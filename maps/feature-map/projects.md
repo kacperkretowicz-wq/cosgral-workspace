@@ -175,7 +175,10 @@ two-browser acceptance evidence.
 Coordinator no-op regression: the server must show a system error even if the
 agent posts a handoff claim but creates no task/interaction and performs no
 scoped child mutation. Old or unrelated task writes cannot satisfy the check;
-completion reports validate the stored child binding. See the server conversation
-test above. RO/RW adapter tests exercise nested bwrap metadata mounts; manual
-Codex CLI sandbox evidence and the informational-reply limitation are in Codex #11
-of COSGRAL-PRZEKAZANIE.md. Live model delegation remains supervisor acceptance.
+completion reports validate the stored child binding and require a saved reply.
+Informational turns without an action obligation pass without a child mutation.
+Workspace preparation tests cover fresh worker worktrees after inherited coordinator
+bindings and preservation of the coordinator folder. RO/RW adapter tests exercise
+nested bwrap metadata mounts; manual Codex CLI evidence is in Codex #11 and the
+follow-up regressions in Codex #12 of COSGRAL-PRZEKAZANIE.md. Live model delegation
+remains supervisor acceptance.

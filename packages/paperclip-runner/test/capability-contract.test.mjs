@@ -18,7 +18,12 @@ test("generated Capability inventory has full source coverage", async () => {
     readRows("eval-traceability.yaml"),
   ]);
 
-  assert.equal(capabilities.length, 161);
+  const contract = JSON.parse(await readFile(resolve(import.meta.dirname, "../spec/capability/source-contract.json"), "utf8"));
+  const headings = (await Promise.all(contract.skillSources.map(async source => {
+    const text = await readFile(resolve(import.meta.dirname, "../../..", source), "utf8");
+    return [...text.matchAll(/^#{1,6}\s+.+$/gm)].length;
+  }))).reduce((sum, count) => sum + count, 0);
+  assert.equal(capabilities.length, headings);
   assert.equal(capabilities.filter(row => row.sourceAnchor.startsWith("skills/paperclip/references/issue-documents.md#")).length, 3);
   assert.equal(tools.length, 42);
   assert.equal(evals.length, 106);

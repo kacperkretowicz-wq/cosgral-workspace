@@ -44,6 +44,7 @@ export interface HeartbeatEnvironmentSelectionInput {
   agent: Pick<typeof agents.$inferSelect,
     "id" | "companyId" | "adapterType" | "adapterConfig" | "defaultEnvironmentId">;
   task: {
+    cosgralRole?: import("./project-conversation-execution.js").ConversationExecutionRole | null;
     freshWorkspace?: import("../fresh-workspace-continuation.js").ContinuationReadiness | null;
     issueRef: Pick<Issue, "id" | "projectWorkspaceId" | "executionWorkspaceId" | "executionWorkspacePreference"> | null;
     issueContext: Pick<Issue, "assigneeAgentId" | "executionWorkspaceSettings"> | null;
@@ -109,12 +110,22 @@ export async function selectHeartbeatEnvironment(db: Db, input: HeartbeatEnviron
   const persistedNativeExecutionWorkspaceId =
     persistedNativeExecutionInput?.binding.executionWorkspaceId ?? null;
   const fresh = input.task.freshWorkspace?.mode === "fresh_isolated_workspace";
-  const requestedExecutionWorkspaceId = isDotRun ? null :
+  let requestedExecutionWorkspaceId = isDotRun ? null :
     persistedNativeExecutionWorkspaceId ??
     readNonEmptyString(issueRef?.executionWorkspaceId);
   let existingExecutionWorkspace = requestedExecutionWorkspaceId
     ? await executionWorkspacesSvc.getStoredById(agent.companyId, requestedExecutionWorkspaceId)
     : null;
+  // A child created from a conversation inherits its parent's binding. Never
+  // reopen, restore or reconcile that worktree under the child's identity.
+  // Keep a matching worker worktree so subsequent turns preserve its work.
+  const discardInheritedWorkspace = input.task.cosgralRole === "worker" && existingExecutionWorkspace &&
+    (existingExecutionWorkspace.sourceIssueId !== issueId || existingExecutionWorkspace.strategyType !== "git_worktree" ||
+      existingExecutionWorkspace.branchName !== `cosgral/${issueId}/${agent.id}`);
+  if (discardInheritedWorkspace && !persistedNativeExecutionInput) {
+    requestedExecutionWorkspaceId = null;
+    existingExecutionWorkspace = null;
+  }
   if (existingExecutionWorkspace && issueId && !isDotRun && !fresh
     && existingExecutionWorkspace.id === readNonEmptyString(issueRef?.executionWorkspaceId)
     && (existingExecutionWorkspace.status === "archived" || existingExecutionWorkspace.status === "cleanup_failed")
@@ -154,7 +165,7 @@ export async function selectHeartbeatEnvironment(db: Db, input: HeartbeatEnviron
   const workspaceReuseRequest =
     resolveExecutionWorkspaceReuseRequestForIssue({
       issueExecutionWorkspaceId: requestedExecutionWorkspaceId,
-      issueExecutionWorkspacePreference: isDotRun ? null : nativeRecoveryExecutionWorkspaceId
+      issueExecutionWorkspacePreference: isDotRun || discardInheritedWorkspace ? null : nativeRecoveryExecutionWorkspaceId
         ? "reuse_existing"
         : (issueRef?.executionWorkspacePreference ?? null),
       existingExecutionWorkspaceStatus:

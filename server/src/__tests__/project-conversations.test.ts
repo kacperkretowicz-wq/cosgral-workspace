@@ -70,7 +70,7 @@ describe("project conversation identity", () => {
     const issue = await projectConversationService(db).setCoordinator(companyId, project!.id, "owner", agent!.id, {
       authorize: async () => {}, changed: async () => {},
     });
-    const [run] = await db.insert(heartbeatRuns).values({ companyId, agentId: agent!.id, issueId: issue!.id, status: "succeeded" }).returning();
+    const [run] = await db.insert(heartbeatRuns).values({ companyId, agentId: agent!.id, issueId: issue!.id, status: "succeeded", contextSnapshot: { wakeReason: "issue_children_completed", completedChildIssueId: randomUUID() } }).returning();
     await settleProjectConversationTurn(db, run!);
     await settleProjectConversationTurn(db, run!);
     const notices = await db.select().from(issueComments).where(and(eq(issueComments.issueId, issue!.id), eq(issueComments.authorType, "system")));
@@ -113,6 +113,40 @@ describe("project conversation identity", () => {
     await db.insert(issueComments).values({ companyId, issueId: issue!.id, authorAgentId: agent!.id, authorType: "agent", createdByRunId: updateRun!.id, body: "Updated existing child" });
     await settleProjectConversationTurn(db, updateRun!);
     expect(await db.select().from(issueComments).where(and(eq(issueComments.issueId, issue!.id), eq(issueComments.authorType, "system")))).toHaveLength(2);
+  }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
+
+  it("accepts informational turns and requires API effects only for declared actions or required reports", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Turn intent", issuePrefix: `I${companyId.slice(0, 6)}` });
+    const [project] = await db.insert(projects).values({ companyId, name: "Intent" }).returning();
+    const [agent] = await db.insert(agents).values({ companyId, name: "Coordinator", role: "general" }).returning();
+    const issue = await projectConversationService(db).setCoordinator(companyId, project!.id, "owner", agent!.id, { authorize: async () => {}, changed: async () => {} });
+    const [child] = await db.insert(issues).values({ companyId, projectId: project!.id, parentId: issue!.id, title: "Finished", status: "done" }).returning();
+    for (const [body, contextSnapshot, error] of [
+      ["Projekt służy do zarządzania zadaniami.", {}, false],
+      ["Delegowanie oznacza przypisanie zadania wykonawcy.", {}, false],
+      [null, {}, false],
+      ["Utworzę zadanie i deleguję je wykonawcy.", {}, true],
+      ["I will delegate this task.", {}, true],
+      [null, { completedChildIssueId: child!.id, wakeReason: "issue_children_completed" }, true],
+      ["I will delegate this task.", { completedChildIssueId: child!.id, wakeReason: "issue_children_completed" }, true],
+      ["Zadanie ukończone; wynik jest dostępny.", { completedChildIssueId: child!.id, wakeReason: "issue_children_completed" }, false],
+    ] as const) {
+      const [run] = await db.insert(heartbeatRuns).values({ companyId, agentId: agent!.id, issueId: issue!.id, status: "succeeded", contextSnapshot }).returning();
+      if (body) await db.insert(issueComments).values({ companyId, issueId: issue!.id, authorAgentId: agent!.id, authorType: "agent", createdByRunId: run!.id, body });
+      await settleProjectConversationTurn(db, run!);
+      await settleProjectConversationTurn(db, run!);
+      const notices = await db.select().from(issueComments).where(and(eq(issueComments.issueId, issue!.id), eq(issueComments.createdByRunId, run!.id), eq(issueComments.authorType, "system")));
+      expect(notices, String(body)).toHaveLength(error ? 1 : 0);
+    }
+    for (const [wakeBody, error] of [["Proszę utwórz zadanie wykonawcy.", true], ["Please create a task.", true], ["Can you delegate this task?", true], ["Could you please create a task?", true], ["Co oznacza delegowanie zadań?", false]] as const) {
+      const [wake] = await db.insert(issueComments).values({ companyId, issueId: issue!.id, authorType: "system", body: wakeBody }).returning();
+      const [run] = await db.insert(heartbeatRuns).values({ companyId, agentId: agent!.id, issueId: issue!.id, status: "succeeded", contextSnapshot: { wakeCommentId: wake.id } }).returning();
+      await db.insert(issueComments).values({ companyId, issueId: issue!.id, authorAgentId: agent!.id, authorType: "agent", createdByRunId: run!.id, body: "Odpowiedź informacyjna." });
+      await settleProjectConversationTurn(db, run!);
+      const notices = await db.select().from(issueComments).where(and(eq(issueComments.issueId, issue!.id), eq(issueComments.createdByRunId, run!.id), eq(issueComments.authorType, "system")));
+      expect(notices, wakeBody).toHaveLength(error ? 1 : 0);
+    }
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
 
   it("projects executor skills, model, real load and runtime limits without credentials or foreign agents", async () => {

@@ -240,6 +240,8 @@ policy; live-model acceptance remains separate.
 Coordinator RO worktrees prepare empty `.agents`/`.codex`/`.aws` mount targets
 before launch; `.git` keeps its private RO binding. Symlinks fail closed.
 Post-turn settlement verifies run/agent/company/project/parent-scoped task or
-interaction writes (or a validated completed-child report). A reply alone leaves
-a visible system error; process `succeeded` is not proof of delegation. This
-conservative check also warns on informational replies without a recorded action.
+interaction writes when the coordinator declares an action or the wake asks for one.
+Completion wakes require a reply tied to the validated completed child. Informational
+turns do not require a mutation; process `succeeded` is not proof of delegation.
+Inherited worker bindings are discarded before restore; only the task/agent worktree
+can be reused. The previous workspace is retained unchanged.

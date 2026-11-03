@@ -81,6 +81,39 @@ describe.skipIf(!support.supported)("heartbeat environment selection boundary", 
     return { input, issue, project, workspace, recover };
   }
 
+  it.each(["active", "archived"] as const)("ignores an inherited COSGRAL workspace before restore (%s)", async status => {
+    const { input, workspace } = await fixture();
+    const saved = await workspace();
+    await executionWorkspaceService(db).update(saved.id, { status, branchName: "cosgral-coordinator/parent/coordinator" });
+    input.task.cosgralRole = "worker";
+    input.task.issueRef!.executionWorkspaceId = saved.id;
+    input.task.issueRef!.executionWorkspacePreference = "reuse_existing";
+    await db.update(issues).set({ executionWorkspaceId: saved.id, executionWorkspacePreference: "reuse_existing" }).where(eq(issues.id, input.task.issueId!));
+    restoration.removed = true;
+    const reopen = vi.spyOn(input.services.executionWorkspacesSvc, "reopenClosedIsolatedExecutionWorkspaceForIssue");
+    try {
+      const result = await selectHeartbeatEnvironment(db, input);
+      expect(result).toMatchObject({ existingExecutionWorkspace: null, reusableExistingExecutionWorkspace: null, requestedShouldReuseExisting: false });
+      expect(result.workspaceReuseRequest.requestedExecutionWorkspaceId).toBeNull();
+      expect(reopen).not.toHaveBeenCalled();
+      expect(await executionWorkspaceService(db).getStoredById(input.agent.companyId, saved.id)).toMatchObject({ status, branchName: "cosgral-coordinator/parent/coordinator" });
+      expect(input.task.issueRef!.executionWorkspaceId).toBe(saved.id);
+    } finally { restoration.removed = false; }
+  });
+
+  it("retains the worker's own task/agent worktree", async () => {
+    const { input, workspace } = await fixture();
+    const saved = await workspace();
+    await executionWorkspaceService(db).update(saved.id, { branchName: `cosgral/${input.task.issueId}/${input.agent.id}` });
+    input.task.cosgralRole = "worker";
+    input.task.issueRef!.executionWorkspaceId = saved.id;
+    input.task.issueRef!.executionWorkspacePreference = "reuse_existing";
+    await db.update(issues).set({ executionWorkspaceId: saved.id, executionWorkspacePreference: "reuse_existing" }).where(eq(issues.id, input.task.issueId!));
+    const result = await selectHeartbeatEnvironment(db, input);
+    expect(result.reusableExistingExecutionWorkspace?.id).toBe(saved.id);
+    expect(result.requestedShouldReuseExisting).toBe(true);
+  });
+
   it("keeps the admitted workspace binding when the issue points at a newer workspace", async () => {
     const { input, workspace, recover } = await fixture();
     const original = await workspace();

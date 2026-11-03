@@ -961,3 +961,117 @@ PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-delegation.mjs --api htt
 - Konto a ma limit do 00:04 (4 XI); t11 uruchomiono na c (tag t11c). Zakończył 23:32. Naprawa bwrap: dodano brakujące punkty montowania `.agents`, `.codex`, `.aws` przy repo koordynatora RO; „ciche succeeded” → systemowy komentarz błędu (uwaga t11: kontrola oznacza też czysto informacyjne odpowiedzi koordynatora – do dopracowania). Standardowy `pnpm typecheck` ma wg t11 dryf kontraktu Runnera (bezpośredni typecheck serwera PASS) – do zbadania.
 - E2E na koncie c (serwer 3199 zrestartowany po t11): **FAIL, ale z postępem** – koordynator działa, zapisuje komentarz początkowy i tworzy zadanie wykonawcy (pierwszy raz od t8). Run wykonawcy pada: `setup_failed` – „COSGRAL retained workspace belongs to a different task or executor.” (server/src/services/heartbeat.ts ~l.2693: dla roli COSGRAL istniejący execution workspace musi mieć sourceIssueId == issueId, strategyType == git_worktree i branchName == `cosgral/<issueId>/<agentId>`; dla zadania wykonawcy utworzonego przez koordynatora z rozmowy istniejący/odziedziczony execution workspace tego nie spełnia). Log: /workspace/logs/e2e-deleg-c3.log. Ze względu na wiele wyników nie ma końcowego raportu koordynatora.
 - Następny krok (t12): ustalić, jaki execution workspace dostaje zadanie wykonawcy (dziedziczony z rozmowy/projektu?) i albo pominąć/zignorować go dla roli COSGRAL worker (utworzyć świeży worktree `cosgral/<issueId>/<agentId>`), albo wymusić tworzenie zadań potomnych bez dziedziczenia execution workspace; test regresyjny; powtórzyć e2e na c lub a (a dostępne po 00:04). Dopiero po zielonym e2e commit t10+t11+t12.
+
+## Codex #12 — świeży worktree wykonawcy, intencja tury i kontrakt Runnera (2026-11-04)
+
+### Przyczyna i zmiany
+
+- Dziedziczenie pochodzi z `routes/issues.ts`: gdy tworzenie nie podaje wyboru
+  workspace, `resolveRunIssueWorkspaceInheritanceSource` wskazuje zadanie runu
+  tworzącego. `issueService.create` dziedziczy z niego (albo rodzica)
+  `executionWorkspaceId` i ustawia `reuse_existing`. Dziecko rozmowy dostawało więc
+  worktree koordynatora; kontrola tożsamości w heartbeat prawidłowo go odrzucała.
+- `environment-selection.ts` dostaje rolę ustaloną przez zapisane ancestry.
+  **Przed reopen/restore** worker pomija workspace, którego sourceIssueId,
+  strategia albo branch nie pasuje do `git_worktree`, bieżącego zadania i
+  `cosgral/<issueId>/<agentId>`. Zeruje wyłącznie wejścia reuse bieżącego runu;
+  zwykłe przygotowanie tworzy nowy worktree i wiąże go z dzieckiem. Cudzy rekord,
+  katalog, branch i niezapisana praca pozostają zachowane. Pasujący własny
+  worktree nadal wznawia się w kolejnych turach. Kontrola końcowej strategii/brancha,
+  dostęp do projektu, local-only, CLI workspace-write i brak bypass pozostają.
+- `project-conversation-turn.ts` rozróżnia obowiązki: brak operacji jest błędem
+  przy jawnej deklaracji/roszczeniu agenta lub poleceniu w komentarzu wake.
+  Czysto informacyjne tury, również bez komentarza i bez wymaganego działania,
+  nie dostają systemowego błędu. Wymagany raport ukończenia sprawdza zapisane
+  powiązanie dziecka i komentarz bieżącego runu. Raport nie zwalnia z osobnego
+  zadeklarowanego działania. Wszystkie komentarze runu są sprawdzane, a receipt
+  operacji nadal musi pasować do run/agenta/firmy/projektu/rodzica. Błąd jest
+  idempotentny. Zaktualizowano obie mapy projektów.
+- Runner: dodana wcześniej sekcja `Shared project coordination` w skillu zmieniła
+  nagłówki i numery linii. Odświeżono `generated/capability` oraz normatywny
+  `spec/capability/capabilities.yaml` z pochodnymi TS/docs. Licznik normatywny
+  wynosi teraz 167; test katalogu fazowego porównuje liczbę nagłówków z żywymi
+  źródłami zamiast przestarzałego stałego 161. Zachowano korpus 106 evali i 42
+  aliasy MCP bez zmian. Pełny generator inventory wymaga niedostępnego zewnętrznego
+  repo `paperclip-evals`; odświeżono tylko część skillową istniejącymi funkcjami
+  generatora, zachowując zapisane evale/aliasy. Reprodukcja tej części:
+
+```js
+// node --input-type=module, z katalogu głównego repo
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { buildSkillInventory, decodeInventory, encodeInventory, renderContractModule, renderDocumentation } from './packages/paperclip-runner/scripts/lib/capability-inventory.mjs';
+const root = resolve('packages/paperclip-runner');
+const read = async name => decodeInventory(await readFile(resolve(root, `spec/capability/${name}.yaml`), 'utf8'));
+const inventories = { capabilities: await buildSkillInventory(process.cwd()), evaluations: await read('eval-traceability'), legacyMcpAliases: await read('mcp-tool-map') };
+await writeFile(resolve(root, 'spec/capability/capabilities.yaml'), encodeInventory(inventories.capabilities));
+await writeFile(resolve(root, 'src/generated/capability-contract.ts'), renderContractModule(inventories));
+await writeFile(resolve(root, 'docs/capability-contract.md'), renderDocumentation(inventories));
+```
+
+### Testy — rzeczywiście wykonane
+
+Wszystkie pnpm z `PATH=/home/box/tools/bin:$PATH`.
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/services/heartbeat/environment-selection.test.ts src/__tests__/project-conversations.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts src/services/heartbeat/workspace-preparation.test.ts --maxWorkers=1
+# PASS: 5 plików / 155 testów (przed rozszerzeniem regresji o przygotowanie dziecka)
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/heartbeat/environment-selection.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts --maxWorkers=1
+# PASS: 4 pliki / 29 testów
+pnpm --filter @paperclipai/server exec vitest run src/services/heartbeat/workspace-preparation.test.ts -t 'creates a worker worktree' --maxWorkers=1
+# PASS: 1 regresja / 126 pominiętych filtrem; rzeczywisty Git i baza, bez modelu
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts --maxWorkers=1
+# PASS: 7 testów po poprawkach z przeglądu (uprzejme prośby EN, raport + nowa delegacja)
+node --test packages/paperclip-runner/test/capability-contract.test.mjs packages/paperclip-runner/scripts/check-capability-inventory.test.mjs
+# PASS: 8 testów
+pnpm --filter @paperclipai/paperclip-runner check:capability-contract
+pnpm --filter @paperclipai/paperclip-runner check:capability-inventory
+pnpm --filter @paperclipai/paperclip-runner typecheck:typescript
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# wszystkie cztery: exit 0
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 IDs, tylko struktura
+git diff --check
+# PASS
+```
+
+- RED przed poprawką: informacyjna odpowiedź dostawała błąd, odziedziczony aktywny
+  workspace wchodził w ścieżkę reuse, zarchiwizowany próbował reopen. Początkowy
+  test własnego worktree miał niepełny fixture bindingu; uzupełniono zapis w bazie.
+  Późniejsza pełna próba dwóch plików: 133 PASS / 1 FAIL — zbyt wczesny snapshot
+  rekordu koordynatora nie uwzględniał triggera `_issuePrivacySources` po przypięciu
+  dziecka. Poprawiono punkt snapshotu; końcowa celowana regresja PASS. Nie zmieniano
+  produkcyjnej polityki prywatności. Kompilacja wykryła też zbyt wąski typ serwisu
+  w nowym fixture; poprawiony, końcowy `tsc --noEmit` PASS.
+- **Standardowy `pnpm --filter @paperclipai/server typecheck`: uruchomiony, FAIL.**
+  Pierwsze próby wykazały kolejne warstwy tego samego dryfu; po odświeżeniu oba
+  katalogi, protocol coverage i semantic contracts przechodzą. Następnie build
+  Runnera zatrzymuje się na cache Cargo poza zapisywalną ścieżką. Powtórka z
+  `CARGO_HOME=/tmp/cosgral12-cargo` dochodzi dalej i zatrzymuje się na rustc:
+  dostępne **1.85.1**, zależności z lockfile wymagają m.in. **1.94.1** (AWS SDK).
+  To osobna blokada środowiska, nie dryf kontraktu; pełnego standardowego skryptu
+  nie zaliczono. Nie zmieniano lockfile ani zależności w celu obejścia MSRV.
+- Logi: `/tmp/cosgral12-{red,tests,followup,worker-final,final-tests,turn-final,runner-tests-final,contract-final,runner-typecheck,server-tsc-final,typecheck-cargo,maps}.log`.
+  Przegląd zmian wykrył uprzejme prośby EN i raport maskujący nową delegację;
+  oba poprawione, ponowny przegląd bez dalszych ustaleń (odczyt źródeł/testów).
+
+### Niezweryfikowane i ograniczenia
+
+- **Bez commit/push; gałąź `wip/cosgral-t10-t12`. Nie używano portu 3199.**
+  Własny serwer API nie był potrzebny. Fixture mają własne bazy/repo/PAPERCLIP_HOME
+  w `/tmp`. Nie używano loginów ani modeli, w szczególności konta b.
+- Prawdziwe e2e delegowania, raport końcowy koordynatora i odbiór na koncie a/c
+  wykonuje nadzorca. Nie deklarowano zielonego e2e ani gotowości PR.
+- Intencja tekstowa jest wąską heurystyką polskich/angielskich deklaracji i próśb,
+  nie klasyfikatorem dowolnego języka/parafrazy. Trwały wake ukończenia nie zależy
+  od tej heurystyki. Sam tekst nadal nie jest dowodem wykonania operacji.
+- Nie uruchamiano pełnych monorepo `pnpm typecheck`, `pnpm test:run`, `pnpm build`
+  ani browser suites. Standardowy typecheck serwera wymaga właściwego toolchainu
+  Rust i zapisywalnego cache; TypeScript serwera i Runnera przeszedł oddzielnie.
+
+### Nadzorca – po Codex t12 (2026-11-04 ~00:30 CET) – ZIELONE
+- E2E delegowania na koncie c (restart 3199 na kodzie t10+t11+t12): **PASS** – koordynator → wykonawca (świeży worktree) → koordynator zapisany w rozmowie, ograniczone udane runy, brak retry przez 75 s. Log: /workspace/logs/e2e-deleg-c4.log. `--verify-isolation` PASS.
+- Testy nadzorcy: serwer 7 plików/204 PASS, UI ProjectConversation 25 PASS, node:test (runner capability contract + e2e delegacji) 39 PASS.
+- Niezweryfikowane: standardowy `pnpm typecheck` serwera blokuje środowisko (rustc 1.85.1 vs wymagane 1.94.1) – bezpośredni tsc serwera/Runnera PASS wg t12; pełne bramki monorepo; test dwóch przeglądarek; §5 (karty zatwierdzeń) bez testu na żywo z modelem.
+- Konta Codex: a (limit do 00:04 4 XI, potem OK), c OK, d do sprawdzenia `codex login status`, b nie używać (brak gpt-6.1-sol).
+- Dalej: test na żywo kart zatwierdzeń i doboru wykonawcy (§5), potem §7 integracje/runtime'y, §12 personalizacja, §10 podłączanie własnego repo, §11 hosting.

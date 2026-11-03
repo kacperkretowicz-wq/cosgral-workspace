@@ -39,6 +39,7 @@ import { resolveExecutionWorkspaceMode, buildExecutionWorkspaceAdapterConfig } f
 import { createLocalDiskStorageProvider } from "../../storage/local-disk-provider.js";
 import { createStorageService } from "../../storage/service.js";
 import { InMemorySpanExporter, SimpleSpanProcessor, TracerProvider } from "@opentelemetry/sdk-trace";
+import { protectConversationConfig } from "./project-conversation-execution.js";
 import { selectHeartbeatEnvironment } from "./environment-selection.js";
 import { assertNativeSessionPreparationAuthority } from "../native-runtime/native-execution-lease.js";
 import { currentNativeControllerIdentity } from "../native-runtime/native-restart-recovery.js";
@@ -126,6 +127,43 @@ describe.skipIf(!support.supported && !externalDatabaseUrl)("heartbeat workspace
     };
     return { input, source, issue, run, envOrchestrator };
   }
+  it("creates a worker worktree after a conversation child inherits the coordinator workspace", async () => {
+    const { input, issue } = await fixture(true);
+    input.config.mergedConfig = protectConversationConfig({}, "coordinator");
+    const coordinator = await prepareHeartbeatWorkspace(db, input);
+    const saved = coordinator.persistedExecutionWorkspace!;
+    await writeFile(join(coordinator.executionWorkspace.cwd, "coordinator-only.txt"), "preserve coordinator work");
+    const [child] = await db.insert(issues).values({ companyId: issue.companyId, parentId: issue.id,
+      projectId: issue.projectId, projectWorkspaceId: issue.projectWorkspaceId, title: "Delegated child", identifier: "WSP-2",
+      assigneeAgentId: input.agent.id, executionWorkspaceId: saved.id, executionWorkspacePreference: "reuse_existing" }).returning();
+    const [run] = await db.insert(heartbeatRuns).values({ companyId: issue.companyId, agentId: input.agent.id,
+      issueId: child.id, scopeKind: "issue", status: "running", runtimeMode: "legacy" }).returning();
+    const inheritedRecord = await input.services.executionWorkspacesSvc.getStoredById(issue.companyId, saved.id);
+    input.run = run;
+    input.task = { ...input.task, issueId: child.id, issueRef: child, context: { issueId: child.id, projectId: child.projectId } };
+    input.config.mergedConfig = protectConversationConfig({}, "worker");
+    const selected = await selectHeartbeatEnvironment(db, {
+      run, agent: input.agent,
+      task: { ...input.task, issueContext: child, cosgralRole: "worker", executionProjectId: child.projectId,
+        workspaceProjectContext: { hasWorkspace: true }, boundSourceWorkspace: saved,
+        hasSelectedWorkspaceSource: false, taskWorkspaceIntent: null, responsibleUserId: null },
+      policy: input.policy,
+      config: { config: {}, sourceWorkspaceConfig: input.config.mergedConfig, issueAssigneeOverrides: null },
+      services: { environmentsSvc: environmentService(db), executionWorkspacesSvc: executionWorkspaceService(db),
+        instanceSettings: instanceSettingsService(db), findSharedWorkspaceHolder: async () => null, findExecutionWorkspaceHolder: async () => null },
+    });
+    input.reuse = { ...input.reuse, ...selected };
+    const worker = await prepareHeartbeatWorkspace(db, input);
+    expect(worker.executionWorkspace.branchName).toBe(`cosgral/${child.id}/${input.agent.id}`);
+    expect(worker.executionWorkspace.cwd).not.toBe(coordinator.executionWorkspace.cwd);
+    expect(worker.persistedExecutionWorkspace!.sourceIssueId).toBe(child.id);
+    expect((await readIssue(child.id)).executionWorkspaceId).toBe(worker.persistedExecutionWorkspace!.id);
+    expect((await readIssue(issue.id)).executionWorkspaceId).toBe(saved.id);
+    expect(await input.services.executionWorkspacesSvc.getStoredById(issue.companyId, saved.id)).toEqual(inheritedRecord);
+    expect(await readFile(join(coordinator.executionWorkspace.cwd, "coordinator-only.txt"), "utf8")).toBe("preserve coordinator work");
+    await expect(access(join(worker.executionWorkspace.cwd, "coordinator-only.txt"))).rejects.toThrow();
+  });
+
   it.each(["unconfigured", "operator-disabled"] as const)("auto-enrollment keeps %s native sandboxes on their existing host path", async mode => {
     const { input, source, envOrchestrator } = await fixture();
     input.agent.adapterType = "paperclip_runner";

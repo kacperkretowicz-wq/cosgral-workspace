@@ -2,7 +2,16 @@ import { activityLog, heartbeatRuns, issueComments, issueThreadInteractions, iss
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { persistActivity, publishActivity, type ActivityPublication } from "../activity-log.js";
 import { PROJECT_CONVERSATION_ORIGIN } from "../project-conversation-policy.js";
+import { deriveCommentId, extractWakeCommentIds } from "../../modules/run-dispatch/index.js";
 import { notifyStatusCardIssueChange } from "../status-card-notifications.js";
+
+// Deliberately narrow first-person declarations/claims, not mentions of the
+// concept of delegation. This is an intent signal, never an action receipt.
+const declaredEnglishAction = /\bi(?:\s+(?:will|shall|am going to)|['’]ll)?\s+(?:delegate|assign|create|update|send)\b|(?:^|[.!?\n]\s*)(?:delegated|assigned|created|updated|sent)\b/iu;
+const declaredPolishAction = /(?:^|[.!?\n]\s*)(?:teraz\s+)?(?:deleguję|zdelegowałem|zdelegowałam|utworzę|utworzyłem|utworzyłam|zlecę|zlecam|przypiszę|przypisałem|przypisałam|zaktualizuję|wyślę)(?=\s|[.,!:;]|$)/iu;
+const requestPrefix = "(?:^|[.!?\\n–—]\\s*)(?:(?:proszę[,:]?|please|can you|could you|would you)\\s+)*(?:please\\s+)?";
+const requestedAction = new RegExp(`${requestPrefix}(?:deleguj|zleć|utwórz|przypisz|zaktualizuj|wyślij|delegate|assign|create|update|send)(?=\\s|[.,!:;]|$)`, "iu");
+const requestedReport = new RegExp(`${requestPrefix}(?:zaraportuj|report)(?=\\s|[.,!:;]|$)`, "iu");
 
 /** Settle a channel turn before releasing its execution lock. No task disposition or retry. */
 export async function settleProjectConversationTurn(db: Db, run: Pick<typeof heartbeatRuns.$inferSelect,
@@ -22,11 +31,12 @@ export async function settleProjectConversationTurn(db: Db, run: Pick<typeof hea
     if (issue.assigneeAgentId !== run.agentId
       || (issue.executionRunId && issue.executionRunId !== run.id)
       || (issue.checkoutRunId && issue.checkoutRunId !== run.id)) return true;
-    const [reply] = await tx.select({ id: issueComments.id }).from(issueComments).where(and(
+    const replies = await tx.select({ id: issueComments.id, body: issueComments.body }).from(issueComments).where(and(
       eq(issueComments.companyId, run.companyId), eq(issueComments.issueId, issue.id),
       eq(issueComments.createdByRunId, run.id), eq(issueComments.authorAgentId, run.agentId),
       isNull(issueComments.deletedAt),
-    )).limit(1);
+    ));
+    const reply = replies[0];
     // Text (including a claimed handoff) is not an action receipt. Only this
     // run's persisted, scoped writes can confirm delegation or a decision gate.
     const [delegation] = await tx.select({ id: issues.id }).from(issues).where(and(
@@ -48,23 +58,34 @@ export async function settleProjectConversationTurn(db: Db, run: Pick<typeof hea
     )).limit(1);
     // A completion wake needs a reply, not another delegation. Revalidate the
     // stored child binding rather than treating arbitrary context as a receipt.
-    const [storedRun] = await tx.select({ completedChildIssueId: sql<unknown>`${heartbeatRuns.contextSnapshot}->'completedChildIssueId'` }).from(heartbeatRuns).where(and(
+    const [storedRun] = await tx.select({ context: heartbeatRuns.contextSnapshot }).from(heartbeatRuns).where(and(
       eq(heartbeatRuns.id, run.id), eq(heartbeatRuns.companyId, run.companyId),
     ));
-    const completedChildId = storedRun?.completedChildIssueId;
+    const context = storedRun?.context ?? {};
+    const completedChildId = context.completedChildIssueId;
+    const wakeCommentIds = [...new Set([...extractWakeCommentIds(context), deriveCommentId(context, null)].filter((id): id is string => typeof id === "string"))];
+    const wakeComments = wakeCommentIds.length ? await tx.select({ body: issueComments.body }).from(issueComments).where(and(
+      eq(issueComments.companyId, run.companyId), eq(issueComments.issueId, issue.id),
+      inArray(issueComments.id, wakeCommentIds), isNull(issueComments.deletedAt),
+    )) : [];
+    const requiresReport = typeof completedChildId === "string" || context.wakeReason === "issue_children_completed";
+    const requiresAction = replies.some(comment => (declaredEnglishAction.test(comment.body) || declaredPolishAction.test(comment.body))) ||
+      wakeComments.some(comment => requestedAction.test(comment.body));
     const [completedChild] = typeof completedChildId === "string"
       ? await tx.select({ id: issues.id }).from(issues).where(and(
         eq(sql`${issues.id}::text`, completedChildId), eq(issues.companyId, run.companyId),
         eq(issues.parentId, issue.id), eq(issues.status, "done"),
         issue.projectId ? eq(issues.projectId, issue.projectId) : isNull(issues.projectId),
       )).limit(1) : [];
-    const missingAction = !delegation && !interaction && !childAction && !completedChild;
+    const missingAction = requiresAction && !delegation && !interaction && !childAction;
+    const missingReport = (requiresReport && !completedChild) ||
+      ((requiresReport || wakeComments.some(comment => requestedReport.test(comment.body))) && !reply);
     const noticeKey = `project-conversation-turn:${run.id}`;
     const [notice] = await tx.select({ id: issueComments.id }).from(issueComments).where(and(
       eq(issueComments.issueId, issue.id), eq(issueComments.companyId, run.companyId),
       eq(issueComments.clientRequestId, noticeKey), eq(issueComments.authorType, "system"),
     )).limit(1);
-    if (!notice && (run.status !== "succeeded" || !reply || missingAction)) {
+    if (!notice && (run.status !== "succeeded" || missingAction || missingReport)) {
       const [comment] = await tx.insert(issueComments).values({
         companyId: run.companyId, issueId: issue.id, authorType: "system", createdByRunId: run.id,
         clientRequestId: noticeKey,
