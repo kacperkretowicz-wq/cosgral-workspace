@@ -24,6 +24,8 @@ export interface LocalProcessSandboxOptions {
   /** Launch with only explicitly supplied environment, excluding server credentials. */
   inheritEnvironment?: boolean;
   managedPaths?: LocalProcessSandboxPath[];
+  /** Host-prepared read-only views; never populated from user extra paths. */
+  readOnlyBindings?: { source: string; target: string }[];
   extraPaths?: LocalProcessSandboxPath[];
   pathAliases?: LocalProcessSandboxPathAlias[];
   outboundRestorePaths?: string[];
@@ -414,6 +416,12 @@ export async function buildLocalProcessSandboxSpawnTarget(input: {
     for (const managedPath of input.options.managedPaths ?? []) await mount(managedPath.path, managedPath.access);
     for (const extraPath of input.options.extraPaths ?? []) await mount(extraPath.path, extraPath.access);
     await mount(workspaceDir, input.options.workspaceAccess ?? "rw");
+    for (const binding of input.options.readOnlyBindings ?? []) {
+      const source = normalizeAbsolutePath(binding.source, "Sandbox binding source");
+      const target = normalizeAbsolutePath(binding.target, "Sandbox binding target");
+      addParentDirectories(args, created, target);
+      args.push("--ro-bind", source, target);
+    }
     for (const [index, alias] of (input.options.pathAliases ?? []).entries()) {
       const aliasPath = normalizeAbsolutePath(alias.path, `Sandbox pathAliases[${index}].path`);
       const aliasTarget = normalizeAbsolutePath(alias.target, `Sandbox pathAliases[${index}].target`);

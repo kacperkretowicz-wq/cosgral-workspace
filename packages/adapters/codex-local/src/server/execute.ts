@@ -1,4 +1,5 @@
-import { cosgralPolicy, cosgralProcessEnvironment } from "./cosgral-policy.js";
+import { prepareCosgralGitView } from "./cosgral-git.js";
+import { cosgralPolicy, cosgralProcessEnvironment, prepareCosgralReadOnlyCwd } from "./cosgral-policy.js";
 import { asStringArray } from "@paperclipai/adapter-utils/server-utils";
 import { applyObservabilityEnvironment } from "@paperclipai/adapter-utils/agent-observability";
 import { prepareCodexObservabilityProfile, selectedCodexProfile, replaceCodexProfileArgs, disableCodexObservabilityArgs } from "@paperclipai/adapter-utils/codex-observability-profile";
@@ -1064,7 +1065,14 @@ async function executePrepared(ctx: AdapterExecutionContext): Promise<AdapterExe
         Object.assign(env, paperclipBridge.env);
       }
     }
-    if (protectedRun) { env.CODEX_HOME = launchHome; env.HOME = launchHome; }
+    if (protectedRun) {
+      env.CODEX_HOME = launchHome; env.HOME = launchHome;
+      const tmp = path.join(launchHome, "tmp");
+      await fs.mkdir(tmp, { recursive: true });
+      for (const key of ["TMPDIR", "TEMP", "TMP", "PAPERCLIP_RUN_SCRATCH_DIR", "PAPERCLIP_TASK_SCRATCH_DIR", "PAPERCLIP_SCRATCH_DIR", "PAPERCLIP_TMPDIR"]) env[key] = tmp;
+    }
+    if (protectedRole === "coordinator") await prepareCosgralReadOnlyCwd(effectiveExecutionCwd);
+    const gitBindings = protectedRun ? await prepareCosgralGitView(effectiveExecutionCwd, launchHome) : [];
     const effectiveEnv = Object.fromEntries(
       Object.entries(protectedRun ? cosgralProcessEnvironment(process.env, env) : { ...process.env, ...env }).filter(
         (entry): entry is [string, string] => typeof entry[1] === "string",
@@ -1083,6 +1091,7 @@ async function executePrepared(ctx: AdapterExecutionContext): Promise<AdapterExe
             workspaceAccess: protectedRole === "coordinator" ? "ro" : "rw",
             inheritEnvironment: protectedRun ? false : undefined,
             managedPaths: [{ path: launchHome, access: "rw" }],
+            readOnlyBindings: gitBindings,
             extraPaths: parseLocalProcessSandboxExtraPaths(config.filesystemExtraPaths),
             pathAliases: targetWorkspaceRealization?.mode === "copy"
               ? targetWorkspaceRealization.pathAliases

@@ -1,3 +1,4 @@
+import type { ProjectConversationRoster } from "./project-conversation-roster.js";
 import { PROJECT_CONVERSATION_ORIGIN_KIND } from "@paperclipai/shared";
 import { REQUIRED_QUALITY_REVIEW_GUIDANCE, requiredQualityReview } from "../required-quality-review.js";
 import { AGENT_CHAT_DIRECTIVE, COORDINATOR_CHAT_HANDOFF_DIRECTIVE } from "../agent-conversations.js";
@@ -19,6 +20,7 @@ export function buildPaperclipTaskMarkdown(input: {
     description?: string | null;
     executionPolicy?: unknown;
   } | null;
+  coordinatorRoster?: ProjectConversationRoster;
   completedChildIssueId?: string | null;
   ancestors?: Array<{
     id: string;
@@ -227,6 +229,10 @@ export function buildPaperclipTaskMarkdown(input: {
         "This is a persistent shared project conversation, not a task to finish: do not close, hide, move or reassign it. Read its comments and reply here through the Paperclip comment API as yourself. Do not impersonate the user.",
         `For authorized work, use the paperclip skill to create ordinary delegated tasks with projectId=${JSON.stringify(issue.projectId)}, parentId=${JSON.stringify(issue.id)}, assigneeAgentId of the requested executor or an authorized reportsTo subordinate, status=todo, a self-contained description with a link to this conversation, and a stable idempotencyKey derived from the source comment and work item. Check existing children before retrying; do not duplicate completed work. Do not execute the delegate's work yourself.`,
         "Do not change the conversation status: never set in_review, blocked, done or cancelled. Task checkout, disposition and recovery instructions do not apply to this channel. After replying or handing off, leave the channel assigned to yourself and exit; the server settles the turn. Do not poll or wait inside a run. When children complete, read their status and comments and post a final report here with links and verified results. Do not delegate again for the same request. If delegation, verification or reporting fails, post the specific failure here as a comment; never claim success without evidence. Budgets, approvals and access controls still apply.");
+      lines.push("", "Executor selection (server snapshot, not execution authority):",
+        JSON.stringify(input.coordinatorRoster ?? []),
+        "Match task type and capabilities before model strength. Respect a human's executor choice; otherwise compare activeTaskCount, activeRuns, availableSlots, maxConcurrentRuns, status and projectAccess. Only idle/running agents with compatible local CLI, project access, remaining budget (budgetMonthlyCents=0 means no configured monthly cap) and available slots are candidates. The runtime and provider credentials are revalidated at dispatch; configured compatibility is not a live login check. Provider quota/subscription limits and model price are unknown unless independently verified; never invent them. Prefer independent tasks on different eligible agents in parallel; keep dependencies sequential and never exceed configured concurrency. Existing assignment authorization still applies; reportsTo does not grant new permissions.",
+        "Human approval gate: when the user marks a task/action as requiring approval, use the existing issue interactions API on this conversation BEFORE creating or executing the task: POST /api/issues/" + issue.id + "/interactions with kind=suggest_tasks, resolverPolicy=human_only, stable idempotencyKey, title explaining the decision, payload={version:1,defaultParentId:" + JSON.stringify(issue.id) + ",tasks:[{clientKey,title,description,projectId:" + JSON.stringify(issue.projectId) + ",assigneeAgentId}]}. This pending proposal is the approval marker: do not also create an executable issue. Acceptance atomically creates assigned todo tasks; rejection creates none. For decisions without a task draft use request_confirmation with resolverPolicy=human_only, continuationPolicy=wake_assignee and payload={version:1,prompt,acceptLabel:Zatwierdź,rejectLabel:Odrzuć,supersedeOnUserComment:false}. Read the persisted decision before dependent work; a new comment, process exit, timeout or unanswered card is not approval. Reuse pending cards; never self-approve. Existing approvals for governed operations remain required and cannot be replaced by a conversation confirmation.");
       if (input.completedChildIssueId) lines.push(`Child task ${JSON.stringify(input.completedChildIssueId)} completed — report in this conversation now. Read its persisted status and comments, link the task and report verified results (or failure). Do not create another delegation or change this conversation status.`);
     }
     if (issue.conversationAgentId) {

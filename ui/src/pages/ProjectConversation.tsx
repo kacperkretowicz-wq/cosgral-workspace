@@ -1,3 +1,4 @@
+import { AttentionInteractionResolver } from "../components/AttentionInteractionResolver";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Menu, Moon, PanelRight, Send, Sun, Settings2 } from "lucide-react";
@@ -130,6 +131,8 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const directory = useQuery({ queryKey: queryKeys.access.companyUserDirectory(companyId), queryFn: () => accessApi.listUserDirectory(companyId) });
   const tasks = useQuery({ queryKey: [...queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId), "conversation-cards"], queryFn: () => issuesApi.listAll(companyId, { projectId: project.data!.id, includeAgentCreatedTasks: true, includeBlockedBy: true }), enabled: Boolean(project.data) });
   const issueId = conversation.data?.issueId;
+  const decisions = useQuery({ queryKey: queryKeys.issues.interactions(issueId ?? "pending"),
+    queryFn: () => issuesApi.listInteractions(issueId!), enabled: Boolean(issueId) });
   const presence = useProjectConversationPresence(companyId, project.data?.id ?? projectId, Boolean(project.data && conversation.isSuccess));
   const viewportRef = useMobileVisualViewport(mobile && Boolean(project.data) && conversation.data !== undefined);
   const tree = useQuery({ queryKey: ["issues", "tree-control-state", issueId ?? "pending"], queryFn: () => issuesApi.getTreeControlState(issueId!), enabled: Boolean(issueId) });
@@ -162,6 +165,9 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     }
     if (event.type !== "activity.logged") return;
     const payload = event.payload;
+    if (issueId && payload.entityType === "issue" && payload.entityId === issueId && typeof payload.action === "string" && payload.action.startsWith("issue.thread_interaction_")) {
+      void client.invalidateQueries({ queryKey: queryKeys.issues.interactions(issueId) });
+    }
     if (payload.entityType === "agent") void client.invalidateQueries({ queryKey: queryKeys.agents.list(companyId) });
     if (payload.entityType === "issue") {
       void client.invalidateQueries({ queryKey: queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId) });
@@ -222,7 +228,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       scroller.scrollTop = prepend.current.top + scroller.scrollHeight - prepend.current.height;
       prepend.current = null;
     } else if (followBottom.current && !history.isFetchingNextPage) scroller.scrollTop = scroller.scrollHeight;
-  }, [comments, history.isFetchingNextPage]);
+  }, [comments, decisions.data, history.isFetchingNextPage]);
 
   const send = useMutation({
     mutationFn: async (submission: { body: string; requestId: string }) => {
@@ -327,6 +333,11 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
               <div className="min-w-0 break-words rounded-lg bg-muted/40 p-3"><MarkdownBody>{comment.body}</MarkdownBody></div>
             </article>;
           })}
+          {issueId && decisions.data?.filter(item => item.kind === "suggest_tasks" || item.kind === "request_confirmation").map(item =>
+            <AttentionInteractionResolver key={item.id} companyId={companyId} issueId={issueId} interactionId={item.id}
+              currentUserId={user.id} agentMap={new Map(roster.map(agent => [agent.id, agent]))}
+              presentation="coordinator-decision" actionLabels={{ accept: t("approval.accept"), reject: t("approval.reject") }} />)}
+          {decisions.isError && <p role="alert" className="text-sm text-destructive">{t("approval.loadError")} <Button onClick={() => { void decisions.refetch(); }}>{t("retry")}</Button></p>}
           <TaskCards tasks={tasks.data ?? []} agents={roster} users={profiles} projectId={project.data?.id ?? projectId} conversationId={issueId ?? ""} />
           {[project, conversation, agents, projects, tasks, directory].some(query => query.isError) && <p role="alert" className="text-sm text-destructive">{t("dataError")} <Button variant="outline" onClick={() => { for (const query of [project, conversation, agents, projects, tasks, directory]) if (query.isError) void query.refetch(); }}>{t("retry")}</Button></p>}
         </div>
@@ -340,6 +351,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
               {roster.map(agent => <option key={agent.id} value={agent.id} disabled={!["idle", "running"].includes(agent.status)}>{agent.name} · {t(`status.${agent.status}`)}</option>)}
             </select>
           </div>
+          <p className="text-xs text-muted-foreground">{t("providerLimitsUnknown")}</p>
           {!coordinatorSelected && <p className="text-sm text-muted-foreground">{t("coordinatorHint")}</p>}
           {conversation.data?.canManageCoordinator === false && !coordinatorSelected && <p className="text-xs text-muted-foreground">{t("coordinatorReadOnly")}</p>}
           {setCoordinator.isError && <p role="alert" className="text-sm text-destructive">{t("coordinatorError")}</p>}

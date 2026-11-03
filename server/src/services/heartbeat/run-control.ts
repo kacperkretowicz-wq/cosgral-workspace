@@ -868,6 +868,7 @@ export function createHeartbeatRunControl(db: Db, dependencies: HeartbeatRunCont
     try {
       const [source] = await db.select({
         id: heartbeatRuns.id, companyId: heartbeatRuns.companyId, agentId: heartbeatRuns.agentId, status: heartbeatRuns.status,
+        storedIssueId: heartbeatRuns.issueId,
         contextIssueId: sql<unknown>`${heartbeatRuns.contextSnapshot}->'issueId'`,
         contextTaskId: sql<unknown>`${heartbeatRuns.contextSnapshot}->'taskId'`,
         errorCode: heartbeatRuns.errorCode,
@@ -879,7 +880,7 @@ export function createHeartbeatRunControl(db: Db, dependencies: HeartbeatRunCont
         eq(heartbeatRuns.id, run.id), eq(heartbeatRuns.companyId, run.companyId),
       ));
       const projectConversationSettled = source ? await settleProjectConversationTurn(db, {
-        ...source, issueId: readNonEmptyString(source.contextIssueId) ?? readNonEmptyString(source.contextTaskId),
+        ...source, issueId: source.storedIssueId ?? readNonEmptyString(source.contextIssueId) ?? readNonEmptyString(source.contextTaskId),
       }) : false;
       const sourceHandoff = await pendingCaseHandoffForRun(db, run.id, run.companyId);
       const { postCommitEffects } = await wakeQueue.releaseIssueExecution({

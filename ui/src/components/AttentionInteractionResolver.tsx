@@ -20,6 +20,7 @@ import { DecisionCardFooter } from "./DecisionCardFooter";
 import { IssueThreadInteractionCard } from "./IssueThreadInteractionCard";
 
 interface AttentionInteractionResolverProps {
+  actionLabels?: { accept: string; reject: string };
   companyId: string;
   issueId: string;
   interactionId: string;
@@ -51,6 +52,7 @@ export function replaceResolvedInteraction(
  * (converged PAP-12628). Reviews never reach here — they deep-link.
  */
 export function AttentionInteractionResolver({
+  actionLabels,
   companyId,
   issueId,
   interactionId,
@@ -158,6 +160,7 @@ export function AttentionInteractionResolver({
 
   return (
     <IssueThreadInteractionCard
+      actionLabels={actionLabels}
       interaction={interaction}
       presentationVariant={presentation}
       footerSlot={footerSlot}

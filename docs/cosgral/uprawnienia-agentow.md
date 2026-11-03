@@ -1,6 +1,6 @@
 # COSGRAL: worktrees i uprawnienia wykonania
 
-Stan: 2026-11-03, zadanie 8. Polityka obejmuje wspólną rozmowę projektu
+Stan: 2026-11-03, zadania 8 i 10. Polityka obejmuje wspólną rozmowę projektu
 `cosgral_project_conversation` i jej potomków w tym samym projekcie/firmie.
 Serwer rozpoznaje rolę z zapisanej hierarchii, nie z instrukcji lub payloadu wake.
 Zwykłe zadania poza tą hierarchią zachowują dotychczasową konfigurację.
@@ -49,12 +49,22 @@ Nie należy udostępniać w sieci usług ujawniających pliki/sekrety bez autory
 
 ## Git i sprzątanie
 
-Proces nie dostaje wspólnego `.git` źródłowego repo: wskaźnik `.git` w standardowym
-worktree prowadzi poza zamontowany katalog. Dzięki temu nie może zmienić wspólnych
-refs/konfiguracji ani metadanych innych worktrees. Edycja i testy plików działają;
-CLI Git wymagające wspólnego gitdir (np. status/commit) pozostają niedostępne.
-Dostarczenie zmian i operacje Git wykonuje zaufana warstwa hosta/operator w ramach
-istniejącego procesu projektu. Nie dodano brokera operacji Git.
+Proces nie dostaje wspólnego `.git`, konfiguracji repozytorium, refs ani metadanych
+innych worktrees. Host przygotowuje w prywatnym runtime płytki widok Git:
+odłączony własny HEAD, kopię własnego indeksu i prywatny pack zawierający tylko
+obiekty bieżącego drzewa HEAD oraz bloby własnego indeksu. Nie montuje wspólnego
+magazynu objects: ten ujawniłby także niepowiązane commity i bloby innych agentów.
+Wskaźnik `.git` i ten widok są montowane tylko do odczytu. `git status`, `git diff`
+i odczyt własnego HEAD/indeksu działają; zmiany indeksu, commitów i refs wykonuje
+warstwa hosta/operator. Historia sprzed płytkiego HEAD nie jest dostępna.
+Przygotowanie packa ma limit czasu 30 s i ograniczony rozmiar listy obiektów;
+przekroczenie kończy turę błędem, bez słabszej izolacji. Pack powstaje na każdą turę,
+więc koszt rośnie z wielkością bieżącego drzewa, nie z liczbą cudzych gałęzi.
+
+`TMPDIR`, `TEMP`, `TMP` i ścieżki scratch Paperclip wskazują istniejący podkatalog
+`tmp` własnego staged runtime. Jest zapisywalny także dla koordynatora i usuwany
+w `finally` razem z runtime. Nie montuje się hostowego `/tmp/paperclip-run-*` ani
+innych katalogów `/tmp`. Prywatne `/tmp` sandboxa pozostaje odizolowane.
 
 Nie usuwa się katalogu tylko dlatego, że run się skończył: zadanie może mieć
 kolejne tury, a wynik może czekać na zachowanie. Istniejący terminal-workspace
@@ -72,8 +82,69 @@ PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-delegation.mjs --verify-
 Uruchamia rzeczywisty Git w jednorazowym repo `/tmp` (tylko tam tworzy fixture
 commit), dwa równoległe worktrees, prawdziwe procesy `bwrap`, próby zapisu/odczytu
 canary, czyszczenie pojedynczego worktree oraz prawdziwą ścieżkę adaptera z
-lokalnym fikcyjnym executable `codex`. Nie uruchamia modelu, API ani serwera.
+lokalnym fikcyjnym executable `codex`. Próba adaptera sprawdza zapis `.sandbox-init`
+w TMPDIR, prawdziwy `git status` i odczyt HEAD/indeksu, odmowę zapisu indeksu
+oraz brak dostępu do unikalnego bloba drugiego worktree i wspólnej konfiguracji. Nie uruchamia modelu, API ani serwera.
 Brak działającego sandboxa to FAIL, nie SKIP/PASS. Node tests skryptu sprawdzają
 propagację błędu tej bramki. Ten wynik nie dowodzi pełnego heartbeat/delegowania,
 kwalifikacji produkcyjnego Codex CLI, pracy z prawdziwymi credentials, restartu,
 zdalnych runtime ani automatycznego reaper cleanup w żywej bazie.
+
+## Dobór wykonawcy i decyzje człowieka (zadanie 10)
+
+Koordynator otrzymuje na każdą turę projekcję agentów tej samej firmy: nazwę,
+kompetencje, skonfigurowany model, status, reportsTo, liczbę aktywnych zadań
+(todo/in_progress/in_review/blocked; bez samego kanału rozmowy), queued/running,
+limit współbieżności, wolne sloty, dostęp do projektu oraz budżet/wydatki.
+Nie otrzymuje surowej konfiguracji ani env. Kompatybilność `codex_local`/Linux
+nie oznacza sprawdzonego logowania lub lokalnego środowiska: dispatch nadal
+weryfikuje runtime. Limit dostawcy i cena modelu są nieznane; UI mówi to jawnie.
+Dobór bierze pod uwagę rodzaj pracy, kompetencje, obciążenie i dostępność;
+niezależne zadania mogą działać równolegle w istniejących limitach, zależne
+kolejno. Budżet 0 oznacza brak skonfigurowanego limitu miesięcznego. Snapshot
+nie przyznaje nowych praw do przypisania zadania.
+
+Zadanie wymagające zgody człowieka jest **propozycją `suggest_tasks`** w rozmowie,
+a nie równocześnie utworzonym wykonywalnym zadaniem. To trwałe oznaczenie bramki.
+Istniejące interactions przechowują oczekującą decyzję. Akceptacja tworzy zwykłe
+przypisane zadania todo atomowo; odrzucenie nie tworzy zadania. Zwykłe istniejące
+zadanie nie zyskuje takiej bramki od samego tekstu w tytule lub etykiety — należy
+najpierw użyć propozycji, zgodnie z instrukcją koordynatora. Dla decyzji bez nowego
+zadania służy `request_confirmation`, z kontynuacją `wake_assignee` i obowiązkiem
+odczytu zapisanej decyzji przed zależną pracą. Istniejące approvals operacji
+zarządzanych nadal obowiązują; karta ich nie zastępuje.
+
+Serwer wymusza `human_only` na obu rodzajach kart w wspólnej rozmowie. Nie
+adresuje ich do pojedynczego agenta/użytkownika; oba uprawnione konta mogą
+zdecydować, widz tylko czyta. Zwykły komentarz nie jest zgodą i nie zastępuje
+potwierdzenia. Proponowane zadania pozostają w tym projekcie/drzewie. UI używa
+istniejącego resolvera kart i zdarzeń `issue.thread_interaction_*` do odświeżenia
+u obu użytkowników, z obsługą błędów i ponawiania. Nie dodano osobnego
+orkiestratora, protokołu zatwierdzania, pollingu ani migracji.
+
+## Punkty montowania Codexa i rozliczenie tury (zadanie 11)
+
+Przed zamontowaniem repo koordynatora RO adapter przygotowuje w jego własnym
+worktree brakujące puste katalogi `.agents`, `.codex` i `.aws`. Zainstalowany
+Codex 0.162.1 tworzy dla tych ścieżek ochronne mounty nawet wtedy, gdy nie istnieją;
+w RO cwd nie może sam przygotować ich celów. `.git` jest już istniejącym plikiem
+worktree, przykrywanym dotychczasowym prywatnym widokiem Git RO. Istniejące katalogi
+i ich zawartość pozostają; symlink lub plik zamiast katalogu ochronnego zatrzymuje
+wykonanie. Nie są kopiowane katalogi operatora ani jego credentials. Repo nadal
+jest RO, runtime RW, approvals never i brak bypass. Worker zachowuje własny RW
+worktree; oba warianty sprawdzono ręcznie prawdziwym `codex sandbox`, bez modelu.
+
+Po turze serwer sprawdza nie tylko odpowiedź agenta, lecz także zapisane efekty:
+nowe dziecko utworzone przez ten run/agenta w tym projekcie, interakcję tego runu
+w rozmowie lub audyt utworzenia/aktualizacji dziecka przez ten run/agenta.
+Raport po ukończeniu dziecka nie wymaga nowego zadania: serwer sprawdza zapisane
+`completedChildIssueId`, projekt, rodzica i status done. Brak odpowiedzi albo
+potwierdzonej operacji daje idempotentny systemowy komentarz błędu widoczny
+w rozmowie, także gdy agent sam napisał, że delegował. Status wyjścia procesu
+może pozostać `succeeded`; nie jest potwierdzeniem wykonania polecenia.
+
+To zachowawcza kontrola efektów, bez klasyfikowania intencji tekstu: także zwykła
+odpowiedź informacyjna bez operacji otrzymuje błąd weryfikacji delegowania.
+Nie dowodzi zgodności treści utworzonego zadania z pełną intencją użytkownika.
+Nie uznaje starego zadania/interakcji z innego runu za nowy efekt. Nie tworzy
+zadań, nie ponawia tury i nie obchodzi bramek zgody.

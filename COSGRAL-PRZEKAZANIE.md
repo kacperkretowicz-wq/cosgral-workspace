@@ -712,3 +712,252 @@ git diff --check
 
 ### Nadzorca – po Codex t9 (2026-11-03 ~22:20 CET)
 Zacommitowano Tabelę, Workflow, zapamiętywanie widoku i rozszerzoną konfigurację agenta (Codex #9). Testy nadzorcy: UI 5 plików/320 PASS, serwer live-events 7 PASS. Uwaga: ten commit zawiera zmiany t8/t9 na kodzie ze znaną regresją sandboxa (patrz wyżej) – e2e delegowania z prawdziwym modelem jest obecnie CZERWONE do czasu t10 część 1. Dalej: t10 (konto c): najpierw naprawa regresji, potem §5 (dobór wykonawcy, zatwierdzenia przez człowieka).
+
+## Codex #10 — regresja sandboxa, dobór wykonawcy i zgody człowieka (2026-11-03)
+
+### Zmiany
+
+1. **Regresja t8:** zewnętrzny `bwrap` tworzył prywatne `/tmp`, podczas gdy env
+   wskazywał hostowy `/tmp/paperclip-run-*`, niewidoczny wewnątrz. `execute.ts`
+   ustawia teraz wszystkie TMP/scratch na istniejący `tmp` własnego staged runtime.
+   Nie montuje hostowego `/tmp` ani katalogów innych runów. Runtime jest usuwany
+   w dotychczasowym `finally`.
+2. Standardowy plik `.git` worktree wskazywał poza zamontowany katalog. Nowy
+   `packages/adapters/codex-local/src/server/cosgral-git.ts` przygotowuje prywatny,
+   płytki widok: detached HEAD, własny indeks, pack własnego drzewa HEAD i blobów
+   indeksu. `local-process-sandbox.ts` pozwala zaufanemu adapterowi zamontować ten
+   widok i wskaźnik `.git` tylko do odczytu. **Nie ma mountu wspólnego objects,
+   konfiguracji, refs ani metadanych innych worktrees.** Własny status/diff i
+   odczyt HEAD/indeksu działają; zapis indeksu/commit/refs pozostaje po stronie hosta.
+   Polityki `cosgral-policy.ts` i `protectConversationConfig` pozostają wymuszone:
+   CLI, workspace-write, approvals never, bez bypass; repo koordynatora nadal RO.
+3. Rozliczenie tury używa zapisanego `heartbeat_runs.issue_id` przed fallbackiem
+   kontekstu. Udane wyjście procesu bez zapisanego przez run komentarza koordynatora
+   daje systemowy komentarz **„Błąd tury koordynatora…”**, idempotentny na run.
+   Status procesu może nadal być succeeded; komunikat nie potwierdza delegowania.
+4. `heartbeat/project-conversation-roster.ts` i task context/markdown dodają
+   projekcję agentów tej samej firmy: kompetencje, model, status, hierarchię,
+   aktywne zadania (bez kanału rozmowy), queued/running, limit/wolne sloty,
+   dostęp do projektu, budżet i wydatki. Bez surowego adapterConfig/env.
+   Instrukcja doboru uwzględnia rodzaj pracy, kompetencje, obciążenie, runtime,
+   wybór człowieka, budżet i równoległość; cena, quota i logowanie są jawnie
+   niezweryfikowane, także w UI. Kompatybilność konfiguracji nie jest testem
+   credentials ani nowym uprawnieniem do przypisania/wykonania.
+5. **Zgoda na zadanie = istniejąca propozycja `suggest_tasks` w rozmowie.**
+   Pending/rejected nie tworzy wykonywalnego zadania; akceptacja tworzy przypisane
+   todo atomowo, z istniejącym wake i autoryzacją. Dla pozostałych decyzji jest
+   `request_confirmation` z `wake_assignee`. Serwis interactions wymusza na obu
+   rodzajach w tym kanale `human_only`, brak pojedynczego adresata i właściwy
+   projekt/drzewo propozycji. Potwierdzenia nie mogą być zastąpione zwykłym
+   komentarzem. Nie dodano nowego rodzaju interakcji, tabeli ani systemu approvals;
+   istniejące approvals operacji zarządzanych nadal obowiązują.
+6. `ProjectConversation` pokazuje karty przez istniejący
+   `AttentionInteractionResolver`/`IssueThreadInteractionCard`, z przyciskami
+   Zatwierdź/Odrzuć, obsługą błędu/retry i odświeżeniem po
+   `issue.thread_interaction_*` także dla decyzji drugiego użytkownika.
+   Dopisano opcjonalne etykiety akcji do istniejących komponentów; pozostałe
+   ekrany zachowują dotychczasowe etykiety. Uzupełniono dokument uprawnień i mapy.
+
+### Testy — rzeczywiście wykonane
+
+Wszystkie pnpm z `PATH=/home/box/tools/bin:$PATH`; końcowe wymienione przebiegi exit 0:
+
+```sh
+pnpm --filter @paperclipai/adapter-codex-local exec vitest run src/server/execute.cosgral.test.ts src/server/cosgral-policy.test.ts
+# 2 pliki / 6 PASS; ostatnia próba izolacji ponownie sprawdziła 2 testy adaptera
+node scripts/cosgral-e2e-delegation.mjs --verify-isolation
+# serwer 2 pliki / 5 PASS + adapter 1 plik / 2 PASS; rzeczywisty Git i bwrap, bez modelu
+pnpm --filter @paperclipai/adapter-utils exec vitest run src/local-process-sandbox.test.ts
+# 10 PASS / 5 istniejących opcjonalnych SKIP
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 src/__tests__/project-conversations.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts src/services/issue-thread-interactions.test.ts src/__tests__/heartbeat-context-summary.test.ts src/__tests__/live-events-toast.test.ts
+# 6 plików / 86 PASS; po wyłączeniu kanału z obciążenia ponownie project-conversations: 6 PASS
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/components/AttentionInteractionResolver.test.tsx src/components/AttentionInteractionResolver.test.ts
+# 3 pliki / 29 PASS
+node --test scripts/cosgral-e2e-delegation.test.mjs
+# 31 PASS
+pnpm --filter @paperclipai/adapter-codex-local typecheck
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui typecheck
+pnpm --filter @paperclipai/ui build
+pnpm check:token-gates
+node scripts/check-maps.mjs
+# 35 obszarów / 193 IDs; tylko kontrola strukturalna
+git diff --check
+```
+
+- Test procesu adaptera działa dla obu ról, z fikcyjnym executable `codex`, ale
+  prawdziwym `bwrap` i Git: `.sandbox-init` w TMPDIR, status, HEAD i staged blob;
+  odmowa zapisu indeksu, odczytu źródłowego `.env`, wspólnej konfiguracji/metadanych
+  oraz unikalnego bloba drugiego worktree. Commity fixture powstają tylko w
+  jednorazowych repozytoriach `/tmp`; nie commitowano repo projektu.
+- PostgreSQL/HTTP z aktorami fixture: propozycja widoczna u A i B, brak zadania/wake
+  przed zgodą, odmowa agentowi/widzowi/obcemu kontu, wyścig A/B tworzy dokładnie jedno
+  zadanie, odrzucenie nie tworzy żadnego; nowy komentarz nie rozstrzyga potwierdzenia.
+  Roster nie zawiera sekretów ani agentów obcej firmy. Tura bez odpowiedzi daje
+  dokładnie jeden komentarz błędu; prawdziwa odpowiedź nie daje takiego komentarza.
+- UI komponentowo: istniejące API akceptacji, polskie przyciski, odświeżenie po
+  zdalnej decyzji oraz błąd pobrania kart. Użyto rzeczywistego resolvera kart;
+  API i zdarzenia są mockowane. To nie odbiór dwóch przeglądarek.
+- Zachowane nieudane próby: początkowo 2 RED dla zapisu TMPDIR i 1 RED dla jawnego
+  błędu cichej tury. Przegląd wykrył, że początkowy RO mount common objects ujawniał
+  cudze bloby: nowy test był RED dla obu ról (exit 39), po prywatnym packu GREEN.
+  Dwa wczesne błędy testów zgód dotyczyły brakującego runId aktora fixture i licznika
+  odczytów w starym mocku idempotencji; poprawione, końcowe testy przechodzą.
+  Ponowny przegląd prywatnego packa nie wskazał dalszych ważnych problemów.
+- Logi: `/tmp/cosgral10-{red,turn-red,objects-red,adapter-final,utils,server-final,project-final,ui-final2,isolation-final,script-tests,adapter-types-final,server-types-final,ui-types-final,ui-build,tokens-final,maps}.log`.
+  Build ma istniejące ostrzeżenia o rozmiarach chunków i mieszanym imporcie
+  MarkdownEditor. Test WS celowo loguje błąd kontrolowanego nieudanego decorate;
+  zestaw kończy się PASS.
+
+### Niezweryfikowane i odbiór nadzorcy
+
+- **Bez commit/push. Serwera 3199 nie restartowano ani nie używano.** Nie było
+  potrzeby uruchamiania własnego serwera 3197; testy serwera używały izolowanej
+  bazy fixture. Nie używano prawdziwego modelu ani logowań dostawców.
+- Próba samego zainstalowanego `codex sandbox` bez modelu zakończyła się przed
+  poleceniem błędem `app-server socket directory must be a user-owned directory
+  with mode 0700`. Nie zaliczono jej jako PASS. Działanie procesu w zewnętrznym
+  confinement i Git potwierdzają powyższe rzeczywiste próby bwrap; pełna warstwa
+  zagnieżdżonego sandboxa produkcyjnego CLI wymaga odbioru nadzorcy.
+- Nie wykonano dwóch przeglądarek, screenshotów ani prawdziwego delegowania po
+  poprawce. Logika wyboru ma testy kontekstu/instrukcji, nie ocenę decyzji modelu.
+  Sam tytuł/etykieta istniejącego zadania nie tworzy bramki: dla pracy wymagającej
+  zgody koordynator musi najpierw użyć trwałej propozycji `suggest_tasks`, bez
+  równoległego tworzenia wykonywalnego zadania. Opisano to w kontekście i polityce.
+- Prywatny widok Git jest płytki i RO. Nie obsługuje commitowania ani pełnej
+  historii w procesie agenta. Przygotowanie packa na turę ma koszt zależny od
+  rozmiaru drzewa i timeout 30 s; nie wykonano benchmarku dużych repozytoriów.
+- Nie uruchamiano pełnych `pnpm -r typecheck`, `pnpm test:run`, `pnpm build`
+  monorepo ani browser suites. To celowana weryfikacja t10, nie deklaracja PR-ready.
+- Nadzorca po restarcie 3199 wykonuje prawdziwy odbiór na koncie c
+  (gpt-6.1-sol: tylko a/c; nie b/d):
+
+```sh
+PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex-c" --timeout-sec 420
+```
+
+### Nadzorca – po Codex t10, e2e na żywo (2026-11-03 ~23:03 CET) – NADAL CZERWONE
+- t10 (konto c) zakończony 22:49, zmiany NIEZACOMMITOWANE w drzewie (nadzorca nie commituje przy czerwonym e2e): naprawa TMPDIR i dostępu Git przez prywatny widok RO, błąd cichej tury widoczny w rozmowie, kontekst doboru wykonawcy + karty zatwierdzeń (§5). Raportowane przez t10 PASS: serwer 86, UI 29, adapter 6, typechecki, build UI, token gates (nadzorca ich nie powtarzał).
+- E2E delegowania na koncie c po t10 (restart 3199 na commicie 7a6b86804 + niezacommitowane zmiany t10): **FAIL**. Koordynator startuje, ale sandbox nadal nie uruchamia poleceń; nowy błąd: `bwrap: Can't create file …/.agents: Read-only file system` (katalog roboczy koordynatora jest tylko do odczytu, a bwrap próbuje utworzyć w nim punkt montowania `.agents`). Wcześniejsze błędy `.sandbox-init`/TMPDIR nie wystąpiły. Run kończy `succeeded`, błąd agenta jest teraz widoczny w odpowiedzi agenta, ale zadanie nie powstaje. Log: /workspace/logs/e2e-deleg-c2.log.
+- Następny krok (t11, konto a lub c): naprawić bwrap/.agents przy repo RO (np. utworzyć `.agents` wcześniej w widoku RO / dodać zapisywalny overlay tylko dla tego katalogu / bind poza cwd), sprawdzić `codex sandbox` ręcznie z tą samą polityką, powtórzyć e2e na c. Nie uruchamiać kolejnych funkcji, dopóki e2e nie będzie zielone. Rotacja kont: tylko a, c oraz d (po sprawdzeniu, że działa po ponownym logowaniu); b nie używać.
+
+## Codex #11 — zagnieżdżony sandbox i brak efektu delegowania (2026-11-03)
+
+### Przyczyna i ręczne odtworzenie
+
+- Odczytano sekcje t8/t10 i ostatni czerwony odbiór nadzorcy oraz dokument
+  uprawnień. Poprzedni fixture adaptera uruchamiał fikcyjnego Codexa i nie
+  odtwarzał ochronnych mountów wewnętrznego `codex-linux-sandbox`.
+- Zainstalowany CLI: **codex-cli 0.162.1**. `codex sandbox` wymaga teraz
+  `-P :workspace` (wbudowany odpowiednik adapterowego `--sandbox workspace-write`),
+  z `-c 'approval_policy="never"'` i
+  `-c 'sandbox_workspace_write.network_access=true'`. Nie włączano bypass.
+- Pierwsza próba z własnym CODEX_HOME/TMPDIR nadal zatrzymała się na
+  `app-server socket directory must be a user-owned directory with mode 0700`.
+  Sam TMPDIR nie przenosi socketu: CLI używa `/tmp/codex-daemon-<uid>`.
+  Powtórzono próbę przez rzeczywisty `buildLocalProcessSandboxSpawnTarget`
+  (`filesystemScope=workspace`), z prywatnym `/tmp` istniejącego bwrap. W tym
+  namespace CLI mógł utworzyć własny katalog socketu 0700. Globalnego katalogu
+  socketu/operatora nie zmieniano.
+- Fixture miał własny root 0700, własny CODEX_HOME/HOME i TMPDIR wewnątrz runtime;
+  nie korzystał z logowania ani z modelu. Prawdziwy CLI w RO cwd odtwarzał
+  `bwrap: Can't create file .../<metadata>: Read-only file system`.
+  Przy kolejnych pustych celach zaobserwowano **`.codex`, `.git`, `.agents`,
+  `.aws`**; kolejność nie jest kontraktem. Po przygotowaniu wszystkich polecenie
+  uruchomiło się (exit 0). Świeży wariant RW uruchomił polecenie bez przygotowania
+  tych katalogów (exit 0). Dodatkowa próba z `-P :workspace` i prywatnym
+  Git usuwała po jednym z `.agents`/`.codex`/`.aws`: każda oddzielnie dawała
+  ten sam błąd RO (exit 1), co potwierdza potrzebę wszystkich trzech celów.
+- Końcowa ręczna próba używała rzeczywistego izolowanego worktree i
+  `prepareCosgralGitView`, tych samych mountów RO co adapter oraz profilu
+  `:workspace`. Obie role: **exit 0**, `sandbox-command-ran`.
+  Wewnątrz uruchomiono `git status --porcelain` i `git rev-parse HEAD`;
+  zweryfikowano odmowę zapisu do wspólnego repo i prywatnego indeksu Git.
+  `touch result.txt` był odrzucony dla koordynatora, dozwolony dla workera.
+  Ostrzeżenie CLI o odmowie tworzenia aliasów helperów w tymczasowym CODEX_HOME
+  pozostało, ale nie blokowało wykonania komendy. Nie jest to test dostawcy/modelu.
+
+### Zmiany
+
+- `cosgral-policy.ts`: przed RO bind koordynatora przygotowuje brakujące puste
+  `.agents`, `.codex`, `.aws` w jego własnym worktree. Istniejąca zawartość
+  katalogów zostaje; symlink lub plik w ich miejscu zatrzymuje wykonanie.
+  `.git` już istnieje jako plik worktree i nadal jest przykryty prywatnym widokiem
+  Git RO z t10. `execute.ts` wywołuje przygotowanie tylko dla koordynatora.
+  Nie ma nowych mountów RW, overlay, dostępu do wspólnego Git lub home operatora.
+- Fixture adaptera teraz uruchamia także zagnieżdżony bwrap z mountami metadata.
+  Przed poprawką: koordynator FAIL, worker PASS; po poprawce obaj PASS.
+  Dodatkowo testy zachowania istniejących instrukcji, idempotencji przygotowania
+  i odrzucenia symlinka bez zapisu poza worktree. Zachowano wcześniejsze testy
+  wymuszania polityki i filtrowania środowiska.
+- `heartbeat/project-conversation-turn.ts`: po turze komentarz agenta sam nie
+  wystarcza. Serwer weryfikuje trwałe efekty bieżącego runu/agenta: nowe dziecko
+  w tym projekcie/drzewie, interakcję rozmowy lub audyt utworzenia/aktualizacji
+  dziecka. Raport ukończenia dziecka sprawdza zapisane `completedChildIssueId`,
+  projekt, rodzica i done; nie wymaga kolejnego zadania. Brak efektu daje
+  idempotentny **systemowy komentarz „Błąd weryfikacji delegowania…”**, także
+  po pozornej odpowiedzi „delegated”. Status procesu może pozostać `succeeded`;
+  nie jest to już cichy sukces rozmowy. Nie dodano retry ani automatycznego zadania.
+- Regresja serwera najpierw FAIL (brak drugiego systemowego błędu po samym
+  komentarzu), następnie PASS. Test obejmuje stare zadanie z innego runu,
+  niewłaściwego rodzica/projektu, rzeczywiste nowe dziecko, propozycję zgody,
+  aktualizację istniejącego dziecka i raport ukończenia bez ponownej delegacji.
+- Uzupełniono dokument uprawnień i obie mapy projektów.
+
+### Testy — rzeczywiście wykonane
+
+Wszystkie wywołania pnpm z `PATH=/home/box/tools/bin:$PATH`.
+
+```sh
+pnpm exec vitest run --project @paperclipai/adapter-codex-local \
+  packages/adapters/codex-local/src/server/execute.cosgral.test.ts \
+  packages/adapters/codex-local/src/server/cosgral-policy.test.ts \
+  --project @paperclipai/server \
+  server/src/__tests__/project-conversations.test.ts \
+  server/src/services/heartbeat/project-conversation-execution.test.ts \
+  server/src/services/heartbeat/project-conversation-isolation.test.ts
+# exit 0: 5 plików / 19 PASS
+node scripts/cosgral-e2e-delegation.mjs --verify-isolation
+# exit 0: serwer 2 pliki / 5 PASS + adapter 1 plik / 2 PASS, rzeczywiste Git/bwrap
+pnpm --filter @paperclipai/adapter-codex-local typecheck
+# exit 0
+pnpm --filter @paperclipai/server typecheck
+# FAIL przed kompilacją serwera: prepare:runner-vendor -> build Runnera ->
+# check:capability-contract: Generated contract drift: generated/capability/capabilities.yaml
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# exit 0: bezpośrednia kompilacja serwera; nie oznacza przejścia standardowego skryptu
+node scripts/check-maps.mjs
+# exit 0: 35 obszarów / 193 IDs, tylko kontrola strukturalna
+git diff --check
+# exit 0
+```
+
+### Niezweryfikowane i ograniczenia
+
+- **Bez commit/push w checkoutcie. Portu 3199 nie używano ani nie restartowano.**
+  Własny serwer API 3197 nie był potrzebny. Testy używały izolowanych fixture baz
+  i repozytoriów `/tmp`. Nie używano konta b ani żadnego prawdziwego modelu/loginu.
+- Prawdziwy e2e delegowania pozostaje do wykonania przez nadzorcę na 3199:
+
+```sh
+PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex-c" --timeout-sec 420
+```
+
+- Kontrola efektów jest zachowawcza: nie ma trwałego rozróżnienia intencji
+  „deleguj”/„odpowiedz informacyjnie”. Dlatego także czysto informacyjna odpowiedź
+  bez operacji dostaje błąd weryfikacji delegowania. Nie zastosowano heurystyki
+  słów w treści. Zapytano o preferencję w trakcie pracy; przy braku odpowiedzi
+  wybrano jawną informację o braku potwierdzonej operacji. To ograniczenie jest
+  opisane także w polityce i mapach. Kontrola nie ocenia semantycznej zgodności
+  treści nowego zadania z całym poleceniem ani czy agent przeczytał wyniki GET.
+- Symlinki w nazwach metadata są odrzucane. Nowa wersja CLI może wprowadzić nowe
+  chronione ścieżki i wymaga ponownej kwalifikacji; brak fallbacku osłabiającego RO.
+- Nie naprawiano niezwiązanego dryftu kontraktu Runnera. Nie uruchamiano pełnych
+  `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` monorepo ani browser suites.
+  To celowana naprawa i weryfikacja t11, **nie deklaracja PR-ready ani zielonego
+  prawdziwego e2e**.
+
+### Nadzorca – po Codex t11 (konto c), e2e na żywo (2026-11-03 ~23:47 CET) – CZERWONE, kod niezacommitowany
+- Konto a ma limit do 00:04 (4 XI); t11 uruchomiono na c (tag t11c). Zakończył 23:32. Naprawa bwrap: dodano brakujące punkty montowania `.agents`, `.codex`, `.aws` przy repo koordynatora RO; „ciche succeeded” → systemowy komentarz błędu (uwaga t11: kontrola oznacza też czysto informacyjne odpowiedzi koordynatora – do dopracowania). Standardowy `pnpm typecheck` ma wg t11 dryf kontraktu Runnera (bezpośredni typecheck serwera PASS) – do zbadania.
+- E2E na koncie c (serwer 3199 zrestartowany po t11): **FAIL, ale z postępem** – koordynator działa, zapisuje komentarz początkowy i tworzy zadanie wykonawcy (pierwszy raz od t8). Run wykonawcy pada: `setup_failed` – „COSGRAL retained workspace belongs to a different task or executor.” (server/src/services/heartbeat.ts ~l.2693: dla roli COSGRAL istniejący execution workspace musi mieć sourceIssueId == issueId, strategyType == git_worktree i branchName == `cosgral/<issueId>/<agentId>`; dla zadania wykonawcy utworzonego przez koordynatora z rozmowy istniejący/odziedziczony execution workspace tego nie spełnia). Log: /workspace/logs/e2e-deleg-c3.log. Ze względu na wiele wyników nie ma końcowego raportu koordynatora.
+- Następny krok (t12): ustalić, jaki execution workspace dostaje zadanie wykonawcy (dziedziczony z rozmowy/projektu?) i albo pominąć/zignorować go dla roli COSGRAL worker (utworzyć świeży worktree `cosgral/<issueId>/<agentId>`), albo wymusić tworzenie zadań potomnych bez dziedziczenia execution workspace; test regresyjny; powtórzyć e2e na c lub a (a dostępne po 00:04). Dopiero po zielonym e2e commit t10+t11+t12.

@@ -1,3 +1,4 @@
+import { isProjectConversation } from "./project-conversation-policy.js";
 import { notifyStatusCardIssueChange } from "./status-card-notifications.js";
 import { notifyMergeConfirmationWork, type MergeConfirmationScope } from "./merged-pr-confirmation-notifications.js";
 import { notifyNativeStatusReassessment } from "./native-status-reassessment-notifications.js";
@@ -3556,6 +3557,30 @@ export function issueThreadInteractionService(
       const data = normalizeCreateInteractionInput(
         createIssueThreadInteractionSchema.parse(input),
       );
+      if (data.kind === "suggest_tasks" || data.kind === "request_confirmation") {
+        const [owner] = await db.select({ originKind: issues.originKind, projectId: issues.projectId }).from(issues)
+          .where(and(eq(issues.id, issue.id), eq(issues.companyId, issue.companyId)));
+        if (isProjectConversation(owner)) {
+          // Shared decisions belong to authorized humans, never the proposing agent.
+          data.resolverPolicy = "human_only";
+          data.addresseeAgentId = null;
+          data.addresseeUserId = null;
+          if (data.kind === "request_confirmation") {
+            data.continuationPolicy = "wake_assignee";
+            data.payload.supersedeOnUserComment = false;
+            data.payload.acceptLabel ??= "Zatwierdź";
+            data.payload.rejectLabel ??= "Odrzuć";
+          } else {
+            data.payload.defaultParentId = issue.id;
+            for (const task of data.payload.tasks) {
+              if ((task.projectId && task.projectId !== owner?.projectId) || (task.parentId && task.parentId !== issue.id)) {
+                throw unprocessable("Project conversation proposals must stay in this project and conversation tree");
+              }
+              task.projectId = owner?.projectId;
+            }
+          }
+        }
+      }
       const qualityItems = data.kind === "request_confirmation" && data.payload.qualityReview
         ? [data.payload] : data.kind === "request_item_verdicts"
           ? data.payload.items.filter(item => item.qualityReview) : [];

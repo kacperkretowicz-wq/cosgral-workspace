@@ -157,3 +157,25 @@ AgentConfigForm render and LiveUpdatesProvider tests. The two-account script now
 PATCHes a disabled process agent A→B and B→A, waits for an agent.updated WS
 invalidation and independently GETs the saved model/budget/concurrency.
 This proves HTTP/WS synchronization, not two browsers or actual model execution.
+
+COSGRAL approvals/selection: coordinator context receives a server projection of
+same-company skills/model, assigned active-task counts, queued/running load,
+concurrency, project access and explicitly unverified provider quota/login/price.
+For work requiring human approval, use existing `suggest_tasks` proposals in the
+conversation: pending/rejected proposals create no task; human acceptance creates
+assigned todo tasks once. `request_confirmation` handles non-task decisions.
+Conversation cards reuse the existing resolver and invalidate on thread-interaction
+activity for both viewers. Verify accept/reject, concurrent A/B decisions, viewer
+and agent denials, retry errors and a new comment that must not imply consent.
+[Server coverage](../../server/src/__tests__/project-conversations.test.ts) uses real
+PostgreSQL and HTTP with fixture actors; [UI coverage](../../ui/src/pages/ProjectConversation.test.tsx)
+uses component rendering and mocked API/events. These are not real-model or
+two-browser acceptance evidence.
+
+Coordinator no-op regression: the server must show a system error even if the
+agent posts a handoff claim but creates no task/interaction and performs no
+scoped child mutation. Old or unrelated task writes cannot satisfy the check;
+completion reports validate the stored child binding. See the server conversation
+test above. RO/RW adapter tests exercise nested bwrap metadata mounts; manual
+Codex CLI sandbox evidence and the informational-reply limitation are in Codex #11
+of COSGRAL-PRZEKAZANIE.md. Live model delegation remains supervisor acceptance.

@@ -3,6 +3,8 @@ import { i18n, useTranslation } from "./index";
 // A Polish surface inside the existing i18next system; it does not change
 // the language of the advanced Paperclip screens.
 i18n.addResourceBundle("pl", "cosgral", {
+  providerLimitsUnknown: "Limity dostawcy, cena modelu i dostępność logowania nie zostały zweryfikowane.",
+  approval: { accept: "Zatwierdź", reject: "Odrzuć", loadError: "Nie udało się wczytać zatwierdzeń." },
   work: {
     zoomIn: "Powiększ", zoomOut: "Pomniejsz", fit: "Dopasuj graf",
     views: "Widok pracy projektu", chat: "Chat", table: "Tabela", workflow: "Workflow",

@@ -221,3 +221,25 @@ audit and budget rules. Company live agent.updated/created events invalidate
 roster/details/org queries and carry no adapter config. The two-account script
 checks A↔B config reads and viewer/foreign-company denials; this is board HTTP/WS
 coverage, not an additional agent grant or proof of model execution.
+
+COSGRAL decisions reuse `GET/POST /api/issues/{id}/interactions` and
+`POST /api/issues/{id}/interactions/{interactionId}/{accept|reject}`. On shared
+project conversations the service pins `suggest_tasks`/`request_confirmation` to
+`human_only` and no single addressee; confirmations cannot be superseded by an
+ordinary comment. Proposals stay in the conversation's project/tree. Existing
+project/issue access, mutation, task creation and assignment checks still apply.
+Agents may propose but cannot resolve these human gates. Pending proposals have
+no executable issue; atomic acceptance creates the assigned task once, rejection
+creates none. Existing governed-operation approvals remain mandatory. Roster
+context is a safe projection, not a grant of assignment/execution authority.
+Git metadata uses a read-only private shallow HEAD/index object pack, excluding
+unrelated branch objects and common configuration. No new agent endpoint or
+runtime bypass is introduced. See the targeted server/UI tests and permission
+policy; live-model acceptance remains separate.
+
+Coordinator RO worktrees prepare empty `.agents`/`.codex`/`.aws` mount targets
+before launch; `.git` keeps its private RO binding. Symlinks fail closed.
+Post-turn settlement verifies run/agent/company/project/parent-scoped task or
+interaction writes (or a validated completed-child report). A reply alone leaves
+a visible system error; process `succeeded` is not proof of delegation. This
+conservative check also warns on informational replies without a recorded action.

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { pendingSuggestedTasksInteraction, pendingRequestConfirmationInteraction } from "../fixtures/issueThreadInteractionFixtures";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -10,11 +11,12 @@ import { queryKeys } from "../lib/queryKeys";
 
 const mocks = vi.hoisted(() => ({
   live: null as ((event: { companyId: string; type: string; payload: Record<string, unknown> }) => void) | null, tree: vi.fn(), release: vi.fn(), get: vi.fn(), getConversation: vi.fn(), openConversation: vi.fn(), setCoordinator: vi.fn(), projects: vi.fn(),
+  decisions: vi.fn(), accept: vi.fn(), reject: vi.fn(),
   cost: vi.fn(), products: vi.fn(), comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(), liveRuns: vi.fn(),
 }));
 vi.mock("./OrgChart", () => ({ OrgChart: ({ orgTree }: { orgTree: unknown }) => <div data-testid="workflow-chart">{JSON.stringify(orgTree)}</div> }));
 vi.mock("../api/projects", () => ({ projectsApi: { get: mocks.get, getConversation: mocks.getConversation, openConversation: mocks.openConversation, setConversationCoordinator: mocks.setCoordinator, list: mocks.projects } }));
-vi.mock("../api/issues", () => ({ issuesApi: { listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getCostSummary: mocks.cost, listWorkProducts: mocks.products, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
+vi.mock("../api/issues", () => ({ issuesApi: { listInteractions: mocks.decisions, acceptInteraction: mocks.accept, rejectInteraction: mocks.reject, listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getCostSummary: mocks.cost, listWorkProducts: mocks.products, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
 vi.mock("../api/agents", () => ({ agentsApi: { list: mocks.agents } }));
 vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForIssue: mocks.liveRuns } }));
 vi.mock("../api/access", () => ({ accessApi: { listUserDirectory: mocks.directory } }));
@@ -54,6 +56,7 @@ beforeEach(async () => {
   mocks.projects.mockResolvedValue([{ id: "p", name: "Uszko" }]);
   mocks.comments.mockResolvedValue([{ id: "comment", body: "Wspólna historia", authorUserId: "u", createdAt: new Date().toISOString() }]);
   mocks.tree.mockResolvedValue({ activePauseHold: null }); mocks.release.mockResolvedValue({});
+  mocks.decisions.mockResolvedValue([]);
   mocks.tasks.mockResolvedValue([]); mocks.agents.mockResolvedValue([]);
   mocks.directory.mockResolvedValue({ users: [{ principalId: "u", status: "active", user: { name: "Anna" } }] });
   mocks.session.mockResolvedValue({ user: { id: "u", name: "Anna" } });
@@ -66,6 +69,33 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); client.clear(); host.remove(); if (originalViewport) Object.defineProperty(window, "visualViewport", originalViewport); else delete (window as { visualViewport?: unknown }).visualViewport; });
 
 describe("project conversation", () => {
+  it("shows human approval proposals, accepts via the existing API and refreshes another user's decision live", async () => {
+    const proposal = { ...pendingSuggestedTasksInteraction, id: "proposal", issueId: "chat", companyId: "c", resolverPolicy: "human_only" as const, effectiveResolverPolicy: "human_only" as const };
+    mocks.decisions.mockResolvedValue([proposal]);
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.interactions("chat") }); });
+    await settle();
+    expect(host.textContent).toContain(proposal.payload.tasks[0]!.title);
+    const approve = Array.from(host.querySelectorAll("button")).find(button => button.textContent === "Zatwierdź");
+    expect(approve).toBeTruthy();
+    mocks.accept.mockImplementation(async () => { const receipt = { ...proposal, status: "accepted", result: { version: 1, createdTasks: [] } }; mocks.decisions.mockResolvedValue([receipt]); return receipt; });
+    await act(async () => approve!.click()); await settle();
+    expect(mocks.accept).toHaveBeenCalledWith("chat", "proposal", expect.any(Object));
+    expect(Array.from(host.querySelectorAll("button")).some(button => button.textContent === "Zatwierdź")).toBe(false);
+    const decision = { ...pendingRequestConfirmationInteraction, issueId: "chat", companyId: "c", payload: { ...pendingRequestConfirmationInteraction.payload, prompt: "Publikacja wymaga zgody", acceptLabel: "Zatwierdź", rejectLabel: "Odrzuć" } };
+    mocks.decisions.mockResolvedValue([decision]);
+    await act(async () => mocks.live?.({ companyId: "c", type: "activity.logged", payload: { entityType: "issue", entityId: "chat", action: "issue.thread_interaction_created" } })); await settle();
+    expect(host.textContent).toContain("Publikacja wymaga zgody");
+    mocks.decisions.mockResolvedValue([{ ...decision, status: "rejected" }]);
+    await act(async () => mocks.live?.({ companyId: "c", type: "activity.logged", payload: { entityType: "issue", entityId: "chat", action: "issue.thread_interaction_rejected" } })); await settle();
+    expect(Array.from(host.querySelectorAll("button")).some(button => button.textContent === "Zatwierdź")).toBe(false);
+  });
+
+  it("surfaces approval load failures and lets the user retry", async () => {
+    mocks.decisions.mockRejectedValue(new Error("unavailable"));
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.interactions("chat") }); }); await settle();
+    expect(host.textContent).toContain("Nie udało się wczytać zatwierdzeń");
+  });
+
   it("shows present humans and other users typing using directory names", async () => {
     presenceMock.connected = true;
     presenceMock.users = [{ userId: "u", typingUntil: Date.now() + 5000 }, { userId: "b", typingUntil: Date.now() + 5000 }];

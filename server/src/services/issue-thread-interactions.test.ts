@@ -195,7 +195,8 @@ describe("issueThreadInteractionService", () => {
     const db: any = {
       select: vi.fn(() => {
         selectCallCount += 1;
-        return createSelectChain(selectCallCount <= 2 ? [existingRow] : []);
+        // The first query reads the immutable project-conversation origin.
+        return createSelectChain(selectCallCount === 1 ? [] : selectCallCount <= 3 ? [existingRow] : []);
       }),
       insert: vi.fn(),
       update: vi.fn(),

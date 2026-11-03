@@ -1,3 +1,5 @@
+import { projectConversationRoster } from "./project-conversation-roster.js";
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { createHash } from "node:crypto";
 import type { Db, agents, agentTaskSessions, heartbeatRuns } from "@paperclipai/db";
 import { FAST_RESPONSE_AGENT_GUIDANCE, fastResponseHistoryBody } from "@paperclipai/shared";
@@ -240,6 +242,8 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
     : false;
   context.paperclipCoordinatorWorkspaceEnabled = Boolean(coordinatorWorkspace);
   const taskMarkdownInput = {
+    coordinatorRoster: isProjectConversation(issueContext) && issueRef?.projectId
+      ? await projectConversationRoster(db, agent.companyId, issueRef.projectId) : undefined,
     completedChildIssueId: readNonEmptyString(context.completedChildIssueId),
     coordinatorWorkspace: Boolean(coordinatorWorkspace),
     conversationConfirmations: issueRef && isConversation(issueContext)

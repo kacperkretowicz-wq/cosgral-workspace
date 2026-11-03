@@ -100,6 +100,7 @@ function InteractionActionError({ message }: { message: string | null }) {
 
 interface IssueThreadInteractionCardProps {
   interaction: IssueThreadInteraction;
+  actionLabels?: { accept: string; reject: string };
   /** Reuse the resolver without the task timeline's audit/header chrome. */
   footerSlot?: ReactNode;
   presentationVariant?: "default" | "coordinator-decision";
@@ -724,6 +725,8 @@ function TaskTreeNode({
 }
 
 function SuggestTasksCard({
+  actionLabels,
+  primaryActionOnRight,
   footerSlot,
   interaction,
   agentMap,
@@ -732,6 +735,8 @@ function SuggestTasksCard({
   onAcceptInteraction,
   onRejectInteraction,
 }: {
+  actionLabels?: { accept: string; reject: string };
+  primaryActionOnRight?: boolean;
   footerSlot?: ReactNode;
   interaction: SuggestTasksInteraction;
   agentMap?: Map<string, Agent>;
@@ -922,6 +927,7 @@ function SuggestTasksCard({
               <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                 <Button
                   size="sm"
+                  className={primaryActionOnRight ? "order-2" : undefined}
                   disabled={!onAcceptInteraction || working !== null || selectedCount === 0}
                   onClick={() => void handleAccept()}
                 >
@@ -931,7 +937,7 @@ function SuggestTasksCard({
                       Accepting...
                     </>
                   ) : (
-                    selectedCount === totalTasks ? "Accept drafts" : "Accept selected drafts"
+                    actionLabels?.accept ?? (selectedCount === totalTasks ? "Accept drafts" : "Accept selected drafts")
                   )}
                 </Button>
                 <Button
@@ -940,7 +946,7 @@ function SuggestTasksCard({
                   disabled={!onRejectInteraction || working !== null}
                   onClick={() => setRejecting((current) => !current)}
                 >
-                  Reject
+                  {actionLabels?.reject ?? "Reject"}
                 </Button>
                 {selectedCount < totalTasks ? (
                   <Button
@@ -977,7 +983,7 @@ function SuggestTasksCard({
                       Saving...
                     </>
                   ) : (
-                    "Save rejection"
+                    actionLabels?.reject ?? "Save rejection"
                   )}
                 </Button>
               </div>
@@ -3708,6 +3714,7 @@ function VerdictProgressBadge({
 
 export function IssueThreadInteractionCard({
   interaction,
+  actionLabels,
   presentationVariant = "default",
   footerSlot,
   agentMap,
@@ -3841,7 +3848,7 @@ export function IssueThreadInteractionCard({
       <CoordinatorTaskCommitment interaction={interaction}>
         <div className="p-4 space-y-3">
           {interaction.status === "pending" ? <InteractionAudienceLine audience={audience} /> : null}
-          <SuggestTasksCard interaction={interaction} agentMap={agentMap} currentUserId={currentUserId}
+          <SuggestTasksCard actionLabels={actionLabels} primaryActionOnRight={primaryActionOnRight} interaction={interaction} agentMap={agentMap} currentUserId={currentUserId}
             userLabelMap={userLabelMap} onAcceptInteraction={onAcceptInteraction} onRejectInteraction={onRejectInteraction} />
         </div>
       </CoordinatorTaskCommitment>
@@ -4006,6 +4013,8 @@ export function IssueThreadInteractionCard({
         <div className={compactDecision ? undefined : "mt-5"}>
           {interaction.kind === "suggest_tasks" ? (
             <SuggestTasksCard
+              actionLabels={actionLabels}
+              primaryActionOnRight={primaryActionOnRight}
               footerSlot={footerSlot}
               interaction={interaction}
               agentMap={agentMap}
