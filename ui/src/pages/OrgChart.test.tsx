@@ -212,6 +212,21 @@ describe("OrgChart mobile gestures", () => {
     };
   }
 
+  it("embeds task links and directional dependency edges with keyboard access", async () => {
+    root = createRoot(container);
+    await act(async () => root.render(<QueryClientProvider client={queryClient}><OrgChart embedded agents={[]} orgTree={[{ id: "one", name: "First task", role: "task", status: "done", reports: [{ id: "two", name: "Next task", role: "task", status: "blocked", reports: [] }] }]} nodeLinks={{ one: "/issues/COS-1", two: "/issues/COS-2" }} nodeDetails={{ one: "Gotowe", two: "Zablokowane" }} relations={[{ from: "one", to: "two", kind: "dependency" }]} controlLabels={{ zoomIn: "Powiększ", zoomOut: "Pomniejsz", fit: "Dopasuj" }} /></QueryClientProvider>));
+    await flushReact();
+    const edge = container.querySelector('path[data-work-edge="dependency"]');
+    expect(edge?.getAttribute("marker-end")).toContain("url(#");
+    expect(edge?.getAttribute("d")).toMatch(/^M /);
+    const node = container.querySelector('[role="link"][aria-label="Next task · Zablokowane"]')!;
+    expect(node.getAttribute("tabindex")).toBe("0");
+    await act(async () => node.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(navigateMock).toHaveBeenCalledWith("/issues/COS-2");
+    expect(container.querySelector('[aria-label="Powiększ"]')).not.toBeNull();
+    expect(orgMock).not.toHaveBeenCalled(); expect(listMock).not.toHaveBeenCalled();
+  });
+
   it("pans the chart with one-finger touch drag", async () => {
     const { viewport, layer } = await renderOrgChart();
 

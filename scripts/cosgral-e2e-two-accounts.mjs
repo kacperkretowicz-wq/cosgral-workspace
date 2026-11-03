@@ -184,11 +184,47 @@ async function main() {
     await close(b);
     pass(`${step} (${elapsed} ms)`);
   }
+  step = 'agent configuration A/B live synchronization';
+  await agentConfigCheck();
+  pass(step);
   step = 'project presence join/leave, typing and authorization';
   await presenceCheck();
   pass(step);
   pass(`${values.phase}: all assertions passed; test data retained`);
 
+  async function agentConfigCheck() {
+    // Disabled process agent: this scenario exercises saved config and live reads, never a model.
+    if (!state.configAgentId) {
+      const row = await request('A', 'POST', `/companies/${state.companyId}/agents`, {
+        name: 'Config sync probe', role: 'engineer', adapterType: 'process',
+        adapterConfig: { command: 'true' }, runtimeConfig: { heartbeat: { enabled: false, wakeOnDemand: false, maxConcurrentRuns: 1 } },
+      });
+      state.configAgentId = row.id; await save();
+      await request('A', 'POST', `/agents/${row.id}/pause`, {});
+    }
+    const a = await connect('A'); const b = await connect('B');
+    try {
+      for (const [writer, reader, ws, concurrency] of [['A', 'B', b, 2], ['B', 'A', a, 3]]) {
+        const changed = waitMessage(ws, event => event.type === 'activity.logged' && event.payload?.action === 'agent.updated' && event.payload?.entityId === state.configAgentId);
+        const name = `Config sync ${writer} ${randomUUID()}`;
+        const before = Date.now();
+        await request(writer, 'PATCH', `/agents/${state.configAgentId}`, {
+          name, capabilities: 'Configuration synchronization test', appearance: { schemaVersion: 1, characterVersion: 'cap-v1', paletteId: writer === 'A' ? 'deep-tide' : 'coral-mint' }, budgetMonthlyCents: 1200,
+          adapterConfig: { command: 'true', model: `config-test-${writer}` },
+          runtimeConfig: { heartbeat: { enabled: false, wakeOnDemand: false, maxConcurrentRuns: concurrency } },
+        });
+        const event = await changed;
+        check(Date.now() - before < 5000, 'agent config event took >=5s');
+        check(!Object.hasOwn(event.payload, 'details') && !Object.hasOwn(event.payload, 'adapterConfig'), 'WS must only carry invalidation identity');
+        const saved = await request(reader, 'GET', `/agents/${state.configAgentId}`);
+        check(saved.name === name && saved.appearance?.paletteId === (writer === 'A' ? 'deep-tide' : 'coral-mint') && saved.adapterConfig?.model === `config-test-${writer}` && saved.budgetMonthlyCents === 1200 && saved.runtimeConfig?.heartbeat?.maxConcurrentRuns === concurrency, 'second account read stale agent configuration');
+      }
+      if (values.phase === 'prepare') {
+        await request('C', 'GET', `/agents/${state.configAgentId}`, undefined, [403, 404]);
+        await request('V', 'PATCH', `/agents/${state.configAgentId}`, { name: 'denied' }, [403, 404]);
+      }
+    } finally { await close(a); await close(b); }
+  }
   async function presenceCheck() {
     const originalIds = (await comments('A')).map(row => row.id);
     const isPresence = event => event.type === 'project.conversation.presence' && event.projectId === state.projectId && event.companyId === state.companyId;

@@ -43,6 +43,15 @@ Open a project and choose **Rozmowa projektu**, or visit
 `/:companyPrefix/projects/:projectId/conversation`. The advanced task screen stays
 available through **Widok zaawansowany**. This Polish surface reuses project
 conversation identity, task comments, company directory and the company live stream.
+Chat / Tabela / Workflow retain the project and draft; the selected view is stored
+per user/company/project. Tabela filters by status/agent/priority, searches and
+sorts accessible tasks (including cancelled tasks). Its model/access summary is
+current configuration, not historical run attribution. Completion counts observed
+children; each row can fetch the recorded subtree USD cost and work products.
+Workflow embeds the existing pan/zoom org chart, links agents and tasks, and draws
+blocker → dependent and recorded author/parent → task edges. A task can jump to a
+matching loaded/older conversation comment, falling back to its task card.
+
 
 ## Driving it with Playwright and the Paperclip CLI
 
@@ -141,3 +150,10 @@ exercises real concurrent worktrees, kernel confinement, coordinator read-only w
 credential canaries and cleanup without a model. See
 [permissions and limits](../../docs/cosgral/uprawnienia-agentow.md). This does not qualify
 full heartbeat dispatch or a real-model journey.
+
+COSGRAL view/config verification: [project work projections](../../ui/src/lib/project-work.test.ts),
+[conversation UI](../../ui/src/pages/ProjectConversation.test.tsx), existing
+AgentConfigForm render and LiveUpdatesProvider tests. The two-account script now
+PATCHes a disabled process agent A→B and B→A, waits for an agent.updated WS
+invalidation and independently GETs the saved model/budget/concurrency.
+This proves HTTP/WS synchronization, not two browsers or actual model execution.

@@ -2109,3 +2109,17 @@ describe("activity toast attribution", () => {
     expect(toast?.actor).toBeUndefined();
   });
 });
+
+
+describe("COSGRAL agent config synchronization", () => {
+  it.each(["agent.updated", "agent.created"])("invalidates agent forms, roster and org chart after another person's %s", action => {
+    const client = new QueryClient();
+    const keys = [queryKeys.agents.list("c"), queryKeys.agents.detail("a"), queryKeys.org("c")];
+    keys.forEach(key => client.setQueryData(key, {}));
+    client.setQueryData(queryKeys.agents.list("other-company"), []);
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "c", { entityType: "agent", entityId: "a", action, actorType: "user", actorId: "alice" }, { userId: "bob", agentId: null });
+    keys.forEach(key => expect(client.getQueryState(key)?.isInvalidated).toBe(true));
+    expect(client.getQueryState(queryKeys.agents.list("other-company"))?.isInvalidated).toBe(false);
+    client.clear();
+  });
+});

@@ -10,10 +10,11 @@ import { queryKeys } from "../lib/queryKeys";
 
 const mocks = vi.hoisted(() => ({
   live: null as ((event: { companyId: string; type: string; payload: Record<string, unknown> }) => void) | null, tree: vi.fn(), release: vi.fn(), get: vi.fn(), getConversation: vi.fn(), openConversation: vi.fn(), setCoordinator: vi.fn(), projects: vi.fn(),
-  comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(), liveRuns: vi.fn(),
+  cost: vi.fn(), products: vi.fn(), comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(), liveRuns: vi.fn(),
 }));
+vi.mock("./OrgChart", () => ({ OrgChart: ({ orgTree }: { orgTree: unknown }) => <div data-testid="workflow-chart">{JSON.stringify(orgTree)}</div> }));
 vi.mock("../api/projects", () => ({ projectsApi: { get: mocks.get, getConversation: mocks.getConversation, openConversation: mocks.openConversation, setConversationCoordinator: mocks.setCoordinator, list: mocks.projects } }));
-vi.mock("../api/issues", () => ({ issuesApi: { listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
+vi.mock("../api/issues", () => ({ issuesApi: { listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getCostSummary: mocks.cost, listWorkProducts: mocks.products, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
 vi.mock("../api/agents", () => ({ agentsApi: { list: mocks.agents } }));
 vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForIssue: mocks.liveRuns } }));
 vi.mock("../api/access", () => ({ accessApi: { listUserDirectory: mocks.directory } }));
@@ -44,6 +45,7 @@ async function type(body: string) {
 }
 beforeEach(async () => {
   vi.clearAllMocks();
+  localStorage.clear();
   presenceMock.users = []; presenceMock.connected = false;
   mocks.liveRuns.mockResolvedValue([]);
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -266,4 +268,50 @@ describe("project conversation", () => {
     await act(async () => { await client.invalidateQueries({ queryKey: ["issues", "comments", "chat"] }); }); await settle();
     expect(host.textContent).toContain("Od drugiej osoby");
   });
+});
+
+
+it("switches real project data between views, filters and keeps draft and preference", async () => {
+  const rows = [{ id: "t", projectId: "p", title: "Backend", priority: "high", status: "in_progress", assigneeAgentId: "a", blockedBy: [] }, { id: "t2", projectId: "p", title: "Frontend", priority: "low", status: "done", assigneeAgentId: null, blockedBy: [] }];
+  mocks.tasks.mockResolvedValue(rows); mocks.agents.mockResolvedValue([{ id: "a", name: "Ala", status: "idle", adapterType: "codex_local", adapterConfig: { model: "test-model", env: { SECRET: "must-not-render" } }, runtimeConfig: {} }]);
+  await act(async () => { await client.invalidateQueries({ queryKey: ["issues"] }); await client.invalidateQueries({ queryKey: ["agents", "c"] }); }); await settle();
+  await type("Zachowany szkic");
+  await act(async () => click("Tabela"));
+  expect(host.querySelector("table")?.textContent).toContain("Backend");
+  expect(host.querySelector("table")?.textContent).toContain("test-model");
+  expect(host.textContent).not.toContain("must-not-render");
+  expect(localStorage.getItem("cosgral.view:u:c:p")).toBe("table");
+  const filter = host.querySelector<HTMLSelectElement>('select[aria-label="Status"]')!;
+  await act(async () => { filter.value = "done"; filter.dispatchEvent(new Event("change", { bubbles: true })); });
+  expect(host.querySelector("tbody")?.textContent).not.toContain("Backend");
+  expect(host.querySelector("tbody")?.textContent).toContain("Frontend");
+  await act(async () => click("Workflow"));
+  expect(host.querySelector('[data-testid="workflow-chart"]')?.textContent).toContain("Frontend");
+  await act(async () => click("Chat"));
+  expect(host.querySelector("textarea")?.value).toBe("Zachowany szkic");
+});
+it("refreshes tasks and configured model after sanitized company activity", async () => {
+  mocks.tasks.mockResolvedValue([{ id: "t", projectId: "p", title: "Nowe zadanie", priority: "high", status: "todo" }]);
+  const before = mocks.tasks.mock.calls.length;
+  await act(async () => { mocks.live?.({ companyId: "c", type: "activity.logged", payload: { action: "issue.created", entityType: "issue", entityId: "t" } }); }); await settle();
+  expect(mocks.tasks.mock.calls.length).toBeGreaterThan(before);
+  await act(async () => click("Tabela"));
+  expect(host.querySelector("table")?.textContent).toContain("Nowe zadanie");
+  const agentsBefore = mocks.agents.mock.calls.length;
+  await act(async () => { mocks.live?.({ companyId: "c", type: "activity.logged", payload: { action: "agent.updated", entityType: "agent", entityId: "a" } }); }); await settle();
+  expect(mocks.agents.mock.calls.length).toBeGreaterThan(agentsBefore);
+});
+
+it("loads recorded cost and result only on demand and refreshes them after task activity", async () => {
+  mocks.tasks.mockResolvedValue([{ id: "t", projectId: "p", title: "Dostarczone", priority: "high", status: "done" }]);
+  mocks.cost.mockResolvedValue({ costCents: 125 }); mocks.products.mockResolvedValue([{ id: "product", title: "Raport", status: "ready" }]);
+  await act(async () => { await client.invalidateQueries({ queryKey: ["issues"] }); }); await settle();
+  await act(async () => click("Tabela"));
+  expect(mocks.cost).not.toHaveBeenCalled();
+  await act(async () => click("Sprawdź koszt i wynik")); await settle();
+  expect(mocks.cost).toHaveBeenCalledWith("t"); expect(mocks.products).toHaveBeenCalledWith("t");
+  expect(host.querySelector("tbody")?.textContent).toContain("Raport"); expect(host.querySelector("tbody")?.textContent).toContain("1,25");
+  mocks.products.mockResolvedValue([{ id: "product", title: "Poprawiony raport", status: "ready" }]);
+  await act(async () => { mocks.live?.({ companyId: "c", type: "activity.logged", payload: { entityType: "issue", entityId: "t", action: "issue.work_product_updated" } }); }); await settle();
+  expect(host.querySelector("tbody")?.textContent).toContain("Poprawiony raport");
 });

@@ -645,6 +645,49 @@ async function flushUntil(check: () => boolean, timeoutMs = 4000) {
 describe("AgentConfigForm environment selector", () => {
   let roots: Root[] = [];
 
+  it("preserves unsaved COSGRAL fields while applying another user's live configuration", async () => {
+    const container = document.createElement("div"); document.body.appendChild(container);
+    const root = createRoot(container); roots.push(root);
+    const queryClient = createFormQueryClient(); const save = vi.fn(async () => undefined);
+    let refresh!: (agent: Agent) => void;
+    function Harness() {
+      const [agent, setAgent] = useState(makeAgent()); refresh = setAgent;
+      return <AgentConfigForm mode="edit" agent={agent} onSave={save} hidePromptTemplate showAdapterTypeField={false} showAdapterTestEnvironmentButton={false} />;
+    }
+    await act(async () => renderFormView(root, queryClient, <Harness />)); await flushReact();
+    const selector = 'input[aria-label="Budżet miesięczny (centy USD, 0 = bez limitu)"]';
+    await act(async () => setInputValue(container.querySelector<HTMLInputElement>(selector)!, "7500"));
+    await act(async () => refresh(makeAgent({ name: "Remote name", role: "designer", budgetMonthlyCents: 1000 })));
+    await flushReact();
+    expect(container.querySelector<HTMLInputElement>('[placeholder="Agent name"]')?.value).toBe("Remote name");
+    expect(container.querySelector<HTMLSelectElement>('select[aria-label="Rola"]')?.value).toBe("designer");
+    expect(container.querySelector<HTMLInputElement>(selector)?.value).toBe("7500");
+    await clickByText(container, "Save");
+    expect(save).toHaveBeenCalledWith({ budgetMonthlyCents: 7500 });
+  });
+
+  it("saves COSGRAL identity, avatar, budget and concurrency through the existing patch", async () => {
+    const result = await renderForm([]);
+    roots.push(result.root);
+    const role = result.container.querySelector<HTMLSelectElement>('select[aria-label="Rola"]')!;
+    const budget = result.container.querySelector<HTMLInputElement>('input[aria-label="Budżet miesięczny (centy USD, 0 = bez limitu)"]')!;
+    const concurrent = result.container.querySelector<HTMLInputElement>('input[aria-label="Maksymalna liczba jednoczesnych zadań"]')!;
+    const description = result.container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Opis i specjalizacja"]')!;
+    expect(role).not.toBeNull(); expect(budget).not.toBeNull(); expect(concurrent).not.toBeNull();
+    await act(async () => {
+      role.value = "designer"; role.dispatchEvent(new Event("change", { bubbles: true }));
+      setInputValue(budget, "2500"); setInputValue(concurrent, "3");
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(description, "Projektowanie");
+      description.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const avatar = result.container.querySelector<HTMLSelectElement>('select[aria-label="Awatar"]')!;
+    expect(avatar).not.toBeNull();
+    await act(async () => { avatar.value = "deep-tide"; avatar.dispatchEvent(new Event("change", { bubbles: true })); });
+    await clickByText(result.container, "Save");
+    expect(result.onSave).toHaveBeenCalledWith(expect.objectContaining({ role: "designer", capabilities: "Projektowanie", appearance: { schemaVersion: 1, characterVersion: "cap-v1", paletteId: "deep-tide" }, budgetMonthlyCents: 2500, runtimeConfig: expect.objectContaining({ heartbeat: expect.objectContaining({ maxConcurrentRuns: 3 }) }) }));
+  });
+
+
   it.each(["paperclip", "legacy"] as const)("uses the resolved %s Claude form to preserve the correct turn limit", async defaultRunner => {
     mockAdaptersApi.list.mockResolvedValue([{ type: "claude_local", supportedRunners: defaultRunner === "paperclip" ? ["paperclip", "legacy"] : ["legacy"], defaultRunner }]);
     try {

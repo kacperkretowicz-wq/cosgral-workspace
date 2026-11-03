@@ -5255,3 +5255,7 @@ html:not(.dark) .coordinator-sidebar {
 .cosgral-conversation :is([data-slot="button"], [data-slot="badge"]) {
   transition-duration: var(--cosgral-control-theme-duration);
 }
+
+/* COSGRAL workflow reuses the org chart geometry and theme tokens. */
+.cosgral-work-dependency { fill: none; stroke: var(--muted-foreground); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.cosgral-work-delegation { fill: none; stroke: var(--primary); stroke-width: 1.5; stroke-dasharray: 2 4; }

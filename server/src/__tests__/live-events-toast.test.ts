@@ -132,6 +132,32 @@ describe("authenticated activity notifications", () => {
     }
   });
 
+  it("delivers agent configuration invalidations to both users without configuration payloads", async () => {
+    const server = createServer();
+    setupLiveEventsWebSocketServer(server, database() as never, { deploymentMode: "authenticated",
+      resolveCloudActor: async req => ({ userId: req.headers["x-test-user"] as string, companyIds: ["company"] }) });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const origin = `ws://127.0.0.1:${(server.address() as { port: number }).port}/api/companies/company/events/ws`;
+    const alice = new WebSocket(origin, { headers: { "x-test-user": "alice" } });
+    const bob = new WebSocket(origin, { headers: { "x-test-user": "bob" } });
+    try {
+      await Promise.all([once(alice, "open"), once(bob, "open")]);
+      const received = Promise.all([once(alice, "message"), once(bob, "message")]);
+      publishLiveEvent({ companyId: "company", type: "activity.logged", payload: {
+        action: "agent.updated", entityType: "agent", entityId: "agent", actorType: "user", actorId: "alice",
+        details: { adapterConfig: { apiKey: "fixture-credential" }, name: "Saved agent" },
+      } });
+      for (const [message] of await received) {
+        expect(JSON.parse(message.toString()).payload).toEqual({ action: "agent.updated", entityType: "agent", entityId: "agent" });
+        expect(message.toString()).not.toContain("fixture-credential");
+      }
+    } finally {
+      alice.terminate(); bob.terminate();
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    }
+  });
+
   it("keeps actor identity after authorization and excludes hidden tasks and private details", async () => {
     const server = createServer();
     setupLiveEventsWebSocketServer(server, database() as never, { deploymentMode: "authenticated",

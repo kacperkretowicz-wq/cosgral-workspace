@@ -3,6 +3,20 @@ import { i18n, useTranslation } from "./index";
 // A Polish surface inside the existing i18next system; it does not change
 // the language of the advanced Paperclip screens.
 i18n.addResourceBundle("pl", "cosgral", {
+  work: {
+    zoomIn: "Powiększ", zoomOut: "Pomniejsz", fit: "Dopasuj graf",
+    views: "Widok pracy projektu", chat: "Chat", table: "Tabela", workflow: "Workflow",
+    title: "Nazwa", task: "Zadanie", agent: "Agent", model: "Model (konfiguracja)", source: "Źródło dostępu", status: "Status", priority: "Priorytet", dependencies: "Zależności", progress: "Postęp", cost: "Koszt", result: "Wynik",
+    search: "Szukaj zadania lub agenta", allStatuses: "Wszystkie statusy", allAgents: "Wszyscy agenci", allPriorities: "Wszystkie priorytety", sort: "Sortuj według", ascending: "Rosnąco", descending: "Malejąco",
+    unknown: "Brak danych", none: "Brak", previous: "Poprzednia", next: "Następna", loading: "Wczytywanie…", inChat: "Pokaż w chacie", openTask: "Otwórz zadanie", noResult: "Brak zapisanego wyniku — otwórz chat zadania", checkEvidence: "Sprawdź koszt i wynik",
+    costScope: "Zarejestrowany koszt USD zadania z potomkami; brak wpisów daje 0. Nie obejmuje ceny subskrypcji.",
+    executionHint: "Model i źródło pokazują bieżącą konfigurację następnego zadania, z nadpisaniem modelu zadania. CLI nie potwierdza subskrypcji. Postęp to ukończone podzadania lub zakończenie zadania; koszt i wyniki pobierzesz przyciskiem w wierszu.",
+    legend: "Strzałki ciągłe: podległość i przypisanie. Przerywane: blokowanie (od blokującego do zależnego). Kropkowane: zapisane delegowanie (autor lub rodzic → zadanie). Kliknij węzeł, aby otworzyć szczegóły. Gesty i przyciski zmieniają powiększenie.",
+    dependency: "Blokuje", delegation: "Delegowanie",
+    sources: { cli: "CLI — logowanie runtime", subscription: "Subskrypcja — wybrane konto", api_key: "API — wybrane konto", responsible_user: "Domyślne konto osoby odpowiedzialnej", router: "Router kont Paperclip", unknown: "Nieustalone — ustawienia agenta" },
+    priorities: { critical: "Krytyczny", high: "Wysoki", medium: "Średni", low: "Niski" },
+  },
+  agentConfig: { name: "Nazwa", title: "Stanowisko", identity: "Tożsamość i zarządzanie", avatar: "Awatar", avatarVariant: "Wariant {{number}}", description: "Opis i specjalizacja", role: "Rola", budget: "Budżet miesięczny (centy USD, 0 = bez limitu)", nextTask: "Zapisany model i reasoning dotyczą kolejnych uruchomień; aktywny run zachowuje swoją konfigurację.", instructions: "Własne instrukcje", concurrency: "Maksymalna liczba jednoczesnych zadań" },
   paused: "Rozmowa jest wstrzymana. Szkic zostaje zachowany.", resume: "Wznów rozmowę", inheritedPause: "Rozmowa jest wstrzymana przez zadanie nadrzędne. Wznów je w widoku zaawansowanym.", pauseError: "Nie udało się sprawdzić lub zmienić wstrzymania rozmowy.",
   coordinator: "Koordynator projektu", chooseCoordinator: "Wybierz koordynatora",
   coordinatorHint: "Wybierz koordynatora, aby wiadomości uruchamiały agenta. Bez wyboru wiadomości zostają we wspólnej rozmowie.",

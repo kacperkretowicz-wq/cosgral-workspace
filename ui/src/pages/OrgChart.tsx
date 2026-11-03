@@ -1,5 +1,5 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, useId } from "react";
 import { Link, useNavigate } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type OrgNode } from "../api/agents";
@@ -203,9 +203,14 @@ export interface OrgChartProps {
   agents?: Agent[];
   /** Hides page-level actions and breadcrumb ownership. */
   embedded?: boolean;
+  nodeLinks?: Record<string, string>;
+  nodeDetails?: Record<string, string>;
+  controlLabels?: { zoomIn: string; zoomOut: string; fit: string };
+  relations?: Array<{ from: string; to: string; kind: string }>;
 }
 
-export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, embedded = false }: OrgChartProps = {}) {
+export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, embedded = false, nodeLinks, nodeDetails, relations, controlLabels }: OrgChartProps = {}) {
+  const arrowId = useId().replace(/:/g, "");
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
@@ -534,8 +539,8 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                 });
               }
             }}
-            title="Zoom in"
-            aria-label="Zoom in"
+            title={controlLabels?.zoomIn ?? "Zoom in"}
+            aria-label={controlLabels?.zoomIn ?? "Zoom in"}
           >
             <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
@@ -550,16 +555,16 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                 });
               }
             }}
-            title="Zoom out"
-            aria-label="Zoom out"
+            title={controlLabels?.zoomOut ?? "Zoom out"}
+            aria-label={controlLabels?.zoomOut ?? "Zoom out"}
           >
             <Minus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
           <button
             className="flex size-9 items-center justify-center rounded border border-border bg-background text-(length:--text-nano) transition-colors hover:bg-accent sm:size-7"
             onClick={fitToScreen}
-            title="Fit to screen"
-            aria-label="Fit chart to screen"
+            title={controlLabels?.fit ?? "Fit to screen"}
+            aria-label={controlLabels?.fit ?? "Fit chart to screen"}
           >
             <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
@@ -573,7 +578,14 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
             height: "100%",
           }}
         >
+          {relations && <defs><marker id={arrowId} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" /></marker></defs>}
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+            {relations?.map((edge, index) => {
+              const from = allNodes.find(node => node.id === edge.from);
+              const to = allNodes.find(node => node.id === edge.to);
+              if (!from || !to) return null;
+              return <path key={`relation-${index}`} data-work-edge={edge.kind} d={`M ${from.x + CARD_W} ${from.y + CARD_H / 2} C ${from.x + CARD_W + GAP_X} ${from.y + CARD_H / 2}, ${to.x - GAP_X} ${to.y + CARD_H / 2}, ${to.x} ${to.y + CARD_H / 2}`} className={edge.kind === "dependency" ? "cosgral-work-dependency" : "cosgral-work-delegation"} markerEnd={`url(#${arrowId})`} />;
+            })}
             {edges.map(({ parent, child }) => {
               const x1 = parent.x + CARD_W / 2;
               const y1 = parent.y + CARD_H;
@@ -588,6 +600,7 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                   fill="none"
                   stroke="var(--border)"
                   strokeWidth={1.5}
+                  markerEnd={relations ? `url(#${arrowId})` : undefined}
                 />
               );
             })}
@@ -618,7 +631,11 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                   width: CARD_W,
                   minHeight: CARD_H,
                 }}
-                onClick={() => navigate(agent ? agentUrl(agent) : `/agents/${node.id}`)}
+                role="link"
+                tabIndex={0}
+                aria-label={`${node.name}${nodeDetails?.[node.id] ? ` · ${nodeDetails[node.id]}` : ""}`}
+                onKeyDown={event => { if (event.key === "Enter") navigate(nodeLinks?.[node.id] ?? (agent ? agentUrl(agent) : `/agents/${node.id}`)); }}
+                onClick={() => navigate(nodeLinks?.[node.id] ?? (agent ? agentUrl(agent) : `/agents/${node.id}`))}
                 onClickCapture={(e) => {
                   if (!suppressNextCardClick.current) return;
                   suppressNextCardClick.current = false;
@@ -643,7 +660,7 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                       {node.name}
                     </span>
                     <span className="text-(length:--text-micro) text-muted-foreground leading-tight mt-0.5">
-                      {agent?.title ?? roleLabel(node.role)}
+                      {nodeDetails?.[node.id] ?? agent?.title ?? roleLabel(node.role)}
                     </span>
                     {agent && (
                       <span className="text-(length:--text-nano) text-muted-foreground/60 font-mono leading-tight mt-1">

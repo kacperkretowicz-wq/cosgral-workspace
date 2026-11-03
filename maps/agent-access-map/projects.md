@@ -212,3 +212,12 @@ and no bypass. Coordinator repository mounts are read-only. Other runtime paths
 fail closed. Existing API permissions, approvals and budgets still apply;
 [this filesystem policy](../../docs/cosgral/uprawnienia-agentow.md) does not grant API
 authority. Offline probes verify filesystem/process denial, not agent API dispatch.
+
+COSGRAL Tabela/Workflow use the same authorized project issue list with
+includeAgentCreatedTasks/includeBlockedBy; they introduce no execution endpoint.
+Cost and work-product reads use existing issue-scoped endpoints. Agent nodes link
+to the existing editor; agent PATCH keeps existing agent configuration authority,
+audit and budget rules. Company live agent.updated/created events invalidate
+roster/details/org queries and carry no adapter config. The two-account script
+checks A↔B config reads and viewer/foreign-company denials; this is board HTTP/WS
+coverage, not an additional agent grant or proof of model execution.

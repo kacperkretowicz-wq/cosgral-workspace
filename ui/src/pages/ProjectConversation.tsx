@@ -19,6 +19,8 @@ import { queryKeys } from "../lib/queryKeys";
 import { liveRunRefetchInterval } from "../lib/live-runs-cache";
 import { agentHierarchy, conversationTasks } from "../lib/project-conversation";
 import { buildCompanyUserProfileMap, buildMarkdownMentionOptions, type CompanyUserProfile } from "../lib/company-members";
+import { ProjectWorkViews } from "../components/ProjectWorkViews";
+import { readProjectWorkView, type ProjectWorkView } from "../lib/project-work";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { AgentStatusCapsule } from "../components/StatusBadge";
 import { Identity } from "../components/Identity";
@@ -55,7 +57,7 @@ function TaskCards({ tasks, agents, users, projectId, conversationId }: { tasks:
       <ul className="flex flex-col gap-2">
         {progress.tasks.map(task => {
           const agent = agents.find(agent => agent.id === task.assigneeAgentId);
-          return <li key={task.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
+          return <li id={`cosgral-task-${task.id}`} key={task.id} className="flex flex-wrap items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
             {agent && <AgentAvatar agent={agent} size={24} />}
             <span className="font-medium">{agent?.name ?? (task.assigneeUserId ? users.get(task.assigneeUserId)?.label ?? t("user") : t("pending"))}</span>
             <Link className="min-w-0 flex-1 break-words underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring" to={`/issues/${task.identifier ?? task.id}`}>{task.title}</Link>
@@ -105,6 +107,13 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const { t } = useCosgralTranslation();
   const client = useQueryClient();
   const { theme, toggleTheme } = useTheme();
+  const viewKey = `cosgral.view:${user.id}:${companyId}:${projectId}`;
+  const [view, setView] = useState<ProjectWorkView>(() => readProjectWorkView(viewKey));
+  const [chatTask, setChatTask] = useState<Issue | null>(null);
+  function changeView(next: ProjectWorkView) {
+    setView(next);
+    try { localStorage.setItem(viewKey, next); } catch { /* View still works without storage. */ }
+  }
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -119,7 +128,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const agents = useQuery({ queryKey: queryKeys.agents.list(companyId), queryFn: () => agentsApi.list(companyId) });
   const projects = useQuery({ queryKey: queryKeys.projects.list(companyId), queryFn: () => projectsApi.list(companyId) });
   const directory = useQuery({ queryKey: queryKeys.access.companyUserDirectory(companyId), queryFn: () => accessApi.listUserDirectory(companyId) });
-  const tasks = useQuery({ queryKey: [...queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId), "conversation-cards"], queryFn: () => issuesApi.listAll(companyId, { projectId: project.data!.id, includeAgentCreatedTasks: true }), enabled: Boolean(project.data) });
+  const tasks = useQuery({ queryKey: [...queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId), "conversation-cards"], queryFn: () => issuesApi.listAll(companyId, { projectId: project.data!.id, includeAgentCreatedTasks: true, includeBlockedBy: true }), enabled: Boolean(project.data) });
   const issueId = conversation.data?.issueId;
   const presence = useProjectConversationPresence(companyId, project.data?.id ?? projectId, Boolean(project.data && conversation.isSuccess));
   const viewportRef = useMobileVisualViewport(mobile && Boolean(project.data) && conversation.data !== undefined);
@@ -147,8 +156,20 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     onSuccess: () => { void client.invalidateQueries({ queryKey: ["issues", "tree-control-state", issueId] }); },
   });
   useCompanyLiveEvent(event => {
-    if (event.companyId !== companyId || event.type !== "activity.logged") return;
+    if (event.companyId !== companyId) return;
+    if (event.type === "heartbeat.run.status") {
+      for (const task of tasks.data ?? []) void client.invalidateQueries({ queryKey: queryKeys.issues.costSummary(task.id) });
+    }
+    if (event.type !== "activity.logged") return;
     const payload = event.payload;
+    if (payload.entityType === "agent") void client.invalidateQueries({ queryKey: queryKeys.agents.list(companyId) });
+    if (payload.entityType === "issue") {
+      void client.invalidateQueries({ queryKey: queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId) });
+      if (typeof payload.entityId === "string") {
+        void client.invalidateQueries({ queryKey: queryKeys.issues.costSummary(payload.entityId) });
+        void client.invalidateQueries({ queryKey: queryKeys.issues.workProducts(payload.entityId) });
+      }
+    }
     // Authenticated events intentionally omit details.projectId. Re-read only
     // this visible project through its authorized endpoint.
     if (payload.action === "project.conversation_created" || (payload.action === "project.conversation_coordinator_changed" && (!issueId || payload.entityId === issueId))) {
@@ -173,6 +194,19 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     const unique = new Map((history.data?.pages.flat() ?? []).map(comment => [comment.id, comment]));
     return [...unique.values()].reverse();
   }, [history.data]);
+  useEffect(() => {
+    if (!chatTask || view !== "chat") return;
+    const comment = comments.find(row => row.body.includes(chatTask.id) || Boolean(chatTask.identifier && row.body.includes(chatTask.identifier)));
+    if (comment) {
+      document.getElementById(`cosgral-comment-${comment.id}`)?.scrollIntoView?.({ block: "center" });
+      setChatTask(null);
+    } else if (history.hasNextPage && !history.isFetchingNextPage && !history.isError) {
+      void history.fetchNextPage();
+    } else if (!history.hasNextPage) {
+      document.getElementById(`cosgral-task-${chatTask.id}`)?.scrollIntoView?.({ block: "center" });
+      setChatTask(null);
+    }
+  }, [chatTask, view, comments, history.hasNextPage, history.isFetchingNextPage, history.isError]);
   const profiles = useMemo(() => buildCompanyUserProfileMap(directory.data?.users), [directory.data]);
   const mentions = useMemo(() => buildMarkdownMentionOptions({ agents: agents.data, members: directory.data?.users }), [agents.data, directory.data]);
   const [draft, setDraft] = useState("");
@@ -267,7 +301,13 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
         <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("theme")} onClick={toggleTheme}>{theme === "dark" ? <Sun /> : <Moon />}</Button>
         <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("details")} aria-expanded={detailsOpen} onClick={() => setDetailsOpen(value => !value)}><PanelRight /></Button>
       </header>
-      <div id="cosgral-messages" tabIndex={0} ref={scrollRef} onScroll={() => { const el = scrollRef.current!; followBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="min-h-0 flex-1 overflow-y-auto p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-6" aria-label={t("conversation")}>
+      <nav aria-label={t("work.views")} className="flex gap-2 border-b px-4 py-2">
+        {(["chat", "table", "workflow"] as const).map(item => <Button key={item} variant={view === item ? "secondary" : "ghost"} aria-pressed={view === item} onClick={() => changeView(item)}>{t(`work.${item}`)}</Button>)}
+      </nav>
+      {view !== "chat" && <ProjectWorkViews view={view} tasks={(tasks.data ?? []).filter(task => task.projectId === project.data?.id && task.id !== issueId)} agents={roster} coordinatorId={conversation.data?.coordinatorAgentId} onChat={task => { followBottom.current = false; setChatTask(task); changeView("chat"); }} />}
+      {view !== "chat" && tasks.isPending && <p role="status" className="p-4">{t("work.loading")}</p>}
+      {view !== "chat" && [tasks, agents].some(query => query.isError) && <p role="alert" className="p-4 text-destructive">{t("dataError")} <Button onClick={() => { void tasks.refetch(); void agents.refetch(); }}>{t("retry")}</Button></p>}
+      <div hidden={view !== "chat"} id="cosgral-messages" tabIndex={0} ref={scrollRef} onScroll={() => { const el = scrollRef.current!; followBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="min-h-0 flex-1 overflow-y-auto p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-6" aria-label={t("conversation")}>
         <div role="log" aria-live="polite" aria-relevant="additions text" aria-label={t("conversation")} className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           {history.hasNextPage && <Button variant="ghost" disabled={history.isFetchingNextPage} onClick={older}>{history.isFetchingNextPage ? t("olderLoading") : t("older")}</Button>}
           {history.isError && <p role="alert" className="text-sm text-destructive">{t("historyError")} <Button variant="outline" onClick={() => { void history.refetch(); }}>{t("retry")}</Button></p>}
@@ -280,7 +320,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
             const created = new Date(comment.createdAt);
             const minutes = Math.round((created.getTime() - Date.now()) / 60000);
             const relative = new Intl.RelativeTimeFormat("pl", { numeric: "auto" }).format(Math.abs(minutes) < 60 ? minutes : Math.round(minutes / 60), Math.abs(minutes) < 60 ? "minute" : "hour");
-            return <article key={comment.id} className="flex flex-col gap-2" aria-label={name}>
+            return <article id={`cosgral-comment-${comment.id}`} key={comment.id} className="flex flex-col gap-2" aria-label={name}>
               <div className="flex flex-wrap items-center gap-2 text-sm">{agent ? <><AgentAvatar agent={agent} size={32} /><span className="font-semibold">{name}</span></> : <Identity name={name} avatarUrl={profile?.image ?? (comment.authorUserId === user.id ? user.image : null)} />}
                 <time className="text-xs text-muted-foreground" dateTime={created.toISOString()} title={created.toLocaleString("pl-PL")}>{relative}</time>
               </div>
@@ -291,7 +331,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
           {[project, conversation, agents, projects, tasks, directory].some(query => query.isError) && <p role="alert" className="text-sm text-destructive">{t("dataError")} <Button variant="outline" onClick={() => { for (const query of [project, conversation, agents, projects, tasks, directory]) if (query.isError) void query.refetch(); }}>{t("retry")}</Button></p>}
         </div>
       </div>
-      <footer className="border-t p-3 md:p-4">
+      <footer hidden={view !== "chat"} className="border-t p-3 md:p-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="project-coordinator" className="text-sm font-medium">{t("coordinator")}</label>

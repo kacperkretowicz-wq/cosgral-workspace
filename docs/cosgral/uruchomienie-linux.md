@@ -266,3 +266,25 @@ W fazie prepare sprawdza również odmowę kontu C. Dla zadania 7 użyto osobnej
 instancji na **3197** z osobnym `PAPERCLIP_HOME` w `/tmp`; serwer 3199 pozostaje
 własnością nadzorcy. „Pracuje nad tą rozmową” pochodzi z istniejących aktywnych
 runów wątku; status „pracuje w firmie” nie dowodzi pracy nad tą rozmową.
+
+## Tabela, Workflow i konfiguracja (Codex #9)
+
+W rozmowie projektu przełącz Chat / Tabela / Workflow. Wybór zapisuje się osobno
+dla użytkownika, firmy i projektu; szkic pozostaje przy powrocie do Chatu. Tabela
+ma filtry i sortowanie oraz przycisk pobierania kosztu/wyniku w każdym wierszu.
+Koszt USD obejmuje zadanie z potomkami; brak zarejestrowanych kosztów daje 0,
+nie oznacza darmowego wykonania ani ceny subskrypcji. Model/źródło to konfiguracja
+następnego uruchomienia (z nadpisaniem zadania), nie historia modelu runu.
+Workflow korzysta z istniejącego org chartu: podległość/przypisanie, blokowanie
+i zapisane delegowanie. Węzły otwierają istniejące szczegóły.
+
+W ustawieniach runtime agenta udostępniono tożsamość (w tym wariant awatara, opis,
+rolę i przełożonego), budżet i limit runów. Model, konto, reasoning i instrukcje
+korzystają z istniejących mechanizmów. Nie ma nowego magazynu poświadczeń.
+
+Rozszerzony `scripts/cosgral-e2e-two-accounts.mjs` w obu fazach sprawdza też
+synchronizację konfiguracji A↔B przez PATCH → WS agent.updated → autoryzowany GET.
+Używa wstrzymanego agenta process z wyłączonym heartbeat/wake, bez modelu.
+Dla odbioru zadania #9 uruchamiać własną instancję wyłącznie na 3197 z osobnym
+PAPERCLIP_HOME w /tmp, według procedury authenticated powyżej (zmienić wszystkie
+adresy/porty na 3197). Serwera nadzorcy 3199 nie restartować.

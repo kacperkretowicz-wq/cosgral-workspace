@@ -1112,7 +1112,6 @@ export function AgentDetail() {
             updatePermissions={updatePermissions}
             canConfigureProviderTrace={canUseProviderTrace}
             content="runtime"
-            hidePromptTemplate
             hideInstructionsFile
           />
         </div>
@@ -1751,8 +1750,8 @@ export function ConfigurationTab({
         sectionLayout="panels"
         environmentVariablesPlacement={content === "secrets" ? "secrets" : "configuration"}
         compactTestFeedback
-        sectionOrder={["adapter", "configuration", "environment", "environment-variables"]}
-        hiddenSections={["identity", "run-policy"]}
+        sectionOrder={["identity", "adapter", "configuration", "environment", "environment-variables"]}
+        hiddenSections={["run-policy"]}
         sectionTitles={{ adapter: "", configuration: "", environment: "" }}
         canConfigureProviderTrace={canConfigureProviderTrace}
       /> : null}

@@ -1,3 +1,6 @@
+import { useCosgralTranslation } from "../i18n/cosgral";
+import { AgentAvatar } from "./AgentAvatar";
+import { AGENT_ROLE_LABELS, AGENT_PALETTE_IDS, appearanceForPalette, resolveAgentAppearance, type AgentPaletteId } from "@paperclipai/shared";
 import { ACCOUNT_BOUND_MODEL_DISCOVERY_QUERY_OPTIONS, isAccountBoundAcpxAgent } from "@/lib/native-model-catalog";
 import { useConnectionModels } from "./ai-connections/useConnectionModels";
 import { agentHarnessType, agentRunner, paperclipRunnerProfileForHarness, normalizeClaudeRunnerOptions, type AgentRunnerChoice } from "@paperclipai/shared";
@@ -354,6 +357,7 @@ function ConfigSections({ order, hidden, className, children }: {
 /* ---- Form ---- */
 
 export function AgentConfigForm(props: AgentConfigFormProps) {
+  const { t: ct } = useCosgralTranslation();
   const { mode, adapterModels: externalModels } = props;
   const isCreate = mode === "create";
   const panels = props.sectionLayout === "panels";
@@ -510,8 +514,8 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   // The overlay snapshot a background account-binding save persisted. The form
   // stays editable while that save is in flight, so the agent refresh that
   // follows it must not wipe edits made during the save. The refresh subtracts
-  // only what the save persisted; a user-initiated Save leaves the snapshot
-  // null and keeps the full wipe. An UNRELATED refresh can land while the save
+  // only what the save persisted; ordinary saves are reconciled
+  // against refreshed persisted values without discarding another user’s draft. An UNRELATED refresh can land while the save
   // is still in flight — that refresh does not carry the persisted binding
   // yet, so it must neither consume the snapshot nor subtract it: subtracting
   // would drop the binding entry from the overlay while `props.agent` also
@@ -522,7 +526,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const backgroundSaveOverlayRef = useRef<AgentConfigOverlay | null>(null);
   const backgroundSaveInFlightRef = useRef(false);
 
-  // Clear overlay when agent data refreshes (after save)
+  // Live refreshes update untouched fields. Keep local drafts until their save succeeds.
   useEffect(() => {
     if (!isCreate) {
       if (
@@ -532,9 +536,17 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       ) {
         const persisted = backgroundSaveOverlayRef.current;
         backgroundSaveOverlayRef.current = null;
-        setOverlay((prev) =>
-          persisted ? subtractPersistedOverlay(prev, persisted) : { ...emptyOverlay },
-        );
+        const changedAgent = agentRef.current.id !== props.agent.id;
+        const refreshed = props.agent;
+        const runtime = asObject(refreshed.runtimeConfig);
+        const savedValues: AgentConfigOverlay = {
+          identity: { ...refreshed }, adapterType: refreshed.adapterType,
+          runner: agentRunner(refreshed.adapterType), adapterConfig: asObject(refreshed.adapterConfig),
+          heartbeat: asObject(runtime.heartbeat), debug: asObject(runtime.debug), runtime: { ...refreshed },
+        };
+        setOverlay((prev) => changedAgent ? { ...emptyOverlay }
+          : subtractPersistedOverlay(prev, persisted ?? savedValues));
+
       }
       agentRef.current = props.agent;
     }
@@ -1656,11 +1668,11 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       {!isCreate && (
         <div data-config-section="identity" className={cn(!cards && "border-b border-border")}>
           {cards
-            ? <h3 className="text-sm font-medium mb-3">{props.sectionTitles?.["identity"] ?? "Identity"}</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Identity</div>
+            ? <h3 className="text-sm font-medium mb-3">{props.sectionTitles?.["identity"] ?? ct("agentConfig.identity")}</h3>
+            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">{ct("agentConfig.identity")}</div>
           }
           <div data-agent-tile={panels ? "" : undefined} className={cn(cards ? cardBody : "px-4 pb-3 space-y-3")}>
-            <Field label="Name" hint={help.name}>
+            <Field label={ct("agentConfig.name")} hint={help.name}>
               <DraftInput
                 value={eff("identity", "name", props.agent.name)}
                 onCommit={(v) => mark("identity", "name", v)}
@@ -1669,7 +1681,30 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 placeholder="Agent name"
               />
             </Field>
-            <Field label="Title" hint={help.title}>
+            <Field label={ct("agentConfig.avatar")}>
+              <div className="flex items-center gap-3">
+                <AgentAvatar agent={props.agent} appearance={eff("identity", "appearance", props.agent.appearance)} size={48} />
+                <select aria-label={ct("agentConfig.avatar")} className={inputClass} value={resolveAgentAppearance(eff("identity", "appearance", props.agent.appearance), props.agent.id).paletteId} onChange={event => mark("identity", "appearance", appearanceForPalette(event.target.value as AgentPaletteId))}>
+                  {AGENT_PALETTE_IDS.map((palette, index) => <option key={palette} value={palette}>{ct("agentConfig.avatarVariant", { number: index + 1 })}</option>)}
+                </select>
+              </div>
+            </Field>
+            <Field label={ct("agentConfig.description")}>
+              <textarea aria-label={ct("agentConfig.description")} className={inputClass} value={eff("identity", "capabilities", props.agent.capabilities ?? "")} onChange={event => mark("identity", "capabilities", event.target.value || null)} />
+            </Field>
+            <Field label={ct("agentConfig.role")}>
+              <select aria-label={ct("agentConfig.role")} className={inputClass} value={eff("identity", "role", props.agent.role)} onChange={event => mark("identity", "role", event.target.value)}>
+                {Object.entries(AGENT_ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </Field>
+            <Field label={ct("agentConfig.budget")} hint={help.budgetMonthlyCents}>
+              <DraftNumberInput aria-label={ct("agentConfig.budget")} value={eff("identity", "budgetMonthlyCents", props.agent.budgetMonthlyCents)} min={0} step={1} onCommit={value => mark("identity", "budgetMonthlyCents", value)} immediate className={inputClass} />
+            </Field>
+            <Field label={ct("agentConfig.concurrency")} hint={help.maxConcurrentRuns}>
+              <DraftNumberInput aria-label={ct("agentConfig.concurrency")} value={eff("heartbeat", "maxConcurrentRuns", Number(heartbeat.maxConcurrentRuns ?? AGENT_DEFAULT_MAX_CONCURRENT_RUNS))} min={1} step={1} onCommit={value => mark("heartbeat", "maxConcurrentRuns", value)} immediate className={inputClass} />
+            </Field>
+            <p className="text-xs text-muted-foreground">{ct("agentConfig.nextTask")}</p>
+            <Field label={ct("agentConfig.title")} hint={help.title}>
               <DraftInput
                 value={eff("identity", "title", props.agent.title ?? "")}
                 onCommit={(v) => mark("identity", "title", v || null)}
@@ -1678,13 +1713,13 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 placeholder="e.g. VP of Engineering"
               />
             </Field>
-            <Field label="Reports to" hint={help.reportsTo}>
+            <Field label={ct("coordinator")} hint={help.reportsTo}>
               <ReportsToPicker
                 agents={companyAgents}
                 value={eff("identity", "reportsTo", props.agent.reportsTo ?? null)}
                 onChange={(id) => mark("identity", "reportsTo", id)}
                 excludeAgentIds={[props.agent.id]}
-                chooseLabel="Choose manager…"
+                chooseLabel={ct("chooseCoordinator")}
               />
             </Field>
             {isLocal && !props.hidePromptTemplate && (
@@ -2280,18 +2315,6 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                     Number(heartbeat.cooldownSec ?? 10),
                   )}
                   onCommit={(v) => mark("heartbeat", "cooldownSec", v)}
-                  immediate
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Max concurrent runs" hint={help.maxConcurrentRuns}>
-                <DraftNumberInput
-                  value={eff(
-                    "heartbeat",
-                    "maxConcurrentRuns",
-                    Number(heartbeat.maxConcurrentRuns ?? AGENT_DEFAULT_MAX_CONCURRENT_RUNS),
-                  )}
-                  onCommit={(v) => mark("heartbeat", "maxConcurrentRuns", v)}
                   immediate
                   className={inputClass}
                 />

@@ -656,3 +656,59 @@ Otwarte: §4 awatary, kursory na wspólnych tablicach, tryb „Obserwuj użytkow
 Zacommitowano izolowane worktrees i bezpieczne uprawnienia (docs/cosgral/uprawnienia-agentow.md). Testy po zakończeniu t8: adapter codex-local 2 pliki/6 testów PASS, serwer 3 pliki/42 testy PASS, node:test e2e delegacji 31 PASS. Niezweryfikowane przez nadzorcę: typechecki (raportuje t8 PASS), `--verify-isolation` na żywym serwerze, nowy test z prawdziwym modelem po zmianach t8 – zrobić po restarcie 3199.
 Przekreślono w COSGRAL-PROMPT-POSTEP.md tylko punkty potwierdzone testami e2e: §4 konto/zaproszenie/online/„pisze”/wiadomości na żywo (profil bez osobnego testu), §14 pkt 1 i 5–10. Pozostałe pozostają otwarte, nawet jeśli częściowo zrobione.
 Dalej: Codex t9 – Tabela, Workflow i konfiguracja agenta (§9, §6).
+
+## Codex #9 — Tabela, Workflow i konfiguracja agenta (2026-11-03)
+
+### Zmiany
+
+- `ProjectConversation` ma Chat / Tabela / Workflow. Wybór zapisuje się w localStorage osobno dla użytkownika, firmy i projektu; szkic i kontekst rozmowy pozostają przy zmianie widoku. Nowy `ProjectWorkViews` wykorzystuje tę samą autoryzowaną listę wszystkich zadań projektu (także agent-created i anulowanych), z `includeBlockedBy`. Bez migracji, dodatkowego orkiestratora lub zależności.
+- Tabela: nazwa/link zadania, agent, skonfigurowany model z uwzględnieniem nadpisania zadania, jawnie nazwane źródło dostępu (CLI, wybrane konto subskrypcji/API, konto osoby odpowiedzialnej lub router), status, priorytet, relacje blokowania, obserwowany postęp, koszt i wynik. Filtry: tekst, agent, status, priorytet; sortowanie: nazwa/agent/status/priorytet i kierunek; stronicowanie po 25. Przycisk w wierszu pobiera istniejące `cost-summary` i `work-products`, bez lawiny zapytań dla całego projektu. Koszt jest zarejestrowanym USD zadania **z potomkami**, nie ceną subskrypcji; 0 oznacza brak zarejestrowanego kosztu. Postęp to done/podzadania lub zakończenie liścia, bez zgadywania procentu. Przejście do Chatu szuka identyfikatora zadania w komentarzach (dociąga wcześniejsze strony), a przy braku odniesienia kieruje do karty zadania.
+- Workflow rozszerza istniejący `OrgChart`: to samo pan/zoom/fit i gesty, agent → przypisane zadania, rzeczywiste `reportsTo`, dodatkowe strzałki blocker → zależne oraz zapisany autor/rodzic → zadanie. Węzły pokazują status i otwierają istniejące strony agentów/zadań; dostępne także klawiaturą. Lista relacji pod grafem daje tekstowy odpowiednik. Cykliczne hierarchie nie ukrywają rekordów. Obce/niedostępne zadania nie stają się węzłami.
+- `AgentDetail` udostępnia sekcję tożsamości istniejącego `AgentConfigForm`: nazwę, **prawdziwy wariant awatara `appearance` z podglądem**, opis/specjalizację w `capabilities`, rolę, tytuł i koordynatora nadrzędnego. Dodano budżet w centach USD i przeniesiono istniejący limit `heartbeat.maxConcurrentRuns` do tej sekcji. Własny prompt jest dostępny w runtime dla wspieranych adapterów; zarządzane instrukcje nadal mają istniejący edytor Instructions. Model, dostawca/harness, rzeczywiste powiązanie konta i reasoning używają istniejących kontrolek i adapterów. Zapis dotyczy kolejnych uruchomień, bez przepisywania aktywnego runu.
+- Live: istniejący `LiveUpdatesProvider` odświeża agent detail/list/org po `agent.updated` i `agent.created`. Rozmowa jawnie odświeża też projektowe zadania, model i pobrane koszty/wyniki po zdarzeniach firmy. Odświeżenie formularza zachowuje lokalne niezapisane pola, odświeża pozostałe i usuwa z nakładki wartości już potwierdzone przez serwer; pozostawiono ochronę trwającego zapisu bindingu. Bez nowego transportu ani pollingu backendu.
+- Nowe teksty w `ui/src/i18n/cosgral.ts`; istniejące tokeny light/dark i style krawędzi w `ui/src/index.css`. Uzupełniono mapy i `docs/cosgral/uruchomienie-linux.md`.
+- `scripts/cosgral-e2e-two-accounts.mjs` w obu fazach sprawdza A→B i B→A: zapis nazwy/modelu/awatara/budżetu/limitu → WS `agent.updated` <5s → niezależny GET drugiego konta; dodatkowo odmowa PATCH widzowi i GET obcemu kontu w prepare. Używa wstrzymanego agenta `process` z wyłączonym heartbeat/wake, bez modelu. WS ma wyłącznie sygnał odświeżenia, bez konfiguracji i sekretów.
+
+### Testy — rzeczywiście wykonane
+
+Wszystkie pnpm z `PATH=/home/box/tools/bin:$PATH`. Końcowe przebiegi zakończone exit 0:
+
+```sh
+pnpm --filter @paperclipai/ui exec vitest run src/components/AgentConfigForm.render.test.tsx src/lib/agent-config-patch.test.ts src/pages/AgentDetailPage.test.tsx src/lib/project-work.test.ts src/pages/ProjectConversation.test.tsx src/context/LiveUpdatesProvider.test.ts src/pages/OrgChart.test.tsx
+# 7 plików / 331 PASS
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 src/__tests__/live-events-toast.test.ts src/__tests__/project-conversations.test.ts
+# 2 pliki / 10 PASS
+pnpm --filter @paperclipai/ui typecheck
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui build
+pnpm check:token-gates
+node scripts/check-maps.mjs
+# 35 obszarów / 193 IDs, tylko struktura
+node --test scripts/cosgral-e2e-two-accounts.test.mjs
+# 3 PASS
+node --check scripts/cosgral-e2e-two-accounts.mjs
+git diff --check
+```
+
+- UI obejmuje rzeczywisty zapis pól przez istniejący patch, podgląd/wybór `appearance`, zachowanie szkicu przy odświeżeniu, filtry i przełączanie, koszt/wynik pobierany na żądanie i odświeżony zdarzeniem, kierunki zależności, ochronę przed cyklami, brak renderowania env/sekretów, nawigację grafu klawiaturą oraz invalidację konfiguracji drugiego użytkownika. Serwer: dodatkowy rzeczywisty transport WS dwóch użytkowników z usunięciem `details` konfiguracji; istniejące testy projektu sprawdzają granice dostępu na PostgreSQL. Autoryzacja w teście WS jest kontrolowana fixturem, nie logowaniem.
+- **Żywy HTTP/WS authenticated: prepare PASS, po rzeczywistym zatrzymaniu i ponownym starcie verify-after-restart PASS.** Własna instancja wyłącznie **3197**, `PAPERCLIP_HOME=/tmp/cosgral9-instance-*`; stan/poświadczenia wyłącznie w prywatnych plikach `/tmp`, bez wypisywania. Prepare sprawdził model/budżet/limit i odmowy; końcowe verify dodatkowo rzeczywisty zapis/odczyt awatara w obu kierunkach. Historia i obecność także PASS. Nie używano serwera 3199 ani logowań dostawców modeli.
+- Logi bez sekretów: `/tmp/cosgral9-{ui-final,server-tests,ui-typecheck,server-typecheck,ui-build,tokens,maps,script-tests,e2e,e2e-restart-final}.log`. Vite zgłasza ostrzeżenia o przyszłym native config loaderze, rozmiarach istniejących chunków i statycznym/dynamicznym imporcie MarkdownEditor; build kończy się sukcesem.
+- Wczesny przebieg UI FAIL: nowy link wymagał kontekstu routera w starych fixture’ach, a test Workflow błędnie zakładał wyzerowanie filtra. Usunięto zbędny link (pozostał działający prompt i istniejące Instructions), poprawiono oczekiwanie zachowanego filtra. Następnie regresje istniejącego testu bindingu ujawniły zbyt wczesne czyszczenie formularza po samej obietnicy zapisu; finalnie czyszczenie następuje na podstawie odświeżonych wartości. Końcowy pełny celowany zestaw 331 PASS. Jedna późniejsza próba e2e zastała zatrzymany serwer (FAIL health); wznowiono tę samą własną instancję i końcowy przebieg z awatarem PASS. Nie zaliczano nieudanych prób jako odbioru.
+
+### Niezweryfikowane i granice
+
+- Nie wykonano odbioru dwóch przeglądarek, screenshotów light/dark/mobile ani nowego rzeczywistego wykonania modelu po zmianie konfiguracji. Zaliczone e2e to prawdziwe HTTP/WS dwóch kont i trwały zapis/odczyt po restarcie; testy UI są komponentowe. Obsługa motywów korzysta z tokenów, ale token gates nie zastępują odbioru wizualnego.
+- Nie uruchamiano pełnych `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` monorepo ani browser suites. Uruchomiono oba dotknięte typechecki i build UI. To celowana weryfikacja zadania #9, nie deklaracja gotowości całego monorepo do PR/produkcji.
+- Model/źródło w Tabeli to jawnie oznaczona konfiguracja, nie historyczny model/konto każdego runu. Nie wyświetla się sekretów ani nie zgaduje loginu subskrypcji z env CLI. Brak sztucznej symulacji komunikacji agent–agent/animacji: graf pokazuje tylko zapisane relacje; blokery poza dostępnym projektem pozostają linkami w Tabeli, bez ujawniania ich jako węzłów.
+- Wariant awatara wybiera istniejący portret Paperclip; nie dodano uploadu własnego zdjęcia, szablonów agenta, nowych integracji MCP/CLI/pluginów ani dostawców. To zakres prostych pól celu C; pozostała część §6/§7 nadal ma istniejące możliwości i ograniczenia adapterów.
+- Równoczesne zapisy tej samej konfiguracji zachowują dotychczasową semantykę Paperclip; nie dodano współdzielonego edytora CRDT/nowego protokołu konfliktów. Widok zachowuje lokalny szkic pól, a zapis podlega dotychczasowej autoryzacji i walidacji.
+- **Bez commit/push.** Nadzorca wykonuje dalszy odbiór i ewentualną integrację.
+
+### Nadzorca – e2e na żywo po t8 (2026-11-03 ~22:00 CET) – REGRESJA
+- `--verify-isolation` (bez modelu): PASS.
+- Konta Codex dla gpt-6.1-sol: **a OK, c OK, b NIE (400 model_not_found: „not supported when using Codex with a ChatGPT account”), d – wygasły refresh token (401, wymaga ponownego logowania)**. Rotacja realnie: a↔c.
+- E2E delegowania na koncie c (po zmianach t8): **FAIL**. Koordynator uruchomiony, ale sandbox nie startuje poleceń: `Failed to write file /tmp/paperclip-run-<run>/.sandbox-init` oraz `Resolved gitdir path <cwd>/.git/worktrees/<agent> does not exist` (wspólny .git/metadane worktree niedostępne w sandboxie; brak katalogu tymczasowego runu przy confinement „workspace filesystem scope”). Run kończy się `succeeded`, ale agent nic nie robi i nie ma raportu błędu w rozmowie (to też luka: cichy sukces). Poprzednie e2e (przed t8, commit f8cc4e609, konto a) było PASS.
+- Do naprawy jako pierwsze (t10): zapewnić zapisywalny TMPDIR runu w sandboxie i dostępne metadane worktree (lub worktree bez zewnętrznego gitdir), potem powtórzyć e2e na koncie c. Dodatkowo: run bez żadnego wywołania API przez agenta w turze delegowania powinien być widoczny jako błąd w rozmowie.
+
+### Nadzorca – po Codex t9 (2026-11-03 ~22:20 CET)
+Zacommitowano Tabelę, Workflow, zapamiętywanie widoku i rozszerzoną konfigurację agenta (Codex #9). Testy nadzorcy: UI 5 plików/320 PASS, serwer live-events 7 PASS. Uwaga: ten commit zawiera zmiany t8/t9 na kodzie ze znaną regresją sandboxa (patrz wyżej) – e2e delegowania z prawdziwym modelem jest obecnie CZERWONE do czasu t10 część 1. Dalej: t10 (konto c): najpierw naprawa regresji, potem §5 (dobór wykonawcy, zatwierdzenia przez człowieka).
