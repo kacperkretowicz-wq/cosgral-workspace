@@ -45,3 +45,5 @@ Po restarcie serwera organizacja, projekt, agenci i zadanie pozostały w bazie. 
 Klucze idempotencji tworzenia zadań mają ograniczoną retencję. Nie nadają się na trwały identyfikator jedynego kanału projektu; potrzebne jest jawne atomowe powiązanie z uprawnieniami projektu i test równoczesnego tworzenia, odczytu oraz ponownego połączenia. Utworzony lokalnie COS-3 to eksperymentalny wątek zadania, nie ukończony kanał multiplayer.
 
 Test przeglądarkowy: komentarz dodany do eksperymentalnego zadania COS-3 pojawił się bez odświeżania w drugiej karcie Chrome. Obie karty działały jako ten sam lokalny operator; nie jest to test dwóch kont ani dowód bezpiecznego współdzielenia między użytkownikami.
+
+Uwaga do konfiguracji agentów: upstream domyślnie ustawia Codex local z pomijaniem sandboxa i zatwierdzeń. W dwóch lokalnych agentach testowych wyłączono tę opcję; nie zweryfikowano jeszcze globalnej polityki bezpiecznych ustawień dla wszystkich nowych agentów i runtime’ów. Przed pracą zespołową trzeba wymusić świadomy wybór uprawnień oraz przetestować zgodność z izolacją środowiska i dostępem do API.

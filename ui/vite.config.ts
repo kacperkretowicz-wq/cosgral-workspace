@@ -8,7 +8,9 @@ import { serviceWorkerBuildIdPlugin } from "./src/lib/vite-sw-build-id";
 import { readBrowserBuildCommit } from "./src/lib/vite-build-commit";
 import { preloadIssueDetail } from "./src/lib/vite-issue-detail-preload";
 
-const apiProxy = createApiProxy();
+// Allow a separately isolated authenticated test instance without changing
+// the default development server or exposing it on the network.
+const apiProxy = createApiProxy(process.env.PAPERCLIP_DEV_API_URL || undefined);
 
 export default defineConfig(({ mode }) => ({
   define: {
