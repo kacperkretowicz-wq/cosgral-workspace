@@ -68,6 +68,10 @@ function decide(overrides: Partial<Parameters<typeof decideSuccessfulRunHandoff>
 }
 
 describe("successful run handoff decision", () => {
+  it("skips task disposition for shared project channels", () => {
+    expect(decide({ issue: { ...issue, originKind: "cosgral_project_conversation" } }))
+      .toEqual({ kind: "skip", reason: "project conversation has no task disposition" });
+  });
   it("queues one normal-model corrective wake to the original agent when a successful run has no disposition", () => {
     const decision = decide();
 

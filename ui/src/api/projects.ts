@@ -20,11 +20,20 @@ function projectPath(id: string, companyId?: string, suffix = "") {
   return withCompanyScope(`/projects/${encodeURIComponent(id)}${suffix}`, companyId);
 }
 
+export interface ProjectConversation {
+  issueId: string;
+  identifier: string | null;
+  coordinatorAgentId: string | null;
+  canManageCoordinator: boolean;
+}
+
 export const projectsApi = {
   getConversation: (id: string, companyId?: string) =>
-    api.get<{ issueId: string; identifier: string | null } | null>(projectPath(id, companyId, "/conversation")),
+    api.get<ProjectConversation | null>(projectPath(id, companyId, "/conversation")),
   openConversation: (id: string, companyId?: string) =>
-    api.post<{ issueId: string; identifier: string | null }>(projectPath(id, companyId, "/conversation"), {}),
+    api.post<ProjectConversation>(projectPath(id, companyId, "/conversation"), {}),
+  setConversationCoordinator: (id: string, agentId: string | null, companyId?: string) =>
+    api.put<ProjectConversation>(projectPath(id, companyId, "/conversation/coordinator"), { agentId }),
   gitAuthorization: (id: string) => api.get<ProjectGitAuthorization>(projectPath(id, undefined, "/git-authorization")),
   setGitAuthorization: (id: string, grantId: string | null) => api.put<ProjectGitAuthorization>(projectPath(id, undefined, "/git-authorization"), { grantId }),
   repositoryOptions: (companyId: string) => api.get<ProjectRepositoryOptions>(`/companies/${companyId}/project-repositories`),

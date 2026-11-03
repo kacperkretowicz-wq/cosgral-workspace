@@ -240,6 +240,7 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
     : false;
   context.paperclipCoordinatorWorkspaceEnabled = Boolean(coordinatorWorkspace);
   const taskMarkdownInput = {
+    completedChildIssueId: readNonEmptyString(context.completedChildIssueId),
     coordinatorWorkspace: Boolean(coordinatorWorkspace),
     conversationConfirmations: issueRef && isConversation(issueContext)
       ? await getConversationConfirmationContext({ db, companyId: agent.companyId, issueId: issueRef.id, agentId: agent.id })
@@ -252,6 +253,8 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
           titleNeedsGeneration: issueContext?.titleNeedsGeneration,
           workMode: issueRef.workMode,
           conversationAgentId: issueContext?.conversationAgentId,
+          originKind: issueContext?.originKind,
+          projectId: issueRef.projectId,
           executionPolicy: issueContext?.executionPolicy,
           description: issueRef.description,
         }

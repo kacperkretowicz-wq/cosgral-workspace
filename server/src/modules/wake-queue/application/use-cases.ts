@@ -1,3 +1,4 @@
+import { PROJECT_CONVERSATION_ORIGIN_KIND } from "@paperclipai/shared";
 import { readWakeChatConversationId } from "../../run-dispatch/index.js";
 import { enrichPromotedWakeContext, wakeMustNotJoinActiveRun } from "../domain/context.js";
 import {
@@ -508,7 +509,7 @@ async function runReleaseRecoveryTail(
   // and for a paused agent escalated the issue to `blocked`. The periodic sweep
   // already stands down for operator cancels; this keeps release consistent.
   const operatorStopped = run.status === "cancelled" && run.operatorStopped === true;
-  const suppressImmediateRecovery = input.suppressImmediateRecovery === true || operatorStopped || Boolean(
+  const suppressImmediateRecovery = input.suppressImmediateRecovery === true || operatorStopped || issue.originKind === PROJECT_CONVERSATION_ORIGIN_KIND || Boolean(
     issue.conversationAgentId && issue.conversationUserId &&
     issue.conversationState === "waiting" && issue.status === "in_review"
   );

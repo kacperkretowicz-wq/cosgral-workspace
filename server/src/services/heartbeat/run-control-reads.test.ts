@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { Db } from "@paperclipai/db";
-import { heartbeatRuns, issues } from "@paperclipai/db";
+import { heartbeatRuns, issues, issueComments } from "@paperclipai/db";
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import { isAiAuthenticationBlocked } from "../ai-auth-failure.js";
@@ -66,6 +66,60 @@ describe.skipIf(!runControlPostgresSupport.supported)("execution release reads",
     expect(Buffer.byteLength(JSON.stringify(reads))).toBeLessThan(2048);
     const [stored] = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, run.id));
     expect(stored).toEqual(run);
+  });
+
+  it.each(["succeeded", "failed", "timed_out", "cancelled"])("settles shared project turns without task disposition (%s)", async status => {
+    const { company, agent } = await fixture();
+    const [issue] = await db.insert(issues).values({ companyId: company.id, title: "Project channel",
+      originKind: "cosgral_project_conversation", status: "in_progress", assigneeAgentId: agent.id }).returning();
+    const [run] = await db.insert(heartbeatRuns).values({ companyId: company.id, agentId: agent.id,
+      status, contextSnapshot: { issueId: issue.id } }).returning();
+    await db.update(issues).set({ executionRunId: run.id, checkoutRunId: run.id }).where(eq(issues.id, issue.id));
+    if (status === "succeeded") await db.insert(issueComments).values({ companyId: company.id, issueId: issue.id,
+      authorType: "agent", authorAgentId: agent.id, createdByRunId: run.id, body: "Delegation report" });
+    const deps = callbacks(db);
+    const control = createHeartbeatRunControl(db, deps);
+    await control.releaseIssueExecutionAndPromote(run);
+    await control.releaseIssueExecutionAndPromote(run);
+    expect(deps.wakeQueue.releaseIssueExecution).toHaveBeenCalledWith(expect.objectContaining({ suppressImmediateRecovery: true }));
+    expect((await db.select().from(issues).where(eq(issues.id, issue.id)))[0]).toMatchObject({
+      status: "todo", assigneeAgentId: agent.id, checkoutRunId: null,
+    });
+    const comments = await db.select().from(issueComments).where(eq(issueComments.issueId, issue.id));
+    expect(comments).toHaveLength(1);
+    expect(comments[0].authorType).toBe(status === "succeeded" ? "agent" : "system");
+    if (status !== "succeeded") expect(comments[0].body).toContain("Nie udało się");
+  });
+
+  it.each(["checkout", "execution"])("preserves a newer project turn's %s ownership", async ownership => {
+    const { company, agent } = await fixture();
+    const [issue] = await db.insert(issues).values({ companyId: company.id, title: "Project channel",
+      originKind: "cosgral_project_conversation", status: "in_progress", assigneeAgentId: agent.id }).returning();
+    const [oldRun, newRun] = await db.insert(heartbeatRuns).values([
+      { companyId: company.id, agentId: agent.id, status: "succeeded", contextSnapshot: { issueId: issue.id } },
+      { companyId: company.id, agentId: agent.id, status: "running", contextSnapshot: { issueId: issue.id } },
+    ]).returning();
+    await db.update(issues).set(ownership === "checkout" ? { checkoutRunId: newRun.id } : { executionRunId: newRun.id }).where(eq(issues.id, issue.id));
+    await createHeartbeatRunControl(db, callbacks(db)).releaseIssueExecutionAndPromote(oldRun);
+    expect((await db.select().from(issues).where(eq(issues.id, issue.id)))[0]).toMatchObject({
+      status: "in_progress", ...(ownership === "checkout" ? { checkoutRunId: newRun.id } : { executionRunId: newRun.id }),
+    });
+    expect(await db.select().from(issueComments).where(eq(issueComments.issueId, issue.id))).toHaveLength(0);
+  });
+
+  it("shows a missing reply instead of silently treating a successful project run as a report", async () => {
+    const { company, agent } = await fixture();
+    const [issue] = await db.insert(issues).values({ companyId: company.id, title: "Project channel",
+      originKind: "cosgral_project_conversation", status: "in_progress", assigneeAgentId: agent.id }).returning();
+    const [run] = await db.insert(heartbeatRuns).values({ companyId: company.id, agentId: agent.id,
+      status: "succeeded", contextSnapshot: { issueId: issue.id } }).returning();
+    const control = createHeartbeatRunControl(db, callbacks(db));
+    await control.releaseIssueExecutionAndPromote(run);
+    await control.releaseIssueExecutionAndPromote(run);
+    const comments = await db.select().from(issueComments).where(eq(issueComments.issueId, issue.id));
+    expect(comments).toHaveLength(1);
+    expect(comments[0]).toMatchObject({ authorType: "system", createdByRunId: run.id });
+    expect(comments[0].body).toContain("nie zapisał odpowiedzi");
   });
 
   it("reads the completed identity after post-commit effects and preserves the full record", async () => {

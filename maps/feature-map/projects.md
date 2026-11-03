@@ -118,6 +118,14 @@ Verify new messages without navigation changes. Load earlier messages from a
 history over 40 comments. Check task cards against accessible project tasks,
 excluding cancelled tasks, with done / remaining total. Check dark/light, mobile
 navigation drawer, details overlay and inline errors/retry. Task assignment is
-shown as assignment, not proof of agent delegation. Presence/typing and a selected
-project coordinator are not implemented. Browser evidence belongs in the handoff;
+shown as assignment, not proof of agent delegation. The coordinator selector uses
+the project's authorized management endpoint; verify selection, a visible change
+comment, paused-agent errors and conversation-specific active-run status. Verify
+that the coordinator only comments, each completed child produces a reporting
+wake, and failed/unanswered turns show a system notice without task disposition.
+[Server tests](../../server/src/__tests__/project-conversations.test.ts) cover
+selection and normal message/assignment/child-completion wakes with a mocked
+heartbeat boundary. [Delegation script](../../scripts/cosgral-e2e-delegation.mjs)
+requires a separate real-model run; its Node tests validate acceptance on mocks.
+Presence/typing remain unimplemented. Browser evidence belongs in the handoff;
 these recipes alone do not claim a live pass.

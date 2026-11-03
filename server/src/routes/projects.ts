@@ -185,21 +185,26 @@ export function projectRoutes(db: Db) {
     return false;
   }
 
-  async function assertCanManageProjectPrivacy(req: Request, res: Response, project: {
+  async function canManageProjectPrivacy(req: Request, project: {
     companyId: string; privacyOwnerUserId?: string | null; personalOwnerUserId?: string | null;
-  }) {
+  }, dbOrTx: Db = db) {
     const actor = req.actor;
     if (actor.type === "board" && actor.userId) {
       if (actor.source === "local_implicit" || actor.isInstanceAdmin) return true;
       if (actor.userId === project.privacyOwnerUserId || actor.userId === project.personalOwnerUserId) return true;
-      const instanceAdmin = actor.source !== "cloud_tenant" && await db.select({ id: instanceUserRoles.id }).from(instanceUserRoles)
+      const instanceAdmin = actor.source !== "cloud_tenant" && await dbOrTx.select({ id: instanceUserRoles.id }).from(instanceUserRoles)
         .where(and(eq(instanceUserRoles.userId, actor.userId), eq(instanceUserRoles.role, "instance_admin"))).limit(1).then(rows => rows.length > 0);
       if (instanceAdmin) return true;
-      const membership = await db.select({ role: companyMemberships.membershipRole }).from(companyMemberships)
+      const membership = await dbOrTx.select({ role: companyMemberships.membershipRole }).from(companyMemberships)
         .where(and(eq(companyMemberships.companyId, project.companyId), eq(companyMemberships.principalType, "user"),
           eq(companyMemberships.principalId, actor.userId), eq(companyMemberships.status, "active"))).limit(1);
       if (["owner", "admin"].includes(membership[0]?.role ?? "")) return true;
     }
+    return false;
+  }
+
+  async function assertCanManageProjectPrivacy(req: Request, res: Response, project: Parameters<typeof canManageProjectPrivacy>[1]) {
+    if (await canManageProjectPrivacy(req, project)) return true;
     res.status(403).json({ error: "Only the project privacy owner or an administrator can change project access" });
     return false;
   }
@@ -406,9 +411,41 @@ export function projectRoutes(db: Db) {
       const decision = await access.decide({ actor: req.actor, action: "issue:read",
         resource: { type: "issue", companyId: project.companyId, issueId: issue.id } });
       if (!decision.allowed) throw notFound("Conversation not found");
-      res.status(created ? 201 : 200).json({ issueId: issue.id, identifier: issue.identifier });
+      res.status(created ? 201 : 200).json({ issueId: issue.id, identifier: issue.identifier,
+        coordinatorAgentId: issue.assigneeAgentId, canManageCoordinator: await canManageProjectPrivacy(req, project) });
     });
   }
+
+  router.put("/projects/:id/conversation/coordinator", validate(z.object({ agentId: z.string().uuid().nullable() }).strict()), async (req, res) => {
+    assertBoard(req);
+    if (!req.actor.userId) throw forbidden("A user session is required");
+    const project = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Project not found");
+    if (!project || !(await assertProjectReadAllowed(req, res, project))) return;
+    assertCompanyAccess(req, project.companyId);
+    if (!(await assertCanManageProjectPrivacy(req, res, project))) return;
+    const publications: ActivityPublication[] = [];
+    const actor = getActorInfo(req);
+    const issue = await projectConversations.setCoordinator(project.companyId, project.id, req.actor.userId, req.body.agentId, {
+      authorize: async tx => {
+        const accessDecision = await accessService(tx).decide({ actor: req.actor, action: "project:read",
+          resource: { type: "project", companyId: project.companyId, projectId: project.id } });
+        const current = await projectService(tx).getById(project.id);
+        if (!accessDecision.allowed || !current) throw notFound("Project not found");
+        if (!(await canManageProjectPrivacy(req, current, tx))) throw forbidden("Project management required");
+      },
+      changed: async (tx, issueId, previousAgentId, agentId, commentId) => {
+        for (const action of ["project.conversation_coordinator_changed", "issue.comment_added"]) {
+          const saved = await persistActivity(tx, { companyId: project.companyId, actorType: actor.actorType,
+            actorId: actor.actorId, action, entityType: "issue", entityId: issueId,
+            details: { projectId: project.id, previousAgentId, agentId, commentId } });
+          publications.push(saved.publication);
+        }
+      },
+    });
+    if (!issue) throw notFound("Project not found");
+    for (const publication of publications) publishActivity(publication);
+    res.json({ issueId: issue.id, identifier: issue.identifier, coordinatorAgentId: issue.assigneeAgentId, canManageCoordinator: true });
+  });
 
   router.get("/projects/:id/external-object-summary", async (req, res) => {
     const id = req.params.id as string;

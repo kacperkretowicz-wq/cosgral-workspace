@@ -8,6 +8,21 @@ const issue = {
 };
 
 describe("heartbeat task markdown rendering", () => {
+  it.each([true, false])("guides shared project coordination on full and resumed turns (%s)", includeDescription => {
+    const markdown = buildPaperclipTaskMarkdown({ issue: { ...issue, originKind: "cosgral_project_conversation", projectId: "project-1" }, completedChildIssueId: "child-1", includeDescription });
+    expect(markdown).toContain("Shared project coordinator");
+    expect(markdown).toContain('parentId');
+    expect(markdown).toContain('project-1');
+    expect(markdown).toContain('assigneeAgentId');
+    expect(markdown).toContain('idempotencyKey');
+    expect(markdown).toContain('child-1');
+    expect(markdown).toContain('report in this conversation');
+    expect(markdown).toContain('Do not change the conversation status');
+    expect(markdown).not.toContain('set this conversation to in_review');
+    expect(markdown).toContain('do not close');
+    expect(markdown).not.toContain('Chat mode directive:');
+  });
+
   it.each([true, false])("keeps native task clarification in the current task on full and resumed assignments (description=%s)", (includeDescription) => {
     const markdown = buildPaperclipTaskMarkdown({
       issue: { ...issue, description: "Write a blog post about our launch." },

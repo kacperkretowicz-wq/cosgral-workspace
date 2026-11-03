@@ -162,7 +162,8 @@ Capability ID: `projects/conversation`.
 Review: `baseline`.
 
 API: `present` — `GET /api/projects/{id}/conversation`,
-`POST /api/projects/{id}/conversation`, `GET /api/issues/{id}/comments`
+`POST /api/projects/{id}/conversation`,
+`PUT /api/projects/{id}/conversation/coordinator`, `GET /api/issues/{id}/comments`
 (with order/limit/after), `POST /api/issues/{id}/comments`.
 
 Agent access: `partial` — comments use the existing REST task-comment path;
@@ -173,6 +174,16 @@ Policy: company and private-project/task read access; comment writes require
 existing mutation authority. A viewer can read but cannot send. Comment authors
 come from the authenticated actor; clientRequestId preserves retry identity.
 Project conversation policy protects its identity and nonterminal lifecycle.
+Coordinator selection requires project read access and existing project-owner or
+administrator management authority; viewers and agent callers cannot select.
+The selected agent must be ready, company-scoped and able to read the project.
+Assignment and its comment/audit commit together. Execution/checkout ownership
+blocks changing coordinator. Ordinary issue PATCH cannot change this assignment.
+The shared channel uses assigneeAgentId; personal conversationAgentId stays null.
+Messages wake the coordinator and each completed child task uses the ordinary
+parent wake path, preserving child context behind an active run. Task dispositions
+and their recovery do not apply to this channel; failed or unanswered turns are
+visible as system comments. Access, approvals and budgets still gate execution.
 
 Evidence: `source-only` — [project routes](../../server/src/routes/projects.ts),
 [comment routes](../../server/src/routes/issues.ts),
@@ -183,4 +194,6 @@ HTTP/WS grants and denials; it does not qualify agent execution.
 Verification: `not-run` for an agent posting on this UI test project. Browser
 board verification is recorded separately in COSGRAL-PRZEKAZANIE.md.
 
-Gaps: selected coordinator, automatic delegation, presence and typing.
+Gaps: real-model delegation acceptance pending supervisor execution; presence
+and typing. Server integration tests exercise persistence/access through wake
+calls with mocked heartbeat, not provider execution.

@@ -146,6 +146,19 @@ function createFakeRecovery(): RecoveryEscalationPort {
 }
 
 describe("releaseIssueExecution", () => {
+  it.each([false, true])("project channels suppress task recovery while promoting real pending wakes (%s)", async hasDeferredWake => {
+    const transaction = createFakeTransaction({
+      findNextDeferredWake: vi.fn(async () => hasDeferredWake ? wakeCandidate() : null),
+    });
+    const release = createReleaseIssueExecution({
+      issueLock: createFakeIssueLock(createFakeHost(), transaction, { ...ISSUE, originKind: "cosgral_project_conversation" }),
+      recovery: createFakeRecovery(),
+    });
+    const result = await release({ companyId: RUN.companyId, runId: RUN.id, now: new Date() });
+    expect(transaction.queueImmediateRecoveryRun).not.toHaveBeenCalled();
+    expect(result.outcome.kind).toBe(hasDeferredWake ? "promoted" : "released");
+  });
+
   it.each([false, true])("preserves a paused head without blocking an eligible follower (%s)", async withFollower => {
     const paused = wakeCandidate({ id: "paused-wake", wakeReason: "issue_comment_mentioned", queuedCommentIds: ["paused-comment"] });
     const ready = wakeCandidate({ id: "ready-wake", agentId: "ready-agent", queuedCommentIds: ["ready-comment"] });

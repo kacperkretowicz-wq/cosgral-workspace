@@ -1,3 +1,4 @@
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { notifyNativeStatusWakeWork } from "../deferred-execution-notifications.js";
 import { notifyExternalAgentSettlement } from "../../modules/external-agents/index.js";
 import { lockCurrentNativeWorkAssessmentEvidence } from "./work-assessments.js";
@@ -1737,7 +1738,7 @@ export async function commitNativeStatusDecision(input: {
     }
     // A completed model turn cannot close a persistent conversation. Preserve
     // the task here; the response finalizer records its durable waiting state.
-    if (issue.conversationAgentId && input.decision.statusAction === "done") {
+    if (isProjectConversation(issue) || (issue.conversationAgentId && input.decision.statusAction === "done")) {
       input = { ...input, decision: { ...input.decision, statusAction: "preserve", toStatus: issue.status as NativeStatusDecision["toStatus"], effects: [] } };
     }
     if (coordinator.phase === "committed" && coordinator.decisionId) {

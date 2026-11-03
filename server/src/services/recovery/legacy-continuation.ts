@@ -1,9 +1,10 @@
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { createHash } from "node:crypto";
 
 /** This contract deliberately has no narrative, liveness label or progress count. */
 export interface LegacyContinuationInput {
   run: { id: string; companyId: string; agentId: string; status: string; runtimeMode?: string | null };
-  issue: { id: string; companyId: string; status: string; assigneeAgentId: string | null; assigneeUserId?: string | null } | null;
+  issue: { originKind?: string | null; id: string; companyId: string; status: string; assigneeAgentId: string | null; assigneeUserId?: string | null } | null;
   agent: { id: string; companyId: string; status: string } | null;
   episode: LegacyDispositionEpisode;
   gates: {
@@ -67,6 +68,7 @@ export function decideLegacyContinuation(input: LegacyContinuationInput):
   if (run.runtimeMode === "native") return { kind: "skip", reason: "native_finalization" };
   if (run.status !== "succeeded") return { kind: "skip", reason: "run_not_successful" };
   if (!issue || !agent || issue.companyId !== run.companyId || agent.companyId !== run.companyId || agent.id !== run.agentId) return { kind: "skip", reason: "invalid_binding" };
+  if (isProjectConversation(issue)) return { kind: "skip", reason: "conversation" };
   if (issue.assigneeAgentId !== run.agentId || issue.assigneeUserId) return { kind: "skip", reason: "owner_changed" };
   if (!["todo", "in_progress"].includes(issue.status)) return { kind: "skip", reason: "recorded_disposition" };
   for (const [blocked, reason] of [

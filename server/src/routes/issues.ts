@@ -16141,7 +16141,7 @@ export function issueRoutes(
         }
         if (becameTerminal && issue.parentId) {
           const parent = await svc.getWakeableParentAfterChildCompletion(
-            issue.parentId,
+            issue.parentId, { issueId: issue.id, summary: null },
           );
           if (parent) {
             addWakeup(parent.assigneeAgentId, {
@@ -19671,7 +19671,7 @@ export function issueRoutes(
         }
         if (becameTerminal && currentIssue.parentId) {
           const parent = await svc.getWakeableParentAfterChildCompletion(
-            currentIssue.parentId,
+            currentIssue.parentId, { issueId: currentIssue.id, summary: null },
           );
           if (parent) {
             addWakeup(parent.assigneeAgentId, {

@@ -1,19 +1,62 @@
 import { and, eq } from "drizzle-orm";
-import { issues, projectConversations, projects, type Db } from "@paperclipai/db";
+import { agents, issues, projectConversations, projects, type Db } from "@paperclipai/db";
 import { issueService } from "./issues.js";
 import { PROJECT_CONVERSATION_ORIGIN } from "./project-conversation-policy.js";
-import { conflict } from "../errors.js";
+import { accessService } from "./access.js";
+import { conflict, unprocessable } from "../errors.js";
 
 /** Persistence only: callers must authorize the project and issue for the actor. */
 export function projectConversationService(db: Db) {
   const issueSvc = issueService(db);
 
-  return {
+  const service = {
     async get(companyId: string, projectId: string) {
       const [row] = await db.select({ issue: issues }).from(projectConversations)
         .innerJoin(issues, and(eq(issues.companyId, projectConversations.companyId), eq(issues.id, projectConversations.issueId)))
         .where(and(eq(projectConversations.companyId, companyId), eq(projectConversations.projectId, projectId)));
       return row?.issue ?? null;
+    },
+
+    async setCoordinator(companyId: string, projectId: string, userId: string, agentId: string | null, hooks: {
+      authorize: (tx: Db) => Promise<void>;
+      changed: (tx: Db, issueId: string, previousAgentId: string | null, agentId: string | null, commentId: string) => Promise<void>;
+    }) {
+      return db.transaction(async rawTx => {
+        const tx = rawTx as unknown as Db;
+        const [project] = await tx.select().from(projects).where(and(eq(projects.companyId, companyId), eq(projects.id, projectId))).for("update");
+        if (!project) return null;
+        await hooks.authorize(tx);
+        if (project.archivedAt) throw conflict("Archived projects cannot change coordinator");
+        let agent: typeof agents.$inferSelect | undefined;
+        if (agentId) {
+          [agent] = await tx.select().from(agents).where(and(eq(agents.companyId, companyId), eq(agents.id, agentId))).for("share");
+          if (!agent) throw unprocessable("Coordinator must be an agent of this company");
+          if (["paused", "terminated", "pending_approval", "error"].includes(agent.status)) throw unprocessable("Coordinator is paused or not ready");
+          const decision = await accessService(tx).decide({ actor: { type: "agent", companyId, agentId }, action: "project:read",
+            resource: { type: "project", companyId, projectId } });
+          if (!decision.allowed) throw unprocessable("Coordinator needs access to this project");
+        }
+        const conversation = projectConversationService(tx);
+        const result = await conversation.getOrCreate(companyId, projectId, userId);
+        if (!result) return null;
+        // Execution admission locks the issue, not the project. Re-read under
+        // that same row lock so selection cannot race checkout or run dispatch.
+        const [issue] = await tx.select().from(issues)
+          .where(and(eq(issues.companyId, companyId), eq(issues.id, result.issue.id))).for("update");
+        if (!issue) return null;
+        if (issue.assigneeAgentId === agentId) return issue;
+        if (issue.executionRunId || issue.checkoutRunId || issue.status === "in_progress") {
+          throw conflict("Coordinator cannot change while execution owns the conversation; wait for the run to finish");
+        }
+        // This is the only assignment writer for shared channels: authorization,
+        // selection event and visible comment commit together, without waking on selection.
+        const [updated] = await tx.update(issues).set({ assigneeAgentId: agentId, assigneeUserId: null,
+          status: agentId ? "todo" : "backlog", updatedAt: new Date() }).where(and(eq(issues.companyId, companyId), eq(issues.id, issue.id))).returning();
+        const comment = await issueService(tx).addComment(issue.id,
+          agent ? `Koordynator projektu: ${agent.name}.` : "Koordynator projektu został odłączony.", { userId }, { authorType: "user" });
+        await hooks.changed(tx, issue.id, issue.assigneeAgentId, agentId, comment.id);
+        return updated;
+      });
     },
 
     async getOrCreate(companyId: string, projectId: string, createdByUserId: string, hooks?: {
@@ -46,4 +89,5 @@ export function projectConversationService(db: Db) {
       });
     },
   };
+  return service;
 }

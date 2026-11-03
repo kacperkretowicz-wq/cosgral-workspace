@@ -135,6 +135,22 @@ describe.skipIf(!support.supported)("heartbeat lifecycle database wiring", () =>
     return { company, agent, wake, run };
   }
 
+  it("does not queue task-comment or disposition recovery for an unanswered project channel", async () => {
+    const { company, agent } = await fixture();
+    const [issue] = await db.insert(issues).values({ companyId: company.id, title: "Project channel",
+      originKind: "cosgral_project_conversation", status: "in_progress", assigneeAgentId: agent.id }).returning();
+    const [run] = await db.insert(heartbeatRuns).values({ companyId: company.id, agentId: agent.id, status: "succeeded",
+      runtimeMode: "legacy", contextSnapshot: { issueId: issue.id, wakeReason: "issue_children_completed" } }).returning();
+    const deps = callbacks(db);
+    const lifecycle = createHeartbeatLifecycle(db, deps);
+    expect(await lifecycle.finalizeIssueCommentPolicy(run, agent)).toMatchObject({ outcome: "not_applicable", queuedRun: null });
+    await lifecycle.handleRunLivenessContinuation(run);
+    await lifecycle.handleSuccessfulRunHandoff(run, agent);
+    await lifecycle.handleIssueReviewPathDisposition(run);
+    expect(deps.enqueueWakeup).not.toHaveBeenCalled();
+    expect(deps.issuesSvc.addComment).not.toHaveBeenCalled();
+  });
+
   it.each(["succeeded", "failed", "cancelled", "timed_out", "interrupted", "deleted"])(
     "rechecks progress after a run becomes %s without reading its large payloads",
     async (status) => {

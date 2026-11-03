@@ -1,3 +1,4 @@
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { readNativeStartupCleanup } from "../native-runtime/native-startup-cleanup.js";
 import { notifyStrandedAgentStatus } from "../live-run-recovery-notifications.js";
 import { notifyRunDispatch } from "../run-dispatch-notifications.js";
@@ -1480,7 +1481,7 @@ export function createHeartbeatLifecycle(db: Db, dependencies: HeartbeatLifecycl
     const issueId = readNonEmptyString(context.issueId);
     if (!issueId) return;
     const waitingContext = await getIssueExecutionContext(run.companyId, issueId);
-    if (isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
+    if (isProjectConversation(waitingContext) || isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
 
     const [issue, agent] = await Promise.all([
       db
@@ -1682,7 +1683,7 @@ export function createHeartbeatLifecycle(db: Db, dependencies: HeartbeatLifecycl
       readNonEmptyString(context.issueId) ?? readNonEmptyString(context.taskId);
     if (!issueId) return;
     const waitingContext = await getIssueExecutionContext(run.companyId, issueId);
-    if (isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
+    if (isProjectConversation(waitingContext) || isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
     if (
       readNonEmptyString(context.goalControlRequestId) ||
       context.resumeSessionGoalHeartbeat === true
@@ -2001,7 +2002,7 @@ export function createHeartbeatLifecycle(db: Db, dependencies: HeartbeatLifecycl
       readNonEmptyString(contextSnapshot.taskId);
     if (!issueId) return;
     const waitingContext = await getIssueExecutionContext(run.companyId, issueId);
-    if (isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
+    if (isProjectConversation(waitingContext) || isWaitingConversation(waitingContext) || waitingContext?.externalConversationState === "waiting") return;
 
     const issue = await db
       .select({
@@ -2651,6 +2652,14 @@ export function createHeartbeatLifecycle(db: Db, dependencies: HeartbeatLifecycl
         issueCommentRetryQueuedAt: null,
       });
       return { outcome: "satisfied" as const, queuedRun: null };
+    }
+
+    // The channel finalizer records unanswered turns visibly. A prose-only
+    // task retry must not compete with pending child-completion reporting.
+    if (isProjectConversation(await getIssueExecutionContext(run.companyId, issueId))) {
+      await patchRunIssueCommentStatus(run.id, { issueCommentStatus: "not_applicable",
+        issueCommentSatisfiedByCommentId: null, issueCommentRetryQueuedAt: null });
+      return { outcome: "not_applicable" as const, queuedRun: null };
     }
 
     // Missing-comment recovery is a legacy compatibility path for otherwise

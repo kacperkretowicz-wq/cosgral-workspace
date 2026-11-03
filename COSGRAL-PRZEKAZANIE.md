@@ -308,3 +308,182 @@ API 3198 i Vite 5173 pozostawiono uruchomione do odbioru. W tej sesji:
 3. Szczegóły otwiera ikona w prawym górnym rogu, obok zmiany motywu i **Widok zaawansowany**. Telefon: ikona menu po lewej, szczegóły jako overlay.
 
 Po restarcie środowiska: uruchom `authenticated` z tym samym `PAPERCLIP_HOME` i prywatnym env według `docs/cosgral/uruchomienie-linux.md`, następnie powyższe polecenie Vite. W tej maszynie skrót startu API to `bash /workspace/start3198.sh` (nie jest częścią repo). Nowe środowisko wymaga własnych kont/danych; adres testowy i pliki `/tmp` nie są trwałym wdrożeniem. Nadzorca wykonuje commit/push i ewentualne pełne bramki repo.
+
+## Aktualizacja 3 XI (Codex #5 — koordynator i delegowanie)
+
+Kontynuacja po limicie poprzedniej sesji. Zastano niezacommitowane, niezweryfikowane zmiany endpointu wyboru koordynatora, polityki wspólnego wątku, instrukcji heartbeat/skilla, UI i skryptu delegowania. Trwa przegląd i weryfikacja; na tym etapie brak deklaracji PASS. Bez commit/push. Plan: `doc/plans/2026-11-03-cosgral-coordinator.md`. Pełny test zagnieżdżonego Codexa uruchomi nadzorca poza sandboxem; wyniki i dokładna komenda zostaną dopisane poniżej.
+
+### Wczesny stan kontynuacji po limicie (3 XI)
+
+Zgłoszenie nadzorcy: typecheck serwera/UI, token gates i testy ProjectConversation przeszły; pozostał czerwony test atomowego wyboru/ochrony wykonania w project-conversations oraz jeden błąd testu skryptu delegowania. Wyniki te pochodzą od nadzorcy; bieżąca sesja najpierw odtworzy oba błędy, rozróżni błąd kodu od testu i zweryfikuje końcowy WIP. Zakres pozostaje zadaniem 5, bez commit/push i bez uruchamiania zagnieżdżonego Codexa.
+
+### Zmiany końcowe zadania 5
+
+- Wybór wykorzystuje `assigneeAgentId` istniejącego wątku `originKind=cosgral_project_conversation`; `conversationAgentId` pozostaje puste. Zbadane prywatne „Chat mode” wiąże rozmowę z jedną osobą i zabrania nowych dzieci, dlatego nie nadaje się do wspólnego kanału z delegowaniem. Brak migracji, wymuszenia Claude ani zmiany modelu/źródła dostępu agenta.
+- `PUT /api/projects/:id/conversation/coordinator` zapisuje wybór/odłączenie. Wymaga dostępu do projektu, istniejącego uprawnienia właściciela projektu lub administratora i prawa zapisu firmy; widz, zwykły członek i agent nie zarządzają wyborem. Agent musi być gotowy, z tej samej firmy i mieć dostęp do projektu. Transakcja ponownie autoryzuje, blokuje projekt i wiersz rozmowy, zapisuje przypisanie, komentarz po polsku i audyt. Powtórzenie wyboru nie dodaje zdarzeń. Zmiana przy executionRunId/checkoutRunId lub in_progress zwraca konflikt; nie czyści cudzej własności wykonania. Boczny PATCH zadania nie zmienia koordynatora. Release zachowuje przypisanie kanału, a obcy checkout nie zajmuje kanału bez wyboru.
+- Wiadomość użytkownika korzysta z istniejącego `issue_commented` wake z ID rozmowy i komentarza; ten sam clientRequestId nie dodaje kolejnego wake. Instrukcja heartbeat i skill Paperclip wymagają odpowiedzi komentarzem agenta, zwykłych zadań `todo` z wykonawcą, tym samym projektem, rodzicem rozmowy, linkiem źródłowym i stabilnym idempotencyKey. Pierwotnie instrukcja kazała po przekazaniu i raporcie czekać w `in_review` (błąd wykryty w żywym e2e, naprawa poniżej); istniejący wake `issue_children_completed` służy raportowaniu po zakończeniu dzieci. Nie dodano drugiego silnika, pollingu backendu, omijania approvals/budżetów ani zapisu wyników za model.
+- UI ma polski selektor, wezwanie do wyboru, placeholder „Wiadomość do …”, blokadę/powód dla agenta wstrzymanego lub niegotowego, zachowanie szkicu po błędzie i aktywność opartą na runach tej rozmowy. Praca agenta gdzie indziej w firmie nie jest przedstawiana jako odpowiedź w rozmowie. Karty używają istniejących zadań projektu, w tym agent-created.
+- Skrypt `scripts/cosgral-e2e-delegation.mjs`: dwóch bezpiecznych Codex local (`gpt-6.1-sol`, low, bypass false), `reportsTo`, osobne cwd z git init, CODEX_HOME z argumentu. Jedyny trigger to wiadomość użytkownika. Niezależnie sprawdza autora komentarzy, dziecko/projekt/przypisanie, done, ok wykonawcy, późniejszy raport i kontynuację koordynatora, limit runów oraz 75 s bez retry. Końcowe odczyty poprzedzają pauzę/anulowanie; błędy i sygnały dają FAIL oraz próbę sprzątania obu agentów.
+- Uzupełniono dokumentację uruchomienia, obie specyfikacje i mapy funkcji/dostępu. Zmiany nadal WIP w working tree gałęzi `codex/cosgral-workspace`; nie wykonano commit/push ani zmian w gałęzi zapasowej.
+
+### Przyczyny dwóch zgłoszonych FAIL
+
+1. **Błąd kodu:** test „creates the first selection atomically and preserves execution ownership during a run” prawidłowo wykrył możliwość odłączenia koordynatora przy aktywnym executionRunId. Odtworzono czerwony test (1 FAIL / 2 PASS), dodano blokadę wiersza issue i odmowę zmiany przy własności wykonania. Test obejmuje też checkoutRunId, in_progress, idempotentny ten sam wybór w trakcie runu oraz rollback przypisania/komentarza po błędzie audytu.
+2. **Błąd runnera testu:** `node --test server/scripts/cosgral-e2e-delegation.test.mjs` kończył się TypeError wewnątrz Vitest, zanim wykonał asercje. Plik importował Vitest i znajdował się w jego globie serwera. Przeniesiono do `scripts/cosgral-e2e-delegation.test.mjs` obok pozostałych Node tests, zastępując Vitest przez `node:test` i `node:assert/strict`. Poprawna komenda jest podana niżej; stara ścieżka została usunięta. Po przeniesieniu 25/25 PASS, bez osłabienia warunków odbioru skryptu.
+
+### Rzeczywiste wyniki bieżącej kontynuacji
+
+Wykonano (każda poniższa komenda zakończyła się **exit 0**):
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/project-conversation-policy.test.ts src/services/heartbeat/task-markdown.test.ts
+# Po dodaniu dodatkowych przypadków blokady i wake wykonawcy:
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts
+node --test scripts/cosgral-e2e-delegation.test.mjs
+pnpm --filter @paperclipai/ui typecheck
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm check:token-gates
+node scripts/check-maps.mjs
+node --check scripts/cosgral-e2e-delegation.mjs
+node scripts/cosgral-e2e-delegation.mjs --help
+git diff --check
+git diff --cached --check
+```
+
+Serwer: **3 pliki / 29 testów PASS**, następnie finalny rozszerzony test rozmów **3/3 PASS**. PostgreSQL testuje trwały wybór, konkurencyjne tworzenie wątku, izolację firmy/projektu, odmowy viewer/member, komentarz/audyt, rollback, ochronę własności oraz rzeczywiste routes do wywołań wake. Granica heartbeat jest zamockowana: sprawdzono `issue_commented`, przypisanie zwykłego dziecka → `issue_assigned` wykonawcy oraz done dziecka → `issue_children_completed` koordynatora, nie wykonanie modelu. UI: **2 pliki / 20 testów PASS**. Node: początkowo **25/25 PASS**, po wzmocnieniu raportu końcowego **29/29 PASS** (niezależne asercje, błędne dowody, cleanup i ograniczenie runów). Oba typechecki i wszystkie 4 token gates: **PASS**. Mapy: **35 obszarów / 193 capability IDs**, kontrola strukturalna. UI zgłasza istniejące ostrzeżenie przyszłego native config loader Vite; nie dotyczy działania koordynatora. Logi lokalne: `/tmp/cosgral-5-{server-tests,wake-tests,ui-tests,ui-typecheck,server-typecheck,tokens}.log`.
+
+### Niezweryfikowane i odbiór nadzorcy
+
+**Nie uruchamiano zagnieżdżonego Codexa ani pełnego scenariusza dwóch modeli.** Mockowane PASS nie potwierdza odpowiedzi modelu, jego wywołań API, komentarza agenta, zakończenia zadania ani końcowego raportu w rzeczywistym runtime. Nie powtarzano browser smoke dla nowego selektora, dwóch kont/restartu, pełnego `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` ani browser suites. To celowana weryfikacja zadania 5, nie deklaracja gotowości całego monorepo do PR/produkcji.
+
+Nadzorca: poza sandboxem uruchomić osobną instancję local_trusted z trwałym JWT zgodnie z sekcją Codex #5 w `docs/cosgral/uruchomienie-linux.md`; po health 200 uruchomić dokładnie (dla własnego istniejącego logowania w `$HOME/.codex`):
+
+```sh
+node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex" --timeout-sec 420
+```
+
+Skrypt pozostawia firmę, projekt, agentów i dwa katalogi testowe do inspekcji; pauzuje obu agentów i anuluje aktywne runy. Nie kopiować poświadczeń ani używać flag bypass. Dopiero rzeczywisty PASS pozwala zaliczyć delegowanie modeli. Następny zakres produktowy po odbiorze: **presence/typing**, następnie **izolowane worktrees** i ich bezpieczne równoległe wykonanie. Te funkcje nie są częścią zakończonych tu zmian.
+
+### Dodatkowa regresja i przegląd końcowy
+
+- `pnpm --filter @paperclipai/server exec vitest run src/__tests__/issues-checkout-wakeup.test.ts src/__tests__/heartbeat-task-context.test.ts src/__tests__/agent-conversations.test.ts`: **3 pliki / 54 testy PASS, exit 0**. Sprawdzono otoczenie zmienionego checkoutu, kontekst heartbeat i zachowanie prywatnych rozmów. Testy kontekstu emitują ostrzeżenia „runtime connection tools could not be delivered” w środowisku testowym; nie uznano ich za dowód dostarczenia narzędzi do realnego modelu. Log: `/tmp/cosgral-5-regressions.log`.
+- Powtórzony po rozszerzeniu testów `pnpm --filter @paperclipai/server exec tsc --noEmit`: **PASS, exit 0**, log `/tmp/cosgral-5-server-typecheck-final.log`.
+- Niezależny przegląd read-only nie wskazał konkretnego błędu produkcyjnego wyboru/uprawnień/UI. Wskazał lukę asercji skryptu: sam znacznik `delegation-complete` nie sprawdzał treści raportu. Dodano 4 przypadki negatywne (sam znacznik, inne zadanie, brak ok, brak done); przed poprawką **4 FAIL**, po poprawce **29/29 PASS, exit 0**. Asercja wymaga identyfikatora dziecka i potwierdzenia słów ok/done, poza niezależnym sprawdzeniem statusu/autora/czasu. Komenda: `node --test scripts/cosgral-e2e-delegation.test.mjs`. Logi: `/tmp/cosgral-5-report-red.log` i `/tmp/cosgral-5-node-tests.log`. Kontrola składni skryptu po tej zmianie: **exit 0**.
+
+
+### Kontynuacja po żywym FAIL delegowania (3 XI, Codex #5)
+
+**Przyczyna potwierdzona przez API i logi 3199:** rozmowa `COSA-1` to
+`355c894d-a2c4-406a-a374-c78ca43eda03`; wykonane dziecko `COSA-2` to
+`463116ac-f222-40a4-80e6-340adc065921` (firma
+`c1ac057d-f0c1-48d1-879c-4ad3dddc74d9`). Instrukcje heartbeat, skill oraz
+instrukcja i asercja skryptu e2e błędnie wymagały `in_review` na wspólnym kanale.
+Run `d35d583d-45eb-4457-b0a5-f686ec3406af` dostał 422
+`invalid_issue_disposition` / brak review_path. Run
+`2c54bf70-4df9-43ba-bed0-1851982a5986` wystartował o 18:19:56, przed zakończeniem
+dziecka, ale jego zapisany kontekst zawiera już `issue_children_completed`:
+kolejka mogła scalać nowy kontekst z aktywną turą, nie gwarantując osobnego raportu.
+Run z 18:20:48 (`fddccd22-e1ee-4750-9351-8487dc696e7c`) miał rzeczywiście
+`wakeReason=issue_disposition_repair`, nie nową turę raportowania. Log żądał
+wyłącznie naprawy dyspozycji; agent próbował niedostępnego resolve (404), utworzył
+pytanie do człowieka i zaparkował kanał w `in_review`. Nie brakowało samego
+mechanizmu wake rodzica: brakowało odrębnej semantyki kanału i zachowania zdarzenia.
+
+**Zmiany:**
+
+- Polityka wspólnego kanału odrzuca taskowe statusy `in_review`, `blocked`, `done`,
+  `cancelled` (także `backlog`); checkout może technicznie oznaczać aktywność
+  `in_progress`, a serwer kończy turę w neutralnym `todo`. Agent tylko odpowiada
+  komentarzem i tworzy autoryzowane zadania. Prywatny Chat zachowuje własny tryb.
+- `heartbeat/project-conversation-turn.ts` kończy turę przed zwolnieniem blokady,
+  z kontrolą firmy, przypisania i execution/checkout ownership. Nie nadpisuje
+  nowszego runu. Brak odpowiedzi lub failed/timed_out/cancelled zostawia jeden
+  komentarz systemowy na run, z audytem; nie publikuje surowych błędów/sekretów ani
+  sukcesu za model. UI pokazuje autora „System”.
+- Kanał jest pomijany przez bezpośrednie i okresowe recovery dyspozycji, review
+  path, handoff, liveness oraz retry wymuszający sam komentarz. Nie jest też
+  traktowany jako wykonywalne zadanie przez timer; celowany test odtworzył ten
+  dodatkowy błąd przed poprawką, a zwykłe zadanie nadal aktywuje timer. Native committer
+  zachowuje status kanału zamiast nadawać dyspozycję zadania. Zwykłe zadania
+  wykonawców nadal podlegają normalnemu recovery, approvals, pauzom i budżetom.
+- Wspólny kanał nie scala wake z aktywnym runem. Rzeczywista kolejka PostgreSQL
+  zapisuje deferred wake i po zwolnieniu promuje osobny run, zachowując
+  `completedChildIssueId` i `issue_children_completed`. Prompt pełny i wznawiany
+  mówi wprost: zakończone dziecko → sprawdź stan/komentarze i raportuj w rozmowie,
+  bez ponownej delegacji i bez zmiany statusu kanału.
+- Zakończone dziecko kanału budzi koordynatora także wtedy, gdy inne dziecko
+  pozostaje otwarte. Zwykły rodzic nadal czeka na zakończenie wszystkich dzieci.
+  Obie ścieżki routes oraz native completion korzystają z istniejącego mechanizmu.
+- Usunięto wymaganie `in_review` również z e2e. Odbiór wymaga neutralnego `todo`
+  po zakończeniu runów. Zachowano poprawkę nadzorcy czekającą na gotowość agentów;
+  używa teraz wstrzykniętego sleep (w CLI nadal prawdziwy czas), a mock odtwarza
+  paused/verifying → idle/ready. Aktualizacja obu specyfikacji, runbooka i map.
+
+**Weryfikacja bieżącej kontynuacji:**
+
+- RED przed poprawką: 10 FAIL w 4 plikach (polityka, prompt, rzeczywiste routes,
+  brak settlement/komentarzy), osobno czerwony test legacy continuation.
+  Test UI również odtworzył brak oznaczenia autora systemowego. Skrypt miał
+  dodatkowo nieaktualne mocki gotowości agentów; końcowy test obejmuje oczekiwanie.
+- Zestaw 9 plików: 250 PASS / 1 FAIL — dodatkowo dodany test wykrył nadpisanie
+  statusu nowszego checkoutu. Po poprawce pełny `run-control-reads.test.ts`:
+  **13/13 PASS, exit 0**, także nowszy execution owner i idempotentne notices.
+- Native status committer: **3/3 PASS, exit 0** (146 pozostałych przypadków corpus
+  celowo pominiętych filtrem). UI: **2 pliki / 21 PASS, exit 0**.
+- `node --test scripts/cosgral-e2e-delegation.test.mjs`: **30/30 PASS, exit 0**.
+  Token gates: **PASS, exit 0**. Mapy: **35 obszarów / 193 IDs, exit 0**.
+- Po ochronie nowszego checkoutu: **2 pliki settlement/kolejka / 49 PASS, exit 0**.
+  Dodatkowe regresje prywatnego Chatu, checkout/wake, task context i completion:
+  **4 pliki / 88 PASS, exit 0**. Typecheck serwera i UI: **PASS, exit 0**.
+  Po ostatniej poprawce timera końcowe powtórzenie zestawu: **9 plików / 252 PASS,
+  exit 0** (`/tmp/cosgral5-final-green.log`). Regresje:
+  `/tmp/cosgral5-regressions-final.log`; native: `/tmp/cosgral5-native.log`;
+  UI: `/tmp/cosgral5-ui-final.log`; skrypt: `/tmp/cosgral5-e2e-final.log`.
+  Typecheck serwera powtórzony po ostatniej zmianie timera: **PASS, exit 0**
+  (`/tmp/cosgral5-tsc-final-timer.log`); UI typecheck:
+  `/tmp/cosgral5-ui-tsc-complete.log`. Pozostałe logi: `/tmp/cosgral5-*.log`.
+
+**Granice dowodu i przekazanie:** nie uruchamiano prawdziwego modelu ani nowego
+żywego e2e; 3199 był użyty do odczytu historycznych komentarzy/runów/logów.
+Kontrole routes i kolejki korzystają z rzeczywistego PostgreSQL, a dispatch modelu
+jest zatrzymany/zamockowany. To nie jest PASS pełnego delegowania modeli ani
+PR-ready całego repo. Nie uruchamiano pełnego `pnpm -r typecheck`, `pnpm test:run`,
+`pnpm build` ani browser suites. Bez commit/push. Nie restartowano serwera nadzorcy.
+
+**Nadzorca: zrestartuj zarządzany serwer 3199, aby wczytał zmieniony kod i skill.**
+Następnie po health 200 powtórz odbiór (bez flag bypass):
+
+```sh
+node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex-a" --timeout-sec 420
+```
+
+Stara firma pozostaje dowodem FAIL; nie naprawiano jej danych ani nie dopisywano
+za model brakującego `delegation-complete`. Skrypt tworzy nowy przebieg.
+
+Komendy odtworzenia celowanej weryfikacji tej poprawki (bez modeli):
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 \
+  src/services/project-conversation-policy.test.ts \
+  src/services/heartbeat/{task-markdown,run-control-reads,queue,run-lifecycle}.test.ts \
+  src/__tests__/project-conversations.test.ts \
+  src/services/recovery/{legacy-continuation,successful-run-handoff}.test.ts \
+  src/modules/wake-queue/application/use-cases.test.ts
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 \
+  src/__tests__/{issues-checkout-wakeup,heartbeat-task-context,agent-conversations}.test.ts \
+  src/services/heartbeat/run-completion.test.ts
+pnpm --filter @paperclipai/server exec vitest run \
+  src/__tests__/native-status-arbiter-corpus.test.ts -t 'preserves project conversations'
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts
+node --test scripts/cosgral-e2e-delegation.test.mjs
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui typecheck
+pnpm check:token-gates
+node scripts/check-maps.mjs
+```
+
+### Nadzorca (2026-11-03 ~20:20 CET) – stan po Codex t6
+- Zmiany Codexa #5/#6 (rozmowa projektu bez dyspozycji zadania, wake rodzica po zakończeniu dziecka, widoczność błędów w rozmowie, wybór koordynatora, skrypt e2e delegowania) zacommitowane po przejściu celowanych testów: serwer 9 plików/252 testy PASS, UI ProjectConversation 18 PASS, node:test scripts/cosgral-e2e-delegation 30 PASS.
+- NIEZWERYFIKOWANE: pełne e2e delegowania z prawdziwym modelem po poprawce. Wymaga restartu serwera 3199, potem: `node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex-a" --timeout-sec 420`.
+- Dalej: presence/typing, potem izolowane worktrees. Uwaga: `pnpm` uruchamiać z /home/box/tools/bin (corepack bez zapisu).

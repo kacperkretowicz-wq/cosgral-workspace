@@ -1,5 +1,14 @@
 # Paperclip Specification
 
+COSGRAL shared project channels use a persistent project issue and its
+`assigneeAgentId` as the selected coordinator, independently of personal Agent
+Chat. Authorized project management selects a company agent with project access;
+messages and each delegated child completion reuse normal wakes. The channel has
+no task disposition: agents only comment; the server settles turns and exposes
+failed or unanswered turns in the thread. Children retain
+project/source links and ordinary approval/budget gates. See the COSGRAL shared
+project coordinator section in `SPEC-implementation.md` for the concrete contract.
+
 Target specification for the Paperclip control plane. Living document — updated incrementally during spec interviews.
 
 Proactive in-app updates let an active standard task or routine publish to its

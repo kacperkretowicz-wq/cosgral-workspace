@@ -8,6 +8,10 @@ const input: LegacyContinuationInput = {
   gates: { stopped: false, paused: false, budgetBlocked: false, pendingWait: false, activeExecution: false, ownedLifecycle: false, conversation: false, agentInvokable: true },
 };
 describe("legacy continuation authority", () => {
+  it("never requires a task disposition from a project conversation", () => {
+    expect(decideLegacyContinuation({ ...input, issue: { ...input.issue!, originKind: "cosgral_project_conversation" } }))
+      .toMatchObject({ kind: "skip", reason: "conversation" });
+  });
   it("requests agent repair for a successful process without a task disposition", () => {
     expect(decideLegacyContinuation(input)).toMatchObject({ kind: "enqueue", nextAttempt: 1 });
   });

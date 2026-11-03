@@ -4,25 +4,27 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectConversation } from "./ProjectConversation";
+import { queryKeys } from "../lib/queryKeys";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  live: null as ((event: { companyId: string; type: string; payload: Record<string, unknown> }) => void) | null, tree: vi.fn(), release: vi.fn(), get: vi.fn(), getConversation: vi.fn(), openConversation: vi.fn(), projects: vi.fn(),
-  comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(),
+  live: null as ((event: { companyId: string; type: string; payload: Record<string, unknown> }) => void) | null, tree: vi.fn(), release: vi.fn(), get: vi.fn(), getConversation: vi.fn(), openConversation: vi.fn(), setCoordinator: vi.fn(), projects: vi.fn(),
+  comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(), liveRuns: vi.fn(),
 }));
-vi.mock("../api/projects", () => ({ projectsApi: { get: mocks.get, getConversation: mocks.getConversation, openConversation: mocks.openConversation, list: mocks.projects } }));
+vi.mock("../api/projects", () => ({ projectsApi: { get: mocks.get, getConversation: mocks.getConversation, openConversation: mocks.openConversation, setConversationCoordinator: mocks.setCoordinator, list: mocks.projects } }));
 vi.mock("../api/issues", () => ({ issuesApi: { listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
 vi.mock("../api/agents", () => ({ agentsApi: { list: mocks.agents } }));
+vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForIssue: mocks.liveRuns } }));
 vi.mock("../api/access", () => ({ accessApi: { listUserDirectory: mocks.directory } }));
 vi.mock("../api/auth", () => ({ authApi: { getSession: mocks.session } }));
 vi.mock("@/lib/router", () => ({ useParams: () => ({ companyPrefix: "COS", projectId: "p" }), Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => <a href={to} {...props}>{children}</a> }));
-vi.mock("../context/LiveUpdatesProvider", () => ({ useCompanyLiveEvent: (handler: typeof mocks.live) => { mocks.live = handler; } }));
+vi.mock("../context/LiveUpdatesProvider", () => ({ useTaskRunLiveUpdates: () => false, useCompanyLiveEvent: (handler: typeof mocks.live) => { mocks.live = handler; } }));
 const company = { id: "c", issuePrefix: "COS" };
 vi.mock("../context/CompanyContext", () => ({ useCompany: () => ({ companies: [company], selectedCompanyId: "c", setSelectedCompanyId: vi.fn() }) }));
 vi.mock("../context/ThemeContext", () => ({ useTheme: () => ({ theme: "dark", setTheme: vi.fn(), toggleTheme: vi.fn() }) }));
 vi.mock("../components/MarkdownBody", () => ({ MarkdownBody: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
-vi.mock("../components/MarkdownEditor", () => ({ MarkdownEditor: ({ value, onChange, onSubmit, readOnly, submitOnEnter }: { value: string; onChange: (v: string) => void; onSubmit: () => void; readOnly: boolean; submitOnEnter: boolean }) => <textarea aria-label="Wiadomość" value={value} readOnly={readOnly} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (submitOnEnter && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }} /> }));
+vi.mock("../components/MarkdownEditor", () => ({ MarkdownEditor: ({ value, onChange, onSubmit, readOnly, submitOnEnter, placeholder }: { placeholder: string; value: string; onChange: (v: string) => void; onSubmit: () => void; readOnly: boolean; submitOnEnter: boolean }) => <textarea aria-label="Wiadomość" placeholder={placeholder} value={value} readOnly={readOnly} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (submitOnEnter && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }} /> }));
 
 const originalViewport = Object.getOwnPropertyDescriptor(window, "visualViewport");
 let root: Root;
@@ -39,9 +41,10 @@ async function type(body: string) {
 }
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.liveRuns.mockResolvedValue([]);
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mocks.get.mockResolvedValue({ id: "p", name: "Uszko", companyId: "c" });
-  mocks.getConversation.mockResolvedValue({ issueId: "chat", identifier: "COS-1" });
+  mocks.getConversation.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: null, canManageCoordinator: true });
   mocks.projects.mockResolvedValue([{ id: "p", name: "Uszko" }]);
   mocks.comments.mockResolvedValue([{ id: "comment", body: "Wspólna historia", authorUserId: "u", createdAt: new Date().toISOString() }]);
   mocks.tree.mockResolvedValue({ activePauseHold: null }); mocks.release.mockResolvedValue({});
@@ -57,6 +60,81 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); client.clear(); host.remove(); if (originalViewport) Object.defineProperty(window, "visualViewport", originalViewport); else delete (window as { visualViewport?: unknown }).visualViewport; });
 
 describe("project conversation", () => {
+  it("shows coordinator work only for an active run in this conversation", async () => {
+    client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "running" }]);
+    client.setQueryData(["projects", "conversation", "c", "p"], { issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true });
+    await settle();
+    expect(host.textContent).not.toContain("Ala pracuje nad tą rozmową");
+    mocks.liveRuns.mockResolvedValue([{ id: "run", agentId: "a", status: "running" }]);
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.liveRuns("chat") }); }); await settle();
+    expect(mocks.liveRuns).toHaveBeenCalledWith("chat");
+    expect(host.textContent).toContain("Ala pracuje nad tą rozmową");
+    mocks.liveRuns.mockResolvedValue([]);
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.liveRuns("chat") }); }); await settle();
+    expect(host.textContent).not.toContain("Ala pracuje nad tą rozmową");
+  });
+  it("shows coordinator failures as system messages in the conversation", async () => {
+    mocks.comments.mockResolvedValue([{ id: "notice", authorType: "system", body: "Nie udało się zakończyć odpowiedzi koordynatora.", createdAt: new Date().toISOString() }]);
+    await act(async () => { await client.invalidateQueries({ queryKey: ["issues", "comments", "chat"] }); }); await settle();
+    expect(host.querySelector('article[aria-label="System"]')?.textContent).toContain("Nie udało się");
+  });
+  it("selects and persists the coordinator without sending a message", async () => {
+    mocks.agents.mockResolvedValue([{ id: "a", name: "Ala", status: "idle" }]);
+    mocks.setCoordinator.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: "a", canManageCoordinator: true });
+    await act(async () => { await client.invalidateQueries({ queryKey: ["agents", "c"] }); }); await settle();
+    expect(host.textContent).toContain("Wybierz koordynatora");
+    const select = host.querySelector<HTMLSelectElement>('select[aria-label="Koordynator projektu"]')!;
+    expect(select).not.toBeNull();
+    await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
+    expect(mocks.setCoordinator).toHaveBeenCalledWith("p", "a", "c");
+    expect(host.querySelector("textarea")?.placeholder).toBe("Wiadomość do Ala…");
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("shows coordinator readiness and observed company execution without claiming a reply", async () => {
+    client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "paused" }, { id: "b", name: "Beata", status: "running" }]);
+    client.setQueryData(["projects", "conversation", "c", "p"], { issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: false });
+    await settle();
+    expect(host.textContent).toContain("Koordynator jest wstrzymany");
+    expect(host.textContent).toContain("Beata pracuje w firmie");
+    expect(host.querySelector<HTMLSelectElement>("select")?.disabled).toBe(true);
+    await type("Szkic");
+    await act(async () => click("Wyślij"));
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(host.querySelector("textarea")?.value).toBe("Szkic");
+  });
+  it("selects the first coordinator through the same endpoint before a conversation exists", async () => {
+    client.setQueryData(["projects", "conversation", "c", "p"], null);
+    client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
+    mocks.setCoordinator.mockResolvedValue({ issueId: "new-chat", identifier: "COS-2", coordinatorAgentId: "a", canManageCoordinator: true });
+    await settle(); await type("Szkic przed wyborem");
+    const select = host.querySelector<HTMLSelectElement>("select")!;
+    await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
+    expect(mocks.setCoordinator).toHaveBeenCalledWith("p", "a", "c");
+    expect(mocks.openConversation).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(host.querySelector("textarea")?.value).toBe("Szkic przed wyborem");
+    expect(host.querySelector("textarea")?.placeholder).toBe("Wiadomość do Ala…");
+    expect(host.querySelector('a[href="/issues/COS-2"]')).not.toBeNull();
+  });
+  it("preserves the draft when selecting a coordinator for an empty conversation fails", async () => {
+    client.setQueryData(["projects", "conversation", "c", "p"], null);
+    client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
+    mocks.setCoordinator.mockRejectedValue(new Error("Forbidden"));
+    await settle(); await type("Zachowany szkic");
+    const select = host.querySelector<HTMLSelectElement>("select")!;
+    await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
+    expect(host.textContent).toContain("Nie udało się zmienić koordynatora");
+    expect(host.querySelector("textarea")?.value).toBe("Zachowany szkic");
+    expect(select.value).toBe("");
+    expect(mocks.openConversation).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("refreshes the persisted coordinator on company activity", async () => {
+    mocks.getConversation.mockResolvedValue({ issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true });
+    client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
+    await act(async () => mocks.live?.({ companyId: "c", type: "activity.logged", payload: { action: "project.conversation_coordinator_changed", entityId: "chat" } })); await settle();
+    expect(host.querySelector("textarea")?.placeholder).toBe("Wiadomość do Ala…");
+  });
   it("shows stored messages and author, hides the details panel and absent task cards", async () => {
     expect(host.textContent).toContain("Wspólna historia");
     expect(host.textContent).toContain("Anna");

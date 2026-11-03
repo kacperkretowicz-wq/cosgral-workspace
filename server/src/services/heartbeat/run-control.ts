@@ -1,3 +1,4 @@
+import { settleProjectConversationTurn } from "./project-conversation-turn.js";
 import { instanceSettingsService } from "../instance-settings.js";
 import { writeDeferredExecutionWait } from "../deferred-execution-wait.js";
 import type { DeferredReceiptRecoveryOptions } from "../deferred-execution-notifications.js";
@@ -866,6 +867,9 @@ export function createHeartbeatRunControl(db: Db, dependencies: HeartbeatRunCont
   ) {
     try {
       const [source] = await db.select({
+        id: heartbeatRuns.id, companyId: heartbeatRuns.companyId, agentId: heartbeatRuns.agentId, status: heartbeatRuns.status,
+        contextIssueId: sql<unknown>`${heartbeatRuns.contextSnapshot}->'issueId'`,
+        contextTaskId: sql<unknown>`${heartbeatRuns.contextSnapshot}->'taskId'`,
         errorCode: heartbeatRuns.errorCode,
         livenessState: heartbeatRuns.livenessState,
         resultJson: sql<Record<string, unknown>>`jsonb_build_object(
@@ -874,6 +878,9 @@ export function createHeartbeatRunControl(db: Db, dependencies: HeartbeatRunCont
       }).from(heartbeatRuns).where(and(
         eq(heartbeatRuns.id, run.id), eq(heartbeatRuns.companyId, run.companyId),
       ));
+      const projectConversationSettled = source ? await settleProjectConversationTurn(db, {
+        ...source, issueId: readNonEmptyString(source.contextIssueId) ?? readNonEmptyString(source.contextTaskId),
+      }) : false;
       const sourceHandoff = await pendingCaseHandoffForRun(db, run.id, run.companyId);
       const { postCommitEffects } = await wakeQueue.releaseIssueExecution({
         companyId: run.companyId,
@@ -881,7 +888,7 @@ export function createHeartbeatRunControl(db: Db, dependencies: HeartbeatRunCont
         now: new Date(),
         // A durable authentication card owns recovery. This covers the review path,
         // while continuation classification blocks periodic generic retries.
-        suppressImmediateRecovery: options.suppressImmediateRecovery || isAiAuthenticationBlocked(source) || Boolean(sourceHandoff),
+        suppressImmediateRecovery: options.suppressImmediateRecovery || projectConversationSettled || isAiAuthenticationBlocked(source) || Boolean(sourceHandoff),
         ...(options.resumeStrandedQueue ? { resumeStrandedQueue: true } : {}),
       });
       if (options.deferredPostCommitEffects) {

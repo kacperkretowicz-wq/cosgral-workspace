@@ -1,3 +1,4 @@
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { agentWakeupRequests, agents, heartbeatRuns, issues } from "@paperclipai/db";
@@ -493,6 +494,7 @@ export function decideSuccessfulRunHandoff(input: {
     return { kind: "skip", reason: "missing issue comment retry owns the next action" };
   }
   if (!issue) return { kind: "skip", reason: "issue not found" };
+  if (isProjectConversation(issue)) return { kind: "skip", reason: "project conversation has no task disposition" };
   if (!agent) return { kind: "skip", reason: "agent not found" };
   if (issue.companyId !== run.companyId || agent.companyId !== run.companyId) {
     return { kind: "skip", reason: "company scope mismatch" };

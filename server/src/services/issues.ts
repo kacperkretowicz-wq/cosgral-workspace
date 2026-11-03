@@ -9591,15 +9591,15 @@ export function issueService(db: Db) {
         )
         .orderBy(asc(issues.issueNumber), asc(issues.createdAt));
       if (children.length === 0) return null;
-      if (
-        !children.every(
-          (child) => child.status === "done" || child.status === "cancelled",
-        )
-      ) {
-        return null;
-      }
+      // A channel spans independent requests: report each completed child even
+      // while another request is still running. Ordinary parents wait for all.
+      const completedChannelChild = parent.originKind === PROJECT_CONVERSATION_ORIGIN && completedChildResult
+        ? children.find(child => child.id === completedChildResult.issueId && ["done", "cancelled"].includes(child.status))
+        : null;
+      if (!completedChannelChild && !children.every(child => ["done", "cancelled"].includes(child.status))) return null;
+      const reportChildren = completedChannelChild ? [completedChannelChild] : children;
 
-      const childIdsForSummaries = children
+      const childIdsForSummaries = reportChildren
         .slice(0, MAX_CHILD_COMPLETION_SUMMARIES)
         .map((child) => child.id);
       const commentRows =
@@ -9626,7 +9626,7 @@ export function issueService(db: Db) {
           latestCommentByIssueId.set(comment.issueId, comment.body);
         }
       }
-      const childIssueSummaries: ChildIssueCompletionSummary[] = children
+      const childIssueSummaries: ChildIssueCompletionSummary[] = reportChildren
         .slice(0, MAX_CHILD_COMPLETION_SUMMARIES)
         .map((child) => ({
           ...child,
@@ -9642,10 +9642,10 @@ export function issueService(db: Db) {
         onboardingCompletion: parent.originKind === "onboarding_first_task",
         id: parent.id,
         assigneeAgentId: parent.assigneeAgentId,
-        childIssueIds: children.map((child) => child.id),
+        childIssueIds: reportChildren.map((child) => child.id),
         childIssueSummaries,
         childIssueSummaryTruncated:
-          children.length > childIssueSummaries.length,
+          reportChildren.length > childIssueSummaries.length,
       };
     },
 
@@ -12266,6 +12266,7 @@ export function issueService(db: Db) {
               eq(issues.id, id),
               inArray(issues.status, expectedStatuses),
               or(isNull(issues.assigneeAgentId), sameRunAssigneeCondition),
+              or(ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN), eq(issues.assigneeAgentId, agentId)),
               executionLockCondition,
             ),
           )
@@ -12650,7 +12651,7 @@ export function issueService(db: Db) {
           .update(issues)
           .set({
             status: releaseStatus,
-            assigneeAgentId: isTerminal ? existing.assigneeAgentId : null,
+            assigneeAgentId: isTerminal || existing.originKind === PROJECT_CONVERSATION_ORIGIN ? existing.assigneeAgentId : null,
             checkoutRunId: null,
             executionRunId: null,
             executionAgentNameKey: null,

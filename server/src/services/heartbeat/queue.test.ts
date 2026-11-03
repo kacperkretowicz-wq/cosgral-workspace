@@ -1,3 +1,5 @@
+import { createWakeQueue } from "../../modules/wake-queue/index.js";
+import { mergeCoalescedContextSnapshot } from "./run-preparation.js";
 import { claimNativeSessionResumptions } from "../native-runtime/native-finalization-reconciler.js";
 import type { Db } from "@paperclipai/db";
 import { agents, agentWakeupRequests, caseHandoffs, cases, companies, createDb, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS, heartbeatRuns, issueComments, issues, nativeRunFinalizations } from "@paperclipai/db";
@@ -7,7 +9,7 @@ import { resolveExternalTestDatabaseUrl } from "../../__tests__/helpers/external
 import { getEmbeddedPostgresTestSupport, startEmbeddedPostgresTestDatabase } from "../../__tests__/helpers/embedded-postgres.js";
 import { createPostgresWakeQueueAdapter } from "../../modules/wake-queue/adapters/postgres.js";
 import { createReleaseIssueExecution } from "../../modules/wake-queue/application/use-cases.js";
-import { createHeartbeatQueue, type HeartbeatQueueDependencies } from "./queue.js";
+import { createHeartbeatQueue, shouldDeferFollowupWakeForSameIssue, shouldQueueFollowupForRunningIssueWake, type HeartbeatQueueDependencies } from "./queue.js";
 import { createHeartbeatRunControl } from "./run-control.js";
 import { callbacks as runControlCallbacks } from "./__tests__/run-control-fixtures.js";
 
@@ -120,6 +122,60 @@ describe.skipIf(!support.supported)("heartbeat queue database wiring", () => {
     await db.update(issues).set({ executionRunId: run.id, executionAgentNameKey: agent.name, executionLockedAt: new Date() }).where(eq(issues.id, issue.id));
     return { company, agent, issue, wake, run };
   }
+
+  it("defers child completion behind an active project conversation run instead of mutating its wake", async () => {
+    const { company, agent, issue, run } = await fixture();
+    await db.update(issues).set({ originKind: "cosgral_project_conversation" }).where(eq(issues.id, issue.id));
+    const deps = callbacks(db);
+    deps.getAgent.mockResolvedValue(agent);
+    deps.instanceSettings.getExperimental.mockResolvedValue({} as Awaited<ReturnType<HeartbeatQueueDependencies["instanceSettings"]["getExperimental"]>>);
+    const wakeQueue = createWakeQueue(db, {
+      resolveResponsibleUserId: async () => "responsible-user",
+      getRoutineEnv: async () => ({ routineId: null, env: null, responsibleUserId: null }),
+      resolveSessionBeforeForWakeup: async () => null,
+      recovery: { escalateStrandedAssignedIssue: async () => undefined, escalateStrandedRecoveryIssueInPlace: async () => undefined },
+      wakeAdmissionHelpers: { filterZombieCoalesceTarget: deps.filterZombieCoalesceTarget,
+        mergeCoalescedContextSnapshot, shouldDeferFollowupWakeForSameIssue, shouldQueueFollowupForRunningIssueWake },
+    });
+    deps.wakeQueue.createAdmissionTransactionScope.mockImplementation(wakeQueue.createAdmissionTransactionScope);
+    deps.wakeQueue.admitWakeBehindIssueExecution.mockImplementation(wakeQueue.admitWakeBehindIssueExecution);
+    const childId = "11111111-1111-4111-8111-111111111111";
+    await createHeartbeatQueue(db, deps).enqueueWakeup(agent.id, {
+      source: "automation", reason: "issue_children_completed", requestedByActorType: "system",
+      payload: { issueId: issue.id, completedChildIssueId: childId },
+      contextSnapshot: { issueId: issue.id, completedChildIssueId: childId },
+    });
+    expect(deps.wakeQueue.admitWakeBehindIssueExecution).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      companyId: company.id, issueId: issue.id, reason: "issue_children_completed", allowRunCoalescing: false,
+      contextSnapshot: expect.objectContaining({ completedChildIssueId: childId }),
+    }));
+    expect((await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, run.id)))[0].contextSnapshot).toEqual(run.contextSnapshot);
+    const pending = await db.select().from(agentWakeupRequests).where(eq(agentWakeupRequests.reason, "issue_execution_deferred"));
+    expect(pending).toHaveLength(1);
+    expect(pending[0].status).toBe("deferred_issue_execution");
+    await db.update(heartbeatRuns).set({ status: "succeeded" }).where(eq(heartbeatRuns.id, run.id));
+    await db.insert(issueComments).values({ companyId: company.id, issueId: issue.id, authorAgentId: agent.id,
+      authorType: "agent", createdByRunId: run.id, body: "Delegation started" });
+    const controlDeps = runControlCallbacks(db);
+    vi.mocked(controlDeps.wakeQueue.releaseIssueExecution).mockImplementation(wakeQueue.releaseIssueExecution);
+    await createHeartbeatRunControl(db, controlDeps).releaseIssueExecutionAndPromote(run);
+    const successor = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.wakeupRequestId, pending[0].id));
+    expect(successor).toHaveLength(1);
+    expect(successor[0].contextSnapshot).toMatchObject({ issueId: issue.id,
+      completedChildIssueId: childId, wakeReason: "issue_children_completed" });
+    expect((await db.select().from(issues).where(eq(issues.id, issue.id)))[0].status).toBe("todo");
+    expect(deps.executeRun).not.toHaveBeenCalled();
+  });
+
+  it("does not treat an idle project channel as timer work, while ordinary tasks remain actionable", async () => {
+    const { company, agent, issue } = await fixture("succeeded");
+    await db.update(issues).set({ originKind: "cosgral_project_conversation" }).where(eq(issues.id, issue.id));
+    const configured = { ...agent, runtimeConfig: { heartbeat: { enabled: true, intervalSec: 60, skipTimerWhenNoActionableWork: true } } };
+    const queue = createHeartbeatQueue(db, callbacks(db));
+    expect(await queue.nextTimerHeartbeatAt(configured, new Date())).toBeNull();
+    await db.insert(issues).values({ companyId: company.id, title: "Ordinary task", status: "todo", assigneeAgentId: agent.id });
+    expect(await queue.nextTimerHeartbeatAt(configured, new Date())).not.toBeNull();
+  });
 
   async function strandedMention(runtimeMode = "legacy") {
     const seeded = await fixture("succeeded");

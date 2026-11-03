@@ -193,3 +193,56 @@ node scripts/check-maps.mjs
 ```
 
 Rzeczywiste wyniki sesji i ścieżki zrzutów: sekcja Codex #4 w `COSGRAL-PRZEKAZANIE.md`.
+
+## Koordynator i delegowanie (Codex #5)
+
+W rozmowie projektu wybierz koordynatora w selektorze nad composerem. Wymagane
+są uprawnienia właściciela projektu lub administratora oraz dostęp do projektu.
+Agent musi należeć do firmy, mieć dostęp do projektu i być gotowy do pracy.
+Model, adapter i źródło dostępu pozostają w konfiguracji wybranego agenta.
+Zmiana tworzy widoczny komentarz; podczas wykonania zmiana jest odrzucana (409).
+Wiadomość użytkownika budzi wybranego agenta zwykłym mechanizmem komentarzy.
+Instrukcje koordynatora wymagają zwykłych zadań wykonawców z `parentId` rozmowy,
+tym samym `projectId`, linkiem źródłowym i kluczem idempotencji. Karty korzystają
+z dostępnych zadań projektu. Po przekazaniu koordynator kończy run bez zmiany
+statusu rozmowy. Serwer przywraca neutralne `todo`; rozmowa nie ma dyspozycji
+zadania (`in_review`/`blocked`/`done`). Zakończenie każdego dziecka budzi go do
+raportu, także podczas pracy nad innym zleceniem; wake czeka za aktywnym runem.
+Błąd lub brak zapisanej odpowiedzi jest widoczny jako komentarz systemowy. Pauzy, uprawnienia, budżety i approvals
+nadal obowiązują. Sam wskaźnik aktywnego runu nie potwierdza odpowiedzi modelu.
+
+Odbiór rzeczywistych modeli wykonuje nadzorca **poza sandboxem tej sesji**.
+Użyj osobnej instancji `local_trusted` na 3199, z trwałym JWT i istniejącym
+logowaniem w zapisywalnym `CODEX_HOME`, według sekcji „Trwały JWT agentów i
+powtarzalny e2e” powyżej. Nie używaj istniejącej instancji authenticated na 3198.
+Po health 200, z katalogu repo uruchom:
+
+```sh
+node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex" --timeout-sec 420
+```
+
+Skrypt tworzy nową firmę, projekt i dwóch agentów `codex_local`, `runner=legacy`,
+`engine=cli`, model `gpt-6.1-sol`, reasoning `low`, bypass `false`, bez `extraArgs`.
+Wykonawca ma `reportsTo` koordynatora; osobne katalogi robocze mają `git init`.
+Nie kopiuje poświadczeń. Jedynym wyzwalaczem pracy jest komentarz użytkownika;
+skrypt nie tworzy zadania wykonawcy, nie zapisuje wyników ani nie budzi ręcznie.
+Niezależny odczyt przed sprzątaniem wymaga komentarza koordynatora, dokładnie
+jednego zadania wykonawcy w projekcie i pod rozmową, jego `done` i własnego `ok`,
+późniejszego raportu koordynatora oraz jego kontynuacji po zakończeniu dziecka.
+PASS wymaga samych udanych runów (łącznie 3–6), bez retry/aktywnego wykonania
+przez 75 s stabilnej obserwacji. Obserwacja wlicza się w timeout.
+Exit 0 = PASS, exit 1 = FAIL. Po teście obaj agenci są pauzowani, aktywne runy
+anulowane; dane i katalogi `/tmp/cosgral-e2e-{coordinator,worker}-*` pozostają do
+inspekcji. SIGKILL/utrata API wymaga ręcznego sprawdzenia tych agentów.
+
+Testy bez uruchamiania modelu:
+
+```sh
+node --test scripts/cosgral-e2e-delegation.test.mjs
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/project-conversation-policy.test.ts src/services/heartbeat/task-markdown.test.ts
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts
+```
+
+Test skryptu przeniesiono z `server/scripts/` (runner Vitest) do `scripts/`
+(wbudowany runner Node). Bieżące dowody obejmują bazę/uprawnienia/API do wywołań
+wake i mockowane asercje skryptu; pełnego cyklu dwóch modeli jeszcze nie zaliczono.

@@ -1,3 +1,4 @@
+import { isProjectConversation } from "../project-conversation-policy.js";
 import { notifyScheduledRetryDispatch } from "../run-dispatch-notifications.js";
 import { notifyNativeEnvironmentSettlement } from "../native-environment-settlement-notifications.js";
 import { notifyExternalAgentSettlement } from "../../modules/external-agents/index.js";
@@ -3849,7 +3850,7 @@ export function recoveryService(
           Boolean(readNonEmptyString(context.goalControlRequestId)) || context.resumeSessionGoalHeartbeat === true ||
           isPluginManagedIssueLifecycle(issue) || routine.length > 0 || workspaceChildren.length > 0 ||
           Boolean(goal[0]?.status && goal[0].status !== "complete") || Boolean(active && !ownsRepair),
-        conversation: Boolean(issue.conversationAgentId) || isWaitingConversation(issue),
+        conversation: isProjectConversation(issue) || Boolean(issue.conversationAgentId) || isWaitingConversation(issue),
         agentInvokable: Boolean(agent && await isAgentInvokable(agent) && isHeartbeatWakeOnDemandEnabled(agent)),
       },
     });
@@ -3903,7 +3904,7 @@ export function recoveryService(
       )
       .limit(1)
       .then((rows) => rows[0] ?? null);
-    if (!current || current.status === "done" || current.status === "cancelled")
+    if (!current || isProjectConversation(current) || current.status === "done" || current.status === "cancelled")
       return "skipped";
 
     const episode = options.legacyEpisode ?? (
@@ -4606,6 +4607,7 @@ export function recoveryService(
     }
 
     for (const issue of candidates) {
+      if (isProjectConversation(issue)) { result.skipped += 1; continue; }
       if (issue.originKind === "chat_channel") {
         if (opts?.skipExternalConversationSettlement) {
 

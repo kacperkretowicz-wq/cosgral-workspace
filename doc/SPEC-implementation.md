@@ -2120,6 +2120,31 @@ Agent appearances are stable, versioned ClipLab end-cap personas, separate from
 behavioral instructions. Compact surfaces use on-demand cached PNG URLs; larger
 placements may use a lazy live character. See [agent-personas.md](agent-personas.md)
 for persistence, migration, rendering, and integration contracts.
+### COSGRAL shared project coordinator (2026-11-03)
+
+The shared project thread (`originKind=cosgral_project_conversation`) stores its
+coordinator in `assigneeAgentId`, reusing ordinary issue execution. It leaves
+personal `conversationAgentId` unset so project members share the same channel
+and ordinary delegated children remain supported. No coordinator migration is needed.
+`PUT /api/projects/:id/conversation/coordinator` accepts `{agentId: UUID | null}`;
+GET/POST conversation responses include `coordinatorAgentId` and
+`canManageCoordinator`. Only project readers with existing project-owner/admin
+management authority may select a ready agent of that company with project access.
+Selection, visible comment and audit are atomic; changing an execution-owned
+channel returns 409. Ordinary issue mutation cannot replace the coordinator.
+Human comments use normal assignee wakes. Coordinator instructions create ordinary
+assigned `todo` children with the same project, source link and stable idempotency
+key, then exit without changing the channel status. The server settles each turn
+back to the neutral `todo` container state. The channel has no task disposition:
+agents cannot set `in_review`, `blocked`, `done` or `cancelled`, and task-disposition
+recovery skips it. Each completed child uses the existing parent wake for verified
+reporting, even while another child remains open. Wakes arriving during an active
+turn are deferred, preserving the completed child context. Failed turns and runs
+without a persisted reply leave a visible system comment. The channel cannot be
+closed, hidden or moved. Existing access,
+approval, pause and budget checks retain authority. Real provider delegation is
+qualified separately by `scripts/cosgral-e2e-delegation.mjs`.
+
 ### Experimental task-backed agent chat (2026-09-10)
 
 Ordinary task and routine runs in standard mode may publish with

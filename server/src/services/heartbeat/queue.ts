@@ -1,3 +1,4 @@
+import { isProjectConversation, PROJECT_CONVERSATION_ORIGIN } from "../project-conversation-policy.js";
 import { notifyExecutionRunWork } from "../execution-control-notifications.js";
 import { PersistedExecutionWaitRefusal, writeDeferredExecutionWait } from "../deferred-execution-wait.js";
 import { notifyDeferredExecutionWork } from "../deferred-execution-notifications.js";
@@ -609,6 +610,7 @@ export function createHeartbeatQueue(db: Db, dependencies: HeartbeatQueueDepende
           isNull(issues.hiddenAt),
           inArray(issues.status, [...TIMER_ACTIONABLE_ISSUE_STATUSES]),
           isNull(issues.conversationAgentId),
+          ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN),
           nonIdleSlackIssueCondition(),
         ),
       )
@@ -3178,6 +3180,7 @@ export function createHeartbeatQueue(db: Db, dependencies: HeartbeatQueueDepende
               id: issues.id,
               companyId: issues.companyId,
               identifier: issues.identifier,
+              originKind: issues.originKind,
               conversationAgentId: issues.conversationAgentId,
               conversationUserId: issues.conversationUserId,
               conversationState: issues.conversationState,
@@ -4094,7 +4097,7 @@ export function createHeartbeatQueue(db: Db, dependencies: HeartbeatQueueDepende
                   contextSnapshot: activeExecutionRun.contextSnapshot,
                   wakeupRequestId: activeExecutionRun.wakeupRequestId,
                 },
-                allowRunCoalescing: isConversation(issue) ? false : opts.allowRunCoalescing,
+                allowRunCoalescing: (isConversation(issue) || isProjectConversation(issue)) ? false : opts.allowRunCoalescing,
                 durableReceipt: receiptRequest
                   ? {
                       id: receiptRequest.id,
@@ -4372,7 +4375,7 @@ export function createHeartbeatQueue(db: Db, dependencies: HeartbeatQueueDepende
               : null;
           // External input owns an exact authorized source batch. Board input
           // must retain its separate receipt, including during normal resume.
-          const canCoalesceComments = !durableRequest && !isConversation(issue) && opts.allowRunCoalescing !== false;
+          const canCoalesceComments = !durableRequest && !isConversation(issue) && !isProjectConversation(issue) && opts.allowRunCoalescing !== false;
           // A resumed receipt already passed admission under this issue lock.
           // Consume it with its successor even when chat keeps other messages
           // in separate turns, or finalization will deliver it a second time.

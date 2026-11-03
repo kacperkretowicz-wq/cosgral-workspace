@@ -2030,6 +2030,21 @@ describe("P6-31 Section 18.13 executable status-authority corpus", () => {
       .rejects.toThrow("native_pending_effect_target_missing:enqueue_continuation");
   }, 30_000);
 
+  it.each(["done", "blocked", "in_review"] as const)("preserves project conversations instead of applying native task disposition %s", async statusAction => {
+    const template = corpus.fixtures.find(candidate => candidate.mode === "native")!;
+    const seeded = await seedFixture({ ...template, id: `project-channel-${randomUUID()}`,
+      given: { ...template.given, priorIssueStatus: "in_progress", completionState: "policy_review_cleanup" } });
+    await db.update(issues).set({ originKind: "cosgral_project_conversation" }).where(eq(issues.id, seeded.issueId));
+    const committed = await commitNativeStatusDecision({
+      db, companyId, issueId: seeded.issueId, runId: seeded.runId, assessmentId: seeded.assessmentId,
+      priorStatus: "in_progress", priorStatusVersion: 0, priorDecisionId: null,
+      decision: { policyVersion: NATIVE_STATUS_ARBITER_POLICY_VERSION, statusAction, toStatus: statusAction,
+        reasonCode: "test_task_disposition", unblockDescriptor: null, effects: [] },
+    });
+    expect(committed.decision.toStatus).toBe("in_progress");
+    expect((await db.select().from(issues).where(eq(issues.id, seeded.issueId)))[0].status).toBe("in_progress");
+  }, 30_000);
+
   async function seedPolicyReview(options: { genuine?: boolean; priorStatus?: "in_progress" | "blocked" | "in_review"; commit?: typeof commitNativeStatusDecision } = {}) {
     const template = corpus.fixtures.find((candidate) => candidate.mode === "native")!;
     const priorStatus = options.priorStatus ?? "in_progress";
