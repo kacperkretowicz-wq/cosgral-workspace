@@ -81,3 +81,74 @@ Skrypt używa wyłącznie lokalnego HTTP i REST API, tworzy osobną firmę, agen
 PASS (exit 0) wymaga niezależnego odczytu `done`, komentarza `ok` właściwego agenta, 1–2 zakończonych runów i braku zaplanowanego retry. Obserwacja trwa jeszcze 75 s po zakończeniu ostatniego runu (retry mają opóźnienia 30/60 s); wlicza się w timeout. FAIL (exit 1) podaje powód i końcówki logów z dodatkowym maskowaniem typowych tokenów/poświadczeń. Nie uruchamiać poleceń drukujących sekrety w samym zadaniu. Skrypt wstrzymuje agenta i anuluje aktywne runy także po błędzie lub SIGINT/SIGTERM. Pozostawia dane i pusty katalog roboczy `/tmp/cosgral-e2e-work-*` do inspekcji; nie usuwa firmy ani nie ustawia sam `done`. SIGKILL lub utrata API uniemożliwia gwarantowane sprzątanie — wtedy sprawdzić agenta po ID z wydruku i wstrzymać go ręcznie.
 
 Po teście Ctrl+C w terminalu serwera; sprawdzić brak nasłuchu na 3199 i porcie embedded PostgreSQL wskazanym w logu startowym. Nie zatrzymywać innych instancji bazy. Wyniki próby z tej sesji i ograniczenia są zapisane w `COSGRAL-PRZEKAZANIE.md`.
+
+## Dwa konta authenticated i restart (Codex #3)
+
+Skrypt `scripts/cosgral-e2e-two-accounts.mjs` wymaga **osobnej, świeżej instancji** z ekspozycją `private`, włączoną rejestracją i bez administratora. Tworzy konta A, B, C oraz V (widz). A rejestruje się normalnie, następnie wywołuje rzeczywisty `POST /api/bootstrap/claim`, dostępny dla pierwszego administratora w `authenticated/private`. Zaproszenie bootstrap nie jest w tym wariancie potrzebne. Gdy instancja ma już administratora, bootstrap zwróci 409 i test zakończy się FAIL — użyć nowej bazy testowej, nie odbierać uprawnień istniejącym użytkownikom. To procedura odbiorowa, nie konfiguracja publicznej produkcji.
+
+Z katalogu repozytorium, terminal 1, jednorazowo (nie włączać `set -x`):
+
+```sh
+set +x
+install -d -m 700 "$HOME/.config/cosgral"
+install -d -m 700 /tmp/cosgral-two-accounts-test
+node --input-type=module <<'NODE'
+import { randomBytes } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
+writeFileSync(`${process.env.HOME}/.config/cosgral/two-accounts.env`,
+  ['BETTER_AUTH_SECRET', 'PAPERCLIP_AGENT_JWT_SECRET']
+    .map(key => `${key}=${randomBytes(32).toString('hex')}\n`).join(''),
+  { mode: 0o600, flag: 'wx' });
+NODE
+pnpm --filter @paperclipai/plugin-sdk build
+env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-two-accounts-instance pnpm db:migrate
+```
+
+Przy każdym starcie, także po restarcie, załadować **ten sam** plik sekretów i użyć **tego samego** `PAPERCLIP_HOME` (lub tej samej zewnętrznej bazy). Nie generować nowych sekretów między fazami:
+
+```sh
+set +x
+set -a
+. "$HOME/.config/cosgral/two-accounts.env"
+set +a
+env -u DATABASE_URL -u PAPERCLIP_AUTH_PUBLIC_BASE_URL -u BETTER_AUTH_BASE_URL \
+  PAPERCLIP_HOME=/tmp/cosgral-two-accounts-instance \
+  HOST=127.0.0.1 PORT=3198 \
+  PAPERCLIP_DEPLOYMENT_MODE=authenticated PAPERCLIP_DEPLOYMENT_EXPOSURE=private \
+  PAPERCLIP_PUBLIC_URL=http://127.0.0.1:3198 BETTER_AUTH_URL=http://127.0.0.1:3198 \
+  PAPERCLIP_AUTH_BASE_URL_MODE=explicit PAPERCLIP_ALLOWED_HOSTNAMES=127.0.0.1 \
+  PAPERCLIP_AUTH_DISABLE_SIGN_UP=false PAPERCLIP_MIGRATION_AUTO_APPLY=true \
+  pnpm --filter @paperclipai/server dev > /dev/null 2>&1
+```
+
+Wyjście serwera celowo wyciszono, żeby nie utrwalać ewentualnych jednorazowych URL bootstrap w logach. Skrypt drukuje wyłącznie kontrolowane komunikaty, bez treści odpowiedzi auth, cookies i tokenów zaproszeń. `BETTER_AUTH_SECRET` zabezpiecza sesje, `PAPERCLIP_AGENT_JWT_SECRET` musi pozostać trwały również dla agentów. Nie używać `cat` plików poświadczeń, `printenv` ani debugowania HTTP. API-only wystarcza.
+
+Adresy powyżej muszą być spójne. `config.ts` wybiera adres auth kolejno z `PAPERCLIP_AUTH_PUBLIC_BASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_BASE_URL`, `PAPERCLIP_PUBLIC_URL`, konfiguracji plikowej. W nowym terminalu usunąć ewentualne odziedziczone sprzeczne ustawienia. `deriveAuthTrustedOrigins` bierze origin jawnego adresu auth oraz warianty protokołu/portu z `PAPERCLIP_ALLOWED_HOSTNAMES`; nie ma potrzeby wymyślania zmiennej `TRUSTED_ORIGINS`. Skrypt wysyła `Origin` równy `--api` zarówno dla HTTP, jak i WS. Przy innym porcie/hoście zmienić wszystkie adresy spójnie; zdalny adres wymaga HTTPS. Nie wyłączać kontroli Origin, cookies ani rate limitera. Na HTTP loopback z `authenticated/private` kod serwera dopuszcza cookies bez `Secure`.
+
+Terminal 2, z katalogu repo (poczekać na health; polecenie ponawia połączenie podczas startu):
+
+```sh
+curl --retry 20 --retry-connrefused --retry-delay 1 --max-time 3 -fsS http://127.0.0.1:3198/api/health
+node scripts/cosgral-e2e-two-accounts.mjs \
+  --api http://127.0.0.1:3198 --phase prepare \
+  --state-file /tmp/cosgral-two-accounts-test/state.json
+```
+
+`prepare` tworzy prywatny projekt i firmę. B oraz V dołączają przez `POST /companies/:id/invites`, `POST /invites/:token/accept` i — jeśli wymagane — zatwierdzenie wniosku przez A; potem A dodaje ich do `/projects/:id/access-members`. Sprawdzana jest też odmowa przed nadaniem dostępu do projektu. C pozostaje poza firmą. Osiem równoległych POST A/B ma zwrócić to samo ID rozmowy. Sesje mają osobne cookie jars w pamięci; `ws` jest ładowany przez `createRequire` z zależności serwera. WebSocket `/api/companies/:id/events/ws` używa cookies sesji i potwierdzenia subskrypcji, zanim test wyśle komentarz. Komunikat `activity.logged` z `issue.comment_added` jest sygnałem odświeżenia danych, nie treścią komentarza; skrypt osobno potwierdza zapis i autora przez API. Wymaga dostarczenia w <5 s w obu kierunkach.
+
+**Luka transportu:** WS nie przechowuje trwałego replay. Po rozłączeniu B skrypt zapisuje dwa komentarze A, łączy B ponownie, pobiera brakujące przez `GET /issues/:id/comments?order=asc&after=:commentId`, następnie porównuje całą historię A i B (ID, treść, autor, kolejność, brak duplikatów/luk). PASS dotyczy tego fallbacku; nie dowodzi automatycznego reconnectu interfejsu przeglądarkowego. C i klient bez sesji muszą otrzymać odmowę upgrade WS 403/404, a widz V musi móc czytać i otrzymać odmowę pisania.
+
+Po PASS `prepare`: Ctrl+C w terminalu 1, zaczekać na zatrzymanie, uruchomić ponownie dokładnie tę samą komendę startową. Następnie terminal 2:
+
+```sh
+curl --retry 20 --retry-connrefused --retry-delay 1 --max-time 3 -fsS http://127.0.0.1:3198/api/health
+node scripts/cosgral-e2e-two-accounts.mjs \
+  --api http://127.0.0.1:3198 --phase verify-after-restart \
+  --state-file /tmp/cosgral-two-accounts-test/state.json
+```
+
+Faza restartowa loguje A i B ponownie (bez zapisanych cookies), wymaga tego samego ID rozmowy i dokładnej historii, dodaje nowy komentarz i sprawdza WS oraz historię. Skrypt nie restartuje serwera sam: fazę tę uruchamiać dopiero po rzeczywistym restarcie. Można ją powtarzać; za każdym razem dopisuje jeden komentarz.
+
+Exit 0 oznacza PASS wszystkich asercji danej fazy; FAIL kończy się exit 1. Po HTTP 429 dla auth skrypt respektuje `Retry-After` (maksymalnie dwa ponowienia, do 60 s każde), bez wyłączania limitera. Plik stanu zawiera wyłącznie ID i testowe e-maile; losowe hasła są wyłącznie w osobnym pliku `<state-file>.credentials.json` 0600, poza repo, bez cookies. Można podać własne `--credentials-file /poza/repo/credentials.json` w obu fazach. Skrypt odrzuca ścieżki wewnątrz repo, symlinki plików przy odczycie i poświadczenia dla innego origin. Nie nadpisuje plików przy `prepare`. Po nieukończonym `prepare` zachować pliki do inspekcji i przygotować nową izolowaną bazę oraz nowe ścieżki. Nie usuwa firm ani kont; po odbiorze zatrzymać instancję i usunąć wyłącznie własne dane testowe. `/tmp` nie służy do trwałej produkcji.
+
+Wynik sesji Codex #3: `prepare` **PASS, exit 0**, live A→B **65 ms**, B→A **45 ms**. Po SIGINT i potwierdzonym `ECONNREFUSED` na portach 3198 oraz 54329 ponowny start tej samej bazy i sekretów: `verify-after-restart` **PASS, exit 0**, ponowne logowanie A/B, ta sama rozmowa, cztery komentarze w pierwotnej kolejności, piąty komentarz przez WS **113 ms**. Test odbył się przez HTTP/WS bez przeglądarki. Nie potwierdza docelowego UI ani delegowania agentów. Szczegóły wcześniejszych FAIL i regresji kursora: `COSGRAL-PRZEKAZANIE.md`, sekcja Codex #3.

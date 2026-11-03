@@ -12794,7 +12794,9 @@ export function issueService(db: Db) {
         const anchor = await db
           .select({
             id: issueComments.id,
-            createdAt: issueComments.createdAt,
+            // Preserve PostgreSQL microseconds: JS Date truncates to milliseconds,
+            // which can replay the anchor (asc) or skip its neighbours (desc).
+            createdAt: sql<string>`${issueComments.createdAt}::text`,
           })
           .from(issueComments)
           .where(
@@ -12806,10 +12808,7 @@ export function issueService(db: Db) {
           .then((rows) => rows[0] ?? null);
 
         if (!anchor) return [];
-        const anchorCreatedAt =
-          anchor.createdAt instanceof Date
-            ? anchor.createdAt
-            : new Date(String(anchor.createdAt));
+        const anchorCreatedAt = sql`${anchor.createdAt}::timestamptz`;
         conditions.push(
           order === "asc"
             ? or(

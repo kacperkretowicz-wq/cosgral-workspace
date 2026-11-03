@@ -188,3 +188,62 @@ Uruchomiono `scripts/cosgral-e2e-agent-lifecycle.mjs` na żywo (Linux, Node 24.2
 Ustalone przyczyny wcześniejszego niepowodzenia (nie sam sandbox): (1) brak trwałego sekretu JWT → agent nie dostawał `PAPERCLIP_API_KEY`; (2) katalog roboczy poza repozytorium git → hello probe Codexa odrzucał `Not inside a trusted directory and --skip-git-repo-check was not specified`, co kończyło się `harness_test_failed` i wstrzymaniem weryfikacji agenta. Skrypt e2e teraz robi `git init` w katalogu roboczym. Sandbox workspace-write z siecią loopback działa dla API (agent wykonał curl do `127.0.0.1:3199`).
 
 Nadal otwarte: test dwóch kont `authenticated`, właściwy widok rozmowy COSGRAL, wybór koordynatora i delegowanie, izolowane worktrees. Dla produktu: UI/onboarding musi gwarantować trwały JWT oraz git-repo jako cwd agenta (albo czytelny błąd z tą wskazówką).
+
+## Aktualizacja 3 XI (Codex #3 — test dwóch kont)
+
+Zakres: powtarzalny test żywego API/WS w `authenticated`, osobne sesje kont A/B, zaproszenia i dostęp do prywatnego projektu, odmowy dla C i widza V, reconnect oraz restart. **Obie fazy przeszły na rzeczywistym serwerze i embedded PostgreSQL.** Bez commitów/push, zmian UI, nowych zależności i flag omijających sandbox.
+
+### Zmienione pliki i wykryta regresja
+
+- `scripts/cosgral-e2e-two-accounts.mjs`: fazy `prepare` / `verify-after-restart`, opcje `--api`, `--state-file`, opcjonalne `--credentials-file`; rzeczywisty Better Auth email/password, bootstrap pierwszego admina w świeżej prywatnej instancji, zaproszenie/dołączenie i zatwierdzenie, osobne cookie jars w pamięci. `ws` przez `createRequire` ze ścieżki serwera. Osiem równoległych prób utworzenia rozmowy A/B, live event w obu kierunkach z limitem 5 s, odzyskanie brakujących komentarzy przez API po reconnect, odmowy HTTP oraz WS dla C i anonimowego klienta, odmowa pisania przez widza. Ponowne logowanie i porównanie ID, treści, autorów i kolejności historii po restarcie, kolejny komentarz live. PASS/FAIL oraz exit 0/1; test pozostawia dane do inspekcji.
+- Stan zawiera tylko identyfikatory i testowe e-maile. Hasła generowane losowo, wyłącznie w osobnym pliku 0600 poza repo, przypisanym do origin API; cookies wyłącznie w pamięci. Tworzenie plików jest wyłączne, odczyt odrzuca symlinki, złego właściciela i tryb inny niż 0600. Nie drukuje odpowiedzi auth, sekretów ani zaproszeń; błędy parsowania JSON także ukrywają zawartość. Dwa ograniczone ponowienia auth po 429 respektują `Retry-After`, bez wyłączania rate limitera.
+- `server/src/services/issues.ts`: test e2e wykrył prawdziwy błąd `listComments(... afterCommentId ...)`. PostgreSQL ma mikrosekundy, a poprzednie pobranie kursora przez JS `Date` obcinało je do milisekund. ASC ponownie zwracał komentarz graniczny; DESC mógł pomijać sąsiadujące komentarze. Minimalna poprawka zachowuje timestamp kursora jako tekst SQL i porównuje go jako `timestamptz`, zachowując istniejący porządek `(created_at, id)`, walidację kursora i zakres issue/company. Nie zmieniano schematu ani kontraktu HTTP.
+- `server/src/__tests__/issue-comment-cursor-postgres.test.ts`: test regresyjny na prawdziwym PostgreSQL, celowo ustawione mikrosekundy, kilka komentarzy z identycznym timestampem i rozstrzyganiem po UUID; ASC/DESC, limit, koniec historii, obcy wątek/firma, brakujący i błędny kursor.
+- `scripts/cosgral-e2e-two-accounts.test.mjs`: ochrona przed zapisem stanu w repo, odmowa testowania `local_trusted`, brak wycieku przy uszkodzonym JSON poświadczeń.
+- `docs/cosgral/uruchomienie-linux.md`: pełna procedura generowania sekretów, startu `authenticated`, origins, bootstrapu, obu faz i restartu; niniejszy plik — rzeczywiste wyniki.
+
+### Rzeczywiste próby i wyniki
+
+Środowisko: Linux, Node **24.22.2**, pnpm **9.15.4**, gałąź `codex/cosgral-workspace`. Instancja końcowa: `PAPERCLIP_HOME=/tmp/cosgral-e2e-3/data-final`, API **127.0.0.1:3198**, embedded PostgreSQL **54329**, brak `DATABASE_URL`, tryb `authenticated/private`. Sekrety wygenerowano jednorazowo do `/tmp/cosgral-e2e-3/auth.env` (0600); serwer ładował je przez `set -a` / source / `set +a`, bez wypisywania. Wyjście serwera skierowano do `/dev/null`, żeby nie utrwalać ewentualnych jednorazowych URL. Stan końcowy i osobne poświadczenia mają potwierdzony tryb **600**, poza repo.
+
+- Migracje osobnej bazy: `env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-e2e-3/data-final pnpm db:migrate`, **exit 0, 422 zastosowane**. Numer migracji fundamentu 0423 nie oznacza liczby zastosowanych migracji. SDK był już zbudowany wcześniej; w tej sesji nie powtarzano jego builda.
+- Pierwsza próba skryptu przed gotowością API: **FAIL, exit 1**, brak połączenia. Ponowienie po health 200 dotarło do czwartej rejestracji i zakończyło się **429 / FAIL** (domyślnie Better Auth ogranicza signup do 3/10 s). Dodano respektowanie `Retry-After`; nie wyłączano zabezpieczenia. Częściowe konta pozostały w pierwszej bazie testowej.
+- Kolejna próba na pierwszej bazie: rejestracje, bootstrap, firma/projekt, zaproszenia, jedna rozmowa, odmowy i oba kierunki WS przeszły; reconnect **FAIL**. Niezależny GET wykazał indeksy `[1,2,3]` zamiast `[2,3]` po kursorze drugiego komentarza. To był błąd produkcyjnego zapytania, nie obejście w skrypcie.
+- Nowy test kursora uruchomiony **przed poprawką**: **1 FAIL**, oczekiwano 2 rekordów, otrzymano 4. Po poprawce zestaw celowany: **4 pliki / 20 testów PASS, exit 0** (kursor, fundament rozmowy, polityka wątku, autoryzacja WS).
+- Końcowy `prepare` na świeżej `data-final`: **PASS, exit 0**. A/B/C/V zarejestrowani, A bootstrap, B operator i V viewer zaproszeni rzeczywistym mechanizmem; brak dostępu do prywatnego projektu przed nadaniem członkostwa projektu. Osiem równoległych POST zwróciło jedno ID rozmowy. C: odmowa odczytu/utworzenia rozmowy i odczytu/zapisu komentarzy. C i anonimowy klient: odmowa upgrade WS. V: odczyt dozwolony, zapis odrzucony bez utworzenia komentarza. A→B **65 ms**, B→A **45 ms**; reconnect B i dwa komentarze odzyskane przez GET w poprawnej kolejności bez duplikatów/luk. Na koniec 4 komentarze.
+- Rzeczywisty restart: SIGINT serwera, osobna próba TCP potwierdziła **ECONNREFUSED na 3198 i 54329**, ponowny start na tej samej bazie i tych samych sekretach. Pierwsza próba fazy restartowej także nastąpiła za wcześnie i zakończyła się **FAIL sieciowy**. Po health 200 powtórzenie: **PASS, exit 0** — świeże logowanie A/B, to samo ID rozmowy, dokładnie cztery wcześniejsze komentarze w tej samej kolejności, nowy piąty komentarz i live do B **113 ms**, końcowa historia A/B identyczna.
+
+Komendy weryfikacyjne uruchomione w tej sesji:
+
+```sh
+node scripts/cosgral-e2e-two-accounts.mjs --api http://127.0.0.1:3198 --phase prepare --state-file /tmp/cosgral-e2e-3/final-state.json
+# Po zatrzymaniu i uruchomieniu tej samej instancji:
+node scripts/cosgral-e2e-two-accounts.mjs --api http://127.0.0.1:3198 --phase verify-after-restart --state-file /tmp/cosgral-e2e-3/final-state.json
+PAPERCLIP_HOME=/tmp/cosgral-e2e-3/test-home pnpm --filter @paperclipai/server exec vitest run src/__tests__/issue-comment-cursor-postgres.test.ts src/__tests__/project-conversations.test.ts src/services/project-conversation-policy.test.ts src/__tests__/live-events-ws.test.ts
+pnpm --filter @paperclipai/server exec tsc --noEmit
+node --test scripts/cosgral-e2e-two-accounts.test.mjs
+node --check scripts/cosgral-e2e-two-accounts.mjs
+git diff --check
+```
+
+Typecheck serwera: **PASS, exit 0**. Node tests skryptu: **3/3 PASS**. Kontrola składni i diff: **exit 0**. Nie uruchamiano pełnego `pnpm -r typecheck`, `pnpm test:run` ani `pnpm build`: wykonano wąskie sprawdzenia skryptu i poprawionej ścieżki serwera; nie jest to deklaracja PR-ready całego repo. Nie wykonywano browser suites ani kontroli tokenów UI — UI nie zmieniano.
+
+### Ograniczenia i następny krok nadzorcy
+
+**WS nie ma trwałego replay komentarzy.** Sprawdzony fallback to jawny GET `comments?order=asc&after=:commentId` po ponownym połączeniu i pełne porównanie historii. Nie potwierdzono automatycznego odtwarzania historii w UI, dwóch kontekstów przeglądarki, obecności/typing, docelowego widoku COSGRAL ani delegowania agentów. Test działa na loopback API/WS; nie sprawdza HTTPS przez reverse proxy ani zdalnej sieci. Nie stwierdzono braku live eventu ani pominięcia autoryzacji WS w sprawdzonych scenariuszach.
+
+Nadzorca: wykonać sekcję „Dwa konta authenticated i restart (Codex #3)” w `docs/cosgral/uruchomienie-linux.md` — zawiera dokładne komendy generowania prywatnego env i startu na 3198. Na nowej izolowanej bazie, po health, uruchomić:
+
+```sh
+node scripts/cosgral-e2e-two-accounts.mjs --api http://127.0.0.1:3198 --phase prepare --state-file /tmp/cosgral-two-accounts-test/state.json
+# Ctrl+C, ponowny start z tym samym PAPERCLIP_HOME i plikiem sekretów, health:
+node scripts/cosgral-e2e-two-accounts.mjs --api http://127.0.0.1:3198 --phase verify-after-restart --state-file /tmp/cosgral-two-accounts-test/state.json
+```
+
+Następny krok produktowy: sprawdzić dwa niezależne konteksty przeglądarki i automatyczny fallback historii po reconnect na właściwym widoku rozmowy. Pełne repozytoryjne bramki przed PR wykona nadzorca. Nie używać istniejącej instalacji produkcyjnej do bootstrapu testowego.
+
+Po zakończeniu fazy restartowej serwer ponownie zatrzymano przez SIGINT. Ostatnia kontrola TCP: **3198 i 54329 — ECONNREFUSED**. Dane testowe i prywatne pliki pozostały wyłącznie w `/tmp/cosgral-e2e-3`, poza repo; stan zawiera pięć ID komentarzy. Końcowe powtórzenie Node tests **3/3 PASS**, składni i `git diff --check` — **exit 0**.
+
+### Potwierdzenie nadzorcy (3 XI, niezależne powtórzenie testu dwóch kont)
+
+Nadzorca powtórzył scenariusz od zera (nowe sekrety, nowa baza, `/workspace/start3198.sh`): `prepare` PASS (A→B 69 ms, B→A 58 ms, C/anonim odrzuceni, widz tylko czyta, 8 równoległych POST → jedna rozmowa), po rzeczywistym restarcie serwera `verify-after-restart` PASS (132 ms). Testy: 3 testy skryptu (node --test) i 1 plik testu kursora komentarzy na PostgreSQL przeszły. To test HTTP/WS dwóch kont, **nie** test dwóch przeglądarek ani docelowego UI; WS nie ma trwałego replay (fallback GET zweryfikowany).
