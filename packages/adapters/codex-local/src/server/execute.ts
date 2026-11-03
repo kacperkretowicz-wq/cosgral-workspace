@@ -1,3 +1,4 @@
+import { cosgralPolicy, cosgralProcessEnvironment } from "./cosgral-policy.js";
 import { asStringArray } from "@paperclipai/adapter-utils/server-utils";
 import { applyObservabilityEnvironment } from "@paperclipai/adapter-utils/agent-observability";
 import { prepareCodexObservabilityProfile, selectedCodexProfile, replaceCodexProfileArgs, disableCodexObservabilityArgs } from "@paperclipai/adapter-utils/codex-observability-profile";
@@ -576,6 +577,21 @@ export async function ensureCodexSkillsInjected(
 }
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
+  ctx = { ...ctx, config: cosgralPolicy(ctx.config) };
+  const role = ctx.config.cosgralExecutionRole;
+  if (role !== "worker" && role !== "coordinator") return executePrepared(ctx);
+  const home = path.join(resolveManagedCodexHomeDir(process.env, ctx.agent.companyId),
+    "cosgral-runtimes", ctx.agent.id, ctx.runId);
+  try {
+    return await executePrepared({ ...ctx, config: { ...ctx.config, cosgralRuntimeHome: home } });
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+  }
+}
+
+async function executePrepared(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
+  const protectedRole = ctx.config.cosgralExecutionRole;
+  const protectedRun = protectedRole === "worker" || protectedRole === "coordinator";
   const providerStop = createProviderStoppedBoundary(ctx.onProviderStopped);
   const engineSelection = await resolveCodexExecutionEngineForRun(ctx);
   if (engineSelection.unavailableReason) {
@@ -740,7 +756,19 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     });
   }
   const defaultCodexHome = resolveManagedCodexHomeDir(process.env, agent.companyId);
-  const effectiveCodexHome = configuredCodexHome ?? defaultCodexHome;
+  let effectiveCodexHome = configuredCodexHome ?? defaultCodexHome;
+  let protectedCredentialPath: string | null = null;
+  if (protectedRun) {
+    // Only the selected provider credential is carried into an agent-owned home.
+    // Never copy the operator's config, sessions, MCP commands or unrelated logins.
+    protectedCredentialPath = await fs.realpath(path.join(effectiveCodexHome, "auth.json")).catch(() => null);
+    const selectedAuth = protectedCredentialPath ? await fs.readFile(protectedCredentialPath).catch(() => null) : null;
+    effectiveCodexHome = asString(config.cosgralRuntimeHome, "");
+    await fs.mkdir(effectiveCodexHome, { recursive: true, mode: 0o700 });
+    const authPath = path.join(effectiveCodexHome, "auth.json");
+    await fs.rm(authPath, { force: true });
+    if (selectedAuth) await fs.writeFile(authPath, selectedAuth, { mode: 0o600 });
+  }
   await fs.mkdir(effectiveCodexHome, { recursive: true });
 
   // Never launch a managed CODEX_HOME with no credentials. Without auth.json
@@ -775,7 +803,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   );
   const preparedRuntimeConfig = await prepareCodexRuntimeConfig({
     env: envConfigStrings,
-    codexHome: configuredCodexHome && !runtimeSkillDigest ? null : effectiveCodexHome,
+    codexHome: protectedRun ? effectiveCodexHome : configuredCodexHome && !runtimeSkillDigest ? null : effectiveCodexHome,
   });
   // Curated allowlist dir staged for the remote `home` asset (see below). Held
   // here so the outer `finally` can remove it on every exit path (teardown and
@@ -936,6 +964,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       onLog,
       onEvent,
     });
+    if (protectedRun && executionTargetIsRemote) throw new Error("COSGRAL remote execution is not qualified for local filesystem confinement.");
+    if (protectedRun) stagedCodexHomeDir = await stageCodexHomeForSync(effectiveCodexHome, { runId });
+    const launchHome = protectedRun ? stagedCodexHomeDir! : effectiveCodexHome;
     const env: Record<string, string> = { ...paperclipBaseEnv };
     env.PAPERCLIP_RUN_ID = runId;
     const wakeTaskId =
@@ -1033,8 +1064,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         Object.assign(env, paperclipBridge.env);
       }
     }
+    if (protectedRun) { env.CODEX_HOME = launchHome; env.HOME = launchHome; }
     const effectiveEnv = Object.fromEntries(
-      Object.entries({ ...process.env, ...env }).filter(
+      Object.entries(protectedRun ? cosgralProcessEnvironment(process.env, env) : { ...process.env, ...env }).filter(
         (entry): entry is [string, string] => typeof entry[1] === "string",
       ),
     );
@@ -1048,13 +1080,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         ? {
             workspaceDir: effectiveExecutionCwd,
             filesystemScope,
-            managedPaths: [{ path: effectiveCodexHome, access: "rw" }],
+            workspaceAccess: protectedRole === "coordinator" ? "ro" : "rw",
+            inheritEnvironment: protectedRun ? false : undefined,
+            managedPaths: [{ path: launchHome, access: "rw" }],
             extraPaths: parseLocalProcessSandboxExtraPaths(config.filesystemExtraPaths),
             pathAliases: targetWorkspaceRealization?.mode === "copy"
               ? targetWorkspaceRealization.pathAliases
               : [],
             outboundRestorePaths: targetWorkspaceRealization?.outboundRestorePaths ?? [],
-            homeDir: filesystemScope ? effectiveCodexHome : null,
+            homeDir: filesystemScope ? launchHome : null,
             networkScope,
             networkAllowlist: parseLocalProcessNetworkAllowlist(config.networkAllowlist),
             networkTrustedUrls: [
@@ -1128,7 +1162,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const runtimeSessionCwd = asString(runtimeSessionParams.cwd, "");
     const runtimeRemoteExecution = parseObject(runtimeSessionParams.remoteExecution);
     const canResumeSession =
-      runtimeSessionId.length > 0 &&
+      !protectedRun && runtimeSessionId.length > 0 &&
       (runtimeSessionCwd.length === 0 || path.resolve(runtimeSessionCwd) === path.resolve(effectiveExecutionCwd)) &&
       adapterExecutionTargetSessionMatches(runtimeRemoteExecution, runtimeExecutionTarget);
     const codexTransientFallbackMode = readCodexTransientFallbackMode(context);
@@ -1394,7 +1428,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         const proc = await runAdapterExecutionTargetProcess(runId, runtimeExecutionTarget, command, args, {
           onProcessStopped: providerStop.beginInvocation(),
           cwd,
-          env,
+          env: protectedRun ? cosgralProcessEnvironment(process.env, env) : env,
           stdin: prompt,
           timeoutSec,
           graceSec,
@@ -1706,6 +1740,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     // (teardown AND error), never only the happy path. Cleanup failure is
     // logged, not fatal — a leaked temp dir must not crash the run.
     if (stagedCodexHomeDir) {
+      if (protectedRun && protectedCredentialPath) {
+        await copyBackCodexAuth({
+          readSandboxAuth: () => fs.readFile(path.join(stagedCodexHomeDir!, "auth.json")),
+          hostAuthPath: protectedCredentialPath,
+          log: (line) => onLog("stdout", `${line}\n`),
+        }).catch(() => undefined); // Cleanup still owns the private credential staging on failure.
+      }
       await fs.rm(stagedCodexHomeDir, { recursive: true, force: true }).catch(async (error) => {
         await onLog(
           "stderr",

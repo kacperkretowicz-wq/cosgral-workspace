@@ -135,3 +135,9 @@ live-run data and events. [Presence hook tests](../../ui/src/hooks/useProjectCon
 cover expiry and reconnect; the two-account script covers real WS join/typing/leave.
 Browser evidence belongs in the handoff;
 these recipes alone do not claim a live pass.
+
+COSGRAL execution verification: `node scripts/cosgral-e2e-delegation.mjs --verify-isolation`
+exercises real concurrent worktrees, kernel confinement, coordinator read-only writes,
+credential canaries and cleanup without a model. See
+[permissions and limits](../../docs/cosgral/uprawnienia-agentow.md). This does not qualify
+full heartbeat dispatch or a real-model journey.

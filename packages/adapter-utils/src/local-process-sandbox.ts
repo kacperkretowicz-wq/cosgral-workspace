@@ -20,6 +20,9 @@ export interface LocalProcessSandboxPathAlias {
 export interface LocalProcessSandboxOptions {
   workspaceDir: string;
   filesystemScope?: "workspace" | null;
+  workspaceAccess?: LocalProcessSandboxAccess;
+  /** Launch with only explicitly supplied environment, excluding server credentials. */
+  inheritEnvironment?: boolean;
   managedPaths?: LocalProcessSandboxPath[];
   extraPaths?: LocalProcessSandboxPath[];
   pathAliases?: LocalProcessSandboxPathAlias[];
@@ -393,7 +396,9 @@ export async function buildLocalProcessSandboxSpawnTarget(input: {
       "--symlink", "usr/lib64", "/lib64",
     );
     const created = new Set<string>(["/", "/proc", "/dev", "/tmp"]);
-    const mounted = new Set<string>();
+    // These destinations are the usr-merge symlinks created above. Bubblewrap
+    // refuses a later bind over a symlink; /usr supplies their actual contents.
+    const mounted = new Set<string>(["/bin", "/sbin", "/lib", "/lib64"]);
     const mount = async (source: string, access: LocalProcessSandboxAccess) => {
       const normalized = normalizeAbsolutePath(source, "Sandbox path");
       if (mounted.has(normalized) || !(await pathExists(normalized))) return;
@@ -404,12 +409,11 @@ export async function buildLocalProcessSandboxSpawnTarget(input: {
     };
     for (const systemPath of SYSTEM_READ_PATHS) await mount(systemPath, "ro");
     for (const executablePath of await executableReadPaths(input.executable)) await mount(executablePath, "ro");
-    if (networkScope === "allowlist") {
-      for (const nodePath of await executableReadPaths(process.execPath)) await mount(nodePath, "ro");
-    }
+    // Local CLI entrypoints may be Node scripts even without the network bridge.
+    for (const nodePath of await executableReadPaths(process.execPath)) await mount(nodePath, "ro");
     for (const managedPath of input.options.managedPaths ?? []) await mount(managedPath.path, managedPath.access);
     for (const extraPath of input.options.extraPaths ?? []) await mount(extraPath.path, extraPath.access);
-    await mount(workspaceDir, "rw");
+    await mount(workspaceDir, input.options.workspaceAccess ?? "rw");
     for (const [index, alias] of (input.options.pathAliases ?? []).entries()) {
       const aliasPath = normalizeAbsolutePath(alias.path, `Sandbox pathAliases[${index}].path`);
       const aliasTarget = normalizeAbsolutePath(alias.target, `Sandbox pathAliases[${index}].target`);

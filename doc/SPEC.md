@@ -8,6 +8,9 @@ no task disposition: agents only comment; the server settles turns and exposes
 failed or unanswered turns in the thread. Children retain
 project/source links and ordinary approval/budget gates. See the COSGRAL shared
 project coordinator section in `SPEC-implementation.md` for the concrete contract.
+The qualified local Codex CLI path uses isolated task/agent worktrees and process
+confinement, with coordinator repository mounts read-only. Unsupported runtimes
+fail closed; see [permissions and qualification limits](../docs/cosgral/uprawnienia-agentow.md).
 
 Target specification for the Paperclip control plane. Living document — updated incrementally during spec interviews.
 

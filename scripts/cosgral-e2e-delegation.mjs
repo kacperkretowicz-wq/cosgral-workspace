@@ -5,9 +5,25 @@ import { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { access, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { redact } from './cosgral-e2e-agent-lifecycle.mjs';
+
+// Real Git + kernel confinement probes. No API, credentials or model invocation.
+export function verifyIsolation({ spawn = spawnSync } = {}) {
+  for (const [pkg, files] of [
+    ['@paperclipai/server', ['src/services/heartbeat/project-conversation-execution.test.ts',
+      'src/services/heartbeat/project-conversation-isolation.test.ts']],
+    ['@paperclipai/adapter-codex-local', ['src/server/execute.cosgral.test.ts']],
+  ]) {
+    const result = spawn('pnpm', ['--filter', pkg, 'exec', 'vitest', 'run', '--maxWorkers=1', ...files], {
+      cwd: new URL('..', import.meta.url), stdio: 'inherit',
+      env: { ...process.env, PATH: `/home/box/tools/bin:${process.env.PATH ?? ''}` },
+    });
+    if (result.status !== 0 || result.error || result.signal) return 1;
+  }
+  return 0;
+}
 
 const active = new Set(['queued', 'scheduled_retry', 'running']);
 const maxRuns = 6;
@@ -50,6 +66,7 @@ export function assessDelegation({ conversation, comments, issues, childComments
 
 // Dependency seams keep mock tests fast; the CLI always uses real HTTP and time.
 export async function main(args = process.argv.slice(2), { fetchImpl = fetch, now = Date.now, sleep = delay, log = console.log } = {}) {
+  if (args.length === 1 && args[0] === '--verify-isolation') return verifyIsolation();
   let api, company, project, conversation;
   const agents = [];
   let runs = [], reasons = [], interrupted = false, observed = false;
@@ -88,7 +105,7 @@ export async function main(args = process.argv.slice(2), { fetchImpl = fetch, no
       'timeout-sec': { type: 'string', default: '420' }, help: { type: 'boolean' },
     } });
     if (values.help) {
-      say('node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home /absolute/codex/home [--timeout-sec 420]');
+      say('node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home /absolute/codex/home [--timeout-sec 420] | --verify-isolation (no model)');
       return 0;
     }
     const url = new URL(values.api);
@@ -112,6 +129,8 @@ export async function main(args = process.argv.slice(2), { fetchImpl = fetch, no
       const cwd = await mkdtemp(join(tmpdir(), `cosgral-e2e-${role}-`));
       dirs.push(cwd);
       execFileSync('git', ['init', '-q'], { cwd });
+      execFileSync('git', ['-c', 'user.name=E2E Fixture', '-c', 'user.email=fixture@example.invalid',
+        'commit', '--allow-empty', '-qm', 'fixture'], { cwd });
       const instructionsFilePath = join(cwd, 'AGENTS.md');
       await writeFile(instructionsFilePath, 'Follow the bounded Paperclip delegation e2e instructions.\n');
       agents.push(await request(`/companies/${company.id}/agents`, 'POST', {
@@ -134,6 +153,7 @@ export async function main(args = process.argv.slice(2), { fetchImpl = fetch, no
         throw new Error(`agent ${agent.id} not ready: ${state.status}/${state.lifecycleState}: ${String(state.lifecycleError ?? '').slice(0, 200)}`);
     }
     project = await request(`/companies/${company.id}/projects`, 'POST', { name: 'Delegation e2e' });
+    await request(`/projects/${project.id}/workspaces`, 'POST', { name: 'Disposable fixture repository', cwd: dirs[0], isPrimary: true });
     await request(`/projects/${project.id}/conversation/coordinator?companyId=${company.id}`, 'PUT', { agentId: agents[0].id });
     const existing = await request(`/projects/${project.id}/conversation`);
     conversation = existing ?? await request(`/projects/${project.id}/conversation`, 'POST', {});

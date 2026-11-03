@@ -131,12 +131,12 @@ Obaj muszą widzieć **jedną rzeczywistą, zsynchronizowaną rozmowę**, a nie 
 
 Wymagania:
 
-- Każdy użytkownik ma swoje konto i profil.
-- Dostęp do projektów przez zaproszenie.
-- Pokazywanie, kto aktualnie jest online.
+- ~~Każdy użytkownik ma swoje konto i profil.~~
+- ~~Dostęp do projektów przez zaproszenie.~~
+- ~~Pokazywanie, kto aktualnie jest online.~~
 - Awatary użytkowników obecnych w projekcie.
-- Informacja, kto aktualnie pisze.
-- Nowe wiadomości pojawiają się natychmiast u obu osób.
+- ~~Informacja, kto aktualnie pisze.~~
+- ~~Nowe wiadomości pojawiają się natychmiast u obu osób.~~
 - Zmiany ustawień agentów są synchronizowane.
 - Gdy jeden użytkownik dodaje agenta, drugi widzi go na żywo.
 - Wszyscy widzą te same zadania, raporty i działania agentów.
@@ -457,16 +457,16 @@ Przeprowadź testy end-to-end i wdroż aplikację w dostępnej infrastrukturze. 
 
 Nie uznawaj projektu za gotowy, dopóki nie uda się przetestować następującego scenariusza:
 
-1. Pierwszy użytkownik loguje się do COSGRAL Workspace.
+1. ~~Pierwszy użytkownik loguje się do COSGRAL Workspace.~~
 2. Tworzy lub otwiera projekt, a wybrane repozytorium może samodzielnie podłączyć w aplikacji. (Wcześniej utworzono jedynie testowy projekt Uszko; pełnego procesu podłączania repozytorium nie zweryfikowano.)
 3. Wybiera kompatybilnego koordynatora, model i dostępne źródło uwierzytelnienia (Claude był tylko przykładem).
 4. Podłącza działającego agenta Codex.
-5. Zaprasza drugiego użytkownika.
-6. Drugi użytkownik wchodzi do tego samego projektu.
-7. Obaj widzą swoją obecność i wspólną historię chatu.
-8. Pierwszy użytkownik zleca koordynatorowi wykonanie zadania.
-9. Koordynator przekazuje część pracy do Codexa.
-10. Codex wykonuje zadanie i raportuje wynik.
+5. ~~Zaprasza drugiego użytkownika.~~
+6. ~~Drugi użytkownik wchodzi do tego samego projektu.~~
+7. ~~Obaj widzą swoją obecność i wspólną historię chatu.~~
+8. ~~Pierwszy użytkownik zleca koordynatorowi wykonanie zadania.~~
+9. ~~Koordynator przekazuje część pracy do Codexa.~~
+10. ~~Codex wykonuje zadanie i raportuje wynik.~~
 11. Komunikaty koordynatora i Codexa pojawiają się u obu użytkowników bez odświeżania.
 12. Drugi użytkownik zmienia dozwoloną konfigurację agenta.
 13. Pierwszy użytkownik widzi tę zmianę na żywo.

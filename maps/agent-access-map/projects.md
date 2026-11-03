@@ -205,3 +205,10 @@ conversation live runs, never client-authored typing.
 Gaps: server integration tests exercise persistence/access through wake calls
 with mocked heartbeat, not provider execution. See the handoff for separate
 supervisor real-model acceptance and current presence test evidence.
+
+COSGRAL conversation descendants: stored ancestry selects isolated task/agent Git
+branches; codex_local legacy CLI is confined by bwrap with explicit run environment
+and no bypass. Coordinator repository mounts are read-only. Other runtime paths
+fail closed. Existing API permissions, approvals and budgets still apply;
+[this filesystem policy](../../docs/cosgral/uprawnienia-agentow.md) does not grant API
+authority. Offline probes verify filesystem/process denial, not agent API dispatch.

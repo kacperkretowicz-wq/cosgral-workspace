@@ -81,6 +81,7 @@ async function journey({ mutate = () => {}, failTrigger = false, signal = false,
       readinessReads.set(path, reads);
       result = reads === 1 ? { status: 'paused', lifecycleState: 'verifying' } : { status: 'idle', lifecycleState: 'ready' };
     } else if (path === '/companies/company/projects') result = { id: 'project' };
+    else if (path === '/projects/project/workspaces') result = { id: 'workspace' };
     else if (path === '/projects/project/conversation/coordinator') {
       assert.equal(options.method, 'PUT'); assert.deepEqual(body, { agentId: 'coordinator' });
       assert.equal(requestUrl.search, '?companyId=company');
@@ -190,4 +191,14 @@ describe('mocked real CLI journey', () => {
     assert.ok(result.output.includes('run bound exceeded'));
     assert.equal(result.calls.some(c => c.path === '/heartbeat-runs/extra/cancel'), true);
   });
+});
+
+ it('offline isolation verification fails closed and never starts a model', async () => {
+  const { verifyIsolation } = await import('./cosgral-e2e-delegation.mjs');
+  const calls = [];
+  assert.equal(verifyIsolation({ spawn: (...args) => { calls.push(args); return { status: 0 }; } }), 0);
+  assert.equal(calls[0][0], 'pnpm');
+  assert.ok(calls[0][1].includes('src/services/heartbeat/project-conversation-isolation.test.ts'));
+  assert.equal(verifyIsolation({ spawn: () => ({ status: 1 }) }), 1);
+  assert.equal(verifyIsolation({ spawn: () => ({ status: null, signal: 'SIGTERM' }) }), 1);
 });

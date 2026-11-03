@@ -223,7 +223,8 @@ node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home
 
 Skrypt tworzy nową firmę, projekt i dwóch agentów `codex_local`, `runner=legacy`,
 `engine=cli`, model `gpt-6.1-sol`, reasoning `low`, bypass `false`, bez `extraArgs`.
-Wykonawca ma `reportsTo` koordynatora; osobne katalogi robocze mają `git init`.
+Wykonawca ma `reportsTo` koordynatora; katalogi fixture mają `git init` i pusty commit.
+Projekt ma jawne źródło Git; serwer tworzy osobne worktrees obu ról.
 Nie kopiuje poświadczeń. Jedynym wyzwalaczem pracy jest komentarz użytkownika;
 skrypt nie tworzy zadania wykonawcy, nie zapisuje wyników ani nie budzi ręcznie.
 Niezależny odczyt przed sprzątaniem wymaga komentarza koordynatora, dokładnie
@@ -235,9 +236,13 @@ Exit 0 = PASS, exit 1 = FAIL. Po teście obaj agenci są pauzowani, aktywne runy
 anulowane; dane i katalogi `/tmp/cosgral-e2e-{coordinator,worker}-*` pozostają do
 inspekcji. SIGKILL/utrata API wymaga ręcznego sprawdzenia tych agentów.
 
+Model uprawnień i ograniczenia Git/runtime: [uprawnienia agentów](uprawnienia-agentow.md).
+Wymagany Linux i działający `bwrap`; błędy izolacji nie przechodzą na słabszy tryb.
+
 Testy bez uruchamiania modelu:
 
 ```sh
+PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-delegation.mjs --verify-isolation
 node --test scripts/cosgral-e2e-delegation.test.mjs
 pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/project-conversation-policy.test.ts src/services/heartbeat/task-markdown.test.ts
 pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts

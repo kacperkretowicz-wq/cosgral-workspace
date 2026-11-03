@@ -1,3 +1,4 @@
+import { conversationExecutionRole, protectConversationConfig } from "./heartbeat/project-conversation-execution.js";
 import { registerDeferredReceiptWork } from "./heartbeat/deferred-receipt-work.js";
 import { reconcileTaskChatRetryReceipts } from "./task-retry.js";
 import { registerIssueRecoveryWork } from "./recovery/work.js";
@@ -2425,6 +2426,13 @@ export function heartbeatService(
           );
         issueContext = { ...issueContext, responsibleUserId };
       }
+      const cosgralRole = await conversationExecutionRole(issueContext ? { ...issueContext, companyId: agent.companyId } : null,
+        async (id) => (await db.select({ id: issues.id, companyId: issues.companyId, projectId: issues.projectId,
+          parentId: issues.parentId, originKind: issues.originKind }).from(issues)
+          .where(and(eq(issues.id, id), eq(issues.companyId, agent.companyId))))[0] ?? null);
+      if (cosgralRole && (agent.adapterType !== "codex_local" || externalProvider || run.runtimeMode === "native")) {
+        throw new Error("COSGRAL isolated execution currently requires the codex_local CLI adapter.");
+      }
       const workspacePolicyContext = workspaceProjectContext ?? (
         !boundSourceWorkspace && !taskWorkspaceIntentRow?.intent && !issueContext?.projectWorkspaceId
           ? taskProjectContext : null
@@ -2432,7 +2440,7 @@ export function heartbeatService(
       const parsedProjectExecutionWorkspacePolicy = workspacePolicyContext?.hasWorkspace
         ? await effectiveProjectWorkspacePolicy(db, agent.companyId, workspacePolicyContext.executionWorkspacePolicy, workspacePolicyContext.hasGitSource)
         : parseProjectExecutionWorkspacePolicy(workspacePolicyContext?.executionWorkspacePolicy);
-      const projectExecutionWorkspacePolicy =
+      let projectExecutionWorkspacePolicy =
         applyDefaultIsolatedExecutionWorkspacePolicy({
           projectPolicy: gateProjectExecutionWorkspacePolicy(
             parsedProjectExecutionWorkspacePolicy,
@@ -2443,12 +2451,19 @@ export function heartbeatService(
           // directory. The operator default cannot turn it into a worktree.
           hasProjectWorkspace: workspaceProjectContext?.hasWorkspace ?? false,
         });
-      const runtimeWorkspaceSelectionEnabled = !externalProvider && (freshWorkspace?.mode === "fresh_isolated_workspace" || taskWorkspaceRuntimeSelectionEnabled({ legacyUiEnabled: isolatedWorkspacesEnabled || Boolean(projectExecutionWorkspacePolicy?.storageProviderPluginId), hasTypedSelection: Boolean(taskWorkspaceIntentRow?.intent), hasBinding: Boolean(issueContext?.executionWorkspaceId) }));
+      if (cosgralRole) projectExecutionWorkspacePolicy = {
+        ...projectExecutionWorkspacePolicy, enabled: true,
+        defaultMode: "isolated_workspace",
+        workspaceStrategy: { type: "git_worktree" },
+      };
+      const runtimeWorkspaceSelectionEnabled = Boolean(cosgralRole) || !externalProvider && (freshWorkspace?.mode === "fresh_isolated_workspace" || taskWorkspaceRuntimeSelectionEnabled({ legacyUiEnabled: isolatedWorkspacesEnabled || Boolean(projectExecutionWorkspacePolicy?.storageProviderPluginId), hasTypedSelection: Boolean(taskWorkspaceIntentRow?.intent), hasBinding: Boolean(issueContext?.executionWorkspaceId) }));
       const parsedIssueExecutionWorkspaceSettings =
         parseIssueExecutionWorkspaceSettings(
           issueContext?.executionWorkspaceSettings,
         );
-      const issueExecutionWorkspaceSettings = runtimeWorkspaceSelectionEnabled
+      const issueExecutionWorkspaceSettings = cosgralRole
+        ? { mode: "isolated_workspace" as const }
+        : runtimeWorkspaceSelectionEnabled
         ? parsedIssueExecutionWorkspaceSettings
         : null;
       const environmentExecutionWorkspaceSettings =
@@ -2623,7 +2638,7 @@ export function heartbeatService(
         policy: { trustPreset, experimentalInstanceSettings, recovering: Boolean(runOptions.nativeRestartRecovery || runOptions.nativeLeaseOwner) },
         services: { issuesSvc, getPinnedSkillTestContext },
       }));
-      const sourceWorkspaceConfig = buildExecutionWorkspaceAdapterConfig({
+      let sourceWorkspaceConfig = buildExecutionWorkspaceAdapterConfig({
         agentConfig: config,
         projectPolicy: projectExecutionWorkspacePolicy,
         issueSettings: issueExecutionWorkspaceSettings,
@@ -2635,6 +2650,7 @@ export function heartbeatService(
           ...(requestedAiBinding?.mode === "router" ? parseObject(parseObject(context.aiRouterSelection).runtimeConfig) : {}),
         },
       });
+      if (cosgralRole) sourceWorkspaceConfig = protectConversationConfig(sourceWorkspaceConfig, cosgralRole);
       const {
         persistedRunnerProfile,
         persistedNativeExecutionInput,
@@ -2669,6 +2685,15 @@ export function heartbeatService(
         services: { executionWorkspacesSvc, environmentsSvc, instanceSettings, findSharedWorkspaceHolder, findExecutionWorkspaceHolder },
       }));
       let nativeChatExpectedCwd = selectedNativeChatExpectedCwd;
+      if (cosgralRole && selectedEnvironmentForConfig?.driver !== "local") {
+        throw new Error("COSGRAL local filesystem confinement requires a local environment; remote execution is not yet qualified.");
+      }
+      const cosgralBranch = `${cosgralRole === "worker" ? "cosgral" : "cosgral-coordinator"}/${issueId}/${agent.id}`;
+      if (cosgralRole && existingExecutionWorkspace &&
+          (existingExecutionWorkspace.sourceIssueId !== issueId || existingExecutionWorkspace.strategyType !== "git_worktree" ||
+           existingExecutionWorkspace.branchName !== cosgralBranch)) {
+        throw new Error("COSGRAL retained workspace belongs to a different task or executor.");
+      }
       const executionConfiguration = await timePreparation("execution_configuration", () => prepareHeartbeatExecutionConfiguration(db, {
         run, agent,
         task: { issueId, context, responsibleUserId, acceptedPlanContinuationWake, acceptedPlanWakeRoutingDecision, taskProjectContext, routineEnvContext, pinnedSkillTest },
@@ -2786,6 +2811,10 @@ export function heartbeatService(
           appendRunEvent,
         },
       }));
+      if (cosgralRole && (executionWorkspace.strategy !== "git_worktree" ||
+          executionWorkspace.branchName !== cosgralBranch)) {
+        throw new Error("COSGRAL execution requires its own task worktree; shared checkout fallback is forbidden.");
+      }
       const preparedInstructions = instructionWorkingCopy = createHeartbeatInstructionWorkingCopy({
         observabilityCompatibilityKey: observability?.compatibilityKey,
         db, instructionCopies, readRun: () => run!, agent, context,

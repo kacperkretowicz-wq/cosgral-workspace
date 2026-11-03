@@ -534,3 +534,125 @@ git diff --check
 
 ### Nadzorca – po Codex t7 (2026-11-03 ~21:00 CET)
 Presence/typing zacommitowane po ponownym przejściu testów: serwer 3 pliki/17 testów PASS, UI (ProjectConversation + hook presence) PASS. Niezweryfikowane: wizualny smoke obu motywów, pełny zestaw monorepo. Dalej: izolowane worktrees i bezpieczne domyślne uprawnienia (Codex t8).
+
+## Codex #8 — izolowane worktrees i uprawnienia (2026-11-03)
+
+### Zmiany
+
+- Sprawdzono istniejące execution workspaces, strategię `git_worktree` serwera,
+  konfigurację `codex_local`, local-process sandbox oraz terminal-workspace cleanup.
+  Rozwiązanie korzysta z tych mechanizmów, bez migracji i drugiego silnika.
+- Moduł `heartbeat/project-conversation-execution.ts` rozpoznaje koordynatora i
+  potomków z zapisanej hierarchii firmy/projektu (także zagnieżdżone delegacje).
+  Wymusza izolowany workspace i gałąź `cosgral/<issue UUID>/<agent UUID>`;
+  koordynator ma własny czysty worktree `cosgral-coordinator/<issue UUID>/<agent UUID>`.
+  Błędna hierarchia, binding innego zadania/agenta lub fallback do wspólnego
+  checkoutu kończą wykonanie błędem. Zwykła hierarchia zadań poza COSGRAL
+  zachowuje dotychczasowy wybór konfiguracji, także pomiędzy projektami.
+- Obie role używają sandboxa Codexa `workspace-write`, approvals `never`, obu
+  wariantów bypass=false. Repo koordynatora jest dodatkowo montowane `ro` przez
+  istniejący `bwrap`; wykonawca ma `rw` tylko dla własnego worktree. Adapter
+  ponownie narzuca politykę, usuwa nadpisania komendy/argumentów/profili i dodatkowe
+  ścieżki filesystem. Nie ma fallbacku po błędzie sandboxa.
+- Proces nie dziedziczy środowiska serwera: tylko PATH/locale i jawna konfiguracja
+  własnego runu. Własny provider home per agent/run otrzymuje tylko wybrane
+  credential, autoryzowane skills i konfigurację runtime; nie kopiuje konfiguracji,
+  innych logowań ani sesji operatora. Istniejący allowlist staging dereferencjonuje
+  skills. Staging i prywatny home są usuwane w finally; odświeżenie credential
+  korzysta z istniejącego newer-only/same-identity copy-back. Każda tura ma świeżą
+  sesję CLI, bez resume do usuniętego stagingu.
+- Żywa próba `bwrap` odtworzyła dwa problemy istniejącego mechanizmu: bind na
+  wcześniej utworzonym symlinku `/bin` i brak Node dla skryptowego entrypointu
+  CLI. Naprawiono montowanie usr-merge i dostarczenie instalacji Node jako `ro`.
+- Sprzątanie worktrees pozostaje po stronie istniejącego terminal cleanup:
+  terminalność drzewa, dostarczenie/merge, brak dirty files, retencja (domyślnie
+  dzień). Nie usuwa niezachowanych wyników po samym końcu runu. Test potwierdza
+  rzeczywiste usunięcie jednego worktree bez naruszenia drugiego i źródła.
+- `scripts/cosgral-e2e-delegation.mjs --verify-isolation` uruchamia rzeczywisty Git,
+  bwrap i ścieżkę adaptera z fikcyjnym programem `codex`, bez modelu/API/serwera.
+  Błąd izolacji daje FAIL. Tryb modeli ma teraz jawne źródło Git projektu i pusty
+  fixture commit w jednorazowym repo `/tmp` (nie w repo roboczym).
+- Model uprawnień i granice: `docs/cosgral/uprawnienia-agentow.md`; link w runbooku,
+  addytywne aktualizacje PRODUCT/SPEC-implementation oraz map funkcji i dostępu.
+
+### Testy — wykonane wyniki
+
+Polecenia pnpm: `PATH=/home/box/tools/bin:$PATH`.
+
+```sh
+node scripts/cosgral-e2e-delegation.mjs --verify-isolation
+# exit 0: serwer 2 pliki / 5 PASS + adapter 1 plik / 2 PASS
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 \
+  src/services/heartbeat/project-conversation-execution.test.ts \
+  src/services/heartbeat/project-conversation-isolation.test.ts \
+  src/services/heartbeat/workspaces.test.ts \
+  src/__tests__/project-conversations.test.ts
+# wcześniejszy rozszerzony zestaw: 4 pliki / 20 PASS (przed dodaniem 1 testu zwykłej hierarchii)
+PAPERCLIP_HOME=$(mktemp -d /tmp/cosgral8-regression-home-XXXXXX) \
+  pnpm --filter @paperclipai/adapter-codex-local exec vitest run \
+  src/server/execute.test.ts src/server/cosgral-policy.test.ts \
+  src/server/safe-defaults.test.ts src/server/codex-args.test.ts
+# exit 0: 4 pliki / 63 PASS
+pnpm --filter @paperclipai/adapter-codex-local exec vitest run \
+  src/server/execute.cosgral.test.ts src/server/cosgral-policy.test.ts
+# po końcowym ujednoliceniu workspace-write obu ról: exit 0, 2 pliki / 6 PASS
+pnpm --filter @paperclipai/adapter-utils exec vitest run src/local-process-sandbox.test.ts
+# exit 0: 10 PASS / 5 SKIP istniejących opcjonalnych prób
+node --test scripts/cosgral-e2e-delegation.test.mjs
+# exit 0: 31 PASS
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/adapter-codex-local exec tsc --noEmit
+pnpm --filter @paperclipai/adapter-utils exec tsc --noEmit
+# wszystkie exit 0
+node scripts/check-maps.mjs
+# exit 0: 35 obszarów / 193 IDs, tylko kontrola strukturalna
+node --check scripts/cosgral-e2e-delegation.mjs
+git diff --check
+```
+
+Próby systemowe sprawdzają dwa równoległe worktrees i gałęzie, własny zapis,
+niemożność odczytu katalogu/credential sąsiada i jego zmiennej środowiskowej,
+odmowę zapisu koordynatora i cleanup. Probe adaptera uruchamia prawdziwy proces
+przez bwrap, ale executable jest syntetyczny — nie wysyła żądań do modelu.
+Logi bez credential dump: `/tmp/cosgral8-{offline-final,permissions-final,regression-final,server-final,sandbox,script-final,tsc-final,codex-tsc,utils-tsc,maps}.log`.
+
+Wcześniejsze FAIL: import nowego modułu przed implementacją; próby bwrap wykryły
+opisane błędy montowania; mock skryptu wymagał nowego endpointu workspaces.
+Pięć istniejących testów adaptera nie mogło utworzyć domyślnego
+`/home/box/.paperclip`; powtórka z osobnym PAPERCLIP_HOME w `/tmp` przeszła.
+Typecheck wykrył błędne testowe `RealizedExecutionWorkspace.baseRef` oraz brak
+argumentu fallback w `asString`; poprawiono, końcowe typechecki przeszły.
+
+### Niezweryfikowane i ograniczenia
+
+- Nie uruchamiano prawdziwego modelu ani nowego HTTP delegowania/pełnego
+  heartbeat dispatch. Nowy tryb offline jest testem mechanizmów Git/procesu,
+  nie dowodem całego cyklu koordynator → wykonawca → raport. Historyczny modelowy
+  PASS #5 nie kwalifikuje nowych uprawnień. Brak nowego serwera; 3199 nadzorcy
+  pozostał nietknięty. Nie wykonano commit/push w repo roboczym.
+- Obsługiwany jest Linux + bwrap + `codex_local` legacy CLI. Inne adaptery,
+  ACP/native i remote są odrzucane. Nie kwalifikowano rzeczywistych provider
+  credentials, ich rotacji w tej ścieżce, własnych profili operatora, restartu,
+  handoffu z bindingiem innego agenta ani produkcyjnego Codex CLI.
+- Wspólny `.git` nie jest montowany do procesu: Git wymagający wspólnego gitdir
+  (status/commit itd.) jest niedostępny. Edycja i testy plików działają; dostarczenie
+  i operacje Git wymagają zaufanego hosta/operatora. Nie dodano brokera Git.
+- Nie weryfikowano automatycznej retencji/reapera w żywej bazie; wykorzystano
+  istniejące bramki bez zmian, sprawdzono bezpośrednią rzeczywistą funkcję cleanup.
+  Dirty/niedostarczona praca celowo pozostaje. Kanał koordynatora jest trwały.
+- To polityka wykonania zadania oparta na bieżącej hierarchii, nie nowa granica
+  autoryzacji całej firmy. Jawne capabilities/API nadal zależą od istniejących
+  uprawnień. Źródła Git i instalacja narzędzi muszą być wolne od sekretów; nie
+  dodano filtrowania egress ani klasyfikatora sekretów w śledzonych plikach.
+- Nie uruchamiano pełnego `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` ani
+  browser suites; brak zmian UI. Jest to celowana weryfikacja zadania 8, nie
+  deklaracja PR-ready całego monorepo. Nadzorca wykonuje dalszy odbiór/commit/push.
+
+### Otwarte punkty z COSGRAL-PROMPT-POSTEP.md (stan 3 XI 2026 ~21:30 CET)
+Przekreślone są tylko: mapa gotowe/konfiguracja/adaptacja/do dopisania (Etap 1) i prywatne repo (Etap 2). Faktycznie zrobione, ale NIEprzekreślone w pliku (do uzgodnienia przy aktualizacji): wspólny chat na żywo dwóch kont (HTTP/WS), obecność i „pisze”, koordynator + wykonawca Codex z delegowaniem (e2e PASS), widok rozmowy Slack×Codex (dwa motywy), historia po restarcie.
+Otwarte: §4 awatary, kursory na wspólnych tablicach, tryb „Obserwuj użytkownika”, sync zmian ustawień agentów i dodania agenta na żywo; §5 dobór wykonawcy wg kosztu/limitów/obciążenia, równoległe delegowanie, zatwierdzenia przez człowieka; §6 pełna konfiguracja agenta (awatar, rola, MCP/CLI/skille/pluginy, budżet, limit zadań, statystyki); §7 integracje Claude Code/Cursor/Grok/Gemini i API (OpenAI/Anthropic/Google/xAI/OpenRouter); §8 filtry kanałów wiadomości, wiadomości agent–agent; §9 widok Tabela i Workflow (kolejny punkt – Codex t9); §10 pamięć projektu w repo GitHub, podłączanie własnego repo w aplikacji; §11 hosting (Netlify, stały backend, trwała baza, NoMac); §12 personalizacja (akcent, szerokości paneli, układ, własne role, instrukcje globalne); §14 kryteria 2–4, 12–15; §16 instrukcja wdrożenia i lista funkcji.
+
+### Nadzorca – po Codex t8 (2026-11-03 ~21:50 CET)
+Zacommitowano izolowane worktrees i bezpieczne uprawnienia (docs/cosgral/uprawnienia-agentow.md). Testy po zakończeniu t8: adapter codex-local 2 pliki/6 testów PASS, serwer 3 pliki/42 testy PASS, node:test e2e delegacji 31 PASS. Niezweryfikowane przez nadzorcę: typechecki (raportuje t8 PASS), `--verify-isolation` na żywym serwerze, nowy test z prawdziwym modelem po zmianach t8 – zrobić po restarcie 3199.
+Przekreślono w COSGRAL-PROMPT-POSTEP.md tylko punkty potwierdzone testami e2e: §4 konto/zaproszenie/online/„pisze”/wiadomości na żywo (profil bez osobnego testu), §14 pkt 1 i 5–10. Pozostałe pozostają otwarte, nawet jeśli częściowo zrobione.
+Dalej: Codex t9 – Tabela, Workflow i konfiguracja agenta (§9, §6).
