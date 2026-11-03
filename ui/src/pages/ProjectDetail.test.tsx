@@ -15,9 +15,12 @@ const mockProjectsApi = vi.hoisted(() => ({
   get: vi.fn(),
   list: vi.fn(),
   update: vi.fn(),
+  getConversation: vi.fn(),
+  openConversation: vi.fn(),
 }));
 const mockIssuesApi = vi.hoisted(() => ({
   list: vi.fn(),
+  listAll: vi.fn(),
   update: vi.fn(),
 }));
 const mockAgentsApi = vi.hoisted(() => ({ list: vi.fn() }));
@@ -193,7 +196,10 @@ describe("ProjectDetail", () => {
     mockUsePluginSlots.mockReturnValue({ slots: [], isLoading: false });
     mockProjectsApi.get.mockResolvedValue(project());
     mockProjectsApi.list.mockResolvedValue([project()]);
+    mockProjectsApi.getConversation.mockResolvedValue(null);
+    mockProjectsApi.openConversation.mockResolvedValue({ issueId: "shared-issue", identifier: "PAP-42" });
     mockIssuesApi.list.mockResolvedValue([]);
+    mockIssuesApi.listAll.mockResolvedValue([]);
     mockAgentsApi.list.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([]);
     mockBudgetsApi.overview.mockResolvedValue({ policies: [] });
@@ -294,6 +300,53 @@ describe("ProjectDetail", () => {
       projectId: "project-1",
       originKindPrefix: "plugin:paperclip.missions",
     });
+  });
+
+  it("opens the shared conversation on request and reuses an existing thread", async () => {
+    mockLocation.pathname = "/projects/project-1/issues";
+    mockProjectsApi.getConversation.mockResolvedValue({ issueId: "shared-issue", identifier: "PAP-42" });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    root = createRoot(container);
+    await act(() => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>));
+    await settle();
+    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Open shared conversation")!.click());
+    await settle();
+    expect(mockProjectsApi.getConversation).toHaveBeenCalledWith("project-1", "company-1");
+    expect(mockProjectsApi.openConversation).not.toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith("/issues/PAP-42");
+    queryClient.clear();
+  });
+
+  it("creates a shared thread only after the user opens it", async () => {
+    mockLocation.pathname = "/projects/project-1/issues";
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    root = createRoot(container);
+    await act(() => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>));
+    await settle();
+    expect(mockProjectsApi.openConversation).not.toHaveBeenCalled();
+    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Open shared conversation")!.click());
+    await settle();
+    expect(mockProjectsApi.openConversation).toHaveBeenCalledWith("project-1", "company-1");
+    expect(mockNavigate).toHaveBeenCalledWith("/issues/PAP-42");
+    queryClient.clear();
+  });
+
+  it("shows progress from the accessible project tasks and keeps the task list available", async () => {
+    mockLocation.pathname = "/projects/project-1/issues";
+    mockIssuesApi.listAll.mockResolvedValue([
+      { id: "one", status: "done" },
+      { id: "two", status: "blocked" },
+      { id: "three", status: "cancelled" },
+      { id: "thread", status: "backlog", originKind: "cosgral_project_conversation" },
+    ]);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    root = createRoot(container);
+    await act(() => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>));
+    await settle();
+    expect(mockIssuesApi.listAll).toHaveBeenCalledWith("company-1", expect.objectContaining({ projectId: "project-1" }));
+    expect(container.textContent).toContain("1 of 2 completed");
+    expect(container.querySelector('[data-testid="issues-list"]')).not.toBeNull();
+    queryClient.clear();
   });
 
   it("keeps Timeline out of the project task-list controls", async () => {

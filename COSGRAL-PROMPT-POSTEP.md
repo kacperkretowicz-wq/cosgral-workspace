@@ -6,6 +6,10 @@ Przekreślenie oznacza element faktycznie wykonany w obecnym zakresie. Niezaznac
 - Repozytorium jest prywatną adaptacją Paperclip, z zachowaną historią upstream.
 - Projekt Uszko został utworzony wyłącznie w lokalnej testowej bazie; nie podłączono jego repozytorium.
 - Aktualizacja użytkownika: koordynatorem nie musi być Claude; użytkownik wybiera kompatybilnego agenta, model i dostępne źródło uwierzytelnienia. Oryginalnego przykładu nie zmieniano.
+- Aktualizacja użytkownika z 3 listopada: Uszko jest przykładowym projektem; użytkownik ma móc sam podłączyć wybrane repozytorium w aplikacji. Nie jest wymagane podłączenie Uszka podczas budowy Workspace.
+- Kierunek wizualny: [załączona przez użytkownika referencja](docs/cosgral/referencja-interfejsu.png) WorkHub pokazuje ciemny, uporządkowany interfejs z boczną hierarchią koordynatora i agentów, centralną rozmową oraz czytelnymi, osadzonymi w niej zestawieniami delegowania i postępu. To inspiracja do adaptacji, nie wymóg kopiowania marki ani fikcyjnych danych. Zachować również wymagania jasnego motywu, dostępności i układu mobilnego.
+- Dodatkowa inspiracja: [Happy Engineering](https://happy.engineering/welcome/) — trwałe sesje, czytelna konfiguracja modeli i agentów, odrębne worktree dla pracy równoległej oraz wspólna praca nad sesją. Deklarowane funkcje Happy nie są dowodem działania tych funkcji w COSGRAL; zgodność integracji i bezpieczeństwo wymagają osobnej weryfikacji. Paperclip pozostaje wybraną bazą.
+- Kontynuacja: działa sprawdzony na poziomie API fundament jednego wątku projektu, ale pełna synchronizacja dwóch zalogowanych przeglądarek, koordynator, delegowanie i docelowy interfejs pozostają otwarte. Szczegóły i zakres dowodów są w `COSGRAL-PRZEKAZANIE.md`.
 
 ---
 
@@ -454,8 +458,8 @@ Przeprowadź testy end-to-end i wdroż aplikację w dostępnej infrastrukturze. 
 Nie uznawaj projektu za gotowy, dopóki nie uda się przetestować następującego scenariusza:
 
 1. Pierwszy użytkownik loguje się do COSGRAL Workspace.
-~~2. Tworzy lub otwiera projekt Uszko.~~
-3. Wybiera Claude jako koordynatora.
+2. Tworzy lub otwiera projekt, a wybrane repozytorium może samodzielnie podłączyć w aplikacji. (Wcześniej utworzono jedynie testowy projekt Uszko; pełnego procesu podłączania repozytorium nie zweryfikowano.)
+3. Wybiera kompatybilnego koordynatora, model i dostępne źródło uwierzytelnienia (Claude był tylko przykładem).
 4. Podłącza działającego agenta Codex.
 5. Zaprasza drugiego użytkownika.
 6. Drugi użytkownik wchodzi do tego samego projektu.

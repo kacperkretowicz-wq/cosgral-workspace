@@ -2,7 +2,7 @@ import { useShowAgentCreatedTasks } from "../hooks/useShowAgentCreatedTasks";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation, Navigate } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PROJECT_COLORS, PROJECT_ICON_NAMES, isUuidLike, type BudgetPolicySummary } from "@paperclipai/shared";
+import { PROJECT_COLORS, PROJECT_ICON_NAMES, PROJECT_CONVERSATION_ORIGIN_KIND, isUuidLike, type BudgetPolicySummary } from "@paperclipai/shared";
 import { budgetsApi } from "../api/budgets";
 import { executionWorkspacesApi } from "../api/execution-workspaces";
 import { instanceSettingsApi } from "../api/instanceSettings";
@@ -22,6 +22,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ProjectTile } from "../components/ProjectTile";
 import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { IssuesList } from "../components/IssuesList";
+import { ProjectTaskProgress } from "../components/ProjectTaskProgress";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { QueryErrorState, useQueryView } from "../components/QueryView";
 import { PageTabBar } from "../components/PageTabBar";
@@ -221,11 +222,13 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
     enabled: !!companyId,
   });
 
-  const { data: issues, isLoading, error } = useQuery({
+  const { data: fetchedIssues, isLoading, error } = useQuery({
     queryKey: [...queryKeys.issues.listByProject(companyId, projectId), showAgentCreatedTasks],
     queryFn: () => issuesApi.listAll(companyId, { projectId, includeRoutineExecutions: true, includeAgentCreatedTasks: showAgentCreatedTasks }),
     enabled: !!companyId,
   });
+  // A conversation is backed by an issue thread, but it is not a task.
+  const issues = useMemo(() => fetchedIssues?.filter((issue) => issue.originKind !== PROJECT_CONVERSATION_ORIGIN_KIND), [fetchedIssues]);
   const liveIssueIds = useMemo(() => collectLiveIssueIds(liveRuns, issues), [issues, liveRuns]);
 
   const updateIssue = useUpdateIssueMutation({
@@ -234,18 +237,40 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
   });
 
   return (
-    <IssuesList
-      issues={issues ?? []}
-      isLoading={isLoading}
-      error={error as Error | null}
-      agents={agents}
-      projects={projects}
-      liveIssueIds={liveIssueIds}
-      projectId={projectId}
-      enableAgentCreatedVisibilityFilter
-      viewStateKey="paperclip:project-issues-view"
-      onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
-    />
+    <div className="space-y-4">
+      {!isLoading && !error && issues && <ProjectTaskProgress issues={issues} showAgentCreatedTasks={showAgentCreatedTasks} />}
+      <IssuesList
+        issues={issues ?? []}
+        isLoading={isLoading}
+        error={error as Error | null}
+        agents={agents}
+        projects={projects}
+        liveIssueIds={liveIssueIds}
+        projectId={projectId}
+        enableAgentCreatedVisibilityFilter
+        viewStateKey="paperclip:project-issues-view"
+        onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
+      />
+    </div>
+  );
+}
+
+function ProjectConversationEntry({ projectId, companyId }: { projectId: string; companyId: string }) {
+  const navigate = useNavigate();
+  const conversation = useMutation({
+    mutationFn: async () => (await projectsApi.getConversation(projectId, companyId))
+      ?? await projectsApi.openConversation(projectId, companyId),
+    onSuccess: (result) => navigate(`/issues/${encodeURIComponent(result.identifier ?? result.issueId)}`),
+  });
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button type="button" variant="outline" disabled={conversation.isPending} onClick={() => conversation.mutate()}>
+        {conversation.isPending ? "Opening conversation…" : "Open shared conversation"}
+      </Button>
+      {conversation.isError && <p role="alert" className="text-sm text-destructive">
+        {conversation.error instanceof Error ? conversation.error.message : "Could not open the conversation."}
+      </p>}
+    </div>
   );
 }
 
@@ -823,6 +848,8 @@ export function ProjectDetail() {
         title="Project summary"
         description="Summarizer keeps the latest project status, next step, and operator-needed items here."
       />
+
+      {resolvedCompanyId && <ProjectConversationEntry projectId={project.id} companyId={resolvedCompanyId} />}
 
       <PluginSlotOutlet
         slotTypes={["toolbarButton", "contextMenuItem"]}

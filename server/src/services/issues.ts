@@ -6,6 +6,7 @@ import { notifyDeferredExecutionEligibility } from "./deferred-execution-notific
 import { notifyIssueRecovery } from "./issue-recovery-notifications.js";
 import { notifyRunDispatch } from "./run-dispatch-notifications.js";
 import { notifyStatusCardIssueChange } from "./status-card-notifications.js";
+import { assertProjectConversationMutation, PROJECT_CONVERSATION_ORIGIN } from "./project-conversation-policy.js";
 import { notifyIssueAttentionRetentionWork } from "./retention-work-notifications.js";
 import { notifyRoutineExecutionStatus } from "./routine-execution-status-notifications.js";
 import { notifyMergeConfirmationWork } from "./merged-pr-confirmation-notifications.js";
@@ -6415,6 +6416,7 @@ async function blockedInboxIssueConditions(
   const conditions = [
     eq(issues.companyId, companyId),
     visibleIssueCondition(),
+    ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN),
     notInArray(issues.status, [...BLOCKED_INBOX_TERMINAL_STATUSES]),
   ];
   if (filters?.readCondition) conditions.push(filters.readCondition);
@@ -8207,6 +8209,7 @@ export function issueService(db: Db) {
         .from(participated).innerJoin(issues, eq(issues.id, sql`"mine_participants"."id"`)).where(and(
         eq(issues.companyId, companyId),
         visibleIssueCondition(),
+        ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN),
         isNull(issues.conversationAgentId),
         nonPluginOperationIssueCondition(),
         ne(issues.status, "cancelled"),
@@ -8251,6 +8254,9 @@ export function issueService(db: Db) {
         eq(issues.companyId, companyId),
         visibleIssueCondition(),
       ];
+      if (!filters?.issueIds && filters?.originKind !== PROJECT_CONVERSATION_ORIGIN) {
+        conditions.push(ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN));
+      }
       if (filters?.issueIds) {
         if (filters.issueIds.length === 0) return [];
         conditions.push(inArray(issues.id, filters.issueIds));
@@ -8607,6 +8613,9 @@ export function issueService(db: Db) {
       }
 
       const conditions = [eq(issues.companyId, companyId), visibleIssueCondition()];
+      if (!filters?.issueIds && filters?.originKind !== PROJECT_CONVERSATION_ORIGIN) {
+        conditions.push(ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN));
+      }
       if (filters?.readCondition) conditions.push(filters.readCondition);
       const creationCondition = creationVisibilityCondition(companyId, filters);
       if (creationCondition) conditions.push(creationCondition);
@@ -11148,6 +11157,7 @@ export function issueService(db: Db) {
         .where(idPredicate)
         .then((rows: Array<typeof issues.$inferSelect>) => rows[0] ?? null);
       if (!existing) return null;
+      assertProjectConversationMutation(existing, data);
       if (data.parentId !== undefined && data.parentId !== existing.parentId) {
         await assertExecutionTaskParent(dbOrTx, existing.companyId, data.parentId);
       }
@@ -11432,6 +11442,7 @@ export function issueService(db: Db) {
           .for("update")
           .then((rows: Array<typeof issues.$inferSelect>) => rows[0] ?? null);
         if (!receiptExisting) return null;
+        assertProjectConversationMutation(receiptExisting, data);
         if (issueData.executionPolicy !== undefined) assertQualityReviewPolicyMutation({ previousPolicy: receiptExisting.executionPolicy, nextPolicy: issueData.executionPolicy, actorAgentId, actorUserId });
         if ((patch.status ?? receiptExisting.status) === "done" &&
             (receiptExisting.status !== "done" || issueData.executionPolicy !== undefined)) {

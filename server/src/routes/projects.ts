@@ -1,4 +1,6 @@
 import { projectGitAuthorizationService } from "../services/project-git-authorization.js";
+import { projectConversationService } from "../services/project-conversations.js";
+import type { ActivityPublication } from "../services/activity-log.js";
 import { skillAccessRequestContext } from "../services/skill-access.js";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
@@ -33,7 +35,7 @@ import type { WorkspaceRuntimeDesiredState, WorkspaceRuntimeServiceStateMap } fr
 import { trackProjectCreated } from "@paperclipai/shared/telemetry";
 import { validate } from "../middleware/validate.js";
 import { accessService, projectService, logActivity, workspaceOperationService } from "../services/index.js";
-import { conflict, forbidden, unprocessable } from "../errors.js";
+import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
 import { externalObjectService } from "../services/external-objects.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
 import { assertBoard, assertCompanyAccess, getAccessibleResource, getActorInfo } from "./authz.js";
@@ -64,6 +66,7 @@ export function projectRoutes(db: Db) {
   const router = Router();
   router.use(skillAccessRequestContext);
   const svc = projectService(db);
+  const projectConversations = projectConversationService(db);
 
   async function repositoryViewer(req: Request) {
     if (req.actor.type === "board") return { userId: req.actor.userId ?? null, localTrusted: req.actor.source === "local_implicit" };
@@ -365,6 +368,47 @@ export function projectRoutes(db: Db) {
     if (!(await assertProjectReadAllowed(req, res, project))) return;
     res.json(project);
   });
+
+  // A project conversation is shared by project members, unlike personal agent chats.
+  // GET is read-only; POST explicitly creates the backing thread at most once.
+  for (const method of ["get", "post"] as const) {
+    router[method]("/projects/:id/conversation", async (req, res) => {
+      assertBoard(req);
+      if (!req.actor.userId) throw forbidden("A user session is required");
+      const project = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Project not found");
+      if (!project || !(await assertProjectReadAllowed(req, res, project))) return;
+      if (method === "post") assertCompanyAccess(req, project.companyId);
+      let issue = await projectConversations.get(project.companyId, project.id);
+      let created = false;
+      if (method === "post" && !issue) {
+        if (project.archivedAt) throw conflict("Archived projects cannot start a new conversation");
+        const publications: ActivityPublication[] = [];
+        const actor = getActorInfo(req);
+        const result = await projectConversations.getOrCreate(project.companyId, project.id, req.actor.userId, {
+          authorize: async (tx) => {
+            const decision = await accessService(tx).decide({ actor: req.actor, action: "project:read",
+              resource: { type: "project", companyId: project.companyId, projectId: project.id } });
+            if (!decision.allowed) throw notFound("Project not found");
+          },
+          created: async (tx, issueId) => {
+            const activity = await persistActivity(tx, { companyId: project.companyId, actorType: actor.actorType,
+              actorId: actor.actorId, action: "project.conversation_created", entityType: "issue", entityId: issueId,
+              details: { projectId: project.id } });
+            publications.push(activity.publication);
+          },
+        });
+        if (!result) throw notFound("Project not found");
+        issue = result.issue;
+        created = result.created;
+        for (const publication of publications) publishActivity(publication);
+      }
+      if (!issue) { res.json(null); return; }
+      const decision = await access.decide({ actor: req.actor, action: "issue:read",
+        resource: { type: "issue", companyId: project.companyId, issueId: issue.id } });
+      if (!decision.allowed) throw notFound("Conversation not found");
+      res.status(created ? 201 : 200).json({ issueId: issue.id, identifier: issue.identifier });
+    });
+  }
 
   router.get("/projects/:id/external-object-summary", async (req, res) => {
     const id = req.params.id as string;

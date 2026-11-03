@@ -21,6 +21,10 @@ function projectPath(id: string, companyId?: string, suffix = "") {
 }
 
 export const projectsApi = {
+  getConversation: (id: string, companyId?: string) =>
+    api.get<{ issueId: string; identifier: string | null } | null>(projectPath(id, companyId, "/conversation")),
+  openConversation: (id: string, companyId?: string) =>
+    api.post<{ issueId: string; identifier: string | null }>(projectPath(id, companyId, "/conversation"), {}),
   gitAuthorization: (id: string) => api.get<ProjectGitAuthorization>(projectPath(id, undefined, "/git-authorization")),
   setGitAuthorization: (id: string, grantId: string | null) => api.put<ProjectGitAuthorization>(projectPath(id, undefined, "/git-authorization"), { grantId }),
   repositoryOptions: (companyId: string) => api.get<ProjectRepositoryOptions>(`/companies/${companyId}/project-repositories`),

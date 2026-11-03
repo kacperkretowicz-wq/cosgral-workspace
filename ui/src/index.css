@@ -3636,6 +3636,18 @@ span.paperclip-mention-chip[data-mention-kind="external-object"] {
   from { transform: translateX(-100%); }
   to { transform: translateX(350%); }
 }
+.project-task-progress {
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--muted);
+  color: var(--primary);
+}
+.project-task-progress::-webkit-progress-bar { background: var(--muted); }
+.project-task-progress::-webkit-progress-value { background: var(--primary); }
+.project-task-progress::-moz-progress-bar { background: var(--primary); }
+
 .skill-import-progress {
   appearance: none;
   overflow: hidden;

@@ -110,6 +110,7 @@ export const issues = pgTable(
       and ${table.status} not in ('done', 'cancelled')
     )`),
     companyIdUq: unique("issues_company_id_uq").on(table.companyId, table.id),
+    companyProjectIdUq: unique("issues_company_project_id_uq").on(table.companyId, table.projectId, table.id),
     companyStatusIdx: index("issues_company_status_idx").on(table.companyId, table.status),
     companyHarnessKindIdx: index("issues_company_harness_kind_idx").on(table.companyId, table.harnessKind),
     assigneeStatusIdx: index("issues_company_assignee_status_idx").on(
