@@ -31,3 +31,11 @@ Conference Room jest eksperymentalny, wyłączony i ograniczony do local_trusted
 - https://github.com/wemux-ai/wemux
 - https://github.com/slopus/happy
 - https://github.com/777genius/agent-teams-ai
+
+## Stan pierwszego uruchomienia
+
+Lokalny serwer i PostgreSQL wystartowały na loopback; migracje 421 przeszły, `/api/health` zwrócił `ok`. Repozytorium `kacperkretowicz-wq/cosgral-workspace` jest prywatne. W testowej instancji utworzono organizację COSGRAL i projekt Uszko bez podłączenia repozytorium produkcyjnego.
+
+Test Codex: wbudowany test adaptera zwrócił rzeczywistą odpowiedź `hello`. Oddzielny agent testowy w zadaniu COS-1 odpowiedział `4`. Nie oznacza to poprawnej pełnej orkiestracji: zadanie nie zakończyło się samodzielnie i uruchomienie zgłosiło błąd zapisu dyspozycji przez API. Zadanie ręcznie zakończono, agenta wstrzymano, retry anulowano. Do wyjaśnienia przed codziennym użyciem. Test dwóch użytkowników, delegowania i współdzielonego czatu nie został wykonany.
+
+Koordynator ma być wybierany przez użytkownika z kompatybilnych agentów i dostępnych kont; Claude nie jest wymagany. Dane subskrypcji pozostają w środowisku właściciela. Widok w przeglądarce jest jeszcze interfejsem upstream, nie projektem COSGRAL.
