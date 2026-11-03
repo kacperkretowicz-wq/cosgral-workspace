@@ -76,3 +76,57 @@ W toku: dodano tożsamość wspólnej rozmowy projektu i migrację `0423`, endpo
 6. Dodać tabelę i workflow na tych samych danych, integracje właściwe dla poszczególnych runtime’ów, trwałą konfigurację i instrukcje. Zrealizować pełny test dwóch użytkowników i restartu oraz konfigurację hostingu dopiero po przejściu kontroli bezpieczeństwa.
 
 Oryginalny prompt z przekreśleniem tylko potwierdzonych punktów znajduje się w `COSGRAL-PROMPT-POSTEP.md`. Pełna lista warunków w nim pozostaje obowiązująca z aktualizacją wyboru dowolnego koordynatora i samodzielnego podłączania repozytoriów. Referencja wyglądu znajduje się w `docs/cosgral/referencja-interfejsu.png`. Następny agent powinien kontynuować realizację całego celu, a nie traktować obecnego testowego wątku jako ukończonego produktu.
+
+## Aktualizacja 3 XI (sesja Linux/Codex #1)
+
+Zakres: wyłącznie bezpieczna domyślna polityka Codex local, diagnoza dostępu agenta do lokalnego API i próba startu Linux. **Pełny cykl rzeczywistego agenta nadal nie jest potwierdzony.** Nie wykonano commitów ani push; zmiany pozostają w working tree.
+
+### Diagnoza i dowody
+
+- Potwierdzony błąd polityki: `DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX` miał wartość `true`, mimo że opis adaptera deklarował workspace sandbox bez bypassa. Drugie `?? true` znajdowało się w konwersji ustawień Codexa w `server/src/services/agent-runner-selection.ts`. Nowe testy przed poprawką wykazały 3 błędy adaptera i 1 błąd serwera (`expected true to be false`). To dowód złej wartości domyślnej, **nie dowód przyczyny odmowy TCP w poprzedniej sesji Windows**.
+- Zwykły CLI z wyłączonym bypassem już przed tą sesją dodawał `sandbox_mode="workspace-write"` i `sandbox_workspace_write.network_access=true`. Jawny `--sandbox`/profil w `extraArgs` wyłącza ten automatyczny dobór. Jawny zakaz sieci zachowuje znaczenie. ACP ma osobne ustawienie `PAPERCLIP_CODEX_ACP_NETWORK_ACCESS` i istniejący patch dla polityki każdej tury. Nie dodano ogólnego odblokowania sieci ani flag omijających sandbox. Włączenie sieci Codexa nie ogranicza jej do loopback; ograniczona lista hostów wymaga istniejącego mechanizmu `networkScope=allowlist` i osobnej kwalifikacji.
+- Ścieżka uwierzytelniania: heartbeat w `heartbeat/runtime-execution.ts` tworzy JWT przez `agent-auth-jwt.ts`; adapter `execute.ts` przekazuje go jako `PAPERCLIP_API_KEY`, a `codexShellEnvironmentKeys` dopuszcza tę nazwę do środowiska shell. `buildPaperclipEnv` wybiera `PAPERCLIP_API_URL`, potem `PAPERCLIP_RUNTIME_API_URL`, następnie host/port nasłuchu. Middleware weryfikuje podpis, firmę/agenta oraz powiązanie run ID. Nie wykryto w tych miejscach ogólnego pominięcia zmiennych. Start nowej instancji tutaj pokazał **brak sekretu JWT**; w takim stanie heartbeat tylko ostrzega i startuje bez wstrzykniętego klucza. Health może równocześnie podawać `authReady: true`. Brak JWT powoduje problem uwierzytelniania, a nie odmowę połączenia TCP.
+- Prosty serwer Node na losowym porcie `127.0.0.1` odpowiedział z hosta `cosgral-loopback-ok`. Próby `codex exec -s workspace-write` z `-c sandbox_workspace_write.network_access=false` i `true` nie dały dowodu wykonania curl. Dodatkowa próba `--json` do działającego Paperclip health zwróciła zero zdarzeń; kod procesu 0 i ostrzeżenie `Read-only file system` **nie oznaczają sukcesu**. `codex sandbox` z obiema politykami, a także z samym `true`, kończył się kodem 1: `error building bubblewrap command: app-server socket directory must be a user-owned directory with mode 0700`. Użyto bieżącego `CODEX_HOME`; nie odczytywano ani nie przenoszono jego `auth.json`. Ograniczenia tej maszyny uniemożliwiły rozstrzygający eksperyment false/true. Hipoteza blokady loopback w poprzedniej konfiguracji pozostaje otwarta; nie ma dowodu wykluczającego niedziałający serwer lub niewłaściwy host/port na Windows.
+- Adapter instaluje skill Paperclip w efektywnym `CODEX_HOME/skills`; skill opisuje curl, autoryzację i zapis dyspozycji. Nie wymaga globalnego CLI; `paperclipai` nie znaleziono w PATH tej maszyny. Bezpośrednie wywołanie curl do API pozostaje właściwą drogą diagnostyczną.
+- Retry sprawdzono statycznie: `heartbeat/retries.ts` ogranicza zwykłe transient retries do dwóch terminów (30 i 60 s); `heartbeat/run-lifecycle.ts` wyczerpuje retry brakującego komentarza po jednym ponowieniu. Nie zmieniano tych odrębnych mechanizmów i nie potwierdzono ich zachowania w rzeczywistym cyklu agenta.
+
+### Zmienione pliki
+
+- `packages/adapters/codex-local/src/index.ts`: domyślny bypass `false` i zgodny opis ustawienia. Z tej samej stałej korzystają normalizacja agenta w routes, builder adaptera i istniejące elementy UI. W aktualnych seedach nie znaleziono analogicznej jawnej wartości Codex `true` do zmiany. Nie migrowano zapisanych wyborów istniejących agentów.
+- `server/src/services/agent-runner-selection.ts`: konwersja Codexa korzysta z tej samej bezpiecznej stałej; zachowuje jawny wybór oraz starszy alias `dangerouslyBypassSandbox`.
+- `packages/adapters/codex-local/src/server/safe-defaults.test.ts`: regresja domyślnej polityki CLI, resume, buildera UI i zachowania jawnego zakazu sieci.
+- `packages/adapters/codex-local/src/server/codex-args.test.ts`, `packages/adapters/codex-local/src/server/execute.remote.test.ts`, `server/src/services/agent-runner-selection.test.ts`, `ui/src/adapters/codex-local/config-fields.test.tsx`: oczekiwania bezpiecznych domyślnych uprawnień, również dla wznowienia i przełącznika UI; jawne istniejące ustawienia nadal mają własne testy.
+- `docs/cosgral/uruchomienie-linux.md`: procedura, wyniki startu API i granice eksperymentu; niniejszy plik — dopisane przekazanie.
+
+### Weryfikacja rzeczywiście wykonana
+
+Komendy uruchamiano z katalogu repozytorium; każda poniższa zielona pozycja zakończyła się kodem 0:
+
+```sh
+pnpm --filter @paperclipai/adapter-codex-local exec vitest run src/server/safe-defaults.test.ts src/server/codex-args.test.ts src/server/acp.test.ts src/server/execute.auth-precedence.test.ts src/ui/build-config.test.ts src/index.test.ts
+# 6 plików, 186 testów zaliczonych
+PAPERCLIP_HOME=/tmp/cosgral-adapter-unit-tests pnpm --filter @paperclipai/adapter-codex-local exec vitest run src/server/execute.remote.test.ts
+# 1 plik, 7 testów zaliczonych (mockowany transport, nie prawdziwy SSH)
+pnpm --filter @paperclipai/server exec vitest run src/services/agent-runner-selection.test.ts
+# 1 plik, 232 testy zaliczone
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/agent-auth-jwt.test.ts
+# 1 plik, 18 testów zaliczonych
+pnpm --filter @paperclipai/ui exec vitest run src/lib/new-agent-hire-payload.test.ts src/adapters/codex-local/config-fields.test.tsx
+# 2 pliki, 48 testów zaliczonych
+pnpm --filter @paperclipai/adapter-codex-local typecheck
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui typecheck
+pnpm check:token-gates
+pnpm --filter @paperclipai/plugin-sdk build
+```
+
+Zachowane niepowodzenia i ich zakres:
+
+- Przed zmianą nowe testy były czerwone, zgodnie z oczekiwaniem regresji. Po zmianie stare oczekiwania bypassa spowodowały 18 błędów `codex-args`, 1 błąd UI i 3 błędy oczekiwań w `execute.remote`; zaktualizowano je do nowej polityki, następnie powyższe zestawy przeszły. Pierwszy `execute.remote` dodatkowo nie mógł utworzyć `/home/box/.paperclip`; powtórzenie używało zapisywalnego, izolowanego `PAPERCLIP_HOME` w `/tmp`.
+- `env -u DATABASE_URL pnpm dev:once --data-dir /tmp/cosgral-linux-codex-1`: 422 migracje zastosowane, część TypeScript runnera zbudowana; pełny start przerwany przez brak builda SDK i później Cargo cache tylko do odczytu. Nie zaliczono standardowego startu.
+- `pnpm --filter @paperclipai/server typecheck`: nie dotarł do `tsc`, bo `prepare:runner-vendor` wymusił build natywny i zapis Cargo do `/home/box/.cargo/registry/cache` zakończył się `Read-only file system` (101). Osobne `exec tsc --noEmit` przeszło; nie zastępuje to zaliczenia całego skryptu pakietu.
+- Po buildzie plugin SDK bezpośrednie `env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-linux-codex-1 HOST=127.0.0.1 PORT=3100 PAPERCLIP_MIGRATION_AUTO_APPLY=true pnpm --filter @paperclipai/server dev` uruchomiło **API bez UI**. `curl --max-time 5 -fsS http://127.0.0.1:3100/api/health` zwrócił HTTP 200, `status: ok`, recovery `ready`. `/api/agents/me` bez klucza zwróciło HTTP 401. Nowa instancja nie miała jeszcze backupu i zgłaszała ostrzeżenie. Po testach proces zatrzymano Ctrl+C; połączenia do 3100 i 54329 zwracały `ECONNREFUSED`.
+
+Nie wykonano repozytoryjnego pełnego zestawu `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` ani testów przeglądarkowych; to skupiona weryfikacja, nie przekazanie PR-ready. Nie zweryfikowano autentycznego heartbeat → checkout → komentarz → `done`, dostępu agenta do API z wnętrza sandboxa, natywnego runnera ani dwóch kont. Nie skonfigurowano trwałego JWT i nie kopiowano poświadczeń. Dokumenty pozostają w working tree zgodnie z poleceniem; nie publikowano artefaktów do zewnętrznej instancji.
+
+**Następny krok:** na środowisku z działającym sandboxem i zapisywalnym bieżącym `CODEX_HOME` powtórzyć równoczesny test host/sandbox false/true. Skonfigurować trwały JWT standardowym onboardingiem bez ujawniania wartości. Następnie uruchomić jeden izolowany agent Codex CLI z bypassem `false`, potwierdzić `/api/agents/me`, checkout, komentarz i faktyczny zapis `done`, odczytać wynik niezależnie i sprawdzić brak kolejnego retry. Dopiero ten wynik może zamknąć cel pełnego cyklu.

@@ -8,7 +8,7 @@ describe("buildCodexExecArgs", () => {
     { config: { args: ["-c", "approval_policy=on-request"] }, bypass: false, args: ["exec", "--json", "-c", 'sandbox_mode="workspace-write"', "-c", "sandbox_workspace_write.network_access=true", "-c", "approval_policy=on-request", "-"] },
     { config: { extraArgs: [], args: ["--profile", "restricted"] }, bypass: false, args: ["exec", "--json", "--profile", "restricted", "-"] },
     { config: { extraArgs: [0, null], args: ["--sandbox", "read-only"] }, bypass: false, args: ["exec", "--json", "--sandbox", "read-only", "-"] },
-    { config: { extraArgs: ["--color", "never"], args: ["--sandbox", "read-only"] }, bypass: true, args: ["exec", "--json", "--dangerously-bypass-approvals-and-sandbox", "--color", "never", "-"] },
+    { config: { extraArgs: ["--color", "never"], args: ["--sandbox", "read-only"] }, bypass: false, args: ["exec", "--json", "-c", 'sandbox_mode="workspace-write"', "-c", "sandbox_workspace_write.network_access=true", "--color", "never", "-"] },
     { config: { dangerouslyBypassApprovalsAndSandbox: true, extraArgs: ["--sandbox", "read-only"] }, bypass: true, args: ["exec", "--json", "--dangerously-bypass-approvals-and-sandbox", "--sandbox", "read-only", "-"] },
     { config: { dangerouslyBypassSandbox: true, args: ["--sandbox", "read-only"] }, bypass: true, args: ["exec", "--json", "--dangerously-bypass-approvals-and-sandbox", "--sandbox", "read-only", "-"] },
     { config: { dangerouslyBypassApprovalsAndSandbox: false, dangerouslyBypassSandbox: true, extraArgs: ["--color", "never"] }, bypass: false, args: ["exec", "--json", "-c", 'sandbox_mode="workspace-write"', "-c", "sandbox_workspace_write.network_access=true", "--color", "never", "-"] },
@@ -17,10 +17,10 @@ describe("buildCodexExecArgs", () => {
     expect(buildCodexExecArgs(config).args).toEqual(args);
   });
 
-  it.each([null, "existing-session"])("defaults direct and resumed launches to full bypass (%s)", (resumeSessionId) => {
+  it.each([null, "existing-session"])("defaults direct and resumed launches to a workspace sandbox (%s)", (resumeSessionId) => {
     const { args } = buildCodexExecArgs({}, { resumeSessionId });
-    expect(args).toContain("--dangerously-bypass-approvals-and-sandbox");
-    expect(args).not.toContain('sandbox_mode="workspace-write"');
+    expect(args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
+    expect(args).toContain('sandbox_mode="workspace-write"');
     if (resumeSessionId) expect(args.slice(-3)).toEqual(["resume", resumeSessionId, "-"]);
   });
 
@@ -37,7 +37,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       model,
       "-c",
@@ -77,7 +80,10 @@ describe("buildCodexExecArgs", () => {
       "--search",
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "gpt-5.4",
       "-c",
@@ -100,7 +106,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "gpt-5.5",
       "-c",
@@ -123,7 +132,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "future-codex-model",
       "-c",
@@ -145,7 +157,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "-c",
       'service_tier="fast"',
       "-c",
@@ -168,7 +183,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "gpt-5",
       "-",
@@ -186,7 +204,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "gpt-5.4-mini",
       "-",
@@ -204,8 +225,11 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--skip-git-repo-check",
-      "--dangerously-bypass-approvals-and-sandbox",
       "--model",
       "gpt-5.5",
       "-",
@@ -225,7 +249,10 @@ describe("buildCodexExecArgs", () => {
     expect(result.args).toEqual([
       "exec",
       "--json",
-      "--dangerously-bypass-approvals-and-sandbox",
+      "-c",
+      'sandbox_mode="workspace-write"',
+      "-c",
+      "sandbox_workspace_write.network_access=true",
       "--model",
       "gpt-5.5",
       "--skip-git-repo-check",
