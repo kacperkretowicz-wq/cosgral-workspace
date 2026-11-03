@@ -130,3 +130,61 @@ Zachowane niepowodzenia i ich zakres:
 Nie wykonano repozytoryjnego pełnego zestawu `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` ani testów przeglądarkowych; to skupiona weryfikacja, nie przekazanie PR-ready. Nie zweryfikowano autentycznego heartbeat → checkout → komentarz → `done`, dostępu agenta do API z wnętrza sandboxa, natywnego runnera ani dwóch kont. Nie skonfigurowano trwałego JWT i nie kopiowano poświadczeń. Dokumenty pozostają w working tree zgodnie z poleceniem; nie publikowano artefaktów do zewnętrznej instancji.
 
 **Następny krok:** na środowisku z działającym sandboxem i zapisywalnym bieżącym `CODEX_HOME` powtórzyć równoczesny test host/sandbox false/true. Skonfigurować trwały JWT standardowym onboardingiem bez ujawniania wartości. Następnie uruchomić jeden izolowany agent Codex CLI z bypassem `false`, potwierdzić `/api/agents/me`, checkout, komentarz i faktyczny zapis `done`, odczytać wynik niezależnie i sprawdzić brak kolejnego retry. Dopiero ten wynik może zamknąć cel pełnego cyklu.
+
+## Aktualizacja 3 XI (Codex #2 — e2e cyklu agenta)
+
+Zakres ZADANIA 2: narzędzie do uruchomienia przez nadzorcę **poza sandboxem tej sesji** i sprawdzenie dostępnych etapów bez wykonania rzeczywistego modelu. Nie wykonano commit ani push. **Pełny cykl agenta nadal nie jest potwierdzony.**
+
+### Co zrobiono
+
+- Dodano `scripts/cosgral-e2e-agent-lifecycle.mjs`: Node + wbudowany fetch, bez nowych zależności. Rzeczywiste kontrakty sprawdzono w `packages/shared/src/validators/{company,agent,project,issue}.ts`, statusy w `constants.ts`, endpointy w routes `companies`, `agents`, `projects`, `issues`; log to JSON z polem `content`, lista runów obsługuje filtr `agentId`.
+- Skrypt tworzy nową firmę, agenta `codex_local` z `runner=legacy`, `engine=cli`, `dangerouslyBypassApprovalsAndSandbox=false`, bez `extraArgs`, `env.CODEX_HOME` z argumentu i modelem `gpt-5.6-terra`; następnie projekt i przypisane zadanie. Korzysta z osobnego katalogu roboczego w `/tmp`. Wyłącza wake przy przypisaniu i okresowy heartbeat, następnie włącza wake na żądanie oraz jawnie wywołuje `/agents/:id/wakeup` z `payload.issueId`.
+- Instrukcja wymaga od agenta checkoutu, komentarza `ok` i zapisania `done` przez API według skilla Paperclip. Skrypt sam nie dopisuje komentarza ani nie zmienia statusu zadania. Niezależny końcowy GET zadania, komentarzy i runów odbywa się **przed** wstrzymaniem/anulowaniem. Warunki PASS: `done`, komentarz `ok` właściwego agenta, 1–2 zakończone runy, brak oczekującego retry. Skrypt obserwuje jeszcze 75 s po zakończeniu runów (ponad opóźnienia retry 30/60 s), z globalnym timeoutem domyślnie 300 s. Nie jest to dowód braku dowolnego późniejszego wake.
+- FAIL ma kod 1 i powód; PASS — kod 0. Końcówki logów mają dodatkowe maskowanie rozpoznawanych JWT, bearer, kluczy i pól poświadczeń, poza istniejącą redakcją logów serwera. Brak logu (404) nie powoduje crasha. Po próbie agent zostaje wstrzymany, aktywne runy są anulowane. Dane testowe pozostają do inspekcji. Błędy sprzątania są FAIL; SIGKILL/utrata API wymagają sprawdzenia ręcznego.
+- Dodano `scripts/cosgral-e2e-agent-lifecycle.test.mjs`: asercje końcowe (w tym fałszywy komentarz operatora/innego agenta, nadmiar runów, aktywny/nieznany status i zaplanowany retry), redakcja oraz test CLI na zastępczym HTTP z błędem wake 409, niezależnymi odczytami i wstrzymaniem agenta. Test nie wywołuje modelu.
+- Do `docs/cosgral/uruchomienie-linux.md` dodano jednorazowe generowanie sekretu przez `crypto.randomBytes(32)` do prywatnego pliku poza repo, z trybem 600 i odmową nadpisania, oraz jawne ładowanie do procesu serwera bez drukowania. Potwierdzono odpowiednik z onboardingu (`ensureAgentJwtSecret` w `cli/src/config/env.ts`). `agent-auth-jwt.ts` → `heartbeat/runtime-execution.ts` → adapter Codex już tworzą i przekazują token jako `PAPERCLIP_API_KEY`; nie znaleziono wymagającej poprawki luki w tym przepływie i nie zmieniano kodu produkcyjnego serwera/adaptera.
+
+### Rzeczywista weryfikacja i wyniki
+
+Instancja testowa: `PAPERCLIP_HOME=/tmp/cosgral-e2e-2/data`, brak `DATABASE_URL`, host `127.0.0.1`, port **3199**, embedded PostgreSQL **54329**. Sekret wygenerowano wyłącznie do `/tmp/cosgral-e2e-2/agent-jwt.env`; `stat` potwierdził **600**, banner serwera `Agent JWT set`. Wartości nie wypisywano. Dla instalacji trwałej użyć ścieżki z dokumentacji, a nie `/tmp`.
+
+Wykonane komendy:
+
+```sh
+env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-e2e-2/data pnpm db:migrate
+# Po załadowaniu prywatnego pliku env przez set -a / source / set +a:
+env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-e2e-2/data HOST=127.0.0.1 PORT=3199 PAPERCLIP_API_URL=http://127.0.0.1:3199 PAPERCLIP_MIGRATION_AUTO_APPLY=true pnpm --filter @paperclipai/server dev
+node scripts/cosgral-e2e-agent-lifecycle.mjs --api http://127.0.0.1:3199 --codex-home /home/box/.codex --timeout-sec 100
+node scripts/cosgral-e2e-agent-lifecycle.mjs --api http://127.0.0.1:3199 --codex-home /home/box/.codex --timeout-sec 10
+node --test scripts/cosgral-e2e-agent-lifecycle.test.mjs
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/agent-auth-jwt.test.ts
+PAPERCLIP_HOME=/tmp/cosgral-e2e-2/adapter-home pnpm --filter @paperclipai/adapter-codex-local exec vitest run src/server/safe-defaults.test.ts src/server/codex-args.test.ts src/server/execute.remote.test.ts
+node --check scripts/cosgral-e2e-agent-lifecycle.mjs
+git diff --check
+```
+
+- Migracje: kod 0, **422 zastosowane**. API health HTTP 200, `status=ok`, `deploymentMode=local_trusted`, `startupRecovery.phase=ready`. SDK był już zbudowany w poprzedniej sesji; jego budowy tu nie powtarzano.
+- Obie próby e2e: firma/agent/projekt/zadanie HTTP 201, aktualizacje HTTP 200, wake HTTP 202 i ID runu; **FAIL, exit 1**, bez nieobsłużonego wyjątku. Run pozostał `queued`, zadanie `todo`, zero komentarzy. Serwer odnotował `harness_test_failed` podczas fazy gotowości `verifying`; wykonanie modelu nie rozpoczęło się. Końcówka logu runu niedostępna (404), ponieważ run nie wystartował. Nie utożsamiać tego z błędem JWT ani dowodem problemu TCP wewnątrz Codexa.
+- Po sprzątaniu osobny odczyt API dla obu agentów potwierdził `status=paused`, `lifecycleState=paused`, po jednym runie `cancelled`. Pierwsza firma: `3a341ec2-bd3f-4fc9-8b8b-763ff2b673c0`, druga: `6bc1f8ed-2c2b-41ad-b85d-62edd86c0694`.
+- Node test skryptu: **3/3 PASS**. W trakcie tworzenia testy wykazały brak implementacji; osobny czerwony test wykrył nieodrzucanie statusu `scheduled_retry` i został naprawiony. Końcowy zestaw zielony.
+- JWT: **18/18 PASS**. Adapter: **56/56 PASS** z prywatnym katalogiem testowym w `/tmp`. Pierwsze wywołanie adaptera bez `PAPERCLIP_HOME` miało **55 PASS / 1 FAIL**: `reselects the full assignment and bootstrap guidance after a failed resume`, `ENOENT mkdir /home/box/.paperclip` (niedostępna domyślna ścieżka w sandboxie). Ponowienie z `PAPERCLIP_HOME` w `/tmp` przeszło bez zmiany produkcyjnego kodu.
+- Kontrola składni i `git diff --check`: kod 0. Nie uruchamiano pełnego `pnpm -r typecheck`, `pnpm test:run` ani `pnpm build`: zmiana obejmuje samodzielny skrypt i dokumentację, sprawdzono wąskie testy; nie jest to repozytoryjny hand-off PR-ready ani dowód zielonego całego repo.
+- Serwer zatrzymano przez SIGINT. Próby TCP na **3199 i 54329** po zatrzymaniu: **ECONNREFUSED**. Dane, prywatny sekret i logi pozostały tylko w `/tmp/cosgral-e2e-2`, poza repozytorium.
+
+### Uruchomienie przez nadzorcę i następny krok
+
+Poza sandboxem tej sesji: przygotować trwały JWT i uruchomić osobny serwer według sekcji „Trwały JWT agentów i powtarzalny e2e” w `docs/cosgral/uruchomienie-linux.md`. W drugim terminalu z katalogu repozytorium uruchomić dokładnie (jeżeli istniejące logowanie Codexa jest w `$HOME/.codex`):
+
+```sh
+node scripts/cosgral-e2e-agent-lifecycle.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex" --timeout-sec 300
+```
+
+Następny krok: uzyskać **PASS** na hoście obsługującym sandbox Codexa i zachować wynik niezależnego odczytu API. Jeśli nadal wystąpi FAIL, zdiagnozować raportowaną gotowość agenta/log runu, bez flag bypass i bez drukowania poświadczeń. W tej sesji **nie zweryfikowano**: prawdziwej odpowiedzi `gpt-5.6-terra`, wywołań API z shell agenta, faktycznego wstrzyknięcia tokenu w wykonującym się modelu, komentarza agenta, jego zapisu `done` ani retry po realnym wykonaniu. Osobna próba dwóch kont i współpracy zdalnej pozostaje późniejszym zadaniem.
+
+## Aktualizacja 3 XI (nadzorca — PASS e2e pełnego cyklu bezpiecznego agenta)
+
+Uruchomiono `scripts/cosgral-e2e-agent-lifecycle.mjs` na żywo (Linux, Node 24.22.2, pnpm 9.15.4, instancja `local_trusted` na `127.0.0.1:3199`, embedded PostgreSQL, trwały `PAPERCLIP_AGENT_JWT_SECRET` z pliku `~/.config/cosgral/agent-jwt.env` poza repo, agent `codex_local`, `dangerouslyBypassApprovalsAndSandbox=false`, model `gpt-5.6-terra`). Wynik: **PASS** — agent sam wywołał `/api/agents/me`, dodał komentarz `ok` i ustawił `done` przez API (potwierdzone niezależnym odczytem: status=done, komentarze=1, runy=1, bez retry).
+
+Ustalone przyczyny wcześniejszego niepowodzenia (nie sam sandbox): (1) brak trwałego sekretu JWT → agent nie dostawał `PAPERCLIP_API_KEY`; (2) katalog roboczy poza repozytorium git → hello probe Codexa odrzucał `Not inside a trusted directory and --skip-git-repo-check was not specified`, co kończyło się `harness_test_failed` i wstrzymaniem weryfikacji agenta. Skrypt e2e teraz robi `git init` w katalogu roboczym. Sandbox workspace-write z siecią loopback działa dla API (agent wykonał curl do `127.0.0.1:3199`).
+
+Nadal otwarte: test dwóch kont `authenticated`, właściwy widok rozmowy COSGRAL, wybór koordynatora i delegowanie, izolowane worktrees. Dla produktu: UI/onboarding musi gwarantować trwały JWT oraz git-repo jako cwd agenta (albo czytelny błąd z tą wskazówką).

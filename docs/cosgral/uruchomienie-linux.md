@@ -39,3 +39,45 @@ Prosty serwer Node na `127.0.0.1` z losowym portem zwrócił z hosta `cosgral-lo
 Bezpośredni `codex sandbox -c 'sandbox_mode="workspace-write"' -- true` oraz warianty z curl i obiema politykami sieci zakończyły się kodem 1: `error building bubblewrap command: app-server socket directory must be a user-owned directory with mode 0700`. Ten problem środowiska uniemożliwił porównanie dostępu z wnętrza sandboxa.
 
 Na maszynie z działającym sandboxem i zapisowalnym bieżącym `CODEX_HOME` powtórzyć porównanie false/true na prostym HTTP. Następnie skonfigurować JWT standardowym onboardingiem i uruchomić pojedynczego agenta z `engine=cli`, `dangerouslyBypassApprovalsAndSandbox=false`, bez dodatkowych flag omijających zabezpieczenia. Sprawdzić z jego narzędzia shell kolejno health, `/api/agents/me`, checkout przypisanego zadania, komentarz i zapis statusu `done`, a potem niezależnym odczytem API potwierdzić zmianę oraz brak kolejnego retry. **Żadnego z tych kroków pełnego cyklu nie uznano tutaj za zaliczony.**
+
+## Trwały JWT agentów i powtarzalny e2e (Codex #2)
+
+`server/src/agent-auth-jwt.ts` odczytuje `PAPERCLIP_AGENT_JWT_SECRET` (awaryjnie `BETTER_AUTH_SECRET`). `cli/src/config/env.ts` i onboarding `pnpm paperclipai onboard` tworzą sekret w pliku env instancji. Przy bezpośrednim starcie serwera można zamiast onboardingu jawnie załadować poniższy prywatny plik. Nie jest to klucz modelu: heartbeat podpisuje nim krótkotrwały token konkretnego agenta/runu, a adapter Codex przekazuje token jako `PAPERCLIP_API_KEY`. `local_trusted` nie zastępuje uwierzytelniania agenta.
+
+Przykład trwałej konfiguracji dla jednego lokalnego operatora, poza repozytorium. Uruchamiać bez `set -x`; nie używać `cat`, `printenv`, debugowania środowiska ani kopiowania poświadczeń. Generowanie jest jednorazowe i odmawia nadpisania istniejącego pliku. Przy kolejnych startach pominąć blok generowania. Zachować ten sam plik przy restartach.
+
+```sh
+set +x
+install -d -m 700 "$HOME/.config/cosgral"
+node --input-type=module <<'NODE'
+import { randomBytes } from 'node:crypto';
+import { writeFileSync, chmodSync } from 'node:fs';
+const file = `${process.env.HOME}/.config/cosgral/agent-jwt.env`;
+writeFileSync(file, `PAPERCLIP_AGENT_JWT_SECRET=${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' });
+chmodSync(file, 0o600);
+NODE
+```
+
+Start osobnej instancji odbiorowej (API, dane poza repo). `PAPERCLIP_API_URL` jest bazą bez `/api`; adapter dodaje prefiks sam. Podany `CODEX_HOME` musi należeć do nadzorcy, zawierać jego istniejące logowanie oraz umożliwiać instalację skilla w `skills/`. Nie kopiować `auth.json`. Polecenia modelu uruchamiać poza sandboxem tej sesji, na hoście obsługującym sandbox Codexa.
+
+```sh
+pnpm --filter @paperclipai/plugin-sdk build
+env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-agent-lifecycle pnpm db:migrate
+set +x
+set -a
+. "$HOME/.config/cosgral/agent-jwt.env"
+set +a
+env -u DATABASE_URL PAPERCLIP_HOME=/tmp/cosgral-agent-lifecycle HOST=127.0.0.1 PORT=3199 PAPERCLIP_API_URL=http://127.0.0.1:3199 PAPERCLIP_MIGRATION_AUTO_APPLY=true pnpm --filter @paperclipai/server dev
+```
+
+W drugim terminalu, z katalogu repozytorium (dla standardowego istniejącego katalogu `$HOME/.codex`; przy innym logowaniu zmienić tylko ścieżkę):
+
+```sh
+node scripts/cosgral-e2e-agent-lifecycle.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex" --timeout-sec 300
+```
+
+Skrypt używa wyłącznie lokalnego HTTP i REST API, tworzy osobną firmę, agenta `codex_local` (`runner=legacy`, `engine=cli`, `gpt-5.6-terra`, bypass `false`, bez `extraArgs`), projekt i przypisane zadanie. Przypisanie nie wyzwala dodatkowego wake; potem skrypt jawnie włącza wake na żądanie i wysyła jedno `/wakeup`. Agent ma zapisać komentarz `ok` oraz `done` przez API według skilla Paperclip. Zakończenie procesu Codexa nie jest dowodem zaliczenia.
+
+PASS (exit 0) wymaga niezależnego odczytu `done`, komentarza `ok` właściwego agenta, 1–2 zakończonych runów i braku zaplanowanego retry. Obserwacja trwa jeszcze 75 s po zakończeniu ostatniego runu (retry mają opóźnienia 30/60 s); wlicza się w timeout. FAIL (exit 1) podaje powód i końcówki logów z dodatkowym maskowaniem typowych tokenów/poświadczeń. Nie uruchamiać poleceń drukujących sekrety w samym zadaniu. Skrypt wstrzymuje agenta i anuluje aktywne runy także po błędzie lub SIGINT/SIGTERM. Pozostawia dane i pusty katalog roboczy `/tmp/cosgral-e2e-work-*` do inspekcji; nie usuwa firmy ani nie ustawia sam `done`. SIGKILL lub utrata API uniemożliwia gwarantowane sprzątanie — wtedy sprawdzić agenta po ID z wydruku i wstrzymać go ręcznie.
+
+Po teście Ctrl+C w terminalu serwera; sprawdzić brak nasłuchu na 3199 i porcie embedded PostgreSQL wskazanym w logu startowym. Nie zatrzymywać innych instancji bazy. Wyniki próby z tej sesji i ograniczenia są zapisane w `COSGRAL-PRZEKAZANIE.md`.
