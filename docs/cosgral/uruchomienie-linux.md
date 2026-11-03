@@ -246,3 +246,18 @@ pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test
 Test skryptu przeniesiono z `server/scripts/` (runner Vitest) do `scripts/`
 (wbudowany runner Node). Bieżące dowody obejmują bazę/uprawnienia/API do wywołań
 wake i mockowane asercje skryptu; pełnego cyklu dwóch modeli jeszcze nie zaliczono.
+
+### Presence i typing (Codex #7)
+
+Rozmowa projektu pokazuje obecnych użytkowników w nagłówku i szczegółach.
+„Pisze…” dotyczy innych użytkowników i wygasa po około 5 s. Zdarzenia nie
+zawierają tekstu szkicu, nie zapisują komentarzy i nie budzą agentów. Obecność
+jest ulotna, lokalna dla procesu serwera; restart/rozłączenie usuwa stan, a klient
+łączy się ponownie. Kilka kart jednej osoby daje jeden wpis.
+
+`cosgral-e2e-two-accounts.mjs` w obu fazach dodatkowo sprawdza obecność, typing,
+leave po zamknięciu/zerwaniu WS, odmowę anonimowi i brak zapisanych wiadomości.
+W fazie prepare sprawdza również odmowę kontu C. Dla zadania 7 użyto osobnej
+instancji na **3197** z osobnym `PAPERCLIP_HOME` w `/tmp`; serwer 3199 pozostaje
+własnością nadzorcy. „Pracuje nad tą rozmową” pochodzi z istniejących aktywnych
+runów wątku; status „pracuje w firmie” nie dowodzi pracy nad tą rozmową.

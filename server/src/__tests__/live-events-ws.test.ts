@@ -69,6 +69,16 @@ describe("setupLiveEventsWebSocketServer", () => {
     vi.clearAllMocks();
   });
 
+  it.each(["", "bad-id", "12345678-1234-1234-1234-123456789012"])("denies unauthenticated or implicit-board presence (%s)", async projectId => {
+    const server = new EventEmitter();
+    const socket = new FakeUpgradeSocket();
+    const wss = setupLiveEventsWebSocketServer(server as never, {} as never, { deploymentMode: "local_trusted" });
+    server.emit("upgrade", createUpgradeRequest({ url: `/api/companies/company-1/events/ws?projectConversation=${projectId}` }), socket as unknown as Duplex, Buffer.alloc(0));
+    await flushPromises();
+    expect(socket.endedChunks.join("")).toContain("403 Forbidden");
+    wss.close();
+  });
+
   it.each([false, true])("counts accepted upgrade authentication after disconnect (failure=%s)", async (fail) => {
     const server = new EventEmitter();
     const socket = new FakeUpgradeSocket();

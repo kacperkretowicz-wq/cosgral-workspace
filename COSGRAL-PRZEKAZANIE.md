@@ -491,3 +491,46 @@ node scripts/check-maps.mjs
 ### Nadzorca – e2e delegowania z prawdziwym modelem (2026-11-03 ~20:23 CET)
 Po restarcie serwera 3199 (`bash /workspace/start3199.sh`, commit f8cc4e609) uruchomiono `node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home $HOME/.codex-a --timeout-sec 420` (konto a, gpt-6.1-sol): **PASS** – koordynator → wykonawca → koordynator zapisany w rozmowie (`delegation-started`, `delegation-complete`), runy zakończone sukcesem, brak retry przez 75 s. Rozmowa COSAA-1 nie dostała dyspozycji zadania. Log: /workspace/logs/e2e-deleg-a.log. Zrzut widoku rozmowy: /workspace/cosgral-conversation.png (Chrome headless, 1440x900, dane z tego e2e).
 Dalej: presence/typing (Codex t7), potem izolowane worktrees.
+
+## Codex #7 — presence i typing (2026-11-03)
+
+### Zmiany
+
+- Wykorzystano istniejący endpoint WS `/api/companies/:companyId/events/ws` z opcjonalnym `?projectConversation=<UUID>`. Osobna subskrypcja projektu nie otrzymuje strumienia firmy. Stan obecności/typing jest wyłącznie w pamięci procesu: bez migracji, zapisu komentarzy, audytu, treści szkicu i wake agentów. Wspólny kontrakt ramek w `packages/shared/src/project-conversation-presence.ts`.
+- Serwer wymaga rzeczywistej tożsamości użytkownika oraz dostępu do firmy, projektu i istniejącego wątku. Typing sprawdza dodatkowo uprawnienia komentarza i zakaz zapisu widza. Agent API key i anonimowy/local implicit board nie publikują ludzkiej obecności. Sesja/uprawnienia są ponownie sprawdzane przed dostarczeniem snapshotu; błędy kończą dostęp. Tożsamości nie przyjmuje się z payloadu.
+- Join/leave, deduplikacja kart po userId, usunięcie przy ostatnim rozłączeniu; martwe połączenia korzystają z istniejącego ping/pong WS. Throttle typing 1,5 s po stronie klienta i serwera, debounce stop 4,5 s, ważność ostatniego sygnału 5 s. UI wygasza wskaźnik niezależnie od kolejnej ramki. Stop po wyczyszczeniu, blur i potwierdzeniu wysłania; reconnect z backoff i czyszczeniem starej listy.
+- Obecni użytkownicy: nagłówek oraz panel szczegółów, nazwy/awatary z istniejącego katalogu firmy. „Pisze…” pokazuje innych użytkowników. Aktywność agentów pochodzi z istniejących runów rozmowy i zdarzeń live (także bez wybranego koordynatora), nie z typing klienta. Dotychczasowy status „pracuje w firmie” pozostaje jawnie oddzielną informacją. i18n w `cosgral.ts`, tylko istniejące tokeny light/dark, bez nowych surowych wartości wizualnych.
+- Rozszerzono `scripts/cosgral-e2e-two-accounts.mjs`, mapy funkcji/dostępu oraz runbook. Bez commit/push; nie ruszano serwera nadzorcy 3199.
+
+### Wykonane testy — rzeczywiste wyniki
+
+Wszystkie poniższe komendy pnpm uruchamiano z `PATH=/home/box/tools/bin:$PATH`:
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run --maxWorkers=1 src/realtime/project-conversation-presence.test.ts src/__tests__/live-events-ws.test.ts src/__tests__/project-conversations.test.ts
+# 3 pliki / 17 PASS, exit 0
+pnpm --filter @paperclipai/ui exec vitest run src/hooks/useProjectConversationPresence.test.tsx src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts
+# 3 pliki / 28 PASS, exit 0
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui typecheck
+pnpm check:token-gates
+node scripts/check-maps.mjs
+node --test scripts/cosgral-e2e-two-accounts.test.mjs
+# 3/3 PASS, exit 0; powyższe typechecki/bramki/mapy także exit 0
+node --check scripts/cosgral-e2e-two-accounts.mjs
+git diff --check
+```
+
+- Testy pamięci WS obejmują deduplikację kart/leave, izolację pokojów, throttle, odrzucenie podszywania się, TTL, stop oraz odmowę/cofnięcie uprawnień. Testy autoryzacji korzystają z rzeczywistego PostgreSQL: członek, widz, obcy projekt/firma, cofnięcie członkostwa projektu, anonim/local implicit. UI: ramki tylko własnego projektu, TTL bez usunięcia obecności, throttle/debounce, stop, reconnect/nawigacja, zachowanie WSS, nazwy i pominięcie własnego typing, aktywny run rozmowy zamiast cudzej pracy w firmie.
+- **Żywy HTTP/WS e2e: obie fazy PASS, exit 0**, na własnej instancji **3197** z osobnym `PAPERCLIP_HOME=/tmp/cosgral7-instance-zqukZT`. `prepare`: konta A/B/C/V, rzeczywiste logowanie/zaproszenia/uprawnienia, live komentarze A→B 53 ms i B→A 47 ms; obecność A/B, typing/stop, TTL w ramce, leave przy close i terminate, odmowa anonimowi/C, brak nowych komentarzy po presence/typing. Po zatrzymaniu instancji potwierdzono niedostępność 3197, uruchomiono ponownie tę samą bazę/sekrety; `verify-after-restart`: świeże logowanie A/B, ta sama historia, live komentarz 147 ms i ponownie presence/typing/leave. Po odbiorze własną instancję zatrzymano.
+- Odtworzenie e2e na tej testowej bazie: `node scripts/cosgral-e2e-two-accounts.mjs --api http://127.0.0.1:3197 --phase verify-after-restart --state-file /tmp/cosgral7-e2e-state.json`. Wymaga wcześniejszego startu własnego 3197 z tym samym prywatnym env. Stan i poświadczenia zapisano poza repo z mode 0600; nie wypisywano ich.
+- Logi lokalne bez credential dump: `/tmp/cosgral7-server-final.log`, `cosgral7-ui-final.log`, `cosgral7-server-tsc.log`, `cosgral7-ui-tsc-final.log`, `cosgral7-tokens-final.log`, `cosgral7-maps.log`, `cosgral7-script-tests.log`, `cosgral7-e2e-prepare.log`, `cosgral7-e2e-restart.log` (wszystkie w `/tmp`).
+
+### Wcześniejsze niepowodzenia i ograniczenia
+
+- Pierwszy UI test run: 2 FAIL w starych asercjach etykiety zalogowanej osoby i informacji o pracy w firmie. Zmieniono etykietę testu na listę obecności, przywrócono istniejącą informację o pracy w firmie; końcowy zestaw 28 PASS. Pierwszy typecheck UI wykrył nullable nazwę użytkownika — dodano fallback. Pierwszy równoległy typecheck serwera zakończył SIGKILL; powtórzony osobno przeszedł. W przeglądzie wychwycono i poprawiono zachowanie `wss:`; obejmuje je końcowy test. Rejestracja w żywym e2e raz czekała zgodnie z `Retry-After`, następnie cały przebieg przeszedł.
+- Nie uruchamiano nowego prawdziwego modelu ani e2e delegowania; to zadanie nie zmienia heartbeat execution. Nie wykonano wizualnego smoke w przeglądarce dla obu motywów/mobile; użyto istniejących semantycznych tokenów i zaliczono token gates. Nie wykonano pełnego `pnpm -r typecheck`, `pnpm test:run`, `pnpm build` ani browser suites — jest to celowany odbiór zadania 7, nie PR-ready całego monorepo.
+- Obecność jest lokalna dla procesu serwera; nie kwalifikowano wielu replik ani dużych pokojów. Utrata połączenia bez close jest wykrywana przez istniejący ping/pong (do około 60 s); typing i tak wygasa po około 5 s. Prawa odbiorcy są odświeżane przy następnej publikacji, bez dodawania pollingu SQL w bezczynności.
+
+### Nadzorca – po Codex t7 (2026-11-03 ~21:00 CET)
+Presence/typing zacommitowane po ponownym przejściu testów: serwer 3 pliki/17 testów PASS, UI (ProjectConversation + hook presence) PASS. Niezweryfikowane: wizualny smoke obu motywów, pełny zestaw monorepo. Dalej: izolowane worktrees i bezpieczne domyślne uprawnienia (Codex t8).

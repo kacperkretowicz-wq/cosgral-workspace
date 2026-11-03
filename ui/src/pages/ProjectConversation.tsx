@@ -12,6 +12,7 @@ import { authApi } from "../api/auth";
 import { useCompany } from "../context/CompanyContext";
 import { useTheme } from "../context/ThemeContext";
 import { useCompanyLiveEvent, useTaskRunLiveUpdates } from "../context/LiveUpdatesProvider";
+import { useProjectConversationPresence } from "../hooks/useProjectConversationPresence";
 import { useMobileVisualViewport } from "../hooks/useMobileVisualViewport";
 import { useCosgralTranslation } from "../i18n/cosgral";
 import { queryKeys } from "../lib/queryKeys";
@@ -120,6 +121,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const directory = useQuery({ queryKey: queryKeys.access.companyUserDirectory(companyId), queryFn: () => accessApi.listUserDirectory(companyId) });
   const tasks = useQuery({ queryKey: [...queryKeys.issues.listByProject(companyId, project.data?.id ?? projectId), "conversation-cards"], queryFn: () => issuesApi.listAll(companyId, { projectId: project.data!.id, includeAgentCreatedTasks: true }), enabled: Boolean(project.data) });
   const issueId = conversation.data?.issueId;
+  const presence = useProjectConversationPresence(companyId, project.data?.id ?? projectId, Boolean(project.data && conversation.isSuccess));
   const viewportRef = useMobileVisualViewport(mobile && Boolean(project.data) && conversation.data !== undefined);
   const tree = useQuery({ queryKey: ["issues", "tree-control-state", issueId ?? "pending"], queryFn: () => issuesApi.getTreeControlState(issueId!), enabled: Boolean(issueId) });
   const hold = tree.data?.activePauseHold;
@@ -129,7 +131,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const liveRuns = useQuery({
     queryKey: queryKeys.issues.liveRuns(issueId ?? "pending"),
     queryFn: () => heartbeatsApi.liveRunsForIssue(issueId!),
-    enabled: Boolean(issueId && coordinatorSelected),
+    enabled: Boolean(issueId),
     refetchInterval: query => liveRunRefetchInterval(hasLiveConnection, query.state, 3000),
   });
   const coordinatorRun = liveRuns.data?.find(run => run.agentId === conversation.data?.coordinatorAgentId && ["running", "queued"].includes(run.status));
@@ -198,7 +200,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       return issuesApi.addComment(target.issueId, submission.body, undefined, undefined, undefined, submission.requestId);
     },
     onSuccess: () => {
-      setDraft(""); attempt.current = null; followBottom.current = true;
+      presence.stopTyping(); setDraft(""); attempt.current = null; followBottom.current = true;
       void client.invalidateQueries({ queryKey: queryKeys.issues.comments(issueId ?? "none") });
     },
     onSettled: () => { sending.current = false; },
@@ -245,7 +247,10 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       {taskData.tasks.map(task => <Link key={task.id} to={`/issues/${task.identifier ?? task.id}`} className="flex flex-col gap-1 rounded-md border p-2 hover:bg-accent"><span>{task.title}</span><span className="text-xs text-muted-foreground">{t(`status.${task.status}`)}</span></Link>)}
       {!taskData.tasks.length && <p className="text-muted-foreground">{t("noTasks")}</p>}
     </section>
-    <section className="flex flex-col gap-2"><h2 className="font-semibold">{t("currentUser")}</h2><Identity name={user.name || t("user")} avatarUrl={user.image} /><p className="text-xs text-muted-foreground">{t("noPresence")}</p></section>
+    <section className="flex flex-col gap-2" data-testid="conversation-presence"><h2 className="font-semibold">{t("presentUsers")}</h2>
+      {!presence.connected && <p className="text-xs text-muted-foreground">{t("presenceDisconnected")}</p>}
+      {presence.users.map(person => <Identity key={person.userId} name={profiles.get(person.userId)?.label ?? (person.userId === user.id ? user.name || t("user") : t("user"))} avatarUrl={profiles.get(person.userId)?.image} />)}
+    </section>
   </div>;
   if (project.isPending || conversation.isPending) return <p role="status" className="p-4">{t("loading")}</p>;
   if ((project.isError && !project.data) || (conversation.isError && conversation.data === undefined)) return <div className="p-4" role="alert">{t("loadError")} <Button onClick={() => { void project.refetch(); void conversation.refetch(); }}>{t("retry")}</Button></div>;
@@ -256,7 +261,8 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     <main className="flex min-w-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b px-4 py-3">
         <Button variant="ghost" size="icon" className="text-foreground md:hidden" aria-label={t("navigation")} onClick={() => setNavigationOpen(true)}><Menu /></Button>
-        <div className="min-w-0 flex-1"><h1 className="truncate text-base font-semibold">{project.data?.name}</h1><p className="text-xs text-muted-foreground">{t("conversation")}</p></div>
+        <div className="min-w-0 flex-1"><h1 className="truncate text-base font-semibold">{project.data?.name}</h1><p className="text-xs text-muted-foreground">{t("conversation")}</p>
+          <p className="truncate text-xs text-muted-foreground" data-testid="conversation-presence-summary">{presence.connected ? t("presentSummary", { names: presence.users.map(person => profiles.get(person.userId)?.label ?? (person.userId === user.id ? user.name || t("user") : t("user"))).join(", ") }) : t("presenceDisconnected")}</p></div>
         {issueId && <Link to={`/issues/${conversation.data?.identifier ?? issueId}`} aria-label={t("advanced")} className="text-xs text-muted-foreground underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"><Settings2 className="size-4 sm:hidden" /><span className="hidden sm:inline">{t("advanced")}</span></Link>}
         <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("theme")} onClick={toggleTheme}>{theme === "dark" ? <Sun /> : <Moon />}</Button>
         <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("details")} aria-expanded={detailsOpen} onClick={() => setDetailsOpen(value => !value)}><PanelRight /></Button>
@@ -302,12 +308,18 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
           {coordinatorSelected && liveRuns.isError && <p role="alert" className="text-sm text-destructive">{t("coordinatorRunError")}</p>}
           {coordinatorUnavailable && <p role="alert" className="text-sm text-destructive">{t(coordinator?.status === "paused" ? "coordinatorPaused" : "coordinatorNotReady")}</p>}
           {roster.filter(agent => agent.status === "running").map(agent => <p key={agent.id} role="status" className="text-xs text-muted-foreground">{t("companyAgentRunning", { name: agent.name })}</p>)}
+          {liveRuns.data?.filter(run => run.status === "running" && run.agentId !== conversation.data?.coordinatorAgentId).map(run => <p key={run.id} role="status" className="text-xs text-muted-foreground">{t("coordinatorWorking", { name: roster.find(agent => agent.id === run.agentId)?.name ?? run.agentName })}</p>)}
+          <div role="status" aria-live="polite" data-testid="conversation-typing" className="text-xs text-muted-foreground">
+            {presence.users.filter(person => person.userId !== user.id && person.typingUntil > Date.now()).map(person => <p key={person.userId}>{t("userTyping", { name: profiles.get(person.userId)?.label ?? t("user") })}</p>)}
+          </div>
           {hold && <div role="status" className="rounded-md border bg-muted p-3 text-sm">
             <p>{t(hold.isRoot ? "paused" : "inheritedPause")}</p>
             {hold.isRoot ? <Button variant="outline" disabled={resume.isPending} onClick={() => resume.mutate()}>{t("resume")}</Button> : <Link className="underline" to={`/issues/${hold.rootIssueId}`}>{t("advanced")}</Link>}
           </div>}
           {(tree.isError || resume.isError) && <p role="alert" className="text-sm text-destructive">{t("pauseError")} <Button variant="outline" onClick={() => { void tree.refetch(); }}>{t("retry")}</Button></p>}
-          <MarkdownEditor value={draft} onChange={setDraft} ariaLabel={t("message")} placeholder={coordinator ? t("messageToCoordinator", { name: coordinator.name }) : t("message")} mentions={mentions} onSubmit={submit} submitOnEnter readOnly={send.isPending || composerBlocked} className="cosgral-composer" />
+          <div onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) presence.stopTyping(); }}>
+          <MarkdownEditor value={draft} onChange={value => { setDraft(value); presence.typing(Boolean(value.trim()) && !composerBlocked); }} ariaLabel={t("message")} placeholder={coordinator ? t("messageToCoordinator", { name: coordinator.name }) : t("message")} mentions={mentions} onSubmit={submit} submitOnEnter readOnly={send.isPending || composerBlocked} className="cosgral-composer" />
+          </div>
           <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">{t("sendHint")}</p><Button onClick={submit} disabled={send.isPending || composerBlocked || !draft.trim()}><Send className="size-4" />{t(send.isPending ? "sending" : "send")}</Button></div>
           {send.isError && <p role="alert" className="text-sm text-destructive">{t("sendError")} <Button variant="outline" onClick={submit}>{t("retry")}</Button></p>}
         </div>

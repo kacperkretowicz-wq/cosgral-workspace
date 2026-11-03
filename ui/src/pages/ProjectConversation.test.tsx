@@ -26,6 +26,9 @@ vi.mock("../context/ThemeContext", () => ({ useTheme: () => ({ theme: "dark", se
 vi.mock("../components/MarkdownBody", () => ({ MarkdownBody: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
 vi.mock("../components/MarkdownEditor", () => ({ MarkdownEditor: ({ value, onChange, onSubmit, readOnly, submitOnEnter, placeholder }: { placeholder: string; value: string; onChange: (v: string) => void; onSubmit: () => void; readOnly: boolean; submitOnEnter: boolean }) => <textarea aria-label="Wiadomość" placeholder={placeholder} value={value} readOnly={readOnly} onChange={e => onChange(e.target.value)} onKeyDown={e => { if (submitOnEnter && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }} /> }));
 
+const presenceMock = vi.hoisted(() => ({ users: [] as Array<{ userId: string; typingUntil: number }>, connected: false, typing: vi.fn(), stopTyping: vi.fn() }));
+vi.mock("../hooks/useProjectConversationPresence", () => ({ useProjectConversationPresence: () => presenceMock }));
+
 const originalViewport = Object.getOwnPropertyDescriptor(window, "visualViewport");
 let root: Root;
 let host: HTMLDivElement;
@@ -41,6 +44,7 @@ async function type(body: string) {
 }
 beforeEach(async () => {
   vi.clearAllMocks();
+  presenceMock.users = []; presenceMock.connected = false;
   mocks.liveRuns.mockResolvedValue([]);
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mocks.get.mockResolvedValue({ id: "p", name: "Uszko", companyId: "c" });
@@ -60,6 +64,19 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); client.clear(); host.remove(); if (originalViewport) Object.defineProperty(window, "visualViewport", originalViewport); else delete (window as { visualViewport?: unknown }).visualViewport; });
 
 describe("project conversation", () => {
+  it("shows present humans and other users typing using directory names", async () => {
+    presenceMock.connected = true;
+    presenceMock.users = [{ userId: "u", typingUntil: Date.now() + 5000 }, { userId: "b", typingUntil: Date.now() + 5000 }];
+    mocks.directory.mockResolvedValue({ users: [{ principalId: "u", status: "active", user: { name: "Anna" } }, { principalId: "b", status: "active", user: { name: "Bogdan" } }] });
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.access.companyUserDirectory("c") }); }); await settle();
+    expect(host.querySelector('[data-testid="conversation-presence-summary"]')?.textContent).toContain("Obecni: Anna, Bogdan");
+    expect(host.querySelector('[data-testid="conversation-typing"]')?.textContent).toContain("Bogdan pisze…");
+    expect(host.querySelector('[data-testid="conversation-typing"]')?.textContent).not.toContain("Anna pisze…");
+    await act(async () => click("Szczegóły projektu"));
+    expect(host.querySelector('[data-testid="conversation-presence"]')?.textContent).toContain("Bogdan");
+    expect(host.querySelector('[data-testid="conversation-presence"]')?.textContent).toContain("Anna");
+    expect(host.textContent).not.toContain("Obecność niedostępna");
+  });
   it("shows coordinator work only for an active run in this conversation", async () => {
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "running" }]);
     client.setQueryData(["projects", "conversation", "c", "p"], { issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true });
@@ -72,6 +89,13 @@ describe("project conversation", () => {
     mocks.liveRuns.mockResolvedValue([]);
     await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.liveRuns("chat") }); }); await settle();
     expect(host.textContent).not.toContain("Ala pracuje nad tą rozmową");
+  });
+  it("shows work from conversation runs even without a selected coordinator", async () => {
+    mocks.agents.mockResolvedValue([{ id: "a", name: "Ala", status: "running" }, { id: "b", name: "Beata", status: "running" }]);
+    mocks.liveRuns.mockResolvedValue([{ id: "run", agentId: "a", agentName: "Ala", status: "running" }]);
+    await act(async () => { await client.invalidateQueries({ queryKey: ["agents", "c"] }); await client.invalidateQueries({ queryKey: queryKeys.issues.liveRuns("chat") }); }); await settle();
+    expect(host.textContent).toContain("Ala pracuje nad tą rozmową");
+    expect(host.textContent).not.toContain("Beata pracuje nad tą rozmową");
   });
   it("shows coordinator failures as system messages in the conversation", async () => {
     mocks.comments.mockResolvedValue([{ id: "notice", authorType: "system", body: "Nie udało się zakończyć odpowiedzi koordynatora.", createdAt: new Date().toISOString() }]);
@@ -141,7 +165,7 @@ describe("project conversation", () => {
     expect(host.querySelector('[aria-label="Szczegóły projektu"]')?.getAttribute("aria-expanded")).toBe("false");
     expect(host.textContent).not.toContain("Plan i delegowanie");
     await act(async () => click("Szczegóły projektu"));
-    expect(document.body.textContent).toContain("Zalogowany użytkownik");
+    expect(document.body.textContent).toContain("Obecni w rozmowie");
   });
   it("sends a comment, keeps the composer pending, and clears only after confirmation", async () => {
     let resolve!: (value: unknown) => void;

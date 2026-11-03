@@ -127,5 +127,11 @@ wake, and failed/unanswered turns show a system notice without task disposition.
 selection and normal message/assignment/child-completion wakes with a mocked
 heartbeat boundary. [Delegation script](../../scripts/cosgral-e2e-delegation.mjs)
 requires a separate real-model run; its Node tests validate acceptance on mocks.
-Presence/typing remain unimplemented. Browser evidence belongs in the handoff;
+Project-scoped ephemeral presence uses the authenticated company WS endpoint with
+`?projectConversation=<project UUID>`; human typing expires after five seconds.
+Check join/leave, duplicate tabs, blur/send/empty stop, disconnect/reconnect and
+unauthorized project/anonymous rejection. Active conversation agents use existing
+live-run data and events. [Presence hook tests](../../ui/src/hooks/useProjectConversationPresence.test.tsx)
+cover expiry and reconnect; the two-account script covers real WS join/typing/leave.
+Browser evidence belongs in the handoff;
 these recipes alone do not claim a live pass.

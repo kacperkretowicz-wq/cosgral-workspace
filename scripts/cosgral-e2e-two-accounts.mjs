@@ -184,8 +184,41 @@ async function main() {
     await close(b);
     pass(`${step} (${elapsed} ms)`);
   }
+  step = 'project presence join/leave, typing and authorization';
+  await presenceCheck();
+  pass(step);
   pass(`${values.phase}: all assertions passed; test data retained`);
 
+  async function presenceCheck() {
+    const originalIds = (await comments('A')).map(row => row.id);
+    const isPresence = event => event.type === 'project.conversation.presence' && event.projectId === state.projectId && event.companyId === state.companyId;
+    const present = (event, key) => event.users?.find(user => user.userId === state.users[key].id);
+    const a = socket('A', true);
+    await waitMessage(a, event => isPresence(event) && present(event, 'A'));
+    const joined = waitMessage(a, event => isPresence(event) && present(event, 'B'));
+    const b = socket('B', true);
+    await Promise.all([joined, waitMessage(b, event => isPresence(event) && present(event, 'A') && present(event, 'B'))]);
+    const typing = waitMessage(b, event => isPresence(event) && present(event, 'A')?.typingUntil > Date.now());
+    const sentAt = Date.now();
+    a.send(JSON.stringify({ type: 'typing', active: true }));
+    const frame = await typing;
+    const expires = present(frame, 'A').typingUntil;
+    check(expires >= sentAt + 4500 && expires <= Date.now() + 5100, 'typing must expire around five seconds');
+    const stopped = waitMessage(b, event => isPresence(event) && present(event, 'A')?.typingUntil === 0);
+    a.send(JSON.stringify({ type: 'typing', active: false }));
+    await stopped;
+    const left = waitMessage(a, event => isPresence(event) && !present(event, 'B'));
+    await close(b); await left;
+    // An ungraceful disconnect must also remove presence.
+    const bAgain = socket('B', true);
+    await waitMessage(bAgain, event => isPresence(event) && present(event, 'B'));
+    const disconnected = waitMessage(a, event => isPresence(event) && !present(event, 'B'));
+    bAgain.terminate(); await disconnected;
+    await deniedSocket(null, true);
+    if (values.phase === 'prepare') await deniedSocket('C', true);
+    assert.deepEqual((await comments('A')).map(row => row.id), originalIds);
+    await close(a);
+  }
   async function save() { await writeFile(stateFile, JSON.stringify(state, null, 2), { mode: 0o600 }); }
   async function sameConversation() {
     for (const key of ['A', 'B']) check((await request(key, 'GET', `/projects/${state.projectId}/conversation`)).issueId === state.issueId, 'shared conversation changed');
@@ -209,8 +242,9 @@ async function main() {
     await save();
     return row;
   }
-  function socket(key) {
+  function socket(key, presence = false) {
     const url = new URL(`/api/companies/${state.companyId}/events/ws`, api);
+    if (presence) url.searchParams.set('projectConversation', state.projectId);
     url.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(url, { origin: api, handshakeTimeout: 5000,
       headers: key ? { Cookie: [...jars[key]].map(([k, v]) => `${k}=${v}`).join('; ') } : {} });
@@ -250,8 +284,8 @@ async function main() {
     check((await comments(key === 'A' ? 'B' : 'A')).some(c => c.id === row.id), 'live invalidation missing persisted comment');
     return Math.ceil(elapsed);
   }
-  async function deniedSocket(key) {
-    const ws = socket(key);
+  async function deniedSocket(key, presence = false) {
+    const ws = socket(key, presence);
     await new Promise((ok, fail) => {
       const timer = setTimeout(() => finish(new Error('unauthorized WS timed out instead of rejecting')), 5500);
       function finish(error) { clearTimeout(timer); ws.terminate(); error ? fail(error) : ok(); }

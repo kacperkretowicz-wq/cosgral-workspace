@@ -2886,3 +2886,4 @@ export {
 } from "./remote-workspace.js";
 
 export { readProviderFailure, type ProviderFailure } from "./provider-failure.generated.js";
+export type { ProjectConversationPresence, ProjectConversationTyping } from "./project-conversation-presence.js";

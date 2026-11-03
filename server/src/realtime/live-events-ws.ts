@@ -1,3 +1,4 @@
+import { createProjectConversationPresence, authorizeProjectPresence } from "./project-conversation-presence.js";
 import { createLiveEventDelivery } from "./live-event-delivery.js";
 import { skillAccessService } from "../services/skill-access.js";
 import { createHash } from "node:crypto";
@@ -54,6 +55,7 @@ import { getHeartbeatRunReadDecisions } from "../services/heartbeat-run-privacy.
 import { canActorReadCase } from "../services/case-access.js";
 
 interface UpgradeContext {
+  projectId?: string;
   actor: AuthorizationActor;
   apiKeyId?: string;
   companyId: string;
@@ -261,6 +263,7 @@ export function setupLiveEventsWebSocketServer(
 ) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
   const redactRunEvent = createLiveRunEventRedactor(db);
+  const presence = createProjectConversationPresence();
   const cleanupByClient = new Map<WsSocket, () => void>();
   const aliveByClient = new Map<WsSocket, boolean>();
 
@@ -282,6 +285,19 @@ export function setupLiveEventsWebSocketServer(
       return;
     }
 
+    if (context.projectId) {
+      const dispose = presence.connect(socket, context.companyId, context.projectId, context.actorId,
+        async (typing) => {
+          const fresh = await authorizeUpgrade(db, req, context.companyId, new URL(req.url!, "http://localhost"), opts);
+          return Boolean(fresh && await authorizeProjectPresence(db, fresh.actor, context.companyId, context.projectId!, typing));
+        });
+      aliveByClient.set(socket, true);
+      socket.on("pong", () => aliveByClient.set(socket, true));
+      socket.on("message", (data, binary) => { if (binary) socket.close(1003, "text messages required"); else dispose.receive(data.toString()); });
+      socket.on("close", () => { dispose.close(); aliveByClient.delete(socket); });
+      socket.on("error", () => { dispose.close(); socket.close(); });
+      return;
+    }
     const access = authorizationService(db);
     async function visibleEvent(event: LiveEvent): Promise<LiveEvent | null> {
       if (event.payload.entityType === "case" && (typeof event.payload.entityId !== "string"
@@ -440,7 +456,15 @@ export function setupLiveEventsWebSocketServer(
       resolveSessionFromHeaders: opts.resolveSessionFromHeaders,
       resolveCloudActor: opts.resolveCloudActor,
     })
-      .then((context) => {
+      .then(async (context) => {
+        const projectId = url.searchParams.get("projectConversation");
+        if (url.searchParams.has("projectConversation") && context) {
+          if (!projectId || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(projectId) || !(await authorizeProjectPresence(db, context.actor, companyId, projectId, false))) {
+            rejectUpgrade(socket, "403 Forbidden", "forbidden");
+            return;
+          }
+          context.projectId = projectId;
+        }
         if (!context) {
           rejectUpgrade(socket, "403 Forbidden", "forbidden");
           return;

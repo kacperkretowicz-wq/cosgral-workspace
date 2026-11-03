@@ -1,3 +1,4 @@
+import { authorizeProjectPresence } from "../realtime/project-conversation-presence.js";
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
@@ -120,6 +121,19 @@ describe("project conversation identity", () => {
     expect((await request(app).get(url).set("x-test-user", "person-b")).body.issueId).toBe(first.body.issueId);
     expect((await request(app).get(url).set("x-test-user", "viewer")).body.issueId).toBe(first.body.issueId);
     expect((await request(app).get(url).set("x-test-user", "outsider")).status).toBe(404);
+    // Presence uses the same live project/issue policy without creating a thread or comment.
+    const presenceActor = (userId: string) => ({ type: "board" as const, source: "session" as const, userId, companyIds: [companyId] });
+    expect(await authorizeProjectPresence(db, presenceActor("person-b"), companyId, project!.id, false)).toBe(true);
+    expect(await authorizeProjectPresence(db, presenceActor("person-b"), companyId, project!.id, true)).toBe(true);
+    expect(await authorizeProjectPresence(db, presenceActor("viewer"), companyId, project!.id, false)).toBe(true);
+    expect(await authorizeProjectPresence(db, presenceActor("viewer"), companyId, project!.id, true)).toBe(false);
+    expect(await authorizeProjectPresence(db, presenceActor("outsider"), companyId, project!.id, false)).toBe(false);
+    expect(await authorizeProjectPresence(db, { type: "none" }, companyId, project!.id, true)).toBe(false);
+    expect(await authorizeProjectPresence(db, { type: "board", source: "local_implicit", userId: "local-board" }, companyId, project!.id, false)).toBe(false);
+    expect(await authorizeProjectPresence(db, presenceActor("person-b"), randomUUID(), project!.id, true)).toBe(false);
+    await db.delete(projectAccessMembers).where(and(eq(projectAccessMembers.projectId, project!.id), eq(projectAccessMembers.subjectId, "person-b")));
+    expect(await authorizeProjectPresence(db, presenceActor("person-b"), companyId, project!.id, false)).toBe(false);
+    await db.insert(projectAccessMembers).values({ companyId, projectId: project!.id, subjectType: "user", subjectId: "person-b" });
     const [coordinator] = await db.insert(agents).values({ companyId, name: "Coordinator", role: "general", adapterType: "codex_local" }).returning();
     const [foreignCompany] = await db.insert(companies).values({ name: "Foreign", issuePrefix: `F${companyId.slice(0, 6)}` }).returning();
     const [foreignAgent] = await db.insert(agents).values({ companyId: foreignCompany!.id, name: "Foreign", role: "general" }).returning();

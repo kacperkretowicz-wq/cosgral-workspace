@@ -194,6 +194,14 @@ HTTP/WS grants and denials; it does not qualify agent execution.
 Verification: `not-run` for an agent posting on this UI test project. Browser
 board verification is recorded separately in COSGRAL-PRZEKAZANIE.md.
 
-Gaps: real-model delegation acceptance pending supervisor execution; presence
-and typing. Server integration tests exercise persistence/access through wake
-calls with mocked heartbeat, not provider execution.
+Presence: the existing company WS accepts `?projectConversation=<project UUID>`
+only for authenticated humans with project and backing issue access. Typing
+requires comment authority; viewer typing, agents and anonymous/implicit local
+board identities are rejected. Frames contain user IDs and expiry only; no DB,
+audit, wake or replay. Access is rechecked before each snapshot delivery. Multiple
+tabs merge by user; last disconnect removes presence. Agent activity uses existing
+conversation live runs, never client-authored typing.
+
+Gaps: server integration tests exercise persistence/access through wake calls
+with mocked heartbeat, not provider execution. See the handoff for separate
+supervisor real-model acceptance and current presence test evidence.

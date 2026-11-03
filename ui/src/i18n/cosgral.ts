@@ -22,7 +22,7 @@ i18n.addResourceBundle("pl", "cosgral", {
   completed: "{{done}} z {{total}} zadań ukończonych", active: "Aktywni agenci firmy",
   noActive: "Żaden agent teraz nie pracuje.", tasks: "Zadania projektu", noTasks: "Brak dostępnych zadań.",
   currentUser: "Zalogowany użytkownik", user: "Użytkownik", system: "System", unknownAgent: "Agent",
-  noPresence: "Obecność innych osób i wskaźnik pisania nie są jeszcze dostępne.",
+  presentUsers: "Obecni w rozmowie", presentSummary: "Obecni: {{names}}", presenceDisconnected: "Obecność niedostępna — brak połączenia.", userTyping: "{{name}} pisze…",
   loading: "Wczytywanie rozmowy…", loadError: "Nie udało się wczytać rozmowy. Sprawdź dostęp i spróbuj ponownie.",
   dataError: "Nie udało się odświeżyć części danych projektu.", retry: "Spróbuj ponownie",
   empty: "Tutaj zaczyna się wspólna rozmowa projektu. Napisz pierwszą wiadomość.",
