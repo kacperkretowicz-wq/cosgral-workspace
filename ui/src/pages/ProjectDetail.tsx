@@ -1,3 +1,4 @@
+import { useCosgralTranslation } from "../i18n/cosgral";
 import { useShowAgentCreatedTasks } from "../hooks/useShowAgentCreatedTasks";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation, Navigate } from "@/lib/router";
@@ -256,19 +257,20 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
 }
 
 function ProjectConversationEntry({ projectId, companyId }: { projectId: string; companyId: string }) {
+  const { t } = useCosgralTranslation();
   const navigate = useNavigate();
   const conversation = useMutation({
     mutationFn: async () => (await projectsApi.getConversation(projectId, companyId))
       ?? await projectsApi.openConversation(projectId, companyId),
-    onSuccess: (result) => navigate(`/issues/${encodeURIComponent(result.identifier ?? result.issueId)}`),
+    onSuccess: () => navigate(`/projects/${encodeURIComponent(projectId)}/conversation`),
   });
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Button type="button" variant="outline" disabled={conversation.isPending} onClick={() => conversation.mutate()}>
-        {conversation.isPending ? "Opening conversation…" : "Open shared conversation"}
+        {conversation.isPending ? t("loading") : t("conversation")}
       </Button>
       {conversation.isError && <p role="alert" className="text-sm text-destructive">
-        {conversation.error instanceof Error ? conversation.error.message : "Could not open the conversation."}
+        {t("loadError")}
       </p>}
     </div>
   );

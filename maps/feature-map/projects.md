@@ -15,6 +15,7 @@ Agent access: [companion](../agent-access-map/projects.md).
 ## Sub-features
 
 - `lifecycle`: `projects/lifecycle` — create, name, organize, and archive projects.
+- `conversation`: `projects/conversation` — shared COSGRAL project conversation, messages and accessible task progress.
 - `task-context`: `projects/task-context` — inspect project tasks and create work in the selected project.
 - `repositories`: `projects/repositories` — configure repository/workspace sources and verify usable checkouts.
 - `defaults`: `projects/defaults` — maintain project instructions, environment, goal, and budget context where offered.
@@ -35,6 +36,13 @@ provider or Core/local choice. Conflicting defaults remain visible for repair.
 ### `project-access`
 
 Open `/projects/:projectId/configuration`, use **Private project**, and choose **Manage access** or **View access** according to your authority. Create a private project through the supported creation surface or API when needed for a fixture.
+
+### `project-conversation`
+
+Open a project and choose **Rozmowa projektu**, or visit
+`/:companyPrefix/projects/:projectId/conversation`. The advanced task screen stays
+available through **Widok zaawansowany**. This Polish surface reuses project
+conversation identity, task comments, company directory and the company live stream.
 
 ## Driving it with Playwright and the Paperclip CLI
 
@@ -96,3 +104,20 @@ its automatic tracking. Changing the ref does not retarget existing skill refere
 ### Documentation scope: Projects and execution workspaces
 
 Provider-specific provisioning, multi-repository/submodule edge cases, Git reconciliation variants, and all service exposure combinations require deeper recipes.
+
+### Shared COSGRAL project conversation
+
+Capability ID: `projects/conversation`.
+
+Component/data coverage: [conversation tests](../../ui/src/pages/ProjectConversation.test.tsx),
+[data mapping](../../ui/src/lib/project-conversation.test.ts), and
+[editor keyboard tests](../../ui/src/components/MarkdownEditor.test.tsx).
+Manual: use two authenticated project members. Send with Enter, keep a newline
+with Shift+Enter, select an @agent mention, disconnect B, send as A and reconnect B.
+Verify new messages without navigation changes. Load earlier messages from a
+history over 40 comments. Check task cards against accessible project tasks,
+excluding cancelled tasks, with done / remaining total. Check dark/light, mobile
+navigation drawer, details overlay and inline errors/retry. Task assignment is
+shown as assignment, not proof of agent delegation. Presence/typing and a selected
+project coordinator are not implemented. Browser evidence belongs in the handoff;
+these recipes alone do not claim a live pass.

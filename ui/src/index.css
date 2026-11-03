@@ -5235,3 +5235,23 @@ html:not(.dark) .coordinator-sidebar {
 .agent-config-panels + h3 {
   font-weight: 600;
 }
+
+/* COSGRAL project conversation uses the shared spacing and status tokens. */
+:root {
+  --cosgral-control-theme-duration: 0ms;
+  --cosgral-agent-indent: calc(var(--spacing) * 4);
+  --cosgral-status-size: calc(var(--spacing) * 2);
+  --cosgral-composer-max-height: calc(var(--spacing) * 48);
+}
+.cosgral-agent-row { padding-inline-start: calc(var(--cosgral-agent-depth, 0) * var(--cosgral-agent-indent)); }
+.cosgral-agent-state .status-fill { width: var(--cosgral-status-size); height: var(--cosgral-status-size); border-radius: var(--cosgral-status-size); }
+.cosgral-composer { max-height: var(--cosgral-composer-max-height); overflow-y: auto; }
+@media (max-width: 767px) {
+  .cosgral-conversation { height: var(--mobile-chat-viewport-height, 100dvh); }
+  .cosgral-composer { font-size: var(--text-base); }
+}
+/* Theme changes must recolor conversation controls in the same frame as their
+   surface; interpolating the old foreground can hide icons and status chips. */
+.cosgral-conversation :is([data-slot="button"], [data-slot="badge"]) {
+  transition-duration: var(--cosgral-control-theme-duration);
+}

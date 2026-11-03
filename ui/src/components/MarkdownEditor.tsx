@@ -99,6 +99,8 @@ interface MarkdownEditorProps {
   actionCommands?: SlashCommandOption[];
   /** Called on Cmd/Ctrl+Enter */
   onSubmit?: () => void;
+  /** Plain Enter sends after autocomplete; Shift+Enter keeps a newline. */
+  submitOnEnter?: boolean;
   /** Render the rich editor without allowing edits. */
   readOnly?: boolean;
 }
@@ -742,6 +744,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   mentions,
   actionCommands = [],
   onSubmit,
+  submitOnEnter = false,
   readOnly = false,
 }: MarkdownEditorProps, forwardedRef) {
   const editorValue = useMemo(() => prepareMarkdownForEditor(value), [value]);
@@ -1367,7 +1370,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           }}
           onBlur={() => onBlur?.()}
           onKeyDown={(event) => {
-            if (onSubmit && event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            if (!readOnly && !event.nativeEvent.isComposing && onSubmit && event.key === "Enter" && ((event.metaKey || event.ctrlKey) || (submitOnEnter && !event.shiftKey))) {
               event.preventDefault();
               onSubmit();
             }
@@ -1402,7 +1405,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
         }
       }}
       onKeyDownCapture={(e) => {
-        if (readOnly) return;
+        if (readOnly || e.nativeEvent.isComposing) return;
         if (
           (e.key === "Backspace" || e.key === "Delete")
           && e.target instanceof HTMLElement
@@ -1465,6 +1468,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               return;
             }
           }
+        }
+        if (submitOnEnter && onSubmit && e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          onSubmit();
         }
       }}
       onDragEnter={(evt) => {

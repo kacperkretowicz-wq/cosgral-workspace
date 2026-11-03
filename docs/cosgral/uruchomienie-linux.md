@@ -152,3 +152,44 @@ Faza restartowa loguje A i B ponownie (bez zapisanych cookies), wymaga tego same
 Exit 0 oznacza PASS wszystkich asercji danej fazy; FAIL kończy się exit 1. Po HTTP 429 dla auth skrypt respektuje `Retry-After` (maksymalnie dwa ponowienia, do 60 s każde), bez wyłączania limitera. Plik stanu zawiera wyłącznie ID i testowe e-maile; losowe hasła są wyłącznie w osobnym pliku `<state-file>.credentials.json` 0600, poza repo, bez cookies. Można podać własne `--credentials-file /poza/repo/credentials.json` w obu fazach. Skrypt odrzuca ścieżki wewnątrz repo, symlinki plików przy odczycie i poświadczenia dla innego origin. Nie nadpisuje plików przy `prepare`. Po nieukończonym `prepare` zachować pliki do inspekcji i przygotować nową izolowaną bazę oraz nowe ścieżki. Nie usuwa firm ani kont; po odbiorze zatrzymać instancję i usunąć wyłącznie własne dane testowe. `/tmp` nie służy do trwałej produkcji.
 
 Wynik sesji Codex #3: `prepare` **PASS, exit 0**, live A→B **65 ms**, B→A **45 ms**. Po SIGINT i potwierdzonym `ECONNREFUSED` na portach 3198 oraz 54329 ponowny start tej samej bazy i sekretów: `verify-after-restart` **PASS, exit 0**, ponowne logowanie A/B, ta sama rozmowa, cztery komentarze w pierwotnej kolejności, piąty komentarz przez WS **113 ms**. Test odbył się przez HTTP/WS bez przeglądarki. Nie potwierdza docelowego UI ani delegowania agentów. Szczegóły wcześniejszych FAIL i regresji kursora: `COSGRAL-PRZEKAZANIE.md`, sekcja Codex #3.
+
+## Dedykowany widok rozmowy projektu (Codex #4)
+
+Po uruchomieniu API w `authenticated` zgodnie z poprzednią sekcją uruchom osobno UI:
+
+```sh
+PAPERCLIP_DEV_API_URL=http://127.0.0.1:3198 pnpm --filter @paperclipai/ui exec vite --host 127.0.0.1 --port 5173
+```
+
+Otwórz `http://127.0.0.1:5173/auth`, zaloguj się kontem z dostępem do firmy i projektu.
+W projekcie wybierz **Rozmowa projektu**. Adres docelowy:
+`http://127.0.0.1:5173/<PREFIX>/projects/<UUID-projektu>/conversation`.
+Używaj konsekwentnie `127.0.0.1` w adresach UI/API; `localhost` ma osobny zakres cookies.
+Vite proxy obsługuje HTTP i WebSocket. API nie musi serwować UI; nie wyłączaj kontroli Origin.
+**Widok zaawansowany** w nagłówku otwiera zachowany ekran zadania Paperclip.
+
+Nowy widok jest po polsku przez namespace `cosgral` istniejącego i18next. Przy braku
+zapisanego wyboru motywu otwiera ciemny; przycisk w nagłówku zmienia motyw.
+Panel szczegółów jest początkowo zamknięty. Na telefonie nawigacja i szczegóły
+korzystają z szuflad. Historia pobiera ostatnie 40 komentarzy, a przycisk u góry
+dociąga starsze. Enter wysyła, Shift+Enter tworzy nową linię, Enter w otwartym menu
+wzmianek wybiera agenta. Ponowienie nie zmienia klucza tej samej wiadomości.
+
+Karty przedstawiają dostępne zadania projektu i `done / wszystkie nieanulowane`;
+nie dowodzą uruchomienia koordynatora ani automatycznego delegowania.
+Obecność innych użytkowników, typing i załączniki w nowym composerze pozostają otwarte.
+Wstrzymanie rozmowy blokuje composer i zachowuje szkic; bezpośrednie wstrzymanie
+można zwolnić przez **Wznów rozmowę**, bez budzenia agentów. Wstrzymanie odziedziczone
+prowadzi do zadania nadrzędnego w widoku zaawansowanym.
+
+Weryfikacja tej warstwy:
+
+```sh
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts src/pages/ProjectDetail.test.tsx src/components/MarkdownEditor.test.tsx src/context/LiveUpdatesProvider.hook.test.tsx
+pnpm --filter @paperclipai/ui typecheck
+pnpm check:token-gates
+pnpm --filter @paperclipai/ui build
+node scripts/check-maps.mjs
+```
+
+Rzeczywiste wyniki sesji i ścieżki zrzutów: sekcja Codex #4 w `COSGRAL-PRZEKAZANIE.md`.

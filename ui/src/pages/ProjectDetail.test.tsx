@@ -309,11 +309,11 @@ describe("ProjectDetail", () => {
     root = createRoot(container);
     await act(() => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>));
     await settle();
-    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Open shared conversation")!.click());
+    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Rozmowa projektu")!.click());
     await settle();
     expect(mockProjectsApi.getConversation).toHaveBeenCalledWith("project-1", "company-1");
     expect(mockProjectsApi.openConversation).not.toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith("/issues/PAP-42");
+    expect(mockNavigate).toHaveBeenCalledWith("/projects/project-1/conversation");
     queryClient.clear();
   });
 
@@ -324,10 +324,10 @@ describe("ProjectDetail", () => {
     await act(() => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>));
     await settle();
     expect(mockProjectsApi.openConversation).not.toHaveBeenCalled();
-    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Open shared conversation")!.click());
+    await act(() => [...container.querySelectorAll("button")].find(button => button.textContent === "Rozmowa projektu")!.click());
     await settle();
     expect(mockProjectsApi.openConversation).toHaveBeenCalledWith("project-1", "company-1");
-    expect(mockNavigate).toHaveBeenCalledWith("/issues/PAP-42");
+    expect(mockNavigate).toHaveBeenCalledWith("/projects/project-1/conversation");
     queryClient.clear();
   });
 

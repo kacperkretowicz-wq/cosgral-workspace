@@ -154,3 +154,33 @@ Project configuration responses also expose effective workspace storage through
 read/update permissions apply. Omitted provider IDs inherit; null explicitly selects
 Core/local. [Offline API coverage](../../server/src/__tests__/project-workspace-provider.integration.test.ts)
 checks overrides and cross-company denial; live agent credential verification remains unqualified.
+
+## `conversation`
+
+Capability ID: `projects/conversation`.
+
+Review: `baseline`.
+
+API: `present` — `GET /api/projects/{id}/conversation`,
+`POST /api/projects/{id}/conversation`, `GET /api/issues/{id}/comments`
+(with order/limit/after), `POST /api/issues/{id}/comments`.
+
+Agent access: `partial` — comments use the existing REST task-comment path;
+project conversation creation is a board action. No separate message store or
+execution authority is introduced by the UI.
+
+Policy: company and private-project/task read access; comment writes require
+existing mutation authority. A viewer can read but cannot send. Comment authors
+come from the authenticated actor; clientRequestId preserves retry identity.
+Project conversation policy protects its identity and nonterminal lifecycle.
+
+Evidence: `source-only` — [project routes](../../server/src/routes/projects.ts),
+[comment routes](../../server/src/routes/issues.ts),
+[conversation UI](../../ui/src/pages/ProjectConversation.tsx).
+[Two-account script](../../scripts/cosgral-e2e-two-accounts.mjs) exercises board
+HTTP/WS grants and denials; it does not qualify agent execution.
+
+Verification: `not-run` for an agent posting on this UI test project. Browser
+board verification is recorded separately in COSGRAL-PRZEKAZANIE.md.
+
+Gaps: selected coordinator, automatic delegation, presence and typing.

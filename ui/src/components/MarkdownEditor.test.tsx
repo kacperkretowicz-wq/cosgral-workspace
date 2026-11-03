@@ -339,6 +339,29 @@ describe("MarkdownEditor", () => {
     mdxEditorMockState.suppressHtmlProcessingValues = [];
   });
 
+  it("optionally sends on Enter while preserving Shift+Enter, IME and default editor behavior", async () => {
+    const root = createRoot(container);
+    const onSubmit = vi.fn();
+    const render = async (submitOnEnter: boolean) => {
+      await act(async () => root.render(<MarkdownEditor value="Draft" onChange={() => {}} onSubmit={onSubmit} submitOnEnter={submitOnEnter} />));
+      await flush();
+    };
+    await render(false);
+    const key = (extra: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, ...extra });
+      container.querySelector('[contenteditable="true"]')!.dispatchEvent(event);
+      return event;
+    };
+    await act(async () => { key(); });
+    expect(onSubmit).not.toHaveBeenCalled();
+    await render(true);
+    await act(async () => { key({ shiftKey: true }); key({ isComposing: true }); });
+    expect(onSubmit).not.toHaveBeenCalled();
+    await act(async () => { expect(key().defaultPrevented).toBe(true); });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    await act(async () => root.unmount());
+  });
+
   it("applies async external value updates once the editor ref becomes ready", async () => {
     const root = createRoot(container);
 
