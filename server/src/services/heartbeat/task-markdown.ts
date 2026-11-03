@@ -1,3 +1,4 @@
+import { PROJECT_CONVERSATION_ORIGIN_KIND } from "@paperclipai/shared";
 import { REQUIRED_QUALITY_REVIEW_GUIDANCE, requiredQualityReview } from "../required-quality-review.js";
 import { AGENT_CHAT_DIRECTIVE, COORDINATOR_CHAT_HANDOFF_DIRECTIVE } from "../agent-conversations.js";
 import { publicChatTaskUrl } from "../chat-task-url.js";
@@ -13,6 +14,8 @@ export function buildPaperclipTaskMarkdown(input: {
     titleNeedsGeneration?: boolean;
     workMode?: string | null;
     conversationAgentId?: string | null;
+    originKind?: string | null;
+    projectId?: string | null;
     description?: string | null;
     executionPolicy?: unknown;
   } | null;
@@ -217,6 +220,12 @@ export function buildPaperclipTaskMarkdown(input: {
         "The current title is a provisional slice of the user's prompt. As one of your first tool calls, use set_task_title with a concise title describing the requested outcome and onlyIfProvisional: true. If that tool is unavailable, PUT /api/issues/" + issue.id + "/title with {title, onlyIfProvisional: true} using your normal Paperclip authentication. Do this in Ask and Plan modes too. Preserve the full task description and any title already chosen by the user; then continue the task.",
         "Check the title tool result before claiming the title was saved. Use a new idempotency key if retrying with changed arguments.",
       );
+    }
+    if (issue.originKind === PROJECT_CONVERSATION_ORIGIN_KIND) {
+      lines.push("", "Shared project coordinator:",
+        "This is a persistent shared project conversation, not a task to finish: do not close, hide, move or reassign it. Read its comments and reply here through the Paperclip comment API as yourself. Do not impersonate the user.",
+        `For authorized work, use the paperclip skill to create ordinary delegated tasks with projectId=${JSON.stringify(issue.projectId)}, parentId=${JSON.stringify(issue.id)}, assigneeAgentId of the requested executor or an authorized reportsTo subordinate, status=todo, a self-contained description with a link to this conversation, and a stable idempotencyKey derived from the source comment and work item. Check existing children before retrying; do not duplicate completed work. Do not execute the delegate's work yourself.`,
+        "After replying or handing off, set this conversation to in_review to wait for the next message or child-completion wake; keep yourself assigned. Do not poll or wait inside a run. When children complete, read their status and comments and post a final report here with links and verified results. Do not delegate again for the same request. Budgets, approvals and access controls still apply.");
     }
     if (issue.conversationAgentId) {
       lines.push("", "Chat mode directive:", AGENT_CHAT_DIRECTIVE, `Current composer mode: ${issue.workMode ?? "standard"}.`);

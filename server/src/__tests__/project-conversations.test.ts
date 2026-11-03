@@ -2,14 +2,20 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { and, eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { companies, companyMemberships, createDb, issues, projectAccessMembers, projectConversations, projects, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS } from "@paperclipai/db";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { agents, activityLog, companies, companyMemberships, createDb, heartbeatRuns, issues, projectAccessMembers, projectConversations, projects, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS } from "@paperclipai/db";
 import { startEmbeddedPostgresTestDatabase } from "./helpers/embedded-postgres.js";
 import { projectConversationService } from "../services/project-conversations.js";
 import { issueService } from "../services/issues.js";
 import { projectRoutes } from "../routes/projects.js";
 import { issueRoutes } from "../routes/issues.js";
 import { errorHandler } from "../middleware/error-handler.js";
+
+const { wakeup } = vi.hoisted(() => ({ wakeup: vi.fn(async (..._args: unknown[]) => null) }));
+vi.mock("../services/heartbeat.js", async importOriginal => {
+  const actual = await importOriginal<typeof import("../services/heartbeat.js")>();
+  return { ...actual, heartbeatService: (...args: Parameters<typeof actual.heartbeatService>) => ({ ...actual.heartbeatService(...args), wakeup }) };
+});
 
 describe("project conversation identity", () => {
   let database: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>>;
@@ -20,6 +26,30 @@ describe("project conversation identity", () => {
     db = createDb(database.connectionString);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
   afterAll(async () => { await db?.$client.end(); await database?.cleanup(); });
+
+  it("creates the first selection atomically and preserves execution ownership during a run", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Selection test", issuePrefix: `S${companyId.slice(0, 6)}` });
+    const [project] = await db.insert(projects).values({ companyId, name: "Selection" }).returning();
+    const [agent] = await db.insert(agents).values({ companyId, name: "Any compatible adapter", role: "general", adapterType: "process" }).returning();
+    const service = projectConversationService(db);
+    const hooks = { authorize: vi.fn(async () => {}), changed: vi.fn(async () => {}) };
+    const selected = await service.setCoordinator(companyId, project!.id, "owner", agent!.id, hooks);
+    expect(selected?.assigneeAgentId).toBe(agent!.id);
+    expect(hooks.changed).toHaveBeenCalledTimes(1);
+    const [run] = await db.insert(heartbeatRuns).values({ companyId, agentId: agent!.id, issueId: selected!.id, status: "running" }).returning();
+    await db.update(issues).set({ status: "in_review", executionRunId: run!.id }).where(eq(issues.id, selected!.id));
+    await expect(service.setCoordinator(companyId, project!.id, "owner", null, hooks)).rejects.toThrow(/execution|run/i);
+    expect((await service.get(companyId, project!.id))?.assigneeAgentId).toBe(agent!.id);
+    expect(hooks.changed).toHaveBeenCalledTimes(1);
+    await db.update(issues).set({ executionRunId: null }).where(eq(issues.id, selected!.id));
+    // A failed event write must roll back assignment and its visible comment.
+    await expect(service.setCoordinator(companyId, project!.id, "owner", null, {
+      ...hooks, changed: async () => { throw new Error("audit unavailable"); },
+    })).rejects.toThrow("audit unavailable");
+    expect((await service.get(companyId, project!.id))?.assigneeAgentId).toBe(agent!.id);
+    expect(await issueService(db).listComments(selected!.id)).toHaveLength(1);
+  }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
 
   it("creates one durable thread under concurrent requests and rejects cross-project moves", async () => {
     const companyId = randomUUID();
@@ -84,12 +114,68 @@ describe("project conversation identity", () => {
     expect((await request(app).get(url).set("x-test-user", "person-b")).body.issueId).toBe(first.body.issueId);
     expect((await request(app).get(url).set("x-test-user", "viewer")).body.issueId).toBe(first.body.issueId);
     expect((await request(app).get(url).set("x-test-user", "outsider")).status).toBe(404);
+    const [coordinator] = await db.insert(agents).values({ companyId, name: "Coordinator", role: "general", adapterType: "codex_local" }).returning();
+    const [foreignCompany] = await db.insert(companies).values({ name: "Foreign", issuePrefix: `F${companyId.slice(0, 6)}` }).returning();
+    const [foreignAgent] = await db.insert(agents).values({ companyId: foreignCompany!.id, name: "Foreign", role: "general" }).returning();
+    const choose = `${url}/coordinator`;
+    expect((await request(app).put(choose).set("x-test-user", "viewer").send({ agentId: coordinator!.id })).status).toBe(403);
+    expect((await request(app).put(choose).set("x-test-user", "person-b").send({ agentId: coordinator!.id })).status).toBe(403);
+    expect((await request(app).put(choose).set("x-test-user", "outsider").send({ agentId: coordinator!.id })).status).toBe(404);
+    expect((await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: foreignAgent!.id })).status).toBe(422);
+    // Private project membership is required for the selected agent too.
+    expect((await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: coordinator!.id })).status).toBe(422);
+    await db.insert(projectAccessMembers).values({ companyId, projectId: project!.id, subjectType: "agent", subjectId: coordinator!.id });
+    await db.update(agents).set({ status: "paused" }).where(eq(agents.id, coordinator!.id));
+    expect((await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: coordinator!.id })).status).toBe(422);
+    await db.update(agents).set({ status: "idle" }).where(eq(agents.id, coordinator!.id));
+    wakeup.mockClear();
+    const selected = await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: coordinator!.id });
+    expect(selected.status).toBe(200);
+    expect(selected.body.coordinatorAgentId).toBe(coordinator!.id);
+    expect(selected.body.canManageCoordinator).toBe(true);
+    expect(wakeup).not.toHaveBeenCalled();
+    const persisted = await issueService(db).getById(first.body.issueId);
+    expect(persisted?.assigneeAgentId).toBe(coordinator!.id);
+    expect(persisted?.conversationAgentId).toBeNull();
+    expect(persisted?.status).toBe("todo");
+    expect((await request(app).get(url).set("x-test-user", "person-b")).body).toMatchObject({ coordinatorAgentId: coordinator!.id, canManageCoordinator: false });
+    expect(await db.select().from(activityLog).where(and(eq(activityLog.entityId, first.body.issueId), eq(activityLog.action, "project.conversation_coordinator_changed")))).toHaveLength(1);
+    // Same selection is idempotent, with no extra event/comment.
+    expect((await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: coordinator!.id })).status).toBe(200);
+    await expect(issueService(db).update(first.body.issueId, { assigneeAgentId: null })).rejects.toThrow(/coordinator/i);
+    expect((await request(app).patch(`/api/issues/${first.body.issueId}`).set("x-test-user", "person-b").send({ assigneeAgentId: null })).status).toBe(409);
+    const child = await issueService(db).create(companyId, { title: "Delegate", parentId: first.body.issueId, projectId: project!.id, status: "todo" });
+    expect(await issueService(db).getWakeableParentAfterChildCompletion(first.body.issueId)).toBeNull();
+    wakeup.mockClear();
+    expect((await request(app).patch(`/api/issues/${child.id}`).set("x-test-user", "person-a").send({ status: "done" })).status).toBe(200);
+    await vi.waitFor(() => expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({
+      reason: "issue_children_completed", contextSnapshot: expect.objectContaining({ issueId: first.body.issueId, completedChildIssueId: child.id }),
+    })));
+    expect((await issueService(db).getWakeableParentAfterChildCompletion(first.body.issueId))?.assigneeAgentId).toBe(coordinator!.id);
+    expect(child.projectId).toBe(project!.id);
+    await issueService(db).release(first.body.issueId, coordinator!.id);
+    expect((await issueService(db).getById(first.body.issueId))?.assigneeAgentId).toBe(coordinator!.id);
+    wakeup.mockClear();
+    const requestId = randomUUID();
+    const sent = await request(app).post(`/api/issues/${first.body.issueId}/comments`).set("x-test-user", "person-b").send({ body: "Delegate this work", clientRequestId: requestId });
+    expect(sent.status).toBe(201);
+    await vi.waitFor(() => expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({
+      reason: "issue_commented", contextSnapshot: expect.objectContaining({ issueId: first.body.issueId, wakeCommentId: sent.body.id }),
+    })));
+    const count = wakeup.mock.calls.length;
+    const repeated = await request(app).post(`/api/issues/${first.body.issueId}/comments`).set("x-test-user", "person-b").send({ body: "Delegate this work", clientRequestId: requestId });
+    expect(repeated.body.id).toBe(sent.body.id);
+    expect(wakeup.mock.calls).toHaveLength(count);
+    // Remove the coordinator before unrelated existing comment-access checks.
+    expect((await request(app).put(choose).set("x-test-user", "person-a").send({ agentId: null })).status).toBe(200);
+    await expect(issueService(db).checkout(first.body.issueId, coordinator!.id, ["backlog"], null)).rejects.toThrow();
     const commentsUrl = `/api/issues/${first.body.issueId}/comments`;
     expect((await request(app).post(commentsUrl).set("x-test-user", "person-a").send({ body: "Hello from A" })).status).toBe(201);
     expect((await request(app).post(commentsUrl).set("x-test-user", "person-b").send({ body: "Hello from B" })).status).toBe(201);
     const history = await request(app).get(`${commentsUrl}?order=asc`).set("x-test-user", "person-b");
     expect(history.status).toBe(200);
-    expect(history.body.map((comment: { body: string }) => comment.body)).toEqual(["Hello from A", "Hello from B"]);
+    expect(history.body.slice(-2).map((comment: { body: string }) => comment.body)).toEqual(["Hello from A", "Hello from B"]);
+    expect(history.body.filter((comment: { body: string }) => /Koordynator/.test(comment.body))).toHaveLength(2);
     expect((await request(app).get(commentsUrl).set("x-test-user", "outsider")).status).toBe(404);
     expect((await request(app).post(commentsUrl).set("x-test-user", "viewer").send({ body: "Not allowed" })).status).toBe(403);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);

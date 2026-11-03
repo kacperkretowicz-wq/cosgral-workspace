@@ -12266,6 +12266,7 @@ export function issueService(db: Db) {
               eq(issues.id, id),
               inArray(issues.status, expectedStatuses),
               or(isNull(issues.assigneeAgentId), sameRunAssigneeCondition),
+              or(ne(issues.originKind, PROJECT_CONVERSATION_ORIGIN), eq(issues.assigneeAgentId, agentId)),
               executionLockCondition,
             ),
           )
@@ -12650,7 +12651,7 @@ export function issueService(db: Db) {
           .update(issues)
           .set({
             status: releaseStatus,
-            assigneeAgentId: isTerminal ? existing.assigneeAgentId : null,
+            assigneeAgentId: isTerminal || existing.originKind === PROJECT_CONVERSATION_ORIGIN ? existing.assigneeAgentId : null,
             checkoutRunId: null,
             executionRunId: null,
             executionAgentNameKey: null,

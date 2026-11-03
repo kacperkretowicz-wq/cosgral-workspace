@@ -4,6 +4,16 @@ import { i18n, useTranslation } from "./index";
 // the language of the advanced Paperclip screens.
 i18n.addResourceBundle("pl", "cosgral", {
   paused: "Rozmowa jest wstrzymana. Szkic zostaje zachowany.", resume: "Wznów rozmowę", inheritedPause: "Rozmowa jest wstrzymana przez zadanie nadrzędne. Wznów je w widoku zaawansowanym.", pauseError: "Nie udało się sprawdzić lub zmienić wstrzymania rozmowy.",
+  coordinator: "Koordynator projektu", chooseCoordinator: "Wybierz koordynatora",
+  coordinatorHint: "Wybierz koordynatora, aby wiadomości uruchamiały agenta. Bez wyboru wiadomości zostają we wspólnej rozmowie.",
+  coordinatorReadOnly: "Właściciel lub administrator projektu może wybrać koordynatora.",
+  coordinatorError: "Nie udało się zmienić koordynatora. Spróbuj ponownie.",
+  coordinatorPaused: "Koordynator jest wstrzymany. Wznów agenta lub wybierz innego koordynatora.",
+  coordinatorNotReady: "Koordynator nie jest gotowy do pracy. Sprawdź ustawienia agenta lub wybierz innego koordynatora.",
+  coordinatorLoading: "Sprawdzanie gotowości koordynatora…",
+  coordinatorWorking: "{{name}} pracuje nad tą rozmową…", coordinatorQueued: "{{name}} czeka na uruchomienie w tej rozmowie…",
+  coordinatorRunError: "Nie udało się sprawdzić aktywności koordynatora w tej rozmowie.",
+  messageToCoordinator: "Wiadomość do {{name}}…", companyAgentRunning: "{{name}} pracuje w firmie",
   conversation: "Rozmowa projektu", projects: "Projekty", agents: "Agenci firmy",
   settings: "Ustawienia", inbox: "Skrzynka", advanced: "Widok zaawansowany",
   details: "Szczegóły projektu", navigation: "Otwórz nawigację", close: "Zamknij",

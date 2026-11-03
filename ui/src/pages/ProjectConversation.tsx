@@ -6,14 +6,16 @@ import { Link, useParams } from "@/lib/router";
 import { projectsApi } from "../api/projects";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
+import { heartbeatsApi } from "../api/heartbeats";
 import { accessApi } from "../api/access";
 import { authApi } from "../api/auth";
 import { useCompany } from "../context/CompanyContext";
 import { useTheme } from "../context/ThemeContext";
-import { useCompanyLiveEvent } from "../context/LiveUpdatesProvider";
+import { useCompanyLiveEvent, useTaskRunLiveUpdates } from "../context/LiveUpdatesProvider";
 import { useMobileVisualViewport } from "../hooks/useMobileVisualViewport";
 import { useCosgralTranslation } from "../i18n/cosgral";
 import { queryKeys } from "../lib/queryKeys";
+import { liveRunRefetchInterval } from "../lib/live-runs-cache";
 import { agentHierarchy, conversationTasks } from "../lib/project-conversation";
 import { buildCompanyUserProfileMap, buildMarkdownMentionOptions, type CompanyUserProfile } from "../lib/company-members";
 import { AgentAvatar } from "../components/AgentAvatar";
@@ -121,7 +123,23 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   const viewportRef = useMobileVisualViewport(mobile && Boolean(project.data) && conversation.data !== undefined);
   const tree = useQuery({ queryKey: ["issues", "tree-control-state", issueId ?? "pending"], queryFn: () => issuesApi.getTreeControlState(issueId!), enabled: Boolean(issueId) });
   const hold = tree.data?.activePauseHold;
-  const composerBlocked = Boolean(issueId && (tree.isPending || tree.isError || hold));
+  const coordinator = agents.data?.find(agent => agent.id === conversation.data?.coordinatorAgentId);
+  const coordinatorSelected = Boolean(conversation.data?.coordinatorAgentId);
+  const hasLiveConnection = useTaskRunLiveUpdates({ companyId, issueId, issueQueryRef: issueId ?? "pending", assigneeAgentId: conversation.data?.coordinatorAgentId });
+  const liveRuns = useQuery({
+    queryKey: queryKeys.issues.liveRuns(issueId ?? "pending"),
+    queryFn: () => heartbeatsApi.liveRunsForIssue(issueId!),
+    enabled: Boolean(issueId && coordinatorSelected),
+    refetchInterval: query => liveRunRefetchInterval(hasLiveConnection, query.state, 3000),
+  });
+  const coordinatorRun = liveRuns.data?.find(run => run.agentId === conversation.data?.coordinatorAgentId && ["running", "queued"].includes(run.status));
+  const coordinatorChecking = coordinatorSelected && agents.isPending;
+  const coordinatorUnavailable = coordinatorSelected && !coordinatorChecking && (!coordinator || !["idle", "running"].includes(coordinator.status));
+  const setCoordinator = useMutation({
+    mutationFn: (agentId: string | null) => projectsApi.setConversationCoordinator(projectId, agentId, companyId),
+    onSuccess: result => { client.setQueryData(conversationKey(companyId, projectId), result); },
+  });
+  const composerBlocked = setCoordinator.isPending || Boolean(issueId && (tree.isPending || tree.isError || hold)) || coordinatorChecking || coordinatorUnavailable;
   const resume = useMutation({
     mutationFn: () => issuesApi.releaseTreeHold(issueId!, hold!.holdId, { metadata: { wakeAgents: false } }),
     onSuccess: () => { void client.invalidateQueries({ queryKey: ["issues", "tree-control-state", issueId] }); },
@@ -131,7 +149,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     const payload = event.payload;
     // Authenticated events intentionally omit details.projectId. Re-read only
     // this visible project through its authorized endpoint.
-    if (payload.action === "project.conversation_created") {
+    if (payload.action === "project.conversation_created" || (payload.action === "project.conversation_coordinator_changed" && (!issueId || payload.entityId === issueId))) {
       void client.invalidateQueries({ queryKey: conversationKey(companyId, projectId) });
     }
     // The global provider defers self-actor refetches for task chat optimistic
@@ -269,12 +287,27 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       </div>
       <footer className="border-t p-3 md:p-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="project-coordinator" className="text-sm font-medium">{t("coordinator")}</label>
+            <select id="project-coordinator" aria-label={t("coordinator")} value={conversation.data?.coordinatorAgentId ?? ""} disabled={conversation.data?.canManageCoordinator === false || setCoordinator.isPending || send.isPending || agents.isPending || agents.isError} onChange={event => setCoordinator.mutate(event.target.value || null)} className="min-w-0 rounded-md border bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
+              <option value="">{t("chooseCoordinator")}</option>
+              {roster.map(agent => <option key={agent.id} value={agent.id} disabled={!["idle", "running"].includes(agent.status)}>{agent.name} · {t(`status.${agent.status}`)}</option>)}
+            </select>
+          </div>
+          {!coordinatorSelected && <p className="text-sm text-muted-foreground">{t("coordinatorHint")}</p>}
+          {conversation.data?.canManageCoordinator === false && !coordinatorSelected && <p className="text-xs text-muted-foreground">{t("coordinatorReadOnly")}</p>}
+          {setCoordinator.isError && <p role="alert" className="text-sm text-destructive">{t("coordinatorError")}</p>}
+          {coordinatorChecking && <p role="status" className="text-sm text-muted-foreground">{t("coordinatorLoading")}</p>}
+          {coordinatorRun && <p role="status" className="text-sm text-muted-foreground">{t(coordinatorRun.status === "running" ? "coordinatorWorking" : "coordinatorQueued", { name: coordinator?.name ?? coordinatorRun.agentName })}</p>}
+          {coordinatorSelected && liveRuns.isError && <p role="alert" className="text-sm text-destructive">{t("coordinatorRunError")}</p>}
+          {coordinatorUnavailable && <p role="alert" className="text-sm text-destructive">{t(coordinator?.status === "paused" ? "coordinatorPaused" : "coordinatorNotReady")}</p>}
+          {roster.filter(agent => agent.status === "running").map(agent => <p key={agent.id} role="status" className="text-xs text-muted-foreground">{t("companyAgentRunning", { name: agent.name })}</p>)}
           {hold && <div role="status" className="rounded-md border bg-muted p-3 text-sm">
             <p>{t(hold.isRoot ? "paused" : "inheritedPause")}</p>
             {hold.isRoot ? <Button variant="outline" disabled={resume.isPending} onClick={() => resume.mutate()}>{t("resume")}</Button> : <Link className="underline" to={`/issues/${hold.rootIssueId}`}>{t("advanced")}</Link>}
           </div>}
           {(tree.isError || resume.isError) && <p role="alert" className="text-sm text-destructive">{t("pauseError")} <Button variant="outline" onClick={() => { void tree.refetch(); }}>{t("retry")}</Button></p>}
-          <MarkdownEditor value={draft} onChange={setDraft} ariaLabel={t("message")} placeholder={t("message")} mentions={mentions} onSubmit={submit} submitOnEnter readOnly={send.isPending || composerBlocked} className="cosgral-composer" />
+          <MarkdownEditor value={draft} onChange={setDraft} ariaLabel={t("message")} placeholder={coordinator ? t("messageToCoordinator", { name: coordinator.name }) : t("message")} mentions={mentions} onSubmit={submit} submitOnEnter readOnly={send.isPending || composerBlocked} className="cosgral-composer" />
           <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">{t("sendHint")}</p><Button onClick={submit} disabled={send.isPending || composerBlocked || !draft.trim()}><Send className="size-4" />{t(send.isPending ? "sending" : "send")}</Button></div>
           {send.isError && <p role="alert" className="text-sm text-destructive">{t("sendError")} <Button variant="outline" onClick={submit}>{t("retry")}</Button></p>}
         </div>

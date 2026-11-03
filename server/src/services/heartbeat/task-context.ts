@@ -252,6 +252,8 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
           titleNeedsGeneration: issueContext?.titleNeedsGeneration,
           workMode: issueRef.workMode,
           conversationAgentId: issueContext?.conversationAgentId,
+          originKind: issueContext?.originKind,
+          projectId: issueRef.projectId,
           executionPolicy: issueContext?.executionPolicy,
           description: issueRef.description,
         }

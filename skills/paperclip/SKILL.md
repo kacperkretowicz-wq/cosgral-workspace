@@ -49,6 +49,30 @@ document before claiming handoff. Preserve the source plan in this conversation.
 The ordinary completion, child-task, and blocker instructions below apply to
 execution tasks; they do not override chat mode.
 
+## Shared project coordination
+
+A task with `originKind=cosgral_project_conversation` is a persistent shared
+project channel. Its coordinator is `assigneeAgentId`; it is distinct from private
+Chat mode (`conversationAgentId`). Read the channel comments and reply as yourself
+through the comment API. Never close, hide, move or reassign this channel.
+
+When the user authorizes work, create an ordinary `todo` task via the issue API
+with the channel's `projectId`, `parentId` equal to the channel issue ID, and
+`assigneeAgentId` of the requested executor or an authorized subordinate (their
+`reportsTo` points to you). Include a self-contained description, a link to the
+source conversation/comment, and a stable `idempotencyKey` based on the source
+comment and work item. Copy an approved plan with `initialPlan` when applicable.
+Check existing children before retrying: completed work must not be duplicated.
+The execution task's own project, assignment, approval and budget checks apply.
+
+Post a handoff comment with the created task link and leave the channel assigned
+to yourself in `in_review`. Exit the run; do not busy-poll. Child completion wakes
+the coordinator through the existing parent-task mechanism. On that wake, read
+the child's persisted status and comments, report verified results and task links
+in this same channel, and return it to `in_review`. Executors comment and mark
+`done` on their own task; they need not write to the channel. A reporting line
+does not grant access or permit bypassing an approval or a budget hard stop.
+
 ## Server-Verified External Chat Turns
 
 Paperclip may identify an ordinary external-chat turn as already checked out and

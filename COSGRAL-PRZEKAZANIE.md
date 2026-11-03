@@ -308,3 +308,7 @@ API 3198 i Vite 5173 pozostawiono uruchomione do odbioru. W tej sesji:
 3. Szczegóły otwiera ikona w prawym górnym rogu, obok zmiany motywu i **Widok zaawansowany**. Telefon: ikona menu po lewej, szczegóły jako overlay.
 
 Po restarcie środowiska: uruchom `authenticated` z tym samym `PAPERCLIP_HOME` i prywatnym env według `docs/cosgral/uruchomienie-linux.md`, następnie powyższe polecenie Vite. W tej maszynie skrót startu API to `bash /workspace/start3198.sh` (nie jest częścią repo). Nowe środowisko wymaga własnych kont/danych; adres testowy i pliki `/tmp` nie są trwałym wdrożeniem. Nadzorca wykonuje commit/push i ewentualne pełne bramki repo.
+
+## Aktualizacja 3 XI (Codex #5 — koordynator i delegowanie)
+
+Kontynuacja po limicie poprzedniej sesji. Zastano niezacommitowane, niezweryfikowane zmiany endpointu wyboru koordynatora, polityki wspólnego wątku, instrukcji heartbeat/skilla, UI i skryptu delegowania. Trwa przegląd i weryfikacja; na tym etapie brak deklaracji PASS. Bez commit/push. Plan: `doc/plans/2026-11-03-cosgral-coordinator.md`. Pełny test zagnieżdżonego Codexa uruchomi nadzorca poza sandboxem; wyniki i dokładna komenda zostaną dopisane poniżej.
