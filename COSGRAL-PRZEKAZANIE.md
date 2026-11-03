@@ -487,3 +487,7 @@ node scripts/check-maps.mjs
 - Zmiany Codexa #5/#6 (rozmowa projektu bez dyspozycji zadania, wake rodzica po zakończeniu dziecka, widoczność błędów w rozmowie, wybór koordynatora, skrypt e2e delegowania) zacommitowane po przejściu celowanych testów: serwer 9 plików/252 testy PASS, UI ProjectConversation 18 PASS, node:test scripts/cosgral-e2e-delegation 30 PASS.
 - NIEZWERYFIKOWANE: pełne e2e delegowania z prawdziwym modelem po poprawce. Wymaga restartu serwera 3199, potem: `node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home "$HOME/.codex-a" --timeout-sec 420`.
 - Dalej: presence/typing, potem izolowane worktrees. Uwaga: `pnpm` uruchamiać z /home/box/tools/bin (corepack bez zapisu).
+
+### Nadzorca – e2e delegowania z prawdziwym modelem (2026-11-03 ~20:23 CET)
+Po restarcie serwera 3199 (`bash /workspace/start3199.sh`, commit f8cc4e609) uruchomiono `node scripts/cosgral-e2e-delegation.mjs --api http://127.0.0.1:3199 --codex-home $HOME/.codex-a --timeout-sec 420` (konto a, gpt-6.1-sol): **PASS** – koordynator → wykonawca → koordynator zapisany w rozmowie (`delegation-started`, `delegation-complete`), runy zakończone sukcesem, brak retry przez 75 s. Rozmowa COSAA-1 nie dostała dyspozycji zadania. Log: /workspace/logs/e2e-deleg-a.log. Zrzut widoku rozmowy: /workspace/cosgral-conversation.png (Chrome headless, 1440x900, dane z tego e2e).
+Dalej: presence/typing (Codex t7), potem izolowane worktrees.
