@@ -39,3 +39,7 @@ Lokalny serwer i PostgreSQL wystartowały na loopback; migracje 421 przeszły, `
 Test Codex: wbudowany test adaptera zwrócił rzeczywistą odpowiedź `hello`. Oddzielny agent testowy w zadaniu COS-1 odpowiedział `4`. Nie oznacza to poprawnej pełnej orkiestracji: zadanie nie zakończyło się samodzielnie i uruchomienie zgłosiło błąd zapisu dyspozycji przez API. Zadanie ręcznie zakończono, agenta wstrzymano, retry anulowano. Do wyjaśnienia przed codziennym użyciem. Test dwóch użytkowników, delegowania i współdzielonego czatu nie został wykonany.
 
 Koordynator ma być wybierany przez użytkownika z kompatybilnych agentów i dostępnych kont; Claude nie jest wymagany. Dane subskrypcji pozostają w środowisku właściciela. Widok w przeglądarce jest jeszcze interfejsem upstream, nie projektem COSGRAL.
+
+Po restarcie serwera organizacja, projekt, agenci i zadanie pozostały w bazie. Drugi test z losowym sekretem JWT w środowisku procesu nie umożliwił agentowi połączenia z lokalnym API; sam model opisał błąd, a zadanie zostało ręcznie zamknięte i agent ponownie wstrzymany. Sekret jest tylko w pamięci procesu. Nie jest to rozwiązanie do wdrożenia.
+
+Klucze idempotencji tworzenia zadań mają ograniczoną retencję. Nie nadają się na trwały identyfikator jedynego kanału projektu; potrzebne jest jawne atomowe powiązanie z uprawnieniami projektu i test równoczesnego tworzenia, odczytu oraz ponownego połączenia. Utworzony lokalnie COS-3 to eksperymentalny wątek zadania, nie ukończony kanał multiplayer.
