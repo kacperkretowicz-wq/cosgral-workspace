@@ -13,6 +13,10 @@ vi.mock("@/api/projects", () => ({
     setGitAuthorization: vi.fn(),
   },
 }));
+vi.mock("@/features/connections/ConnectionSetupFlow", () => ({
+  ConnectionSetupFlow: ({ onComplete, onCancel }: { onComplete: () => void; onCancel: () => void }) =>
+    <div><button onClick={onComplete}>Finish connection</button><button onClick={onCancel}>Cancel connection</button></div>,
+}));
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("ProjectGitAuthorization", () => {
@@ -76,4 +80,54 @@ describe("ProjectGitAuthorization", () => {
       client.clear();
     }
   });
+});
+
+
+it("connects GitHub from an empty account list and refreshes authorization choices", async () => {
+  const empty = { grantId: null, authorizedByUserId: null, options: [] };
+  vi.mocked(projectsApi.gitAuthorization).mockResolvedValue(empty);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  const invalidate = vi.spyOn(client, "invalidateQueries");
+  const container = document.createElement("div"), root = createRoot(container);
+  document.body.appendChild(container);
+  const settle = () => new Promise(resolve => setTimeout(resolve, 20));
+  try {
+    await act(async () => { root.render(<QueryClientProvider client={client}><ProjectGitAuthorization project={{ id: "p", companyId: "c" } as Project} /></QueryClientProvider>); });
+    await act(async () => { await settle(); });
+    const connect = [...container.querySelectorAll("button")].find(b => b.textContent === "Connect GitHub")!;
+    expect(connect).toBeDefined();
+    await act(async () => { connect.click(); });
+    expect(container.textContent).toContain("Finish connection");
+    const added = { ...empty, options: [{ grantId: "new", login: "my-account", connectionName: "Personal" }] };
+    vi.mocked(projectsApi.gitAuthorization).mockResolvedValue(added);
+    await act(async () => {
+      [...container.querySelectorAll("button")].find(b => b.textContent === "Finish connection")!.click();
+      await settle();
+    });
+    await act(async () => { await settle(); });
+    expect(container.textContent).toContain("Connect another GitHub account");
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["project-git-authorization", "c", "p"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["project-repositories", "c"] });
+    expect(client.getQueryData(["project-git-authorization", "c", "p"])).toEqual(added);
+  } finally { await act(async () => root.unmount()); container.remove(); client.clear(); }
+});
+
+it("offers retry when authorization lookup fails", async () => {
+  vi.mocked(projectsApi.gitAuthorization).mockRejectedValueOnce(new Error("Temporary connection failure"));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const container = document.createElement("div"), root = createRoot(container);
+  document.body.appendChild(container);
+  try {
+    await act(async () => { root.render(<QueryClientProvider client={client}><ProjectGitAuthorization project={{ id: "retry", companyId: "c" } as Project} /></QueryClientProvider>); });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Temporary connection failure");
+    vi.mocked(projectsApi.gitAuthorization).mockResolvedValue({ grantId: null, authorizedByUserId: null, options: [] });
+    await act(async () => {
+      [...container.querySelectorAll("button")].find(b => b.textContent === "Try again")!.click();
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(container.textContent).toContain("Connect GitHub");
+  } finally { await act(async () => root.unmount()); container.remove(); client.clear(); }
 });

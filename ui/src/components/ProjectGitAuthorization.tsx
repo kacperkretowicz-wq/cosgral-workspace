@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
 import { projectsApi } from "@/api/projects";
+import { ConnectionSetupFlow } from "@/features/connections/ConnectionSetupFlow";
+import { repositoryOptionsKey } from "./ProjectRepositoryInput";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
@@ -13,6 +15,7 @@ export function ProjectGitAuthorization({ project }: { project: Project }) {
     queryFn: () => projectsApi.gitAuthorization(project.id),
   });
   const [selected, setSelected] = useState<string>("");
+  const [connecting, setConnecting] = useState(false);
   const save = useMutation({
     mutationFn: (grantId: string | null) => projectsApi.setGitAuthorization(project.id, grantId),
     onSuccess: (data) => {
@@ -30,6 +33,14 @@ export function ProjectGitAuthorization({ project }: { project: Project }) {
         Project repository editors can add repositories covered by this connection. Manage repository access in the GitHub connection.
         Task runs continue to use their own identity.
       </p>
+      {connecting ? <ConnectionSetupFlow host="dialog" serviceSlug="github" forceNewConnection
+        onCancel={() => setConnecting(false)} onComplete={() => {
+          setConnecting(false);
+          setSelected("");
+          void client.invalidateQueries({ queryKey: key });
+          void client.invalidateQueries({ queryKey: repositoryOptionsKey(project.companyId) });
+        }} /> : <>
+      {authorization.isPending && <p role="status" className="text-sm text-muted-foreground">Loading GitHub authorizations…</p>}
       {data?.grantId && (
         <p role="status" className="text-sm">
           Authorized:{" "}
@@ -39,7 +50,7 @@ export function ProjectGitAuthorization({ project }: { project: Project }) {
       )}
       {data && (
         <div className="flex flex-wrap gap-2">
-          <Select value={selected} onValueChange={setSelected} disabled={save.isPending}>
+          <Select value={selected} onValueChange={setSelected} disabled={save.isPending || !data.options.length}>
             <SelectTrigger aria-label="Your GitHub authorization">
               <SelectValue placeholder="Select your GitHub account" />
             </SelectTrigger>
@@ -51,7 +62,7 @@ export function ProjectGitAuthorization({ project }: { project: Project }) {
               ))}
             </SelectContent>
           </Select>
-          <Button disabled={!selected || save.isPending} onClick={() => save.mutate(selected)}>
+          <Button disabled={!data.options.some(option => option.grantId === selected) || save.isPending} onClick={() => save.mutate(selected)}>
             Authorize project
           </Button>
           {data.grantId && (
@@ -66,11 +77,16 @@ export function ProjectGitAuthorization({ project }: { project: Project }) {
           Connect your GitHub account and install the Connector for this company to authorize it.
         </p>
       )}
+      {data && <Button type="button" variant="outline" disabled={save.isPending} onClick={() => setConnecting(true)}>
+        {data.options.length ? "Connect another GitHub account" : "Connect GitHub"}
+      </Button>}
       {(authorization.error || save.error) && (
         <p role="alert" className="text-sm text-destructive">
           {(authorization.error || save.error)?.message}
         </p>
       )}
+      {authorization.isError && <Button type="button" variant="outline" disabled={authorization.isFetching} onClick={() => void authorization.refetch()}>Try again</Button>}
+      </>}
     </section>
   );
 }
