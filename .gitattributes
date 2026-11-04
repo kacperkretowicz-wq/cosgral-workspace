@@ -9,3 +9,7 @@ packages/paperclip-runner/src/contracts/generated-*.ts text eol=lf
 packages/paperclip-runner/src/protocol/generated/* text eol=lf
 packages/paperclip-runner/runner/crates/runner-core/src/generated_*.rs text eol=lf
 packages/shared/src/provider-failure.generated.ts text eol=lf
+
+# Token/character generators compare these outputs byte for byte.
+packages/shared/src/cliplab/palette-tokens.ts text eol=lf
+packages/shared/src/cliplab/character.ts text eol=lf
