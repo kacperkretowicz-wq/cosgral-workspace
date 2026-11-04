@@ -52,3 +52,9 @@ Weryfikacja tej zmiany: formularz 5/5, istniejące testy repozytoriów i trwało
 Panel autoryzacji GitHub projektu ma bezpośrednie podłączanie konta przez istniejący `ConnectionSetupFlow`, odświeżanie dostępnych autoryzacji/repozytoriów i ponowienie odczytu po błędzie. Zgoda projektu pozostaje osobną decyzją użytkownika. Testy komponentu: 3/3 PASS; token gates PASS. Pełne logowanie GitHub i dostęp rzeczywistego agenta nadal wymagają odbioru.
 
 Końcowo dla panelu: typecheck UI, produkcyjny build UI, kontrola map oraz synchronizacja palety/postaci PASS. Build najpierw uruchomiono omyłkowo z root (błąd ścieżki sw.js); poprawny build z katalogu ui przeszedł z ostrzeżeniami o rozmiarze chunków i konfiguracji Vite. Testy panelu po finalnej zmianie ponownie 3/3 PASS. Nie jest to pełny build monorepo ani odbiór wdrożenia.
+
+## Przygotowanie diagnozy P0 i Oracle
+
+Użytkownik wybrał wdrożenie Oracle zamiast lokalnego WSL; rejestracja konta wymaga jego działania. Instalator WSL zakończył się komunikatem o wymaganym restarcie Windows; restartu nie wykonywano. Nie utworzono jeszcze maszyny Oracle.
+
+Dodano `scripts/cosgral-profile-server.mjs` i instrukcję `P0-PROFILOWANIE.md`: zewnętrzny pomiar health, profil CPU od początku obserwacji, zapis próbek przed oczekiwaniem na Inspector i brak zatrzymywania serwera. Testy na rzeczywistym procesie Node (zdrowy HTTP, blokada CPU, walidacja adresów) 3/3 PASS. Pierwotnego P0 nie odtworzono i nie zamknięto.
