@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from "vitest";
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function readPackMetadata(packDestination: string) {
-  const output = execFileSync("npm", ["pack", "--json", "--pack-destination", `"${packDestination}"`], {
+  const output = execFileSync("npm", ["pack", "--json", "--pack-destination", process.platform === "win32" ? `"${packDestination}"` : packDestination], {
     cwd: packageRoot,
     encoding: "utf8",
     shell: process.platform === "win32",

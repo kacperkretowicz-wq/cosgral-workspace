@@ -15,7 +15,7 @@ export function agentLifecycleWriteViolations(source, file = "") {
         : "Use the agent lifecycle module to insert an agent"); continue; }
       for (const field of protectedFields) {
         // The offline seed copy disables timers before any server can verify or run an agent.
-        if (field === "runtimeConfig" && file.split(sep).join("/") === "cli/src/commands/worktree.ts") continue;
+        if (field === "runtimeConfig" && file.replace(/\\/g, "/") === "cli/src/commands/worktree.ts") continue;
         if (new RegExp(`(?<![\\w.])${field}\\s*(?=:|[,}])`).test(chain)) violations.push(`Use the agent lifecycle module to change ${field}`);
       }
       if (/\bstatus\s*:/.test(chain) && !chain.includes(`eq(${alias}.lifecycleState, "ready")`)) {

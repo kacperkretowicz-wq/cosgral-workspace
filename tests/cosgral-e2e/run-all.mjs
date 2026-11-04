@@ -2,7 +2,7 @@
 /**
  * COSGRAL Workspace: Central E2E Test Suite Runner
  *
- * Executes Tiers 1-4 opaque-box end-to-end tests:
+ * Executes Tiers 1-4 in-memory simulation tests:
  * - Tier 1: Feature Coverage (46 features × 5 tests = 230 tests)
  * - Tier 2: Boundary & Corner Cases (46 features × 5 tests = 230 tests)
  * - Tier 3: Cross-Feature Interactions (46 pairwise tests = 46 tests)
@@ -18,6 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(Number);
+if (nodeMajor < 24 || (nodeMajor === 24 && nodeMinor < 11)) {
+  console.error('COSGRAL simulation suite requires Node >=24.11.0.');
+  process.exit(1);
+}
 const SUITE_DIR = __dirname;
 const REPO_ROOT = resolve(__dirname, '../../');
 
@@ -49,7 +54,7 @@ const TIERS = [
 ];
 
 console.log('================================================================================');
-console.log('            COSGRAL Workspace: Opaque-Box E2E Test Suite Runner                ');
+console.log('            COSGRAL Workspace: In-Memory Simulation Test Suite Runner                ');
 console.log('================================================================================');
 console.log(`Node Runtime : ${process.version}`);
 console.log(`Platform     : ${process.platform} (${process.arch})`);
@@ -69,7 +74,7 @@ for (const entry of TIERS) {
   process.stdout.write(`[RUNNING] ${entry.tier}: ${entry.name}... `);
   const tierStart = Date.now();
 
-  const child = spawnSync(process.execPath, ['--test', entry.file], {
+  const child = spawnSync(process.execPath, ['--test', '--test-reporter=tap', entry.file], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env: { ...process.env, FORCE_COLOR: '0' },
@@ -97,7 +102,8 @@ for (const entry of TIERS) {
   totalFail += failCount;
   totalSkipped += skippedCount;
 
-  const success = exitCode === 0 && failCount === 0 && testsCount >= entry.expectedMin;
+  const success = exitCode === 0 && failCount === 0 && skippedCount === 0
+    && passCount === testsCount && testsCount >= entry.expectedMin;
   if (!success) overallPass = false;
 
   results.push({
@@ -148,6 +154,7 @@ console.log('===================================================================
 // Output structured JSON report
 const jsonReport = {
   timestamp: new Date().toISOString(),
+  verificationScope: 'in-memory-simulation; not live server, database, browser or sandbox acceptance',
   environment: {
     nodeVersion: process.version,
     platform: process.platform,
@@ -169,9 +176,9 @@ writeFileSync(reportPath, JSON.stringify(jsonReport, null, 2), 'utf8');
 console.log(`JSON Report generated at: ${reportPath}`);
 
 if (!overallPass) {
-  console.error('\nE2E Test Suite FAILED.');
+  console.error('\nSimulation Test Suite FAILED.');
   process.exit(1);
 } else {
-  console.log('\nE2E Test Suite PASSED 100% CLEANLY (Exit Code: 0).');
+  console.log('\nSimulation Test Suite PASSED (Exit Code: 0).');
   process.exit(0);
 }

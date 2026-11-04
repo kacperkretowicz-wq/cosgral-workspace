@@ -1,5 +1,11 @@
 # COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~14:00 CET)
 
+## Korekta po niezależnym przeglądzie — 4 XI 2026
+
+Pakiet tests/cosgral-e2e uruchamia własny model stanu w pamięci i część schematów shared. Nie uruchamia produkcyjnego routera, PostgreSQL, przeglądarek, rzeczywistego WebSocket ani bwrap. Jego 511 wyników PASS nie zamyka odbioru dwóch przeglądarek, restartu aplikacji ani izolacji wykonawców. Historyczny test-results.json pochodził z Node 20.18.0 mimo wymogu >=24.11.0; ponowienie na Node 24.18.0 dało 511 PASS. To potwierdzenie symulacji.
+
+Poprawiono cytowanie argumentu npm pack dodawane również na POSIX oraz zależną od hosta normalizację ścieżek Windows. Runner jawnie wybiera TAP, wymaga wspieranej wersji Node, odrzuca pominięte testy i opisuje zakres dowodu w JSON. Testy narzędzi cyklu życia: 9 PASS. Pełny odbiór produktu pozostaje otwarty.
+
 ## Bieżący stan — Zakończenie Milestone 1 i Pakiet E2E 511 Testów (4 XI 2026, ~14:00 CET)
 
 Etap **Milestone 1 (Platform Boundaries, Tooling & Static Integrity)** został w **100% ZAKOŃCZONY** i certyfikowany przez pełną, dwuiteracyjną bramkę jakościową zespołu (Worker, Reviewerzy: APPROVE, Challengerzy: CONFIRM_CORRECT, Auditorzy: CLEAN). 

@@ -1,7 +1,8 @@
 {
-  "timestamp": "2026-11-04T13:07:20.098Z",
+  "timestamp": "2026-11-04T14:32:22.618Z",
+  "verificationScope": "in-memory-simulation; not live server, database, browser or sandbox acceptance",
   "environment": {
-    "nodeVersion": "v20.18.0",
+    "nodeVersion": "v24.18.0",
     "platform": "win32",
     "arch": "x64"
   },
@@ -10,7 +11,7 @@
     "totalPass": 511,
     "totalFail": 0,
     "totalSkipped": 0,
-    "totalDurationMs": 3467,
+    "totalDurationMs": 3809,
     "success": true
   },
   "tiers": [
@@ -22,7 +23,7 @@
       "pass": 230,
       "fail": 0,
       "skipped": 0,
-      "durationMs": 1053,
+      "durationMs": 912,
       "success": true,
       "exitCode": 0,
       "error": null
@@ -35,7 +36,7 @@
       "pass": 230,
       "fail": 0,
       "skipped": 0,
-      "durationMs": 1000,
+      "durationMs": 1280,
       "success": true,
       "exitCode": 0,
       "error": null
@@ -48,7 +49,7 @@
       "pass": 46,
       "fail": 0,
       "skipped": 0,
-      "durationMs": 731,
+      "durationMs": 879,
       "success": true,
       "exitCode": 0,
       "error": null
@@ -61,7 +62,7 @@
       "pass": 5,
       "fail": 0,
       "skipped": 0,
-      "durationMs": 681,
+      "durationMs": 736,
       "success": true,
       "exitCode": 0,
       "error": null
