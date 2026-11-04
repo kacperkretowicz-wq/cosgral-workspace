@@ -25,6 +25,11 @@ test("offline seed quarantine can disable timers but cannot change lifecycle sta
   assert.equal(agentLifecycleWriteViolations(source("db.update(records).set({ lifecycleState: 'ready' })"), file).length, 1);
 });
 
+test("offline seed quarantine handles Windows path separators", () => {
+  const file = "cli\\src\\commands\\worktree.ts";
+  assert.deepEqual(agentLifecycleWriteViolations(source("db.update(records).set({ runtimeConfig })"), file), []);
+});
+
 test("rejects agent deletion outside the module even with a terminal state guard", () => {
   assert.equal(agentLifecycleWriteViolations(source('db.delete(records).where(and(eq(records.id, id), inArray(records.lifecycleState, ["terminated", "rejected"])))')).length, 1);
   assert.equal(agentLifecycleWriteViolations(source('db.delete(records).where(inArray(records.lifecycleState, ["ready", "terminated"]))')).length, 1);

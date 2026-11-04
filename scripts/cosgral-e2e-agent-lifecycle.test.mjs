@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { assessLifecycle, redact } from './cosgral-e2e-agent-lifecycle.mjs';
 
 const snapshot = {
@@ -52,7 +53,7 @@ test('CLI reports wake failure, reads independent evidence and pauses agent with
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
-    const child = spawn(process.execPath, [new URL('./cosgral-e2e-agent-lifecycle.mjs', import.meta.url).pathname,
+    const child = spawn(process.execPath, [fileURLToPath(new URL('./cosgral-e2e-agent-lifecycle.mjs', import.meta.url)),
       '--api', `http://127.0.0.1:${server.address().port}`, '--codex-home', tmpdir()], { stdio: ['ignore', 'pipe', 'pipe'] });
     let output = '';
     child.stdout.on('data', chunk => { output += chunk; });

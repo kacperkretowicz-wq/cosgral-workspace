@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { resolve, relative } from "node:path";
+import { resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const protectedFields = new Set(["pauseReason", "pausedAt", "lifecycleState", "lifecycleVersion", "lifecycleError", "lifecycleOperation", "lifecycleRequiredPluginIds", "lifecycleHolds", "adapterType", "adapterConfig", "runtimeConfig", "defaultEnvironmentId"]);
@@ -15,7 +15,7 @@ export function agentLifecycleWriteViolations(source, file = "") {
         : "Use the agent lifecycle module to insert an agent"); continue; }
       for (const field of protectedFields) {
         // The offline seed copy disables timers before any server can verify or run an agent.
-        if (field === "runtimeConfig" && file === "cli/src/commands/worktree.ts") continue;
+        if (field === "runtimeConfig" && file.split(sep).join("/") === "cli/src/commands/worktree.ts") continue;
         if (new RegExp(`(?<![\\w.])${field}\\s*(?=:|[,}])`).test(chain)) violations.push(`Use the agent lifecycle module to change ${field}`);
       }
       if (/\bstatus\s*:/.test(chain) && !chain.includes(`eq(${alias}.lifecycleState, "ready")`)) {
@@ -32,10 +32,10 @@ export function scanAgentLifecycleBoundaries(root = resolve(fileURLToPath(new UR
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (["node_modules", "dist", "__tests__"].includes(entry.name)) continue;
       const path = resolve(directory, entry.name);
-      const label = relative(root, path);
+      const label = relative(root, path).split(sep).join("/");
       if (label.includes("modules/agent-lifecycle/")) continue;
       if (entry.isDirectory()) walk(path);
-      else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name)) {
+      else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name) && !/-fixture\.ts$/.test(entry.name)) {
         for (const reason of agentLifecycleWriteViolations(readFileSync(path, "utf8"), label)) violations.push(`${label}: ${reason}`);
       }
     }

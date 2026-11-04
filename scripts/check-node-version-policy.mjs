@@ -10,7 +10,7 @@ const failures = [];
 const skippedDirectories = new Set([".git", ".paperclip", "coverage", "data", "dist", "node_modules"]);
 
 function relative(filePath) {
-  return path.relative(repoRoot, filePath) || ".";
+  return (path.relative(repoRoot, filePath) || ".").replace(/\\/g, "/");
 }
 
 function walk(directory, visit) {
@@ -41,7 +41,7 @@ walk(workflowRoot, (filePath) => {
   if (!/\.ya?ml$/.test(filePath)) return;
   const source = fs.readFileSync(filePath, "utf8");
   const packProducer = relative(filePath) === ".github/workflows/release-verify.yml"
-    ? /(?:^|\n)  runner_binaries:\n[\s\S]*?(?=\n  [a-z_]+:\n|$)/.exec(source)
+    ? /(?:^|\r?\n)  runner_binaries:\r?\n[\s\S]*?(?=\r?\n  [a-z_]+:\r?\n|$)/.exec(source)
     : null;
   for (const match of source.matchAll(/node-version:\s*["']?([^\s"'#]+)/g)) {
     if (match[1] === "24.21.0" && packProducer

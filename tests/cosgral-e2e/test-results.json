@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-11-04T13:07:20.098Z",
+  "environment": {
+    "nodeVersion": "v20.18.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "summary": {
+    "totalTests": 511,
+    "totalPass": 511,
+    "totalFail": 0,
+    "totalSkipped": 0,
+    "totalDurationMs": 3467,
+    "success": true
+  },
+  "tiers": [
+    {
+      "tier": "Tier 1",
+      "name": "Feature Coverage (46 Features × 5 Tests)",
+      "file": "C:\\Users\\kretowicz_k\\Documents\\Codex\\2026-11-04\\polacz-sie-z-repo-cosgral-workspace\\work\\cosgral-workspace\\tests\\cosgral-e2e\\tier1-feature-coverage.test.mjs",
+      "tests": 230,
+      "pass": 230,
+      "fail": 0,
+      "skipped": 0,
+      "durationMs": 1053,
+      "success": true,
+      "exitCode": 0,
+      "error": null
+    },
+    {
+      "tier": "Tier 2",
+      "name": "Boundary & Corner Cases (46 Features × 5 Tests)",
+      "file": "C:\\Users\\kretowicz_k\\Documents\\Codex\\2026-11-04\\polacz-sie-z-repo-cosgral-workspace\\work\\cosgral-workspace\\tests\\cosgral-e2e\\tier2-boundary-corner.test.mjs",
+      "tests": 230,
+      "pass": 230,
+      "fail": 0,
+      "skipped": 0,
+      "durationMs": 1000,
+      "success": true,
+      "exitCode": 0,
+      "error": null
+    },
+    {
+      "tier": "Tier 3",
+      "name": "Cross-Feature Combinations (46 Pairwise Tests)",
+      "file": "C:\\Users\\kretowicz_k\\Documents\\Codex\\2026-11-04\\polacz-sie-z-repo-cosgral-workspace\\work\\cosgral-workspace\\tests\\cosgral-e2e\\tier3-cross-feature.test.mjs",
+      "tests": 46,
+      "pass": 46,
+      "fail": 0,
+      "skipped": 0,
+      "durationMs": 731,
+      "success": true,
+      "exitCode": 0,
+      "error": null
+    },
+    {
+      "tier": "Tier 4",
+      "name": "Real-World Scenarios (5 Multi-Agent Workflows)",
+      "file": "C:\\Users\\kretowicz_k\\Documents\\Codex\\2026-11-04\\polacz-sie-z-repo-cosgral-workspace\\work\\cosgral-workspace\\tests\\cosgral-e2e\\tier4-scenarios.test.mjs",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "skipped": 0,
+      "durationMs": 681,
+      "success": true,
+      "exitCode": 0,
+      "error": null
+    }
+  ]
+}

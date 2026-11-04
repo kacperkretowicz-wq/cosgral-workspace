@@ -9,9 +9,10 @@ import { afterEach, describe, expect, it } from "vitest";
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function readPackMetadata(packDestination: string) {
-  const output = execFileSync("npm", ["pack", "--json", "--pack-destination", packDestination], {
+  const output = execFileSync("npm", ["pack", "--json", "--pack-destination", `"${packDestination}"`], {
     cwd: packageRoot,
     encoding: "utf8",
+    shell: process.platform === "win32",
   });
   const metadata = JSON.parse(output);
   if (!Array.isArray(metadata) || metadata.length === 0 || typeof metadata[0]?.filename !== "string") {
@@ -41,6 +42,7 @@ describe("skills catalog package artifacts", () => {
       execFileSync("pnpm", ["--filter", "@paperclipai/skills-catalog", "build"], {
         cwd: packageRoot,
         stdio: "ignore",
+        shell: process.platform === "win32",
       });
       metadata = readPackMetadata(createPackDestination());
     }

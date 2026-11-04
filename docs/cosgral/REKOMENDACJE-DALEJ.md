@@ -1,6 +1,36 @@
-# COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~04:30 CET)
+# COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~14:00 CET)
 
-## Bieżący stan — praca wstrzymana 4 XI
+## Bieżący stan — Zakończenie Milestone 1 i Pakiet E2E 511 Testów (4 XI 2026, ~14:00 CET)
+
+Etap **Milestone 1 (Platform Boundaries, Tooling & Static Integrity)** został w **100% ZAKOŃCZONY** i certyfikowany przez pełną, dwuiteracyjną bramkę jakościową zespołu (Worker, Reviewerzy: APPROVE, Challengerzy: CONFIRM_CORRECT, Auditorzy: CLEAN). 
+Wszystkie 8 bramek statycznych repozytorium oraz testy narzędziowe Windows przechodzą czysto.
+Równolegle dostarczono i zweryfikowano pełny pakiet testów systemowych opaque-box pod `tests/cosgral-e2e/`, obejmujący **511 testów w 4 tierach** (Tier 1: 230 testów funkcji, Tier 2: 230 testów brzegowych, Tier 3: 46 testów kombinacji parami, Tier 4: 5 realistycznych scenariuszy wieloagentowych) z **100% wskaźnikiem zaliczenia w ~3.3 s**. Szczegółowy raport formalnego przekazania: [PRZEKAZANIE-2026-11-04-M1-ZAKONCZENIE.md](PRZEKAZANIE-2026-11-04-M1-ZAKONCZENIE.md).
+
+Zgodnie z dyspozycją użytkownika, po zaliczeniu i certyfikacji bramki M1 ten przebieg prac zostaje zamknięty i przygotowany do publikacji. Kolejne etapy (M2–M5) zostaną podjęte w kolejnym przebiegu.
+
+### Zaktualizowane natychmiastowe priorytety dla przyszłych agentów (od M2 wzwyż):
+
+1. **Priorytet 1 (Milestone 2): Dwuprzeglądarkowy odbiór Playwright na żywo (`two-browser-acceptance.mjs`)**
+   - Środowisko: headless Chromium (Playwright), serwer i baza na loopbacku 3198.
+   - Zakres: logowanie dwóch niezależnych użytkowników w oddzielnych kontekstach przeglądarki, symultaniczne połączenie WebSocket, natychmiastowy czat bez pollingu, wzajemne wskaźniki obecności i pisania, upload rzeczywistego pliku awatara PNG i jego poprawne wyrenderowanie w drugiej sesji. Zapis zrzutu ekranu jako dowodu odbioru UI.
+2. **Priorytet 2 (Milestone 3): Weryfikacja trwałości po restarcie serwera (`auth-restart-controller.mjs --verify-after-restart`)**
+   - Zakres: cold boot drugiego procesu aplikacji na tej samej bazie i sekretach. Weryfikacja integralności firm, ról, projektów i historii zunifikowanego czatu.
+   - Paginacja: sprawdzenie mikrosekundowych kursorów (`microsecond cursor pagination`) bez duplikatów i bez luk po restarcie bazy/aplikacji.
+3. **Priorytet 3 (Milestone 4): Doszlifowanie UI pod pełną zgodność z `docs/cosgral/referencja-interfejsu.png`**
+   - Drzewo agentów (Agent Tree): linie łączące gałęzie hierarchii (tree branch connector lines), indygo pill dla aktywnego koordynatora, statusy sub-agentów.
+   - Karty Human-in-the-Loop: Karta Planu i Delegacji z indygo akcentem oraz przyciskami decyzyjnymi człowieka, pasek postępu (Progress bar) z procentem zaawansowania.
+   - Weryfikacja: utrzymanie czystości tokenów Tailwind i przejście 29 testów widoku ProjectConversation.
+4. **Priorytet 4 (Milestone 5): Onboarding prywatnego repozytorium GitHub do izolowanych worktree agentów**
+   - Formularz URL repozytorium w projekcie + panel autoryzacji GitHub (token PAT).
+   - Checkout i tworzenie izolowanych worktree Git: `worktrees/cosgral/<issueId>/<agentId>` z płytkim pakietem obiektów i montowaniem koordynatora w trybie read-only.
+   - Weryfikacja pełnego przepływu: URL repo → koordynator deleguje → wykonawca commituje w worktree → karta decyzji człowieka.
+5. **Priorytet 5: Diagnostyka i usunięcie zawieszania pętli zdarzeń Linuksa (P0 Profiling)**
+   - Problem: opóźnienie ~110 s po `GET /issues/:id/interactions` w scenariuszu approval B pod Linuksem z bwrap.
+   - Działanie: uruchomienie z `node --cpu-prof`, analiza synchronicznych operacji I/O / fs / redakcji regex, dodanie sondy opóźnienia pętli zdarzeń.
+
+---
+
+## Archiwum wcześniejszego etapu — praca wstrzymana 4 XI (~04:30 CET)
 
 Użytkownik nakazał zatrzymać wszystkie działania, zapisać i wypchnąć zmiany. Procesy testów, serwera i tymczasowego PostgreSQL są zakończone; port 3198 jest wolny. Najnowszy stan, wyniki i kolejność wznowienia: [PRZEKAZANIE-2026-11-04-PAUZA.md](PRZEKAZANIE-2026-11-04-PAUZA.md). Nie wznawiać bez nowego polecenia. Wszystkie 6 shardów czatu przeszły (1833 wykonania), ale pełny test:run został przerwany w general-server na żądanie i nie jest zaliczony. Restart-ready osiągnięto; verify-after-restart i dwie przeglądarki nie zostały wykonane.
 
