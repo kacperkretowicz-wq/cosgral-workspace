@@ -571,6 +571,15 @@ interface AuthorizationCredentialRange {
   replacement: string;
 }
 
+function mayStartQuotedAuthorizationScheme(input: string, start: number, delimiterWidth: number): boolean {
+  const content = input.slice(start).trimStart();
+  const prefix = /^(?:Bearer|Basic)/i.exec(content);
+  if (!prefix) return false;
+  // Unterminated values are sliced by delimiter width below. Preserve that
+  // fail-closed behavior when truncation could expose a valid scheme boundary.
+  return /^(?:Bearer|Basic)\b/i.test(content) || content.length <= prefix[0].length + delimiterWidth;
+}
+
 function authorizationCredentialRange(
   input: string,
   wordEnd: number,
@@ -599,6 +608,9 @@ function authorizationCredentialRange(
 
   const rawValueQuote = input[valueStart];
   if (rawValueQuote === '"' || rawValueQuote === "'") {
+    // Most quoted diagnostic labels are not credentials. Check the scheme
+    // before scanning for the delimiter, which may be missing or malformed.
+    if (!mayStartQuotedAuthorizationScheme(input, valueStart + 1, 1)) return null;
     const quotedEnd = rawQuotedValueEnd(input, valueStart, rawValueQuote);
     const content = input.slice(valueStart + 1, quotedEnd - 1).trimStart();
     if (!/^(?:Bearer|Basic)\b/i.test(content)) return null;
@@ -611,6 +623,7 @@ function authorizationCredentialRange(
 
   const escapedValueQuote = escapedQuoteAt(input, valueStart);
   if (escapedValueQuote) {
+    if (!mayStartQuotedAuthorizationScheme(input, valueStart + 2, 2)) return null;
     const quotedEnd = escapedQuotedValueEnd(
       input,
       valueStart,
@@ -1027,7 +1040,7 @@ export function redactSensitiveText(input: string): string {
 export function containsInstructionCredential(text: string): boolean {
   return redactSensitiveText(text) !== text
     || /-----BEGIN [^-]*(?:PRIVATE KEY|CERTIFICATE)-----/i.test(text)
-    || /\b(?:api[-_]?key|access[-_]?token|auth(?:_?token)?|authorization|secret|passwd|password|credential|jwt|private[-_]?key|cookie|connectionstring)\s*["']?\s*[:=]\s*\S+/i.test(text)
+    || /\b(?:api[-_]?key|access[-_]?token|auth(?:_?token)?|authorization|secret|passwd|password|credential|jwt|private[-_]?key|cookie|connectionstring)\s*(?:["']\s*)?[:=]\s*\S+/i.test(text)
     || /\bBearer\s+[A-Za-z0-9._~+/-]+/i.test(text)
     || /\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b/.test(text)
     || /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp):\/\/\S+/i.test(text);

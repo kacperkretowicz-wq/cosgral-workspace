@@ -172,4 +172,14 @@ describe("heartbeat run-log chunk formatting", () => {
     expect(compacted).toContain("[omitted base64 image data: 70000 chars]");
     expect(compacted).not.toContain("[paperclip truncated");
   });
+
+  it("bounds a large malformed authorization log without blocking on repeated scans or leaking credentials", () => {
+    const chunk = `${'Authorization "abc Authorization "Bearerfoo '.repeat(4000)}\nAuthorization: Bearer fixture-secret-token`;
+    const started = performance.now();
+    const compacted = compactRunLogChunk(chunk);
+    expect(performance.now() - started).toBeLessThan(3000);
+    expect(compacted).toContain("[paperclip truncated run log chunk:");
+    expect(compacted).toContain("***REDACTED***");
+    expect(compacted).not.toContain("fixture-secret-token");
+  }, 10000);
 });
