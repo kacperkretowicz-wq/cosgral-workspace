@@ -2129,3 +2129,7 @@ Granice: testy komponentowe z mockowanym API i testy HTTP/DB prawdziwego routera
 
 - Początkowa kontrola tokenów na Windows zgłosiła 106 naruszeń i zero wyjątków: parser listy nie obsługiwał CRLF. Dwa generowane moduły ClipLab także miały CRLF zamiast wymaganego LF. Parser przyjmuje teraz oba zakończenia linii; `.gitattributes` wymusza LF dla generowanych modułów. Ich treść logiczna nie uległa zmianie.
 - Po poprawce `pnpm check:token-gates`: PASS, 33 wyjątki odczytane, wszystkie cztery gates CLEAN; synchronizacja postaci i palety PASS. Shared typecheck, mapy i diff-check PASS. To kontrole objętych zmianami modułów; pełnego monorepo test/build/typecheck nadal nie zaliczono i nie deklaruje się gotowości całej platformy.
+
+## Zapis i publikacja na prośbę użytkownika — 4 XI
+
+Użytkownik polecił zapisać i wypchnąć całość oraz pozostawić rekomendacje, po czym wstrzymał cel budowy. Aktualne zalecenia i stan odbioru są w sekcji „Najnowsze przekazanie” pliku `docs/cosgral/REKOMENDACJE-DALEJ.md`. Ostatnia rozpoczęta analiza dotyczyła formularza podłączania repozytorium; potwierdzono istniejący backend `repositoryUrls`, ale nie rozpoczęto implementacji nowego pola. Brak nowych zewnętrznych komponentów/orkiestratorów w tej kontynuacji. Lokalne dane, konta, profile diagnostyczne i node_modules pozostają poza zakresem publikowanych źródeł.

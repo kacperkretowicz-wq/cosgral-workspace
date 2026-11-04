@@ -2,6 +2,20 @@
 
 Gałąź: `codex/cosgral-workspace`. Pełna historia: `COSGRAL-PRZEKAZANIE.md`, cel: `COSGRAL-PROMPT-POSTEP.md` (przekreślone = potwierdzone testami/e2e).
 
+## Najnowsze przekazanie — 4 XI, kontynuacja Windows
+
+Ten rozdział aktualizuje historyczne instrukcje poniżej. Kod zapisano w commitach `f8a21d897` (kontrole Windows), `758d21cbb` (wybór odbiorców ról), `fe5f55aaa` (wydajność redakcji), `a961e2cee` (wyniki i ograniczenia).
+
+- **P0 pozostaje otwarte.** Poprawiono dwa odtwarzalne przypadki kosztownej redakcji; nie dowiedziono, że powodowały pierwotne 110 sekund. Testy redakcji i ścieżki logów: 64 PASS. W próbie z lokalnym kontem Sol przeszedł weryfikację na stabilnym CLI 0.162.1, lecz rzeczywisty run zakończył się EPERM symlinku przed A. B nie osiągnięto. Polityka COSGRAL wymaga obecnie linuksowego bwrap; nie wyłączać izolacji, aby uzyskać pozorny PASS. Powtórzyć A/B na Linuksie i zapisać profil CPU przed zatrzymaniem procesu oraz niezależne pomiary health.
+- **Konta a/c/d są historyczną konfiguracją poprzedniego hosta**, nie wymaganiem produktu. Użytkownik zezwolił na użycie jego lokalnego, zalogowanego Codexa. Nie kopiować poświadczeń między użytkownikami. Model testowanych agentów: gpt-6.1-sol, medium. Sesja implementacyjna przeszła z Terra na Sol; zmiana modelu sesji i model uruchamianego agenta to osobne ustawienia.
+- **Role:** wybór użytkownika i agenta po nazwie działa; nowy katalog członkostw agentów jest board-only, z kontrolą firmy i nieskopowanego users:manage_permissions. UI 12 PASS; API/DB + OpenAPI 45 PASS i dodatkowy finalny test ról 12 PASS. W przeglądarce utworzono i zastosowano pustą rolę do testowego agenta. Odbiór dwóch zalogowanych osób nadal otwarty.
+- **Windows:** stosować krótką ścieżkę repozytorium przy embedded PostgreSQL; długi katalog powodował błąd dostępu do rozszerzenia pg_trgm. Node >=24.11, pnpm 9.15.4. Kontrole CRLF poprawione; token gates, synchronizacja palety/postaci, shared typecheck i mapy przeszły. Nie zaliczono pełnego monorepo test/build/typecheck.
+- **Następna praca produktowa:** domknąć podłączanie repozytorium z formularza projektu. Rozpoznano istniejące `ProjectRepositoryInput`, `projectsApi.create` i backendowe `repositoryUrls` z walidacją HTTPS GitHub. Formularz nowego projektu wysyła obecnie tylko wybrane `repositoryIds`. Nie dodano jeszcze pola URL ani nie potwierdzono pełnego procesu prywatnego repo → checkout → praca agenta. Rozwinąć istniejący mechanizm i jego politykę dostępu.
+- **Kolejność do wersji do codziennej pracy:** stabilny host Linux + trwały Postgres/sekrety; odbiór P0; pełny onboarding repo i koordynatora/wykonawcy; odbiór dwóch kont na wdrożeniu (realtime, restart, konfiguracja, Tabela/Workflow); potem kolejne runtime'y/konta i pozostały zakres UX, pamięci i integracji.
+- **Wykorzystanie gotowych rozwiązań:** ta kontynuacja rozbudowała istniejące moduły Paperclip i jego zależności. Nie importowano kodu Agor, Wemux, Happy ani Agent Teams AI i nie dodano drugiego orkiestratora. Audyt tych kandydatów jest historycznym rozpoznaniem, nie dowodem integracji. W pierwszej kolejności korzystać z już obecnych adapterów, Better Auth, WebSocketów, katalogu połączeń GitHub i mechanizmów workspace. Nowy pakiet dokładać dopiero dla potwierdzonej luki; licencję i aktualną zgodność sprawdzić przed użyciem.
+
+Praca nad celem została wstrzymana przez użytkownika na czas przekazania i publikacji zmian w GitHub. Procesy testowe zakończone; produkcji nie wdrażano.
+
 ## Priorytety
 
 1. **Zawieszanie pętli zdarzeń serwera w approval e2e** (P0). W odbiorze t18 dwa razy serwer nie odpowiadał ~110 s tuż po `GET /issues/:id/interactions` w scenariuszu B (`scripts/cosgral-e2e-approval.mjs`), sonda health: 109953 ms. Wystąpiło na koncie c; na d przeszło. Zrobić: uruchomić 3199 z `node --cpu-prof` (lub `--inspect` + profil), powtórzyć approval na c, znaleźć synchroniczną operację (podejrzane: synchroniczne fs/git przy worktree, kopiowanie Codex home/auth, redakcja dużych tekstów regexami, `containsInstructionCredential`). Dodać test/sondę opóźnienia pętli.
