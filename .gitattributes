@@ -12,6 +12,9 @@ packages/paperclip-runner/protocol/**/*.json text eol=lf
 packages/paperclip-runner/protocol/manifest.json text eol=lf
 packages/paperclip-runner/src/generated/capability-contract.ts text eol=lf
 packages/paperclip-runner/docs/capability-contract.md text eol=lf
+packages/paperclip-runner/spec/capability/protocol-coverage.json text eol=lf
+packages/paperclip-runner/generated/**/*.json text eol=lf
+packages/paperclip-runner/generated/*.json text eol=lf
 packages/paperclip-runner/runner/crates/runner-core/src/generated_*.rs text eol=lf
 packages/shared/src/provider-failure.generated.ts text eol=lf
 
