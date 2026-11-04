@@ -1,3 +1,4 @@
+import { companyRoleRoutes } from "./routes/company-roles.js";
 import { connectionEventWakeRoutes } from "./routes/connection-event-wake.js";
 import { registerGitHubReviewProjectionWork } from "./services/chat-channels/github/review-projection-work.js";
 import { finishServiceShutdown } from "./shutdown.js";
@@ -837,6 +838,7 @@ export async function createApp(
   api.use(primaryAgentRoutes(db));
   api.use(workspacePreferenceRoutes(db));
   api.use(workspaceInstructionRoutes(db));
+  api.use(companyRoleRoutes(db));
   api.use(inboxDismissalRoutes(db));
   api.use(instanceSettingsRoutes(db, workerManager, opts.prepareIdleDatabaseBackup));
   if (opts.databaseBackupService) {

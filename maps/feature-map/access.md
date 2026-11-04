@@ -98,3 +98,15 @@ Scope: ui
 Storybook: CLI authorization approval, pending, expired/denied and already-authorized states.
 Production: Authorize intended CLI identity/context, make scoped request, revoke current server token and retry same bearer; logout alone is insufficient.
 Sources: Source: [CliAuth.tsx](../../ui/src/pages/CliAuth.tsx). Tests: [cli-auth-routes.test.ts](../../server/src/__tests__/cli-auth-routes.test.ts), [board-auth.test.ts](../../cli/src/__tests__/board-auth.test.ts), [token.test.ts](../../cli/src/__tests__/token.test.ts)
+
+## T19 — własne role przez API
+
+W ramach `access/membership`: [kontrakt i ograniczenia](../../doc/company-roles.md),
+[router](../../server/src/routes/company-roles.ts),
+[test HTTP/DB](../../server/src/__tests__/company-roles.test.ts) oraz
+[odbiór bez modelu](../../scripts/cosgral-e2e-roles.mjs).
+Administrator firmy z users:manage_permissions tworzy/edytuje zestaw istniejących
+kluczy i stosuje konkretną wersję do członkostwa użytkownika lub agenta.
+Nie wolno nadać klucza ponad własny zakres; viewer nie edytuje.
+Edycja definicji wymaga jawnego ponownego przypisania. Brak panelu UI;
+nie jest to odbiór całego zarządzania członkami ani logowania.

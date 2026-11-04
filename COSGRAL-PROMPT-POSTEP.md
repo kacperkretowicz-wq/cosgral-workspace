@@ -415,7 +415,7 @@ Dodaj prosty panel personalizacji:
 - ~~Regulacja szerokości paneli.~~
 - ~~Zapamiętywanie układu.~~
 - Konfiguracja widoków.
-- Własne instrukcje globalne i projektowe.
+- ~~Własne instrukcje globalne i projektowe.~~
 
 Stan t18 (4 XI 2026): instrukcje firmy/projektu/osoby w danej firmie mają osobny
 kontrakt, edytor w profilu, limit i odmowę widzowi. E2E bez modelu potwierdza
@@ -428,7 +428,7 @@ Projekt powinien mieć spójny charakter wizualny COSGRAL.
 
 Nie twórz przesadnie rozbudowanego kreatora wyglądu. Wystarczy kilka użytecznych ustawień.
 
-Stan t17 (4 XI 2026): przekreślone motyw, akcent, szerokości paneli, zapamiętywanie układu – testy UI/serwera + `scripts/cosgral-e2e-personalization.mjs` PASS. Otwarte: instrukcje globalne/projektowe w panelu, własne role, konfiguracja widoków (częściowo z #9).
+Stan t17 (4 XI 2026): przekreślone motyw, akcent, szerokości paneli, zapamiętywanie układu – testy UI/serwera + `scripts/cosgral-e2e-personalization.mjs` PASS. Stan t18: instrukcje firmy/projektu/osoby przekreślone (`scripts/cosgral-e2e-instructions.mjs` PASS: zapis → kolejny run, aktywny run bez zmian, izolacja, viewer, odrzucanie sekretów). Otwarte: własne role, konfiguracja widoków (częściowo z #9).
 
 ## 13. Kolejność realizacji
 

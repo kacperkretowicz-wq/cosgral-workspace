@@ -98,6 +98,7 @@ const apiPrefixes: Record<string, string> = {
   "user-profiles.ts": "/api",
   "workspace-preferences.ts": "/api",
   "workspace-instructions.ts": "/api",
+  "company-roles.ts": "/api",
 };
 
 const ROUTE_LITERAL_PATTERN =
@@ -322,6 +323,34 @@ function loadSpecRoutes() {
 }
 
 describe("openapi routes", () => {
+  it("documents the six COSGRAL operations and versioned company roles without coverage exclusions", () => {
+    const spec = buildOpenApiSpec() as any;
+    for (const [path, method] of [
+      ["/api/agents/{id}/config-template", "get"], ["/api/agents/{id}/config-stats", "get"],
+      ["/api/companies/{companyId}/agents/from-template", "post"], ["/api/projects/{id}/conversation/coordinator", "put"],
+      ["/api/companies/{companyId}/roles", "get"], ["/api/companies/{companyId}/roles", "post"],
+      ["/api/companies/{companyId}/roles/{roleId}", "put"], ["/api/companies/{companyId}/members/{memberId}/custom-role", "put"],
+    ]) {
+      const operation = spec.paths[path][method];
+      expect(operation.security).toEqual([{ BoardSessionAuth: [] }, { BoardApiKeyAuth: [] }]);
+      expect(operation["x-paperclip-authorization"]).toEqual({ actor: "board" });
+      expect(operation.responses["403"]).toBeDefined();
+      expect(operation.responses["404"]).toBeDefined();
+    }
+    for (const [path, method] of [["/api/issues/{id}/project-history", "get"], ["/api/issues/{id}/executor-selection", "post"]]) {
+      expect(spec.paths[path][method].security).toContainEqual({ AgentBearerAuth: [] });
+      expect(spec.paths[path][method].responses["422"]).toBeDefined();
+    }
+    const schema = (path: string, method: string, status: string) => spec.paths[path][method].responses[status].content["application/json"].schema;
+    expect(schema("/api/agents/{id}/config-template", "get", "200").additionalProperties).toBe(false);
+    expect(schema("/api/agents/{id}/config-stats", "get", "200").properties.recentErrors.maxItems).toBe(5);
+    expect(schema("/api/issues/{id}/project-history", "get", "200").properties.nextCursor).toBeDefined();
+    const apply = spec.paths["/api/companies/{companyId}/members/{memberId}/custom-role"].put;
+    expect(apply.requestBody.content["application/json"].schema.required).toEqual(["roleId", "version"]);
+    expect(apply.responses["409"]).toBeDefined();
+    expect(spec.paths["/api/companies/{companyId}/agents/from-template"].post.responses["201"]).toBeDefined();
+  });
+
   it.each(["summary", "tasks"])("documents the board-only compact attention %s contract", projection => {
     const spec = buildOpenApiSpec() as any;
     const operation = spec.paths[`/api/companies/{companyId}/attention/${projection}`].get;

@@ -1922,3 +1922,141 @@ git diff --check
 - E2E na 3199 parami: approval(a)+parallel(d) PASS; messages(d) PASS; delegowanie na a FAIL przez `provider_quota` (konto a limit do 05:26), powtórzone na c → PASS (`e2e-delegation-t17c.log`).
 - Konta: a zablokowane do 05:26 (CET), c i d działają; b nigdy.
 - Przekreślono §12: motyw, akcent, szerokości paneli, zapamiętywanie układu. Otwarte: instrukcje globalne/projektowe, własne role.
+
+## Codex #19 — sześć operacji OpenAPI i etap API własnych ról (2026-11-04)
+
+### Wykonany zakres
+
+- Przeczytano #16–18, notę nadzorcy po t17 i cel produktu. Gałąź
+  `codex/cosgral-workspace`; bez commit/push, kont, sekretów i prawdziwego modelu.
+- Domknięto sześć wcześniejszych braków: GET config-template/config-stats,
+  POST agents/from-template, GET project-history, POST executor-selection,
+  PUT conversation/coordinator. Dodano rzeczywiste schematy żądań/odpowiedzi,
+  kody błędów i rozróżnienie board / board-or-agent. Nie dodano wyjątków do
+  pokrycia OpenAPI. Dodatkowy test sprawdza też ograniczenia i auth nowych ról.
+  Generator Zod → OpenAPI dostał obsługę limitów długości tablic: dotychczas
+  pomijał m.in. maxItems=5 dla ostatnich błędów agenta.
+- Priorytet c dostarczono jako spójny **kontrakt + baza + API + ACL**, bez UI.
+  Firma ma nazwane, opisane i wersjonowane definicje zestawów PERMISSION_KEYS.
+  POST/GET `/api/companies/:companyId/roles`,
+  PUT `/api/companies/:companyId/roles/:roleId` oraz
+  PUT `/api/companies/:companyId/members/:memberId/custom-role`.
+  Ścisły kontrakt w shared, no-store, aktualne członkostwo w bazie i standardowa
+  bramka zakresu firmy aktora. Widz odczytuje katalog, ale nie edytuje;
+  agent-token i anonim nie korzystają z tego API.
+- Mutacje wymagają bazowej roli owner/admin, nieskopowanego
+  users:manage_permissions i każdego wydawanego klucza jako nieskopowanego
+  grantu. Kontrola używa istniejącego accessService.hasPermission, a przypisanie
+  accessService.setMemberPermissions. Scoped grant nie może stać się prawem
+  firmowym. Edycja wymaga praw do starej i nowej definicji. Blokady członkostwa
+  i grantów chronią kontrolę przy współbieżnym odbieraniu praw; blokada firmy
+  `FOR NO KEY UPDATE` serializuje operacje modułu bez blokowania kluczy obcych.
+- Przypisanie stosuje konkretną wersję jako **zastąpienie grantów**, dla
+  użytkownika lub agenta. Pusty zestaw odbiera bezpośrednie granty. Nie zmienia
+  membershipRole, AGENT_ROLES, polityki zaufania, sandboxa, budżetu ani projektu.
+  Owner/admin/viewer i nieaktywne członkostwa są chronione przed zastąpieniem.
+  Pokwitowanie ostatniego zastosowania zapisuje wersję, klucze i nadającego;
+  audyt przypisania zawiera memberId i wersję. Zapis i audyt są atomowe.
+- **Edycja definicji nie propaguje nowych praw do wcześniejszych odbiorców.**
+  Wymagane jawne ponowne zastosowanie z aktualną wersją i kontrolą nadającego.
+  Pokwitowanie nie zastępuje bieżącego ACL po ręcznej zmianie grantów.
+- Migracja `0426_fast_doctor_faustus.sql` wygenerowana `pnpm db:generate`:
+  company_roles, company_role_applications i złożona unikalność członkostwa.
+  Przesunięto wygenerowane indeksy unikalne przed zależne FK — pierwsza świeża
+  baza wykazała nieprawidłową kolejność generatora. Prune usunął snapshot 0421;
+  pozostało pięć: 0422–0426. Historycznego SQL ani wpisów journal nie usuwano.
+- W istniejącym usuwaniu firmy dodano sprzątanie definicji i pokwitowań ról.
+  Test regresji najpierw wykazał blokujący FK, następnie przeszedł po poprawce.
+- Dokumentacja po polsku: `doc/company-roles.md`, plan w `doc/plans/`,
+  uzupełnione obie mapy `access/membership`. Prompt celu bez przekreśleń:
+  cały priorytet c i §12 nadal wymagają panelu UI i pełnego odbioru.
+
+### Dowody i weryfikacja
+
+Komendy z katalogu repo, pnpm w `/home/box/tools/bin` (bieżący PATH).
+
+```sh
+pnpm db:generate
+# PASS: migracja 0426; standardowe prune snapshotów.
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/openapi-routes.test.ts
+# RED: 31 PASS / 1 FAIL, dokładnie sześć wcześniejszych braków.
+# GREEN po rejestracjach: 32 PASS; po dodaniu testu kontraktu i poprawce
+# limitów tablic: 33 PASS (cosgral19-openapi-final.log).
+pnpm --filter @paperclipai/server exec vitest run \
+  src/__tests__/company-roles.test.ts \
+  src/__tests__/openapi-routes.test.ts \
+  src/__tests__/agent-config-template.test.ts
+# PASS 3 pliki / 47 testów (cosgral19-tests-final3.log).
+# Obejmuje 10 testów ról, 33 OpenAPI i 4 szablonów.
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS exit 0 (cosgral19-server-typecheck-final.log).
+pnpm --filter @paperclipai/ui typecheck
+# PASS exit 0, Storybook catalog + tsc -b (cosgral19-ui-typecheck.log).
+pnpm check:token-gates
+# PASS: cztery bramki CLEAN i synchronizacja cliplab.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 capability IDs, wyłącznie kontrola struktury.
+pnpm --filter @paperclipai/db check:migrations
+# PASS: migration safety, historyczne pozycje pokryte baseline.
+git diff --check
+# PASS.
+```
+
+- Testy ról obejmują realny PostgreSQL i produkcyjne trasy HTTP: walidację,
+  użytkownika/agenta jako odbiorcę, odmowę administratorowi bez manage_permissions,
+  zwykłemu operatorowi nawet z tym grantem, widzowi, tokenowi agenta, anonimowi,
+  obcej firmie oraz nadającemu bez prawa/scoped. Sprawdzają stale-version 409,
+  współbieżną edycję (jedno 200/jedno 409), zachowanie wbudowanych ról,
+  zawieszenie, rollback audytu, sprzątanie firmy i zakres firmy w aktorze.
+- Zachowane RED: brak modułu; FK przed unikalnością w migracji; brak maxItems
+  w generatorze OpenAPI; blokada usuwania firmy przez nowe definicje;
+  aktor z pustym companyIds przy aktywnym członkostwie otrzymywał 200 zamiast
+  404. Każdy doprowadzono do GREEN bez usuwania wymagania z testu.
+- Pierwszy e2e `node scripts/cosgral-e2e-roles.mjs`: PASS (`cosgral19-e2e1.log`),
+  HTTP/DB i rzeczywiste granty Paperclip; finally zatrzymał proces, bind 3197 PASS.
+  Późniejsze powtórzenie równolegle z typecheckiem przekroczyło 90 s startu
+  fixture (`cosgral19-e2e-final.log`). To zachowany FAIL, nie wynik ACL ani dowód
+  przyczyny; ponowienie bez równoległego typechecku opisano poniżej.
+
+### Granice i następny krok
+
+- Etap backendowy priorytetu c, bez panelu katalogu/przypisania w UI, usuwania
+  ról przez API, dynamicznego dziedziczenia i scalania z ręcznymi grantami.
+  Następny krok: UI korzystające z tego kontraktu i jawna prezentacja
+  zastosowanej wersji/zastąpienia grantów; potem odbiór dwóch zalogowanych osób.
+  Ewentualna propagacja edycji wymaga osobnego projektu migracji wszystkich
+  konsumentów ACL i kontroli nadającego dla każdego odbiorcy.
+- Fixture `server/scripts/cosgral-roles-fixture.ts` wstrzykuje syntetycznych
+  aktorów wyłącznie testowo; brak rejestracji/logowania, kont dostawców i modeli.
+  Skrypt odmawia zajęcia używanego 3197, ma cleanup finally i końcową kontrolę
+  portu. Dane i PAPERCLIP_HOME w /tmp. Nie dotykano instancji 3199.
+- Nie uruchamiano pełnego monorepo typecheck/test:run/build ani browser suites;
+  brak deklaracji gotowości PR lub ukończenia całego §12. Lokalne logi
+  `/tmp/cosgral19-*` nie są trwałym artefaktem produktu; komendy i wyniki są tutaj.
+
+### Końcowe ponowienie e2e
+
+`node scripts/cosgral-e2e-roles.mjs` uruchomione samodzielnie: **PASS**
+(`/tmp/cosgral19-e2e-retry.log`). Potwierdzono prawdziwe HTTP/DB,
+definicję i wersje, użytkownika i agenta jako odbiorców rzeczywistych grantów,
+ACL/izolację/brak eskalacji oraz pozostawienie wcześniejszych grantów po edycji
+z ich zastąpieniem dopiero po ponownym przypisaniu. Cleanup i końcowy bind:
+**PASS — serwer zakończony, port 3197 wolny**. Wcześniejszy timeout pozostaje
+odnotowany; udane ponowienie nie ustala jednoznacznej przyczyny opóźnienia.
+
+Końcowy stan kodu (także audyt przypisania i blokada `FOR NO KEY UPDATE`)
+ponownie sprawdzono tą samą komendą trzech plików: **47/47 PASS**, exit 0
+(`/tmp/cosgral19-tests-verified.log`), następnie typecheck serwera **PASS**, exit 0
+(`/tmp/cosgral19-server-verified.log`). Końcowe token gates, mapy, kontrola
+migracji i `git diff --check`: **PASS** (`cosgral19-*-final.log`).
+`node --check scripts/cosgral-e2e-roles.mjs`: **PASS**. Nowe pliki źródłowe i
+Markdown dodatkowo sprawdzono pod kątem końcowych białych znaków: brak naruszeń.
+
+## Nadzorca – po Codex t18 (4 XI 2026, ~04:27 CET)
+
+- t18 (konto c, uruchomiony przez rutynę, zakończony 03:48): instrukcje firmy/projektu/osoby (limit 8000 znaków, odrzucanie sekretów, viewer bez edycji), wstrzykiwane do kontekstu następnego runu. Migracja 0425.
+- **Uwaga procesowa:** t18 pracował w tym samym drzewie równolegle z odbiorem t17, więc jego kod trafił już do commitu t17 (`6ed812578` WIP i `364ec63b1` na codex/cosgral-workspace). Odbiór t18 zrobiono po fakcie na HEAD; nie uruchamiać rutynowego Codexa w tym samym drzewie podczas odbioru innego.
+- Testy: serwer 103/104 – jedyny FAIL `openapi-routes` „covers the mounted server routes exactly” = **wcześniejszy dług**: brak specyfikacji 6 operacji z t13/t15/t16 (config-stats, config-template, agents/from-template, project-history, executor-selection, conversation/coordinator). UI 36 PASS; unit skryptów e2e 7× PASS; check-maps, diff-check OK; e2e bez modelu: instructions PASS, personalization PASS.
+- E2E na 3199 (max 2 naraz): parallel(d) PASS; messages(c) PASS; delegowanie(d) PASS; approval: 2× FAIL na koncie c (timeout 60 s – **pętla zdarzeń serwera zablokowana ~110 s** tuż po GET interactions w scenariuszu B, potwierdzone sondą health 109953 ms), potem PASS na d. Otwarty problem: znaleźć synchroniczną operację blokującą (profil `--cpu-prof` serwera podczas approval).
+- Przekreślono §12 „Własne instrukcje globalne i projektowe”. Otwarte: własne role, OpenAPI dla 6 operacji, blokada pętli zdarzeń.
+- Konto a limit do 05:26 (CET); c, d działają; b nigdy.

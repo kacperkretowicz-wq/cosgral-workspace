@@ -276,3 +276,5 @@ export { userWorkspacePreferences } from "./user_workspace_preferences.js";
 
 export { issueThreadInteractionIdempotencyKeys } from "./issue_thread_interaction_idempotency_keys.js";
 export { workspaceInstructions } from "./workspace_instructions.js";
+
+export { companyRoles, companyRoleApplications } from "./company_roles.js";

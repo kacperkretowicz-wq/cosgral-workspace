@@ -148,3 +148,19 @@ verify any listed agent request/result path separately. A delegated operation ne
 own policy and access review.
 
 Gaps: CLI board login/revocation cannot be counted as agent self-authentication.
+
+## T19 — uzupełnienie `membership`
+
+Operacje `GET/POST /api/companies/{companyId}/roles`,
+`PUT /api/companies/{companyId}/roles/{roleId}` oraz
+`PUT /api/companies/{companyId}/members/{memberId}/custom-role` są board-only.
+Token agenta otrzymuje 403 również przy odczycie katalogu; agent może być
+odbiorcą grantów przez własne aktywne członkostwo. Mutacje wymagają bazowej
+roli owner/admin, users:manage_permissions i nieskopowanych grantów nadającego.
+Brak aktywnego członkostwa/obca firma daje 404, nieaktualna wersja 409.
+Zastosowanie używa istniejącego ACL, nie zmienia specjalizacji ani granicy
+zaufania agenta. Pokwitowanie wersji nie zastępuje bieżących grantów.
+Dowody i granice: [test](../../server/src/__tests__/company-roles.test.ts),
+[e2e HTTP/DB bez modelu](../../scripts/cosgral-e2e-roles.mjs),
+[dokumentacja](../../doc/company-roles.md). Brak odbioru natywnego call_api,
+logowania i UI; nie rozszerza wcześniejszych deklaracji całej capability.

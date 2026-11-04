@@ -14,6 +14,7 @@ export const companyMemberships = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
+    companyIdUniqueIdx: uniqueIndex("company_memberships_company_id_unique").on(table.companyId, table.id),
     companyPrincipalUniqueIdx: uniqueIndex("company_memberships_company_principal_unique_idx").on(
       table.companyId,
       table.principalType,

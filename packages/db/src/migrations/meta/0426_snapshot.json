@@ -1,6 +1,6 @@
 {
-  "id": "deb3f1b9-6eb7-447f-adf2-dee69f943c59",
-  "prevId": "8f75a1bb-32d9-4aed-9f93-134a6ae71f79",
+  "id": "5fb10227-811a-4ec9-8bca-5aee73ff282a",
+  "prevId": "a6eeea51-eb4f-4552-a381-b24d45b27f40",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2228,6 +2228,74 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.agent_file_roots": {
+      "name": "agent_file_roots",
+      "schema": "",
+      "columns": {
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_id": {
+          "name": "agent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generation": {
+          "name": "generation",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entries": {
+          "name": "entries",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "agent_file_roots_company_id_agent_id_agents_company_id_id_fk": {
+          "name": "agent_file_roots_company_id_agent_id_agents_company_id_id_fk",
+          "tableFrom": "agent_file_roots",
+          "tableTo": "agents",
+          "columnsFrom": [
+            "company_id",
+            "agent_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "agent_file_roots_company_id_agent_id_pk": {
+          "name": "agent_file_roots_company_id_agent_id_pk",
+          "columns": [
+            "company_id",
+            "agent_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -16064,6 +16132,27 @@
         }
       },
       "indexes": {
+        "company_memberships_company_id_unique": {
+          "name": "company_memberships_company_id_unique",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "company_memberships_company_principal_unique_idx": {
           "name": "company_memberships_company_principal_unique_idx",
           "columns": [
@@ -16433,6 +16522,226 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.company_role_applications": {
+      "name": "company_role_applications",
+      "schema": "",
+      "columns": {
+        "member_id": {
+          "name": "member_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "permissions": {
+          "name": "permissions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applied_by_user_id": {
+          "name": "applied_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applied_at": {
+          "name": "applied_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "company_role_applications_company_id_role_id_company_roles_company_id_id_fk": {
+          "name": "company_role_applications_company_id_role_id_company_roles_company_id_id_fk",
+          "tableFrom": "company_role_applications",
+          "tableTo": "company_roles",
+          "columnsFrom": [
+            "company_id",
+            "role_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "company_role_applications_company_id_member_id_company_memberships_company_id_id_fk": {
+          "name": "company_role_applications_company_id_member_id_company_memberships_company_id_id_fk",
+          "tableFrom": "company_role_applications",
+          "tableTo": "company_memberships",
+          "columnsFrom": [
+            "company_id",
+            "member_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.company_roles": {
+      "name": "company_roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "permissions": {
+          "name": "permissions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "company_roles_company_id_unique": {
+          "name": "company_roles_company_id_unique",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "company_roles_company_name_unique": {
+          "name": "company_roles_company_name_unique",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "company_roles_company_id_companies_id_fk": {
+          "name": "company_roles_company_id_companies_id_fk",
+          "tableFrom": "company_roles",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "company_roles_definition_check": {
+          "name": "company_roles_definition_check",
+          "value": "length(btrim(\"company_roles\".\"name\")) between 1 and 100 and length(\"company_roles\".\"description\") <= 2000 and \"company_roles\".\"version\" > 0 and jsonb_typeof(\"company_roles\".\"permissions\") = 'array'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.company_secret_bindings": {
@@ -42938,6 +43247,15 @@
             "company_id",
             "id"
           ]
+        },
+        "issues_company_project_id_uq": {
+          "name": "issues_company_project_id_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "project_id",
+            "id"
+          ]
         }
       },
       "policies": {},
@@ -48548,6 +48866,94 @@
           "value": "\"project_access_members\".\"subject_type\" in ('user', 'agent')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.project_conversations": {
+      "name": "project_conversations",
+      "schema": "",
+      "columns": {
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "project_conversations_project_fk": {
+          "name": "project_conversations_project_fk",
+          "tableFrom": "project_conversations",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "company_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "project_conversations_issue_fk": {
+          "name": "project_conversations_issue_fk",
+          "tableFrom": "project_conversations",
+          "tableTo": "issues",
+          "columnsFrom": [
+            "company_id",
+            "project_id",
+            "issue_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "project_id",
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "project_conversations_project_uq": {
+          "name": "project_conversations_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "project_id"
+          ]
+        },
+        "project_conversations_issue_uq": {
+          "name": "project_conversations_issue_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "issue_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.project_goals": {
@@ -61134,6 +61540,13 @@
           "notNull": true,
           "default": false
         },
+        "personalization": {
+          "name": "personalization",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -61565,6 +61978,117 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.workspace_instructions": {
+      "name": "workspace_instructions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workspace_instructions_scope_uq": {
+          "name": "workspace_instructions_scope_uq",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workspace_instructions_company_id_companies_id_fk": {
+          "name": "workspace_instructions_company_id_companies_id_fk",
+          "tableFrom": "workspace_instructions",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspace_instructions_company_id_project_id_projects_company_id_id_fk": {
+          "name": "workspace_instructions_company_id_project_id_projects_company_id_id_fk",
+          "tableFrom": "workspace_instructions",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "company_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "company_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "workspace_instructions_scope_check": {
+          "name": "workspace_instructions_scope_check",
+          "value": "(\"workspace_instructions\".\"project_id\" is not null and \"workspace_instructions\".\"key\" = 'project:' || \"workspace_instructions\".\"project_id\"::text) or (\"workspace_instructions\".\"project_id\" is null and (\"workspace_instructions\".\"key\" = 'company' or \"workspace_instructions\".\"key\" like 'user:%'))"
+        },
+        "workspace_instructions_length_check": {
+          "name": "workspace_instructions_length_check",
+          "value": "length(\"workspace_instructions\".\"text\") <= 8000"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.workspace_operations": {

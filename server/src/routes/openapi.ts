@@ -1,3 +1,5 @@
+import { agentTemplateSchema, createAgentFromTemplateSchema } from "@paperclipai/shared/agent-template";
+import { companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
 import { workspaceInstructionSchema } from "@paperclipai/shared/workspace-instructions";
 import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { MUSE_ASSET_VERSION, museStopBoundarySchema, museDetectorCleanupAttestationSchema, createGrokInvitationSchema, configureGrokRoutineSchema, verifyGrokRoutineSchema, recoverGrokRoutineSchema, pairGrokBindingSchema, stopGrokWorkSchema, retryGrokDeliverySchema, updateFastResponseSchema } from "@paperclipai/shared";
@@ -516,10 +518,17 @@ function zodToOpenApiSchema(schema: z.ZodTypeAny): JsonSchema {
   }
 
   if (typeName === "array") {
-    return {
+    const jsonSchema: JsonSchema = {
       type: "array",
       items: zodToOpenApiSchema(def.element as z.ZodTypeAny),
     };
+    for (const check of (def.checks as unknown[]) ?? []) {
+      const constraint = checkDef(check);
+      if (constraint?.check === "min_length") jsonSchema.minItems = constraint.minimum;
+      if (constraint?.check === "max_length") jsonSchema.maxItems = constraint.maximum;
+      if (constraint?.check === "length_equals") jsonSchema.minItems = jsonSchema.maxItems = constraint.length;
+    }
+    return jsonSchema;
   }
 
   if (typeName === "record") {
@@ -1420,6 +1429,14 @@ const browserUseOperations = [
 ] as const;
 
 const BOARD_ONLY_OPERATIONS = new Set([
+  "GET /api/agents/{id}/config-stats",
+  "GET /api/agents/{id}/config-template",
+  "POST /api/companies/{companyId}/agents/from-template",
+  "PUT /api/projects/{id}/conversation/coordinator",
+  "GET /api/companies/{companyId}/roles",
+  "POST /api/companies/{companyId}/roles",
+  "PUT /api/companies/{companyId}/roles/{roleId}",
+  "PUT /api/companies/{companyId}/members/{memberId}/custom-role",
   "GET /api/agents/{id}/project-access",
   "POST /api/agents/{id}/project-access",
   "GET /api/issues/{id}/pending-questions",
@@ -6802,6 +6819,54 @@ registerCurrentRoute({
     403: r.forbidden,
     404: r.notFound,
   },
+});
+
+
+registerCurrentRoute({
+  method: "get", path: "/api/agents/{id}/config-template", tags: ["agents"],
+  summary: "Eksport przenośnej konfiguracji agenta bez kont i sekretów; wymaga odczytu konfiguracji",
+  responses: { 200: r.ok(agentTemplateSchema), 403: r.forbidden, 404: r.notFound },
+});
+registerCurrentRoute({
+  method: "get", path: "/api/agents/{id}/config-stats", tags: ["agents"],
+  summary: "Stan agenta, ukończone aktualnie przypisane zadania i pięć ostatnich błędów",
+  responses: { 200: r.ok(z.object({ completedTasks: z.number().int().nonnegative(), state: z.enum(["available", "working", "waiting", "offline", "error"]), recentErrors: z.array(z.object({ id: z.uuid(), at: z.string().datetime(), message: z.string() })).max(5) })), 403: r.forbidden, 404: r.notFound },
+});
+registerCurrentRoute({
+  method: "post", path: "/api/companies/{companyId}/agents/from-template", tags: ["agents"],
+  summary: "Utworzenie agenta z szablonu w projekcie; zachowuje walidację, low_trust_review i bramkę zatwierdzenia",
+  body: createAgentFromTemplateSchema,
+  responses: { 201: r.ok(), 400: r.badRequest, 403: r.forbidden, 404: r.notFound, 409: r.conflict, 422: r.unprocessable },
+});
+registerCurrentRoute({
+  method: "put", path: "/api/projects/{id}/conversation/coordinator", tags: ["projects"],
+  summary: "Wybór lub odłączenie koordynatora przez osobę zarządzającą projektem",
+  body: z.object({ agentId: z.uuid().nullable() }).strict(),
+  responses: { 200: r.ok(z.object({ issueId: z.uuid(), identifier: z.string().nullable(), coordinatorAgentId: z.uuid().nullable(), canResolveApprovals: z.literal(true), canManageCoordinator: z.literal(true) })), 400: r.badRequest, 403: r.forbidden, 404: r.notFound, 409: r.conflict, 422: r.unprocessable },
+});
+registerCurrentRoute({
+  method: "get", path: "/api/issues/{id}/project-history", tags: ["issues"],
+  summary: "Stronicowana historia widocznych działań wspólnej rozmowy projektu",
+  query: z.object({ cursor: z.string().optional().describe('JSON {at: data PostgreSQL, id: UUID}; kursor z nextCursor') }),
+  responses: { 200: r.ok(z.object({ entries: z.array(z.object({ id: z.uuid(), kind: z.enum(["comment", "task", "error", "approval"]), issueId: z.uuid(), createdAt: z.string().datetime(), body: z.string(), authorType: z.string().nullable().optional(), authorAgentId: z.uuid().nullable().optional(), authorUserId: z.string().nullable().optional(), recipientAgentId: z.uuid().nullable().optional(), messageKind: z.literal("audit").optional(), category: z.enum(["humans", "coordinator", "agents", "tasks", "errors"]).optional() })), nextCursor: z.string().nullable() })), 403: r.forbidden, 404: r.notFound, 422: r.unprocessable },
+});
+registerCurrentRoute({
+  method: "post", path: "/api/issues/{id}/executor-selection", tags: ["issues"],
+  summary: "Rekomendacja wykonawcy i zapis uzasadnienia w rozmowie; board lub przypisany koordynator z aktywnym runem",
+  description: "Nie rezerwuje slotu i nie nadaje praw wykonania. Brak kandydata zapisuje komentarz i zwraca 422. Wybór respektuje istniejące tasks:assign oraz granice zaufania agenta.",
+  body: z.object({ title: z.string().trim().min(1).max(500), description: z.string().max(10000).optional(), role: z.string().max(100).optional(), model: z.string().max(200).optional(), preferredAgentId: z.uuid().optional() }).strict(),
+  responses: { 200: r.ok(z.object({ agentId: z.uuid().nullable(), reason: z.string(), commentId: z.uuid() })), 400: r.badRequest, 403: r.forbidden, 404: r.notFound, 409: r.conflict, 422: r.unprocessable },
+});
+
+for (const [method, path, body, output, status] of [
+  ["get", "/api/companies/{companyId}/roles", undefined, z.array(companyRoleSchema), 200],
+  ["post", "/api/companies/{companyId}/roles", companyRoleDefinitionSchema, companyRoleSchema, 201],
+  ["put", "/api/companies/{companyId}/roles/{roleId}", updateCompanyRoleSchema, companyRoleSchema, 200],
+  ["put", "/api/companies/{companyId}/members/{memberId}/custom-role", assignCompanyRoleSchema, companyRoleApplicationSchema, 200],
+] as const) registerCurrentRoute({
+  method, path, body, tags: ["access"], summary: method === "get" ? "Katalog własnych ról firmy" : "Zapis lub zastosowanie wersji roli przez administratora z users:manage_permissions",
+  description: "Tylko aktywny członek firmy. Mutacje wymagają owner/admin i nieskopowanych grantów nadającego. Zastosowanie zastępuje granty konkretnej wersji, nie zmienia bazowej roli, zaufania ani projektu. Edycja definicji nie propaguje praw. Pokwitowanie opisuje ostatnie zastosowanie, nie późniejsze ręczne zmiany grantów.",
+  responses: { [status]: r.ok(output), 400: r.badRequest, 403: r.forbidden, 404: r.notFound, 409: r.conflict },
 });
 
 for (const scope of ["company", "me", "projects/{projectId}"]) {
