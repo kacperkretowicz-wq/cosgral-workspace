@@ -15,6 +15,10 @@ export function CompanyRolesPanel({ companyId, userId }: { companyId: string; us
   const access = useQuery({ queryKey: ["company-role-access", userId, companyId], queryFn: accessApi.getCurrentBoardAccess, retry: false });
   const member = access.data?.memberships?.find(m => m.companyId === companyId && m.status === "active");
   const canEdit = member?.membershipRole === "owner" || member?.membershipRole === "admin";
+  const members = useQuery({ queryKey: ["company-role-members", userId, companyId], queryFn: () => accessApi.listMembers(companyId), enabled: canEdit, retry: false });
+  const agentMembers = useQuery({ queryKey: ["company-role-agent-members", userId, companyId], queryFn: () => companyRolesApi.agentRecipients(companyId), enabled: canEdit, retry: false });
+  const eligibleMembers = members.data?.members.filter(m => m.status === "active" && (m.membershipRole === "operator" || m.membershipRole === null)) ?? [];
+  const [recipientType, setRecipientType] = useState<"user" | "agent" | "manual">("user");
   const [editing, setEditing] = useState<CompanyRole | "new" | null>(null);
   const [draft, setDraft] = useState<CompanyRoleDefinition>({ name: "", description: "", permissions: [] });
   const [memberId, setMemberId] = useState("");
@@ -36,6 +40,8 @@ export function CompanyRolesPanel({ companyId, userId }: { companyId: string; us
     mutationFn: (role: CompanyRole) => {
       if (!canEdit) throw new Error("Brak prawa przypisania.");
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberId.trim())) throw new Error("Podaj poprawny identyfikator członkostwa (UUID).");
+      if (recipientType === "user" && !eligibleMembers.some(m => m.id === memberId)) throw new Error("Wybierz aktywnego członka z listy.");
+      if (recipientType === "agent" && !agentMembers.data?.some(m => m.memberId === memberId)) throw new Error("Wybierz agenta z listy.");
       return companyRolesApi.apply(companyId, memberId.trim(), { roleId: role.id, version: role.version });
     },
     onSuccess: () => { setNotice("Zastosowano rolę do członkostwa."); setError(""); },
@@ -68,10 +74,34 @@ export function CompanyRolesPanel({ companyId, userId }: { companyId: string; us
     {notice && <p role="status">{notice}</p>}
     {canEdit && <div className="space-y-4">
       <Button disabled={pending} onClick={() => { setError(""); void roles.refetch(); }}>Odśwież listę</Button>
-      <label className="block space-y-2">Identyfikator członkostwa
-        <Input aria-label="Identyfikator członkostwa" value={memberId} onChange={e => setMemberId(e.target.value)} disabled={pending} aria-describedby="role-member-help" />
+      <label className="block space-y-2">Odbiorca roli
+        <select aria-label="Rodzaj odbiorcy" value={recipientType} onChange={e => { setRecipientType(e.target.value as "user" | "agent" | "manual"); setMemberId(""); }} disabled={pending} className="block w-full rounded-md border bg-background p-2">
+          <option value="user">Użytkownik z listy</option><option value="agent">Agent z listy</option><option value="manual">Identyfikator członkostwa</option>
+        </select>
       </label>
-      <p id="role-member-help" className="text-sm text-muted-foreground">UUID członkostwa użytkownika lub agenta w tej firmie (nie identyfikator agenta ani konta).</p>
+      {recipientType === "user" ? <>
+        <label className="block space-y-2">Członek firmy
+          <select aria-label="Członek firmy" value={memberId} onChange={e => setMemberId(e.target.value)} disabled={pending || members.isPending || !!members.error} className="block w-full rounded-md border bg-background p-2">
+            <option value="">Wybierz członka</option>
+            {eligibleMembers.map(m => <option key={m.id} value={m.id}>{m.user?.name || m.user?.email || m.principalId}{m.user?.name && m.user?.email ? ` (${m.user.email})` : ""}</option>)}
+          </select>
+        </label>
+        {members.isPending && <p role="status">Wczytywanie członków…</p>}
+        {members.error && <p role="alert">Nie udało się wczytać członków. {members.error.message} <button type="button" className="underline" onClick={() => void members.refetch()}>Spróbuj ponownie</button></p>}
+        {members.isSuccess && eligibleMembers.length === 0 && <p>Brak aktywnych operatorów, którym można przypisać rolę.</p>}
+      </> : recipientType === "agent" ? <>
+        <label className="block space-y-2">Agent
+          <select aria-label="Agent" value={memberId} onChange={e => setMemberId(e.target.value)} disabled={pending || agentMembers.isPending || !!agentMembers.error} className="block w-full rounded-md border bg-background p-2">
+            <option value="">Wybierz agenta</option>
+            {agentMembers.data?.map(m => <option key={m.memberId} value={m.memberId}>{m.name}{agentMembers.data.filter(other => other.name === m.name).length > 1 ? ` (${m.agentId})` : ""}</option>)}
+          </select>
+        </label>
+        {agentMembers.isPending && <p role="status">Wczytywanie agentów…</p>}
+        {agentMembers.error && <p role="alert">Nie udało się wczytać agentów. {agentMembers.error.message} <button type="button" className="underline" onClick={() => void agentMembers.refetch()}>Spróbuj ponownie</button></p>}
+        {agentMembers.isSuccess && agentMembers.data.length === 0 && <p>Brak agentów z aktywnym członkostwem do przypisania roli.</p>}
+      </> : <><label className="block space-y-2">Identyfikator członkostwa
+        <Input aria-label="Identyfikator członkostwa" value={memberId} onChange={e => setMemberId(e.target.value)} disabled={pending} aria-describedby="role-member-help" />
+      </label><p id="role-member-help" className="text-sm text-muted-foreground">UUID członkostwa użytkownika lub agenta w tej firmie, nie identyfikator konta ani agenta.</p></>}
       <Button onClick={() => edit("new")} disabled={pending}>Nowa rola</Button>
     </div>}
     {roles.data?.length === 0 && <p>Brak własnych ról.</p>}
@@ -81,7 +111,7 @@ export function CompanyRolesPanel({ companyId, userId }: { companyId: string; us
       {canEdit && <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" disabled={pending} onClick={() => edit(role)}>Edytuj {role.name}</Button>
         <Button variant="outline" disabled={pending} onClick={() => { setDeleting(role); setError(""); }}>Usuń {role.name}</Button>
-        <Button variant="outline" disabled={pending || !memberId.trim()} onClick={() => { setError(""); setNotice(""); apply.mutate(role); }}>Zastosuj {role.name}</Button>
+        <Button variant="outline" disabled={pending || !memberId.trim() || (recipientType === "user" && !eligibleMembers.some(m => m.id === memberId)) || (recipientType === "agent" && !agentMembers.data?.some(m => m.memberId === memberId))} onClick={() => { setError(""); setNotice(""); apply.mutate(role); }}>Zastosuj {role.name}</Button>
       </div>}
     </li>)}</ul>
     {canEdit && deleting && <div className="space-y-2" role="group" aria-label="Potwierdzenie usunięcia">

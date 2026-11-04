@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { companies, companyMemberships, companyRoles, companyRoleApplications, principalPermissionGrants, agents, type Db } from "@paperclipai/db";
 import { companyRoleDefinitionSchema, type CompanyRoleDefinition } from "@paperclipai/shared/company-roles";
 import type { PermissionKey } from "@paperclipai/shared";
@@ -48,6 +48,19 @@ export function companyRoleService(db: Db) {
     async list(companyId: string, userId: string) {
       await membership(db, companyId, userId, false);
       return db.select().from(companyRoles).where(eq(companyRoles.companyId, companyId)).orderBy(companyRoles.name);
+    },
+    async listAgentRecipients(companyId: string, userId: string) {
+      return db.transaction(async transaction => {
+        const tx = transaction as unknown as Db;
+        await membership(tx, companyId, userId, true);
+        await assertGrantAuthority(tx, companyId, userId, []);
+        const rows = await tx.select({ memberId: companyMemberships.id, agentId: agents.id, name: agents.name, role: companyMemberships.membershipRole })
+          .from(companyMemberships).innerJoin(agents, and(eq(sql<string>`${agents.id}::text`, companyMemberships.principalId), eq(agents.companyId, companyMemberships.companyId)))
+          .where(and(eq(companyMemberships.companyId, companyId), eq(companyMemberships.principalType, "agent"), eq(companyMemberships.status, "active")))
+          .orderBy(agents.name, agents.id);
+        return rows.filter(row => !["owner", "admin", "viewer"].includes(row.role ?? ""))
+          .map(({ memberId, agentId, name }) => ({ memberId, agentId, name }));
+      });
     },
     async create(companyId: string, userId: string, input: CompanyRoleDefinition) {
       const definition = companyRoleDefinitionSchema.parse(input);

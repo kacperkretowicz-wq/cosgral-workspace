@@ -152,11 +152,13 @@ Gaps: CLI board login/revocation cannot be counted as agent self-authentication.
 ## T19 — uzupełnienie `membership`
 
 Operacje `GET/POST /api/companies/{companyId}/roles`,
+`GET /api/companies/{companyId}/role-agent-recipients`,
 `PUT /api/companies/{companyId}/roles/{roleId}` oraz
 `PUT /api/companies/{companyId}/members/{memberId}/custom-role` są board-only.
 Token agenta otrzymuje 403 również przy odczycie katalogu; agent może być
 odbiorcą grantów przez własne aktywne członkostwo. Mutacje wymagają bazowej
 roli owner/admin, users:manage_permissions i nieskopowanych grantów nadającego.
+Lista członkostw agentów również wymaga owner/admin i nieskopowanego users:manage_permissions.
 Brak aktywnego członkostwa/obca firma daje 404, nieaktualna wersja 409.
 Zastosowanie używa istniejącego ACL, nie zmienia specjalizacji ani granicy
 zaufania agenta. Pokwitowanie wersji nie zastępuje bieżących grantów.

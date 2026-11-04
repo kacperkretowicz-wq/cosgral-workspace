@@ -37,6 +37,16 @@ function app(userId = "admin", actorType = "board", ids = [companyId]) {
 const base = () => `/api/companies/${companyId}/roles`;
 const definition = { name: "Programista", description: "Tworzy agentów", permissions: ["agents:create"] };
 let role: any;
+it("lists only eligible agent memberships in the company for authorized administrators", async () => {
+ const suspendedId = randomUUID(), protectedId = randomUUID(), foreignId = randomUUID();
+ await db.insert(agents).values([{ id: suspendedId, companyId, name: "Suspended", role: "engineer", adapterType: "process" }, { id: protectedId, companyId, name: "Protected", role: "engineer", adapterType: "process" }, { id: foreignId, companyId: otherId, name: "Foreign", role: "engineer", adapterType: "process", lifecycleState: "terminated" }]);
+ await db.insert(companyMemberships).values([{ companyId, principalType: "agent", principalId: suspendedId, status: "suspended", membershipRole: "member" }, { companyId, principalType: "agent", principalId: protectedId, status: "active", membershipRole: "viewer" }, { companyId: otherId, principalType: "agent", principalId: foreignId, status: "active", membershipRole: "member" }]);
+ const path = `/api/companies/${companyId}/role-agent-recipients`;
+ expect((await request(app()).get(path).expect(200)).body).toEqual([{ memberId: agentMemberId, agentId, name: "No model" }]);
+ for (const user of ["viewer", "operator", "no-manage"]) await request(app(user)).get(path).expect(403);
+ for (const type of ["agent", "none"]) await request(app("admin", type)).get(path).expect(403);
+ await request(app()).get(`/api/companies/${otherId}/role-agent-recipients`).expect(404);
+});
 it("creates and lists strict company role definitions and rejects unknown permissions/fields", async () => {
  role = (await request(app()).post(base()).send(definition).expect(201)).body;
  expect(role).toMatchObject({ ...definition, version: 1, companyId });

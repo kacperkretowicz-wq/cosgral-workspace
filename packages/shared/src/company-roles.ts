@@ -18,5 +18,7 @@ export const companyRoleApplicationSchema = z.object({
   name: z.string(), permissions: z.array(z.enum(PERMISSION_KEYS)), appliedByUserId: z.string(), appliedAt: z.string().datetime(),
 }).strict();
 export type CompanyRoleDefinition = z.infer<typeof companyRoleDefinitionSchema>;
+export const companyRoleAgentRecipientSchema = z.object({ memberId: z.uuid(), agentId: z.uuid(), name: z.string() }).strict();
+export type CompanyRoleAgentRecipient = z.infer<typeof companyRoleAgentRecipientSchema>;
 
 export const deleteCompanyRoleSchema = z.object({ version: z.number().int().positive() }).strict();

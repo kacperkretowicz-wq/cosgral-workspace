@@ -21,6 +21,9 @@ export function companyRoleRoutes(db: Db) {
   router.get("/companies/:companyId/roles", authorize, async (req, res) => {
     res.json(await service.list(req.params.companyId as string, req.actor.userId!));
   });
+  router.get("/companies/:companyId/role-agent-recipients", authorize, async (req, res) => {
+    res.json(await service.listAgentRecipients(req.params.companyId as string, req.actor.userId!));
+  });
   router.post("/companies/:companyId/roles", authorize, validate(companyRoleDefinitionSchema), async (req, res) => {
     res.status(201).json(await service.create(req.params.companyId as string, req.actor.userId!, req.body));
   });

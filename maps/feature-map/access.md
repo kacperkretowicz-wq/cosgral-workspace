@@ -117,7 +117,7 @@ W ramach `access/membership`: [panel](../../ui/src/components/CompanyRolesPanel.
 [klient API](../../ui/src/api/companyRoles.ts),
 [test komponentu](../../ui/src/components/CompanyRolesPanel.test.tsx).
 Profil → Własne role firmy: lista, nowa rola, edycja, wybór kluczy,
-zastosowanie wersji do UUID członkostwa użytkownika/agenta, usunięcie po potwierdzeniu.
+wybór użytkownika lub agenta po nazwie, zastosowanie wersji do członkostwa oraz usunięcie po potwierdzeniu. Dostępny jest także ręczny wpis UUID członkostwa.
 Viewer tylko odczytuje. Pusta nazwa blokuje zapis; błędy API są widoczne,
 draft pozostaje po błędzie. Role z pokwitowaniami zastosowania są chronione przed usunięciem.
-Weryfikacja komponentowa z mockowanym API; przeglądarka/logowanie: not-run.
+Weryfikacja komponentowa z mockowanym API oraz próba przeglądarkowa wyboru i przypisania agenta na lokalnej instancji `local_trusted`; logowanie dwoma kontami: not-run.

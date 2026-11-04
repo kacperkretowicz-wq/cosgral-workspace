@@ -1,5 +1,5 @@
 import { agentTemplateSchema, createAgentFromTemplateSchema } from "@paperclipai/shared/agent-template";
-import { deleteCompanyRoleSchema, companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
+import { deleteCompanyRoleSchema, companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema, companyRoleSchema, companyRoleApplicationSchema, companyRoleAgentRecipientSchema } from "@paperclipai/shared/company-roles";
 import { workspaceInstructionSchema } from "@paperclipai/shared/workspace-instructions";
 import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { MUSE_ASSET_VERSION, museStopBoundarySchema, museDetectorCleanupAttestationSchema, createGrokInvitationSchema, configureGrokRoutineSchema, verifyGrokRoutineSchema, recoverGrokRoutineSchema, pairGrokBindingSchema, stopGrokWorkSchema, retryGrokDeliverySchema, updateFastResponseSchema } from "@paperclipai/shared";
@@ -1434,6 +1434,7 @@ const BOARD_ONLY_OPERATIONS = new Set([
   "POST /api/companies/{companyId}/agents/from-template",
   "PUT /api/projects/{id}/conversation/coordinator",
   "GET /api/companies/{companyId}/roles",
+  "GET /api/companies/{companyId}/role-agent-recipients",
   "POST /api/companies/{companyId}/roles",
   "PUT /api/companies/{companyId}/roles/{roleId}",
   "PUT /api/companies/{companyId}/members/{memberId}/custom-role",
@@ -6857,6 +6858,8 @@ registerCurrentRoute({
   body: z.object({ title: z.string().trim().min(1).max(500), description: z.string().max(10000).optional(), role: z.string().max(100).optional(), model: z.string().max(200).optional(), preferredAgentId: z.uuid().optional() }).strict(),
   responses: { 200: r.ok(z.object({ agentId: z.uuid().nullable(), reason: z.string(), commentId: z.uuid() })), 400: r.badRequest, 403: r.forbidden, 404: r.notFound, 409: r.conflict, 422: r.unprocessable },
 });
+
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/role-agent-recipients", tags: ["access"], summary: "Agenci z aktywnym członkostwem dostępnym do przypisania roli", description: "Wymaga aktywnego owner/admin i nieskopowanego users:manage_permissions. Zwraca wyłącznie agentów tej firmy; serwer ponownie sprawdza uprawnienia przy przypisaniu.", responses: { 200: r.ok(z.array(companyRoleAgentRecipientSchema)), 403: r.forbidden, 404: r.notFound } });
 
 for (const [method, path, body, output, status] of [
   ["delete", "/api/companies/{companyId}/roles/{roleId}", deleteCompanyRoleSchema, z.object({ deleted: z.boolean() }), 200],

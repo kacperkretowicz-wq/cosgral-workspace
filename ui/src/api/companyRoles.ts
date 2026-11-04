@@ -1,7 +1,8 @@
-import type { CompanyRoleDefinition, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
+import type { CompanyRoleDefinition, CompanyRoleAgentRecipient, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
 import { api } from "./client";
 export type CompanyRole = typeof companyRoleSchema._output;
 export const companyRolesApi = {
+  agentRecipients: (companyId: string) => api.get<CompanyRoleAgentRecipient[]>(`/companies/${companyId}/role-agent-recipients`),
   remove: (companyId: string, roleId: string, version: number) => api.deleteWithBody<{ deleted: boolean }>(`/companies/${companyId}/roles/${roleId}`, { version }),
   list: (companyId: string) => api.get<CompanyRole[]>(`/companies/${companyId}/roles`),
   create: (companyId: string, definition: CompanyRoleDefinition) => api.post<CompanyRole>(`/companies/${companyId}/roles`, definition),
