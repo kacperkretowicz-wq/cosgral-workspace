@@ -1,5 +1,9 @@
 # COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~14:00 CET)
 
+## STOP na polecenie użytkownika — najnowsze przekazanie
+
+Budowa zatrzymana. Stan, wyniki, otwarte błędy oraz odpowiedź o zmianie UI: [PRZEKAZANIE-2026-11-04-STOP-PO-PRZEGLADZIE.md](PRZEKAZANIE-2026-11-04-STOP-PO-PRZEGLADZIE.md). Nie wznawiać bez nowego polecenia. Poniższe wpisy są historią i wymagają czytania z korektami z najnowszego przekazania.
+
 ## Live acceptance continuation — 4 XI 2026
 
 - Two disposable authenticated/private instances used real embedded PostgreSQL, actual HTTP/WebSocket and synthetic accounts. Prepare passed twice.

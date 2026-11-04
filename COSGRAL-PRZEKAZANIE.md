@@ -2137,3 +2137,7 @@ Użytkownik polecił zapisać i wypchnąć całość oraz pozostawić rekomendac
 ## Wstrzymanie, zapis i GitHub — 4 XI 2026
 
 Użytkownik nakazał zatrzymać wszystko, zapisać stan, wypchnąć na GitHub i przekazać pracę. Procesy tej kontynuacji zakończono, w tym pełny test:run przerwany na żądanie. Kontroler zaakceptował stop i zakończył się kodem 0, tymczasowy PostgreSQL zamknięty, port 3198 wolny. Najnowsze pełne przekazanie: `docs/cosgral/PRZEKAZANIE-2026-11-04-PAUZA.md`; obejmuje commity, wyniki, ograniczenia, ścieżki lokalnych artefaktów i następne kroki. Nie wznawiać celu bez nowej prośby użytkownika. Dane testowych kont i sekretów pozostają poza Git.
+
+## Stop po przeglądzie M1 i kontynuacji — 4 XI 2026
+
+Użytkownik zatrzymał budowę, polecił zapis i push oraz wyjaśnienie różnicy UI. Najnowsze przekazanie: docs/cosgral/PRZEKAZANIE-2026-11-04-STOP-PO-PRZEGLADZIE.md. Nie wznawiać bez nowej prośby. Pełny test monorepo zakończył się błędem; produkt nie jest ukończony.

@@ -53,3 +53,7 @@ The isolated identity-lock case passed without a production change (1 PASS, 1832
 The diagnostic general-chat invocation with shard-index 1/count 6 maps to two child shards 3/12 and 4/12, splitting the original 2/6 workload; one child has passed 134 tests, the other is still live. Diagnostic candidate counts are temporarily present in the integration test and must be removed before final commit. Reproduce exact original 2/6 ordering if split results do not explain the original failure.
 
 Local Linux inventory: WSL lists no distributions; no Docker or Podman executable found. User asked asynchronously about an available Linux host. Continue independent local work while awaiting that information. Avoid simultaneous memory-heavy checks (16 GB host, approximately 1.2 GB free during the diagnostic pair).
+
+## User stop
+
+User explicitly stopped work, confirmed no Linux server and requested a saved/pushed handoff answering the UI question. See docs/cosgral/PRZEKAZANIE-2026-11-04-STOP-PO-PRZEGLADZIE.md. Diagnostic pair ended 134 + 156 PASS but did not emit the target diagnostic; its CLI mapping is not proof of reproducing the original 2/6 ordering. Temporary diagnostics removed. Do not resume without a new request.
