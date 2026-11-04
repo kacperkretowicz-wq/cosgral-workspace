@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { test } from "node:test";
 
-import { capabilityGroups, validateInventorySchema, validateInventories } from "./lib/capability-inventory.mjs";
+import { decodeInventory, encodeInventory, capabilityGroups, validateInventorySchema, validateInventories } from "./lib/capability-inventory.mjs";
 
 const inventorySchema = JSON.parse(await readFile(
   resolve(import.meta.dirname, "../spec/capability/inventory.schema.json"),
@@ -92,4 +92,14 @@ test("capability inventory validator rejects missing, duplicate, and unknown MCP
   const errors = validateInventories(inventories);
   assert.ok(errors.some((error) => error.includes("must be folded exactly once")));
   assert.ok(errors.some((error) => error.includes("unknown normative row")));
+});
+
+
+test("decodes generated inventory on LF and CRLF checkouts without changing values", () => {
+  const value = { rows: [{ text: "line one\nline two", path: "C:\\work" }] };
+  const generated = encodeInventory(value);
+  assert.deepEqual(decodeInventory(generated), value);
+  assert.deepEqual(decodeInventory(generated.replaceAll("\n", "\r\n")), value);
+  assert.deepEqual(decodeInventory(JSON.stringify(value)), value);
+  assert.throws(() => decodeInventory("# unknown header\r\n{}"));
 });
