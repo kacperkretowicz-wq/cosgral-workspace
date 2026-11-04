@@ -172,6 +172,13 @@ PostgreSQL and HTTP with fixture actors; [UI coverage](../../ui/src/pages/Projec
 uses component rendering and mocked API/events. These are not real-model or
 two-browser acceptance evidence.
 
+T13: `POST /api/issues/{conversationId}/executor-selection` dobiera dostępnego,
+uprawnionego wykonawcę według roli/kompetencji/modelu, obciążenia i stałego ID;
+zapisuje powód w rozmowie bez uruchamiania pracy. Jawny niedostępny wybór daje 422.
+Oba rodzaje kart wymuszają wake po obu decyzjach. `canResolveApprovals` steruje
+trybem tylko do odczytu UI. Regresje PostgreSQL/HTTP i komponentów są w powyższych
+plikach; nie stanowią odbioru z modelem na żywo.
+
 Coordinator no-op regression: the server must show a system error even if the
 agent posts a handoff claim but creates no task/interaction and performs no
 scoped child mutation. Old or unrelated task writes cannot satisfy the check;

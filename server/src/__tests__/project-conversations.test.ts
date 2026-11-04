@@ -181,15 +181,21 @@ describe("project conversation identity", () => {
     const [worker] = await db.insert(agents).values({ companyId, name: "Worker", role: "engineer", adapterType: "codex_local" }).returning();
     await db.insert(projectAccessMembers).values({ companyId, projectId: project!.id, subjectType: "agent", subjectId: worker!.id });
     const conversation = (await projectConversationService(db).getOrCreate(companyId, project!.id, "a"))!.issue;
+    const [coordinator] = await db.insert(agents).values({ companyId, name: "Coordinator", role: "general", adapterType: "codex_local" }).returning();
+    await db.insert(projectAccessMembers).values({ companyId, projectId: project!.id, subjectType: "agent", subjectId: coordinator!.id });
+    await projectConversationService(db).setCoordinator(companyId, project!.id, "a", coordinator!.id, { authorize: async () => {}, changed: async () => {} });
+    const [coordinatorRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: coordinator!.id, issueId: conversation.id, status: "running" }).returning();
     const app = express(); app.use(express.json());
-    app.use((req, _res, next) => { const userId = req.header("x-test-user") ?? "outsider"; req.actor = { type: "board", source: "session", userId, companyIds: [companyId], memberships: [{ companyId, membershipRole: userId === "viewer" ? "viewer" : "operator", status: "active" }] }; next(); });
+    app.use((req, _res, next) => { if (req.header("x-test-agent")) { req.actor = { type: "agent", source: "agent_jwt", companyId, agentId: coordinator!.id, runId: coordinatorRun!.id }; next(); return; } const userId = req.header("x-test-user") ?? "outsider"; req.actor = { type: "board", source: "session", userId, companyIds: [companyId], memberships: [{ companyId, membershipRole: userId === "viewer" ? "viewer" : "operator", status: "active" }] }; next(); });
     app.use("/api", issueRoutes(db)); app.use(errorHandler);
     const url = `/api/issues/${conversation.id}/interactions`;
-    const draft = { kind: "suggest_tasks", idempotencyKey: "human-proposal", resolverPolicy: "anyone", payload: { version: 1, tasks: [{ clientKey: "one", title: "Needs human approval", projectId: project!.id, assigneeAgentId: worker!.id }] } };
+    const draft = { kind: "suggest_tasks", idempotencyKey: "human-proposal", resolverPolicy: "anyone", continuationPolicy: "none", payload: { version: 1, tasks: [{ clientKey: "one", title: "Needs human approval", projectId: project!.id, assigneeAgentId: worker!.id }] } };
     wakeup.mockClear();
-    const proposed = await request(app).post(url).set("x-test-user", "a").send(draft);
+    const proposed = await request(app).post(url).set("x-test-agent", "coordinator").send(draft);
     expect(proposed.status).toBe(201);
+    expect(proposed.body.createdByAgentId).toBe(coordinator!.id);
     expect(proposed.body.effectiveResolverPolicy).toBe("human_only");
+    expect(proposed.body.continuationPolicy).toBe("wake_assignee");
     expect((await issueService(db).list(companyId, { projectId: project!.id, includeAgentCreatedTasks: true }))).toHaveLength(0);
     expect(wakeup).not.toHaveBeenCalled();
     const visible = await request(app).get(url).set("x-test-user", "b");
@@ -197,22 +203,88 @@ describe("project conversation identity", () => {
     await expect(issueThreadInteractionService(db).acceptInteraction(conversation, proposed.body.id, {}, { agentId: worker!.id, runId: randomUUID(), suggestedTaskEffectsAuthorized: true })).rejects.toThrow(/human/i);
     expect((await request(app).post(`${url}/${proposed.body.id}/accept`).set("x-test-user", "viewer").send({})).status).toBe(403);
     expect((await request(app).post(`${url}/${proposed.body.id}/accept`).set("x-test-user", "outsider").send({})).status).toBe(404);
+    expect((await request(app).post(`${url}/${proposed.body.id}/accept`).set("x-test-agent", "coordinator").send({})).status).toBe(403);
     const decisions = await Promise.all(["a", "b"].map(user => request(app).post(`${url}/${proposed.body.id}/accept`).set("x-test-user", user).send({})));
     expect(decisions.filter(result => result.status === 200)).toHaveLength(1);
     const created = await issueService(db).list(companyId, { projectId: project!.id, includeAgentCreatedTasks: true });
     expect(created).toHaveLength(1);
     expect(created[0]).toMatchObject({ parentId: conversation.id, assigneeAgentId: worker!.id, status: "todo" });
+    expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({ payload: expect.objectContaining({ interactionId: proposed.body.id, interactionStatus: "accepted" }) }));
+    wakeup.mockClear();
     const rejectable = await request(app).post(url).set("x-test-user", "a").send({ ...draft, idempotencyKey: "reject-proposal" });
     expect((await request(app).post(`${url}/${rejectable.body.id}/reject`).set("x-test-user", "b").send({})).status).toBe(200);
     expect(await issueService(db).list(companyId, { projectId: project!.id, includeAgentCreatedTasks: true })).toHaveLength(1);
+    expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({ payload: expect.objectContaining({ interactionId: rejectable.body.id, interactionStatus: "rejected" }) }));
     const confirmation = await request(app).post(url).set("x-test-user", "a").send({ kind: "request_confirmation", resolverPolicy: "anyone", payload: { version: 1, prompt: "Publish?", supersedeOnUserComment: true } });
     expect(confirmation.status).toBe(201);
     expect(confirmation.body).toMatchObject({ effectiveResolverPolicy: "human_only", continuationPolicy: "wake_assignee", payload: { acceptLabel: "Zatwierdź", rejectLabel: "Odrzuć", supersedeOnUserComment: false } });
     expect((await request(app).post(`/api/issues/${conversation.id}/comments`).set("x-test-user", "b").send({ body: "Dodatkowy kontekst — to nie zgoda" })).status).toBe(201);
     const stillPending = await request(app).get(url).set("x-test-user", "b");
     expect(stillPending.body.find((row: { id: string }) => row.id === confirmation.body.id).status).toBe("pending");
+    wakeup.mockClear();
+    expect((await request(app).post(`${url}/${confirmation.body.id}/reject`).set("x-test-user", "viewer").send({})).status).toBe(403);
+    expect((await request(app).post(`${url}/${confirmation.body.id}/accept`).set("x-test-user", "b").send({})).status).toBe(200);
+    expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({ payload: expect.objectContaining({ interactionId: confirmation.body.id, interactionStatus: "accepted" }) }));
+    const secondConfirmation = await request(app).post(url).set("x-test-agent", "coordinator").send({ kind: "request_confirmation", continuationPolicy: "none", payload: { version: 1, prompt: "Publish another?" } });
+    wakeup.mockClear();
+    expect((await request(app).post(`${url}/${secondConfirmation.body.id}/reject`).set("x-test-user", "a").send({ reason: "Nie teraz" })).status).toBe(200);
+    expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({ payload: expect.objectContaining({ interactionId: secondConfirmation.body.id, interactionStatus: "rejected" }) }));
     const receipt = await request(app).get(url).set("x-test-user", "a");
     expect(receipt.body.find((row: { id: string }) => row.id === rejectable.body.id).status).toBe("rejected");
+  }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
+
+  it("selects an authorized available executor deterministically and persists its reason without starting work", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Selection API", issuePrefix: `E${companyId.slice(0, 6)}` });
+    await db.insert(companyMemberships).values(["owner", "viewer", "outsider"].map(principalId => ({ companyId, principalType: "user", principalId, status: "active", membershipRole: principalId === "viewer" ? "viewer" : "operator" })));
+    const [project] = await db.insert(projects).values({ companyId, name: "Private", visibility: "private", privacyOwnerUserId: "owner" }).returning();
+    await db.insert(projectAccessMembers).values(["owner", "viewer"].map(subjectId => ({ companyId, projectId: project!.id, subjectType: "user", subjectId })));
+    const [coordinator, coder, fallback, paused, inaccessible] = await db.insert(agents).values([
+      { companyId, name: "Coordinator", role: "general", adapterType: "codex_local" },
+      { companyId, name: "TypeScript engineer", role: "engineer", capabilities: "TypeScript", adapterType: "codex_local", adapterConfig: { model: "configured-model" }, runtimeConfig: { heartbeat: { maxConcurrentRuns: 1 } } },
+      { companyId, name: "General worker", role: "general", adapterType: "codex_local" },
+      { companyId, name: "Paused TypeScript", role: "engineer", capabilities: "TypeScript", status: "paused", adapterType: "codex_local" },
+      { companyId, name: "Inaccessible", role: "engineer", capabilities: "TypeScript", adapterType: "codex_local" },
+    ]).returning();
+    await db.insert(projectAccessMembers).values([coordinator!, coder!, fallback!, paused!].map(agent => ({ companyId, projectId: project!.id, subjectType: "agent", subjectId: agent.id })));
+    const conversation = await projectConversationService(db).setCoordinator(companyId, project!.id, "owner", coordinator!.id, { authorize: async () => {}, changed: async () => {} });
+    await db.update(agents).set({ reportsTo: coordinator!.id }).where(eq(agents.id, coder!.id));
+    const [selectionRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: coordinator!.id, issueId: conversation!.id, status: "running" }).returning();
+    const app = express(); app.use(express.json());
+    app.use((req, _res, next) => { if (req.header("x-test-agent")) { req.actor = { type: "agent", source: "agent_jwt", companyId, agentId: coordinator!.id, runId: selectionRun!.id }; next(); return; } const userId = req.header("x-test-user") ?? "owner"; req.actor = { type: "board", source: "session", userId, companyIds: [companyId], memberships: [{ companyId, membershipRole: userId === "viewer" ? "viewer" : "operator", status: "active" }] }; next(); });
+    app.use("/api", issueRoutes(db)); app.use(errorHandler);
+    const url = `/api/issues/${conversation!.id}/executor-selection`;
+    wakeup.mockClear();
+    const selected = await request(app).post(url).send({ title: "TypeScript", model: "configured-model" });
+    expect(selected.status).toBe(200);
+    expect(selected.body).toMatchObject({ agentId: coder!.id });
+    expect(selected.body.reason).toContain("TypeScript engineer");
+    expect((await issueService(db).listComments(conversation!.id)).some(c => c.body.includes(selected.body.reason))).toBe(true);
+    expect(wakeup).not.toHaveBeenCalled();
+    expect((await request(app).post(url).set("x-test-agent", "coordinator").send({ title: "TypeScript" })).body.agentId).toBe(coder!.id);
+    await db.insert(heartbeatRuns).values({ companyId, agentId: coder!.id, status: "queued" });
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(fallback!.id);
+    await db.update(agents).set({ status: "paused" }).where(eq(agents.id, coder!.id));
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(fallback!.id);
+    expect((await request(app).post(url).send({ title: "TypeScript", preferredAgentId: paused!.id })).status).toBe(422);
+    expect((await request(app).post(url).send({ title: "TypeScript", preferredAgentId: inaccessible!.id })).status).toBe(422);
+    expect((await request(app).post(url).set("x-test-user", "viewer").send({ title: "TypeScript" })).status).toBe(403);
+    expect((await request(app).post(url).set("x-test-user", "outsider").send({ title: "TypeScript" })).status).toBe(404);
+    await db.update(agents).set({ budgetMonthlyCents: 100, spentMonthlyCents: 100 }).where(eq(agents.id, fallback!.id));
+    expect((await request(app).post(url).send({ title: "TypeScript" })).status).toBe(422);
+    const [twin] = await db.insert(agents).values({ companyId, name: "Second general", role: "general", adapterType: "codex_local" }).returning();
+    await db.insert(projectAccessMembers).values({ companyId, projectId: project!.id, subjectType: "agent", subjectId: twin!.id });
+    await db.update(agents).set({ spentMonthlyCents: 0 }).where(eq(agents.id, fallback!.id));
+    const expectedFallback = [fallback!.id, twin!.id].sort()[0];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const tie = await request(app).post(url).send({ title: "Unmatched work" });
+      expect(tie.body.agentId).toBe(expectedFallback);
+      expect(tie.body.reason).toContain("Fallback");
+    }
+    expect((await request(app).post(url).send({ title: "Unmatched work", preferredAgentId: twin!.id })).body.agentId).toBe(twin!.id);
+    const [foreignCompany] = await db.insert(companies).values({ name: "Foreign selection", issuePrefix: `Z${companyId.slice(0, 6)}` }).returning();
+    const [foreignAgent] = await db.insert(agents).values({ companyId: foreignCompany!.id, name: "Foreign", adapterType: "codex_local" }).returning();
+    expect((await request(app).post(url).send({ title: "TypeScript", preferredAgentId: foreignAgent!.id })).status).toBe(422);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
 
   it("creates one durable thread under concurrent requests and rejects cross-project moves", async () => {
@@ -276,7 +348,8 @@ describe("project conversation identity", () => {
     expect([first.status, second.status].sort()).toEqual([200, 201]);
     expect(first.body.issueId).toBe(second.body.issueId);
     expect((await request(app).get(url).set("x-test-user", "person-b")).body.issueId).toBe(first.body.issueId);
-    expect((await request(app).get(url).set("x-test-user", "viewer")).body.issueId).toBe(first.body.issueId);
+    expect((await request(app).get(url).set("x-test-user", "viewer")).body).toMatchObject({ issueId: first.body.issueId, canResolveApprovals: false });
+    expect((await request(app).get(url).set("x-test-user", "person-b")).body.canResolveApprovals).toBe(true);
     expect((await request(app).get(url).set("x-test-user", "outsider")).status).toBe(404);
     // Presence uses the same live project/issue policy without creating a thread or comment.
     const presenceActor = (userId: string) => ({ type: "board" as const, source: "session" as const, userId, companyIds: [companyId] });

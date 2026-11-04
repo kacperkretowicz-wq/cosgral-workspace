@@ -6,7 +6,7 @@ import { accessService } from "../access.js";
 /** A prompt projection, never raw adapter configuration or provider credentials. */
 export async function projectConversationRoster(db: Db, companyId: string, projectId: string) {
   const [roster, tasks, runs] = await Promise.all([
-    db.select({ id: agents.id, name: agents.name, capabilities: agents.capabilities,
+    db.select({ id: agents.id, name: agents.name, role: agents.role, capabilities: agents.capabilities,
       status: agents.status, reportsTo: agents.reportsTo, adapterType: agents.adapterType,
       model: sql<string | null>`${agents.adapterConfig}->>'model'`,
       configuredConcurrency: sql<unknown>`${agents.runtimeConfig}->'heartbeat'->'maxConcurrentRuns'`,

@@ -20,6 +20,7 @@ import { DecisionCardFooter } from "./DecisionCardFooter";
 import { IssueThreadInteractionCard } from "./IssueThreadInteractionCard";
 
 interface AttentionInteractionResolverProps {
+  readOnly?: boolean;
   actionLabels?: { accept: string; reject: string };
   companyId: string;
   issueId: string;
@@ -52,6 +53,7 @@ export function replaceResolvedInteraction(
  * (converged PAP-12628). Reviews never reach here — they deep-link.
  */
 export function AttentionInteractionResolver({
+  readOnly = false,
   actionLabels,
   companyId,
   issueId,
@@ -168,19 +170,19 @@ export function AttentionInteractionResolver({
       agentMap={agentMap}
       currentUserId={currentUserId}
       userLabelMap={userLabelMap}
-      onAcceptInteraction={(target, selectedClientKeys, selectedOptionIds, rememberAction) =>
+      onAcceptInteraction={readOnly ? undefined : (target, selectedClientKeys, selectedOptionIds, rememberAction) =>
         acceptMutation.mutateAsync({ interaction: target, selectedClientKeys, selectedOptionIds, rememberAction }).then(() => undefined)
       }
-      onRejectInteraction={(target, reason) =>
+      onRejectInteraction={readOnly ? undefined : (target, reason) =>
         rejectMutation.mutateAsync({ interactionId: target.id, reason }).then(() => undefined)
       }
-      onSubmitInteractionAnswers={(target: AskUserQuestionsInteraction, answers) =>
+      onSubmitInteractionAnswers={readOnly ? undefined : (target: AskUserQuestionsInteraction, answers) =>
         respondMutation.mutateAsync({ interactionId: target.id, answers }).then(() => undefined)
       }
-      onCancelInteraction={(target: AskUserQuestionsInteraction) =>
+      onCancelInteraction={readOnly ? undefined : (target: AskUserQuestionsInteraction) =>
         cancelMutation.mutateAsync({ interactionId: target.id }).then(() => undefined)
       }
-      onSubmitInteractionVerdicts={(target: RequestItemVerdictsInteraction, verdicts) =>
+      onSubmitInteractionVerdicts={readOnly ? undefined : (target: RequestItemVerdictsInteraction, verdicts) =>
         verdictsMutation.mutateAsync({ interactionId: target.id, verdicts }).then(() => undefined)
       }
     />

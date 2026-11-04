@@ -157,14 +157,20 @@ Koordynatorem może być dowolny kompatybilny agent, np. Claude Opus, Codex albo
 Koordynator:
 1. Odbiera wiadomości od użytkowników.
 2. Analizuje projekt i jego instrukcje.
-3. Sprawdza dostępnych agentów oraz ich konfiguracje.
-4. Dobiera wykonawców do zadań.
+3. ~~Sprawdza dostępnych agentów oraz ich konfiguracje.~~
+4. ~~Dobiera wykonawców do zadań.~~
 5. Rozdziela zadania, również równolegle.
 6. Nadzoruje przebieg pracy.
 7. Koordynuje wymianę informacji między agentami.
 8. Zleca dodatkowe audyty lub poprawki.
 9. Zbiera wyniki i raportuje postęp.
-10. Prosi o zatwierdzenie działań wymagających decyzji człowieka.
+10. ~~Prosi o zatwierdzenie działań wymagających decyzji człowieka.~~
+
+Stan t13 (4 XI 2026): pkt 3, 4 i 10 przekreślone po żywym e2e na koncie a
+(`scripts/cosgral-e2e-approval.mjs`, log `e2e-approval-a1.log`: PASS A/B/C — dobór
+wykonawcy z uzasadnieniem, karta zatwierdzenia human-only, akceptacja → worker →
+raport, odrzucenie bez zadania i bez retry) oraz testy serwer 126 / UI 27 / skrypt 27.
+Szczegóły: `COSGRAL-PRZEKAZANIE.md`, Codex #13 i „Nadzorca – po Codex t13”.
 
 Przykład polecenia:
 

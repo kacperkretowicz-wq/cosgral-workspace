@@ -412,7 +412,9 @@ export function projectRoutes(db: Db) {
         resource: { type: "issue", companyId: project.companyId, issueId: issue.id } });
       if (!decision.allowed) throw notFound("Conversation not found");
       res.status(created ? 201 : 200).json({ issueId: issue.id, identifier: issue.identifier,
-        coordinatorAgentId: issue.assigneeAgentId, canManageCoordinator: await canManageProjectPrivacy(req, project) });
+        coordinatorAgentId: issue.assigneeAgentId,
+        canResolveApprovals: (await access.decide({ actor: req.actor, action: "issue:mutate", resource: { type: "issue", companyId: project.companyId, issueId: issue.id, projectId: issue.projectId, parentIssueId: issue.parentId, assigneeAgentId: issue.assigneeAgentId, assigneeUserId: issue.assigneeUserId, status: issue.status } })).allowed,
+        canManageCoordinator: await canManageProjectPrivacy(req, project) });
     });
   }
 
@@ -444,7 +446,7 @@ export function projectRoutes(db: Db) {
     });
     if (!issue) throw notFound("Project not found");
     for (const publication of publications) publishActivity(publication);
-    res.json({ issueId: issue.id, identifier: issue.identifier, coordinatorAgentId: issue.assigneeAgentId, canManageCoordinator: true });
+    res.json({ issueId: issue.id, identifier: issue.identifier, coordinatorAgentId: issue.assigneeAgentId, canResolveApprovals: true, canManageCoordinator: true });
   });
 
   router.get("/projects/:id/external-object-summary", async (req, res) => {

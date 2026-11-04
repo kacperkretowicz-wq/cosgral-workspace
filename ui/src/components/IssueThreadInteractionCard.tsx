@@ -2646,6 +2646,7 @@ function ConnectionAuthorizationStatusLine({
 }
 
 function RequestConfirmationCard({
+  actionLabels,
   footerSlot,
   interaction,
   compact = false,
@@ -2656,6 +2657,7 @@ function RequestConfirmationCard({
   onUploadImage,
   externalReferences,
 }: {
+  actionLabels?: { accept: string; reject: string };
   footerSlot?: ReactNode;
   interaction: RequestConfirmationInteraction;
   compact?: boolean;
@@ -2781,8 +2783,8 @@ function RequestConfirmationCard({
         <ConfirmationActionRow
           footerSlot={footerSlot}
           resetKey={`${interaction.id}:${interaction.status}`}
-          approveLabel={interaction.payload.acceptLabel ?? CONFIRMATION_APPROVE_LABEL}
-          rejectLabel={CONFIRMATION_REJECT_LABEL}
+          approveLabel={actionLabels?.accept ?? interaction.payload.acceptLabel ?? CONFIRMATION_APPROVE_LABEL}
+          rejectLabel={actionLabels?.reject ?? CONFIRMATION_REJECT_LABEL}
           approveVariant={isPlan ? "cta" : "default"}
           primaryActionOnRight={primaryActionOnRight}
           allowRevise={allowRevise}
@@ -4082,6 +4084,7 @@ export function IssueThreadInteractionCard({
             />
           ) : (
             <RequestConfirmationCard
+              actionLabels={actionLabels}
               footerSlot={footerSlot}
               interaction={interaction}
               compact={compactDecision}

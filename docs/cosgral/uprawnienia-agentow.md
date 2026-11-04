@@ -122,6 +122,44 @@ istniejącego resolvera kart i zdarzeń `issue.thread_interaction_*` do odświe�
 u obu użytkowników, z obsługą błędów i ponawiania. Nie dodano osobnego
 orkiestratora, protokołu zatwierdzania, pollingu ani migracji.
 
+## Dobór przez API i wznowienie po decyzji (zadanie 13)
+
+Przed utworzeniem zadania albo propozycji koordynator wywołuje
+`POST /api/issues/:conversationId/executor-selection` z `{title, description?,
+role?, model?, preferredAgentId?}`. Dostęp ma uprawniony operator albo przypisany
+koordynator z uwierzytelnionym runem. Serwer sprawdza tę samą politykę
+`tasks:assign` dla projektu, rodzica i kandydata, której używa tworzenie zadania.
+Bierze wyłącznie agentów firmy z dostępem do projektu, zdrową hierarchią,
+statusem idle/running, zgodnym lokalnym CLI, wolnym slotem i niewyczerpanym budżetem.
+Koordynator nie wybiera siebie. Ranking: jawnie wskazana rola (100), liczba
+wspólnych słów zadania i roli/kompetencji (po 10), zgodny wskazany model (1),
+następnie najmniej aktywnych zadań, runów i rosnące ID. To prosta deterministyczna
+reguła, nie semantyczna ocena kompetencji ani optymalizator kosztu.
+
+Wskazany `preferredAgentId` ma pierwszeństwo wśród dostępnych, uprawnionych
+kandydatów. Niedostępny jawny wybór zwraca 422, bez cichej zamiany. Bez dopasowania
+serwer wybiera najmniej obciążonego, a remis rozstrzyga stałym porządkiem ID.
+Brak kandydata również daje 422. Wynik `{agentId, reason, commentId}` zapisuje
+uzasadnienie jako komentarz autora operacji i publikuje `issue.comment_added`.
+Nie uruchamia zadania ani wake. Nie rezerwuje slotów; tworzenie, akceptacja
+propozycji i dispatch ponownie stosują swoje zwykłe uprawnienia i limity.
+Koordynator dostaje instrukcję użycia zwróconego ID; API rekomendacji nie blokuje
+wszystkich innych istniejących dróg przypisania zadań.
+
+Oba rodzaje kart w rozmowie wymuszają teraz `wake_assignee`, również gdy autor
+poda `none` lub kontynuację tylko po akceptacji. Istniejący mechanizm kontynuacji
+zapisuje decyzję i kieruje wake po akceptacji lub odrzuceniu. Oczekująca propozycja
+nie tworzy zadania. `GET /projects/:id/conversation` zwraca
+`canResolveApprovals` z polityki mutacji wątku; UI przy braku tego uprawnienia
+pokazuje historię i wyłącza przyciski. Serwer nadal samodzielnie egzekwuje odmowę
+widzowi, agentowi i osobie bez dostępu do projektu/firmy. Opcjonalne etykiety akcji
+przekazane przez widok rozmowy działają także w zwykłym potwierdzeniu, więc
+„Odrzuć” działa obok „Zatwierdź”. Decyzje operacji zarządzanych w `/approvals` zachowują własne bramki.
+
+Weryfikacja obejmuje PostgreSQL, HTTP z syntetycznymi aktorami, zapis komentarzy,
+karty UI i wywołania istniejącego heartbeat (wakeup zastąpiony spy, bez modelu).
+Odbiór żywych runów po decyzji i dwóch przeglądarek pozostaje osobnym testem nadzorcy.
+
 ## Punkty montowania Codexa i rozliczenie tury (zadanie 11)
 
 Przed zamontowaniem repo koordynatora RO adapter przygotowuje w jego własnym

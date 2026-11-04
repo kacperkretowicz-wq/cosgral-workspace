@@ -1075,3 +1075,130 @@ git diff --check
 - Niezweryfikowane: standardowy `pnpm typecheck` serwera blokuje środowisko (rustc 1.85.1 vs wymagane 1.94.1) – bezpośredni tsc serwera/Runnera PASS wg t12; pełne bramki monorepo; test dwóch przeglądarek; §5 (karty zatwierdzeń) bez testu na żywo z modelem.
 - Konta Codex: a (limit do 00:04 4 XI, potem OK), c OK, d do sprawdzenia `codex login status`, b nie używać (brak gpt-6.1-sol).
 - Dalej: test na żywo kart zatwierdzeń i doboru wykonawcy (§5), potem §7 integracje/runtime'y, §12 personalizacja, §10 podłączanie własnego repo, §11 hosting.
+
+## Codex #13 — zgody człowieka i deterministyczny dobór wykonawcy (2026-11-04)
+
+### Rozpoznanie i zmiany
+
+- Paperclip ma odrębne approvals operacji zarządzanych (`/approvals`) i interakcje
+  wątku zadania. Rozmowa projektu jest trwałym wątkiem zadania. T10 już używało
+  `suggest_tasks` (akceptacja atomowo tworzy przypisane todo, pending/rejected nic
+  nie tworzą) oraz `request_confirmation` (decyzja bez nowego zadania), wyświetlanych
+  przez rzeczywisty resolver w `ProjectConversation`. Nie dodano drugiego silnika,
+  nowego rodzaju kart ani migracji. Approvals operacji zarządzanych nadal obowiązują.
+- Brak: propozycja mogła ustawić `continuationPolicy=none` lub kontynuację tylko
+  po akceptacji. Serwis `issue-thread-interactions` wymusza teraz `wake_assignee`
+  dla obu rodzajów nowych kart rozmowy. Istniejąca ścieżka decyzji zapisuje wynik
+  i kieruje wake do koordynatora po akceptacji **i odrzuceniu**. Nie zmieniano
+  polityki istniejących, już zapisanych propozycji `none`; przed odbiorem należy
+  użyć nowej karty. Nie zmieniano infrastruktury kolejki/wakeup.
+- Brak: UI dawało widzowi aktywne akcje, choć API odmawiało. Odpowiedź rozmowy
+  zawiera `canResolveApprovals`, obliczone przez istniejące `issue:mutate` dla
+  pełnego zakresu wątku/projektu. Resolver ma opcjonalne `readOnly`; rozmowa
+  wyłącza akcje także przy braku capability. Historia zostaje widoczna. API nadal
+  egzekwuje firmę/projekt, rolę viewer i human-only niezależnie od UI.
+- Brak: zwykłe potwierdzenie ignorowało opcjonalne `actionLabels` widoku rozmowy.
+  Karta przyjmuje teraz te etykiety, więc „Zatwierdź/Odrzuć” są widoczne i
+  obsługiwalne. Pozostałe widoki zachowują kanoniczne etykiety (w tym plan/review).
+  Test obejmuje błąd zapisu, zachowanie oczekującej karty i późniejsze odrzucenie.
+- Dobór: `POST /api/issues/:conversationId/executor-selection` przyjmuje
+  `{title, description?, role?, model?, preferredAgentId?}`. Uprawniony operator
+  albo przypisany koordynator z uwierzytelnionym runem otrzymuje
+  `{agentId, reason, commentId}`. Nowy serwis `project-executor-selection.ts`
+  korzysta z rzeczywistych agentów, runów i dostępu; roster uzupełniono o rolę.
+  Filtruje pauzę i inne niegotowe statusy, brak dostępu do projektu, niewłaściwy
+  runtime, pełne sloty, wyczerpany budżet i niespójną hierarchię. Dla każdego
+  kandydata stosuje istniejące `tasks:assign` z projektem/rodzicem/assignee.
+- Ranking jest jawny: zgodna wskazana rola 100, wspólne słowa zadania i
+  roli/kompetencji po 10, zgodny wskazany model 1; dalej najmniej aktywnych zadań,
+  runów i rosnące ID. Bez dopasowania działa deterministyczny fallback. Jawny
+  `preferredAgentId` ma pierwszeństwo wśród uprawnionych/dostępnych; niedostępny
+  daje 422 zamiast cichej podmiany. Brak kandydata również daje 422. Uzasadnienie
+  trafia jako komentarz autora operacji do rozmowy i ma zdarzenie aktywności.
+  Instrukcja koordynatora wymaga użycia endpointu przed delegacją/propozycją.
+- To rekomendacja, nie rezerwacja slotu ani nowy grant. Zwykłe tworzenie zadań,
+  akceptacja propozycji i dispatch zachowują swoją autoryzację, budżety i pauzę.
+  Istniejące drogi przypisania nie zostały zablokowane wymogiem receipt doboru.
+  Ranking nie ocenia semantycznie dowolnych umiejętności; cena, quota i logowanie
+  pozostają niezweryfikowane. Kwalifikacja runtime nadal ogranicza się do obecnej
+  bezpiecznej ścieżki codex_local/Linux; nie rozszerzono listy adapterów.
+- Uzupełniono `docs/cosgral/uprawnienia-agentow.md` i obie mapy projektów.
+  W §5 promptu dopisano zakres dowodów; pkt 3–4/10 pozostawiono bez przekreśleń
+  do żywego odbioru. Nie deklarowano ukończenia całego §5 ani §6.
+
+### Testy — dokładne polecenia i wyniki
+
+Wszystkie pnpm wykonano z `PATH=/home/box/tools/bin:$PATH` z katalogu repo.
+Fixture serwera używają własnych PostgreSQL i PAPERCLIP_HOME w `/tmp` (setup
+Vitest), test izolacji tworzy repo w `/tmp`. Bez loginów, modeli, sekretów,
+portu 3199 i flag omijających sandbox.
+
+```sh
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts --maxWorkers=1
+# RED: 3 FAIL / 5 PASS: brak endpointu (404), brak canResolveApprovals,
+# propozycja zachowuje none zamiast wake_assignee.
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx --maxWorkers=1
+# RED: aktywny przycisk u widza. Osobna regresja: brak przycisku Odrzuć,
+# bo RequestConfirmationCard ignoruje etykiety akcji widoku.
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/__tests__/issue-thread-interactions-service.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts --maxWorkers=1
+# GREEN: 4 pliki / 122 PASS, exit 0 (końcowe rozszerzenie także 122 PASS).
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/components/AttentionInteractionResolver.test.ts src/components/AttentionInteractionResolver.test.tsx src/components/IssueThreadInteractionCard.test.tsx --maxWorkers=1
+# GREEN: 4 pliki / 118 PASS, exit 0; sam ProjectConversation: 27 testów.
+# Wcześniejszy zestaw bez pełnego pliku karty: 3 pliki / 31 PASS.
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS, exit 0; ponowiona kompilacja także exit 0.
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/ui typecheck
+# PASS, exit 0, również po poprawce etykiety; generowanie katalogu + tsc -b.
+PATH=/home/box/tools/bin:$PATH pnpm check:token-gates
+# PASS, exit 0: 1443 pliki, wszystkie 4 bramki CLEAN; ponowienie także PASS.
+node scripts/check-maps.mjs
+# PASS, exit 0: 35 obszarów / 193 IDs; tylko kontrola strukturalna.
+git diff --check
+# PASS, exit 0.
+```
+
+- Regresje serwera: karta utworzona przez koordynatora z runem; odmowa agentowi
+  przez HTTP i serwis; odmowa widzowi i osobie bez dostępu; konkurencyjne decyzje
+  a/b tworzą dokładnie jedno zadanie; potwierdzenie nie znika od komentarza;
+  wake po obu decyzjach dla obu rodzajów kart. Dobór sprawdza rzeczywisty zapis
+  uzasadnienia, kontekst koordynatora, queued run zajmujący slot, pauzę, budżet,
+  prywatny projekt, obcego agenta firmy, jawny override i powtarzalny remis po ID.
+- W trakcie GREEN poprawiono fixture limitu współbieżności (domyślny limit jest
+  większy niż 1; fixture teraz jawnie ustawia 1), pełny zakres resource do
+  `canResolveApprovals` i fixture potwierdzenia (pierwotnie było kartą planu z
+  obowiązkowym powodem). Jedna obciążona próba UI miała dodatkowo timeout 5 s
+  istniejącego testu kosztu; końcowy zestaw z domyślnym timeoutem przeszedł.
+- Późne powtórzenie tsc serwera równolegle z innymi procesami zakończyło się
+  SIGKILL bez diagnostyki TypeScript (wcześniejsze dwie kompilacje exit 0).
+  Końcowe osobne ponowienie: **PASS, exit 0**, zapisane w `server-tsc-retry.log`.
+- Logi: `/tmp/cosgral13-{server-red,ui-red,ui-label-red,server-suite-final,ui-suite-final,server-tsc-final,server-tsc-retry,ui-tsc-final,tokens-final,maps}.log`.
+
+### Niezweryfikowane i następny krok nadzorcy
+
+- Bez commit/push, gałąź `codex/cosgral-workspace`. Zauważone w trakcie pracy
+  nieśledzone `scripts/cosgral-e2e-approval.mjs` i `.test.mjs` pozostawiono bez
+  zmian; nie powstały w tej implementacji i nie zaliczono ich jako testu t13.
+- PostgreSQL i HTTP są rzeczywiste, aktorzy syntetyczni; heartbeat.wakeup jest
+  spy. Test potwierdza skierowanie kontynuacji, nie wykonanie modelu ani pełną
+  trwałość wake po awarii procesu. Nie przeprowadzono żywego e2e ani dwóch
+  przeglądarek. Nie uruchamiano pełnych monorepo typecheck/test:run/build,
+  standardowego typecheck serwera budującego Rust ani browser suites. To nie
+  jest deklaracja gotowości PR ani rozwiązania wcześniejszej blokady MSRV.
+- Nadzorca: na koncie **a/c** uruchomić własną kontrolowaną instancję na bieżącym
+  kodzie, zaprosić drugiego uprawnionego użytkownika i widza. W rozmowie polecić
+  dobór zadania wymagającego zgody. Sprawdzić wywołanie executor-selection,
+  komentarz uzasadnienia, brak dziecka/runu przed decyzją i karty u obu osób.
+  Najpierw odrzucić: brak zadania, receipt i pojedynczy ograniczony run
+  koordynatora z odczytem odmowy. Potem nową propozycję zaakceptować: dokładnie
+  jedno dziecko, wake wykonawcy i koordynatora, wynik oraz brak retry/pętli.
+  Osobno sprawdzić request_confirmation accept/reject, odmowę widzowi/API,
+  izolację projektu/firmy oraz wybór po pauzie/zajętym slocie i brak cichej
+  podmiany jawnego wykonawcy. Dopiero po tym aktualizować przekreślenia §5.
+
+## Nadzorca – po Codex t13 (4 XI 2026, ~01:30 CET)
+
+- t13 (konto a) zakończony; dodatkowy przebieg t13 z rutyny na koncie c nie działał (brak procesu), proces a zatrzymany po `turn.completed`, serwer testowy 3197 zabity; przez cały czas jeden serwer (3199).
+- Konto **c ma limit do 02:50 (CET)** (`provider_quota`) – pierwszy e2e zatwierdzeń (`e2e-approval-c1.log`) padł właśnie przez to ("failed or excessive run"), nie przez kod. Konto a działa, d odpowiada (`codex login status` OK).
+- Żywe e2e: delegowanie PASS (c5, to samo drzewo); zatwierdzenia/dobór `node scripts/cosgral-e2e-approval.mjs --api http://127.0.0.1:3199 --codex-home ~/.codex-a --timeout-sec 850` → **PASS A, B-approve, C-reject** (`/workspace/logs/e2e-approval-a1.log`).
+- Testy: serwer `project-conversations` + `issue-thread-interactions` 126 PASS; UI `ProjectConversation.test.tsx` 27 PASS; `node --test scripts/cosgral-e2e-approval.test.mjs` 27 PASS; `check-maps` OK; `git diff --check` OK.
+- Przekreślono w `COSGRAL-PROMPT-POSTEP.md` §5 pkt 3, 4, 10.

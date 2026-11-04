@@ -25,6 +25,7 @@ export interface ProjectConversation {
   identifier: string | null;
   coordinatorAgentId: string | null;
   canManageCoordinator: boolean;
+  canResolveApprovals: boolean;
 }
 
 export const projectsApi = {

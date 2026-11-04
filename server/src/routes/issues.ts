@@ -1,3 +1,5 @@
+import { selectProjectExecutor } from "../services/project-executor-selection.js";
+import { isProjectConversation } from "../services/project-conversation-policy.js";
 import { notifyDeferredExecutionWork } from "../services/deferred-execution-notifications.js";
 import { notifyNativeRecoveryNotices } from "../services/native-recovery-notice-notifications.js";
 import { notifyNativeStatusReassessment } from "../services/native-status-reassessment-notifications.js";
@@ -17155,6 +17157,37 @@ export function issueRoutes(
     res.json(await conversationDecisionReceiptsService(db).list(issue.companyId, issue.id, {
       ...query.data, actor: req.actor, userId: req.actor.userId,
     }));
+  });
+
+  router.post("/issues/:id/executor-selection", validate(z.object({
+    title: z.string().trim().min(1).max(500), description: z.string().max(10000).optional(),
+    role: z.string().max(100).optional(), model: z.string().max(200).optional(),
+    preferredAgentId: z.string().uuid().optional(),
+  }).strict()), async (req, res) => {
+    const issue = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Issue not found");
+    if (!issue || !(await assertIssueReadAllowed(req, res, issue))) return;
+    assertCompanyAccess(req, issue.companyId);
+    if (!isProjectConversation(issue) || !issue.projectId) throw unprocessable("Executor selection requires a project conversation");
+    if (req.actor.type === "agent") {
+      if (req.actor.agentId !== issue.assigneeAgentId) throw forbidden("Only the assigned project coordinator can select executors");
+      if ((await assertAgentInteractionRunAttribution(req, res, issue)) === false) return;
+      if (!(await assertAgentIssueMutationAllowed(req, res, issue))) return;
+      if (await assertLowTrustControlPlaneDenied(req, res, issue.companyId, issue)) return;
+    } else { assertBoard(req); }
+    const actor = getActorInfo(req);
+    const selected = await selectProjectExecutor(db, { companyId: issue.companyId,
+      projectId: issue.projectId, coordinatorAgentId: issue.assigneeAgentId }, req.body, async agentId => {
+      const scope = { projectId: issue.projectId, parentIssueId: issue.id, assigneeAgentId: agentId, assigneeUserId: null };
+      return (await access.decide({ actor: req.actor, action: "tasks:assign",
+        resource: { type: "issue", companyId: issue.companyId, ...scope }, scope })).allowed;
+    });
+    const comment = await svc.addComment(issue.id, selected.reason, {
+      agentId: actor.agentId ?? undefined, userId: actor.actorType === "user" ? actor.actorId : undefined, runId: actor.runId,
+    });
+    await logActivity(db, { companyId: issue.companyId, actorType: actor.actorType, actorId: actor.actorId,
+      agentId: actor.agentId, runId: actor.runId, action: "issue.comment_added", entityType: "issue", entityId: issue.id,
+      details: { commentId: comment.id, selectedAgentId: selected.agentId, source: "executor_selection" } });
+    res.json({ ...selected, commentId: comment.id });
   });
 
   router.get("/issues/:id/interactions", async (req, res) => {

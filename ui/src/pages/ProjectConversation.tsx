@@ -334,7 +334,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
             </article>;
           })}
           {issueId && decisions.data?.filter(item => item.kind === "suggest_tasks" || item.kind === "request_confirmation").map(item =>
-            <AttentionInteractionResolver key={item.id} companyId={companyId} issueId={issueId} interactionId={item.id}
+            <AttentionInteractionResolver readOnly={conversation.data?.canResolveApprovals !== true} key={item.id} companyId={companyId} issueId={issueId} interactionId={item.id}
               currentUserId={user.id} agentMap={new Map(roster.map(agent => [agent.id, agent]))}
               presentation="coordinator-decision" actionLabels={{ accept: t("approval.accept"), reject: t("approval.reject") }} />)}
           {decisions.isError && <p role="alert" className="text-sm text-destructive">{t("approval.loadError")} <Button onClick={() => { void decisions.refetch(); }}>{t("retry")}</Button></p>}

@@ -3563,6 +3563,7 @@ export function issueThreadInteractionService(
         if (isProjectConversation(owner)) {
           // Shared decisions belong to authorized humans, never the proposing agent.
           data.resolverPolicy = "human_only";
+          data.continuationPolicy = "wake_assignee";
           data.addresseeAgentId = null;
           data.addresseeUserId = null;
           if (data.kind === "request_confirmation") {

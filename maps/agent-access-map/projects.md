@@ -233,9 +233,18 @@ no executable issue; atomic acceptance creates the assigned task once, rejection
 creates none. Existing governed-operation approvals remain mandatory. Roster
 context is a safe projection, not a grant of assignment/execution authority.
 Git metadata uses a read-only private shallow HEAD/index object pack, excluding
-unrelated branch objects and common configuration. No new agent endpoint or
-runtime bypass is introduced. See the targeted server/UI tests and permission
+unrelated branch objects and common configuration. Nie dodano obejścia polityki runtime. See the targeted server/UI tests and permission
 policy; live-model acceptance remains separate.
+
+T13: `POST /api/issues/{conversationId}/executor-selection` jest dostępny dla
+operatora lub przypisanego koordynatora z runem. Wymaga odczytu rozmowy i firmy,
+polityki mutacji agenta i `tasks:assign` dla konkretnego kandydata/projektu/rodzica.
+Filtruje pauzę, budżet, wolne sloty, zgodność runtime i dostęp do projektu;
+nie przyznaje uprawnień ani nie rezerwuje wykonania. Zapisuje uzasadnienie w
+komentarzu. Jawny wybór niedostępnego agenta daje 422 bez cichego fallbacku.
+`suggest_tasks` i `request_confirmation` wymuszają `wake_assignee` po obu
+rozstrzygnięciach; capability `canResolveApprovals` z polityki issue:mutate
+wyłącza akcje kart dla widza. Autoryzacja decyzji nadal działa w API.
 
 Coordinator RO worktrees prepare empty `.agents`/`.codex`/`.aws` mount targets
 before launch; `.git` keeps its private RO binding. Symlinks fail closed.

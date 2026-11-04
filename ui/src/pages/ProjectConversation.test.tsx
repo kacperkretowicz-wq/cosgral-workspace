@@ -52,7 +52,7 @@ beforeEach(async () => {
   mocks.liveRuns.mockResolvedValue([]);
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mocks.get.mockResolvedValue({ id: "p", name: "Uszko", companyId: "c" });
-  mocks.getConversation.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: null, canManageCoordinator: true });
+  mocks.getConversation.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: null, canManageCoordinator: true, canResolveApprovals: true });
   mocks.projects.mockResolvedValue([{ id: "p", name: "Uszko" }]);
   mocks.comments.mockResolvedValue([{ id: "comment", body: "Wspólna historia", authorUserId: "u", createdAt: new Date().toISOString() }]);
   mocks.tree.mockResolvedValue({ activePauseHold: null }); mocks.release.mockResolvedValue({});
@@ -90,6 +90,31 @@ describe("project conversation", () => {
     expect(Array.from(host.querySelectorAll("button")).some(button => button.textContent === "Zatwierdź")).toBe(false);
   });
 
+  it("shows decision failures, preserves the pending card and submits rejection", async () => {
+    const decision = { ...pendingRequestConfirmationInteraction, issueId: "chat", companyId: "c", payload: { ...pendingRequestConfirmationInteraction.payload, prompt: "Publikować?", target: undefined, rejectRequiresReason: false, acceptLabel: "Zatwierdź", rejectLabel: "Odrzuć" } };
+    mocks.decisions.mockResolvedValue([decision]);
+    mocks.accept.mockRejectedValueOnce(new Error("Brak połączenia z serwerem"));
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.interactions("chat") }); }); await settle();
+    await act(async () => click("Zatwierdź")); await settle();
+    expect(host.textContent).toContain("Brak połączenia z serwerem");
+    expect(host.textContent).toContain("Publikować?");
+    mocks.reject.mockImplementation(async () => { const receipt = { ...decision, status: "rejected" }; mocks.decisions.mockResolvedValue([receipt]); return receipt; });
+    await act(async () => click("Odrzuć")); await settle();
+    expect(mocks.reject).toHaveBeenCalledWith("chat", decision.id, undefined);
+    expect([...host.querySelectorAll("button")].some(b => b.textContent === "Zatwierdź")).toBe(false);
+  });
+
+  it("keeps approval cards read-only for a viewer", async () => {
+    mocks.getConversation.mockResolvedValue({ issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: false, canResolveApprovals: false });
+    mocks.decisions.mockResolvedValue([{ ...pendingRequestConfirmationInteraction, issueId: "chat", companyId: "c", payload: { ...pendingRequestConfirmationInteraction.payload, prompt: "Decyzja człowieka", target: undefined, rejectRequiresReason: false, acceptLabel: "Zatwierdź", rejectLabel: "Odrzuć" } }]);
+    await act(async () => { await client.invalidateQueries(); }); await settle();
+    expect(host.textContent).toContain("Decyzja człowieka");
+    const actions = [...host.querySelectorAll("button")].filter(b => ["Zatwierdź", "Odrzuć"].includes(b.textContent ?? ""));
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.every(b => b.disabled)).toBe(true);
+    expect(mocks.accept).not.toHaveBeenCalled(); expect(mocks.reject).not.toHaveBeenCalled();
+  });
+
   it("surfaces approval load failures and lets the user retry", async () => {
     mocks.decisions.mockRejectedValue(new Error("unavailable"));
     await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.interactions("chat") }); }); await settle();
@@ -111,7 +136,7 @@ describe("project conversation", () => {
   });
   it("shows coordinator work only for an active run in this conversation", async () => {
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "running" }]);
-    client.setQueryData(["projects", "conversation", "c", "p"], { issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true });
+    client.setQueryData(["projects", "conversation", "c", "p"], { issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true, canResolveApprovals: true });
     await settle();
     expect(host.textContent).not.toContain("Ala pracuje nad tą rozmową");
     mocks.liveRuns.mockResolvedValue([{ id: "run", agentId: "a", status: "running" }]);
@@ -136,7 +161,7 @@ describe("project conversation", () => {
   });
   it("selects and persists the coordinator without sending a message", async () => {
     mocks.agents.mockResolvedValue([{ id: "a", name: "Ala", status: "idle" }]);
-    mocks.setCoordinator.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: "a", canManageCoordinator: true });
+    mocks.setCoordinator.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: "a", canManageCoordinator: true, canResolveApprovals: true });
     await act(async () => { await client.invalidateQueries({ queryKey: ["agents", "c"] }); }); await settle();
     expect(host.textContent).toContain("Wybierz koordynatora");
     const select = host.querySelector<HTMLSelectElement>('select[aria-label="Koordynator projektu"]')!;
@@ -161,7 +186,7 @@ describe("project conversation", () => {
   it("selects the first coordinator through the same endpoint before a conversation exists", async () => {
     client.setQueryData(["projects", "conversation", "c", "p"], null);
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
-    mocks.setCoordinator.mockResolvedValue({ issueId: "new-chat", identifier: "COS-2", coordinatorAgentId: "a", canManageCoordinator: true });
+    mocks.setCoordinator.mockResolvedValue({ issueId: "new-chat", identifier: "COS-2", coordinatorAgentId: "a", canManageCoordinator: true, canResolveApprovals: true });
     await settle(); await type("Szkic przed wyborem");
     const select = host.querySelector<HTMLSelectElement>("select")!;
     await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
@@ -186,7 +211,7 @@ describe("project conversation", () => {
     expect(mocks.send).not.toHaveBeenCalled();
   });
   it("refreshes the persisted coordinator on company activity", async () => {
-    mocks.getConversation.mockResolvedValue({ issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true });
+    mocks.getConversation.mockResolvedValue({ issueId: "chat", coordinatorAgentId: "a", canManageCoordinator: true, canResolveApprovals: true });
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
     await act(async () => mocks.live?.({ companyId: "c", type: "activity.logged", payload: { action: "project.conversation_coordinator_changed", entityId: "chat" } })); await settle();
     expect(host.querySelector("textarea")?.placeholder).toBe("Wiadomość do Ala…");
