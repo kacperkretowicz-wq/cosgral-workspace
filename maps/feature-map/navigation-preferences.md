@@ -144,3 +144,12 @@ remount persistence, account separation, unknown routes and cross-tab updates.
 Manual: pin with mouse and keyboard, reload, follow a pinned link, unpin from both
 locations, and check the mobile drawer. Local-trusted checks do not prove two-user
 authenticated browser isolation.
+
+T17 — sekcja „Personalizacja” w ustawieniach profilu ustawia motyw
+jasny/ciemny/systemowy i cztery akcenty z tokenów CSS. Rozmowa projektu zapisuje
+szerokości obu paneli, otwarcie szczegółów i widok Chat/Tabela/Workflow.
+Separatory obsługują przeciąganie, strzałki oraz Home/End. Dane są przypisane
+użytkownikowi na serwerze; walidowana kopia localStorage jest awaryjna.
+Testy: PersonalizationPanel/PersonalizationResizeHandle, workspace-preferences;
+`scripts/cosgral-e2e-personalization.mjs` sprawdza prawdziwe HTTP i bazę na 3197,
+bez modeli. Instrukcje globalne/projektowe i własne role pozostają otwarte.

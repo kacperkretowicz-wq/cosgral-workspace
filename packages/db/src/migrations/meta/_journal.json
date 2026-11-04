@@ -2955,6 +2955,13 @@
       "when": 1793716590781,
       "tag": "0423_complete_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 424,
+      "version": "7",
+      "when": 1793757346900,
+      "tag": "0424_left_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

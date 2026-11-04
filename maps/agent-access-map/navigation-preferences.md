@@ -185,3 +185,12 @@ Evidence: `source-only` — reviewed at `9ef434fe79c57d976b8b03b14c5242db270b832
 Verification: `not-run` — Drive palette and shortcut entry points in the browser, preserve filter/query intent into full search, and check denied private/foreign results. Separately call the read/search path with the actual permitted agent and reject unsupported human-only filters; a board palette result is not agent authorization evidence.
 
 Gaps: The map records transient palette state, not a promise that its open state or draft input survives reload. Every shell, keyboard layout, file-viewer gate, and creation action is not qualified by one palette test.
+
+T17 — `navigation-preferences/preferences`: board-only
+`GET /api/workspace-preferences/me/personalization` oraz
+`PUT /api/companies/{companyId}/workspace-preferences/me/personalization`.
+Tożsamość pochodzi wyłącznie z aktora; żądanie z userId/nieznanym polem jest
+odrzucane. Zapis wymaga aktywnego dostępu do firmy (kontekst audytu).
+Widz może zmienić własną prezentację; token agenta i anonim nie mają dostępu.
+Preferencje nie przyznają uprawnień wykonawczych. Baza/test HTTP obejmuje
+izolację użytkowników, walidację i odmowę dla obcej firmy.

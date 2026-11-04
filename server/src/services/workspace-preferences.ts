@@ -1,3 +1,4 @@
+import { personalizationSchema, type Personalization } from "@paperclipai/shared/personalization";
 import { eq } from "drizzle-orm";
 import { userWorkspacePreferences, type Db } from "@paperclipai/db";
 import type { WorkspacePreference } from "@paperclipai/shared";
@@ -17,6 +18,25 @@ export function workspacePreferenceService(db: Db) {
   }
   return {
     get,
+    async getPersonalization(userId: string): Promise<Personalization> {
+      const row = await db.query.userWorkspacePreferences.findFirst({ where: eq(userWorkspacePreferences.userId, userId) });
+      return personalizationSchema.parse(row?.personalization ?? {});
+    },
+    async setPersonalization(companyId: string, userId: string, value: Personalization) {
+      const personalization = personalizationSchema.parse(value);
+      const result = await db.transaction(async tx => {
+        await tx.insert(userWorkspacePreferences).values({ userId, personalization })
+          .onConflictDoUpdate({ target: userWorkspacePreferences.userId, set: { personalization, updatedAt: new Date() } });
+        const { publication } = await persistActivity(tx as unknown as Db, {
+          companyId, actorType: "user", actorId: userId,
+          action: "personalization.updated", entityType: "user_preference", entityId: userId,
+        });
+        return { publication };
+      });
+      try { publishActivity(result.publication); }
+      catch (error) { logger.warn({ err: error }, "Could not publish personalization update"); }
+      return personalization;
+    },
     async set(companyId: string, userId: string, enabled: boolean): Promise<WorkspacePreference> {
       const result = await db.transaction(async tx => {
         const txDb = tx as unknown as Db;

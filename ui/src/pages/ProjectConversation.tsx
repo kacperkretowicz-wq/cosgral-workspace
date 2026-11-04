@@ -1,3 +1,5 @@
+import { usePersonalization } from "../hooks/usePersonalization";
+import { PersonalizationResizeHandle } from "../components/PersonalizationResizeHandle";
 import { classifyConversationEntry, type ConversationEntry, type ConversationFilter } from "@paperclipai/shared/project-conversation-history";
 import { AttentionInteractionResolver } from "../components/AttentionInteractionResolver";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -87,12 +89,8 @@ export function ProjectConversation() {
   const { companyPrefix, projectId } = useParams<{ companyPrefix: string; projectId: string }>();
   const { companies, setSelectedCompanyId } = useCompany();
   const { t } = useCosgralTranslation();
-  const { setTheme } = useTheme();
   const company = companies.find(company => company.issuePrefix.toLowerCase() === companyPrefix?.toLowerCase());
   useEffect(() => { if (company) setSelectedCompanyId(company.id); }, [company?.id, setSelectedCompanyId]);
-  useEffect(() => {
-    try { if (!localStorage.getItem("paperclip.theme")) setTheme("dark"); } catch { /* Restricted storage retains the current theme. */ }
-  }, [setTheme]);
   if (!company || !projectId) return <p role="alert" className="p-4">{t("loadError")}</p>;
   return <ConversationData key={`${company.id}:${projectId}`} companyId={company.id} projectId={projectId} />;
 }
@@ -108,17 +106,24 @@ function ConversationData({ companyId, projectId }: { companyId: string; project
 function ConversationContent({ companyId, projectId, user }: { companyId: string; projectId: string; user: { id: string; name?: string | null; image?: string | null } }) {
   const { t } = useCosgralTranslation();
   const client = useQueryClient();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
+  const personalization = usePersonalization(user.id, companyId);
+  const savedViewKey = `${companyId}:${projectId}`;
   const viewKey = `cosgral.view:${user.id}:${companyId}:${projectId}`;
   const [view, setView] = useState<ProjectWorkView>(() => readProjectWorkView(viewKey));
+  useEffect(() => {
+    if (personalization.loaded && personalization.value.views[savedViewKey]) setView(personalization.value.views[savedViewKey]);
+  }, [personalization.loaded, personalization.value.views[savedViewKey]]);
   const [chatTask, setChatTask] = useState<Issue | null>(null);
   function changeView(next: ProjectWorkView) {
     setView(next);
+    personalization.update({ views: Object.fromEntries([...Object.entries(personalization.value.views).filter(([key]) => key !== savedViewKey).slice(-199), [savedViewKey, next]]) });
     try { localStorage.setItem(viewKey, next); } catch { /* View still works without storage. */ }
   }
   const [messageFilter, setMessageFilter] = useState<ConversationFilter>("all");
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsOpen = personalization.value.detailsOpen;
+  const setDetailsOpen = (detailsOpen: boolean) => personalization.update({ detailsOpen });
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
@@ -323,7 +328,8 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   if ((project.isError && !project.data) || (conversation.isError && conversation.data === undefined)) return <div className="p-4" role="alert">{t("loadError")} <Button onClick={() => { void project.refetch(); void conversation.refetch(); }}>{t("retry")}</Button></div>;
   return <div ref={viewportRef} data-task-chat-shell className="cosgral-conversation flex h-dvh min-h-0 overflow-hidden bg-background text-foreground">
     <a href="#cosgral-messages" className="sr-only focus:not-sr-only">{t("conversation")}</a>
-    <aside className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar md:block">{sidebar}</aside>
+    <aside style={{ "--cosgral-panel-width": `${personalization.value.sidebarWidth}px` } as CSSProperties} className="cosgral-personal-panel hidden shrink-0 overflow-y-auto border-r bg-sidebar md:block">{sidebar}</aside>
+    <PersonalizationResizeHandle label="Szerokość nawigacji" value={personalization.value.sidebarWidth} min={208} max={420} onChange={sidebarWidth => personalization.update({ sidebarWidth })} />
     <Drawer open={navigationOpen} onOpenChange={setNavigationOpen} side="left" title={t("projects")}>{sidebar}</Drawer>
     <main className="flex min-w-0 flex-1 flex-col">
       <header className="flex items-center gap-2 border-b px-4 py-3">
@@ -331,9 +337,10 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
         <div className="min-w-0 flex-1"><h1 className="truncate text-base font-semibold">{project.data?.name}</h1><p className="text-xs text-muted-foreground">{t("conversation")}</p>
           <p className="truncate text-xs text-muted-foreground" data-testid="conversation-presence-summary">{presence.connected ? t("presentSummary", { names: presence.users.map(person => profiles.get(person.userId)?.label ?? (person.userId === user.id ? user.name || t("user") : t("user"))).join(", ") }) : t("presenceDisconnected")}</p></div>
         {issueId && <Link to={`/issues/${conversation.data?.identifier ?? issueId}`} aria-label={t("advanced")} className="text-xs text-muted-foreground underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"><Settings2 className="size-4 sm:hidden" /><span className="hidden sm:inline">{t("advanced")}</span></Link>}
-        <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("theme")} onClick={toggleTheme}>{theme === "dark" ? <Sun /> : <Moon />}</Button>
-        <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("details")} aria-expanded={detailsOpen} onClick={() => setDetailsOpen(value => !value)}><PanelRight /></Button>
+        <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("theme")} onClick={() => personalization.update({ theme: theme === "dark" ? "light" : "dark" })}>{theme === "dark" ? <Sun /> : <Moon />}</Button>
+        <Button variant="ghost" size="icon" className="text-foreground" aria-label={t("details")} aria-expanded={detailsOpen} onClick={() => setDetailsOpen(!detailsOpen)}><PanelRight /></Button>
       </header>
+      {personalization.error && <p role="alert" className="px-4 py-2 text-sm text-destructive">Nie udało się zsynchronizować personalizacji. Zmiany pozostają zapisane lokalnie.</p>}
       <nav aria-label={t("work.views")} className="flex gap-2 border-b px-4 py-2">
         {(["chat", "table", "workflow"] as const).map(item => <Button key={item} variant={view === item ? "secondary" : "ghost"} aria-pressed={view === item} onClick={() => changeView(item)}>{t(`work.${item}`)}</Button>)}
       </nav>
@@ -418,7 +425,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
         </div>
       </footer>
     </main>
-    {detailsOpen && !mobile && <aside aria-label={t("details")} className="w-72 shrink-0 overflow-y-auto border-l bg-sidebar">{details}</aside>}
+    {detailsOpen && !mobile && <><PersonalizationResizeHandle label="Szerokość szczegółów rozmowy" value={personalization.value.conversationWidth} min={240} max={520} reverse onChange={conversationWidth => personalization.update({ conversationWidth })} /><aside aria-label={t("details")} style={{ "--cosgral-panel-width": `${personalization.value.conversationWidth}px` } as CSSProperties} className="cosgral-personal-panel shrink-0 overflow-y-auto border-l bg-sidebar">{details}</aside></>}
     <Drawer open={detailsOpen && mobile} onOpenChange={setDetailsOpen} side="right" title={t("details")}>{details}</Drawer>
   </div>;
 }

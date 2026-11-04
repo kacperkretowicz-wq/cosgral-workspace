@@ -1,3 +1,5 @@
+import { defaultPersonalization } from "@paperclipai/shared/personalization";
+import { ThemeProvider } from "../context/ThemeContext";
 // @vitest-environment jsdom
 
 import { act } from "react";
@@ -23,6 +25,10 @@ const mockAssetsApi = vi.hoisted(() => ({
 
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 
+vi.mock("../api/workspacePreferences", () => ({ workspacePreferencesApi: {
+  getPersonalization: vi.fn(async () => defaultPersonalization()),
+  updatePersonalization: vi.fn(async (_company: string, value: unknown) => value),
+} }));
 vi.mock("@/api/auth", () => ({
   authApi: mockAuthApi,
 }));
@@ -92,7 +98,7 @@ describe("ProfileSettings", () => {
     const root = createRoot(container);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () => {
-      root.render(<QueryClientProvider client={queryClient}><ProfileSettings /></QueryClientProvider>);
+      root.render(<QueryClientProvider client={queryClient}><ThemeProvider><ProfileSettings /></ThemeProvider></QueryClientProvider>);
     });
     await flushReact();
     expect(container.textContent).toContain("Jane Example");
@@ -110,7 +116,7 @@ describe("ProfileSettings", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient}>
-          <ProfileSettings />
+          <ThemeProvider><ProfileSettings /></ThemeProvider>
         </QueryClientProvider>,
       );
     });
@@ -165,7 +171,7 @@ describe("ProfileSettings", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient}>
-          <ProfileSettings />
+          <ThemeProvider><ProfileSettings /></ThemeProvider>
         </QueryClientProvider>,
       );
     });

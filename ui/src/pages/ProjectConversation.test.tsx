@@ -1,3 +1,4 @@
+import { defaultPersonalization } from "@paperclipai/shared/personalization";
 // @vitest-environment jsdom
 import { pendingSuggestedTasksInteraction, pendingRequestConfirmationInteraction } from "../fixtures/issueThreadInteractionFixtures";
 import { act, type ReactNode } from "react";
@@ -20,6 +21,10 @@ vi.mock("../api/issues", () => ({ issuesApi: { projectHistory: mocks.projectHist
 vi.mock("../api/agents", () => ({ agentsApi: { list: mocks.agents } }));
 vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForIssue: mocks.liveRuns } }));
 vi.mock("../api/access", () => ({ accessApi: { listUserDirectory: mocks.directory } }));
+vi.mock("../api/workspacePreferences", () => ({ workspacePreferencesApi: {
+  getPersonalization: vi.fn(async () => defaultPersonalization()),
+  updatePersonalization: vi.fn(async (_company: string, value: unknown) => value),
+} }));
 vi.mock("../api/auth", () => ({ authApi: { getSession: mocks.session } }));
 vi.mock("@/lib/router", () => ({ useParams: () => ({ companyPrefix: "COS", projectId: "p" }), Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => <a href={to} {...props}>{children}</a> }));
 vi.mock("../context/LiveUpdatesProvider", () => ({ useTaskRunLiveUpdates: () => false, useCompanyLiveEvent: (handler: typeof mocks.live) => { mocks.live = handler; } }));
@@ -164,7 +169,7 @@ describe("project conversation", () => {
     expect(host.querySelector('[data-testid="conversation-presence-summary"]')?.textContent).toContain("Obecni: Anna, Bogdan");
     expect(host.querySelector('[data-testid="conversation-typing"]')?.textContent).toContain("Bogdan pisze…");
     expect(host.querySelector('[data-testid="conversation-typing"]')?.textContent).not.toContain("Anna pisze…");
-    await act(async () => click("Szczegóły projektu"));
+    await act(async () => click("Szczegóły projektu")); await settle();
     expect(host.querySelector('[data-testid="conversation-presence"]')?.textContent).toContain("Bogdan");
     expect(host.querySelector('[data-testid="conversation-presence"]')?.textContent).toContain("Anna");
     expect(host.textContent).not.toContain("Obecność niedostępna");
@@ -257,7 +262,7 @@ describe("project conversation", () => {
     expect(host.textContent).toContain("Anna");
     expect(host.querySelector('[aria-label="Szczegóły projektu"]')?.getAttribute("aria-expanded")).toBe("false");
     expect(host.textContent).not.toContain("Plan i delegowanie");
-    await act(async () => click("Szczegóły projektu"));
+    await act(async () => click("Szczegóły projektu")); await settle();
     expect(document.body.textContent).toContain("Obecni w rozmowie");
   });
   it("sends a comment, keeps the composer pending, and clears only after confirmation", async () => {

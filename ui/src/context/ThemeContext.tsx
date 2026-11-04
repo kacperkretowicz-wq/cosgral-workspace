@@ -12,7 +12,7 @@ type Theme = "light" | "dark";
 
 interface ThemeContextValue {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme | "system") => void;
   toggleTheme: () => void;
 }
 
@@ -55,9 +55,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // follow OS-level changes mid-session without being persisted.
   const [hasExplicitChoice, setHasExplicitChoice] = useState<boolean>(() => hasStoredTheme());
 
-  const setTheme = useCallback((nextTheme: Theme) => {
-    setHasExplicitChoice(true);
-    setThemeState(nextTheme);
+  const setTheme = useCallback((nextTheme: Theme | "system") => {
+    setHasExplicitChoice(nextTheme !== "system");
+    if (nextTheme === "system") {
+      try { localStorage.removeItem(THEME_STORAGE_KEY); } catch { /* Restricted storage. */ }
+      setThemeState(typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } else setThemeState(nextTheme);
   }, []);
 
   const toggleTheme = useCallback(() => {

@@ -1,3 +1,4 @@
+import { PersonalizationPanel } from "../components/PersonalizationPanel";
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, LoaderCircle, Save, Trash2, UserRoundPen } from "lucide-react";
@@ -270,6 +271,7 @@ export function ProfileSettings() {
           </div>
         </form>
 
+        {selectedCompanyId && <PersonalizationPanel userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
         <InboxAgentPolicyControl companyId={selectedCompanyId} />
       </section>
     </div>

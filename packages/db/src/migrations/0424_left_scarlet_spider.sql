@@ -1,0 +1,1 @@
+ALTER TABLE "user_workspace_preferences" ADD COLUMN "personalization" jsonb DEFAULT '{}'::jsonb NOT NULL;

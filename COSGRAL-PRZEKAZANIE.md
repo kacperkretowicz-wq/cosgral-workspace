@@ -1651,3 +1651,119 @@ git diff --check
 - E2E: agent-config (bez modelu, własny fixture na 3197) PASS; na 3199 równolegle (jedna instancja serwera): approval(a), parallel(a), messages(d), delegowanie(d) – wszystkie PASS (`/workspace/logs/e2e-*-t16.log`).
 - Przekreślono w §6: szablon, liczba zadań, ostatnie błędy, stan. Otwarte: pełny import profili Runnera, per-agent MCP/CLI/skille/pluginy, upload awatara, żywe potwierdzenie zmiany modelu.
 - Następne: §12 personalizacja, §7 integracje, §4 awatary/kursory, §10 pamięć repo, §11 hosting.
+
+## Codex #17 — panel personalizacji i układ rozmowy (2026-11-04)
+
+### Audyt i wykonany zakres (priorytet a)
+
+- Odczytano #9, #16, końcowe wpisy nadzorcy i §12. Istnieją: jasny/ciemny
+  ThemeContext ze śledzeniem systemu przy braku jawnego wyboru, lokalny widok
+  Chat/Tabela/Workflow per osoba/firma/projekt, formularz nazwy/appearance/roli
+  agenta, zarządzane instrukcje agenta i promptTemplate. Nie powielano tych
+  formularzy. Paperclip ma też własne resizery sidebar/properties; nowy separator
+  dotyczy dwóch paneli samodzielnego widoku rozmowy COSGRAL.
+- Dodano prostą sekcję „Personalizacja” w ustawieniach profilu: motyw
+  jasny/ciemny/systemowy i akcent COSGRAL/fiolet/ocean/bursztyn. Wartości palety
+  są wyłącznie w `ui/src/index.css`; nie rozszerzano allowlisty token gates.
+  Istniejący ThemeContext dostał jawny wybór systemowy. Zapisany wygląd jest
+  stosowany także przez zwykły Layout, a nie tylko przez ekran ustawień.
+- Rozmowa zapisuje szerokość nawigacji (208–420), panelu szczegółów (240–520),
+  otwarcie szczegółów i do 200 widoków firma:projekt. Separatory mają semantykę
+  separatora, etykiety, przeciąganie z pointer capture, strzałki, Home/End.
+  Podgląd szerokości podczas ruchu jest lokalny; zapis następuje po puszczeniu.
+  Na mobile zostają istniejące szuflady. Widok z #9 nadal służy jako lokalny
+  punkt startowy, a zapisany widok serwerowy ma pierwszeństwo po odczycie.
+- Rozszerzono istniejącą tabelę `user_workspace_preferences` o JSONB
+  `personalization`. Migracja wygenerowana przez `pnpm db:generate`:
+  `0424_left_scarlet_spider.sql`; automatyczne prune usunęło snapshot 0419,
+  pozostawiając pięć najnowszych. Nie zmieniano istniejącej flagi workspace.
+- Dodano ścisły kontrakt `packages/shared/src/personalization.ts`, metody API
+  i dokumentację OpenAPI. GET `/api/workspace-preferences/me/personalization`
+  oraz PUT `/api/companies/:companyId/workspace-preferences/me/personalization`
+  są board-only, private/no-store i używają wyłącznie userId aktora.
+  Zapis wymaga dostępu do firmy jako kontekstu audytu. Nieznane pola, obcy
+  userId, nieprawidłowe enumy/szerokości/widoki są odrzucane. Zapis i audyt
+  są jedną transakcją; awaria publikacji live nie cofa zapisu.
+- Walidowana kopia localStorage jest rozdzielona per użytkownik; awaria HTTP
+  ma widoczny komunikat i zachowuje kopię lokalną. Kolejka zapisów w jednej
+  aplikacji jest serializowana per konto, cache też ma klucz konta.
+  **Widz może zmieniać własną prezentację**, zgodnie z istniejącą regułą repo.
+  To nie jest zgoda na edycję instrukcji ani konfiguracji wykonawczej.
+- Zaktualizowano mapy navigation-preferences. Bez commit/push, bez zmian
+  `COSGRAL-PROMPT-POSTEP.md`, gałąź `codex/cosgral-workspace`.
+
+### Testy i rzeczywiste wyniki
+
+```sh
+PATH=/home/box/tools/bin:$PATH pnpm exec vitest run \
+  server/src/__tests__/workspace-preferences.test.ts \
+  server/src/__tests__/workspace-preferences-routes.test.ts \
+  ui/src/components/PersonalizationPanel.test.tsx \
+  ui/src/components/PersonalizationResizeHandle.test.tsx \
+  ui/src/context/ThemeContext.test.tsx \
+  ui/src/pages/ProjectConversation.test.tsx \
+  ui/src/pages/ProfileSettings.test.tsx \
+  ui/src/components/Layout.test.tsx
+# PASS: 8 plików / 88 testów, exit 0.
+
+PATH=/home/box/tools/bin:$PATH node scripts/cosgral-e2e-personalization.mjs
+# PASS: prawdziwe HTTP i PostgreSQL, własny fixture tylko na 3197.
+node --test scripts/cosgral-e2e-personalization.test.mjs
+# PASS: 2 testy, walidacja wyniku i ograniczenie adresu/portu.
+
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/server exec tsc --noEmit
+PATH=/home/box/tools/bin:$PATH pnpm --filter @paperclipai/ui typecheck
+# Oba PASS, exit 0; UI generuje katalog Storybook i uruchamia tsc -b.
+pnpm check:token-gates
+# PASS: cztery bramki CLEAN, cliplab w synchronizacji.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 IDs; kontrola strukturalna.
+pnpm --filter @paperclipai/db check:migrations
+# PASS; historyczne pozycje objęte istniejącym baseline.
+git diff --check
+# PASS.
+```
+
+- RED serwera: nowy test zapisu personalizacji zwrócił 404 przed dodaniem
+  endpointu; GREEN po implementacji. Początkowy RED UI był brakiem modułu
+  panelu. Kolejne rzeczywiste FAIL wykryły brak oczekiwania na powiadomienie
+  cache React Query w testach wyboru akcentu/otwarcia szczegółów. Dodano
+  oczekiwanie na obserwowalny stan i mock nowego API do starszych testów
+  strony; końcowe 88 PASS obejmuje wszystkie te regresje.
+- Testy obejmują prawdziwą bazę, izolację osób, odmowę anonimowi/agentowi,
+  rollback zapisu bez audytu, walidację, lokalny fallback i zmianę konta,
+  sterowanie klawiaturą i pojedynczy zapis po przeciąganiu separatora.
+- E2E ma osobny `server/scripts/cosgral-personalization-fixture.ts`.
+  Brak logowania i modeli. Baza i PAPERCLIP_HOME są w /tmp, proces kończony
+  w finally. Po przebiegu niezależny bind potwierdził wolny port 3197.
+  Nie uruchamiano ani nie zatrzymywano instancji nadzorcy na 3199.
+
+### Otwarte / niezweryfikowane / następny krok
+
+- **Priorytet b nie został wykonany.** Nie dodano globalnych instrukcji
+  użytkownika/firmy ani nowego projektowego pola instrukcji i nie wykazano ich
+  obecności w kontekście następnego runu. Istniejące instrukcje agenta nie są
+  dowodem automatycznego dziedziczenia instrukcji użytkownika/projektu.
+  Przeszukanie projektu i task-context nie znalazło osobnego kontraktu tego
+  dziedziczenia; potrzebny dalszy audyt istniejącej pamięci/plików projektu.
+  E2E t17 **nie sprawdza promptu ani odmowy edycji instrukcji widzowi** —
+  sprawdza wyłącznie personalizację prezentacji. Nie traktować PASS jako
+  ukończenia całego §12.
+- Następna tura: odrębny kontrakt instrukcji z limitem długości, obsługą
+  sekretów i ACL (viewer nie edytuje); wpiąć przez istniejący moduł
+  `heartbeat/task-context.ts` do wszystkich wariantów task markdown,
+  bez zmiany aktywnego runu i bez nadawania uprawnień. Udowodnić zapis →
+  kolejny rzeczywisty kontekst kontrolowanego adaptera, bez modelu, także
+  firmę/projekt/osobę i odmowę widzowi. Rozszerzyć obecny fixture/skrypt 3197.
+- **Priorytet c otwarty.** `AGENT_ROLES` to zamknięty enum używany przez
+  walidatory/UI/szablony. Własna etykieta `title` i opis/specjalizacja już
+  istnieją; nie zastępowano nimi po cichu nowego katalogu własnych ról.
+  Taki katalog wymaga osobnego projektu kontraktu, migracji i sprawdzenia
+  wszystkich konsumentów, w tym uprawnień związanych z rolami.
+- Szerokości t17 dotyczą paneli rozmowy COSGRAL; szerokość zwykłego sidebaru
+  Paperclip zachowuje istniejący mechanizm localStorage. Równoczesna edycja
+  preferencji w kilku kartach ma semantykę ostatniego zapisu, bez wersjonowania.
+- Brak wizualnego odbioru przeglądarki/light/dark/mobile i oceny kontrastu
+  palet na wszystkich powierzchniach. Nie uruchamiano pełnego monorepo
+  typecheck/test:run/build ani browser suites (zakres tej tury był wąski).
+  Nie deklarujemy gotowości PR ani pełnego domknięcia §12.

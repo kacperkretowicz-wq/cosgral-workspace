@@ -38,6 +38,36 @@ if (!support.supported) console.warn(`Workspace preference database tests unavai
   }
   const url = (companyId: string) => `/api/companies/${companyId}/workspace-preferences/me`;
 
+  it("persists validated personalization per user without altering workspace mode", async () => {
+    const companyId = await company(), userId = randomUUID(), other = randomUUID();
+    const path = `/api/companies/${companyId}/workspace-preferences/me/personalization`;
+    const prefs = { theme: "system", accent: "violet", sidebarWidth: 280, conversationWidth: 360, detailsOpen: true, views: { [`${companyId}:project`]: "table" } };
+    await request(app(actor(companyId, userId))).put(path).send(prefs).expect(200);
+    const saved = await request(app(actor(companyId, userId))).get("/api/workspace-preferences/me/personalization").expect(200);
+    expect(saved.body).toMatchObject(prefs);
+    const isolated = await request(app(actor(companyId, other))).get("/api/workspace-preferences/me/personalization").expect(200);
+    expect(isolated.body.accent).toBe("cosgral");
+    expect(isolated.body.views).toEqual({});
+    expect((await workspacePreferenceService(db).get(userId)).coordinatorWorkspaceEnabled).toBe(false);
+    for (const invalid of [{ ...prefs, sidebarWidth: 0 }, { ...prefs, accent: "red" }, { ...prefs, userId: other }, { ...prefs, views: { x: "bad" } }]) {
+      await request(app(actor(companyId, userId))).put(path).send(invalid).expect(400);
+    }
+    await request(app(actor(companyId, userId))).put(path.replace(companyId, randomUUID())).send(prefs).expect(403);
+  });
+
+  it("denies agent and anonymous personalization access and rolls back an unauditable save", async () => {
+    const companyId = await company(), userId = randomUUID();
+    const path = `/api/companies/${companyId}/workspace-preferences/me/personalization`;
+    for (const identity of [{ type: "none", source: "none" }, { type: "agent", source: "agent_key", companyId, agentId: randomUUID() }] as Express.Request["actor"][]) {
+      await request(app(identity)).get("/api/workspace-preferences/me/personalization").expect(403);
+      await request(app(identity)).put(path).send({ accent: "violet" }).expect(403);
+    }
+    const svc = workspacePreferenceService(db);
+    const original = await svc.getPersonalization(userId);
+    await expect(svc.setPersonalization(randomUUID(), userId, { ...original, accent: "violet" })).rejects.toThrow();
+    expect(await svc.getPersonalization(userId)).toEqual(original);
+  });
+
   it("defaults to classic without creating a row", async () => {
     const userId = randomUUID();
     expect(await workspacePreferenceService(db).get(userId)).toEqual({ userId, coordinatorWorkspaceEnabled: false, updatedAt: null });

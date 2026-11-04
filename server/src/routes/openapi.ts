@@ -1,3 +1,4 @@
+import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { MUSE_ASSET_VERSION, museStopBoundarySchema, museDetectorCleanupAttestationSchema, createGrokInvitationSchema, configureGrokRoutineSchema, verifyGrokRoutineSchema, recoverGrokRoutineSchema, pairGrokBindingSchema, stopGrokWorkSchema, retryGrokDeliverySchema, updateFastResponseSchema } from "@paperclipai/shared";
 import { slackTestMessageSchema, slackTestMessageResultSchema, slackManagerAuthorizationSchema, slackSetupOptionsSchema, slackManagedProvisionSchema, slackManagedResultSchema, slackRegistrationSchema, slackSetupActionSchema, slackInstallAuthorizationSchema, slackRegistrationStateSchema, slackAppConfigurationSchema, slackAvatarStateSchema, slackAccountStateSchema } from "@paperclipai/shared";
 import { experimentalApiMetadata } from "./experimental-api-metadata.js";
@@ -1487,6 +1488,8 @@ const BOARD_ONLY_OPERATIONS = new Set([
   "DELETE /api/board-api-keys/{keyId}",
   "POST /api/bootstrap/claim",
   "GET /api/companies/{companyId}/resource-memberships/me",
+  "GET /api/workspace-preferences/me/personalization",
+  "PUT /api/companies/{companyId}/workspace-preferences/me/personalization",
   "GET /api/workspace-preferences/me",
   "PUT /api/companies/{companyId}/workspace-preferences/me",
   "GET /api/companies/{companyId}/primary-agent/me",
@@ -6792,6 +6795,18 @@ registerCurrentRoute({
     403: r.forbidden,
     404: r.notFound,
   },
+});
+
+registerCurrentRoute({
+  method: "get", path: "/api/workspace-preferences/me/personalization",
+  tags: ["workspace-preferences"], summary: "Read your personal COSGRAL appearance and layout",
+  responses: { 200: r.ok(), 401: r.unauthorized, 403: r.forbidden },
+});
+registerCurrentRoute({
+  method: "put", path: "/api/companies/{companyId}/workspace-preferences/me/personalization",
+  tags: ["workspace-preferences"], summary: "Save your appearance; active company access supplies audit context",
+  body: personalizationSchema,
+  responses: { 200: r.ok(), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound },
 });
 
 registerCurrentRoute({

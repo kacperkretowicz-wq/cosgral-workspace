@@ -1,3 +1,4 @@
+import { PersonalizationAppearance } from "./PersonalizationAppearance";
 import { CoordinatorPresentation } from "./coordinator/CoordinatorPresentation";
 import { CoordinatorChatReferencesProvider } from "./coordinator/CoordinatorChatReferences";
 import { useCoordinatorWorkspaceEnabled } from "@/hooks/useCoordinatorWorkspaceEnabled";
@@ -123,7 +124,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
   const location = useLocation();
   const navigationType = useNavigationType();
   const { enabled: classicStreamlinedUiEnabled } = useStreamlinedUiEnabled();
-  const { enabled: coordinatorWorkspaceEnabled } = useCoordinatorWorkspaceEnabled();
+  const { enabled: coordinatorWorkspaceEnabled, userId: personalizationUserId } = useCoordinatorWorkspaceEnabled();
   const streamlinedUiEnabled = classicStreamlinedUiEnabled || coordinatorWorkspaceEnabled;
   const shellRoute = classifyShellRoute(location.pathname, companyPrefix);
   const isCompanySettingsRoute = shellRoute.builtInContextualSurface === "settings";
@@ -585,6 +586,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
     <CoordinatorPresentation.Provider value={coordinatorWorkspaceEnabled}>
     <CoordinatorChatReferencesProvider enabled={coordinatorWorkspaceEnabled}>
     <ChatSetupSidebarProvider>
+      {personalizationUserId && selectedCompanyId && <PersonalizationAppearance key={personalizationUserId} userId={personalizationUserId} companyId={selectedCompanyId} />}
       <div
       ref={mobileViewportRef}
       data-mobile={isMobile ? "true" : undefined}

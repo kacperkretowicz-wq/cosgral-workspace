@@ -1,0 +1,44 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { expect, it, vi } from "vitest";
+import { ThemeProvider } from "../context/ThemeContext";
+import { PersonalizationPanel } from "./PersonalizationPanel";
+import { defaultPersonalization } from "@paperclipai/shared/personalization";
+const api = vi.hoisted(() => ({ getPersonalization: vi.fn(), updatePersonalization: vi.fn() }));
+vi.mock("../api/workspacePreferences", () => ({ workspacePreferencesApi: api }));
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+it("loads server preferences and saves an accessible accent choice for the current user", async () => {
+ api.getPersonalization.mockResolvedValue({ ...defaultPersonalization(), accent: "ocean" });
+ api.updatePersonalization.mockImplementation(async (_company, value) => value);
+ const host = document.createElement("div"); document.body.append(host);
+ const root = createRoot(host); const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+ await act(async () => { root.render(<QueryClientProvider client={client}><ThemeProvider><PersonalizationPanel companyId="company" userId="alice" /></ThemeProvider></QueryClientProvider>); });
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ const select = host.querySelector('select[aria-label="Akcent"]') as HTMLSelectElement;
+ expect(select.value).toBe("ocean");
+ await act(async () => { select.value = "violet"; select.dispatchEvent(new Event("change", { bubbles: true })); });
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect(api.updatePersonalization).toHaveBeenCalledWith("company", expect.objectContaining({ accent: "violet" }));
+ expect(document.documentElement.dataset.cosgralAccent).toBe("violet");
+ expect(JSON.parse(localStorage.getItem("cosgral.personalization:alice")!).accent).toBe("violet");
+ await act(async () => root.unmount()); host.remove(); client.clear();
+});
+it("falls back to validated local preferences and isolates a changed account", async () => {
+ api.getPersonalization.mockRejectedValue(new Error("offline"));
+ localStorage.setItem("cosgral.personalization:alice", JSON.stringify({ ...defaultPersonalization(), accent: "amber" }));
+ localStorage.setItem("cosgral.personalization:bob", JSON.stringify({ accent: "invalid" }));
+ const host = document.createElement("div"); const root = createRoot(host);
+ const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+ const render = (userId: string) => <QueryClientProvider client={client}><ThemeProvider><PersonalizationPanel key={userId} companyId="company" userId={userId} /></ThemeProvider></QueryClientProvider>;
+ await act(async () => root.render(render("alice")));
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect(host.querySelector('select[aria-label="Akcent"]')?.getAttribute("aria-label")).toBe("Akcent");
+ expect((host.querySelector('select[aria-label="Akcent"]') as HTMLSelectElement).value).toBe("amber");
+ expect(host.querySelector('[role="alert"]')).not.toBeNull();
+ await act(async () => root.render(render("bob")));
+ expect((host.querySelector('select[aria-label="Akcent"]') as HTMLSelectElement).value).toBe("cosgral");
+ expect(document.documentElement.dataset.cosgralAccent).toBe("cosgral");
+ await act(async () => root.unmount()); client.clear();
+});

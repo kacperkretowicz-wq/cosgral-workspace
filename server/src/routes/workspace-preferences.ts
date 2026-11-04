@@ -1,3 +1,4 @@
+import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { Router } from "express";
 import { companies, type Db } from "@paperclipai/db";
 import { eq } from "drizzle-orm";
@@ -16,6 +17,17 @@ export function workspacePreferenceRoutes(db: Db) {
     if (!req.actor.userId) throw forbidden("Board user access required");
     res.setHeader("Cache-Control", "private, no-store");
     next();
+  });
+  router.get("/workspace-preferences/me/personalization", async (req, res) => {
+    res.json(await svc.getPersonalization(req.actor.userId!));
+  });
+  router.put("/companies/:companyId/workspace-preferences/me/personalization", validate(personalizationSchema), async (req, res) => {
+    const companyId = req.params.companyId as string;
+    if (!hasCompanyAccess(req, companyId)) throw forbidden("User does not have access to this company");
+    if (req.actor.source !== "local_implicit" && !req.actor.isInstanceAdmin
+      && !req.actor.memberships?.some(m => m.companyId === companyId && m.status === "active")) throw forbidden("Active company access required");
+    if (!await db.query.companies.findFirst({ where: eq(companies.id, companyId) })) throw notFound("Company not found");
+    res.json(await svc.setPersonalization(companyId, req.actor.userId!, req.body));
   });
   router.get("/workspace-preferences/me", async (req, res) => {
     res.json(await svc.get(req.actor.userId!));
