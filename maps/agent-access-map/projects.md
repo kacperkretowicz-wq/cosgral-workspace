@@ -294,3 +294,8 @@ route. No new agent tool, endpoint, credential grant or execution permission is 
 New-project completion navigates to the existing conversation UI after the create
 request succeeds. It adds no API or agent authority; conversation creation and
 coordinator assignment retain their existing server checks.
+
+Conversation onboarding links reuse project configuration and agent creation
+routes. Visibility of the creation shortcut follows coordinator-management UI
+state; the destination retains company agent-creation authorization. It grants
+neither coordinator assignment nor credentials merely by following the link.

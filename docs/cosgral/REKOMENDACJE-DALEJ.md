@@ -117,3 +117,7 @@ Pełny przebieg zaliczył shard czatu 1/6: 351 PASS / 1482 SKIP (1833 zgłoszone
 
 Po pomyślnym utworzeniu projektu dialog otwiera teraz jego rozmowę przez firmowy router. Błąd zapisu pozostawia formularz i nie wywołuje przejścia. Testy formularza i dialogu: 6/6 PASS; rzeczywisty MemoryRouter potwierdza `/COS/projects/created-project/conversation`. Pierwsza próba ujawniła brak issuePrefix w starej fiksturze firmy (3 FAIL + 3 błędy); fiksturę uzupełniono i powtórzenie jest zielone. Nie jest to dowód dwóch sesji ani działania modelu.
 Końcowe kontrole zmiany nawigacji: tsc -b w ui, token gates, mapy i git diff --check PASS. Nie ponawiano produkcyjnego buildu po tej zmianie; poprzedni build dotyczył przyrostu b46079aa2.
+
+## Nawigacja onboardingu z rozmowy — 4 XI
+
+Rozmowa udostępnia bezpośrednio konfigurację projektu (repozytoria/autoryzacja) i istniejący kreator agenta. Skrót tworzenia jest ukryty przy canManageCoordinator=false; docelowy kreator i backend nadal rozstrzygają uprawnienie tworzenia agentów w firmie. Nie przypisuje automatycznie nowego agenta do projektu. Pusty roster nie jest już deklarowany podczas pobierania ani błędu listy. Istniejące testy ProjectConversation: 29/29 PASS; UI tsc -b, token gates, mapy i diff-check PASS. Nie dodawano osobnych testów powtarzających treść odnośników. Żywy onboarding prywatnego repo/wykonawcy i odbiór dwóch osób pozostają otwarte.

@@ -21,6 +21,7 @@ i18n.addResourceBundle("pl", "cosgral", {
   agentConfig: { name: "Nazwa", title: "Stanowisko", identity: "Tożsamość i zarządzanie", avatar: "Awatar", avatarVariant: "Wariant {{number}}", description: "Opis i specjalizacja", role: "Rola", budget: "Budżet miesięczny (centy USD, 0 = bez limitu)", nextTask: "Zapisany model i reasoning dotyczą kolejnych uruchomień; aktywny run zachowuje swoją konfigurację.", instructions: "Własne instrukcje", concurrency: "Maksymalna liczba jednoczesnych zadań" },
   paused: "Rozmowa jest wstrzymana. Szkic zostaje zachowany.", resume: "Wznów rozmowę", inheritedPause: "Rozmowa jest wstrzymana przez zadanie nadrzędne. Wznów je w widoku zaawansowanym.", pauseError: "Nie udało się sprawdzić lub zmienić wstrzymania rozmowy.",
   coordinator: "Koordynator projektu", chooseCoordinator: "Wybierz koordynatora",
+  addAgent: "Dodaj agenta", projectConfiguration: "Repozytoria i konfiguracja projektu",
   coordinatorHint: "Wybierz koordynatora, aby wiadomości uruchamiały agenta. Bez wyboru wiadomości zostają we wspólnej rozmowie.",
   coordinatorReadOnly: "Właściciel lub administrator projektu może wybrać koordynatora.",
   coordinatorError: "Nie udało się zmienić koordynatora. Spróbuj ponownie.",

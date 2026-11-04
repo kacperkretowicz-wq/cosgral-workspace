@@ -228,3 +228,8 @@ using company-aware navigation; failed saves retain the form and do not navigate
 `NewProjectDialog.managed-sandbox.test.tsx` exercises creation with the real memory
 router and verifies the company-prefixed conversation path. The form retry test
 checks that the completion callback is not invoked after rejection.
+
+Conversation onboarding (4 XI): navigation links directly to project configuration
+(repo sources and GitHub authorization) and the existing new-agent wizard. The
+agent creation link is hidden for known read-only conversation viewers. An empty
+roster is reported only after successful agent loading, not during loading/failure.

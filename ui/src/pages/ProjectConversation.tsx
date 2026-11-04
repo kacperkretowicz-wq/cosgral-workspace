@@ -298,7 +298,8 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     </nav>
     <nav aria-label={t("agents")} className="flex flex-col gap-2">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("agents")}</h2>
-      {!roster.length && <p className="text-sm text-muted-foreground">{t("noAgents")}</p>}
+      {agents.isSuccess && !roster.length && <p className="text-sm text-muted-foreground">{t("noAgents")}</p>}
+      {conversation.data?.canManageCoordinator !== false && <Link to="/agents/new" className="rounded-md px-2 py-2 text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring">{t("addAgent")}</Link>}
       {agentHierarchy(roster).map(({ agent, depth }) => <div key={agent.id} className="cosgral-agent-row" style={{ "--cosgral-agent-depth": depth } as CSSProperties}>
         <Link to={`/agents/${agent.id}`} className="flex items-center gap-2 rounded-md p-1 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
           <AgentAvatar agent={agent} /><span className="min-w-0 flex-1 truncate">{agent.name}</span><span className="cosgral-agent-state" role="img" title={t(`status.${agent.status}`)} aria-label={t(`status.${agent.status}`)}><AgentStatusCapsule status={agent.status} /></span>
@@ -306,6 +307,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       </div>)}
     </nav>
     <nav className="mt-auto flex flex-col gap-3 text-sm" aria-label={t("settings")}>
+      <Link to={`/projects/${encodeURIComponent(projectId)}/configuration`}>{t("projectConfiguration")}</Link>
       <Link to="/inbox">{t("inbox")}</Link><Link to="/company/settings">{t("settings")}</Link>
       <Identity name={user.name || t("user")} avatarUrl={user.image} />
     </nav>
