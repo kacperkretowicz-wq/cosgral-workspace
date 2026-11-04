@@ -1,0 +1,27 @@
+[Unit]
+Description=COSGRAL Workspace
+Wants=network-online.target
+After=network-online.target postgresql.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=cosgral
+Group=cosgral
+WorkingDirectory=/opt/cosgral/app
+Environment=NODE_ENV=production
+Environment=HOME=/var/lib/cosgral
+EnvironmentFile=/etc/cosgral/workspace.env
+StateDirectory=cosgral
+StateDirectoryMode=0700
+UMask=0077
+ExecStartPre=/usr/bin/node /opt/cosgral/app/scripts/cosgral-host-preflight.mjs
+ExecStart=/usr/bin/node /opt/cosgral/app/server/dist/index.js
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=90
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

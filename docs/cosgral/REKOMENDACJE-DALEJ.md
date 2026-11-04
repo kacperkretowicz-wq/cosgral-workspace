@@ -58,3 +58,7 @@ Końcowo dla panelu: typecheck UI, produkcyjny build UI, kontrola map oraz synch
 Użytkownik wybrał wdrożenie Oracle zamiast lokalnego WSL; rejestracja konta wymaga jego działania. Instalator WSL zakończył się komunikatem o wymaganym restarcie Windows; restartu nie wykonywano. Nie utworzono jeszcze maszyny Oracle.
 
 Dodano `scripts/cosgral-profile-server.mjs` i instrukcję `P0-PROFILOWANIE.md`: zewnętrzny pomiar health, profil CPU od początku obserwacji, zapis próbek przed oczekiwaniem na Inspector i brak zatrzymywania serwera. Testy na rzeczywistym procesie Node (zdrowy HTTP, blokada CPU, walidacja adresów) 3/3 PASS. Pierwotnego P0 nie odtworzono i nie zamknięto.
+
+## Profil wdrożenia Oracle — przygotowany, nieuruchomiony
+
+Dodano `deploy/cosgral/cosgral.service`, `workspace.env.example`, `scripts/cosgral-host-preflight.mjs` i `ORACLE-WDROZENIE.md`. Profil uruchamia istniejący zbudowany backend/UI jako użytkownik cosgral, z trwałym stanem, PostgreSQL i loopback za proxy HTTPS. Preflight wymaga authenticated, trwałych sekretów i gotowych artefaktów, sprawdza podstawowy bwrap/Git/Codex. Testy walidacji 3/3 PASS. Lokalna próba CLI odmówiła uruchomienia na Windowsie bez konfiguracji (oczekiwany błąd). Nie sprawdzono systemd, ARM, połączenia bazy, modelu ani izolacji pełnego agenta; wymaga to maszyny Oracle. Pełny odbiór P0 i dwóch osób nadal otwarty.
