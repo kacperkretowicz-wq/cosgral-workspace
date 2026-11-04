@@ -6,7 +6,7 @@ import { notifyDeferredExecutionEligibility } from "./deferred-execution-notific
 import { notifyIssueRecovery } from "./issue-recovery-notifications.js";
 import { notifyRunDispatch } from "./run-dispatch-notifications.js";
 import { notifyStatusCardIssueChange } from "./status-card-notifications.js";
-import { assertProjectConversationMutation, PROJECT_CONVERSATION_ORIGIN } from "./project-conversation-policy.js";
+import { assertProjectConversationMutation, lockProjectConversationChildren, PROJECT_CONVERSATION_MAX_ACTIVE_CHILDREN, PROJECT_CONVERSATION_ORIGIN } from "./project-conversation-policy.js";
 import { notifyIssueAttentionRetentionWork } from "./retention-work-notifications.js";
 import { notifyRoutineExecutionStatus } from "./routine-execution-status-notifications.js";
 import { notifyMergeConfirmationWork } from "./merged-pr-confirmation-notifications.js";
@@ -9581,6 +9581,8 @@ export function issueService(db: Db) {
           assigneeAgentId: issues.assigneeAgentId,
           assigneeUserId: issues.assigneeUserId,
           updatedAt: issues.updatedAt,
+          completedAt: issues.completedAt,
+          cancelledAt: issues.cancelledAt,
         })
         .from(issues)
         .where(
@@ -9591,13 +9593,15 @@ export function issueService(db: Db) {
         )
         .orderBy(asc(issues.issueNumber), asc(issues.createdAt));
       if (children.length === 0) return null;
-      // A channel spans independent requests: report each completed child even
-      // while another request is still running. Ordinary parents wait for all.
-      const completedChannelChild = parent.originKind === PROJECT_CONVERSATION_ORIGIN && completedChildResult
-        ? children.find(child => child.id === completedChildResult.issueId && ["done", "cancelled"].includes(child.status))
-        : null;
-      if (!completedChannelChild && !children.every(child => ["done", "cancelled"].includes(child.status))) return null;
-      const reportChildren = completedChannelChild ? [completedChannelChild] : children;
+      if (!children.every(child => ["done", "cancelled"].includes(child.status))) return null;
+      // Only the last persisted completion owns the channel wake. If two
+      // completions inspect the same terminal snapshot, the earlier one stays
+      // quiet; if it inspects before the last commit it sees an active sibling.
+      if (parent.originKind === PROJECT_CONVERSATION_ORIGIN && completedChildResult) {
+        const last = [...children].sort((a, b) => (b.completedAt ?? b.cancelledAt ?? b.updatedAt).getTime() - (a.completedAt ?? a.cancelledAt ?? a.updatedAt).getTime() || b.id.localeCompare(a.id))[0];
+        if (last.id !== completedChildResult.issueId) return null;
+      }
+      const reportChildren = children;
 
       const childIdsForSummaries = reportChildren
         .slice(0, MAX_CHILD_COMPLETION_SUMMARIES)
@@ -9639,6 +9643,8 @@ export function issueService(db: Db) {
         }));
 
       return {
+        completionWakeKey: parent.originKind === PROJECT_CONVERSATION_ORIGIN
+          ? `conversation-children:${parent.id}:${children.map(child => `${child.id}:${(child.completedAt ?? child.cancelledAt ?? child.updatedAt).toISOString()}`).join(",")}` : undefined,
         onboardingCompletion: parent.originKind === "onboarding_first_task",
         id: parent.id,
         assigneeAgentId: parent.assigneeAgentId,
@@ -10341,6 +10347,22 @@ export function issueService(db: Db) {
           return withRelations;
         }
 
+        if (issueData.parentId && !["done", "cancelled"].includes(issueData.status ?? "todo")) {
+          const [parent] = await tx.select({ originKind: issues.originKind }).from(issues)
+            .where(and(eq(issues.companyId, companyId), eq(issues.id, issueData.parentId)));
+          if (parent?.originKind === PROJECT_CONVERSATION_ORIGIN) {
+            // The company privacy-tree xact lock above serializes every create
+            // entry point, including createChild and accepted suggestions.
+            const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(issues)
+              .where(and(eq(issues.companyId, companyId), eq(issues.parentId, issueData.parentId),
+                notInArray(issues.status, ["done", "cancelled"])));
+            if (count >= PROJECT_CONVERSATION_MAX_ACTIVE_CHILDREN) {
+              throw unprocessable(`Limit aktywnych zadań-dzieci rozmowy wynosi ${PROJECT_CONVERSATION_MAX_ACTIVE_CHILDREN}. Poczekaj na zakończenie pozostałych dzieci.`,
+                { code: "project_conversation_child_limit", conversationId: issueData.parentId });
+            }
+          }
+        }
+
         if (issueData.status === "done" && requiredQualityReview(issueData.executionPolicy)) {
           throw unprocessable("A new task with required quality review cannot start completed", { code: "required_quality_review_incomplete" });
         }
@@ -10782,8 +10804,24 @@ export function issueService(db: Db) {
         );
         return withRelations;
       };
-      if (dbOrTx === db) return db.transaction(persist);
-      return persist(dbOrTx as DbTransaction);
+      try {
+        if (dbOrTx === db) return await db.transaction(persist);
+        return await persist(dbOrTx as DbTransaction);
+      } catch (error) {
+        // Callers owning an outer transaction record the refusal after their
+        // rollback. Root creates can safely publish the diagnostic here.
+        if (dbOrTx === db && error instanceof Error && "details" in error &&
+          (error.details as { code?: string })?.code === "project_conversation_child_limit" && issueData.parentId) {
+          const comment = await issueService(db).addComment(issueData.parentId, error.message, {
+            agentId: issueData.createdByAgentId ?? undefined, userId: issueData.createdByUserId ?? undefined, runId: actorRunId,
+          });
+          await logActivity(db, { companyId, actorType: "system", actorId: "project_conversation",
+            action: "issue.comment_added", entityType: "issue", entityId: issueData.parentId,
+            details: { commentId: comment.id, source: "project_conversation.child_limit" } });
+          Object.assign(error.details as object, { commentId: comment.id });
+        }
+        throw error;
+      }
     },
 
     /**
@@ -11432,6 +11470,16 @@ export function issueService(db: Db) {
       const runUpdate = async (tx: any) => {
         const changesPrivacy = issueData.visibility !== undefined || issueData.parentId !== undefined || issueData.projectId !== undefined;
         if (changesPrivacy) await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`issue-privacy-tree:${existing.companyId}`}, 0))`);
+        if (issueData.status && ["done", "cancelled"].includes(issueData.status) &&
+          await lockProjectConversationChildren(tx as Db, existing.companyId, existing.parentId)) {
+          const [latest] = await tx.select({ at: sql<Date | string | null>`max(greatest(${issues.completedAt}, ${issues.cancelledAt}))` })
+            .from(issues).where(and(eq(issues.companyId, existing.companyId), eq(issues.parentId, existing.parentId!)));
+          // Monotonic millisecond receipts survive JS timestamp projection and
+          // identify the final writer even when sibling callbacks race.
+          const completedAt = new Date(Math.max(Date.now(), latest?.at ? new Date(latest.at).getTime() + 1 : 0));
+          if (issueData.status === "done") patch.completedAt = completedAt;
+          else patch.cancelledAt = completedAt;
+        }
         // The receipt baseline must be read under the same row lock as the
         // write. Otherwise a concurrent update can be mistaken for a change
         // made by this request.

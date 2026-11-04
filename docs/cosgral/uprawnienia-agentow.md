@@ -93,12 +93,15 @@ zdalnych runtime ani automatycznego reaper cleanup w żywej bazie.
 ## Dobór wykonawcy i decyzje człowieka (zadanie 10)
 
 Koordynator otrzymuje na każdą turę projekcję agentów tej samej firmy: nazwę,
-kompetencje, skonfigurowany model, status, reportsTo, liczbę aktywnych zadań
-(todo/in_progress/in_review/blocked; bez samego kanału rozmowy), queued/running,
+kompetencje, skonfigurowany model, status, reportsTo, liczbę otwartych zadań
+(backlog/todo/in_progress/in_review/blocked) i aktywnych (bez backlog; obie liczby
+bez samego kanału rozmowy), queued/running,
 limit współbieżności, wolne sloty, dostęp do projektu oraz budżet/wydatki.
 Nie otrzymuje surowej konfiguracji ani env. Kompatybilność `codex_local`/Linux
 nie oznacza sprawdzonego logowania lub lokalnego środowiska: dispatch nadal
-weryfikuje runtime. Limit dostawcy i cena modelu są nieznane; UI mówi to jawnie.
+weryfikuje runtime. Limit dostawcy i rzeczywisty koszt konta są nieznane.
+Od t15 roster zawiera też jawnie wersjonowany koszt referencyjny API znanych
+modeli; to nie jest potwierdzenie opłat na koncie.
 Dobór bierze pod uwagę rodzaj pracy, kompetencje, obciążenie i dostępność;
 niezależne zadania mogą działać równolegle w istniejących limitach, zależne
 kolejno. Budżet 0 oznacza brak skonfigurowanego limitu miesięcznego. Snapshot
@@ -133,14 +136,29 @@ Bierze wyłącznie agentów firmy z dostępem do projektu, zdrową hierarchią,
 statusem idle/running, zgodnym lokalnym CLI, wolnym slotem i niewyczerpanym budżetem.
 Koordynator nie wybiera siebie. Ranking: jawnie wskazana rola (100), liczba
 wspólnych słów zadania i roli/kompetencji (po 10), zgodny wskazany model (1),
-następnie najmniej aktywnych zadań, runów i rosnące ID. To prosta deterministyczna
-reguła, nie semantyczna ocena kompetencji ani optymalizator kosztu.
+następnie referencyjny koszt modelu, liczba otwartych zadań, aktywnych zadań,
+runów i rosnące ID. Otwarte obejmują backlog/todo/in_progress/in_review/blocked
+w całej firmie, bez rozmów projektu; aktywne nie obejmują backlog. Runy to
+queued/running. Gotowość lifecycle musi być ready. Pełny slot albo wyczerpany
+budżet wykluczają także jawny wybór; pauza nadal wyklucza.
+
+Koszt to jawny koszyk porównawczy standardowego API: 1 mln tokenów wejścia bez
+cache + 1 mln wyjścia, z wersjonowanego cennika w `codex-pricing.ts`. Nie ocenia
+zapotrzebowania zadania na tokeny, rzeczywistego rachunku ani subskrypcji. Nie
+pobiera cennika z sieci. Model spoza cennika: „brak danych o koszcie”. Gdy choć
+jeden uprawniony kandydat o równym dopasowaniu nie ma ceny, porównanie kosztu
+wyłącza się dla całej tej grupy (spójne sortowanie bez zgadywania). To prosta
+reguła słownikowa, nie semantyczna ocena kompetencji. Osobnego limitu otwartych
+zadań nie ma w modelu agenta; nie tworzymy fikcyjnego limitu ani quota dostawcy.
 
 Wskazany `preferredAgentId` ma pierwszeństwo wśród dostępnych, uprawnionych
 kandydatów. Niedostępny jawny wybór zwraca 422, bez cichej zamiany. Bez dopasowania
-serwer wybiera najmniej obciążonego, a remis rozstrzyga stałym porządkiem ID.
+serwer stosuje ten sam ranking kosztu referencyjnego i obciążenia, a remis
+rozstrzyga stałym porządkiem ID.
 Brak kandydata również daje 422. Wynik `{agentId, reason, commentId}` zapisuje
-uzasadnienie jako komentarz autora operacji i publikuje `issue.comment_added`.
+uzasadnienie i powody wykluczeń/niższej pozycji jako komentarz autora operacji
+i publikuje `issue.comment_added`. Również odmowa 422 zapisuje powód w rozmowie
+(`details.commentId` w odpowiedzi błędu).
 Nie uruchamia zadania ani wake. Nie rezerwuje slotów; tworzenie, akceptacja
 propozycji i dispatch ponownie stosują swoje zwykłe uprawnienia i limity.
 Koordynator dostaje instrukcję użycia zwróconego ID; API rekomendacji nie blokuje
@@ -226,3 +244,19 @@ Skrypt zachowuje firmę i repozytoria w `/tmp` jako dowód, a na końcu pauzuje
 agentów i anuluje aktywne runy. Nie usuwa dowodów ani nie uruchamia serwera.
 Weryfikuje klasyfikację delegowania/statusów, nadawcę/adresata, odpowiedź,
 ograniczoną liczbę udanych runów i 75 sekund bez dalszych zmian/retry.
+
+
+## Zakres t15 i odbiór równoległości
+
+T15 domyka dobór wg kosztu referencyjnego, obciążenia i istniejących limitów.
+Nie wprowadza limitu równoległych dzieci ani bariery pojedynczego raportu.
+Dotychczasowa ścieżka nadal budzi koordynatora po każdym ukończonym dziecku.
+Nie traktować instrukcji „parallel” jako gwarancji zabezpieczenia silnika.
+
+`scripts/cosgral-e2e-parallel.mjs` jest przygotowanym testem odbioru docelowego
+zachowania, z walidatorem testowanym bez modeli. Tworzy dwóch wykonawców o różnym
+koszcie referencyjnym/obciążeniu i wymaga dwóch dzieci, różnych wykonawców,
+odrębnych worktree, nakładających się runów, zapisanych powodów, obu done,
+jednego raportu po obu zakończeniach i dokładnie czterech udanych runów oraz
+75 sekund ciszy. Wykonuje się go dopiero po wdrożeniu limitu i bariery wake;
+obecny silnik może słusznie nie przejść tego odbioru. Nie uruchamiano go z modelem.

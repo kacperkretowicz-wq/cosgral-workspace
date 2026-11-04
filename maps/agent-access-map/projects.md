@@ -271,3 +271,17 @@ sprawdzane w bazie; klient nie ustawia licznika hopów. Zwykłe wybudzenie po
 zakończeniu dziecka pozostaje osobnym istniejącym zdarzeniem orkiestracji.
 Testy HTTP z PostgreSQL używają syntetycznych aktorów i spy wake; żywa próba
 modelu i dwóch przeglądarek wymaga odbioru nadzorcy.
+
+
+T15: dobór wykonawcy uwzględnia referencyjny koszt modelu z istniejącego
+wersjonowanego cennika (jawny koszyk standardowego API, nie cena subskrypcji),
+liczbę otwartych zadań w całej firmie, aktywne zadania i queued/running runy.
+Nieznana cena wyłącza porównanie kosztu dla całej grupy o równym dopasowaniu.
+Lifecycle inny niż ready, pełne sloty i budżet wykluczają. Powody odrzuceń,
+również całkowitej odmowy 422, trafiają do rozmowy. Regresja PostgreSQL/HTTP
+w `project-conversations.test.ts`; skrypt `cosgral-e2e-parallel.mjs` przygotowuje
+odbiór. T15b wymusza limit 4 aktywnych dzieci rozmowy (również backlog/blocked),
+z zapisem powodu odmowy 422; raport czeka na ostatnie dziecko. Ukończenia
+rodzeństwa są serializowane także w natywnym runtime. Testy PostgreSQL/HTTP
+obejmują wyścigi tworzenia/ukończeń i odmowę akceptacji suggest_tasks.
+Brak żywego dowodu równoległości z modelem w t15/t15b.

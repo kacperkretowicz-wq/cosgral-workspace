@@ -6,7 +6,7 @@ import { authorizeProjectPresence } from "../realtime/project-conversation-prese
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { agents, activityLog, companies, companyMemberships, createDb, heartbeatRuns, issueComments, issueThreadInteractions, issues, projectAccessMembers, projectConversations, projects, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS } from "@paperclipai/db";
 import { startEmbeddedPostgresTestDatabase } from "./helpers/embedded-postgres.js";
@@ -32,6 +32,65 @@ describe("project conversation identity", () => {
     db = createDb(database.connectionString);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
   afterAll(async () => { await db?.$client.end(); await database?.cleanup(); });
+
+  it("limits concurrent conversation children atomically and preserves idempotency", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Parallel", issuePrefix: `L${companyId.slice(0, 6)}` });
+    const [project] = await db.insert(projects).values({ companyId, name: "Parallel" }).returning();
+    const conversation = (await projectConversationService(db).getOrCreate(companyId, project!.id, "owner"))!.issue;
+    const svc = issueService(db);
+    const results = await Promise.allSettled(Array.from({ length: 5 }, (_, i) => svc.create(companyId, {
+      title: `Parallel ${i}`, parentId: conversation.id, projectId: project!.id, status: "todo", idempotencyKey: `parallel-${i}`,
+    })));
+    expect(results.filter(r => r.status === "fulfilled")).toHaveLength(4);
+    const denied = results.find(r => r.status === "rejected") as PromiseRejectedResult;
+    expect(denied.reason).toMatchObject({ status: 422, details: { code: "project_conversation_child_limit" } });
+    const comments = await svc.listComments(conversation.id);
+    expect(comments.some(c => c.body.includes("Limit") && c.body.includes("4"))).toBe(true);
+    await db.insert(companyMemberships).values({ companyId, principalType: "user", principalId: "owner", status: "active", membershipRole: "operator" });
+    const [worker] = await db.insert(agents).values({ companyId, name: "Worker", adapterType: "process" }).returning();
+    const app = express(); app.use(express.json());
+    app.use((req, _res, next) => { req.actor = { type: "board", source: "session", userId: "owner", companyIds: [companyId],
+      memberships: [{ companyId, membershipRole: "operator", status: "active" }] }; next(); });
+    app.use("/api", issueRoutes(db)); app.use(errorHandler);
+    const deniedHttp = await request(app).post(`/api/companies/${companyId}/issues`).send({ title: "Overflow HTTP",
+      projectId: project!.id, parentId: conversation.id, status: "todo", assigneeAgentId: worker!.id });
+    expect(deniedHttp.status).toBe(422);
+    expect((await svc.listComments(conversation.id)).some(c => c.id === deniedHttp.body.details.commentId)).toBe(true);
+    const proposal = await request(app).post(`/api/issues/${conversation.id}/interactions`).send({ kind: "suggest_tasks", resolverPolicy: "human_only",
+      payload: { version: 1, defaultParentId: conversation.id, tasks: [{ clientKey: "overflow", title: "Overflow suggestion", projectId: project!.id, assigneeAgentId: worker!.id }] } });
+    expect(proposal.status).toBe(201);
+    const deniedSuggestion = await request(app).post(`/api/issues/${conversation.id}/interactions/${proposal.body.id}/accept`).send({});
+    expect(deniedSuggestion.status).toBe(422);
+    expect((await svc.listComments(conversation.id)).some(c => c.id === deniedSuggestion.body.details.commentId)).toBe(true);
+    expect((await issueThreadInteractionService(db).getById(proposal.body.id))?.status).toBe("pending");
+    const accepted = results.find(r => r.status === "fulfilled") as PromiseFulfilledResult<Awaited<ReturnType<typeof svc.create>>>;
+    const index = results.indexOf(accepted);
+    expect((await svc.create(companyId, { title: `Parallel ${index}`, parentId: conversation.id, projectId: project!.id,
+      status: "todo", idempotencyKey: `parallel-${index}` })).id).toBe(accepted.value.id);
+    await svc.update(accepted.value.id, { status: "done" });
+    expect((await svc.createChild(conversation.id, { title: "Freed slot", status: "todo" })).issue.parentId).toBe(conversation.id);
+  });
+
+  it("keeps exactly one completion wake when sibling transactions finish concurrently", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Completion race", issuePrefix: `W${companyId.slice(0, 6)}` });
+    const [project] = await db.insert(projects).values({ companyId, name: "Race" }).returning();
+    const [agent] = await db.insert(agents).values({ companyId, name: "Coordinator", adapterType: "process" }).returning();
+    const conversation = (await projectConversationService(db).getOrCreate(companyId, project!.id, "owner"))!.issue;
+    await db.update(issues).set({ assigneeAgentId: agent!.id, status: "todo" }).where(eq(issues.id, conversation.id));
+    const svc = issueService(db);
+    const children = await Promise.all(["a", "b"].map(title => svc.create(companyId, { title, parentId: conversation.id, projectId: project!.id, status: "todo" })));
+    const wakes = await Promise.all(children.map(child => db.transaction(async tx => {
+      const service = issueService(tx as unknown as typeof db);
+      const completed = await service.update(child.id, { status: "done" });
+      expect(completed?.status).toBe("done");
+      await tx.execute(sql`select pg_sleep(0.05)`);
+      return service.getWakeableParentAfterChildCompletion(conversation.id, { issueId: child.id, summary: null });
+    })));
+    expect(wakes.filter(Boolean)).toHaveLength(1);
+    expect(wakes.find(Boolean)?.childIssueIds.toSorted()).toEqual(children.map(child => child.id).toSorted());
+  });
 
   it("projects child messages and task events with access checks and stops agent reply wakes", async () => {
     const companyId = randomUUID();
@@ -385,6 +444,72 @@ describe("project conversation identity", () => {
     expect((await request(app).post(url).send({ title: "TypeScript", preferredAgentId: foreignAgent!.id })).status).toBe(422);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
 
+  it("ranks equal capability by documented model reference cost and company-wide open load, recording exclusions even on failure", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "T15 selection", issuePrefix: `T${companyId.slice(0, 6)}` });
+    await db.insert(companyMemberships).values({ companyId, principalType: "user", principalId: "owner", status: "active", membershipRole: "operator" });
+    const [project] = await db.insert(projects).values({ companyId, name: "T15" }).returning();
+    const [expensive, cheap, paused] = await db.insert(agents).values([
+      { companyId, name: "Expensive", role: "engineer", capabilities: "TypeScript", adapterType: "codex_local", adapterConfig: { model: "gpt-6-astra" } },
+      { companyId, name: "Cheap", role: "engineer", capabilities: "TypeScript", adapterType: "codex_local", adapterConfig: { model: "gpt-6-luna" } },
+      { companyId, name: "Paused", adapterType: "codex_local", status: "paused" },
+    ]).returning();
+    const conversation = (await projectConversationService(db).getOrCreate(companyId, project!.id, "owner"))!.issue;
+    const app = express(); app.use(express.json());
+    app.use((req, _res, next) => { req.actor = { type: "board", source: "session", userId: "owner", companyIds: [companyId], memberships: [{ companyId, membershipRole: "operator", status: "active" }] }; next(); });
+    app.use("/api", issueRoutes(db)); app.use(errorHandler);
+    const url = `/api/issues/${conversation.id}/executor-selection`;
+    // Give cheap the larger ID: selection must actually use cost, not win a random ID tie.
+    const low = [expensive!.id, cheap!.id].sort()[0];
+    const high = [expensive!.id, cheap!.id].sort()[1];
+    await db.update(agents).set({ adapterConfig: { model: "gpt-6-astra" } }).where(eq(agents.id, low));
+    await db.update(agents).set({ adapterConfig: { model: "gpt-6-luna" } }).where(eq(agents.id, high));
+    const cost = await request(app).post(url).send({ title: "TypeScript" });
+    expect(cost.status).toBe(200);
+    expect(cost.body.agentId).toBe(high);
+    expect(cost.body.reason).toContain("referencyjny koszt");
+    expect(cost.body.reason).toContain(`${paused!.id}: status paused`);
+    expect(cost.body.reason).toContain("brak danych o koszcie");
+    // Backlog and work in another project both count, done/cancelled and conversation don't.
+    const [other] = await db.insert(projects).values({ companyId, name: "Other" }).returning();
+    await db.insert(issues).values([
+      { companyId, projectId: other!.id, title: "Queued work", status: "backlog", assigneeAgentId: high },
+      { companyId, title: "Finished", status: "done", assigneeAgentId: low },
+      { companyId, title: "Cancelled", status: "cancelled", assigneeAgentId: low },
+    ]);
+    const roster = await projectConversationRoster(db, companyId, project!.id);
+    expect(roster.find(a => a.id === high)).toMatchObject({ openTaskCount: 1, activeTaskCount: 0 });
+    // Cost precedes load at equal skill; unknown costs disable price comparison for the score group.
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(high);
+    await db.update(agents).set({ adapterConfig: { model: "unknown-model" } }).where(eq(agents.id, high));
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(low);
+    const load = await db.insert(issues).values([
+      { companyId, title: "Open backlog one", status: "backlog", assigneeAgentId: low },
+      { companyId, title: "Open backlog two", status: "backlog", assigneeAgentId: low },
+    ]).returning();
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(high);
+    await db.update(issues).set({ status: "done" }).where(eq(issues.id, load[0]!.id));
+    await db.update(issues).set({ status: "todo" }).where(eq(issues.id, load[1]!.id));
+    // Equal open count: zero active beats one active, despite the larger ID.
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(high);
+    await db.update(issues).set({ status: "backlog" }).where(eq(issues.id, load[1]!.id));
+    const [queued] = await db.insert(heartbeatRuns).values({ companyId, agentId: low, status: "queued" }).returning();
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(high);
+    await db.update(heartbeatRuns).set({ status: "succeeded" }).where(eq(heartbeatRuns.id, queued!.id));
+    // Exact requested model remains a capability criterion before price.
+    expect((await request(app).post(url).send({ title: "TypeScript", model: "unknown-model" })).body.agentId).toBe(high);
+    await db.update(agents).set({ budgetMonthlyCents: 5, spentMonthlyCents: 5 }).where(eq(agents.id, high));
+    const denied = await request(app).post(url).send({ title: "TypeScript", preferredAgentId: high });
+    expect(denied.status).toBe(422);
+    const comments = await issueService(db).listComments(conversation.id);
+    expect(comments.find(c => c.body.startsWith("Brak wyboru"))!.body).toContain(`${high}: budżet wyczerpany`);
+    expect(comments.find(c => c.body.startsWith("Brak wyboru"))!.body).toContain("Brak wyboru");
+    expect(comments.find(c => c.body.startsWith("Brak wyboru"))!.body).not.toContain("unknown-model"); // no raw configuration in exclusion details
+    await db.update(agents).set({ capabilities: "", role: "general", adapterConfig: { model: "gpt-6-luna" } }).where(eq(agents.id, high));
+    await db.update(agents).set({ spentMonthlyCents: 0 }).where(eq(agents.id, high));
+    expect((await request(app).post(url).send({ title: "TypeScript" })).body.agentId).toBe(low);
+  }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
+
   it("creates one durable thread under concurrent requests and rejects cross-project moves", async () => {
     const companyId = randomUUID();
     await db.insert(companies).values({ id: companyId, name: "Conversation test", issuePrefix: `C${companyId.slice(0, 6)}` });
@@ -505,16 +630,19 @@ describe("project conversation identity", () => {
       reason: "issue_assigned", contextSnapshot: expect.objectContaining({ issueId: child.id }),
     })));
     expect(await issueService(db).getWakeableParentAfterChildCompletion(first.body.issueId)).toBeNull();
-    // An unrelated open child must not suppress a completed delegation report.
+    // Other active children hold the final report until the last completion.
     const pending = await issueService(db).create(companyId, {
       title: "Another request", parentId: first.body.issueId, projectId: project!.id, status: "todo",
     });
     wakeup.mockClear();
     expect((await request(app).patch(`/api/issues/${child.id}`).set("x-test-user", "person-a").send({ status: "done" })).status).toBe(200);
+    expect(wakeup).not.toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({ reason: "issue_children_completed" }));
+    expect(await issueService(db).getWakeableParentAfterChildCompletion(first.body.issueId, { issueId: child.id, summary: null })).toBeNull();
+    expect((await request(app).patch(`/api/issues/${pending.id}`).set("x-test-user", "person-a").send({ status: "done" })).status).toBe(200);
     await vi.waitFor(() => expect(wakeup).toHaveBeenCalledWith(coordinator!.id, expect.objectContaining({
-      reason: "issue_children_completed", contextSnapshot: expect.objectContaining({ issueId: first.body.issueId, completedChildIssueId: child.id }),
+      reason: "issue_children_completed", idempotencyKey: expect.any(String),
+      contextSnapshot: expect.objectContaining({ issueId: first.body.issueId, completedChildIssueId: pending.id, childIssueIds: [child.id, pending.id] }),
     })));
-    await issueService(db).update(pending.id, { status: "cancelled" });
     expect((await issueService(db).getWakeableParentAfterChildCompletion(first.body.issueId))?.assigneeAgentId).toBe(coordinator!.id);
     expect(child.projectId).toBe(project!.id);
     await issueService(db).release(first.body.issueId, coordinator!.id);

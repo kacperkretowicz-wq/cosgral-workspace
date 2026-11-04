@@ -12,6 +12,14 @@ const RATES: Record<string, readonly [string, string, string, string]> = {
   "gpt-5.6-sol": ["4", "0.4", "5", "20"],
 };
 
+/** Standard API reference basket only (1M uncached input + 1M output).
+ * Does not infer account billing, quota, task token usage or subscription cost.
+ * Kept next to receipt pricing so selection never maintains a second rate card. */
+export function codexModelReferenceCost(model: string | null) {
+  const rates = model && Object.hasOwn(RATES, model) ? RATES[model] : undefined;
+  return rates ? { usdPerReferenceBasket: Number(rates[0]) + Number(rates[3]), version: VERSION } : null;
+}
+
 /** Price new, direct-API receipts only. A token-price estimate is not an invoice.
  * Run totals cannot establish per-request context length or cache-write splits;
  * preserve those assumptions instead of inferring a long request from a long run. */

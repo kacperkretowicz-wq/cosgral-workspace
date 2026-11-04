@@ -12759,6 +12759,17 @@ export function issueRoutes(
       try {
         issue = await createAcceptedIssue(createInput);
       } catch (error) {
+        if (error instanceof Error && "details" in error &&
+          (error.details as { code?: string; commentId?: string })?.code === "project_conversation_child_limit" &&
+          !(error.details as { commentId?: string }).commentId && createInput.parentId) {
+          const comment = await svc.addComment(createInput.parentId, error.message, {
+            agentId: actor.agentId ?? undefined, userId: actor.actorType === "user" ? actor.actorId : undefined, runId: actor.runId,
+          });
+          await logActivity(db, { companyId, actorType: actor.actorType, actorId: actor.actorId,
+            action: "issue.comment_added", entityType: "issue", entityId: createInput.parentId,
+            details: { commentId: comment.id, source: "project_conversation.child_limit" } });
+          Object.assign(error.details as object, { commentId: comment.id });
+        }
         // Concurrent onboarding creates can both pass the zero-count fast path;
         // the issues_onboarding_first_task_uq index rejects the loser here. Fail
         // closed: drop the privileged origin (and with it the agent-attributed
@@ -16153,6 +16164,7 @@ export function issueRoutes(
               source: "automation",
               triggerDetail: "system",
               reason: "issue_children_completed",
+              idempotencyKey: parent.completionWakeKey,
               payload: {
                 issueId: parent.id,
                 completedChildIssueId: issue.id,
@@ -17208,6 +17220,7 @@ export function issueRoutes(
     await logActivity(db, { companyId: issue.companyId, actorType: actor.actorType, actorId: actor.actorId,
       agentId: actor.agentId, runId: actor.runId, action: "issue.comment_added", entityType: "issue", entityId: issue.id,
       details: { commentId: comment.id, selectedAgentId: selected.agentId, source: "executor_selection" } });
+    if (!selected.agentId) throw unprocessable(selected.reason, { commentId: comment.id });
     res.json({ ...selected, commentId: comment.id });
   });
 
@@ -17490,6 +17503,19 @@ export function issueRoutes(
           resolverPolicyRestriction:
             resolutionAuthorization.resolverPolicyRestriction,
           suggestedTaskEffectsAuthorized,
+        }).catch(async error => {
+          if (error instanceof Error && "details" in error &&
+            (error.details as { code?: string })?.code === "project_conversation_child_limit") {
+            const conversationId = (error.details as { conversationId: string }).conversationId;
+            const comment = await svc.addComment(conversationId, error.message, {
+              agentId: actor.agentId ?? undefined, userId: actor.actorType === "user" ? actor.actorId : undefined, runId: actor.runId,
+            });
+            await logActivity(db, { companyId: issue.companyId, actorType: actor.actorType, actorId: actor.actorId,
+              action: "issue.comment_added", entityType: "issue", entityId: conversationId,
+              details: { commentId: comment.id, source: "project_conversation.child_limit" } });
+            Object.assign(error.details as object, { commentId: comment.id });
+          }
+          throw error;
         });
       const toolAction =
         interaction.payload && typeof interaction.payload === "object"
@@ -19734,6 +19760,7 @@ export function issueRoutes(
               source: "automation",
               triggerDetail: "system",
               reason: "issue_children_completed",
+              idempotencyKey: parent.completionWakeKey,
               payload: {
                 issueId: parent.id,
                 completedChildIssueId: currentIssue.id,

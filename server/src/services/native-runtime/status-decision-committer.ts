@@ -1,4 +1,4 @@
-import { isProjectConversation } from "../project-conversation-policy.js";
+import { isProjectConversation, lockProjectConversationChildren } from "../project-conversation-policy.js";
 import { notifyNativeStatusWakeWork } from "../deferred-execution-notifications.js";
 import { notifyExternalAgentSettlement } from "../../modules/external-agents/index.js";
 import { lockCurrentNativeWorkAssessmentEvidence } from "./work-assessments.js";
@@ -1642,6 +1642,12 @@ export async function commitNativeStatusDecision(input: {
   const publications: ActivityPublication[] = [];
   const terminalRunsToEmit: (typeof heartbeatRuns.$inferSelect)[] = [];
   const committed = await input.db.transaction(async (tx) => {
+    if (input.decision.statusAction === "done") {
+      const [completionSource] = await tx.select({ parentId: issues.parentId }).from(issues)
+        .where(and(eq(issues.companyId, input.companyId), eq(issues.id, input.issueId)));
+      await lockProjectConversationChildren(tx as unknown as Db, input.companyId, completionSource?.parentId);
+    }
+
     const retiredReview = input.requireReassessmentSource?.retiredAutomaticReview;
     if (retiredReview && !await lockCurrentNativeCompletionContract(tx as unknown as Db, {
       companyId: input.companyId, issueId: input.issueId, contractId: retiredReview.contractId,
@@ -2315,7 +2321,7 @@ export async function commitNativeStatusDecision(input: {
       for (const dependent of dependents) {
         const isCompletedChildParent = parent?.id === dependent.id;
         const idempotencyKey = isCompletedChildParent
-          ? `issue_children_completed:${dependent.id}:${input.issueId}${childCompletionRevision}`
+          ? (parent?.completionWakeKey ?? `issue_children_completed:${dependent.id}:${input.issueId}${childCompletionRevision}`)
           : buildIssueBlockersResolvedWakeIdempotencyKey({
               dependentIssueId: dependent.id,
               resolvedBlockerIssueId: input.issueId,
@@ -2367,7 +2373,7 @@ export async function commitNativeStatusDecision(input: {
           issueId: parent.id,
           agentId: parent.assigneeAgentId,
           reason: "issue_children_completed",
-          idempotencyKey: `issue_children_completed:${parent.id}:${input.issueId}${childCompletionRevision}`,
+          idempotencyKey: parent.completionWakeKey ?? `issue_children_completed:${parent.id}:${input.issueId}${childCompletionRevision}`,
           payload: {
             completedChildIssueId: input.issueId,
             ...childCompletionDelivery,

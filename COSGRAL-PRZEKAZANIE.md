@@ -1340,3 +1340,203 @@ git diff --check
 - Żywe e2e na 3199: messages (konto d) PASS (`e2e-messages-t14.log`), approval (a) PASS A/B/C (`e2e-approval-t14.log`), delegowanie (d) PASS (`e2e-deleg-t14.log`).
 - Przekreślono w §8: wiadomości agentów między sobą + 6 filtrów. Konto c nadal z limitem do 02:50.
 - Następne: §6 pełna konfiguracja agenta, §5 dobór wg kosztu/limitów/obciążenia i równoległe delegowanie, §12 personalizacja.
+
+## Codex #15 — dobór wg obciążenia, limitów i kosztu referencyjnego (2026-11-04)
+
+### Zakres wykonany i decyzje
+
+- Zgodnie z dopuszczonym podziałem t15 wykonano najpierw dobór i testy.
+  **Nie wdrożono jeszcze zabezpieczonego równoległego delegowania**: jawny limit
+  dzieci rozmowy, wymuszenie różnych wykonawców w grupie oraz bariera jednego
+  wake/raportu wymagają kolejnej tury. Nie uznawać całego §5 za ukończony.
+  `COSGRAL-PROMPT-POSTEP.md` pozostawiono bez zmian.
+- `project-conversation-roster.ts` liczy otwarte zadania agenta w całej firmie
+  (backlog/todo/in_progress/in_review/blocked) oraz osobno aktywne (bez backlog).
+  Nie liczy rozmów projektu ani done/cancelled. Runy nadal obejmują queued/running.
+  Projekcja nie zawiera env ani poświadczeń. Dodano stan lifecycle, brak osobnego
+  limitu zadań (`taskLimit: null`) i jawne dane ceny referencyjnej.
+- Model agenta ma miesięczny budżet i `runtimeConfig.heartbeat.maxConcurrentRuns`;
+  nie znaleziono osobnego limitu otwartych zadań. Wyczerpany budżet, pełne sloty,
+  pauza, lifecycle inny niż ready, niedostępny runtime/projekt i nieuprawnione
+  przypisanie wykluczają. Nie wymyślano quota subskrypcji ani nie sprawdzano loginu.
+- Stała kolejność: filtry dostępności i uprawnień → jawny dostępny wybór →
+  dotychczasowy wynik dopasowania (rola 100, wspólne słowa po 10, wskazany model 1)
+  → koszt referencyjny → otwarte zadania → aktywne zadania → runy → ID rosnąco.
+  Tańszy model nie wygrywa ze słabiej dopasowaną kompetencją; przy równym
+  dopasowaniu koszt ma pierwszeństwo przed obciążeniem. Jawny wybór nie omija
+  filtrów i nie powoduje cichej podmiany po odmowie.
+- Cena jest **referencją standardowego API**, a nie odczytem rachunku CLI lub
+  subskrypcji. `codexModelReferenceCost` korzysta z tego samego wersjonowanego
+  cennika w `codex-pricing.ts`, co rozliczanie receipts; nie dodano drugiej tabeli
+  cen ani pobierania z sieci. Jawny koszyk: 1 mln tokenów wejścia bez cache +
+  1 mln wyjścia. Nie prognozuje tokenów zadania, service tier ani kosztu konta.
+  Nieznany model: „brak danych o koszcie”. Gdy choć jeden dostępny kandydat ma
+  nieznaną cenę, porównanie kosztu wyłącza się w całej jego grupie równego
+  dopasowania, dzięki czemu comparator pozostaje przechodni i deterministyczny.
+- `project-executor-selection.ts` zwraca uzasadnienie oraz jawne powody wykluczeń
+  i niższej pozycji kandydatów. Route zapisuje komentarz i activity również przy
+  braku wyboru, potem zwraca 422 z `details.commentId`. Bez wake i rezerwacji;
+  zwykłe tworzenie/akceptacja/dispatch zachowują własne kontrole. Surowe błędy
+  providerów i konfiguracja nie trafiają do diagnostyki.
+- Instrukcję koordynatora uzupełniono o koszt referencyjny i otwarte zadania.
+  Uaktualniono `docs/cosgral/uprawnienia-agentow.md` i obie mapy projektów.
+  Nie deklarowano fikcyjnego limitu dzieci w instrukcji: silnik go jeszcze nie ma.
+
+### Skrypt przygotowany do następnego odbioru
+
+- Dodano `scripts/cosgral-e2e-parallel.mjs` i `.test.mjs`. To **test odbioru
+  docelowej równoległości**, nie dowód, że obecny silnik ją zabezpiecza.
+  Tworzy firmę/projekt, koordynatora i dwóch wykonawców o różnych modelach
+  referencyjnych oraz dodatkowym obciążeniu backlog poza projektem odbioru.
+  Koordynator ma utworzyć oba dzieci w tej samej turze; pierwszy wybór automatyczny,
+  drugi jawnie wskazany inny wykonawca. Używa zwykłych API, bez ręcznego wake.
+- Walidator wymaga dwóch done w odpowiednim projekcie/rodzicu, różnych agentów,
+  różnych ID i katalogów workspace z providerType git_worktree, odmiennych od
+  źródłowych repo, nakładających się przedziałów runów wykonawców i uzasadnień
+  doboru w rozmowie. Wymaga dokładnie czterech udanych, unikalnych runów
+  (dwa koordynatora i po jednym wykonawców), jednego wake ukończenia po obu
+  completedAt dzieci i dokładnie jednego `t15-complete` z tego runu. Kontroluje
+  retry i 75 sekund stabilności, potem pauzuje agentów/anuluje aktywne runy.
+- Skrypt nie był uruchamiany z modelem. Obecny per-child wake może słusznie
+  spowodować FAIL tego odbioru. Nie łagodzić asercji, aby ukryć brak bariery.
+  Po wdrożeniu bariery/limitu nadzorca może uruchomić go na własnym 3199:
+  `node scripts/cosgral-e2e-parallel.mjs --api http://127.0.0.1:3199 --codex-home /bezwzgledna/sciezka/do/uprawnionego/konta --timeout-sec 900`.
+  Domyślnie skrypt używa gpt-6.1-sol i gpt-6-astra; nadzorca musi mieć dostęp
+  do obu. To konfiguracja przyszłego testu, bez wywołania w t15.
+
+### Testy i wyniki
+
+Komendy pnpm z `PATH=/home/box/tools/bin:$PATH`. Vitest używa izolowanych baz
+PostgreSQL/PAPERCLIP_HOME w `/tmp`; izolacja używa repozytorium w `/tmp`.
+Nie uruchamiano osobnego dev API (również na 3197); nie używano portu 3199,
+loginów, modeli ani flag omijających sandbox. Brak serwera t15 do zatrzymania.
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts -t 'ranks equal capability'
+# RED: 1 FAIL — wygrywa niższe ID droższego modelu zamiast tańszego.
+# Pierwszy GREEN doszedł do błędu fixture: listComments zwraca najnowsze najpierw;
+# poprawiono test tak, by sprawdzał zapisany komentarz odmowy, nie ostatni element.
+
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/codex-pricing.test.ts src/services/heartbeat/task-markdown.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts
+# GREEN: 5 plików / 38 PASS, exit 0.
+# Regresje obejmują koszt przy remisie zdolności, pierwszeństwo zdolności/modelu,
+# brak ceny, rzeczywiste backlog/inne projekty, open/active/run tie-break,
+# zapis przy 422, budżet, pauzę, pełne sloty, jawny wybór, ACL i stabilne ID.
+
+node --test scripts/cosgral-e2e-parallel.test.mjs
+# RED: brak modułu skryptu. GREEN końcowego walidatora: 27 PASS.
+node --test scripts/cosgral-e2e-parallel.test.mjs scripts/cosgral-e2e-messages.test.mjs scripts/cosgral-e2e-approval.test.mjs
+# GREEN: 72 PASS, exit 0; wyłącznie testy bez modeli.
+
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS, exit 0 (również końcowe ponowienie).
+pnpm --filter @paperclipai/ui typecheck
+# PASS, exit 0; generowanie katalogu Storybook + tsc -b.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 IDs; kontrola strukturalna.
+node --check scripts/cosgral-e2e-parallel.mjs
+# PASS.
+git diff --check
+# PASS.
+```
+
+Logi: `/tmp/cosgral15-{red,green,tests,final-tests,script-red,script-green,scripts,server-tsc,server-tsc-final,ui-tsc,maps}.log`.
+Nie zmieniano UI, więc nie dodawano regresji komponentów ani nie uruchamiano
+browser suites/token gates. Nie uruchamiano pełnych monorepo typecheck/test:run/
+build ani standardowego typecheck serwera budującego Rust; zakres to celowany
+fragment, nie gotowość PR. Bez commit/push, gałąź `codex/cosgral-workspace`.
+
+### Następny krok — pozostała równoległość
+
+1. Ustalić i wymusić limit aktywnych dzieci rozmowy atomowo w istniejących drogach
+   tworzenia (zwykłe create/createChild oraz akceptacja suggest_tasks), z testem
+   równoczesnych wywołań na prawdziwej bazie. Nie opierać limitu na samym promptcie.
+2. Powiązać grupę równoległą z trwałą delegacją/turą i wymusić różne agenty oraz
+   świeże worktree bez odziedziczonego bindingu. Obecne testy izolacji pozostają
+   zielone; nie stanowią dowodu atomowego limitu grupy ani odmowy wspólnego agenta.
+3. Zastąpić dla grupy per-child wake pojedynczą trwałą kontynuacją po wszystkich
+   zakończeniach, bez utraty wyniku przy równoczesnym done i bez ponownego raportu.
+   Obecny punkt `issues.ts:getWakeableParentAfterChildCompletion` świadomie budzi
+   po każdym dziecku rozmowy. Sprawdzić też osobną natywną ścieżkę
+   `native-runtime/status-decision-committer.ts` i istniejącą kolejkę/recovery.
+   Nie zmieniać niezależnych tur rozmowy w jedną globalną barierę bez zakresu.
+4. Dopiero potem zaktualizować task-markdown/roster o rzeczywiście egzekwowany
+   limit i wykonać powyższy żywy odbiór na instancji nadzorcy. Żaden punkt promptu
+   nie został w t15 przekreślony.
+
+### t15b — limit dzieci i bariera raportu (2026-11-04)
+
+- Zachowano niezacommitowane zmiany t15. Dodano jedną stałą
+  `PROJECT_CONVERSATION_MAX_ACTIVE_CHILDREN = 4` w polityce rozmowy.
+  Wspólne `issueService.create` sprawdza limit po deduplikacji, pod istniejącą
+  transakcyjną blokadą drzewa firmy. Obejmuje zwykłe create, createChild i
+  akceptację suggest_tasks. Aktywne oznacza wszystkie statusy poza done/cancelled,
+  także backlog i blocked. Ponowienie tego samego idempotencyKey nie zużywa slotu.
+- Odmowa to 422 z kodem `project_conversation_child_limit`, powodem i commentId;
+  powód oraz activity są zapisywane w rozmowie po rollbacku tworzenia/akceptacji.
+  Nieudana akceptacja pozostawia propozycję pending i nie tworzy dzieci.
+- Wspólny getWakeableParentAfterChildCompletion wstrzymuje wake, dopóki choć jedno
+  dziecko rozmowy pozostaje aktywne. Ostatnie ukończenie przekazuje wszystkie
+  dzieci i ich podsumowania. Równoczesne transakcje kończące rodzeństwo są
+  serializowane blokadą rozmowy; monotoniczne znaczniki ukończenia wskazują jednego
+  właściciela wake również wtedy, gdy oba callbacki widzą już końcowy stan.
+  Natywne zatwierdzenie decyzji bierze tę samą blokadę przed blokadami wierszy
+  i używa wspólnego klucza wake. Nie dodano pętli, timerów ani dodatkowych runów.
+- Bariera obejmuje aktywne dzieci całej rozmowy projektu. Nie dodano osobnego
+  modelu grup/tur. Instrukcja pozwala tworzyć wiele niezależnych dzieci w jednej
+  turze dla RÓŻNYCH wykonawców, każde ze świeżym git worktree, podaje limit i
+  nakazuje czekać na pozostałe dzieci przed raportem. Dotychczasowe wymuszenie
+  izolacji worktree pozostaje w runtime. Sam wybór różnych wykonawców jest
+  instrukcją koordynatora, nie nowym ograniczeniem przypisań w API.
+- Zachowano brak dyspozycji zadania dla rozmowy i poprawną obsługę odpowiedzi
+  informacyjnych. Uaktualniono obie mapy projektów. Asercje żywego skryptu nie
+  zostały złagodzone; zmieniono jedynie komentarz o stanie implementacji.
+
+Polecenia pnpm z `PATH=/home/box/tools/bin:$PATH`:
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts
+# RED: 2 FAIL — piąte dziecko przyjęte i przedwczesny wake pierwszego dziecka.
+
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts -t 'sibling transactions'
+# Dodatkowy RED po poprawieniu fixture rozmowy (musi mieć status todo):
+# przy czasowym usunięciu blokady ukończeń oba wake zginęły (0 zamiast 1).
+# Poprawkę przywrócono przed końcową weryfikacją.
+# Wcześniejszy przebieg tej regresji miał wadliwy fixture backlog;
+# jego wyniku nie traktowano jako dowodu działania bariery.
+
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/heartbeat/task-markdown.test.ts src/services/heartbeat/project-conversation-execution.test.ts src/services/heartbeat/project-conversation-isolation.test.ts
+# GREEN: 4 pliki / 34 PASS. Prawdziwy PostgreSQL: wyścig pięciu create,
+# idempotencja przy pełnym limicie, zwolnienie slotu i createChild,
+# HTTP 422 ze wskazaniem zapisanego komentarza, rollback suggest_tasks,
+# wstrzymanie pierwszego wake i jeden wake równoczesnych ukończeń.
+
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/native-status-arbiter-corpus.test.ts -t 'rechecks child delivery|new evidence cannot|retires a proven'
+# PASS: 3 testy, 146 pominiętych przez filtr.
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS, exit 0, końcowy stan kodu i testów.
+node --test scripts/cosgral-e2e-parallel.test.mjs
+# PASS: 27 testów, bez modeli.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 capability IDs (kontrola strukturalna).
+node --check scripts/cosgral-e2e-parallel.mjs
+# PASS.
+git diff --check
+# PASS.
+```
+
+Logi: `/tmp/cosgral15b-{red,race-red-valid,verified-final,native,tsc-verified,script-final,maps-final}.log`.
+Nie uruchamiano modeli, żywego odbioru ani dev API na 3197/3199; nie ma serwera
+tej tury do zatrzymania. Bazy testowe są sprzątane przez fixture. Bez flag
+omijających sandbox. Nie wykonywano pełnego monorepo typecheck/test:run/build,
+UI ani browser suites — to celowana tura serwera, bez deklaracji gotowości PR.
+Nie zmieniano COSGRAL-PROMPT-POSTEP.md; bez commit/push.
+
+## Nadzorca – po Codex t15/t15b (4 XI 2026, ~02:28 CET)
+
+- t15 (konto a): dobór wg obciążenia/budżetu/slotów/kosztu referencyjnego; t15b (konto d): limit 4 aktywnych dzieci na rozmowę (422 + powód w rozmowie), bariera raportu koordynatora do ostatniego dziecka, instrukcja multi-delegacji.
+- Testy: serwer 136 PASS (project-conversations, issue-thread-interactions, codex-pricing); UI ProjectConversation 29; skrypty e2e unit parallel/messages/approval/delegation 27/18/27/31 PASS; check-maps, diff-check OK.
+- Żywe e2e na 3199 (jeden serwer): parallel (a) PASS, messages (d) PASS, approval (a) PASS, delegowanie (d) PASS; logi `/workspace/logs/e2e-*-t15.log`.
+- Przekreślono §5 pkt 5. §5 w całości: pkt 1–10 teraz wszystkie przekreślone poza ewentualnymi 1,2,6–9 – sprawdzić (pkt 1,2,6,7,8,9 pokrywa e2e delegowania, ale nie były osobno przekreślane).
+- Koszt = cena referencyjna API, nie rachunek subskrypcji; brak osobnego limitu otwartych zadań w modelu agenta.
+- Następne: §6 pełna konfiguracja agenta, §12 personalizacja, §7 integracje, §4 awatary/kursory.

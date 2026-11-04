@@ -159,12 +159,14 @@ Koordynator:
 2. Analizuje projekt i jego instrukcje.
 3. ~~Sprawdza dostępnych agentów oraz ich konfiguracje.~~
 4. ~~Dobiera wykonawców do zadań.~~
-5. Rozdziela zadania, również równolegle.
+5. ~~Rozdziela zadania, również równolegle.~~
 6. Nadzoruje przebieg pracy.
 7. Koordynuje wymianę informacji między agentami.
 8. Zleca dodatkowe audyty lub poprawki.
 9. Zbiera wyniki i raportuje postęp.
 10. ~~Prosi o zatwierdzenie działań wymagających decyzji człowieka.~~
+
+Stan t15 (4 XI 2026): pkt 5 przekreślony po żywym e2e `scripts/cosgral-e2e-parallel.mjs` (`e2e-parallel-t15.log` PASS: dwa równoległe dzieci, różni wykonawcy/worktree, jeden raport, limit 4 dzieci w silniku). Dobór uwzględnia obciążenie, budżet/sloty i koszt referencyjny (nie koszt rachunku subskrypcji).
 
 Stan t13 (4 XI 2026): pkt 3, 4 i 10 przekreślone po żywym e2e na koncie a
 (`scripts/cosgral-e2e-approval.mjs`, log `e2e-approval-a1.log`: PASS A/B/C — dobór
