@@ -2069,3 +2069,43 @@ Markdown dodatkowo sprawdzono pod kątem końcowych białych znaków: brak narus
 - E2E na 3199 po restarcie z kodem t19 (2 naraz): approval (d) PASS, delegowanie (c) PASS.
 - Rekomendacje i zasady: `docs/cosgral/REKOMENDACJE-DALEJ.md`.
 - Wszystkie serwery i procesy Codex zatrzymane. Konto a limit do 05:26 (CET), c/d działają, b nigdy.
+
+## Codex #20 — prosty panel własnych ról (2026-11-04)
+
+- Przeczytano Codex #19, odbiór nadzorcy t19, `doc/company-roles.md` i §12 promptu. Na gałęzi `codex/cosgral-workspace`; bez commit/push i nowych przekreśleń.
+- Dodano `ui/src/api/companyRoles.ts` i `CompanyRolesPanel` w profilu obok personalizacji/instrukcji pracy. Lista, tworzenie/edycja nazwy, opisu i kluczy, walidacja shared, zastosowanie konkretnej wersji oraz usunięcie po jawnym potwierdzeniu. Etykiety, fieldset/legend, natywna obsługa klawiatury, statusy/alerty; draft pozostaje po błędzie. Viewer odczytuje; formularze dostępne owner/admin, serwer nadal rozstrzyga granty. Klucze cache obejmują osobę i firmę, zmiana firmy/osoby resetuje panel.
+- API t19 nie zawierało DELETE. Dodano w tym samym module DELETE `/api/companies/:companyId/roles/:roleId` z `{version}`, kontraktem shared i OpenAPI, dotychczasowymi kontrolami aktora/firmy/grantów oraz atomowym audytem. **Usuwane są tylko role bez zapisanych zastosowań**: pokwitowanie daje 409, zachowując historię i granty. Test sprawdza też wersję, viewer, brak grantów, obcego członka, brak roli, walidację i rollback po awarii audytu.
+- Przypisanie przyjmuje UUID członkostwa użytkownika lub agenta, nie UUID konta/agenta; nie dodano katalogu członkostw agentów ani kreatora. UI wyjaśnia zastępowanie grantów, pusty zestaw, ochronę bazowych ról oraz brak propagacji edycji. Zaktualizowano dokumentację i obie mapy `access/membership`.
+
+Komendy (PATH=/home/box/tools/bin:$PATH) i wyniki:
+
+```sh
+pnpm --filter @paperclipai/ui exec vitest run src/components/CompanyRolesPanel.test.tsx
+# RED: 8 FAIL dla pustego panelu; GREEN: 8 PASS.
+# Dodatkowy RED usuwania: 1 FAIL / 8 PASS; następnie GREEN 9 PASS.
+pnpm --filter @paperclipai/ui exec vitest run src/components/CompanyRolesPanel.test.tsx src/components/WorkspaceInstructionsPanel.test.tsx src/components/PersonalizationPanel.test.tsx
+# PASS: 3 pliki / 13 testów.
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/company-roles.test.ts
+# RED: 1 FAIL / 10 PASS — brak DELETE (404 zamiast oczekiwanego 403).
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/company-roles.test.ts src/__tests__/openapi-routes.test.ts
+# GREEN: 2 pliki / 44 PASS; powtórzone po dodaniu rollbacku i dodatkowych odmów.
+pnpm --filter @paperclipai/ui typecheck
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/shared typecheck
+# Wszystkie PASS, exit 0.
+pnpm check:token-gates
+# PASS, wszystkie gates CLEAN; synchronizacja tokenów i postaci poprawna.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów, 193 capability IDs; wyłącznie kontrola strukturalna.
+git diff --check
+# PASS.
+```
+
+Granice: testy komponentowe z mockowanym API i testy HTTP/DB prawdziwego routera; bez przeglądarki, logowania, modelu i portu 3199. Vitest zgłasza istniejące ostrzeżenie konfiguracji Vite o `__dirname`. Nie uruchamiano pełnego repo-wide typecheck/test/build ani E2E — krótka tura t20 z weryfikacją zmienionych modułów; nie jest to deklaracja pełnego odbioru §12 ani PR-ready całego repo. Nie drukowano sekretów i nie używano flag bypass sandboxa.
+
+## Nadzorca – odbiór Codex t20 (4 XI 2026, ~04:50 CET)
+
+- t20 (konto d): panel UI własnych ról (`CompanyRolesPanel`): lista, tworzenie, edycja, usuwanie z potwierdzeniem, przypisywanie przez UUID członkostwa; viewer tylko odczyt.
+- Testy: UI CompanyRolesPanel+ProfileSettings 12 PASS; serwer company-roles+openapi-routes 44 PASS; check-maps, token gates, diff-check OK; e2e ról bez modelu PASS. Bez e2e z modelem (zgodnie z poleceniem).
+- Przekreślono §12 „Możliwość tworzenia własnych ról”. Zaktualizowano `docs/cosgral/REKOMENDACJE-DALEJ.md`.
+- Wszystko zatrzymane (serwery, Codex).

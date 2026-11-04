@@ -409,7 +409,7 @@ Operacje takie jak merge do głównej gałęzi, deploy produkcyjny, usuwanie dan
 
 Dodaj prosty panel personalizacji:
 - Zmiana nazwy i awatara każdego agenta.
-- Możliwość tworzenia własnych ról.
+- ~~Możliwość tworzenia własnych ról.~~
 - ~~Motyw jasny/ciemny.~~
 - ~~Zmiana akcentu kolorystycznego.~~
 - ~~Regulacja szerokości paneli.~~

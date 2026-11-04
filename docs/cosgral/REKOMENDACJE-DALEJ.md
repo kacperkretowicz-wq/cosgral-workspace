@@ -5,7 +5,7 @@ Gałąź: `codex/cosgral-workspace`. Pełna historia: `COSGRAL-PRZEKAZANIE.md`, 
 ## Priorytety
 
 1. **Zawieszanie pętli zdarzeń serwera w approval e2e** (P0). W odbiorze t18 dwa razy serwer nie odpowiadał ~110 s tuż po `GET /issues/:id/interactions` w scenariuszu B (`scripts/cosgral-e2e-approval.mjs`), sonda health: 109953 ms. Wystąpiło na koncie c; na d przeszło. Zrobić: uruchomić 3199 z `node --cpu-prof` (lub `--inspect` + profil), powtórzyć approval na c, znaleźć synchroniczną operację (podejrzane: synchroniczne fs/git przy worktree, kopiowanie Codex home/auth, redakcja dużych tekstów regexami, `containsInstructionCredential`). Dodać test/sondę opóźnienia pętli.
-2. **UI własnych ról (§12)** – backend gotowy w t19 (`company_roles`, migracja 0426, API, ACL bez eskalacji); brak panelu UI i e2e UI.
+2. ~~UI własnych ról (§12)~~ – zrobione w t20 (`CompanyRolesPanel` w profilu). Pozostaje: przypisywanie po nazwie członka zamiast UUID członkostwa, test przeglądarkowy, usuwanie ról w użyciu (dziś 409).
 3. **§7 integracje** – Claude Code / Cursor / Grok / Gemini CLI oraz API (OpenAI/Anthropic/Google/xAI/OpenRouter); uczciwe oznaczanie możliwości narzędzi per runtime (start w t16).
 4. **§4 multiplayer** – awatary (upload), kursory na wspólnych widokach, „Obserwuj użytkownika”, sync ustawień agentów na żywo.
 5. **§10 pamięć projektu** – pamięć w repo GitHub, podłączanie własnego repo z aplikacji.

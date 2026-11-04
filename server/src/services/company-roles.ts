@@ -74,6 +74,18 @@ export function companyRoleService(db: Db) {
         return { value: role!, action: "company_role.updated", entityId: roleId };
       });
     },
+    async remove(companyId: string, userId: string, roleId: string, version: number) {
+      return mutate(companyId, userId, async tx => {
+        const [role] = await tx.select().from(companyRoles).where(and(eq(companyRoles.companyId, companyId), eq(companyRoles.id, roleId))).for("update");
+        if (!role) throw notFound("Role not found");
+        if (role.version !== version) throw conflict("Role version changed");
+        await assertGrantAuthority(tx, companyId, userId, role.permissions as PermissionKey[]);
+        const [application] = await tx.select({ id: companyRoleApplications.memberId }).from(companyRoleApplications).where(and(eq(companyRoleApplications.companyId, companyId), eq(companyRoleApplications.roleId, roleId))).limit(1);
+        if (application) throw conflict("Rola ma zapisane zastosowania. Nie można jej usunąć; istniejące granty pozostają bez zmian.");
+        await tx.delete(companyRoles).where(and(eq(companyRoles.companyId, companyId), eq(companyRoles.id, roleId)));
+        return { value: { deleted: true }, action: "company_role.deleted", entityId: roleId, details: { version } };
+      });
+    },
     async apply(companyId: string, userId: string, memberId: string, roleId: string, version: number) {
       return mutate(companyId, userId, async tx => {
         const [role] = await tx.select().from(companyRoles).where(and(eq(companyRoles.companyId, companyId), eq(companyRoles.id, roleId))).for("share");

@@ -1,3 +1,4 @@
+import { CompanyRolesPanel } from "../components/CompanyRolesPanel";
 import { WorkspaceInstructionsPanel } from "../components/WorkspaceInstructionsPanel";
 import { PersonalizationPanel } from "../components/PersonalizationPanel";
 import { useEffect, useId, useRef, useState } from "react";
@@ -273,6 +274,7 @@ export function ProfileSettings() {
         </form>
 
         {selectedCompanyId && <PersonalizationPanel userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
+        {selectedCompanyId && <CompanyRolesPanel key={`roles:${sessionQuery.data.user.id}:${selectedCompanyId}`} userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
         {selectedCompanyId && <WorkspaceInstructionsPanel key={`${sessionQuery.data.user.id}:${selectedCompanyId}`} userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
         <InboxAgentPolicyControl companyId={selectedCompanyId} />
       </section>

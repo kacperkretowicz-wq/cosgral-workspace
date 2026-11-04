@@ -108,5 +108,16 @@ W ramach `access/membership`: [kontrakt i ograniczenia](../../doc/company-roles.
 Administrator firmy z users:manage_permissions tworzy/edytuje zestaw istniejących
 kluczy i stosuje konkretną wersję do członkostwa użytkownika lub agenta.
 Nie wolno nadać klucza ponad własny zakres; viewer nie edytuje.
-Edycja definicji wymaga jawnego ponownego przypisania. Brak panelu UI;
+Edycja definicji wymaga jawnego ponownego przypisania. Panel UI w profilu obok instrukcji pracy;
 nie jest to odbiór całego zarządzania członkami ani logowania.
+
+## T20 — panel własnych ról
+
+W ramach `access/membership`: [panel](../../ui/src/components/CompanyRolesPanel.tsx),
+[klient API](../../ui/src/api/companyRoles.ts),
+[test komponentu](../../ui/src/components/CompanyRolesPanel.test.tsx).
+Profil → Własne role firmy: lista, nowa rola, edycja, wybór kluczy,
+zastosowanie wersji do UUID członkostwa użytkownika/agenta, usunięcie po potwierdzeniu.
+Viewer tylko odczytuje. Pusta nazwa blokuje zapis; błędy API są widoczne,
+draft pozostaje po błędzie. Role z pokwitowaniami zastosowania są chronione przed usunięciem.
+Weryfikacja komponentowa z mockowanym API; przeglądarka/logowanie: not-run.

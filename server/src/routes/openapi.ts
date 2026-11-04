@@ -1,5 +1,5 @@
 import { agentTemplateSchema, createAgentFromTemplateSchema } from "@paperclipai/shared/agent-template";
-import { companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
+import { deleteCompanyRoleSchema, companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema, companyRoleSchema, companyRoleApplicationSchema } from "@paperclipai/shared/company-roles";
 import { workspaceInstructionSchema } from "@paperclipai/shared/workspace-instructions";
 import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { MUSE_ASSET_VERSION, museStopBoundarySchema, museDetectorCleanupAttestationSchema, createGrokInvitationSchema, configureGrokRoutineSchema, verifyGrokRoutineSchema, recoverGrokRoutineSchema, pairGrokBindingSchema, stopGrokWorkSchema, retryGrokDeliverySchema, updateFastResponseSchema } from "@paperclipai/shared";
@@ -6859,6 +6859,7 @@ registerCurrentRoute({
 });
 
 for (const [method, path, body, output, status] of [
+  ["delete", "/api/companies/{companyId}/roles/{roleId}", deleteCompanyRoleSchema, z.object({ deleted: z.boolean() }), 200],
   ["get", "/api/companies/{companyId}/roles", undefined, z.array(companyRoleSchema), 200],
   ["post", "/api/companies/{companyId}/roles", companyRoleDefinitionSchema, companyRoleSchema, 201],
   ["put", "/api/companies/{companyId}/roles/{roleId}", updateCompanyRoleSchema, companyRoleSchema, 200],

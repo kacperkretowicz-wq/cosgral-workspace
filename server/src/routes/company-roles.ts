@@ -1,7 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import type { Db } from "@paperclipai/db";
 import { z } from "zod";
-import { companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema } from "@paperclipai/shared/company-roles";
+import { deleteCompanyRoleSchema, companyRoleDefinitionSchema, updateCompanyRoleSchema, assignCompanyRoleSchema } from "@paperclipai/shared/company-roles";
 import { companyRoleService } from "../services/company-roles.js";
 import { assertBoard, hasCompanyAccess, assertCompanyAccess } from "./authz.js";
 import { forbidden, notFound } from "../errors.js";
@@ -30,6 +30,9 @@ export function companyRoleRoutes(db: Db) {
   });
   router.put("/companies/:companyId/members/:memberId/custom-role", authorize, validate(assignCompanyRoleSchema), async (req, res) => {
     res.json(await service.apply(req.params.companyId as string, req.actor.userId!, req.params.memberId as string, req.body.roleId, req.body.version));
+  });
+  router.delete("/companies/:companyId/roles/:roleId", authorize, validate(deleteCompanyRoleSchema), async (req, res) => {
+    res.json(await service.remove(req.params.companyId as string, req.actor.userId!, req.params.roleId as string, req.body.version));
   });
   return router;
 }

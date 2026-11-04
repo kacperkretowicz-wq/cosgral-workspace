@@ -117,3 +117,21 @@ it("honors the actor company scope even when the user has a stored company membe
  await request(app("admin", "board", [])).get(base()).expect(404);
  await request(app("admin", "board", [])).post(base()).send({ ...definition, name: "Poza zakresem tokena" }).expect(404);
 });
+
+it("deletes unused roles with authority and version checks, preserving applied roles", async () => {
+ const unused = (await request(app()).post(base()).send({ ...definition, name: "Do usunięcia" }).expect(201)).body;
+ await request(app("viewer")).delete(`${base()}/${unused.id}`).send({ version: 1 }).expect(403);
+ await request(app("limited")).delete(`${base()}/${unused.id}`).send({ version: 1 }).expect(403);
+ await request(app()).delete(`${base()}/${unused.id}`).send({ version: 2 }).expect(409);
+ await request(app()).delete(`${base()}/${role.id}`).send({ version: 3 }).expect(409);
+ await request(app()).delete(`${base()}/${unused.id}`).send({}).expect(400);
+ await request(app("outsider")).delete(`${base()}/${unused.id}`).send({ version: 1 }).expect(404);
+ await request(app()).delete(`${base()}/${randomUUID()}`).send({ version: 1 }).expect(404);
+ const auditFailure = vi.spyOn(activity, "persistActivity").mockRejectedValue(new Error("synthetic delete audit failure"));
+ try { await request(app()).delete(`${base()}/${unused.id}`).send({ version: 1 }).expect(500); }
+ finally { auditFailure.mockRestore(); }
+ expect((await request(app()).get(base())).body.some((r: any) => r.id === unused.id)).toBe(true);
+ await request(app()).delete(`${base()}/${unused.id}`).send({ version: 1 }).expect(200);
+ expect((await request(app()).get(base())).body.some((r: any) => r.id === unused.id)).toBe(false);
+ expect((await db.select().from(activityLog).where(eq(activityLog.action, "company_role.deleted"))).some(a => a.entityId === unused.id)).toBe(true);
+});

@@ -1,4 +1,4 @@
-# Własne role firmy — etap API
+# Własne role firmy
 
 Firma ma katalog nazwanych zestawów istniejących uprawnień Paperclip (`PERMISSION_KEYS`). Rola zawiera nazwę (1–100 znaków), opis (do 2000 znaków), unikalne klucze uprawnień i dodatnią wersję. To osobny katalog od specjalizacji agenta `AGENT_ROLES`, jego tytułu i bazowych ról członkostwa.
 
@@ -10,6 +10,7 @@ Wszystkie operacje wymagają aktora board z aktywnym członkostwem zapisanym w d
 | --- | --- |
 | GET `/companies/:companyId/roles` | Lista definicji, również dla widza |
 | POST `/companies/:companyId/roles` | Utworzenie `{name, description, permissions}`, wynik 201 |
+| DELETE `/companies/:companyId/roles/:roleId` | Usunięcie nieużywanej definicji `{version}`, wynik `{deleted:true}`; 409 przy zapisanych zastosowaniach |
 | PUT `/companies/:companyId/roles/:roleId` | Pełna edycja `{name, description, permissions, version}` |
 | PUT `/companies/:companyId/members/:memberId/custom-role` | Zastosowanie `{roleId, version}` do istniejącego członkostwa użytkownika lub agenta |
 
@@ -27,6 +28,8 @@ Mutacja definicji, grantów/pokwitowania oraz zapis audytu są jedną transakcj�
 
 ## Granice i dalsza praca
 
-To spójny etap kontrakt + API + ACL priorytetu c. Brak panelu katalogu i przypisywania w UI, usuwania ról, dynamicznego dziedziczenia po edycji oraz wspólnej migracji istniejących ręcznych grantów. Nie zmieniono pól agenta `role`, `permissions`, trustPreset, polityki sandboxa, budżetu ani dostępu do projektów. Brak tych elementów nie oznacza pełnego ukończenia §12 produktu.
+To spójny etap kontrakt + API + ACL priorytetu c. Panel katalogu znajduje się w profilu obok personalizacji i instrukcji pracy. Lista jest dostępna dla widza; owner/admin tworzy, edytuje, usuwa nieużywane definicje po potwierdzeniu i stosuje konkretną wersję do UUID członkostwa użytkownika lub agenta (nie UUID agenta/konta). Serwer ponownie sprawdza wszystkie granty. Usuwanie wymaga wersji i praw do kluczy usuwanej roli; zapis oraz audyt są atomowe. Rola z pokwitowaniem zastosowania pozostaje chroniona (409), bez zmiany grantów. Brak dynamicznego dziedziczenia po edycji i wspólnej migracji istniejących ręcznych grantów. Nie zmieniono pól agenta `role`, `permissions`, trustPreset, polityki sandboxa, budżetu ani dostępu do projektów. Brak tych elementów nie oznacza pełnego ukończenia §12 produktu.
 
 Odbiór: `pnpm --filter @paperclipai/server exec vitest run src/__tests__/company-roles.test.ts src/__tests__/openapi-routes.test.ts` i `node scripts/cosgral-e2e-roles.mjs`. E2E używa produkcyjnego routera, rzeczywistej bazy tymczasowej i jawnych syntetycznych aktorów fixture wyłącznie na 3197; nie sprawdza logowania/przeglądarki/modelu. Nie tworzy kont użytkowników ani dostawców. Port zajęty powoduje odmowę startu; proces kończy się w finally, a końcowy bind potwierdza zwolnienie portu.
+
+Testy komponentu: `pnpm --filter @paperclipai/ui exec vitest run src/components/CompanyRolesPanel.test.tsx`. Pokrywają katalog, zapis, walidację, odczyt widza, błędy, edycję i zastosowanie wersji oraz potwierdzane usuwanie. To dowód UI z mockowanym API; nie dowód przeglądarkowy/logowania.

@@ -164,3 +164,16 @@ Dowody i granice: [test](../../server/src/__tests__/company-roles.test.ts),
 [e2e HTTP/DB bez modelu](../../scripts/cosgral-e2e-roles.mjs),
 [dokumentacja](../../doc/company-roles.md). Brak odbioru natywnego call_api,
 logowania i UI; nie rozszerza wcześniejszych deklaracji całej capability.
+
+## T20 — rozszerzenie `membership`
+
+API: `present` — DELETE /api/companies/{companyId}/roles/{roleId}, ciało `{version}`.
+Agent access: `restricted` — board-only, tak jak katalog t19; token agenta nie wystarcza.
+Policy: aktywne członkostwo owner/admin, users:manage_permissions oraz nieskopowane
+uprawnienia starej definicji. Zapis i audyt w jednej transakcji. Wersja nieaktualna
+lub zapisane zastosowanie: 409. Usunięcie nie odbiera grantów.
+Evidence: test HTTP/DB company-roles oraz komponent CompanyRolesPanel; bez odbioru natywnego agenta.
+Verification: owner/admin usuwa nieużywaną wersję; viewer i administrator bez grantów
+mają odmowę, zastosowana rola pozostaje. UI w profilu korzysta z tych samych API.
+Gaps: nie wykonano przeglądarkowego/logowanego przypisania; wybór odbiorcy przez UUID
+członkostwa, bez katalogu członkostw agentów w panelu.
