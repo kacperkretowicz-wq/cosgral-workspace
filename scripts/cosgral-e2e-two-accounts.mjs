@@ -2,8 +2,9 @@
 // Live acceptance test. Creates durable test data; never prints response bodies or credentials.
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { readFile, writeFile, lstat, realpath } from 'node:fs/promises';
-import { dirname, resolve, relative, isAbsolute } from 'node:path';
+import { writeFile, realpath } from 'node:fs/promises';
+import { basename, dirname, resolve, relative, isAbsolute } from 'node:path';
+import { readPrivateAcceptanceJson as readPrivate, createPrivateAcceptanceFile } from './private-acceptance-file.mjs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
@@ -17,16 +18,10 @@ const { WebSocket } = createRequire(new URL('../server/package.json', import.met
 
 async function privatePath(path) {
   const parent = await realpath(dirname(path));
-  const actual = resolve(parent, path.split('/').at(-1));
+  const actual = resolve(parent, basename(path));
   const rel = relative(await realpath(repo), actual);
   check(rel.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) || isAbsolute(rel), 'state and credentials must be outside repository');
   return actual;
-}
-async function readPrivate(path) {
-  const stat = await lstat(path);
-  check(stat.isFile() && (stat.mode & 0o777) === 0o600 && stat.uid === process.getuid(), 'private file must be owned by current user, regular, mode 0600');
-  const contents = await readFile(path, 'utf8');
-  try { return JSON.parse(contents); } catch { throw new Error('invalid private JSON file (contents withheld)'); }
 }
 async function main() {
   const { values } = parseArgs({ options: {
@@ -86,8 +81,8 @@ async function main() {
     state = { users: Object.fromEntries(['A', 'B', 'C', 'V'].map(key => [key, { email: `cosgral-${key.toLowerCase()}-${suffix}@example.com` }])), commentIds: [] };
     credentials = { api, passwords: Object.fromEntries(['A', 'B', 'C', 'V'].map(key => [key, randomBytes(32).toString('base64url')])) };
     // Exclusive creation: a failed/partial run is inspectable and cannot be silently overwritten.
-    await writeFile(stateFile, JSON.stringify(state, null, 2), { mode: 0o600, flag: 'wx' });
-    await writeFile(credentialsFile, JSON.stringify(credentials), { mode: 0o600, flag: 'wx' });
+    await createPrivateAcceptanceFile(stateFile, JSON.stringify(state, null, 2));
+    await createPrivateAcceptanceFile(credentialsFile, JSON.stringify(credentials));
     step = 'separate email/password registrations A, B, C, viewer';
     for (const key of Object.keys(state.users)) {
       const result = await request(key, 'POST', '/auth/sign-up/email', {

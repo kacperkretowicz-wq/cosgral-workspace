@@ -190,3 +190,9 @@ Live prepare acceptance (4 XI) exercised the authenticated profile update and
 company-directory read with separate A/B cookie jars, plus outsider/viewer denials
 for private conversations and sockets. This is local API/WS evidence, not browser
 or deployment acceptance; no model/provider credentials were used.
+
+Acceptance credentials: the two-account script creates files exclusively and
+checks owner + 0600 on POSIX or a private ACL on Windows before consuming JSON.
+The Windows helper rejects public access; it does not relax application auth or
+repair existing files during reads. Local Windows helper tests are not restart
+or POSIX acceptance evidence.

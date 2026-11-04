@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { createPrivateAcceptanceFile } from './private-acceptance-file.mjs';
 
 const script = new URL('./cosgral-e2e-two-accounts.mjs', import.meta.url);
 async function run(args) {
-  const child = spawn(process.execPath, [script.pathname, ...args], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, [fileURLToPath(script), ...args], { stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '';
   child.stdout.on('data', data => { output += data; });
   child.stderr.on('data', data => { output += data; });
@@ -19,7 +21,7 @@ async function run(args) {
 }
 
 test('rejects repository state paths before creating credentials', async () => {
-  const result = await run(['--api', 'http://127.0.0.1:3198', '--state-file', new URL('../forbidden-state.json', import.meta.url).pathname]);
+  const result = await run(['--api', 'http://127.0.0.1:3198', '--state-file', fileURLToPath(new URL('../forbidden-state.json', import.meta.url))]);
   assert.equal(result.code, 1);
   assert.match(result.output, /outside repository/);
 });
@@ -42,8 +44,8 @@ test('never echoes malformed credential JSON, even when parsing errors contain s
   const dir = await mkdtemp(join(tmpdir(), 'cosgral-script-'));
   try {
     const state = join(dir, 'state.json');
-    await writeFile(state, '{}', { mode: 0o600 });
-    await writeFile(`${state}.credentials.json`, `{"password": "${secret}", BROKEN}`, { mode: 0o600 });
+    await createPrivateAcceptanceFile(state, '{}');
+    await createPrivateAcceptanceFile(`${state}.credentials.json`, `{"password": "${secret}", BROKEN}`);
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     const result = await run(['--api', `http://127.0.0.1:${server.address().port}`, '--phase', 'verify-after-restart', '--state-file', state]);
