@@ -2,7 +2,7 @@
 
 ## Bieżące ustalenia — kontynuacja 4 XI
 
-Cel budowy jest obecnie wstrzymany na prośbę użytkownika. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle zatrzymała się na problemie z kartą; nie utworzono konta ani maszyny. Codespaces może być opcją do pracy w wolnej chwili, ale konfigurację odłożono. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
+Użytkownik wznowił budowę 4 XI poleceniem „kontunuuj budowę projektu”. Historyczne zapisy wstrzymania poniżej pozostają opisem wcześniejszych etapów. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle zatrzymała się na problemie z kartą; nie utworzono konta ani maszyny. Codespaces może być opcją do pracy w wolnej chwili, ale konfigurację odłożono. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
 
 Nowsze przyrosty kodu: formularz URL repozytorium, podłączanie GitHub z panelu autoryzacji, profiler P0 i przygotowany profil systemd. Szczegóły oraz granice odbioru są na końcu dokumentu. Historyczne komunikaty o wstrzymaniu i instrukcje kont poprzedniego hosta nie opisują obecnego stanu.
 
@@ -98,3 +98,15 @@ Dalszy przebieg kontroli Windows: wykryto CRLF także w protocol-coverage.json i
 ## Wynik kontroli po poprawkach Windows
 
 Produkcyjny Runner zbudował się poprawnie (`cargo build --release`, 9m51s, ostrzeżenia). Przeszły następnie replay goldens, semantic catalog, zapis stempla buildu i przygotowanie vendora. Kontrola typów serwera zakończyła się kodem 0. Osobna kontrola CLI paperclipai także zakończyła się kodem 0. UI, pozostałe pakiety i cargo check przeszły w poprzednich etapach tego odbioru. Pierwotne pełne wywołania pnpm -r typecheck były czerwone z opisanych przyczyn; po poprawkach domknięto wadliwą ścieżkę serwera i CLI osobno, bez ponawiania całego monorepo jednym poleceniem. Pełny test:run i pełny monorepo build nadal nieodebrane. Testy zmienionych powierzchni: 111 UI oraz 5 katalogu możliwości PASS. Nie zalicza to P0, runtime Linux, dwóch kont ani wdrożenia.
+
+## Wznowienie budowy — 4 XI, bieżący odbiór Windows
+
+Sprawdzono czysty checkout i zgodność lokalnego HEAD z origin: `da6aedcf1fd51a54c021adaf7b7ce339ff43204f`. Testy wrappera po ostatniej zmianie dispatchera (`node --test scripts/__tests__/vitest-invocation.test.mjs scripts/__tests__/run-vitest-stable-shard.test.mjs`) zakończyły się kodem 0: 35 PASS, 5 SKIP (fixture'y POSIX na Windows), zero błędów. Nie dowodzą działania pominiętych scenariuszy.
+
+Wznowiono pełny `test:run` na Node 24.18.0 i pnpm 9.15.4 z lokalnego katalogu tooling. Oba katalogi bin muszą poprzedzać globalne shimy w PATH: pierwsza próba z globalnym pnpm zatrzymała się przed testami, żądając reinstalacji modułów bez TTY. Reinstalacji nie wykonano; ponowienie z właściwym PATH przeszło preflight i uruchomiło shard czatu 1/6 (150/899 testów). W chwili tego zapisu proces nadal działa; brak wyniku shardu i całego zestawu. Nie uruchamiać drugiego pełnego przebiegu, dopóki obecny proces nie zakończy się. Log obserwacji znajduje się w katalogu roboczym tego czatu, poza repozytorium.
+
+## Rozbudowa onboardingu istniejącego projektu — 4 XI
+
+Dodano formularz `AddProjectRepositoryUrl` w `ProjectRepositories`: dołączanie źródła przez URL także po utworzeniu projektu, przez istniejące `projectsApi.createWorkspace` z zakresem firmy i typem git_repo. Zapis odświeża listę i oba klucze szczegółów projektu; błąd zachowuje adres do poprawy/ponowienia. Obecny routing serwera zachowuje read/workspace-write, walidację i audyt. Formularz informuje o autoryzacji prywatnych repo. Nie jest to dowód checkoutu ani pracy modelu. Test komponentu odrzucenie → ponowienie → sukces PASS (1/1); token gates i mapy PASS. Typecheck UI rozpoczęty, jeszcze bez wyniku końcowego; pełny test:run nadal działa na pierwszym shardzie. Zmiany pozostają lokalne do dalszego odbioru.
+
+Odbiór przyrostu onboardingu: UI typecheck zakończył się kodem 0. Produkcyjny build z katalogu ui zakończył się kodem 0 (Vite 1m15s). Ostrzeżenia: selektory ::highlight, mieszane importy MarkdownEditor, rozmiary chunków i czas pluginów. Komponent 1/1, token gates, mapy i diff-check PASS. To odbiór zmienionego UI, bez pełnego monorepo PASS i bez żywego checkoutu/modelu. Pełny test:run uruchomiony wcześniej nadal działa.

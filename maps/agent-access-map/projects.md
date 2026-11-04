@@ -285,3 +285,8 @@ z zapisem powodu odmowy 422; raport czeka na ostatnie dziecko. Ukończenia
 rodzeństwa są serializowane także w natywnym runtime. Testy PostgreSQL/HTTP
 obejmują wyścigi tworzenia/ukończeń i odmowę akceptacji suggest_tasks.
 Brak żywego dowodu równoległości z modelem w t15/t15b.
+
+Repository URL onboarding (4 XI): the board repository form calls existing
+`POST /api/projects/:id/workspaces` with `sourceType: git_repo` and `repoUrl`.
+Project read/workspace-write checks and activity logging remain in the owning
+route. No new agent tool, endpoint, credential grant or execution permission is added.

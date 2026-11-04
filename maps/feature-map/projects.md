@@ -216,3 +216,9 @@ z zapisem powodu odmowy 422; raport czeka na ostatnie dziecko. Ukończenia
 rodzeństwa są serializowane także w natywnym runtime. Testy PostgreSQL/HTTP
 obejmują wyścigi tworzenia/ukończeń i odmowę akceptacji suggest_tasks.
 Brak żywego dowodu równoległości z modelem w t15/t15b.
+
+Repository URL onboarding (4 XI): existing projects expose `AddProjectRepositoryUrl`
+in their repository settings. Saving uses the existing company-scoped workspace
+API; failures retain the URL, success refreshes project aliases and lists. The
+component test covers rejection and retry. This adds a source workspace, not proof
+of remote access, checkout or a live model run; private sources need authorization.

@@ -1,4 +1,5 @@
 import { LegacyProjectRepository } from "./LegacyProjectRepository";
+import { AddProjectRepositoryUrl } from "./AddProjectRepositoryUrl";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Project, ProjectRepository } from "@paperclipai/shared";
@@ -30,6 +31,7 @@ export function ProjectRepositories({ project }: { project: Project }) {
     },
   });
   return <section aria-label="Repositories" className="flex min-w-0 flex-col gap-4 py-4">
+    <AddProjectRepositoryUrl key={project.id} project={project} />
     <ProjectRepositoryInput companyId={project.companyId} selected={draft ?? saved} onChange={(repos) => { setDraft(repos); save.reset(); }} onConnect={() => setConnecting(true)} disabled={save.isPending} />
     {project.workspaces.filter((workspace) => workspace.repoUrl && !workspace.metadata?.githubRepositoryId).map((workspace) => <LegacyProjectRepository key={workspace.id} workspace={workspace} projectRef={project.urlKey} />)}
     <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
