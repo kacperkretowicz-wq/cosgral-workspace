@@ -33,3 +33,9 @@ Free hosting without a card remains unresolved. Do not create paid resources.
 - Owned runtimes requested to stop. Full monorepo test:run started, result pending; full monorepo build/typecheck and Linux bwrap P0 remain open.
 
 Private evidence remains under the chat work directory, acceptance-live-20261104 and acceptance-restart-20261104. Credentials and raw server logs are not committed.
+
+## Subsequent review and remediation
+
+- Reproduced the agent-avatar warning with an actual HTTP disconnect while a cold render was suspended. The baseline failed: the returned storage stream remained open and pipeline logged ERR_STREAM_UNABLE_TO_PIPE. The route now disposes/settles that stream when the response is already destroyed. Avatar suite: 11 PASS, including cache, ETag, S3, rendering failure and disconnect cases. This establishes this warning mechanism; it does not prove every possible stream warning has the same cause.
+- Replaced the broad M1 lifecycle scanner exemption for every *-fixture.ts file with four explicit standalone acceptance-script paths. A filesystem test verifies production and unknown script fixture names still report violations. Lifecycle scanner tests: 7 PASS; real repository scan PASS.
+- Full monorepo run remains live; no complete monorepo PASS claimed.

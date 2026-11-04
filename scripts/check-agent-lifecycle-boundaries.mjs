@@ -26,6 +26,14 @@ export function agentLifecycleWriteViolations(source, file = "") {
   return violations;
 }
 
+// Standalone acceptance servers seed synthetic data and are never production imports.
+// Keep exemptions explicit: a production file named *-fixture.ts still needs checks.
+const offlineAcceptanceFixtures = new Set([
+  "server/scripts/cosgral-roles-fixture.ts",
+  "server/scripts/cosgral-personalization-fixture.ts",
+  "server/scripts/cosgral-instructions-fixture.ts",
+  "server/scripts/cosgral-agent-config-fixture.ts",
+]);
 export function scanAgentLifecycleBoundaries(root = resolve(fileURLToPath(new URL("..", import.meta.url)))) {
   const violations = [];
   function walk(directory) {
@@ -35,7 +43,7 @@ export function scanAgentLifecycleBoundaries(root = resolve(fileURLToPath(new UR
       const label = relative(root, path).split(sep).join("/");
       if (label.includes("modules/agent-lifecycle/")) continue;
       if (entry.isDirectory()) walk(path);
-      else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name) && !/-fixture\.ts$/.test(entry.name)) {
+      else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name) && !offlineAcceptanceFixtures.has(label)) {
         for (const reason of agentLifecycleWriteViolations(readFileSync(path, "utf8"), label)) violations.push(`${label}: ${reason}`);
       }
     }

@@ -6,7 +6,8 @@ import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, Delete
 import { createS3StorageProvider } from "../storage/s3-provider.js";
 import path from "node:path";
 import express from "express";
-import type { Server } from "node:http";
+import { get, type Server } from "node:http";
+import { logger } from "../middleware/logger.js";
 import sharp from "sharp";
 import { AGENT_PALETTE_IDS, appearanceForPalette, PAPERCLIP_DARK_AVATAR_BACKGROUND } from "@paperclipai/shared";
 import { createLocalDiskStorageProvider } from "../storage/local-disk-provider.js";
@@ -32,6 +33,41 @@ async function serve(service: ReturnType<typeof createAgentAvatarService>) {
   return `http://127.0.0.1:${(server.address() as { port: number }).port}/api/agent-avatars/cap-v1/arctic-blue/rest.png`;
 }
 describe("on-demand agent avatars", () => {
+  it("disposes a rendered stream when the HTTP client disconnects before rendering finishes", async () => {
+    let release!: () => void;
+    let started!: () => void;
+    let disconnected!: () => void;
+    const rendering = new Promise<void>(resolve => { release = resolve; });
+    const admitted = new Promise<void>(resolve => { started = resolve; });
+    const closed = new Promise<void>(resolve => { disconnected = resolve; });
+    const service = createAgentAvatarService(await storage(), async () => {
+      started(); await rendering; return Buffer.from("png-bytes");
+    });
+    const originalGet = service.get.bind(service);
+    let output: Readable | undefined;
+    vi.spyOn(service, "get").mockImplementation(async (...args) => {
+      const result = await originalGet(...args); output = result.stream; return result;
+    });
+    const warning = vi.spyOn(logger, "warn");
+    const app = express();
+    app.use((_req, res, next) => { res.once("close", disconnected); next(); });
+    app.use("/api", agentAvatarRoutes(service).router);
+    const server = await new Promise<Server>(resolve => {
+      const running = app.listen(0, "127.0.0.1", () => resolve(running));
+    });
+    cleanups.push(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+    const client = get(`http://127.0.0.1:${(server.address() as { port: number }).port}/api/agent-avatars/cap-v1/arctic-blue/rest.png`);
+    client.on("error", () => {}); // Intentional disconnect, not an application failure.
+    try {
+      await admitted;
+      client.destroy();
+      await closed;
+      release();
+      await vi.waitFor(() => expect(output?.closed).toBe(true));
+      expect(warning).not.toHaveBeenCalled();
+    } finally { release(); client.destroy(); warning.mockRestore(); }
+  });
+
   it("coalesces cold requests, survives restarts and regenerates deleted cache entries", async () => {
     const provider = await storage();
     const render = vi.fn(async () => Buffer.from("png-bytes"));

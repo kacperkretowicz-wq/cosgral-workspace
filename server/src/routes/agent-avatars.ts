@@ -38,6 +38,13 @@ export function agentAvatarRoutes(injected?: ReturnType<typeof createAgentAvatar
     try {
       service ??= createAgentAvatarService(createStorageProviderFromConfig(loadConfig()));
       const { stream, byteSize, etag } = await service.get({ appearance: appearanceForPalette(palette === "muted-dream" ? AGENT_PALETTE_IDS[0] : palette), muted: palette === "muted-dream", pose, size: size as AgentAvatarSize, scale: Number(scale) as 1 | 2, background }, req.ip || req.socket.remoteAddress || "unknown");
+      // Cold rendering may outlive the browser request. Dispose the newly
+      // opened storage stream before attempting to pipe to a closed response.
+      if (res.destroyed) {
+        stream.destroy();
+        await finished(stream, { cleanup: true }).catch(() => {});
+        return;
+      }
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       res.setHeader("ETag", etag);
       res.setHeader("X-Content-Type-Options", "nosniff");
