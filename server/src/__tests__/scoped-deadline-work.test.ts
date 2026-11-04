@@ -415,3 +415,29 @@ it("coalesces broad reconstruction without delaying an exact object hint or save
   await vi.advanceTimersByTimeAsync(120_000);
   expect(load).toHaveBeenCalledTimes(4); expect(check).toHaveBeenCalledOnce();
 });
+
+it("ready settles the first batch while remaining work retains its scheduler deadline", async () => {
+  vi.useFakeTimers();
+  const owner = installDatabaseWorkSignals({ execute: vi.fn(async () => []), transaction: vi.fn(async () => undefined) });
+  const onError = vi.fn();
+  coordinator = createDeliveryWorkCoordinator({ owner, canRun: () => true, onError });
+  const now = Date.now();
+  const check = vi.fn(async () => null);
+  const worker = registerScopedDeadlineWork(coordinator, {
+    queue: DELIVERY_QUEUES.nativeResponsePresentation,
+    batchSize: 1,
+    decodeScope: () => undefined,
+    matches: () => true,
+    load: async () => [1, 2, 3].map(id => ({ id: String(id), companyId: "company", dueAt: 0 })),
+    check,
+  }, () => true);
+  await worker.ready;
+  expect(check).toHaveBeenCalledTimes(1);
+  expect(coordinator.nextWakeAt()).toBe(now + 1000);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(check).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(check).toHaveBeenCalledTimes(3);
+  expect(coordinator.nextWakeAt()).toBeNull();
+  expect(onError).not.toHaveBeenCalled();
+});
