@@ -13000,6 +13000,7 @@ export function issueService(db: Db) {
         onBehalfOfUserId?: string | null;
       },
       options?: {
+        messageKind?: "audit";
         authorType?: IssueCommentAuthorType | null;
         presentation?: IssueCommentPresentation | null;
         metadata?: IssueCommentMetadata | null;
@@ -13038,13 +13039,13 @@ export function issueService(db: Db) {
       // The query below locks human comments on caller-owned transactions too,
       // sharing the fence with both question creation and Slack settlement.
       const issueQuery = dbOrTx
-        .select({ companyId: issues.companyId, conversationAgentId: issues.conversationAgentId })
+        .select({ companyId: issues.companyId, conversationAgentId: issues.conversationAgentId, assigneeAgentId: issues.assigneeAgentId })
         .from(issues)
         .where(eq(issues.id, issueId));
       // Caller-owned transactions (including chat and review comments) must
       // serialize with question creation before inserting the human comment.
       const issue = await (actor.userId || (actor.runId && dbOrTx !== db) ? issueQuery.for("update") : issueQuery)
-        .then((rows: Array<{ companyId: string; conversationAgentId: string | null }>) => rows[0] ?? null);
+        .then((rows: Array<{ companyId: string; conversationAgentId: string | null; assigneeAgentId: string | null }>) => rows[0] ?? null);
 
       if (!issue) throw notFound("Issue not found");
 
@@ -13212,7 +13213,8 @@ export function issueService(db: Db) {
             actor.onBehalfOfUserId,
           )
         : null;
-      const metadata = issueCommentMetadataSchema
+      if (options?.metadata?.recipientAgentId) throw forbidden("Message recipient provenance is server-owned");
+      let metadata = issueCommentMetadataSchema
         .nullable()
         .parse(
           actor.agentId
@@ -13222,6 +13224,13 @@ export function issueService(db: Db) {
               )
             : (options?.metadata ?? null),
         );
+      if (options?.messageKind === "audit") {
+        metadata ??= { version: 1, sections: [{ rows: [{ type: "text", text: "Raport audytu" }] }] };
+        metadata.messageKind = "audit";
+      }
+      if (actor.agentId && issue.assigneeAgentId && actor.agentId !== issue.assigneeAgentId && metadata) {
+        metadata.recipientAgentId = issue.assigneeAgentId;
+      }
       let comment: typeof issueComments.$inferSelect | null = null;
       if (createdByRunId && !options?.proactiveChatMessage) {
         const existing = await dbOrTx

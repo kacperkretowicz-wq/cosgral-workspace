@@ -1202,3 +1202,141 @@ git diff --check
 - Żywe e2e: delegowanie PASS (c5, to samo drzewo); zatwierdzenia/dobór `node scripts/cosgral-e2e-approval.mjs --api http://127.0.0.1:3199 --codex-home ~/.codex-a --timeout-sec 850` → **PASS A, B-approve, C-reject** (`/workspace/logs/e2e-approval-a1.log`).
 - Testy: serwer `project-conversations` + `issue-thread-interactions` 126 PASS; UI `ProjectConversation.test.tsx` 27 PASS; `node --test scripts/cosgral-e2e-approval.test.mjs` 27 PASS; `check-maps` OK; `git diff --check` OK.
 - Przekreślono w `COSGRAL-PROMPT-POSTEP.md` §5 pkt 3, 4, 10.
+
+## Codex #14 — chronologiczny chat i komunikacja agent–agent (2026-11-04)
+
+### Zmiany i ustalenia
+
+- `ProjectConversation` scala po czasie i ID komentarze rozmowy, komentarze
+  bezpośrednich zadań dzieci tego samego projektu, delegowania, zmiany statusu,
+  błędy wykonania oraz istniejące karty zatwierdzeń. Karty zgód mają teraz miejsce
+  w historii zamiast osobnego bloku pod wszystkimi komentarzami. Domyślne wpisy
+  nie pokazują surowych logów; wiadomość agenta ma skrót i natywne rozwijane
+  szczegóły. API błędów zwraca stan wykonania/link, bez surowego tekstu błędu.
+- Sześć filtrów: Wszystkie wiadomości / Tylko ludzie / Koordynator /
+  Komunikacja agentów / Zadania / Błędy i audyty. Natywny select ma etykietę,
+  aria, obsługę klawiatury, liczniki wczytanych wpisów i pusty stan. Główne
+  komentarze i dodatkowe zdarzenia mają osobną paginację. Licznik nie udaje
+  pełnego licznika serwerowego; starsze strony trzeba wczytać. Zdarzenia firmy
+  i statusy runów odświeżają dodatkową historię przez istniejący transport.
+- Klasyfikacja jest jedną czystą funkcją w
+  `packages/shared/src/project-conversation-history.ts`, używaną w API i UI,
+  z testem pierwszeństwa kategorii. Nie zgaduje po słowach w treści. Nowe
+  `POST /api/issues/{id}/comments` z `messageKind: "audit"` zapisuje jawnie
+  oznaczony raport audytu w metadanych; to tylko prezentacja, nie uprawnienia.
+- `GET /api/issues/{conversationId}/project-history?cursor=...` jest projekcją
+  istniejących tabel, bez kopiowania wiadomości ani migracji. Sprawdza odczyt
+  rozmowy, zakres firmy/projektu i odczyt każdego dziecka/runu. Dane pozostają
+  w komentarzach, activity i heartbeat_runs. Kursor zachowuje mikrosekundy;
+  sortowanie nie używa localeCompare, które źle porządkuje interpunkcję dat.
+- Adresowanie już istnieje przez komentarz do zadania przypisanego adresatowi.
+  Samo @mention w Markdown nie uruchamia tutaj wake. Serwis komentarzy zapisuje
+  `metadata.recipientAgentId` z przypisania w chwili przyjęcia; autor pochodzi
+  z aktora, a klient nie może podrobić snapshotu. Zmiana przypisania nie zmienia
+  zapisanego adresata. Historycznym wpisom bez snapshotu nie dopisujemy
+  wymyślonego adresata. Nazwy nadawcy i adresata są widoczne w rozmowie.
+- Istniejące ACL komentarzy nadal decydują o zapisie. Widz tylko czyta; UI
+  blokuje również composer przy braku capability mutacji. Nowy endpoint nie
+  daje grantów ani dodatkowej możliwości wykonania.
+- `project-message-wakeup.ts` ogranicza automatyczną wymianę do jednego hopu:
+  odpowiedź runu wybudzonego komentarzem agenta zapisuje się, ale nie wywołuje
+  następnego wake komentarzem. Sprawdzane jest trwałe źródło uwierzytelnionego
+  runu, firma, autor i stan running; klient nie podaje licznika hopów. Dotyczy
+  POST komentarza i PATCH z komentarzem w rozmowie i jej bezpośrednich dzieciach.
+  Poza tym zakresem nie zmieniono dotychczasowej polityki wake. Normalny raport
+  po zakończeniu dziecka nadal używa istniejącego `issue_children_completed`.
+- Instrukcja koordynatora opisuje adresowanie, raport audytu i zakaz obchodzenia
+  limitu przez ręczny wake/resume/reopen. Uaktualniono dokument uprawnień i obie
+  mapy projektów. `COSGRAL-PROMPT-POSTEP.md` pozostawiono bez zmian.
+
+### Testy i wyniki
+
+Polecenia pnpm uruchamiano z `PATH=/home/box/tools/bin:$PATH`.
+Testy mają własne PostgreSQL/PAPERCLIP_HOME w `/tmp`, syntetycznych aktorów
+HTTP Supertest i spy wake. Bez logowania, wywołań modeli, połączeń do 3199,
+flag omijających sandbox i osobnej instancji dev API. Nie pozostał serwer t14
+na 3197; nie uruchamiano tam dodatkowego procesu.
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/services/project-conversation-history.test.ts
+# RED: brak nowego modułu klasyfikacji.
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx
+# RED: 1 FAIL / 27 PASS, brak filtra i rozwijania wiadomości.
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts
+# RED: brak endpointu historii, 404.
+# Osobno czasowo wyłączona ochrona wake: RED na zwrotnym wybudzeniu;
+# kod ochrony przywrócony, GREEN na finalnym zestawie.
+# Osobno paginacja >40 wpisów w pełnej sekundzie oraz +100 ms:
+# RED na trwale pominiętym wpisie; po porównaniu ASCII GREEN.
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/project-conversations.test.ts src/services/project-conversation-history.test.ts src/services/issue-comment-wakeup.test.ts src/__tests__/issue-thread-interactions-service.test.ts src/services/heartbeat/project-conversation-execution.test.ts
+# GREEN: 5 plików / 127 PASS, exit 0 (finalny zestaw po review).
+pnpm --filter @paperclipai/ui exec vitest run src/pages/ProjectConversation.test.tsx src/lib/project-conversation.test.ts
+# GREEN: 2 pliki / 32 PASS, exit 0 (sam widok: 29 PASS).
+node --test scripts/cosgral-e2e-messages.test.mjs
+# RED: brak skryptu; osobne RED na braku/błędnym źródle wake wykonawcy.
+# GREEN: 18 PASS, exit 0 po wzmocnieniu dowodu wake.
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS, exit 0.
+pnpm --filter @paperclipai/ui typecheck
+# PASS, exit 0 (generowanie katalogu Storybook i tsc -b).
+pnpm check:token-gates
+# PASS: wszystkie 4 bramki CLEAN, synchronizacja cliplab OK.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 capability IDs; tylko kontrola strukturalna.
+git diff --check
+# PASS, exit 0.
+```
+
+- Testy obejmują nadawcę/adresata, snapshot po zmianie przypisania, oznaczony
+  audyt, odmowę widzowi i agentowi bez projektu, pominięcie innego projektu,
+  zgodność widoczności prywatnego dziecka z kanonicznym GET zadania, brak
+  surowego błędu runtime, paginację z równymi czasami i granicą sekundy,
+  usunięte komentarze, błędny kursor oraz brak wake po odpowiedzi POST/PATCH.
+- Wczesne GREEN ujawniło brak aliasu tabeli (`issues` zamiast `issueRows`),
+  różnicę typów dat shared (Date vs string) i stare selektory testów UI
+  wybierające pierwszy select; poprawiono kod i fixture. Test historii miał
+  jednakowe daty dla wszystkich numerów — teraz ma rzeczywiste rosnące czasy.
+- Jedna szersza próba podczas kompilacji miała timeout istniejącego testu zgód
+  po 15 s oraz spóźniony wake audytu wpadający do następnego etapu testu.
+  Fixture czeka teraz na konkretny wake audytu przed zerowaniem spy. Powtórzenie
+  bez równoległych kompilacji: 127 PASS; po review również 127 PASS.
+- Read-only review wskazało błąd localeCompare i zbyt słaby dowód wake w e2e;
+  oba poprawiono z osobnymi RED→GREEN. Końcowy review potwierdził poprawki.
+- Logi w `/tmp/cosgral14-*`: m.in. `server-red.log`, `api-red.log`,
+  `ui-red.log`, `guard-red.log`, `pagination-red.log`, `server-final3.log`,
+  `ui-expanded.log`, `script-wake-red.log`, `script-final2.log`,
+  `server-tsc-verified.log`, `ui-tsc-final.log`, `ui-final.log`,
+  `tokens.log`, `maps-final.log`.
+
+### Skrypt żywego odbioru i następny krok nadzorcy
+
+- Dodano `scripts/cosgral-e2e-messages.mjs` i `.test.mjs`, według istniejącego
+  e2e zatwierdzeń. Skrypt tworzy osobną firmę/projekt, dwa bezpiecznie
+  skonfigurowane lokalne agenty i repozytoria w `/tmp`. Koordynator tworzy
+  dziecko backlog, wysyła do niego `t14-message`, a wykonawca odpowiada
+  `t14-reply` do rozmowy i kończy zadanie. Skrypt wymaga runu wykonawcy
+  z `contextSnapshot.wakeCommentId` równym ID tej konkretnej wiadomości,
+  poprawnej klasyfikacji delegowania/statusów i nadawcy/adresata. Nie ma
+  zastępczego PATCH backlog→todo, który mógłby ukryć niedziałający wake.
+- Po `t14-complete` wymaga 75 sekund bez zmian/retry, ograniczonej liczby
+  udanych runów i braku runu wywołanego odpowiedzią `t14-reply`. Zawsze próbuje
+  pauzować agentów i anulować aktywne runy; dowody pozostają w firmie i `/tmp`.
+- Nadzorca na własnej instancji 3199 i uprawnionym koncie:
+  `node scripts/cosgral-e2e-messages.mjs --api http://127.0.0.1:3199 --codex-home /bezwzględna/ścieżka/do/konta --timeout-sec 900`.
+  Skryptu **nie uruchamiano z modelem w t14**. Sprawdzić także dwie niezależne
+  przeglądarki: te same wpisy i kolejność, filtry, szczegóły agentów, widza,
+  reconnect oraz ponowne odczytanie zapisanej historii. Dopiero po żywym odbiorze
+  nadzorca może aktualizować przekreślenia §8.
+- Nie przeprowadzono pełnego monorepo typecheck/test:run/build, browser suites,
+  restartu z modelem ani kwalifikacji pozostałych runtime’ów. Testy API nie są
+  dowodem wykonania modelu ani trwałości dostarczenia wake po awarii procesu.
+  Nie deklarujemy ukończenia całej aplikacji ani gotowości PR. Bez commit/push;
+  gałąź pozostaje `codex/cosgral-workspace`.
+
+## Nadzorca – po Codex t14 (4 XI 2026, ~01:57 CET)
+
+- t14 (konto d, gpt-6.1-sol medium): §8 filtry (6) + wiadomości agent–agent z nadawcą/adresatem, ACL, ochrona przed ping-pongiem. Jeden serwer (3199), zatrzymany na końcu.
+- Testy: serwer 127 PASS; UI ProjectConversation 29 PASS (t14 raportował 32 w szerszym zestawie); skrypty e2e messages/approval/delegation (unit) 18/27/31 PASS; check-maps OK; git diff --check OK.
+- Żywe e2e na 3199: messages (konto d) PASS (`e2e-messages-t14.log`), approval (a) PASS A/B/C (`e2e-approval-t14.log`), delegowanie (d) PASS (`e2e-deleg-t14.log`).
+- Przekreślono w §8: wiadomości agentów między sobą + 6 filtrów. Konto c nadal z limitem do 02:50.
+- Następne: §6 pełna konfiguracja agenta, §5 dobór wg kosztu/limitów/obciążenia i równoległe delegowanie, §12 personalizacja.

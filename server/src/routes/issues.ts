@@ -1,3 +1,5 @@
+import { projectConversationHistory } from "../services/project-conversation-history.js";
+import { allowAgentMessageWake } from "../services/project-message-wakeup.js";
 import { selectProjectExecutor } from "../services/project-executor-selection.js";
 import { isProjectConversation } from "../services/project-conversation-policy.js";
 import { notifyDeferredExecutionWork } from "../services/deferred-execution-notifications.js";
@@ -15970,6 +15972,7 @@ export function issueRoutes(
             assigneeId &&
             !assigneeChanged &&
             !goalCommentSteered &&
+            (selfComment || await allowAgentMessageWake(db, issue.companyId, issue.id, actor.agentId, actor.runId)) &&
             shouldWakeAssigneeForComment
           ) {
             addWakeup(assigneeId, {
@@ -17156,6 +17159,24 @@ export function issueRoutes(
     if (!query.success) throw badRequest("Invalid decision receipt filters");
     res.json(await conversationDecisionReceiptsService(db).list(issue.companyId, issue.id, {
       ...query.data, actor: req.actor, userId: req.actor.userId,
+    }));
+  });
+
+  router.get("/issues/:id/project-history", async (req, res) => {
+    const issue = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Issue not found");
+    if (!issue || !(await assertIssueReadAllowed(req, res, issue))) return;
+    if (!isProjectConversation(issue) || !issue.projectId) throw unprocessable("Project conversation required");
+    let cursor: { at: string; id: string } | undefined;
+    if (req.query.cursor !== undefined) {
+      try { cursor = z.object({ at: z.string().refine(s => Number.isFinite(Date.parse(s))), id: z.uuid() }).strict().parse(JSON.parse(String(req.query.cursor))); }
+      catch { throw unprocessable("Invalid history cursor"); }
+    }
+    const children = await filterIssuesForActor(req, await db.select().from(issueRows).where(and(
+      eq(issueRows.companyId, issue.companyId), eq(issueRows.projectId, issue.projectId), eq(issueRows.parentId, issue.id),
+    )));
+    res.json(await projectConversationHistory(db, { companyId: issue.companyId, conversationId: issue.id,
+      coordinatorId: issue.assigneeAgentId, children, cursor,
+      canReadRun: run => canActorReadHeartbeatRun(db, access, req.actor, run),
     }));
   });
 
@@ -19139,6 +19160,7 @@ export function issueRoutes(
 
         const sourceTrust = await sourceTrustForActorWrite(currentIssue, actor);
         const commentOptions = {
+          messageKind: req.body.messageKind,
           authorType:
             req.body.authorType ??
             (actor.actorType === "agent" ? "agent" : "user"),
@@ -19252,6 +19274,7 @@ export function issueRoutes(
         });
       } else {
         const commentOptions = {
+          messageKind: req.body.messageKind,
           authorType:
             req.body.authorType ??
             (actor.actorType === "agent" ? "agent" : "user"),
@@ -19588,7 +19611,7 @@ export function issueRoutes(
           reopened,
           currentStatus: wakeIssueSnapshot.status,
         });
-        if (assigneeId && !goalCommentSteered && shouldWakeAssigneeForComment) {
+        if (assigneeId && !goalCommentSteered && (selfComment || await allowAgentMessageWake(db, currentIssue.companyId, currentIssue.id, actor.agentId, actor.runId)) && shouldWakeAssigneeForComment) {
           if (reopened) {
             addWakeup(assigneeId, {
               source: "automation",

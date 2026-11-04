@@ -11,12 +11,12 @@ import { queryKeys } from "../lib/queryKeys";
 
 const mocks = vi.hoisted(() => ({
   live: null as ((event: { companyId: string; type: string; payload: Record<string, unknown> }) => void) | null, tree: vi.fn(), release: vi.fn(), get: vi.fn(), getConversation: vi.fn(), openConversation: vi.fn(), setCoordinator: vi.fn(), projects: vi.fn(),
-  decisions: vi.fn(), accept: vi.fn(), reject: vi.fn(),
+  projectHistory: vi.fn(), decisions: vi.fn(), accept: vi.fn(), reject: vi.fn(),
   cost: vi.fn(), products: vi.fn(), comments: vi.fn(), send: vi.fn(), tasks: vi.fn(), agents: vi.fn(), directory: vi.fn(), session: vi.fn(), liveRuns: vi.fn(),
 }));
 vi.mock("./OrgChart", () => ({ OrgChart: ({ orgTree }: { orgTree: unknown }) => <div data-testid="workflow-chart">{JSON.stringify(orgTree)}</div> }));
 vi.mock("../api/projects", () => ({ projectsApi: { get: mocks.get, getConversation: mocks.getConversation, openConversation: mocks.openConversation, setConversationCoordinator: mocks.setCoordinator, list: mocks.projects } }));
-vi.mock("../api/issues", () => ({ issuesApi: { listInteractions: mocks.decisions, acceptInteraction: mocks.accept, rejectInteraction: mocks.reject, listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getCostSummary: mocks.cost, listWorkProducts: mocks.products, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
+vi.mock("../api/issues", () => ({ issuesApi: { projectHistory: mocks.projectHistory, listInteractions: mocks.decisions, acceptInteraction: mocks.accept, rejectInteraction: mocks.reject, listComments: mocks.comments, addComment: mocks.send, listAll: mocks.tasks, getCostSummary: mocks.cost, listWorkProducts: mocks.products, getTreeControlState: mocks.tree, releaseTreeHold: mocks.release } }));
 vi.mock("../api/agents", () => ({ agentsApi: { list: mocks.agents } }));
 vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForIssue: mocks.liveRuns } }));
 vi.mock("../api/access", () => ({ accessApi: { listUserDirectory: mocks.directory } }));
@@ -50,6 +50,7 @@ beforeEach(async () => {
   localStorage.clear();
   presenceMock.users = []; presenceMock.connected = false;
   mocks.liveRuns.mockResolvedValue([]);
+  mocks.projectHistory.mockResolvedValue({ entries: [], nextCursor: null });
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
   mocks.get.mockResolvedValue({ id: "p", name: "Uszko", companyId: "c" });
   mocks.getConversation.mockResolvedValue({ issueId: "chat", identifier: "COS-1", coordinatorAgentId: null, canManageCoordinator: true, canResolveApprovals: true });
@@ -69,6 +70,40 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); client.clear(); host.remove(); if (originalViewport) Object.defineProperty(window, "visualViewport", originalViewport); else delete (window as { visualViewport?: unknown }).visualViewport; });
 
 describe("project conversation", () => {
+  it("filters chronologically with counts, empty state and expandable agent messages", async () => {
+    mocks.comments.mockResolvedValue([
+      { id: "agent", authorAgentId: "worker", body: "Raport wykonawcy\nSzczegóły audytu", createdAt: "2026-11-04T10:02:00Z" },
+      { id: "human", authorUserId: "u", body: "Polecenie człowieka", createdAt: "2026-11-04T10:01:00Z" },
+    ]);
+    await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.comments("chat") }); }); await settle();
+    const filter = host.querySelector<HTMLSelectElement>('select[aria-label="Filtr wiadomości"]');
+    expect(filter).toBeTruthy();
+    expect(host.querySelector("details")?.open).toBe(false);
+    await act(async () => { filter!.value = "humans"; filter!.dispatchEvent(new Event("change", { bubbles: true })); });
+    const log = host.querySelector('[role="log"]')!;
+    expect(log.textContent).toContain("Polecenie człowieka");
+    expect(log.textContent).not.toContain("Raport wykonawcy");
+    expect(host.textContent).toContain("Tylko ludzie (1)");
+    await act(async () => { filter!.value = "errors"; filter!.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(log.textContent).toContain("Brak wiadomości dla tego filtra");
+  });
+
+  it("merges task activity, child comments, runtime errors and approvals in chronological order", async () => {
+    mocks.agents.mockResolvedValue([{ id: "worker", name: "Wykonawca" }, { id: "coord", name: "Koordynator" }]);
+    mocks.comments.mockResolvedValue([{ id: "human", authorUserId: "u", body: "Początek", createdAt: "2026-11-04T10:00:00Z" }]);
+    mocks.projectHistory.mockResolvedValue({ nextCursor: null, entries: [
+      { id: "error", issueId: "child", kind: "error", body: "Błąd wykonania", createdAt: "2026-11-04T10:03:00Z" },
+      { id: "child-message", issueId: "child", kind: "comment", authorAgentId: "coord", recipientAgentId: "worker", body: "Sprawdź GPU", createdAt: "2026-11-04T10:02:00Z" },
+      { id: "task", issueId: "child", kind: "task", body: "Delegowanie zadania", createdAt: "2026-11-04T10:01:00Z" },
+    ] });
+    await act(async () => { await client.invalidateQueries(); }); await settle();
+    const articles = [...host.querySelectorAll('[role="log"] article')];
+    expect(articles.map(a => a.textContent).join("|")).toMatch(/Początek.*Delegowanie zadania.*Sprawdź GPU.*Błąd wykonania/s);
+    expect(host.textContent).toContain("Koordynator → Wykonawca");
+    await act(async () => { const f = host.querySelector<HTMLSelectElement>("#conversation-filter")!; f.value = "agents"; f.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(host.querySelector('[role="log"]')!.textContent).toContain("Sprawdź GPU");
+    expect(host.querySelector('[role="log"]')!.textContent).not.toContain("Delegowanie zadania");
+  });
   it("shows human approval proposals, accepts via the existing API and refreshes another user's decision live", async () => {
     const proposal = { ...pendingSuggestedTasksInteraction, id: "proposal", issueId: "chat", companyId: "c", resolverPolicy: "human_only" as const, effectiveResolverPolicy: "human_only" as const };
     mocks.decisions.mockResolvedValue([proposal]);
@@ -144,6 +179,7 @@ describe("project conversation", () => {
     expect(mocks.liveRuns).toHaveBeenCalledWith("chat");
     expect(host.textContent).toContain("Ala pracuje nad tą rozmową");
     mocks.liveRuns.mockResolvedValue([]);
+  mocks.projectHistory.mockResolvedValue({ entries: [], nextCursor: null });
     await act(async () => { await client.invalidateQueries({ queryKey: queryKeys.issues.liveRuns("chat") }); }); await settle();
     expect(host.textContent).not.toContain("Ala pracuje nad tą rozmową");
   });
@@ -177,7 +213,7 @@ describe("project conversation", () => {
     await settle();
     expect(host.textContent).toContain("Koordynator jest wstrzymany");
     expect(host.textContent).toContain("Beata pracuje w firmie");
-    expect(host.querySelector<HTMLSelectElement>("select")?.disabled).toBe(true);
+    expect(host.querySelector<HTMLSelectElement>("#project-coordinator")?.disabled).toBe(true);
     await type("Szkic");
     await act(async () => click("Wyślij"));
     expect(mocks.send).not.toHaveBeenCalled();
@@ -188,7 +224,7 @@ describe("project conversation", () => {
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
     mocks.setCoordinator.mockResolvedValue({ issueId: "new-chat", identifier: "COS-2", coordinatorAgentId: "a", canManageCoordinator: true, canResolveApprovals: true });
     await settle(); await type("Szkic przed wyborem");
-    const select = host.querySelector<HTMLSelectElement>("select")!;
+    const select = host.querySelector<HTMLSelectElement>("#project-coordinator")!;
     await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
     expect(mocks.setCoordinator).toHaveBeenCalledWith("p", "a", "c");
     expect(mocks.openConversation).not.toHaveBeenCalled();
@@ -202,7 +238,7 @@ describe("project conversation", () => {
     client.setQueryData(["agents", "c"], [{ id: "a", name: "Ala", status: "idle" }]);
     mocks.setCoordinator.mockRejectedValue(new Error("Forbidden"));
     await settle(); await type("Zachowany szkic");
-    const select = host.querySelector<HTMLSelectElement>("select")!;
+    const select = host.querySelector<HTMLSelectElement>("#project-coordinator")!;
     await act(async () => { select.value = "a"; select.dispatchEvent(new Event("change", { bubbles: true })); }); await settle();
     expect(host.textContent).toContain("Nie udało się zmienić koordynatora");
     expect(host.querySelector("textarea")?.value).toBe("Zachowany szkic");
@@ -276,7 +312,7 @@ describe("project conversation", () => {
     expect(host.textContent).not.toContain("Wznów rozmowę");
   });
   it("loads a descending cursor page into chronological history without moving the reading anchor", async () => {
-    const comment = (n: number) => ({ id: `id-${n}`, body: `History ${n}`, createdAt: new Date().toISOString() });
+    const comment = (n: number) => ({ id: `id-${n}`, body: `History ${n}`, createdAt: new Date(Date.UTC(2026, 10, 4, 10, n)).toISOString() });
     mocks.comments.mockImplementation((_id, filters) => Promise.resolve(filters?.after ? Array.from({ length: 5 }, (_, i) => comment(5 - i)) : Array.from({ length: 40 }, (_, i) => comment(45 - i))));
     await act(async () => { await client.invalidateQueries({ queryKey: ["issues", "comments", "chat"] }); }); await settle();
     const scroller = host.querySelector<HTMLElement>("#cosgral-messages")!;

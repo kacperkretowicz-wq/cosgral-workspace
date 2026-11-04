@@ -254,3 +254,20 @@ Completion wakes require a reply tied to the validated completed child. Informat
 turns do not require a mutation; process `succeeded` is not proof of delegation.
 Inherited worker bindings are discarded before restore; only the task/agent worktree
 can be reused. The previous workspace is retained unchanged.
+
+T14: `GET /api/issues/{conversationId}/project-history?cursor=...` zwraca
+stronicowany odczyt komentarzy dzieci, delegowań/statusów i błędów. Wymaga
+odczytu rozmowy, tej samej firmy/projektu, odczytu każdego dziecka i runu.
+Nie przyznaje uprawnień zapisu. Komentarz agenta do zadania przypisanego innemu
+agentowi jest adresowaną wiadomością; serwer zapisuje `metadata.recipientAgentId`
+z bieżącego przypisania, klient nie może go podrobić. Samo @mention nie kieruje
+wake. Istniejące ACL komentarzy i rola viewer pozostają obowiązujące.
+`POST /api/issues/{id}/comments` przyjmuje opcjonalne `messageKind: "audit"`
+(jedynie klasyfikacja widoku). Nowych endpointów wykonania nie dodano.
+W rozmowie projektu i jej bezpośrednich dzieciach run wybudzony komentarzem
+agenta nie może uruchomić kolejnego wake komentarzem (POST ani PATCH).
+Wiadomość nadal jest zapisywana. Brak/poprawność runu i źródło wiadomości są
+sprawdzane w bazie; klient nie ustawia licznika hopów. Zwykłe wybudzenie po
+zakończeniu dziecka pozostaje osobnym istniejącym zdarzeniem orkiestracji.
+Testy HTTP z PostgreSQL używają syntetycznych aktorów i spy wake; żywa próba
+modelu i dwóch przeglądarek wymaga odbioru nadzorcy.

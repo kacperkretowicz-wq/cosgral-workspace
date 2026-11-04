@@ -1,3 +1,4 @@
+import { allowAgentMessageWake } from "../services/project-message-wakeup.js";
 import { projectConversationRoster } from "../services/heartbeat/project-conversation-roster.js";
 import { issueThreadInteractionService } from "../services/issue-thread-interactions.js";
 import { buildPaperclipTaskMarkdown } from "../services/heartbeat/task-markdown.js";
@@ -31,6 +32,103 @@ describe("project conversation identity", () => {
     db = createDb(database.connectionString);
   }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
   afterAll(async () => { await db?.$client.end(); await database?.cleanup(); });
+
+  it("projects child messages and task events with access checks and stops agent reply wakes", async () => {
+    const companyId = randomUUID();
+    await db.insert(companies).values({ id: companyId, name: "Messages", issuePrefix: `M${companyId.slice(0, 6)}` });
+    await db.insert(companyMemberships).values(["owner", "viewer"].map(principalId => ({ companyId, principalType: "user", principalId, status: "active", membershipRole: principalId === "viewer" ? "viewer" : "operator" })));
+    const [project] = await db.insert(projects).values({ companyId, name: "Messages", visibility: "private", privacyOwnerUserId: "owner" }).returning();
+    const [coordinator, worker, outsider] = await db.insert(agents).values(["Coordinator", "Worker", "Outsider"].map(name => ({ companyId, name, adapterType: "process" }))).returning();
+    await db.insert(projectAccessMembers).values([
+      ...[coordinator!, worker!].map(a => ({ companyId, projectId: project!.id, subjectType: "agent", subjectId: a.id })),
+      ...["owner", "viewer"].map(subjectId => ({ companyId, projectId: project!.id, subjectType: "user", subjectId })),
+    ]);
+    const conversation = (await projectConversationService(db).getOrCreate(companyId, project!.id, "owner"))!.issue;
+    await db.update(issues).set({ assigneeAgentId: coordinator!.id }).where(eq(issues.id, conversation.id));
+    const child = await issueService(db).create(companyId, { title: "Delegated work", projectId: project!.id, parentId: conversation.id, assigneeAgentId: worker!.id, status: "todo" });
+    const [sourceRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: coordinator!.id, issueId: conversation.id, status: "running" }).returning();
+    let actorAgent = coordinator!.id; let actorRun = sourceRun!.id;
+    const app = express(); app.use(express.json());
+    app.use((req, _res, next) => {
+      req.actor = req.header("x-test-user") ? { type: "board", source: "session", userId: req.header("x-test-user")!, companyIds: [companyId], memberships: [{ companyId, membershipRole: req.header("x-test-user") === "viewer" ? "viewer" : "operator", status: "active" }] } : { type: "agent", source: "agent_jwt", companyId, agentId: actorAgent, runId: actorRun };
+      next();
+    }); app.use("/api", issueRoutes(db)); app.use(errorHandler);
+    const childUrl = `/api/issues/${child.id}/comments`;
+    const historyUrl = `/api/issues/${conversation.id}/project-history`;
+    wakeup.mockClear();
+    const sent = await request(app).post(childUrl).send({ body: "Sprawdź obsługę błędów GPU" });
+    expect(sent.status).toBe(201);
+    expect(sent.body.metadata.recipientAgentId).toBe(worker!.id);
+    await vi.waitFor(() => expect(wakeup).toHaveBeenCalledWith(worker!.id, expect.objectContaining({ reason: "issue_commented" })));
+    const audit = await request(app).post(childUrl).send({ body: "Audyt GPU", messageKind: "audit" });
+    expect(audit.status).toBe(201);
+    expect(audit.body.metadata.messageKind).toBe("audit");
+    await vi.waitFor(() => expect(wakeup).toHaveBeenCalledWith(worker!.id, expect.objectContaining({ contextSnapshot: expect.objectContaining({ wakeCommentId: audit.body.id }) })));
+    const [replyRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: worker!.id, issueId: child.id, status: "running", contextSnapshot: { wakeReason: "issue_commented", wakeCommentId: sent.body.id } }).returning();
+    actorAgent = worker!.id; actorRun = replyRun!.id;
+    wakeup.mockClear();
+    const replied = await request(app).post(`/api/issues/${conversation.id}/comments`).send({ body: "Sprawdzam GPU" });
+    expect(replied.status).toBe(201);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(wakeup).not.toHaveBeenCalled();
+    // PATCH with comment cannot extend the same reply chain either.
+    const patched = await request(app).patch(`/api/issues/${conversation.id}`).send({ comment: "Druga odpowiedź GPU" });
+    expect([200, 403]).toContain(patched.status);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(wakeup).not.toHaveBeenCalled();
+    expect(await allowAgentMessageWake(db, companyId, conversation.id, worker!.id, replyRun!.id)).toBe(false);
+    expect(await allowAgentMessageWake(db, companyId, conversation.id, worker!.id, sourceRun!.id)).toBe(false);
+    expect(await allowAgentMessageWake(db, companyId, conversation.id, worker!.id, null)).toBe(false);
+    expect(await allowAgentMessageWake(db, companyId, child.id, coordinator!.id, sourceRun!.id)).toBe(true);
+    const [humanSource] = await db.insert(issueComments).values({ companyId, issueId: conversation.id, body: "Człowiek", authorUserId: "owner" }).returning();
+    await db.update(heartbeatRuns).set({ contextSnapshot: { wakeReason: "issue_commented", wakeCommentId: humanSource!.id } }).where(eq(heartbeatRuns.id, sourceRun!.id));
+    expect(await allowAgentMessageWake(db, companyId, child.id, coordinator!.id, sourceRun!.id)).toBe(true);
+    const privateChild = await issueService(db).create(companyId, { title: "Private report", projectId: project!.id, parentId: conversation.id, visibility: "private", createdByUserId: "owner" });
+    await issueService(db).addComment(privateChild.id, "PRIVATE-CONTENT", { userId: "owner" });
+    const [otherProject] = await db.insert(projects).values({ companyId, name: "Other project" }).returning();
+    const otherChild = await issueService(db).create(companyId, { title: "Outside project", projectId: otherProject!.id, parentId: conversation.id });
+    await issueService(db).addComment(otherChild.id, "OTHER-PROJECT", { userId: "owner" });
+    const [failedRun] = await db.insert(heartbeatRuns).values({ companyId, agentId: worker!.id, issueId: child.id, status: "failed", error: "SECRET-RAW-RUNTIME" }).returning();
+    await db.insert(activityLog).values({ companyId, actorType: "agent", actorId: coordinator!.id, action: "issue.created", entityType: "issue", entityId: child.id, details: { status: "todo" } });
+    await db.insert(activityLog).values({ companyId, actorType: "agent", actorId: worker!.id, action: "issue.updated", entityType: "issue", entityId: child.id, details: { status: "done", _previous: { status: "todo" } } });
+    const history = await request(app).get(historyUrl).set("x-test-user", "viewer");
+    expect(history.status).toBe(200);
+    expect(history.body.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: audit.body.id, category: "errors", messageKind: "audit" }),
+      expect.objectContaining({ id: sent.body.id, category: "agents", authorAgentId: coordinator!.id, recipientAgentId: worker!.id }),
+      expect.objectContaining({ kind: "task", category: "tasks", body: expect.stringContaining("done") }),
+    ]));
+    // Project membership can grant inherited private-child access. Match the
+    // canonical issue endpoint rather than inventing a stricter projection ACL.
+    const privateRead = await request(app).get(`/api/issues/${privateChild.id}`).set("x-test-user", "viewer");
+    expect(JSON.stringify(history.body).includes("PRIVATE-CONTENT")).toBe(privateRead.status === 200);
+    expect(JSON.stringify(history.body)).not.toContain("OTHER-PROJECT");
+    expect(JSON.stringify(history.body)).not.toContain("SECRET-RAW-RUNTIME");
+    expect(history.body.entries).toContainEqual(expect.objectContaining({ id: failedRun!.id, category: "errors" }));
+    expect((await request(app).get(`${historyUrl}?cursor=broken`).set("x-test-user", "viewer")).status).toBe(422);
+    // Stored recipient survives reassignment; deleted rows never leak content.
+    await db.update(issues).set({ assigneeAgentId: coordinator!.id }).where(eq(issues.id, child.id));
+    const reread = await request(app).get(historyUrl).set("x-test-user", "viewer");
+    expect(reread.body.entries.find((e: { id: string }) => e.id === sent.body.id).recipientAgentId).toBe(worker!.id);
+    const batch = await db.insert(issueComments).values(Array.from({ length: 47 }, (_, n) => ({ companyId, issueId: child.id, body: `Page ${n}`, authorUserId: "owner", createdAt: new Date("2026-11-04T11:00:00Z") }))).returning();
+    const [fractional] = await db.insert(issueComments).values({ companyId, issueId: child.id, body: "Fractional boundary", authorUserId: "owner", createdAt: new Date("2026-11-04T11:00:00.100Z") }).returning();
+    const allEntries: Array<{ id: string }> = []; let cursor: string | null = null;
+    do {
+      const page = await request(app).get(`${historyUrl}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`).set("x-test-user", "viewer");
+      expect(page.status).toBe(200); allEntries.push(...page.body.entries); cursor = page.body.nextCursor;
+    } while (cursor);
+    expect(new Set(allEntries.map(e => e.id)).size).toBe(allEntries.length);
+    expect(batch.every(c => allEntries.some(e => e.id === c.id))).toBe(true);
+    expect(allEntries.some(e => e.id === fractional!.id)).toBe(true);
+    await db.update(issueComments).set({ deletedAt: new Date() }).where(eq(issueComments.id, sent.body.id));
+    expect(JSON.stringify((await request(app).get(historyUrl).set("x-test-user", "viewer")).body)).not.toContain(sent.body.body);
+    expect((await request(app).post(childUrl).set("x-test-user", "viewer").send({ body: "deny" })).status).toBe(403);
+    actorAgent = outsider!.id;
+    expect((await request(app).get(historyUrl)).status).toBe(404);
+    actorAgent = coordinator!.id; actorRun = sourceRun!.id;
+    const spoof = await request(app).post(childUrl).send({ body: "spoof", metadata: { version: 1, recipientAgentId: coordinator!.id, sections: [{ rows: [{ type: "text", text: "spoof" }] }] } });
+    expect([400, 403]).toContain(spoof.status);
+  }, EMBEDDED_POSTGRES_TEST_TIMEOUT_MS);
 
   it("creates the first selection atomically and preserves execution ownership during a run", async () => {
     const companyId = randomUUID();

@@ -186,3 +186,43 @@ odpowiedź informacyjna bez operacji otrzymuje błąd weryfikacji delegowania.
 Nie dowodzi zgodności treści utworzonego zadania z pełną intencją użytkownika.
 Nie uznaje starego zadania/interakcji z innego runu za nowy efekt. Nie tworzy
 zadań, nie ponawia tury i nie obchodzi bramek zgody.
+
+## t14 — wiadomości agent–agent w rozmowie projektu
+
+Adresowanie korzysta z istniejącego zadania: agent wysyła
+`POST /api/issues/{zadanie-adresata}/comments` z `{ "body": "treść" }`.
+Adresatem jest agent przypisany do zadania w chwili zapisu. Serwer zapisuje
+snapshot `metadata.recipientAgentId`, autor pochodzi z uwierzytelnionego aktora.
+Samo `@agent` w Markdown nie wybudza adresata. Nie powstała nowa ścieżka zapisu
+ani grant dostępu; komentarz musi przejść dotychczasową politykę firmy,
+projektu i zadania. Widz może czytać, ale nie wysyłać ani zatwierdzać.
+
+Pierwsza wiadomość może użyć istniejącego wake przypisanego wykonawcy.
+Jeżeli bieżący run został wybudzony komentarzem innego agenta, jego odpowiedź
+zapisuje się, ale nie wywołuje kolejnego wake komentarzem. Dotyczy POST oraz
+PATCH zadania z komentarzem w rozmowie i jej bezpośrednich dzieciach. Agent bez
+poprawnego aktywnego runu również nie inicjuje takiego wake. Nie należy
+zastępować tego ręcznym wake/resume/reopen ani nową delegacją. Zakończenie
+zadania nadal może normalnie wybudzić koordynatora do raportu.
+
+Raport audytu można jawnie oznaczyć przez
+`{ "body": "wynik audytu", "messageKind": "audit" }` w POST komentarza.
+To klasyfikacja prezentacji, nie nadanie uprawnień. Serwer i UI używają jednej
+czystej funkcji z `packages/shared/src/project-conversation-history.ts`.
+Priorytet: błąd/system/audyt, zadanie/zgoda, wiadomość adresowana/inny agent,
+koordynator, człowiek. Treść wiadomości nie służy do zgadywania kategorii.
+Historyczne komentarze bez snapshotu nie otrzymują domyślonego adresata.
+
+Dodatkowa historia jest odczytywana przez
+`GET /api/issues/{rozmowa}/project-history?cursor=...`; dane pozostają w swoich
+kanonicznych tabelach. Nie zawiera surowych komunikatów runtime ani sekretów.
+Widok pokazuje liczniki wczytanych wpisów; główne komentarze oraz zdarzenia
+projektu mają niezależne przyciski pobierania starszych stron. Klasyfikacja
+koordynatora odnosi się do aktualnie wybranego koordynatora projektu.
+
+Żywy odbiór nadzorcy (uruchamia modele i tworzy osobną firmę testową):
+`node scripts/cosgral-e2e-messages.mjs --api http://127.0.0.1:3199 --codex-home /ścieżka/do/uprawnionego/konta --timeout-sec 900`.
+Skrypt zachowuje firmę i repozytoria w `/tmp` jako dowód, a na końcu pauzuje
+agentów i anuluje aktywne runy. Nie usuwa dowodów ani nie uruchamia serwera.
+Weryfikuje klasyfikację delegowania/statusów, nadawcę/adresata, odpowiedź,
+ograniczoną liczbę udanych runów i 75 sekund bez dalszych zmian/retry.

@@ -1,3 +1,4 @@
+import { classifyConversationEntry, type ConversationEntry, type ConversationFilter } from "@paperclipai/shared/project-conversation-history";
 import { AttentionInteractionResolver } from "../components/AttentionInteractionResolver";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -115,6 +116,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     setView(next);
     try { localStorage.setItem(viewKey, next); } catch { /* View still works without storage. */ }
   }
+  const [messageFilter, setMessageFilter] = useState<ConversationFilter>("all");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -153,7 +155,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     mutationFn: (agentId: string | null) => projectsApi.setConversationCoordinator(projectId, agentId, companyId),
     onSuccess: result => { client.setQueryData(conversationKey(companyId, projectId), result); },
   });
-  const composerBlocked = setCoordinator.isPending || Boolean(issueId && (tree.isPending || tree.isError || hold)) || coordinatorChecking || coordinatorUnavailable;
+  const composerBlocked = conversation.data?.canResolveApprovals === false || setCoordinator.isPending || Boolean(issueId && (tree.isPending || tree.isError || hold)) || coordinatorChecking || coordinatorUnavailable;
   const resume = useMutation({
     mutationFn: () => issuesApi.releaseTreeHold(issueId!, hold!.holdId, { metadata: { wakeAgents: false } }),
     onSuccess: () => { void client.invalidateQueries({ queryKey: ["issues", "tree-control-state", issueId] }); },
@@ -161,10 +163,12 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
   useCompanyLiveEvent(event => {
     if (event.companyId !== companyId) return;
     if (event.type === "heartbeat.run.status") {
+      if (issueId) void client.invalidateQueries({ queryKey: [...queryKeys.issues.comments(issueId), "project-history"] });
       for (const task of tasks.data ?? []) void client.invalidateQueries({ queryKey: queryKeys.issues.costSummary(task.id) });
     }
     if (event.type !== "activity.logged") return;
     const payload = event.payload;
+    if (issueId) void client.invalidateQueries({ queryKey: [...queryKeys.issues.comments(issueId), "project-history"] });
     if (issueId && payload.entityType === "issue" && payload.entityId === issueId && typeof payload.action === "string" && payload.action.startsWith("issue.thread_interaction_")) {
       void client.invalidateQueries({ queryKey: queryKeys.issues.interactions(issueId) });
     }
@@ -196,10 +200,33 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
     getNextPageParam: (page) => page.length === PAGE_SIZE ? page.at(-1)?.id : undefined,
     retry: false,
   });
+  const extraHistory = useInfiniteQuery({
+    queryKey: [...queryKeys.issues.comments(issueId ?? "none"), "project-history"],
+    queryFn: ({ pageParam }) => issuesApi.projectHistory(issueId!, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: page => page.nextCursor ?? undefined,
+    enabled: Boolean(issueId),
+  });
   const comments = useMemo(() => {
     const unique = new Map((history.data?.pages.flat() ?? []).map(comment => [comment.id, comment]));
     return [...unique.values()].reverse();
   }, [history.data]);
+  const timeline = useMemo(() => {
+    const entries: ConversationEntry[] = comments.map(c => ({ ...c, createdAt: new Date(c.createdAt).toISOString(), issueId: c.issueId ?? issueId ?? "", kind: "comment", messageKind: c.metadata?.messageKind, recipientAgentId: c.metadata?.recipientAgentId }));
+    entries.push(...(extraHistory.data?.pages.flatMap(page => page.entries) ?? []));
+    entries.push(...(decisions.data ?? []).filter(item => item.kind === "suggest_tasks" || item.kind === "request_confirmation").map(item => ({
+      id: item.id, kind: "approval" as const, issueId: issueId!, body: item.title ?? "Zatwierdzenie", createdAt: new Date(item.createdAt).toISOString(),
+    })));
+    return [...new Map(entries.map(e => [`${e.kind}:${e.id}`, e])).values()]
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id));
+  }, [comments, extraHistory.data, decisions.data, issueId]);
+  const filters: Array<{ value: ConversationFilter; label: string }> = [
+    { value: "all", label: "Wszystkie wiadomości" }, { value: "humans", label: "Tylko ludzie" },
+    { value: "coordinator", label: "Koordynator" }, { value: "agents", label: "Komunikacja agentów" },
+    { value: "tasks", label: "Zadania" }, { value: "errors", label: "Błędy i audyty" },
+  ];
+  const category = (entry: ConversationEntry) => classifyConversationEntry(entry, conversation.data?.coordinatorAgentId);
+  const visibleEntries = timeline.filter(e => messageFilter === "all" || category(e) === messageFilter);
   useEffect(() => {
     if (!chatTask || view !== "chat") return;
     const comment = comments.find(row => row.body.includes(chatTask.id) || Boolean(chatTask.identifier && row.body.includes(chatTask.identifier)));
@@ -228,7 +255,7 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       scroller.scrollTop = prepend.current.top + scroller.scrollHeight - prepend.current.height;
       prepend.current = null;
     } else if (followBottom.current && !history.isFetchingNextPage) scroller.scrollTop = scroller.scrollHeight;
-  }, [comments, decisions.data, history.isFetchingNextPage]);
+  }, [timeline, messageFilter, history.isFetchingNextPage]);
 
   const send = useMutation({
     mutationFn: async (submission: { body: string; requestId: string }) => {
@@ -313,13 +340,28 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       {view !== "chat" && <ProjectWorkViews view={view} tasks={(tasks.data ?? []).filter(task => task.projectId === project.data?.id && task.id !== issueId)} agents={roster} coordinatorId={conversation.data?.coordinatorAgentId} onChat={task => { followBottom.current = false; setChatTask(task); changeView("chat"); }} />}
       {view !== "chat" && tasks.isPending && <p role="status" className="p-4">{t("work.loading")}</p>}
       {view !== "chat" && [tasks, agents].some(query => query.isError) && <p role="alert" className="p-4 text-destructive">{t("dataError")} <Button onClick={() => { void tasks.refetch(); void agents.refetch(); }}>{t("retry")}</Button></p>}
+      <div hidden={view !== "chat"} className="flex flex-wrap items-center gap-2 border-b p-3">
+        <label htmlFor="conversation-filter" className="text-sm">Filtr wiadomości</label>
+        <select id="conversation-filter" aria-label="Filtr wiadomości" value={messageFilter} onChange={e => setMessageFilter(e.target.value as ConversationFilter)} className="rounded-md border bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
+          {filters.map(f => <option key={f.value} value={f.value}>{f.label} ({f.value === "all" ? timeline.length : timeline.filter(e => category(e) === f.value).length})</option>)}
+        </select>
+        <span role="status" className="text-xs text-muted-foreground">{visibleEntries.length} z {timeline.length} wczytanych wpisów</span>
+      </div>
       <div hidden={view !== "chat"} id="cosgral-messages" tabIndex={0} ref={scrollRef} onScroll={() => { const el = scrollRef.current!; followBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="min-h-0 flex-1 overflow-y-auto p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-6" aria-label={t("conversation")}>
         <div role="log" aria-live="polite" aria-relevant="additions text" aria-label={t("conversation")} className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           {history.hasNextPage && <Button variant="ghost" disabled={history.isFetchingNextPage} onClick={older}>{history.isFetchingNextPage ? t("olderLoading") : t("older")}</Button>}
           {history.isError && <p role="alert" className="text-sm text-destructive">{t("historyError")} <Button variant="outline" onClick={() => { void history.refetch(); }}>{t("retry")}</Button></p>}
           {history.isPending && issueId && <p role="status">{t("loading")}</p>}
-          {!comments.length && (!issueId || history.isSuccess) && <p className="py-6 text-sm text-muted-foreground">{t("empty")}</p>}
-          {comments.map(comment => {
+          {!timeline.length && messageFilter === "all" && (!issueId || history.isSuccess) && <p className="py-6 text-sm text-muted-foreground">{t("empty")}</p>}
+          {extraHistory.hasNextPage && <Button variant="ghost" disabled={extraHistory.isFetchingNextPage} onClick={() => { void extraHistory.fetchNextPage(); }}>Wczytaj starsze zdarzenia projektu</Button>}
+          {extraHistory.isError && <p role="alert">Nie udało się wczytać zdarzeń projektu. <Button onClick={() => { void extraHistory.refetch(); }}>{t("retry")}</Button></p>}
+          {!visibleEntries.length && (messageFilter !== "all" || timeline.length > 0) && <p role="status">Brak wiadomości dla tego filtra</p>}
+          {visibleEntries.map(comment => {
+            if (comment.kind === "approval") return <AttentionInteractionResolver readOnly={conversation.data?.canResolveApprovals !== true} key={comment.id} companyId={companyId} issueId={issueId!} interactionId={comment.id}
+              currentUserId={user.id} agentMap={new Map(roster.map(agent => [agent.id, agent]))}
+              presentation="coordinator-decision" actionLabels={{ accept: t("approval.accept"), reject: t("approval.reject") }} />;
+            if (comment.kind === "task" || comment.kind === "error") return <article key={comment.id} className="rounded-md border p-3 text-sm"><p>{comment.body}</p><Link className="underline" to={`/issues/${comment.issueId}`}>Otwórz zadanie</Link></article>;
+
             const agent = roster.find(agent => agent.id === comment.authorAgentId);
             const profile = comment.authorUserId ? profiles.get(comment.authorUserId) : null;
             const name = comment.authorType === "system" ? t("system") : agent?.name ?? profile?.label ?? (comment.authorUserId === user.id ? user.name : null) ?? t(comment.authorAgentId ? "unknownAgent" : "user");
@@ -330,15 +372,14 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
               <div className="flex flex-wrap items-center gap-2 text-sm">{agent ? <><AgentAvatar agent={agent} size={32} /><span className="font-semibold">{name}</span></> : <Identity name={name} avatarUrl={profile?.image ?? (comment.authorUserId === user.id ? user.image : null)} />}
                 <time className="text-xs text-muted-foreground" dateTime={created.toISOString()} title={created.toLocaleString("pl-PL")}>{relative}</time>
               </div>
-              <div className="min-w-0 break-words rounded-lg bg-muted/40 p-3"><MarkdownBody>{comment.body}</MarkdownBody></div>
+              {comment.recipientAgentId && <p className="text-sm text-muted-foreground">{name} → {roster.find(a => a.id === comment.recipientAgentId)?.name ?? t("unknownAgent")}</p>}
+              {comment.issueId !== issueId && <Link className="text-xs underline" to={`/issues/${comment.issueId}`}>Wątek zadania</Link>}
+              {comment.authorAgentId ? <details className="min-w-0 break-words rounded-lg bg-muted/40 p-3"><summary className="cursor-pointer text-sm focus-visible:ring-2 focus-visible:ring-ring">{comment.body.split("\n").find(line => line.trim())?.slice(0, 180) || "Wiadomość agenta"} · Szczegóły</summary><MarkdownBody>{comment.body}</MarkdownBody></details>
+                : <div className="min-w-0 break-words rounded-lg bg-muted/40 p-3"><MarkdownBody>{comment.body}</MarkdownBody></div>}
             </article>;
           })}
-          {issueId && decisions.data?.filter(item => item.kind === "suggest_tasks" || item.kind === "request_confirmation").map(item =>
-            <AttentionInteractionResolver readOnly={conversation.data?.canResolveApprovals !== true} key={item.id} companyId={companyId} issueId={issueId} interactionId={item.id}
-              currentUserId={user.id} agentMap={new Map(roster.map(agent => [agent.id, agent]))}
-              presentation="coordinator-decision" actionLabels={{ accept: t("approval.accept"), reject: t("approval.reject") }} />)}
           {decisions.isError && <p role="alert" className="text-sm text-destructive">{t("approval.loadError")} <Button onClick={() => { void decisions.refetch(); }}>{t("retry")}</Button></p>}
-          <TaskCards tasks={tasks.data ?? []} agents={roster} users={profiles} projectId={project.data?.id ?? projectId} conversationId={issueId ?? ""} />
+          {messageFilter === "all" && <TaskCards tasks={tasks.data ?? []} agents={roster} users={profiles} projectId={project.data?.id ?? projectId} conversationId={issueId ?? ""} />}
           {[project, conversation, agents, projects, tasks, directory].some(query => query.isError) && <p role="alert" className="text-sm text-destructive">{t("dataError")} <Button variant="outline" onClick={() => { for (const query of [project, conversation, agents, projects, tasks, directory]) if (query.isError) void query.refetch(); }}>{t("retry")}</Button></p>}
         </div>
       </div>

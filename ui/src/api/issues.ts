@@ -281,6 +281,8 @@ function issueListSearchParams(filters?: IssueListFilters) {
 }
 
 export const issuesApi = {
+  projectHistory: (id: string, cursor?: string) => api.get<import("@paperclipai/shared/project-conversation-history").ConversationHistoryPage>(`/issues/${id}/project-history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`),
+
   summaries: async (companyId: string, issueIds: readonly string[], options?: RequestOptions): Promise<IssueSummary[]> => {
     if (issueIds.length > ISSUE_SUMMARIES_MAX_IDS) throw new Error("Too many issue summary IDs");
     const ids = [...new Set(issueIds.map((id) => id.trim().toLowerCase()))].sort();

@@ -1182,6 +1182,10 @@ export interface IssueCommentMetadataSection {
 }
 
 export interface IssueCommentMetadata {
+  /** Server-owned snapshot of the assigned recipient at message acceptance. */
+  recipientAgentId?: string;
+  /** Author-declared audit report; display classification only. */
+  messageKind?: "audit";
   version: 1;
   chatMessage?: {
     sourceTaskId: string;

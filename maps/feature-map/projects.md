@@ -189,3 +189,14 @@ bindings and preservation of the coordinator folder. RO/RW adapter tests exercis
 nested bwrap metadata mounts; manual Codex CLI evidence is in Codex #11 and the
 follow-up regressions in Codex #12 of COSGRAL-PRZEKAZANIE.md. Live model delegation
 remains supervisor acceptance.
+
+T14 — rozmowa scala chronologicznie komentarze głównego wątku, komentarze
+bezpośrednich dzieci tego projektu, delegowania, zmiany statusu, błędy runów
+oraz karty zgód. Sześć filtrów ma liczniki **wczytanych** wpisów i pusty stan;
+select jest dostępny z klawiatury. Wiadomości agentów mają zwijane szczegóły.
+Komentarze główne i zdarzenia projektu mają osobną paginację; starsze strony
+trzeba wczytać przed filtrowaniem całej historii. Oznaczony przez autora raport
+`messageKind: "audit"` trafia do „Błędy i audyty”, bez analizy słów w treści.
+Automaty: ProjectConversation.test.tsx oraz project-conversations.test.ts.
+Żywy odbiór z modelem: `scripts/cosgral-e2e-messages.mjs` (osobne uruchomienie
+nadzorcy; testy Node skryptu nie są dowodem wykonania modelu).

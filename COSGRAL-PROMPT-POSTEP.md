@@ -278,7 +278,7 @@ W jednej chronologicznej historii pokazuj:
 - Wiadomości ludzi.
 - Odpowiedzi koordynatora.
 - Delegowanie zadań.
-- Wiadomości agentów między sobą.
+- ~~Wiadomości agentów między sobą.~~
 - Aktualizacje postępu.
 - Błędy.
 - Wyniki audytów.
@@ -302,14 +302,16 @@ Przykładowy przebieg:
 Każdą wiadomość agenta można rozwinąć, aby zobaczyć więcej szczegółów.
 
 Dodaj filtry:
-- Wszystkie wiadomości.
-- Tylko ludzie.
-- Koordynator.
-- Komunikacja agentów.
-- Zadania.
-- Błędy i audyty.
+- ~~Wszystkie wiadomości.~~
+- ~~Tylko ludzie.~~
+- ~~Koordynator.~~
+- ~~Komunikacja agentów.~~
+- ~~Zadania.~~
+- ~~Błędy i audyty.~~
 
 Domyślnie chat musi być czytelny, a nie przypominać surowego logu terminala.
+
+Stan t14 (4 XI 2026): przekreślone filtry i wiadomości agent–agent po żywym e2e (`scripts/cosgral-e2e-messages.mjs`, log `e2e-messages-t14.log` PASS). Pozostałe punkty listy (delegowanie, postęp, audyty, zatwierdzenia w jednej historii) tylko częściowo potwierdzone.
 
 ## 9. Trzy widoki tej samej pracy
 
