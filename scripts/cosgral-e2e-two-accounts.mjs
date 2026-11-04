@@ -146,6 +146,20 @@ async function main() {
     step = 'B writes -> A receives live event <5s';
     const a = await connect('A');
     pass(`${step} (${await liveComment('B', a)} ms)`);
+    step = 'A updates profile -> B receives content-free invalidation and reads the saved profile';
+    const profileName = `Updated E2E ${suffix}`;
+    const profileImage = 'https://example.test/cosgral-e2e-avatar.png';
+    const profileEvent = waitMessage(b, event => event.type === 'activity.logged'
+      && event.companyId === state.companyId && event.payload?.action === 'user.profile_updated'
+      && event.payload.entityId === state.users.A.id);
+    const [, event] = await Promise.all([
+      request('A', 'PATCH', '/auth/profile', { name: profileName, image: profileImage }), profileEvent,
+    ]);
+    check(!JSON.stringify(event).includes(profileName) && !JSON.stringify(event).includes(profileImage), 'profile event contains profile content');
+    const directory = await request('B', 'GET', `/companies/${state.companyId}/user-directory`);
+    const updatedPerson = directory.users?.find(person => person.principalId === state.users.A.id);
+    check(updatedPerson?.user?.name === profileName && updatedPerson.user.image === profileImage, 'second account cannot read updated profile');
+    pass(step);
     step = 'B reconnect: ordered complete GET fallback, no duplicates/gaps';
     await close(b);
     const after = state.commentIds.at(-1);

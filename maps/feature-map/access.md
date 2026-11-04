@@ -128,3 +128,7 @@ name/avatar through authorized HTTP reads; another tab of the same user also
 refreshes its session. PostgreSQL route tests cover active/inactive membership
 scope and no profile content in the event; UI invalidation tests cover company
 scope and self/other session behavior. Two real browser accounts remain unverified.
+
+Live prepare acceptance (4 XI): separate authenticated API/WebSocket sessions
+verified profile update A→B with content-free events and an authorized directory
+read. No browser rendering, server restart or actual image fetch was exercised.

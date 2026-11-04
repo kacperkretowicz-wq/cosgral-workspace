@@ -185,3 +185,8 @@ user.profile_updated, entityType user and the user's ID. Profile/audit writes ar
 transactional; publication follows commit. Only active human memberships supply
 audience companies. No name, email or image is published in the event. UI reads
 continue through the existing session and company-directory authorization paths.
+
+Live prepare acceptance (4 XI) exercised the authenticated profile update and
+company-directory read with separate A/B cookie jars, plus outsider/viewer denials
+for private conversations and sockets. This is local API/WS evidence, not browser
+or deployment acceptance; no model/provider credentials were used.
