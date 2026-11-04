@@ -2,7 +2,7 @@
 
 ## Bieżące ustalenia — kontynuacja 4 XI
 
-Cel budowy jest aktywny. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle jest obecnie zatrzymana przez problem z kartą; nie utworzono maszyny. Użytkownik zaakceptował Codespaces jako opcję do rozwoju w darmowym limicie, z wyraźnym odłożeniem konfiguracji na później. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
+Cel budowy jest obecnie wstrzymany na prośbę użytkownika. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle zatrzymała się na problemie z kartą; nie utworzono konta ani maszyny. Codespaces może być opcją do pracy w wolnej chwili, ale konfigurację odłożono. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
 
 Nowsze przyrosty kodu: formularz URL repozytorium, podłączanie GitHub z panelu autoryzacji, profiler P0 i przygotowany profil systemd. Szczegóły oraz granice odbioru są na końcu dokumentu. Historyczne komunikaty o wstrzymaniu i instrukcje kont poprzedniego hosta nie opisują obecnego stanu.
 
@@ -69,6 +69,21 @@ Dodano `scripts/cosgral-profile-server.mjs` i instrukcję `P0-PROFILOWANIE.md`: 
 ## Profil wdrożenia Oracle — przygotowany, nieuruchomiony
 
 Dodano `deploy/cosgral/cosgral.service`, `workspace.env.example`, `scripts/cosgral-host-preflight.mjs` i `ORACLE-WDROZENIE.md`. Profil uruchamia istniejący zbudowany backend/UI jako użytkownik cosgral, z trwałym stanem, PostgreSQL i loopback za proxy HTTPS. Preflight wymaga authenticated, trwałych sekretów i gotowych artefaktów, sprawdza podstawowy bwrap/Git/Codex. Testy walidacji 3/3 PASS. Lokalna próba CLI odmówiła uruchomienia na Windowsie bez konfiguracji (oczekiwany błąd). Nie sprawdzono systemd, ARM, połączenia bazy, modelu ani izolacji pełnego agenta; wymaga to maszyny Oracle. Pełny odbiór P0 i dwóch osób nadal otwarty.
+
+## Zatrzymanie i przekazanie — 4 XI 2026
+
+Użytkownik poprosił zatrzymać wszystkie działania, zapisać stan, wypchnąć go na GitHub i przekazać rekomendacje. Przed publikacją sprawdzono procesy powiązane z repozytorium: nie działa już test, serwer, profiler ani kompilacja uruchomiona w tej pracy. Nie ma wdrożenia ani utworzonej maszyny. Nie wznawiać implementacji ani konfiguracji Codespaces bez prośby użytkownika.
+
+Commit bazowy przed checkpointem: `8da828bcf73915011aca3a272fbd11a3f01cc440` (`Record successful Runner build and backend checks`). Zawiera wynik pełnego produkcyjnego buildu Runnera, osobny typecheck serwera i CLI oraz opis ograniczeń wyżej. Pełny `pnpm -r typecheck` nie został ponownie zaliczony jako jedno polecenie; pełny `pnpm test:run` i monorepo build nadal nie są odebrane.
+
+Przed zatrzymaniem przygotowano lokalne poprawki narzędzi Windows:
+
+- `ensure-workspace-package-links.ts` naprawia tworzenie linków pakietów workspace przez junctions na Windowsie bez wymagania Developer Mode/uprawnień administratora; po poprawce preflight linków przeszedł.
+- `run-vitest-stable.mjs` uruchamia Windowsowy Vitest bezpośrednio przez Node, zamiast przez shim `pnpm.cmd`. Nowy `vitest-invocation.mjs` zachowuje dotychczasowe `pnpm exec vitest` na Unixie. Usuwa to błędy `spawnSync pnpm ENOENT` i ograniczenie długości polecenia przy długich filtrach shardów.
+- Test `scripts/__tests__/vitest-invocation.test.mjs` przeszedł 2/2, w tym przekazanie długiej listy argumentów, ścieżek ze spacjami i znaków specjalnych. Wcześniejszy test wrappera: 35 PASS, 5 pominiętych testów fixture'ów POSIX na Windowsie; ten wynik był sprzed ostatniej zmiany dispatchera.
+- Ostatni przebieg `pnpm test:run` przeszedł preflight i kolekcję shardu czatu: 150/899 testów w shardzie 1/6, filtr zweryfikowany. Przebieg zatrzymano na prośbę użytkownika po starcie Vitest; nie ma wyniku tego shardu ani pełnego zestawu. Nie traktować zatrzymania jako PASS ani jako błędu testów.
+
+Zmiany checkpointu zapisano i wypchnięto na gałąź `codex/cosgral-workspace`. Przy wznowieniu najpierw sprawdzić `git status` i HEAD względem origin, przeczytać `COSGRAL-PROMPT-POSTEP.md` oraz tę rekomendację. Jeśli użytkownik wznowi odbiór Windows, dokończyć `pnpm test:run`, zebrać pełne wyniki bez pomijania shardów, a potem uruchomić pełny monorepo build/typecheck. Nadal osobno wymagają decyzji i środowiska: Linux z bwrap, odtworzenie P0, trwały hosting oraz dwie niezależne sesje użytkowników. Nie twierdzić, że platforma jest gotowa do codziennej pracy.
 
 ## Synchronizacja autoryzacji i kontrola całego repozytorium
 

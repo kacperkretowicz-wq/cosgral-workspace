@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
+import { vitestInvocation } from "./vitest-invocation.mjs";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -420,8 +421,9 @@ async function runVitest(args, label, testShard = null, exactFiles = false) {
     const sourceLines = readFileSync(file, "utf8").split("\n");
     const collect = (filters, name) => {
       const output = path.join(testRoot, `${name}.json`);
-      const result = spawnSync("pnpm", ["exec", "vitest", "list", ...sourceOnlyVitestArgs,
-        ...filters, "--allowOnly=false", "--includeTaskLocation", `--json=${output}`], {
+      const invocation = vitestInvocation(["list", ...sourceOnlyVitestArgs,
+        ...filters, "--allowOnly=false", "--includeTaskLocation", `--json=${output}`], { root: repoRoot });
+      const result = spawnSync(invocation.command, invocation.args, {
         cwd: repoRoot, env, stdio: "inherit",
       });
       if (result.error || result.status !== 0) throw new Error(`Vitest collection failed: ${result.error?.message ?? result.status}`);
@@ -451,9 +453,10 @@ async function runVitest(args, label, testShard = null, exactFiles = false) {
     args = [...args.filter((arg) => arg !== chatSuite), ...runFilters, "--allowOnly=false"];
   }
   await new Promise((resolve, reject) => {
-    const command = exactFiles ? process.execPath : "pnpm";
-    const prefix = exactFiles ? [path.join(scriptsDir, "ci/run-selected-vitest.mjs")] : ["exec", "vitest", "run"];
-    const child = spawn(command, [...prefix, ...sourceOnlyVitestArgs, ...args], {
+    const invocation = exactFiles
+      ? { command: process.execPath, args: [path.join(scriptsDir, "ci/run-selected-vitest.mjs"), ...sourceOnlyVitestArgs, ...args] }
+      : vitestInvocation(["run", ...sourceOnlyVitestArgs, ...args], { root: repoRoot });
+    const child = spawn(invocation.command, invocation.args, {
       cwd: repoRoot,
       env: invocationEnv("vitest", env),
       stdio: "inherit",
