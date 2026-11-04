@@ -2060,3 +2060,12 @@ Markdown dodatkowo sprawdzono pod kątem końcowych białych znaków: brak narus
 - E2E na 3199 (max 2 naraz): parallel(d) PASS; messages(c) PASS; delegowanie(d) PASS; approval: 2× FAIL na koncie c (timeout 60 s – **pętla zdarzeń serwera zablokowana ~110 s** tuż po GET interactions w scenariuszu B, potwierdzone sondą health 109953 ms), potem PASS na d. Otwarty problem: znaleźć synchroniczną operację blokującą (profil `--cpu-prof` serwera podczas approval).
 - Przekreślono §12 „Własne instrukcje globalne i projektowe”. Otwarte: własne role, OpenAPI dla 6 operacji, blokada pętli zdarzeń.
 - Konto a limit do 05:26 (CET); c, d działają; b nigdy.
+
+## Nadzorca – odbiór Codex t19 (4 XI 2026, ~04:35 CET)
+
+- t19 (rutyna, zakończony 04:16): 6 brakujących operacji OpenAPI (config-stats, config-template, agents/from-template, project-history, executor-selection, conversation/coordinator) + backend własnych ról (`company_roles`, migracja 0426, API, przypisania, ACL bez eskalacji). UI ról – otwarte.
+- **Korekta opisu commitów:** kod t19 trafił do commitu `274187733` („t18 acceptance…”), bo t19 edytował drzewo w trakcie mojego odbioru t18 (`git add -A`). Bez force nie poprawiono komunikatu – ten wpis jest właściwym opisem. Analogicznie t18 jest w `364ec63b1`.
+- Testy: serwer company-roles + openapi-routes + workspace-instructions + project-conversations **60 PASS** (OpenAPI już zielone); check-maps OK; e2e bez modelu `cosgral-e2e-roles.mjs` PASS.
+- E2E na 3199 po restarcie z kodem t19 (2 naraz): approval (d) PASS, delegowanie (c) PASS.
+- Rekomendacje i zasady: `docs/cosgral/REKOMENDACJE-DALEJ.md`.
+- Wszystkie serwery i procesy Codex zatrzymane. Konto a limit do 05:26 (CET), c/d działają, b nigdy.
