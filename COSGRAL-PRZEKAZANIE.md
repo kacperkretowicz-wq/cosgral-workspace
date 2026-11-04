@@ -1767,3 +1767,158 @@ git diff --check
   palet na wszystkich powierzchniach. Nie uruchamiano pełnego monorepo
   typecheck/test:run/build ani browser suites (zakres tej tury był wąski).
   Nie deklarujemy gotowości PR ani pełnego domknięcia §12.
+
+## Codex #18 — instrukcje firmy, projektu i osoby (2026-11-04)
+
+### Zakres i wykonane zmiany
+
+- Po restarcie potwierdzono t17: **19/19** testów workspace-preferences
+  (serwis/trasy), PersonalizationPanel i PersonalizationResizeHandle oraz
+  **PASS** `scripts/cosgral-e2e-personalization.mjs` na własnym 3197.
+- Zrealizowano priorytet b jako osobny kontrakt instrukcji wykonawczych, bez
+  rozszerzania preferencji prezentacji. `workspaceInstructionSchema` to ścisłe
+  `{text}`, maks. 8000 jednostek UTF-16, bez niedozwolonych znaków sterujących.
+  Zapis odrzuca rozpoznawalne poświadczenia: wykorzystuje istniejącą redakcję
+  Paperclip i uzupełnia ją o wzorce przypisań sekretów, Bearer, PEM, prefiksy
+  API/GitHub/AWS i adresy baz. Nie używano rzeczywistych sekretów.
+- Tabela `workspace_instructions`: firma/klucz zakresu, opcjonalny projekt,
+  treść i data zmiany. Osoba ma osobny zapis **w każdej firmie**, poza tabelą
+  preferencji użytkownika. Złożony FK firma/projekt, unikalny indeks zakresu,
+  ograniczenie długości i klucza. Wygenerowano migrację
+  `0425_cuddly_switch.sql` przez `pnpm db:generate`; standardowe prune usunęło
+  snapshot 0420, pozostawiając pięć najnowszych.
+- Produkcyjne GET/PUT `/api/companies/:companyId/instructions/company`,
+  `/instructions/me` i `/instructions/projects/:projectId` (wszystkie pod
+  prefiksem firmy). Board-only, private/no-store; `me` wyłącznie z aktora.
+  Widz nie edytuje żadnego zakresu, także własnego. Projekt używa istniejącego
+  `accessService`: project:read i project:write_workspace. Obce/prywatne zasoby
+  dają 404, brak prawa zapisu 403, błędna treść 400. Zapis i audyt bez treści
+  są jedną transakcją; błąd publikacji live nie cofa zatwierdzonego zapisu.
+- Ustawienia → Profil → „Instrukcje pracy”: wybór własnych wskazówek, firmy
+  lub dostępnego projektu, jawny zapis, limit, widoczny błąd i potwierdzenie.
+  Odczyt zwraca `canEdit`; widz widzi edytor tylko do odczytu. Cache rozdzielony
+  per osoba/firma/zakres, zmiana zakresu nie przenosi szkicu. Użyto istniejących
+  Button/Textarea i tokenów; bez nowego systemu stylów.
+- `heartbeat/task-context.ts` pobiera instrukcje jednym indeksowanym zapytaniem
+  przy przygotowaniu nowego runu i dodaje je do wspólnego prefiksu wszystkich
+  czterech wariantów task markdown. Osoba odpowiedzialna pochodzi z istniejącego
+  rozstrzygnięcia tożsamości w heartbeat, nie z żądanego userId ani autora
+  dowolnego komentarza. Nowy run ignoruje podsunięty snapshot, recovery zachowuje
+  poprzedni. Snapshot podlega istniejącej redakcji z rejestru runu. Brak instrukcji
+  zachowuje dotychczasowy markdown; identyczne warianty compact nadal mogą być
+  pomijane przez istniejący kontrakt.
+- Zapis nie budzi agenta, nie zmienia aktywnego runu, adapterConfig, uprawnień,
+  sandboxa, budżetu ani zatwierdzeń. Nie dodano orkiestratora, pollingu ani
+  dostawcy modelu. Dokumentacja: `doc/workspace-instructions.md`, OpenAPI i obie
+  mapy navigation-preferences. Prompt otrzymał dokładny stan, **bez nowych
+  przekreśleń** szerokich wymagań.
+
+### Weryfikacja — komendy i wyniki
+
+Polecenia pnpm/node z `PATH=/home/box/tools/bin:$PATH`.
+
+```sh
+pnpm exec vitest run server/src/__tests__/workspace-preferences.test.ts \
+  server/src/__tests__/workspace-preferences-routes.test.ts \
+  ui/src/components/PersonalizationPanel.test.tsx \
+  ui/src/components/PersonalizationResizeHandle.test.tsx
+# PASS 4 pliki / 19 testów, potwierdzenie t17 po restarcie.
+node scripts/cosgral-e2e-personalization.mjs
+# PASS, HTTP/PostgreSQL, własny fixture 3197, bez modelu.
+
+pnpm exec vitest run server/src/__tests__/workspace-instructions.test.ts \
+  server/src/__tests__/heartbeat-task-context.test.ts \
+  server/src/__tests__/heartbeat-execution-configuration.test.ts \
+  ui/src/components/WorkspaceInstructionsPanel.test.tsx \
+  ui/src/pages/ProfileSettings.test.tsx
+# Pełny przebieg po poprawieniu fixture: 57 PASS (przed dodaniem testu rollbacku
+# audytu). Po końcowych zmianach ponownie 4 pliki bez niezmienionego
+# heartbeat-execution-configuration: 21 PASS; ten ostatni miał 37 PASS.
+# Łącznie 58 aktualnych przypadków w pięciu plikach.
+node scripts/cosgral-e2e-instructions.mjs
+# PASS końcowy: rzeczywiste HTTP → DB → heartbeat → kontrolowany adapter.
+# Firma/projekt/osoba we wszystkich 4 wariantach, zapis podczas aktywnego runu
+# bez jego zmiany, kolejny run z nową treścią, Bob bez wskazówek Alice/projektu,
+# druga firma bez wskazówek pierwszej; odmowa viewer/agent/anonim/outsider,
+# limit, sekrety syntetyczne, niezmienione permissions i zapisane config agenta.
+node --test scripts/cosgral-e2e-instructions.test.mjs \
+  scripts/cosgral-e2e-personalization.test.mjs
+# PASS 4 testy.
+
+pnpm --filter @paperclipai/server exec tsc --noEmit
+pnpm --filter @paperclipai/ui typecheck
+# Oba PASS po odbudowie brakujących deklaracji zależności opisanej niżej.
+pnpm check:token-gates
+# PASS: 4 bramki CLEAN; cliplab w synchronizacji.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 IDs; kontrola strukturalna.
+pnpm --filter @paperclipai/db check:migrations
+# PASS; historyczne ustalenia objęte baseline.
+git diff --check
+# PASS.
+```
+
+- Testy dowodzą także: brak edycji prywatnego/obcego projektu, izolacja osób,
+  brak pola userId w kontrakcie, brak treści w audycie, rollback zapisu przy
+  odrzuconym audycie, recovery ze starymi wskazówkami, odrzucenie podsuniętego
+  snapshotu i redakcja zarejestrowanej syntetycznej wartości w snapshot/markdown.
+- OpenAPI: nowy test kontraktu instrukcji **PASS**; pełny plik daje
+  **31 PASS / 1 FAIL**. Jedyny FAIL to wcześniejsze braki specyfikacji sześciu
+  operacji: config-stats, config-template, agents/from-template, project-history,
+  executor-selection, conversation/coordinator. Odtworzono identyczny FAIL na
+  kopiach OpenAPI i testu z HEAD sprzed t18, z pominięciem nowego pliku tras.
+  Nie wyłączano kontroli i nie wpisywano tych braków do allowlisty.
+- Początkowy typecheck serwera nie przeszedł przez brak deklaracji lokalnego
+  `@paperclipai/paperclip-runner` i `paperclip-eval-kernel`. Odbudowano wyłącznie
+  lokalne artefakty: `pnpm --filter @paperclipai/paperclip-eval-kernel build`,
+  potem `pnpm --filter @paperclipai/paperclip-runner exec tsc -p tsconfig.json`.
+  Końcowy typecheck serwera przeszedł. Nie zmieniano źródeł tych pakietów.
+- RED testów: brak modułów instrukcji/edytora. Pierwszy przebieg tras wykrył
+  kolizję prefix-match w Express (projekt interpretowany jako zakres); końcowe
+  trasy są dokładne. Pierwszy test czterech wariantów miał pusty opis, więc
+  istniejący kontrakt poprawnie pomijał identyczny compact; fixture dostał opis.
+  Test redakcji początkowo nie przypisał rejestru do issueId w contextSnapshot;
+  poprawiono syntetyczny rekord zgodnie z istniejącym kontraktem rejestru.
+- Wczesny e2e: brak syntetycznej tożsamości odpowiedzialnej osoby w bazie →
+  prawidłowa odmowa silnika. Po dodaniu tożsamości wyłącznie w tymczasowej bazie
+  ujawnił timeout: fixture zostawiał zadanie in_review i blokował automatyczny
+  następny run. Kontrolowany adapter teraz kończy zadanie done. Kolejny FAIL
+  porównywał runowe TMPDIR zamiast zapisanej konfiguracji — porównanie zawężono
+  do rzeczywistego adapterConfig/runtimeConfig i permissions. Końcowy e2e PASS
+  powtórzono z drugim użytkownikiem i drugą firmą.
+- Logi w `/tmp/cosgral18-*`: t17-tests, t17-e2e, final-tests2,
+  targeted-final, e2e-reviewed, server-tsc-final, ui-tsc-final, tokens, maps,
+  migration-check, script-tests, openapi2 i openapi-baseline. Są lokalnymi
+  dowodami tego środowiska; polecenia i wynik pozostają w tym dokumencie.
+
+### Granice i następny krok
+
+- To odbiór kontekstu kontrolowanego adaptera **bez modelu**, nie dowód stosowania
+  wskazówek przez rzeczywisty model ani dwóch zalogowanych przeglądarek.
+  Fixture ma jawną iniekcję syntetycznych aktorów tylko w pliku testowym;
+  żadnej rejestracji/logowania, kont dostawców ani sekretów użytkownika.
+- Instrukcje osoby są company-scoped; brak osobistej instrukcji wspólnej dla
+  wszystkich firm. Treść osoby trafia do kontekstu zadania, nie jest prywatnym
+  kanałem do modelu. Skaner nie rozpoznaje każdego arbitralnego sekretu bez
+  charakterystycznego wzorca. Instrukcje nie są magazynem poświadczeń.
+- Równoczesne edycje: ostatni zapis, bez wersjonowania i scalania. Nie odbierano
+  wizualnie panelu w przeglądarce ani wszystkich runtime’ów/modeli.
+- Następnie: domknąć sześć wcześniejszych luk OpenAPI, wykonać odbiór instrukcji
+  w rzeczywistym modelu i wrócić do priorytetu c (własne role) / integracji
+  runtime opisanych w #16–17. Nie uznawać całego §12 za zakończony.
+- Bez pełnego monorepo typecheck/test:run/build i browser suites; wykonano
+  wskazane przez użytkownika kontrole serwera/UI i właściwe testy. Nie jest to
+  deklaracja gotowości PR. Bez commit/push i bez dotykania instancji 3199.
+- Własny serwer 3197 zakończony przez finally; końcowa kontrola bind potwierdza
+  wolny port (wynik w `cosgral18-port-final.log`).
+
+## Nadzorca – po Codex t17 (4 XI 2026, ~03:58 CET)
+
+- t17 (konto c): §12 panel Personalizacja (motyw, akcenty COSGRAL, szerokości paneli mysz/klawiatura, zapis układu per użytkownik na serwerze + localStorage). Migracja 0424 (JSONB `personalization`), prune snapshotu 0419 zgodnie z konwencją repo.
+- **Incydent:** ~03:08 box padł (najpewniej OOM: serwer + 4 równoległe e2e z modelami). Po restarcie zniknęły `node_modules`, buildy `dist` pakietów i /tmp (PAPERCLIP_HOME 3199 = świeża baza). Naprawa: `pnpm install --frozen-lockfile` + `pnpm --filter @paperclipai/plugin-sdk... build`.
+- **ZASADA: maksymalnie 2 e2e z modelem naraz (plus jeden serwer).**
+- Zabezpieczenie: WIP wypchnięty na `wip/cosgral-t17` (6ed812578) przed e2e.
+- Testy: serwer 19 PASS (project-conversations, workspace-preferences), UI 36 PASS, unit skryptów e2e 6× PASS, check-maps/token-gates/diff-check OK; e2e personalization (bez modelu) PASS.
+- E2E na 3199 parami: approval(a)+parallel(d) PASS; messages(d) PASS; delegowanie na a FAIL przez `provider_quota` (konto a limit do 05:26), powtórzone na c → PASS (`e2e-delegation-t17c.log`).
+- Konta: a zablokowane do 05:26 (CET), c i d działają; b nigdy.
+- Przekreślono §12: motyw, akcent, szerokości paneli, zapamiętywanie układu. Otwarte: instrukcje globalne/projektowe, własne role.

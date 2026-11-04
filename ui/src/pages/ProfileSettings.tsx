@@ -1,3 +1,4 @@
+import { WorkspaceInstructionsPanel } from "../components/WorkspaceInstructionsPanel";
 import { PersonalizationPanel } from "../components/PersonalizationPanel";
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -272,6 +273,7 @@ export function ProfileSettings() {
         </form>
 
         {selectedCompanyId && <PersonalizationPanel userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
+        {selectedCompanyId && <WorkspaceInstructionsPanel key={`${sessionQuery.data.user.id}:${selectedCompanyId}`} userId={sessionQuery.data.user.id} companyId={selectedCompanyId} />}
         <InboxAgentPolicyControl companyId={selectedCompanyId} />
       </section>
     </div>

@@ -194,3 +194,16 @@ odrzucane. Zapis wymaga aktywnego dostępu do firmy (kontekst audytu).
 Widz może zmienić własną prezentację; token agenta i anonim nie mają dostępu.
 Preferencje nie przyznają uprawnień wykonawczych. Baza/test HTTP obejmuje
 izolację użytkowników, walidację i odmowę dla obcej firmy.
+
+T18 — `navigation-preferences/preferences`: instrukcje wykonawcze mają osobny
+kontrakt od prezentacji. Board-only GET/PUT
+`/api/companies/{companyId}/instructions/company`, `/instructions/me` i
+`/instructions/projects/{projectId}` (dwa ostatnie również pod prefiksem firmy).
+`me` pochodzi wyłącznie z aktora; instrukcje osoby są ograniczone do firmy.
+Viewer nie zapisuje żadnego zakresu; projekt wymaga istniejącego odczytu
+oraz `project:write_workspace` przy zapisie. Obce/prywatne zasoby: 404.
+Token agenta i anonim: 403. Odczyt zwraca `{text, canEdit}`, zapis `{text}`;
+cache private/no-store. Limit, ścisły JSON, odrzucanie rozpoznawalnych sekretów,
+atomowy audyt bez treści. Heartbeat pobiera wskazówki dla rozstrzygniętej przez
+serwer osoby odpowiedzialnej; nie jest to grant ani zmiana polityki narzędzi.
+Dowód: testy HTTP/DB oraz e2e kontrolowanego adaptera, bez wywołania modelu.

@@ -1022,3 +1022,13 @@ export function redactSensitiveText(input: string): string {
     REDACTED_EVENT_VALUE,
   );
 }
+
+/** Conservative rejection for free-form execution guidance; never echoes a match. */
+export function containsInstructionCredential(text: string): boolean {
+  return redactSensitiveText(text) !== text
+    || /-----BEGIN [^-]*(?:PRIVATE KEY|CERTIFICATE)-----/i.test(text)
+    || /\b(?:api[-_]?key|access[-_]?token|auth(?:_?token)?|authorization|secret|passwd|password|credential|jwt|private[-_]?key|cookie|connectionstring)\s*["']?\s*[:=]\s*\S+/i.test(text)
+    || /\bBearer\s+[A-Za-z0-9._~+/-]+/i.test(text)
+    || /\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b/.test(text)
+    || /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp):\/\/\S+/i.test(text);
+}

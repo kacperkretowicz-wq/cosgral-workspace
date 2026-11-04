@@ -152,4 +152,14 @@ Separatory obsługują przeciąganie, strzałki oraz Home/End. Dane są przypisa
 użytkownikowi na serwerze; walidowana kopia localStorage jest awaryjna.
 Testy: PersonalizationPanel/PersonalizationResizeHandle, workspace-preferences;
 `scripts/cosgral-e2e-personalization.mjs` sprawdza prawdziwe HTTP i bazę na 3197,
-bez modeli. Instrukcje globalne/projektowe i własne role pozostają otwarte.
+bez modeli. Własne role pozostają otwarte; instrukcje pracy opisuje wpis T18 poniżej.
+
+T18 — `navigation-preferences/preferences`: Ustawienia → Profil → „Instrukcje
+pracy” pozwala zapisać osobno instrukcje firmy, dostępnego projektu i własne
+w tej firmie. Limit 8000 znaków, pusta treść usuwa wpływ instrukcji. Widz ma
+odczyt; serwer odmawia zapisu. Zapis działa od kolejnego runu odpowiedzialnej
+osoby, nie zmienia aktywnego runu, uprawnień ani konfiguracji adaptera.
+Testy: WorkspaceInstructionsPanel, workspace-instructions, heartbeat-task-context,
+heartbeat-execution-configuration. `scripts/cosgral-e2e-instructions.mjs` sprawdza
+zapis HTTP → prawdziwy heartbeat → kontrolowany adapter na 3197, bez modelu.
+To dowód dostarczenia kontekstu, nie stosowania wskazówek przez model.

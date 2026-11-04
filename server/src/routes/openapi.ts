@@ -1,3 +1,4 @@
+import { workspaceInstructionSchema } from "@paperclipai/shared/workspace-instructions";
 import { personalizationSchema } from "@paperclipai/shared/personalization";
 import { MUSE_ASSET_VERSION, museStopBoundarySchema, museDetectorCleanupAttestationSchema, createGrokInvitationSchema, configureGrokRoutineSchema, verifyGrokRoutineSchema, recoverGrokRoutineSchema, pairGrokBindingSchema, stopGrokWorkSchema, retryGrokDeliverySchema, updateFastResponseSchema } from "@paperclipai/shared";
 import { slackTestMessageSchema, slackTestMessageResultSchema, slackManagerAuthorizationSchema, slackSetupOptionsSchema, slackManagedProvisionSchema, slackManagedResultSchema, slackRegistrationSchema, slackSetupActionSchema, slackInstallAuthorizationSchema, slackRegistrationStateSchema, slackAppConfigurationSchema, slackAvatarStateSchema, slackAccountStateSchema } from "@paperclipai/shared";
@@ -1488,6 +1489,12 @@ const BOARD_ONLY_OPERATIONS = new Set([
   "DELETE /api/board-api-keys/{keyId}",
   "POST /api/bootstrap/claim",
   "GET /api/companies/{companyId}/resource-memberships/me",
+  "GET /api/companies/{companyId}/instructions/company",
+  "PUT /api/companies/{companyId}/instructions/company",
+  "GET /api/companies/{companyId}/instructions/me",
+  "PUT /api/companies/{companyId}/instructions/me",
+  "GET /api/companies/{companyId}/instructions/projects/{projectId}",
+  "PUT /api/companies/{companyId}/instructions/projects/{projectId}",
   "GET /api/workspace-preferences/me/personalization",
   "PUT /api/companies/{companyId}/workspace-preferences/me/personalization",
   "GET /api/workspace-preferences/me",
@@ -6796,6 +6803,20 @@ registerCurrentRoute({
     404: r.notFound,
   },
 });
+
+for (const scope of ["company", "me", "projects/{projectId}"]) {
+  registerCurrentRoute({
+    method: "get", path: `/api/companies/{companyId}/instructions/${scope}`,
+    tags: ["workspace-preferences"], summary: "Odczyt instrukcji pracy i prawa edycji; zakres me wyłącznie dla bieżącego użytkownika",
+    responses: { 200: r.ok(workspaceInstructionSchema.extend({ canEdit: z.boolean() })), 400: r.badRequest, 403: r.forbidden, 404: r.notFound },
+  });
+  registerCurrentRoute({
+    method: "put", path: `/api/companies/{companyId}/instructions/${scope}`,
+    tags: ["workspace-preferences"], summary: "Zapis instrukcji od następnego runu; board, viewer nie edytuje; projekt wymaga dostępu do zapisu",
+    body: workspaceInstructionSchema,
+    responses: { 200: r.ok(workspaceInstructionSchema), 400: r.badRequest, 403: r.forbidden, 404: r.notFound },
+  });
+}
 
 registerCurrentRoute({
   method: "get", path: "/api/workspace-preferences/me/personalization",

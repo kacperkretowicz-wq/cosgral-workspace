@@ -1,0 +1,42 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { expect, it, vi } from "vitest";
+import { WorkspaceInstructionsPanel } from "./WorkspaceInstructionsPanel";
+const mocks = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), list: vi.fn() }));
+vi.mock("../api/workspaceInstructions", () => ({ workspaceInstructionsApi: mocks }));
+vi.mock("../api/projects", () => ({ projectsApi: { list: mocks.list } }));
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+it("loads scoped instructions, saves through API, and surfaces failed saves", async () => {
+ mocks.list.mockResolvedValue([{ id: "p", name: "Projekt" }]);
+ mocks.get.mockImplementation(async (_c, scope) => ({ text: `Instrukcja ${scope}`, canEdit: true }));
+ mocks.put.mockRejectedValue(new Error("Zapis odrzucony"));
+ const host = document.createElement("div"), root = createRoot(host), client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+ await act(async () => root.render(<QueryClientProvider client={client}><WorkspaceInstructionsPanel companyId="c" userId="alice" /></QueryClientProvider>));
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toBe("Instrukcja me");
+ expect((host.querySelector("textarea") as HTMLTextAreaElement).maxLength).toBe(8000);
+ await act(async () => (host.querySelector("button") as HTMLButtonElement).click());
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect(mocks.put).toHaveBeenCalledWith("c", "me", { text: "Instrukcja me" });
+ expect(host.querySelector('[role="alert"]')?.textContent).toContain("Zapis odrzucony");
+ mocks.put.mockImplementation(async (_c, _scope, value) => value);
+ await act(async () => (host.querySelector("button") as HTMLButtonElement).click());
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect(host.querySelector('[role="status"]')?.textContent).toContain("Zapisano");
+ const scope = host.querySelector('select[aria-label="Zakres instrukcji"]') as HTMLSelectElement;
+ await act(async () => { scope.value = "company"; scope.dispatchEvent(new Event("change", { bubbles: true })); });
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toBe("Instrukcja company");
+ await act(async () => root.unmount()); client.clear();
+});
+it("shows viewer instructions read-only", async () => {
+ mocks.list.mockResolvedValue([]); mocks.get.mockResolvedValue({ text: "Bez edycji", canEdit: false });
+ const host = document.createElement("div"), root = createRoot(host), client = new QueryClient();
+ await act(async () => root.render(<QueryClientProvider client={client}><WorkspaceInstructionsPanel companyId="c" userId="viewer" /></QueryClientProvider>));
+ await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+ expect((host.querySelector("textarea") as HTMLTextAreaElement).readOnly).toBe(true);
+ expect((host.querySelector("button") as HTMLButtonElement).disabled).toBe(true);
+ await act(async () => root.unmount()); client.clear();
+});

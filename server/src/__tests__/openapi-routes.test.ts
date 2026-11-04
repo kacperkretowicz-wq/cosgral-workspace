@@ -97,6 +97,7 @@ const apiPrefixes: Record<string, string> = {
   "tool-gateway.ts": "/api",
   "user-profiles.ts": "/api",
   "workspace-preferences.ts": "/api",
+  "workspace-instructions.ts": "/api",
 };
 
 const ROUTE_LITERAL_PATTERN =
@@ -1049,6 +1050,19 @@ describe("openapi routes", () => {
     expect(spec.paths[base + "/test"].post.requestBody.content["application/json"].schema).toMatchObject({
       type: "object", additionalProperties: false, properties: {},
     });
+  });
+
+  it("documents strict board-only workspace instructions in all three scopes", () => {
+    const { spec } = loadSpecRoutes();
+    for (const scope of ["company", "me", "projects/{projectId}"]) {
+      const route = spec.paths[`/api/companies/{companyId}/instructions/${scope}`];
+      expect(route.get["x-paperclip-authorization"]).toEqual({ actor: "board" });
+      expect(route.put["x-paperclip-authorization"]).toEqual({ actor: "board" });
+      expect(route.put.requestBody.content["application/json"].schema).toMatchObject({
+        additionalProperties: false, required: ["text"], properties: { text: { type: "string", maxLength: 8000 } },
+      });
+      for (const status of [400, 403, 404]) expect(route.put.responses[status]).toBeDefined();
+    }
   });
 
   it("covers the mounted server routes exactly", () => {

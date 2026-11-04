@@ -410,16 +410,25 @@ Operacje takie jak merge do głównej gałęzi, deploy produkcyjny, usuwanie dan
 Dodaj prosty panel personalizacji:
 - Zmiana nazwy i awatara każdego agenta.
 - Możliwość tworzenia własnych ról.
-- Motyw jasny/ciemny.
-- Zmiana akcentu kolorystycznego.
-- Regulacja szerokości paneli.
-- Zapamiętywanie układu.
+- ~~Motyw jasny/ciemny.~~
+- ~~Zmiana akcentu kolorystycznego.~~
+- ~~Regulacja szerokości paneli.~~
+- ~~Zapamiętywanie układu.~~
 - Konfiguracja widoków.
 - Własne instrukcje globalne i projektowe.
+
+Stan t18 (4 XI 2026): instrukcje firmy/projektu/osoby w danej firmie mają osobny
+kontrakt, edytor w profilu, limit i odmowę widzowi. E2E bez modelu potwierdza
+zapis → kolejny kontekst kontrolowanego adaptera, izolację i brak zmiany aktywnego
+runu. Nie przekreślamy całego punktu „globalne i projektowe”: nie odebrano
+stosowania wskazówek przez model ani ustawień osoby wspólnych dla wszystkich
+firm. Szczegóły i granice: `COSGRAL-PRZEKAZANIE.md`, Codex #18.
 
 Projekt powinien mieć spójny charakter wizualny COSGRAL.
 
 Nie twórz przesadnie rozbudowanego kreatora wyglądu. Wystarczy kilka użytecznych ustawień.
+
+Stan t17 (4 XI 2026): przekreślone motyw, akcent, szerokości paneli, zapamiętywanie układu – testy UI/serwera + `scripts/cosgral-e2e-personalization.mjs` PASS. Otwarte: instrukcje globalne/projektowe w panelu, własne role, konfiguracja widoków (częściowo z #9).
 
 ## 13. Kolejność realizacji
 

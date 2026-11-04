@@ -5,6 +5,7 @@ import { agents, authUsers, companies, companyMemberships, createDb, heartbeatRu
 import { FAST_RESPONSE_AGENT_GUIDANCE } from "@paperclipai/shared";
 import { registerServerAdapter, unregisterServerAdapter, type AdapterExecutionContext } from "../adapters/index.js";
 import { heartbeatService } from "../services/heartbeat.js";
+import { workspaceInstructionService } from "../services/workspace-instructions.js";
 import { prepareHeartbeatTaskContext } from "../services/heartbeat/task-context.js";
 import { documentService } from "../services/documents.js";
 import { ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY } from "../services/issue-continuation-summary.js";
@@ -195,6 +196,34 @@ describePostgres("heartbeat task context delivered to an adapter", () => {
     else await preparing;
     expect(pinned).toHaveBeenCalledTimes(recovering ? 1 : 0);
     expect(context.paperclipAgentJwtScope).toEqual({ kind: recovering ? "skill_test" : "standard", ...(recovering ? { issueId: f.issueId } : {}) });
+  });
+
+  it("pins instruction guidance during recovery, ignores forged snapshots on new runs, and redacts registered secrets", async () => {
+    const f = await seed();
+    const svc = workspaceInstructionService(db);
+    await svc.set(f.companyId, "company", "context-user", { text: "Pierwotne wskazówki" });
+    const [run] = await db.insert(heartbeatRuns).values({ companyId: f.companyId, agentId: f.agentId, status: "running", issueId: f.issueId, contextSnapshot: { issueId: f.issueId } }).returning();
+    const [agent] = await db.select().from(agents).where(eq(agents.id, f.agentId));
+    const [issueRef] = await db.select().from(issues).where(eq(issues.id, f.issueId));
+    const context: Record<string, unknown> = { issueId: f.issueId, paperclipWorkspaceInstructionMarkdown: "FORGED" };
+    const prepare = (recovering: boolean) => prepareHeartbeatTaskContext(db, {
+      run, agent, task: { issueRef, issueContext: null, context, taskSession: null, responsibleUserId: "context-user" },
+      policy: { recovering, trustPreset: { kind: "standard" }, experimentalInstanceSettings: {} },
+      services: { issuesSvc: { getAncestors: async () => [] }, getPinnedSkillTestContext: async () => null },
+    });
+    await prepare(false);
+    expect(context.paperclipTaskMarkdown).toContain("Pierwotne wskazówki");
+    expect(context.paperclipTaskMarkdown).not.toContain("FORGED");
+    const secret = "registered-instruction-canary";
+    await createRunSecretRedactionRegistry(db).register(f.companyId, run!.id, secret);
+    await svc.set(f.companyId, "company", "context-user", { text: `Nowe wskazówki ${secret}` });
+    await prepare(true);
+    expect(context.paperclipTaskMarkdown).toContain("Pierwotne wskazówki");
+    expect(context.paperclipTaskMarkdown).not.toContain("Nowe wskazówki");
+    await prepare(false);
+    expect(context.paperclipTaskMarkdown).toContain("Nowe wskazówki");
+    expect(context.paperclipWorkspaceInstructionMarkdown).not.toContain(secret);
+    expect(context.paperclipTaskMarkdown).not.toContain(secret);
   });
 
   it("retains the context issue scope when no issue reference is available", async () => {

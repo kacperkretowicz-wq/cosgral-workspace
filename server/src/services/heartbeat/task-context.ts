@@ -20,6 +20,7 @@ import { liveVoiceExecutionGuidance } from "../voice/voice-execution-guidance.js
 import { buildPaperclipWakePayload, ConfigurationIncompleteFailure, readHeartbeatWakeComments, PAPERCLIP_WAKE_PAYLOAD_KEY, type createHeartbeatRunPreparation } from "./run-preparation.js";
 import { buildPaperclipTaskMarkdown } from "./task-markdown.js";
 import { deriveCommentId, extractWakeCommentIds } from "../../modules/run-dispatch/index.js";
+import { workspaceInstructionService } from "../workspace-instructions.js";
 import { workspacePreferenceService } from "../workspace-preferences.js";
 
 type RunPreparation = ReturnType<typeof createHeartbeatRunPreparation>;
@@ -29,6 +30,7 @@ export interface HeartbeatTaskContextInput {
   run: Pick<typeof heartbeatRuns.$inferSelect, "id">;
   agent: Pick<typeof agents.$inferSelect, "id" | "companyId" | "adapterType">;
   task: {
+    responsibleUserId?: string | null;
     issueRef: Pick<IssueContext,
       "id" | "identifier" | "title" | "status" | "priority" | "workMode" |
       "conversationAgentId" | "description" | "projectId"> | null;
@@ -321,7 +323,13 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
     : null;
   if (workflowCase) context.paperclipCase = workflowCase;
   else delete context.paperclipCase;
-  const assignmentPrefix = liveVoiceTaskPrefix + caseExecutionMarkdown(workflowCase);
+  // Server-resolved identity only. A recovery retains the admitted snapshot;
+  // a normal next run reads the latest saved guidance once.
+  const instructionMarkdown = input.policy.recovering
+    ? readNonEmptyString(context.paperclipWorkspaceInstructionMarkdown) ?? ""
+    : await workspaceInstructionService(db).markdown(agent.companyId, issueRef?.projectId ?? null, input.task.responsibleUserId ?? null);
+  context.paperclipWorkspaceInstructionMarkdown = instructionMarkdown;
+  const assignmentPrefix = liveVoiceTaskPrefix + caseExecutionMarkdown(workflowCase) + instructionMarkdown;
   let taskMarkdown = assignmentPrefix + buildPaperclipTaskMarkdown({ ...taskMarkdownInput, taskPlan }) + chatCompletionInstruction(context);
   let taskMarkdownAssignment = assignmentPrefix + buildPaperclipTaskMarkdown({
     ...taskMarkdownInput,
@@ -384,12 +392,14 @@ export async function prepareHeartbeatTaskContext(db: Db, input: HeartbeatTaskCo
       paperclipCase: context.paperclipCase,
       paperclipWakeComment: context.paperclipWakeComment,
       paperclipTaskCommunicationGuidance: context.paperclipTaskCommunicationGuidance,
+      paperclipWorkspaceInstructionMarkdown: context.paperclipWorkspaceInstructionMarkdown,
       paperclipTaskMarkdown: context.paperclipTaskMarkdown,
       paperclipTaskMarkdownCompact: context.paperclipTaskMarkdownCompact,
       paperclipTaskMarkdownAssignment: context.paperclipTaskMarkdownAssignment,
       paperclipTaskMarkdownAssignmentCompact: context.paperclipTaskMarkdownAssignmentCompact,
     });
     context.paperclipIssue = redactedWakeContext.paperclipIssue;
+    context.paperclipWorkspaceInstructionMarkdown = redactedWakeContext.paperclipWorkspaceInstructionMarkdown;
     if (redactedWakeContext.paperclipCase) context.paperclipCase = redactedWakeContext.paperclipCase;
     context.paperclipTaskCommunicationGuidance = redactedWakeContext.paperclipTaskCommunicationGuidance;
     if (redactedWakeContext.paperclipWakeComment) {

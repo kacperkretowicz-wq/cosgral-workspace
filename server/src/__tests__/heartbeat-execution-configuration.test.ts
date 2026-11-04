@@ -12,6 +12,7 @@ import { companySkillService } from "../services/company-skills.js";
 import { withSkillVersionCacheLock } from "../services/skill-version-cache.js";
 import { registerServerAdapter, unregisterServerAdapter, type AdapterExecutionContext } from "../adapters/index.js";
 import { HttpError } from "../errors.js";
+import { workspaceInstructionService } from "../services/workspace-instructions.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { bindHeartbeatRunnerHomeMode, prepareHeartbeatExecutionConfiguration, type HeartbeatExecutionConfigurationInput } from "../services/heartbeat/execution-configuration.js";
 import { buildEffectiveRunSessionConfigMetadata, resolveTaskSessionConfigFreshness } from "../services/heartbeat/workspaces.js";
@@ -612,6 +613,32 @@ describePostgres("heartbeat execution configuration through adapter dispatch", (
     const result = await pending;
     expect(result.prepared).toBe(true);
     if (result.prepared) expect(result.runtimeSkillEntries.some(entry => entry.key === (kind === "selected native" ? selected.key : "paperclipai/paperclip/paperclip"))).toBe(true);
+  });
+
+  it("uses saved company/project/person instructions on the next dispatch without changing the active run", async () => {
+    const f = await seed();
+    const [issue] = await db.select().from(issues).where(eq(issues.id, f.issueId));
+    await db.update(issues).set({ description: "Opis zadania do wariantu compact" }).where(eq(issues.id, f.issueId));
+    const svc = workspaceInstructionService(db);
+    const keys = ["company", `project:${issue!.projectId}`, `user:${f.userId}`];
+    for (const key of keys) await svc.set(f.companyId, key, f.userId, { text: `Pierwsza ${key}` }, key.startsWith("project:") ? issue!.projectId : null);
+    inspect.set(f.agentId, async input => {
+      for (const field of ["paperclipTaskMarkdown", "paperclipTaskMarkdownAssignment", "paperclipTaskMarkdownCompact", "paperclipTaskMarkdownAssignmentCompact"]) {
+        expect(input.context[field]).toContain("Pierwsza company");
+        expect(input.context[field]).toContain(`Pierwsza project:${issue!.projectId}`);
+        expect(input.context[field]).toContain(`Pierwsza user:${f.userId}`);
+      }
+      for (const key of keys) await svc.set(f.companyId, key, f.userId, { text: `Kolejna ${key}` }, key.startsWith("project:") ? issue!.projectId : null);
+      expect(input.context.paperclipTaskMarkdown).not.toContain("Kolejna");
+      inspect.delete(f.agentId);
+    });
+    const first = await execute(f);
+    expect(first.finished.status, first.finished.error ?? undefined).toBe("succeeded");
+    await db.update(issues).set({ status: "todo" }).where(eq(issues.id, f.issueId));
+    const second = await execute(f);
+    expect(second.finished.status, second.finished.error ?? undefined).toBe("succeeded");
+    for (const key of keys) expect(second.input?.context.paperclipTaskMarkdown).toContain(`Kolejna ${key}`);
+    expect(first.input?.context.paperclipTaskMarkdown).not.toContain("Kolejna");
   });
 
   it("uses a changed model for the next run while keeping the running dispatch immutable", async () => {

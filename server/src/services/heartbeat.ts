@@ -2634,7 +2634,7 @@ export function heartbeatService(
         continuationSummary, executionContinuation, paperclipWakePayload, safeWakeComments, safeWakeCommentContext, pinnedSkillTest,
       } = await timePreparation("task_context", () => prepareHeartbeatTaskContext(db, {
         run, agent,
-        task: { issueRef, issueContext, context, taskSession },
+        task: { issueRef, issueContext, context, taskSession, responsibleUserId },
         policy: { trustPreset, experimentalInstanceSettings, recovering: Boolean(runOptions.nativeRestartRecovery || runOptions.nativeLeaseOwner) },
         services: { issuesSvc, getPinnedSkillTestContext },
       }));
