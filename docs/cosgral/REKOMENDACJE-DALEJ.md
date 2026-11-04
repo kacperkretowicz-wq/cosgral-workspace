@@ -1,5 +1,12 @@
 # COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~04:30 CET)
 
+## Bieżące ustalenia — kontynuacja 4 XI
+
+Cel budowy jest aktywny. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle jest obecnie zatrzymana przez problem z kartą; nie utworzono maszyny. Użytkownik zaakceptował Codespaces jako opcję do rozwoju w darmowym limicie, z wyraźnym odłożeniem konfiguracji na później. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
+
+Nowsze przyrosty kodu: formularz URL repozytorium, podłączanie GitHub z panelu autoryzacji, profiler P0 i przygotowany profil systemd. Szczegóły oraz granice odbioru są na końcu dokumentu. Historyczne komunikaty o wstrzymaniu i instrukcje kont poprzedniego hosta nie opisują obecnego stanu.
+
+
 Gałąź: `codex/cosgral-workspace`. Pełna historia: `COSGRAL-PRZEKAZANIE.md`, cel: `COSGRAL-PROMPT-POSTEP.md` (przekreślone = potwierdzone testami/e2e).
 
 ## Najnowsze przekazanie — 4 XI, kontynuacja Windows
@@ -62,3 +69,9 @@ Dodano `scripts/cosgral-profile-server.mjs` i instrukcję `P0-PROFILOWANIE.md`: 
 ## Profil wdrożenia Oracle — przygotowany, nieuruchomiony
 
 Dodano `deploy/cosgral/cosgral.service`, `workspace.env.example`, `scripts/cosgral-host-preflight.mjs` i `ORACLE-WDROZENIE.md`. Profil uruchamia istniejący zbudowany backend/UI jako użytkownik cosgral, z trwałym stanem, PostgreSQL i loopback za proxy HTTPS. Preflight wymaga authenticated, trwałych sekretów i gotowych artefaktów, sprawdza podstawowy bwrap/Git/Codex. Testy walidacji 3/3 PASS. Lokalna próba CLI odmówiła uruchomienia na Windowsie bez konfiguracji (oczekiwany błąd). Nie sprawdzono systemd, ARM, połączenia bazy, modelu ani izolacji pełnego agenta; wymaga to maszyny Oracle. Pełny odbiór P0 i dwóch osób nadal otwarty.
+
+## Synchronizacja autoryzacji i kontrola całego repozytorium
+
+Panel autoryzacji GitHub projektu korzysta teraz z klucza pod kanonicznym prefiksem szczegółów projektu. Dzięki temu istniejący mechanizm zdarzeń unieważnia go po nadaniu/cofnięciu autoryzacji przez inną osobę. Testy panelu i LiveUpdatesProvider: 111/111 PASS; kontrole tokenów, palety/postaci i map PASS. Odbiór dwóch prawdziwych sesji nadal otwarty.
+
+Pełny typecheck odkrył fałszywe rozjechanie manifestu PRP na Windowsie: wszystkie 84 wejścia po normalizacji CRLF do LF miały dokładnie oczekiwane hashe. Dodano reguły LF w .gitattributes i znormalizowano lokalny checkout, bez regeneracji manifestu ani zmiany semantyki protokołu. check:protocol-manifest po poprawce PASS. Część Rust cargo check pierwszej próby przeszła z ostrzeżeniami; pełna próba zatrzymała się później na manifeście przy przygotowaniu serwera. Trwa ponowienie pełnej kontroli po poprawce; nie zaliczać jej przed zakończeniem.

@@ -518,6 +518,7 @@ export const queryKeys = {
         { includeArchived: opts.includeArchived === true },
       ] as const,
     detail: (id: string) => ["projects", "detail", id] as const,
+    gitAuthorization: (id: string) => ["projects", "detail", id, "git-authorization"] as const,
     accessMembers: (id: string) => ["projects", "access-members", id] as const,
   },
   cases: {

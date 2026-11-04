@@ -2123,3 +2123,20 @@ describe("COSGRAL agent config synchronization", () => {
     client.clear();
   });
 });
+
+
+describe("project GitHub authorization synchronization", () => {
+  it.each(["project.git_authorized", "project.git_authorization_revoked"])("refreshes authorization after %s without affecting another project", action => {
+    const client = new QueryClient();
+    const current = queryKeys.projects.gitAuthorization("project-a");
+    const other = queryKeys.projects.gitAuthorization("project-b");
+    client.setQueryData(current, { grantId: "old-grant" });
+    client.setQueryData(other, { grantId: "other-grant" });
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-a", {
+      entityType: "project", entityId: "project-a", action,
+    }, { userId: "another-member", agentId: null });
+    expect(client.getQueryState(current)?.isInvalidated).toBe(true);
+    expect(client.getQueryState(other)?.isInvalidated).toBe(false);
+    client.clear();
+  });
+});

@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
 import { describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/lib/queryKeys";
 import { projectsApi } from "@/api/projects";
 import { ProjectGitAuthorization } from "./ProjectGitAuthorization";
 
@@ -41,7 +42,7 @@ describe("ProjectGitAuthorization", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
-    client.setQueryData(["project-git-authorization", "company-a", "project-a"], saved);
+    client.setQueryData(queryKeys.projects.gitAuthorization("project-a"), saved);
     const container = document.createElement("div"),
       root = createRoot(container);
     document.body.appendChild(container);
@@ -70,7 +71,7 @@ describe("ProjectGitAuthorization", () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
       });
       expect(projectsApi.setGitAuthorization).toHaveBeenCalledWith("project-a", null);
-      expect(client.getQueryData(["project-git-authorization", "company-a", "project-a"])).toMatchObject({
+      expect(client.getQueryData(queryKeys.projects.gitAuthorization("project-a"))).toMatchObject({
         grantId: null,
       });
       expect(container.textContent).not.toContain("Revoke authorization");
@@ -106,9 +107,9 @@ it("connects GitHub from an empty account list and refreshes authorization choic
     });
     await act(async () => { await settle(); });
     expect(container.textContent).toContain("Connect another GitHub account");
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["project-git-authorization", "c", "p"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.projects.gitAuthorization("p") });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["project-repositories", "c"] });
-    expect(client.getQueryData(["project-git-authorization", "c", "p"])).toEqual(added);
+    expect(client.getQueryData(queryKeys.projects.gitAuthorization("p"))).toEqual(added);
   } finally { await act(async () => root.unmount()); container.remove(); client.clear(); }
 });
 

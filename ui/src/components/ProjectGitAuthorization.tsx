@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
 import { projectsApi } from "@/api/projects";
+import { queryKeys } from "@/lib/queryKeys";
 import { ConnectionSetupFlow } from "@/features/connections/ConnectionSetupFlow";
 import { repositoryOptionsKey } from "./ProjectRepositoryInput";
 import { Button } from "./ui/button";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 export function ProjectGitAuthorization({ project }: { project: Project }) {
   const client = useQueryClient();
-  const key = ["project-git-authorization", project.companyId, project.id];
+  const key = queryKeys.projects.gitAuthorization(project.id);
   const authorization = useQuery({
     queryKey: key,
     queryFn: () => projectsApi.gitAuthorization(project.id),

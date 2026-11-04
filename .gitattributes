@@ -7,6 +7,9 @@ packages/paperclip-runner/src/drivers/acpx/generated-*.ts text eol=lf
 packages/paperclip-runner/src/contracts/*.generated.ts text eol=lf
 packages/paperclip-runner/src/contracts/generated-*.ts text eol=lf
 packages/paperclip-runner/src/protocol/generated/* text eol=lf
+# Protocol manifest hashes the schema/fixture bytes, including line endings.
+packages/paperclip-runner/protocol/**/*.json text eol=lf
+packages/paperclip-runner/protocol/manifest.json text eol=lf
 packages/paperclip-runner/runner/crates/runner-core/src/generated_*.rs text eol=lf
 packages/shared/src/provider-failure.generated.ts text eol=lf
 
