@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { authUsers } from "@paperclipai/db";
+import { authUsers, companyMemberships } from "@paperclipai/db";
+import { logActivity, publishActivity, type ActivityPublication } from "../services/activity-log.js";
 import {
   authSessionSchema,
   currentUserProfileSchema,
@@ -74,27 +75,49 @@ export function authRoutes(db: Db) {
     }
 
     const patch = updateCurrentUserProfileSchema.parse(req.body);
+    const userId = req.actor.userId;
     const now = new Date();
 
-    const updated = await db
-      .update(authUsers)
-      .set({
-        name: patch.name,
-        ...(patch.image !== undefined ? { image: patch.image } : {}),
-        updatedAt: now,
-      })
-      .where(eq(authUsers.id, req.actor.userId))
-      .returning({
-        id: authUsers.id,
-        email: authUsers.email,
-        name: authUsers.name,
-        image: authUsers.image,
-      })
-      .then((rows) => rows[0] ?? null);
+    const publications: ActivityPublication[] = [];
+    const updated = await db.transaction(async (tx) => {
+      const updated = await tx
+        .update(authUsers)
+        .set({
+          name: patch.name,
+          ...(patch.image !== undefined ? { image: patch.image } : {}),
+          updatedAt: now,
+        })
+        .where(eq(authUsers.id, userId))
+        .returning({
+          id: authUsers.id,
+          email: authUsers.email,
+          name: authUsers.name,
+          image: authUsers.image,
+        })
+        .then((rows) => rows[0] ?? null);
+
+      if (!updated) throw unauthorized("Signed-in user not found");
+      const memberships = await tx.select({ companyId: companyMemberships.companyId })
+        .from(companyMemberships).where(and(
+          eq(companyMemberships.principalType, "user"),
+          eq(companyMemberships.principalId, userId),
+          eq(companyMemberships.status, "active"),
+        ));
+      for (const membership of memberships) {
+        await logActivity(tx as unknown as Db, {
+          companyId: membership.companyId, actorType: "user", actorId: userId,
+          action: "user.profile_updated", entityType: "user", entityId: updated.id,
+          responsibleUserIdOverride: updated.id,
+        }, publications);
+      }
+      return updated;
+    });
 
     if (!updated) {
       throw unauthorized("Signed-in user not found");
     }
+
+    for (const publication of publications) publishActivity(publication);
 
     res.json(currentUserProfileSchema.parse({
       id: updated.id,

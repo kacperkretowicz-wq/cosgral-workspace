@@ -1392,6 +1392,12 @@ function invalidateActivityQueries(
   const actorType = readString(payload.actorType);
   const actorId = readString(payload.actorId);
   const details = readRecord(payload.details);
+  if (action === "user.profile_updated") {
+    queryClient.invalidateQueries({ queryKey: queryKeys.access.companyUserDirectory(companyId) });
+    if (entityId === currentActor.userId) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.session });
+    }
+  }
   const decisionProjectionChanged = entityType === "decision" ||
     ["inbox.dismissed", "inbox.snoozed", "inbox.restored"].includes(action ?? "") ||
     action?.startsWith("issue.thread_interaction_") ||

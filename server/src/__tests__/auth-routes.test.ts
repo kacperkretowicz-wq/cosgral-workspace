@@ -33,10 +33,12 @@ function createUpdateChain(row: unknown) {
 }
 
 function createDb(row: Record<string, unknown>) {
-  return {
-    select: () => createSelectChain([row]),
+  const db = {
+    select: (fields: Record<string, unknown>) => createSelectChain("companyId" in fields ? [] : [row]),
     update: () => createUpdateChain(row),
-  } as any;
+    transaction: async (callback: (tx: unknown) => Promise<unknown>): Promise<unknown> => callback(db),
+  };
+  return db as any;
 }
 
 function createApp(actor: Express.Request["actor"], row: Record<string, unknown>) {

@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
+import { authRoutes } from "../routes/auth.js";
+import { subscribeCompanyLiveEvents } from "../services/live-events.js";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activityLog,
@@ -121,10 +123,50 @@ describeEmbeddedPostgres("GET /companies/:companyId/users/:userSlug/profile", ()
       };
       next();
     });
+    app.use("/api/auth", authRoutes(db));
     app.use("/api", userProfileRoutes(db));
     app.use(errorHandler);
     return app;
   }
+
+  it("rolls back the profile and publishes nothing when the audit write fails", async () => {
+    const received: unknown[] = [];
+    const unsubscribe = subscribeCompanyLiveEvents(companyId, event => { received.push(event); });
+    await db.$client.unsafe(`CREATE FUNCTION test_profile_audit_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN IF NEW.action = 'user.profile_updated' THEN RAISE EXCEPTION 'injected profile audit failure'; END IF;
+      RETURN NEW; END $$`);
+    try {
+      await db.$client.unsafe(`CREATE TRIGGER test_profile_audit_failure BEFORE INSERT ON activity_log
+        FOR EACH ROW EXECUTE FUNCTION test_profile_audit_failure()`);
+      const res = await request(createApp()).patch("/api/auth/profile").send({ name: "Must roll back", image: "https://example.test/rollback.png" });
+      expect(res.status).toBe(500);
+      expect(await db.select({ name: authUsers.name, image: authUsers.image }).from(authUsers))
+        .toEqual([{ name: "Dotta", image: null }]);
+      expect(received).toEqual([]);
+      expect(await db.select().from(activityLog)).toEqual([]);
+    } finally {
+      unsubscribe();
+      await db.$client.unsafe("DROP TRIGGER IF EXISTS test_profile_audit_failure ON activity_log");
+      await db.$client.unsafe("DROP FUNCTION IF EXISTS test_profile_audit_failure()");
+    }
+  });
+
+  it("publishes a committed profile change only to active user memberships without profile content", async () => {
+    const outside = randomUUID();
+    await db.insert(companies).values({ id: outside, name: "Other", issuePrefix: "OTHER" });
+    await db.insert(companyMemberships).values({ companyId: outside, principalType: "user", principalId: userId, status: "inactive" });
+    const received: Array<{ companyId: string; payload: Record<string, unknown> }> = [];
+    const unsubscribe = subscribeCompanyLiveEvents(companyId, event => { received.push(event); });
+    const unsubscribeOutside = subscribeCompanyLiveEvents(outside, event => { received.push(event); });
+    try {
+      const res = await request(createApp()).patch("/api/auth/profile").send({ name: "Updated person", image: "https://example.test/avatar.png" });
+      expect(res.status).toBe(200);
+      expect(received).toHaveLength(1);
+      expect(received[0]).toMatchObject({ companyId, payload: { action: "user.profile_updated", entityType: "user", entityId: userId } });
+      expect(JSON.stringify(received)).not.toContain("Updated person");
+      expect(JSON.stringify(received)).not.toContain("avatar.png");
+    } finally { unsubscribe(); unsubscribeOutside(); }
+  });
 
   it("resolves a user slug and returns issue, activity, and attributed cost stats", async () => {
     const doneIssueId = randomUUID();

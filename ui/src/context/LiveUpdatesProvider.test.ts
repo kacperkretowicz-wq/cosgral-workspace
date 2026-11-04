@@ -16,6 +16,19 @@ import { __liveUpdatesTestUtils } from "./LiveUpdatesProvider";
 import { queryKeys } from "../lib/queryKeys";
 
 describe("LiveUpdatesProvider issue invalidation", () => {
+  it.each(["other-user", "user-1"])("refreshes scoped profile data for %s", userId => {
+    const client = new QueryClient();
+    const directory = queryKeys.access.companyUserDirectory("company-1");
+    const outside = queryKeys.access.companyUserDirectory("company-2");
+    for (const key of [directory, outside, queryKeys.auth.session]) client.setQueryData(key, {});
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", {
+      entityType: "user", entityId: userId, action: "user.profile_updated",
+    }, { userId: "user-1", agentId: null });
+    expect(client.getQueryState(directory)?.isInvalidated).toBe(true);
+    expect(client.getQueryState(outside)?.isInvalidated).toBe(false);
+    expect(client.getQueryState(queryKeys.auth.session)?.isInvalidated).toBe(userId === "user-1");
+    client.clear();
+  });
   it("discovers first proactive deliveries without invalidating another human's chat list", () => {
     const client = new QueryClient();
     const mine = queryKeys.agentChats.list("company-1", "user-1");

@@ -121,3 +121,10 @@ wybór użytkownika lub agenta po nazwie, zastosowanie wersji do członkostwa or
 Viewer tylko odczytuje. Pusta nazwa blokuje zapis; błędy API są widoczne,
 draft pozostaje po błędzie. Role z pokwitowaniami zastosowania są chronione przed usunięciem.
 Weryfikacja komponentowa z mockowanym API oraz próba przeglądarkowa wyboru i przypisania agenta na lokalnej instancji `local_trusted`; logowanie dwoma kontami: not-run.
+
+Profile realtime (4 XI): saving a human profile publishes a content-free activity
+in each active user membership after commit. Open company directories refresh the
+name/avatar through authorized HTTP reads; another tab of the same user also
+refreshes its session. PostgreSQL route tests cover active/inactive membership
+scope and no profile content in the event; UI invalidation tests cover company
+scope and self/other session behavior. Two real browser accounts remain unverified.

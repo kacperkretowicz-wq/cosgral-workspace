@@ -179,3 +179,9 @@ Verification: owner/admin usuwa nieużywaną wersję; viewer i administrator bez
 mają odmowę, zastosowana rola pozostaje. UI w profilu korzysta z tych samych API.
 Gaps: nie wykonano przeglądarkowego/logowanego przypisania; wybór odbiorcy przez UUID
 członkostwa, bez katalogu członkostw agentów w panelu.
+
+Profile realtime uses existing PATCH /api/auth/profile and activity.logged with
+user.profile_updated, entityType user and the user's ID. Profile/audit writes are
+transactional; publication follows commit. Only active human memberships supply
+audience companies. No name, email or image is published in the event. UI reads
+continue through the existing session and company-directory authorization paths.
