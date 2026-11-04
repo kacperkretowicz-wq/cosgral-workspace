@@ -300,9 +300,9 @@ function ConversationContent({ companyId, projectId, user }: { companyId: string
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("agents")}</h2>
       {agents.isSuccess && !roster.length && <p className="text-sm text-muted-foreground">{t("noAgents")}</p>}
       {conversation.data?.canManageCoordinator !== false && <Link to="/agents/new" className="rounded-md px-2 py-2 text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring">{t("addAgent")}</Link>}
-      {agentHierarchy(roster).map(({ agent, depth }) => <div key={agent.id} className="cosgral-agent-row" style={{ "--cosgral-agent-depth": depth } as CSSProperties}>
+      {agentHierarchy(roster).map(({ agent, depth }) => <div key={agent.id} className="cosgral-agent-row" data-child={depth > 0 || undefined} data-coordinator={agent.id === conversation.data?.coordinatorAgentId || undefined} style={{ "--cosgral-agent-depth": depth } as CSSProperties}>
         <Link to={`/agents/${agent.id}`} className="flex items-center gap-2 rounded-md p-1 text-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring">
-          <AgentAvatar agent={agent} /><span className="min-w-0 flex-1 truncate">{agent.name}</span><span className="cosgral-agent-state" role="img" title={t(`status.${agent.status}`)} aria-label={t(`status.${agent.status}`)}><AgentStatusCapsule status={agent.status} /></span>
+          <AgentAvatar agent={agent} /><span className="min-w-0 flex-1"><span className="block truncate">{agent.name}</span>{agent.id === conversation.data?.coordinatorAgentId && <span className="cosgral-coordinator-label">{t("coordinator")}</span>}</span><span className="cosgral-agent-state" role="img" title={t(`status.${agent.status}`)} aria-label={t(`status.${agent.status}`)}><AgentStatusCapsule status={agent.status} /></span>
         </Link>
       </div>)}
     </nav>

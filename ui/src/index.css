@@ -5243,7 +5243,36 @@ html:not(.dark) .coordinator-sidebar {
   --cosgral-status-size: calc(var(--spacing) * 2);
   --cosgral-composer-max-height: calc(var(--spacing) * 48);
 }
-.cosgral-agent-row { padding-inline-start: calc(var(--cosgral-agent-depth, 0) * var(--cosgral-agent-indent)); }
+.cosgral-agent-row {
+  position: relative;
+  padding-inline-start: calc(var(--cosgral-agent-depth, 0) * var(--cosgral-agent-indent));
+}
+.cosgral-agent-row[data-child]::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset-inline-start: calc((var(--cosgral-agent-depth) - 0.5) * var(--cosgral-agent-indent));
+  inset-block-start: calc(var(--spacing) * -2);
+  width: calc(var(--cosgral-agent-indent) / 2);
+  height: calc(50% + var(--spacing) * 2);
+  border-inline-start: 1px solid var(--border);
+  border-block-end: 1px solid var(--border);
+}
+.cosgral-agent-row[data-coordinator] > a {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+.cosgral-coordinator-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  padding-inline: var(--spacing);
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+}
 .cosgral-agent-state .status-fill { width: var(--cosgral-status-size); height: var(--cosgral-status-size); border-radius: var(--cosgral-status-size); }
 .cosgral-composer { max-height: var(--cosgral-composer-max-height); overflow-y: auto; }
 @media (max-width: 767px) {
