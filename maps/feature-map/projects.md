@@ -222,3 +222,9 @@ in their repository settings. Saving uses the existing company-scoped workspace
 API; failures retain the URL, success refreshes project aliases and lists. The
 component test covers rejection and retry. This adds a source workspace, not proof
 of remote access, checkout or a live model run; private sources need authorization.
+
+New-project completion (4 XI): successful creation opens the shared conversation
+using company-aware navigation; failed saves retain the form and do not navigate.
+`NewProjectDialog.managed-sandbox.test.tsx` exercises creation with the real memory
+router and verifies the company-prefixed conversation path. The form retry test
+checks that the completion callback is not invoked after rejection.

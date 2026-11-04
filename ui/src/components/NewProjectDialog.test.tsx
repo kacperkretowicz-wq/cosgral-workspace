@@ -46,8 +46,9 @@ describe("new project colors", () => {
       .mockRejectedValueOnce(new Error("Try again"))
       .mockResolvedValueOnce({ id: "project-created" } as Awaited<ReturnType<typeof projectsApi.create>>);
     const onClose = vi.fn();
+    const onCreated = vi.fn();
     act(() => root.render(<QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
-      <NewProjectForm companyId="company-1" onClose={onClose} />
+      <NewProjectForm companyId="company-1" onClose={onClose} onCreated={onCreated} />
     </QueryClientProvider>));
     const previewColor = container.querySelector<HTMLElement>('span[style]')!.style.backgroundColor;
     const input = container.querySelector<HTMLInputElement>('input[aria-label="Project name"]')!;
@@ -58,6 +59,7 @@ describe("new project colors", () => {
     act(() => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
     await settle();
     expect(container.querySelector('[role="alert"]')?.textContent).toBe("Try again");
+    expect(onCreated).not.toHaveBeenCalled();
     const firstColor = vi.mocked(projectsApi.create).mock.calls[0][1].color;
     expect(PROJECT_COLORS).toContain(firstColor);
     const expected = document.createElement("span");
@@ -68,6 +70,7 @@ describe("new project colors", () => {
     expect(vi.mocked(projectsApi.create).mock.calls[1][1]).toEqual({ name: "Colorful project", color: firstColor, status: "planned", repositoryIds: [] });
     expect(getLastProjectId("company-1")).toBe("project-created");
     expect(onClose).toHaveBeenCalledOnce();
+    expect(onCreated).toHaveBeenCalledExactlyOnceWith("project-created");
   });
 });
 

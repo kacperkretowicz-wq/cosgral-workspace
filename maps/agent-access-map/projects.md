@@ -290,3 +290,7 @@ Repository URL onboarding (4 XI): the board repository form calls existing
 `POST /api/projects/:id/workspaces` with `sourceType: git_repo` and `repoUrl`.
 Project read/workspace-write checks and activity logging remain in the owning
 route. No new agent tool, endpoint, credential grant or execution permission is added.
+
+New-project completion navigates to the existing conversation UI after the create
+request succeeds. It adds no API or agent authority; conversation creation and
+coordinator assignment retain their existing server checks.

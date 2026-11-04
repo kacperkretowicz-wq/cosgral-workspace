@@ -12,15 +12,18 @@ import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { ProjectRepositoryInput, repositoryOptionsKey } from "./ProjectRepositoryInput";
 import { ConnectionSetupFlow } from "@/features/connections/ConnectionSetupFlow";
+import { useNavigate } from "@/lib/router";
 
 export function NewProjectDialog() {
+  const navigate = useNavigate();
   const { newProjectOpen, closeNewProject } = useDialog();
   const { selectedCompanyId } = useCompany();
   return selectedCompanyId && newProjectOpen
-    ? <NewProjectForm key={selectedCompanyId} companyId={selectedCompanyId} onClose={closeNewProject} /> : null;
+    ? <NewProjectForm key={selectedCompanyId} companyId={selectedCompanyId} onClose={closeNewProject}
+      onCreated={(id) => navigate(`/projects/${encodeURIComponent(id)}/conversation`)} /> : null;
 }
 
-export function NewProjectForm({ companyId, onClose }: { companyId: string; onClose: () => void }) {
+export function NewProjectForm({ companyId, onClose, onCreated }: { companyId: string; onClose: () => void; onCreated?: (id: string) => void }) {
   const client = useQueryClient();
   const [name, setName] = useState("");
   const [color] = useState(() => PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]!);
@@ -34,6 +37,7 @@ export function NewProjectForm({ companyId, onClose }: { companyId: string; onCl
       trackRecentProject(project.id, companyId);
       void client.invalidateQueries({ queryKey: queryKeys.projects.all(companyId) });
       onClose();
+      onCreated?.(project.id);
     },
   });
   return <Dialog open onOpenChange={(open) => { if (!open && !create.isPending) onClose(); }}>
