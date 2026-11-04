@@ -231,13 +231,15 @@ Panel pojedynczego agenta powinien umożliwiać:
 - Budżet i ograniczenia kosztów.
 - Historia pracy.
 - Raporty i audyty.
-- Liczba wykonanych zadań.
-- Ostatnie błędy.
-- Stan: dostępny, pracuje, oczekuje, offline, błąd.
+- ~~Liczba wykonanych zadań.~~
+- ~~Ostatnie błędy.~~
+- ~~Stan: dostępny, pracuje, oczekuje, offline, błąd.~~
 
 Obsługa narzędzi ma być dostosowana do rzeczywistych możliwości danego runtime'u. Nie udawaj, że każda integracja MCP, skill albo plugin działa identycznie z każdym dostawcą.
 
-Przygotuj możliwość zapisania konfiguracji agenta jako szablonu i późniejszego użycia jej w innym projekcie.
+~~Przygotuj możliwość zapisania konfiguracji agenta jako szablonu i późniejszego użycia jej w innym projekcie.~~
+
+Stan t16 (4 XI 2026): przekreślone: szablon konfiguracji (zapis + użycie w innym projekcie/firmie, allowlista bez sekretów, viewer, izolacja), liczba zadań, ostatnie błędy, stan — potwierdzone `scripts/cosgral-e2e-agent-config.mjs` (PASS) i testami. Zmiana modelu przed następnym zadaniem potwierdzona tylko testem serwera (nie żywym runem); reszta §6 (pełny import profili natywnego Runnera, MCP/CLI/skille/pluginy per agent, upload awatara) otwarta.
 
 ## 7. Integracje modeli i subskrypcji
 

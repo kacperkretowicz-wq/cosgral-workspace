@@ -1540,3 +1540,114 @@ Nie zmieniano COSGRAL-PROMPT-POSTEP.md; bez commit/push.
 - Przekreślono §5 pkt 5. §5 w całości: pkt 1–10 teraz wszystkie przekreślone poza ewentualnymi 1,2,6–9 – sprawdzić (pkt 1,2,6,7,8,9 pokrywa e2e delegowania, ale nie były osobno przekreślane).
 - Koszt = cena referencyjna API, nie rachunek subskrypcji; brak osobnego limitu otwartych zadań w modelu agenta.
 - Następne: §6 pełna konfiguracja agenta, §12 personalizacja, §7 integracje, §4 awatary/kursory.
+
+## Codex #16 — szablon konfiguracji i statystyki agenta (2026-11-04)
+
+### Audyt §6 i wykonane zmiany
+
+- Przeczytano #9, #15/t15b i wpisy nadzorcy. Istnieją: nazwa/appearance,
+  opis/specjalizacja, rola/reportsTo, adapter/model/reasoning, powiązanie konta,
+  własne instrukcje, uprawnienia, budżet, maxConcurrentRuns, historia runów,
+  zadania i audyty. Nie dublowano formularza ani silnika. Limit oznacza runy,
+  nie odrębny limit wszystkich otwartych zadań. Upload awatara i §7 poza zakresem.
+- Dodano `packages/shared/src/agent-template.ts`: wersjonowany, ścisły schemat
+  przenośnego JSON. Lista pól: nazwa, rola, opis, model, reasoning, instrukcje,
+  limit runów, budżet, dwie flagi uprawnień i deklaracje narzędzi. Brak dowolnych
+  adapterConfig/runtimeConfig/permissions, env, kont, ścieżek, poleceń i sekretów.
+  Znane wartości z wykluczonych pól konfiguracji są usuwane także z tekstu.
+  Eksport managed obejmuje plik wejściowy instrukcji, nie cały katalog ani
+  zewnętrzne pliki. Własny tekst należy przejrzeć przed udostępnieniem: to nie
+  jest uniwersalny skaner sekretów wpisanych ręcznie do instrukcji.
+- `GET /agents/:id/config-template`: board, dostęp do agenta i odczytu jego
+  konfiguracji. `POST /companies/:companyId/agents/from-template`: board,
+  kontrola tworzenia w firmie i odczytu projektu; obcy projekt daje 404,
+  widz/agent-token 403. Żądane flagi tworzenia agentów/skilli sprawdzane wobec
+  uprawnień użytkownika. Import trafia do ISTNIEJĄCEGO create i zachowuje approval
+  gate, walidację runtime, log aktywności oraz lifecycle. Nowy agent ma zawsze
+  low_trust_review z granicą wskazanego projektu, bez kopiowania grantów;
+  heartbeat/wake są wyłączone. Uprawnienia efektywne pozostają zawężone presetem.
+- `GET /agents/:id/config-stats`: board, istniejąca kontrola odczytu agenta,
+  404 dla obcej firmy. Liczy done aktualnie przypisane temu agentowi (nie liczbę
+  runów ani pełne historyczne autorstwo po zmianie assignee), maks. 5 ostatnich
+  failed/timed_out z ID/datą i ogólnym komunikatem, bez surowego błędu runtime.
+  Stan z lifecycle/statusu i queued/running/scheduled_retry: dostępny/pracuje/
+  oczekuje/offline/błąd. Trzy ograniczone zapytania na żądanie, bez nowego pollingu.
+- Przegląd agenta pokazuje statystyki, pobiera szablon jako plik JSON, pozwala
+  wkleić zapisany JSON i wybrać firmę/projekt docelowy. Błędy operacji są widoczne.
+  Narzędzia opisano zachowawczo jako niezweryfikowane dla wykonania; deklaracja
+  szablonu nie instaluje MCP/skilla/pluginu ani nie daje repo/terminala.
+- Dodano test istniejącego heartbeat z prawdziwą bazą i kontrolowanym adapterem:
+  zmiana zapisanego modelu podczas dispatch nie zmienia bieżącej konfiguracji,
+  a następny run dostaje nowy model. Bez zmiany silnika i bez wywołania dostawcy.
+- Uaktualniono obie mapy agentów. COSGRAL-PROMPT-POSTEP.md bez zmian.
+
+### Weryfikacja i wyniki
+
+Wszystkie pnpm z `PATH=/home/box/tools/bin:$PATH`.
+
+```sh
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/agent-config-template.test.ts
+# GREEN: 4 PASS. Allowlista, redakcja znanej wartości także w instrukcjach,
+# odmowy HTTP widzowi/agentowi, obca firma, rzeczywista baza i wszystkie 5 stanów.
+# RED: początkowo brak modułu; następnie właściwy RED 1 FAIL / 3 PASS:
+# wartość SECRET z env pozostawała w promptTemplate. Po redakcji GREEN.
+pnpm --filter @paperclipai/server exec vitest run src/__tests__/heartbeat-execution-configuration.test.ts -t 'changed model for the next run'
+# PASS: 1 test, 35 pominiętych filtrem; kontrolowany adapter, nie model.
+pnpm --filter @paperclipai/ui exec vitest run src/components/AgentConfigurationSummary.test.tsx src/components/AgentConfigForm.render.test.tsx src/pages/AgentDetailPage.test.tsx
+# GREEN: 3 pliki / 185 PASS. Osobny RED mutacyjny: licznik 0 zamiast 12,
+# 1 FAIL / 1 PASS; prawidłowy kod przywrócono przed GREEN.
+node --test scripts/cosgral-e2e-agent-config.test.mjs
+# PASS: 2 testy; wcześniej RED brak skryptu.
+node scripts/cosgral-e2e-agent-config.mjs
+# PASS końcowy: prawdziwe trasy HTTP, dwie firmy/dwa projekty przez API,
+# eksport/import, brak sentinel sekretu w odpowiedziach, ścisła allowlista,
+# widz 403, obca firma/projekt 404, statystyki i offline po pauzie.
+pnpm --filter @paperclipai/server exec tsc --noEmit
+# PASS exit 0, końcowy kod i testy.
+pnpm --filter @paperclipai/ui typecheck
+# PASS exit 0; Storybook catalog + tsc -b.
+pnpm check:token-gates
+# PASS: 4 bramki CLEAN, cliplab w synchronizacji.
+node scripts/check-maps.mjs
+# PASS: 35 obszarów / 193 capability IDs, tylko struktura.
+git diff --check
+# PASS.
+```
+
+- Skrypt sam tworzy wyłącznie serwer fixture na **3197**, z rzeczywistymi
+  routerami produkcyjnymi i jawną testową iniekcją aktorów board/viewer/outsider.
+  Odmawia zajęcia używanego portu. To test HTTP ACL, nie logowania ani dwóch
+  zalogowanych przeglądarek. PostgreSQL i PAPERCLIP_HOME wyłącznie w /tmp.
+  Proces grupy zatrzymywany w finally, baza sprzątana przez fixture. Bez modeli,
+  kont subskrypcji, portu 3199 i flag omijających sandbox.
+- Wczesny e2e FAIL: zły mount companyRoutes (404); poprawiono mount /api/companies.
+  Kolejny FAIL: proces bez gotowego runtime może być offline, nie tylko waiting;
+  warunek dopuszcza offline, nadal zabrania fikcyjnej pracy i sprawdza pauzę.
+  Końcowy pełny przebieg PASS po dodaniu eksportu managed instructions.
+- Logi: `/tmp/cosgral16-{secret-red,server-green,model,ui-red-valid,ui-final,
+  live-final,server-tsc-final,ui-tsc-final,tokens,maps}.log`.
+
+### Granice i następny krok
+
+- To częściowe domknięcie §6, nie odbiór całego runtime dla każdego dostawcy.
+  Szablon nie przenosi profilu natywnego paperclip_runner (provider/acpxAgent),
+  konta ani środowiska. UI przekazuje adapter źródłowy; dla konfiguracji wymagającej
+  dodatkowych pól import może zostać uczciwie odrzucony przez istniejącą walidację.
+  Następna tura: wybór/konfiguracja runtime przy imporcie i odbiór natywnego
+  Runnera, bez osłabiania walidacji oraz bez automatycznego kopiowania kont.
+- Brak pełnego archiwalnego licznika wykonawstwa po przepisywaniu assignee;
+  etykieta wyraźnie mówi „obecnie przypisane”. Rozszerzenie wymaga ustalenia
+  źródła historycznego, zamiast traktowania udanego runu jako wykonanego zadania.
+- Brak kwalifikacji macierzy MCP/skille/pluginy per runtime — pokazano
+  niezweryfikowane. Brak wizualnego odbioru browser/light/dark/mobile i prawdziwego
+  modelu po zmianie konfiguracji. Nie uruchamiano pełnego monorepo
+  typecheck/test:run/build ani browser suites. Nie deklarujemy gotowości PR.
+- Bez commit/push i bez przekreśleń promptu. Gałąź codex/cosgral-workspace.
+
+## Nadzorca – po Codex t16 (4 XI 2026, ~02:55 CET)
+
+- t16 (konto d): §6 – szablony konfiguracji agenta (allowlista, bez sekretów), statystyki i stan agenta, test zmiany modelu od następnego runu, opis możliwości narzędzi wg runtime'u.
+- Testy: serwer project-conversations+issue-thread-interactions 130 PASS; agent-config-template/heartbeat-execution-configuration/codex-pricing 46 PASS; UI AgentConfigurationSummary+ProjectConversation 31 PASS; skrypty e2e unit agent-config/parallel/messages/approval/delegation 2/27/18/27/31 PASS; check-maps, diff-check OK.
+- E2E: agent-config (bez modelu, własny fixture na 3197) PASS; na 3199 równolegle (jedna instancja serwera): approval(a), parallel(a), messages(d), delegowanie(d) – wszystkie PASS (`/workspace/logs/e2e-*-t16.log`).
+- Przekreślono w §6: szablon, liczba zadań, ostatnie błędy, stan. Otwarte: pełny import profili Runnera, per-agent MCP/CLI/skille/pluginy, upload awatara, żywe potwierdzenie zmiany modelu.
+- Następne: §12 personalizacja, §7 integracje, §4 awatary/kursory, §10 pamięć repo, §11 hosting.

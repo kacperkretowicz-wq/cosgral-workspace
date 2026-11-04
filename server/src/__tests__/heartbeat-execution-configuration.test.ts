@@ -614,6 +614,26 @@ describePostgres("heartbeat execution configuration through adapter dispatch", (
     if (result.prepared) expect(result.runtimeSkillEntries.some(entry => entry.key === (kind === "selected native" ? selected.key : "paperclipai/paperclip/paperclip"))).toBe(true);
   });
 
+  it("uses a changed model for the next run while keeping the running dispatch immutable", async () => {
+    const f = await seed();
+    await db.update(issues).set({ assigneeAdapterOverrides: null }).where(eq(issues.id, f.issueId));
+    inspect.set(f.agentId, async input => {
+      expect(input.config.model).toBe("agent-model");
+      const [current] = await db.select().from(agents).where(eq(agents.id, f.agentId));
+      await db.update(agents).set({ adapterConfig: { ...current!.adapterConfig, model: "next-model" } }).where(eq(agents.id, f.agentId));
+      expect(input.config.model).toBe("agent-model");
+      inspect.delete(f.agentId);
+    });
+    const first = await execute(f);
+    expect(first.finished.status, first.finished.error ?? undefined).toBe("succeeded");
+    expect(first.input?.config.model).toBe("agent-model");
+    await db.update(issues).set({ status: "todo" }).where(eq(issues.id, f.issueId));
+    const second = await execute(f);
+    expect(second.finished.status, second.finished.error ?? undefined).toBe("succeeded");
+    expect(second.input?.config.model).toBe("next-model");
+    expect(first.input?.config.model).toBe("agent-model");
+  });
+
   it("applies project environment and issue overrides and replaces caller-supplied runtime fields", async () => {
     const f = await seed();
     const { finished, input } = await execute(f);

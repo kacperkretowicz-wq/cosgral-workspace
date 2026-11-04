@@ -411,3 +411,17 @@ Evidence: `source-only` — reviewed at `9ef434fe79c57d976b8b03b14c5242db270b832
 Verification: `not-run` — Compare provider and Paperclip state before/after probe, then inspect a permitted create/adopt and repeated resource reuse. Reject missing acknowledgement, unsafe resources, invalid model/version/secret/company, and viewer/agent mutations. Separately run a bounded useful task with the saved qualified profile before claiming runtime readiness.
 
 Gaps: This is a provider-specific setup path, not qualification of every managed service or deployed environment. Mocked setup and source validation do not prove live retention, remote execution, or provider availability.
+
+### COSGRAL t16 — konfiguracja przenośna i statystyki
+
+Rozszerza `agents/instructions` i `agents/lifecycle` bez nowych capability IDs.
+`GET /api/agents/{id}/config-template` wymaga board, odczytu konfiguracji i dostępu
+do agenta. `GET /api/agents/{id}/config-stats` wymaga board i dostępu do agenta;
+agent-token nie dostaje agregatu obejmującego inne projekty. Obce ID daje 404.
+`POST /api/companies/{companyId}/agents/from-template` wymaga board,
+`agents:create`, odczytu projektu w docelowej firmie i własnych uprawnień
+`agents:create`/`skills:create` dla żądanych flag. Widz ma 403. Import korzysta
+z istniejącego create (w tym approval gate), preset low_trust_review zawęża
+projekt, konta i granty nie są kopiowane. Narzędzia pozostają deklaracjami.
+Dowód: testy Vitest tras i żywy HTTP fixture; nie jest to odbiór agent-token,
+logowania ani rzeczywistego wykonania modelu.

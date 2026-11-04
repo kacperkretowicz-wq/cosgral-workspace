@@ -344,3 +344,13 @@ Evidence: source implementation and focused protocol tests; real provider assign
 ### Documentation scope: Agents, organization, and runtime setup
 
 Per-harness/model/account capabilities, every instruction-file error, and complete built-in-agent lifecycle variants remain separate qualification matrices.
+
+### COSGRAL §6 — szablon i statystyki (t16)
+
+W przeglądzie agenta: pobranie szablonu JSON, wklejenie zapisanego JSON i wybór
+firmy/projektu docelowego. Import ma preset low_trust_review i wyłączony wake;
+narzędzia są deklaracjami. Jawne pola nie przenoszą kont ani env. Statystyki
+pokazują aktualnie przypisane done, ostatnie ogólne komunikaty błędów oraz stan
+z lifecycle i runów. To rozszerzenie `agents/instructions` i `agents/lifecycle`.
+Odbiór HTTP bez modelu: `node scripts/cosgral-e2e-agent-config.mjs` (wyłącznie 3197,
+izolowana baza i PAPERCLIP_HOME w /tmp, aktorzy fixture zamiast logowania).

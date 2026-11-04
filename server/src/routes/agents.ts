@@ -1,3 +1,5 @@
+import { exportAgentTemplate, instantiateAgentTemplate, createAgentFromTemplateSchema } from "@paperclipai/shared/agent-template";
+import { agentConfigurationStats } from "../services/agent-configuration-stats.js";
 import { readTaskPanelActivations } from "../services/plugin-task-panels.js";
 import { enqueueNativeRuntimeResponse } from "../services/native-runtime/native-runtime-response-delivery.js";
 import { latestFailedRunsByAgent } from "@paperclipai/shared";
@@ -4169,6 +4171,24 @@ export function agentRoutes(
     res.json(await agentIdentityService(db).getPublicIdentity(agent.companyId, agent.id));
   });
 
+  router.get("/agents/:id/config-template", async (req, res) => {
+    assertBoard(req);
+    const agent = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Agent not found");
+    if (!agent) return;
+    if (!(await assertAgentReadAllowed(req, res, agent))) return;
+    await assertCanReadConfigurations(req, agent.companyId);
+    const state = deriveBundleState(agent);
+    const entry = state.mode === "managed" ? await instructions.readFile(agent, state.entryFile) : null;
+    res.json(exportAgentTemplate(entry ? { ...agent, adapterConfig: { ...agent.adapterConfig, promptTemplate: entry.content } } : agent));
+  });
+  router.get("/agents/:id/config-stats", async (req, res) => {
+    assertBoard(req);
+    const agent = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Agent not found");
+    if (!agent) return;
+    if (!(await assertAgentReadAllowed(req, res, agent))) return;
+    res.json(await agentConfigurationStats(db, agent));
+  });
+
   router.get("/agents/:id", async (req, res) => {
     const id = req.params.id as string;
     const agent = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
@@ -4765,7 +4785,24 @@ export function agentRoutes(
     } else await handleAgentHire(req, res);
   });
 
-  router.post("/companies/:companyId/agents", validate(createAgentSchema), async (req, res) => {
+  router.post(["/companies/:companyId/agents", "/companies/:companyId/agents/from-template"], async (req, _res, next) => {
+    if (!req.path.endsWith("/from-template")) return next();
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    await assertBoardCanManageAgentsForCompany(req, companyId);
+    const parsed = createAgentFromTemplateSchema.safeParse(req.body);
+    if (!parsed.success) throw unprocessable("Invalid agent template");
+    const { template, adapterType, projectId } = parsed.data;
+    const project = await db.select({ id: projectsTable.id }).from(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.companyId, companyId)));
+    if (!project.length) throw notFound("Project not found");
+    const decision = await access.decide({ actor: req.actor, action: "project:read", resource: { type: "project", companyId, projectId } });
+    if (!decision.allowed) throw forbidden("Project unavailable");
+    for (const [enabled, action] of [[template.permissions.canCreateAgents, "agents:create"], [template.permissions.canCreateSkills, "skills:create"]] as const) {
+      if (enabled && !(await access.decide({ actor: req.actor, action, resource: { type: "company", companyId } })).allowed) throw forbidden("Template exceeds your permissions");
+    }
+    req.body = instantiateAgentTemplate(template, adapterType, companyId, projectId);
+    next();
+  }, validate(createAgentSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     await assertCanCreateAgentsForCompany(req, companyId);
 

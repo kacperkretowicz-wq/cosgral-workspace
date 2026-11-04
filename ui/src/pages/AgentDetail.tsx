@@ -1,3 +1,4 @@
+import { AgentConfigurationSummary } from "../components/AgentConfigurationSummary";
 import { useSelectedHeartbeatRun } from "../hooks/useSelectedHeartbeatRun";
 import { grokBotApi } from "@/api/grokBot";
 import { GrokBotWorkSummary } from "@/components/GrokBotWorkSummary";
@@ -1072,6 +1073,7 @@ export function AgentDetail() {
         <AgentAuditTab agent={agent} companyId={resolvedCompanyId} section={activeView} />
       ) : null}
 
+      {activeView === "overview" && <AgentConfigurationSummary agentId={agent.id} companyId={agent.companyId} adapterType={agent.adapterType} />}
       {activeView === "overview" && (
         <AgentOverview
           agent={agent}

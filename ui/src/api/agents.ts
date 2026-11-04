@@ -1,3 +1,4 @@
+import type { AgentTemplate, AgentConfigurationStats } from "@paperclipai/shared/agent-template";
 import type { AgentPublicIdentity } from "@paperclipai/shared";
 import type { AgentProjectAccess } from "@paperclipai/shared";
 import type {
@@ -112,6 +113,9 @@ function agentPath(id: string, companyId?: string, suffix = "") {
 }
 
 export const agentsApi = {
+  configurationStats: (id: string) => api.get<AgentConfigurationStats>(`/agents/${id}/config-stats`),
+  configurationTemplate: (id: string) => api.get<AgentTemplate>(`/agents/${id}/config-template`),
+  createFromTemplate: (companyId: string, template: unknown, adapterType: string, projectId: string) => api.post<Agent>(`/companies/${companyId}/agents/from-template`, { template, adapterType, projectId }),
   projectAccess: (id: string) => api.get<AgentProjectAccess>(`/agents/${id}/project-access`),
   addProjectAccess: (id: string, projectIds: string[]) => api.post<AgentProjectAccess>(`/agents/${id}/project-access`, { projectIds }),
   qualifyRunner: (id: string, expectedEnvironmentId: string, companyId?: string) =>
