@@ -1,6 +1,10 @@
 # COSGRAL Workspace – rekomendacje dalszych prac (stan 4 XI 2026, ~04:30 CET)
 
-## Bieżące ustalenia — kontynuacja 4 XI
+## Bieżący stan — praca wstrzymana 4 XI
+
+Użytkownik nakazał zatrzymać wszystkie działania, zapisać i wypchnąć zmiany. Procesy testów, serwera i tymczasowego PostgreSQL są zakończone; port 3198 jest wolny. Najnowszy stan, wyniki i kolejność wznowienia: [PRZEKAZANIE-2026-11-04-PAUZA.md](PRZEKAZANIE-2026-11-04-PAUZA.md). Nie wznawiać bez nowego polecenia. Wszystkie 6 shardów czatu przeszły (1833 wykonania), ale pełny test:run został przerwany w general-server na żądanie i nie jest zaliczony. Restart-ready osiągnięto; verify-after-restart i dwie przeglądarki nie zostały wykonane.
+
+### Historia kontynuacji 4 XI
 
 Użytkownik wznowił budowę 4 XI poleceniem „kontunuuj budowę projektu”. Historyczne zapisy wstrzymania poniżej pozostają opisem wcześniejszych etapów. Użytkownik chce darmowego hostingu bez karty. Rejestracja Oracle zatrzymała się na problemie z kartą; nie utworzono konta ani maszyny. Codespaces może być opcją do pracy w wolnej chwili, ale konfigurację odłożono. Nie uruchamiać go teraz. Codespaces nie zastępuje docelowego hostingu 24/7 i jego zgodność z bwrap nie jest potwierdzona. Nie kupować VPS-a ani nie tworzyć płatnych zasobów bez nowej decyzji użytkownika.
 

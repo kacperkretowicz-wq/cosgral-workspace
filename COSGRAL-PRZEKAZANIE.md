@@ -2133,3 +2133,7 @@ Granice: testy komponentowe z mockowanym API i testy HTTP/DB prawdziwego routera
 ## Zapis i publikacja na prośbę użytkownika — 4 XI
 
 Użytkownik polecił zapisać i wypchnąć całość oraz pozostawić rekomendacje, po czym wstrzymał cel budowy. Aktualne zalecenia i stan odbioru są w sekcji „Najnowsze przekazanie” pliku `docs/cosgral/REKOMENDACJE-DALEJ.md`. Ostatnia rozpoczęta analiza dotyczyła formularza podłączania repozytorium; potwierdzono istniejący backend `repositoryUrls`, ale nie rozpoczęto implementacji nowego pola. Brak nowych zewnętrznych komponentów/orkiestratorów w tej kontynuacji. Lokalne dane, konta, profile diagnostyczne i node_modules pozostają poza zakresem publikowanych źródeł.
+
+## Wstrzymanie, zapis i GitHub — 4 XI 2026
+
+Użytkownik nakazał zatrzymać wszystko, zapisać stan, wypchnąć na GitHub i przekazać pracę. Procesy tej kontynuacji zakończono, w tym pełny test:run przerwany na żądanie. Kontroler zaakceptował stop i zakończył się kodem 0, tymczasowy PostgreSQL zamknięty, port 3198 wolny. Najnowsze pełne przekazanie: `docs/cosgral/PRZEKAZANIE-2026-11-04-PAUZA.md`; obejmuje commity, wyniki, ograniczenia, ścieżki lokalnych artefaktów i następne kroki. Nie wznawiać celu bez nowej prośby użytkownika. Dane testowych kont i sekretów pozostają poza Git.
