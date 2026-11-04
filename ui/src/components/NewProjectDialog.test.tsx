@@ -70,3 +70,34 @@ describe("new project colors", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
+
+
+describe("repository URL onboarding", () => {
+  it("sends a trimmed URL and retains the draft when repository access is rejected", async () => {
+    vi.mocked(projectsApi.create).mockRejectedValueOnce(new Error("Repository URL must identify a GitHub owner and repository"))
+      .mockResolvedValueOnce({ id: "url-project" } as Awaited<ReturnType<typeof projectsApi.create>>);
+    const onClose = vi.fn();
+    act(() => root.render(<QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <NewProjectForm companyId="company-1" onClose={onClose} />
+    </QueryClientProvider>));
+    const setInput = (selector: string, value: string) => act(() => {
+      const input = container.querySelector<HTMLInputElement>(selector)!;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    setInput('input[aria-label="Project name"]', "My project");
+    setInput('input[type="url"]', "https://github.com/owner/repo/tree/main");
+    act(() => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await settle();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Repository URL must identify");
+    expect(onClose).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLInputElement>('input[type="url"]')!.value).toContain("/tree/main");
+    setInput('input[type="url"]', " https://github.com/owner/private-repo.git ");
+    act(() => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await settle();
+    expect(vi.mocked(projectsApi.create).mock.calls[1]).toEqual(["company-1", expect.objectContaining({
+      name: "My project", repositoryIds: [], repositoryUrls: ["https://github.com/owner/private-repo.git"],
+    })]);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});

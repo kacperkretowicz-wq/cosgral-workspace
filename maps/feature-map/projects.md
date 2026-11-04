@@ -29,6 +29,8 @@ Open `/projects`, create a project, and enter its overview or Issues view.
 
 ### `repository-settings`
 
+The new-project dialog accepts an optional GitHub HTTPS repository URL alongside catalog selections. URL validation and workspace registration remain server-owned. A saved URL does not prove private repository authorization or checkout; verify those through the normal GitHub connection and execution path. Component coverage: `ui/src/components/NewProjectDialog.test.tsx` (URL submission and correction after server rejection).
+
 Open `/projects/:projectId/configuration` and its repository/workspace settings.
 Workspace storage shows the inherited installed default and allows an explicit
 provider or Core/local choice. Conflicting defaults remain visible for repair.

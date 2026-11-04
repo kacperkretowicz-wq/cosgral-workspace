@@ -25,10 +25,11 @@ export function NewProjectForm({ companyId, onClose }: { companyId: string; onCl
   const [name, setName] = useState("");
   const [color] = useState(() => PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]!);
   const [repos, setRepos] = useState<ProjectRepository[]>([]);
+  const [repositoryUrl, setRepositoryUrl] = useState("");
   const [connecting, setConnecting] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const create = useMutation({
-    mutationFn: () => projectsApi.create(companyId, { name: name.trim(), color, status: "planned", repositoryIds: repos.map((repo) => repo.id) }),
+    mutationFn: () => projectsApi.create(companyId, { name: name.trim(), color, status: "planned", repositoryIds: repos.map((repo) => repo.id), ...(repositoryUrl.trim() ? { repositoryUrls: [repositoryUrl.trim()] } : {}) }),
     onSuccess: (project) => {
       trackRecentProject(project.id, companyId);
       void client.invalidateQueries({ queryKey: queryKeys.projects.all(companyId) });
@@ -59,6 +60,14 @@ export function NewProjectForm({ companyId, onClose }: { companyId: string; onCl
         </div>
         <div role="region" aria-label="Source repositories" tabIndex={0} className="min-h-0 overflow-y-auto overscroll-contain px-5 pb-1 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring">
           <ProjectRepositoryInput companyId={companyId} selected={repos} onChange={setRepos} onConnect={() => setConnecting(true)} disabled={create.isPending} />
+          <div className="flex flex-col gap-2 py-3">
+            <label htmlFor="new-project-repository-url" className="text-sm font-medium">GitHub repository URL (optional)</label>
+            <input id="new-project-repository-url" type="url" value={repositoryUrl} disabled={create.isPending}
+              onChange={(event) => setRepositoryUrl(event.target.value)} placeholder="https://github.com/owner/repository"
+              aria-describedby="new-project-repository-url-help"
+              className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+            <p id="new-project-repository-url-help" className="text-xs text-muted-foreground">Add a repository by URL if it is missing from the list. Private repositories still require an authorized GitHub connection before agents can access them.</p>
+          </div>
         </div>
         {create.isError && <p role="alert" className="px-5 pt-3 text-sm text-destructive">{create.error.message}</p>}
         <div className="flex shrink-0 justify-end gap-2 px-5 py-5">

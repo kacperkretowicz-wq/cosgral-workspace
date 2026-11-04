@@ -42,3 +42,9 @@ Praca nad celem została wstrzymana przez użytkownika na czas przekazania i pub
 - c: działa (wcześniej limit do 02:50, minął).
 - d: działa.
 - b: nie używać.
+
+## Kontynuacja 4 XI — formularz repozytorium
+
+Dodano opcjonalny adres HTTPS GitHub w formularzu nowego projektu, przekazywany jako `repositoryUrls` obok istniejących `repositoryIds`. Serwer nadal odpowiada za walidację, deduplikację i rejestrację workspace. Zapis adresu nie potwierdza dostępu do prywatnego repo ani checkoutu. Odbiór pełnej ścieżki repo → koordynator → wykonawca pozostaje otwarty.
+
+Weryfikacja tej zmiany: formularz 5/5, istniejące testy repozytoriów i trwałości 13/13, typecheck UI, token gates i kontrola map PASS na Node 24.18.0. Pierwsze uruchomienia na globalnym Node 20 nie przeszły inicjalizacji; powtórzenie na wymaganej wersji przeszło. Nie wykonano pełnego monorepo build/test ani odbioru w przeglądarce. Linux dla P0 nadal niepotwierdzony (lokalny WSL nie zwrócił dystrybucji).
