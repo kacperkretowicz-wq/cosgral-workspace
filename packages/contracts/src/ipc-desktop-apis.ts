@@ -41,6 +41,17 @@ import type {
 } from "./ipc-conversation";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
+  AgentMemory,
+  ChannelMemory,
+  DeleteAgentMemoryInput,
+  DeleteChannelMemoryInput,
+  ListAgentMemoriesInput,
+  ListChannelMemoriesInput,
+  SaveAgentMemoryInput,
+  SaveChannelMemoryInput,
+  SearchAgentMemoriesInput,
+} from "./ipc-memory";
+import type {
   CreateSidebarFolderInput,
   DeleteSidebarFolderInput,
   DuplicateSidebarFolderInput,
@@ -134,6 +145,20 @@ export interface SidebarDesktopApi {
 export interface ChannelsDesktopApi {
   list: () => Promise<WorkspaceChannel[]>;
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
+  listMemories?: (input: ListChannelMemoriesInput | string) => Promise<ChannelMemory[]>;
+  saveMemory?: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
+  deleteMemory?: (input: DeleteChannelMemoryInput) => Promise<void>;
+}
+
+/** COSGRAL W2: agent and channel memory (see ipc-memory.ts). */
+export interface MemoryDesktopApi {
+  listAgentMemories: (input: ListAgentMemoriesInput) => Promise<AgentMemory[]>;
+  saveAgentMemory: (input: SaveAgentMemoryInput) => Promise<AgentMemory>;
+  deleteAgentMemory: (input: DeleteAgentMemoryInput) => Promise<void>;
+  searchAgentMemories?: (input: SearchAgentMemoriesInput) => Promise<AgentMemory[]>;
+  listChannelMemories: (input: ListChannelMemoriesInput | string) => Promise<ChannelMemory[]>;
+  saveChannelMemory: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
+  deleteChannelMemory: (input: DeleteChannelMemoryInput) => Promise<void>;
 }
 
 export interface BrowserDesktopApi {
@@ -225,4 +250,6 @@ export interface OpenBotDesktopApi {
   sidebar?: SidebarDesktopApi;
   /** COSGRAL W1 (engine in W1-BE2). Optional until every renderer mock implements it. */
   channels?: ChannelsDesktopApi;
+  /** COSGRAL W2: agent and channel memory. Optional until every renderer mock implements it. */
+  memory?: MemoryDesktopApi;
 }

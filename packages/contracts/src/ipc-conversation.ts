@@ -19,6 +19,7 @@ import {
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { type AgentMemory, type ChannelMemory, isAgentMemory, isChannelMemory } from "./ipc-memory";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { type ChannelTask, isChannelTask, isWorkspaceChannel, type WorkspaceChannel } from "./ipc-workspace-channels";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
@@ -472,6 +473,10 @@ export type AgentEvent =
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
+  /** COSGRAL W2: an agent's saved memories changed. */
+  | { type: "agent-memory-changed"; botId: string; action: "saved" | "deleted"; memory: AgentMemory }
+  /** COSGRAL W2: a channel's shared memories changed. */
+  | { type: "channel-memory-changed"; channelId: string; action: "saved" | "deleted"; memory: ChannelMemory }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -536,6 +541,18 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":
       return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
+    case "agent-memory-changed":
+      return (
+        isString(value.botId) &&
+        (value.action === "saved" || value.action === "deleted") &&
+        isAgentMemory(value.memory)
+      );
+    case "channel-memory-changed":
+      return (
+        isString(value.channelId) &&
+        (value.action === "saved" || value.action === "deleted") &&
+        isChannelMemory(value.memory)
+      );
     case "error":
       return isString(value.code) && isString(value.message);
     default:
