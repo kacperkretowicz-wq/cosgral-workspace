@@ -3,7 +3,11 @@
 Lider: Okiestrator. Zespół: Backend Expert (Claude Opus), UI Designer (Cursor), Tester (Codex).
 Kanał: „Projekt COSGRAL WORKSPACE” w OpenBot.
 
-## 0. KIERUNEK OD 12.11.2026: droga A (decyzja właściciela)
+## 00. AKTUALNY KIERUNEK (12.11.2026, później): droga B
+
+Właściciel nie aktywuje licencji Team. Program ma być tylko dla nas i mieć wszystkie funkcje OpenBota. Budujemy go na OpenBocie 0.1.11 (Apache-2.0) w gałęzi `codex/cosgral-desktop` (worktree `Shared\cosgral-desktop`). Plan: `docs/cosgral/PLAN.md` w tej gałęzi. Sekcja 0 poniżej (droga A) jest nieaktualna.
+
+## 0. (nieaktualne) KIERUNEK OD 12.11.2026: droga A
 
 Właściciel chce programu identycznego z OpenBotem, tylko lepszego, i to tylko na własny użytek. Wybrał drogę A z `2026-11-12-cosgral-openbot-1to1-paths.md`: **licencja komercyjna OpenBot + nasze dodatki**. Sekcje 2–5 poniżej (silnik Paperclip) są od teraz historią.
 
