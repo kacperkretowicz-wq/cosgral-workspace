@@ -28,7 +28,7 @@ export function collectNeedsYouItems(input: {
         botName: bot.name,
         kind: "question",
         orderKey: `p:${String(prompt.requestId)}`,
-        summary: first?.question ?? "Pytanie od agenta",
+        summary: first?.question ?? "Agent question",
       });
     }
     const approval = input.approvals[bot.id];
@@ -58,7 +58,13 @@ export function stickyDecisionForBot(input: {
 
 function approvalSummary(approval: AgentApproval): string {
   if (approval.kind === "command" && approval.command) return approval.command;
-  if (approval.kind === "file-change") return approval.reason ?? "Zmiana plików";
-  if (approval.kind === "permissions") return approval.reason ?? "Uprawnienia";
-  return approval.reason ?? "Zatwierdzenie";
+  if (approval.kind === "file-change") return approval.reason ?? "File changes";
+  if (approval.kind === "permissions") return approval.reason ?? "Permissions";
+  if (approval.kind === "screen") {
+    return approval.reason ?? (approval.eyes ? `Screen access: ${approval.eyes.targetLabel}` : "Screen access");
+  }
+  if (approval.kind === "camera") {
+    return approval.reason ?? (approval.eyes ? `Camera ${approval.eyes.live ? "live preview" : "photo"}` : "Camera");
+  }
+  return approval.reason ?? "Approval";
 }

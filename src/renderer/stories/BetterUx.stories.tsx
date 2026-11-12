@@ -29,7 +29,7 @@ const needsYouItems: NeedsYouSidebarItem[] = [
     botId: "research",
     botName: "Research",
     kind: "question",
-    summary: "Który wariant A+B+C wchodzi do W1?",
+    summary: "Which A+B+C variant ships in W1?",
   },
   {
     botId: "sales",
@@ -49,11 +49,11 @@ const prompt = {
     {
       id: "q1",
       header: "",
-      question: "Który wariant A+B+C wchodzi do W1?",
+      question: "Which A+B+C variant ships in W1?",
       isSecret: false,
       options: [
-        { label: "Lepszy", description: "" },
-        { label: "Później", description: "" },
+        { label: "Better", description: "" },
+        { label: "Later", description: "" },
       ],
     },
   ],
@@ -63,11 +63,11 @@ function ChannelShell() {
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
   return (
     <div style={{ display: "flex", "flex-direction": "column", height: "100%", background: "var(--openbot-bg-app)" }}>
-      <ChatTasksSwitch mode={mode()} onChange={setMode} channelLabel="# projekt-cosgral · Lider + 3" />
+      <ChatTasksSwitch mode={mode()} onChange={setMode} channelLabel="# project-cosgral · Lead + 3" />
       {mode() === "tasks" ? (
         <ChannelTasksPanel tasks={MOCK_CHANNEL_TASKS} />
       ) : (
-        <div style={{ padding: "16px", color: "var(--openbot-text-secondary)" }}>Oś czatu kanału (atrapa).</div>
+        <div style={{ padding: "16px", color: "var(--openbot-text-secondary)" }}>Channel chat timeline (mock).</div>
       )}
     </div>
   );
@@ -124,7 +124,7 @@ export const NeedsYouSidebar: Story = {
 };
 
 export const StickyDecisionCard: Story = {
-  name: "B · Sticky Decyzja",
+  name: "B · Sticky Decision",
   render: () => (
     <div
       style={{
@@ -138,7 +138,7 @@ export const StickyDecisionCard: Story = {
     >
       <div style={{ flex: 1, overflow: "auto", padding: "16px", color: "var(--openbot-text-secondary)" }}>
         {Array.from({ length: 24 }, (_, index) => (
-          <p>Wiadomość historii #{index + 1} — przewiń, Decyzja zostaje.</p>
+          <p>History message #{index + 1} - scroll, the Decision stays.</p>
         ))}
       </div>
       <StickyDecision
@@ -152,12 +152,12 @@ export const StickyDecisionCard: Story = {
 };
 
 export const ChatTasks: Story = {
-  name: "C · Chat | Zadania",
+  name: "C · Chat | Tasks",
   render: () => <ChannelShell />,
 };
 
 export const ChatTasksDark: Story = {
-  name: "C · Chat | Zadania (ciemny)",
+  name: "C · Chat | Tasks (dark)",
   parameters: { backgrounds: { default: "dark" } },
   globals: { theme: "dark" },
   render: () => (

@@ -39,7 +39,7 @@ describe("Sidebar Needs you", () => {
             botId: "research",
             botName: "Research",
             kind: "question",
-            summary: "Który wariant?",
+            summary: "Which variant?",
           },
         ]}
         onSelectBot={vi.fn()}
@@ -62,7 +62,8 @@ describe("Sidebar Needs you", () => {
 
     expect(screen.getByRole("heading", { name: "Needs you" })).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole("button", { name: /Research, czeka na Ciebie/ }));
+    expect(screen.getByText("Question")).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: /Research, Needs you/ }));
     expect(onSelectNeedsYou).toHaveBeenCalledWith("research");
   });
 });

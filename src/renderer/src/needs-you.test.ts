@@ -4,7 +4,7 @@ import type { AgentApproval } from "@openbot/contracts/ipc";
 
 const bots = [
   { id: "research", name: "Research" },
-  { id: "chief", name: "Lider" },
+  { id: "chief", name: "Lead" },
 ];
 
 const prompt = {
@@ -17,9 +17,9 @@ const prompt = {
     {
       id: "q1",
       header: "",
-      question: "Który wariant?",
+      question: "Which variant?",
       isSecret: false,
-      options: [{ label: "Lepszy", description: "" }],
+      options: [{ label: "Better", description: "" }],
     },
   ],
 };
@@ -47,7 +47,7 @@ describe("collectNeedsYouItems", () => {
     expect(items).toHaveLength(2);
     expect(items.map((item) => item.botId)).toEqual(["chief", "research"]);
     expect(items[0]?.kind).toBe("approval");
-    expect(items[1]?.summary).toBe("Który wariant?");
+    expect(items[1]?.summary).toBe("Which variant?");
   });
 
   it("ignores bots without pending decisions", () => {
@@ -58,6 +58,42 @@ describe("collectNeedsYouItems", () => {
         approvals: {},
       }),
     ).toEqual([]);
+  });
+});
+
+describe("collectNeedsYouItems summaries (English)", () => {
+  const summaryFor = (next: Partial<AgentApproval>) =>
+    collectNeedsYouItems({
+      bots,
+      prompts: {},
+      approvals: { chief: { ...approval, command: null, ...next } },
+    })[0]?.summary;
+  const eyes = { source: "screen" as const, targetLabel: "Screen 1", live: false, frames: 1, intervalSeconds: null };
+
+  it("falls back to English labels", () => {
+    expect(summaryFor({ kind: "file-change" })).toBe("File changes");
+    expect(summaryFor({ kind: "permissions" })).toBe("Permissions");
+    expect(summaryFor({ kind: "command" })).toBe("Approval");
+  });
+
+  it("falls back to an English question label", () => {
+    const empty = { ...prompt, questions: [] };
+    expect(collectNeedsYouItems({ bots, prompts: { research: empty }, approvals: {} })[0]?.summary).toBe(
+      "Agent question",
+    );
+  });
+
+  it("describes screen and camera requests", () => {
+    expect(summaryFor({ kind: "screen", eyes })).toBe("Screen access: Screen 1");
+    expect(summaryFor({ kind: "screen" })).toBe("Screen access");
+    expect(summaryFor({ kind: "screen", reason: "Check the build window" })).toBe("Check the build window");
+    expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", targetLabel: "Camera" } })).toBe(
+      "Camera photo",
+    );
+    expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", live: true } })).toBe(
+      "Camera live preview",
+    );
+    expect(summaryFor({ kind: "camera" })).toBe("Camera");
   });
 });
 

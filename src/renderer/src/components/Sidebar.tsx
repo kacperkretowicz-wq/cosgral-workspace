@@ -65,7 +65,7 @@ export type SidebarAgentState =
 function sidebarAgentStateLabel(state: SidebarAgentState): string {
   if (state.kind === "working") return "Thinking";
   if (state.kind === "responded") return "Responded";
-  if (state.kind === "needs-you") return "czeka na Ciebie";
+  if (state.kind === "needs-you") return "Needs you";
   return `${state.count} new ${state.count === 1 ? "reply" : "replies"}`;
 }
 
@@ -83,7 +83,7 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
         </svg>
       </Show>
       <Show when={props.state.kind === "needs-you"}>
-        <span class="bot-row-needs-you-dot" title="czeka na Ciebie" />
+        <span class="bot-row-needs-you-dot" title="Needs you" />
       </Show>
       <Show when={props.state.kind === "unread"}>
         <span>{unreadCount()}</span>
@@ -578,14 +578,14 @@ export function Sidebar(props: SidebarProps) {
                       "bot-row needs-you-row",
                       { "bot-row-active": props.activeBotId === item.botId },
                     ]}
-                    aria-label={`${item.botName}, czeka na Ciebie. ${item.summary}`}
+                    aria-label={`${item.botName}, Needs you. ${item.summary}`}
                     onClick={() => (props.onSelectNeedsYou ?? props.onSelectBot)(item.botId)}
                   >
                     <span class="bot-row-copy">
                       <span class="bot-row-heading">
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
-                          {item.kind === "question" ? "Pytanie" : "Zatwierdzenie"}
+                          {item.kind === "question" ? "Question" : "Approval"}
                         </Badge>
                       </span>
                       <span class="bot-row-preview">{item.summary}</span>

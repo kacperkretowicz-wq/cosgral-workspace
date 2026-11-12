@@ -2733,7 +2733,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
       await screen.findByText("Where should I work?", { selector: ".approval-question-prompt" }),
     ).toBeInTheDocument();
     // The sidebar "Needs you" section also shows a count, so read the step number inside the pinned decision.
-    expect(within(screen.getByRole("region", { name: "Decyzja" })).getByText("1")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Decision" })).getByText("1")).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: /Repository/ }));
     await fireEvent.click(screen.getByRole("button", { name: "Next question" }));
     expect(
@@ -2784,7 +2784,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
 
     expect(await screen.findByText("Run this command?")).toBeInTheDocument();
     // The sidebar "Needs you" row repeats the command as its summary; check the pinned decision card itself.
-    const decision = within(screen.getByRole("region", { name: "Decyzja" }));
+    const decision = within(screen.getByRole("region", { name: "Decision" }));
     expect(decision.getByText("npm test -- --runInBand")).toBeInTheDocument();
     expect(decision.getByText("Run the verification suite.")).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: "Approve" }));
