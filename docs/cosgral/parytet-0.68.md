@@ -1,8 +1,8 @@
-# Parytet 0.68 — fala W1 (B2a)
+# Parytet 0.68 — W1 + W2/W3/M (B2a + B2b)
 
 Stan: 12.11.2026. Baza COSGRAL = OpenBot 0.1.11 (`a6fe240`, opis w `package.json`). Opis zachowania 0.68: własnymi słowami, bez fragmentów kodu i bez kopiowania tekstów UI.
 
-**Źródła W1:** mapa UX 0.67.1 (`docs/cosgral-raporty/claude-k-openbot-ux-map.md` na `codex/cosgral-workspace`), publiczny [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md) i [changelog v0.68.0](https://github.com/nightly-labs/openbot/releases/tag/v0.68.0), statyczna lista paczki `app.asar` (8250 wpisów + nazwy chunków renderera; poza repo w `Shared\cosgral-data\desktop-tester\rea-0.68`), kod worktree `desktop-tester` po merge `codex/cosgral-desktop` @ `f42d104d6`. REA CLI: próba z limitem 600 s; przy braku wyniku obowiązuje metoda statyczna.
+**Źródła:** mapa UX 0.67.1 (`docs/cosgral-raporty/claude-k-openbot-ux-map.md` na `codex/cosgral-workspace`), publiczny [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md) i [changelog v0.68.0](https://github.com/nightly-labs/openbot/releases/tag/v0.68.0), statyczna lista paczki `app.asar` (8250 wpisów + nazwy chunków; B2b: `Shared\cosgral-data\desktop-tester\rea-0.68-b2b`), kod worktree `desktop-tester` @ `codex/cosgral-desktop` `f42d104d6`. REA CLI: timeout 600 s w B2a (6502 pliki, pusty wynik) → B2b nie powtarza tej samej próby; obowiązuje fallback statyczny.
 
 **Legenda stanu w 0.1.11:** jest = zachowanie pokryte end-to-end w bazie · częściowo = jest zalążek, brakuje stanów albo powierzchni · brak = nie ma odpowiednika. Istnienie pliku nie dowodzi pełnej funkcji. Żaden test odbioru z tej tabeli nie został uruchomiony w runtime.
 
@@ -69,5 +69,22 @@ Policzono wiersze 1–19 tej tabeli.
 
 - Mapa 0.67.1 i README/changelog 0.68 opisują powierzchnie; nie uruchamiano OpenBota 0.68 pod debuggerem w tym zadaniu.
 - Statyczna paczka: 8250 ścieżek w `app.asar`; nazwy chunków W1 m.in. `QuestionPromptBubble`, `UiBlockPrompt`, `QueuePanel`, `GlobalSearch`, `BrowserPreviewSidebar`, `channel-*`, `LibraryPanel`, `WorkflowsPage`.
-- REA CLI (`analyze-javascript-application` na `app.asar`): **timeout 600 s** po fazie „Processing 6502 selected application files”; `rea-out.json` pusty → obowiązuje fallback statyczny (lista plików + nazwy chunków).
-- Testów odbioru z tabeli nie uruchomiono. Reszta obszarów = zadanie B2b.
+- REA CLI (`analyze-javascript-application` na `app.asar`): **timeout 600 s** w B2a po fazie „Processing 6502 selected application files”; wynik pusty → B2b używa fallbacku statycznego (lista + chunki), bez drugiej próby 600 s na tym samym celu.
+- Testów odbioru z tabeli nie uruchomiono.
+
+## W2 — agenci, pamięć, skille, MCP, Vault, rutyny, tabele, pliki, przeglądarka+
+
+| Nr | Obszar | Zachowanie 0.68 (własnymi słowami) | 0.1.11: stan / dowód | Fala | Test odbioru: kroki → wynik |
+|---|---|---|---|---|---|
+| 20 | Agenci · tworzenie | Tworzy się agenta z imieniem, opisem i przeglądem sekcji; da się importować i zakładać z poziomu desktopu i telefonu. | Częściowo — `bot-store.ts` `createBot` / `updateBot` / `deleteBot`; tworzenie z pickera w UI. Bez pełnego kreatora z przeglądem sekcji jak w README 0.68. | W2 | Utworzyć agenta z nazwą i opisem → pojawia się na liście i ma własną rozmowę. |
+| 21 | Agenci · ustawienia | Awatar, kolor, dostawca/model (+ zapasowe), instrukcje z limitem, foldery dostępu, poziom dostępu, zachowanie gdy zajęty, limity wątków, skille, użycie. | Częściowo — panel ustawień w `Conversation.tsx` (nazwa, tytuł, opis, model, reasoning, powiadomienia, awatar w `bot-store`); brak modeli zapasowych, folderów dostępu, skilli w ustawieniach. | W2 | Zmienić model i instrukcje → kolejna tura używa nowych ustawień po restarcie. |
+| 22 | Agenci · szablony | Gotowe szablony (np. poczta, podróż) i instalacja z Marketplace / import. | Brak — w bazie nie ma katalogu szablonów; w paczce 0.68 jest `AgentTemplateInstall`. | W2 | Zainstalować szablon → nowy agent ma gotowe instrukcje i skille szablonu. |
+| 23 | Pamięć | Wspomnienia „zawsze” vs „w razie potrzeby”, wyszukiwanie, ręczne dodawanie, osobna pula per agent i per kanał. | Brak — brak magazynu pamięci i narzędzi remember/search w bazie. | W2 | Zapisać wspomnienie „zawsze” → widać je w kolejnej rozmowie bez ponownego podawania. |
+| 24 | Skille | Lokalna biblioteka skilli, wersje, aktualizacja/naprawa, instalacja z Marketplace, przypisanie do agenta. | Brak — brak IPC/skill store; w 0.68 chunki `ipc-skills`, `SkillPreview`, `skills-port`. | W2 | Agent tworzy skill → widać go w bibliotece; drugi agent może go dodać. |
+| 25 | MCP | Panel serwerów MCP, połączenie, narzędzia dostępne dla agentów, obsługa logowania do MCP. | Brak — baza ma własny browser MCP dla agentów, ale nie panel użytkownika do obcych serwerów MCP (`mcp-servers` w paczce 0.68). | W2 | Dodać serwer MCP → agent widzi jego narzędzia w kolejnej turze. |
+| 26 | Vault | Loginy, karty, kontakty, klucze API, TOTP; agent bierze element bez ujawniania sekretu w czacie; konektory 1Password/Bitwarden/Proton. | Brak — brak `VaultPanel` / magazynu sekretów UI; sekrety konta idą innymi ścieżkami. | W2 | Zapisać login → agent prosi o element i wypełnia formularz bez pokazania hasła w czacie. |
+| 27 | Rutyny i webhooki | Harmonogram (kalendarz, strefa, następne uruchomienie), webhook z filtrami, historia uruchomień, feed na serwerze. | Brak — brak strony Harmonogram/Rutyny; w 0.68 `routine-schedule-ui`, `RoutineWebhookTrigger`. | W2 | Utworzyć rutynę codzienną → odpala się o wskazanej godzinie i zostawia wynik. |
+| 28 | Przepływy pracy | Płótno z węzłami, wyzwalacz, kroki z zatwierdzeniem, wyjścia, integracje. | Brak — brak `WorkflowsPage` / canvas w bazie. | W2 | Zbudować prosty przepływ z jednym krokiem → uruchomienie kończy się widocznym wynikiem. |
+| 29 | Tabele | Wspólne tabele agentów (kto prowadzi, usuwanie dla wszystkich), nie tylko tabela w markdownie czatu. | Częściowo — `DataTable.tsx` renderuje tabele **w czacie**; brak wspólnej bazy tabel między agentami jak w mapie 0.68. | W2 | Utworzyć wspólną tabelę → dwóch agentów czyta te same wiersze po restarcie. |
+| 30 | Pliki · biblioteka | Biblioteka plików (siatka/lista), zaznaczanie, pobieranie, sprzątanie, pliki maszyny. | Częściowo — załączniki i mailbox (`mailbox-store.ts`, karty załączników); brak osobnej Biblioteki (`LibraryPanel` w 0.68). | W2 | Wrzuć plik do biblioteki → widać go na liście i da się pobrać po restarcie. |
+| 31 | Przeglądarka · poza W1 | Trwała przeglądarka, wiele kart, żywy podgląd, zapis zrzutu jako plik, profile, dock przeglądarki. | Częściowo — zakładki i kontrola agenta w `Conversation.tsx` / `browser-host.ts`; bez docka/live view jak w chunkach `BrowserDock`, `BrowserLiveView`. | W2 | Agent otwiera dwie karty → po restarcie sesja/karty wracają albo jasny komunikat o utracie. |
