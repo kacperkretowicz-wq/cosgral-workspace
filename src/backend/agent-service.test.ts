@@ -96,6 +96,23 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(persistConversation).not.toHaveBeenCalled();
   });
 
+  it("marks a conversation read through the receipt of the message the user just sent", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      return new FakeAgentClient(provider, "DONE", false);
+    });
+    await service.initialize();
+
+    const receipt = await service.sendMessage({ botId: "chief", text: "Read through my own message" });
+    await waitFor(async () => Boolean((await service?.readConversation("chief"))?.threadId));
+
+    // COSGRAL: the conversation lists a sent message under its delivery id, not the receipt's message id.
+    await expect(service.markConversationRead("chief", "local-user:owner", receipt.messageId)).resolves.toMatchObject({
+      unreadCount: 0,
+      throughMessageId: receipt.deliveries[0]?.id,
+    });
+  });
+
   it("expands inline file references before sending text to the agent", async () => {
     const source = join(root, "start-types.d.ts");
     await writeFile(source, "export type Start = true;\n");
