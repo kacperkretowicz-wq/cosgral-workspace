@@ -2,24 +2,30 @@
 
 import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MailboxStore } from "./mailbox-store";
+import { closeTestDatabases, testDatabase } from "./testing/databases";
 
 let root: string;
 let store: MailboxStore;
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "openbot-mailbox-test-"));
-  store = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+  store = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
   await store.initialize();
 });
 
 afterEach(async () => {
+  closeTestDatabases();
   await rm(root, { recursive: true, force: true });
 });
+
+function createMailboxStore(userDataPath: string, sharedRoot: string): MailboxStore {
+  return new MailboxStore(userDataPath, sharedRoot, testDatabase(userDataPath));
+}
 
 describe("MailboxStore", () => {
   it("imports mailbox.json once and keeps a legacy backup", async () => {
@@ -55,7 +61,7 @@ describe("MailboxStore", () => {
     };
     const legacyPath = join(userData, "mailbox.json");
     await writeFile(legacyPath, `${JSON.stringify(legacy, null, 2)}\n`);
-    const imported = new MailboxStore(userData, join(root, "Legacy Shared"));
+    const imported = createMailboxStore(userData, join(root, "Legacy Shared"));
     await imported.initialize();
 
     expect(imported.listQueue("chief").deliveries).toMatchObject([
@@ -64,7 +70,7 @@ describe("MailboxStore", () => {
     await expect(readFile(join(userData, "legacy-backup-v1", "mailbox.json"), "utf8")).resolves.toContain(
       "Legacy request",
     );
-    const restored = new MailboxStore(userData, join(root, "Legacy Shared"));
+    const restored = createMailboxStore(userData, join(root, "Legacy Shared"));
     await restored.initialize();
     expect(restored.listQueue("chief").deliveries).toHaveLength(1);
   });
@@ -149,7 +155,7 @@ describe("MailboxStore", () => {
 
     await store.cancel("sales-outbound", first.deliveries[0].id);
     await store.setPaused("sales-outbound", true);
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
     expect(restored.listQueue("sales-outbound")).toMatchObject({
       paused: true,
@@ -183,7 +189,7 @@ describe("MailboxStore", () => {
     const unsupported = '{"version":999,"messages":[{"important":true}]}\n';
     await writeFile(statePath, unsupported);
 
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await expect(restored.initialize()).resolves.toBeUndefined();
     await expect(readFile(statePath, "utf8")).resolves.toBe(unsupported);
   });
@@ -202,7 +208,7 @@ describe("MailboxStore", () => {
     });
 
     await store.setReaction("chief", "assistant-1", "❤️");
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
     expect(restored.reactionFor("chief", "assistant-1")).toBe("❤️");
     await restored.setReaction("chief", "assistant-1", null);
@@ -324,7 +330,7 @@ describe("MailboxStore", () => {
       mimeType: "image/png",
     });
 
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
     const resolved = await restored.resolveAttachment(attachment.id);
     expect(resolved?.mimeType).toBe("image/png");
@@ -337,7 +343,7 @@ describe("MailboxStore", () => {
     const [draft] = await store.prepareAttachments([source]);
     expect(draft).toBeDefined();
 
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
 
     await expect(restored.resolveAttachment(draft.id)).resolves.toBeNull();
@@ -379,7 +385,17 @@ describe("MailboxStore", () => {
     const attachment = store.getDelivery(receipt.deliveries[0].id)?.managedAttachments[0];
     expect(attachment).toBeDefined();
     await rm(attachment?.path ?? "missing");
-    await symlink(outside, attachment?.path ?? "missing");
+    if (process.platform === "win32") {
+      // COSGRAL: file symlinks need admin or Developer Mode on Windows; a directory junction escapes the same way.
+      const attachmentDirectory = dirname(attachment?.path ?? "missing");
+      const outsideDirectory = join(root, "outside-directory");
+      await mkdir(outsideDirectory);
+      await writeFile(join(outsideDirectory, basename(attachment?.path ?? "missing")), "secret");
+      await rm(attachmentDirectory, { recursive: true });
+      await symlink(outsideDirectory, attachmentDirectory, "junction");
+    } else {
+      await symlink(outside, attachment?.path ?? "missing");
+    }
 
     await expect(store.resolveAttachment(attachment?.id ?? "")).resolves.toBeNull();
     await expect(store.listExportAttachments()).resolves.toEqual([]);
@@ -428,7 +444,7 @@ describe("MailboxStore", () => {
       exchange: { direction: "incoming" },
     });
 
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
     expect(restored.conversationMessages("chief")[0]?.exchange?.deliveries).toEqual(
       expect.arrayContaining([expect.objectContaining({ status: "running" })]),
@@ -479,7 +495,7 @@ describe("MailboxStore", () => {
     expect(edited?.delivery.attachments).toHaveLength(2);
     expect(edited?.delivery.attachments[0]?.id).toBe(originalAttachmentId);
 
-    const restored = new MailboxStore(join(root, "user-data"), join(root, "Shared"));
+    const restored = createMailboxStore(join(root, "user-data"), join(root, "Shared"));
     await restored.initialize();
     expect(restored.listQueue("chief").deliveries).toEqual(
       expect.arrayContaining([

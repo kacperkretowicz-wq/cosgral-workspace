@@ -2,6 +2,7 @@ import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { isNumber, isString } from "@openbot/contracts/runtime-values";
 import type { AgentProvider } from "./agent-client";
+import { cliCommand } from "./cli";
 import { JsonLineDecoder } from "./jsonl";
 import {
   type AppServerNotification,
@@ -62,15 +63,23 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
 
     this.#stopping = false;
     this.#decoder = new JsonLineDecoder();
-    const child = spawn(this.#executable, ["app-server", "--listen", "stdio://"], {
+    // COSGRAL: no `shell: true`; it broke CLI paths with spaces on Windows.
+    const { command, args, windowsVerbatimArguments } = cliCommand(this.#executable, [
+      "app-server",
+      "--listen",
+      "stdio://",
+    ]);
+    const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: process.env,
-      shell: process.platform === "win32",
       windowsHide: true,
+      windowsVerbatimArguments,
     });
     this.#process = child;
 
     child.stdout.on("data", (chunk: Buffer) => {
+      // COSGRAL: after stop() a Windows `.cmd` shim's Node child can still write; a stopped client stays silent.
+      if (this.#process !== child) return;
       try {
         for (const message of this.#decoder.push(chunk)) this.#handleMessage(message);
       } catch (error) {

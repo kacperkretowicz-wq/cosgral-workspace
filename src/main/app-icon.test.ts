@@ -19,22 +19,28 @@ describe("app icon variant", () => {
   });
 
   it("resolves source and packaged icon paths", () => {
+    // COSGRAL: compare as POSIX paths; on Windows the platform join returns backslashes.
+    const posixPath = (value: string) => value.replaceAll("\\", "/");
     expect(appIconFileName("preview")).toBe("icon-preview.png");
     expect(
-      resolveAppIconPath({
-        variant: "dev",
-        isPackaged: false,
-        resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
-        sourceRoot: "/workspace/cosgral",
-      }),
+      posixPath(
+        resolveAppIconPath({
+          variant: "dev",
+          isPackaged: false,
+          resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
+          sourceRoot: "/workspace/cosgral",
+        }),
+      ),
     ).toBe("/workspace/cosgral/build/icon-dev.png");
     expect(
-      resolveAppIconPath({
-        variant: "production",
-        isPackaged: true,
-        resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
-        sourceRoot: "/workspace/cosgral",
-      }),
+      posixPath(
+        resolveAppIconPath({
+          variant: "production",
+          isPackaged: true,
+          resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
+          sourceRoot: "/workspace/cosgral",
+        }),
+      ),
     ).toBe("/Applications/COSGRAL Workspace.app/Contents/Resources/icons/icon-production.png");
   });
 });

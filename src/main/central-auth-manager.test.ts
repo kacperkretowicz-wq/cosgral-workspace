@@ -251,7 +251,8 @@ describe("CentralAuthManager", () => {
       encrypt: (value) => Buffer.from(value),
       decrypt: (value) => value.toString(),
       fetch: fetchMock,
-      startupRetryWindowMs: 100,
+      // COSGRAL: 100 ms ran out under a loaded Windows test run (15.6 ms timer ticks); the spacing checks below stay.
+      startupRetryWindowMs: 2_000,
       startupRequestTimeoutMs: 20,
       startupRetryDelaysMs: [10, 20],
     });

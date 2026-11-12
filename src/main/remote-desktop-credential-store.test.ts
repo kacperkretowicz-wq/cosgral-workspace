@@ -28,7 +28,8 @@ describe("RemoteDesktopCredentialStore", () => {
     await store.setPassword("deskpass");
     expect(store.getPassword()).toBe("deskpass");
     expect(await readFile(path, "utf8")).not.toContain("deskpass");
-    expect((await stat(path)).mode & 0o777).toBe(0o600);
+    // COSGRAL: Windows has no POSIX modes (Node reports 0o666); the user-profile ACL protects AppData.
+    if (process.platform !== "win32") expect((await stat(path)).mode & 0o777).toBe(0o600);
 
     const restored = new RemoteDesktopCredentialStore(path, cipher);
     await restored.initialize();

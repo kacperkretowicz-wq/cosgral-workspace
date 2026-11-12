@@ -39,7 +39,10 @@ export async function resolveCodexCli(): Promise<CodexCliInfo> {
       const stdout = await readCliVersion(candidate);
       const version = parseCodexVersion(stdout);
       if (!isMinimumVersion(version)) {
-        throw new CodexCliError(`Codex CLI ${version} is too old. COSGRAL Workspace requires 0.144.1 or newer.`, "outdated");
+        throw new CodexCliError(
+          `Codex CLI ${version} is too old. COSGRAL Workspace requires 0.144.1 or newer.`,
+          "outdated",
+        );
       }
 
       return { executable: candidate, version };
@@ -189,23 +192,46 @@ function posixFallbackPaths(command: "codex" | "claude"): string[] {
   return paths;
 }
 
-async function readCliVersion(candidate: string): Promise<string> {
-  if (process.platform === "win32" && [".bat", ".cmd"].includes(extname(candidate).toLowerCase())) {
-    const commandProcessor = process.env.ComSpec?.trim() || "cmd.exe";
-    const escapedCandidate = candidate.replaceAll("%", "%%");
-    const { stdout } = await execFileAsync(commandProcessor, ["/d", "/s", "/c", `""${escapedCandidate}" --version"`], {
-      timeout: 5_000,
-      maxBuffer: 64 * 1024,
-      windowsHide: true,
-      windowsVerbatimArguments: true,
-    });
-    return stdout;
-  }
+export interface CliCommand {
+  command: string;
+  args: string[];
+  windowsVerbatimArguments: boolean;
+}
 
-  const { stdout } = await execFileAsync(candidate, ["--version"], {
+/**
+ * COSGRAL: how to start an agent CLI without `shell: true`. On Windows a shell splits
+ * unquoted paths at spaces ("C:\Users\First Last\..."), so `.cmd`/`.bat` shims run through
+ * a quoted `cmd.exe` command line and native executables start directly.
+ */
+export function cliCommand(
+  executable: string,
+  args: readonly string[],
+  platform: NodeJS.Platform = process.platform,
+  comSpec: string | undefined = process.env.ComSpec,
+): CliCommand {
+  if (platform !== "win32" || ![".bat", ".cmd"].includes(extname(executable).toLowerCase())) {
+    return { command: executable, args: [...args], windowsVerbatimArguments: false };
+  }
+  for (const argument of args) {
+    if (!SAFE_SHIM_ARGUMENT.test(argument)) throw new Error("Unsafe CLI argument for a Windows command shim.");
+  }
+  const commandLine = [`"${executable.replaceAll("%", "%%")}"`, ...args].join(" ");
+  return {
+    command: comSpec?.trim() || "cmd.exe",
+    args: ["/d", "/s", "/c", `"${commandLine}"`],
+    windowsVerbatimArguments: true,
+  };
+}
+
+const SAFE_SHIM_ARGUMENT = /^[\w:/.=-]+$/u;
+
+async function readCliVersion(candidate: string): Promise<string> {
+  const { command, args, windowsVerbatimArguments } = cliCommand(candidate, ["--version"]);
+  const { stdout } = await execFileAsync(command, args, {
     timeout: 5_000,
     maxBuffer: 64 * 1024,
     windowsHide: process.platform === "win32",
+    windowsVerbatimArguments,
   });
   return stdout;
 }

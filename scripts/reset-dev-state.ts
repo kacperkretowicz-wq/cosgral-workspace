@@ -1,6 +1,6 @@
 import { lstat, rm } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, parse, resolve } from "node:path";
+import { dirname, parse, posix, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { type DevelopmentProfile, developmentUserDataName } from "../src/main/development-profile";
 
@@ -13,7 +13,8 @@ export function resolveDevelopmentAppDataRoot(
   homeDirectory = homedir(),
 ): string {
   if (platform === "darwin") {
-    return join(homeDirectory, "Library", "Application Support");
+    // COSGRAL: macOS and Linux roots are POSIX paths whatever the host platform is.
+    return posix.join(homeDirectory, "Library", "Application Support");
   }
 
   if (platform === "win32") {
@@ -24,7 +25,7 @@ export function resolveDevelopmentAppDataRoot(
     return appData;
   }
 
-  return environment.XDG_CONFIG_HOME?.trim() || join(homeDirectory, ".config");
+  return environment.XDG_CONFIG_HOME?.trim() || posix.join(homeDirectory, ".config");
 }
 
 export function developmentStatePaths(appDataRoot: string): string[] {

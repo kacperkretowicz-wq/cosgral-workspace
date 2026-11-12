@@ -2164,6 +2164,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #bufferDelta(delta: PendingDelta): void {
+    // COSGRAL: stop() drops buffered deltas; a client that is still shutting down must not schedule new writes.
+    if (this.#stopping) return;
     const key = `${delta.externalThreadId}:${delta.turnId}:${delta.messageId}`;
     const existing = this.#pendingDeltas.get(key);
     if (existing) {

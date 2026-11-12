@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -15,6 +15,7 @@ import {
   getRecord,
   getString,
 } from "./protocol";
+import { writeFakeCli } from "./testing/fake-cli";
 
 type TestStreamMessage =
   | {
@@ -55,16 +56,15 @@ afterEach(async () => {
 describe("ClaudeAgentClient", () => {
   it("streams a Claude SDK turn through the App Server event contract", async () => {
     root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
-    const executable = join(root, "claude");
-    await writeFile(
-      executable,
-      `#!/bin/sh
-if [ "$1" = "auth" ]; then
-  printf '%s' '{"loggedIn":true,"email":"claude@example.com","subscriptionType":"max"}'
-fi
+    // COSGRAL: cross-platform fake CLI in a folder with a space (Windows profile paths often have one).
+    const executable = await writeFakeCli(
+      join(root, "Claude Code"),
+      "claude",
+      `if (process.argv[2] === "auth") {
+  process.stdout.write('{"loggedIn":true,"email":"claude@example.com","subscriptionType":"max"}');
+}
 `,
     );
-    await chmod(executable, 0o755);
 
     const output = new TestQueue<TestStreamMessage>();
     let prompt: AsyncIterable<SDKUserMessage> | null = null;
