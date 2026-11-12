@@ -1,20 +1,42 @@
 "use strict";
 
 const { app, BrowserWindow, shell } = require("electron");
+const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
-const { ensureBackend, stopBackend } = require("./backend");
-
-/** Default: loopback API (serves UI when built). Override: COSGRAL_UI_URL (e.g. Vite :5173). */
-const UI_URL =
-  process.env.COSGRAL_UI_URL ||
-  process.env.MONARCHIA_UI_URL || // legacy alias — do not use in docs
-  "http://127.0.0.1:3100";
+const {
+  ensureBackend,
+  stopBackend,
+  resolveRepoRoot,
+  resolveBackendTarget,
+} = require("./backend");
 
 const APP_TITLE = "COSGRAL Workspace";
 const WAITING_HTML = path.join(__dirname, "static", "waiting.html");
 
+// One window per Paperclip instance: backend, ui and tester checkouts run
+// side by side, so each needs its own userData (single-instance lock, cache,
+// cookies). The instance id comes from the repo-local .paperclip/.env.
+const startupTarget = resolveBackendTarget({ repoRoot: resolveRepoRoot() });
+const instanceId =
+  process.env.COSGRAL_INSTANCE ||
+  startupTarget.worktree?.instanceId ||
+  (startupTarget.port === 3100 ? null : `port-${startupTarget.port}`);
+if (instanceId) {
+  app.setPath(
+    "userData",
+    path.join(app.getPath("appData"), APP_TITLE, "instances", instanceId)
+  );
+}
+
+/** Default: loopback API of this instance (serves the built UI). Override: COSGRAL_UI_URL (e.g. Vite). */
+let uiUrl =
+  process.env.COSGRAL_UI_URL ||
+  process.env.MONARCHIA_UI_URL || // legacy alias — do not use in docs
+  `http://${startupTarget.host}:${startupTarget.port}`;
+
 let mainWindow = null;
+let quitting = false;
 
 function isHttpUrl(url) {
   try {
@@ -64,20 +86,21 @@ function probeUrl(url, timeoutMs = 1200) {
 }
 
 async function loadUi(win) {
-  const up = await probeUrl(UI_URL);
+  const up = await probeUrl(uiUrl);
   if (up) {
-    await win.loadURL(UI_URL);
+    await win.loadURL(uiUrl);
     return;
   }
-  const waiting = `file://${WAITING_HTML.replace(/\\/g, "/")}?target=${encodeURIComponent(UI_URL)}`;
+  const waiting = `file://${WAITING_HTML.replace(/\\/g, "/")}?target=${encodeURIComponent(uiUrl)}`;
   await win.loadURL(waiting);
 }
 
 function createWindow() {
+  const title = instanceId ? `${APP_TITLE} — ${instanceId}` : APP_TITLE;
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: APP_TITLE,
+    title,
     show: false,
     backgroundColor: "#0c0f14",
     webPreferences: {
@@ -93,16 +116,46 @@ function createWindow() {
     mainWindow.show();
   });
 
+  // Keep the instance name in the title bar; the page sets its own title.
+  mainWindow.on("page-title-updated", (event, pageTitle) => {
+    event.preventDefault();
+    mainWindow.setTitle(pageTitle ? `${title} · ${pageTitle}` : title);
+  });
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     openSafeExternal(url);
     return { action: "deny" };
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (!sameOrigin(url, UI_URL)) {
+    if (!sameOrigin(url, uiUrl)) {
       event.preventDefault();
     }
   });
+
+  // Evidence for testers: COSGRAL_CAPTURE_PATH=<file.png> saves one capture
+  // of the window content once the real UI (not the waiting page) loaded.
+  const capturePath = process.env.COSGRAL_CAPTURE_PATH;
+  if (capturePath) {
+    let captured = false;
+    mainWindow.webContents.on("did-finish-load", () => {
+      if (captured || !sameOrigin(mainWindow.webContents.getURL(), uiUrl)) return;
+      captured = true;
+      const delay = Number(process.env.COSGRAL_CAPTURE_DELAY_MS) || 8000;
+      setTimeout(async () => {
+        try {
+          const image = await mainWindow.webContents.capturePage();
+          fs.mkdirSync(path.dirname(capturePath), { recursive: true });
+          fs.writeFileSync(capturePath, image.toPNG());
+          console.log(
+            `[cosgral-workspace] captured ${capturePath} title="${mainWindow.getTitle()}" url=${mainWindow.webContents.getURL()}`
+          );
+        } catch (err) {
+          console.error(`[cosgral-workspace] capture failed: ${err.message}`);
+        }
+      }, delay);
+    });
+  }
 
   loadUi(mainWindow).catch((err) => {
     console.error(`[cosgral-workspace] load failed:`, err.message);
@@ -128,10 +181,16 @@ if (!gotLock) {
     if (process.platform === "win32") {
       app.setAppUserModelId("pl.cosgral.workspace");
     }
-    console.log(`[cosgral-workspace] target UI ${UI_URL}`);
+    console.log(`[cosgral-workspace] target UI ${uiUrl}`);
+    console.log(`[cosgral-workspace] userData ${app.getPath("userData")}`);
 
-    // Auto-start Node API + embedded DB on loopback (no manual start-windows.ps1).
-    const backend = await ensureBackend();
+    // Auto-start Node API + embedded DB on loopback.
+    const backend = await ensureBackend({
+      logFile: path.join(app.getPath("userData"), "logs", "backend.log"),
+    });
+    if (!process.env.COSGRAL_UI_URL && backend.baseUrl) {
+      uiUrl = backend.baseUrl;
+    }
     if (!backend.ok) {
       console.error(
         `[cosgral-workspace] backend not ready (${backend.error || "unknown"}) — waiting screen`
@@ -146,13 +205,19 @@ if (!gotLock) {
   });
 }
 
-app.on("before-quit", () => {
-  stopBackend();
+// Wait for the ordered backend shutdown (embedded Postgres included) before
+// the shell process exits.
+app.on("before-quit", (event) => {
+  if (quitting) return;
+  quitting = true;
+  event.preventDefault();
+  stopBackend()
+    .catch((err) => console.error(`[cosgral-workspace] stop failed: ${err.message}`))
+    .finally(() => app.exit(0));
 });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    stopBackend();
     app.quit();
   }
 });

@@ -41,7 +41,8 @@
           ]
         }
       ],
-      "artifactName": "COSGRAL-Workspace-Setup-${version}.${ext}"
+      "artifactName": "COSGRAL-Workspace-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
@@ -53,7 +54,10 @@
       "uninstallDisplayName": "COSGRAL Workspace",
       "deleteAppDataOnUninstall": false
     },
-    "asar": true
+    "asar": true,
+    "asarUnpack": [
+      "src/backend-entry.mjs"
+    ]
   },
   "devDependencies": {
     "electron": "^37.2.0",

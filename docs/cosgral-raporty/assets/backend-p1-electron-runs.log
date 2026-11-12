@@ -1,0 +1,41 @@
+===== electron-run1 =====
+[cosgral-workspace] target UI http://127.0.0.1:3110
+[cosgral-workspace] userData C:\Users\x1 Yoga\AppData\Roaming\COSGRAL Workspace\instances\backend
+[cosgral-workspace] starting backend via node tsx server/src (cwd=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\server)
+[cosgral-workspace] instance config C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\.paperclip\config.json
+[backend] [13:45:22] WARN: Embedded PostgreSQL port is in use; using next free port (requestedPort=54340, selectedPort=54341)
+[backend] [13:45:22] INFO: Using embedded PostgreSQL because no DATABASE_URL set (dataDir=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\backend\instances\backend\db, port=54341)
+[backend] [13:45:33] INFO: embedded-postgres {"embeddedPostgresLog":"2026-11-12 13:45:33.243 CET [7800] FATAL:  pre-existing shared memory block is still in use"}
+[backend] [13:45:33] ERROR: Embedded PostgreSQL failed; showing buffered startup logs {"phase":"start","recentLogs":["2026-11-12 13:45:33.243 CET [7800] FATAL:  pre-existing shared memory block is still in use","2026-11-12 13:45:33.243 CET [7800] HINT:  Check if there are any old server processes still running, and terminate them.","2026-11-12 13:45:33.243 CET [7800] LOG:  database system is shut down"]}
+[backend] [13:45:33] ERROR: Paperclip server failed to start
+[cosgral-workspace] backend exited code=1 signal=
+===== electron-run2 =====
+[cosgral-workspace] target UI http://127.0.0.1:3110
+[cosgral-workspace] userData C:\Users\x1 Yoga\AppData\Roaming\COSGRAL Workspace\instances\backend
+[cosgral-workspace] starting backend via node tsx server/src (cwd=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\server)
+[cosgral-workspace] instance config C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\.paperclip\config.json
+[backend] [13:51:08] WARN: Stopping 1 orphaned embedded PostgreSQL process(es): 4380
+[backend] [13:51:08] INFO: Using embedded PostgreSQL because no DATABASE_URL set (dataDir=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\backend\instances\backend\db, port=54340)
+[backend] [13:51:22] INFO: Embedded PostgreSQL ready
+[cosgral-workspace] backend ready at http://127.0.0.1:3110/api/health
+[backend] [13:51:28] INFO: Server startup recovery complete on 127.0.0.1:3110
+[cosgral-workspace] captured C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\backend\evidence\electron-window-run2.png title="COSGRAL Workspace — backend · Paperclip" url=http://127.0.0.1:3110/onboarding
+[cosgral-workspace] stopping backend pid=3848
+[backend] [cosgral-backend-entry] ordered shutdown (shell request)
+[backend] [13:53:26] INFO: Stopping embedded PostgreSQL {"signal":"SIGTERM"}
+[cosgral-workspace] backend exited code=0 signal=
+===== electron-run3 =====
+[cosgral-workspace] target UI http://127.0.0.1:3110
+[cosgral-workspace] userData C:\Users\x1 Yoga\AppData\Roaming\COSGRAL Workspace\instances\backend
+[cosgral-workspace] starting backend via node tsx server/src (cwd=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\server)
+[cosgral-workspace] instance config C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\backend\.paperclip\config.json
+[backend] [13:57:34] INFO: Using embedded PostgreSQL because no DATABASE_URL set (dataDir=C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\backend\instances\backend\db, port=54340)
+[backend] [13:57:34] WARN: Removing stale embedded PostgreSQL lock file
+[backend] [13:57:43] INFO: Embedded PostgreSQL ready
+[backend] [13:58:06] INFO: Server startup recovery complete on 127.0.0.1:3110
+[cosgral-workspace] backend ready at http://127.0.0.1:3110/api/health
+[cosgral-workspace] captured C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\backend\evidence\electron-window-run3.png title="COSGRAL Workspace — backend · Paperclip" url=http://127.0.0.1:3110/onboarding
+[cosgral-workspace] stopping backend pid=14980
+[backend] [cosgral-backend-entry] ordered shutdown (shell request)
+[backend] [13:58:22] INFO: Stopping embedded PostgreSQL {"signal":"SIGTERM"}
+[cosgral-workspace] backend exited code=0 signal=
