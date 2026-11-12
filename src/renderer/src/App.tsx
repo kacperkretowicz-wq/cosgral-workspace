@@ -28,6 +28,7 @@ import type {
   QueueSnapshot,
   RemoteMacSession,
   ServerSummary,
+  SidebarLayout,
   StopAgentEyesInput,
   TeamInviteSummary,
   TeamMemberSummary,
@@ -50,6 +51,7 @@ import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar } from "./components/Sidebar";
+import type { SidebarFolderActions } from "./components/SidebarFolders";
 import type { BotMessage, BotProfile } from "./data";
 import { needsYouItemsFromCards } from "./needs-you";
 import {
@@ -180,6 +182,9 @@ const ONBOARDING_PROFILES: Record<string, { role: string; description: string; f
   },
 };
 
+/** A position past the end: the backend puts the folder or agent last. */
+const LAST_POSITION = 1_000_000;
+
 export function App() {
   const [botList, setBotList] = createSignal<BotProfile[]>([]);
   const [modelOptions, setModelOptions] = createSignal<AgentModelOption[]>([]);
@@ -211,6 +216,7 @@ export function App() {
   // COSGRAL W1: every open question/approval card, oldest first. The backend keeps them until resolved.
   const [pendingCards, setPendingCards] = createSignal<PendingCard[]>([]);
   // COSGRAL W1: the row state of each agent as the backend sees it (waiting, working, limited, error, idle).
+  const [sidebarLayout, setSidebarLayout] = createSignal<SidebarLayout | null>(null);
   const [activities, setActivities] = createSignal<Record<string, AgentActivity>>({});
   const [appInfo, setAppInfo] = createSignal<AppInfo | null>(null);
   const [agentStatus, setAgentStatus] = createSignal<AgentStatus>(FALLBACK_STATUS);
@@ -596,6 +602,10 @@ export function App() {
       case "approval-resolved":
         dropCard("approval", event.requestId);
         return;
+      case "sidebar-layout-changed":
+        layoutSeen.changed = true;
+        setSidebarLayout(event.layout);
+        return;
       case "activity-changed":
         if (activitySeen.loading > 0) activitySeen.changedBotIds.add(event.activity.botId);
         setActivities((current) => ({ ...current, [event.activity.botId]: event.activity }));
@@ -610,6 +620,9 @@ export function App() {
 
   const activitySeen = { loading: 0, changedBotIds: new Set<string>() };
 
+  // A `sidebar-layout-changed` event that arrives while `getLayout()` loads is newer than its answer.
+  const layoutSeen = { loading: 0, changed: false };
+
   function addLiveCard(card: PendingCard): void {
     if (attentionSeen.loading > 0) attentionSeen.liveKeys.add(cardKey(card.kind, card.requestId));
     setPendingCards((current) => addCard(current, card));
@@ -622,7 +635,57 @@ export function App() {
 
   /** Everything the backend keeps for this window: open cards (and, below, row states and folders). */
   async function refreshAttention(): Promise<void> {
-    await Promise.all([refreshPendingCards(), refreshActivities()]);
+    await Promise.all([refreshPendingCards(), refreshActivities(), refreshSidebarLayout()]);
+  }
+
+  /** Folders of this server; later changes arrive as `sidebar-layout-changed`. Remote servers have none yet. */
+  async function refreshSidebarLayout(): Promise<void> {
+    const sidebar = window.openbot.sidebar;
+    if (!sidebar || activeServer()?.kind === "remote") return;
+    if (layoutSeen.loading === 0) layoutSeen.changed = false;
+    layoutSeen.loading += 1;
+    try {
+      const fetched = await sidebar.getLayout();
+      if (!layoutSeen.changed) setSidebarLayout(fetched);
+    } catch {
+      // Without a layout the sidebar stays a flat list.
+    } finally {
+      layoutSeen.loading -= 1;
+    }
+  }
+
+  /** Every change returns the new layout, so the tree updates even if the event is slow. */
+  const folderActions: SidebarFolderActions = {
+    createFolder: async (name, parentId) => {
+      const sidebar = requireSidebar();
+      setSidebarLayout((await sidebar.createFolder({ name, parentId })).layout);
+    },
+    renameFolder: async (folderId, name) => {
+      setSidebarLayout(await requireSidebar().updateFolder({ folderId, name }));
+    },
+    setFolderCollapsed: async (folderId, collapsed) => {
+      setSidebarLayout(await requireSidebar().updateFolder({ folderId, collapsed }));
+    },
+    duplicateFolder: async (folderId) => {
+      setSidebarLayout((await requireSidebar().duplicateFolder({ folderId })).layout);
+    },
+    deleteFolder: async (folderId) => {
+      setSidebarLayout(await requireSidebar().deleteFolder({ folderId }));
+    },
+    moveFolder: async (folderId, parentId) => {
+      setSidebarLayout(await requireSidebar().moveFolder({ folderId, parentId, position: LAST_POSITION }));
+    },
+    moveAgent: async (botId, folderId) => {
+      setSidebarLayout(
+        await requireSidebar().moveItem({ itemKind: "agent", itemId: botId, folderId, position: LAST_POSITION }),
+      );
+    },
+  };
+
+  function requireSidebar(): NonNullable<typeof window.openbot.sidebar> {
+    const sidebar = window.openbot.sidebar;
+    if (!sidebar) throw new Error("Folders are not available in this build.");
+    return sidebar;
   }
 
   /** Row states of every agent; later changes arrive as `activity-changed`. */
@@ -1464,6 +1527,7 @@ export function App() {
     setQueues({});
     setPendingCards([]);
     setActivities({});
+    setSidebarLayout(null);
     setTeamPresence(EMPTY_TEAM_PRESENCE);
     const [storedBots, reads, status, models, tabs, controlState, presence] = await Promise.all([
       window.openbot.agent.listBots(),
@@ -1603,6 +1667,9 @@ export function App() {
   }
 
   const activeServer = createMemo(() => servers().find((server) => server.active));
+  const folderLayout = createMemo(() =>
+    activeServer()?.kind === "remote" ? undefined : (sidebarLayout() ?? undefined),
+  );
   const activeRemoteMacSession = createMemo(() => {
     const server = activeServer();
     if (!server) return undefined;
@@ -1689,6 +1756,8 @@ export function App() {
                 accountUsage={accountUsage()}
                 updateStatus={updateStatus()}
                 agentStates={sidebarAgentStates()}
+                layout={folderLayout()}
+                folderActions={folderLayout() ? folderActions : undefined}
                 needsYouItems={needsYouItems()}
                 lookingBotIds={lookingBotIds()}
                 localProfile={localProfile()}

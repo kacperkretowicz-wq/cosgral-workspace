@@ -214,6 +214,191 @@
   color: var(--openbot-danger);
 }
 
+/* Sidebar folders ---------------------------------------------------------
+   Folders sit above the agents of their level and read as quiet labels: one 30px line, muted text,
+   a chevron that turns when open. Agents keep their 54px tile and move right by one step per level. */
+
+.folder-row {
+  display: flex;
+  width: 100%;
+  height: 30px;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: 0 8px 0 calc(8px + var(--folder-level, 0) * 14px);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+  text-align: left;
+  transition:
+    background-color var(--openbot-duration-normal) ease,
+    color var(--openbot-duration-normal) ease;
+}
+
+.sidebar:not(.sidebar-compact) .folder-row {
+  width: calc(100% + var(--openbot-space-2));
+  margin-inline: calc(var(--openbot-space-1) * -1);
+}
+
+.folder-row:hover,
+.folder-row[data-expanded] {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-secondary);
+}
+
+.folder-row:focus-visible {
+  outline: 1px solid var(--openbot-text-muted);
+  outline-offset: -1px;
+}
+
+.folder-row + .folder-row,
+.folder-row + .bot-row,
+.bot-row + .folder-row {
+  margin-top: 2px;
+}
+
+.bot-row + .folder-row {
+  margin-top: 6px;
+}
+
+.folder-row-chevron {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  fill: none;
+  stroke: currentColor;
+  transition: transform var(--openbot-duration-fast) ease;
+}
+
+.folder-row-open .folder-row-chevron {
+  transform: rotate(90deg);
+}
+
+.folder-row-glyph {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+}
+
+.folder-row-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-row-count {
+  flex: 0 0 auto;
+  color: var(--openbot-text-dim);
+  font-size: var(--openbot-text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar:not(.sidebar-compact) .agent-row[data-in-folder] {
+  padding-left: calc(8px + var(--folder-level, 0) * 14px);
+}
+
+.sidebar-compact .sidebar-folder-button {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px) scale(0.92);
+}
+
+.sidebar-folder-error {
+  margin: 4px 0;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-danger-soft);
+  padding: 6px 8px;
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-xs);
+  line-height: 16px;
+}
+
+.folder-dialog {
+  align-items: stretch;
+  text-align: left;
+}
+
+.folder-dialog > p {
+  max-width: none;
+}
+
+.folder-dialog-form {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.folder-targets {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  max-height: 260px;
+  gap: 2px;
+  margin-top: 14px;
+  overflow-y: auto;
+}
+
+.folder-target {
+  display: flex;
+  height: 30px;
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--openbot-radius-sm);
+  background: transparent;
+  padding: 0 8px 0 calc(8px + var(--folder-level, 0) * 14px);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  text-align: left;
+}
+
+.folder-target:hover:not(:disabled) {
+  background: var(--openbot-hover);
+}
+
+.folder-target:disabled {
+  color: var(--openbot-text-muted);
+  cursor: default;
+}
+
+.folder-target-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-target-note {
+  flex: 0 0 auto;
+  color: var(--openbot-text-dim);
+  font-size: var(--openbot-text-xs);
+}
+
+.bot-delete-actions .folder-dialog-primary {
+  border-color: var(--openbot-accent);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-text-primary);
+}
+
+.bot-delete-actions .folder-dialog-primary:hover:not(:disabled) {
+  background: var(--openbot-accent-soft);
+  filter: brightness(1.15);
+}
+
+.bot-delete-actions.folder-dialog-single {
+  grid-template-columns: 1fr;
+}
+
 /* Slim bar under the conversation header: who is looking, at what, and Stop. */
 .eyes-bar {
   display: flex;

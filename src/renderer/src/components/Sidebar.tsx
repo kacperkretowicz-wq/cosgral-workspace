@@ -7,15 +7,33 @@ import type {
   CentralAuthUser,
   DirectThreadSummary,
   ExternalDestination,
+  SidebarLayout,
   TeamPresenceMember,
   UpdateStatus,
 } from "@openbot/contracts/ipc";
+import { emptySidebarLayout } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
+import {
+  agentMoveTargets,
+  buildSidebarRows,
+  folderMoveTargets,
+  type SidebarFolderRow,
+  type SidebarRow,
+} from "../sidebar-tree";
 import { AgentAvatar } from "./AgentAvatar";
 import { EyesBadge } from "./EyesIndicator";
+import {
+  FolderDeleteDialog,
+  FolderMoveIcon,
+  FolderNameDialog,
+  FolderPlusIcon,
+  FolderRow,
+  MoveToDialog,
+  type SidebarFolderActions,
+} from "./SidebarFolders";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, ContextMenu, Input, Popover } from "./ui";
@@ -45,6 +63,10 @@ interface SidebarProps {
   lookingBotIds?: string[];
   /** COSGRAL: local owner profile: no account service, so no email and no sign out. */
   localProfile?: boolean;
+  /** COSGRAL W1: user folders. Without a layout the agent list stays flat. */
+  layout?: SidebarLayout;
+  /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
+  folderActions?: SidebarFolderActions;
   onSelectBot: (botId: string) => void;
   onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
@@ -233,6 +255,40 @@ export function Sidebar(props: SidebarProps) {
       ? props.bots.filter((bot) => `${bot.name} ${bot.role} ${bot.preview}`.toLowerCase().includes(normalizedQuery))
       : props.bots;
   });
+  // COSGRAL W1: folders. Folders come before agents at each level; compact mode shows the flat list.
+  type FolderDialogState =
+    | { kind: "create"; parentId: string | null }
+    | { kind: "rename"; folderId: string }
+    | { kind: "move-folder"; folderId: string }
+    | { kind: "move-agent"; botId: string }
+    | { kind: "delete"; folderId: string };
+  const [folderDialog, setFolderDialog] = createSignal<FolderDialogState | null>(null);
+  const [folderError, setFolderError] = createSignal<string | null>(null);
+  const listRows = createMemo<SidebarRow<BotProfile>[]>(() => {
+    const layout = props.layout;
+    if (!layout || props.compact) return filteredBots().map((bot) => ({ type: "agent", bot, depth: 0 }));
+    return buildSidebarRows(layout, filteredBots(), { searching: query().trim().length > 0 });
+  });
+  const folderById = (folderId: string) => props.layout?.folders.find((folder) => folder.id === folderId);
+
+  /** Changes that have no dialog of their own: a failure shows as one line above the list. */
+  async function runFolderAction(change: (actions: SidebarFolderActions) => Promise<void>): Promise<void> {
+    const actions = props.folderActions;
+    if (!actions) return;
+    setFolderError(null);
+    try {
+      await change(actions);
+    } catch (error) {
+      setFolderError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  function toggleFolder(row: SidebarFolderRow): void {
+    // A search opens every folder that holds a match; the saved open/closed state stays as it was.
+    if (query().trim()) return;
+    void runFolderAction((actions) => actions.setFolderCollapsed(row.folder.id, row.expanded));
+  }
+
   const directThreadByMember = createMemo(
     () => new Map(props.directThreads.map((thread) => [thread.otherMemberId, thread])),
   );
@@ -467,6 +523,19 @@ export function Sidebar(props: SidebarProps) {
           >
             <SidebarToggleIcon />
           </Button>
+          <Show when={props.layout && props.folderActions}>
+            <Button
+              type="button"
+              class="sidebar-icon-button sidebar-folder-button no-drag"
+              onClick={() => setFolderDialog({ kind: "create", parentId: null })}
+              aria-label="New folder"
+              title="New folder"
+              aria-hidden={props.compact ? "true" : undefined}
+              tabindex={props.compact ? -1 : 0}
+            >
+              <FolderPlusIcon />
+            </Button>
+          </Show>
           <Button
             type="button"
             class="sidebar-icon-button sidebar-new-button no-drag"
@@ -602,7 +671,7 @@ export function Sidebar(props: SidebarProps) {
               </For>
             </section>
           </Show>
-          <Show when={filteredBots().length > 0}>
+          <Show when={listRows().length > 0}>
             <section
               class="sidebar-chat-group"
               aria-label={filteredPeople().length > 0 ? undefined : "Agents"}
@@ -613,8 +682,33 @@ export function Sidebar(props: SidebarProps) {
                   <h2 id="sidebar-agents-heading">Agents</h2>
                 </header>
               </Show>
-              <For each={filteredBots()}>
-                {(bot) => {
+              <Show when={folderError()}>
+                {(message) => (
+                  <p class="sidebar-folder-error" role="alert">
+                    {message()}
+                  </p>
+                )}
+              </Show>
+              <For each={listRows()}>
+                {(row) => {
+                  if (row.type === "folder") {
+                    const folderId = row.folder.id;
+                    return (
+                      <FolderRow
+                        row={row}
+                        layout={props.layout ?? emptySidebarLayout()}
+                        editable={props.folderActions !== undefined}
+                        onToggle={() => toggleFolder(row)}
+                        onNewSubfolder={() => setFolderDialog({ kind: "create", parentId: folderId })}
+                        onRename={() => setFolderDialog({ kind: "rename", folderId })}
+                        onDuplicate={() => void runFolderAction((actions) => actions.duplicateFolder(folderId))}
+                        onMove={() => setFolderDialog({ kind: "move-folder", folderId })}
+                        onDelete={() => setFolderDialog({ kind: "delete", folderId })}
+                      />
+                    );
+                  }
+                  const bot = row.bot;
+                  const depth = row.depth;
                   const role = () => bot.role.trim();
                   const state = () => props.agentStates[bot.id];
                   const note = () => sidebarAgentStateNote(state());
@@ -636,6 +730,8 @@ export function Sidebar(props: SidebarProps) {
                           },
                         ]}
                         aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
+                        style={depth > 0 ? { "--folder-level": String(depth - 1) } : undefined}
+                        data-in-folder={depth > 0 ? "true" : undefined}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >
@@ -686,6 +782,12 @@ export function Sidebar(props: SidebarProps) {
                             <EditIcon />
                             <span>Edit agent</span>
                           </ContextMenu.Item>
+                          <Show when={props.layout && props.folderActions}>
+                            <ContextMenu.Item onSelect={() => setFolderDialog({ kind: "move-agent", botId: bot.id })}>
+                              <FolderMoveIcon />
+                              <span>Move to…</span>
+                            </ContextMenu.Item>
+                          </Show>
                           <ContextMenu.Separator class="bot-context-separator" />
                           <ContextMenu.Item
                             class="bot-context-danger"
@@ -843,6 +945,64 @@ export function Sidebar(props: SidebarProps) {
           </Popover.Portal>
         </Popover.Root>
       </div>
+
+      <Show when={props.folderActions && props.layout ? folderDialog() : null} keyed>
+        {(state) => {
+          const actions = props.folderActions;
+          const layout = props.layout;
+          if (!actions || !layout) return null;
+          const close = () => setFolderDialog(null);
+          if (state.kind === "create") {
+            return (
+              <FolderNameDialog
+                mode="create"
+                initialName=""
+                parentName={state.parentId ? (folderById(state.parentId)?.name ?? null) : null}
+                onSubmit={(name) => actions.createFolder(name, state.parentId)}
+                onClose={close}
+              />
+            );
+          }
+          if (state.kind === "rename") {
+            return (
+              <FolderNameDialog
+                mode="rename"
+                initialName={folderById(state.folderId)?.name ?? ""}
+                parentName={null}
+                onSubmit={(name) => actions.renameFolder(state.folderId, name)}
+                onClose={close}
+              />
+            );
+          }
+          if (state.kind === "delete") {
+            return (
+              <FolderDeleteDialog
+                name={folderById(state.folderId)?.name ?? "this folder"}
+                onConfirm={() => actions.deleteFolder(state.folderId)}
+                onClose={close}
+              />
+            );
+          }
+          if (state.kind === "move-folder") {
+            return (
+              <MoveToDialog
+                title={`Move ${folderById(state.folderId)?.name ?? "folder"} to…`}
+                targets={folderMoveTargets(layout, state.folderId)}
+                onMove={(parentId) => actions.moveFolder(state.folderId, parentId)}
+                onClose={close}
+              />
+            );
+          }
+          return (
+            <MoveToDialog
+              title={`Move ${props.bots.find((bot) => bot.id === state.botId)?.name ?? "agent"} to…`}
+              targets={agentMoveTargets(layout, state.botId)}
+              onMove={(folderId) => actions.moveAgent(state.botId, folderId)}
+              onClose={close}
+            />
+          );
+        }}
+      </Show>
 
       <AlertDialog.Root
         open={Boolean(deleteTarget())}
