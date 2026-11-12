@@ -26,6 +26,19 @@
   --server-rail-width: 72px;
 }
 
+/* COSGRAL page rail: a slim column right of the server rail (or first when there is none). */
+.app-frame-with-page-rail {
+  --page-rail-width: 54px;
+
+  grid-template-columns: var(--page-rail-width) var(--left-panel-width, 280px) 0 minmax(0, 1fr);
+}
+
+.app-frame-with-page-rail.app-frame-with-server-rail {
+  grid-template-columns:
+    var(--server-rail-width) var(--page-rail-width) var(--left-panel-width, 280px) 0
+    minmax(0, 1fr);
+}
+
 .global-search-overlay {
   position: fixed;
   z-index: var(--openbot-layer-dialog);
