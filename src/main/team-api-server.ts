@@ -1,0 +1,1186 @@
+import { readFile } from "node:fs/promises";
+import { createServer, type Server, type ServerResponse } from "node:http";
+import { createRequire } from "node:module";
+import { createConnection, type Socket } from "node:net";
+import { basename, dirname, join } from "node:path";
+import { isAvatarMimeType } from "@openbot/contracts/avatar-images";
+import { ATTACHMENT_LIMITS, AVATAR_IMAGE_LIMITS, INPUT_LIMITS } from "@openbot/contracts/input-limits";
+import {
+  type AgentEvent,
+  type CentralAuthUser,
+  type DirectConversationSnapshot,
+  type DirectMessage,
+  type DirectMessageRealtimeEvent,
+  type DirectThreadSummary,
+  type DirectTypingRealtimeEvent,
+  isAgentModel,
+  isAvatarHue,
+  isAvatarSeed,
+  isMessageReaction,
+  isReasoningEffort,
+  type ReorderQueueInput,
+  type RespondToApprovalInput,
+  type SteerQueuedMessageInput,
+  type TeamMemberSummary,
+  type TeamPresenceSnapshot,
+  type TeamRealtimeEvent,
+  type UpdateBotInput,
+  type UpdateQueuedMessageInput,
+} from "@openbot/contracts/ipc";
+import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import type * as Ws from "ws";
+import type { AgentService } from "../backend/agent-service";
+import type { BrowserHost } from "../backend/browser-host";
+import type { MailboxStore } from "../backend/mailbox-store";
+import type { TeamChatStore } from "../backend/team-chat-store";
+import type { TeamStore } from "./team-store";
+
+const JSON_LIMIT = 1024 * 1024;
+const TYPING_TIMEOUT_MS = 5_000;
+const requireModule = createRequire(import.meta.url);
+const webSockets: typeof Ws = requireModule(join(dirname(requireModule.resolve("ws/package.json")), "index.js"));
+
+type TeamApiAgentMethods = Pick<
+  AgentService,
+  | "getStatus"
+  | "getUsage"
+  | "listModels"
+  | "listBots"
+  | "listConversationReads"
+  | "createBot"
+  | "updateBot"
+  | "deleteBot"
+  | "setAvatar"
+  | "resolveAvatar"
+  | "readConversationFor"
+  | "markConversationRead"
+  | "prepareImportedAttachments"
+  | "discardDraftAttachment"
+  | "sendMessage"
+  | "listQueue"
+  | "setMessageReaction"
+  | "cancelQueuedMessage"
+  | "setQueuePaused"
+  | "steerQueuedMessage"
+  | "updateQueuedMessage"
+  | "reorderQueue"
+  | "interrupt"
+  | "respondToPrompt"
+  | "respondToApproval"
+>;
+
+type TeamApiAgents = TeamApiAgentMethods & {
+  on: (event: "event", listener: (event: AgentEvent) => void) => void;
+  off: (event: "event", listener: (event: AgentEvent) => void) => void;
+};
+
+type TeamApiMailbox = Pick<MailboxStore, "resolveAttachment">;
+type TeamApiBrowser = Pick<BrowserHost, "listTabs" | "getControlState" | "open" | "activate" | "close" | "setVisible">;
+
+interface TeamApiOptions {
+  store: TeamStore;
+  agents: TeamApiAgents;
+  mailbox: TeamApiMailbox;
+  browser: TeamApiBrowser;
+  getRemoteMac: () => { hostname: string | null; online: boolean };
+  getRemoteDesktopPassword?: () => string | null;
+  remoteDesktopPort?: number;
+  redeemCentralTicket?: (ticket: string, serverId: string) => Promise<CentralAuthUser | null>;
+  onPresence?: (snapshot: TeamPresenceSnapshot) => void;
+  chat?: TeamChatStore;
+  onDirectMessage?: (event: DirectMessageRealtimeEvent) => void;
+  onDirectTyping?: (event: DirectTypingRealtimeEvent) => void;
+}
+
+interface EventClientState {
+  token: string;
+  memberId: string;
+  typingBotId: string | null;
+  typingTimer: ReturnType<typeof setTimeout> | null;
+  directTypingRecipientId: string | null;
+  directTypingTimer: ReturnType<typeof setTimeout> | null;
+}
+
+interface RateEntry {
+  attempts: number;
+  resetAt: number;
+}
+
+export class TeamApiServer {
+  readonly #options: TeamApiOptions;
+  readonly #rateLimits = new Map<string, RateEntry>();
+  readonly #eventClients = new Map<Ws.WebSocket, EventClientState>();
+  readonly #desktopClients = new Map<Ws.WebSocket, { token: string; target: Socket }>();
+  readonly #webSockets = new webSockets.WebSocketServer({
+    noServer: true,
+    handleProtocols: (protocols) => (protocols.has("openbot-events") ? "openbot-events" : false),
+  });
+  readonly #desktopWebSockets = new webSockets.WebSocketServer({
+    noServer: true,
+    handleProtocols: (protocols) => (protocols.has("openbot-desktop") ? "openbot-desktop" : false),
+  });
+  #server: Server | null = null;
+  #port: number | null = null;
+  #heartbeat: ReturnType<typeof setInterval> | null = null;
+  #agentListener: ((event: AgentEvent) => void) | null = null;
+  #localTypingBotId: string | null = null;
+
+  constructor(options: TeamApiOptions) {
+    this.#options = options;
+  }
+
+  get port(): number | null {
+    return this.#port;
+  }
+
+  async start(): Promise<number> {
+    if (this.#server && this.#port) return this.#port;
+    this.#server = createServer((request, response) => void this.#handle(request, response));
+    this.#server.on("upgrade", (request, socket, head) => {
+      const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      const protocols = (request.headers["sec-websocket-protocol"] ?? "").split(",").map((value) => value.trim());
+      const encodedToken = protocols.find((value) => value.startsWith("openbot-token."));
+      const token = encodedToken?.slice("openbot-token.".length) ?? "";
+      const member = token.length <= 512 ? this.#options.store.authenticate(token) : null;
+      if (!member) {
+        socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+      if (url.pathname === "/v1/events" && protocols.includes("openbot-events")) {
+        this.#webSockets.handleUpgrade(request, socket, head, (client) => {
+          this.#connectEvents(client, token, member.id);
+        });
+        return;
+      }
+      if (url.pathname === "/v1/remote-desktop" && protocols.includes("openbot-desktop")) {
+        if (!this.#options.getRemoteMac().online || !this.#options.getRemoteDesktopPassword?.()) {
+          socket.write("HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+        this.#desktopWebSockets.handleUpgrade(request, socket, head, (client) => {
+          this.#connectDesktop(client, token);
+        });
+        return;
+      }
+      socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+      socket.destroy();
+    });
+    await new Promise<void>((resolve, reject) => {
+      this.#server?.once("error", reject);
+      this.#server?.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = this.#server.address();
+    if (!address || isString(address)) throw new Error("Could not bind the team API.");
+    this.#port = address.port;
+    this.#agentListener = (event) => this.#broadcastAgentEvent(event);
+    this.#options.agents.on("event", this.#agentListener);
+    this.#heartbeat = setInterval(() => {
+      for (const [client, connection] of this.#eventClients) {
+        if (!this.#options.store.authenticate(connection.token)) {
+          client.close(1008, "Team access was revoked");
+        } else if (client.readyState === webSockets.WebSocket.OPEN) client.ping();
+      }
+      for (const [client, connection] of this.#desktopClients) {
+        if (!this.#options.store.authenticate(connection.token)) {
+          client.close(1008, "Team access was revoked");
+          connection.target.destroy();
+        } else if (client.readyState === webSockets.WebSocket.OPEN) client.ping();
+      }
+    }, 15_000);
+    this.#heartbeat.unref?.();
+    this.#publishPresence();
+    return this.#port;
+  }
+
+  async stop(): Promise<void> {
+    if (this.#heartbeat) clearInterval(this.#heartbeat);
+    this.#heartbeat = null;
+    if (this.#agentListener) this.#options.agents.off("event", this.#agentListener);
+    this.#agentListener = null;
+    for (const [client, connection] of this.#eventClients) {
+      if (connection.typingTimer) clearTimeout(connection.typingTimer);
+      if (connection.directTypingTimer) clearTimeout(connection.directTypingTimer);
+      client.close(1001, "Server stopped");
+    }
+    this.#eventClients.clear();
+    this.#localTypingBotId = null;
+    for (const [client, connection] of this.#desktopClients) {
+      client.close(1001, "Server stopped");
+      connection.target.destroy();
+    }
+    this.#desktopClients.clear();
+    const server = this.#server;
+    this.#server = null;
+    this.#port = null;
+    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+    this.#publishPresence();
+  }
+
+  getPresence(): TeamPresenceSnapshot {
+    const identity = this.#options.store.getIdentity();
+    if (!identity) {
+      return { serverId: null, members: [], updatedAt: new Date().toISOString() };
+    }
+    const connections = [...this.#eventClients.values()];
+    const owner = this.#options.store.listMembers().find((member) => member.role === "owner");
+    return {
+      serverId: identity.serverId,
+      members: this.#options.store.listMembers().map((member) => {
+        const memberConnections = connections.filter((connection) => connection.memberId === member.id);
+        return {
+          ...member,
+          online: memberConnections.length > 0 || (member.id === owner?.id && this.#server !== null),
+          typingBotId:
+            (member.id === owner?.id ? this.#localTypingBotId : null) ??
+            memberConnections.find((connection) => connection.typingBotId)?.typingBotId ??
+            null,
+        };
+      }),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  setLocalTyping(botId: string | null, typing: boolean): void {
+    const next = typing && this.#server ? botId : null;
+    if (next === this.#localTypingBotId) return;
+    this.#localTypingBotId = next;
+    this.#publishPresence();
+  }
+
+  refreshPresence(): void {
+    for (const [client, connection] of this.#eventClients) {
+      if (!this.#options.store.authenticate(connection.token)) {
+        client.close(1008, "Team access was revoked");
+      }
+    }
+    this.#publishPresence();
+  }
+
+  listDirectThreads(memberId: string): DirectThreadSummary[] {
+    return this.#requireChat().listThreads(memberId);
+  }
+
+  readDirectConversation(memberId: string, otherMemberId: string): DirectConversationSnapshot {
+    this.#requireDirectRecipient(memberId, otherMemberId);
+    return this.#requireChat().readConversation(memberId, otherMemberId);
+  }
+
+  sendDirectMessage(
+    senderMemberId: string,
+    input: { memberId: string; text: string; clientMessageId: string },
+  ): DirectMessage {
+    this.#requireDirectRecipient(senderMemberId, input.memberId);
+    const message = this.#requireChat().sendMessage({
+      clientMessageId: input.clientMessageId,
+      senderMemberId,
+      recipientMemberId: input.memberId,
+      text: input.text,
+    });
+    this.#publishDirectMessage(message);
+    return message;
+  }
+
+  markDirectRead(memberId: string, otherMemberId: string, throughSequence: number) {
+    this.#requireDirectRecipient(memberId, otherMemberId);
+    return this.#requireChat().markRead(memberId, otherMemberId, throughSequence);
+  }
+
+  setLocalDirectTyping(senderMemberId: string, recipientMemberId: string, typing: boolean): void {
+    this.#requireDirectRecipient(senderMemberId, recipientMemberId);
+    this.#publishDirectTyping(senderMemberId, recipientMemberId, typing);
+  }
+
+  async #handle(request: import("node:http").IncomingMessage, response: ServerResponse) {
+    try {
+      response.setHeader("Cache-Control", "no-store");
+      response.setHeader("X-Content-Type-Options", "nosniff");
+      const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      const method = request.method ?? "GET";
+
+      if (method === "GET" && url.pathname === "/v1/identity") {
+        const challenge = url.searchParams.get("challenge");
+        return this.#json(
+          response,
+          200,
+          challenge ? this.#options.store.getIdentityProof(challenge) : this.#options.store.getIdentity(),
+        );
+      }
+      if (method === "POST" && url.pathname === "/v1/join") {
+        const body = await readJson(request);
+        this.#checkRate(request, stringField(body, "username", false, 64));
+        const result = await this.#options.store.acceptInvite(
+          stringField(body, "inviteToken", false, INPUT_LIMITS.identifier),
+          stringField(body, "username", false, 64),
+          stringField(body, "password", false, 256),
+        );
+        return this.#json(response, 201, result);
+      }
+      if (method === "POST" && url.pathname === "/v1/join/account") {
+        const body = await readJson(request);
+        const identity = this.#options.store.getIdentity();
+        const user = identity
+          ? await this.#options.redeemCentralTicket?.(
+              stringField(body, "accountTicket", false, INPUT_LIMITS.identifier),
+              identity.serverId,
+            )
+          : null;
+        if (!user) return this.#json(response, 401, { error: "OpenBot sign-in is required." });
+        this.#checkRate(request, user.email);
+        const result = await this.#options.store.acceptInviteWithAccount(
+          stringField(body, "inviteToken", false, INPUT_LIMITS.identifier),
+          user,
+        );
+        return this.#json(response, 201, result);
+      }
+      if (method === "POST" && url.pathname === "/v1/auth/login") {
+        const body = await readJson(request);
+        this.#checkRate(request, stringField(body, "username", false, 64));
+        const result = await this.#options.store.login(
+          stringField(body, "username", false, 64),
+          stringField(body, "password", false, 256),
+        );
+        return this.#json(response, 200, result);
+      }
+      if (method === "POST" && url.pathname === "/v1/auth/account") {
+        const body = await readJson(request);
+        const identity = this.#options.store.getIdentity();
+        const user = identity
+          ? await this.#options.redeemCentralTicket?.(
+              stringField(body, "accountTicket", false, INPUT_LIMITS.identifier),
+              identity.serverId,
+            )
+          : null;
+        if (!user) return this.#json(response, 401, { error: "OpenBot sign-in is required." });
+        this.#checkRate(request, user.email);
+        return this.#json(response, 200, await this.#options.store.loginWithAccount(user));
+      }
+
+      const token = bearerToken(request.headers.authorization);
+      const member = token ? this.#options.store.authenticate(token) : null;
+      if (!member || !token) return this.#json(response, 401, { error: "Authentication required." });
+
+      if (method === "POST" && url.pathname === "/v1/auth/logout") {
+        await this.#options.store.logout(token);
+        this.refreshPresence();
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/auth/password") {
+        const body = await readJson(request);
+        await this.#options.store.changePassword(
+          member.id,
+          stringField(body, "currentPassword", false, 256),
+          stringField(body, "newPassword", false, 256),
+        );
+        this.refreshPresence();
+        return this.#empty(response, 204);
+      }
+      if (method === "GET" && url.pathname === "/v1/me") {
+        return this.#json(response, 200, member);
+      }
+      if (method === "GET" && url.pathname === "/v1/events") {
+        return this.#json(response, 426, { error: "Use WebSocket for remote events." });
+      }
+      if (method === "GET" && url.pathname === "/v1/host/remote-mac") {
+        return this.#json(response, 200, this.#options.getRemoteMac());
+      }
+      if (method === "GET" && url.pathname === "/v1/host/remote-desktop-access") {
+        const password = this.#options.getRemoteDesktopPassword?.() ?? null;
+        return this.#json(response, 200, {
+          configured: password !== null,
+          password,
+        });
+      }
+      if (method === "GET" && url.pathname === "/v1/direct/threads") {
+        return this.#json(response, 200, this.listDirectThreads(member.id));
+      }
+      if (method === "POST" && url.pathname === "/v1/direct/messages") {
+        const body = await readJson(request);
+        return this.#json(
+          response,
+          201,
+          this.sendDirectMessage(member.id, {
+            memberId: stringField(body, "memberId", false, INPUT_LIMITS.identifier),
+            text: stringField(body, "text", false, INPUT_LIMITS.directMessageText),
+            clientMessageId: stringField(body, "clientMessageId", false, INPUT_LIMITS.identifier),
+          }),
+        );
+      }
+      const directConversationMatch = url.pathname.match(/^\/v1\/direct\/conversations\/([^/]+)(?:\/(read))?$/);
+      if (method === "GET" && directConversationMatch && !directConversationMatch[2]) {
+        return this.#json(
+          response,
+          200,
+          this.readDirectConversation(member.id, pathIdentifier(directConversationMatch[1], "memberId")),
+        );
+      }
+      if (method === "POST" && directConversationMatch?.[2] === "read") {
+        const body = await readJson(request);
+        const throughSequence = body.throughSequence;
+        if (!isNumber(throughSequence) || !Number.isSafeInteger(throughSequence)) {
+          throw new HttpError(400, "Invalid direct-message read boundary.");
+        }
+        return this.#json(
+          response,
+          200,
+          this.markDirectRead(member.id, pathIdentifier(directConversationMatch[1], "memberId"), throughSequence),
+        );
+      }
+      if (method === "GET" && url.pathname === "/v1/browser/tabs") {
+        return this.#json(response, 200, this.#options.browser.listTabs());
+      }
+      if (method === "GET" && url.pathname === "/v1/browser/control") {
+        return this.#json(response, 200, this.#options.browser.getControlState());
+      }
+      if (method === "POST" && url.pathname === "/v1/browser/open") {
+        const body = await readJson(request);
+        return this.#json(
+          response,
+          201,
+          await this.#options.browser.open(
+            stringField(body, "url", false, INPUT_LIMITS.browserUrl),
+            nullableString(body, "ownerThreadId"),
+            nullableString(body, "ownerBotId"),
+          ),
+        );
+      }
+      if (method === "POST" && url.pathname === "/v1/browser/activate") {
+        const body = await readJson(request);
+        await this.#options.browser.activate(stringField(body, "tabId"));
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/browser/close") {
+        const body = await readJson(request);
+        await this.#options.browser.close(stringField(body, "tabId"));
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/browser/visible") {
+        const body = await readJson(request);
+        if (!isBoolean(body.visible)) throw new HttpError(400, "visible is required.");
+        await this.#options.browser.setVisible({
+          visible: body.visible,
+          bounds: body.bounds === undefined ? undefined : parseBrowserBounds(body.bounds),
+        });
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/attachments") {
+        const name = url.searchParams.get("name")?.trim();
+        const mimeType = url.searchParams.get("mime") ?? "application/octet-stream";
+        if (!name || basename(name) !== name || name.length > INPUT_LIMITS.attachmentName) {
+          throw new HttpError(400, "A safe attachment name is required.");
+        }
+        if (mimeType.length > INPUT_LIMITS.mimeType) {
+          throw new HttpError(400, "The attachment MIME type is too long.");
+        }
+        const bytes = await readBinary(request, ATTACHMENT_LIMITS.fileBytes);
+        const attachments = await this.#options.agents.prepareImportedAttachments([], [{ name, mimeType, bytes }]);
+        return this.#json(response, 201, attachments[0]);
+      }
+      const attachmentMatch = url.pathname.match(/^\/v1\/attachments\/([^/]+)$/);
+      if (attachmentMatch) {
+        const attachmentId = pathIdentifier(attachmentMatch[1], "attachmentId");
+        if (method === "DELETE") {
+          await this.#options.agents.discardDraftAttachment(attachmentId);
+          return this.#empty(response, 204);
+        }
+        if (method === "GET") {
+          const attachment = await this.#options.mailbox.resolveAttachment(attachmentId);
+          if (!attachment) throw new HttpError(404, "Attachment not found.");
+          const bytes = await readFile(attachment.path);
+          response.writeHead(200, {
+            "Content-Type": attachment.mimeType || "application/octet-stream",
+            "Content-Length": String(bytes.length),
+            "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(basename(attachment.path))}`,
+          });
+          response.end(bytes);
+          return;
+        }
+      }
+      if (method === "GET" && url.pathname === "/v1/team/members") {
+        requireAdmin(member);
+        return this.#json(response, 200, this.#options.store.listMembers());
+      }
+      const memberMatch = url.pathname.match(/^\/v1\/team\/members\/([^/]+)$/);
+      if (method === "PATCH" && memberMatch) {
+        requireAdmin(member);
+        const body = await readJson(request);
+        const role = body.role;
+        const disabled = body.disabled;
+        if (role !== undefined && role !== "admin" && role !== "member") {
+          throw new HttpError(400, "Invalid role.");
+        }
+        if (disabled !== undefined && !isBoolean(disabled)) {
+          throw new HttpError(400, "disabled must be a boolean.");
+        }
+        const updated = await this.#options.store.updateMember(pathIdentifier(memberMatch[1], "memberId"), {
+          ...(role ? { role } : {}),
+          ...(disabled === undefined ? {} : { disabled }),
+        });
+        this.refreshPresence();
+        return this.#json(response, 200, updated);
+      }
+      if (method === "DELETE" && memberMatch) {
+        requireAdmin(member);
+        await this.#options.store.removeMember(pathIdentifier(memberMatch[1], "memberId"));
+        this.refreshPresence();
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/team/invites") {
+        requireAdmin(member);
+        const body = await readJson(request);
+        const role = stringField(body, "role");
+        if (role !== "admin" && role !== "member") throw new HttpError(400, "Invalid role.");
+        return this.#json(
+          response,
+          201,
+          await this.#options.store.createInvite(role, nullableString(body, "email", INPUT_LIMITS.email) ?? undefined),
+        );
+      }
+      if (method === "GET" && url.pathname === "/v1/team/invites") {
+        requireAdmin(member);
+        return this.#json(response, 200, this.#options.store.listInvites());
+      }
+      const inviteMatch = url.pathname.match(/^\/v1\/team\/invites\/([^/]+)$/);
+      if (method === "DELETE" && inviteMatch) {
+        requireAdmin(member);
+        await this.#options.store.revokeInvite(pathIdentifier(inviteMatch[1], "inviteId"));
+        return this.#empty(response, 204);
+      }
+      if (method === "GET" && url.pathname === "/v1/team/sessions") {
+        requireAdmin(member);
+        return this.#json(response, 200, this.#options.store.listSessions());
+      }
+      const sessionMatch = url.pathname.match(/^\/v1\/team\/sessions\/([^/]+)$/);
+      if (method === "DELETE" && sessionMatch) {
+        requireAdmin(member);
+        await this.#options.store.revokeSession(pathIdentifier(sessionMatch[1], "sessionId"));
+        this.refreshPresence();
+        return this.#empty(response, 204);
+      }
+
+      if (method === "GET" && url.pathname === "/v1/agents/status") {
+        return this.#json(response, 200, this.#options.agents.getStatus());
+      }
+      if (method === "GET" && url.pathname === "/v1/agents/usage") {
+        return this.#json(response, 200, await this.#options.agents.getUsage());
+      }
+      if (method === "GET" && url.pathname === "/v1/agents/models") {
+        return this.#json(response, 200, await this.#options.agents.listModels());
+      }
+      if (method === "GET" && url.pathname === "/v1/agents") {
+        return this.#json(response, 200, this.#options.agents.listBots());
+      }
+      if (method === "GET" && url.pathname === "/v1/agents/conversation-reads") {
+        return this.#json(response, 200, this.#options.agents.listConversationReads(member.id));
+      }
+      if (method === "POST" && url.pathname === "/v1/agents") {
+        return this.#json(response, 201, await this.#options.agents.createBot());
+      }
+
+      const agentMatch = url.pathname.match(/^\/v1\/agents\/([^/]+)(?:\/(.*))?$/);
+      if (agentMatch) {
+        const botId = pathIdentifier(agentMatch[1], "botId");
+        const action = agentMatch[2] ?? "";
+        if (method === "PATCH" && !action) {
+          const body = await readJson(request);
+          return this.#json(response, 200, await this.#options.agents.updateBot(botUpdate(body, botId)));
+        }
+        if (method === "DELETE" && !action) {
+          if (member.role === "member") throw new HttpError(403, "Members cannot delete agents.");
+          await this.#options.agents.deleteBot(botId);
+          return this.#empty(response, 204);
+        }
+        if (action === "avatar") {
+          if (method === "PUT") {
+            const mimeType = request.headers["content-type"]?.split(";", 1)[0]?.trim() ?? "";
+            if (!isAvatarMimeType(mimeType)) {
+              throw new HttpError(415, "Choose a PNG, JPEG, or WebP image.");
+            }
+            const bytes = await readBinary(request, AVATAR_IMAGE_LIMITS.storedBytes);
+            return this.#json(response, 200, await this.#options.agents.setAvatar(botId, { mimeType, bytes }));
+          }
+          if (method === "DELETE") {
+            return this.#json(response, 200, await this.#options.agents.setAvatar(botId, null));
+          }
+          if (method === "GET") {
+            const avatar = this.#options.agents.resolveAvatar(botId);
+            if (!avatar || avatar.version !== url.searchParams.get("v")) {
+              throw new HttpError(404, "Agent avatar not found.");
+            }
+            const bytes = await readFile(avatar.path);
+            response.writeHead(200, {
+              "Content-Type": avatar.mimeType,
+              "Content-Length": String(bytes.length),
+              "Cache-Control": "private, max-age=31536000, immutable",
+              "X-Content-Type-Options": "nosniff",
+            });
+            response.end(bytes);
+            return;
+          }
+        }
+        if (method === "GET" && action === "conversation") {
+          return this.#json(response, 200, await this.#options.agents.readConversationFor(botId, member.id));
+        }
+        if (method === "POST" && action === "conversation/read") {
+          const body = await readJson(request);
+          return this.#json(
+            response,
+            200,
+            await this.#options.agents.markConversationRead(botId, member.id, nullableString(body, "throughMessageId")),
+          );
+        }
+        if (method === "POST" && action === "messages") {
+          const body = await readJson(request);
+          return this.#json(
+            response,
+            202,
+            await this.#options.agents.sendMessage({
+              botId,
+              text: stringField(body, "text", true, INPUT_LIMITS.messageText),
+              attachmentDraftIds: stringArray(body, "attachmentDraftIds"),
+              replyToMessageId: nullableString(body, "replyToMessageId"),
+            }),
+          );
+        }
+        if (method === "GET" && action === "queue") {
+          return this.#json(response, 200, this.#options.agents.listQueue(botId));
+        }
+        if (method === "POST" && action === "reactions") {
+          const body = await readJson(request);
+          const emoji = body.emoji;
+          if (emoji !== null && !isMessageReaction(emoji)) throw new HttpError(400, "Invalid emoji.");
+          await this.#options.agents.setMessageReaction({
+            botId,
+            messageId: stringField(body, "messageId"),
+            emoji,
+          });
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "queue/cancel") {
+          const body = await readJson(request);
+          await this.#options.agents.cancelQueuedMessage(botId, stringField(body, "deliveryId"));
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "queue/pause") {
+          const body = await readJson(request);
+          if (!isBoolean(body.paused)) throw new HttpError(400, "paused is required.");
+          await this.#options.agents.setQueuePaused(botId, body.paused);
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "queue/steer") {
+          const body = await readJson(request);
+          await this.#options.agents.steerQueuedMessage({
+            botId,
+            deliveryId: stringField(body, "deliveryId"),
+            expectedTurnId: stringField(body, "expectedTurnId"),
+          } satisfies SteerQueuedMessageInput);
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "queue/update") {
+          const body = await readJson(request);
+          await this.#options.agents.updateQueuedMessage({
+            botId,
+            deliveryId: stringField(body, "deliveryId"),
+            text: stringField(body, "text", true, INPUT_LIMITS.messageText),
+            keepAttachmentIds: stringArray(body, "keepAttachmentIds"),
+            attachmentDraftIds: stringArray(body, "attachmentDraftIds"),
+          } satisfies UpdateQueuedMessageInput);
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "queue/reorder") {
+          const body = await readJson(request);
+          await this.#options.agents.reorderQueue({
+            botId,
+            deliveryIds: stringArray(body, "deliveryIds", INPUT_LIMITS.messageRecipients),
+          } satisfies ReorderQueueInput);
+          return this.#empty(response, 204);
+        }
+        if (method === "POST" && action === "interrupt") {
+          const body = await readJson(request);
+          await this.#options.agents.interrupt(botId, stringField(body, "turnId"));
+          return this.#empty(response, 204);
+        }
+      }
+
+      if (method === "POST" && url.pathname === "/v1/prompts/respond") {
+        const body = await readJson(request);
+        await this.#options.agents.respondToPrompt({
+          requestId: promptRequestId(body.requestId),
+          answers: promptAnswers(body.answers),
+        });
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/approvals/respond") {
+        const body = await readJson(request);
+        await this.#options.agents.respondToApproval({
+          requestId: promptRequestId(body.requestId),
+          decision: approvalDecision(body.decision),
+        });
+        return this.#empty(response, 204);
+      }
+
+      return this.#json(response, 404, { error: "Route not found." });
+    } catch (error) {
+      const status = error instanceof HttpError ? error.status : 400;
+      const message = error instanceof Error ? error.message : "Request failed.";
+      return this.#json(response, status, { error: message });
+    }
+  }
+
+  #checkRate(request: import("node:http").IncomingMessage, username: string): void {
+    const key = `${request.socket.remoteAddress ?? "local"}:${username.toLowerCase()}`;
+    const current = this.#rateLimits.get(key);
+    const now = Date.now();
+    if (!current || current.resetAt <= now) {
+      this.#rateLimits.set(key, { attempts: 1, resetAt: now + 15 * 60 * 1_000 });
+      return;
+    }
+    current.attempts += 1;
+    if (current.attempts > 5) throw new HttpError(429, "Too many sign-in attempts. Try again later.");
+  }
+
+  #broadcastAgentEvent(event: AgentEvent): void {
+    const payload = JSON.stringify(event);
+    for (const client of this.#eventClients.keys()) {
+      if (client.readyState === webSockets.WebSocket.OPEN) client.send(payload);
+    }
+  }
+
+  #connectEvents(client: Ws.WebSocket, token: string, memberId: string): void {
+    const connection: EventClientState = {
+      token,
+      memberId,
+      typingBotId: null,
+      typingTimer: null,
+      directTypingRecipientId: null,
+      directTypingTimer: null,
+    };
+    this.#eventClients.set(client, connection);
+    client.on("message", (data, isBinary) => {
+      if (isBinary) {
+        client.close(1003, "Text events are required");
+        return;
+      }
+      try {
+        const text = Buffer.isBuffer(data)
+          ? data.toString("utf8")
+          : Array.isArray(data)
+            ? Buffer.concat(data).toString("utf8")
+            : Buffer.from(data).toString("utf8");
+        if (text.length > 1_024) throw new Error("Event payload is too large.");
+        const event = JSON.parse(text);
+        if (!isDynamicRecord(event)) {
+          throw new Error("Unsupported team event.");
+        }
+        if (event.type === "team-direct-typing") {
+          const typing = event.typing;
+          const recipientMemberId = event.recipientMemberId;
+          if (!isBoolean(typing) || !isString(recipientMemberId)) {
+            throw new Error("Invalid direct typing event.");
+          }
+          if (recipientMemberId.length > INPUT_LIMITS.identifier) {
+            throw new Error("Invalid direct typing recipient.");
+          }
+          this.#requireDirectRecipient(memberId, recipientMemberId);
+          this.#setClientDirectTyping(connection, typing ? recipientMemberId : null);
+          return;
+        }
+        if (event.type !== "team-typing") throw new Error("Unsupported team event.");
+        const typing = event.typing;
+        const botId = event.botId;
+        if (!isBoolean(typing) || (botId !== null && !isString(botId))) {
+          throw new Error("Invalid typing event.");
+        }
+        if (typing && (!botId || botId.length > INPUT_LIMITS.identifier)) {
+          throw new Error("A valid agent is required for typing state.");
+        }
+        this.#setClientTyping(connection, typing ? botId : null);
+      } catch {
+        client.close(1003, "Invalid team event payload");
+      }
+    });
+    client.once("close", () => {
+      if (connection.typingTimer) clearTimeout(connection.typingTimer);
+      if (connection.directTypingTimer) clearTimeout(connection.directTypingTimer);
+      const directTypingRecipientId = connection.directTypingRecipientId;
+      connection.directTypingRecipientId = null;
+      this.#eventClients.delete(client);
+      if (directTypingRecipientId && !this.#hasDirectTyping(connection.memberId, directTypingRecipientId)) {
+        this.#publishDirectTyping(connection.memberId, directTypingRecipientId, false);
+      }
+      this.#publishPresence();
+    });
+    this.#publishPresence();
+  }
+
+  #setClientTyping(connection: EventClientState, botId: string | null): void {
+    const changed = connection.typingBotId !== botId;
+    connection.typingBotId = botId;
+    if (connection.typingTimer) clearTimeout(connection.typingTimer);
+    connection.typingTimer = botId
+      ? setTimeout(() => {
+          connection.typingTimer = null;
+          if (!connection.typingBotId) return;
+          connection.typingBotId = null;
+          this.#publishPresence();
+        }, TYPING_TIMEOUT_MS)
+      : null;
+    connection.typingTimer?.unref?.();
+    if (changed) this.#publishPresence();
+  }
+
+  #setClientDirectTyping(connection: EventClientState, recipientMemberId: string | null): void {
+    const previousRecipientId = connection.directTypingRecipientId;
+    const changed = previousRecipientId !== recipientMemberId;
+    const recipientAlreadyActive = recipientMemberId
+      ? this.#hasDirectTyping(connection.memberId, recipientMemberId)
+      : false;
+    connection.directTypingRecipientId = recipientMemberId;
+    if (changed && previousRecipientId && !this.#hasDirectTyping(connection.memberId, previousRecipientId)) {
+      this.#publishDirectTyping(connection.memberId, previousRecipientId, false);
+    }
+    if (connection.directTypingTimer) clearTimeout(connection.directTypingTimer);
+    connection.directTypingTimer = recipientMemberId
+      ? setTimeout(() => {
+          connection.directTypingTimer = null;
+          const expiredRecipientId = connection.directTypingRecipientId;
+          if (!expiredRecipientId) return;
+          connection.directTypingRecipientId = null;
+          if (!this.#hasDirectTyping(connection.memberId, expiredRecipientId)) {
+            this.#publishDirectTyping(connection.memberId, expiredRecipientId, false);
+          }
+        }, TYPING_TIMEOUT_MS)
+      : null;
+    connection.directTypingTimer?.unref?.();
+    if (changed && recipientMemberId && !recipientAlreadyActive) {
+      this.#publishDirectTyping(connection.memberId, recipientMemberId, true);
+    }
+  }
+
+  #hasDirectTyping(senderMemberId: string, recipientMemberId: string): boolean {
+    return [...this.#eventClients.values()].some(
+      (connection) =>
+        connection.memberId === senderMemberId && connection.directTypingRecipientId === recipientMemberId,
+    );
+  }
+
+  #publishPresence(): void {
+    const snapshot = this.getPresence();
+    this.#options.onPresence?.(snapshot);
+    const event: TeamRealtimeEvent = { type: "team-presence", snapshot };
+    const payload = JSON.stringify(event);
+    for (const client of this.#eventClients.keys()) {
+      if (client.readyState === webSockets.WebSocket.OPEN) client.send(payload);
+    }
+  }
+
+  #publishDirectMessage(message: DirectMessage): void {
+    const memberIds: [string, string] = [message.senderMemberId, message.recipientMemberId];
+    const event: DirectMessageRealtimeEvent = {
+      type: "team-direct-message",
+      message,
+      memberIds,
+    };
+    this.#sendToMembers(memberIds, event);
+    const owner = this.#options.store.listMembers().find((member) => member.role === "owner");
+    if (owner && memberIds.includes(owner.id)) this.#options.onDirectMessage?.(event);
+  }
+
+  #publishDirectTyping(senderMemberId: string, recipientMemberId: string, typing: boolean): void {
+    const event: DirectTypingRealtimeEvent = {
+      type: "team-direct-typing",
+      senderMemberId,
+      recipientMemberId,
+      typing,
+    };
+    this.#sendToMembers([senderMemberId, recipientMemberId], event);
+    const owner = this.#options.store.listMembers().find((member) => member.role === "owner");
+    if (owner && (owner.id === senderMemberId || owner.id === recipientMemberId)) {
+      this.#options.onDirectTyping?.(event);
+    }
+  }
+
+  #sendToMembers(memberIds: string[], event: TeamRealtimeEvent): void {
+    const payload = JSON.stringify(event);
+    for (const [client, connection] of this.#eventClients) {
+      if (memberIds.includes(connection.memberId) && client.readyState === webSockets.WebSocket.OPEN) {
+        client.send(payload);
+      }
+    }
+  }
+
+  #requireChat(): TeamChatStore {
+    if (!this.#options.chat) throw new Error("Direct messages are unavailable.");
+    return this.#options.chat;
+  }
+
+  #requireDirectRecipient(senderMemberId: string, recipientMemberId: string): TeamMemberSummary {
+    if (senderMemberId === recipientMemberId) {
+      throw new Error("You cannot open a direct message with yourself.");
+    }
+    const sender = this.#options.store.getMember(senderMemberId);
+    const recipient = this.#options.store.getMember(recipientMemberId);
+    if (!sender || sender.disabled) throw new Error("Your team access is unavailable.");
+    if (!recipient || recipient.disabled) throw new Error("This team member is unavailable.");
+    return recipient;
+  }
+
+  #connectDesktop(client: Ws.WebSocket, token: string): void {
+    const target = createConnection({
+      host: "127.0.0.1",
+      port: this.#options.remoteDesktopPort ?? 5900,
+    });
+    const pending: Buffer[] = [];
+    this.#desktopClients.set(client, { token, target });
+
+    client.on("message", (data) => {
+      if (!this.#options.store.authenticate(token)) {
+        client.close(1008, "Team access was revoked");
+        target.destroy();
+        return;
+      }
+      const chunk = Buffer.isBuffer(data) ? data : Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data);
+      if (target.connecting) pending.push(chunk);
+      else if (!target.destroyed) target.write(chunk);
+    });
+    client.on("close", () => target.destroy());
+    client.on("error", () => target.destroy());
+
+    target.on("connect", () => {
+      for (const chunk of pending.splice(0)) target.write(chunk);
+    });
+    target.on("data", (chunk) => {
+      if (client.readyState === webSockets.WebSocket.OPEN) client.send(chunk);
+    });
+    target.on("close", () => {
+      this.#desktopClients.delete(client);
+      if (client.readyState === webSockets.WebSocket.OPEN) client.close();
+    });
+    target.on("error", () => {
+      if (client.readyState === webSockets.WebSocket.OPEN) {
+        client.close(1011, "Remote Desktop is unavailable");
+      }
+    });
+  }
+
+  #json(response: ServerResponse, status: number, value: unknown): void {
+    response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+    response.end(`${JSON.stringify(value)}\n`);
+  }
+
+  #empty(response: ServerResponse, status: number): void {
+    response.writeHead(status);
+    response.end();
+  }
+}
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+function bearerToken(value: string | undefined): string | null {
+  const match = value?.match(/^Bearer ([A-Za-z0-9_-]{20,512})$/);
+  return match?.[1] ?? null;
+}
+
+function requireAdmin(member: TeamMemberSummary): void {
+  if (member.role === "member") throw new HttpError(403, "Administrator access is required.");
+}
+
+function parseBrowserBounds(value: unknown): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  if (!isDynamicRecord(value)) throw new HttpError(400, "Invalid browser bounds.");
+  const x = value.x;
+  const y = value.y;
+  const width = value.width;
+  const height = value.height;
+  if (
+    !isNumber(x) ||
+    !isNumber(y) ||
+    !isNumber(width) ||
+    !isNumber(height) ||
+    ![x, y, width, height].every(Number.isFinite)
+  ) {
+    throw new HttpError(400, "Invalid browser bounds.");
+  }
+  return { x, y, width, height };
+}
+
+async function readJson(request: import("node:http").IncomingMessage): Promise<DynamicRecord> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += bytes.length;
+    if (size > JSON_LIMIT) throw new HttpError(413, "Request body is too large.");
+    chunks.push(bytes);
+  }
+  try {
+    const value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (!isDynamicRecord(value)) throw new Error();
+    return value;
+  } catch {
+    throw new HttpError(400, "A valid JSON object is required.");
+  }
+}
+
+function stringField(
+  value: DynamicRecord,
+  field: string,
+  allowEmpty = false,
+  maxLength: number = INPUT_LIMITS.identifier,
+): string {
+  const item = value[field];
+  if (!isString(item) || (!allowEmpty && !item.trim())) {
+    throw new HttpError(400, `${field} is required.`);
+  }
+  if (item.length > maxLength) throw new HttpError(400, `${field} is too long.`);
+  return item;
+}
+
+function nullableString(
+  value: DynamicRecord,
+  field: string,
+  maxLength: number = INPUT_LIMITS.identifier,
+): string | null {
+  const item = value[field];
+  if (item === undefined || item === null || item === "") return null;
+  if (!isString(item)) throw new HttpError(400, `${field} must be a string.`);
+  if (item.length > maxLength) throw new HttpError(400, `${field} is too long.`);
+  return item;
+}
+
+function pathIdentifier(value: string | undefined, field: string): string {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value ?? "");
+  } catch {
+    throw new HttpError(400, `${field} is invalid.`);
+  }
+  if (!decoded || decoded.length > INPUT_LIMITS.identifier) {
+    throw new HttpError(400, `${field} is invalid.`);
+  }
+  return decoded;
+}
+
+function stringArray(
+  value: DynamicRecord,
+  field: string,
+  maxItems: number = INPUT_LIMITS.attachments,
+  maxLength: number = INPUT_LIMITS.identifier,
+): string[] {
+  const item = value[field];
+  if (item === undefined) return [];
+  if (
+    !Array.isArray(item) ||
+    item.length > maxItems ||
+    !item.every((entry) => isString(entry) && entry.length <= maxLength)
+  ) {
+    throw new HttpError(400, `${field} must be a string array.`);
+  }
+  return item;
+}
+
+function promptRequestId(value: unknown): string | number {
+  if (isNumber(value) && Number.isSafeInteger(value)) return value;
+  if (isString(value) && value.length > 0 && value.length <= INPUT_LIMITS.identifier) {
+    return value;
+  }
+  throw new HttpError(400, "requestId is invalid.");
+}
+
+function promptAnswers(value: unknown): Record<string, string[]> {
+  if (!isDynamicRecord(value)) {
+    throw new HttpError(400, "answers is required.");
+  }
+  const entries = Object.entries(value);
+  if (entries.length > INPUT_LIMITS.promptQuestions) {
+    throw new HttpError(400, "Too many prompt answers.");
+  }
+  const answers: Record<string, string[]> = {};
+  for (const [key, answer] of entries) {
+    if (
+      key.length > INPUT_LIMITS.identifier ||
+      !Array.isArray(answer) ||
+      answer.length > INPUT_LIMITS.promptAnswersPerQuestion ||
+      !answer.every((item) => isString(item) && item.length <= INPUT_LIMITS.promptAnswerText)
+    ) {
+      throw new HttpError(400, "A prompt answer is invalid.");
+    }
+    answers[key] = answer;
+  }
+  return answers;
+}
+
+function approvalDecision(value: unknown): RespondToApprovalInput["decision"] {
+  if (value === "accept" || value === "decline") return value;
+  throw new HttpError(400, "approval decision is invalid.");
+}
+
+function botUpdate(value: DynamicRecord, botId: string): UpdateBotInput {
+  const result: UpdateBotInput = { botId };
+  const textFields = {
+    name: INPUT_LIMITS.agentName,
+    role: INPUT_LIMITS.agentTitle,
+    description: INPUT_LIMITS.agentDescription,
+  } as const;
+  for (const [field, maxLength] of Object.entries(textFields)) {
+    const item = value[field];
+    if (item === undefined) continue;
+    if (!isString(item) || item.length > maxLength) {
+      throw new HttpError(400, `${field} is invalid.`);
+    }
+    if (field === "name") result.name = item;
+    else if (field === "role") result.role = item;
+    else result.description = item;
+  }
+  if (value.notifications !== undefined) {
+    if (!isBoolean(value.notifications)) {
+      throw new HttpError(400, "notifications is invalid.");
+    }
+    result.notifications = value.notifications;
+  }
+  if (value.model !== undefined) {
+    if (!isAgentModel(value.model)) throw new HttpError(400, "model is invalid.");
+    result.model = value.model;
+  }
+  if (value.reasoningEffort !== undefined) {
+    if (!isReasoningEffort(value.reasoningEffort)) {
+      throw new HttpError(400, "reasoningEffort is invalid.");
+    }
+    result.reasoningEffort = value.reasoningEffort;
+  }
+  if (value.avatarSeed !== undefined) {
+    if (!isAvatarSeed(value.avatarSeed)) throw new HttpError(400, "avatarSeed is invalid.");
+    result.avatarSeed = value.avatarSeed;
+  }
+  if (value.avatarHue !== undefined) {
+    if (value.avatarHue !== null && !isAvatarHue(value.avatarHue)) {
+      throw new HttpError(400, "avatarHue is invalid.");
+    }
+    result.avatarHue = value.avatarHue;
+  }
+  return result;
+}
+
+async function readBinary(request: import("node:http").IncomingMessage, limit: number): Promise<Uint8Array> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += bytes.length;
+    if (size > limit) throw new HttpError(413, "Attachment exceeds the 100 MB limit.");
+    chunks.push(bytes);
+  }
+  return new Uint8Array(Buffer.concat(chunks));
+}

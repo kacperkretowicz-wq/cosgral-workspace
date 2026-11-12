@@ -1,0 +1,22 @@
+{
+  "name": "@openbot/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./attachment-references": "./src/attachment-references.ts",
+    "./avatar-images": "./src/avatar-images.ts",
+    "./input-limits": "./src/input-limits.ts",
+    "./ipc": "./src/ipc.ts",
+    "./runtime-values": "./src/runtime-values.ts",
+    "./validation": "./src/validation.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts src"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
