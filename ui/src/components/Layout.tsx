@@ -753,7 +753,9 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
                 />
               ) : (
                 <RouteErrorBoundary>
-                  <Outlet />
+                  <div key={location.pathname} className="cosgral-page-enter min-h-0">
+                    <Outlet />
+                  </div>
                 </RouteErrorBoundary>
               )}
               </main>

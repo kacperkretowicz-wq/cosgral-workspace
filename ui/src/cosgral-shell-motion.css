@@ -1,0 +1,125 @@
+/* COSGRAL Workspace — shell motion layer (own CSS, not OpenBot assets).
+   Soft page enter + live agent pulse. Respects prefers-reduced-motion. */
+
+:root {
+  --cosgral-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cosgral-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --cosgral-dur-page: 420ms;
+  --cosgral-dur-row: 220ms;
+  --cosgral-accent: #6ea8ff;
+}
+
+@keyframes cosgral-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cosgral-agent-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--cosgral-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--cosgral-accent) 0%, transparent);
+  }
+}
+
+@keyframes cosgral-fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cosgral-page-enter {
+  animation: cosgral-page-in var(--cosgral-dur-page) var(--cosgral-ease-out) both;
+}
+
+.cosgral-row-enter {
+  animation: cosgral-fade-rise var(--cosgral-dur-row) var(--cosgral-ease-soft) both;
+}
+
+.cosgral-agent-live {
+  position: relative;
+}
+
+.cosgral-agent-live::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: cosgral-agent-pulse 1.8s var(--cosgral-ease-soft) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosgral-page-enter,
+  .cosgral-row-enter,
+  .cosgral-agent-live::after {
+    animation: none !important;
+  }
+}
+
+/* Impeccable Anti-Slop Design Tokens & Utilities (DESIGN.md) */
+:root {
+  --bg-base: #090A0F;
+  --bg-surface: #12151D;
+  --bg-card: #1A1E29;
+  --bg-elevated: #242A38;
+  --border-hairline: #2A3142;
+  --border-focus: #3B82F6;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-cyan: #06B6D4;
+  --accent-emerald: #10B981;
+  --accent-amber: #F59E0B;
+  --accent-rose: #F43F5E;
+}
+
+.cosgral-oled-base {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.cosgral-surface {
+  background-color: var(--bg-surface);
+  border-color: var(--border-hairline);
+}
+
+.cosgral-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+}
+
+.cosgral-card-active {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-focus);
+}
+
+.cosgral-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.cosgral-node-glow-cyan {
+  box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.25);
+}
+
+.cosgral-node-glow-emerald {
+  box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.25);
+}
+
+.cosgral-node-glow-amber {
+  box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.25);
+}
+
