@@ -30,6 +30,19 @@ if (typeof process.send === "function") {
   process.on("disconnect", () => requestShutdown("shell disconnected"));
 }
 
+// Background servers without an IPC channel (scripts/cosgral-instance.ps1
+// -Mode server -Background) are stopped by creating this file.
+const stopFile = process.env.COSGRAL_STOP_FILE;
+if (stopFile) {
+  const { existsSync, rmSync } = await import("node:fs");
+  rmSync(stopFile, { force: true });
+  setInterval(() => {
+    if (!existsSync(stopFile)) return;
+    rmSync(stopFile, { force: true });
+    requestShutdown("stop file");
+  }, 1000).unref();
+}
+
 // Keep argv shaped like `node <entry> ...` for code that inspects it.
 process.argv.splice(1, 2, path.resolve(entry));
 await import(pathToFileURL(path.resolve(entry)).href);
