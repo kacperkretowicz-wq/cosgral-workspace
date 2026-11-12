@@ -124,10 +124,10 @@ export function HostPanel(props: HostPanelProps) {
             <header class="remote-admin-header">
               <div>
                 <span class="remote-dialog-eyebrow">
-                  {props.status.configured ? "Published access" : "This OpenBot"}
+                  {props.status.configured ? "Published access" : "This COSGRAL Workspace"}
                 </span>
                 <Dialog.Title as="h2" id="host-title">
-                  {props.status.configured ? (props.status.serverName ?? "OpenBot server") : "Publish this OpenBot"}
+                  {props.status.configured ? (props.status.serverName ?? "COSGRAL server") : "Publish this COSGRAL Workspace"}
                 </Dialog.Title>
               </div>
               <Button type="button" aria-label="Close" onClick={props.onClose}>
@@ -135,7 +135,7 @@ export function HostPanel(props: HostPanelProps) {
               </Button>
             </header>
             <Dialog.Description class="sr-only">
-              Configure publishing, access, people, and remote desktop settings for this OpenBot.
+              Configure publishing, access, people, and remote desktop settings for this COSGRAL Workspace.
             </Dialog.Description>
 
             <Show
@@ -184,9 +184,9 @@ export function HostPanel(props: HostPanelProps) {
                     <section class="remote-admin-view" aria-labelledby="server-overview-title">
                       <div class="remote-admin-view-heading">
                         <div>
-                          <span class="remote-admin-kicker">This OpenBot</span>
+                          <span class="remote-admin-kicker">This COSGRAL Workspace</span>
                           <h3 id="server-overview-title">Published access</h3>
-                          <p>Control the secure public address for this local OpenBot instance.</p>
+                          <p>Control the secure public address for this local COSGRAL Workspace instance.</p>
                         </div>
                         <Badge
                           class={["remote-admin-status-pill", { online: online() }]}
@@ -333,7 +333,7 @@ export function HostPanel(props: HostPanelProps) {
                               : "Create invitation link"}
                         </Button>
                         <Show when={!props.status.apiOnline}>
-                          <p class="remote-inline-note">Make this OpenBot public before inviting people.</p>
+                          <p class="remote-inline-note">Make this COSGRAL Workspace public before inviting people.</p>
                         </Show>
                         <Show when={invite()}>
                           {(item) => (
@@ -515,7 +515,7 @@ function HostSetup(props: {
   return (
     <div class="remote-host-setup">
       <p>
-        Publish the agents, conversations, files, and browser from this local OpenBot instance through a secure public
+        Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public
         address. Only people you invite can sign in.
       </p>
       <label class="remote-field">
@@ -541,7 +541,7 @@ function HostSetup(props: {
         disabled={props.busy || props.serverName.trim().length < INPUT_LIMITS.serverNameMin}
         onClick={props.onCreate}
       >
-        {props.busy ? "Publishing…" : "Publish this OpenBot"}
+        {props.busy ? "Publishing…" : "Publish this COSGRAL Workspace"}
       </Button>
     </div>
   );

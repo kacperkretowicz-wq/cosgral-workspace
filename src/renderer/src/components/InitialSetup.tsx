@@ -98,7 +98,7 @@ export function InitialSetup(props: InitialSetupProps) {
       const next = await window.openbot.getMacPermissions();
       if (revision === permissionRevision) flush(() => setPermissions(next));
     } catch (cause) {
-      setError(errorMessage(cause, "OpenBot could not read macOS permissions."));
+      setError(errorMessage(cause, "COSGRAL Workspace could not read macOS permissions."));
     }
   }
 
@@ -125,7 +125,7 @@ export function InitialSetup(props: InitialSetupProps) {
       const next = await window.openbot.requestMacPermission(permission);
       if (revision === permissionRevision) flush(() => setPermissions(next));
     } catch (cause) {
-      setError(errorMessage(cause, "OpenBot could not open this macOS permission."));
+      setError(errorMessage(cause, "COSGRAL Workspace could not open this macOS permission."));
     } finally {
       setPermissionBusy(null);
     }
@@ -144,7 +144,7 @@ export function InitialSetup(props: InitialSetupProps) {
     try {
       await props.onSave(provider);
     } catch (cause) {
-      setError(errorMessage(cause, "OpenBot could not save your local setup."));
+      setError(errorMessage(cause, "COSGRAL Workspace could not save your local setup."));
       setSaving(false);
     }
   }
@@ -157,7 +157,7 @@ export function InitialSetup(props: InitialSetupProps) {
     try {
       await props.onJoinRemote({ inviteUrl: inviteUrl().trim() }, provider);
     } catch (cause) {
-      setError(errorMessage(cause, "OpenBot could not connect to this host."));
+      setError(errorMessage(cause, "COSGRAL Workspace could not connect to this host."));
       setSaving(false);
     }
   }
@@ -166,7 +166,7 @@ export function InitialSetup(props: InitialSetupProps) {
     if (props.reviewing) return "Providers & permissions";
     if (route() === "local") return "Set up this computer";
     if (route() === "remote") return "Connect to a host";
-    return "Where will OpenBot run?";
+    return "Where will COSGRAL Workspace run?";
   };
 
   const description = () => {
@@ -177,9 +177,9 @@ export function InitialSetup(props: InitialSetupProps) {
       return "Agents, conversations, and files stay on this computer.";
     }
     if (route() === "remote") {
-      return "Use an invitation from the person who runs your OpenBot host.";
+      return "Use an invitation from the person who runs your COSGRAL host.";
     }
-    return "Use this computer, or connect to an OpenBot host that runs somewhere else.";
+    return "Use this computer, or connect to a COSGRAL host that runs somewhere else.";
   };
 
   return (
@@ -211,7 +211,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 Sign out
               </Button>
             </div>
-            <p class="initial-setup-eyebrow">OpenBot setup</p>
+            <p class="initial-setup-eyebrow">COSGRAL setup</p>
             <Dialog.Title as="h1" id="initial-setup-title">
               {title()}
             </Dialog.Title>
@@ -234,7 +234,7 @@ export function InitialSetup(props: InitialSetupProps) {
                   </span>
                   <span class="setup-route-copy">
                     <strong>Use this computer</strong>
-                    <small>Run Codex or Claude locally. Keep all OpenBot data here.</small>
+                    <small>Run Codex or Claude locally. Keep all COSGRAL data here.</small>
                   </span>
                   <RouteArrow />
                 </Button>
@@ -252,7 +252,7 @@ export function InitialSetup(props: InitialSetupProps) {
                   </span>
                   <span class="setup-route-copy">
                     <strong>Connect to a host</strong>
-                    <small>Use agents and conversations from an existing OpenBot host.</small>
+                    <small>Use agents and conversations from an existing COSGRAL host.</small>
                   </span>
                   <RouteArrow />
                 </Button>

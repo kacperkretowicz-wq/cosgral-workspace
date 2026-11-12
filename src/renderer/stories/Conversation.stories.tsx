@@ -112,8 +112,8 @@ const imageGenerationMessages: RendererBotMessage[] = [
   },
 ];
 
-const generatedImagePreview = new URL("../src/assets/openbot-logo-production.png", import.meta.url).href;
-const generatedImagePreviewAlternate = new URL("../src/assets/openbot-logo-dev.png", import.meta.url).href;
+const generatedImagePreview = new URL("../src/assets/cosgral-logo-production.png", import.meta.url).href;
+const generatedImagePreviewAlternate = new URL("../src/assets/cosgral-logo-dev.png", import.meta.url).href;
 const generatedImageAttachment: AttachmentSummary = {
   id: "generated-image-in-chat",
   name: "generated-image.png",

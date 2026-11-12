@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 
 describe("trusted IPC renderer boundary", () => {
-  it("accepts only the packaged OpenBot application origin", () => {
+  it("accepts only the packaged COSGRAL Workspace application origin", () => {
     expect(isTrustedRendererUrl("openbot-app://app/index.html", undefined)).toBe(true);
     expect(isTrustedRendererUrl("openbot-app://other/index.html", undefined)).toBe(false);
     expect(isTrustedRendererUrl("https://app.example/index.html", undefined)).toBe(false);

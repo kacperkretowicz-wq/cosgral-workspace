@@ -35,7 +35,7 @@ const BOTS: BotSummary[] = [
     avatarHue: null,
     avatarUrl: null,
     threadId: "thread-chief",
-    workspacePath: "/tmp/OpenBot/Bots/chief",
+    workspacePath: "/tmp/COSGRAL Workspace/Bots/chief",
     preview: "No messages yet",
     updatedAt: null,
   },
@@ -51,7 +51,7 @@ const BOTS: BotSummary[] = [
     avatarHue: 280,
     avatarUrl: null,
     threadId: null,
-    workspacePath: "/tmp/OpenBot/Bots/sales-outbound",
+    workspacePath: "/tmp/COSGRAL Workspace/Bots/sales-outbound",
     preview: "No messages yet",
     updatedAt: null,
   },
@@ -65,7 +65,7 @@ async function confirmOnboardingModel(): Promise<void> {
   await screen.findByRole("radiogroup", { name: "What do you want me helping with most?" });
 }
 
-describe("OpenBot connected desktop shell", () => {
+describe("COSGRAL Workspace connected desktop shell", () => {
   beforeEach(() => {
     emitAgentEvent = undefined;
     emitAttachmentImport = undefined;
@@ -80,7 +80,7 @@ describe("OpenBot connected desktop shell", () => {
       configurable: true,
       value: {
         getAppInfo: vi.fn().mockResolvedValue({
-          name: "OpenBot",
+          name: "COSGRAL",
           version: "0.1.0",
           platform: "darwin",
           variant: "production",
@@ -417,8 +417,8 @@ describe("OpenBot connected desktop shell", () => {
     });
     render(() => <App />);
 
-    expect(await screen.findByRole("dialog", { name: "Where will OpenBot run?" })).toBeInTheDocument();
-    expect(screen.queryByText("Verified. Opening OpenBot…")).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Where will COSGRAL Workspace run?" })).toBeInTheDocument();
+    expect(screen.queryByText("Verified. Opening COSGRAL Workspace…")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chief" })).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
 
@@ -507,7 +507,7 @@ describe("OpenBot connected desktop shell", () => {
     vi.mocked(window.openbot.auth.getState).mockResolvedValueOnce({ status: "signed_out" });
     render(() => <App />);
 
-    expect(await screen.findByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.queryByRole("radiogroup", { name: "Default provider" })).not.toBeInTheDocument();
 
     await fireEvent.input(screen.getByRole("textbox", { name: "Email" }), {
@@ -519,21 +519,21 @@ describe("OpenBot connected desktop shell", () => {
       target: { value: "ABCD-EFGH" },
     });
     expect(window.openbot.auth.verifyEmailCode).toHaveBeenCalledWith("challenge-1", "ABCD-EFGH");
-    expect(await screen.findByText("Verified. Opening OpenBot…")).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: "Where will OpenBot run?" })).not.toBeInTheDocument();
-    expect(await screen.findByRole("dialog", { name: "Where will OpenBot run?" })).toBeInTheDocument();
+    expect(await screen.findByText("Verified. Opening COSGRAL Workspace…")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Where will COSGRAL Workspace run?" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Where will COSGRAL Workspace run?" })).toBeInTheDocument();
   });
 
   it("shows a soft loader until the account API becomes available", async () => {
     vi.mocked(window.openbot.auth.getState).mockResolvedValueOnce({ status: "loading" });
     render(() => <App />);
 
-    expect(await screen.findByRole("heading", { name: "Connecting to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Connecting to COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Connecting securely…");
     expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
 
     emitAuth?.({ status: "signed_out" });
-    expect(await screen.findByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
   });
 
@@ -543,7 +543,7 @@ describe("OpenBot connected desktop shell", () => {
       status: "error",
       issue: {
         code: "auth_api_unavailable",
-        message: "OpenBot could not reach the account service.",
+        message: "COSGRAL Workspace could not reach the account service.",
       },
     });
     vi.mocked(window.openbot.auth.retry).mockReturnValueOnce(
@@ -558,16 +558,16 @@ describe("OpenBot connected desktop shell", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(window.openbot.auth.retry).toHaveBeenCalledOnce();
-    expect(screen.getByRole("heading", { name: "Connecting to OpenBot" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Connecting to COSGRAL Workspace" })).toBeInTheDocument();
     finishRetry?.({ status: "signed_out" });
-    expect(await screen.findByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
   });
 
   it("requires account sign-in before opening a completed workspace", async () => {
     vi.mocked(window.openbot.auth.getState).mockResolvedValueOnce({ status: "signed_out" });
     render(() => <App />);
 
-    expect(await screen.findByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chief" })).not.toBeInTheDocument();
     expect(screen.queryByText("Codex")).not.toBeInTheDocument();
   });
@@ -738,14 +738,14 @@ describe("OpenBot connected desktop shell", () => {
       preferredProvider: null,
     });
     vi.mocked(window.openbot.getAppInfo).mockResolvedValueOnce({
-      name: "OpenBot",
+      name: "COSGRAL",
       version: "0.1.0",
       platform: "win32",
       variant: "production",
     });
     render(() => <App />);
 
-    expect(await screen.findByRole("dialog", { name: "Where will OpenBot run?" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Where will COSGRAL Workspace run?" })).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
     await waitFor(() => expect(screen.queryByText("Mac permissions")).not.toBeInTheDocument());
     expect(window.openbot.getMacPermissions).not.toHaveBeenCalled();
@@ -776,7 +776,7 @@ describe("OpenBot connected desktop shell", () => {
       cliVersion: "0.144.1",
       auth: { kind: "signed-out" },
       capabilities: { chat: "unavailable", browser: "ready", computerUse: "unavailable" },
-      message: "Run `codex login`, then restart OpenBot.",
+      message: "Run `codex login`, then restart COSGRAL Workspace.",
       fullAccess: true,
     });
     render(() => <App />);
@@ -838,7 +838,7 @@ describe("OpenBot connected desktop shell", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
     await waitFor(() => expect(window.openbot.auth.logout).toHaveBeenCalledOnce());
-    expect(await screen.findByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
     expect(window.openbot.agent.deleteBot).not.toHaveBeenCalled();
   });
 
@@ -1458,8 +1458,8 @@ describe("OpenBot connected desktop shell", () => {
 
     await fireEvent.keyDown(window, { key: "k", metaKey: true });
 
-    const dialog = await screen.findByRole("dialog", { name: "Search OpenBot" });
-    const input = screen.getByRole("combobox", { name: "Search OpenBot" });
+    const dialog = await screen.findByRole("dialog", { name: "Search COSGRAL" });
+    const input = screen.getByRole("combobox", { name: "Search COSGRAL" });
     expect(dialog).toBeVisible();
     await waitFor(() => expect(input).toHaveFocus());
 
@@ -1471,7 +1471,7 @@ describe("OpenBot connected desktop shell", () => {
 
     await fireEvent.keyDown(window, { key: "k", metaKey: true });
     await fireEvent.click(screen.getByRole("tab", { name: "Bots" }));
-    const botSearch = screen.getByRole("combobox", { name: "Search OpenBot" });
+    const botSearch = screen.getByRole("combobox", { name: "Search COSGRAL" });
     await fireEvent.input(botSearch, { target: { value: "chief" } });
     await fireEvent.click(await screen.findByRole("option", { name: /Chief/ }));
     await screen.findByRole("heading", { name: "Chief" });
@@ -2438,7 +2438,7 @@ describe("OpenBot connected desktop shell", () => {
             id: "commentary-open",
             turnId: "turn-open",
             author: "assistant",
-            text: "I’ll open x.com in the OpenBot browser.",
+            text: "I’ll open x.com in the COSGRAL Workspace browser.",
             createdAt: "2026-08-12T10:00:01.000Z",
             status: "completed",
             itemType: "commentary",
@@ -2467,14 +2467,14 @@ describe("OpenBot connected desktop shell", () => {
 
     const thinkingLabel = await screen.findByText("Thinking");
     const details = thinkingLabel.closest("details");
-    expect(screen.getByText("I’ll open x.com in the OpenBot browser.")).not.toBeVisible();
+    expect(screen.getByText("I’ll open x.com in the COSGRAL Workspace browser.")).not.toBeVisible();
     expect(screen.getByText("Checking that the page loaded.")).not.toBeVisible();
     expect(screen.getByText("Opened x.com.")).toBeVisible();
     expect(screen.getAllByText("Thinking")).toHaveLength(1);
 
     await fireEvent.click(thinkingLabel);
     expect(details).toHaveAttribute("open");
-    expect(screen.getByText("I’ll open x.com in the OpenBot browser.")).toBeVisible();
+    expect(screen.getByText("I’ll open x.com in the COSGRAL Workspace browser.")).toBeVisible();
 
     emitAgentEvent?.({
       type: "conversation",
@@ -2505,7 +2505,7 @@ describe("OpenBot connected desktop shell", () => {
       },
     });
     await waitFor(() => expect(screen.getByText("Thinking").closest("details")).toBe(details));
-    expect(screen.getByText("I’ll open x.com in the OpenBot browser.")).toBeVisible();
+    expect(screen.getByText("I’ll open x.com in the COSGRAL Workspace browser.")).toBeVisible();
   });
 
   it("keeps text and attachments when enqueue fails", async () => {
@@ -3069,7 +3069,7 @@ describe("OpenBot connected desktop shell", () => {
     expect(await screen.findByRole("complementary", { name: "Servers" })).toBeInTheDocument();
     expect(screen.getByText("Local", { selector: ".sidebar-server-name" })).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: "Add remote server" }));
-    expect(screen.getByRole("dialog", { name: "Join an OpenBot team" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Join a COSGRAL team" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Invitation link" })).toBeInTheDocument();
   });
 
@@ -3116,8 +3116,8 @@ describe("OpenBot connected desktop shell", () => {
       clientX: 32,
       clientY: 80,
     });
-    await fireEvent.pointerUp(screen.getByRole("menuitem", { name: "Publish this OpenBot" }), { button: 0 });
-    expect(screen.getByRole("dialog", { name: "Publish this OpenBot" })).toBeInTheDocument();
+    await fireEvent.pointerUp(screen.getByRole("menuitem", { name: "Publish this COSGRAL Workspace" }), { button: 0 });
+    expect(screen.getByRole("dialog", { name: "Publish this COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Server name" })).toBeInTheDocument();
   });
 
@@ -3141,7 +3141,7 @@ describe("OpenBot connected desktop shell", () => {
       phase: "online",
       enabledOnLaunch: true,
       apiOnline: true,
-      message: "This OpenBot is public. Only invited people can sign in.",
+      message: "This COSGRAL Workspace is public. Only invited people can sign in.",
     });
     render(() => <App />);
 
@@ -3150,11 +3150,11 @@ describe("OpenBot connected desktop shell", () => {
       clientX: 32,
       clientY: 80,
     });
-    await fireEvent.pointerUp(screen.getByRole("menuitem", { name: "Publish this OpenBot" }), { button: 0 });
+    await fireEvent.pointerUp(screen.getByRole("menuitem", { name: "Publish this COSGRAL Workspace" }), { button: 0 });
     await fireEvent.input(screen.getByRole("textbox", { name: "Server name" }), {
       target: { value: "Design studio" },
     });
-    await fireEvent.click(screen.getByRole("button", { name: "Publish this OpenBot" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Publish this COSGRAL Workspace" }));
 
     await waitFor(() => expect(window.openbot.host.configure).toHaveBeenCalledWith({ serverName: "Design studio" }));
     expect(window.openbot.host.start).toHaveBeenCalledOnce();
@@ -3163,7 +3163,7 @@ describe("OpenBot connected desktop shell", () => {
 
   it("shows publishing controls in the local server context menu on Windows", async () => {
     vi.mocked(window.openbot.getAppInfo).mockResolvedValueOnce({
-      name: "OpenBot",
+      name: "COSGRAL",
       version: "0.1.0",
       platform: "win32",
       variant: "production",
@@ -3175,7 +3175,7 @@ describe("OpenBot connected desktop shell", () => {
       clientX: 32,
       clientY: 80,
     });
-    expect(screen.getByRole("menuitem", { name: "Publish this OpenBot" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Publish this COSGRAL Workspace" })).toBeInTheDocument();
   });
 
   it("shows and clears the unread boundary in an agent conversation", async () => {

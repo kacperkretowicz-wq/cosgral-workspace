@@ -49,7 +49,7 @@ export const Interactive: Story = {
     await expect(body.getByRole("button", { name: "Notifications" })).toBeDisabled();
     await expect(body.getByRole("button", { name: "Advanced" })).toBeDisabled();
 
-    const launchSwitch = body.getByRole("switch", { name: "Launch OpenBot at login" });
+    const launchSwitch = body.getByRole("switch", { name: "Launch COSGRAL Workspace at login" });
     await expect(launchSwitch).toBeChecked();
     await userEvent.click(launchSwitch);
     await expect(launchSwitch).not.toBeChecked();

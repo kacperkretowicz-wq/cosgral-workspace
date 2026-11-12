@@ -172,7 +172,7 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div>
                   <Dialog.Title class="settings-modal-title">General</Dialog.Title>
                   <Dialog.Description class="settings-modal-description">
-                    Control how OpenBot behaves on this computer.
+                    Control how COSGRAL Workspace behaves on this computer.
                   </Dialog.Description>
                 </div>
                 <IconButton
@@ -199,11 +199,11 @@ export function SettingsModal(props: SettingsModalProps) {
                     <Card class="settings-modal-card">
                       <Switch
                         defaultChecked
-                        label="Launch OpenBot at login"
+                        label="Launch COSGRAL Workspace at login"
                         description="Open the app when you sign in to this computer."
                       />
                       <Switch
-                        label="Keep OpenBot running in the background"
+                        label="Keep COSGRAL Workspace running in the background"
                         description="Keep active tasks running after you close the window."
                       />
                     </Card>
@@ -228,7 +228,7 @@ export function SettingsModal(props: SettingsModalProps) {
                         </div>
                         <NativeSelect class="settings-modal-select" size="sm" aria-label="Open external links in">
                           <option value="browser">Default browser</option>
-                          <option value="openbot">OpenBot</option>
+                          <option value="openbot">COSGRAL</option>
                         </NativeSelect>
                       </div>
                     </Card>
@@ -263,7 +263,7 @@ export function SettingsModal(props: SettingsModalProps) {
                       />
                       <div class="settings-modal-row">
                         <div class="settings-modal-row-copy">
-                          <span class="settings-modal-row-title">OpenBot version</span>
+                          <span class="settings-modal-row-title">COSGRAL Workspace version</span>
                           <div class="settings-modal-version">
                             <Text tone="muted" variant="caption">
                               Installed version

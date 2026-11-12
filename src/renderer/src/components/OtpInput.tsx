@@ -29,7 +29,7 @@ export function OtpInput(props: OtpInputProps) {
   const status = () => props.status ?? "idle";
   const disabled = () => Boolean(props.disabled || status() === "verifying" || status() === "success");
   const message = createMemo(() => {
-    if (status() === "success") return props.successMessage ?? "Verified. Opening OpenBot…";
+    if (status() === "success") return props.successMessage ?? "Verified. Opening COSGRAL Workspace…";
     if (status() === "error") return props.errorMessage ?? "That code is incorrect. Try again.";
     if (status() === "verifying") return "Verifying…";
     return props.hint;

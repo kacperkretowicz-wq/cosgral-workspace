@@ -39,7 +39,7 @@ export async function resolveCodexCli(): Promise<CodexCliInfo> {
       const stdout = await readCliVersion(candidate);
       const version = parseCodexVersion(stdout);
       if (!isMinimumVersion(version)) {
-        throw new CodexCliError(`Codex CLI ${version} is too old. OpenBot requires 0.144.1 or newer.`, "outdated");
+        throw new CodexCliError(`Codex CLI ${version} is too old. COSGRAL Workspace requires 0.144.1 or newer.`, "outdated");
       }
 
       return { executable: candidate, version };
@@ -62,7 +62,7 @@ export async function resolveCodexCli(): Promise<CodexCliInfo> {
   }
 
   throw new CodexCliError(
-    "Codex CLI was not found. Install Codex, run `codex login`, then restart OpenBot.",
+    "Codex CLI was not found. Install Codex, run `codex login`, then restart COSGRAL Workspace.",
     "missing",
   );
 }
@@ -91,7 +91,7 @@ export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
   }
 
   throw new CodexCliError(
-    "Claude CLI was not found. Install Claude Code, run `claude auth login`, then restart OpenBot.",
+    "Claude CLI was not found. Install Claude Code, run `claude auth login`, then restart COSGRAL Workspace.",
     "missing",
   );
 }

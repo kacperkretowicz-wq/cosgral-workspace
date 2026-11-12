@@ -36,7 +36,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
               <div>
                 <span class="remote-dialog-eyebrow">Remote server</span>
                 <Dialog.Title as="h2" id="join-title">
-                  Join an OpenBot team
+                  Join a COSGRAL team
                 </Dialog.Title>
               </div>
               <Button type="button" aria-label="Close" disabled={busy()} onClick={props.onClose}>
@@ -44,7 +44,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
               </Button>
             </header>
             <Dialog.Description>
-              Paste the one-time invitation link. You will join with your signed-in OpenBot account.
+              Paste the one-time invitation link. You will join with your signed-in COSGRAL account.
             </Dialog.Description>
             <label class="remote-field">
               <span>Invitation link</span>

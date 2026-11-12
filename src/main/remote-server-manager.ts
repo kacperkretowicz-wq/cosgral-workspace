@@ -639,7 +639,7 @@ export function parseJoinUrl(value: string): {
   try {
     url = new URL(value);
   } catch {
-    throw new Error("Enter a valid OpenBot invitation link.");
+    throw new Error("Enter a valid COSGRAL invitation link.");
   }
   const apiUrl = url.searchParams.get("api") ?? "";
   const serverId = url.searchParams.get("server") ?? "";
@@ -653,7 +653,7 @@ export function parseJoinUrl(value: string): {
     !/^[A-Za-z0-9_-]{32,64}$/.test(expectedFingerprint) ||
     !/^[A-Za-z0-9_-]{32,64}$/.test(token)
   ) {
-    throw new Error("The OpenBot invitation link is invalid.");
+    throw new Error("The COSGRAL invitation link is invalid.");
   }
   return { apiUrl, serverId, fingerprint: expectedFingerprint, token };
 }
@@ -669,7 +669,7 @@ export function parseAddressUpdateUrl(value: string): {
   try {
     url = new URL(value);
   } catch {
-    throw new Error("Enter a valid OpenBot address update link.");
+    throw new Error("Enter a valid COSGRAL address update link.");
   }
   const apiUrl = url.searchParams.get("api") ?? "";
   const serverId = url.searchParams.get("server") ?? "";
@@ -685,7 +685,7 @@ export function parseAddressUpdateUrl(value: string): {
     !/^[A-Za-z0-9_-]{64,2048}$/.test(publicKey) ||
     !/^[A-Za-z0-9_-]{64,128}$/.test(signature)
   ) {
-    throw new Error("The OpenBot address update link is invalid.");
+    throw new Error("The COSGRAL address update link is invalid.");
   }
   return { apiUrl, serverId, vncHostname, publicKey, signature };
 }

@@ -182,7 +182,7 @@ export class HostService extends EventEmitter<HostEvents> {
   }
 
   async start(): Promise<HostStatus> {
-    if (!this.#options.store.configured) throw new Error("Name this OpenBot before publishing it.");
+    if (!this.#options.store.configured) throw new Error("Name this COSGRAL Workspace before publishing it.");
     if (this.#status.phase === "online" || this.#status.phase === "starting") {
       return this.getStatus();
     }
@@ -205,7 +205,7 @@ export class HostService extends EventEmitter<HostEvents> {
       const vncReady = screenSharingReady && this.#options.getRemoteDesktopPassword() !== null;
       this.#setStatus({ message: "Provisioning a stable openbot.run address…" });
       const identity = this.#options.store.getIdentity();
-      if (!identity) throw new Error("Name this OpenBot before publishing it.");
+      if (!identity) throw new Error("Name this COSGRAL Workspace before publishing it.");
       const provisioned = await this.#options.provisionTeamTunnel({
         serverId: identity.serverId,
         serverName: identity.serverName,
@@ -220,7 +220,7 @@ export class HostService extends EventEmitter<HostEvents> {
       this.#setStatus({
         apiUrl: provisioned.apiUrl,
         vncHostname: provisioned.vncHostname,
-        message: "Publishing this OpenBot through its secure address…",
+        message: "Publishing this COSGRAL Workspace through its secure address…",
       });
       if (!(await waitForPublicApi(provisioned.apiUrl, this.#options.publicReadyTimeoutMs))) {
         throw new Error("Cloudflare did not publish the named tunnel address. Try again.");
@@ -229,10 +229,10 @@ export class HostService extends EventEmitter<HostEvents> {
         apiOnline: true,
         vncOnline: vncReady,
         message: vncReady
-          ? "This OpenBot and Remote Desktop are publicly reachable."
+          ? "This COSGRAL Workspace and Remote Desktop are publicly reachable."
           : !screenSharingReady
-            ? "This OpenBot is public. Only invited people can sign in."
-            : "This OpenBot is public. Add the dedicated VNC password to enable Remote Desktop.",
+            ? "This COSGRAL Workspace is public. Only invited people can sign in."
+            : "This COSGRAL Workspace is public. Add the dedicated VNC password to enable Remote Desktop.",
       });
       await this.#options.store.setEnabledOnLaunch(true);
       this.#setStatus({ phase: "online", enabledOnLaunch: true });
@@ -244,7 +244,7 @@ export class HostService extends EventEmitter<HostEvents> {
         vncOnline: false,
         apiUrl: null,
         vncHostname: null,
-        message: error instanceof Error ? error.message : "This OpenBot could not be published.",
+        message: error instanceof Error ? error.message : "This COSGRAL Workspace could not be published.",
       });
     }
     return this.getStatus();
@@ -252,7 +252,7 @@ export class HostService extends EventEmitter<HostEvents> {
 
   async stop(persistPreference = true): Promise<HostStatus> {
     if (this.#status.phase === "unconfigured") return this.getStatus();
-    this.#setStatus({ phase: "stopping", message: "Making this OpenBot private…" });
+    this.#setStatus({ phase: "stopping", message: "Making this COSGRAL Workspace private…" });
     await this.#stopRuntime();
     if (persistPreference) await this.#options.store.setEnabledOnLaunch(false);
     this.#setStatus({
@@ -262,7 +262,7 @@ export class HostService extends EventEmitter<HostEvents> {
       vncHostname: null,
       apiOnline: false,
       vncOnline: false,
-      message: "This OpenBot is private.",
+      message: "This COSGRAL Workspace is private.",
     });
     return this.getStatus();
   }
@@ -345,7 +345,7 @@ export class HostService extends EventEmitter<HostEvents> {
   }
 
   createAddressUpdate(): string {
-    if (!this.#status.apiUrl) throw new Error("Make this OpenBot public first.");
+    if (!this.#status.apiUrl) throw new Error("Make this COSGRAL Workspace public first.");
     const proof = this.#options.store.createAddressUpdateProof(this.#status.apiUrl, this.#status.vncHostname);
     const url = new URL("cosgral://update");
     url.searchParams.set("api", proof.apiUrl);
@@ -357,9 +357,9 @@ export class HostService extends EventEmitter<HostEvents> {
   }
 
   async createInvite(input: CreateTeamInviteInput): Promise<InviteSummary> {
-    if (!this.#status.apiUrl) throw new Error("Make this OpenBot public before creating an invite.");
+    if (!this.#status.apiUrl) throw new Error("Make this COSGRAL Workspace public before creating an invite.");
     const identity = this.#options.store.getIdentity();
-    if (!identity) throw new Error("Name this OpenBot before publishing it.");
+    if (!identity) throw new Error("Name this COSGRAL Workspace before publishing it.");
     const invite = await this.#options.store.createInvite(input.role, input.email);
     const url = new URL("cosgral://join");
     url.searchParams.set("api", this.#status.apiUrl);

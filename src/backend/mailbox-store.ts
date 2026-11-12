@@ -962,7 +962,7 @@ export class MailboxStore {
     try {
       const value = JSON.parse(await readFile(this.#statePath, "utf8"));
       if (!isStoredState(value)) {
-        throw new Error("Mailbox state is corrupt or from a newer OpenBot version; refusing to overwrite it.");
+        throw new Error("Mailbox state is corrupt or from a newer COSGRAL Workspace version; refusing to overwrite it.");
       }
       return value;
     } catch (error) {
