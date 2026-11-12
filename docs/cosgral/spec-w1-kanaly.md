@@ -83,3 +83,4 @@ Uzgodnione stany: `queued | running | waiting | done | failed | cancelled`.
 - Dowód „jako użytkownik”: praca w kanale OpenBot (przydziały, wyniki, stop/pauza, odpowiedzi członków, izolowana pamięć kanału).
 - README 0.68: shared channel chats, delegation, Stop/Resume/Reassign/Archive/Restore.
 - Kontrakt `ChannelTask` — baza; rozszerzenia w §3.
+- Gałąź: `team/tester/w1-spec` od `codex/cosgral-desktop` (podgląd UI: e10abd46d).
