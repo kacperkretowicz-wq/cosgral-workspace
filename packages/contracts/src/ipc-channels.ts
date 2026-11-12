@@ -62,6 +62,8 @@ export const IPC_CHANNELS = {
   sidebarMoveItem: "sidebar:move-item",
   channelsList: "channels:list",
   channelsListTasks: "channels:list-tasks",
+  channelsListMessages: "channels:list-messages",
+  channelsSendMessage: "channels:send-message",
   channelsCreate: "channels:create",
   channelsUpdate: "channels:update",
   channelsAddMember: "channels:add-member",

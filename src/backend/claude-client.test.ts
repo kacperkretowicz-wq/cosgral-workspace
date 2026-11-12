@@ -158,7 +158,9 @@ describe("ClaudeAgentClient", () => {
       decodeThreadResponse,
     );
 
-    expect(serverNames).toEqual(expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes"]));
+    expect(serverNames).toEqual(
+      expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes", "cosgral_channels"]),
+    );
     await client.stop();
   });
 

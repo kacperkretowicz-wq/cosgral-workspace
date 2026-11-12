@@ -15,6 +15,7 @@ import { BotStore } from "./bot-store";
 import { type EyesCapture, type EyesFrame, EyesService, type EyesSourceInfo } from "./eyes-service";
 import { MailboxStore } from "./mailbox-store";
 import { type AppServerNotification, getString, type RequestId, type ResponseDecoder, type RpcError } from "./protocol";
+import { channelFixture, channelTaskFixture } from "./testing/channel-fixtures";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 
@@ -55,6 +56,33 @@ afterEach(async () => {
 
 // COSGRAL: on Windows every fake CLI call starts cmd.exe and Node (0.3–1 s each), so tests near the 5 s default flake.
 describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20_000 : 5_000 }, () => {
+  it("runs a channel turn on a separate thread without writing the agent's direct conversation", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(
+      store,
+      mailbox,
+      fakeBrowser(),
+      null,
+      30_000,
+      "codex",
+      (provider) => new FakeAgentClient(provider),
+    );
+    await service.initialize();
+    const bot = await store.getOrCreate("chief");
+    const before = await service.readConversation(bot.id);
+    const result = await service.runChannelTurn({
+      task: channelTaskFixture({ ownerBotId: bot.id }),
+      channel: channelFixture({ memberBotIds: [bot.id], leadBotId: bot.id }),
+      history: [],
+      memory: [],
+      signal: new AbortController().signal,
+      tool: async () => ({}),
+      waiting: () => {},
+    });
+    expect(result).toMatchObject({ status: "completed", text: "CODEX_DONE" });
+    expect((await service.readConversation(bot.id)).messages).toEqual(before.messages);
+    expect(store.activeProviderSession(bot.id)).toBeNull();
+  });
   it("does not surface the skills context-budget notice as an agent error", async () => {
     process.env.OPENBOT_FAKE_WARNING = "Skill descriptions were shortened to fit the skills context budget.";
     const { store, mailbox } = stores();

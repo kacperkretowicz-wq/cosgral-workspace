@@ -72,7 +72,7 @@ describe("ChannelStore", () => {
     );
     expect(() =>
       channels.create(launchPlan({ name: "two", instructions: "x".repeat(CHANNEL_LIMITS.instructions + 1) })),
-    ).toThrow("Channel instructions have at most 4000 characters.");
+    ).toThrow("Channel instructions have at most 2000 characters.");
   });
 
   it("adds and removes members and moves the lead role", async () => {
@@ -106,7 +106,7 @@ describe("ChannelStore", () => {
       channelId: channel.id,
       title: `  ${"Prepare the launch report ".repeat(10)}`,
       requestMessageId: "m1",
-      resourceKey: "c:\\work\\launch",
+      resourceKey: "workspace:c:\\work\\launch",
     });
     const second = channels.createTask({
       channelId: channel.id,
@@ -119,7 +119,7 @@ describe("ChannelStore", () => {
       channelId: channel.id,
       title: "Check the folder",
       requestMessageId: "m3",
-      resourceKey: "c:\\work\\launch",
+      resourceKey: "workspace:c:\\work\\launch",
     });
 
     expect(first).toMatchObject({ ownerBotId: "chief", state: "queued", assignmentCount: 1, archivedAt: null });
@@ -132,9 +132,7 @@ describe("ChannelStore", () => {
     const done = channels.complete({ taskId: first.id, outcome: "done", resultMessageId: "m4" });
     expect(done).toMatchObject({ state: "done", resultMessageId: "m4" });
     expect(channels.startable().map((task) => task.id)).toEqual([second.id, third.id]);
-    expect(() => channels.complete({ taskId: first.id, outcome: "done", resultMessageId: "m5" })).toThrow(
-      "This task already has a result.",
-    );
+    expect(channels.complete({ taskId: first.id, outcome: "done", resultMessageId: "m5" }).resultMessageId).toBe("m5");
   });
 
   it("lets a person stop, pause, resume, archive and restore a task", async () => {

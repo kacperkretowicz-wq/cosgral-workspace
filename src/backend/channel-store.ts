@@ -3,15 +3,25 @@
 // keeps data and enforces the rules; running agents on tasks is the channel engine's job.
 
 import { randomUUID } from "node:crypto";
+import { EventEmitter } from "node:events";
+import { posix, win32 } from "node:path";
 import {
+  type AgentEvent,
   CHANNEL_LIMITS,
+  type ChannelAssignment,
   type ChannelMemberInput,
+  type ChannelMemory,
+  type ChannelMessage,
   type ChannelTask,
   type ChannelTaskActionInput,
   type ChannelTaskState,
   type CreateWorkspaceChannelInput,
+  isChannelAssignment,
+  isChannelMemory,
+  isChannelMessage,
   isChannelName,
   isChannelTaskState,
+  type ListChannelMessagesInput,
   type ReassignChannelTaskInput,
   type UpdateWorkspaceChannelInput,
   type WorkspaceChannel,
@@ -35,6 +45,8 @@ export interface NewChannelTask {
   parentTaskId?: string | null;
   dependencyTaskIds?: string[];
   resourceKey?: string | null;
+  kind?: "work" | "question";
+  questionRootId?: string | null;
 }
 
 export interface CompleteChannelTaskInput {
@@ -52,12 +64,13 @@ const FINISHED_STATES: readonly ChannelTaskState[] = ["done", "failed", "cancell
 const ACTIVE_STATES: readonly ChannelTaskState[] = ["running", "waiting"];
 const OPEN_STATES: readonly ChannelTaskState[] = ["queued", "running", "waiting", "paused"];
 
-export class ChannelStore {
+export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
   readonly #database: OpenBotDatabase;
   readonly #now: () => Date;
   readonly #botExists: (botId: string) => boolean;
 
   constructor(database: OpenBotDatabase, options: ChannelStoreOptions = {}) {
+    super();
     this.#database = database;
     this.#now = options.now ?? (() => new Date());
     this.#botExists = options.botExists ?? (() => true);
@@ -166,7 +179,7 @@ export class ChannelStore {
             ? {
                 ...task,
                 ownerBotId: leadBotId,
-                state: "queued",
+                state: task.state === "paused" ? "paused" : "queued",
                 assignmentCount: task.assignmentCount + 1,
                 updatedAt: at,
               }
@@ -184,7 +197,7 @@ export class ChannelStore {
   listTasks(channelId: string): ChannelTask[] {
     return rows(
       this.#database.connection
-        .prepare(`${TASK_SELECT} WHERE channel_id = ? ORDER BY created_at, rowid`)
+        .prepare(`${TASK_SELECT} WHERE channel_id = ? ORDER BY created_at, projection_channel_tasks.rowid`)
         .all(channelId),
     ).map(taskFromRow);
   }
@@ -219,8 +232,13 @@ export class ChannelStore {
       resultMessageId: null,
       parentTaskId,
       dependencyTaskIds,
-      resourceKey: input.resourceKey?.trim() || null,
+      resourceKey: channelResourceKey(input.resourceKey),
       assignmentCount: 1,
+      automaticAssignmentCount: 1,
+      waitingForTaskIds: [],
+      pauseReason: null,
+      kind: input.kind ?? "work",
+      questionRootId: input.questionRootId ?? null,
       archivedAt: null,
       createdAt: at,
       updatedAt: at,
@@ -234,19 +252,35 @@ export class ChannelStore {
    * same resource is running or waiting, and no older queued task holds the same resource.
    */
   startable(): ChannelTask[] {
-    const all = rows(this.#database.connection.prepare(`${TASK_SELECT} ORDER BY created_at, rowid`).all()).map(
-      taskFromRow,
-    );
+    const all = rows(
+      this.#database.connection.prepare(`${TASK_SELECT} ORDER BY created_at, projection_channel_tasks.rowid`).all(),
+    ).map(taskFromRow);
     const byId = new Map(all.map((task) => [task.id, task]));
     const busy = new Set(
-      all.flatMap((task) => (ACTIVE_STATES.includes(task.state) && task.resourceKey ? [task.resourceKey] : [])),
+      all.flatMap((task) =>
+        ACTIVE_STATES.includes(task.state) && !task.waitingForTaskIds?.length && task.resourceKey
+          ? [task.resourceKey]
+          : [],
+      ),
     );
     const startable: ChannelTask[] = [];
     for (const task of all) {
-      if (task.state !== "queued" || task.archivedAt) continue;
+      if (task.state !== "queued" || task.archivedAt || this.get(task.channelId).archived) continue;
+      let ancestor = task.parentTaskId;
+      let ancestorStopped = false;
+      while (ancestor) {
+        const parent = byId.get(ancestor);
+        if (!parent || ["paused", "cancelled", "done", "failed"].includes(parent.state)) {
+          ancestorStopped = true;
+          break;
+        }
+        ancestor = parent.parentTaskId;
+      }
+      if (ancestorStopped) continue;
       const ready = task.dependencyTaskIds.every((id) => byId.get(id)?.state === "done");
       const resourceFree = !task.resourceKey || !busy.has(task.resourceKey);
-      if (task.resourceKey) busy.add(task.resourceKey);
+      // An unmet dependency must not reserve a resource needed by that dependency.
+      if (ready && task.resourceKey) busy.add(task.resourceKey);
       if (ready && resourceFree) startable.push(task);
     }
     return startable;
@@ -263,8 +297,8 @@ export class ChannelStore {
   /** The one result of a task. */
   complete(input: CompleteChannelTaskInput): ChannelTask {
     const task = this.getTask(input.taskId);
-    if (task.resultMessageId) throw new Error("This task already has a result.");
-    if (!["queued", "running", "waiting"].includes(task.state)) throw new Error("This task is not running.");
+    if (!["queued", "running", "waiting", "done", "failed"].includes(task.state))
+      throw new Error("This task is not running.");
     const updated: ChannelTask = {
       ...task,
       state: input.outcome,
@@ -276,13 +310,22 @@ export class ChannelStore {
   }
 
   /** A person's Stop, Pause, Resume, Archive or Restore. */
-  act(input: ChannelTaskActionInput): ChannelTask {
+  act(input: ChannelTaskActionInput, actor: "human" | "agent" = "human"): ChannelTask {
     switch (input.action) {
       case "stop":
         return this.#transition(input.taskId, OPEN_STATES, "cancelled", "This task is already finished.");
       case "pause":
         return this.#transition(input.taskId, ["queued", "running", "waiting"], "paused", "This task is not running.");
       case "resume":
+        if (actor !== "human") throw new Error("Only a human can resume a task.");
+        if (!["paused", "cancelled"].includes(this.getTask(input.taskId).state))
+          throw new Error("Only a paused or stopped task can be resumed.");
+        this.#save(
+          [],
+          [{ ...this.getTask(input.taskId), automaticAssignmentCount: 0, pauseReason: null, waitingForTaskIds: [] }],
+          "channel-task.budget-reset",
+          {},
+        );
         return this.#transition(
           input.taskId,
           ["paused", "cancelled"],
@@ -303,22 +346,289 @@ export class ChannelStore {
   }
 
   /** Gives an open task to another member; it starts again for the new owner. */
-  reassign(input: ReassignChannelTaskInput): ChannelTask {
+  reassign(
+    input: ReassignChannelTaskInput,
+    actor: "human" | "agent" = "human",
+    resourceKey?: string | null,
+  ): ChannelTask {
     const task = this.getTask(input.taskId);
     const channel = this.get(task.channelId);
     if (!channel.memberBotIds.includes(input.ownerBotId)) {
       throw new Error("Only a member of the channel can own its tasks.");
     }
     if (FINISHED_STATES.includes(task.state)) throw new Error("This task is finished.");
+    if (actor === "agent" && task.state === "paused") return task;
+    if (
+      actor === "agent" &&
+      (task.automaticAssignmentCount ?? task.assignmentCount) >= CHANNEL_LIMITS.automaticAssignments
+    ) {
+      this.#save(
+        [],
+        [{ ...task, state: "paused", pauseReason: ASSIGNMENT_LIMIT_REASON, updatedAt: this.#isoNow() }],
+        "channel-task.limited",
+        {},
+      );
+      return this.getTask(task.id);
+    }
+    const count = actor === "human" ? 0 : (task.automaticAssignmentCount ?? task.assignmentCount) + 1;
     const updated: ChannelTask = {
       ...task,
       ownerBotId: input.ownerBotId,
-      state: task.state === "paused" ? "paused" : "queued",
+      state: count > CHANNEL_LIMITS.automaticAssignments ? "paused" : "queued",
+      automaticAssignmentCount: count,
+      resourceKey: resourceKey === undefined ? task.resourceKey : channelResourceKey(resourceKey),
+      pauseReason: count > CHANNEL_LIMITS.automaticAssignments ? ASSIGNMENT_LIMIT_REASON : null,
       assignmentCount: task.assignmentCount + 1,
       updatedAt: this.#isoNow(),
     };
     this.#save([], [updated], "channel-task.reassigned", { ...input });
     return this.getTask(task.id);
+  }
+
+  listMessages(channelId: string, input: Omit<ListChannelMessagesInput, "channelId"> = {}): ChannelMessage[] {
+    this.get(channelId);
+    const limit = input.limit ?? CHANNEL_LIMITS.historyPage;
+    if (!Number.isInteger(limit) || limit < 1 || limit > CHANNEL_LIMITS.historyPage)
+      throw new Error("Invalid history page size.");
+    let before = Number.MAX_SAFE_INTEGER;
+    if (input.beforeMessageId) {
+      const row = this.#database.connection
+        .prepare("SELECT ordinal FROM projection_channel_messages WHERE channel_id = ? AND message_id = ?")
+        .get(channelId, input.beforeMessageId);
+      if (!row || !isNumber(row.ordinal)) throw new Error("This message is not in the channel.");
+      before = row.ordinal;
+    }
+    return rows(
+      this.#database.connection
+        .prepare(
+          "SELECT data_json FROM projection_channel_messages WHERE channel_id = ? AND ordinal < ? ORDER BY ordinal DESC LIMIT ?",
+        )
+        .all(channelId, before, limit),
+    )
+      .map((row) => jsonColumn(row, isChannelMessage))
+      .reverse();
+  }
+
+  getMessage(channelId: string, id: string): ChannelMessage {
+    const row = this.#database.connection
+      .prepare("SELECT data_json FROM projection_channel_messages WHERE channel_id = ? AND message_id = ?")
+      .get(channelId, id);
+    if (!isDynamicRecord(row)) throw new Error("This message is not in the channel.");
+    return jsonColumn(row, isChannelMessage);
+  }
+
+  addMessage(
+    input: Pick<ChannelMessage, "channelId" | "authorBotId" | "kind" | "text"> &
+      Partial<Pick<ChannelMessage, "taskId" | "replyToMessageId">>,
+  ): ChannelMessage {
+    this.get(input.channelId);
+    const message = this.#message(input);
+    this.#save([], [], "channel.message-added", { channelId: input.channelId }, { messages: [message] });
+    return message;
+  }
+
+  /** The request and its task are committed together, before the scheduler can see either. */
+  submit(channelId: string, text: string, resourceKey?: string | null): { message: ChannelMessage; task: ChannelTask } {
+    // createTask validates membership and resource first; both writes use the same dispatch via pending message.
+    const channel = this.get(channelId);
+    if (channel.archived || !channel.leadBotId) throw new Error("This channel has no available lead or is archived.");
+    const key = channelResourceKey(resourceKey);
+    const message = this.#message({ channelId, authorBotId: null, kind: "human", text });
+    const at = this.#isoNow();
+    const task: ChannelTask = {
+      id: randomUUID(),
+      channelId,
+      ownerBotId: channel.leadBotId,
+      state: "queued",
+      title: taskTitle(text),
+      requestMessageId: message.id,
+      resultMessageId: null,
+      parentTaskId: null,
+      dependencyTaskIds: [],
+      resourceKey: key,
+      assignmentCount: 1,
+      automaticAssignmentCount: 1,
+      waitingForTaskIds: [],
+      pauseReason: null,
+      kind: "work",
+      questionRootId: null,
+      archivedAt: null,
+      createdAt: at,
+      updatedAt: at,
+    };
+    message.taskId = task.id;
+    this.#save([], [task], "channel-task.created", { channelId, taskId: task.id }, { messages: [message] });
+    return { message, task: this.getTask(task.id) };
+  }
+
+  recordResult(taskId: string, authorBotId: string, text: string, outcome: "done" | "failed" = "done"): ChannelMessage {
+    const task = this.getTask(taskId);
+    if (task.ownerBotId !== authorBotId) throw new Error("Only the task owner can return its result.");
+    if (["paused", "cancelled"].includes(task.state)) throw new Error("This task is stopped.");
+    const previous = task.resultMessageId ? this.getMessage(task.channelId, task.resultMessageId) : null;
+    const message: ChannelMessage = {
+      ...this.#message({
+        channelId: task.channelId,
+        taskId,
+        authorBotId,
+        kind: task.kind === "question" ? "reply" : "result",
+        text,
+      }),
+      resultVersion: (previous?.resultVersion ?? 0) + 1,
+    };
+    const messages = previous ? [{ ...previous, superseded: true }, message] : [message];
+    const notes = rows(
+      this.#database.connection
+        .prepare(
+          "SELECT data_json FROM projection_channel_messages WHERE channel_id = ? AND json_extract(data_json,'$.taskId') = ? AND json_extract(data_json,'$.kind') = 'note' AND json_extract(data_json,'$.superseded') = 0",
+        )
+        .all(task.channelId, task.id),
+    ).map((row) => ({ ...jsonColumn(row, isChannelMessage), superseded: true }));
+    this.#save(
+      [],
+      [{ ...task, state: outcome, resultMessageId: message.id, updatedAt: this.#isoNow() }],
+      "channel-task.result",
+      { taskId },
+      { messages: [...notes, ...messages] },
+    );
+    return message;
+  }
+
+  listMemory(channelId: string): ChannelMemory[] {
+    this.get(channelId);
+    return rows(
+      this.#database.connection
+        .prepare("SELECT data_json FROM projection_channel_memories WHERE channel_id = ? ORDER BY rowid")
+        .all(channelId),
+    ).map((row) => jsonColumn(row, isChannelMemory));
+  }
+
+  remember(channelId: string, authorBotId: string, value: string): ChannelMemory {
+    const channel = this.get(channelId);
+    if (!channel.memberBotIds.includes(authorBotId)) throw new Error("Only channel members can write its memory.");
+    if (!value.trim() || value.length > CHANNEL_LIMITS.memoryEntry)
+      throw new Error(`A channel memory entry has 1–${CHANNEL_LIMITS.memoryEntry} characters.`);
+    const memory: ChannelMemory = {
+      id: randomUUID(),
+      channelId,
+      authorBotId,
+      text: value.trim(),
+      createdAt: this.#isoNow(),
+    };
+    this.#save([], [], "channel.memory-added", { channelId }, { memories: [memory] });
+    return memory;
+  }
+
+  listAssignments(taskId: string): ChannelAssignment[] {
+    return rows(
+      this.#database.connection
+        .prepare("SELECT data_json FROM projection_channel_assignments WHERE task_id = ? ORDER BY ordinal")
+        .all(taskId),
+    ).map((row) => jsonColumn(row, isChannelAssignment));
+  }
+
+  waitForTasks(taskId: string, ids: string[]): ChannelTask {
+    const task = this.getTask(taskId);
+    if (!["running", "waiting"].includes(task.state)) throw new Error("This task is not running.");
+    if (ids.some((id) => this.getTask(id).parentTaskId !== taskId)) throw new Error("Only child tasks can be awaited.");
+    this.#save(
+      [],
+      [{ ...task, state: "waiting", waitingForTaskIds: [...new Set(ids)], updatedAt: this.#isoNow() }],
+      "channel-task.waiting",
+      { taskId },
+    );
+    return this.getTask(taskId);
+  }
+
+  continueTask(taskId: string): ChannelTask {
+    const task = this.getTask(taskId);
+    if (task.state !== "waiting") return task;
+    const count = task.automaticAssignmentCount ?? task.assignmentCount;
+    const limited = count >= CHANNEL_LIMITS.automaticAssignments;
+    this.#save(
+      [],
+      [
+        {
+          ...task,
+          state: limited ? "paused" : "queued",
+          waitingForTaskIds: [],
+          pauseReason: limited ? ASSIGNMENT_LIMIT_REASON : null,
+          assignmentCount: limited ? task.assignmentCount : task.assignmentCount + 1,
+          automaticAssignmentCount: limited ? count : count + 1,
+          updatedAt: this.#isoNow(),
+        },
+      ],
+      "channel-task.continued",
+      { taskId },
+    );
+    return this.getTask(taskId);
+  }
+
+  /** Child dispatches consume their asking task's budget too; fan-out cannot bypass the limit. */
+  reserveChildAssignment(taskId: string): boolean {
+    const task = this.getTask(taskId);
+    const count = task.automaticAssignmentCount ?? task.assignmentCount;
+    if (count >= CHANNEL_LIMITS.automaticAssignments) {
+      this.#save(
+        [],
+        [{ ...task, state: "paused", pauseReason: ASSIGNMENT_LIMIT_REASON, updatedAt: this.#isoNow() }],
+        "channel-task.limited",
+        {},
+      );
+      return false;
+    }
+    this.#save(
+      [],
+      [
+        {
+          ...task,
+          automaticAssignmentCount: count + 1,
+          assignmentCount: task.assignmentCount + 1,
+          updatedAt: this.#isoNow(),
+        },
+      ],
+      "channel-task.child-assigned",
+      {},
+    );
+    return true;
+  }
+
+  recoverInterrupted(): ChannelTask[] {
+    const changed = this.list()
+      .flatMap((c) => this.listTasks(c.id))
+      .filter((t) => t.state === "running" || (t.state === "waiting" && !t.waitingForTaskIds?.length))
+      .map((t) => ({
+        ...t,
+        state: "paused" as const,
+        pauseReason:
+          "The application stopped during this turn. A human must resume it to avoid repeating side effects.",
+        updatedAt: this.#isoNow(),
+      }));
+    if (changed.length) this.#save([], changed, "channel-task.recovered", {});
+    return changed;
+  }
+
+  #message(
+    input: Pick<ChannelMessage, "channelId" | "authorBotId" | "kind" | "text"> &
+      Partial<Pick<ChannelMessage, "taskId" | "replyToMessageId">>,
+  ): ChannelMessage {
+    if (!input.text.trim() || input.text.length > CHANNEL_LIMITS.message)
+      throw new Error(`A channel message has 1–${CHANNEL_LIMITS.message} characters.`);
+    if (input.authorBotId && !this.get(input.channelId).memberBotIds.includes(input.authorBotId))
+      throw new Error("Only a channel member can write here.");
+    if (input.replyToMessageId) this.getMessage(input.channelId, input.replyToMessageId);
+    return {
+      id: randomUUID(),
+      channelId: input.channelId,
+      taskId: input.taskId ?? null,
+      authorBotId: input.authorBotId,
+      kind: input.kind,
+      text: input.text.trim(),
+      replyToMessageId: input.replyToMessageId ?? null,
+      resultVersion: null,
+      superseded: false,
+      createdAt: this.#isoNow(),
+    };
   }
 
   #transition(taskId: string, from: readonly ChannelTaskState[], to: ChannelTaskState, refusal: string): ChannelTask {
@@ -342,7 +652,13 @@ export class ChannelStore {
     return members;
   }
 
-  #save(channels: WorkspaceChannel[], tasks: ChannelTask[], eventType: string, payload: DynamicRecord): void {
+  #save(
+    channels: WorkspaceChannel[],
+    tasks: ChannelTask[],
+    eventType: string,
+    payload: DynamicRecord,
+    extra: { messages?: ChannelMessage[]; memories?: ChannelMemory[] } = {},
+  ): void {
     const occurredAt = this.#isoNow();
     this.#database.dispatch(
       `${eventType}:${randomUUID()}`,
@@ -351,7 +667,7 @@ export class ChannelStore {
           aggregateType: tasks.length > 0 && channels.length === 0 ? "channel-task" : "channel",
           aggregateId: channels[0]?.id ?? tasks[0]?.id ?? "channels",
           eventType,
-          payload: { ...payload },
+          payload: { ...payload, channels, tasks, ...extra },
           occurredAt,
         },
       ],
@@ -398,6 +714,8 @@ export class ChannelStore {
              state = excluded.state,
              result_message_id = excluded.result_message_id,
              assignment_count = excluded.assignment_count,
+             dependency_task_ids_json = excluded.dependency_task_ids_json,
+             resource_key = excluded.resource_key,
              archived_at = excluded.archived_at,
              updated_at = excluded.updated_at,
              last_event_sequence = excluded.last_event_sequence`,
@@ -420,10 +738,58 @@ export class ChannelStore {
             task.updatedAt,
             sequence,
           );
+          db.prepare(
+            "INSERT INTO projection_channel_task_runtime(task_id, runtime_json) VALUES (?, ?) ON CONFLICT(task_id) DO UPDATE SET runtime_json = excluded.runtime_json",
+          ).run(
+            task.id,
+            JSON.stringify({
+              automaticAssignmentCount: task.automaticAssignmentCount,
+              waitingForTaskIds: task.waitingForTaskIds,
+              pauseReason: task.pauseReason,
+              kind: task.kind,
+              questionRootId: task.questionRootId,
+            }),
+          );
+          if (
+            [
+              "channel-task.created",
+              "channel-task.reassigned",
+              "channel-task.continued",
+              "channel-task.budget-reset",
+              "channel-task.child-assigned",
+            ].includes(eventType)
+          ) {
+            const assignment: ChannelAssignment = {
+              id: randomUUID(),
+              taskId: task.id,
+              ownerBotId: task.ownerBotId,
+              count: task.assignmentCount,
+              reason: eventType,
+              createdAt: occurredAt,
+            };
+            db.prepare("INSERT INTO projection_channel_assignments(task_id, data_json) VALUES (?, ?)").run(
+              task.id,
+              JSON.stringify(assignment),
+            );
+          }
         }
+        for (const message of extra.messages ?? [])
+          db.prepare(
+            "INSERT INTO projection_channel_messages(message_id, channel_id, data_json) VALUES (?, ?, ?) ON CONFLICT(message_id) DO UPDATE SET data_json = excluded.data_json",
+          ).run(message.id, message.channelId, JSON.stringify(message));
+        for (const memory of extra.memories ?? [])
+          db.prepare("INSERT INTO projection_channel_memories(memory_id, channel_id, data_json) VALUES (?, ?, ?)").run(
+            memory.id,
+            memory.channelId,
+            JSON.stringify(memory),
+          );
         return null;
       },
     );
+    if (channels.length) this.emit("event", { type: "channels-changed", channels: this.list() });
+    for (const message of extra.messages ?? [])
+      this.emit("event", { type: message.superseded ? "channel-message-changed" : "channel-message", message });
+    for (const task of tasks) this.emit("event", { type: "task-changed", task: this.getTask(task.id) });
   }
 
   #isoNow(): string {
@@ -436,7 +802,7 @@ const CHANNEL_SELECT = `SELECT channel_id, name, title, instructions, lead_bot_i
 
 const TASK_SELECT = `SELECT task_id, channel_id, owner_bot_id, state, title, request_message_id, result_message_id,
   parent_task_id, dependency_task_ids_json, resource_key, assignment_count, archived_at, created_at, updated_at
-  FROM projection_channel_tasks`;
+  , runtime_json FROM projection_channel_tasks LEFT JOIN projection_channel_task_runtime USING(task_id)`;
 
 function channelName(value: string): string {
   const name = value.trim();
@@ -472,6 +838,12 @@ function rows(value: unknown): DynamicRecord[] {
     if (!isDynamicRecord(row)) throw new Error("Invalid channel row.");
     return row;
   });
+}
+
+function jsonColumn<T>(row: DynamicRecord, guard: (value: unknown) => value is T): T {
+  const value = JSON.parse(text(row, "data_json"));
+  if (!guard(value)) throw new Error("Invalid channel data column.");
+  return value;
 }
 
 function stringList(value: unknown): string[] {
@@ -533,5 +905,22 @@ function taskFromRow(row: DynamicRecord): ChannelTask {
     archivedAt: optionalText(row, "archived_at"),
     createdAt: text(row, "created_at"),
     updatedAt: text(row, "updated_at"),
+    ...(isString(row.runtime_json) ? JSON.parse(row.runtime_json) : {}),
   };
+}
+
+export const ASSIGNMENT_LIMIT_REASON = `Automatic assignment limit (${CHANNEL_LIMITS.automaticAssignments}) reached. A human can resume or reassign this task.`;
+
+/** Canonical keys are stable across Windows spelling/case and trailing separators. */
+export function channelResourceKey(value?: string | null): string | null {
+  if (value == null || value === "") return null;
+  if (value === "browser") return value;
+  if (!value.startsWith("workspace:")) throw new Error("A resource must be browser or workspace:<absolute path>.");
+  const path = value.slice("workspace:".length);
+  if (win32.isAbsolute(path) && (/^[a-z]:[\\/]/i.test(path) || path.startsWith("\\\\"))) {
+    const normalized = win32.normalize(path).toLowerCase();
+    return `workspace:${normalized.length > win32.parse(normalized).root.length ? normalized.replace(/[\\/]+$/, "") : normalized}`;
+  }
+  if (posix.isAbsolute(path)) return `workspace:${posix.normalize(path).replace(/\/$/, "") || "/"}`;
+  throw new Error("A workspace resource requires an absolute path.");
 }

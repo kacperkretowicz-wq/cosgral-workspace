@@ -13,7 +13,11 @@ export const CHANNEL_LIMITS = {
   /** Short name: lowercase letters, digits and dashes, unique on this computer. */
   name: 40,
   title: 120,
-  instructions: 4_000,
+  instructions: 2_000,
+  memoryEntry: 500,
+  automaticAssignments: 8,
+  message: 32_000,
+  historyPage: 200,
   members: 20,
   taskTitle: 120,
   /** Answers a member may give to one short question from another member. */
@@ -55,6 +59,93 @@ export interface ChannelTask {
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Dispatch budget since the last human resume/reassignment. Total stays in assignmentCount. */
+  automaticAssignmentCount?: number;
+  waitingForTaskIds?: string[];
+  pauseReason?: string | null;
+  kind?: "work" | "question";
+  /** Shared budget across the answers of one short question. */
+  questionRootId?: string | null;
+}
+
+export interface ChannelMessage {
+  id: string;
+  channelId: string;
+  taskId: string | null;
+  authorBotId: string | null;
+  kind: "human" | "assignment" | "question" | "reply" | "result" | "note" | "system";
+  text: string;
+  replyToMessageId: string | null;
+  resultVersion: number | null;
+  superseded: boolean;
+  createdAt: string;
+}
+
+export interface ChannelMemory {
+  id: string;
+  channelId: string;
+  authorBotId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface ChannelAssignment {
+  id: string;
+  taskId: string;
+  ownerBotId: string;
+  count: number;
+  reason: string;
+  createdAt: string;
+}
+
+export function isChannelMemory(value: unknown): value is ChannelMemory {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.channelId) &&
+    isString(value.authorBotId) &&
+    isString(value.text) &&
+    isString(value.createdAt)
+  );
+}
+export function isChannelAssignment(value: unknown): value is ChannelAssignment {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.taskId) &&
+    isString(value.ownerBotId) &&
+    isNumber(value.count) &&
+    isString(value.reason) &&
+    isString(value.createdAt)
+  );
+}
+
+export interface SendChannelMessageInput {
+  channelId: string;
+  text: string;
+  resourceKey?: string | null;
+}
+export interface ListChannelMessagesInput {
+  channelId: string;
+  beforeMessageId?: string;
+  limit?: number;
+}
+
+export function isChannelMessage(value: unknown): value is ChannelMessage {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.channelId) &&
+    (value.taskId === null || isString(value.taskId)) &&
+    (value.authorBotId === null || isString(value.authorBotId)) &&
+    isOneOf(["human", "assignment", "question", "reply", "result", "note", "system"] as const, value.kind) &&
+    isString(value.text) &&
+    (value.replyToMessageId === null || isString(value.replyToMessageId)) &&
+    (value.resultVersion === null ||
+      (isNumber(value.resultVersion) && Number.isInteger(value.resultVersion) && value.resultVersion > 0)) &&
+    isBoolean(value.superseded) &&
+    isString(value.createdAt)
+  );
 }
 
 export interface WorkspaceChannel {

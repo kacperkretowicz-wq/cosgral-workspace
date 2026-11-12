@@ -52,6 +52,8 @@ import type { AgentClient, AgentProvider } from "./agent-client";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
+import { ChannelAgentRunner } from "./channel-agent-runner";
+import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
 import { ClaudeAgentClient } from "./claude-client";
 import { type ClaudeCliInfo, CodexCliError, type CodexCliInfo, resolveClaudeCli, resolveCodexCli } from "./cli";
 import { ConversationReadStore } from "./conversation-read-store";
@@ -237,6 +239,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #requestTimeoutMs: number;
   readonly #clientFactory: AgentClientFactory | null;
   readonly #eyes: AgentEyes | null;
+  readonly #channelRunner: ChannelAgentRunner;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
   readonly #loadedThreads = new Set<string>();
@@ -289,6 +292,38 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#clientFactory = clientFactory;
     this.#preferredProvider = preferredProvider;
     this.#eyes = eyes;
+    this.#channelRunner = new ChannelAgentRunner({
+      client: async (botId) => {
+        const bot = this.#store.list().find((b) => b.id === botId);
+        if (!bot) throw new Error("This agent no longer exists.");
+        await this.ensureProvider(providerForBot(bot));
+        return this.#requireReadyClient(providerForBot(bot));
+      },
+      bot: (botId) => {
+        const bot = this.#store.list().find((b) => b.id === botId);
+        if (!bot) throw new Error("Unknown channel member.");
+        return bot;
+      },
+      tools: () => [
+        BROWSER_DYNAMIC_TOOLS,
+        { ...OPENBOT_DYNAMIC_TOOLS, tools: OPENBOT_DYNAMIC_TOOLS.tools.filter((t) => t.name === "ask_user") },
+        ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
+      ],
+      commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
+      register: (threadId, botId) => {
+        this.#threadToBot.set(threadId, botId);
+      },
+      clear: (threadId, turnId) => {
+        if (turnId) {
+          this.#clearPendingRequestsForTurn(threadId, turnId);
+          this.#browser.endControl(threadId, turnId);
+        }
+        const botId = this.#threadToBot.get(threadId);
+        this.#threadToBot.delete(threadId);
+        if (botId) this.#scheduleDrain(botId);
+      },
+      event: (event) => this.#emit(event),
+    });
     this.#activity = new AgentActivityTracker({
       listBots: () => this.#store.list(),
       pendingRequests: (botId) => this.#pendingRequestCount(botId),
@@ -312,6 +347,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL: agent eyes state for the UI indicator. */
   getEyesState(): AgentEyesState {
     return this.#eyes?.getState() ?? { sessions: [], grants: [] };
+  }
+
+  runChannelTurn(input: ChannelRunInput): Promise<ChannelTurnResult> {
+    return this.#channelRunner.run(input);
+  }
+
+  canRunChannelTurn(botId: string): boolean {
+    return !this.#isWorking(botId);
   }
 
   /** COSGRAL: the user's stop button for agent eyes. */
@@ -515,6 +558,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const clients = [...this.#clients.values()];
     this.#clients.clear();
     await Promise.all(clients.map((client) => client.stop().catch(() => undefined)));
+    for (const client of clients) this.#channelRunner.clientExited(client);
     await Promise.allSettled([...this.#drainTasks.values()]);
     await Promise.allSettled(
       [...this.#imageGenerationOperations.values()]
@@ -911,6 +955,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #handleExit(client: AgentClient, error: Error): void {
+    this.#channelRunner.clientExited(client);
     if (this.#clients.get(client.provider) !== client || this.#stopping) return;
     this.#clients.delete(client.provider);
     void client.stop().catch(() => undefined);
@@ -1048,7 +1093,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
-  async #handleServerRequest(client: AgentClient, request: AppServerRequest): Promise<void> {
+  async #handleServerRequest(client: AgentClient, request: AppServerRequest, channelRequest = false): Promise<void> {
+    if (!channelRequest && this.#channelRunner.request(client, request)) return;
     try {
       switch (request.method) {
         case "item/commandExecution/requestApproval":
@@ -1194,7 +1240,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       this.#status.phase !== "ready" ||
       this.#drainingBots.has(botId) ||
       this.#scheduledDrains.has(botId) ||
-      this.#compactingBots.has(botId)
+      this.#compactingBots.has(botId) ||
+      this.#channelRunner.working(botId)
     ) {
       return;
     }
@@ -1551,6 +1598,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #handleNotification(notification: AppServerNotification): void {
+    if (this.#channelRunner.notification(notification)) return;
     const params = notification.params;
     const threadId = getString(params, "threadId");
     const botId = threadId ? this.#threadToBot.get(threadId) : undefined;
@@ -2186,6 +2234,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** COSGRAL W1: tells every window that a question card ended. */
   #emitPromptResolved(pending: PendingPrompt, resolution: PromptResolution): void {
+    this.#channelRunner.resolved(getString(pending.params, "threadId") ?? "");
     this.#emit({
       type: "prompt-resolved",
       requestId: pending.prompt.requestId,
@@ -2196,6 +2245,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** COSGRAL W1: tells every window that an approval card ended. */
   #emitApprovalResolved(pending: PendingApproval, resolution: ApprovalResolution): void {
+    this.#channelRunner.resolved(getString(pending.params, "threadId") ?? "");
     this.#emit({
       type: "approval-resolved",
       requestId: pending.approval.requestId,
@@ -2213,6 +2263,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** The same rule as the sidebar: a running turn, or a delivery that is starting or running. */
   #isWorking(botId: string): boolean {
+    if (this.#channelRunner.working(botId)) return true;
     if (this.#snapshots.get(botId)?.activeTurnId) return true;
     return this.#mailbox
       .listQueue(botId)
@@ -2383,6 +2434,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #publicThreadId(botId: string, fallback: string): string {
+    if (this.#channelRunner.owns(fallback)) return fallback;
     return this.#store.list().find((candidate) => candidate.id === botId)?.threadId ?? fallback;
   }
 

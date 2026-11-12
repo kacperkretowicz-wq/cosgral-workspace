@@ -8,7 +8,6 @@ import {
   type AppInfo,
   type AppSetupState,
   type CentralAuthState,
-  type ChannelTask,
   type ExternalDestination,
   emptyAgentEyesState,
   emptySidebarLayout,
@@ -20,7 +19,6 @@ import {
   type SidebarLayout,
   type StopAgentEyesInput,
   type UpdateBotInput,
-  type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import {
   app,
@@ -41,6 +39,7 @@ import { AgentService } from "../backend/agent-service";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
+import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
@@ -78,7 +77,9 @@ import {
   parseChannelMember,
   parseChannelTaskAction,
   parseCreateChannel,
+  parseListChannelMessages,
   parseReassignChannelTask,
+  parseSendChannelMessage,
   parseUpdateChannel,
 } from "./ipc/channel-inputs";
 import {
@@ -174,6 +175,7 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null;
 let browserHost: BrowserHost | null = null;
 let agentService: AgentService | null = null;
+let channelEngineService: ChannelEngine | null = null;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
@@ -238,6 +240,7 @@ function registerIpcHandlers(
   centralAuth: AccountManager,
   sidebar: SidebarStore,
   channels: ChannelStore,
+  channelEngine: ChannelEngine,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -713,26 +716,35 @@ function registerIpcHandlers(
     const scoped = parseAgentRequest(input);
     return scoped.serverId === "local" ? channels.listTasks(parseChannelId(scoped.payload)) : [];
   });
+  handleTrusted(IPC_CHANNELS.channelsListMessages, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") return [];
+    const parsed = parseListChannelMessages(scoped.payload);
+    return channels.listMessages(parsed.channelId, parsed);
+  });
+  handleTrusted(IPC_CHANNELS.channelsSendMessage, (input: unknown) =>
+    channelEngine.sendMessage(localChannelInput(input, parseSendChannelMessage)),
+  );
   handleTrusted(IPC_CHANNELS.channelsCreate, (input: unknown) =>
-    forwardChannels(channels, channels.create(localChannelInput(input, parseCreateChannel))),
+    channels.create(localChannelInput(input, parseCreateChannel)),
   );
   handleTrusted(IPC_CHANNELS.channelsUpdate, (input: unknown) =>
-    forwardChannels(channels, channels.update(localChannelInput(input, parseUpdateChannel))),
+    channels.update(localChannelInput(input, parseUpdateChannel)),
   );
   handleTrusted(IPC_CHANNELS.channelsAddMember, (input: unknown) =>
-    forwardChannels(channels, channels.addMember(localChannelInput(input, parseChannelMember))),
+    channels.addMember(localChannelInput(input, parseChannelMember)),
   );
   handleTrusted(IPC_CHANNELS.channelsRemoveMember, (input: unknown) =>
-    forwardChannels(channels, channels.removeMember(localChannelInput(input, parseChannelMember))),
+    channels.removeMember(localChannelInput(input, parseChannelMember)),
   );
   handleTrusted(IPC_CHANNELS.channelsSetLead, (input: unknown) =>
-    forwardChannels(channels, channels.setLead(localChannelInput(input, parseChannelMember))),
+    channels.setLead(localChannelInput(input, parseChannelMember)),
   );
   handleTrusted(IPC_CHANNELS.channelsTaskAction, (input: unknown) =>
-    forwardChannelTask(channels.act(localChannelInput(input, parseChannelTaskAction))),
+    channelEngine.actOnTask(localChannelInput(input, parseChannelTaskAction)),
   );
   handleTrusted(IPC_CHANNELS.channelsReassignTask, (input: unknown) =>
-    forwardChannelTask(channels.reassign(localChannelInput(input, parseReassignChannelTask))),
+    channelEngine.reassignTask(localChannelInput(input, parseReassignChannelTask)),
   );
 
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
@@ -1033,6 +1045,13 @@ if (!hasSingleInstanceLock) {
       const channelStore = new ChannelStore(store.database, {
         botExists: (botId) => service.listBots().some((bot) => bot.id === botId),
       });
+      const engine = new ChannelEngine(
+        channelStore,
+        { run: (input) => service.runChannelTurn(input), available: (id) => service.canRunChannelTurn(id) },
+        { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
+      );
+      channelEngineService = engine;
+      channelStore.on("event", (event) => forwardAgentEvent("local", event));
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1131,6 +1150,9 @@ if (!hasSingleInstanceLock) {
         beforeInstall: prepareForShutdown,
       });
       service.on("event", (event) => forwardAgentEvent("local", event));
+      service.on("event", (event) => {
+        if (event.type === "turn-completed" || event.type === "queue-changed") engine.reconcile();
+      });
       // COSGRAL W1: a deleted agent leaves its folder.
       service.on("event", (event) => {
         if (event.type !== "bots-changed") return;
@@ -1149,10 +1171,7 @@ if (!hasSingleInstanceLock) {
         // COSGRAL W1-BE2: and its channels; a deleted lead hands the role and open tasks to the next member.
         try {
           const changed = channelStore.pruneBots(event.bots.map((bot) => bot.id));
-          if (changed.channels.length > 0) {
-            forwardAgentEvent("local", { type: "channels-changed", channels: channelStore.list() });
-          }
-          for (const task of changed.tasks) forwardChannelTask(task);
+          if (changed.tasks.length) engine.reconcile();
         } catch (error) {
           console.error("Unable to update channels:", error);
         }
@@ -1171,7 +1190,10 @@ if (!hasSingleInstanceLock) {
       remoteServers.on("directTyping", forwardDirectTyping);
       updateService.on("status", forwardUpdateStatus);
       updateService.start();
-      const agentInitialization = new AgentInitializationGate(() => service.initialize());
+      const agentInitialization = new AgentInitializationGate(async () => {
+        await service.initialize();
+        engine.start();
+      });
       registerIpcHandlers(
         service,
         mailboxStore,
@@ -1185,6 +1207,7 @@ if (!hasSingleInstanceLock) {
         centralAuthManager,
         sidebarStore,
         channelStore,
+        engine,
       );
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
@@ -1249,18 +1272,6 @@ function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("Channels are available only on this computer for now.");
   return parse(scoped.payload);
-}
-
-/** COSGRAL W1-BE2: every window follows the channel list. */
-function forwardChannels(channels: ChannelStore, changed: WorkspaceChannel): WorkspaceChannel {
-  forwardAgentEvent("local", { type: "channels-changed", channels: channels.list() });
-  return changed;
-}
-
-/** COSGRAL W1-BE2: every window follows task changes. */
-function forwardChannelTask(task: ChannelTask): ChannelTask {
-  forwardAgentEvent("local", { type: "task-changed", task });
-  return task;
 }
 
 function parseStopEyes(value: unknown): StopAgentEyesInput {
@@ -1339,7 +1350,7 @@ async function prepareForShutdown(): Promise<void> {
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
   await (browserHost?.destroy() ?? Promise.resolve());
-  await (agentService?.stop() ?? Promise.resolve());
+  await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
 }
 
 function routeUpdateBot(

@@ -9,6 +9,7 @@ import {
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
+  type ChannelMessage,
   type ChannelTask,
   type ConversationReadState,
   type ConversationWithReadState,
@@ -17,6 +18,7 @@ import {
   IPC_CHANNELS,
   isAgentActivity,
   isAgentModel,
+  isChannelMessage,
   isChannelTask,
   isPendingAgentRequest,
   isReasoningEffort,
@@ -349,6 +351,17 @@ function decodeChannelTasks(value: unknown): ChannelTask[] {
   return value.filter(isChannelTask);
 }
 
+function decodeChannelMessages(value: unknown): ChannelMessage[] {
+  if (!Array.isArray(value) || !value.every(isChannelMessage)) throw new Error("Invalid channel history response.");
+  return value;
+}
+
+function decodeChannelReceipt(value: unknown): { message: ChannelMessage; task: ChannelTask } {
+  if (!isDynamicRecord(value) || !isChannelMessage(value.message) || !isChannelTask(value.task))
+    throw new Error("Invalid channel message response.");
+  return { message: value.message, task: value.task };
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -457,6 +470,8 @@ const openbotApi: OpenBotDesktopApi = {
     moveItem: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveItem, input, decodeSidebarLayout),
   },
   channels: {
+    listMessages: (input) => invokeAgent(IPC_CHANNELS.channelsListMessages, input, decodeChannelMessages),
+    sendMessage: (input) => invokeAgent(IPC_CHANNELS.channelsSendMessage, input, decodeChannelReceipt),
     list: () => invokeAgent(IPC_CHANNELS.channelsList, null, decodeChannels),
     listTasks: (channelId) => invokeAgent(IPC_CHANNELS.channelsListTasks, channelId, decodeChannelTasks),
     create: (input) => invokeAgent(IPC_CHANNELS.channelsCreate, input, decodeChannel),

@@ -20,7 +20,14 @@ import {
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
-import { type ChannelTask, isChannelTask, isWorkspaceChannel, type WorkspaceChannel } from "./ipc-workspace-channels";
+import {
+  type ChannelMessage,
+  type ChannelTask,
+  isChannelMessage,
+  isChannelTask,
+  isWorkspaceChannel,
+  type WorkspaceChannel,
+} from "./ipc-workspace-channels";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked" | "stopped";
@@ -466,6 +473,8 @@ export type AgentEvent =
   | { type: "channels-changed"; channels: WorkspaceChannel[] }
   /** COSGRAL W1 (engine in W1-BE2): one channel task was created or changed. */
   | { type: "task-changed"; task: ChannelTask }
+  | { type: "channel-message"; message: ChannelMessage }
+  | { type: "channel-message-changed"; message: ChannelMessage }
   /** COSGRAL W1: an agent shows a draft before sending it in the user's name. */
   | { type: "draft-preview"; card: DraftPreviewCard }
   | { type: "draft-preview-resolved"; requestId: string; botId: string; resolution: DraftPreviewResolution }
@@ -528,6 +537,9 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.channels) && value.channels.every(isWorkspaceChannel);
     case "task-changed":
       return isChannelTask(value.task);
+    case "channel-message":
+    case "channel-message-changed":
+      return isChannelMessage(value.message);
     case "draft-preview":
       return isDraftPreviewCard(value.card);
     case "draft-preview-resolved":

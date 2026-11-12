@@ -252,6 +252,27 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS channel_tasks_channel
     ON projection_channel_tasks(channel_id, created_at);
+  CREATE TABLE IF NOT EXISTS projection_channel_task_runtime (
+    task_id TEXT PRIMARY KEY REFERENCES projection_channel_tasks(task_id) ON DELETE CASCADE,
+    runtime_json TEXT NOT NULL CHECK(json_valid(runtime_json))
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_messages (
+    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id TEXT NOT NULL UNIQUE,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS channel_messages_channel ON projection_channel_messages(channel_id, ordinal);
+  CREATE TABLE IF NOT EXISTS projection_channel_memories (
+    memory_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_assignments (
+    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT NOT NULL REFERENCES projection_channel_tasks(task_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

@@ -80,10 +80,13 @@ import type {
 } from "./ipc-team-host";
 import type {
   ChannelMemberInput,
+  ChannelMessage,
   ChannelTask,
   ChannelTaskActionInput,
   CreateWorkspaceChannelInput,
+  ListChannelMessagesInput,
   ReassignChannelTaskInput,
+  SendChannelMessageInput,
   UpdateWorkspaceChannelInput,
   WorkspaceChannel,
 } from "./ipc-workspace-channels";
@@ -140,6 +143,9 @@ export interface SidebarDesktopApi {
 
 /** COSGRAL W1: channels and channel tasks (see ipc-workspace-channels.ts). */
 export interface ChannelsDesktopApi {
+  /** Optional until all renderer mocks implement channel history/composer. */
+  listMessages?: (input: ListChannelMessagesInput) => Promise<ChannelMessage[]>;
+  sendMessage?: (input: SendChannelMessageInput) => Promise<{ message: ChannelMessage; task: ChannelTask }>;
   list: () => Promise<WorkspaceChannel[]>;
   /** All tasks of the channel, archived ones included (filter on `archivedAt`). */
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
