@@ -12,6 +12,7 @@ const {
   resolveBackendTarget,
   buildBackendEnv,
   pickSpawnCommand,
+  unpackedPath,
 } = require("../src/backend");
 
 function makeRepo({ config, env, tsx = true, dist = false } = {}) {
@@ -110,6 +111,16 @@ test("pickSpawnCommand runs server sources through tsx with the chosen node", ()
   assert.equal(pick.args[0], path.join(repo, "server", "node_modules", "tsx", "dist", "cli.mjs"));
   assert.ok(pick.args.includes(path.join(repo, "server", "src", "index.ts")));
   assert.equal(pick.shell, false);
+});
+
+test("unpackedPath maps files inside app.asar to app.asar.unpacked", () => {
+  const inside = path.join("C:\\Program Files\\COSGRAL Workspace\\resources", "app.asar", "src", "backend-entry.mjs");
+  assert.equal(
+    unpackedPath(inside),
+    path.join("C:\\Program Files\\COSGRAL Workspace\\resources", "app.asar.unpacked", "src", "backend-entry.mjs")
+  );
+  const plain = path.join("C:\\repo", "app-shell", "src", "backend-entry.mjs");
+  assert.equal(unpackedPath(plain), plain);
 });
 
 test("pickSpawnCommand prefers a built server/dist", () => {

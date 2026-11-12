@@ -156,10 +156,19 @@ function resolveNodeBinary(env) {
   return process.platform === "win32" ? "node.exe" : "node";
 }
 
+// An external node.exe cannot read files inside app.asar; electron-builder
+// unpacks backend-entry.mjs next to it (build.asarUnpack).
+function unpackedPath(filePath) {
+  const marker = `${path.sep}app.asar${path.sep}`;
+  return filePath.includes(marker)
+    ? filePath.replace(marker, `${path.sep}app.asar.unpacked${path.sep}`)
+    : filePath;
+}
+
 function pickSpawnCommand(repoRoot, env = process.env) {
   const serverDir = path.join(repoRoot, "server");
   const node = resolveNodeBinary(env);
-  const entryWrapper = path.join(__dirname, "backend-entry.mjs");
+  const entryWrapper = unpackedPath(path.join(__dirname, "backend-entry.mjs"));
   const distEntry = path.join(serverDir, "dist", "index.js");
   const tsxCli = path.join(serverDir, "node_modules", "tsx", "dist", "cli.mjs");
   const sourceEntry = path.join(serverDir, "src", "index.ts");
@@ -428,4 +437,5 @@ module.exports = {
   resolveBackendTarget,
   buildBackendEnv,
   pickSpawnCommand,
+  unpackedPath,
 };

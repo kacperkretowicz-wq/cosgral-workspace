@@ -53,7 +53,10 @@
       "uninstallDisplayName": "COSGRAL Workspace",
       "deleteAppDataOnUninstall": false
     },
-    "asar": true
+    "asar": true,
+    "asarUnpack": [
+      "src/backend-entry.mjs"
+    ]
   },
   "devDependencies": {
     "electron": "^37.2.0",
