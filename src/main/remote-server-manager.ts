@@ -646,7 +646,7 @@ export function parseJoinUrl(value: string): {
   const expectedFingerprint = url.searchParams.get("fingerprint") ?? "";
   const token = url.searchParams.get("invite") ?? "";
   if (
-    url.protocol !== "openbot:" ||
+    url.protocol !== "cosgral:" ||
     url.hostname !== "join" ||
     !isValidRemoteApiUrl(apiUrl) ||
     !/^[0-9a-f-]{36}$/i.test(serverId) ||
@@ -677,7 +677,7 @@ export function parseAddressUpdateUrl(value: string): {
   const publicKey = url.searchParams.get("key") ?? "";
   const signature = url.searchParams.get("signature") ?? "";
   if (
-    url.protocol !== "openbot:" ||
+    url.protocol !== "cosgral:" ||
     url.hostname !== "update" ||
     !isValidRemoteApiUrl(apiUrl) ||
     !/^[0-9a-f-]{36}$/i.test(serverId) ||

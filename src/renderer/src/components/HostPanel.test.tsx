@@ -96,7 +96,7 @@ describe("HostPanel", () => {
       email: "alice@example.com",
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
       usedAt: null,
-      inviteUrl: "openbot://join?invite=token",
+      inviteUrl: "cosgral://join?invite=token",
     });
     render(() => (
       <HostPanel
@@ -246,7 +246,7 @@ describe("HostPanel", () => {
       email: null,
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
       usedAt: null,
-      inviteUrl: "openbot://join?invite=private-token",
+      inviteUrl: "cosgral://join?invite=private-token",
     });
     render(() => (
       <HostPanel
@@ -290,7 +290,7 @@ describe("HostPanel", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Create invitation link" }));
 
     await waitFor(() => expect(onCreateInvite).toHaveBeenCalledWith({ role: "admin" }));
-    expect(writeText).toHaveBeenCalledWith("openbot://join?invite=private-token");
+    expect(writeText).toHaveBeenCalledWith("cosgral://join?invite=private-token");
     expect(await screen.findByText("Link copied")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy again" })).toBeInTheDocument();
   });

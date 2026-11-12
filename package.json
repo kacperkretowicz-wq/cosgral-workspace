@@ -1,21 +1,20 @@
 {
-  "name": "openbot",
-  "productName": "OpenBot",
-  "version": "0.1.11",
-  "description": "A local-first multi-agent desktop workspace for Codex and Claude.",
+  "name": "cosgral-workspace",
+  "productName": "COSGRAL Workspace",
+  "version": "0.2.0",
+  "description": "COSGRAL Workspace: a private local-first multi-agent desktop workspace, based on OpenBot 0.1.11 (Apache-2.0).",
   "author": {
-    "name": "Norbert Bodziony",
-    "url": "https://x.com/norbertbodziony"
+    "name": "COSGRAL"
   },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NorbertBodziony/openbot.git"
+    "url": "git+https://github.com/kacperkretowicz-wq/cosgral-workspace.git"
   },
   "bugs": {
-    "url": "https://github.com/NorbertBodziony/openbot/issues"
+    "url": "https://github.com/kacperkretowicz-wq/cosgral-workspace/issues"
   },
-  "homepage": "https://github.com/NorbertBodziony/openbot#readme",
+  "homepage": "https://github.com/kacperkretowicz-wq/cosgral-workspace#readme",
   "keywords": [
     "ai-agents",
     "bun",

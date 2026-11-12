@@ -197,7 +197,7 @@ describe("TeamStore", () => {
     const { store } = await createStore();
     const identity = await store.configure("Studio Mac", "owner", "correct horse battery");
     const proof = store.createAddressUpdateProof("https://new-api.trycloudflare.com/", "new-vnc.trycloudflare.com");
-    const url = new URL("openbot://update");
+    const url = new URL("cosgral://update");
     url.searchParams.set("api", proof.apiUrl);
     url.searchParams.set("server", proof.serverId);
     url.searchParams.set("vnc", proof.vncHostname ?? "");

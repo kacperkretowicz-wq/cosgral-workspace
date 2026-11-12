@@ -84,7 +84,7 @@ async function main(): Promise<void> {
     const apiUrl = provisioned.apiUrl;
     await waitForPublicTunnel(apiUrl);
     const invite = await store.createInvite("member");
-    const inviteUrl = new URL("openbot://join");
+    const inviteUrl = new URL("cosgral://join");
     inviteUrl.searchParams.set("api", apiUrl);
     inviteUrl.searchParams.set("server", identity.serverId);
     inviteUrl.searchParams.set("fingerprint", identity.fingerprint);

@@ -3,8 +3,8 @@ import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } 
 
 describe("development profile", () => {
   it("uses a separate userData folder for the test client", () => {
-    expect(developmentUserDataName(readDevelopmentProfile("test-client"))).toBe("OpenBot Dev Test Client");
-    expect(developmentUserDataName(readDevelopmentProfile("app"))).toBe("OpenBot Dev");
+    expect(developmentUserDataName(readDevelopmentProfile("test-client"))).toBe("COSGRAL Workspace Dev Test Client");
+    expect(developmentUserDataName(readDevelopmentProfile("app"))).toBe("COSGRAL Workspace Dev");
   });
 
   it("does not accept an arbitrary profile as a path component", () => {

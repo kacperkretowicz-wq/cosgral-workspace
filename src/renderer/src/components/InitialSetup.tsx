@@ -325,7 +325,7 @@ export function InitialSetup(props: InitialSetupProps) {
                   maxlength={INPUT_LIMITS.inviteUrl}
                   value={inviteUrl()}
                   onInput={(event) => setInviteUrl(event.currentTarget.value)}
-                  placeholder="Paste an openbot:// invitation link"
+                  placeholder="Paste an cosgral:// invitation link"
                   spellcheck={false}
                   autofocus
                   required

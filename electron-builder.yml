@@ -1,9 +1,9 @@
-appId: app.openbot.desktop
-productName: OpenBot
+appId: pl.cosgral.workspace
+productName: COSGRAL Workspace
 protocols:
-  - name: OpenBot invitations
+  - name: COSGRAL Workspace invitations
     schemes:
-      - openbot
+      - cosgral
 asar: true
 artifactName: ${productName}-${version}-${arch}.${ext}
 electronUpdaterCompatibility: ">=2.16"
@@ -19,8 +19,8 @@ electronFuses:
   grantFileProtocolExtraPrivileges: false
 publish:
   provider: github
-  owner: NorbertBodziony
-  repo: openbot
+  owner: kacperkretowicz-wq
+  repo: cosgral-workspace
 files:
   - out/**/*
   - package.json

@@ -396,7 +396,7 @@ describe("OpenBot connected desktop shell", () => {
           listInvites: vi.fn().mockResolvedValue([]),
           revokeInvite: vi.fn().mockResolvedValue(undefined),
           createInvite: vi.fn().mockResolvedValue(undefined),
-          createAddressUpdate: vi.fn().mockResolvedValue("openbot://update"),
+          createAddressUpdate: vi.fn().mockResolvedValue("cosgral://update"),
           onEvent: vi.fn(() => () => undefined),
         },
         remoteMac: {
@@ -445,14 +445,14 @@ describe("OpenBot connected desktop shell", () => {
     expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
 
     await fireEvent.input(screen.getByRole("textbox", { name: "Host invitation" }), {
-      target: { value: "openbot://join/invite" },
+      target: { value: "cosgral://join/invite" },
     });
     expect(screen.getAllByText(/person@example.com/).length).toBeGreaterThan(0);
     await fireEvent.click(screen.getByRole("button", { name: "Connect to host" }));
 
     await waitFor(() =>
       expect(window.openbot.servers.join).toHaveBeenCalledWith({
-        inviteUrl: "openbot://join/invite",
+        inviteUrl: "cosgral://join/invite",
       }),
     );
     await waitFor(() => expect(window.openbot.saveSetup).toHaveBeenCalledWith({ preferredProvider: "codex" }));

@@ -105,7 +105,7 @@ if (!app.isPackaged) {
   app.setPath("userData", join(app.getPath("appData"), developmentUserDataName(profile)));
 }
 app.enableSandbox();
-if (process.platform === "win32") app.setAppUserModelId("app.openbot.desktop");
+if (process.platform === "win32") app.setAppUserModelId("pl.cosgral.workspace");
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 const appVariant = readAppVariant(process.env.OPENBOT_APP_VARIANT, app.isPackaged);
 const appIconPath = resolveAppIconPath({
@@ -667,7 +667,7 @@ function createWindow(): BrowserWindow {
     minHeight: 640,
     show: false,
     backgroundColor: "#0b0d0e",
-    title: "OpenBot",
+    title: "COSGRAL Workspace",
     icon: appIconPath,
     ...(process.platform === "darwin"
       ? { titleBarStyle: "hidden" as const, trafficLightPosition: { x: 8, y: 14 } }
@@ -811,7 +811,7 @@ function forwardCentralAuth(state: CentralAuthState): void {
 }
 
 function acceptInviteUrl(value: string): void {
-  if (!value.startsWith("openbot://join?")) return;
+  if (!value.startsWith("cosgral://join?")) return;
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show();
     mainWindow.focus();
@@ -822,7 +822,7 @@ function acceptInviteUrl(value: string): void {
 }
 
 function acceptAddressUpdateUrl(value: string): void {
-  if (!value.startsWith("openbot://update?")) return;
+  if (!value.startsWith("cosgral://update?")) return;
   if (!remoteServerManager) {
     pendingAddressUpdateUrl = value;
     return;
@@ -834,8 +834,8 @@ function acceptAddressUpdateUrl(value: string): void {
 }
 
 function acceptOpenbotUrl(value: string): void {
-  if (value.startsWith("openbot://join?")) acceptInviteUrl(value);
-  else if (value.startsWith("openbot://update?")) acceptAddressUpdateUrl(value);
+  if (value.startsWith("cosgral://join?")) acceptInviteUrl(value);
+  else if (value.startsWith("cosgral://update?")) acceptAddressUpdateUrl(value);
 }
 
 app.on("open-url", (event, url) => {
@@ -847,7 +847,7 @@ if (!hasSingleInstanceLock) {
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
-    const deepLink = argv.find((value) => value.startsWith("openbot://join?") || value.startsWith("openbot://update?"));
+    const deepLink = argv.find((value) => value.startsWith("cosgral://join?") || value.startsWith("cosgral://update?"));
     if (deepLink) acceptOpenbotUrl(deepLink);
     if (!mainWindow || mainWindow.isDestroyed()) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -858,7 +858,7 @@ if (!hasSingleInstanceLock) {
   void app
     .whenReady()
     .then(async () => {
-      if (process.platform === "darwin") app.setAsDefaultProtocolClient("openbot");
+      if (process.platform === "darwin") app.setAsDefaultProtocolClient("cosgral");
       if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
       configureContentSecurityPolicy();
       mainWindow = createWindow();

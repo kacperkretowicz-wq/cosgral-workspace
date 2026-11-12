@@ -4,8 +4,8 @@ export function readDevelopmentProfile(value: string | undefined): DevelopmentPr
   return value === "test-client" ? "test-client" : "app";
 }
 
-export function developmentUserDataName(profile: DevelopmentProfile): "OpenBot Dev Test Client" | "OpenBot Dev" {
-  return profile === "test-client" ? "OpenBot Dev Test Client" : "OpenBot Dev";
+export function developmentUserDataName(profile: DevelopmentProfile): "COSGRAL Workspace Dev Test Client" | "COSGRAL Workspace Dev" {
+  return profile === "test-client" ? "COSGRAL Workspace Dev Test Client" : "COSGRAL Workspace Dev";
 }
 
 export function shouldAutoStartHost(input: { configured: boolean; enabledOnLaunch: boolean }): boolean {

@@ -21,7 +21,7 @@ const args: Parameters<typeof HostPanel>[0] = {
     role: input.role,
     expiresAt: "2026-09-19T10:00:00.000Z",
     usedAt: null,
-    inviteUrl: "openbot://invite/created",
+    inviteUrl: "cosgral://invite/created",
     email: input.email ?? null,
   }),
   onUpdateMember: async () => undefined,

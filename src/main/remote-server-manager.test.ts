@@ -19,7 +19,7 @@ describe("remote server links", () => {
   });
 
   it("parses an OpenBot invitation", () => {
-    const url = new URL("openbot://join");
+    const url = new URL("cosgral://join");
     url.searchParams.set("api", "https://team-host.trycloudflare.com/");
     url.searchParams.set("server", "00000000-0000-4000-8000-000000000000");
     url.searchParams.set("fingerprint", "a".repeat(43));
@@ -34,7 +34,7 @@ describe("remote server links", () => {
 
   it("parses a stable openbot.run invitation", () => {
     const apiUrl = "https://studio-mac-k7m4q2pz-host.openbot.run/";
-    const url = new URL("openbot://join");
+    const url = new URL("cosgral://join");
     url.searchParams.set("api", apiUrl);
     url.searchParams.set("server", "00000000-0000-4000-8000-000000000000");
     url.searchParams.set("fingerprint", "a".repeat(43));
@@ -43,11 +43,11 @@ describe("remote server links", () => {
   });
 
   it("rejects a link with a non-Cloudflare API URL", () => {
-    expect(() => parseJoinUrl("openbot://join?api=https%3A%2F%2Fevil.example&server=x")).toThrow("invalid");
+    expect(() => parseJoinUrl("cosgral://join?api=https%3A%2F%2Fevil.example&server=x")).toThrow("invalid");
   });
 
   it("validates address update links and creates token-free preview URLs", () => {
-    const url = new URL("openbot://update");
+    const url = new URL("cosgral://update");
     url.searchParams.set("api", "https://new-api.trycloudflare.com/");
     url.searchParams.set("server", "00000000-0000-4000-8000-000000000000");
     url.searchParams.set("vnc", "new-vnc.trycloudflare.com");

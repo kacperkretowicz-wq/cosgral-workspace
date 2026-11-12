@@ -347,7 +347,7 @@ export class HostService extends EventEmitter<HostEvents> {
   createAddressUpdate(): string {
     if (!this.#status.apiUrl) throw new Error("Make this OpenBot public first.");
     const proof = this.#options.store.createAddressUpdateProof(this.#status.apiUrl, this.#status.vncHostname);
-    const url = new URL("openbot://update");
+    const url = new URL("cosgral://update");
     url.searchParams.set("api", proof.apiUrl);
     url.searchParams.set("server", proof.serverId);
     if (proof.vncHostname) url.searchParams.set("vnc", proof.vncHostname);
@@ -361,7 +361,7 @@ export class HostService extends EventEmitter<HostEvents> {
     const identity = this.#options.store.getIdentity();
     if (!identity) throw new Error("Name this OpenBot before publishing it.");
     const invite = await this.#options.store.createInvite(input.role, input.email);
-    const url = new URL("openbot://join");
+    const url = new URL("cosgral://join");
     url.searchParams.set("api", this.#status.apiUrl);
     url.searchParams.set("server", identity.serverId);
     url.searchParams.set("fingerprint", identity.fingerprint);

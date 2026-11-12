@@ -704,10 +704,10 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         role: input.role,
         expiresAt: "2026-09-19T10:00:00.000Z",
         usedAt: null,
-        inviteUrl: "openbot://invite/mock-invite",
+        inviteUrl: "cosgral://invite/mock-invite",
         email: input.email ?? null,
       }),
-      createAddressUpdate: async () => "openbot://server-update/mock",
+      createAddressUpdate: async () => "cosgral://server-update/mock",
       onEvent: (listener) => {
         hostListeners.add(listener);
         return () => hostListeners.delete(listener);

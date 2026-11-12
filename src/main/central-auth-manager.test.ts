@@ -85,7 +85,7 @@ describe("CentralAuthManager", () => {
     await manager.sendTeamInviteEmail({
       email: "alice@example.com",
       serverName: "Studio Mac",
-      inviteUrl: "openbot://join?invite=token",
+      inviteUrl: "cosgral://join?invite=token",
       role: "member",
     });
     await expect(

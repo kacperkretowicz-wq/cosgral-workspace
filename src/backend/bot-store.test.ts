@@ -35,13 +35,13 @@ describe("BotStore", () => {
     const chief = await store.getOrCreate("chief");
     const sales = await store.getOrCreate("sales-outbound");
 
-    expect(chief.workspacePath).toBe(join(home, "OpenBot", "Bots", "chief"));
+    expect(chief.workspacePath).toBe(join(home, "COSGRAL Workspace", "Bots", "chief"));
     expect(chief.description).toBe("");
     expect(chief.preview).toBe("No messages yet");
     expect(chief.model).toBe("gpt-5.6-luna");
     expect(chief.reasoningEffort).toBe("medium");
-    expect(sales.workspacePath).toBe(join(home, "OpenBot", "Bots", "sales-outbound"));
-    expect(store.sharedRoot).toBe(join(home, "OpenBot", "Shared"));
+    expect(sales.workspacePath).toBe(join(home, "COSGRAL Workspace", "Bots", "sales-outbound"));
+    expect(store.sharedRoot).toBe(join(home, "COSGRAL Workspace", "Shared"));
     expect(chief.workspacePath).not.toBe(sales.workspacePath);
   });
 

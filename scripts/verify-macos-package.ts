@@ -26,7 +26,7 @@ const plist = JSON.parse(run("plutil", ["-convert", "json", "-o", "-", plistPath
 if (!isDynamicRecord(plist)) throw new Error("Info.plist is not a JSON object.");
 expectEqual(plist.CFBundleDisplayName, "OpenBot", "display name");
 expectEqual(plist.CFBundleExecutable, "OpenBot", "executable name");
-expectEqual(plist.CFBundleIdentifier, "app.openbot.desktop", "bundle identifier");
+expectEqual(plist.CFBundleIdentifier, "pl.cosgral.workspace", "bundle identifier");
 expectEqual(plist.CFBundleIconFile, "icon.icns", "application icon");
 expectEqual(plist.LSMinimumSystemVersion, "12.0", "minimum macOS version");
 if (!plist.ElectronAsarIntegrity) throw new Error("ASAR integrity metadata is missing.");

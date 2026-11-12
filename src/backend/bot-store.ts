@@ -63,7 +63,7 @@ export class BotStore {
   #avatarUpdateQueue: Promise<void> = Promise.resolve();
 
   constructor(userDataPath: string, homePath: string, database = new OpenBotDatabase(userDataPath)) {
-    const openbotRoot = join(homePath, "OpenBot");
+    const openbotRoot = join(homePath, "COSGRAL Workspace");
     this.#statePath = join(userDataPath, "bots.json");
     this.#botsRoot = join(openbotRoot, "Bots");
     this.#sharedRoot = join(openbotRoot, "Shared");

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { JoinServerDialog } from "../src/components/JoinServerDialog";
 
 const args: Parameters<typeof JoinServerDialog>[0] = {
-  inviteUrl: "openbot://invite/team-demo",
+  inviteUrl: "cosgral://invite/team-demo",
   accountEmail: "person@example.com",
   onClose: fn(),
   onJoin: async () => undefined,
