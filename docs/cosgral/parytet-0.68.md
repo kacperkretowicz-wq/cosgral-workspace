@@ -69,5 +69,5 @@ Policzono wiersze 1–19 tej tabeli.
 
 - Mapa 0.67.1 i README/changelog 0.68 opisują powierzchnie; nie uruchamiano OpenBota 0.68 pod debuggerem w tym zadaniu.
 - Statyczna paczka: 8250 ścieżek w `app.asar`; nazwy chunków W1 m.in. `QuestionPromptBubble`, `UiBlockPrompt`, `QueuePanel`, `GlobalSearch`, `BrowserPreviewSidebar`, `channel-*`, `LibraryPanel`, `WorkflowsPage`.
-- REA CLI: uruchomione z limitem 600 s; wynik dopisywany poniżej po zakończeniu albo oznaczony jako timeout → fallback statyczny.
+- REA CLI (`analyze-javascript-application` na `app.asar`): **timeout 600 s** po fazie „Processing 6502 selected application files”; `rea-out.json` pusty → obowiązuje fallback statyczny (lista plików + nazwy chunków).
 - Testów odbioru z tabeli nie uruchomiono. Reszta obszarów = zadanie B2b.

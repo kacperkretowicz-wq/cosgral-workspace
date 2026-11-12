@@ -30,7 +30,7 @@ Jak w `parytet-0.68.md`: szyna stron, foldery, Needs you w pasku, limit, błąd,
 ## Dowody / poza repo
 
 - Statyczna lista ASAR i skrypty REA: `Shared\cosgral-data\desktop-tester\rea-0.68` (do usunięcia po analizie; nie w git).
-- REA CLI: wynik dopisany w `parytet-0.68.md` sekcja Metoda (timeout → fallback statyczny, albo exit status).
+- REA CLI: timeout 600 s (pusty wynik, w logu: Processing 6502 files) → użyty fallback statyczny; zapisane w `parytet-0.68.md`.
 
 ## Czego nie sprawdzono
 
