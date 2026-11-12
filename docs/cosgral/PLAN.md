@@ -38,6 +38,22 @@ Uruchamianie na próbę zawsze z osobnymi `USERPROFILE`, `APPDATA` i `LOCALAPPDA
 | **W3** | Zespół | Więcej dostawców (Gemini, Grok, OpenCode, własny ACP; wzorce z adapterów Paperclip, MIT), użycie i limity, modele zapasowe, głos, Computer Use na Windows, zdalny pulpit, telefon (QR), dok i wyspa, przepływy pracy, marketplace | Testy W3 |
 | **Lepszy** | Zespół | „Needs you” w pasku agentów, przyklejona Decyzja nad kompozytorem, Chat / Zadania w kanale (UI A+B+C, zaakceptowane), wspólna sesja na żywo, oczy agenta (MCP od Backendu), Plugin Studio | Każdy wyróżnik ma test i dowód |
 
+## Kiedy jest „totalnie wszystko” (wymóg właściciela z 12.11)
+
+1. **Lista:** spis funkcji OpenBota 0.68 od Testera (`docs/cosgral/parytet-0.68.md`, etap B2) to umowa. Funkcji spoza tej listy nie uznajemy za zrobione „na słowo”. Gdy OpenBot doda nową funkcję, dopisujemy ją do listy.
+2. **Gotowe:** program jest gotowy, gdy każdy wiersz listy ma stan „jest” i przechodzący test akceptacyjny z dowodem. Wiersza nie wolno usunąć ani oznaczyć „pomijamy” bez decyzji właściciela.
+3. **Obszary, których nie może zabraknąć:**
+   - nawigacja i stany agentów;
+   - czat i karty akcji;
+   - kanały i zadania;
+   - agenci, szablony, pamięć, skille, MCP;
+   - Vault, rutyny i webhooki, przepływy pracy, tabele, pliki;
+   - przeglądarka z przejęciem, Computer Use i zdalny pulpit;
+   - głos, dostawcy i limity, zespół i serwery;
+   - telefon, dok i wyspa;
+   - ustawienia i powiadomienia, onboarding, marketplace i wtyczki.
+4. **Postęp:** lider po każdej fali podaje właścicielowi liczbę funkcji „jest / częściowo / brak”.
+
 ## Zasady
 
 1. Każdy pracuje w swoim worktree, na gałęzi `team/<rola>/<temat>` od `codex/cosgral-desktop`. Scala lider po przeglądzie.
