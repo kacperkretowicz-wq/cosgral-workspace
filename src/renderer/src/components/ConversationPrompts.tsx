@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { AgentApproval, AgentPromptQuestion } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { EyesIcon, EyesRequestDetails } from "./EyesIndicator";
 import { Button, Input, RadioGroup } from "./ui";
 
 export function ChoiceCard(props: {
@@ -158,7 +159,7 @@ export function ApprovalCard(props: {
     >
       <header class="approval-card-header">
         <span class="approval-card-icon" data-kind={props.variant}>
-          <CardIcon variant={props.variant} />
+          <CardIcon variant={props.variant} eyes={isEyesApproval(props.approval)} />
         </span>
         <div>
           <strong>{props.variant === "questions" ? "Questions" : approvalTitle(props.approval)}</strong>
@@ -327,6 +328,7 @@ export function ApprovalCard(props: {
                   <strong>{approval().grantRoot ?? "Agent workspace"}</strong>
                 </div>
               </Show>
+              <Show when={approval().eyes}>{(eyes) => <EyesRequestDetails eyes={eyes()} />}</Show>
               <Show when={approval().kind === "permissions"}>
                 <PermissionDetails permissions={approval().permissions} />
               </Show>
@@ -363,7 +365,14 @@ export function ApprovalCard(props: {
 function approvalTitle(approval: AgentApproval | undefined) {
   if (approval?.kind === "command") return "Run this command?";
   if (approval?.kind === "file-change") return "Approve file changes?";
+  if (approval?.kind === "screen")
+    return approval.eyes?.source === "window" ? "Allow window access?" : "Allow screen access?";
+  if (approval?.kind === "camera") return "Allow camera?";
   return "Grant permissions?";
+}
+
+function isEyesApproval(approval: AgentApproval | undefined): boolean {
+  return approval?.kind === "screen" || approval?.kind === "camera";
 }
 
 function PermissionDetails(props: { permissions: AgentApproval["permissions"] }) {
@@ -383,7 +392,8 @@ function PermissionDetails(props: { permissions: AgentApproval["permissions"] })
   );
 }
 
-function CardIcon(props: { variant: "questions" | "approval" }) {
+function CardIcon(props: { variant: "questions" | "approval"; eyes?: boolean }) {
+  if (props.variant === "approval" && props.eyes) return <EyesIcon />;
   return props.variant === "questions" ? (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />

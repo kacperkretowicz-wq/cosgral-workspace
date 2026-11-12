@@ -1,4 +1,4 @@
-/** Storybook / UI atrapa until Backend adds contracts (W1). */
+/** Storybook / UI mock until Backend adds contracts (W1). */
 
 export type ChannelTaskState = "queued" | "running" | "waiting" | "done" | "failed" | "cancelled";
 
@@ -23,7 +23,7 @@ export const MOCK_CHANNEL_TASKS: ChannelTask[] = [
     ownerBotId: "research",
     ownerBotName: "Research",
     state: "waiting",
-    title: "Zebrać kryteria Needs you",
+    title: "Collect Needs you criteria",
     requestMessageId: "msg-1",
     resultMessageId: null,
     updatedAt: "2026-11-12T14:00:00.000Z",
@@ -32,9 +32,9 @@ export const MOCK_CHANNEL_TASKS: ChannelTask[] = [
     id: "task-2",
     channelId: "channel-cosgral",
     ownerBotId: "chief",
-    ownerBotName: "Lider",
+    ownerBotName: "Lead",
     state: "running",
-    title: "Scalenie gałęzi B4",
+    title: "Merge the B4 branch",
     requestMessageId: "msg-2",
     resultMessageId: null,
     updatedAt: "2026-11-12T14:10:00.000Z",
@@ -45,7 +45,7 @@ export const MOCK_CHANNEL_TASKS: ChannelTask[] = [
     ownerBotId: "writer",
     ownerBotName: "Writer",
     state: "done",
-    title: "Szkic raportu ui-b4-better",
+    title: "Draft the ui-b4-better report",
     requestMessageId: "msg-3",
     resultMessageId: "msg-4",
     updatedAt: "2026-11-12T13:50:00.000Z",
@@ -55,16 +55,16 @@ export const MOCK_CHANNEL_TASKS: ChannelTask[] = [
 export function channelTaskStateLabel(state: ChannelTaskState): string {
   switch (state) {
     case "queued":
-      return "W kolejce";
+      return "Queued";
     case "running":
-      return "W toku";
+      return "Running";
     case "waiting":
-      return "Czeka";
+      return "Waiting";
     case "done":
-      return "Wynik";
+      return "Done";
     case "failed":
-      return "Błąd";
+      return "Failed";
     case "cancelled":
-      return "Zatrzymane";
+      return "Stopped";
   }
 }

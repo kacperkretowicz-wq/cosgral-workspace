@@ -13,11 +13,11 @@ const prompt = {
     {
       id: "q1",
       header: "",
-      question: "Który wariant A+B+C wchodzi do W1?",
+      question: "Which A+B+C variant ships in W1?",
       isSecret: false,
       options: [
-        { label: "Lepszy", description: "" },
-        { label: "Później", description: "" },
+        { label: "Better", description: "" },
+        { label: "Later", description: "" },
       ],
     },
   ],
@@ -58,12 +58,12 @@ describe("StickyDecision", () => {
         onRespondToApproval={vi.fn(async () => true)}
       />
     ));
-    const region = screen.getByRole("region", { name: "Decyzja" });
+    const region = screen.getByRole("region", { name: "Decision" });
     expect(region).toBeInTheDocument();
     expect(region.querySelector(".approval-question-prompt")).toHaveTextContent(
-      "Który wariant A+B+C wchodzi do W1?",
+      "Which A+B+C variant ships in W1?",
     );
-    expect(screen.getByText("Decyzja · przypięta")).toBeInTheDocument();
+    expect(screen.getByText("Decision · pinned")).toBeInTheDocument();
   });
 
   it("shows approval when there is no prompt", () => {
@@ -75,6 +75,6 @@ describe("StickyDecision", () => {
         onRespondToApproval={vi.fn(async () => true)}
       />
     ));
-    expect(screen.getByRole("region", { name: "Decyzja" })).toHaveAttribute("data-kind", "approval");
+    expect(screen.getByRole("region", { name: "Decision" })).toHaveAttribute("data-kind", "approval");
   });
 });

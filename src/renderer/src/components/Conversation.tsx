@@ -6,6 +6,7 @@ import {
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   AgentEvent,
+  AgentEyesState,
   AgentModelId,
   AgentModelOption,
   AgentReasoningEffort,
@@ -22,6 +23,7 @@ import type {
   QueueSnapshot,
   RemoteMacSession,
   ServerSummary,
+  StopAgentEyesInput,
   TeamPresenceSnapshot,
   UpdateBotInput,
 } from "@openbot/contracts/ipc";
@@ -33,7 +35,6 @@ import type { BotMessage, BotProfile } from "../data";
 import { AgentAvatar } from "./AgentAvatar";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ChoiceCard } from "./ConversationPrompts";
-import { StickyDecision } from "./StickyDecision";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
 import { ChatSearch } from "./conversation/ChatSearch";
@@ -66,6 +67,7 @@ import {
   UnreadMessagesDivider,
   unreadMessagesDividerIsVisible,
 } from "./conversation/UnreadMessages";
+import { EyesBar } from "./EyesIndicator";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import {
@@ -75,6 +77,7 @@ import {
   REMOTE_DESKTOP_PANEL_STORAGE_KEY,
   RemoteMacPanel,
 } from "./RemoteMacPanel";
+import { StickyDecision } from "./StickyDecision";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
 
 type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
@@ -106,6 +109,9 @@ interface ConversationProps {
   remoteDesktopRequest: number;
   prompt: Extract<AgentEvent, { type: "prompt" }> | undefined;
   approval: Extract<AgentEvent, { type: "approval" }>["approval"] | undefined;
+  /** COSGRAL: agents that are looking at a window, screen or camera right now. */
+  eyes?: AgentEyesState;
+  onStopEyes?: (input: StopAgentEyesInput) => void;
   onCloseAgentPicker: () => void;
   onCreateAgent: () => void;
   onSelectAgent: (botId: string) => void;
@@ -1613,6 +1619,8 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </header>
 
+      <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
+
       <Show when={chatSearchOpen()}>
         <ChatSearch
           query={chatSearchQuery()}
@@ -1664,7 +1672,8 @@ export function Conversation(props: ConversationProps) {
                     : "Agent CLI setup required"}
                 </strong>
                 <p>
-                  {props.agentStatus.message ?? "Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace."}
+                  {props.agentStatus.message ??
+                    "Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace."}
                 </p>
               </div>
               <Show when={props.agentStatus.phase !== "starting" && props.agentStatus.phase !== "restarting"}>

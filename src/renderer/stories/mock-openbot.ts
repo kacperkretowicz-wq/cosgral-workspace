@@ -1,5 +1,6 @@
 import type {
   AgentEvent,
+  AgentEyesState,
   AgentModelOption,
   AgentStatus,
   AppInfo,
@@ -42,6 +43,7 @@ import type {
   SetQueuePausedInput,
   SetTeamTypingInput,
   SteerQueuedMessageInput,
+  StopAgentEyesInput,
   TeamInviteSummary,
   TeamMemberSummary,
   TeamPresenceSnapshot,
@@ -51,6 +53,7 @@ import type {
   UpdateStatus,
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
+import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -94,6 +97,8 @@ export interface MockOpenBotOptions {
   sessions?: TeamSessionSummary[];
   remoteMacSessions?: RemoteMacSession[];
   updateStatus?: UpdateStatus;
+  /** Agents that are looking at a window, screen or camera when the mock starts. */
+  eyesState?: AgentEyesState;
 }
 
 export interface MockOpenBotControls {
@@ -106,6 +111,8 @@ export interface MockOpenBotControls {
   emitInvite: (inviteUrl: string) => void;
   emitHostStatus: (status: HostStatus) => void;
   emitRemoteMacSessions: (sessions: RemoteMacSession[]) => void;
+  /** Replace the eyes state and emit `eyes-changed`. */
+  emitEyesState: (state: AgentEyesState) => void;
   dispose: () => void;
 }
 
@@ -142,6 +149,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let sessions = clone(options.sessions ?? STORY_SESSIONS);
   let remoteMacSessions = clone(options.remoteMacSessions ?? [STORY_REMOTE_MAC_SESSION]);
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
+  let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
   const usage = clone(STORY_USAGE);
   let botCounter = bots.length;
   let messageCounter = 10;
@@ -206,6 +214,26 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   function emitRemoteMacSessions(sessionsValue: RemoteMacSession[]): void {
     remoteMacSessions = clone(sessionsValue);
     emit(remoteMacListeners, sessionsValue);
+  }
+
+  function emitEyesState(state: AgentEyesState): void {
+    eyesState = clone(state);
+    emitAgentEvent({ type: "eyes-changed", state: eyesState });
+  }
+
+  /** Stopping clears the matching sessions (and, for a bot or everyone, its grants) and emits `eyes-changed`. */
+  function stopEyes(input: StopAgentEyesInput): AgentEyesState {
+    const bySession = input.sessionId !== undefined;
+    emitEyesState({
+      sessions: eyesState.sessions.filter((session) => {
+        if (bySession) return session.id !== input.sessionId;
+        return input.botId !== undefined && session.botId !== input.botId;
+      }),
+      grants: bySession
+        ? eyesState.grants
+        : eyesState.grants.filter((grant) => input.botId !== undefined && grant.botId !== input.botId),
+    });
+    return clone(eyesState);
   }
 
   function getSnapshot(botId: string): ConversationSnapshot {
@@ -498,6 +526,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
       respondToPrompt: async (_input: RespondToPromptInput) => undefined,
       respondToApproval: async () => undefined,
+      // Optional in the contract until Backend makes them required (see docs/cosgral-raporty/ui-w1-ui1.md).
+      getEyesState: async () => clone(eyesState),
+      stopEyes: async (input: StopAgentEyesInput) => stopEyes(input),
       onEvent: (listener) => {
         agentListeners.add(listener);
         return () => agentListeners.delete(listener);
@@ -753,6 +784,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     emitInvite,
     emitHostStatus,
     emitRemoteMacSessions,
+    emitEyesState,
     dispose: () => {
       for (const timer of timers) clearTimeout(timer);
       timers.clear();

@@ -10,7 +10,7 @@ interface ChatTasksSwitchProps {
 
 export function ChatTasksSwitch(props: ChatTasksSwitchProps) {
   return (
-    <div class="chat-tasks-switch" role="tablist" aria-label="Widok kanału">
+    <div class="chat-tasks-switch" role="tablist" aria-label="Channel view">
       <Button
         type="button"
         role="tab"
@@ -27,7 +27,7 @@ export function ChatTasksSwitch(props: ChatTasksSwitchProps) {
         class={["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === "tasks" }]}
         onClick={() => props.onChange("tasks")}
       >
-        Zadania
+        Tasks
       </Button>
       <Show when={props.channelLabel}>
         {(label) => <span class="chat-tasks-switch-context">{label()}</span>}

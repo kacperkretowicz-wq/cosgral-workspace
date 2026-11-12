@@ -2,6 +2,7 @@ import type {
   AccountUsage,
   AgentApproval,
   AgentEvent,
+  AgentEyesState,
   AgentModelId,
   AgentModelOption,
   AgentProviderId,
@@ -27,6 +28,7 @@ import type {
   QueueSnapshot,
   RemoteMacSession,
   ServerSummary,
+  StopAgentEyesInput,
   TeamInviteSummary,
   TeamMemberSummary,
   TeamPresenceSnapshot,
@@ -34,14 +36,17 @@ import type {
   UpdateBotInput,
   UpdateStatus,
 } from "@openbot/contracts/ipc";
+import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
 import { AccountLogin } from "./components/AccountLogin";
+import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
+import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar, type SidebarAgentState } from "./components/Sidebar";
@@ -109,6 +114,7 @@ const CONVERSATION_MIN_WIDTH = 424;
 const MAC_SERVER_RAIL_WIDTH = 72;
 const SERVER_RAIL_WIDTH = 64;
 const NARROW_SERVER_RAIL_WIDTH = 56;
+const PAGE_RAIL_WIDTH = 54;
 
 type StoredValue = BotProfile | BotMessage;
 type StoredSetter = (value: StoredValue) => void;
@@ -210,6 +216,8 @@ export function App() {
   });
   const [authSuccessVisible, setAuthSuccessVisible] = createSignal(false);
   const [permissionsOpen, setPermissionsOpen] = createSignal(false);
+  const [activePage, setActivePage] = createSignal<PageId>("agents");
+  const [eyesState, setEyesState] = createSignal<AgentEyesState>(emptyAgentEyesState());
   const [servers, setServers] = createSignal<ServerSummary[]>([]);
   const [joinServerOpen, setJoinServerOpen] = createSignal(false);
   const [pendingInviteUrl, setPendingInviteUrl] = createSignal("");
@@ -271,7 +279,7 @@ export function App() {
             ? NARROW_SERVER_RAIL_WIDTH
             : SERVER_RAIL_WIDTH
           : 0;
-    return window.innerWidth - serverRailWidth - panelWidth < CONVERSATION_MIN_WIDTH;
+    return window.innerWidth - serverRailWidth - PAGE_RAIL_WIDTH - panelWidth < CONVERSATION_MIN_WIDTH;
   }
 
   function updateResponsiveSidebar(): void {
@@ -480,6 +488,11 @@ export function App() {
       .list()
       .then(setRemoteMacSessions)
       .catch(() => undefined);
+    // COSGRAL agent eyes: optional until Backend makes it required in the desktop API.
+    void window.openbot.agent
+      .getEyesState?.()
+      .then(setEyesState)
+      .catch(() => undefined);
     return cleanup;
   });
 
@@ -532,6 +545,9 @@ export function App() {
         return;
       case "browser-control-changed":
         setBrowserControlState(event.state);
+        return;
+      case "eyes-changed":
+        setEyesState(event.state);
         return;
       case "turn-started":
         clearRecentReply(event.botId);
@@ -606,7 +622,7 @@ export function App() {
   }
 
   function isAgentChatOpen(botId: string): boolean {
-    return !agentPickerOpen() && !activeDirectMemberId() && activeBot()?.id === botId;
+    return activePage() === "agents" && !agentPickerOpen() && !activeDirectMemberId() && activeBot()?.id === botId;
   }
 
   function autoMarkAgentMessageRead(botId: string, messageId: string): void {
@@ -735,12 +751,14 @@ export function App() {
     if (directMemberId) {
       void window.openbot.servers.setDirectTyping({ memberId: directMemberId, typing: false }).catch(() => undefined);
     }
+    setActivePage("agents");
     setActiveDirectMemberId(null);
     setDirectConversationError(null);
     setAgentPickerOpen(true);
   }
 
   function selectBot(botId: string) {
+    setActivePage("agents");
     setAgentPickerOpen(false);
     const directMemberId = activeDirectMemberId();
     if (directMemberId) {
@@ -783,6 +801,7 @@ export function App() {
 
   async function selectDirectMember(memberId: string): Promise<void> {
     if (!currentTeamMember() || !directPeople().some((member) => member.id === memberId)) return;
+    setActivePage("agents");
     setAgentPickerOpen(false);
     setSettingsRequest(null);
     const previousMemberId = activeDirectMemberId();
@@ -1257,6 +1276,22 @@ export function App() {
     return states;
   });
 
+  const lookingBotIds = createMemo(() => [...new Set(eyesState().sessions.map((session) => session.botId))]);
+  const localProfile = createMemo(() => {
+    const state = centralAuth();
+    return state.status === "signed_in" && state.localProfile === true;
+  });
+  const activePageTitle = createMemo(() => PAGE_RAIL_ITEMS.find((item) => item.id === activePage())?.label ?? "");
+
+  /** Stop an agent that is looking at a window, screen or camera (also revokes its approvals). */
+  function stopEyes(input: StopAgentEyesInput): void {
+    const stopping = window.openbot.agent.stopEyes?.(input);
+    if (!stopping) return;
+    void stopping.then(setEyesState).catch((error) => {
+      if (input.botId) appendUiError(input.botId, error, "Stop failed");
+    });
+  }
+
   function setSidebarCollapsed(collapsed: boolean) {
     setLeftPanelCollapsed(collapsed);
     window.localStorage.setItem(LEFT_PANEL_COLLAPSED_STORAGE_KEY, String(collapsed));
@@ -1515,6 +1550,7 @@ export function App() {
                 "app-frame",
                 {
                   "app-frame-sidebar-compact": leftPanelCompact(),
+                  "app-frame-with-page-rail": true,
                   "app-frame-with-server-rail": appInfo()?.platform === "darwin" || appInfo()?.platform === "win32",
                   "app-frame-platform-darwin": appInfo()?.platform === "darwin",
                 },
@@ -1531,6 +1567,11 @@ export function App() {
                   onOpenRemoteMac={() => setRemoteDesktopRequest((current) => current + 1)}
                 />
               </Show>
+              <PageRail
+                active={activePage()}
+                onSelect={setActivePage}
+                onOpenSettings={() => setPermissionsOpen(true)}
+              />
               <Sidebar
                 serverName={activeServer()?.name ?? "Local"}
                 bots={botList()}
@@ -1545,6 +1586,8 @@ export function App() {
                 updateStatus={updateStatus()}
                 agentStates={sidebarAgentStates()}
                 needsYouItems={needsYouItems()}
+                lookingBotIds={lookingBotIds()}
+                localProfile={localProfile()}
                 onSelectBot={selectBot}
                 onSelectNeedsYou={selectBot}
                 onSelectPerson={(memberId) => void selectDirectMember(memberId)}
@@ -1583,7 +1626,10 @@ export function App() {
                   },
                 }}
               />
-              <Show when={activeDirectMember()} keyed>
+              <Show when={activePage() !== "agents"}>
+                <ComingSoon title={activePageTitle()} />
+              </Show>
+              <Show when={activePage() === "agents" ? activeDirectMember() : undefined} keyed>
                 {(member) => (
                   <DirectConversation
                     member={member}
@@ -1598,7 +1644,7 @@ export function App() {
                   />
                 )}
               </Show>
-              <Show when={!activeDirectMember()}>
+              <Show when={activePage() === "agents" && !activeDirectMember()}>
                 <Conversation
                   agentStatus={agentStatus()}
                   bot={activeBot()}
@@ -1650,6 +1696,8 @@ export function App() {
                   onDisconnectRemoteMac={disconnectRemoteMac}
                   onOpenAgentSetup={() => window.openbot.openExternal("agent-setup")}
                   onStop={stopActiveTurn}
+                  eyes={eyesState()}
+                  onStopEyes={stopEyes}
                 />
               </Show>
               <Show when={permissionsOpen()}>

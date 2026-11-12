@@ -14,6 +14,7 @@ import { createEffect, createMemo, createSignal, For, onSettled, Show } from "so
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { AgentAvatar } from "./AgentAvatar";
+import { EyesBadge } from "./EyesIndicator";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, ContextMenu, Input, Popover } from "./ui";
@@ -39,6 +40,10 @@ interface SidebarProps {
   updateStatus: UpdateStatus;
   agentStates: Record<string, SidebarAgentState>;
   needsYouItems?: NeedsYouSidebarItem[];
+  /** COSGRAL: agents that are looking at a window, screen or camera right now. */
+  lookingBotIds?: string[];
+  /** COSGRAL: local owner profile: no account service, so no email and no sign out. */
+  localProfile?: boolean;
   onSelectBot: (botId: string) => void;
   onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
@@ -65,7 +70,7 @@ export type SidebarAgentState =
 function sidebarAgentStateLabel(state: SidebarAgentState): string {
   if (state.kind === "working") return "Thinking";
   if (state.kind === "responded") return "Responded";
-  if (state.kind === "needs-you") return "czeka na Ciebie";
+  if (state.kind === "needs-you") return "Needs you";
   return `${state.count} new ${state.count === 1 ? "reply" : "replies"}`;
 }
 
@@ -83,7 +88,7 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
         </svg>
       </Show>
       <Show when={props.state.kind === "needs-you"}>
-        <span class="bot-row-needs-you-dot" title="czeka na Ciebie" />
+        <span class="bot-row-needs-you-dot" title="Needs you" />
       </Show>
       <Show when={props.state.kind === "unread"}>
         <span>{unreadCount()}</span>
@@ -375,7 +380,9 @@ export function Sidebar(props: SidebarProps) {
     setAccountError(null);
     void props
       .onUpdateAction()
-      .catch((error) => setAccountError(error instanceof Error ? error.message : "Could not update COSGRAL Workspace."));
+      .catch((error) =>
+        setAccountError(error instanceof Error ? error.message : "Could not update COSGRAL Workspace."),
+      );
   }
 
   async function logout(): Promise<void> {
@@ -574,18 +581,15 @@ export function Sidebar(props: SidebarProps) {
                 {(item) => (
                   <Button
                     type="button"
-                    class={[
-                      "bot-row needs-you-row",
-                      { "bot-row-active": props.activeBotId === item.botId },
-                    ]}
-                    aria-label={`${item.botName}, czeka na Ciebie. ${item.summary}`}
+                    class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
+                    aria-label={`${item.botName}, Needs you. ${item.summary}`}
                     onClick={() => (props.onSelectNeedsYou ?? props.onSelectBot)(item.botId)}
                   >
                     <span class="bot-row-copy">
                       <span class="bot-row-heading">
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
-                          {item.kind === "question" ? "Pytanie" : "Zatwierdzenie"}
+                          {item.kind === "question" ? "Question" : "Approval"}
                         </Badge>
                       </span>
                       <span class="bot-row-preview">{item.summary}</span>
@@ -610,6 +614,7 @@ export function Sidebar(props: SidebarProps) {
                 {(bot) => {
                   const role = () => bot.role.trim();
                   const state = () => props.agentStates[bot.id];
+                  const looking = () => props.lookingBotIds?.includes(bot.id) ?? false;
                   return (
                     <ContextMenu.Root modal={false}>
                       <ContextMenu.Trigger
@@ -622,7 +627,7 @@ export function Sidebar(props: SidebarProps) {
                             "bot-row-needs-you": state()?.kind === "needs-you",
                           },
                         ]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${state() ? `${sidebarAgentStateLabel(state()!)}. ` : ""}${bot.preview}`}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${state() ? `${sidebarAgentStateLabel(state()!)}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >
@@ -644,7 +649,12 @@ export function Sidebar(props: SidebarProps) {
                                 )}
                               </Show>
                             </span>
-                            <span class="bot-row-time">{bot.time}</span>
+                            <span class="bot-row-meta">
+                              <Show when={looking()}>
+                                <EyesBadge />
+                              </Show>
+                              <span class="bot-row-time">{bot.time}</span>
+                            </span>
                           </span>
                           <span class="bot-row-preview">{bot.preview}</span>
                         </span>
@@ -738,7 +748,9 @@ export function Sidebar(props: SidebarProps) {
                 {accountAvatar("account-profile-avatar")}
                 <div class="account-profile-copy">
                   <strong>{accountName()}</strong>
-                  <span>{props.account.email}</span>
+                  <Show when={!props.localProfile}>
+                    <span>{props.account.email}</span>
+                  </Show>
                   <div class="account-profile-actions">
                     <Button type="button" onClick={() => accountAvatarInput?.click()} disabled={avatarUploadBusy()}>
                       {avatarUploadBusy() ? "Saving…" : props.account.avatarUrl ? "Replace photo" : "Upload photo"}
@@ -801,16 +813,18 @@ export function Sidebar(props: SidebarProps) {
                 <MessageIcon />
                 <span>Message</span>
               </Button>
-              <div class="account-menu-separator" />
-              <Button
-                type="button"
-                class="account-menu-row account-menu-danger"
-                onClick={() => void logout()}
-                disabled={loggingOut()}
-              >
-                <LogoutIcon />
-                <span>{loggingOut() ? "Signing out…" : "Sign out"}</span>
-              </Button>
+              <Show when={!props.localProfile}>
+                <div class="account-menu-separator" />
+                <Button
+                  type="button"
+                  class="account-menu-row account-menu-danger"
+                  onClick={() => void logout()}
+                  disabled={loggingOut()}
+                >
+                  <LogoutIcon />
+                  <span>{loggingOut() ? "Signing out…" : "Sign out"}</span>
+                </Button>
+              </Show>
               <Show when={popoverError()}>{(message) => <p class="account-popover-error">{message()}</p>}</Show>
             </Popover.Content>
           </Popover.Portal>

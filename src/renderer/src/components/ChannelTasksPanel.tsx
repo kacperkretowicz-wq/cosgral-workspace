@@ -10,10 +10,10 @@ interface ChannelTasksPanelProps {
 
 export function ChannelTasksPanel(props: ChannelTasksPanelProps) {
   return (
-    <section class="channel-tasks-panel" aria-label="Zadania kanału">
+    <section class="channel-tasks-panel" aria-label="Channel tasks">
       <Show
         when={props.tasks.length > 0}
-        fallback={<p class="channel-tasks-empty">Brak zadań w tym kanale.</p>}
+        fallback={<p class="channel-tasks-empty">No tasks in this channel.</p>}
       >
         <ul class="channel-tasks-list">
           <For each={props.tasks}>
@@ -36,7 +36,7 @@ export function ChannelTasksPanel(props: ChannelTasksPanelProps) {
                   </Show>
                   <Show when={task.state === "cancelled" || task.state === "failed"}>
                     <Button type="button" size="sm" onClick={() => props.onResume?.(task.id)}>
-                      Wznów
+                      Resume
                     </Button>
                   </Show>
                 </div>

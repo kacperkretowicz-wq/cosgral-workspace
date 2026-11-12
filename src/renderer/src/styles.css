@@ -5,6 +5,7 @@
 @import "./styles/app-shell.css";
 @import "./styles/conversation.css";
 @import "./styles/settings-modal.css";
+@import "./styles/cosgral.css";
 
 :root {
   color-scheme: dark;
