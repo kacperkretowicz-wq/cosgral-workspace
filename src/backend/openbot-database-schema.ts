@@ -200,6 +200,25 @@ const SCHEMA_SQL = `
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT
   );
+  -- COSGRAL W1: user folders in the sidebar and where each agent or channel sits.
+  CREATE TABLE IF NOT EXISTS projection_sidebar_folders (
+    folder_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id TEXT REFERENCES projection_sidebar_folders(folder_id) DEFERRABLE INITIALLY DEFERRED,
+    position INTEGER NOT NULL,
+    collapsed INTEGER NOT NULL DEFAULT 0 CHECK(collapsed IN (0, 1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_sidebar_placements (
+    item_kind TEXT NOT NULL CHECK(item_kind IN ('agent', 'channel')),
+    item_id TEXT NOT NULL,
+    folder_id TEXT REFERENCES projection_sidebar_folders(folder_id) DEFERRABLE INITIALLY DEFERRED,
+    position INTEGER NOT NULL,
+    last_event_sequence INTEGER NOT NULL,
+    PRIMARY KEY(item_kind, item_id)
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

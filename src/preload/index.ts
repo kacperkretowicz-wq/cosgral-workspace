@@ -18,6 +18,8 @@ import {
   isAgentModel,
   isPendingAgentRequest,
   isReasoningEffort,
+  isSidebarFolder,
+  isSidebarLayout,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -26,6 +28,8 @@ import {
   type ScopedDirectMessageEvent,
   type ScopedDirectTypingEvent,
   type ScopedTeamPresenceSnapshot,
+  type SidebarFolderChange,
+  type SidebarLayout,
   type UpdateStatus,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
@@ -307,6 +311,19 @@ function decodeActivities(value: unknown): AgentActivity[] {
   return value.filter(isAgentActivity);
 }
 
+/** COSGRAL W1: the sidebar folder layout. */
+function decodeSidebarLayout(value: unknown): SidebarLayout {
+  if (!isSidebarLayout(value)) throw new Error("Invalid sidebar layout response.");
+  return value;
+}
+
+function decodeSidebarFolderChange(value: unknown): SidebarFolderChange {
+  if (!isDynamicRecord(value) || !isSidebarFolder(value.folder) || !isSidebarLayout(value.layout)) {
+    throw new Error("Invalid sidebar folder response.");
+  }
+  return { folder: value.folder, layout: value.layout };
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -404,6 +421,15 @@ const openbotApi: OpenBotDesktopApi = {
       ipcRenderer.on(IPC_CHANNELS.agentEvent, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.agentEvent, handler);
     },
+  },
+  sidebar: {
+    getLayout: () => invokeAgent(IPC_CHANNELS.sidebarGetLayout, null, decodeSidebarLayout),
+    createFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarCreateFolder, input, decodeSidebarFolderChange),
+    updateFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarUpdateFolder, input, decodeSidebarLayout),
+    moveFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveFolder, input, decodeSidebarLayout),
+    duplicateFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDuplicateFolder, input, decodeSidebarFolderChange),
+    deleteFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDeleteFolder, input, decodeSidebarLayout),
+    moveItem: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveItem, input, decodeSidebarLayout),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

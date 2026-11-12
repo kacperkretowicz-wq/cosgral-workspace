@@ -10,11 +10,13 @@ import {
   type CentralAuthState,
   type ExternalDestination,
   emptyAgentEyesState,
+  emptySidebarLayout,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   type MacPermissionId,
   type MacPermissionsState,
   type SendMessageInput,
+  type SidebarLayout,
   type StopAgentEyesInput,
   type UpdateBotInput,
 } from "@openbot/contracts/ipc";
@@ -39,6 +41,7 @@ import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
+import { SidebarStore } from "../backend/sidebar-store";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
@@ -80,6 +83,13 @@ import {
   parseSetTeamTyping,
   parseUpdateTeamMember,
 } from "./ipc/server-inputs";
+import {
+  parseCreateSidebarFolder,
+  parseMoveSidebarFolder,
+  parseMoveSidebarItem,
+  parseSidebarFolderId,
+  parseUpdateSidebarFolder,
+} from "./ipc/sidebar-inputs";
 import { isObject, requireString } from "./ipc/validation";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
@@ -215,6 +225,7 @@ function registerIpcHandlers(
   remoteMac: RemoteMacManager,
   remoteServers: RemoteServerManager,
   centralAuth: AccountManager,
+  sidebar: SidebarStore,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -646,6 +657,36 @@ function registerIpcHandlers(
     const { serverId } = parseAgentRequest(input);
     return serverId === "local" ? service.listActivity() : [];
   });
+  // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
+  handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? sidebar.layout() : emptySidebarLayout();
+  });
+  handleTrusted(IPC_CHANNELS.sidebarCreateFolder, (input: unknown) => {
+    const change = sidebar.createFolder(localSidebarInput(input, parseCreateSidebarFolder));
+    forwardSidebarLayout(change.layout);
+    return change;
+  });
+  handleTrusted(IPC_CHANNELS.sidebarUpdateFolder, (input: unknown) =>
+    forwardSidebarLayout(sidebar.updateFolder(localSidebarInput(input, parseUpdateSidebarFolder))),
+  );
+  handleTrusted(IPC_CHANNELS.sidebarMoveFolder, (input: unknown) =>
+    forwardSidebarLayout(sidebar.moveFolder(localSidebarInput(input, parseMoveSidebarFolder))),
+  );
+  handleTrusted(IPC_CHANNELS.sidebarDuplicateFolder, (input: unknown) => {
+    const change = sidebar.duplicateFolder(localSidebarInput(input, parseSidebarFolderId));
+    forwardSidebarLayout(change.layout);
+    return change;
+  });
+  handleTrusted(IPC_CHANNELS.sidebarDeleteFolder, (input: unknown) =>
+    forwardSidebarLayout(sidebar.deleteFolder(localSidebarInput(input, parseSidebarFolderId))),
+  );
+  handleTrusted(IPC_CHANNELS.sidebarMoveItem, (input: unknown) => {
+    const parsed = localSidebarInput(input, parseMoveSidebarItem);
+    if (parsed.itemKind === "channel") throw new Error("Channels are not available yet.");
+    if (!service.listBots().some((bot) => bot.id === parsed.itemId)) throw new Error("This agent no longer exists.");
+    return forwardSidebarLayout(sidebar.moveItem(parsed));
+  });
 
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);
@@ -939,6 +980,8 @@ if (!hasSingleInstanceLock) {
         eyes,
       );
       const service = agentService;
+      // COSGRAL W1: sidebar folders live in the same local database.
+      const sidebarStore = new SidebarStore(store.database);
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1037,6 +1080,22 @@ if (!hasSingleInstanceLock) {
         beforeInstall: prepareForShutdown,
       });
       service.on("event", (event) => forwardAgentEvent("local", event));
+      // COSGRAL W1: a deleted agent leaves its folder.
+      service.on("event", (event) => {
+        if (event.type !== "bots-changed") return;
+        try {
+          if (
+            sidebarStore.pruneItems(
+              "agent",
+              event.bots.map((bot) => bot.id),
+            )
+          ) {
+            forwardSidebarLayout(sidebarStore.layout());
+          }
+        } catch (error) {
+          console.error("Unable to update sidebar folders:", error);
+        }
+      });
       host.on("changed", forwardHostStatus);
       host.on("presence", (snapshot) => forwardTeamPresence("local", snapshot));
       host.on("directMessage", (event) => forwardDirectMessage("local", event));
@@ -1063,6 +1122,7 @@ if (!hasSingleInstanceLock) {
         remoteMac,
         remoteServers,
         centralAuthManager,
+        sidebarStore,
       );
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
@@ -1107,6 +1167,19 @@ if (!hasSingleInstanceLock) {
 function showEyesIndicator(looking: boolean): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setTitle(looking ? `${app.getName()} — an agent is looking` : app.getName());
+}
+
+/** COSGRAL W1: folder changes are kept on this computer only. */
+function localSidebarInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Folders are available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
+/** COSGRAL W1: every window follows folder changes. */
+function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
+  forwardAgentEvent("local", { type: "sidebar-layout-changed", layout });
+  return layout;
 }
 
 function parseStopEyes(value: unknown): StopAgentEyesInput {
