@@ -77,6 +77,8 @@ import { createSentryRunLinkResolver } from "./services/sentry-run-links.js";
 import { waitForPendingRunFailureReports } from "./services/run-failure-report.js";
 import { verifyStoppedNativeSessionForReplacement } from "./services/native-runtime/native-session-executor.js";
 import { embeddedPostgresOwnerPort } from "./embedded-postgres-owner.js";
+import { reapOrphanedEmbeddedPostgresChildren, resolveEmbeddedPostgresBinaryDir } from "./embedded-postgres-orphans.js";
+import { installWindowsCleanStop } from "./embedded-postgres-windows-stop.js";
 import { deliverExecutionStatuses } from "./services/execution-status-delivery.js";
 import { deliverReconciledExecutions, settleUnrecoverableExecutions } from "./services/execution-recovery-resolution.js";
 import { reconcileSafeNativeReplacements } from "./services/native-runtime/native-safe-replacement.js";
@@ -598,7 +600,15 @@ async function startServerWithDatabaseTeardown(
         return null;
       }
     };
-  
+
+    // Windows: after a hard kill a backend forked by the dead postmaster can
+    // keep the shared memory block, so the next start would fail.
+    await reapOrphanedEmbeddedPostgresChildren({
+      postmasterPidFile,
+      isPidRunning,
+      log: (message) => logger.warn(message),
+    });
+
     const runningPid = getRunningPid();
     if (runningPid) {
       port = embeddedPostgresOwnerPort(readFileSync(postmasterPidFile, "utf8"), dataDir, runningPid);
@@ -622,13 +632,17 @@ async function startServerWithDatabaseTeardown(
           `Embedded PostgreSQL appears to already be reachable without a pid file; reusing existing server on configured port ${configuredPort}`,
         );
       } catch {
-        const detectedPort = await detectPort(configuredPort);
+        // Probe loopback only: without a hostname detect-port binds every
+        // interface and 0.0.0.0, which triggers the Windows firewall prompt.
+        // Embedded PostgreSQL itself only listens on localhost.
+        const detectedPort = await detectPort({ port: configuredPort, hostname: "127.0.0.1" });
         if (detectedPort !== configuredPort) {
           logger.warn(`Embedded PostgreSQL port is in use; using next free port (requestedPort=${configuredPort}, selectedPort=${detectedPort})`);
         }
         port = detectedPort;
         logger.info(`Using embedded PostgreSQL because no DATABASE_URL set (dataDir=${dataDir}, port=${port})`);
-        const createEmbeddedPostgres = () => new EmbeddedPostgres({
+        const embeddedPostgresBinaryDir = resolveEmbeddedPostgresBinaryDir();
+        const createEmbeddedPostgres = () => installWindowsCleanStop(new EmbeddedPostgres({
           databaseDir: dataDir,
           user: "paperclip",
           password: "paperclip",
@@ -637,6 +651,10 @@ async function startServerWithDatabaseTeardown(
           initdbFlags: ["--encoding=UTF8", "--locale=C", "--lc-messages=C"],
           onLog: appendEmbeddedPostgresLog,
           onError: appendEmbeddedPostgresLog,
+        }), {
+          dataDir,
+          pgCtlPath: embeddedPostgresBinaryDir ? resolve(embeddedPostgresBinaryDir, "pg_ctl.exe") : null,
+          log: (message) => logger.warn(message),
         });
         embeddedPostgres = createEmbeddedPostgres();
 
