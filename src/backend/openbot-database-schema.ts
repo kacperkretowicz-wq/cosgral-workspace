@@ -219,6 +219,39 @@ const SCHEMA_SQL = `
     last_event_sequence INTEGER NOT NULL,
     PRIMARY KEY(item_kind, item_id)
   );
+  -- COSGRAL W1-BE2: channels with a lead agent, and channel tasks.
+  CREATE TABLE IF NOT EXISTS projection_channels (
+    channel_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    lead_bot_id TEXT,
+    member_bot_ids_json TEXT NOT NULL CHECK(json_valid(member_bot_ids_json)),
+    isolated INTEGER NOT NULL CHECK(isolated IN (0, 1)),
+    archived INTEGER NOT NULL CHECK(archived IN (0, 1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_tasks (
+    task_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    owner_bot_id TEXT NOT NULL,
+    state TEXT NOT NULL,
+    title TEXT NOT NULL,
+    request_message_id TEXT NOT NULL,
+    result_message_id TEXT,
+    parent_task_id TEXT,
+    dependency_task_ids_json TEXT NOT NULL CHECK(json_valid(dependency_task_ids_json)),
+    resource_key TEXT,
+    assignment_count INTEGER NOT NULL,
+    archived_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS channel_tasks_channel
+    ON projection_channel_tasks(channel_id, created_at);
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

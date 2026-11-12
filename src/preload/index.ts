@@ -9,6 +9,7 @@ import {
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
+  type ChannelTask,
   type ConversationReadState,
   type ConversationWithReadState,
   type DraftAttachment,
@@ -16,10 +17,12 @@ import {
   IPC_CHANNELS,
   isAgentActivity,
   isAgentModel,
+  isChannelTask,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
   isSidebarLayout,
+  isWorkspaceChannel,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -31,6 +34,7 @@ import {
   type SidebarFolderChange,
   type SidebarLayout,
   type UpdateStatus,
+  type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
@@ -324,6 +328,27 @@ function decodeSidebarFolderChange(value: unknown): SidebarFolderChange {
   return { folder: value.folder, layout: value.layout };
 }
 
+/** COSGRAL W1-BE2: channels and channel tasks. */
+function decodeChannel(value: unknown): WorkspaceChannel {
+  if (!isWorkspaceChannel(value)) throw new Error("Invalid channel response.");
+  return value;
+}
+
+function decodeChannels(value: unknown): WorkspaceChannel[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel list response.");
+  return value.filter(isWorkspaceChannel);
+}
+
+function decodeChannelTask(value: unknown): ChannelTask {
+  if (!isChannelTask(value)) throw new Error("Invalid channel task response.");
+  return value;
+}
+
+function decodeChannelTasks(value: unknown): ChannelTask[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel task list response.");
+  return value.filter(isChannelTask);
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -430,6 +455,17 @@ const openbotApi: OpenBotDesktopApi = {
     duplicateFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDuplicateFolder, input, decodeSidebarFolderChange),
     deleteFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDeleteFolder, input, decodeSidebarLayout),
     moveItem: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveItem, input, decodeSidebarLayout),
+  },
+  channels: {
+    list: () => invokeAgent(IPC_CHANNELS.channelsList, null, decodeChannels),
+    listTasks: (channelId) => invokeAgent(IPC_CHANNELS.channelsListTasks, channelId, decodeChannelTasks),
+    create: (input) => invokeAgent(IPC_CHANNELS.channelsCreate, input, decodeChannel),
+    update: (input) => invokeAgent(IPC_CHANNELS.channelsUpdate, input, decodeChannel),
+    addMember: (input) => invokeAgent(IPC_CHANNELS.channelsAddMember, input, decodeChannel),
+    removeMember: (input) => invokeAgent(IPC_CHANNELS.channelsRemoveMember, input, decodeChannel),
+    setLead: (input) => invokeAgent(IPC_CHANNELS.channelsSetLead, input, decodeChannel),
+    actOnTask: (input) => invokeAgent(IPC_CHANNELS.channelsTaskAction, input, decodeChannelTask),
+    reassignTask: (input) => invokeAgent(IPC_CHANNELS.channelsReassignTask, input, decodeChannelTask),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

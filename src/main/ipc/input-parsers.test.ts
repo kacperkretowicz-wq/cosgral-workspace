@@ -21,6 +21,14 @@ import {
 import { parseMacPermission, parseProvider } from "./app-inputs";
 import { parseBrowserOpen, parseVisibility } from "./browser-inputs";
 import {
+  parseChannelId,
+  parseChannelMember,
+  parseChannelTaskAction,
+  parseCreateChannel,
+  parseReassignChannelTask,
+  parseUpdateChannel,
+} from "./channel-inputs";
+import {
   parseCreateTeamInvite,
   parseHostConfig,
   parseJoinServer,
@@ -289,6 +297,56 @@ describe("sidebar IPC input parsing", () => {
     );
     expect(() => parseMoveSidebarItem({ itemKind: "person", itemId: "u1", folderId: null, position: 0 })).toThrowError(
       "itemKind must be agent or channel.",
+    );
+  });
+});
+
+describe("channel IPC input parsing", () => {
+  it("parses channel and task requests", () => {
+    expect(
+      parseCreateChannel({
+        name: "launch-plan",
+        title: "",
+        instructions: "",
+        memberBotIds: ["chief", "writer"],
+        leadBotId: "chief",
+        isolated: false,
+      }),
+    ).toEqual({
+      name: "launch-plan",
+      title: "",
+      instructions: "",
+      memberBotIds: ["chief", "writer"],
+      leadBotId: "chief",
+      isolated: false,
+    });
+    expect(parseUpdateChannel({ channelId: "c1", archived: true })).toEqual({ channelId: "c1", archived: true });
+    expect(parseChannelMember({ channelId: "c1", botId: "writer" })).toEqual({ channelId: "c1", botId: "writer" });
+    expect(parseChannelTaskAction({ taskId: "t1", action: "archive" })).toEqual({ taskId: "t1", action: "archive" });
+    expect(parseReassignChannelTask({ taskId: "t1", ownerBotId: "writer" })).toEqual({
+      taskId: "t1",
+      ownerBotId: "writer",
+    });
+    expect(parseChannelId("c1")).toBe("c1");
+  });
+
+  it("rejects malformed channel requests", () => {
+    expect(() =>
+      parseCreateChannel({ name: "x", title: "", instructions: "", memberBotIds: "chief", leadBotId: "chief" }),
+    ).toThrowError("memberBotIds must be a list of agent ids.");
+    expect(() =>
+      parseCreateChannel({
+        name: "x",
+        title: "",
+        instructions: "",
+        memberBotIds: ["chief"],
+        leadBotId: "chief",
+        isolated: "no",
+      }),
+    ).toThrowError("isolated must be true or false.");
+    expect(() => parseUpdateChannel({ channelId: "c1", title: 5 })).toThrowError("title must be text.");
+    expect(() => parseChannelTaskAction({ taskId: "t1", action: "delete" })).toThrowError(
+      "action must be stop, pause, resume, archive or restore.",
     );
   });
 });
