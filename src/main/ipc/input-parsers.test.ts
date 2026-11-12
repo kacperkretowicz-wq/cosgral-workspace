@@ -30,6 +30,13 @@ import {
   parseRemoteMacConnect,
   parseUpdateTeamMember,
 } from "./server-inputs";
+import {
+  parseCreateSidebarFolder,
+  parseMoveSidebarFolder,
+  parseMoveSidebarItem,
+  parseSidebarFolderId,
+  parseUpdateSidebarFolder,
+} from "./sidebar-inputs";
 import { requireString } from "./validation";
 
 describe("app IPC input parsing", () => {
@@ -250,6 +257,38 @@ describe("browser IPC input parsing", () => {
     expect(() => parseVisibility({ visible: "yes" })).toThrowError("Invalid browser visibility request.");
     expect(() => parseVisibility({ visible: true, bounds: { x: 1, y: 2, width: Number.NaN, height: 4 } })).toThrowError(
       "Invalid browser bound: width.",
+    );
+  });
+});
+
+describe("sidebar IPC input parsing", () => {
+  it("parses folder and item requests", () => {
+    expect(parseCreateSidebarFolder({ name: "Sales", parentId: undefined })).toEqual({ name: "Sales", parentId: null });
+    expect(parseUpdateSidebarFolder({ folderId: "f1", collapsed: true })).toEqual({ folderId: "f1", collapsed: true });
+    expect(parseMoveSidebarFolder({ folderId: "f1", parentId: "f2", position: 3 })).toEqual({
+      folderId: "f1",
+      parentId: "f2",
+      position: 3,
+    });
+    expect(parseSidebarFolderId({ folderId: "f1", extra: true })).toEqual({ folderId: "f1" });
+    expect(parseMoveSidebarItem({ itemKind: "agent", itemId: "chief", folderId: null, position: 0 })).toEqual({
+      itemKind: "agent",
+      itemId: "chief",
+      folderId: null,
+      position: 0,
+    });
+  });
+
+  it("rejects malformed sidebar requests", () => {
+    expect(() => parseCreateSidebarFolder({ name: 7, parentId: null })).toThrowError("name is required.");
+    expect(() => parseUpdateSidebarFolder({ folderId: "f1", collapsed: "yes" })).toThrowError(
+      "collapsed must be true or false.",
+    );
+    expect(() => parseMoveSidebarFolder({ folderId: "f1", parentId: null, position: -1 })).toThrowError(
+      "position must be 0 or more.",
+    );
+    expect(() => parseMoveSidebarItem({ itemKind: "person", itemId: "u1", folderId: null, position: 0 })).toThrowError(
+      "itemKind must be agent or channel.",
     );
   });
 });
