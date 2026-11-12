@@ -41,7 +41,8 @@
           ]
         }
       ],
-      "artifactName": "COSGRAL-Workspace-Setup-${version}.${ext}"
+      "artifactName": "COSGRAL-Workspace-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
