@@ -7,6 +7,7 @@ import type { AgentEyesRequest, AgentEyesState } from "@openbot/contracts/ipc";
 import type { DynamicRecord } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  EYES_TOOL_DESCRIPTIONS,
   type EyesCallContext,
   type EyesCapture,
   type EyesFrame,
@@ -143,6 +144,20 @@ describe("EyesService", () => {
     const other = context([true], { threadId: "thread-2" });
     await service.handleDynamicTool(call("look_at_screen"), other.value);
     expect(other.requests).toHaveLength(1);
+  });
+
+  it("starts every result with the saved picture path and how to open it", async () => {
+    const { service } = await setup();
+
+    const result = await service.handleDynamicTool(call("take_photo"), context([true]).value);
+    const firstLine = text(result).split("\n")[0] ?? "";
+    const path = firstLine.match(/saved on this computer: (.+?\.jpg)/i)?.[1];
+
+    expect(firstLine).toMatch(/view_image/);
+    expect(path).toBeDefined();
+    await expect(stat(path ?? "missing")).resolves.toBeTruthy();
+    expect(EYES_TOOL_DESCRIPTIONS.take_photo).toMatch(/view_image/);
+    expect(EYES_TOOL_DESCRIPTIONS.look_at_window).toMatch(/view_image/);
   });
 
   it("does not look when the user declines", async () => {

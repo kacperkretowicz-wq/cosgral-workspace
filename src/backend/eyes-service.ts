@@ -20,16 +20,17 @@ import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
  */
 export const EYES_NAMESPACE = "cosgral_eyes";
 
+const PICTURE_RESULT =
+  "Returns text (not an object with content): its first line is the path of the saved picture. Print it with text(result) or open that path with view_image to see the picture; do not call this tool again just to see it.";
+
 export const EYES_TOOL_DESCRIPTIONS = {
   list_sources:
     "List the open windows and screens on the user's computer that you can look at. The user approves screen access once per conversation.",
-  look_at_window:
-    "Take one picture of an open window (by windowId from list_sources, or by part of its title) and see it. Needs the user's screen approval.",
-  look_at_screen:
-    "Take one picture of a whole screen (the first screen by default) and see it. Needs the user's screen approval.",
-  take_photo: "Take one photo with the computer's camera and see it. The user approves every photo separately.",
+  look_at_window: `Take one picture of an open window (by windowId from list_sources, or by part of its title). Needs the user's screen approval. ${PICTURE_RESULT}`,
+  look_at_screen: `Take one picture of a whole screen (the first screen by default). Needs the user's screen approval. ${PICTURE_RESULT}`,
+  take_photo: `Take one photo with the computer's camera. The user approves every photo separately, so never retake a photo just to see it. ${PICTURE_RESULT}`,
   watch:
-    "Watch a window or screen live: 2–6 frames, 1–10 seconds apart (at most one minute). Use it to follow something that changes. The user can stop it at any time.",
+    "Watch a window or screen live: 2–6 frames, 1–10 seconds apart (at most one minute). Use it to follow something that changes. The user can stop it at any time. Returns text (not an object with content) that lists the saved path of every frame: open them with view_image.",
 } as const;
 
 export const EYES_LIMITS = {
@@ -455,10 +456,12 @@ export class EyesService extends EventEmitter<{ changed: [state: AgentEyesState]
   }
 }
 
+// COSGRAL: Codex 0.16x code mode turns a tool result into one text where the picture becomes a long
+// data URL, so every line starts with the saved path and how to open it with view_image.
 function framesResult(label: string, frames: SavedFrame[], note: string | null): DynamicToolResult {
   const lines = frames.map(
     (saved, index) =>
-      `${frames.length > 1 ? `Frame ${index + 1}: ` : ""}${label} at ${saved.capturedAt} (${saved.frame.width}×${saved.frame.height}). Kept only on this computer: ${saved.path}`,
+      `${frames.length > 1 ? `Frame ${index + 1}: picture` : "Picture"} saved on this computer: ${saved.path} (open it with view_image to see it). ${label} at ${saved.capturedAt}, ${saved.frame.width}×${saved.frame.height}.`,
   );
   if (note) lines.push(note);
   return {
