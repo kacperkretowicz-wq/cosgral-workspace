@@ -42,20 +42,35 @@ Nad polem wpisywania widać przyklejoną Decyzję: najstarszą otwartą kartę p
 
 W kanale jest przełącznik Chat | Zadania w tej samej rozmowie (bez zmiany kanału). Chat to oś wiadomości. Zadania to lista przydziałów: kto jest właścicielem, stan (kolejka / w toku / czeka / wynik / zatrzymane), oraz akcje Stop, Resume, Reassign, Archive, Restore. Przełączenie zachowuje kontekst kanału i otwarte karty Decyzji. Lista zadań pokazuje też zadania zatrzymane i pozwala je wznowić albo przydzielić ponownie.
 
-## Podsumowanie W1 (liczby)
+## Podsumowanie liczb
 
-Policzono wiersze 1–19 tej tabeli.
+### Według fali
 
-| Stan w 0.1.11 | Liczba |
-|---|---|
-| jest | 1 |
-| częściowo | 11 |
-| brak | 7 |
+| Fala | Wiersze | Jest | Częściowo | Brak |
+|---|---|---|---|---|
+| W1 | 1–19 | 1 | 11 | 7 |
+| W2 | 20–31 | 0 | 5 | 7 |
+| W3 | 32–41 | 0 | 6 | 4 |
+| M | 42–44 | 0 | 0 | 3 |
+| **Razem** | **1–44** | **1** | **22** | **21** |
+
+### Według obszaru (skrót)
+
+| Obszar | Jest | Częściowo | Brak |
+|---|---|---|---|
+| Nawigacja (W1) | 0 | 4 | 4 |
+| Czat i karty (W1) | 0 | 4 | 1 |
+| Kanały / panel / kolejka / search (W1) | 1 | 3 | 2 |
+| Agenci / pamięć / skille / MCP / Vault (W2) | 0 | 2 | 5 |
+| Rutyny / przepływy / tabele / pliki / przeglądarka+ (W2) | 0 | 3 | 2 |
+| CU / remote / głos / dostawcy / zespół (W3) | 0 | 4 | 1 |
+| Dok / wyspa / ustawienia / onboarding / marketplace (W3) | 0 | 2 | 3 |
+| Telefon (M) | 0 | 0 | 3 |
 
 ## 10 najważniejszych braków W1
 
 1. Szyna stron (Agenci / Harmonogram / Zadania / …) — brak w shellu bazy.
-2. Foldery agentów (z zagnieżdżeniem) — brak modelu.
+2. Foldery agentów (zagnieżdżeniem) — brak modelu.
 3. Sekcja Needs you + stan „czeka na Ciebie” w pasku — tylko powiadomienia i karty w otwartej rozmowie.
 4. Stan limitu na wierszu agenta — brak.
 5. Stan błędu na wierszu agenta — brak.
@@ -64,6 +79,32 @@ Policzono wiersze 1–19 tej tabeli.
 8. Kanały z liderem i agentami — brak (jest tylko DM osób).
 9. Lista zadań kanału i Chat \| Zadania — brak.
 10. Przyklejona Decyzja nad kompozytorem — brak w bazie (cel B4-UI).
+
+## 10 najważniejszych braków W2
+
+1. Pamięć agentów/kanałów (zawsze / w razie potrzeby).
+2. Skille lokalne + wersje + Marketplace skill install.
+3. Panel i połączenia MCP użytkownika.
+4. Vault (loginy, karty, kontakty, TOTP) bez sekretów w czacie.
+5. Rutyny z harmonogramem i webhookami.
+6. Przepływy pracy (płótno).
+7. Szablony agentów / instalacja z katalogu.
+8. Wspólne tabele między agentami (nie tylko markdown w czacie).
+9. Biblioteka plików jako osobna powierzchnia.
+10. Trwałość / dock / live view przeglądarki poza podstawowymi kartami W1.
+
+## 10 najważniejszych braków W3
+
+1. Pełny Computer Use na Windows z `cua-driver` (dziś głównie capability + setup Mac).
+2. Głos (STT/TTS + hosty).
+3. Dostawcy poza Codex/Claude + modele zapasowe i limity w UI.
+4. Dok agentów.
+5. Dynamic Island / notch.
+6. Marketplace agentów i skilli.
+7. Macierz powiadomień i pełne zakładki ustawień (Mobile, Dok, Wyspa, …).
+8. Onboarding z językiem i pierwszym agentem z propozycji.
+9. Role z dostępem per agent + status maszyny hosta.
+10. Zdalny pulpit jako produkt Windows (nie tylko Remote Mac).
 
 ## Metoda i limity sprawdzenia
 
