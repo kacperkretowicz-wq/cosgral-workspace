@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>COSGRAL Workspace</title>
+  <style>
+    :root {
+      --bg0: #0c0f14;
+      --bg1: #121821;
+      --ink: #f2f5f8;
+      --muted: #9aa7b5;
+      --accent: #6ea8ff;
+      --line: rgba(255,255,255,.08);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; min-height: 100%;
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(110,168,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(80,220,180,.08), transparent 50%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      color: var(--ink);
+      font: 15px/1.5 ui-sans-serif, system-ui, Segoe UI, sans-serif;
+    }
+    main {
+      min-height: 100vh; display: grid; place-items: center; padding: 2rem;
+    }
+    .card {
+      width: min(28rem, 100%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.75rem;
+      background: rgba(18,24,33,.72);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    h1 {
+      margin: 0 0 .35rem;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+    p { margin: 0; color: var(--muted); }
+    .pulse {
+      width: 2.5rem; height: 2.5rem; border-radius: 999px;
+      margin: 0 0 1rem;
+      background: radial-gradient(circle at 30% 30%, #fff, var(--accent) 45%, transparent 70%);
+      animation: breathe 1.6s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { transform: scale(.92); opacity: .7; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: .85em;
+      color: var(--accent);
+    }
+    .meta { margin-top: 1.1rem; font-size: .85rem; }
+    button {
+      margin-top: 1.25rem;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(110,168,255,.14);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: .65rem 1rem;
+      cursor: pointer;
+      font: inherit;
+      transition: background .2s ease, transform .2s ease;
+    }
+    button:hover { background: rgba(110,168,255,.24); transform: translateY(-1px); }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse { animation: none; }
+      button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card" aria-live="polite">
+      <div class="pulse" aria-hidden="true"></div>
+      <h1>COSGRAL Workspace</h1>
+      <p>UI jeszcze nie odpowiada na <code id="url"></code>.</p>
+      <p class="meta">Odpal backend/Vite w klonie, potem odśwież. Shell czeka na loopback — bez OpenBot.</p>
+      <button type="button" id="retry">Spróbuj ponownie</button>
+    </section>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const target = params.get("target") || "http://127.0.0.1:5173";
+    document.getElementById("url").textContent = target;
+    document.getElementById("retry").onclick = () => {
+      location.href = target;
+    };
+    // Soft poll — jump when UI wakes up.
+    let tries = 0;
+    const tick = async () => {
+      tries += 1;
+      try {
+        await fetch(target, { mode: "no-cors", cache: "no-store" });
+        location.href = target;
+      } catch (_) {
+        if (tries < 120) setTimeout(tick, 2500);
+      }
+    };
+    setTimeout(tick, 1500);
+  </script>
+</body>
+</html>

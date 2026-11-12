@@ -1,0 +1,63 @@
+{
+  "name": "cosgral-workspace-app-shell",
+  "productName": "COSGRAL Workspace",
+  "version": "0.0.1",
+  "private": true,
+  "description": "COSGRAL Workspace desktop shell — Electron window over local COSGRAL UI (not OpenBot).",
+  "main": "src/main.js",
+  "author": "COSGRAL",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-packager . \"COSGRAL Workspace\" --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"dist|dist-installer|node_modules/electron\"",
+    "dist": "electron-builder --win nsis",
+    "dist:dir": "electron-builder --win dir",
+    "dist:nsis": "electron-builder --win nsis"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "build": {
+    "appId": "pl.cosgral.workspace",
+    "productName": "COSGRAL Workspace",
+    "copyright": "Copyright © COSGRAL",
+    "directories": {
+      "output": "dist-installer",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "src/main.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "COSGRAL-Workspace-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "COSGRAL Workspace",
+      "uninstallDisplayName": "COSGRAL Workspace",
+      "deleteAppDataOnUninstall": false
+    },
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2"
+  }
+}
