@@ -1,4 +1,6 @@
 import type {
+  AgentActivity,
+  AgentApproval,
   AgentEvent,
   AgentEyesState,
   AgentModelOption,
@@ -29,11 +31,13 @@ import type {
   MacPermissionsState,
   OpenAttachmentInput,
   OpenBotDesktopApi,
+  PendingAgentRequest,
   QueueDelivery,
   QueueSnapshot,
   RemoteMacConnectInput,
   RemoteMacSession,
   ReorderQueueInput,
+  RespondToApprovalInput,
   RespondToPromptInput,
   SendDirectMessageInput,
   SendMessageInput,
@@ -42,6 +46,7 @@ import type {
   SetMessageReactionInput,
   SetQueuePausedInput,
   SetTeamTypingInput,
+  SidebarLayout,
   SteerQueuedMessageInput,
   StopAgentEyesInput,
   TeamInviteSummary,
@@ -74,6 +79,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "./fixtures";
+import { createMockSidebar } from "./mock-sidebar";
 
 type Listener<T> = (value: T) => void;
 
@@ -99,6 +105,12 @@ export interface MockOpenBotOptions {
   updateStatus?: UpdateStatus;
   /** Agents that are looking at a window, screen or camera when the mock starts. */
   eyesState?: AgentEyesState;
+  /** COSGRAL W1: cards that are already open when the window starts (oldest first), like after a reload. */
+  pendingRequests?: PendingAgentRequest[];
+  /** COSGRAL W1: the row state of agents when the window starts. */
+  activity?: AgentActivity[];
+  /** COSGRAL W1: folders and placements saved before the window starts. */
+  sidebarLayout?: SidebarLayout;
 }
 
 export interface MockOpenBotControls {
@@ -113,6 +125,12 @@ export interface MockOpenBotControls {
   emitRemoteMacSessions: (sessions: RemoteMacSession[]) => void;
   /** Replace the eyes state and emit `eyes-changed`. */
   emitEyesState: (state: AgentEyesState) => void;
+  /** Replace one agent's row state and emit `activity-changed`. */
+  emitActivity: (activity: AgentActivity) => void;
+  /** Replace the folder layout (as if another window changed it) and emit `sidebar-layout-changed`. */
+  emitSidebarLayout: (layout: SidebarLayout) => void;
+  /** Cards the mock still holds open: what `listPendingRequests()` returns, oldest first. */
+  pendingRequests: () => PendingAgentRequest[];
   dispose: () => void;
 }
 
@@ -150,6 +168,11 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let remoteMacSessions = clone(options.remoteMacSessions ?? [STORY_REMOTE_MAC_SESSION]);
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
   let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
+  let pending = clone(options.pendingRequests ?? []);
+  const activityByBot = new Map<string, AgentActivity>(
+    clone(options.activity ?? []).map((activity) => [activity.botId, activity]),
+  );
+  let sidebar = createMockSidebar(options.sidebarLayout);
   const usage = clone(STORY_USAGE);
   let botCounter = bots.length;
   let messageCounter = 10;
@@ -180,8 +203,91 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   const emptyQueue = (botId: string): QueueSnapshot => ({ botId, paused: false, deliveries: [] });
   const queues = new Map<string, QueueSnapshot>(bots.map((bot) => [bot.id, emptyQueue(bot.id)]));
 
+  /** Like the backend: the mock keeps cards open until a `*-resolved` event, so a "reload" can read them again. */
+  function trackAgentEvent(event: AgentEvent): void {
+    const createdAt = new Date().toISOString();
+    switch (event.type) {
+      case "prompt": {
+        const { requestId, botId, threadId, turnId, questions } = event;
+        pending = [
+          ...pending.filter((card) => !(card.kind === "prompt" && card.requestId === requestId)),
+          { kind: "prompt", requestId, botId, threadId, turnId, questions, createdAt },
+        ];
+        return;
+      }
+      case "approval":
+        pending = [
+          ...pending.filter(
+            (card) => !(card.kind === "approval" && card.approval.requestId === event.approval.requestId),
+          ),
+          { kind: "approval", approval: event.approval, createdAt },
+        ];
+        return;
+      case "prompt-resolved":
+        pending = pending.filter((card) => !(card.kind === "prompt" && card.requestId === event.requestId));
+        return;
+      case "approval-resolved":
+        pending = pending.filter((card) => !(card.kind === "approval" && card.approval.requestId === event.requestId));
+        return;
+      case "activity-changed":
+        activityByBot.set(event.activity.botId, clone(event.activity));
+        return;
+      default:
+    }
+  }
+
   function emitAgentEvent(event: AgentEvent): void {
+    trackAgentEvent(event);
     emit(agentListeners, event);
+  }
+
+  /** The turn ended before anyone answered: close its cards in every window. */
+  function expireCards(botId: string): void {
+    for (const card of [...pending]) {
+      if (card.kind === "prompt" && card.botId === botId) {
+        emitAgentEvent({ type: "prompt-resolved", requestId: card.requestId, botId, resolution: "expired" });
+      } else if (card.kind === "approval" && card.approval.botId === botId) {
+        emitAgentEvent({
+          type: "approval-resolved",
+          requestId: card.approval.requestId,
+          botId,
+          resolution: "expired",
+        });
+      }
+    }
+  }
+
+  function respondToPrompt(input: RespondToPromptInput): void {
+    const card = pending.find((item) => item.kind === "prompt" && item.requestId === input.requestId);
+    if (card?.kind !== "prompt") return;
+    const answered = Object.values(input.answers).some((answers) => answers.length > 0);
+    emitAgentEvent({
+      type: "prompt-resolved",
+      requestId: card.requestId,
+      botId: card.botId,
+      resolution: answered ? "answered" : "skipped",
+    });
+  }
+
+  function respondToApproval(input: RespondToApprovalInput): void {
+    const card = pending.find((item) => item.kind === "approval" && item.approval.requestId === input.requestId);
+    if (card?.kind !== "approval") return;
+    const approval: AgentApproval = card.approval;
+    emitAgentEvent({
+      type: "approval-resolved",
+      requestId: approval.requestId,
+      botId: approval.botId,
+      resolution: input.decision === "accept" ? "accepted" : "declined",
+    });
+  }
+
+  function emitActivity(activity: AgentActivity): void {
+    emitAgentEvent({ type: "activity-changed", activity });
+  }
+
+  function emitSidebarLayout(layout: SidebarLayout): void {
+    sidebar = createMockSidebar(layout);
+    emitAgentEvent({ type: "sidebar-layout-changed", layout: sidebar.layout() });
   }
 
   function emitAuthState(state: CentralAuthState): void {
@@ -516,6 +622,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         emitAgentEvent({ type: "queue-changed", snapshot: queue });
       },
       interrupt: async (input) => {
+        expireCards(input.botId);
         emitAgentEvent({
           type: "turn-completed",
           botId: input.botId,
@@ -524,11 +631,14 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
           status: "interrupted",
         });
       },
-      respondToPrompt: async (_input: RespondToPromptInput) => undefined,
-      respondToApproval: async () => undefined,
+      respondToPrompt: async (input: RespondToPromptInput) => respondToPrompt(input),
+      respondToApproval: async (input: RespondToApprovalInput) => respondToApproval(input),
       // Optional in the contract until Backend makes them required (see docs/cosgral-raporty/ui-w1-ui1.md).
       getEyesState: async () => clone(eyesState),
       stopEyes: async (input: StopAgentEyesInput) => stopEyes(input),
+      // Optional in the contract until Backend makes them required (see docs/cosgral-raporty/ui-w1-ui2.md).
+      listPendingRequests: async () => clone(pending),
+      listActivity: async () => clone([...activityByBot.values()]),
       onEvent: (listener) => {
         agentListeners.add(listener);
         return () => agentListeners.delete(listener);
@@ -585,6 +695,41 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     maintenance: {
       exportData: async () => ({ saved: true }),
       exportDiagnostics: async () => ({ saved: true }),
+    },
+    // Optional in the contract until Backend makes it required (see docs/cosgral-raporty/ui-w1-ui2.md).
+    // Every change returns the new layout and also emits `sidebar-layout-changed`, like the real store.
+    sidebar: {
+      getLayout: async () => sidebar.layout(),
+      createFolder: async (input) => {
+        const change = sidebar.createFolder(input);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout: change.layout });
+        return change;
+      },
+      updateFolder: async (input) => {
+        const layout = sidebar.updateFolder(input);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout });
+        return layout;
+      },
+      moveFolder: async (input) => {
+        const layout = sidebar.moveFolder(input);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout });
+        return layout;
+      },
+      duplicateFolder: async (input) => {
+        const change = sidebar.duplicateFolder(input.folderId);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout: change.layout });
+        return change;
+      },
+      deleteFolder: async (input) => {
+        const layout = sidebar.deleteFolder(input.folderId);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout });
+        return layout;
+      },
+      moveItem: async (input) => {
+        const layout = sidebar.moveItem(input);
+        emitAgentEvent({ type: "sidebar-layout-changed", layout });
+        return layout;
+      },
     },
     servers: {
       list: async () => clone(servers),
@@ -785,6 +930,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     emitHostStatus,
     emitRemoteMacSessions,
     emitEyesState,
+    emitActivity,
+    emitSidebarLayout,
+    pendingRequests: () => clone(pending),
     dispose: () => {
       for (const timer of timers) clearTimeout(timer);
       timers.clear();
