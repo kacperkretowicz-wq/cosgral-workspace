@@ -18,6 +18,13 @@ import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, ContextMenu, Input, Popover } from "./ui";
 
+export interface NeedsYouSidebarItem {
+  botId: string;
+  botName: string;
+  kind: "question" | "approval";
+  summary: string;
+}
+
 interface SidebarProps {
   serverName: string;
   bots: BotProfile[];
@@ -31,7 +38,9 @@ interface SidebarProps {
   accountUsage: AccountUsage | null;
   updateStatus: UpdateStatus;
   agentStates: Record<string, SidebarAgentState>;
+  needsYouItems?: NeedsYouSidebarItem[];
   onSelectBot: (botId: string) => void;
+  onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
   onEditBot: (botId: string) => void;
@@ -47,11 +56,16 @@ interface SidebarProps {
   onExpand: () => void;
 }
 
-export type SidebarAgentState = { kind: "working" } | { kind: "responded" } | { kind: "unread"; count: number };
+export type SidebarAgentState =
+  | { kind: "working" }
+  | { kind: "responded" }
+  | { kind: "unread"; count: number }
+  | { kind: "needs-you" };
 
 function sidebarAgentStateLabel(state: SidebarAgentState): string {
   if (state.kind === "working") return "Thinking";
   if (state.kind === "responded") return "Responded";
+  if (state.kind === "needs-you") return "czeka na Ciebie";
   return `${state.count} new ${state.count === 1 ? "reply" : "replies"}`;
 }
 
@@ -67,6 +81,9 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
           <title>Responded</title>
           <path d="m3 6.2 1.8 1.8L9 3.8" />
         </svg>
+      </Show>
+      <Show when={props.state.kind === "needs-you"}>
+        <span class="bot-row-needs-you-dot" title="czeka na Ciebie" />
       </Show>
       <Show when={props.state.kind === "unread"}>
         <span>{unreadCount()}</span>
@@ -547,6 +564,37 @@ export function Sidebar(props: SidebarProps) {
               </For>
             </section>
           </Show>
+          <Show when={(props.needsYouItems?.length ?? 0) > 0 && !props.compact}>
+            <section class="sidebar-chat-group sidebar-needs-you" aria-labelledby="sidebar-needs-you-heading">
+              <header>
+                <h2 id="sidebar-needs-you-heading">Needs you</h2>
+                <span>{props.needsYouItems?.length ?? 0}</span>
+              </header>
+              <For each={props.needsYouItems ?? []}>
+                {(item) => (
+                  <Button
+                    type="button"
+                    class={[
+                      "bot-row needs-you-row",
+                      { "bot-row-active": props.activeBotId === item.botId },
+                    ]}
+                    aria-label={`${item.botName}, czeka na Ciebie. ${item.summary}`}
+                    onClick={() => (props.onSelectNeedsYou ?? props.onSelectBot)(item.botId)}
+                  >
+                    <span class="bot-row-copy">
+                      <span class="bot-row-heading">
+                        <strong>{item.botName}</strong>
+                        <Badge tone="warning" size="sm">
+                          {item.kind === "question" ? "Pytanie" : "Zatwierdzenie"}
+                        </Badge>
+                      </span>
+                      <span class="bot-row-preview">{item.summary}</span>
+                    </span>
+                  </Button>
+                )}
+              </For>
+            </section>
+          </Show>
           <Show when={filteredBots().length > 0}>
             <section
               class="sidebar-chat-group"
@@ -561,13 +609,20 @@ export function Sidebar(props: SidebarProps) {
               <For each={filteredBots()}>
                 {(bot) => {
                   const role = () => bot.role.trim();
+                  const state = () => props.agentStates[bot.id];
                   return (
                     <ContextMenu.Root modal={false}>
                       <ContextMenu.Trigger
                         as={Button}
                         type="button"
-                        class={["bot-row agent-row", { "bot-row-active": props.activeBotId === bot.id }]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.preview}`}
+                        class={[
+                          "bot-row agent-row",
+                          {
+                            "bot-row-active": props.activeBotId === bot.id,
+                            "bot-row-needs-you": state()?.kind === "needs-you",
+                          },
+                        ]}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${state() ? `${sidebarAgentStateLabel(state()!)}. ` : ""}${bot.preview}`}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >

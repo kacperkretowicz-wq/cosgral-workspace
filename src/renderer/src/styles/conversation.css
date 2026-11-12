@@ -4172,6 +4172,115 @@
   color: var(--openbot-text-muted);
 }
 
+.sticky-decision {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  flex: 0 0 auto;
+  margin: 0 12px 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--openbot-accent) 45%, transparent);
+  border-radius: var(--openbot-radius-lg);
+  background: color-mix(in srgb, var(--openbot-bg-surface) 92%, var(--openbot-accent-soft));
+  box-shadow: 0 -8px 24px var(--openbot-shadow-popover-ambient);
+}
+
+.sticky-decision-kicker {
+  margin: 0 4px 6px;
+  color: var(--openbot-accent-text);
+  font-size: var(--openbot-text-2xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sticky-decision .approval-card {
+  margin: 0;
+}
+
+.chat-tasks-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 12px 0;
+  padding: 3px;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+}
+
+.chat-tasks-switch-tab {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--openbot-radius-sm);
+  color: var(--openbot-text-secondary);
+}
+
+.chat-tasks-switch-tab-active {
+  background: var(--openbot-accent);
+  color: #fff;
+}
+
+.chat-tasks-switch-context {
+  margin-left: 8px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.channel-tasks-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.channel-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.channel-task-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--openbot-border-subtle);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+}
+
+.channel-task-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.channel-task-copy strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-sm);
+}
+
+.channel-task-copy span {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+}
+
+.channel-task-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.channel-tasks-empty {
+  margin: 24px 0;
+  color: var(--openbot-text-muted);
+  text-align: center;
+}
+
 .composer-wrap {
   position: relative;
   flex: 0 0 auto;

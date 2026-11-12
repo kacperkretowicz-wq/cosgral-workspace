@@ -1944,6 +1944,40 @@ textarea {
   animation: sidebar-reply-in var(--openbot-duration-overlay) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.bot-row-agent-status-needs-you {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-warning-soft);
+  border-color: var(--openbot-warning);
+}
+
+.bot-row-needs-you-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-warning);
+}
+
+.sidebar-needs-you {
+  margin-bottom: 4px;
+}
+
+.sidebar-needs-you > header h2 {
+  color: var(--openbot-warning);
+}
+
+.needs-you-row {
+  border: 1px solid color-mix(in srgb, var(--openbot-warning) 45%, transparent);
+  background: var(--openbot-warning-soft);
+  margin-bottom: 4px;
+}
+
+.bot-row-needs-you {
+  box-shadow: inset 2px 0 0 var(--openbot-warning);
+}
+
 @keyframes typing-dot-pulse {
   0%,
   60%,
