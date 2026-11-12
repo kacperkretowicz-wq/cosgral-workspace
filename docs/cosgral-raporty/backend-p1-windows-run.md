@@ -48,7 +48,7 @@ Znalazłem i naprawiłem przyczynę dawnego problemu „Postgres startuje tylko 
 | tester | `Shared\cosgral-wt\tester` | 3130 | 54360 | `Shared\cosgral-data\tester` | propozycja |
 | integracja (lider) | `Shared\cosgral-workspace` | 3100 | 54329 | `Shared\cosgral-data\lead` | propozycja |
 
-`Shared` = `C:\Users\x1 Yoga\OpenBot\Shared`. Wolne porty sprawdziłem 12.11. OpenBot zajmuje 28417 i 56113.
+`Shared` = `%USERPROFILE%\OpenBot\Shared`. Wolne porty sprawdziłem 12.11. OpenBot zajmuje 28417 i 56113.
 
 Układ katalogu danych jednej instancji:
 
@@ -79,7 +79,7 @@ Wymagania: worktree od lidera, `Shared\tools` (Node 24.22.3, MinGit). Nic nie in
 **Jedna komenda (po scaleniu tej gałęzi do Waszej):**
 
 ```powershell
-cd "C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\ui"
+cd "%USERPROFILE%\OpenBot\Shared\cosgral-wt\ui"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\cosgral-instance.ps1 -Name ui -ServerPort 3120 -DbPort 54350
 ```
 
@@ -95,7 +95,7 @@ Warianty:
 # Zatrzymanie tego, co ruszyło w tle (czysty stop Postgresa)
 ... cosgral-instance.ps1 -Name ui -Mode stop
 # Zrzut okna jako dowód (PNG treści okna po załadowaniu UI)
-$env:COSGRAL_CAPTURE_PATH = "C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\ui\evidence\okno.png"
+$env:COSGRAL_CAPTURE_PATH = "%USERPROFILE%\OpenBot\Shared\cosgral-data\ui\evidence\okno.png"
 ```
 
 Porty podajecie tylko przy pierwszym uruchomieniu. Potem skrypt bierze je z `.paperclip\config.json`.
