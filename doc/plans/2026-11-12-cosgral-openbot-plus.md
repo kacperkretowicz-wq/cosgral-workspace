@@ -37,9 +37,9 @@ Ryzyka znane z audytu: start embedded Postgres na Windows, nietrwały sekret JWT
 
 | Faza | Zakres | Kryterium ukończenia |
 |---|---|---|
-| **F1 — fundament** (teraz) | Uruchomienie całości na tym PC; plan powłoki UI; macierz parytetu z OpenBotem; graf repo | Okno Electron z działającym backendem (`/api/health` 200), zaakceptowany shape UI, macierz parytetu w repo |
-| F2 — rdzeń OpenBota | Kanały z liderem i zadaniami (na issues i koordynatorze Paperclip), karty akcji w czacie, stany agentów w pasku bocznym | Scenariusz: wiadomość → zadanie → przydział → wynik, widoczny u dwóch osób |
-| F3 — oczy i przeglądarka | Podgląd okna/ekranu/kamery dla agenta (Electron `desktopCapturer` → model z wizją), wbudowana przeglądarka agenta z przejęciem | Agent opisuje bieżące okno; człowiek przejmuje logowanie |
+| **F1 — fundament** (teraz) | Uruchomienie całości na tym PC; plan powłoki UI; macierz parytetu z OpenBotem; graf repo | **Bramka G1** (decyzja silnika §4): okno Electron, `/api/health` 200, 3 restarty bez ręcznego `pg_ctl`, jeden przebieg agenta na Windows, czas zimnego startu; zaakceptowany shape UI ✓; macierz parytetu w repo |
+| F2 — rdzeń OpenBota | **F2.0 kierunek wizualny + porównanie z OpenBotem**; kanały z liderem i zadaniami (na issues i koordynatorze Paperclip), karty akcji w czacie przez serwer MCP COSGRAL (jeden kontrakt dla wszystkich agentów), stany agentów w pasku bocznym | Scenariusz: wiadomość → zadanie → przydział → wynik, widoczny u dwóch osób |
+| F3 — oczy i przeglądarka | Podgląd okna/ekranu/kamery dla agenta (Electron `desktopCapturer` → narzędzie MCP → model z wizją), lokalna przeglądarka agenta na `WebContentsView` z przejęciem | Agent opisuje bieżące okno; człowiek przejmuje logowanie |
 | F4 — Plugin Studio, pamięć, Vault | Agent tworzy skill/MCP → test → zatwierdzenie → katalog; pamięć zawsze/w razie potrzeby; Vault na `safeStorage` | Agent sam tworzy i używa nowego narzędzia po zatwierdzeniu |
 | F5 — dystrybucja | Instalator NSIS `.exe`, autoaktualizacja, telefon (PWA przez Tailscale), dok/wyspa | Czysta instalacja na Windows 10 i pierwszy agent w < 5 min |
 
@@ -64,6 +64,11 @@ Ryzyka znane z audytu: start embedded Postgres na Windows, nietrwały sekret JWT
 8. **Gotowe** = testy przeszły + dowód (log, zrzut ekranu) + raport w `docs/cosgral-raporty/`. Funkcje sprawdza Tester przed scaleniem.
 9. **Bezpieczeństwo**: serwer tylko na loopback, sekrety poza repo, żadnych kluczy w czacie ani commitach.
 10. **Repo `AGENTS.md`** obowiązuje (zasady Paperclip: zakres firmy, kontrakty db/shared/server/ui, plany w `doc/plans/`).
+
+## 6a. Decyzje lidera (12.11.2026)
+
+- **Silnik:** zostaje Paperclip jako warstwa sterowania. Warstwę uruchomieniową (Electron, ACP, serwer MCP dla agentów, `WebContentsView`, `safeStorage`) budujemy na wzór architektury OpenBota, własnym kodem. Hermes i OpenClaw działają jako agenci w środku. Szczegóły, porównanie i plan awaryjny dla bazy: `doc/plans/2026-11-12-cosgral-engine-decision.md`.
+- **Shape UI** (`doc/plans/2026-11-12-ui-shell-shape.md`): zaakceptowany z poprawkami z §6 dokumentu decyzji.
 
 ## 7. Narzędzia na tym PC (bez instalacji systemowej)
 
