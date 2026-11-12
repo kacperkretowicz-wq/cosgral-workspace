@@ -15,10 +15,16 @@ function resolveRepoRoot() {
   if (process.env.COSGRAL_REPO) {
     return path.resolve(process.env.COSGRAL_REPO);
   }
-  // app-shell/src → ../../cosgral-workspace (staging layout)
-  const fromShell = path.resolve(__dirname, "..", "..", "cosgral-workspace");
-  if (fs.existsSync(path.join(fromShell, "package.json"))) {
-    return fromShell;
+  const candidates = [
+    // app-shell/src → repo root (in-tree: cosgral-workspace/app-shell)
+    path.resolve(__dirname, "..", ".."),
+    // Shared/.../app-shell/src → sibling cosgral-workspace (staging)
+    path.resolve(__dirname, "..", "..", "cosgral-workspace"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "package.json"))) {
+      return candidate;
+    }
   }
   if (process.resourcesPath) {
     const bundled = path.join(process.resourcesPath, "cosgral-workspace");
@@ -26,7 +32,7 @@ function resolveRepoRoot() {
       return bundled;
     }
   }
-  return fromShell;
+  return candidates[0];
 }
 
 function resolveDataHome(repoRoot) {
