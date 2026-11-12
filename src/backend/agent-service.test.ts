@@ -179,6 +179,153 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(codex.responses[0]).toMatchObject({ id: "eyes-call-3", result: { success: false } });
   });
 
+  it("keeps open cards for a reloaded window and tells every window how they ended", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+
+    codex.emit("request", {
+      method: "item/tool/requestUserInput",
+      id: 41,
+      params: { threadId, turnId, questions: [{ id: "q1", header: "Plan", question: "Which plan?" }] },
+    });
+    codex.emit("request", {
+      method: "item/commandExecution/requestApproval",
+      id: 42,
+      params: { threadId, turnId, command: "npm test", reason: "Run the tests" },
+    });
+    codex.emit("request", {
+      method: "item/commandExecution/requestApproval",
+      id: 43,
+      params: { threadId, turnId, command: "npm run lint" },
+    });
+    await waitFor(() => service?.listPendingRequests().length === 3);
+
+    expect(service?.listPendingRequests()).toEqual([
+      expect.objectContaining({
+        kind: "prompt",
+        requestId: 41,
+        botId: "chief",
+        turnId,
+        questions: [expect.objectContaining({ id: "q1", question: "Which plan?" })],
+        createdAt: expect.any(String),
+      }),
+      expect.objectContaining({
+        kind: "approval",
+        approval: expect.objectContaining({ requestId: 42, command: "npm test" }),
+        createdAt: expect.any(String),
+      }),
+      expect.objectContaining({ kind: "approval", approval: expect.objectContaining({ requestId: 43 }) }),
+    ]);
+
+    await service?.respondToPrompt({ requestId: 41, answers: { q1: ["Pro"] } });
+    await service?.respondToApproval({ requestId: 42, decision: "decline" });
+    codex.emit(
+      "notification",
+      notification("turn/completed", { threadId, turn: { id: turnId, status: "interrupted" } }),
+    );
+    await waitFor(() => service?.listPendingRequests().length === 0);
+
+    expect(events.filter((event) => event.type === "prompt-resolved" || event.type === "approval-resolved")).toEqual([
+      { type: "prompt-resolved", requestId: 41, botId: "chief", resolution: "answered" },
+      { type: "approval-resolved", requestId: 42, botId: "chief", resolution: "declined" },
+      { type: "approval-resolved", requestId: 43, botId: "chief", resolution: "expired" },
+    ]);
+  });
+
+  it("counts a question closed without answers as skipped", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    codex.emit("request", {
+      method: "item/tool/requestUserInput",
+      id: 51,
+      params: { threadId, turnId, questions: [{ id: "q1", question: "Which plan?" }] },
+    });
+    await waitFor(() => service?.listPendingRequests().length === 1);
+
+    await service?.respondToPrompt({ requestId: 51, answers: {} });
+
+    expect(events).toContainEqual({ type: "prompt-resolved", requestId: 51, botId: "chief", resolution: "skipped" });
+    expect(service?.listPendingRequests()).toEqual([]);
+  });
+
+  it("shows on the agent row when it works, waits, fails and recovers", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    const rows = () =>
+      events.flatMap((event) =>
+        event.type === "activity-changed" && event.activity.botId === "chief" ? [event.activity] : [],
+      );
+    await waitFor(() => rows().at(-1)?.kind === "working");
+
+    codex.emit("request", {
+      method: "item/tool/requestUserInput",
+      id: 61,
+      params: { threadId, turnId, questions: [{ id: "q1", question: "Which plan?" }] },
+    });
+    await waitFor(() => rows().at(-1)?.kind === "waiting");
+    expect(rows().at(-1)).toMatchObject({ pendingRequests: 1, limit: null, error: null });
+    await service?.respondToPrompt({ requestId: 61, answers: { q1: ["Pro"] } });
+    await waitFor(() => rows().at(-1)?.kind === "working");
+
+    codex.emit("notification", notification("error", { threadId, message: "Stream disconnected.\nretrying later" }));
+    codex.emit("notification", notification("turn/completed", { threadId, turn: { id: turnId, status: "failed" } }));
+    await waitFor(() => rows().at(-1)?.kind === "error");
+    expect(rows().at(-1)?.error).toMatchObject({ code: "agent_error", message: "Stream disconnected." });
+    expect(service?.listActivity()).toContainEqual(expect.objectContaining({ botId: "chief", kind: "error" }));
+
+    await service?.sendMessage({ botId: "chief", text: "Try again" });
+    await waitFor(() => events.filter((event) => event.type === "turn-started").length === 2);
+    const retry = events.filter((event) => event.type === "turn-started").at(-1);
+    if (retry?.type !== "turn-started") throw new Error("The second turn did not start.");
+    codex.emit(
+      "notification",
+      notification("turn/completed", { threadId, turn: { id: retry.turnId, status: "completed" } }),
+    );
+
+    await waitFor(() => rows().at(-1)?.kind === "idle");
+    expect(rows().at(-1)).toMatchObject({ pendingRequests: 0, limit: null, error: null });
+  });
+
+  it("shows a failed turn without an error message as an error", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    codex.emit("notification", notification("turn/completed", { threadId, turn: { id: turnId, status: "failed" } }));
+
+    await waitFor(() => events.some((event) => event.type === "activity-changed" && event.activity.kind === "error"));
+    expect(service?.listActivity().find((activity) => activity.botId === "chief")?.error).toMatchObject({
+      code: "turn_failed",
+      message: "The last turn failed.",
+    });
+  });
+
+  it("shows the Codex usage limit with its reset time until the limit resets", async () => {
+    const usage = { resetsAt: 0 };
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      return new UsageLimitedClient(provider, usage);
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await store.getOrCreate("chief");
+
+    const resetsAt = Math.floor(Date.now() / 1_000) + 2;
+    usage.resetsAt = resetsAt;
+    await service.getUsage();
+
+    expect(service.listActivity().find((activity) => activity.botId === "chief")).toMatchObject({
+      kind: "limited",
+      limit: { provider: "codex", limitId: "codex", resetsAt },
+      error: null,
+    });
+    expect(events).toContainEqual({
+      type: "activity-changed",
+      activity: expect.objectContaining({ botId: "chief", kind: "limited" }),
+    });
+    await waitFor(() => service?.listActivity().find((activity) => activity.botId === "chief")?.kind === "idle");
+    await waitFor(() =>
+      events.some(
+        (event) => event.type === "activity-changed" && event.activity.kind === "idle" && event.activity.limit === null,
+      ),
+    );
+  });
+
   it("marks a conversation read through the receipt of the message the user just sent", async () => {
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
@@ -1497,19 +1644,27 @@ class StaticEyesCapture implements EyesCapture {
   }
 }
 
-async function startEyesTurn(): Promise<{
+function startEyesTurn(): Promise<ManualTurn> {
+  return startManualTurn(
+    new EyesService({
+      capture: new StaticEyesCapture(),
+      storageRoot: join(root, "eyes"),
+      sleep: async () => undefined,
+    }),
+  );
+}
+
+interface ManualTurn {
   codex: FakeAgentClient;
   events: AgentEvent[];
   threadId: string;
   turnId: string;
-}> {
+}
+
+/** A Codex turn that stays open until the test completes it. */
+async function startManualTurn(eyes: EyesService | null = null): Promise<ManualTurn> {
   let codex: FakeAgentClient | undefined;
   const { store, mailbox } = stores();
-  const eyes = new EyesService({
-    capture: new StaticEyesCapture(),
-    storageRoot: join(root, "eyes"),
-    sleep: async () => undefined,
-  });
   service = new AgentService(
     store,
     mailbox,
@@ -1531,8 +1686,30 @@ async function startEyesTurn(): Promise<{
   await waitFor(() => events.some((event) => event.type === "turn-started"));
   const started = events.find((event) => event.type === "turn-started");
   const turnStart = codex?.requests.find((request) => request.method === "turn/start");
-  if (!codex || started?.type !== "turn-started" || !turnStart) throw new Error("The eyes turn did not start.");
+  if (!codex || started?.type !== "turn-started" || !turnStart) throw new Error("The manual turn did not start.");
   return { codex, events, threadId: stringParam(turnStart.params, "threadId"), turnId: started.turnId };
+}
+
+/** COSGRAL: a Codex account at its usage limit until `usage.resetsAt` (Unix seconds, read at each request). */
+class UsageLimitedClient extends FakeAgentClient {
+  constructor(
+    provider: AgentProvider,
+    readonly usage: { resetsAt: number },
+  ) {
+    super(provider);
+  }
+
+  override async request<T>(method: string, params: unknown, decoder: ResponseDecoder<T>): Promise<T> {
+    if (method !== "account/rateLimits/read") return super.request(method, params, decoder);
+    return decoder({
+      rateLimits: {
+        limitId: "codex",
+        primary: { usedPercent: 100, windowDurationMins: 300, resetsAt: this.usage.resetsAt },
+        secondary: { usedPercent: 40, windowDurationMins: 10080, resetsAt: this.usage.resetsAt + 86_400 },
+      },
+      rateLimitsByLimitId: null,
+    });
+  }
 }
 
 /** COSGRAL: a provider that keeps streaming while it shuts down, as a slow Windows process can. */

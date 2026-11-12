@@ -637,6 +637,15 @@ function registerIpcHandlers(
     const scoped = parseAgentRequest(input);
     return scoped.serverId === "local" ? service.stopEyes(parseStopEyes(scoped.payload)) : emptyAgentEyesState();
   });
+  // COSGRAL W1: open cards and agent row states; remote servers do not offer them yet.
+  handleTrusted(IPC_CHANNELS.agentListPendingRequests, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.listPendingRequests() : [];
+  });
+  handleTrusted(IPC_CHANNELS.agentListActivity, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.listActivity() : [];
+  });
 
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);

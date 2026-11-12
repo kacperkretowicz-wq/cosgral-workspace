@@ -1,5 +1,6 @@
 import {
   type AccountUsage,
+  type AgentActivity,
   type AgentEyesGrant,
   type AgentEyesSession,
   type AgentEyesState,
@@ -13,9 +14,12 @@ import {
   type DraftAttachment,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
+  isAgentActivity,
   isAgentModel,
+  isPendingAgentRequest,
   isReasoningEffort,
   type OpenBotDesktopApi,
+  type PendingAgentRequest,
   type QueuedMessageReceipt,
   type QueueSnapshot,
   type ScopedAgentEvent,
@@ -291,6 +295,18 @@ function isEyesGrant(value: unknown): value is AgentEyesGrant {
   );
 }
 
+/** COSGRAL W1: open cards for a reloaded window; malformed entries are dropped. */
+function decodePendingRequests(value: unknown): PendingAgentRequest[] {
+  if (!Array.isArray(value)) throw new Error("Invalid pending requests response.");
+  return value.filter(isPendingAgentRequest);
+}
+
+/** COSGRAL W1: agent row states; malformed entries are dropped. */
+function decodeActivities(value: unknown): AgentActivity[] {
+  if (!Array.isArray(value)) throw new Error("Invalid agent activity response.");
+  return value.filter(isAgentActivity);
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -379,6 +395,8 @@ const openbotApi: OpenBotDesktopApi = {
     respondToApproval: (input) => invokeAgent(IPC_CHANNELS.agentRespondToApproval, input, decodeVoid),
     getEyesState: () => invokeAgent(IPC_CHANNELS.agentGetEyesState, null, decodeEyesState),
     stopEyes: (input) => invokeAgent(IPC_CHANNELS.agentStopEyes, input, decodeEyesState),
+    listPendingRequests: () => invokeAgent(IPC_CHANNELS.agentListPendingRequests, null, decodePendingRequests),
+    listActivity: () => invokeAgent(IPC_CHANNELS.agentListActivity, null, decodeActivities),
     onEvent: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: ScopedAgentEvent) => {
         if (payload.serverId === selectedServerId) listener(payload.event);

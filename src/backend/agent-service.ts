@@ -6,6 +6,7 @@ import type {
   AccountUsage,
   AccountUsageLimit,
   AccountUsageWindow,
+  AgentActivity,
   AgentApproval,
   AgentApprovalKind,
   AgentApprovalPermissions,
@@ -16,6 +17,7 @@ import type {
   AgentPromptQuestion,
   AgentProviderStatus,
   AgentStatus,
+  ApprovalResolution,
   AttachmentDataInput,
   AttachmentSummary,
   AvatarImageInput,
@@ -28,6 +30,9 @@ import type {
   ConversationWithReadState,
   DraftAttachment,
   ImageGenerationInfo,
+  PendingAgentPrompt,
+  PendingAgentRequest,
+  PromptResolution,
   QueuedMessageReceipt,
   QueueSnapshot,
   ReorderQueueInput,
@@ -42,6 +47,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { isClaudeModel, isImageGenerationAspectRatio, isReasoningEffort } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { BotStore } from "./bot-store";
@@ -98,6 +104,10 @@ interface PendingPrompt {
   id: RequestId;
   params: unknown;
   resolve?: (result: DynamicToolResult) => void;
+  /** COSGRAL W1: the open card, as `listPendingRequests` returns it after a window reload. */
+  prompt: PendingAgentPrompt;
+  /** COSGRAL W1: creation order of open cards. */
+  sequence: number;
 }
 
 interface PendingApproval {
@@ -108,6 +118,9 @@ interface PendingApproval {
   approval: AgentApproval;
   /** COSGRAL: set for approvals decided inside COSGRAL (agent eyes) instead of by the provider. */
   resolve?: (allowed: boolean) => void;
+  /** COSGRAL W1: when the card opened, and the creation order of open cards. */
+  createdAt: string;
+  sequence: number;
 }
 
 /** COSGRAL: agent eyes (see eyes-service.ts); null when the host cannot capture. */
@@ -229,6 +242,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #loadedThreads = new Set<string>();
   readonly #pendingPrompts = new Map<RequestId, PendingPrompt>();
   readonly #pendingApprovals = new Map<RequestId, PendingApproval>();
+  #pendingSequence = 0;
+  readonly #activity: AgentActivityTracker;
   readonly #itemTurns = new Map<string, string>();
   readonly #imageGenerationOperations = new Map<string, ImageGenerationOperation>();
   readonly #interruptedTurns = new Set<string>();
@@ -274,6 +289,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#clientFactory = clientFactory;
     this.#preferredProvider = preferredProvider;
     this.#eyes = eyes;
+    this.#activity = new AgentActivityTracker({
+      listBots: () => this.#store.list(),
+      pendingRequests: (botId) => this.#pendingRequestCount(botId),
+      working: (botId) => this.#isWorking(botId),
+      provider: (bot) => providerForBot(bot),
+      emit: (activity) => this.emit("event", { type: "activity-changed", activity }),
+      limitReset: () => {
+        const client = this.#clients.get("codex");
+        if (client && !this.#stopping) void this.#refreshUsage(client).catch(() => undefined);
+      },
+    });
     this.#browser.onChanged((tabs, activeTabId) => {
       this.#emit({ type: "browser-changed", tabs, activeTabId });
     });
@@ -291,6 +317,28 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL: the user's stop button for agent eyes. */
   stopEyes(input: StopAgentEyesInput): AgentEyesState {
     return this.#eyes?.stop(input) ?? { sessions: [], grants: [] };
+  }
+
+  /** COSGRAL W1: open question and approval cards of every agent, oldest first. */
+  listPendingRequests(): PendingAgentRequest[] {
+    const prompts = [...this.#pendingPrompts.values()].map((pending) => ({
+      sequence: pending.sequence,
+      request: structuredClone(pending.prompt),
+    }));
+    const approvals = [...this.#pendingApprovals.values()].map((pending) => ({
+      sequence: pending.sequence,
+      request: {
+        kind: "approval" as const,
+        approval: structuredClone(pending.approval),
+        createdAt: pending.createdAt,
+      },
+    }));
+    return [...prompts, ...approvals].sort((a, b) => a.sequence - b.sequence).map((entry) => entry.request);
+  }
+
+  /** COSGRAL W1: the row state of every agent. */
+  listActivity(): AgentActivity[] {
+    return this.#activity.list();
   }
 
   getStatus(): AgentStatus {
@@ -452,6 +500,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     this.#pendingDeltas.clear();
     this.#pendingHandoffs.clear();
+    this.#activity.stop();
     this.#clearPendingPrompts();
     this.#clearPendingApprovals();
     this.#eyes?.stop({});
@@ -687,22 +736,27 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (!pending) throw new Error("This prompt is no longer active.");
 
     this.#pendingPrompts.delete(input.requestId);
+    const resolution = hasPromptAnswers(input.answers) ? "answered" : "skipped";
     if (pending.resolve) {
       pending.resolve(dynamicPromptResult(input.answers));
+      this.#emitPromptResolved(pending, resolution);
       return;
     }
 
     const answers = Object.fromEntries(Object.entries(input.answers).map(([id, values]) => [id, { answers: values }]));
     pending.client.respond(pending.id, { answers });
+    this.#emitPromptResolved(pending, resolution);
   }
 
   async respondToApproval(input: RespondToApprovalInput): Promise<void> {
     const pending = this.#pendingApprovals.get(input.requestId);
     if (!pending) throw new Error("This approval is no longer active.");
 
+    const resolution = input.decision === "accept" ? "accepted" : "declined";
     if (pending.resolve) {
       this.#pendingApprovals.delete(input.requestId);
       pending.resolve(input.decision === "accept");
+      this.#emitApprovalResolved(pending, resolution);
       return;
     }
     if (pending.approval.kind === "permissions") {
@@ -720,6 +774,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       pending.client.respond(pending.id, { decision: input.decision });
     }
     this.#pendingApprovals.delete(input.requestId);
+    this.#emitApprovalResolved(pending, resolution);
   }
 
   async #connect(phase: "starting" | "restarting", requestedProviders: readonly AgentProvider[]): Promise<void> {
@@ -2032,6 +2087,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       method: request.method,
       params: request.params,
       approval,
+      ...this.#pendingOrder(),
     });
     this.#emit({ type: "approval", approval });
   }
@@ -2063,6 +2119,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       method: request.method,
       params: request.params,
       approval,
+      ...this.#pendingOrder(),
     });
     this.#emit({ type: "approval", approval });
   }
@@ -2088,6 +2145,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       if (pendingThreadId === threadId && pendingTurnId === turnId) {
         pending.resolve?.(dynamicPromptResult({}));
         this.#pendingPrompts.delete(requestId);
+        this.#emitPromptResolved(pending, "expired");
       }
     }
     for (const [requestId, pending] of this.#pendingApprovals) {
@@ -2096,22 +2154,69 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       if (pendingThreadId === threadId && (!pendingTurnId || pendingTurnId === turnId)) {
         this.#pendingApprovals.delete(requestId);
         pending.resolve?.(false);
+        this.#emitApprovalResolved(pending, "expired");
       }
     }
   }
 
   #clearPendingPrompts(): void {
-    for (const pending of this.#pendingPrompts.values()) {
-      pending.resolve?.(dynamicPromptResult({}));
-    }
+    const pending = [...this.#pendingPrompts.values()];
     this.#pendingPrompts.clear();
+    for (const prompt of pending) {
+      prompt.resolve?.(dynamicPromptResult({}));
+      this.#emitPromptResolved(prompt, "expired");
+    }
   }
 
   /** COSGRAL: approvals decided inside COSGRAL count as declined when they are dropped. */
   #clearPendingApprovals(): void {
     const pending = [...this.#pendingApprovals.values()];
     this.#pendingApprovals.clear();
-    for (const approval of pending) approval.resolve?.(false);
+    for (const approval of pending) {
+      approval.resolve?.(false);
+      this.#emitApprovalResolved(approval, "expired");
+    }
+  }
+
+  /** COSGRAL W1: creation time and order of a new open card. */
+  #pendingOrder(): { createdAt: string; sequence: number } {
+    this.#pendingSequence += 1;
+    return { createdAt: new Date().toISOString(), sequence: this.#pendingSequence };
+  }
+
+  /** COSGRAL W1: tells every window that a question card ended. */
+  #emitPromptResolved(pending: PendingPrompt, resolution: PromptResolution): void {
+    this.#emit({
+      type: "prompt-resolved",
+      requestId: pending.prompt.requestId,
+      botId: pending.prompt.botId,
+      resolution,
+    });
+  }
+
+  /** COSGRAL W1: tells every window that an approval card ended. */
+  #emitApprovalResolved(pending: PendingApproval, resolution: ApprovalResolution): void {
+    this.#emit({
+      type: "approval-resolved",
+      requestId: pending.approval.requestId,
+      botId: pending.approval.botId,
+      resolution,
+    });
+  }
+
+  #pendingRequestCount(botId: string): number {
+    let count = 0;
+    for (const pending of this.#pendingPrompts.values()) if (pending.prompt.botId === botId) count += 1;
+    for (const pending of this.#pendingApprovals.values()) if (pending.approval.botId === botId) count += 1;
+    return count;
+  }
+
+  /** The same rule as the sidebar: a running turn, or a delivery that is starting or running. */
+  #isWorking(botId: string): boolean {
+    if (this.#snapshots.get(botId)?.activeTurnId) return true;
+    return this.#mailbox
+      .listQueue(botId)
+      .deliveries.some((delivery) => delivery.status === "starting" || delivery.status === "running");
   }
 
   #dynamicTools() {
@@ -2166,6 +2271,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         params: { threadId: params.threadId, turnId: params.turnId },
         approval,
         resolve,
+        ...this.#pendingOrder(),
       });
       this.#emit({ type: "approval", approval });
     });
@@ -2190,20 +2296,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
 
     return new Promise((resolve) => {
-      this.#pendingPrompts.set(request.id, {
-        client,
-        id: request.id,
-        params: request.params,
-        resolve,
-      });
-      this.#emit({
-        type: "prompt",
-        requestId: request.id,
-        botId,
-        threadId: this.#publicThreadId(botId, threadId),
-        turnId,
-        questions,
-      });
+      this.#openPrompt({ client, id: request.id, params: request.params, resolve }, botId, threadId, turnId, questions);
     });
   }
 
@@ -2217,12 +2310,33 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
 
     const questions = promptQuestions(request.params);
-    this.#pendingPrompts.set(request.id, { client, id: request.id, params: request.params });
-    this.#emit({
-      type: "prompt",
-      requestId: request.id,
+    this.#openPrompt({ client, id: request.id, params: request.params }, botId, threadId, turnId, questions);
+  }
+
+  /** Keeps the question card open (also for a reloaded window) and shows it. */
+  #openPrompt(
+    source: Pick<PendingPrompt, "client" | "id" | "params" | "resolve">,
+    botId: string,
+    threadId: string,
+    turnId: string,
+    questions: AgentPromptQuestion[],
+  ): void {
+    const { createdAt, sequence } = this.#pendingOrder();
+    const prompt: PendingAgentPrompt = {
+      kind: "prompt",
+      requestId: source.id,
       botId,
       threadId: this.#publicThreadId(botId, threadId),
+      turnId,
+      questions,
+      createdAt,
+    };
+    this.#pendingPrompts.set(source.id, { ...source, prompt, sequence });
+    this.#emit({
+      type: "prompt",
+      requestId: prompt.requestId,
+      botId,
+      threadId: prompt.threadId,
       turnId,
       questions,
     });
@@ -2439,7 +2553,18 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #emit(event: AgentEvent): void {
     this.emit("event", event);
+    if (this.#stopping || event.type === "conversation-delta") return;
+    try {
+      this.#activity.observe(event);
+    } catch {
+      // COSGRAL W1: the row state is a derived view; it must never break the event it follows.
+    }
   }
+}
+
+/** COSGRAL W1: a question card closed with no answer text was skipped. */
+function hasPromptAnswers(answers: RespondToPromptInput["answers"]): boolean {
+  return Object.values(answers).some((values) => values.some((value) => value.trim().length > 0));
 }
 
 function deliveryInput(
