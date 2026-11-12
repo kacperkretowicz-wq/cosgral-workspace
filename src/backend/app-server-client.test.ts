@@ -1,12 +1,13 @@
 // @vitest-environment node
 
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { CodexAppServerClient } from "./app-server-client";
 import { decodeRecordResponse, isRecord } from "./protocol";
+import { writeFakeCli } from "./testing/fake-cli";
 
 const temporaryRoots: string[] = [];
 const clients: CodexAppServerClient[] = [];
@@ -50,6 +51,19 @@ describe("CodexAppServerClient", () => {
     });
   });
 
+  it("does not surface output that arrives after stop", async () => {
+    const client = createClient(await createFakeCodex(), 5_000);
+    const notifications: string[] = [];
+    client.on("notification", (notification) => notifications.push(notification.method));
+    client.start();
+    await client.request("test/echo", { text: "ready" }, decodeEchoResponse);
+
+    await client.stop();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    expect(notifications).not.toContain("test/late");
+  });
+
   it("resets fragmented JSON state when restarted after a process crash", async () => {
     const client = createClient(await createFakeCodex(), 5_000);
     client.start();
@@ -78,12 +92,15 @@ function createClient(executable: string, timeout: number): CodexAppServerClient
 async function createFakeCodex(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "openbot-fake-codex-"));
   temporaryRoots.push(root);
-  const executable = join(root, "codex");
-  await writeFile(
-    executable,
-    `#!/usr/bin/env node
-let buffer = "";
+  // COSGRAL: a folder with a space, like "C:\Users\First Last\AppData\Roaming\npm".
+  return writeFakeCli(
+    join(root, "Codex CLI"),
+    "codex",
+    `let buffer = "";
 process.stdin.setEncoding("utf8");
+process.stdin.on("end", () => {
+  process.stdout.write(JSON.stringify({ method: "test/late", params: {} }) + "\\n");
+});
 process.stdin.on("data", (chunk) => {
   buffer += chunk;
   let newline = buffer.indexOf("\\n");
@@ -109,8 +126,5 @@ process.stdin.on("data", (chunk) => {
   }
 });
 `,
-    { mode: 0o700 },
   );
-  await chmod(executable, 0o700);
-  return executable;
 }

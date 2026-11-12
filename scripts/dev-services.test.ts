@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createDevelopmentServiceSpec, parseDevelopmentTarget, projectRoot, servicesForTarget } from "./dev-services";
 
@@ -15,7 +16,7 @@ describe("development service runner", () => {
   it("builds the API command without a shell command string", () => {
     const spec = createDevelopmentServiceSpec("api", {});
     expect(spec.executable).toBe(process.execPath);
-    expect(spec.args).toEqual(["run", "--cwd", `${projectRoot}/apps/auth-api`, "dev"]);
+    expect(spec.args).toEqual(["run", "--cwd", join(projectRoot, "apps", "auth-api"), "dev"]);
   });
 
   it("isolates the app and test-client profiles, ports, and outputs", () => {

@@ -2,18 +2,20 @@
 
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
 import type { AgentEvent, BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
 import { MailboxStore } from "./mailbox-store";
 import { type AppServerNotification, getString, type RequestId, type ResponseDecoder, type RpcError } from "./protocol";
+import { closeTestDatabases, testDatabase } from "./testing/databases";
+import { writeFakeCli } from "./testing/fake-cli";
 
 let root: string;
 let logPath: string;
@@ -46,10 +48,12 @@ afterEach(async () => {
   delete process.env.OPENBOT_FAKE_ARCHIVED_THREAD;
   delete process.env.OPENBOT_FAKE_TURN_START_RESPONSE_DELAY;
   delete process.env.OPENBOT_FAKE_WARNING;
+  closeTestDatabases();
   await rm(root, { recursive: true, force: true });
 });
 
-describe.sequential("AgentService", () => {
+// COSGRAL: on Windows every fake CLI call starts cmd.exe and Node (0.3–1 s each), so tests near the 5 s default flake.
+describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20_000 : 5_000 }, () => {
   it("does not surface the skills context-budget notice as an agent error", async () => {
     process.env.OPENBOT_FAKE_WARNING = "Skill descriptions were shortened to fit the skills context budget.";
     const { store, mailbox } = stores();
@@ -69,6 +73,44 @@ describe.sequential("AgentService", () => {
         }),
       ]),
     );
+  });
+
+  it("ignores streamed output from a client that is still stopping", async () => {
+    let codex: LateOutputClient | undefined;
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new LateOutputClient(provider);
+      if (provider === "codex") codex = client;
+      return client;
+    });
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "Start a turn" });
+    await waitFor(() => Boolean(codex?.turn));
+    const persistConversation = vi.spyOn(store.database, "persistConversation");
+
+    await service.stop();
+    service = null;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(codex?.lateOutputSent).toBe(true);
+    expect(persistConversation).not.toHaveBeenCalled();
+  });
+
+  it("marks a conversation read through the receipt of the message the user just sent", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      return new FakeAgentClient(provider, "DONE", false);
+    });
+    await service.initialize();
+
+    const receipt = await service.sendMessage({ botId: "chief", text: "Read through my own message" });
+    await waitFor(async () => Boolean((await service?.readConversation("chief"))?.threadId));
+
+    // COSGRAL: the conversation lists a sent message under its delivery id, not the receipt's message id.
+    await expect(service.markConversationRead("chief", "local-user:owner", receipt.messageId)).resolves.toMatchObject({
+      unreadCount: 0,
+      throughMessageId: receipt.deliveries[0]?.id,
+    });
   });
 
   it("expands inline file references before sending text to the agent", async () => {
@@ -911,9 +953,13 @@ describe.sequential("AgentService", () => {
 
     await service.sendMessage({ botId: "chief", text: "First large task" });
     await service.sendMessage({ botId: "chief", text: "Run after compaction" });
+    // COSGRAL: the fake logs turn/start on receipt; the service emits turn-started only after the reply (slower on Windows).
     await waitFor(async () => {
       const messages = await protocolMessages();
-      return messages.filter((message) => message.method === "turn/start").length === 2;
+      return (
+        messages.filter((message) => message.method === "turn/start").length === 2 &&
+        events.filter((event) => event.type === "turn-started").length === 2
+      );
     });
 
     const lifecycle = (await protocolMessages())
@@ -1015,8 +1061,13 @@ describe.sequential("AgentService", () => {
       ]),
     );
 
-    const starts = (await protocolMessages()).filter((message) => message.method === "turn/start");
-    const salesStart = starts.find((message) => getString(message.params, "cwd")?.endsWith("/sales-outbound"));
+    // COSGRAL: the incoming exchange is stored before the recipient's turn starts; wait for that turn too.
+    let salesStart: DynamicRecord | undefined;
+    await waitFor(async () => {
+      const starts = (await protocolMessages()).filter((message) => message.method === "turn/start");
+      salesStart = starts.find((message) => basename(getString(message.params, "cwd") ?? "") === "sales-outbound");
+      return salesStart !== undefined;
+    });
     const salesInput = inputRecords(salesStart?.params);
     expect(getString(salesInput[0], "text")).toContain(
       "After completing the request, send a concise result back to Chief",
@@ -1345,6 +1396,35 @@ class FakeAgentClient extends EventEmitter implements AgentClient {
   respondError(_id: RequestId, _error: RpcError): void {}
 }
 
+/** COSGRAL: a provider that keeps streaming while it shuts down, as a slow Windows process can. */
+class LateOutputClient extends FakeAgentClient {
+  turn: { threadId: string; turnId: string } | null = null;
+  lateOutputSent = false;
+
+  constructor(provider: AgentProvider) {
+    super(provider, "unused", false);
+  }
+
+  override async request<T>(method: string, params: unknown, decoder: ResponseDecoder<T>): Promise<T> {
+    const result = await super.request(method, params, (value) => value);
+    const turn = isDynamicRecord(result) ? result.turn : null;
+    if (method === "turn/start" && isDynamicRecord(turn) && isString(turn.id)) {
+      this.turn = { threadId: stringParam(params, "threadId"), turnId: turn.id };
+    }
+    return decoder(result);
+  }
+
+  override async stop(): Promise<void> {
+    if (this.turn) {
+      const { threadId, turnId } = this.turn;
+      const itemId = `${turnId}:assistant`;
+      this.emit("notification", notification("item/agentMessage/delta", { threadId, turnId, itemId, delta: "late" }));
+      this.lateOutputSent = true;
+    }
+    await super.stop();
+  }
+}
+
 function notification(method: string, params: unknown): AppServerNotification {
   return { method, params };
 }
@@ -1372,8 +1452,9 @@ function inputRecords(value: unknown): DynamicRecord[] {
 }
 
 function stores(): { store: BotStore; mailbox: MailboxStore } {
-  const store = new BotStore(join(root, "user-data"), join(root, "home"));
-  return { store, mailbox: new MailboxStore(join(root, "user-data"), store.sharedRoot) };
+  const userData = join(root, "user-data");
+  const store = new BotStore(userData, join(root, "home"), testDatabase(userData));
+  return { store, mailbox: new MailboxStore(userData, store.sharedRoot, testDatabase(userData)) };
 }
 
 function fakeBrowser() {
@@ -1400,7 +1481,8 @@ async function protocolMessages(): Promise<DynamicRecord[]> {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + 3_000;
+  // COSGRAL: Windows starts each fake CLI process much slower than macOS.
+  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 3_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -1409,11 +1491,11 @@ async function waitFor(check: () => boolean | undefined | Promise<boolean | unde
 }
 
 async function createFakeCodex(directory: string): Promise<string> {
-  const executable = join(directory, "codex");
-  await writeFile(
-    executable,
-    `#!/usr/bin/env node
-const fs = require("node:fs");
+  // COSGRAL: cross-platform fake CLI in a folder with a space, like real Windows profile paths.
+  return writeFakeCli(
+    join(directory, "Codex CLI"),
+    "codex",
+    `const fs = require("node:fs");
 if (process.argv.includes("--version")) {
   process.stdout.write("codex-cli 0.144.1\\n");
   process.exit(0);
@@ -1521,24 +1603,18 @@ process.stdin.on("data", (chunk) => {
   }
 });
 `,
-    { mode: 0o700 },
   );
-  await chmod(executable, 0o700);
-  return executable;
 }
 
 async function createFakeClaude(directory: string): Promise<string> {
-  const executable = join(directory, "claude");
-  await writeFile(
-    executable,
-    `#!/bin/sh
-if [ "$1" = "--version" ]; then
-  printf '%s\\n' '2.1.231 (Claude Code)'
-elif [ "$1" = "auth" ]; then
-  printf '%s' '{"loggedIn":true,"email":"claude@example.com","subscriptionType":"max"}'
-fi
+  return writeFakeCli(
+    join(directory, "Claude Code"),
+    "claude",
+    `if (process.argv[2] === "--version") {
+  process.stdout.write("2.1.231 (Claude Code)\\n");
+} else if (process.argv[2] === "auth") {
+  process.stdout.write('{"loggedIn":true,"email":"claude@example.com","subscriptionType":"max"}');
+}
 `,
   );
-  await chmod(executable, 0o755);
-  return executable;
 }

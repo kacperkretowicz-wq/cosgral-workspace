@@ -15,7 +15,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { type DynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { z } from "zod";
 import type { AgentProvider } from "./agent-client";
-import type { ClaudeCliInfo } from "./cli";
+import { type ClaudeCliInfo, cliCommand } from "./cli";
 import {
   type AccountReadResult,
   type AppServerNotification,
@@ -197,10 +197,17 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
 
   async #readAccount(): Promise<AccountReadResult> {
     try {
-      const { stdout } = await execFileAsync(this.#cli.executable, ["auth", "status", "--json"], {
+      // COSGRAL: no `shell: true`; it broke CLI paths with spaces on Windows.
+      const { command, args, windowsVerbatimArguments } = cliCommand(this.#cli.executable, [
+        "auth",
+        "status",
+        "--json",
+      ]);
+      const { stdout } = await execFileAsync(command, args, {
         timeout: 5_000,
         maxBuffer: 64 * 1024,
-        shell: process.platform === "win32",
+        windowsHide: true,
+        windowsVerbatimArguments,
       });
       const status = JSON.parse(stdout);
       if (!isRecord(status) || status.loggedIn !== true) {
@@ -472,7 +479,9 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
           tool("open", "Open an HTTP(S) URL in COSGRAL Workspace's private browser.", { url: z.string() }, (args) =>
             call("openbot_browser", "open", args),
           ),
-          tool("list_tabs", "List COSGRAL Workspace browser tabs.", {}, (args) => call("openbot_browser", "list_tabs", args)),
+          tool("list_tabs", "List COSGRAL Workspace browser tabs.", {}, (args) =>
+            call("openbot_browser", "list_tabs", args),
+          ),
           tool("snapshot", "Read a browser page and get element references.", { tabId: z.string() }, (args) =>
             call("openbot_browser", "snapshot", args),
           ),

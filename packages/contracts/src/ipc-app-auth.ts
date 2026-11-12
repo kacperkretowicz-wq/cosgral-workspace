@@ -69,7 +69,12 @@ export type CentralAuthState =
       developmentCode?: string;
       issue?: CentralAuthIssue;
     }
-  | { status: "signed_in"; user: CentralAuthUser }
+  | {
+      status: "signed_in";
+      user: CentralAuthUser;
+      /** COSGRAL: true for the local owner profile (no account service, nothing to sign out of). */
+      localProfile?: boolean;
+    }
   | { status: "error"; issue: CentralAuthIssue };
 
 export interface CentralAuthDesktopApi {

@@ -51,7 +51,8 @@ describe("OpenBotDatabase", () => {
     expect(database.connection.prepare("PRAGMA journal_mode").get()).toMatchObject({
       journal_mode: "wal",
     });
-    expect((await stat(database.path)).mode & 0o777).toBe(0o600);
+    // COSGRAL: Windows has no POSIX modes (Node reports 0o666); the user-profile ACL protects AppData.
+    if (process.platform !== "win32") expect((await stat(database.path)).mode & 0o777).toBe(0o600);
     database.close();
   });
 

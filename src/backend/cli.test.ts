@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   CodexCliError,
+  cliCommand,
   parseClaudeVersion,
   parseCodexVersion,
   resolveClaudeCli,
@@ -42,6 +43,45 @@ describe("Claude CLI version parsing", () => {
 
   it("fails closed on an unknown format", () => {
     expect(() => parseClaudeVersion("Claude development build")).toThrow(CodexCliError);
+  });
+});
+
+describe("CLI command lines", () => {
+  it("quotes a Windows command shim whose path contains spaces", () => {
+    expect(
+      cliCommand(
+        "C:\\Users\\Jane Doe\\AppData\\Roaming\\npm\\codex.cmd",
+        ["app-server", "--listen", "stdio://"],
+        "win32",
+        "C:\\Windows\\system32\\cmd.exe",
+      ),
+    ).toEqual({
+      command: "C:\\Windows\\system32\\cmd.exe",
+      args: [
+        "/d",
+        "/s",
+        "/c",
+        '""C:\\Users\\Jane Doe\\AppData\\Roaming\\npm\\codex.cmd" app-server --listen stdio://"',
+      ],
+      windowsVerbatimArguments: true,
+    });
+  });
+
+  it("runs native executables directly, without a shell", () => {
+    expect(cliCommand("C:\\Users\\Jane Doe\\.local\\bin\\claude.exe", ["auth", "status", "--json"], "win32")).toEqual({
+      command: "C:\\Users\\Jane Doe\\.local\\bin\\claude.exe",
+      args: ["auth", "status", "--json"],
+      windowsVerbatimArguments: false,
+    });
+    expect(cliCommand("/opt/homebrew/bin/codex", ["--version"], "darwin")).toEqual({
+      command: "/opt/homebrew/bin/codex",
+      args: ["--version"],
+      windowsVerbatimArguments: false,
+    });
+  });
+
+  it("refuses arguments that a command shim could reinterpret", () => {
+    expect(() => cliCommand("C:\\npm\\codex.cmd", ["--version & calc"], "win32")).toThrow("Unsafe CLI argument");
   });
 });
 

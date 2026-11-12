@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { ATTACHMENT_LIMITS, INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import {
@@ -40,7 +40,6 @@ import { TeamChatStore } from "../backend/team-chat-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
-import { CentralAuthManager, readCentralAuthApiUrl } from "./central-auth-manager";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
 import { HostService } from "./host-service";
 import {
@@ -78,6 +77,7 @@ import {
   parseUpdateTeamMember,
 } from "./ipc/server-inputs";
 import { isObject, requireString } from "./ipc/validation";
+import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
 import { RemoteMacManager } from "./remote-mac";
@@ -145,7 +145,7 @@ let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
 let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
-let centralAuthManager: CentralAuthManager | null = null;
+let centralAuthManager: AccountManager | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -156,6 +156,7 @@ const BROWSER_STATE_FILE = "openbot-browser-state-v1.json";
 const TEAM_FILE = "openbot-team-server-v1.json";
 const REMOTE_SERVERS_FILE = "openbot-remote-servers-v1.json";
 const CENTRAL_AUTH_FILE = "openbot-central-auth-v1.bin";
+const LOCAL_OWNER_FILE = "cosgral-local-owner-v1.json";
 const REMOTE_DESKTOP_CREDENTIAL_FILE = "openbot-remote-desktop-credential-v1.json";
 
 const EXTERNAL_DESTINATIONS: Record<ExternalDestination, string> = {
@@ -199,7 +200,7 @@ function registerIpcHandlers(
   host: HostService,
   remoteMac: RemoteMacManager,
   remoteServers: RemoteServerManager,
-  centralAuth: CentralAuthManager,
+  centralAuth: AccountManager,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -862,9 +863,12 @@ if (!hasSingleInstanceLock) {
       if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
       configureContentSecurityPolicy();
       mainWindow = createWindow();
-      centralAuthManager = new CentralAuthManager({
-        apiUrl: readCentralAuthApiUrl(process.env.OPENBOT_AUTH_API_URL),
-        storagePath: join(app.getPath("userData"), CENTRAL_AUTH_FILE),
+      // COSGRAL: local owner profile by default; the hosted account service only when OPENBOT_AUTH_API_URL is set.
+      centralAuthManager = createAccountManager({
+        accountServiceUrl: process.env.OPENBOT_AUTH_API_URL,
+        localProfilePath: join(app.getPath("userData"), LOCAL_OWNER_FILE),
+        centralStoragePath: join(app.getPath("userData"), CENTRAL_AUTH_FILE),
+        defaultName: localOwnerName(),
         encrypt: (value) => {
           if (!safeStorage.isEncryptionAvailable()) {
             throw new Error("macOS secure storage is unavailable.");
@@ -874,7 +878,8 @@ if (!hasSingleInstanceLock) {
         decrypt: (value) => safeStorage.decryptString(value),
       });
       centralAuthManager.on("changed", forwardCentralAuth);
-      void centralAuthManager.initialize();
+      const accountInitialization = centralAuthManager.initialize();
+      if (centralAuthManager instanceof LocalOwnerAccount) await accountInitialization;
       const store = new BotStore(app.getPath("userData"), homedir());
       await store.initialize();
       mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
@@ -1055,6 +1060,14 @@ if (!hasSingleInstanceLock) {
       );
       app.quit();
     });
+}
+
+function localOwnerName(): string {
+  try {
+    return userInfo().username;
+  } catch {
+    return "";
+  }
 }
 
 function readComputerUsePrerequisites(): {

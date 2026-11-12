@@ -6,18 +6,24 @@ import { join } from "node:path";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BotStore } from "./bot-store";
+import { closeTestDatabases, testDatabase } from "./testing/databases";
 
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
+  closeTestDatabases();
   await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true })));
 });
+
+function createBotStore(userDataPath: string, homePath: string): BotStore {
+  return new BotStore(userDataPath, homePath, testDatabase(userDataPath));
+}
 
 describe("BotStore", () => {
   it("starts a new user with no agents", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "user-data"), join(root, "home"));
+    const store = createBotStore(join(root, "user-data"), join(root, "home"));
 
     await store.initialize();
 
@@ -29,7 +35,7 @@ describe("BotStore", () => {
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
     const home = join(root, "home");
-    const store = new BotStore(userData, home);
+    const store = createBotStore(userData, home);
 
     await store.initialize();
     const chief = await store.getOrCreate("chief");
@@ -49,12 +55,12 @@ describe("BotStore", () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await store.initialize();
 
     await store.getOrCreate("chief");
     const threadId = await store.ensureThreadId("chief");
-    const restored = new BotStore(userData, join(root, "home"));
+    const restored = createBotStore(userData, join(root, "home"));
     await restored.initialize();
     expect(restored.list().find((bot) => bot.id === "chief")?.threadId).toBe(threadId);
     await expect(readFile(join(userData, "bots.json"), "utf8")).rejects.toMatchObject({
@@ -91,7 +97,7 @@ describe("BotStore", () => {
     };
     await writeFile(statePath, `${JSON.stringify(legacy, null, 2)}\n`);
 
-    const restored = new BotStore(userData, join(root, "home"));
+    const restored = createBotStore(userData, join(root, "home"));
     await restored.initialize();
 
     expect(restored.list().find((bot) => bot.id === "chief")).toMatchObject({
@@ -133,7 +139,7 @@ describe("BotStore", () => {
     };
     const source = `${JSON.stringify(legacy, null, 2)}\n`;
     await writeFile(statePath, source);
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await store.initialize();
 
     expect(store.list()).toMatchObject([{ id: "writer", model: "claude-sonnet-5", threadId: null, avatarHue: 215 }]);
@@ -145,7 +151,7 @@ describe("BotStore", () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await store.initialize();
 
     const first = await store.createBot();
@@ -161,7 +167,7 @@ describe("BotStore", () => {
         .map((bot) => bot.id),
     ).toEqual([second.id, first.id]);
 
-    const reloaded = new BotStore(userData, join(root, "home"));
+    const reloaded = createBotStore(userData, join(root, "home"));
     await reloaded.initialize();
     expect(
       reloaded
@@ -174,7 +180,7 @@ describe("BotStore", () => {
   it("rejects path traversal bot ids", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "data"), join(root, "home"));
+    const store = createBotStore(join(root, "data"), join(root, "home"));
     await store.initialize();
 
     await expect(store.getOrCreate("../outside")).rejects.toThrow("Invalid bot id");
@@ -189,7 +195,7 @@ describe("BotStore", () => {
     await mkdir(userData, { recursive: true });
     await writeFile(statePath, unsupported);
 
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await expect(store.initialize()).rejects.toThrow("refusing to overwrite");
     await expect(readFile(statePath, "utf8")).resolves.toBe(unsupported);
   });
@@ -198,7 +204,7 @@ describe("BotStore", () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await store.initialize();
 
     await store.getOrCreate("chief");
@@ -213,7 +219,7 @@ describe("BotStore", () => {
       avatarSeed: "chief:avatar:2:4",
       avatarHue: 215,
     });
-    const restored = new BotStore(userData, join(root, "home"));
+    const restored = createBotStore(userData, join(root, "home"));
     await restored.initialize();
     expect(restored.list().find((bot) => bot.id === "chief")).toMatchObject({
       name: "Coordinator",
@@ -231,7 +237,7 @@ describe("BotStore", () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
-    const store = new BotStore(userData, join(root, "home"));
+    const store = createBotStore(userData, join(root, "home"));
     await store.initialize();
     await store.getOrCreate("chief");
     const image = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -242,7 +248,7 @@ describe("BotStore", () => {
     expect(storedAvatar?.mimeType).toBe("image/png");
     await expect(readFile(storedAvatar?.path ?? "")).resolves.toEqual(Buffer.from(image));
 
-    const restored = new BotStore(userData, join(root, "home"));
+    const restored = createBotStore(userData, join(root, "home"));
     await restored.initialize();
     expect(restored.list().find((bot) => bot.id === "chief")?.avatarUrl).toBe(updated.avatarUrl);
     const restoredPath = restored.resolveAvatar("chief")?.path ?? "";
@@ -254,7 +260,7 @@ describe("BotStore", () => {
   it("restores the previous avatar when SQLite persistence fails", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "user-data"), join(root, "home"));
+    const store = createBotStore(join(root, "user-data"), join(root, "home"));
     await store.initialize();
     await store.getOrCreate("chief");
     const image = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -281,7 +287,7 @@ describe("BotStore", () => {
   it("rejects agent fields above their limits without truncating stored values", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "user-data"), join(root, "home"));
+    const store = createBotStore(join(root, "user-data"), join(root, "home"));
     await store.initialize();
     await store.getOrCreate("chief");
 
@@ -303,7 +309,7 @@ describe("BotStore", () => {
   it("keeps the COSGRAL Workspace thread when the model changes provider", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "user-data"), join(root, "home"));
+    const store = createBotStore(join(root, "user-data"), join(root, "home"));
     await store.initialize();
     await store.getOrCreate("chief");
     const threadId = await store.ensureThreadId("chief");
@@ -318,7 +324,7 @@ describe("BotStore", () => {
   it("keeps provider sessions private and creates a new session when returning", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
-    const store = new BotStore(join(root, "user-data"), join(root, "home"));
+    const store = createBotStore(join(root, "user-data"), join(root, "home"));
     await store.initialize();
     await store.getOrCreate("chief");
     const publicThreadId = await store.ensureThreadId("chief");
@@ -346,14 +352,14 @@ describe("BotStore", () => {
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
     const home = join(root, "home");
-    const store = new BotStore(userData, home);
+    const store = createBotStore(userData, home);
     await store.initialize();
 
     await store.createBot();
     for (const bot of store.list()) await store.deleteBot(bot.id);
     expect(store.list()).toEqual([]);
 
-    const restored = new BotStore(userData, home);
+    const restored = createBotStore(userData, home);
     await restored.initialize();
     expect(restored.list()).toEqual([]);
   });

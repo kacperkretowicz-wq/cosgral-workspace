@@ -498,6 +498,14 @@ export class MailboxStore {
     return delivery ? this.#context(delivery) : null;
   }
 
+  /** COSGRAL: the conversation id (delivery id) of a sent message for one recipient. */
+  deliveryIdForMessage(botId: string, messageId: string): string | null {
+    return (
+      this.#state.deliveries.find((delivery) => delivery.messageId === messageId && delivery.recipientBotId === botId)
+        ?.id ?? null
+    );
+  }
+
   getDelivery(deliveryId: string): DeliveryContext | null {
     const delivery = this.#state.deliveries.find((candidate) => candidate.id === deliveryId);
     return delivery ? this.#context(delivery) : null;
@@ -962,7 +970,9 @@ export class MailboxStore {
     try {
       const value = JSON.parse(await readFile(this.#statePath, "utf8"));
       if (!isStoredState(value)) {
-        throw new Error("Mailbox state is corrupt or from a newer COSGRAL Workspace version; refusing to overwrite it.");
+        throw new Error(
+          "Mailbox state is corrupt or from a newer COSGRAL Workspace version; refusing to overwrite it.",
+        );
       }
       return value;
     } catch (error) {

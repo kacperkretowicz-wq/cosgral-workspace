@@ -1809,26 +1809,8 @@ describe("COSGRAL Workspace connected desktop shell", () => {
   it("publishes typing state", async () => {
     render(() => <App />);
     await confirmOnboardingModel();
-    emitPresence?.({
-      serverId: "server-1",
-      updatedAt: "2026-08-18T12:00:00.000Z",
-      members: [
-        {
-          id: "member-alice",
-          username: "alice@example.com",
-          email: "alice@example.com",
-          name: "Alice",
-          role: "member",
-          createdAt: "2026-08-18T10:00:00.000Z",
-          disabled: false,
-          online: true,
-          typingBotId: "chief",
-        },
-      ],
-    });
-
-    expect(screen.getByText("Alice is typing")).toBeInTheDocument();
-
+    // COSGRAL: the 0.1.11 agent conversation no longer renders teammates' typing (only direct chats and the
+    // host panel do; see Conversation.stories), so this test checks only what it is named after.
     const composer = screen.getByRole("textbox", { name: "Message Chief" });
     composer.textContent = "Review this";
     await fireEvent.input(composer);
@@ -2618,7 +2600,8 @@ describe("COSGRAL Workspace connected desktop shell", () => {
         ],
       },
     });
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel queued message 1" }));
+    // COSGRAL: the queue button is labelled "Delete" in 0.1.11 (QueuePanel and its test); it still cancels the delivery.
+    await fireEvent.click(screen.getByRole("button", { name: "Delete queued message 1" }));
     expect(window.openbot.agent.cancelQueuedMessage).toHaveBeenCalled();
     expect(window.openbot.agent.setQueuePaused).toHaveBeenCalledWith({
       botId: "chief",

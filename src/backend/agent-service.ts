@@ -480,7 +480,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     throughMessageId: string | null,
   ): Promise<ConversationReadState> {
     const snapshot = await this.readConversation(botId);
-    return this.#conversationReads.markRead(memberId, snapshot, throughMessageId);
+    // COSGRAL: after sending, the renderer marks read through the receipt's message id, but the
+    // conversation lists that message under its delivery id; accept both.
+    const boundary =
+      throughMessageId && !snapshot.messages.some((message) => message.id === throughMessageId)
+        ? (this.#mailbox.deliveryIdForMessage(botId, throughMessageId) ?? throughMessageId)
+        : throughMessageId;
+    return this.#conversationReads.markRead(memberId, snapshot, boundary);
   }
 
   prepareAttachments(paths: string[]): Promise<DraftAttachment[]> {
@@ -2164,6 +2170,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #bufferDelta(delta: PendingDelta): void {
+    // COSGRAL: stop() drops buffered deltas; a client that is still shutting down must not schedule new writes.
+    if (this.#stopping) return;
     const key = `${delta.externalThreadId}:${delta.turnId}:${delta.messageId}`;
     const existing = this.#pendingDeltas.get(key);
     if (existing) {
