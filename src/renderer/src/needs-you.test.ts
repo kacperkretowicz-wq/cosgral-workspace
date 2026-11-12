@@ -1,6 +1,7 @@
 import type { AgentApproval } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
-import { collectNeedsYouItems, stickyDecisionForBot } from "./needs-you";
+import { collectNeedsYouItems, needsYouItemsFromCards, stickyDecisionForBot } from "./needs-you";
+import { approvalCard, promptCard } from "./pending-cards";
 
 const bots = [
   { id: "research", name: "Research" },
@@ -92,6 +93,30 @@ describe("collectNeedsYouItems summaries (English)", () => {
     );
     expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", live: true } })).toBe("Camera live preview");
     expect(summaryFor({ kind: "camera" })).toBe("Camera");
+  });
+});
+
+describe("needsYouItemsFromCards", () => {
+  it("lists every open card, oldest first, one row per card", () => {
+    const second = { ...approval, requestId: "a2", command: "bun run test" };
+    const items = needsYouItemsFromCards({
+      bots,
+      cards: [
+        approvalCard(approval, "2026-11-12T10:00:01.000Z"),
+        promptCard(prompt, "2026-11-12T10:00:02.000Z"),
+        approvalCard(second, "2026-11-12T10:00:03.000Z"),
+      ],
+    });
+    expect(items.map((item) => [item.botId, item.kind, item.summary])).toEqual([
+      ["chief", "approval", "bun run build"],
+      ["research", "question", "Which variant?"],
+      ["chief", "approval", "bun run test"],
+    ]);
+  });
+
+  it("skips cards of agents that no longer exist", () => {
+    const gone = { ...approval, botId: "deleted" };
+    expect(needsYouItemsFromCards({ bots, cards: [approvalCard(gone, "2026-11-12T10:00:01.000Z")] })).toEqual([]);
   });
 });
 

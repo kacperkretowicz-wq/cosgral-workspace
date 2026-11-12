@@ -1,6 +1,7 @@
-import type { AgentApproval, AgentEvent, BotSummary } from "@openbot/contracts/ipc";
+import type { AgentApproval, BotSummary } from "@openbot/contracts/ipc";
+import { cardKey, type PendingCard, type PromptEvent } from "./pending-cards";
 
-export type PromptEvent = Extract<AgentEvent, { type: "prompt" }>;
+export type { PromptEvent };
 
 export type NeedsYouKind = "question" | "approval";
 
@@ -43,6 +44,32 @@ export function collectNeedsYouItems(input: {
     }
   }
   return items.sort((left, right) => left.orderKey.localeCompare(right.orderKey));
+}
+
+/** One row per open card, oldest first (the list order of `PendingCard`s); agents that no longer exist are skipped. */
+export function needsYouItemsFromCards(input: {
+  bots: Array<Pick<BotSummary, "id" | "name">>;
+  cards: readonly PendingCard[];
+}): NeedsYouItem[] {
+  const names = new Map(input.bots.map((bot) => [bot.id, bot.name]));
+  const items: NeedsYouItem[] = [];
+  for (const card of input.cards) {
+    const botName = names.get(card.botId);
+    if (botName === undefined) continue;
+    const orderKey = `${card.createdAt}:${cardKey(card.kind, card.requestId)}`;
+    if (card.kind === "prompt") {
+      items.push({
+        botId: card.botId,
+        botName,
+        kind: "question",
+        orderKey,
+        summary: card.prompt.questions[0]?.question ?? "Agent question",
+      });
+    } else {
+      items.push({ botId: card.botId, botName, kind: "approval", orderKey, summary: approvalSummary(card.approval) });
+    }
+  }
+  return items;
 }
 
 export function stickyDecisionForBot(input: {
