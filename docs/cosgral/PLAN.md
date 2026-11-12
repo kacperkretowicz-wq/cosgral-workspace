@@ -23,6 +23,33 @@
 - Makiety W1 przyjęte jako układ. Do poprawy w kodzie: polskie znaki w tekstach, karty w czacie jedną kolumną na osi rozmowy.
 - W toku: B1 (Backend), B2 (Tester; szkic 6 wierszy), B4-UI. Potem A1 (oczy agenta).
 
+## Stan po rundzie 1 (12.11, wieczór)
+
+- Scalone: B1 `e22cb2250`, A1 `e529ce90f`, B4-UI `000748ed1`, B2 `c26d4cebf`, poprawka testów lidera `df56fd08a`.
+- Sprawdzone przez lidera na `df56fd08a`: `bun install`, `typecheck:node`, `typecheck:renderer`, `build` OK; **wszystkie testy 483/483** (log: `Shared\cosgral-data\lead-verify-c26d4cebf*.log`). Po scaleniu B4 padały 2 testy `App.test.tsx`, bo pasek Needs you powtarza licznik i treść polecenia; testy zawężone do przypiętej Decyzji.
+- Działa: profil lokalny bez logowania, agent Codex odpowiada w czacie, instalator `.exe` 169 MB się buduje, oczy agenta (okno, ekran, kamera, podgląd na żywo) ze zgodą, Needs you i przyklejona Decyzja, Chat | Zadania na atrapie.
+- Lista funkcji: 44 wiersze, względem bazy **1 jest / 22 częściowo / 21 brak** (W1: 1/11/7, W2: 0/5/7, W3: 0/6/4, M: 0/0/3). Wiersze 6, 10 i 11 są po B4 bliżej „jest”; potwierdzi to odbiór Testera.
+- Nie sprawdzone: instalacja NSIS (pisze do rejestru prawdziwego profilu), agent Claude (brak logowania), prawdziwa kamera.
+
+## Decyzje lidera (12.11)
+
+1. **Język interfejsu:** do czasu wyboru języka w onboardingu (wiersz 40) nowe napisy UI są po angielsku, spójnie z bazą. Polski przyjdzie jako tłumaczenie PL/EN. Mieszanie języków w jednym widoku to błąd.
+2. **`claude.exe` w paczce (304 MB, nieużywany):** usuwamy z paczki. Claude działa przez zainstalowane CLI, tak jak dziś.
+3. **Prawdziwi agenci w testach:** prawdziwy Codex lub Claude tylko do krótkich testów dymnych (kilka tur na zadanie). Resztę testów robimy na atrapie CLI.
+4. **Kontrakt zadań kanału:** `ChannelTask {id, channelId, ownerBotId, state, title, requestMessageId, resultMessageId|null, updatedAt}`, zdarzenie `task-changed`, odczyt `channels.listTasks(channelId)` (uzgodnione przez Backend i UI).
+
+## Runda W1 (od 12.11)
+
+| Zadanie | Kto | Zakres | Czeka na |
+|---|---|---|---|
+| W1-T1 | Tester | Opis zachowania 0.68: kanały z liderem, zadania, podgląd szkicu, przejęcie przeglądarki | — |
+| W1-T2 | Tester | Odbiór scalonej wersji w piaskownicy: B1, A1, B4 i wiersze W1, które powinny już działać | W1-T1 |
+| W1-BE1 | Backend | Kontrakt całego W1, oczekujące prośby po przeładowaniu, stany wiersza „limit” i „błąd”, foldery | — |
+| W1-BE2 | Backend | Kanały z liderem i zadaniami (silnik i API) | W1-BE1, W1-T1 |
+| W1-UI1 | UI | Wskaźnik „agent patrzy” ze Stop, tytuły kart zgody, profil lokalny, szyna stron, spójny język | — |
+| W1-UI2 | UI | Needs you na trwałych danych, stany „limit” i „błąd”, foldery w pasku | W1-BE1 |
+| Potem | Backend + UI | Karta podglądu szkicu, karta przejęcia przeglądarki, kanały i zadania w UI na prawdziwych danych, paczka bez `claude.exe` | W1-BE2 |
+
 ## Narzędzia
 
 ```powershell
@@ -37,11 +64,11 @@ Uruchamianie na próbę zawsze z osobnymi `USERPROFILE`, `APPDATA` i `LOCALAPPDA
 | Etap | Kto | Zakres | Gotowe, gdy |
 |---|---|---|---|
 | **B0** ✓ | Lider | Baza i izolacja | Okno startuje, dane osobno |
-| **B1** | Backend Expert | Rdzeń na Windows: konta lokalne (bez logowania do cudzej chmury), naprawa testów Windows, pełny przebieg agenta Codex i Claude, instalator `dist:win` | Agent odpowiada w czacie, `.exe` instaluje się i startuje |
-| **B2** | Tester | Pełny spis funkcji OpenBota 0.68: każda funkcja → czy jest w 0.1.11 → fala → test akceptacyjny | `docs/cosgral/parytet-0.68.md` |
+| **B1** ✓ | Backend Expert | Rdzeń na Windows: konta lokalne (bez logowania do cudzej chmury), naprawa testów Windows, pełny przebieg agenta Codex i Claude, instalator `dist:win` | Agent odpowiada w czacie, `.exe` instaluje się i startuje |
+| **B2** ✓ | Tester | Pełny spis funkcji OpenBota 0.68: każda funkcja → czy jest w 0.1.11 → fala → test akceptacyjny | `docs/cosgral/parytet-0.68.md` |
 | **B3-UI** ✓ | UI Designer | Marka COSGRAL (napisy, logo, ikony), potem makiety fali W1 w stylu bazy, w jasnym i ciemnym motywie | Zero „OpenBot” w UI; makiety zaakceptowane |
-| **B4-UI** | UI Designer | Kod „Lepszy” A+B+C na komponentach bazy: Needs you w pasku agentów, przyklejona Decyzja nad kompozytorem, Chat / Zadania w kanale; jasny i ciemny motyw | Testy i Storybook, zrzuty z piaskownicy |
-| **A1** | Backend Expert | Oczy agenta: narzędzia MCP do podglądu okna, ekranu i kamery (za zgodą, tylko loopback) | Agent opisuje zrzut okna testowego |
+| **B4-UI** ✓ | UI Designer | Kod „Lepszy” A+B+C na komponentach bazy: Needs you w pasku agentów, przyklejona Decyzja nad kompozytorem, Chat / Zadania w kanale; jasny i ciemny motyw | Testy i Storybook, zrzuty z piaskownicy |
+| **A1** ✓ | Backend Expert | Oczy agenta: narzędzia MCP do podglądu okna, ekranu i kamery (za zgodą, tylko loopback) | Agent opisuje zrzut okna testowego |
 | **W1** | Backend + UI | Nawigacja jak w OpenBocie 0.68: szyna serwerów i stron, foldery agentów ze stanami (myśli, czeka na Ciebie, limit), kanały z liderem i zadaniami, karty w czacie (pytanie, zatwierdzenie, podgląd szkicu, przejęcie przeglądarki), panel boczny | Testy z B2 dla W1 przechodzą |
 | **W2** | Backend + UI | Pamięć (zawsze / w razie potrzeby), skille i kreator skilli, serwery MCP, Vault (loginy, karty, kontakty, klucze, TOTP) na `safeStorage`, rutyny (harmonogram, webhooki), tabele, biblioteka plików | Testy W2 |
 | **W3** | Zespół | Więcej dostawców (Gemini, Grok, OpenCode, własny ACP; wzorce z adapterów Paperclip, MIT), użycie i limity, modele zapasowe, głos, Computer Use na Windows, zdalny pulpit, telefon (QR), dok i wyspa, przepływy pracy, marketplace | Testy W3 |
