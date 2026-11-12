@@ -1,3 +1,4 @@
+import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "./ipc-action-cards";
 import type {
   AppInfo,
   AppSetupState,
@@ -9,6 +10,7 @@ import type {
   SaveSetupInput,
   UpdateStatus,
 } from "./ipc-app-auth";
+import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type {
   AccountUsage,
@@ -39,6 +41,16 @@ import type {
 } from "./ipc-conversation";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
+  CreateSidebarFolderInput,
+  DeleteSidebarFolderInput,
+  DuplicateSidebarFolderInput,
+  MoveSidebarFolderInput,
+  MoveSidebarItemInput,
+  SidebarFolderChange,
+  SidebarLayout,
+  UpdateSidebarFolderInput,
+} from "./ipc-sidebar";
+import type {
   ConfigureHostInput,
   ConfigureRemoteDesktopInput,
   CreateTeamInviteInput,
@@ -66,6 +78,7 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
+import type { ChannelTask, WorkspaceChannel } from "./ipc-workspace-channels";
 
 export interface AgentDesktopApi {
   getStatus: () => Promise<AgentStatus>;
@@ -97,7 +110,30 @@ export interface AgentDesktopApi {
   /** COSGRAL agent eyes (local server only). Optional until every renderer mock implements it. */
   getEyesState?: () => Promise<AgentEyesState>;
   stopEyes?: (input: StopAgentEyesInput) => Promise<AgentEyesState>;
+  /** COSGRAL W1: open cards of every agent, oldest first; read again after a window reload. */
+  listPendingRequests?: () => Promise<PendingAgentRequest[]>;
+  /** COSGRAL W1: the row state of every agent; then follow `activity-changed`. */
+  listActivity?: () => Promise<AgentActivity[]>;
+  respondToDraftPreview?: (input: RespondToDraftPreviewInput) => Promise<void>;
+  respondToBrowserTakeover?: (input: RespondToBrowserTakeoverInput) => Promise<void>;
   onEvent: (listener: (event: AgentEvent) => void) => () => void;
+}
+
+/** COSGRAL W1: user folders in the sidebar (see ipc-sidebar.ts). */
+export interface SidebarDesktopApi {
+  getLayout: () => Promise<SidebarLayout>;
+  createFolder: (input: CreateSidebarFolderInput) => Promise<SidebarFolderChange>;
+  updateFolder: (input: UpdateSidebarFolderInput) => Promise<SidebarLayout>;
+  moveFolder: (input: MoveSidebarFolderInput) => Promise<SidebarLayout>;
+  duplicateFolder: (input: DuplicateSidebarFolderInput) => Promise<SidebarFolderChange>;
+  deleteFolder: (input: DeleteSidebarFolderInput) => Promise<SidebarLayout>;
+  moveItem: (input: MoveSidebarItemInput) => Promise<SidebarLayout>;
+}
+
+/** COSGRAL W1: channels and channel tasks, read side (engine and writes in W1-BE2). */
+export interface ChannelsDesktopApi {
+  list: () => Promise<WorkspaceChannel[]>;
+  listTasks: (channelId: string) => Promise<ChannelTask[]>;
 }
 
 export interface BrowserDesktopApi {
@@ -185,4 +221,8 @@ export interface OpenBotDesktopApi {
   servers: ServersDesktopApi;
   host: HostDesktopApi;
   remoteMac: RemoteMacDesktopApi;
+  /** COSGRAL W1. Optional until every renderer mock implements it. */
+  sidebar?: SidebarDesktopApi;
+  /** COSGRAL W1 (engine in W1-BE2). Optional until every renderer mock implements it. */
+  channels?: ChannelsDesktopApi;
 }

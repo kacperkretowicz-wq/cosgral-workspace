@@ -1,5 +1,26 @@
+import {
+  type BrowserTakeoverPhase,
+  type BrowserTakeoverRequest,
+  type DraftPreviewCard,
+  type DraftPreviewResolution,
+  isBrowserTakeoverPhase,
+  isBrowserTakeoverRequest,
+  isDraftPreviewCard,
+  isDraftPreviewResolution,
+} from "./ipc-action-cards";
+import {
+  type AgentActivity,
+  type ApprovalResolution,
+  isAgentActivity,
+  isApprovalResolution,
+  isPromptResolution,
+  isRequestId,
+  type PromptResolution,
+} from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
+import { type ChannelTask, isChannelTask, isWorkspaceChannel, type WorkspaceChannel } from "./ipc-workspace-channels";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked" | "stopped";
@@ -433,6 +454,24 @@ export type AgentEvent =
   | { type: "browser-control-changed"; state: BrowserControlState }
   /** COSGRAL: agent eyes sessions and approvals changed. */
   | { type: "eyes-changed"; state: AgentEyesState }
+  /** COSGRAL W1: a question card ended; drop it in every window. */
+  | { type: "prompt-resolved"; requestId: string | number; botId: string; resolution: PromptResolution }
+  /** COSGRAL W1: an approval card ended; drop it in every window. */
+  | { type: "approval-resolved"; requestId: string | number; botId: string; resolution: ApprovalResolution }
+  /** COSGRAL W1: the agent row state changed (waiting, working, limited, error, idle). */
+  | { type: "activity-changed"; activity: AgentActivity }
+  /** COSGRAL W1: folders or item placements changed. */
+  | { type: "sidebar-layout-changed"; layout: SidebarLayout }
+  /** COSGRAL W1 (engine in W1-BE2): the channel list changed. */
+  | { type: "channels-changed"; channels: WorkspaceChannel[] }
+  /** COSGRAL W1 (engine in W1-BE2): one channel task was created or changed. */
+  | { type: "task-changed"; task: ChannelTask }
+  /** COSGRAL W1: an agent shows a draft before sending it in the user's name. */
+  | { type: "draft-preview"; card: DraftPreviewCard }
+  | { type: "draft-preview-resolved"; requestId: string; botId: string; resolution: DraftPreviewResolution }
+  /** COSGRAL W1: an agent asks the user to take over a browser tab. */
+  | { type: "browser-takeover"; request: BrowserTakeoverRequest }
+  | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -477,6 +516,26 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isDynamicRecord(value.state);
     case "eyes-changed":
       return isDynamicRecord(value.state) && Array.isArray(value.state.sessions) && Array.isArray(value.state.grants);
+    case "prompt-resolved":
+      return isRequestId(value.requestId) && isString(value.botId) && isPromptResolution(value.resolution);
+    case "approval-resolved":
+      return isRequestId(value.requestId) && isString(value.botId) && isApprovalResolution(value.resolution);
+    case "activity-changed":
+      return isAgentActivity(value.activity);
+    case "sidebar-layout-changed":
+      return isSidebarLayout(value.layout);
+    case "channels-changed":
+      return Array.isArray(value.channels) && value.channels.every(isWorkspaceChannel);
+    case "task-changed":
+      return isChannelTask(value.task);
+    case "draft-preview":
+      return isDraftPreviewCard(value.card);
+    case "draft-preview-resolved":
+      return isString(value.requestId) && isString(value.botId) && isDraftPreviewResolution(value.resolution);
+    case "browser-takeover":
+      return isBrowserTakeoverRequest(value.request);
+    case "browser-takeover-changed":
+      return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
     case "error":
       return isString(value.code) && isString(value.message);
     default:
