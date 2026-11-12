@@ -1,0 +1,285 @@
+/* COSGRAL workspace additions: page rail, "Coming soon" page, agent eyes. Imported last so these win. */
+
+/* Page rail ------------------------------------------------------------- */
+
+.page-rail {
+  position: relative;
+  z-index: 44;
+  display: flex;
+  min-width: var(--page-rail-width);
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 42px 6px 9px;
+  background: var(--openbot-bg-sidebar);
+  -webkit-app-region: drag;
+}
+
+.page-rail::before {
+  position: absolute;
+  top: calc(var(--left-header-height) - 1px);
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--openbot-border);
+  content: "";
+  pointer-events: none;
+}
+
+.page-rail-list,
+.page-rail-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-rail-tools {
+  padding-top: 10px;
+  border-top: 1px solid var(--openbot-hover);
+}
+
+.page-rail-button {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--openbot-radius-lg);
+  padding: 0;
+  color: var(--openbot-text-muted);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.page-rail-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.page-rail-button-active[data-variant],
+.page-rail-button-active[data-variant]:hover:not(:disabled) {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-text-primary);
+}
+
+.page-rail-mark {
+  position: absolute;
+  left: -6px;
+  width: 3px;
+  height: 0;
+  border-radius: 0 var(--openbot-radius-xs) var(--openbot-radius-xs) 0;
+  background: var(--openbot-text-primary);
+  transition: height var(--openbot-duration-normal) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.page-rail-button-active .page-rail-mark {
+  height: 20px;
+}
+
+/* The page rail adds a column; the conversation (or Coming soon) moves one to the right. */
+.app-frame-with-page-rail .conversation-panel,
+.app-frame-with-page-rail .direct-conversation,
+.app-frame-with-page-rail .coming-soon {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.app-frame-with-page-rail.app-frame-with-server-rail .conversation-panel,
+.app-frame-with-page-rail.app-frame-with-server-rail .direct-conversation,
+.app-frame-with-page-rail.app-frame-with-server-rail .coming-soon {
+  grid-column: 5;
+}
+
+/* Coming soon ----------------------------------------------------------- */
+
+.coming-soon {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--openbot-bg-canvas);
+}
+
+.coming-soon-drag {
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.coming-soon-body {
+  display: grid;
+  flex: 1 1 auto;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+
+.coming-soon-body h1 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-2xl);
+  font-weight: 600;
+}
+
+.coming-soon-body p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+/* Agent eyes ------------------------------------------------------------ */
+
+.eyes-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.eyes-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--openbot-danger);
+}
+
+.eyes-badge .eyes-icon {
+  width: 14px;
+  height: 14px;
+  animation: eyes-pulse 1.6s ease-in-out infinite;
+}
+
+.bot-row-meta {
+  display: inline-flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.bot-row-meta .eyes-badge {
+  align-self: center;
+}
+
+/* Slim bar under the conversation header: who is looking, at what, and Stop. */
+.eyes-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  border-bottom: 1px solid color-mix(in srgb, var(--openbot-danger) 32%, transparent);
+  background: var(--openbot-danger-soft);
+}
+
+.eyes-bar-row {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  line-height: 16px;
+}
+
+.eyes-bar-row + .eyes-bar-row {
+  border-top: 1px solid color-mix(in srgb, var(--openbot-danger) 18%, transparent);
+}
+
+.eyes-bar-icon {
+  position: relative;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--openbot-danger);
+}
+
+.eyes-bar-pulse {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-danger);
+  animation: eyes-pulse 1.6s ease-in-out infinite;
+}
+
+.eyes-bar-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.eyes-bar-copy strong {
+  color: var(--openbot-text-primary);
+  font-weight: 620;
+}
+
+.eyes-bar-target {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eyes-bar-meta {
+  flex: 0 0 auto;
+  color: var(--openbot-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.eyes-bar-stop {
+  height: 22px;
+  flex: 0 0 auto;
+  padding-inline: 10px;
+  font-size: var(--openbot-text-xs);
+}
+
+.conversation-panel:has(.agent-settings-panel) .eyes-bar {
+  width: calc(100% - var(--settings-panel-width, 296px));
+}
+
+.approval-eyes {
+  display: grid;
+  gap: 6px;
+}
+
+.approval-eyes .approval-detail-row strong {
+  font-family: inherit;
+  white-space: normal;
+}
+
+@keyframes eyes-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eyes-badge .eyes-icon,
+  .eyes-bar-pulse {
+    animation: none;
+  }
+}

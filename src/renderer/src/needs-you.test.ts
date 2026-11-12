@@ -1,6 +1,6 @@
+import type { AgentApproval } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
 import { collectNeedsYouItems, stickyDecisionForBot } from "./needs-you";
-import type { AgentApproval } from "@openbot/contracts/ipc";
 
 const bots = [
   { id: "research", name: "Research" },
@@ -90,9 +90,7 @@ describe("collectNeedsYouItems summaries (English)", () => {
     expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", targetLabel: "Camera" } })).toBe(
       "Camera photo",
     );
-    expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", live: true } })).toBe(
-      "Camera live preview",
-    );
+    expect(summaryFor({ kind: "camera", eyes: { ...eyes, source: "camera", live: true } })).toBe("Camera live preview");
     expect(summaryFor({ kind: "camera" })).toBe("Camera");
   });
 });
