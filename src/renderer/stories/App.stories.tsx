@@ -82,8 +82,8 @@ export const CommandSearch: Story = {
     await canvas.findByRole("heading", { name: "Chief" });
     await fireEvent.keyDown(window, { key: "k", metaKey: true });
     const page = within(canvasElement.ownerDocument.body);
-    const dialog = await page.findByRole("dialog", { name: "Search OpenBot" });
-    const input = page.getByRole("combobox", { name: "Search OpenBot" });
+    const dialog = await page.findByRole("dialog", { name: "Search COSGRAL" });
+    const input = page.getByRole("combobox", { name: "Search COSGRAL" });
     await expect(dialog).toBeVisible();
     await expect(input).toHaveFocus();
 

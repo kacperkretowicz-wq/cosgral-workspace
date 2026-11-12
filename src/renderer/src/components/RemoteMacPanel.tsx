@@ -123,7 +123,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             if (rfb !== client) return;
             setViewerState("error");
             setViewerError(
-              error instanceof Error ? error.message : "OpenBot could not authorize Remote Desktop access.",
+              error instanceof Error ? error.message : "COSGRAL Workspace could not authorize Remote Desktop access.",
             );
           });
       };

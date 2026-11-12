@@ -46,8 +46,8 @@
   --openbot-accent-text: #a49fff;
   --openbot-accent-soft: rgba(105, 96, 241, 0.16);
   --openbot-accent-strong: rgba(105, 96, 241, 0.34);
-  --openbot-logo-production: #d6adf2;
-  --openbot-logo-eye: #040007;
+  --openbot-logo-production: #2f6fed;
+  --openbot-logo-eye: #f4f8ff;
   --openbot-logo-dev: var(--openbot-warning);
   --openbot-logo-preview: var(--openbot-success);
   --openbot-unread-surface: #74b9ff;

@@ -216,7 +216,7 @@ export function AccountLogin(props: AccountLoginProps) {
     try {
       await props.onRetry();
     } catch {
-      setLocalError("OpenBot still can’t reach the account service.");
+      setLocalError("COSGRAL Workspace still can’t reach the account service.");
     } finally {
       setPendingAction(null);
     }
@@ -232,7 +232,7 @@ export function AccountLogin(props: AccountLoginProps) {
       setCodeError(null);
       setIssueVisible(false);
     } catch {
-      setLocalError("OpenBot couldn’t restart sign in. Try again.");
+      setLocalError("COSGRAL Workspace couldn’t restart sign in. Try again.");
     } finally {
       setPendingAction(null);
     }
@@ -243,7 +243,7 @@ export function AccountLogin(props: AccountLoginProps) {
       <div class="account-login-shell">
         <header class="account-login-brand-lockup">
           <AppLogo variant={props.variant} animation="blink" interactive class="account-login-logo" />
-          <span class="account-login-wordmark">OpenBot</span>
+          <span class="account-login-wordmark">COSGRAL</span>
         </header>
 
         <section
@@ -255,14 +255,14 @@ export function AccountLogin(props: AccountLoginProps) {
         >
           <h1 id="account-login-title" class="account-login-title">
             {connecting()
-              ? "Connecting to OpenBot"
+              ? "Connecting to COSGRAL Workspace"
               : unavailable()
                 ? "Service unavailable"
                 : verified()
                   ? "You’re signed in"
                   : codeSent()
                     ? "Check your inbox"
-                    : "Sign in to OpenBot"}
+                    : "Sign in to COSGRAL Workspace"}
           </h1>
           <p id="account-login-description" class="account-login-description">
             <Show
@@ -271,7 +271,7 @@ export function AccountLogin(props: AccountLoginProps) {
                 connecting()
                   ? "Starting the account service. This usually takes a moment."
                   : unavailable()
-                    ? (currentIssue()?.message ?? "OpenBot can’t reach the account service right now.")
+                    ? (currentIssue()?.message ?? "COSGRAL Workspace can’t reach the account service right now.")
                     : "We’ll email you a one-time code."
               }
             >
@@ -401,7 +401,7 @@ export function AccountLogin(props: AccountLoginProps) {
                   status={otpStatus()}
                   hint="Enter all 8 characters to continue."
                   errorMessage={displayedCodeError()}
-                  successMessage="Verified. Opening OpenBot…"
+                  successMessage="Verified. Opening COSGRAL Workspace…"
                   disabled={codeNeedsReplacement() || resendBusy()}
                   autofocus
                   onChange={handleCodeInput}

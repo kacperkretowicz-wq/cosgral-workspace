@@ -6,7 +6,7 @@ import "../../src/renderer/src/styles.css";
 import "../../.storybook/preview.css";
 import { QueuePanel } from "../../src/renderer/src/components/conversation/QueuePanel";
 
-const previewUrl = new URL("../../src/renderer/src/assets/openbot-logo-production.png", import.meta.url).href;
+const previewUrl = new URL("../../src/renderer/src/assets/cosgral-logo-production.png", import.meta.url).href;
 const previewAttachment: AttachmentSummary = {
   id: "queue-visual-preview",
   name: "queue-preview.png",

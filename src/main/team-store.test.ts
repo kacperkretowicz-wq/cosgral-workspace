@@ -52,7 +52,7 @@ describe("TeamStore", () => {
     );
   });
 
-  it("uses the verified OpenBot email as the team identity", async () => {
+  it("uses the verified COSGRAL email as the team identity", async () => {
     const { store } = await createStore();
     await store.configureWithAccount("Studio Mac", {
       id: "owner-account",
@@ -103,7 +103,7 @@ describe("TeamStore", () => {
     expect(restored.listMembers()[0]?.avatarUrl).toBe("https://api.openbot.run/v1/avatars/owner-account?v=image-1");
   });
 
-  it("allows only the OpenBot email that created the host to own it", async () => {
+  it("allows only the COSGRAL email that created the host to own it", async () => {
     const { store } = await createStore();
     await store.configureWithAccount("Studio Mac", {
       id: "owner-account",

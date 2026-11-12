@@ -33,7 +33,7 @@ const STARTUP_REQUEST_TIMEOUT_MS = 3_000;
 const STARTUP_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
 const RESEND_FALLBACK_DELAY_MS = 60_000;
 const AUTH_API_UNAVAILABLE_MESSAGE =
-  "OpenBot could not reach the account service. Check that the API is running, then try again.";
+  "COSGRAL Workspace could not reach the account service. Check that the API is running, then try again.";
 
 export interface ProvisionedTeamTunnel {
   tunnelId: string;
@@ -66,7 +66,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
 
   getSignedInUser(): CentralAuthUser {
     if (this.#state.status !== "signed_in") {
-      throw new AuthApiError(401, "unauthorized", "Sign in to OpenBot first.");
+      throw new AuthApiError(401, "unauthorized", "Sign in to COSGRAL Workspace first.");
     }
     return structuredClone(this.#state.user);
   }
@@ -220,7 +220,7 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
         ...(result.developmentCode ? { developmentCode: result.developmentCode } : {}),
       });
     } catch (error) {
-      const issue = centralAuthIssue(error, "email_sign_in_start_failed", "OpenBot could not send the sign-in code.");
+      const issue = centralAuthIssue(error, "email_sign_in_start_failed", "COSGRAL Workspace could not send the sign-in code.");
       if (existingChallenge) {
         return this.#setState({ ...existingChallenge, issue });
       }

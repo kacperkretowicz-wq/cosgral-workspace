@@ -240,7 +240,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       model: input.model ?? "gpt-5.6-luna",
       reasoningEffort: input.reasoningEffort ?? "medium",
       threadId: input.threadId ?? `thread-${id}`,
-      workspacePath: input.workspacePath ?? `/mock/OpenBot/Bots/${id}`,
+      workspacePath: input.workspacePath ?? `/mock/COSGRAL/Bots/${id}`,
       preview: input.preview ?? "No messages yet",
       updatedAt: input.updatedAt ?? null,
       avatarSeed: input.avatarSeed ?? id,

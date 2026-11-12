@@ -33,7 +33,7 @@ export const STORY_BOT_SUMMARIES: BotSummary[] = [
     model: "gpt-5.6-luna",
     reasoningEffort: "medium",
     threadId: "thread-chief",
-    workspacePath: "/mock/OpenBot/Bots/chief",
+    workspacePath: "/mock/COSGRAL/Bots/chief",
     preview: "I pulled together the latest project notes and next steps.",
     updatedAt: STORY_NOW,
     avatarSeed: "chief",
@@ -49,7 +49,7 @@ export const STORY_BOT_SUMMARIES: BotSummary[] = [
     model: "claude-sonnet-5",
     reasoningEffort: "high",
     threadId: "thread-research",
-    workspacePath: "/mock/OpenBot/Bots/research",
+    workspacePath: "/mock/COSGRAL/Bots/research",
     preview: "Three useful sources are ready for your review.",
     updatedAt: "2026-08-18T16:32:00.000Z",
     avatarSeed: "research",
@@ -65,7 +65,7 @@ export const STORY_BOT_SUMMARIES: BotSummary[] = [
     model: "gpt-5.6-terra",
     reasoningEffort: "medium",
     threadId: "thread-sales",
-    workspacePath: "/mock/OpenBot/Bots/sales",
+    workspacePath: "/mock/COSGRAL/Bots/sales",
     preview: "The follow-up draft is ready to send.",
     updatedAt: "2026-08-17T09:20:00.000Z",
     avatarSeed: "sales-outbound",
@@ -364,7 +364,7 @@ export const STORY_SERVERS: ServerSummary[] = [
   },
   {
     id: "team",
-    name: "OpenBot team",
+    name: "COSGRAL team",
     kind: "remote",
     state: "online",
     apiUrl: "https://team.example.com",
@@ -377,7 +377,7 @@ export const STORY_SERVERS: ServerSummary[] = [
 export const STORY_BROWSER_TABS: BrowserTab[] = [
   {
     id: "browser-tab-docs",
-    title: "OpenBot documentation",
+    title: "COSGRAL documentation",
     url: "https://openbot.run/docs",
     loading: false,
     ownerThreadId: "thread-chief",
@@ -405,7 +405,7 @@ export const STORY_HOST_STATUS: HostStatus = {
   configured: true,
   enabledOnLaunch: true,
   serverId: "team",
-  serverName: "OpenBot team",
+  serverName: "COSGRAL team",
   apiUrl: "https://team.example.com",
   vncHostname: "desktop.example.com",
   apiOnline: true,
@@ -466,7 +466,7 @@ export const STORY_UPDATE_STATUS: UpdateStatus = {
 };
 
 export const STORY_APP_INFO = {
-  name: "OpenBot",
+  name: "COSGRAL",
   version: "0.1.11",
   platform: "darwin" as const,
   variant: "production" as const,

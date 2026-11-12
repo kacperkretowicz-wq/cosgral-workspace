@@ -97,7 +97,7 @@ describe.sequential("AgentService", () => {
     expect(inputText).not.toContain("attachment:");
   });
 
-  it("creates independent full-access threads with browser and OpenBot tools", async () => {
+  it("creates independent full-access threads with browser and COSGRAL Workspace tools", async () => {
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser(), () => ({
       screenRecording: true,

@@ -26,13 +26,13 @@ export async function exportOpenBotData(
 ): Promise<ExportResult> {
   const destination = await chooseExportDestination(
     context.parentWindow,
-    `OpenBot-backup-${new Date().toISOString().slice(0, 10)}.zip`,
+    `COSGRAL-backup-${new Date().toISOString().slice(0, 10)}.zip`,
     [{ name: "ZIP archive", extensions: ["zip"] }],
   );
   if (!destination) return { saved: false };
 
   const temporaryRoot = await mkdtemp(join(tmpdir(), "openbot-export-"));
-  const exportRoot = join(temporaryRoot, "OpenBot Backup");
+  const exportRoot = join(temporaryRoot, "COSGRAL Backup");
   const archiveCandidate = `${destination}.${randomUUID()}.tmp.zip`;
   try {
     await mkdir(exportRoot, { recursive: true, mode: 0o700 });
@@ -45,7 +45,7 @@ export async function exportOpenBotData(
     const manifest = {
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
-      application: { name: "OpenBot", version: app.getVersion() },
+      application: { name: "COSGRAL", version: app.getVersion() },
       scope: {
         includes: ["agent profiles", "conversation snapshots", "queues", "attachments"],
         excludes: ["Codex credentials", "browser cookies", "agent workspace files"],
@@ -89,7 +89,7 @@ export async function exportDiagnostics(
 ): Promise<ExportResult> {
   const destination = await chooseExportDestination(
     context.parentWindow,
-    `OpenBot-diagnostics-${new Date().toISOString().slice(0, 10)}.json`,
+    `COSGRAL-diagnostics-${new Date().toISOString().slice(0, 10)}.json`,
     [{ name: "JSON document", extensions: ["json"] }],
   );
   if (!destination) return { saved: false };

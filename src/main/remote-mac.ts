@@ -173,7 +173,7 @@ export class RemoteMacManager extends EventEmitter<RemoteMacEvents> {
     const hostname = input.hostname.trim().toLowerCase();
     const useTeamAccess = Boolean(input.serverId && this.#options.resolveRemoteDesktop);
     if (!useTeamAccess && !isValidTunnelHostname(hostname)) {
-      throw new Error("Enter a valid OpenBot Remote Mac hostname.");
+      throw new Error("Enter a valid COSGRAL Remote Mac hostname.");
     }
     const existing = [...this.#sessions.values()].find(
       ({ snapshot }) =>
@@ -344,7 +344,7 @@ export class RemoteMacManager extends EventEmitter<RemoteMacEvents> {
       tunnel_timeout: "The tunnel did not become ready within 15 seconds.",
       tunnel_disconnected: "cloudflared stopped before the connection was ready.",
       invalid_vnc_handshake: "The remote service did not return an RFB VNC handshake.",
-      desktop_bridge_unavailable: "OpenBot could not start the local remote desktop bridge.",
+      desktop_bridge_unavailable: "COSGRAL Workspace could not start the local remote desktop bridge.",
       desktop_access_not_configured: "The host owner must configure Remote Desktop access.",
       desktop_access_denied: "Your team session could not open this remote desktop.",
     };

@@ -64,7 +64,7 @@ describe("HostPanel", () => {
           apiOnline: false,
           vncOnline: false,
           remoteDesktopCredentialConfigured: false,
-          message: "This OpenBot is private.",
+          message: "This COSGRAL Workspace is private.",
         }}
         members={[]}
         invites={[]}
@@ -113,7 +113,7 @@ describe("HostPanel", () => {
           apiOnline: true,
           vncOnline: false,
           remoteDesktopCredentialConfigured: false,
-          message: "This OpenBot is public. Only invited people can sign in.",
+          message: "This COSGRAL Workspace is public. Only invited people can sign in.",
         }}
         members={[]}
         invites={[]}
@@ -169,7 +169,7 @@ describe("HostPanel", () => {
           apiOnline: true,
           vncOnline: false,
           remoteDesktopCredentialConfigured: false,
-          message: "This OpenBot is public. Only invited people can sign in.",
+          message: "This COSGRAL Workspace is public. Only invited people can sign in.",
         }}
         members={[
           {
@@ -263,7 +263,7 @@ describe("HostPanel", () => {
           apiOnline: true,
           vncOnline: false,
           remoteDesktopCredentialConfigured: false,
-          message: "This OpenBot is public. Only invited people can sign in.",
+          message: "This COSGRAL Workspace is public. Only invited people can sign in.",
         }}
         members={[]}
         invites={[]}

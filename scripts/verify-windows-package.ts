@@ -15,7 +15,7 @@ if (process.platform !== "win32") {
 const requireUpdateMetadata = process.argv.includes("--require-update-metadata");
 const appPathArgument = process.argv.slice(2).find((argument) => !argument.startsWith("--"));
 const appPath = resolve(appPathArgument ?? "dist/win-unpacked");
-const executablePath = resolve(appPath, "OpenBot.exe");
+const executablePath = resolve(appPath, "COSGRAL Workspace.exe");
 const resourcesPath = resolve(appPath, "resources");
 
 await Promise.all([
@@ -50,8 +50,8 @@ const versionInfo = JSON.parse(
   ]),
 );
 if (!isDynamicRecord(versionInfo)) throw new Error("Windows version metadata is invalid.");
-expectEqual(versionInfo.ProductName, "OpenBot", "product name");
-expectEqual(versionInfo.FileDescription, "OpenBot", "file description");
+expectEqual(versionInfo.ProductName, "COSGRAL Workspace", "product name");
+expectEqual(versionInfo.FileDescription, "COSGRAL Workspace", "file description");
 if (!String(versionInfo.ProductVersion).startsWith(packageJson.version)) {
   throw new Error(
     `Unexpected product version: ${String(versionInfo.ProductVersion)} (expected ${packageJson.version})`,
@@ -90,7 +90,7 @@ await verifyLaunch(executablePath);
 
 console.log(`Verified ${appPath}`);
 console.log(
-  `OpenBot ${packageJson.version} · Windows x64 · metadata · licenses · ASAR integrity · hardened fuses · launch`,
+  `COSGRAL Workspace ${packageJson.version} · Windows x64 · metadata · licenses · ASAR integrity · hardened fuses · launch`,
 );
 
 function expectEqual(actual: unknown, expected: unknown, label: string): void {
@@ -129,7 +129,7 @@ async function verifyLaunch(executable: string): Promise<void> {
       new Promise<never>((_, reject) => {
         child.once("exit", (code, signal) => {
           reject(
-            new Error(`Packaged OpenBot exited during launch (${signal ?? `code ${String(code)}`}): ${stderr.trim()}`),
+            new Error(`Packaged COSGRAL Workspace exited during launch (${signal ?? `code ${String(code)}`}): ${stderr.trim()}`),
           );
         });
       }),
@@ -177,11 +177,11 @@ async function verifySecondInstanceExits(executable: string, userDataPath: strin
   ]);
   if (!result) {
     second.kill();
-    throw new Error("A second OpenBot instance did not exit.");
+    throw new Error("A second COSGRAL Workspace instance did not exit.");
   }
   if (result.code !== 0 || result.signal) {
     throw new Error(
-      `A second OpenBot instance exited unexpectedly (${result.signal ?? `code ${String(result.code)}`}).`,
+      `A second COSGRAL Workspace instance exited unexpectedly (${result.signal ?? `code ${String(result.code)}`}).`,
     );
   }
 }

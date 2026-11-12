@@ -24,17 +24,17 @@ describe("app icon variant", () => {
       resolveAppIconPath({
         variant: "dev",
         isPackaged: false,
-        resourcesPath: "/Applications/OpenBot.app/Contents/Resources",
-        sourceRoot: "/workspace/openbot",
+        resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
+        sourceRoot: "/workspace/cosgral",
       }),
-    ).toBe("/workspace/openbot/build/icon-dev.png");
+    ).toBe("/workspace/cosgral/build/icon-dev.png");
     expect(
       resolveAppIconPath({
         variant: "production",
         isPackaged: true,
-        resourcesPath: "/Applications/OpenBot.app/Contents/Resources",
-        sourceRoot: "/workspace/openbot",
+        resourcesPath: "/Applications/COSGRAL Workspace.app/Contents/Resources",
+        sourceRoot: "/workspace/cosgral",
       }),
-    ).toBe("/Applications/OpenBot.app/Contents/Resources/icons/icon-production.png");
+    ).toBe("/Applications/COSGRAL Workspace.app/Contents/Resources/icons/icon-production.png");
   });
 });

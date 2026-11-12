@@ -75,7 +75,7 @@ export const BROWSER_DYNAMIC_TOOLS = [
   {
     type: "namespace",
     name: OPENBOT_BROWSER_NAMESPACE,
-    description: "Operate OpenBot's private, persistent local browser.",
+    description: "Operate COSGRAL Workspace's private, persistent local browser.",
     tools: [
       functionTool("open", "Open an HTTP(S) URL in a new tab.", {
         type: "object",
@@ -974,7 +974,7 @@ async function withDevToolsDebugger<T>(contents: WebContents, operation: () => P
   const attachedHere = !contents.debugger.isAttached();
   if (attachedHere) {
     contents.debugger.attach("1.3");
-    // Native input must also work while OpenBot is not the foreground application.
+    // Native input must also work while COSGRAL Workspace is not the foreground application.
     await contents.debugger.sendCommand("Emulation.setFocusEmulationEnabled", { enabled: true });
   }
   try {

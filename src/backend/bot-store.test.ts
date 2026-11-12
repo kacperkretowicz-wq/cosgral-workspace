@@ -45,7 +45,7 @@ describe("BotStore", () => {
     expect(chief.workspacePath).not.toBe(sales.workspacePath);
   });
 
-  it("persists stable OpenBot thread ids in SQLite", async () => {
+  it("persists stable COSGRAL Workspace thread ids in SQLite", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const userData = join(root, "user-data");
@@ -81,7 +81,7 @@ describe("BotStore", () => {
           model: "gpt-5.6-luna",
           reasoningEffort: "medium",
           threadId: "native-codex-thread",
-          workspacePath: join(root, "home", "OpenBot", "Bots", "chief"),
+          workspacePath: join(root, "home", "COSGRAL Workspace", "Bots", "chief"),
           preview: "Hello",
           updatedAt: "2026-01-01T00:00:00.000Z",
           avatarShape: "cloud",
@@ -123,7 +123,7 @@ describe("BotStore", () => {
           model: "claude-sonnet-5",
           reasoningEffort: "high",
           threadId: null,
-          workspacePath: join(root, "home", "OpenBot", "Bots", "writer"),
+          workspacePath: join(root, "home", "COSGRAL Workspace", "Bots", "writer"),
           preview: "No messages yet",
           updatedAt: null,
           avatarSeed: "writer",
@@ -300,7 +300,7 @@ describe("BotStore", () => {
     });
   });
 
-  it("keeps the OpenBot thread when the model changes provider", async () => {
+  it("keeps the COSGRAL Workspace thread when the model changes provider", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);
     const store = new BotStore(join(root, "user-data"), join(root, "home"));
