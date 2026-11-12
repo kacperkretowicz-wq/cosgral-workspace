@@ -1,0 +1,48 @@
+# COSGRAL Workspace: plan (od 12.11.2026)
+
+**Cel właściciela:** program tylko dla nas, który ma wszystkie funkcje OpenBota, wygląda podobnie, a działa lepiej.
+**Lider:** Okiestrator. **Gałąź integracyjna:** `codex/cosgral-desktop` (worktree `Shared\cosgral-desktop`, scala tylko lider).
+**Baza:** OpenBot 0.1.11 (Apache-2.0), commit `a6fe240`. Pochodzenie i lista zmian: `COSGRAL-CHANGES.md`.
+
+## Stan na start (zweryfikowany 12.11)
+
+- Import bez zmian: `a04be4c22`. Izolacja od zainstalowanego OpenBota: `7ba807576`. Obejmuje nazwę, `appId` `pl.cosgral.workspace`, linki `cosgral://`, aktualizacje z naszego repo i dane w `~/COSGRAL Workspace`.
+- Sprawdzone:
+  - `bun install`, typecheck node i renderer, build: OK;
+  - okno „COSGRAL Workspace” otwiera się w 3 s;
+  - baza SQLite tworzy się w osobnym folderze.
+- Znane braki:
+  - Część funkcji wymaga zalogowania (lokalny serwer kont `127.0.0.1:3100` nie działa).
+  - Testy backendu na Windows: 29/96 przechodzi. Przyczyny: atrapa CLI pod macOS i `EBUSY` przy sprzątaniu SQLite.
+  - W UI zostało 197 napisów „OpenBot” i logo OpenBot.
+
+## Narzędzia
+
+```powershell
+$env:PATH = "C:\Users\x1 Yoga\OpenBot\Shared\tools\bun;C:\Users\x1 Yoga\OpenBot\Shared\tools\node;C:\Users\x1 Yoga\OpenBot\Shared\tools\git\cmd;$env:PATH"
+bun install; bun run typecheck:node; bun run build
+```
+
+Uruchamianie na próbę zawsze z osobnymi `USERPROFILE`, `APPDATA` i `LOCALAPPDATA` (piaskownica). Nie wolno uruchamiać na prawdziwym profilu, dopóki Backend nie potwierdzi izolacji.
+
+## Etapy
+
+| Etap | Kto | Zakres | Gotowe, gdy |
+|---|---|---|---|
+| **B0** ✓ | Lider | Baza i izolacja | Okno startuje, dane osobno |
+| **B1** | Backend Expert | Rdzeń na Windows: konta lokalne (bez logowania do cudzej chmury), naprawa testów Windows, pełny przebieg agenta Codex i Claude, instalator `dist:win` | Agent odpowiada w czacie, `.exe` instaluje się i startuje |
+| **B2** | Tester | Pełny spis funkcji OpenBota 0.68: każda funkcja → czy jest w 0.1.11 → fala → test akceptacyjny | `docs/cosgral/parytet-0.68.md` |
+| **B3-UI** | UI Designer | Marka COSGRAL (napisy, logo, ikony), potem makiety fali W1 w stylu bazy, w jasnym i ciemnym motywie | Zero „OpenBot” w UI; makiety zaakceptowane |
+| **W1** | Backend + UI | Nawigacja jak w OpenBocie 0.68: szyna serwerów i stron, foldery agentów ze stanami (myśli, czeka na Ciebie, limit), kanały z liderem i zadaniami, karty w czacie (pytanie, zatwierdzenie, podgląd szkicu, przejęcie przeglądarki), panel boczny | Testy z B2 dla W1 przechodzą |
+| **W2** | Backend + UI | Pamięć (zawsze / w razie potrzeby), skille i kreator skilli, serwery MCP, Vault (loginy, karty, kontakty, klucze, TOTP) na `safeStorage`, rutyny (harmonogram, webhooki), tabele, biblioteka plików | Testy W2 |
+| **W3** | Zespół | Więcej dostawców (Gemini, Grok, OpenCode, własny ACP; wzorce z adapterów Paperclip, MIT), użycie i limity, modele zapasowe, głos, Computer Use na Windows, zdalny pulpit, telefon (QR), dok i wyspa, przepływy pracy, marketplace | Testy W3 |
+| **Lepszy** | Zespół | „Needs you” w pasku agentów, przyklejona Decyzja nad kompozytorem, Chat / Zadania w kanale (UI A+B+C, zaakceptowane), wspólna sesja na żywo, oczy agenta (MCP od Backendu), Plugin Studio | Każdy wyróżnik ma test i dowód |
+
+## Zasady
+
+1. Każdy pracuje w swoim worktree, na gałęzi `team/<rola>/<temat>` od `codex/cosgral-desktop`. Scala lider po przeglądzie.
+2. Nowe funkcje budujemy na podstawie opisu zachowania (analiza REA, używanie aplikacji, publiczne opisy funkcji). Osoby implementujące nie otwierają kodu OpenBota nowszego niż `a6fe240` ani zdekompilowanej paczki 0.68. Tester opisuje zachowanie własnymi słowami, bez fragmentów kodu.
+3. Wygląd ma być podobny do OpenBota: system wizualny bazy 0.1.11 jest nasz. Logo, ikony i grafiki nowych ekranów robimy sami.
+4. Każdą zmianę pliku z bazy dopisujemy do tabeli w `COSGRAL-CHANGES.md`.
+5. Gotowe = testy + dowód (log lub zrzut) + raport w `docs/cosgral-raporty/<rola>-<temat>.md`. Commit z trailerem `Co-authored-by: OpenBot <335604065+openbotgit[bot]@users.noreply.github.com>`. Bez push, dopóki właściciel nie da tokenu.
+6. Serwery tylko na loopback, sekrety poza repo i czatem.
