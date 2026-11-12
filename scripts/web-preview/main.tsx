@@ -22,8 +22,30 @@ if (!root) {
 
 render(() => <App />, root);
 
-// Two agents wait for the user, so the "Needs you" section and the pinned decision are visible.
+// Two agents wait for the user, so the "Needs you" section and the pinned decision are visible,
+// and Chief is looking at a window, so the "agent is looking" indicator with Stop is visible.
 window.setTimeout(() => {
+  const now = Date.now();
+  mock.emitEyesState({
+    sessions: [
+      {
+        id: "demo-eyes",
+        botId: "chief",
+        threadId: "thread-chief",
+        turnId: "demo-turn-1",
+        source: "window",
+        targetLabel: "Notepad - plan.txt",
+        phase: "watching",
+        framesCaptured: 2,
+        framesPlanned: 6,
+        startedAt: new Date(now - 20_000).toISOString(),
+        endsAt: new Date(now + 10 * 60_000).toISOString(),
+      },
+    ],
+    grants: [
+      { botId: "chief", threadId: "thread-chief", source: "screen", grantedAt: new Date(now - 30_000).toISOString() },
+    ],
+  });
   mock.emitAgentEvent({
     type: "prompt",
     requestId: "demo-prompt",

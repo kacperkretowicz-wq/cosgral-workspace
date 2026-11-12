@@ -43,6 +43,28 @@
 3. **Prawdziwi agenci w testach:** prawdziwy Codex lub Claude tylko do krótkich testów dymnych (kilka tur na zadanie). Resztę testów robimy na atrapie CLI.
 4. **Kontrakt zadań kanału:** `ChannelTask {id, channelId, ownerBotId, state, title, requestMessageId, resultMessageId|null, updatedAt}`, zdarzenie `task-changed`, odczyt `channels.listTasks(channelId)` (uzgodnione przez Backend i UI).
 
+## Decyzje lidera do kanałów (12.11, odpowiedzi na pytania z `spec-w1-kanaly.md` §6)
+
+Źródło: to, co lider widzi jako członek kanału OpenBota 0.68 (zachowanie, nie kod).
+
+1. **Stany zadania:** `queued`, `running`, `waiting`, `paused`, `done`, `failed`, `cancelled`. `paused` to osobny stan: zadanie wstrzymane przez system (np. limit przydziałów) albo przez człowieka; wznawia je tylko człowiek. Archiwum to flaga `archived` (zadania i kanału), nie stan.
+2. **Wynik:** jeden wynik na zadanie, ale z numerem wersji. Poprawka w tym samym zadaniu tworzy nową wersję wyniku, a starsza jest oznaczona jako zastąpiona i zostaje w historii. Nowa prośba człowieka to nowe zadanie.
+3. **Limity:** instrukcje kanału ≤ 2000 znaków; wpis pamięci kanału ≤ 500 znaków; krótkie pytanie do innego członka ≤ 2 odpowiedzi; ≤ 8 automatycznych przydziałów na zadanie, potem zadanie przechodzi w `paused` z komunikatem, że może je wznowić albo przydzielić człowiek. Liczby trzymamy w jednym miejscu konfiguracji, nie w kodzie wielu plików.
+4. **Zasób do kolejkowania:** tekstowy klucz `workspace:<ścieżka bezwzględna>` albo `browser`. Zadania z tym samym kluczem idą po kolei.
+5. **Przejęcie przeglądarki** liczy się do Needs you: trzeci typ prośby obok pytania i zatwierdzenia.
+6. **Podgląd szkicu** to ten sam mechanizm co karta potwierdzenia (Send / Edit / Keep draft): jeden typ karty w kontrakcie z wariantami.
+7. **Foldery (pytania Backendu):** duplikat folderu nie kopiuje agentów; w pasku najpierw foldery, potem agenci. Tester potwierdza to w odbiorze; jeśli 0.68 działa inaczej, zmieniamy.
+8. **Postęp w kanale:** członek może pokazywać plan (lista kroków z odhaczeniem) i krótkie notatki z postępu, które po wyniku są oznaczone jako zastąpione.
+
+## Runda W1-2 (od 12.11, 21:10)
+
+| Zadanie | Kto | Zakres |
+|---|---|---|
+| W1-BE2 | Backend | Silnik kanałów z liderem i zadaniami według `spec-w1-kanaly.md` i decyzji wyżej, API dla UI i agentów |
+| W1-UI2 | UI | Needs you na trwałych danych (`listPendingRequests`, `*-resolved`), stany wiersza z `activity-changed`, foldery w pasku |
+| W1-T2 | Tester | Odbiór scalonej wersji w piaskownicy: B1, A1, B4, W1-BE1, W1-UI1 i wiersze W1 |
+| Potem | Backend + UI | Karty podglądu szkicu i przejęcia przeglądarki, kanały i zadania w UI na prawdziwych danych, paczka bez `claude.exe` |
+
 ## Runda W1 (od 12.11)
 
 | Zadanie | Kto | Zakres | Czeka na |
