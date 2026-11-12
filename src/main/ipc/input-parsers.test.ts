@@ -20,6 +20,7 @@ import {
 } from "./agent-inputs";
 import { parseMacPermission, parseProvider } from "./app-inputs";
 import { parseBrowserOpen, parseVisibility } from "./browser-inputs";
+import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./card-inputs";
 import {
   parseChannelId,
   parseChannelMember,
@@ -348,6 +349,39 @@ describe("channel IPC input parsing", () => {
     expect(() => parseChannelTaskAction({ taskId: "t1", action: "delete" })).toThrowError(
       "action must be stop, pause, resume, archive or restore.",
     );
+  });
+});
+
+describe("action card IPC input parsing", () => {
+  it("parses decisions on draft cards, browser takeovers and kept drafts", () => {
+    expect(parseDraftPreviewResponse({ requestId: "card-1", decision: "send" })).toEqual({
+      requestId: "card-1",
+      decision: "send",
+    });
+    expect(
+      parseDraftPreviewResponse({ requestId: "card-1", decision: "edit", feedback: "Warmer", text: "Dear Anna" }),
+    ).toEqual({ requestId: "card-1", decision: "edit", feedback: "Warmer", text: "Dear Anna" });
+    expect(parseBrowserTakeoverResponse({ requestId: "takeover-1", action: "take-over" })).toEqual({
+      requestId: "takeover-1",
+      action: "take-over",
+    });
+    expect(parseDeleteDraft({ draftId: "card-1" })).toEqual({ draftId: "card-1" });
+  });
+
+  it("rejects malformed card decisions", () => {
+    expect(() => parseDraftPreviewResponse({ requestId: "card-1", decision: "sent" })).toThrowError(
+      "decision must be send, edit or keep-draft.",
+    );
+    expect(() => parseDraftPreviewResponse({ requestId: "card-1", decision: "send", text: "Other" })).toThrowError(
+      "Only edit can carry new text.",
+    );
+    expect(() =>
+      parseDraftPreviewResponse({ requestId: "card-1", decision: "edit", feedback: "x".repeat(2_001) }),
+    ).toThrowError("feedback is too long.");
+    expect(() => parseBrowserTakeoverResponse({ requestId: "takeover-1", action: "steal" })).toThrowError(
+      "action must be take-over, return or decline.",
+    );
+    expect(() => parseDeleteDraft({})).toThrowError("draftId is required.");
   });
 });
 

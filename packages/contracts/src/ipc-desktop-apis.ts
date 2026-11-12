@@ -1,4 +1,9 @@
-import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "./ipc-action-cards";
+import type {
+  DeleteDraftInput,
+  KeptDraft,
+  RespondToBrowserTakeoverInput,
+  RespondToDraftPreviewInput,
+} from "./ipc-action-cards";
 import type {
   AppInfo,
   AppSetupState,
@@ -125,8 +130,13 @@ export interface AgentDesktopApi {
   listPendingRequests?: () => Promise<PendingAgentRequest[]>;
   /** COSGRAL W1: the row state of every agent; then follow `activity-changed`. */
   listActivity?: () => Promise<AgentActivity[]>;
+  /** COSGRAL W1-BE3: decide a draft preview / confirm card (local server only). */
   respondToDraftPreview?: (input: RespondToDraftPreviewInput) => Promise<void>;
+  /** COSGRAL W1-BE3: take over, return or decline a browser takeover request (local server only). */
   respondToBrowserTakeover?: (input: RespondToBrowserTakeoverInput) => Promise<void>;
+  /** COSGRAL W1-BE3: drafts kept with "keep-draft", newest first; then follow `drafts-changed`. */
+  listDrafts?: () => Promise<KeptDraft[]>;
+  deleteDraft?: (input: DeleteDraftInput) => Promise<void>;
   onEvent: (listener: (event: AgentEvent) => void) => () => void;
 }
 

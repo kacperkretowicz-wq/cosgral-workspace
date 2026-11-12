@@ -7,6 +7,8 @@ import {
   isBrowserTakeoverRequest,
   isDraftPreviewCard,
   isDraftPreviewResolution,
+  isKeptDraft,
+  type KeptDraft,
 } from "./ipc-action-cards";
 import {
   type AgentActivity,
@@ -478,6 +480,8 @@ export type AgentEvent =
   /** COSGRAL W1: an agent shows a draft before sending it in the user's name. */
   | { type: "draft-preview"; card: DraftPreviewCard }
   | { type: "draft-preview-resolved"; requestId: string; botId: string; resolution: DraftPreviewResolution }
+  /** COSGRAL W1-BE3: the kept drafts of every agent, newest first; replace the whole list. */
+  | { type: "drafts-changed"; drafts: KeptDraft[] }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -544,6 +548,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isDraftPreviewCard(value.card);
     case "draft-preview-resolved":
       return isString(value.requestId) && isString(value.botId) && isDraftPreviewResolution(value.resolution);
+    case "drafts-changed":
+      return Array.isArray(value.drafts) && value.drafts.every(isKeptDraft);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

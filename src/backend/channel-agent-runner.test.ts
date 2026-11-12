@@ -175,6 +175,44 @@ it("interrupts a turn whose started notification arrives after the user's Stop",
   expect(interrupted).toBe(true);
 });
 
+it("lets a channel turn show a card to the user and marks its task waiting meanwhile", async () => {
+  const client = new Client();
+  const handled: Array<string | null> = [];
+  const waiting: boolean[] = [];
+  const runner = new ChannelAgentRunner({
+    client: async () => client,
+    bot: channelBotFixture,
+    tools: () => [],
+    commonRequest: async (_client, request) => {
+      handled.push(getString(request.params, "namespace"));
+    },
+    register: () => {},
+    clear: () => {},
+  });
+  const runInput = input(new AbortController().signal);
+  runInput.waiting = (value) => waiting.push(value);
+  const work = runner.run(runInput);
+  await new Promise((r) => setTimeout(r, 0));
+  const threadId = getString(client.requests[1].params, "threadId");
+  runner.request(client, {
+    id: "card",
+    method: "item/tool/call",
+    params: {
+      threadId,
+      turnId: "turn",
+      callId: "card",
+      namespace: "cosgral_cards",
+      tool: "confirm",
+      arguments: { preview: "Hi" },
+    },
+  });
+  await new Promise((r) => setTimeout(r, 0));
+  expect(handled).toEqual(["cosgral_cards"]);
+  expect(waiting).toEqual([true, false]);
+  runner.notification({ method: "turn/completed", params: { threadId, turn: { id: "turn", status: "completed" } } });
+  await work;
+});
+
 it("processes a repeated provider call id once while replying to both requests", async () => {
   const client = new Client();
   let effects = 0;

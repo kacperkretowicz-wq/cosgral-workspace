@@ -1,5 +1,6 @@
 import type { AgentEvent, BotSummary } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
+import { CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import type { AgentClient } from "./agent-client";
 import type { ChannelRunInput, ChannelRunner, ChannelTurnResult } from "./channel-engine";
 import { CHANNEL_DYNAMIC_TOOLS, CHANNEL_NAMESPACE } from "./channel-tools";
@@ -83,6 +84,7 @@ export class ChannelAgentRunner implements ChannelRunner {
           `Your profile: ${JSON.stringify({ name: bot.name, role: bot.role, description: bot.description })}`,
           `Channel: ${input.channel.name}. Instructions: ${input.channel.instructions}`,
           `This channel is ${input.channel.isolated ? "isolated" : "shared"}; no direct-message context or memory is included.`,
+          CARDS_INSTRUCTIONS,
         ].join("\n"),
         dynamicTools: [...this.#options.tools(), CHANNEL_DYNAMIC_TOOLS],
       },
@@ -241,6 +243,7 @@ export class ChannelAgentRunner implements ChannelRunner {
           if (
             params.namespace !== "openbot_browser" &&
             params.namespace !== "cosgral_eyes" &&
+            params.namespace !== CARDS_NAMESPACE &&
             !(params.namespace === "openbot" && params.tool === "ask_user")
           )
             throw new Error("This tool is outside the channel's scope.");

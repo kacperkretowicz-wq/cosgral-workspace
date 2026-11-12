@@ -273,6 +273,14 @@ const SCHEMA_SQL = `
     task_id TEXT NOT NULL REFERENCES projection_channel_tasks(task_id) ON DELETE CASCADE,
     data_json TEXT NOT NULL CHECK(json_valid(data_json))
   );
+  -- COSGRAL W1-BE3: drafts the user kept unsent from a draft preview / confirm card.
+  CREATE TABLE IF NOT EXISTS projection_kept_drafts (
+    draft_id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    kept_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS kept_drafts_kept_at ON projection_kept_drafts(kept_at);
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

@@ -20,11 +20,13 @@ import {
   isAgentModel,
   isChannelMessage,
   isChannelTask,
+  isKeptDraft,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
   isSidebarLayout,
   isWorkspaceChannel,
+  type KeptDraft,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -311,6 +313,12 @@ function decodePendingRequests(value: unknown): PendingAgentRequest[] {
   return value.filter(isPendingAgentRequest);
 }
 
+/** COSGRAL W1-BE3: kept drafts; malformed entries are dropped. */
+function decodeDrafts(value: unknown): KeptDraft[] {
+  if (!Array.isArray(value)) throw new Error("Invalid drafts response.");
+  return value.filter(isKeptDraft);
+}
+
 /** COSGRAL W1: agent row states; malformed entries are dropped. */
 function decodeActivities(value: unknown): AgentActivity[] {
   if (!Array.isArray(value)) throw new Error("Invalid agent activity response.");
@@ -452,6 +460,10 @@ const openbotApi: OpenBotDesktopApi = {
     stopEyes: (input) => invokeAgent(IPC_CHANNELS.agentStopEyes, input, decodeEyesState),
     listPendingRequests: () => invokeAgent(IPC_CHANNELS.agentListPendingRequests, null, decodePendingRequests),
     listActivity: () => invokeAgent(IPC_CHANNELS.agentListActivity, null, decodeActivities),
+    respondToDraftPreview: (input) => invokeAgent(IPC_CHANNELS.agentRespondToDraftPreview, input, decodeVoid),
+    respondToBrowserTakeover: (input) => invokeAgent(IPC_CHANNELS.agentRespondToBrowserTakeover, input, decodeVoid),
+    listDrafts: () => invokeAgent(IPC_CHANNELS.agentListDrafts, null, decodeDrafts),
+    deleteDraft: (input) => invokeAgent(IPC_CHANNELS.agentDeleteDraft, input, decodeVoid),
     onEvent: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: ScopedAgentEvent) => {
         if (payload.serverId === selectedServerId) listener(payload.event);

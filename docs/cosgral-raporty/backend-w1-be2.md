@@ -38,7 +38,41 @@ Pola zadania dodane opcjonalnie (zgodność z atrapami): `automaticAssignmentCou
 
 Limity w jednym `CHANNEL_LIMITS`: instrukcje **2000**, wpis pamięci **500**, odpowiedzi na krótkie pytanie **2**, automatyczne przydziały **8**. Pierwszy przydział, przekazania, pomocnicy i kontynuacje zużywają budżet. Następna próba ustawia `paused` i `pauseReason` z instrukcją wznowienia przez człowieka. `assignmentCount` nie rośnie dla odrzuconego przekazania. Nazwa 40, tytuł 120, członkowie 20, wiadomość 32000, strona historii 200.
 
-Serwer zdalny nadal zwraca puste listy; mutacje kanałów zdalnych są odrzucane. Nie ma jeszcze widoku historii/composera kanału w rendererze. Przejęcie przeglądarki i karta szkicu pozostają osobnym kolejnym zadaniem; ich istniejący kontrakt z BE1 jest zachowany.
+Serwer zdalny nadal zwraca puste listy; mutacje kanałów zdalnych są odrzucane. Nie ma jeszcze widoku historii/composera kanału w rendererze.
+
+### Karty akcji (W1-BE3): podgląd szkicu / potwierdzenie i przejęcie przeglądarki
+
+Typy: `packages/contracts/src/ipc-action-cards.ts` i `ipc-attention.ts`. Wszystkie metody są opcjonalne w `window.openbot.agent` i działają tylko na tym komputerze (`serverId: local`). Serwer zdalny zwraca pustą listę szkiców i odrzuca decyzje.
+
+**Jeden typ karty z wariantami** (decyzja lidera 6): `DraftPreviewCard.variant`:
+
+| `variant` | Kiedy | Przyciski w UI | `decision` |
+|---|---|---|---|
+| `draft` | Agent wysyła coś w imieniu użytkownika (wiadomość, e-mail) | Send / Edit / Keep draft | `send` / `edit` / `keep-draft` |
+| `confirm` | Inne działanie w imieniu użytkownika (post, usunięcie, płatność) | Confirm / Edit / Cancel | `send` / `edit` / `keep-draft` |
+
+Karta: `requestId, botId, threadId, turnId, variant, title, recipient|null, channel|null, preview, draftId|null, createdAt`. `preview` to dokładnie to, co wyjdzie. `draftId` jest ustawione, gdy agent ponownie otwiera zachowany szkic.
+
+| Metoda | Wynik | Zachowanie |
+|---|---|---|
+| `respondToDraftPreview?.({requestId, decision, feedback?, text?})` | `void` | `send` zatwierdza raz dokładnie tę treść dla tych odbiorców. `edit` nic nie wysyła: agent poprawia i pokazuje nową kartę; `text` to własna wersja człowieka (tylko z `edit`), `feedback` to uwagi. `keep-draft` nic nie wysyła i zapisuje szkic. Druga decyzja na tej samej karcie: błąd „already decided or no longer open” |
+| `listDrafts?.()` | `KeptDraft[]` | Zachowane szkice, najnowsze pierwsze; trwałe po restarcie (SQLite), max 200 (nowy ponad limit jest odrzucany, stary nigdy nie znika po cichu) |
+| `deleteDraft?.({draftId})` | `void` | Usuwa szkic. Szkice usuniętego agenta znikają razem z nim |
+| `respondToBrowserTakeover?.({requestId, action})` | `void` | `take-over`: backend aktywuje tę kartę przeglądarki, faza `taken-over`; agent nie może w tym czasie używać narzędzi przeglądarki na tej karcie. `return`: oddanie, agent kontynuuje w tej samej karcie i sesji (te same ciasteczka). `decline`: agent idzie dalej bez pomocy. `return` działa też z fazy `requested` |
+
+Zdarzenia (przez `agent.onEvent`):
+
+| Zdarzenie | Dane | Obsługa w UI |
+|---|---|---|
+| `draft-preview` | `{card}` | Pokaż kartę w rozmowie, w Needs you i w przypiętej Decyzji |
+| `draft-preview-resolved` | `{requestId, botId, resolution}` | Usuń kartę; `resolution`: `send`, `edit`, `keep-draft`, `expired` |
+| `drafts-changed` | `{drafts}` | Zastąp listę zachowanych szkiców |
+| `browser-takeover` | `{request}` | Karta przejęcia: `tabId`, `url`, `reason`; liczy się do Needs you |
+| `browser-takeover-changed` | `{requestId, botId, phase}` | `taken-over`: pokaż panel przeglądarki z tą kartą i przycisk oddania. `returned`, `declined`, `expired`: usuń kartę |
+
+`listPendingRequests()` zwraca też `{kind: "draft-preview", card}` i `{kind: "browser-takeover", request, phase}` w jednej kolejności z pytaniami i zatwierdzeniami, więc karty wracają po przeładowaniu okna. `AgentActivity.pendingRequests` liczy wszystkie cztery rodzaje; wiersz agenta ma stan `waiting`. Otwarta karta wygasa z końcem albo przerwaniem tury (`expired`): nic nie jest zatwierdzone.
+
+Agenci dostają narzędzia `cosgral_cards` (`confirm`, `request_takeover`, `list_drafts`) tym samym mechanizmem co `cosgral_eyes`: funkcje dynamiczne Codex i serwer MCP w procesie dla Claude. Działają też w turach kanału; zadanie kanału ma wtedy stan `waiting`.
 
 ## Wykonanie i izolacja
 

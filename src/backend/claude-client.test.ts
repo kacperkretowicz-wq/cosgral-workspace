@@ -159,7 +159,7 @@ describe("ClaudeAgentClient", () => {
     );
 
     expect(serverNames).toEqual(
-      expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes", "cosgral_channels"]),
+      expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes", "cosgral_channels", "cosgral_cards"]),
     );
     await client.stop();
   });

@@ -52,6 +52,8 @@ export const IPC_CHANNELS = {
   agentListActivity: "agent:list-activity",
   agentRespondToDraftPreview: "agent:respond-to-draft-preview",
   agentRespondToBrowserTakeover: "agent:respond-to-browser-takeover",
+  agentListDrafts: "agent:list-drafts",
+  agentDeleteDraft: "agent:delete-draft",
   agentEvent: "agent:event",
   sidebarGetLayout: "sidebar:get-layout",
   sidebarCreateFolder: "sidebar:create-folder",

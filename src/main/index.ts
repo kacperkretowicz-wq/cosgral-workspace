@@ -72,6 +72,7 @@ import {
 import { parseMacPermission, parseProvider } from "./ipc/app-inputs";
 import { parseAvatarImage } from "./ipc/avatar-inputs";
 import { parseBrowserOpen, parseVisibility } from "./ipc/browser-inputs";
+import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./ipc/card-inputs";
 import {
   parseChannelId,
   parseChannelMember,
@@ -671,6 +672,26 @@ function registerIpcHandlers(
   handleTrusted(IPC_CHANNELS.agentListActivity, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
     return serverId === "local" ? service.listActivity() : [];
+  });
+  // COSGRAL W1-BE3: draft preview / confirm cards, browser takeovers and kept drafts; this computer only.
+  handleTrusted(IPC_CHANNELS.agentRespondToDraftPreview, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Draft cards are available on this computer only.");
+    return service.respondToDraftPreview(parseDraftPreviewResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentRespondToBrowserTakeover, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Browser takeover is available on this computer only.");
+    return service.respondToBrowserTakeover(parseBrowserTakeoverResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentListDrafts, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.listDrafts() : [];
+  });
+  handleTrusted(IPC_CHANNELS.agentDeleteDraft, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Drafts are kept on this computer only.");
+    service.deleteDraft(parseDeleteDraft(scoped.payload));
   });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {

@@ -68,22 +68,44 @@ describe("W1 agent events", () => {
   });
 
   it("accepts the draft preview card and the browser takeover request", () => {
+    const card = {
+      requestId: "d1",
+      botId: "chief",
+      threadId: "thread-1",
+      turnId: "turn-1",
+      variant: "draft",
+      title: "Send this e-mail?",
+      recipient: "Anna",
+      channel: "email",
+      preview: "Hi Anna, …",
+      draftId: null,
+      createdAt: AT,
+    };
+    expect(isAgentEvent({ type: "draft-preview", card })).toBe(true);
+    // One card type with variants: a confirm card for an outward action, reopened from a kept draft.
+    expect(isAgentEvent({ type: "draft-preview", card: { ...card, variant: "confirm", draftId: "k1" } })).toBe(true);
+    expect(isAgentEvent({ type: "draft-preview", card: { ...card, variant: "pay" } })).toBe(false);
+    const { variant: _variant, ...withoutVariant } = card;
+    expect(isAgentEvent({ type: "draft-preview", card: withoutVariant })).toBe(false);
     expect(
       isAgentEvent({
-        type: "draft-preview",
-        card: {
-          requestId: "d1",
-          botId: "chief",
-          threadId: "thread-1",
-          turnId: "turn-1",
-          title: "Send this e-mail?",
-          recipient: "Anna",
-          channel: "email",
-          preview: "Hi Anna, …",
-          createdAt: AT,
-        },
+        type: "drafts-changed",
+        drafts: [
+          {
+            id: "k1",
+            botId: "chief",
+            threadId: "thread-1",
+            variant: "draft",
+            title: "Send this e-mail?",
+            recipient: null,
+            channel: null,
+            preview: "Hi Anna, …",
+            keptAt: AT,
+          },
+        ],
       }),
     ).toBe(true);
+    expect(isAgentEvent({ type: "drafts-changed", drafts: [{ id: "k1", botId: "chief" }] })).toBe(false);
     expect(
       isAgentEvent({ type: "draft-preview-resolved", requestId: "d1", botId: "chief", resolution: "keep-draft" }),
     ).toBe(true);

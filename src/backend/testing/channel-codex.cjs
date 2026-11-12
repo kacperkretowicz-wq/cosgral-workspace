@@ -28,6 +28,38 @@ async function run(threadId, turnId, context) {
   const task = context.assignment,
     members = context.members;
   if (task.title.startsWith("STOP SMOKE")) return;
+  if (task.title.startsWith("CARD SMOKE")) {
+    // W1-BE3: a draft card in the user's name; the turn waits for Send / Edit / Keep draft.
+    const response = await call(
+      threadId,
+      turnId,
+      "confirm",
+      {
+        title: "Send the summary to Anna?",
+        preview: "Hi Anna, the report is ready.",
+        recipient: "Anna",
+        channel: "email",
+      },
+      "cosgral_cards",
+    );
+    const decision = JSON.parse(response.contentItems[0].text).decision;
+    complete(threadId, turnId, `Stub: card decision ${decision}`);
+    return;
+  }
+  if (task.title.startsWith("TAKEOVER SMOKE")) {
+    // W1-BE3: a person takes over the tab, returns it, and the agent continues in the same tab.
+    const response = await call(
+      threadId,
+      turnId,
+      "request_takeover",
+      { tabId: "tab-1", reason: "Sign in to continue" },
+      "cosgral_cards",
+    );
+    const outcome = JSON.parse(response.contentItems[0].text).outcome;
+    if (outcome === "returned") await call(threadId, turnId, "snapshot", { tabId: "tab-1" }, "openbot_browser");
+    complete(threadId, turnId, `Stub: takeover ${outcome}`);
+    return;
+  }
   if (task.title.startsWith("QUESTION SMOKE")) {
     await call(
       threadId,

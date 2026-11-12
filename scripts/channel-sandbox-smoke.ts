@@ -6,6 +6,7 @@ import { AgentService } from "../src/backend/agent-service";
 import { BotStore } from "../src/backend/bot-store";
 import { ChannelEngine } from "../src/backend/channel-engine";
 import { ChannelStore } from "../src/backend/channel-store";
+import { DraftStore } from "../src/backend/draft-store";
 import { MailboxStore } from "../src/backend/mailbox-store";
 import { OpenBotDatabase } from "../src/backend/openbot-database";
 import { writeFakeCli } from "../src/backend/testing/fake-cli";
@@ -30,12 +31,31 @@ async function main() {
   const db = new OpenBotDatabase(join(root, "data"));
   const bots = new BotStore(join(root, "data"), join(root, "home"), db);
   const mailbox = new MailboxStore(join(root, "data"), bots.sharedRoot, db);
+  // A fake browser with one tab: the fixture never drives a real page.
+  const activatedTabs: string[] = [];
+  const browserCalls: string[] = [];
   const service = new AgentService(bots, mailbox, {
     onChanged: () => () => {},
     onControlChanged: () => () => {},
     clearControls: () => {},
     endControl: () => {},
-    handleDynamicTool: async () => ({ success: false, contentItems: [] }),
+    handleDynamicTool: async (params) => {
+      browserCalls.push(params.tool);
+      return { success: true, contentItems: [{ type: "inputText", text: "{}" }] };
+    },
+    listTabs: () => [
+      {
+        id: "tab-1",
+        title: "Sign in",
+        url: "https://login.example/",
+        loading: false,
+        ownerThreadId: null,
+        ownerBotId: null,
+      },
+    ],
+    activate: async (tabId) => {
+      activatedTabs.push(tabId);
+    },
   });
   const events: AgentEvent[] = [];
   service.on("event", (e) => events.push(e));
@@ -97,6 +117,36 @@ async function main() {
     assert(prompt.kind === "prompt");
     await service.respondToPrompt({ requestId: prompt.requestId, answers: { format: ["Short"] } });
     await wait(() => store.getTask(question.id).state === "done");
+    // W1-BE3: draft card (Send, then Keep draft) and browser takeover inside channel turns.
+    const pendingKind = (kind: string) => service.listPendingRequests().filter((request) => request.kind === kind);
+    const sent = engine.sendMessage({ channelId: channel.id, text: "CARD SMOKE send" }).task;
+    await wait(() => pendingKind("draft-preview").length === 1);
+    assert.equal(store.getTask(sent.id).state, "waiting");
+    const firstCard = pendingKind("draft-preview")[0];
+    assert(firstCard?.kind === "draft-preview");
+    assert.equal(firstCard.card.preview, "Hi Anna, the report is ready.");
+    await service.respondToDraftPreview({ requestId: firstCard.card.requestId, decision: "send" });
+    await wait(() => store.getTask(sent.id).state === "done");
+    assert.equal(resultText(store, channel.id, sent.id), "Stub: card decision send");
+    const kept = engine.sendMessage({ channelId: channel.id, text: "CARD SMOKE keep" }).task;
+    await wait(() => pendingKind("draft-preview").length === 1);
+    const secondCard = pendingKind("draft-preview")[0];
+    assert(secondCard?.kind === "draft-preview");
+    await service.respondToDraftPreview({ requestId: secondCard.card.requestId, decision: "keep-draft" });
+    await wait(() => store.getTask(kept.id).state === "done");
+    assert.equal(resultText(store, channel.id, kept.id), "Stub: card decision keep-draft");
+    assert.equal(service.listDrafts().length, 1);
+    const takeover = engine.sendMessage({ channelId: channel.id, text: "TAKEOVER SMOKE", resourceKey: "browser" }).task;
+    await wait(() => pendingKind("browser-takeover").length === 1);
+    const request = pendingKind("browser-takeover")[0];
+    assert(request?.kind === "browser-takeover" && request.phase === "requested");
+    await service.respondToBrowserTakeover({ requestId: request.request.requestId, action: "take-over" });
+    assert.deepEqual(activatedTabs, ["tab-1"]);
+    assert.equal(pendingKind("browser-takeover")[0]?.kind, "browser-takeover");
+    await service.respondToBrowserTakeover({ requestId: request.request.requestId, action: "return" });
+    await wait(() => store.getTask(takeover.id).state === "done");
+    assert.equal(resultText(store, channel.id, takeover.id), "Stub: takeover returned");
+    assert.deepEqual(browserCalls, ["snapshot"]);
     const stopped = engine.sendMessage({ channelId: channel.id, text: "STOP SMOKE", resourceKey: "browser" }).task;
     await wait(() => store.getTask(stopped.id).state === "running");
     engine.actOnTask({ taskId: stopped.id, action: "stop" });
@@ -123,6 +173,7 @@ async function main() {
     const reopened = new OpenBotDatabase(join(root, "data"));
     await reopened.initialize();
     assert.equal(new ChannelStore(reopened).listMessages(channel.id).length, storeMessageCount(messages, events));
+    assert.equal(new DraftStore(reopened).list().length, 1, "The kept draft survives a restart");
     reopened.close();
     console.log(
       JSON.stringify({
@@ -131,6 +182,9 @@ async function main() {
         agents: 3,
         resultVersions: 2,
         fastHelperWaitingTextNotResult: true,
+        draftCardSend: true,
+        draftCardKeptDrafts: 1,
+        browserTakeoverReturned: true,
         assignmentLimit: 8,
         humanResume: true,
         question: true,
@@ -144,6 +198,11 @@ async function main() {
     db.close();
   }
 }
+function resultText(store: ChannelStore, channelId: string, taskId: string): string | undefined {
+  const resultId = store.getTask(taskId).resultMessageId;
+  return resultId ? store.getMessage(channelId, resultId).text : undefined;
+}
+
 function storeMessageCount(_messages: unknown[], events: AgentEvent[]): number {
   return events.filter((e) => e.type === "channel-message").length;
 }
