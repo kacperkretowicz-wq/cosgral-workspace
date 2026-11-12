@@ -4,7 +4,8 @@
 **Author:** UI Designer · branch `team/ui/p1-shell-shape`  
 **Skills:** impeccable `shape` + Canvas `critique` · superpowers brainstorming  
 **Sources:** `DESIGN.md`, `doc/plans/2026-11-12-cosgral-openbot-plus.md`, `docs/cosgral-raporty/claude-k-openbot-ux-map.md`, `COSGRAL-PROMPT-POSTEP.md` §3/§8/§9, `docs/cosgral/referencja-interfejsu.png`, `Layout.tsx`, `MultiAgentCanvas.tsx`, `cosgral-shell-motion.css`  
-**License note:** OpenBot PolyForm Noncommercial — behavior only; no copy of texts, graphics, icons, names, or branding.
+**License note:** OpenBot PolyForm Noncommercial — behavior only; no copy of texts, graphics, icons, names, or branding.  
+**Owner mandate (12.11, kanał):** wybierać najlepszą opcję — produkt lepszy niż OpenBot także wizualnie; jeśli inny silnik będzie lepszy i lepiej pasuje, brać go pod uwagę (nie przywiązanie do klonu 1:1).
 
 ---
 
@@ -15,8 +16,10 @@
 | **Job** | Operator shell for COSGRAL Workspace: scan agent/channel state, chat, approve, watch eyes, build plugins. |
 | **Audience** | 2 operators (same project, live) + agents. Mode: **Operate**. |
 | **Primary outcome** | In one glance: *what is happening → does it need me → what do I do*. |
-| **Product truth** | Slack × Codex × Linear density; Paperclip engine under the hood; calmer and clearer than OpenBot. |
-| **Anti-goals** | Glowing dashboards, AI-slop cards, parallel design systems, OpenBot clone of copy/brand, Canvas as home screen. |
+| **Product truth** | Slack × Codex × Linear density; Paperclip engine under the hood; **calmer, clearer, and visually stronger than OpenBot**. |
+| **Quality bar** | Feature parity+ **and** visual parity+: denser scan, quieter chrome, better hierarchy than OpenBot — not a lookalike. |
+| **Engine stance (UI)** | Prefer Paperclip shell (`Layout`, tokens, Issues/chat) because it already fits Operate mode and live team work. If Backend shows a better-fitting engine, UI re-shapes on that base — OpenBot is the **behavior reference**, not the locked stack. |
+| **Anti-goals** | Glowing dashboards, AI-slop cards, parallel design systems, OpenBot clone of copy/brand, Canvas as home screen, “good enough” visuals. |
 | **Visual authority** | Existing `DESIGN.md` + semantic tokens in `ui/src/index.css`. Brand hex TBD → only tokens. |
 | **Assumptions (mark for leader)** | (A1) Server rail is secondary to company/project for MVP. (A2) Chat/Tabela/Workflow share one data model (issues + conversation). (A3) Plugin Studio expands `SkillStudio`, not a greenfield app. |
 
@@ -246,7 +249,8 @@ Each step: one PR-sized change, tokens only, no OpenBot assets.
 
 1. **Home = Chat-first shell on Paperclip Layout**, not MultiAgentCanvas; Canvas stays unmounted prototype; Workflow rebuilt thin in F2.9.  
 2. **Channels = ProjectConversation + CoordinatorTasks + Issues**, one task model — no parallel “channel engine” in UI.  
-3. **Action cards in chat are the approval UX**; list pages (`Approvals`, `WhatNeedsMe`) remain mirrors, not a separate product language.
+3. **Action cards in chat are the approval UX**; list pages (`Approvals`, `WhatNeedsMe`) remain mirrors, not a separate product language.  
+4. **Quality mandate locked:** beat OpenBot in UX *and* visuals; Paperclip stays default UI base unless Backend proves a better-fitting engine (then re-shape, don’t force a fake OpenBot clone).
 
 ---
 
