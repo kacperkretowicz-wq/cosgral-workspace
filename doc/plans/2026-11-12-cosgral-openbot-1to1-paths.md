@@ -1,7 +1,7 @@
 # OpenBot 1:1: jak legalnie zdobyć backend (12.11.2026)
 
 **Prośba właściciela:** program ma być identyczny jak OpenBot, „dosłownie to samo, a nawet lepszy”, a backend trzeba jakoś zdobyć.
-**Autor:** Okiestrator (lider). **Status:** ustalenia gotowe, wybór drogi zależy od właściciela (§4).
+**Autor:** Okiestrator (lider). **Status:** 12.11.2026 właściciel wybrał **drogę A** (licencja + dodatki, tylko na własny użytek). Plan: `2026-11-12-cosgral-openbot-plus.md` §0.
 Ten dokument zastępuje część „silnik” w `2026-11-12-cosgral-engine-decision.md`.
 
 ## 1. Co ustaliłem (fakty ze źródła)

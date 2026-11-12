@@ -3,6 +3,25 @@
 Lider: Okiestrator. Zespół: Backend Expert (Claude Opus), UI Designer (Cursor), Tester (Codex).
 Kanał: „Projekt COSGRAL WORKSPACE” w OpenBot.
 
+## 0. KIERUNEK OD 12.11.2026: droga A (decyzja właściciela)
+
+Właściciel chce programu identycznego z OpenBotem, tylko lepszego, i to tylko na własny użytek. Wybrał drogę A z `2026-11-12-cosgral-openbot-1to1-paths.md`: **licencja komercyjna OpenBot + nasze dodatki**. Sekcje 2–5 poniżej (silnik Paperclip) są od teraz historią.
+
+| Etap | Kto | Zakres | Gotowe, gdy |
+|---|---|---|---|
+| **A0** | Właściciel | Licencja Team dla 2 osób w OpenBocie: Ustawienia → Rozliczenia (0 € do 1.12.2026) | Licencja aktywna. Do tego czasu nie zmieniamy kodu OpenBota. |
+| **A1** (dziś) | Tester | Które życzenia „lepszy” OpenBot 0.68 już spełnia, a które nie: wspólna sesja na żywo, oczy agenta (okno/ekran/kamera na Windows), Plugin Studio, wygląd | Lista realnych luk z testami akceptacyjnymi. Nie budujemy tego, co już jest. |
+| **A1** (dziś) | Backend Expert | Zamknąć F1 Paperclip czystym commitem. Zbadać punkty rozszerzeń OpenBota (skille, serwery MCP, wtyczki). Prototyp MCP „Oczy agenta” na Windows | Agent w OpenBocie robi zrzut wskazanego okna po zgodzie człowieka |
+| **A1** (dziś) | UI Designer | „Lepszy wizualnie” w ramach licencji: co da się zrobić dodatkami, a co tylko zmianą w prywatnym forku. 3 propozycje z kryteriami, bez kodu | Lider akceptuje propozycje |
+| **A2** | Zespół | Dodatki jako nasz kod w `addons/` tego repo: serwery MCP i skille (Oczy, Plugin Studio, kolejne luki z A1) | Każdy dodatek ma test, dowód i raport |
+| **A3** | Backend + UI | Prywatny fork OpenBota tylko na zmiany, których nie da się zrobić dodatkiem | Mały diff, scalany z wydaniami OpenBota |
+
+**Zasady drogi A (dodatkowe):**
+1. Kod OpenBota i nasze zmiany w nim **nigdy nie trafiają do publicznego repo** ani do innych firm (licencja §6.2). Fork trzymamy lokalnie albo w prywatnym repo.
+2. Nie zmieniamy nazwy ani logo OpenBot (licencja §6.3).
+3. Dodatki w `addons/` to wyłącznie nasz kod, bez fragmentów kodu OpenBota.
+4. Paperclip jest wstrzymany i zostaje jako archiwum pomysłów. Kopia OpenBota 0.1.11 (Apache-2.0) w `Shared\upstream` zostaje jako plan B, gdyby zmieniły się warunki licencji.
+
 ## 1. Cel
 
 Aplikacja desktopowa na Windows, która robi wszystko co OpenBot, a do tego więcej:
