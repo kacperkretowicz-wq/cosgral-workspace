@@ -1,16 +1,26 @@
-# Parytet 0.68 — inwentaryzacja w toku
+# Parytet 0.68 — fala W1 (B2a)
 
-Stan roboczy, 12.11.2026. Baza `23ca29fa9` (pochodzi z 0.1.11). Żaden test odbioru nie został uruchomiony. Mapa 0.67.1 opisuje statyczne ślady, nie dowodzi zachowania 0.68; [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md) potwierdza ogólny zakres, a [wydanie 0.68](https://github.com/nightly-labs/openbot/releases/tag/v0.68.0) wskazuje zmiany. Istnienie pliku nie dowodzi pełnej funkcji. Oceny poniżej są wstępne i wymagają porównania implementacji oraz testu.
+Stan: 12.11.2026. Baza COSGRAL = OpenBot 0.1.11 (`a6fe240`, opis w `package.json`). Opis zachowania 0.68: własnymi słowami, bez fragmentów kodu i bez kopiowania tekstów UI.
 
-| Nr | Obszar | Zachowanie | 0.1.11: wstępny stan / dowód | Fala | Test odbioru: kroki → wynik |
+**Źródła W1:** mapa UX 0.67.1 (`docs/cosgral-raporty/claude-k-openbot-ux-map.md` na `codex/cosgral-workspace`), publiczny [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md) i [changelog v0.68.0](https://github.com/nightly-labs/openbot/releases/tag/v0.68.0), statyczna lista paczki `app.asar` (8250 wpisów + nazwy chunków renderera; poza repo w `Shared\cosgral-data\desktop-tester\rea-0.68`), kod worktree `desktop-tester` po merge `codex/cosgral-desktop` @ `f42d104d6`. REA CLI: próba z limitem 600 s; przy braku wyniku obowiązuje metoda statyczna.
+
+**Legenda stanu w 0.1.11:** jest = zachowanie pokryte end-to-end w bazie · częściowo = jest zalążek, brakuje stanów albo powierzchni · brak = nie ma odpowiednika. Istnienie pliku nie dowodzi pełnej funkcji. Żaden test odbioru z tej tabeli nie został uruchomiony w runtime.
+
+## W1 — nawigacja, czat, kanały, panel, kolejka, wyszukiwanie
+
+| Nr | Obszar | Zachowanie 0.68 (własnymi słowami) | 0.1.11: stan / dowód | Fala | Test odbioru: kroki → wynik |
 |---|---|---|---|---|---|
-| 1 | Nawigacja | Lista agentów otwiera ich rozmowy. | Częściowo — `src/renderer/src/components/Sidebar.tsx`; zakres stanów do sprawdzenia. | W1 | Wybrać dwóch agentów kolejno → każdy pokazuje własną historię. |
-| 2 | Czat | Rozmowa wyświetla wiadomości i odpowiedzi agenta. | Częściowo — `src/renderer/src/components/Conversation.tsx`; działanie bez zewnętrznego logowania do sprawdzenia. | W1 | Wysłać wiadomość agentowi → odpowiedź widoczna i zachowana po restarcie. |
-| 3 | Czat | Wiadomości wysłane podczas pracy czekają w kolejce. | Częściowo — `src/renderer/src/components/conversation/QueuePanel.tsx`; zachowanie po awarii do sprawdzenia. | W1 | Wysłać dwie wiadomości podczas pracy → wykonać je kolejno i zachować po restarcie. |
-| 4 | Czat | Przeszukiwanie rozmowy prowadzi do trafienia. | Częściowo — `src/renderer/src/components/conversation/ChatSearch.tsx`; zakres wyszukiwania do sprawdzenia. | W1 | Wyszukać unikalny tekst → otworzyć właściwą wiadomość. |
-| 5 | Przeglądarka | Agent i człowiek korzystają z wbudowanej przeglądarki. | Częściowo — `src/backend/browser-host.ts`; przejęcie i sesja do sprawdzenia. | W1 | Agent otwiera stronę testową, człowiek przejmuje sterowanie → po oddaniu agent kontynuuje w tej samej sesji. |
-| 6 | Zespół | Użytkownicy wymieniają wiadomości w zespole. | Częściowo — `src/backend/team-chat-store.ts`; kanały z liderem i zadaniami niezweryfikowane. | W1 | Dwie osoby i agent otwierają wspólną rozmowę → wiadomości widoczne wszystkim i po restarcie. |
+| 1 | Nawigacja · szyna serwerów | Skrajnie po lewej widać ten komputer oraz serwery zdalne/hostowane; można je wybierać, dopinać, wyciszać, ustawiać, opuszczać i przestawiać kolejność. | Częściowo — `ServerRail.tsx` + `ServerSummary`: lokalny i zdalne, dodawanie i host; bez pełnego menu wycisz/opuść/ukryj i bez hostowanych stron jak w 0.68. | W1 | Dodać serwer zdalny i przełączyć lokalny ↔ zdalny → aktywny serwer zmienia kontekst listy agentów. |
+| 2 | Nawigacja · szyna stron | Obok szyny serwerów jest szyna stron (Agenci, Harmonogram, Zadania, Przepływy, Użycie, Biblioteka, Marketplace, Ustawienia, Więcej, przypinanie). | Brak — w rendererze bazy nie ma szyny stron; ustawienia to modal, biblioteka/przepływy nie są osobnymi stronami w shellu. W paczce 0.68 widać m.in. chunki `LibraryPanel`, `WorkflowsPage`. | W1 | Otworzyć Harmonogram, wrócić do Agentów → stan listy agentów zachowany. |
+| 3 | Nawigacja · pasek boczny | Lista agentów i kanałów; klik otwiera rozmowę; sekcja osób; wyszukiwanie na liście; menu wiersza (edycja, duplikat, nowy wątek, okno, ukryj, usuń, przeczytane). | Częściowo — `Sidebar.tsx`: ludzie + agenci, filtr, usuwanie, konto; brak kanałów grupowych na liście i części akcji menu z 0.68. | W1 | Wybrać dwóch agentów kolejno → każdy ma własną historię. |
+| 4 | Nawigacja · foldery | Użytkownik tworzy foldery (także zagnieżdżone), przenosi agentów/kanały, duplikuje i zmienia nazwę folderu. | Brak — lista to stałe sekcje ludzie/agenci, bez modelu folderów użytkownika. Changelog 0.68 potwierdza foldery w folderach. | W1 | Utworzyć folder, wrzucić agenta, zagnieździć folder → po restarcie układ ten sam. |
+| 5 | Nawigacja · stan „myśli” | Wiersz agenta pokazuje, że agent właśnie pracuje (myśli / analizuje). | Częściowo — `SidebarAgentState.kind = working` + kropki w `Sidebar.tsx`, gdy trwa tura lub kolejka `starting`/`running`. | W1 | Wysłać wiadomość → w pasku widać stan pracy, po odpowiedzi znika. |
+| 6 | Nawigacja · stan „czeka na Ciebie” | Wiersz (i zbiorczo Needs you) pokazuje oczekiwanie na pytanie, zatwierdzenie albo przejęcie przeglądarki. | Częściowo — powiadomienia „Needs your input/approval” w `agent-notifications.ts` oraz karty w aktywnej rozmowie; **brak** osobnego stanu w pasku i sekcji Needs you (stany to tylko working/unread/responded). | W1 | Agent zada pytanie poza otwartą rozmową → w Needs you widać go z liczbą; klik otwiera kartę. |
+| 7 | Nawigacja · stan „limit” | Wiersz pokazuje czekanie na limit użycia z godziną resetu. | Brak — `AccountUsage` istnieje w kontraktach, ale pasek boczny nie renderuje stanu limitu na agencie. | W1 | Symulować limit → wiersz pokazuje limit i czas; po resecie wraca do normalnego stanu. |
+| 8 | Nawigacja · stan „błąd” | Wiersz pokazuje, że ostatnia praca padła błędem (widać to bez otwierania czatu). | Brak — błędy tur są w rozmowie; brak dedykowanego stanu wiersza. | W1 | Wywołać błąd dostawcy → wiersz pokazuje błąd; po udanej turze znika. |
 
-## Pozostała praca
+## Współpraca UI (Needs you) — zachowanie 0.68
 
-Ta tabela nie jest pełną listą funkcji ani podstawą do ogłoszenia parytetu. Należy dopisać wszystkie obszary z B2, zbadać zachowanie 0.1.11 i dowody 0.68, ustalić liczbę stanów oraz priorytety W1. REA jest w trakcie próby; wyniku nie ma. Testów runtime nie wykonano.
+Agent jest „czeka na Ciebie”, gdy otwarta jest nierozstrzygnięta karta pytania, zatwierdzenia albo prośba o przejęcie przeglądarki w tej rozmowie. Ten stan widać na wierszu agenta i w zbiorczej sekcji Needs you na górze listy (z liczbą). Klik w Needs you otwiera rozmowę już przewiniętą do tej karty. Stan znika dopiero po odpowiedzi, pominięciu pytań, decyzji zatwierdzenia albo zakończeniu przejęcia — nie znika samym odczytaniem czatu.
+
+*(Wiersze czatu, kanałów, panelu, kolejki i wyszukiwania dopisywane w kolejnych commitach B2a.)*
