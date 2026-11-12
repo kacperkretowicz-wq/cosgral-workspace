@@ -88,3 +88,38 @@ Policzono wiersze 1–19 tej tabeli.
 | 29 | Tabele | Wspólne tabele agentów (kto prowadzi, usuwanie dla wszystkich), nie tylko tabela w markdownie czatu. | Częściowo — `DataTable.tsx` renderuje tabele **w czacie**; brak wspólnej bazy tabel między agentami jak w mapie 0.68. | W2 | Utworzyć wspólną tabelę → dwóch agentów czyta te same wiersze po restarcie. |
 | 30 | Pliki · biblioteka | Biblioteka plików (siatka/lista), zaznaczanie, pobieranie, sprzątanie, pliki maszyny. | Częściowo — załączniki i mailbox (`mailbox-store.ts`, karty załączników); brak osobnej Biblioteki (`LibraryPanel` w 0.68). | W2 | Wrzuć plik do biblioteki → widać go na liście i da się pobrać po restarcie. |
 | 31 | Przeglądarka · poza W1 | Trwała przeglądarka, wiele kart, żywy podgląd, zapis zrzutu jako plik, profile, dock przeglądarki. | Częściowo — zakładki i kontrola agenta w `Conversation.tsx` / `browser-host.ts`; bez docka/live view jak w chunkach `BrowserDock`, `BrowserLiveView`. | W2 | Agent otwiera dwie karty → po restarcie sesja/karty wracają albo jasny komunikat o utracie. |
+
+## W3 — Computer Use, zdalny pulpit, głos, dostawcy, zespół, dok/wyspa, ustawienia, onboarding, marketplace
+
+| Nr | Obszar | Zachowanie 0.68 (własnymi słowami) | 0.1.11: stan / dowód | Fala | Test odbioru: kroki → wynik |
+|---|---|---|---|---|---|
+| 32 | Computer Use | Osobny sterownik `cua-driver` na Windows/macOS/Linux; agent steruje pulpitem poza przeglądarką; setup uprawnień. | Częściowo — capability `computerUse` w `agent-service.ts` + setup uprawnień w `InitialSetup.tsx` (macOS); bez dołączonego `cua-driver` i pełnego przebiegu Windows jak w README 0.68. | W3 | Włączyć Computer Use → agent opisuje/klika element poza przeglądarką; Stop kończy sesję. |
+| 33 | Zdalny pulpit | Podgląd i sterowanie zdalnym pulpitem hosta (VNC/tunnel), konfiguracja po stronie właściciela. | Częściowo — `RemoteMacPanel.tsx`, `remote-mac.ts`, API `remoteMac` w kontraktach; ukierunkowane na Mac host, nie pełny Windows↔Windows jak produkt 0.68. | W3 | Połączyć się z hostem → widać pulpit i da się rozłączyć bez zawieszenia. |
+| 34 | Głos | Mowa → tekst i tekst → mowa w kompozytorze / panelu; osobne hosty przetwarzania. | Brak — brak UI głosu w bazie; w paczce 0.68 są `voice-speech-host` / `voice-transcription-host`. | W3 | Nagrać komendę głosową → pojawia się jako tekst i agent odpowiada. |
+| 35 | Dostawcy i limity | Wiele dostawców (Codex, Claude, Grok, Gemini, OpenCode, Cursor, …), konta, modele zapasowe, pierścienie użycia i limity. | Częściowo — tylko `codex` i `claude` w `AgentProviderId`; `AccountUsage` w kontraktach; bez listy kont wielu dostawców (`ProviderAccountList` w 0.68). | W3 | Dodać drugiego dostawcę → agent przełącza model; przy limicie widać reset. |
+| 36 | Zespół i serwery | Członkowie, role, zaproszenia (link/QR), hostowanie serwera, status maszyny, klient webowy. | Częściowo — `team-store.ts` (role, invite), `HostPanel.tsx`, `JoinServerDialog.tsx`, `ServerRail`; bez macierzy dostępu per agent i pełnego statusu maszyny z mapy 0.68. | W3 | Wystawić host i dołączyć drugą osobę zaproszeniem → obie widzą obecność i mogą pisać DM. |
+| 37 | Dok agentów | Mini-czaty z ulubionymi agentami poza głównym oknem; ukrywanie, kolejność, rozmiar. | Brak — brak okna doku; changelog 0.68 i mapa opisują dock. | W3 | Przypiąć agenta do doku → mini-czat działa przy zamkniętym głównym układzie listy. |
+| 38 | Dynamic Island | Nakładka ze stanem (pracuje, wiadomość, pytanie, zatwierdzenie, przejęcie, błąd). | Brak — chunk `OpenBotDynamicIsland` tylko w 0.68. | W3 | Agent zada pytanie w tle → wyspa pokazuje stan; klik otwiera kartę. |
+| 39 | Ustawienia i powiadomienia | Zakładki: ogólne, agenci, powiadomienia (macierz), głos, Computer Use, profil, Mobile Connect, dok, wyspa, aktualizacje, rozliczenia, hosty, transfer. | Częściowo — `SettingsModal.tsx` (głównie General + proste powiadomienia desktop); bez macierzy zdarzeń i zakładek Mobile/Dok/Wyspa. | W3 | Wyłączyć powiadomienia desktop → zdarzenie „needs input” nie pokazuje toastu systemowego. |
+| 40 | Onboarding | Język, pierwszy dostawca, pierwszy agent z propozycji, Computer Use. | Częściowo — `InitialSetup.tsx` / setup preferred provider + uprawnienia Mac; bez wyboru języka i galerii pierwszego agenta jak `FirstAgentSetup` / `FirstRunFlow` w 0.68. | W3 | Świeża instalacja → przejście setupu kończy się listą z pierwszym agentem gotowym do czatu. |
+| 41 | Marketplace i wtyczki | Katalog skilli/agentów, instalacja, sugestie marketplace, wtyczki z własnymi połączeniami. | Brak — brak `MarketplaceModal` / seed katalogu w bazie. | W3 | Wyszukać skill w Marketplace → instalacja włącza go u wybranego agenta. |
+
+## M — Telefon (etap po Windows)
+
+### Zachowanie telefonu w OpenBot 0.68 (opis dla Backendu i UI)
+
+OpenBot 0.68 ma **osobną aplikację mobilną** (Expo / iOS, także Android w release pipeline) obok desktopu. Telefon nie uruchamia silnika agentów: łączy się z kontem / hostem desktopowym przez **Mobile Connect** (parowanie kodem QR albo stałym linkiem `openbot://` / biletem developerskim). Po sparowaniu z telefonu da się m.in.: tworzyć i edytować agentów (instrukcje, awatar), czytać i pisać w rozmowach, dostawać powiadomienia (w tym Live Activity na iPhonie), kontynuować pracę gdy desktop czeka na decyzję. Aktualizacje JS mogą iść OTA przy tej samej wersji natywnego runtime. Desktytopowe `bun run mobile:*` i `dev:mobile` w README służą do buildu, symulatora i parowania bez skanowania QR w trybie deweloperskim.
+
+W paczce desktop 0.68 widać ślad powierzchni telefonu (np. asset `smartphone-*`); pełny kod aplikacji leży w `apps/mobile` repozytorium OpenBot (nie w samym `app.asar` desktopu).
+
+| Nr | Obszar | Zachowanie 0.68 (własnymi słowami) | 0.1.11: stan / dowód | Fala | Test odbioru: kroki → wynik |
+|---|---|---|---|---|---|
+| 42 | Telefon · Mobile Connect | Parowanie telefonu z komputerem (QR / link / bilet); telefon używa tego samego konta/hosta. | Brak — brak zakładki Mobile Connect i generowania QR w bazie. | M | Z telefonu zeskanować QR z desktopu → sesja sparowana, widać listę agentów. |
+| 43 | Telefon · czat i decyzje | Z telefonu: czytanie/pisanie czatu, powiadomienia o „czeka na Ciebie”, odpowiadanie na pytania/zatwierdzenia. | Brak — brak klienta mobilnego COSGRAL. | M | Agent pyta na desktopie → powiadomienie na telefonie; odpowiedź z telefonu odblokowuje turę. |
+| 44 | Telefon · agenci | Tworzenie i edycja agentów z telefonu (instrukcje, awatar, przegląd sekcji). | Brak — tylko desktopowy `createBot`. | M | Utworzyć agenta na telefonie → widać go na desktopie po odświeżeniu. |
+
+### Decyzje do podjęcia (Backend + UI)
+
+1. **Klient:** natywny (Expo/Capacitor) vs PWA do hosta na Windows (plan COSGRAL dopuszcza PWA/Tailscale na start).
+2. **Transport:** tylko loopback+LAN vs tunel; jak wystawić Mobile Connect bez chmury OpenBot.
+3. **Zakres MVP telefonu:** czat + Needs you + powiadomienia najpierw; tworzenie agentów i OTA później.
