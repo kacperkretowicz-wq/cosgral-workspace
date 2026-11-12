@@ -13,6 +13,7 @@ import type {
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
+import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { AgentAvatar } from "./AgentAvatar";
 import { EyesBadge } from "./EyesIndicator";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
@@ -61,18 +62,7 @@ interface SidebarProps {
   onExpand: () => void;
 }
 
-export type SidebarAgentState =
-  | { kind: "working" }
-  | { kind: "responded" }
-  | { kind: "unread"; count: number }
-  | { kind: "needs-you" };
-
-function sidebarAgentStateLabel(state: SidebarAgentState): string {
-  if (state.kind === "working") return "Thinking";
-  if (state.kind === "responded") return "Responded";
-  if (state.kind === "needs-you") return "Needs you";
-  return `${state.count} new ${state.count === 1 ? "reply" : "replies"}`;
-}
+export type { SidebarAgentState };
 
 function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
   const unreadCount = () => (props.state.kind === "unread" ? props.state.count : 0);
@@ -80,6 +70,19 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
     <span class={`bot-row-agent-status bot-row-agent-status-${props.state.kind}`} aria-hidden="true">
       <Show when={props.state.kind === "working"}>
         <TypingDots class="bot-row-thinking-dots" />
+      </Show>
+      <Show when={props.state.kind === "limited"}>
+        <svg viewBox="0 0 12 12">
+          <title>Limit</title>
+          <circle cx="6" cy="6" r="3.8" />
+          <path d="M6 4.1V6l1.3.8" />
+        </svg>
+      </Show>
+      <Show when={props.state.kind === "error"}>
+        <svg viewBox="0 0 12 12">
+          <title>Error</title>
+          <path d="M6 3.2v3.4M6 8.6v.2" />
+        </svg>
       </Show>
       <Show when={props.state.kind === "responded"}>
         <svg viewBox="0 0 12 12">
@@ -614,6 +617,11 @@ export function Sidebar(props: SidebarProps) {
                 {(bot) => {
                   const role = () => bot.role.trim();
                   const state = () => props.agentStates[bot.id];
+                  const note = () => sidebarAgentStateNote(state());
+                  const stateLabel = () => {
+                    const current = state();
+                    return current ? sidebarAgentStateLabel(current) : "";
+                  };
                   const looking = () => props.lookingBotIds?.includes(bot.id) ?? false;
                   return (
                     <ContextMenu.Root modal={false}>
@@ -627,7 +635,7 @@ export function Sidebar(props: SidebarProps) {
                             "bot-row-needs-you": state()?.kind === "needs-you",
                           },
                         ]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${state() ? `${sidebarAgentStateLabel(state()!)}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >
@@ -656,7 +664,12 @@ export function Sidebar(props: SidebarProps) {
                               <span class="bot-row-time">{bot.time}</span>
                             </span>
                           </span>
-                          <span class="bot-row-preview">{bot.preview}</span>
+                          <span
+                            class={["bot-row-preview", { "bot-row-note": note() !== null }]}
+                            data-activity={state()?.kind}
+                          >
+                            {note() ?? bot.preview}
+                          </span>
                         </span>
                         <Show when={props.agentStates[bot.id]}>
                           {(state) => <span class="sr-only">{sidebarAgentStateLabel(state())}</span>}

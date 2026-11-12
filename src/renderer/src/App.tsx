@@ -1,5 +1,6 @@
 import type {
   AccountUsage,
+  AgentActivity,
   AgentEvent,
   AgentEyesState,
   AgentModelId,
@@ -48,7 +49,7 @@ import { JoinServerDialog } from "./components/JoinServerDialog";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ServerRail } from "./components/ServerRail";
-import { Sidebar, type SidebarAgentState } from "./components/Sidebar";
+import { Sidebar } from "./components/Sidebar";
 import type { BotMessage, BotProfile } from "./data";
 import { needsYouItemsFromCards } from "./needs-you";
 import {
@@ -64,6 +65,7 @@ import {
   promptCard,
   removeCard,
 } from "./pending-cards";
+import { rowStateFor, type SidebarAgentState } from "./row-activity";
 
 const FALLBACK_STATUS: AgentStatus = {
   phase: "starting",
@@ -208,6 +210,8 @@ export function App() {
   } | null>(null);
   // COSGRAL W1: every open question/approval card, oldest first. The backend keeps them until resolved.
   const [pendingCards, setPendingCards] = createSignal<PendingCard[]>([]);
+  // COSGRAL W1: the row state of each agent as the backend sees it (waiting, working, limited, error, idle).
+  const [activities, setActivities] = createSignal<Record<string, AgentActivity>>({});
   const [appInfo, setAppInfo] = createSignal<AppInfo | null>(null);
   const [agentStatus, setAgentStatus] = createSignal<AgentStatus>(FALLBACK_STATUS);
   const [accountUsage, setAccountUsage] = createSignal<AccountUsage | null>(null);
@@ -592,6 +596,10 @@ export function App() {
       case "approval-resolved":
         dropCard("approval", event.requestId);
         return;
+      case "activity-changed":
+        if (activitySeen.loading > 0) activitySeen.changedBotIds.add(event.activity.botId);
+        setActivities((current) => ({ ...current, [event.activity.botId]: event.activity }));
+        return;
       case "error":
         if (event.botId) appendUiError(event.botId, event.message, "Error");
     }
@@ -599,6 +607,8 @@ export function App() {
 
   // Events that arrive while `listPendingRequests()` loads win over its (older) answer.
   const attentionSeen = { loading: 0, liveKeys: new Set<string>(), resolvedKeys: new Set<string>() };
+
+  const activitySeen = { loading: 0, changedBotIds: new Set<string>() };
 
   function addLiveCard(card: PendingCard): void {
     if (attentionSeen.loading > 0) attentionSeen.liveKeys.add(cardKey(card.kind, card.requestId));
@@ -612,7 +622,27 @@ export function App() {
 
   /** Everything the backend keeps for this window: open cards (and, below, row states and folders). */
   async function refreshAttention(): Promise<void> {
-    await refreshPendingCards();
+    await Promise.all([refreshPendingCards(), refreshActivities()]);
+  }
+
+  /** Row states of every agent; later changes arrive as `activity-changed`. */
+  async function refreshActivities(): Promise<void> {
+    const list = window.openbot.agent.listActivity;
+    if (!list) return;
+    activitySeen.loading += 1;
+    try {
+      const fetched = await list();
+      // An `activity-changed` event that arrived while the list loaded is newer than the list.
+      setActivities((current) => ({
+        ...Object.fromEntries(fetched.map((activity) => [activity.botId, activity])),
+        ...Object.fromEntries(Object.entries(current).filter(([botId]) => activitySeen.changedBotIds.has(botId))),
+      }));
+    } catch {
+      // The row falls back to what this window knows (open cards, running turns, unread replies).
+    } finally {
+      activitySeen.loading -= 1;
+      if (activitySeen.loading === 0) activitySeen.changedBotIds.clear();
+    }
   }
 
   /** Open cards survive a window reload in the backend: read them again and seed the Needs you list. */
@@ -1088,6 +1118,7 @@ export function App() {
       setRecentReplies((current) => withoutBot(current, botId));
       setQueues((current) => withoutBot(current, botId));
       setPendingCards((current) => clearBotCards(current, botId));
+      setActivities((current) => withoutBot(current, botId));
       const replyTimer = recentReplyTimers.get(botId);
       if (replyTimer) clearTimeout(replyTimer);
       recentReplyTimers.delete(botId);
@@ -1323,6 +1354,7 @@ export function App() {
     const queueSnapshots = queues();
     const unread = unreadReplies();
     const recent = recentReplies();
+    const activity = activities();
     const waiting = new Set(needsYouItems().map((item) => item.botId));
     const states: Record<string, SidebarAgentState> = {};
     for (const bot of botList()) {
@@ -1333,11 +1365,14 @@ export function App() {
             (delivery) => delivery.status === "starting" || delivery.status === "running",
           ),
         );
-      if (waiting.has(bot.id)) states[bot.id] = { kind: "needs-you" };
-      else if (isWorking) states[bot.id] = { kind: "working" };
-      else if ((unread[bot.id] ?? 0) > 0) {
-        states[bot.id] = { kind: "unread", count: unread[bot.id] ?? 1 };
-      } else if (recent[bot.id]) states[bot.id] = { kind: "responded" };
+      const state = rowStateFor({
+        activity: activity[bot.id],
+        localNeedsYou: waiting.has(bot.id),
+        localWorking: isWorking,
+        unread: unread[bot.id] ?? 0,
+        responded: recent[bot.id] === true,
+      });
+      if (state) states[bot.id] = state;
     }
     return states;
   });
@@ -1428,6 +1463,7 @@ export function App() {
     setUnreadReplies({});
     setQueues({});
     setPendingCards([]);
+    setActivities({});
     setTeamPresence(EMPTY_TEAM_PRESENCE);
     const [storedBots, reads, status, models, tabs, controlState, presence] = await Promise.all([
       window.openbot.agent.listBots(),

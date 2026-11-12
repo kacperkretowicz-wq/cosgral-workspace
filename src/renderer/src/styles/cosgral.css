@@ -173,6 +173,47 @@
   align-self: center;
 }
 
+/* Agent row states from the backend: usage limit and last error. ----------- */
+
+.bot-row-agent-status-limited,
+.bot-row-agent-status-error {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--openbot-radius-pill);
+}
+
+.bot-row-agent-status-limited {
+  border-color: var(--openbot-warning);
+  background: var(--openbot-warning-soft);
+  color: var(--openbot-warning);
+}
+
+.bot-row-agent-status-error {
+  border-color: var(--openbot-danger);
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+}
+
+.bot-row-agent-status-limited svg,
+.bot-row-agent-status-error svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The note replaces the message preview, so it stays one line like the preview. */
+.bot-row-note[data-activity="limited"] {
+  color: var(--openbot-warning);
+}
+
+.bot-row-note[data-activity="error"] {
+  color: var(--openbot-danger);
+}
+
 /* Slim bar under the conversation header: who is looking, at what, and Stop. */
 .eyes-bar {
   display: flex;
