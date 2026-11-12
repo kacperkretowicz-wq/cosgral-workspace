@@ -125,10 +125,10 @@ export class TeamStore {
   assertOwnerAccount(user: CentralAuthUser): void {
     const owner = this.#state?.members.find((member) => member.role === "owner");
     if (!owner?.email) {
-      throw new Error("This host is not linked to an OpenBot owner account.");
+      throw new Error("This host is not linked to a COSGRAL owner account.");
     }
     if (normalizeEmail(user.email) !== normalizeEmail(owner.email)) {
-      throw new Error("Sign in with the OpenBot email that created this host.");
+      throw new Error("Sign in with the COSGRAL email that created this host.");
     }
   }
 
@@ -323,7 +323,7 @@ export class TeamStore {
     const member = state.members.find(
       (candidate) => (candidate.email === email || candidate.username === email) && !candidate.disabled,
     );
-    if (!member) throw new Error("This OpenBot account is not a member of the team.");
+    if (!member) throw new Error("This COSGRAL account is not a member of the team.");
     member.email = email;
     member.username = email;
     member.name = normalizeName(user.name);

@@ -37,9 +37,9 @@ describe("AccountLogin", () => {
   it("renders a page-level sign-in form with an interactive brand logo", () => {
     renderLogin();
 
-    expect(screen.getByRole("heading", { name: "Sign in to OpenBot" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sign in to COSGRAL Workspace" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Animate OpenBot logo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Animate COSGRAL logo" })).toBeInTheDocument();
   });
 
   it("validates and normalizes an email before requesting a code", async () => {
@@ -263,7 +263,7 @@ describe("AccountLogin", () => {
     renderLogin(
       {
         status: "error",
-        issue: { code: "auth_api_unavailable", message: "OpenBot could not reach the account service." },
+        issue: { code: "auth_api_unavailable", message: "COSGRAL Workspace could not reach the account service." },
       },
       { onRetry },
     );

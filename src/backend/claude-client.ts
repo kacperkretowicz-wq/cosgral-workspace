@@ -469,16 +469,16 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         name: "openbot_browser",
         version: "0.1.0",
         tools: [
-          tool("open", "Open an HTTP(S) URL in OpenBot's private browser.", { url: z.string() }, (args) =>
+          tool("open", "Open an HTTP(S) URL in COSGRAL Workspace's private browser.", { url: z.string() }, (args) =>
             call("openbot_browser", "open", args),
           ),
-          tool("list_tabs", "List OpenBot browser tabs.", {}, (args) => call("openbot_browser", "list_tabs", args)),
+          tool("list_tabs", "List COSGRAL Workspace browser tabs.", {}, (args) => call("openbot_browser", "list_tabs", args)),
           tool("snapshot", "Read a browser page and get element references.", { tabId: z.string() }, (args) =>
             call("openbot_browser", "snapshot", args),
           ),
           tool(
             "act",
-            "Click, type, press a key, scroll, navigate, or reload in OpenBot's browser.",
+            "Click, type, press a key, scroll, navigate, or reload in COSGRAL Workspace's browser.",
             {
               tabId: z.string(),
               revision: z.number().int(),
@@ -496,7 +496,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
           tool("screenshot", "Capture the visible browser page.", { tabId: z.string() }, (args) =>
             call("openbot_browser", "screenshot", args),
           ),
-          tool("close_tab", "Close an OpenBot browser tab.", { tabId: z.string() }, (args) =>
+          tool("close_tab", "Close a COSGRAL Workspace browser tab.", { tabId: z.string() }, (args) =>
             call("openbot_browser", "close_tab", args),
           ),
         ],
@@ -505,12 +505,12 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         name: "openbot",
         version: "0.1.0",
         tools: [
-          tool("list_agents", "List OpenBot agents that can receive local messages.", {}, (args) =>
+          tool("list_agents", "List COSGRAL Workspace agents that can receive local messages.", {}, (args) =>
             call("openbot", "list_agents", args),
           ),
           tool(
             "send_message",
-            "Send an asynchronous message or local files to OpenBot teammates.",
+            "Send an asynchronous message or local files to COSGRAL teammates.",
             {
               recipientBotIds: z.array(z.string()).min(1).max(32),
               text: z.string().min(1).max(100_000),

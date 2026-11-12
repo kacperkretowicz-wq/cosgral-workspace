@@ -35,7 +35,7 @@ describe("OtpInput", () => {
     await waitFor(() => expect(input).toHaveFocus());
   });
 
-  it("renders eight fixed slots and filters paste through the OpenBot alphabet", async () => {
+  it("renders eight fixed slots and filters paste through the COSGRAL alphabet", async () => {
     const { input, slots, onChange, onComplete } = renderOtp();
 
     expect(slots()).toHaveLength(8);
@@ -161,7 +161,7 @@ describe("OtpInput", () => {
 
     const successView = renderOtp({ value: "ABCDEFGH", status: "success" });
     const message = screen.getByRole("status");
-    expect(message).toHaveTextContent("Verified. Opening OpenBot…");
+    expect(message).toHaveTextContent("Verified. Opening COSGRAL Workspace…");
     expect(message.querySelector(".otp-input-success")).toBeInTheDocument();
     expect(successView.container.querySelector(".otp-input-slots .otp-input-success")).not.toBeInTheDocument();
   });

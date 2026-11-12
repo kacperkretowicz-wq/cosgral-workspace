@@ -116,7 +116,7 @@ export const HappyPath: Story = {
     await expect(canvas.getByRole("heading", { name: "Check your inbox" })).toBeInTheDocument();
     await expect(canvas.getByText(/person@example.com/)).toBeInTheDocument();
     await userEvent.type(canvas.getByRole("textbox", { name: "One-time code" }), "ABCDEFGH");
-    await expect(canvas.getByText("Verified. Opening OpenBot…")).toBeInTheDocument();
+    await expect(canvas.getByText("Verified. Opening COSGRAL Workspace…")).toBeInTheDocument();
   },
 };
 
@@ -177,7 +177,7 @@ export const ServiceUnavailable: Story = {
       status: "error",
       issue: {
         code: "auth_api_unavailable",
-        message: "OpenBot could not reach the account service. Check your connection and try again.",
+        message: "COSGRAL Workspace could not reach the account service. Check your connection and try again.",
       },
     },
   },

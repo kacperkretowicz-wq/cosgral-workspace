@@ -17,13 +17,13 @@ describe("AppLogo", () => {
     expect(logo?.querySelector("img")).toBeNull();
   });
 
-  it.each<AppLogoAnimation>(["blink", "look-around", "surprised"])("selects the %s eye animation", (animation) => {
+  it.each<AppLogoAnimation>(["blink", "look-around", "surprised"])("selects the %s mark animation", (animation) => {
     const view = render(() => <AppLogo variant="preview" animation={animation} />);
     const logo = view.container.querySelector(".app-logo");
 
     expect(logo).toHaveAttribute("data-animation", animation);
     expect(logo).toHaveAttribute("data-variant", "preview");
-    expect(logo?.querySelectorAll(".app-logo-eye")).toHaveLength(2);
+    expect(logo?.querySelectorAll(".app-logo-mark")).toHaveLength(1);
   });
 
   it("updates the selected animation dynamically", async () => {
@@ -57,7 +57,7 @@ describe("AppLogo", () => {
     });
 
     expect(logo).toHaveAttribute("role", "button");
-    expect(logo).toHaveAttribute("aria-label", "Animate OpenBot logo");
+    expect(logo).toHaveAttribute("aria-label", "Animate COSGRAL logo");
 
     await fireEvent.pointerMove(logo, { clientX: 100, clientY: 25, pointerType: "mouse" });
     expect(logo.style.getPropertyValue("--app-logo-eye-x")).toBe("2.4%");

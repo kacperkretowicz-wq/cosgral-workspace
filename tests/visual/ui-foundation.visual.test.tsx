@@ -37,7 +37,7 @@ test("foundation gallery is visually stable", async () => {
   render(() => (
     <main class="foundation-story" data-testid="foundation-gallery">
       <Heading as="h1" size="display">
-        OpenBot UI foundation
+        COSGRAL UI foundation
       </Heading>
 
       <section class="foundation-story-stack">

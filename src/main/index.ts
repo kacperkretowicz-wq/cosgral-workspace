@@ -160,7 +160,7 @@ const REMOTE_DESKTOP_CREDENTIAL_FILE = "openbot-remote-desktop-credential-v1.jso
 
 const EXTERNAL_DESTINATIONS: Record<ExternalDestination, string> = {
   "agent-setup": "https://github.com/NorbertBodziony/openbot/blob/main/docs/TROUBLESHOOTING.md",
-  feedback: "https://x.com/intent/post?text=Feedback%20for%20OpenBot%20%40norbertbodziony%3A%20",
+  feedback: "https://x.com/intent/post?text=Feedback%20for%20COSGRAL%20Workspace%3A%20",
   message: "https://x.com/norbertbodziony",
 };
 
@@ -829,7 +829,7 @@ function acceptAddressUpdateUrl(value: string): void {
   }
   void remoteServerManager.updateAddress(value).catch((error) => {
     const message = error instanceof Error ? error.message : "The server address was not updated.";
-    dialog.showErrorBox("OpenBot server update failed", message);
+    dialog.showErrorBox("COSGRAL server update failed", message);
   });
 }
 
@@ -975,7 +975,7 @@ if (!hasSingleInstanceLock) {
         pendingAddressUpdateUrl = null;
         void remoteServerManager.updateAddress(updateUrl).catch((error) => {
           const message = error instanceof Error ? error.message : "The server address was not updated.";
-          dialog.showErrorBox("OpenBot server update failed", message);
+          dialog.showErrorBox("COSGRAL server update failed", message);
         });
       }
       const host = hostService;
@@ -1031,7 +1031,7 @@ if (!hasSingleInstanceLock) {
           enabledOnLaunch: teamIdentity?.enabledOnLaunch ?? false,
         })
       ) {
-        void host.start().catch((error) => console.error("Unable to republish this OpenBot:", error));
+        void host.start().catch((error) => console.error("Unable to republish this COSGRAL Workspace:", error));
       }
       void agentInitialization.start().catch((error) => {
         console.error("Unable to initialize the local agent backend:", error);
@@ -1048,9 +1048,9 @@ if (!hasSingleInstanceLock) {
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("OpenBot failed to start:", error);
+      console.error("COSGRAL Workspace failed to start:", error);
       dialog.showErrorBox(
-        "OpenBot couldn’t start",
+        "COSGRAL Workspace couldn’t start",
         `${message}\n\nYour local data was not reset or overwritten. See the troubleshooting guide for recovery steps.`,
       );
       app.quit();

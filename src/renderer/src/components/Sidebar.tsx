@@ -233,7 +233,7 @@ export function Sidebar(props: SidebarProps) {
   });
   const accountName = createMemo(() => props.account.name?.trim() || props.account.email);
   const accountInitials = createMemo(() => {
-    const localPart = accountName().split("@")[0] ?? "OpenBot";
+    const localPart = accountName().split("@")[0] ?? "COSGRAL";
     const parts = localPart.split(/[._\-\s]+/).filter(Boolean);
     return (parts.length > 1 ? `${parts[0]?.[0]}${parts[1]?.[0]}` : localPart.slice(0, 2)).toUpperCase();
   });
@@ -358,7 +358,7 @@ export function Sidebar(props: SidebarProps) {
     setAccountError(null);
     void props
       .onUpdateAction()
-      .catch((error) => setAccountError(error instanceof Error ? error.message : "Could not update OpenBot."));
+      .catch((error) => setAccountError(error instanceof Error ? error.message : "Could not update COSGRAL Workspace."));
   }
 
   async function logout(): Promise<void> {
@@ -665,7 +665,7 @@ export function Sidebar(props: SidebarProps) {
               <Badge class="sidebar-update-pill" tone="accent" shape="pill">
                 Update
               </Badge>
-              <span class="sr-only">OpenBot update available</span>
+              <span class="sr-only">COSGRAL Workspace update available</span>
             </Show>
           </Popover.Trigger>
           <Popover.Portal>
@@ -783,7 +783,7 @@ export function Sidebar(props: SidebarProps) {
                   />
                   <AlertDialog.Title>Delete {bot().name}?</AlertDialog.Title>
                   <AlertDialog.Description>
-                    This removes the agent, its OpenBot queue, and managed files used only by that conversation. Its
+                    This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its
                     workspace and CLI history stay on your Mac.
                   </AlertDialog.Description>
                   <Show when={deleteError()}>{(message) => <p class="bot-delete-error">{message()}</p>}</Show>

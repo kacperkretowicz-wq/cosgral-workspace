@@ -101,7 +101,7 @@ afterEach(async () => {
 });
 
 describe("TeamApiServer administration", () => {
-  it("joins an email-bound invitation with a verified OpenBot account", async () => {
+  it("joins an email-bound invitation with a verified COSGRAL account", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-team-api-account-"));
     roots.push(root);
     const store = new TeamStore(join(root, "team.json"));

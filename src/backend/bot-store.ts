@@ -269,7 +269,7 @@ export class BotStore {
 
   bindProviderSession(id: string, externalSessionId: string): ProviderSession {
     const bot = this.#requireBot(id);
-    if (!bot.threadId) throw new Error(`Agent ${id} does not have an OpenBot thread.`);
+    if (!bot.threadId) throw new Error(`Agent ${id} does not have a COSGRAL Workspace thread.`);
     return this.#database.bindProviderSession({
       threadId: bot.threadId,
       provider: providerForStoredModel(bot.model),
@@ -290,7 +290,7 @@ export class BotStore {
     try {
       const parsed = JSON.parse(await readFile(this.#statePath, "utf8"));
       if (!isRecord(parsed) || !isBoolean(parsed.examplesInitialized) || !Array.isArray(parsed.bots)) {
-        throw new Error("Agent state is corrupt or from a newer OpenBot version; refusing to overwrite it.");
+        throw new Error("Agent state is corrupt or from a newer COSGRAL Workspace version; refusing to overwrite it.");
       }
 
       let bots: StoredBot[];
@@ -299,7 +299,7 @@ export class BotStore {
       } else if (parsed.version === 2 && parsed.bots.every(isStoredBot)) {
         bots = parsed.bots.map(normalizeStoredBot);
       } else {
-        throw new Error("Agent state is corrupt or from a newer OpenBot version; refusing to overwrite it.");
+        throw new Error("Agent state is corrupt or from a newer COSGRAL Workspace version; refusing to overwrite it.");
       }
       if (new Set(bots.map((bot) => bot.id)).size !== bots.length) {
         throw new Error("Agent state contains duplicate bot ids; refusing to overwrite it.");

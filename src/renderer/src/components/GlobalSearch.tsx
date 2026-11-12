@@ -102,7 +102,7 @@ export function GlobalSearch(props: GlobalSearchProps) {
       <Dialog.Portal>
         <Dialog.Overlay class="global-search-overlay" />
         <Dialog.Content class="global-search-dialog" aria-describedby={undefined}>
-          <Dialog.Title class="sr-only">Search OpenBot</Dialog.Title>
+          <Dialog.Title class="sr-only">Search COSGRAL</Dialog.Title>
           <Combobox.Root<GlobalSearchResult>
             options={results()}
             open={true}
@@ -149,7 +149,7 @@ export function GlobalSearch(props: GlobalSearchProps) {
                 as={Input}
                 ref={(element) => (input = element)}
                 class="global-search-input"
-                aria-label="Search OpenBot"
+                aria-label="Search COSGRAL"
                 placeholder="Search"
                 autocomplete="off"
                 autocapitalize="none"

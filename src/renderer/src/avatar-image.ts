@@ -24,7 +24,7 @@ export async function normalizeAvatarFile(file: File): Promise<AvatarImageInput>
   } finally {
     source.close();
   }
-  throw new Error("OpenBot could not make this image small enough. Choose a simpler image.");
+  throw new Error("COSGRAL Workspace could not make this image small enough. Choose a simpler image.");
 }
 
 export function avatarCrop(width: number, height: number): { sourceX: number; sourceY: number; sourceSize: number } {
@@ -47,6 +47,6 @@ async function renderAvatar(source: ImageBitmap, outputSize: number, quality: nu
   const crop = avatarCrop(source.width, source.height);
   context.drawImage(source, crop.sourceX, crop.sourceY, crop.sourceSize, crop.sourceSize, 0, 0, outputSize, outputSize);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
-  if (!blob) throw new Error("OpenBot could not process this image.");
+  if (!blob) throw new Error("COSGRAL Workspace could not process this image.");
   return blob;
 }

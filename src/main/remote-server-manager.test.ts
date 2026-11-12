@@ -18,7 +18,7 @@ describe("remote server links", () => {
     expect(isValidRemoteApiUrl("https://example.com/")).toBe(false);
   });
 
-  it("parses an OpenBot invitation", () => {
+  it("parses a COSGRAL invitation", () => {
     const url = new URL("cosgral://join");
     url.searchParams.set("api", "https://team-host.trycloudflare.com/");
     url.searchParams.set("server", "00000000-0000-4000-8000-000000000000");

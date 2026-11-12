@@ -411,7 +411,7 @@ export function App() {
           status: "error",
           issue: {
             code: "auth_unavailable",
-            message: "OpenBot could not load the account service.",
+            message: "COSGRAL Workspace could not load the account service.",
           },
         }),
       );
@@ -426,7 +426,7 @@ export function App() {
         .then(setAppInfo)
         .catch(() =>
           setAppInfo({
-            name: "OpenBot",
+            name: "COSGRAL",
             version: "unavailable",
             platform: "darwin",
             variant: "production",
@@ -1390,7 +1390,7 @@ export function App() {
     setHostStatus(published);
     await refreshHostManagement();
     if (published.phase !== "online") {
-      throw new Error(published.message ?? "This OpenBot could not be published.");
+      throw new Error(published.message ?? "This COSGRAL Workspace could not be published.");
     }
   }
 
@@ -1469,7 +1469,7 @@ export function App() {
   return (
     <Show
       when={setupLoaded() && appInfo() !== null}
-      fallback={<div class="initial-setup-screen" role="status" aria-label="Loading OpenBot" />}
+      fallback={<div class="initial-setup-screen" role="status" aria-label="Loading COSGRAL Workspace" />}
     >
       <Show
         when={visibleSignedInAccount()}

@@ -14,7 +14,7 @@ export const Scale: Story = {
     <main class="foundation-story">
       <section class="foundation-story-stack">
         <Heading as="h1" size="display">
-          OpenBot UI foundation
+          COSGRAL UI foundation
         </Heading>
         <Heading as="h2" size="lg">
           Large section heading

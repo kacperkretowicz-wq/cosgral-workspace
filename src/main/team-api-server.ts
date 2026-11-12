@@ -326,7 +326,7 @@ export class TeamApiServer {
               identity.serverId,
             )
           : null;
-        if (!user) return this.#json(response, 401, { error: "OpenBot sign-in is required." });
+        if (!user) return this.#json(response, 401, { error: "COSGRAL sign-in is required." });
         this.#checkRate(request, user.email);
         const result = await this.#options.store.acceptInviteWithAccount(
           stringField(body, "inviteToken", false, INPUT_LIMITS.identifier),
@@ -352,7 +352,7 @@ export class TeamApiServer {
               identity.serverId,
             )
           : null;
-        if (!user) return this.#json(response, 401, { error: "OpenBot sign-in is required." });
+        if (!user) return this.#json(response, 401, { error: "COSGRAL sign-in is required." });
         this.#checkRate(request, user.email);
         return this.#json(response, 200, await this.#options.store.loginWithAccount(user));
       }

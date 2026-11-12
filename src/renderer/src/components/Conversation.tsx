@@ -1663,7 +1663,7 @@ export function Conversation(props: ConversationProps) {
                     : "Agent CLI setup required"}
                 </strong>
                 <p>
-                  {props.agentStatus.message ?? "Install and sign in to Codex CLI or Claude CLI, then restart OpenBot."}
+                  {props.agentStatus.message ?? "Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace."}
                 </p>
               </div>
               <Show when={props.agentStatus.phase !== "starting" && props.agentStatus.phase !== "restarting"}>

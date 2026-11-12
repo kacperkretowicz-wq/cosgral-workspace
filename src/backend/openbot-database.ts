@@ -111,7 +111,7 @@ interface MailboxProjectionState {
 }
 
 /**
- * The local OpenBot event log and its read projections.
+ * The local COSGRAL Workspace event log and its read projections.
  *
  * A command appends events, changes projections, and stores its receipt in one
  * SQLite transaction. Providers never receive direct access to this database.
@@ -151,7 +151,7 @@ export class OpenBotDatabase {
   }
 
   get connection(): DatabaseSync {
-    if (!this.#db) throw new Error("OpenBot database is not initialized.");
+    if (!this.#db) throw new Error("COSGRAL Workspace database is not initialized.");
     return this.#db;
   }
 
@@ -632,7 +632,7 @@ export class OpenBotDatabase {
     const thread = decodeThreadAgentRow(
       db.prepare("SELECT agent_id FROM projection_threads WHERE thread_id = ?").get(threadId),
     );
-    if (!thread) throw new Error(`Unknown OpenBot thread: ${threadId}`);
+    if (!thread) throw new Error(`Unknown COSGRAL Workspace thread: ${threadId}`);
 
     let latest: ConversationSnapshot | null = null;
     let latestSequence = 0;

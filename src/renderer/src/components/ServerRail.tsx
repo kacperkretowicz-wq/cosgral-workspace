@@ -65,7 +65,7 @@ export function ServerRail(props: ServerRailProps) {
                         <circle cx="6" cy="5.5" r=".8" />
                         <circle cx="6" cy="14.5" r=".8" />
                       </svg>
-                      <span>Publish this OpenBot</span>
+                      <span>Publish this COSGRAL Workspace</span>
                     </ContextMenu.Item>
                   </ContextMenu.Content>
                 </ContextMenu.Portal>
