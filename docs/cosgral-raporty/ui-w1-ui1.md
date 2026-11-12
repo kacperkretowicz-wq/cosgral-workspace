@@ -49,7 +49,7 @@ Zmienione: `App.tsx`, `Sidebar.tsx`, `Conversation.tsx`, `ConversationPrompts.ts
 
 Nowe testy (31): `needs-you` +3, `EyesIndicator` 7, `ConversationPrompts.eyes` 5, `Sidebar.eyes-local` 4, `PageRail` 4, `App.eyes` 8. Pokrywają m.in.: pasek znika przy pustym stanie, klatki i `until`, Stop → `stopEyes({ botId })` i znikanie paska po `eyes-changed`, tytuły kart `screen`/`window`/`camera`, ukrycie Sign out i e-maila przy `localProfile`, „Coming soon” przy zachowanej liście agentów, powrót na Agents po wyborze agenta, Settings otwiera dialog bez zmiany strony.
 
-Uwaga o stabilności: test `App.test.tsx › selects a stable generated avatar…` ma limit 5 s i na tej maszynie trwa 3,3–4,5 s (także na czystej bazie 4,1 s). W jednym przebiegu pod obciążeniem przekroczył limit, w następnych przebiegach (też pełnym) przeszedł. Nie jest powiązany ze zmianą.
+Uwaga o stabilności: test avatar w `App.test.tsx` przekraczał limit 5 s pod obciążeniem; limit podniesiony do 15 s (commit po W1-UI1).
 
 ## Jak zobaczyć w Storybooku
 

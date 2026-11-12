@@ -1243,79 +1243,85 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     );
   });
 
-  it("selects a stable generated avatar and color without tying it to the agent name", async () => {
-    render(() => <App />);
-    await screen.findByRole("heading", { name: "Chief" });
-    await fireEvent.click(screen.getByRole("button", { name: "View agent settings" }));
-    const settings = screen.getByRole("complementary", { name: "Agent settings" });
-    const avatarButton = within(settings).getByRole("button", { name: "Edit agent avatar" });
-    await fireEvent.click(avatarButton);
+  it(
+    "selects a stable generated avatar and color without tying it to the agent name",
+    async () => {
+      render(() => <App />);
+      await screen.findByRole("heading", { name: "Chief" });
+      await fireEvent.click(screen.getByRole("button", { name: "View agent settings" }));
+      const settings = screen.getByRole("complementary", { name: "Agent settings" });
+      const avatarButton = within(settings).getByRole("button", { name: "Edit agent avatar" });
+      await fireEvent.click(avatarButton);
 
-    const editor = within(settings).getByRole("dialog", { name: "Avatar editor" });
-    expect(within(editor).getByRole("button", { name: /Upload image/ })).toBeInTheDocument();
-    expect(within(editor).getAllByRole("button", { name: /Avatar option/ })).toHaveLength(11);
-    const faceButtons = within(editor).getAllByRole("button", {
-      name: /Selected avatar|Avatar option/,
-    });
-    expect(faceButtons).toHaveLength(12);
-    for (const faceButton of faceButtons) {
-      expect(faceButton.querySelector(".bot-avatar-motion-hover")).not.toBeNull();
-      expect(faceButton.querySelector(".bot-avatar > svg .mo-root")).not.toBeNull();
-      expect(faceButton.querySelector(".agent-mark")).toBeNull();
-    }
-    const optionTwo = within(editor).getByRole("button", { name: "Avatar option 2" });
-    const faceMarkup = faceButtons.map((button) => button.innerHTML);
-    await fireEvent.click(optionTwo);
-    expect(optionTwo).toHaveAttribute("aria-pressed", "true");
-    expect(within(editor).getAllByRole("button", { name: /Selected avatar|Avatar option/ })[1]).toBe(optionTwo);
-    expect(
-      within(editor)
-        .getAllByRole("button", { name: /Selected avatar|Avatar option/ })
-        .map((button) => button.innerHTML),
-    ).toEqual(faceMarkup);
-    const callsBeforeNewSet = vi.mocked(window.openbot.agent.updateBot).mock.calls.length;
-    await fireEvent.click(within(editor).getByRole("button", { name: "New set" }));
-    const nextFaceButtons = within(editor).getAllByRole("button", {
-      name: /Selected avatar|Avatar option/,
-    });
-    expect(nextFaceButtons[0]).toHaveAttribute("aria-pressed", "true");
-    expect(nextFaceButtons.map((button) => button.innerHTML)).not.toEqual(faceMarkup);
-    expect(window.openbot.agent.updateBot).toHaveBeenCalledTimes(callsBeforeNewSet);
-    await waitFor(() =>
-      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
-        botId: "chief",
-        avatarSeed: "chief:avatar:0:1",
-      }),
-    );
-    await fireEvent.click(within(editor).getByRole("button", { name: "Reset to ID" }));
-    await waitFor(() =>
-      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
-        botId: "chief",
-        avatarSeed: "chief",
-      }),
-    );
-    await fireEvent.click(within(editor).getByRole("button", { name: "Avatar option 2" }));
+      const editor = within(settings).getByRole("dialog", { name: "Avatar editor" });
+      expect(within(editor).getByRole("button", { name: /Upload image/ })).toBeInTheDocument();
+      expect(within(editor).getAllByRole("button", { name: /Avatar option/ })).toHaveLength(11);
+      const faceButtons = within(editor).getAllByRole("button", {
+        name: /Selected avatar|Avatar option/,
+      });
+      expect(faceButtons).toHaveLength(12);
+      for (const faceButton of faceButtons) {
+        expect(faceButton.querySelector(".bot-avatar-motion-hover")).not.toBeNull();
+        expect(faceButton.querySelector(".bot-avatar > svg .mo-root")).not.toBeNull();
+        expect(faceButton.querySelector(".agent-mark")).toBeNull();
+      }
+      const optionTwo = within(editor).getByRole("button", { name: "Avatar option 2" });
+      const faceMarkup = faceButtons.map((button) => button.innerHTML);
+      await fireEvent.click(optionTwo);
+      expect(optionTwo).toHaveAttribute("aria-pressed", "true");
+      expect(within(editor).getAllByRole("button", { name: /Selected avatar|Avatar option/ })[1]).toBe(
+        optionTwo,
+      );
+      expect(
+        within(editor)
+          .getAllByRole("button", { name: /Selected avatar|Avatar option/ })
+          .map((button) => button.innerHTML),
+      ).toEqual(faceMarkup);
+      const callsBeforeNewSet = vi.mocked(window.openbot.agent.updateBot).mock.calls.length;
+      await fireEvent.click(within(editor).getByRole("button", { name: "New set" }));
+      const nextFaceButtons = within(editor).getAllByRole("button", {
+        name: /Selected avatar|Avatar option/,
+      });
+      expect(nextFaceButtons[0]).toHaveAttribute("aria-pressed", "true");
+      expect(nextFaceButtons.map((button) => button.innerHTML)).not.toEqual(faceMarkup);
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledTimes(callsBeforeNewSet);
+      await waitFor(() =>
+        expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+          botId: "chief",
+          avatarSeed: "chief:avatar:0:1",
+        }),
+      );
+      await fireEvent.click(within(editor).getByRole("button", { name: "Reset to ID" }));
+      await waitFor(() =>
+        expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+          botId: "chief",
+          avatarSeed: "chief",
+        }),
+      );
+      await fireEvent.click(within(editor).getByRole("button", { name: "Avatar option 2" }));
 
-    await fireEvent.click(within(editor).getByRole("button", { name: "Blue avatar color" }));
-    await waitFor(() =>
-      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
-        botId: "chief",
-        avatarHue: 215,
-      }),
-    );
+      await fireEvent.click(within(editor).getByRole("button", { name: "Blue avatar color" }));
+      await waitFor(() =>
+        expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+          botId: "chief",
+          avatarHue: 215,
+        }),
+      );
 
-    const name = within(settings).getByRole("textbox", { name: "Agent name" });
-    await fireEvent.pointerDown(name);
-    expect(within(settings).queryByRole("dialog", { name: "Avatar editor" })).toBeNull();
-    await fireEvent.input(name, { target: { value: "Coordinator" } });
-    await fireEvent.blur(name);
-    await waitFor(() =>
-      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
-        botId: "chief",
-        name: "Coordinator",
-      }),
-    );
-  });
+      const name = within(settings).getByRole("textbox", { name: "Agent name" });
+      await fireEvent.pointerDown(name);
+      expect(within(settings).queryByRole("dialog", { name: "Avatar editor" })).toBeNull();
+      await fireEvent.input(name, { target: { value: "Coordinator" } });
+      await fireEvent.blur(name);
+      await waitFor(() =>
+        expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+          botId: "chief",
+          name: "Coordinator",
+        }),
+      );
+    },
+    15_000,
+  );
 
   it("removes a custom agent avatar and keeps its generated avatar settings", async () => {
     vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([
