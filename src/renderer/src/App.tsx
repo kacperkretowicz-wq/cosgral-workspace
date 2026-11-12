@@ -46,6 +46,7 @@ import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/Panel
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar, type SidebarAgentState } from "./components/Sidebar";
 import type { BotMessage, BotProfile } from "./data";
+import { collectNeedsYouItems } from "./needs-you";
 
 const FALLBACK_STATUS: AgentStatus = {
   phase: "starting",
@@ -1224,11 +1225,20 @@ export function App() {
     const bot = activeBot();
     return bot ? queues()[bot.id] : undefined;
   });
+  const needsYouItems = createMemo(() =>
+    collectNeedsYouItems({
+      bots: botList(),
+      prompts: pendingPrompts(),
+      approvals: pendingApprovals(),
+    }),
+  );
+
   const sidebarAgentStates = createMemo<Record<string, SidebarAgentState>>(() => {
     const turns = activeTurns();
     const queueSnapshots = queues();
     const unread = unreadReplies();
     const recent = recentReplies();
+    const waiting = new Set(needsYouItems().map((item) => item.botId));
     const states: Record<string, SidebarAgentState> = {};
     for (const bot of botList()) {
       const isWorking =
@@ -1238,7 +1248,8 @@ export function App() {
             (delivery) => delivery.status === "starting" || delivery.status === "running",
           ),
         );
-      if (isWorking) states[bot.id] = { kind: "working" };
+      if (waiting.has(bot.id)) states[bot.id] = { kind: "needs-you" };
+      else if (isWorking) states[bot.id] = { kind: "working" };
       else if ((unread[bot.id] ?? 0) > 0) {
         states[bot.id] = { kind: "unread", count: unread[bot.id] ?? 1 };
       } else if (recent[bot.id]) states[bot.id] = { kind: "responded" };
@@ -1533,7 +1544,9 @@ export function App() {
                 accountUsage={accountUsage()}
                 updateStatus={updateStatus()}
                 agentStates={sidebarAgentStates()}
+                needsYouItems={needsYouItems()}
                 onSelectBot={selectBot}
+                onSelectNeedsYou={selectBot}
                 onSelectPerson={(memberId) => void selectDirectMember(memberId)}
                 onCreateBot={openAgentPicker}
                 onEditBot={editBot}

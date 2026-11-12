@@ -32,7 +32,8 @@ import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../bl
 import type { BotMessage, BotProfile } from "../data";
 import { AgentAvatar } from "./AgentAvatar";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
-import { ApprovalCard, ChoiceCard } from "./ConversationPrompts";
+import { ChoiceCard } from "./ConversationPrompts";
+import { StickyDecision } from "./StickyDecision";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
 import { ChatSearch } from "./conversation/ChatSearch";
@@ -1847,23 +1848,15 @@ export function Conversation(props: ConversationProps) {
             }}
           </For>
           <AgentActivityIndicator bot={props.bot} state={visibleAgentActivity()} />
-          <Show when={props.prompt}>
-            {(prompt) => (
-              <ApprovalCard variant="questions" questions={prompt().questions} onSubmit={props.onAnswerPrompt} />
-            )}
-          </Show>
-          <Show when={props.approval}>
-            {(approval) => (
-              <ApprovalCard
-                variant="approval"
-                approval={approval()}
-                onApprove={() => props.onRespondToApproval("accept")}
-                onReject={() => props.onRespondToApproval("decline")}
-              />
-            )}
-          </Show>
         </Show>
       </div>
+
+      <StickyDecision
+        prompt={props.prompt}
+        approval={props.approval}
+        onAnswerPrompt={props.onAnswerPrompt}
+        onRespondToApproval={props.onRespondToApproval}
+      />
 
       <Show when={!props.prompt && !props.approval}>
         <div class="composer-wrap">
