@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>COSGRAL Workspace · podgląd</title>
+    <style>
+      .cosgral-preview-badge {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 2147483647;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font: 600 12px/1.2 system-ui, sans-serif;
+        color: #f2f4f8;
+        background: rgba(47, 111, 237, 0.92);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>COSGRAL Workspace requires JavaScript to run.</noscript>
+    <div id="root"></div>
+    <div class="cosgral-preview-badge" aria-hidden="true">Podgląd · dane demo, bez silnika</div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

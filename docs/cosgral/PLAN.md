@@ -31,6 +31,11 @@
 - Lista funkcji: 44 wiersze, względem bazy **1 jest / 22 częściowo / 21 brak** (W1: 1/11/7, W2: 0/5/7, W3: 0/6/4, M: 0/0/3). Wiersze 6, 10 i 11 są po B4 bliżej „jest”; potwierdzi to odbiór Testera.
 - Nie sprawdzone: instalacja NSIS (pisze do rejestru prawdziwego profilu), agent Claude (brak logowania), prawdziwa kamera.
 
+## Podgląd w przeglądarce
+
+- Adres: https://cosgral-workspace-podglad-podglad-interfejsu-4yze9z3enp.openbot.site (publiczny, dane demo, wygasa 12.12.2026, odnawia go podmiana).
+- To prawdziwy interfejs z `src/renderer` na atrapie API, bez silnika. Budowa: `scripts/web-preview/README.md`. Po każdym scaleniu lider buduje go od nowa i podmienia stronę pod tym samym adresem.
+
 ## Decyzje lidera (12.11)
 
 1. **Język interfejsu:** do czasu wyboru języka w onboardingu (wiersz 40) nowe napisy UI są po angielsku, spójnie z bazą. Polski przyjdzie jako tłumaczenie PL/EN. Mieszanie języków w jednym widoku to błąd.
