@@ -1,6 +1,6 @@
 # Decyzja: silnik i kierunek wizualny COSGRAL Workspace (12.11.2026)
 
-**Status:** przyjęta przez lidera (Okiestrator).
+**Status:** część „silnik” zastąpiona przez `2026-11-12-cosgral-openbot-1to1-paths.md`, bo właściciel chce OpenBota 1:1. Kierunek wizualny i akceptacja shape UI obowiązują nadal.
 **Powód:** właściciel napisał, że jeśli silnik taki jak w OpenBocie jest lepszy i bardziej pasuje, mamy go wziąć pod uwagę. Produkt ma być lepszy niż OpenBot, również wizualnie. Wybór należy do zespołu.
 
 ## 1. Decyzja w trzech zdaniach
