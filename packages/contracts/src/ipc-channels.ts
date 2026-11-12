@@ -46,6 +46,8 @@ export const IPC_CHANNELS = {
   agentInterrupt: "agent:interrupt",
   agentRespondToPrompt: "agent:respond-to-prompt",
   agentRespondToApproval: "agent:respond-to-approval",
+  agentGetEyesState: "agent:get-eyes-state",
+  agentStopEyes: "agent:stop-eyes",
   agentEvent: "agent:event",
   browserOpen: "browser:open",
   browserActivate: "browser:activate",

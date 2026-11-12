@@ -143,6 +143,25 @@ describe("ClaudeAgentClient", () => {
     await client.stop();
   });
 
+  it("gives Claude the agent eyes tools next to the browser and teammate tools", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    let serverNames: string[] = [];
+    const client = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, (params) => {
+      serverNames = Object.keys(params.options?.mcpServers ?? {});
+      return new TestQuery(new TestQueue<TestStreamMessage>());
+    });
+    client.start();
+
+    await client.request(
+      "thread/start",
+      { cwd: root, model: "claude-sonnet-5", developerInstructions: "Be concise.", runtimeWorkspaceRoots: [root] },
+      decodeThreadResponse,
+    );
+
+    expect(serverNames).toEqual(expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes"]));
+    await client.stop();
+  });
+
   it("uses a complete assistant message when Claude omits stream deltas", async () => {
     const { client, notifications, output, threadId } = await createHarness();
     const turnId = "11111111-1111-4111-8111-111111111111";

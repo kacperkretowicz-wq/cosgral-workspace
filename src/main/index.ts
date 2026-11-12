@@ -9,11 +9,13 @@ import {
   type AppSetupState,
   type CentralAuthState,
   type ExternalDestination,
+  emptyAgentEyesState,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   type MacPermissionId,
   type MacPermissionsState,
   type SendMessageInput,
+  type StopAgentEyesInput,
   type UpdateBotInput,
 } from "@openbot/contracts/ipc";
 import {
@@ -35,12 +37,14 @@ import { AgentService } from "../backend/agent-service";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
+import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
+import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
 import {
   parseAgentRequest,
@@ -105,6 +109,10 @@ if (!app.isPackaged) {
   app.setPath("userData", join(app.getPath("appData"), developmentUserDataName(profile)));
 }
 app.enableSandbox();
+// COSGRAL: a synthetic camera for sandbox tests of agent eyes; development builds only.
+if (!app.isPackaged && process.env.COSGRAL_FAKE_CAMERA === "1") {
+  app.commandLine.appendSwitch("use-fake-device-for-media-stream");
+}
 if (process.platform === "win32") app.setAppUserModelId("pl.cosgral.workspace");
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 const appVariant = readAppVariant(process.env.OPENBOT_APP_VARIANT, app.isPackaged);
@@ -135,6 +143,11 @@ protocol.registerSchemesAsPrivileged([
     scheme: "openbot-remote-avatar",
     privileges: { standard: true, secure: true, supportFetchAPI: true },
   },
+  // COSGRAL: the hidden camera page of agent eyes needs a secure context.
+  {
+    scheme: EYES_CAMERA_SCHEME,
+    privileges: { standard: true, secure: true },
+  },
 ]);
 
 let mainWindow: BrowserWindow | null = null;
@@ -157,6 +170,7 @@ const TEAM_FILE = "openbot-team-server-v1.json";
 const REMOTE_SERVERS_FILE = "openbot-remote-servers-v1.json";
 const CENTRAL_AUTH_FILE = "openbot-central-auth-v1.bin";
 const LOCAL_OWNER_FILE = "cosgral-local-owner-v1.json";
+const EYES_FOLDER = "eyes";
 const REMOTE_DESKTOP_CREDENTIAL_FILE = "openbot-remote-desktop-credential-v1.json";
 
 const EXTERNAL_DESTINATIONS: Record<ExternalDestination, string> = {
@@ -614,6 +628,15 @@ function registerIpcHandlers(
       ? service.respondToApproval(parsed)
       : remoteServers.request("/v1/approvals/respond", { method: "POST", body: parsed }, scoped.serverId, decodeVoid);
   });
+  // COSGRAL: agent eyes run only on this computer.
+  handleTrusted(IPC_CHANNELS.agentGetEyesState, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.getEyesState() : emptyAgentEyesState();
+  });
+  handleTrusted(IPC_CHANNELS.agentStopEyes, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? service.stopEyes(parseStopEyes(scoped.payload)) : emptyAgentEyesState();
+  });
 
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);
@@ -889,6 +912,13 @@ if (!hasSingleInstanceLock) {
       await browserHost.restore();
       const setupFile = join(app.getPath("userData"), SETUP_FILE);
       const setupState = await readSetupState(setupFile);
+      // COSGRAL: agent eyes; pictures stay in userData/eyes and expire.
+      const eyes = new EyesService({
+        capture: new ElectronEyesCapture(),
+        storageRoot: join(app.getPath("userData"), EYES_FOLDER),
+      });
+      void eyes.cleanup().catch((error) => console.error("Unable to clean agent eyes pictures:", error));
+      eyes.on("changed", (state) => showEyesIndicator(state.sessions.length > 0));
       agentService = new AgentService(
         store,
         mailboxStore,
@@ -896,6 +926,8 @@ if (!hasSingleInstanceLock) {
         readComputerUsePrerequisites,
         30_000,
         setupState.preferredProvider ?? "codex",
+        null,
+        eyes,
       );
       const service = agentService;
       configureAttachmentProtocol(mailboxStore, service);
@@ -1060,6 +1092,21 @@ if (!hasSingleInstanceLock) {
       );
       app.quit();
     });
+}
+
+/** COSGRAL: until the UI indicator lands, the window title shows that an agent is looking. */
+function showEyesIndicator(looking: boolean): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setTitle(looking ? `${app.getName()} — an agent is looking` : app.getName());
+}
+
+function parseStopEyes(value: unknown): StopAgentEyesInput {
+  if (value === null || value === undefined) return {};
+  if (!isObject(value)) throw new Error("Stop details are required.");
+  return {
+    ...(value.botId === undefined ? {} : { botId: requireString(value.botId, "botId") }),
+    ...(value.sessionId === undefined ? {} : { sessionId: requireString(value.sessionId, "sessionId") }),
+  };
 }
 
 function localOwnerName(): string {

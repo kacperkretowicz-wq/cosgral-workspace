@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
+import { type EyesCapture, type EyesFrame, EyesService, type EyesSourceInfo } from "./eyes-service";
 import { MailboxStore } from "./mailbox-store";
 import { type AppServerNotification, getString, type RequestId, type ResponseDecoder, type RpcError } from "./protocol";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
@@ -94,6 +95,88 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
 
     expect(codex?.lateOutputSent).toBe(true);
     expect(persistConversation).not.toHaveBeenCalled();
+  });
+
+  it("asks with the approval card before an agent looks and answers with the picture", async () => {
+    const { codex, events, threadId, turnId } = await startEyesTurn();
+
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "eyes-call-1",
+      params: {
+        threadId,
+        turnId,
+        callId: "call-1",
+        namespace: "cosgral_eyes",
+        tool: "look_at_window",
+        arguments: { titleContains: "calc" },
+      },
+    });
+    await waitFor(() => events.some((event) => event.type === "approval"));
+    const approval = events.find((event) => event.type === "approval");
+    if (approval?.type !== "approval") throw new Error("Expected an approval.");
+
+    expect(approval.approval).toMatchObject({
+      kind: "screen",
+      botId: "chief",
+      eyes: { source: "window", targetLabel: "Calculator", live: false },
+    });
+    expect(approval.approval.reason).toContain("Calculator");
+    expect(codex.responses).toEqual([]);
+
+    await service?.respondToApproval({ requestId: approval.approval.requestId, decision: "accept" });
+    await waitFor(() => codex.responses.length === 1);
+
+    expect(codex.responses[0]).toMatchObject({
+      id: "eyes-call-1",
+      result: {
+        success: true,
+        contentItems: expect.arrayContaining([expect.objectContaining({ type: "inputImage" })]),
+      },
+    });
+    expect(events.some((event) => event.type === "eyes-changed" && event.state.grants.length === 1)).toBe(true);
+    const threadStart = codex.requests.find((request) => request.method === "thread/start");
+    expect(threadStart?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([expect.objectContaining({ name: "cosgral_eyes" })]),
+    });
+  });
+
+  it("answers an eyes tool call without a picture when the user rejects it", async () => {
+    const { codex, events, threadId, turnId } = await startEyesTurn();
+
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "eyes-call-2",
+      params: { threadId, turnId, callId: "call-2", namespace: "cosgral_eyes", tool: "take_photo", arguments: {} },
+    });
+    await waitFor(() => events.some((event) => event.type === "approval"));
+    const approval = events.find((event) => event.type === "approval");
+    if (approval?.type !== "approval") throw new Error("Expected an approval.");
+    expect(approval.approval).toMatchObject({ kind: "camera", eyes: { source: "camera" } });
+
+    await service?.respondToApproval({ requestId: approval.approval.requestId, decision: "decline" });
+    await waitFor(() => codex.responses.length === 1);
+
+    expect(codex.responses[0]).toMatchObject({ id: "eyes-call-2", result: { success: false } });
+    expect(JSON.stringify(codex.responses[0])).not.toContain("inputImage");
+  });
+
+  it("does not leave an eyes tool call hanging when its turn ends without an answer", async () => {
+    const { codex, events, threadId, turnId } = await startEyesTurn();
+
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "eyes-call-3",
+      params: { threadId, turnId, callId: "call-3", namespace: "cosgral_eyes", tool: "look_at_screen", arguments: {} },
+    });
+    await waitFor(() => events.some((event) => event.type === "approval"));
+    codex.emit(
+      "notification",
+      notification("turn/completed", { threadId, turn: { id: turnId, status: "interrupted" } }),
+    );
+    await waitFor(() => codex.responses.length === 1);
+
+    expect(codex.responses[0]).toMatchObject({ id: "eyes-call-3", result: { success: false } });
   });
 
   it("marks a conversation read through the receipt of the message the user just sent", async () => {
@@ -1394,6 +1477,62 @@ class FakeAgentClient extends EventEmitter implements AgentClient {
   }
 
   respondError(_id: RequestId, _error: RpcError): void {}
+}
+
+/** COSGRAL: a fixed capture source for agent eyes tests. */
+class StaticEyesCapture implements EyesCapture {
+  async listSources(): Promise<EyesSourceInfo[]> {
+    return [
+      { id: "window:7", kind: "window", title: "Calculator", displayId: null },
+      { id: "screen:1", kind: "screen", title: "Screen 1", displayId: "1" },
+    ];
+  }
+
+  async capture(): Promise<EyesFrame> {
+    return { mimeType: "image/jpeg", bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2]), width: 2, height: 2 };
+  }
+
+  async takePhoto(): Promise<EyesFrame> {
+    return this.capture();
+  }
+}
+
+async function startEyesTurn(): Promise<{
+  codex: FakeAgentClient;
+  events: AgentEvent[];
+  threadId: string;
+  turnId: string;
+}> {
+  let codex: FakeAgentClient | undefined;
+  const { store, mailbox } = stores();
+  const eyes = new EyesService({
+    capture: new StaticEyesCapture(),
+    storageRoot: join(root, "eyes"),
+    sleep: async () => undefined,
+  });
+  service = new AgentService(
+    store,
+    mailbox,
+    fakeBrowser(),
+    null,
+    30_000,
+    "codex",
+    (provider) => {
+      const client = new FakeAgentClient(provider, "DONE", false);
+      if (provider === "codex") codex = client;
+      return client;
+    },
+    eyes,
+  );
+  const events: AgentEvent[] = [];
+  service.on("event", (event) => events.push(event));
+  await service.initialize();
+  await service.sendMessage({ botId: "chief", text: "Look at my screen" });
+  await waitFor(() => events.some((event) => event.type === "turn-started"));
+  const started = events.find((event) => event.type === "turn-started");
+  const turnStart = codex?.requests.find((request) => request.method === "turn/start");
+  if (!codex || started?.type !== "turn-started" || !turnStart) throw new Error("The eyes turn did not start.");
+  return { codex, events, threadId: stringParam(turnStart.params, "threadId"), turnId: started.turnId };
 }
 
 /** COSGRAL: a provider that keeps streaming while it shuts down, as a slow Windows process can. */
