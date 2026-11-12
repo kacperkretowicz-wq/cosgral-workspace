@@ -1,5 +1,8 @@
 import {
   type AccountUsage,
+  type AgentEyesGrant,
+  type AgentEyesSession,
+  type AgentEyesState,
   type AgentIpcRequest,
   type AgentModelOption,
   type AgentStatus,
@@ -253,6 +256,41 @@ function decodeQueue(value: unknown): QueueSnapshot {
   return value;
 }
 
+/** COSGRAL: agent eyes state (who is looking, standing approvals). */
+function decodeEyesState(value: unknown): AgentEyesState {
+  if (!isDynamicRecord(value) || !Array.isArray(value.sessions) || !Array.isArray(value.grants)) {
+    throw new Error("Invalid agent eyes response.");
+  }
+  return { sessions: value.sessions.filter(isEyesSession), grants: value.grants.filter(isEyesGrant) };
+}
+
+function isEyesSession(value: unknown): value is AgentEyesSession {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.botId) &&
+    isString(value.threadId) &&
+    isString(value.turnId) &&
+    (value.source === "screen" || value.source === "window" || value.source === "camera") &&
+    isString(value.targetLabel) &&
+    (value.phase === "capturing" || value.phase === "watching") &&
+    isNumber(value.framesCaptured) &&
+    isNumber(value.framesPlanned) &&
+    isString(value.startedAt) &&
+    (value.endsAt === null || isString(value.endsAt))
+  );
+}
+
+function isEyesGrant(value: unknown): value is AgentEyesGrant {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.botId) &&
+    isString(value.threadId) &&
+    value.source === "screen" &&
+    isString(value.grantedAt)
+  );
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -339,6 +377,8 @@ const openbotApi: OpenBotDesktopApi = {
     interrupt: (input) => invokeAgent(IPC_CHANNELS.agentInterrupt, input, decodeVoid),
     respondToPrompt: (input) => invokeAgent(IPC_CHANNELS.agentRespondToPrompt, input, decodeVoid),
     respondToApproval: (input) => invokeAgent(IPC_CHANNELS.agentRespondToApproval, input, decodeVoid),
+    getEyesState: () => invokeAgent(IPC_CHANNELS.agentGetEyesState, null, decodeEyesState),
+    stopEyes: (input) => invokeAgent(IPC_CHANNELS.agentStopEyes, input, decodeEyesState),
     onEvent: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: ScopedAgentEvent) => {
         if (payload.serverId === selectedServerId) listener(payload.event);

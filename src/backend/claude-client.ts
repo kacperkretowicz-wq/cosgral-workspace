@@ -16,6 +16,7 @@ import { type DynamicRecord, isOneOf, isString } from "@openbot/contracts/runtim
 import { z } from "zod";
 import type { AgentProvider } from "./agent-client";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
+import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
 import {
   type AccountReadResult,
   type AppServerNotification,
@@ -527,6 +528,46 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
               replyToMessageId: z.string().nullable().optional(),
             },
             (args) => call("openbot", "send_message", args),
+          ),
+        ],
+      }),
+      // COSGRAL: agent eyes; AgentService asks the user before any picture is taken.
+      [EYES_NAMESPACE]: createSdkMcpServer({
+        name: EYES_NAMESPACE,
+        version: "0.1.0",
+        tools: [
+          tool("list_sources", EYES_TOOL_DESCRIPTIONS.list_sources, {}, (args) =>
+            call(EYES_NAMESPACE, "list_sources", args),
+          ),
+          tool(
+            "look_at_window",
+            EYES_TOOL_DESCRIPTIONS.look_at_window,
+            { windowId: z.string().max(128).optional(), titleContains: z.string().max(200).optional() },
+            (args) => call(EYES_NAMESPACE, "look_at_window", args),
+          ),
+          tool(
+            "look_at_screen",
+            EYES_TOOL_DESCRIPTIONS.look_at_screen,
+            { screenId: z.string().max(128).optional() },
+            (args) => call(EYES_NAMESPACE, "look_at_screen", args),
+          ),
+          tool("take_photo", EYES_TOOL_DESCRIPTIONS.take_photo, {}, (args) => call(EYES_NAMESPACE, "take_photo", args)),
+          tool(
+            "watch",
+            EYES_TOOL_DESCRIPTIONS.watch,
+            {
+              target: z.enum(["window", "screen"]),
+              windowId: z.string().max(128).optional(),
+              titleContains: z.string().max(200).optional(),
+              screenId: z.string().max(128).optional(),
+              frames: z.number().int().min(EYES_LIMITS.minFrames).max(EYES_LIMITS.maxFrames).optional(),
+              intervalSeconds: z
+                .number()
+                .min(EYES_LIMITS.minIntervalSeconds)
+                .max(EYES_LIMITS.maxIntervalSeconds)
+                .optional(),
+            },
+            (args) => call(EYES_NAMESPACE, "watch", args),
           ),
         ],
       }),

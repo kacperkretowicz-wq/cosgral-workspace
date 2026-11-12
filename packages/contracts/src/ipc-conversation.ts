@@ -1,4 +1,5 @@
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
+import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked" | "stopped";
@@ -364,7 +365,8 @@ export interface RespondToPromptInput {
   answers: Record<string, string[]>;
 }
 
-export type AgentApprovalKind = "command" | "file-change" | "permissions";
+/** COSGRAL: "screen" (windows and screens, once per conversation) and "camera" (every photo) are agent eyes. */
+export type AgentApprovalKind = "command" | "file-change" | "permissions" | "screen" | "camera";
 
 export interface AgentApprovalPermissions {
   fileSystem: {
@@ -385,6 +387,8 @@ export interface AgentApproval {
   reason: string | null;
   grantRoot: string | null;
   permissions: AgentApprovalPermissions | null;
+  /** COSGRAL: set for the "screen" and "camera" kinds. */
+  eyes?: AgentEyesRequest | null;
 }
 
 export interface RespondToApprovalInput {
@@ -427,6 +431,8 @@ export type AgentEvent =
   | { type: "approval"; approval: AgentApproval }
   | { type: "browser-changed"; tabs: BrowserTab[]; activeTabId: string | null }
   | { type: "browser-control-changed"; state: BrowserControlState }
+  /** COSGRAL: agent eyes sessions and approvals changed. */
+  | { type: "eyes-changed"; state: AgentEyesState }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -469,6 +475,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.tabs) && (value.activeTabId === null || isString(value.activeTabId));
     case "browser-control-changed":
       return isDynamicRecord(value.state);
+    case "eyes-changed":
+      return isDynamicRecord(value.state) && Array.isArray(value.state.sessions) && Array.isArray(value.state.grants);
     case "error":
       return isString(value.code) && isString(value.message);
     default:

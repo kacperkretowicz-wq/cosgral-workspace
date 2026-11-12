@@ -124,7 +124,7 @@ Dowody: `Shared\cosgral-data\desktop-backend\evidence\b1\run1-no-cli … run8-pa
 ### 4.2 Codex: działa
 
 - Codex CLI zainstalowałem tylko w `Shared\tools\codex-cli` (`npm --prefix`, cache w `Shared\tools\npm-cache`). Wersja 0.167.2; minimum programu to 0.144.1.
-- **Uwaga o izolacji:** Codex na Windows trzyma logowanie w Menedżerze poświadczeń Windows, wspólnym dla użytkownika. Dlatego w piaskownicy był zalogowany kontem ChatGPT właściciela. Run 7 zrobił na tym koncie jedną krótką turę („pong”).
+- **Uwaga o izolacji (poprawione w A1):** Codex na Windows ustala katalog domowy przez system, a nie przez `USERPROFILE`, więc w piaskownicy używał prawdziwego `~\.codex` (logowanie `auth.json` i zapis sesji). Dlatego był zalogowany kontem ChatGPT właściciela. Run 7 zrobił na tym koncie jedną krótką turę („pong”), a sesja tej tury została zapisana w prawdziwym `~\.codex\sessions`. Szczegóły: `backend-a1-oczy.md`, sekcja 7.3.
 - Program instalowany normalnie znajdzie Codex w `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe` lub `%APPDATA%\npm\codex.cmd`. Na tym PC żadnej z tych ścieżek nie ma, czyli **Codex nie jest zainstalowany systemowo**. Potrzebna instalacja Codex CLI ≥ 0.144.1. Logowanie już jest.
 
 ### 4.3 Claude: czego brakuje
@@ -192,7 +192,7 @@ Wszystkie zdarzenia agenta idą kanałem `agent:event` jako `ScopedAgentEvent { 
   - Naprawa: `run-sandbox.ps1` czyści `CLAUDE*`, `ANTHROPIC*`, `OPENAI*`, `CODEX*`, `OPENBOT*`; od run 3 Claude w piaskownicy jest „sign-in-required”.
   - E-maile kont usunąłem z logów dowodowych, a sterownik maskuje je od razu przy zapisie.
   - Nie da się sprawdzić, czy te dwa polecenia coś zapisały w katalogu konfiguracji OpenBota, bo moja sesja pisze tam równocześnie. Plików OpenBota nie otwierałem.
-- Codex: logowanie jest w Menedżerze poświadczeń Windows (sekcja 4.2), więc piaskownica folderów go nie izoluje. To ważne dla przyszłych testów: prawdziwe tury Codex idą na konto właściciela.
+- Codex: logowanie i sesje są w prawdziwym `~\.codex` (sekcja 4.2, poprawione w A1), więc piaskownica folderów ich nie izoluje. To ważne dla przyszłych testów: prawdziwe tury Codex idą na konto właściciela i zapisują się w jego historii Codex.
 - Serwery: aplikacja nie otwiera portów. DevTools tylko na 127.0.0.1 i tylko w przebiegach testowych.
 - Repo: raport nie zawiera ścieżek z nazwą konta Windows ani e-maili, a zrzuty zostały poza repo.
 

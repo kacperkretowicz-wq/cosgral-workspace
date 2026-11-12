@@ -37,6 +37,7 @@ import type {
   UpdateBotInput,
   UpdateQueuedMessageInput,
 } from "./ipc-conversation";
+import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
   ConfigureHostInput,
   ConfigureRemoteDesktopInput,
@@ -93,6 +94,9 @@ export interface AgentDesktopApi {
   interrupt: (input: InterruptTurnInput) => Promise<void>;
   respondToPrompt: (input: RespondToPromptInput) => Promise<void>;
   respondToApproval: (input: RespondToApprovalInput) => Promise<void>;
+  /** COSGRAL agent eyes (local server only). Optional until every renderer mock implements it. */
+  getEyesState?: () => Promise<AgentEyesState>;
+  stopEyes?: (input: StopAgentEyesInput) => Promise<AgentEyesState>;
   onEvent: (listener: (event: AgentEvent) => void) => () => void;
 }
 
