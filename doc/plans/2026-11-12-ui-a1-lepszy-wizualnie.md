@@ -1,9 +1,10 @@
 # A1 UI — 3 propozycje „lepszy niż OpenBot” (wizualnie + obsługa)
 
-**Status:** waiting for leader acceptance · **bez kodu**  
+**Status:** waiting for leader acceptance · **bez kodu** · **kontynuacja 12.11 (wizualnie podobny + lepszy)**  
 **Branch:** `team/ui/a1-visual` (od `bd92bdf0e`)  
-**Kontekst:** droga A — silnik = OpenBot (licencja Team); Paperclip wstrzymany; shape Chat-first / karty decyzji / stany agentów zostaje jako **zasady**, nie plan kodu Paperclip.  
-**Zasady:** nie kopiujemy grafik, ikon, tekstów UI OpenBota do repo; nazwa i logo OpenBot bez zmian; zmiany chrome tylko w prywatnym forku po aktywacji licencji.
+**Kontekst:** właściciel: OpenBot jest jakościowy → nasz UI ma być **podobny wizualnie**, a w obsłudze **lepszy**. Shape Chat-first / karty / stany = zasady.  
+**Zasady repo:** nie wklejamy do publicznego repo kodu, grafik, ikon ani tekstów UI OpenBota (PolyForm NC / instrukcje kanału). Budujemy **własny** chrome zainspirowany powierzchniami (REA + obserwacja).  
+**Uwaga właściciela (później):** bez licencji Team — UI nie czeka na fork 0.68; dostawa = własna powłoka / plan B (0.1.11 Apache) wg lidera, nie kopiowanie assetów.
 
 ---
 
@@ -16,7 +17,52 @@
 | Kryteria lidera (F2.0) | „Czeka na Ciebie” ≤ 1 s; PL; bez świecenia; porównanie light/dark. |
 | Ograniczenie tej sesji | Side-thread bez Computer Use — **brak zrzutu pikseli Electrona w tym raporcie**. Zrzuty żywe: folder poza repo `C:\Users\x1 Yoga\OpenBot\Agents\agent-47a8f2c5-9b74-4380-910e-a5ab189976b9\tmp\openbot-a1-ui\` (do wypełnienia w czacie głównym UI Designera). |
 
-**Wniosek jakości:** OpenBot jest już „jakościowy” (właściciel). „Lepszy” = mniej szukania decyzji i stanu zespołu, nie nowy branding.
+**Wniosek jakości:** OpenBot jest już „jakościowy” (właściciel). Cel = **visual twin** (ten sam spokój, gęstość, IA) + **polish** (Needs you / sticky decyzja / Chat|Zadania) — nie nowy branding ani AI-slop.
+
+---
+
+## 0b. Karta „visual twin” (podobny + lepszy)
+
+| Warstwa | Trzymamy jak OpenBot | Lepsze niż OpenBot |
+|---|---|---|
+| IA | Szyna stron · lista agentów/kanałów · czat · panel | Needs you na wierzchu; sticky decyzja; Chat\|Zadania |
+| Gęstość | Mało chrome, dużo treści | Mniej „szukania” waiting |
+| Motyw | Jasny + ciemny, stonowany | Zero glow / OLED pulse / Canvas |
+| Ruch | Dyskretny | `prefers-reduced-motion` zawsze |
+| Copy | PL, własne sformułowania w naszym kodzie | Krótsze CTA przy decyzjach |
+
+### Mock — lista agentów (dark / light ta sama struktura)
+
+```
+┌────┬──────────────────┬────────────────────────────┐
+│ SR │ Needs you (2)    │  wątek / czat               │
+│    │ · Agent A · Q    │                            │
+│    │ · Agent B · OK   │                            │
+│    │ ── Zespół ─────  │                            │
+│    │  Agent C  idle   │                            │
+└────┴──────────────────┴────────────────────────────┘
+Dark: surface muted + warning chip. Light: white surface + same chip contrast.
+```
+
+### Mock — czat + sticky decyzja
+
+```
+│ historia …                                         │
+├ Decyzja 1/1 ───────────────────────────────────────┤
+│ Zezwolić na zapis?   [Zezwól] [Zawsze] [Odrzuć]   │
+├────────────────────────────────────────────────────┤
+│ Message…                                        ⏎  │
+```
+
+### Mock — kanał Chat | Zadania
+
+```
+# Kanał X   [Chat] [Zadania]   lider · 2 online
+│ zadanie │ agent │ stan    │ wynik │
+│ …       │ …     │ waiting │  —    │
+```
+
+**Akceptacja visual twin:** ktoś znający OpenBot rozpoznaje układ w ≤ 3 s; jednocześnie Needs you widać bez scrolla.
 
 ---
 
@@ -48,7 +94,7 @@ Stany *czeka na odpowiedź / zatwierdzenie / przeglądarkę* są w wierszu agent
 | **(b) prywatny fork** | Zmiana layoutu listy agentów / badge na szynie stron. To jest chrome produktu → fork. |
 | **(a) dodatek** | Skill/MCP **nie** naprawi chrome. Wtyczka ze stroną „Needs you” (jeśli apps w manifeście) = obejście, gorsze niż w pasku. |
 
-**Rekomendacja:** **fork** (po A0). Do czasu forka: wtyczka-strona jako MVP widoczności.
+**Rekomendacja:** własna powłoka (V2) albo prywatny fork po licencji. Do czasu kodu: wtyczka-strona „Needs you” jako MVP.
 
 ### Motyw jasny / ciemny
 Jeden semantyczny kolor „needs-you” (warning), bez glow. Light: ciemniejszy tekst na jasnym chipie; dark: jasny tekst na stonowanym tle. Kontrast WCAG AA na chipie i liczniku.
@@ -91,7 +137,7 @@ Gdy wątek ma otwarte waiting: **sticky strip** 1 kartę (lub stos „1/3”) tu
 | **(b) prywatny fork** | Właściwe miejsce: layout czatu / composer. |
 | **(a) dodatek** | Nie da się wiarygodnie „dokleić” do kompozytora bez API hosta. |
 
-**Rekomendacja:** **tylko fork**.
+**Rekomendacja:** chrome czatu → własna powłoka (V2) lub fork; dodatek MCP tego nie doklei.
 
 ### Motyw jasny / ciemny
 Strip = `surface` + border hairline (jak karty systemowe), nie gradient. Light/dark z tokenów motywu OpenBota w forku; zero neonu.
@@ -159,28 +205,30 @@ Segment jak w System UI: aktywny = foreground + underline/weight, nie wypełnion
 
 ---
 
-## 5. Kolejność wdrożenia (UI)
+## 5. Kolejność wdrożenia (UI) — kontynuacja bez czekania na Team
 
 | Krok | Co | Blokuje |
 |---|---|---|
-| A0 | Licencja Team aktywna | Fork chrome (A, B) |
-| A2 | Wtyczka/strona Zadania kanału (C-lite) | — |
-| A3 | Fork: Needs you + sticky Decyzja (A, B) + segment C | A0 |
-| Potem | Badge Eyes + Plugin Studio UI wg luk Testera | Backend / Tester |
+| **V0** | Lider akceptuje A+B+C + kartę visual twin (§0b) | — |
+| **V1** | Własne mockupy high-fi (light/dark) 3 ekranów — poza kopiowaniem assetów OpenBota; porównanie obok zrzutów trzymanych **poza repo** | V0 |
+| **V2** | Kod powłoki: Needs you → sticky Decyzja → Chat\|Zadania na bazie, którą wskaże lider (własny UI / 0.1.11 / addons) | V1 + decyzja silnika |
+| **V3** | Badge Eyes + Plugin Studio UI wg luk Testera | Backend / Tester |
+
+Fork chrome OpenBot 0.68 **nie jest wymagany**, jeśli nie ma licencji Team — i tak nie kopiujemy UI do publicznego repo.
 
 ---
 
 ## 6. Decyzje dla lidera
 
-1. Przyjąć **A + B + C** jako pakiet „lepszy wizualnie/obsługowo”?  
-2. C-lite jako dodatek przed forkiem — tak/nie?  
-3. Po A0: priorytet forka **A przed B** (najpierw lista, potem composer)?
+1. Przyjąć **A + B + C** oraz kartę **visual twin** (§0b)?  
+2. V1 (high-fi mockupy) od razu po akceptacji — tak/nie?  
+3. Priorytet implementacji: **A → B → C**?
 
 ---
 
 ## 7. Nie sprawdzone
 
 - Piksele live OpenBot 0.68 (brak Computer Use w tym wątku).  
-- Czy licencja Team już aktywna i czy daje źródła do forka.  
-- Dokładne API wtyczek OpenBota pod custom `apps` (Backend A1 rozszerzenia).  
+- Finalna baza renderu UI po rezygnacji z Team (lider + Backend).  
+- Dokładne API wtyczek OpenBota pod custom `apps`.  
 - Pełna macierz luk „oczy / Plugin Studio” (Tester A1).
