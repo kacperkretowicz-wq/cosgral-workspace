@@ -54,11 +54,17 @@ describe("W1 agent events", () => {
           title: "Prepare the report",
           requestMessageId: "m1",
           resultMessageId: null,
+          parentTaskId: null,
+          dependencyTaskIds: [],
+          resourceKey: null,
+          assignmentCount: 1,
+          archivedAt: null,
+          createdAt: AT,
           updatedAt: AT,
         },
       }),
     ).toBe(true);
-    expect(isAgentEvent({ type: "task-changed", task: { id: "t1", state: "paused" } })).toBe(false);
+    expect(isAgentEvent({ type: "task-changed", task: { id: "t1", state: "archived" } })).toBe(false);
   });
 
   it("accepts the draft preview card and the browser takeover request", () => {

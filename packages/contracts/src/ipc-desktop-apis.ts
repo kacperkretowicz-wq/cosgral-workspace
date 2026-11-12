@@ -78,7 +78,15 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
-import type { ChannelTask, WorkspaceChannel } from "./ipc-workspace-channels";
+import type {
+  ChannelMemberInput,
+  ChannelTask,
+  ChannelTaskActionInput,
+  CreateWorkspaceChannelInput,
+  ReassignChannelTaskInput,
+  UpdateWorkspaceChannelInput,
+  WorkspaceChannel,
+} from "./ipc-workspace-channels";
 
 export interface AgentDesktopApi {
   getStatus: () => Promise<AgentStatus>;
@@ -130,10 +138,19 @@ export interface SidebarDesktopApi {
   moveItem: (input: MoveSidebarItemInput) => Promise<SidebarLayout>;
 }
 
-/** COSGRAL W1: channels and channel tasks, read side (engine and writes in W1-BE2). */
+/** COSGRAL W1: channels and channel tasks (see ipc-workspace-channels.ts). */
 export interface ChannelsDesktopApi {
   list: () => Promise<WorkspaceChannel[]>;
+  /** All tasks of the channel, archived ones included (filter on `archivedAt`). */
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
+  create: (input: CreateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  update: (input: UpdateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  addMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  removeMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  setLead: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  /** Stop, pause, resume, archive or restore a task. */
+  actOnTask: (input: ChannelTaskActionInput) => Promise<ChannelTask>;
+  reassignTask: (input: ReassignChannelTaskInput) => Promise<ChannelTask>;
 }
 
 export interface BrowserDesktopApi {
