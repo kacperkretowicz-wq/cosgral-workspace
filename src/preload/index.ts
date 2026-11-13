@@ -78,6 +78,7 @@ import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } fro
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
+import { createMarketplaceApi } from "./marketplace-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
@@ -762,6 +763,7 @@ const openbotApi: OpenBotDesktopApi = {
   agentSettings: createAgentSettingsApi(invokeAgent, decodeBot),
   appSettings: createAppSettingsApi(invokeAgent),
   onboarding: createOnboardingApi(invokeAgent),
+  marketplace: createMarketplaceApi(invokeAgent, decodeBot),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

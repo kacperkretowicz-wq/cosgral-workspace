@@ -31,6 +31,7 @@ import {
   isIslandState,
 } from "./ipc-dock";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
@@ -583,6 +584,8 @@ export type AgentEvent =
   | { type: "workflows-changed"; workflows: Workflow[] }
   /** COSGRAL W3: a workflow run started or changed (a step finished, an approval opened or was decided). */
   | { type: "workflow-run-changed"; run: WorkflowRun }
+  /** COSGRAL W3: the Marketplace catalog or an install state changed; replace the whole list. */
+  | { type: "marketplace-changed"; items: MarketplaceItem[] }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -704,6 +707,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.workflows) && value.workflows.every(isWorkflow);
     case "workflow-run-changed":
       return isWorkflowRun(value.run);
+    case "marketplace-changed":
+      return Array.isArray(value.items) && value.items.every(isMarketplaceItem);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

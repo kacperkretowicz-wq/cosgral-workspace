@@ -87,6 +87,7 @@ import { DATA_DYNAMIC_TOOLS, DATA_INSTRUCTIONS, SharedDataTools } from "./data-t
 import { DraftStore } from "./draft-store";
 import { EYES_DYNAMIC_TOOLS, EYES_NAMESPACE, type EyesCallContext } from "./eyes-service";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
+import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { isMemoryToolName, MEMORY_DYNAMIC_TOOLS, MemoryService } from "./memory-service";
 import { MemoryStore } from "./memory-store";
@@ -339,6 +340,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly agentSettings: AgentSettingsService;
   /** COSGRAL W3: built-in and saved agent templates, and the agent creator. */
   readonly agentTemplates: AgentTemplates;
+  /** COSGRAL W3: the local Marketplace (seed in the repo) on the skill library and the agent creator. */
+  readonly marketplace: Marketplace;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
   readonly #loadedThreads = new Set<string>();
@@ -410,7 +413,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       root: join(dirname(store.sharedRoot), "Skills"),
       workspaceFor: (botId) => this.#store.list().find((bot) => bot.id === botId)?.workspacePath ?? null,
     });
-    this.#skillTools = new SkillTools(this.#skills);
+    this.#skillTools = new SkillTools(this.#skills, () => this.marketplace);
     // COSGRAL W2: the Vault encrypts through whatever box the host gives later; until then nothing is saved.
     this.#vault = new VaultStore(store.database, {
       canEncrypt: () => this.#secretBox.canEncrypt(),
@@ -493,6 +496,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       skillNames: async (botId) => this.#skills.installedFor(botId).map((skill) => skill.name),
       saveEssentialMemory: (botId, text) => this.#memory.save({ botId, text, inclusion: "essential" }),
       essentialMemories: (botId) => this.#memory.store.listAgentMemories(botId, "essential").map((item) => item.text),
+      emit: (event) => this.#emit(event),
+    });
+    this.marketplace = new Marketplace({
+      database: store.database,
+      library: this.#skills,
+      bots: () => this.#store.list(),
+      createAgent: (input) => this.agentTemplates.createAgent(input),
+      deleteBot: (botId) => this.deleteBot(botId),
+      confirm: (context, input) => this.#cards.confirmAction(context, input),
       emit: (event) => this.#emit(event),
     });
     this.#skills.on("skills-changed", (skills) => this.#emit({ type: "skills-changed", skills }));
@@ -2818,6 +2830,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       botId: bot.id,
       workspacePath: bot.workspacePath,
       sharedRoot: this.#store.sharedRoot,
+      // COSGRAL W3: a Marketplace suggestion asks with a confirm card in this turn.
+      card: {
+        botId: bot.id,
+        threadId: this.#publicThreadId(bot.id, params.threadId),
+        providerThreadId: params.threadId,
+        turnId: params.turnId,
+      },
     });
   }
 
