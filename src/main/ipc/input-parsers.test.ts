@@ -46,6 +46,16 @@ import {
   parseSidebarFolderId,
   parseUpdateSidebarFolder,
 } from "./sidebar-inputs";
+import {
+  parseDeleteSkill,
+  parseInstallSkill,
+  parseListSkillInstalls,
+  parseReadSkill,
+  parseRestoreSkillVersion,
+  parseSkillId,
+  parseUninstallSkill,
+  parseUpdateSkillInstall,
+} from "./skill-inputs";
 import { requireString } from "./validation";
 
 describe("app IPC input parsing", () => {
@@ -382,6 +392,40 @@ describe("action card IPC input parsing", () => {
       "action must be take-over, return or decline.",
     );
     expect(() => parseDeleteDraft({})).toThrowError("draftId is required.");
+  });
+});
+
+describe("skill IPC input parsing", () => {
+  it("parses library and install requests", () => {
+    expect(parseSkillId({ skillId: "s1" })).toEqual({ skillId: "s1" });
+    expect(parseReadSkill({ skillId: "s1" })).toEqual({ skillId: "s1" });
+    expect(parseReadSkill({ skillId: "s1", version: 2 })).toEqual({ skillId: "s1", version: 2 });
+    expect(parseRestoreSkillVersion({ skillId: "s1", version: 1 })).toEqual({ skillId: "s1", version: 1 });
+    expect(parseDeleteSkill({ skillId: "s1", force: true })).toEqual({ skillId: "s1", force: true });
+    expect(parseListSkillInstalls(null)).toEqual({});
+    expect(parseListSkillInstalls({ botId: "chief" })).toEqual({ botId: "chief" });
+    expect(parseInstallSkill({ skillId: "s1", botId: "chief", version: 3 })).toEqual({
+      skillId: "s1",
+      botId: "chief",
+      version: 3,
+    });
+    expect(parseUpdateSkillInstall({ skillId: "s1", botId: "chief", overwriteLocalChanges: true })).toEqual({
+      skillId: "s1",
+      botId: "chief",
+      overwriteLocalChanges: true,
+    });
+    expect(parseUninstallSkill({ skillId: "s1", botId: "chief" })).toEqual({ skillId: "s1", botId: "chief" });
+  });
+
+  it("rejects malformed skill requests", () => {
+    expect(() => parseSkillId({})).toThrowError("skillId is required.");
+    expect(() => parseReadSkill({ skillId: "s1", version: 0 })).toThrowError("version must be a whole number from 1.");
+    expect(() => parseRestoreSkillVersion({ skillId: "s1" })).toThrowError("version must be a whole number from 1.");
+    expect(() => parseDeleteSkill({ skillId: "s1", force: "yes" })).toThrowError("force must be true or false.");
+    expect(() => parseInstallSkill({ skillId: "s1" })).toThrowError("botId is required.");
+    expect(() => parseUpdateSkillInstall({ skillId: "s1", botId: "chief", overwriteLocalChanges: 1 })).toThrowError(
+      "overwriteLocalChanges must be true or false.",
+    );
   });
 });
 

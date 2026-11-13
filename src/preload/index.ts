@@ -21,12 +21,17 @@ import {
   isChannelMessage,
   isChannelTask,
   isKeptDraft,
+  isLocalSkill,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
   isSidebarLayout,
+  isSkillContent,
+  isSkillInstall,
+  isSkillVersion,
   isWorkspaceChannel,
   type KeptDraft,
+  type LocalSkill,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -313,6 +318,37 @@ function decodePendingRequests(value: unknown): PendingAgentRequest[] {
   return value.filter(isPendingAgentRequest);
 }
 
+/** COSGRAL W2: the skill library; malformed list entries are dropped. */
+function decodeSkills(value: unknown): LocalSkill[] {
+  if (!Array.isArray(value)) throw new Error("Invalid skill list response.");
+  return value.filter(isLocalSkill);
+}
+
+function decodeSkill(value: unknown): LocalSkill {
+  if (!isLocalSkill(value)) throw new Error("Invalid skill response.");
+  return value;
+}
+
+function decodeSkillContent(value: unknown) {
+  if (!isSkillContent(value)) throw new Error("Invalid skill content response.");
+  return value;
+}
+
+function decodeSkillVersions(value: unknown) {
+  if (!Array.isArray(value)) throw new Error("Invalid skill versions response.");
+  return value.filter(isSkillVersion);
+}
+
+function decodeSkillInstall(value: unknown) {
+  if (!isSkillInstall(value)) throw new Error("Invalid skill install response.");
+  return value;
+}
+
+function decodeSkillInstalls(value: unknown) {
+  if (!Array.isArray(value)) throw new Error("Invalid skill installs response.");
+  return value.filter(isSkillInstall);
+}
+
 /** COSGRAL W1-BE3: kept drafts; malformed entries are dropped. */
 function decodeDrafts(value: unknown): KeptDraft[] {
   if (!Array.isArray(value)) throw new Error("Invalid drafts response.");
@@ -493,6 +529,17 @@ const openbotApi: OpenBotDesktopApi = {
     setLead: (input) => invokeAgent(IPC_CHANNELS.channelsSetLead, input, decodeChannel),
     actOnTask: (input) => invokeAgent(IPC_CHANNELS.channelsTaskAction, input, decodeChannelTask),
     reassignTask: (input) => invokeAgent(IPC_CHANNELS.channelsReassignTask, input, decodeChannelTask),
+  },
+  skills: {
+    list: () => invokeAgent(IPC_CHANNELS.skillsList, null, decodeSkills),
+    read: (input) => invokeAgent(IPC_CHANNELS.skillsRead, input, decodeSkillContent),
+    listVersions: (input) => invokeAgent(IPC_CHANNELS.skillsListVersions, input, decodeSkillVersions),
+    restoreVersion: (input) => invokeAgent(IPC_CHANNELS.skillsRestoreVersion, input, decodeSkill),
+    delete: (input) => invokeAgent(IPC_CHANNELS.skillsDelete, input, decodeVoid),
+    listInstalls: (input) => invokeAgent(IPC_CHANNELS.skillsListInstalls, input ?? null, decodeSkillInstalls),
+    install: (input) => invokeAgent(IPC_CHANNELS.skillsInstall, input, decodeSkillInstall),
+    update: (input) => invokeAgent(IPC_CHANNELS.skillsUpdate, input, decodeSkillInstall),
+    uninstall: (input) => invokeAgent(IPC_CHANNELS.skillsUninstall, input, decodeVoid),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

@@ -28,6 +28,37 @@ async function run(threadId, turnId, context) {
   const task = context.assignment,
     members = context.members;
   if (task.title.startsWith("STOP SMOKE")) return;
+  if (task.title.startsWith("SKILL SMOKE")) {
+    // W2: the agent creates a skill, reads it, revises it from the version it read and installs the new version.
+    const skill = async (tool, args) => {
+      const response = await call(threadId, turnId, tool, args, "cosgral_skills");
+      if (!response.success) throw new Error(`${tool}: ${response.contentItems[0]?.text}`);
+      return JSON.parse(response.contentItems[0].text);
+    };
+    await skill("create_skill", {
+      skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n1. Read the table.\n",
+    });
+    const read = await skill("read_local_skill", { name: "weekly-report" });
+    await skill("revise_skill", {
+      name: "weekly-report",
+      baseVersion: read.version,
+      skillMd:
+        "---\nname: weekly-report\ndescription: Builds the weekly report with totals.\n---\n1. Read the table.\n2. Add totals.\n",
+      note: "Add totals",
+    });
+    await skill("install_local_skill", { name: "weekly-report" });
+    complete(threadId, turnId, "Stub: skill created and revised");
+    return;
+  }
+  if (task.title.startsWith("SKILL CHECK")) {
+    const instructions = threads.get(threadId).developerInstructions;
+    complete(
+      threadId,
+      turnId,
+      instructions.includes("weekly-report (version 2)") ? "Stub: skill in instructions" : "Stub: skill missing",
+    );
+    return;
+  }
   if (task.title.startsWith("CARD SMOKE")) {
     // W1-BE3: a draft card in the user's name; the turn waits for Send / Edit / Keep draft.
     const response = await call(
