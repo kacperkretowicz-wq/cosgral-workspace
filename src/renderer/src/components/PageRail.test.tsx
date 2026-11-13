@@ -10,7 +10,19 @@ describe("PageRail", () => {
     const names = within(rail)
       .getAllByRole("button")
       .map((button) => button.getAttribute("aria-label"));
-    expect(names).toEqual(["Agents", "Schedule", "Tasks", "Workflows", "Usage", "Library", "Marketplace", "Settings"]);
+    expect(names).toEqual([
+      "Agents",
+      "Schedule",
+      "Tasks",
+      "Workflows",
+      "Usage",
+      "Library",
+      "Marketplace",
+      "Remote desktop",
+      "Providers",
+      "Phone",
+      "Settings",
+    ]);
     expect(PAGE_RAIL_ITEMS.map((item) => item.label)).toEqual(names.slice(0, -1));
   });
 
