@@ -53,6 +53,7 @@ import { WebhookReceiver } from "../backend/webhook-receiver";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
+import { registerSharedDataIpc } from "./data-ipc";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
@@ -785,6 +786,12 @@ function registerIpcHandlers(
   handleTrusted(IPC_CHANNELS.vaultRespondToRequest, (input: unknown) =>
     service.respondToVaultRequest(localVaultInput(input, parseRespondToVaultRequest)),
   );
+  // COSGRAL W2: shared tables and the file library of this computer.
+  registerSharedDataIpc({
+    data: () => service.sharedData,
+    window: () => mainWindow,
+    prepareDraft: (paths) => service.prepareAttachments(paths),
+  });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1768,7 +1775,9 @@ function configureAttachmentProtocol(mailbox: MailboxStore, agents: AgentService
     try {
       const url = new URL(request.url);
       const id = url.pathname.split("/").filter(Boolean).at(-1);
-      const attachment = id ? await mailbox.resolveAttachment(id) : null;
+      const attachment = id
+        ? ((await mailbox.resolveAttachment(id)) ?? (await agents.sharedData.library.resolve(id)))
+        : null;
       if (!attachment) return new Response("Not found", { status: 404 });
       return new Response(await readFile(attachment.path), {
         headers: {

@@ -26,6 +26,7 @@ import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
+import { isSharedTable, type SharedTable } from "./ipc-tables";
 import {
   isVaultItemSummary,
   isVaultRequest,
@@ -505,6 +506,12 @@ export type AgentEvent =
   /** COSGRAL W2: an agent needs a Vault item (add or choose); a Needs you card. */
   | { type: "vault-request"; request: VaultRequest }
   | { type: "vault-request-resolved"; requestId: string; botId: string; resolution: VaultRequestResolution }
+  /** COSGRAL W2: a shared table was created, deleted or got other rows; replace the whole list. */
+  | { type: "tables-changed"; tables: SharedTable[] }
+  /** COSGRAL W2: rows of one table were added, changed or deleted; read them again. */
+  | { type: "table-rows-changed"; tableId: string; rowIds: string[] }
+  /** COSGRAL W2: files of the library or chat attachments were added or deleted; read the list again. */
+  | { type: "library-changed"; fileIds: string[] }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -595,6 +602,12 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isVaultRequest(value.request);
     case "vault-request-resolved":
       return isString(value.requestId) && isString(value.botId) && isVaultRequestResolution(value.resolution);
+    case "tables-changed":
+      return Array.isArray(value.tables) && value.tables.every(isSharedTable);
+    case "table-rows-changed":
+      return isString(value.tableId) && Array.isArray(value.rowIds) && value.rowIds.every(isString);
+    case "library-changed":
+      return Array.isArray(value.fileIds) && value.fileIds.every(isString);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

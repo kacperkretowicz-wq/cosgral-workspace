@@ -4,6 +4,7 @@ import { CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import type { AgentClient } from "./agent-client";
 import type { ChannelRunInput, ChannelRunner, ChannelTurnResult } from "./channel-engine";
 import { CHANNEL_DYNAMIC_TOOLS, CHANNEL_NAMESPACE } from "./channel-tools";
+import { DATA_INSTRUCTIONS, LIBRARY_NAMESPACE, TABLES_NAMESPACE } from "./data-tools";
 import {
   type AppServerNotification,
   type AppServerRequest,
@@ -91,6 +92,7 @@ export class ChannelAgentRunner implements ChannelRunner {
           `This channel is ${input.channel.isolated ? "isolated" : "shared"}; no direct-message context or memory is included.`,
           CARDS_INSTRUCTIONS,
           VAULT_INSTRUCTIONS,
+          DATA_INSTRUCTIONS,
           ...(this.#options.instructions ? [this.#options.instructions(bot.id)] : []),
         ].join("\n"),
         dynamicTools: [...this.#options.tools(bot.id), CHANNEL_DYNAMIC_TOOLS],
@@ -253,6 +255,8 @@ export class ChannelAgentRunner implements ChannelRunner {
             params.namespace !== CARDS_NAMESPACE &&
             params.namespace !== SKILLS_NAMESPACE &&
             params.namespace !== VAULT_NAMESPACE &&
+            params.namespace !== TABLES_NAMESPACE &&
+            params.namespace !== LIBRARY_NAMESPACE &&
             !(params.namespace === "openbot" && params.tool === "ask_user")
           )
             throw new Error("This tool is outside the channel's scope.");

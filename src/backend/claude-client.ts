@@ -21,6 +21,7 @@ import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
 import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
+import { DATA_TOOL_SPECS } from "./data-tools";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { MEMORY_TOOL_DESCRIPTIONS } from "./memory-service";
@@ -528,6 +529,19 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
           tool(spec.name, spec.description, spec.schema, (args) => call(VAULT_NAMESPACE, spec.name, args)),
         ),
       }),
+      // COSGRAL W2: shared tables and the file library (cosgral_tables, cosgral_library).
+      ...Object.fromEntries(
+        DATA_TOOL_SPECS.map(({ namespace, specs }) => [
+          namespace,
+          createSdkMcpServer({
+            name: namespace,
+            version: "0.1.0",
+            tools: specs.map((spec) =>
+              tool(spec.name, spec.description, spec.schema, (args) => call(namespace, spec.name, args)),
+            ),
+          }),
+        ]),
+      ),
       // COSGRAL W2: the local skill library (create, revise, read, install for oneself).
       [SKILLS_NAMESPACE]: createSdkMcpServer({
         name: SKILLS_NAMESPACE,
