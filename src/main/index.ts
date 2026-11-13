@@ -53,6 +53,7 @@ import { TeamChatStore } from "../backend/team-chat-store";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
+import { registerAgentSettingsIpc } from "./agent-settings-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
@@ -795,6 +796,15 @@ function registerIpcHandlers(
     prepareDraft: (paths) => service.prepareAttachments(paths),
   });
   registerComputerUseIpc(() => service.computerUse);
+  // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
+  registerAgentSettingsIpc({
+    service: () => service,
+    setupFile,
+    applyProvider: async (provider) => {
+      await service.setPreferredProvider(provider);
+      await initializeAgent();
+    },
+  });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);

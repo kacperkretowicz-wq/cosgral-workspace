@@ -65,6 +65,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 
@@ -684,6 +685,9 @@ const openbotApi: OpenBotDesktopApi = {
   tables: createTablesApi(invokeAgent),
   library: createLibraryApi(invokeAgent, decodeDraftAttachments),
   computerUse: createComputerUseApi(invokeAgent),
+  agentSettings: createAgentSettingsApi(invokeAgent, decodeBot),
+  appSettings: createAppSettingsApi(invokeAgent),
+  onboarding: createOnboardingApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
