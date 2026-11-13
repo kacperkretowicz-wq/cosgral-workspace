@@ -43,6 +43,7 @@ import { AccountLogin } from "./components/AccountLogin";
 import { OnboardingW3Gate } from "./components/AppSettingsW3";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
+import { MarketplacePage } from "./components/MarketplacePage";
 import { Conversation } from "./components/Conversation";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
@@ -1902,7 +1903,8 @@ export function App() {
                   <RoutinePanel bots={botList()} />
                 </main>
               </Show>
-              <Show when={activePage() !== "agents" && activePage() !== "library" && activePage() !== "schedule"}>
+              <Show when={activePage() === "marketplace"}><MarketplacePage bots={botList()} /></Show>
+              <Show when={activePage() !== "agents" && activePage() !== "library" && activePage() !== "schedule" && activePage() !== "marketplace"}>
                 <ComingSoon title={activePageTitle()} />
               </Show>
               <Show when={activePage() === "agents" ? activeDirectMember() : undefined} keyed>
