@@ -435,7 +435,7 @@ async function main() {
   note(
     "webhook-secret-once",
     /^whsec_/.test(secret) &&
-      createdWh.routine.webhook?.url.startsWith("http://127.0.0.1:") &&
+      createdWh.routine.webhook?.url.startsWith("http://127.0.0.1:") === true &&
       !JSON.stringify(manager2.list()).includes(secret),
     `url=${createdWh.routine.webhook?.url}`,
   );
