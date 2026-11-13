@@ -11,6 +11,7 @@ import type {
   AgentModelOption,
   AgentReasoningEffort,
   AgentStatus,
+  ApprovalRuleScope,
   AttachmentSummary,
   AvatarImageInput,
   BotAvatarHue,
@@ -36,6 +37,7 @@ import type { PendingCard } from "../pending-cards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
+import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ChoiceCard } from "./ConversationPrompts";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
@@ -138,7 +140,7 @@ interface ConversationProps {
     reasoningEffort: AgentReasoningEffort,
   ) => Promise<boolean>;
   onAnswerPrompt: (answers: Record<string, string[]>) => Promise<boolean>;
-  onRespondToApproval: (decision: "accept" | "decline") => Promise<boolean>;
+  onRespondToApproval: (decision: "accept" | "decline", always?: ApprovalRuleScope) => Promise<boolean>;
   onCancelQueuedMessage: (deliveryId: string) => void;
   onSteerQueuedMessage: (deliveryId: string) => void;
   onUpdateQueuedMessage: (
@@ -2430,6 +2432,7 @@ export function Conversation(props: ConversationProps) {
                 <>
                   <AgentMemorySettingsView botId={botId} />
                   <AgentSettingsW3 botId={botId} />
+                  <ApprovalRulesSettings botId={botId} />
                   <SkillsSettings botId={botId} />
                   <McpSettings botId={botId} />
                   <RoutinePanel botId={botId} bots={props.bots} />

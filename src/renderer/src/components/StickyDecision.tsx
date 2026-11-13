@@ -1,7 +1,7 @@
-import type { AgentApproval, AgentEvent } from "@openbot/contracts/ipc";
+import type { AgentApproval, AgentEvent, ApprovalRuleScope } from "@openbot/contracts/ipc";
 import { Show } from "solid-js";
-import { ApprovalCard } from "./ConversationPrompts";
 import { stickyDecisionForBot } from "../needs-you";
+import { ApprovalCard } from "./ConversationPrompts";
 
 type PromptEvent = Extract<AgentEvent, { type: "prompt" }>;
 
@@ -9,7 +9,7 @@ interface StickyDecisionProps {
   prompt: PromptEvent | undefined;
   approval: AgentApproval | undefined;
   onAnswerPrompt: (answers: Record<string, string[]>) => Promise<boolean>;
-  onRespondToApproval: (decision: "accept" | "decline") => Promise<boolean>;
+  onRespondToApproval: (decision: "accept" | "decline", always?: ApprovalRuleScope) => Promise<boolean>;
 }
 
 /**
@@ -21,7 +21,7 @@ export function StickyDecision(props: StickyDecisionProps) {
   return (
     <Show when={decision()}>
       {(active) => (
-        <div class="sticky-decision" data-kind={active().kind} role="region" aria-label="Decision">
+        <section class="sticky-decision" data-kind={active().kind} aria-label="Decision">
           <div class="sticky-decision-kicker">Decision · pinned</div>
           <Show when={active().kind === "question" && active().prompt}>
             {(prompt) => (
@@ -35,10 +35,11 @@ export function StickyDecision(props: StickyDecisionProps) {
                 approval={approval()}
                 onApprove={() => props.onRespondToApproval("accept")}
                 onReject={() => props.onRespondToApproval("decline")}
+                onAlways={(scope) => props.onRespondToApproval("accept", scope)}
               />
             )}
           </Show>
-        </div>
+        </section>
       )}
     </Show>
   );
