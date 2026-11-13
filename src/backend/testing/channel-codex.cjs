@@ -28,6 +28,38 @@ async function run(threadId, turnId, context) {
   const task = context.assignment,
     members = context.members;
   if (task.title.startsWith("STOP SMOKE")) return;
+  if (task.title.startsWith("VAULT SMOKE")) {
+    // W2: sign in on a local test page with a Vault login and two-step code; the agent never sees the values.
+    const use = async (namespace, tool, args) => {
+      const response = await call(threadId, turnId, tool, args, namespace);
+      if (!response.success) throw new Error(`${tool}: ${response.contentItems[0]?.text}`);
+      return JSON.parse(response.contentItems[0].text);
+    };
+    const items = await use("cosgral_vault", "list_vault_items", {});
+    const opened = await use("openbot_browser", "open", { url: `${process.env.COSGRAL_VAULT_SITE}/login` });
+    const tabId = opened.tab.id;
+    const first = await use("openbot_browser", "snapshot", { tabId });
+    const refIn = (snapshot, label) => snapshot.elements.find((element) => element.name === label)?.ref;
+    const filled = await use("cosgral_vault", "fill_login", {
+      tabId,
+      revision: first.revision,
+      usernameRef: refIn(first, "User name"),
+      passwordRef: refIn(first, "Password"),
+    });
+    const after = await use("openbot_browser", "snapshot", { tabId });
+    const code = await use("cosgral_vault", "fill_totp", {
+      tabId,
+      revision: after.revision,
+      ref: refIn(after, "One-time code"),
+    });
+    let welcome = null;
+    for (let attempt = 0; attempt < 40 && !welcome?.text?.includes("Signed in as"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      welcome = await use("openbot_browser", "snapshot", { tabId }).catch(() => null);
+    }
+    complete(threadId, turnId, JSON.stringify({ items, filled, after, code, welcome: welcome?.text ?? "" }));
+    return;
+  }
   if (task.title.startsWith("SKILL SMOKE")) {
     // W2: the agent creates a skill, reads it, revises it from the version it read and installs the new version.
     const skill = async (tool, args) => {
