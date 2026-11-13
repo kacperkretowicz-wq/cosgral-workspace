@@ -23,6 +23,7 @@ import {
   type UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import { isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { parseApprovalRuleScope } from "./approval-rules-inputs";
 import { parseAvatarImage } from "./avatar-inputs";
 import { isObject, requireString } from "./validation";
 
@@ -285,5 +286,10 @@ export function parseApprovalResponse(value: unknown): RespondToApprovalInput {
   if (value.decision !== "accept" && value.decision !== "decline") {
     throw new Error("Invalid approval decision.");
   }
-  return { requestId: value.requestId, decision: value.decision };
+  if (value.always === undefined || value.always === null) {
+    return { requestId: value.requestId, decision: value.decision };
+  }
+  // COSGRAL W3-KK3: "Always allow" goes only with Allow.
+  if (value.decision !== "accept") throw new Error("Always goes only with Allow.");
+  return { requestId: value.requestId, decision: value.decision, always: parseApprovalRuleScope(value.always) };
 }

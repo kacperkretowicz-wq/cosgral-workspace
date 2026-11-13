@@ -395,6 +395,7 @@ export const MOBILE_COMPUTER_ONLY = [
   "mcp",
   "voice",
   "mobile",
+  "approval-rules",
 ] as const;
 
 export const MOBILE_ANSWER_PLACES = ["phone", "computer"] as const;

@@ -36,6 +36,7 @@ import {
 } from "electron";
 import electronUpdater from "electron-updater";
 import { AgentService } from "../backend/agent-service";
+import { ApprovalRulesStore } from "../backend/approval-rules";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
@@ -60,6 +61,7 @@ import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
+import { registerApprovalRulesIpc } from "./approval-rules-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
@@ -827,6 +829,7 @@ function registerIpcHandlers(
   registerRemoteDesktopIpc(() => remoteDesktop);
   registerVoiceIpc(() => voiceService);
   registerMobileIpc(() => mobileConnect);
+  registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
     service: () => service,
@@ -1319,6 +1322,13 @@ if (!hasSingleInstanceLock) {
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
       service.useProviders(providerRegistry);
       registerProviderIpc(providerRegistry);
+      // COSGRAL W3-KK3: "always allow" rules of approval cards (this computer only).
+      service.useApprovalRules(
+        new ApprovalRulesStore({
+          filePath: join(app.getPath("userData"), "approval-rules.json"),
+          onChange: (rules) => service.relay({ type: "approval-rules-changed", rules }),
+        }),
+      );
       // COSGRAL W3: remote desktop. The host has its own Windows driver, separate from Computer Use, and asks its owner
       // on a confirm card; the pictures of a host this computer looks at go to the main window only.
       remoteDesktop = createRemoteDesktop({

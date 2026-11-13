@@ -423,6 +423,12 @@ describe("phone chat (row 43)", () => {
       body: { kind: "approval", decision: "decline" },
     });
     expect(state.approvals).toEqual([{ requestId: 9, decision: "decline" }]);
+    // COSGRAL W3-KK3: a phone cannot make an "always allow" rule; what it adds to its answer goes nowhere.
+    await request(base, mobilePhonePath.answer("9"), token, {
+      method: "POST",
+      body: { kind: "approval", decision: "accept", always: { prefix: "npm test" } },
+    });
+    expect(state.approvals.every((answer) => !("always" in answer))).toBe(true);
     const draft = await request(base, mobilePhonePath.needsYouItem("card-1"), token);
     expect(draft.body).toMatchObject({
       kind: "draft-preview",
@@ -620,6 +626,8 @@ describe("phone limits", () => {
       ["GET", "/v1/devices"],
       ["POST", "/v1/remote-desktop/enable"],
       ["POST", "/v1/mobile/devices/revoke"],
+      ["GET", "/v1/approval-rules"],
+      ["POST", "/v1/approval-rules/revoke"],
     ] as const) {
       const refused = await request(base, path, token, { method });
       expect(refused.status, path).toBe(403);

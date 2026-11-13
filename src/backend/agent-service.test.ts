@@ -18,6 +18,7 @@ import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contract
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
+import { ApprovalRulesStore } from "./approval-rules";
 import { BotStore } from "./bot-store";
 import { type EyesCapture, type EyesFrame, EyesService, type EyesSourceInfo } from "./eyes-service";
 import { MailboxStore } from "./mailbox-store";
@@ -1092,6 +1093,72 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
       { type: "approval-resolved", requestId: 42, botId: "chief", resolution: "declined" },
       { type: "approval-resolved", requestId: 43, botId: "chief", resolution: "expired" },
     ]);
+  });
+
+  it("COSGRAL W3-KK3: Always allow answers now, saves a rule, and the next matching command opens no card", async () => {
+    const { codex, threadId, turnId } = await startManualTurn();
+    const rules = new ApprovalRulesStore({ filePath: join(root, "approval-rules.json") });
+    service?.useApprovalRules(rules);
+    const ask = (id: number, command: string) =>
+      codex.emit("request", {
+        method: "item/commandExecution/requestApproval",
+        id,
+        params: { threadId, turnId, command },
+      });
+
+    ask(61, "git status --short");
+    await waitFor(() => service?.listPendingRequests().length === 1);
+    await service?.respondToApproval({ requestId: 61, decision: "accept", always: { prefix: "git status" } });
+    expect(codex.responses.find((response) => response.id === 61)).toMatchObject({ result: { decision: "accept" } });
+    expect(rules.list("chief")).toEqual([expect.objectContaining({ kind: "command", prefix: "git status" })]);
+
+    ask(62, "git status --porcelain");
+    await waitFor(() => codex.responses.some((response) => response.id === 62));
+    expect(codex.responses.find((response) => response.id === 62)).toMatchObject({ result: { decision: "accept" } });
+    expect(service?.listPendingRequests()).toEqual([]);
+    expect(rules.list("chief")[0]?.uses).toBe(1);
+
+    // Another command, and one that chains, still ask the person.
+    ask(63, "git push");
+    ask(64, "git status; rm -r build");
+    await waitFor(() => service?.listPendingRequests().length === 2);
+    expect(codex.responses.some((response) => response.id === 63 || response.id === 64)).toBe(false);
+  });
+
+  it("COSGRAL W3-KK3: a refused rule leaves the card open and answers nothing", async () => {
+    const { codex, threadId, turnId } = await startManualTurn();
+    service?.useApprovalRules(new ApprovalRulesStore({ filePath: join(root, "approval-rules.json") }));
+    codex.emit("request", {
+      method: "item/commandExecution/requestApproval",
+      id: 71,
+      params: { threadId, turnId, command: "git status" },
+    });
+    await waitFor(() => service?.listPendingRequests().length === 1);
+
+    await expect(
+      service?.respondToApproval({ requestId: 71, decision: "accept", always: { prefix: "git" } }),
+    ).rejects.toThrow(/two words/);
+    await expect(service?.respondToApproval({ requestId: 71, decision: "decline", always: {} })).rejects.toThrow(
+      /only with Allow/,
+    );
+    expect(service?.listPendingRequests()).toHaveLength(1);
+    expect(codex.responses.some((response) => response.id === 71)).toBe(false);
+    expect(service?.approvalRules?.list()).toEqual([]);
+  });
+
+  it("COSGRAL W3-KK3: without the rules attached, Always allow is refused and a plain Allow still works", async () => {
+    const { codex, threadId, turnId } = await startManualTurn();
+    codex.emit("request", {
+      method: "item/commandExecution/requestApproval",
+      id: 81,
+      params: { threadId, turnId, command: "git status" },
+    });
+    await waitFor(() => service?.listPendingRequests().length === 1);
+    await expect(service?.respondToApproval({ requestId: 81, decision: "accept", always: {} })).rejects.toThrow(
+      /unavailable/,
+    );
+    await service?.respondToApproval({ requestId: 81, decision: "accept" });
+    expect(codex.responses.find((response) => response.id === 81)).toMatchObject({ result: { decision: "accept" } });
   });
 
   it("counts a question closed without answers as skipped", async () => {

@@ -9,6 +9,7 @@ import type {
   AgentReasoningEffort,
   AgentStatus,
   AppInfo,
+  ApprovalRuleScope,
   AppSetupState,
   AvatarImageInput,
   BotSummary,
@@ -1356,7 +1357,7 @@ export function App() {
     }
   }
 
-  async function respondToApproval(decision: "accept" | "decline"): Promise<boolean> {
+  async function respondToApproval(decision: "accept" | "decline", always?: ApprovalRuleScope): Promise<boolean> {
     const bot = activeBot();
     const approval = activeApproval();
     if (!bot || !approval) return false;
@@ -1364,6 +1365,7 @@ export function App() {
       await window.openbot.agent.respondToApproval({
         requestId: approval.requestId,
         decision,
+        ...(always ? { always } : {}),
       });
       dropCard("approval", approval.requestId);
       return true;

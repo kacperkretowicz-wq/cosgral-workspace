@@ -68,6 +68,7 @@ import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { AgentTemplates } from "./agent-templates";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
+import type { ApprovalRulesStore } from "./approval-rules";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
 import { ChannelAgentRunner } from "./channel-agent-runner";
@@ -114,6 +115,7 @@ import {
   type ThreadItem,
 } from "./protocol";
 import type { ProviderRegistry } from "./provider-registry";
+import { steerSupport, withSteerSupport } from "./queue-steer";
 import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
@@ -311,6 +313,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #routines: AgentRoutines | null = null;
   /** COSGRAL W3: ACP agents, fallback models and provider usage; attached after construction. */
   #providers: ProviderRegistry | null = null;
+  /** COSGRAL W3-KK3: the "always allow" rules of approval cards (attached by the program). */
+  #approvalRules: ApprovalRulesStore | null = null;
   /** COSGRAL W3: models already tried per message (delivery), so a fallback never loops. */
   readonly #triedModels = new Map<string, Set<string>>();
   /** COSGRAL W3: the usage-limit / unavailability error of a turn, read when the turn fails. */
@@ -678,6 +682,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#providers = providers;
   }
 
+  /** COSGRAL W3-KK3: attach the "always allow" rules; without them every approval opens a card. */
+  useApprovalRules(rules: ApprovalRulesStore): void {
+    this.#approvalRules = rules;
+  }
+
+  get approvalRules(): ApprovalRulesStore | null {
+    return this.#approvalRules;
+  }
+
   /** COSGRAL W3: an event of a helper (provider registry) goes out like the service's own. */
   relay(event: AgentEvent): void {
     this.#emit(event);
@@ -900,6 +913,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#mcp?.deleteAgent(botId);
     // COSGRAL W3: and its fallback list.
     this.#providers?.deleteAgent(botId);
+    // COSGRAL W3-KK3: and its "always allow" rules.
+    this.#approvalRules?.removeForBot(botId);
     this.agentSettings.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
@@ -1059,7 +1074,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   listQueue(botId: string): QueueSnapshot {
-    return this.#mailbox.listQueue(botId);
+    return this.#queueSnapshot(botId);
+  }
+
+  /** COSGRAL W3: the queue plus whether this agent's provider can steer (see queue-steer.ts). */
+  #queueSnapshot(botId: string): QueueSnapshot {
+    const snapshot = this.#mailbox.listQueue(botId);
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    return bot ? withSteerSupport(snapshot, providerForBot(bot)) : snapshot;
   }
 
   async cancelQueuedMessage(botId: string, deliveryId: string): Promise<void> {
@@ -1088,6 +1110,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async steerQueuedMessage(input: SteerQueuedMessageInput): Promise<void> {
     const bot = await this.#store.getOrCreate(input.botId);
+    const support = steerSupport(providerForBot(bot));
+    if (!support.available) throw new Error(support.reason ?? "Steering is unavailable for this agent.");
     const client = this.#requireReadyClient(providerForBot(bot));
     const session = this.#store.activeProviderSession(bot.id);
     const snapshot = this.#ensureSnapshot(bot.id, bot.threadId);
@@ -1232,28 +1256,46 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (!pending) throw new Error("This approval is no longer active.");
 
     const resolution = input.decision === "accept" ? "accepted" : "declined";
+    if (input.always) {
+      // COSGRAL W3-KK3: "Always allow". Checked before anything is answered, so a refused rule leaves the card open.
+      if (input.decision !== "accept") throw new Error('"Always" goes only with Allow.');
+      if (pending.resolve) throw new Error("This kind of request can never be allowed for good.");
+      if (!this.#approvalRules) throw new Error("Remembering approvals is unavailable.");
+      this.#approvalRules.addFromApproval(pending.approval, input.always);
+    }
     if (pending.resolve) {
       this.#pendingApprovals.delete(input.requestId);
       pending.resolve(input.decision === "accept");
       this.#emitApprovalResolved(pending, resolution);
       return;
     }
-    if (pending.approval.kind === "permissions") {
-      const permissions = getRecord(pending.params, "permissions") ?? {};
-      pending.client.respond(pending.id, {
-        permissions: input.decision === "accept" ? permissions : {},
-        scope: "turn",
-      });
-    } else if (pending.method === "applyPatchApproval" || pending.method === "execCommandApproval") {
-      pending.client.respond(pending.id, {
-        decision:
-          input.decision === "accept" ? "approved" : { denied: { rejection: "The user declined this action." } },
-      });
-    } else {
-      pending.client.respond(pending.id, { decision: input.decision });
-    }
+    this.#answerProviderApproval(pending, input.decision === "accept");
     this.#pendingApprovals.delete(input.requestId);
     this.#emitApprovalResolved(pending, resolution);
+  }
+
+  #answerProviderApproval(pending: PendingApproval, accept: boolean): void {
+    if (pending.approval.kind === "permissions") {
+      const permissions = getRecord(pending.params, "permissions") ?? {};
+      pending.client.respond(pending.id, { permissions: accept ? permissions : {}, scope: "turn" });
+    } else if (pending.method === "applyPatchApproval" || pending.method === "execCommandApproval") {
+      pending.client.respond(pending.id, {
+        decision: accept ? "approved" : { denied: { rejection: "The user declined this action." } },
+      });
+    } else {
+      pending.client.respond(pending.id, { decision: accept ? "accept" : "decline" });
+    }
+  }
+
+  /**
+   * COSGRAL W3-KK3: allows the approval at once when an "always allow" rule of this agent covers it. Only the provider's
+   * own requests come here (command, file change, permissions); Computer Use, the Vault, payments, Mobile Connect,
+   * browser takeover and agent eyes are other cards that never ask the rules.
+   */
+  #allowedByRule(pending: PendingApproval): boolean {
+    if (pending.resolve || !this.#approvalRules?.match(pending.approval)) return false;
+    this.#answerProviderApproval(pending, true);
+    return true;
   }
 
   async #connect(phase: "starting" | "restarting", requestedProviders: readonly AgentProvider[]): Promise<void> {
@@ -2096,7 +2138,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #emitQueue(botId: string): void {
-    this.#emit({ type: "queue-changed", snapshot: this.#mailbox.listQueue(botId) });
+    this.#emit({ type: "queue-changed", snapshot: this.#queueSnapshot(botId) });
     const affectedBots = new Set([botId, ...this.#mailbox.senderBotIdsForRecipient(botId)]);
     for (const affectedBotId of affectedBots) {
       const snapshot = this.#snapshots.get(affectedBotId);
@@ -2644,14 +2686,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       grantRoot: getString(request.params, "grantRoot"),
       permissions: kind === "permissions" ? approvalPermissions(request.params) : null,
     };
-    this.#pendingApprovals.set(request.id, {
+    const pending: PendingApproval = {
       client,
       id: request.id,
       method: request.method,
       params: request.params,
       approval,
       ...this.#pendingOrder(),
-    });
+    };
+    if (this.#allowedByRule(pending)) return;
+    this.#pendingApprovals.set(request.id, pending);
     this.#emit({ type: "approval", approval });
   }
 
@@ -2676,14 +2720,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       grantRoot: getString(request.params, "grantRoot"),
       permissions: null,
     };
-    this.#pendingApprovals.set(request.id, {
+    const pending: PendingApproval = {
       client,
       id: request.id,
       method: request.method,
       params: request.params,
       approval,
       ...this.#pendingOrder(),
-    });
+    };
+    if (this.#allowedByRule(pending)) return;
+    this.#pendingApprovals.set(request.id, pending);
     this.#emit({ type: "approval", approval });
   }
 

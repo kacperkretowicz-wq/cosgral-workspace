@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type { AgentApproval, AgentPromptQuestion } from "@openbot/contracts/ipc";
+import type { AgentApproval, AgentPromptQuestion, ApprovalRuleScope } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { AlwaysAllowPanel } from "./AlwaysAllowPanel";
 import { EyesIcon, EyesRequestDetails } from "./EyesIndicator";
 import { Button, Input, RadioGroup } from "./ui";
 
@@ -91,6 +92,8 @@ export function ApprovalCard(props: {
   onSubmit?: (answers: Record<string, string[]>) => Promise<boolean>;
   onApprove?: () => Promise<boolean>;
   onReject?: () => Promise<boolean>;
+  /** COSGRAL W3-KK3: "Always allow" with the person's scope; the card offers it only when this is given. */
+  onAlways?: (scope: ApprovalRuleScope) => Promise<boolean>;
 }) {
   const [step, setStep] = createSignal(0);
   const [answers, setAnswers] = createSignal<Record<string, string>>({});
@@ -334,6 +337,20 @@ export function ApprovalCard(props: {
               </Show>
               <Show when={approval().reason}>{(reason) => <p class="approval-reason">{reason()}</p>}</Show>
             </div>
+            <Show when={props.onAlways && !isEyesApproval(approval())}>
+              <AlwaysAllowPanel
+                approval={approval()}
+                busy={submitting()}
+                onConfirm={(scope) => {
+                  const always = props.onAlways;
+                  if (!always || submitting()) return;
+                  setSubmitting(true);
+                  void always(scope).then((completed) => {
+                    if (!completed) setSubmitting(false);
+                  });
+                }}
+              />
+            </Show>
             <footer class="approval-card-footer approval-card-footer-end">
               <div class="approval-card-actions">
                 <Button

@@ -113,6 +113,16 @@ describe("QueuePanel", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Edit message");
   });
 
+  it("COSGRAL W3: disables Steer and says why when the provider cannot steer", () => {
+    const reason = "This agent's provider (ACP) cannot take new input during a turn. The message goes next.";
+    render(() => (
+      <QueuePanel deliveries={[delivery(1)]} paused={false} canSteer={false} steerReason={reason} {...callbacks()} />
+    ));
+    const steer = screen.getByRole("button", { name: "Steer queued message 1" });
+    expect(steer).toBeDisabled();
+    expect(steer).toHaveAttribute("title", reason);
+  });
+
   it("reorders queued messages with the keyboard and drag-and-drop", async () => {
     const props = callbacks();
     const view = render(() => (
