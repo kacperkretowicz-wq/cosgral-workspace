@@ -23,6 +23,7 @@ import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
+import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
@@ -50,7 +51,8 @@ export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked
 
 export type CapabilityState = "ready" | "setup-required" | "unavailable";
 
-export type AgentProviderId = "codex" | "claude";
+/** COSGRAL W3: "acp" = any Agent Client Protocol agent over stdio (see ipc-providers.ts). */
+export type AgentProviderId = "codex" | "claude" | "acp";
 export type AgentProviderState =
   | "not-started"
   | "checking"
@@ -120,6 +122,8 @@ export interface BotSummary {
   avatarSeed: string;
   avatarHue: BotAvatarHue | null;
   avatarUrl: string | null;
+  /** COSGRAL W3: set while turns run on a fallback model instead of `model` (see ipc-providers.ts). */
+  activeModel?: AgentModelId;
 }
 
 export const AGENT_MODELS = [
@@ -130,7 +134,9 @@ export const AGENT_MODELS = [
   "claude-opus-5",
   "claude-sonnet-5",
 ] as const;
-export type AgentModelId = (typeof AGENT_MODELS)[number];
+/** COSGRAL W3: an ACP agent added by the person, as one model: "acp:<id>". */
+export type AcpModelId = `acp:${string}`;
+export type AgentModelId = (typeof AGENT_MODELS)[number] | AcpModelId;
 
 export const AGENT_REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type AgentReasoningEffort = (typeof AGENT_REASONING_EFFORTS)[number];
@@ -147,7 +153,12 @@ export const BOT_AVATAR_HUES = [0, 30, 55, 100, 150, 185, 215, 245, 280, 320] as
 export type BotAvatarHue = (typeof BOT_AVATAR_HUES)[number];
 
 export function isAgentModel(value: unknown): value is AgentModelId {
-  return isOneOf(AGENT_MODELS, value);
+  return isOneOf(AGENT_MODELS, value) || isAcpModel(value);
+}
+
+/** COSGRAL W3: the model id of an ACP agent. */
+export function isAcpModel(value: unknown): value is AcpModelId {
+  return isString(value) && /^acp:[a-z][a-z0-9-]{0,39}$/.test(value);
 }
 
 export function isClaudeModel(model: AgentModelId): boolean {
@@ -518,6 +529,12 @@ export type AgentEvent =
   | { type: "agent-mcp-changed"; botId: string; settings: AgentMcpServerSetting[] }
   /** COSGRAL W2: the routine list changed (created, edited, paused, next run moved); replace the list. */
   | { type: "routines-changed"; routines: Routine[] }
+  /** COSGRAL W3: a provider hit or left a usage limit, or became unavailable; replace the list. */
+  | { type: "provider-usage-changed"; usage: ProviderUsage[] }
+  /** COSGRAL W3: a turn moved to a fallback model (toModel), or back to the agent's own model (toModel = model). */
+  | { type: "model-fallback"; botId: string; fromModel: AgentModelId; toModel: AgentModelId; reason: string }
+  /** COSGRAL W3: the ACP agents of the program changed; replace the list. */
+  | { type: "acp-agents-changed"; agents: AcpAgentConfig[] }
   /** COSGRAL W2: a routine run started, finished, or was skipped or ignored. */
   | { type: "routine-run"; run: RoutineRun }
   | { type: "error"; botId?: string; code: string; message: string };
@@ -601,6 +618,14 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
     case "mcp-servers-changed":
       return Array.isArray(value.servers) && value.servers.every(isMcpServer);
+    case "provider-usage-changed":
+      return Array.isArray(value.usage) && value.usage.every(isProviderUsage);
+    case "model-fallback":
+      return (
+        isString(value.botId) && isAgentModel(value.fromModel) && isAgentModel(value.toModel) && isString(value.reason)
+      );
+    case "acp-agents-changed":
+      return Array.isArray(value.agents) && value.agents.every(isAcpAgentConfig);
     case "routines-changed":
       return Array.isArray(value.routines) && value.routines.every(isRoutine);
     case "routine-run":

@@ -20,6 +20,7 @@ import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibili
 import type {
   AccountUsage,
   AgentEvent,
+  AgentModelId,
   AgentModelOption,
   AgentStatus,
   AttachmentImportEvent,
@@ -64,6 +65,13 @@ import type {
   SearchAgentMemoriesInput,
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
+import type {
+  AcpAgentConfig,
+  AcpAgentIdInput,
+  FallbackModelsInput,
+  ProviderUsage,
+  SaveAcpAgentInput,
+} from "./ipc-providers";
 import type {
   CreateRoutineInput,
   Routine,
@@ -256,6 +264,18 @@ export interface SkillsDesktopApi {
   uninstall: (input: UninstallSkillInput) => Promise<void>;
 }
 
+/** COSGRAL W3: ACP agents, fallback models, usage and limits (see ipc-providers.ts). */
+export interface ProvidersDesktopApi {
+  listAcpAgents: () => Promise<AcpAgentConfig[]>;
+  /** Add or edit; the agent's model id is `acp:<id>`. */
+  saveAcpAgent: (input: SaveAcpAgentInput) => Promise<AcpAgentConfig>;
+  removeAcpAgent: (input: AcpAgentIdInput) => Promise<void>;
+  /** One entry per provider (and per ACP agent) with limit state and reset time. */
+  listUsage: () => Promise<ProviderUsage[]>;
+  getFallbackModels: (botId: string) => Promise<AgentModelId[]>;
+  setFallbackModels: (input: FallbackModelsInput) => Promise<AgentModelId[]>;
+}
+
 /** COSGRAL W2: routines and webhooks (see ipc-routines.ts). */
 export interface RoutinesDesktopApi {
   /** Every routine, or one agent's routines. */
@@ -403,4 +423,6 @@ export interface OpenBotDesktopApi {
   vault?: VaultDesktopApi;
   /** COSGRAL W2: routines and webhooks. Optional until every renderer mock implements it. */
   routines?: RoutinesDesktopApi;
+  /** COSGRAL W3: providers. Optional until every renderer mock implements it. */
+  providers?: ProvidersDesktopApi;
 }

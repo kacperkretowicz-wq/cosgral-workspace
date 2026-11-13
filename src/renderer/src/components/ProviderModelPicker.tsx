@@ -22,7 +22,7 @@ interface ProviderModelPickerProps {
 }
 
 const PROVIDERS: AgentProviderId[] = ["claude", "codex"];
-const DEFAULT_MODELS: Record<AgentProviderId, AgentModelId> = {
+const DEFAULT_MODELS: Partial<Record<AgentProviderId, AgentModelId>> = {
   claude: "claude-opus-5",
   codex: "gpt-5.6-luna",
 };
