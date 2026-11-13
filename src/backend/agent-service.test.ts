@@ -302,6 +302,56 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(instructions).toContain(join(install.path, "SKILL.md"));
   });
 
+  it("lists Vault items for an agent without secrets and asks the person for a missing one", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    service?.useSecretBox({
+      canEncrypt: () => true,
+      encrypt: (plain) => `box:${Buffer.from(plain).toString("base64")}`,
+      decrypt: (cipher) => Buffer.from(cipher.slice(4), "base64").toString(),
+    });
+    service?.vault.save({
+      kind: "login",
+      url: "https://bank.example",
+      username: "tester",
+      password: "Test-Pass-1234!",
+    });
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "vault-list",
+      params: { threadId, turnId, callId: "v1", namespace: "cosgral_vault", tool: "list_vault_items", arguments: {} },
+    });
+    await waitFor(() => codex.responses.some((response) => response.id === "vault-list"));
+    const listed = JSON.stringify(codex.responses.find((response) => response.id === "vault-list"));
+    expect(listed).toContain("tester");
+    expect(listed).not.toContain("Test-Pass-1234!");
+
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "vault-request",
+      params: {
+        threadId,
+        turnId,
+        callId: "v2",
+        namespace: "cosgral_vault",
+        tool: "request_vault_item",
+        arguments: { kind: "apiKey", reason: "The weather tool needs a key", name: "WEATHER_API_KEY" },
+      },
+    });
+    await waitFor(() => events.some((event) => event.type === "vault-request"));
+    const request = events.find((event) => event.type === "vault-request");
+    if (request?.type !== "vault-request") throw new Error("Expected a Vault request.");
+    expect(service?.listPendingRequests()).toEqual([{ kind: "vault-request", request: request.request }]);
+    await waitFor(() => service?.listActivity().find((row) => row.botId === "chief")?.kind === "waiting");
+    await service?.respondToVaultRequest({ requestId: request.request.requestId, decline: true });
+    await waitFor(() => codex.responses.some((response) => response.id === "vault-request"));
+    expect(JSON.stringify(codex.responses.find((response) => response.id === "vault-request"))).toContain("declined");
+    expect(service?.listPendingRequests()).toEqual([]);
+    const threadStart = codex.requests.find((request) => request.method === "thread/start");
+    expect(threadStart?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([expect.objectContaining({ name: "cosgral_vault" })]),
+    });
+  });
+
   it("keeps a draft with Keep draft and lets the user delete it", async () => {
     const { codex, events, threadId, turnId } = await startManualTurn();
     codex.emit("request", {
