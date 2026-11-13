@@ -46,6 +46,7 @@ import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
+import type { MobileConnect } from "../backend/mobile-connect";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
@@ -151,6 +152,7 @@ import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } 
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
+import { createMobileConnect, registerMobileIpc } from "./mobile-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -253,6 +255,7 @@ let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
+let mobileConnect: MobileConnect | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -823,6 +826,7 @@ function registerIpcHandlers(
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
   registerVoiceIpc(() => voiceService);
+  registerMobileIpc(() => mobileConnect);
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
     service: () => service,
@@ -1339,6 +1343,15 @@ if (!hasSingleInstanceLock) {
         confirm: (request) => service.confirmForPerson(null, request),
         emit: (event) => forwardAgentEvent("local", event),
       });
+      // COSGRAL W3: Mobile Connect (phone pairing by QR; loopback unless the person allows the local network).
+      mobileConnect = createMobileConnect({
+        userDataPath: app.getPath("userData"),
+        bots: () => service.listBots(),
+        pending: () => service.listPendingRequests(),
+        confirm: (request) => service.confirmForPerson(null, request),
+        canAsk: () => service.listBots().length > 0,
+        emit: (event) => forwardAgentEvent("local", event),
+      });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({
         userDataPath: app.getPath("userData"),
@@ -1755,6 +1768,7 @@ async function prepareForShutdown(): Promise<void> {
   dockWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
   await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
+  await (mobileConnect?.close() ?? Promise.resolve()).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   // COSGRAL W3: open workflow runs end as failed while the database is still open.
   workflowManager?.stop();

@@ -34,6 +34,7 @@ import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
+import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } from "./ipc-mobile";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import {
   isRemoteDesktopClientState,
@@ -589,6 +590,10 @@ export type AgentEvent =
   | { type: "marketplace-changed"; items: MarketplaceItem[] }
   /** COSGRAL W3: voice state changed (speaking, a download's progress, a model, the settings); replace it. */
   | { type: "voice-changed"; state: VoiceState }
+  /** COSGRAL W3: Mobile Connect changed (server, pairing, devices); replace the whole state. */
+  | { type: "mobile-changed"; state: MobileState }
+  /** COSGRAL W3: a phone was paired after the person approved it. */
+  | { type: "mobile-pairing-completed"; device: MobileDevice }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -714,6 +719,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.items) && value.items.every(isMarketplaceItem);
     case "voice-changed":
       return isVoiceState(value.state);
+    case "mobile-changed":
+      return isMobileState(value.state);
+    case "mobile-pairing-completed":
+      return isMobileDevice(value.device);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

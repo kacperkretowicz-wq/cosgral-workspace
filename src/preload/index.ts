@@ -79,6 +79,7 @@ import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createMarketplaceApi } from "./marketplace-api";
+import { createMobileApi } from "./mobile-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createVoiceApi } from "./voice-api";
 
@@ -766,6 +767,7 @@ const openbotApi: OpenBotDesktopApi = {
   onboarding: createOnboardingApi(invokeAgent),
   marketplace: createMarketplaceApi(invokeAgent, decodeBot),
   voice: createVoiceApi(invokeAgent),
+  mobile: createMobileApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
