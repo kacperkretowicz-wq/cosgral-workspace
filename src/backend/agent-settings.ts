@@ -85,6 +85,11 @@ const TAB_FEATURES: Partial<Record<SettingsTabId, "computer" | "missing">> = {
   island: "missing",
 };
 
+/** The tabs of the features that are part of the program now (COSGRAL W3-BE8); voice needs the Windows speech engine. */
+export function builtInTabFeatures(platform: string): Partial<Record<SettingsTabId, boolean>> {
+  return { voice: platform === "win32", mobile: true, dock: true, island: true };
+}
+
 export interface AgentSettingsDeps {
   database: OpenBotDatabase;
   bot: (botId: string) => BotSummary | null;
