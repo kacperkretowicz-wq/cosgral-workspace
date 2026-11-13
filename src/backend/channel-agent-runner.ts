@@ -36,6 +36,8 @@ interface Options {
   bot: (botId: string) => BotSummary;
   /** The dynamic tools of one member agent's channel turn (COSGRAL W2: its MCP servers included). */
   tools: (botId: string) => unknown[];
+  /** COSGRAL W3: drops the tool groups the person switched off for this member. */
+  filterTools?: (botId: string, tools: unknown[]) => unknown[];
   commonRequest: (client: AgentClient, request: AppServerRequest) => Promise<void>;
   register: (threadId: string, botId: string) => void;
   clear: (threadId: string, turnId: string | null) => void;
@@ -96,7 +98,10 @@ export class ChannelAgentRunner implements ChannelRunner {
           DATA_INSTRUCTIONS,
           ...(this.#options.instructions ? [this.#options.instructions(bot.id)] : []),
         ].join("\n"),
-        dynamicTools: [...this.#options.tools(bot.id), CHANNEL_DYNAMIC_TOOLS],
+        dynamicTools: [
+          ...(this.#options.filterTools ?? ((_, all) => all))(bot.id, this.#options.tools(bot.id)),
+          CHANNEL_DYNAMIC_TOOLS,
+        ],
       },
       decodeThreadResponse,
     );

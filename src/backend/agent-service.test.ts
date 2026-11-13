@@ -280,6 +280,52 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     });
   });
 
+  it("COSGRAL W3: leaves switched-off tool groups out of the thread, refuses their calls and says so", async () => {
+    let codex: FakeAgentClient | undefined;
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "DONE", false);
+      if (provider === "codex") codex = client;
+      return client;
+    });
+    await service.initialize();
+    await store.getOrCreate("chief");
+    await service.agentSettings.update({ botId: "chief", tools: { vault: false, messaging: false } });
+    await service.agentSettings.updateAppSettings({ language: "pl" });
+    await service.sendMessage({ botId: "chief", text: "Hello" });
+    await waitFor(() => Boolean(codex?.requests.some((request) => request.method === "thread/start")));
+    const threadStart = codex?.requests.find((request) => request.method === "thread/start");
+    const tools = JSON.stringify(threadStart?.params);
+    expect(tools).not.toContain('"cosgral_vault"');
+    expect(tools).not.toContain('"send_message"');
+    expect(tools).toContain('"ask_user"');
+    expect(tools).toContain('"cosgral_skills"');
+    const instructions = stringParam(threadStart?.params, "developerInstructions");
+    expect(instructions).toContain("switched off these tools for you: Vault, messaging other agents");
+    expect(instructions).toContain("Polish");
+
+    // FakeAgentClient names its first thread "codex-session-1".
+    const providerThread = "codex-session-1";
+    codex?.emit("request", {
+      method: "item/tool/call",
+      id: "vault-blocked",
+      params: {
+        threadId: providerThread,
+        turnId: "turn",
+        callId: "v1",
+        namespace: "cosgral_vault",
+        tool: "list_vault_items",
+        arguments: {},
+      },
+    });
+    await waitFor(() => Boolean(codex?.responses.some((response) => response.id === "vault-blocked")));
+    expect(JSON.stringify(codex?.responses.find((response) => response.id === "vault-blocked"))).toContain(
+      "switched off the Vault",
+    );
+    const settings = await service.agentSettings.get("chief");
+    expect(settings.tools.find((tool) => tool.group === "vault")).toMatchObject({ enabled: false });
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();
