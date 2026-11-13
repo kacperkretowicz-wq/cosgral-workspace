@@ -46,6 +46,17 @@ import type {
 } from "./ipc-conversation";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
+  AgentMemory,
+  AgentMemorySettings,
+  DeleteAgentMemoryInput,
+  DeleteChannelMemoryInput,
+  ListAgentMemoriesInput,
+  SaveAgentMemoryInput,
+  SaveChannelMemoryInput,
+  SearchAgentMemoriesInput,
+  SetAgentMemoryLimitInput,
+} from "./ipc-memory";
+import type {
   CreateSidebarFolderInput,
   DeleteSidebarFolderInput,
   DuplicateSidebarFolderInput,
@@ -85,6 +96,7 @@ import type {
 } from "./ipc-team-host";
 import type {
   ChannelMemberInput,
+  ChannelMemory,
   ChannelMessage,
   ChannelTask,
   ChannelTaskActionInput,
@@ -159,6 +171,11 @@ export interface ChannelsDesktopApi {
   list: () => Promise<WorkspaceChannel[]>;
   /** All tasks of the channel, archived ones included (filter on `archivedAt`). */
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
+  /** COSGRAL W2: the channel's shared memory, oldest first. Optional until every renderer mock has it. */
+  listMemories?: (channelId: string) => Promise<ChannelMemory[]>;
+  /** A person adds an entry (no memoryId) or edits one (memoryId). At most 500 characters. */
+  saveMemory?: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
+  deleteMemory?: (input: DeleteChannelMemoryInput) => Promise<void>;
   create: (input: CreateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
   update: (input: UpdateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
   addMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
@@ -167,6 +184,19 @@ export interface ChannelsDesktopApi {
   /** Stop, pause, resume, archive or restore a task. */
   actOnTask: (input: ChannelTaskActionInput) => Promise<ChannelTask>;
   reassignTask: (input: ReassignChannelTaskInput) => Promise<ChannelTask>;
+}
+
+/** COSGRAL W2: an agent's private memory, for the agent settings page (see ipc-memory.ts). */
+export interface MemoryDesktopApi {
+  /** Newest change first. */
+  listAgentMemories: (input: ListAgentMemoriesInput) => Promise<AgentMemory[]>;
+  /** Add (no memoryId) or edit (memoryId). Adding at the storage limit rejects with a clear message. */
+  saveAgentMemory: (input: SaveAgentMemoryInput) => Promise<AgentMemory>;
+  deleteAgentMemory: (input: DeleteAgentMemoryInput) => Promise<void>;
+  searchAgentMemories: (input: SearchAgentMemoriesInput) => Promise<AgentMemory[]>;
+  getAgentSettings: (botId: string) => Promise<AgentMemorySettings>;
+  /** Change the storage limit; a limit below the saved count keeps every entry and only blocks new ones. */
+  setAgentLimit: (input: SetAgentMemoryLimitInput) => Promise<AgentMemorySettings>;
 }
 
 export interface BrowserDesktopApi {
@@ -258,4 +288,6 @@ export interface OpenBotDesktopApi {
   sidebar?: SidebarDesktopApi;
   /** COSGRAL W1 (engine in W1-BE2). Optional until every renderer mock implements it. */
   channels?: ChannelsDesktopApi;
+  /** COSGRAL W2: agent and channel memory. Optional until every renderer mock implements it. */
+  memory?: MemoryDesktopApi;
 }

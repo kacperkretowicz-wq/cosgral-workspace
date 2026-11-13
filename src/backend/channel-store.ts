@@ -27,6 +27,7 @@ import {
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { purgeChannelMemoryHistory } from "./memory-history";
 import type { OpenBotDatabase } from "./openbot-database";
 
 export interface ChannelStoreOptions {
@@ -519,6 +520,46 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
     return memory;
   }
 
+  /**
+   * COSGRAL W2: a person adds an entry (no memoryId, author null) or edits one (memoryId; the author stays).
+   * Same 500-character limit as the agents' entries.
+   */
+  saveMemoryByPerson(input: { channelId: string; text: string; memoryId?: string }): ChannelMemory {
+    this.get(input.channelId);
+    const text = input.text.trim();
+    if (!text || text.length > CHANNEL_LIMITS.memoryEntry)
+      throw new Error(`A channel memory entry has 1–${CHANNEL_LIMITS.memoryEntry} characters.`);
+    const at = this.#isoNow();
+    if (input.memoryId) {
+      const existing = this.#memory(input.channelId, input.memoryId);
+      const memory: ChannelMemory = { ...existing, text, updatedAt: at };
+      this.#save([], [], "channel.memory-edited", { channelId: input.channelId }, { memories: [memory] });
+      return memory;
+    }
+    const memory: ChannelMemory = {
+      id: randomUUID(),
+      channelId: input.channelId,
+      authorBotId: null,
+      text,
+      createdAt: at,
+    };
+    this.#save([], [], "channel.memory-added", { channelId: input.channelId }, { memories: [memory] });
+    return memory;
+  }
+
+  /** COSGRAL W2: remove one entry of the channel's memory. */
+  forgetMemory(input: { channelId: string; memoryId: string }): ChannelMemory {
+    const memory = this.#memory(input.channelId, input.memoryId);
+    this.#save([], [], "channel.memory-forgotten", { channelId: input.channelId }, { forgotten: [memory] });
+    return memory;
+  }
+
+  #memory(channelId: string, memoryId: string): ChannelMemory {
+    const memory = this.listMemory(channelId).find((entry) => entry.id === memoryId);
+    if (!memory) throw new Error("This channel memory entry no longer exists.");
+    return memory;
+  }
+
   listAssignments(taskId: string): ChannelAssignment[] {
     return rows(
       this.#database.connection
@@ -657,7 +698,7 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
     tasks: ChannelTask[],
     eventType: string,
     payload: DynamicRecord,
-    extra: { messages?: ChannelMessage[]; memories?: ChannelMemory[] } = {},
+    extra: { messages?: ChannelMessage[]; memories?: ChannelMemory[]; forgotten?: ChannelMemory[] } = {},
   ): void {
     const occurredAt = this.#isoNow();
     this.#database.dispatch(
@@ -667,7 +708,15 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
           aggregateType: tasks.length > 0 && channels.length === 0 ? "channel-task" : "channel",
           aggregateId: channels[0]?.id ?? tasks[0]?.id ?? "channels",
           eventType,
-          payload: { ...payload, channels, tasks, ...extra },
+          // COSGRAL W2: a forgotten memory is named by id only, so its text stays out of the log.
+          payload: {
+            ...payload,
+            channels,
+            tasks,
+            ...(extra.messages ? { messages: extra.messages } : {}),
+            ...(extra.memories ? { memories: extra.memories } : {}),
+            ...(extra.forgotten ? { forgottenMemoryIds: extra.forgotten.map((memory) => memory.id) } : {}),
+          },
           occurredAt,
         },
       ],
@@ -777,16 +826,30 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
           db.prepare(
             "INSERT INTO projection_channel_messages(message_id, channel_id, data_json) VALUES (?, ?, ?) ON CONFLICT(message_id) DO UPDATE SET data_json = excluded.data_json",
           ).run(message.id, message.channelId, JSON.stringify(message));
-        for (const memory of extra.memories ?? [])
-          db.prepare("INSERT INTO projection_channel_memories(memory_id, channel_id, data_json) VALUES (?, ?, ?)").run(
+        for (const memory of extra.memories ?? []) {
+          db.prepare(
+            "INSERT INTO projection_channel_memories(memory_id, channel_id, data_json) VALUES (?, ?, ?) ON CONFLICT(memory_id) DO UPDATE SET data_json = excluded.data_json",
+          ).run(memory.id, memory.channelId, JSON.stringify(memory));
+          // COSGRAL W2: an edit replaces the text; only the newest event keeps it.
+          if (eventType === "channel.memory-edited") purgeChannelMemoryHistory(db, memory.id, sequence);
+        }
+        for (const memory of extra.forgotten ?? []) {
+          db.prepare("DELETE FROM projection_channel_memories WHERE memory_id = ? AND channel_id = ?").run(
             memory.id,
             memory.channelId,
-            JSON.stringify(memory),
           );
+          // COSGRAL W2: a forgotten entry leaves no text in the event log.
+          purgeChannelMemoryHistory(db, memory.id, sequence);
+        }
         return null;
       },
     );
     if (channels.length) this.emit("event", { type: "channels-changed", channels: this.list() });
+    // COSGRAL W2: every change of a channel's memory, by an agent or a person.
+    for (const memory of extra.memories ?? [])
+      this.emit("event", { type: "channel-memory-changed", channelId: memory.channelId, action: "saved", memory });
+    for (const memory of extra.forgotten ?? [])
+      this.emit("event", { type: "channel-memory-changed", channelId: memory.channelId, action: "deleted", memory });
     for (const message of extra.messages ?? [])
       this.emit("event", { type: message.superseded ? "channel-message-changed" : "channel-message", message });
     for (const task of tasks) this.emit("event", { type: "task-changed", task: this.getTask(task.id) });

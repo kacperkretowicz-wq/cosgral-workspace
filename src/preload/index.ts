@@ -5,10 +5,13 @@ import {
   type AgentEyesSession,
   type AgentEyesState,
   type AgentIpcRequest,
+  type AgentMemory,
+  type AgentMemorySettings,
   type AgentModelOption,
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
+  type ChannelMemory,
   type ChannelMessage,
   type ChannelTask,
   type ConversationReadState,
@@ -17,7 +20,10 @@ import {
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   isAgentActivity,
+  isAgentMemory,
+  isAgentMemorySettings,
   isAgentModel,
+  isChannelMemory,
   isChannelMessage,
   isChannelTask,
   isKeptDraft,
@@ -338,6 +344,32 @@ function decodeSidebarFolderChange(value: unknown): SidebarFolderChange {
   return { folder: value.folder, layout: value.layout };
 }
 
+/** COSGRAL W2: memory decoders. */
+function decodeAgentMemory(value: unknown): AgentMemory {
+  if (!isAgentMemory(value)) throw new Error("Invalid agent memory response.");
+  return value;
+}
+
+function decodeAgentMemories(value: unknown): AgentMemory[] {
+  if (!Array.isArray(value)) throw new Error("Invalid agent memories response.");
+  return value.filter(isAgentMemory);
+}
+
+function decodeAgentMemorySettings(value: unknown): AgentMemorySettings {
+  if (!isAgentMemorySettings(value)) throw new Error("Invalid memory settings response.");
+  return value;
+}
+
+function decodeChannelMemory(value: unknown): ChannelMemory {
+  if (!isChannelMemory(value)) throw new Error("Invalid channel memory response.");
+  return value;
+}
+
+function decodeChannelMemories(value: unknown): ChannelMemory[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel memories response.");
+  return value.filter(isChannelMemory);
+}
+
 /** COSGRAL W1-BE2: channels and channel tasks. */
 function decodeChannel(value: unknown): WorkspaceChannel {
   if (!isWorkspaceChannel(value)) throw new Error("Invalid channel response.");
@@ -481,7 +513,18 @@ const openbotApi: OpenBotDesktopApi = {
     deleteFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDeleteFolder, input, decodeSidebarLayout),
     moveItem: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveItem, input, decodeSidebarLayout),
   },
+  memory: {
+    listAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memoryListAgentMemories, input, decodeAgentMemories),
+    saveAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memorySaveAgentMemory, input, decodeAgentMemory),
+    deleteAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memoryDeleteAgentMemory, input, decodeVoid),
+    searchAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memorySearchAgentMemories, input, decodeAgentMemories),
+    getAgentSettings: (botId) => invokeAgent(IPC_CHANNELS.memoryGetAgentSettings, botId, decodeAgentMemorySettings),
+    setAgentLimit: (input) => invokeAgent(IPC_CHANNELS.memorySetAgentLimit, input, decodeAgentMemorySettings),
+  },
   channels: {
+    listMemories: (channelId) => invokeAgent(IPC_CHANNELS.channelsListMemories, channelId, decodeChannelMemories),
+    saveMemory: (input) => invokeAgent(IPC_CHANNELS.channelsSaveMemory, input, decodeChannelMemory),
+    deleteMemory: (input) => invokeAgent(IPC_CHANNELS.channelsDeleteMemory, input, decodeVoid),
     listMessages: (input) => invokeAgent(IPC_CHANNELS.channelsListMessages, input, decodeChannelMessages),
     sendMessage: (input) => invokeAgent(IPC_CHANNELS.channelsSendMessage, input, decodeChannelReceipt),
     list: () => invokeAgent(IPC_CHANNELS.channelsList, null, decodeChannels),

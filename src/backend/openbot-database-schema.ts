@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -281,6 +281,26 @@ const SCHEMA_SQL = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json))
   );
   CREATE INDEX IF NOT EXISTS kept_drafts_kept_at ON projection_kept_drafts(kept_at);
+  -- COSGRAL W2: private agent memories ("essential" = always in the prompt, "searchable" = found with a tool).
+  -- Channel memory is separate: projection_channel_memories above (channel engine, W1-BE2).
+  CREATE TABLE IF NOT EXISTS projection_agent_memories (
+    memory_id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    inclusion TEXT NOT NULL CHECK(inclusion IN ('essential', 'searchable')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS agent_memories_agent
+    ON projection_agent_memories(agent_id, inclusion, updated_at DESC);
+  -- COSGRAL W2: the per-agent memory limit a person set (absent = default 512).
+  CREATE TABLE IF NOT EXISTS projection_agent_memory_settings (
+    agent_id TEXT PRIMARY KEY,
+    max_memories INTEGER NOT NULL CHECK(max_memories >= 1),
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

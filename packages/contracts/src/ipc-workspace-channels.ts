@@ -84,9 +84,12 @@ export interface ChannelMessage {
 export interface ChannelMemory {
   id: string;
   channelId: string;
-  authorBotId: string;
+  /** The member agent that saved it; null when a person added it (COSGRAL W2). */
+  authorBotId: string | null;
   text: string;
   createdAt: string;
+  /** Set when the entry was edited (COSGRAL W2). */
+  updatedAt?: string;
 }
 
 export interface ChannelAssignment {
@@ -103,9 +106,10 @@ export function isChannelMemory(value: unknown): value is ChannelMemory {
     isDynamicRecord(value) &&
     isString(value.id) &&
     isString(value.channelId) &&
-    isString(value.authorBotId) &&
+    (isString(value.authorBotId) || value.authorBotId === null) &&
     isString(value.text) &&
-    isString(value.createdAt)
+    isString(value.createdAt) &&
+    (value.updatedAt === undefined || isString(value.updatedAt))
   );
 }
 export function isChannelAssignment(value: unknown): value is ChannelAssignment {

@@ -84,6 +84,16 @@ import {
   parseUpdateChannel,
 } from "./ipc/channel-inputs";
 import {
+  parseAgentMemoryBotId,
+  parseDeleteAgentMemory,
+  parseDeleteChannelMemory,
+  parseListAgentMemories,
+  parseSaveAgentMemory,
+  parseSaveChannelMemory,
+  parseSearchAgentMemories,
+  parseSetAgentMemoryLimit,
+} from "./ipc/memory-inputs";
+import {
   parseCreateTeamInvite,
   parseDirectTyping,
   parseHostConfig,
@@ -768,6 +778,45 @@ function registerIpcHandlers(
     channelEngine.reassignTask(localChannelInput(input, parseReassignChannelTask)),
   );
 
+  // COSGRAL W2: an agent's private memory (agent settings page). Same rules and events as the agent tools.
+  handleTrusted(IPC_CHANNELS.memoryListAgentMemories, (input: unknown) => {
+    const parsed = localMemoryInput(input, parseListAgentMemories);
+    return service.memoryStore.listAgentMemories(parsed.botId, parsed.inclusion);
+  });
+  handleTrusted(IPC_CHANNELS.memorySaveAgentMemory, (input: unknown) => {
+    const parsed = localMemoryInput(input, parseSaveAgentMemory);
+    if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
+    return service.memoryService.save(parsed);
+  });
+  handleTrusted(IPC_CHANNELS.memoryDeleteAgentMemory, (input: unknown) => {
+    const parsed = localMemoryInput(input, parseDeleteAgentMemory);
+    service.memoryService.delete(parsed.botId, parsed.memoryId);
+    return null;
+  });
+  handleTrusted(IPC_CHANNELS.memorySearchAgentMemories, (input: unknown) =>
+    service.memoryStore.searchAgentMemories(localMemoryInput(input, parseSearchAgentMemories)),
+  );
+  handleTrusted(IPC_CHANNELS.memoryGetAgentSettings, (input: unknown) =>
+    service.memoryStore.settings(localMemoryInput(input, parseAgentMemoryBotId)),
+  );
+  handleTrusted(IPC_CHANNELS.memorySetAgentLimit, (input: unknown) => {
+    const parsed = localMemoryInput(input, parseSetAgentMemoryLimit);
+    if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
+    return service.memoryStore.setLimit(parsed);
+  });
+  // COSGRAL W2: the person's side of channel memory; the channel engine owns the pool.
+  handleTrusted(IPC_CHANNELS.channelsListMemories, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? channels.listMemory(parseChannelId(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.channelsSaveMemory, (input: unknown) =>
+    channels.saveMemoryByPerson(localChannelInput(input, parseSaveChannelMemory)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsDeleteMemory, (input: unknown) => {
+    channels.forgetMemory(localChannelInput(input, parseDeleteChannelMemory));
+    return null;
+  });
+
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);
     return remoteServers.activeServerId === "local"
@@ -1289,6 +1338,12 @@ function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
 }
 
 /** COSGRAL W1-BE2: channel changes are kept on this computer only. */
+function localMemoryInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Agent memory is available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
 function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T {
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("Channels are available only on this computer for now.");
