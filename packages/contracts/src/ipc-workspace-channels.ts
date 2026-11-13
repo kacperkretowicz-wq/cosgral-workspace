@@ -128,6 +128,8 @@ export interface SendChannelMessageInput {
   channelId: string;
   text: string;
   resourceKey?: string | null;
+  /** COSGRAL W3: the person answers this message; it must be in the same channel. */
+  replyToMessageId?: string | null;
 }
 export interface ListChannelMessagesInput {
   channelId: string;

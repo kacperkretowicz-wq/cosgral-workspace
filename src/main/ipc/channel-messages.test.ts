@@ -10,6 +10,17 @@ it("validates new message IPC and history pagination", () => {
     text: "hello",
     resourceKey: "browser",
   });
+  expect(parseSendChannelMessage({ channelId: "c", text: "thanks", replyToMessageId: "m1" })).toEqual({
+    channelId: "c",
+    text: "thanks",
+    replyToMessageId: "m1",
+  });
+  expect(parseSendChannelMessage({ channelId: "c", text: "new", replyToMessageId: null })).toEqual({
+    channelId: "c",
+    text: "new",
+    replyToMessageId: null,
+  });
+  expect(() => parseSendChannelMessage({ channelId: "c", text: "x", replyToMessageId: 5 })).toThrow(/replyToMessageId/);
   expect(() => parseSendChannelMessage({ channelId: "c", text: " " })).toThrow();
   expect(() => parseSendChannelMessage({ channelId: "c", text: "x", resourceKey: "workspace:relative" })).toThrow();
   expect(parseListChannelMessages({ channelId: "c", beforeMessageId: "m", limit: 5 })).toEqual({
