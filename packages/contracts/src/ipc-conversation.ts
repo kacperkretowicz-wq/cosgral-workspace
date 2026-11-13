@@ -23,6 +23,7 @@ import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
+import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
 import {
@@ -502,6 +503,10 @@ export type AgentEvent =
   | { type: "mcp-servers-changed"; servers: McpServer[] }
   /** COSGRAL W2: one agent's MCP switches changed; replace that agent's settings. */
   | { type: "agent-mcp-changed"; botId: string; settings: AgentMcpServerSetting[] }
+  /** COSGRAL W2: the routine list changed (created, edited, paused, next run moved); replace the list. */
+  | { type: "routines-changed"; routines: Routine[] }
+  /** COSGRAL W2: a routine run started, finished, or was skipped or ignored. */
+  | { type: "routine-run"; run: RoutineRun }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -577,6 +582,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
     case "mcp-servers-changed":
       return Array.isArray(value.servers) && value.servers.every(isMcpServer);
+    case "routines-changed":
+      return Array.isArray(value.routines) && value.routines.every(isRoutine);
+    case "routine-run":
+      return isRoutineRun(value.run);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

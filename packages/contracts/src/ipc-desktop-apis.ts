@@ -65,6 +65,14 @@ import type {
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
 import type {
+  CreateRoutineInput,
+  Routine,
+  RoutineIdInput,
+  RoutineRun,
+  RoutineWithSecret,
+  UpdateRoutineInput,
+} from "./ipc-routines";
+import type {
   CreateSidebarFolderInput,
   DeleteSidebarFolderInput,
   DuplicateSidebarFolderInput,
@@ -241,6 +249,22 @@ export interface SkillsDesktopApi {
   uninstall: (input: UninstallSkillInput) => Promise<void>;
 }
 
+/** COSGRAL W2: routines and webhooks (see ipc-routines.ts). */
+export interface RoutinesDesktopApi {
+  /** Every routine, or one agent's routines. */
+  list: (botId?: string) => Promise<Routine[]>;
+  /** A webhook routine's secret comes back here once; schedule routines have secret null. */
+  create: (input: CreateRoutineInput) => Promise<RoutineWithSecret>;
+  update: (input: UpdateRoutineInput) => Promise<Routine>;
+  delete: (input: RoutineIdInput) => Promise<void>;
+  /** Start a run now (a paused routine is not started). */
+  runNow: (input: RoutineIdInput) => Promise<RoutineRun>;
+  /** Newest first. */
+  listRuns: (input: RoutineIdInput) => Promise<RoutineRun[]>;
+  /** A new webhook secret, shown once; the old one stops working. */
+  regenerateSecret: (input: RoutineIdInput) => Promise<RoutineWithSecret>;
+}
+
 /** COSGRAL W2: MCP servers of the program and the per-agent switch (see ipc-mcp.ts). */
 export interface McpDesktopApi {
   /** Every server with its status and tools. Secret values are never returned, only their names. */
@@ -353,4 +377,6 @@ export interface OpenBotDesktopApi {
   skills?: SkillsDesktopApi;
   /** COSGRAL W2: MCP servers. Optional until every renderer mock implements it. */
   mcp?: McpDesktopApi;
+  /** COSGRAL W2: routines and webhooks. Optional until every renderer mock implements it. */
+  routines?: RoutinesDesktopApi;
 }
