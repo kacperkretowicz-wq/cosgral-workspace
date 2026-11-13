@@ -63,3 +63,56 @@ Stan: 13.11.2026. Żaden test odbioru z tej specyfikacji nie został uruchomiony
 | 4.8 | Kto tworzy webhook z czatu | Tylko wiadomość **człowieka** może tworzyć/zmieniać webhook routine; run rutyny ani inny agent nie. | Routine run próbuje create_webhook → odrzucone; człowiek w czacie → OK. |
 
 **Kontrakt (rutyny):** `Routine {id, scope: agent|channel, trigger: schedule|webhook, timezone, nextRunAt, paused, …}`, historia runów, IPC create/update/delete/list; webhook: URL, filters, test-event.
+
+## 5. Tabele wspólne (wiersz 29)
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 5.1 | Wspólna baza | Tabele agentów to **trwały magazyn wierszy** (nie tylko markdown w czacie); wielu agentów czyta te same dane. | Utworzyć tabelę, dodać wiersz agentem A → agent B widzi ten wiersz po odświeżeniu / w kolejnej turze. |
+| 5.2 | Kto prowadzi | Tabela ma właściciela / uprawnienia; usunięcie przez uprawnionego usuwa **dla wszystkich**. | Usunąć tabelę → znika u obu agentów i po restarcie. |
+| 5.3 | API agenta | Agent listuje tabele, czyta/pisze wiersze narzędziami; zmiany są danymi, nie poleceniami. | Agent dopisuje wiersz → widać go w UI tabeli i u drugiego agenta. |
+| 5.4 | Brzeg: konflikt | Równoległy zapis tego samego wiersza: ostatni wygrywa albo wersjonowanie z jasnym sygnałem (wybrać jedną regułę i trzymać). | Dwóch agentów edytuje ten sam wiersz → wynik przewidywalny, bez cichego rozjazdu UI. |
+| 5.5 | Trwałość | Dane przeżywają restart programu. | Restart → te same kolumny i wiersze. |
+
+**Kontrakt (tabele):** `SharedTable {id, name, ownerBotId?, columns[], updatedAt}`, `list_tables` / read / write / delete; zdarzenie `table-changed`.
+
+## 6. Biblioteka plików (wiersz 30)
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 6.1 | Widok biblioteki | Osobna strona/panel Biblioteka: siatka lub lista plików (nie tylko załączniki w wątku). | Otworzyć Bibliotekę → widać pliki niezależnie od otwartego czatu. |
+| 6.2 | Dodawanie | Człowiek lub agent wrzuca plik (upload / zapis z narzędzia / zrzut); plik dostaje nazwę, rozmiar, datę. | Wrzuć plik → pojawia się na liście. |
+| 6.3 | Pobieranie / otwarcie | Zaznaczenie i pobranie na dysk albo otwarcie podglądu. | Pobierz plik → bajty zgodne z oryginałem. |
+| 6.4 | Sprzątanie | Usuwanie i ewentualne limity miejsca; usunięcie zwalnia miejsce. | Usuń plik → znika z listy i po restarcie. |
+| 6.5 | Pliki maszyny | Opcja wskazania plików lokalnych maszyny (ścieżki) obok magazynu aplikacji — z jasnym rozróżnieniem. | Dodać odniesienie do pliku dysku → widać etykietę ścieżki; brak pliku → błąd, nie pusty sukces. |
+| 6.6 | Trwałość | Biblioteka przeżywa restart. | Restart → te same wpisy. |
+
+**Kontrakt (biblioteka):** `LibraryItem {id, name, size, createdAt, source: app|path}`, list/upload/download/delete; zdarzenie `library-changed`.
+
+## 7. Przepływy pracy (wiersz 28) — skrót
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 7.1 | Płótno | Osobna strona Workflows: węzły, wyzwalacz, kroki (także z zatwierdzeniem człowieka), wyjścia / integracje. | Utworzyć przepływ z jednym krokiem → zapisany po restarcie. |
+| 7.2 | Uruchomienie | Start ręczny lub z wyzwalacza kończy się widocznym wynikiem / statusem; wyjście może iść do kanału OpenBot. | Uruchomić prosty przepływ → status done i wynik w historii / kanale. |
+| 7.3 | Zatwierdzenie w kroku | Krok z approval wstrzymuje run do decyzji człowieka (Needs you). | Krok approval → karta; po Allow run idzie dalej. |
+
+*(Pełniejszy opis canvas można rozwinąć przy implementacji W2/W3 UI; tu minimum pod parytet wiersz 28.)*
+
+## 8. Pytania otwarte dla lidera
+
+1. Skille: domyślny limit plików/rozmiaru folderu skillu w COSGRAL — kopiujemy limity skill-creator 0.68, czy własne liczby w jednym pliku konfiguracji?
+2. MCP: czy serwery są globalne na host, czy też per-agent enable od dnia 1?
+3. Vault: czy konektory 1Password/Bitwarden/Proton są w zakresie pierwszej dostawy W2, czy tylko lokalny Vault?
+4. Rutyny: na Windows bez konta OpenBot — czy webhooki w ogóle startują (wymagają konta/host online), czy W2 oddaje tylko schedule lokalny?
+5. Tabele: reguła konfliktu zapisu — last-write-wins czy version field?
+6. Biblioteka vs załączniki czatu — jeden magazyn z dwoma widokami, czy osobne store?
+7. Przepływy (wiersz 28): pełne płótno w tej samej fali co tabele, czy po Vault/rutynach?
+
+## Metoda
+
+- Dowód „jako użytkownik”: narzędzia i karty w tej sesji OpenBot (skille, Vault, rutyny/webhooki, tabele, prośby o klucze).
+- README 0.68 Local skills; docs/webhooks.md (limity 64 routines, 64 KiB, 7 dni receipts, secret raz).
+- Changelog v0.68.0: MCP po kluczu API, Standard Webhooks, skill folder rename na Windows, ciche rutyny.
+- Paczka: `resources/managed-skills` (m.in. openbot-skill-creator).
+- Gałąź: `team/tester/w2-spec` od `codex/cosgral-desktop` @ `341ae769b`.
