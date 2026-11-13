@@ -8,15 +8,16 @@
 import type {
   AgentApproval,
   AgentEvent,
-  PendingAgentRequest,
-  DraftPreviewCard,
-  BrowserTakeoverRequest,
   BrowserTakeoverPhase,
+  BrowserTakeoverRequest,
+  DraftPreviewCard,
+  PendingAgentRequest,
+  VaultRequest,
 } from "@openbot/contracts/ipc";
 
 export type PromptEvent = Extract<AgentEvent, { type: "prompt" }>;
 
-export type PendingCardKind = "prompt" | "approval" | "draft-preview" | "browser-takeover";
+export type PendingCardKind = "prompt" | "approval" | "draft-preview" | "browser-takeover" | "vault-request";
 
 export type PendingCard =
   | { kind: "prompt"; requestId: string | number; botId: string; createdAt: string; prompt: PromptEvent }
@@ -29,7 +30,18 @@ export type PendingCard =
       createdAt: string;
       request: BrowserTakeoverRequest;
       phase: BrowserTakeoverPhase;
-    };
+    }
+  | { kind: "vault-request"; requestId: string; botId: string; createdAt: string; request: VaultRequest };
+
+export function vaultCard(request: VaultRequest): PendingCard {
+  return {
+    kind: "vault-request",
+    requestId: request.requestId,
+    botId: request.botId,
+    createdAt: request.createdAt,
+    request,
+  };
+}
 
 export function draftCard(card: DraftPreviewCard): PendingCard {
   return { kind: "draft-preview", requestId: card.requestId, botId: card.botId, createdAt: card.createdAt, card };
@@ -75,6 +87,8 @@ export function cardsFromPending(requests: readonly PendingAgentRequest[]): Pend
       cards.push(draftCard(request.card));
     } else if (request.kind === "browser-takeover") {
       cards.push(takeoverCard(request.request, request.phase));
+    } else if (request.kind === "vault-request") {
+      cards.push(vaultCard(request.request));
     }
   }
   return sortOldestFirst(cards);

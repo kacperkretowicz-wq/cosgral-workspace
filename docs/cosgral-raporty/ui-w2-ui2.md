@@ -1,0 +1,8 @@
+# W2-UI2 — Vault, rutyny, tabele i pliki
+
+- Vault na stronie Library pokazuje podsumowania i stan szyfrowania; formularz obsługuje pięć rodzajów, a puste pola sekretów są pomijane. Prośby Vault wracają z listy oczekujących i pojawiają się w Needs you, czacie i przypiętej decyzji.
+- Rutyny są na stronie Schedule oraz w ustawieniach agenta: interwał, czas dzienny, cron, webhook, strefa, pauza, uruchomienie i historia. Sekret webhooka jest pokazywany raz z przyciskiem kopiowania.
+- Library zawiera również tabele z filtrem, edycją wersjonowanych wierszy i wyborem przy konflikcie. Ponowienie wysyła tylko pola zmienione przez osobę. Pliki można wyszukać, dodać i usunąć; wybór z biblioteki w kompozytorze załącza przygotowany plik do właściwego agenta. Lista reaguje także na zdarzenia rozmowy.
+- Atrapa udostępnia demonstracyjne Vault, rutyny, tabele i pliki. Odpowiedź osoby w kanale działa tylko przy jawnym `supportsMessageReplies: true`; atrapa wystawia tę flagę. Obecny preload jej nie wystawia, więc przycisk jest ukryty w aplikacji do czasu uzgodnienia sposobu wykrycia możliwości po scaleniu backendu.
+- Ograniczenie kontraktu Vault: podsumowania nie zwracają e-maila/telefonu/adresu kontaktu ani konta TOTP, a backend zastępuje je podczas zapisu. Edycja tych rodzajów wymaga ponownego wpisania wartości i dodatkowego potwierdzenia, by nie usunąć ich nieświadomie. Dla karty trzeba ponownie podać posiadacza, którego podsumowanie także nie zwraca.
+- Nie sprawdzono pełnego przebiegu w Electronie z prawdziwym magazynem; testy UI i stories korzystają z atrapy. Przy błędzie dodania pozycji Vault należy ponownie wpisać pola sekretne, jeśli zamknięto formularz.

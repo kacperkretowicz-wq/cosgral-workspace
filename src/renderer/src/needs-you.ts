@@ -3,7 +3,7 @@ import { cardKey, type PendingCard, type PromptEvent } from "./pending-cards";
 
 export type { PromptEvent };
 
-export type NeedsYouKind = "question" | "approval" | "takeover";
+export type NeedsYouKind = "question" | "approval" | "takeover" | "vault";
 
 export interface NeedsYouItem {
   botId: string;
@@ -69,8 +69,10 @@ export function needsYouItemsFromCards(input: {
       items.push({ botId: card.botId, botName, kind: "approval", orderKey, summary: approvalSummary(card.approval) });
     } else if (card.kind === "draft-preview") {
       items.push({ botId: card.botId, botName, kind: "approval", orderKey, summary: card.card.title });
-    } else {
+    } else if (card.kind === "browser-takeover") {
       items.push({ botId: card.botId, botName, kind: "takeover", orderKey, summary: card.request.reason });
+    } else {
+      items.push({ botId: card.botId, botName, kind: "vault", orderKey, summary: card.request.reason });
     }
   }
   return items;

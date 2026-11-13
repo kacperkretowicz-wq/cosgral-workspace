@@ -32,6 +32,8 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show
 import { normalizeAvatarFile } from "../avatar-image";
 import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
+import type { PendingCard } from "../pending-cards";
+import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ChoiceCard } from "./ConversationPrompts";
@@ -68,6 +70,9 @@ import {
   unreadMessagesDividerIsVisible,
 } from "./conversation/UnreadMessages";
 import { EyesBar } from "./EyesIndicator";
+import { LibraryPanel } from "./LibraryPanel";
+import { McpSettings } from "./McpSettings";
+import { AgentMemorySettingsView } from "./MemorySettings";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import {
@@ -77,13 +82,11 @@ import {
   REMOTE_DESKTOP_PANEL_STORAGE_KEY,
   RemoteMacPanel,
 } from "./RemoteMacPanel";
-import { StickyDecision } from "./StickyDecision";
-import { AgentMemorySettingsView } from "./MemorySettings";
+import { RoutinePanel } from "./RoutinePanel";
 import { SkillsSettings } from "./SkillsSettings";
-import { McpSettings } from "./McpSettings";
-import { ActionCard } from "./ActionCard";
-import type { PendingCard } from "../pending-cards";
+import { StickyDecision } from "./StickyDecision";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
+import { VaultRequestCard } from "./VaultRequestCard";
 
 type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
 
@@ -204,6 +207,9 @@ export function Conversation(props: ConversationProps) {
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
+  const [libraryOpen, setLibraryOpen] = createSignal(false);
+  let libraryDetails: HTMLDetailsElement | undefined;
+  let libraryOwner: string | undefined;
   const [attachmentBusy, setAttachmentBusy] = createSignal(false);
   const [composerError, setComposerError] = createSignal<string | null>(null);
   const [markingRead, setMarkingRead] = createSignal(false);
@@ -1383,6 +1389,11 @@ export function Conversation(props: ConversationProps) {
     if (browserTabs().length === 0) void openBrowserAddress();
   }
 
+  function activeActionCard() {
+    const card = props.actionCard;
+    return card?.kind === "draft-preview" || card?.kind === "browser-takeover" ? card : undefined;
+  }
+
   let shownTakeoverId: string | undefined;
   createEffect(
     () => props.actionCard,
@@ -1893,20 +1904,11 @@ export function Conversation(props: ConversationProps) {
               );
             }}
           </For>
-          <Show
-            when={
-              props.actionCard?.kind === "draft-preview" || props.actionCard?.kind === "browser-takeover"
-                ? props.actionCard
-                : undefined
-            }
-          >
-            {(card) => (
-              <ActionCard
-                card={card() as Extract<PendingCard, { kind: "draft-preview" | "browser-takeover" }>}
-                onDraft={respondActionDraft}
-                onTakeover={respondActionTakeover}
-              />
-            )}
+          <Show when={activeActionCard()}>
+            {(card) => <ActionCard card={card()} onDraft={respondActionDraft} onTakeover={respondActionTakeover} />}
+          </Show>
+          <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
+            {(request) => <VaultRequestCard request={request} />}
           </Show>
           <AgentActivityIndicator bot={props.bot} state={visibleAgentActivity()} />
         </Show>
@@ -1918,27 +1920,47 @@ export function Conversation(props: ConversationProps) {
         onAnswerPrompt={props.onAnswerPrompt}
         onRespondToApproval={props.onRespondToApproval}
       />
-      <Show
-        when={
-          props.actionCard?.kind === "draft-preview" || props.actionCard?.kind === "browser-takeover"
-            ? props.actionCard
-            : undefined
-        }
-      >
-        {(card) => (
-          <div class="sticky-decision" role="region" aria-label="Decision">
+      <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
+        {(request) => (
+          <section class="sticky-decision" aria-label="Decision">
             <div class="sticky-decision-kicker">Decision · pinned</div>
-            <ActionCard
-              card={card() as Extract<PendingCard, { kind: "draft-preview" | "browser-takeover" }>}
-              onDraft={respondActionDraft}
-              onTakeover={respondActionTakeover}
-            />
-          </div>
+            <VaultRequestCard request={request} />
+          </section>
+        )}
+      </Show>
+      <Show when={activeActionCard()}>
+        {(card) => (
+          <section class="sticky-decision" aria-label="Decision">
+            <div class="sticky-decision-kicker">Decision · pinned</div>
+            <ActionCard card={card()} onDraft={respondActionDraft} onTakeover={respondActionTakeover} />
+          </section>
         )}
       </Show>
 
       <Show when={!props.prompt && !props.approval}>
         <div class="composer-wrap">
+          <details
+            ref={(element) => (libraryDetails = element)}
+            onToggle={(event) => {
+              if (event.currentTarget.open) libraryOwner = props.bot?.id;
+              setLibraryOpen(event.currentTarget.open);
+            }}
+          >
+            <summary>Choose from library</summary>
+            <Show when={libraryOpen()}>
+              <LibraryPanel
+                onAttach={(draft) => {
+                  if (!libraryOwner) {
+                    void window.openbot.agent.discardDraftAttachment(draft.id);
+                    return;
+                  }
+                  addAttachments([draft], libraryOwner);
+                  if (libraryDetails) libraryDetails.open = false;
+                  setLibraryOpen(false);
+                }}
+              />
+            </Show>
+          </details>
           <For each={unreferencedDraftAttachments()}>
             {(attachment) => (
               <div class="composer-attachment">
@@ -2374,6 +2396,7 @@ export function Conversation(props: ConversationProps) {
                   <AgentMemorySettingsView botId={botId} />
                   <SkillsSettings botId={botId} />
                   <McpSettings botId={botId} />
+                  <RoutinePanel botId={botId} bots={props.bots} />
                 </>
               )}
             </Show>

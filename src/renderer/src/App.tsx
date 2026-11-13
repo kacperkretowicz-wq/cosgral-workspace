@@ -40,21 +40,25 @@ import type {
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
 import { AccountLogin } from "./components/AccountLogin";
+import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
-import { SkillsSettings } from "./components/SkillsSettings";
-import { McpSettings } from "./components/McpSettings";
-import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
+import { LibraryPanel } from "./components/LibraryPanel";
+import { McpSettings } from "./components/McpSettings";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
+import { RoutinePanel } from "./components/RoutinePanel";
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
+import { SkillsSettings } from "./components/SkillsSettings";
+import { TablesPanel } from "./components/TablesPanel";
+import { VaultPanel } from "./components/VaultPanel";
 import type { BotMessage, BotProfile } from "./data";
 import { needsYouItemsFromCards } from "./needs-you";
 import {
@@ -64,13 +68,14 @@ import {
   cardsFromPending,
   clearBotCards,
   draftCard,
-  takeoverCard,
   mergeHydrated,
   oldestCardForBot,
   type PendingCard,
   type PendingCardKind,
   promptCard,
   removeCard,
+  takeoverCard,
+  vaultCard,
 } from "./pending-cards";
 import { rowStateFor, type SidebarAgentState } from "./row-activity";
 
@@ -613,6 +618,12 @@ export function App() {
         return;
       case "draft-preview-resolved":
         dropCard("draft-preview", event.requestId);
+        return;
+      case "vault-request":
+        addLiveCard(vaultCard(event.request));
+        return;
+      case "vault-request-resolved":
+        dropCard("vault-request", event.requestId);
         return;
       case "browser-takeover":
         addLiveCard(takeoverCard(event.request));
@@ -1845,10 +1856,18 @@ export function App() {
               <Show when={activePage() === "library"}>
                 <main class="w2-library">
                   <SkillsSettings />
+                  <VaultPanel />
+                  <TablesPanel />
+                  <LibraryPanel />
                   <McpSettings />
                 </main>
               </Show>
-              <Show when={activePage() !== "agents" && activePage() !== "library"}>
+              <Show when={activePage() === "schedule"}>
+                <main class="w2-library">
+                  <RoutinePanel bots={botList()} />
+                </main>
+              </Show>
+              <Show when={activePage() !== "agents" && activePage() !== "library" && activePage() !== "schedule"}>
                 <ComingSoon title={activePageTitle()} />
               </Show>
               <Show when={activePage() === "agents" ? activeDirectMember() : undefined} keyed>

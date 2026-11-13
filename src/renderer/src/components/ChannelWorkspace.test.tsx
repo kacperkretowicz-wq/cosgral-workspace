@@ -18,6 +18,14 @@ describe("channel workspace", () => {
     ));
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
     await screen.findByText("Prepare the release plan.");
+    await fireEvent.click(screen.getByRole("button", { name: "Reply to Prepare the release plan." }));
+    await fireEvent.input(screen.getByLabelText("New message to channel lead"), { target: { value: "Reply text" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(
+      (await mock.api.channels?.listMessages?.({ channelId: "demo-channel" }))?.find(
+        (item) => item.text === "Reply text",
+      )?.replyToMessageId,
+    ).toBe("demo-message");
     mock.emitAgentEvent({
       type: "channel-message-changed",
       message: {
@@ -40,11 +48,10 @@ describe("channel workspace", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Send" }));
     await screen.findByText("Check the dates");
     await fireEvent.click(screen.getByRole("tab", { name: "Tasks" }));
-    const task = screen.getByText("Review the plan").closest("article")!;
+    const task = screen.getByText("Review the plan").closest("article");
+    if (!task) throw new Error("Task row not found");
     await fireEvent.click(within(task).getByRole("button", { name: "Resume" }));
-    await waitFor(() =>
-      expect(within(screen.getByText("Review the plan").closest("article")!).getByText("Queued")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("Review the plan").closest("article")).toHaveTextContent("Queued"));
     await fireEvent.change(screen.getByLabelText("Reassign Review the plan"), { target: { value: "research" } });
     await waitFor(() =>
       expect(screen.getByText("Review the plan").closest("article")?.querySelector("p")).toHaveTextContent("Research"),
