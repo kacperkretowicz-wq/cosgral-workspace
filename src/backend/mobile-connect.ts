@@ -31,6 +31,7 @@ import {
   type StartMobilePairingInput,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { isMobileAppPath, serveMobileApp } from "./mobile-app";
 import { createMobileCertificate } from "./mobile-certificate";
 import { HttpError, readJson, sendJson } from "./mobile-http";
 import type { MobilePhoneApi } from "./mobile-phone-api";
@@ -331,6 +332,11 @@ export class MobileConnect {
     try {
       if (this.#limited(address)) throw new HttpError(429, "Too many failed attempts. Wait a minute and try again.");
       const path = (request.url ?? "/").split("?")[0] ?? "/";
+      // COSGRAL W3-BE7: the phone web app (files only, no token).
+      if (isMobileAppPath(path)) {
+        serveMobileApp(request, response, path);
+        return;
+      }
       if (path === MOBILE_API_PATHS.pair) {
         if (request.method !== "POST") throw new HttpError(405, "Use POST.");
         await this.#pair(request, response, address);
