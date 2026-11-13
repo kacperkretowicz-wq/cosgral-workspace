@@ -5,6 +5,7 @@ import {
   type AgentEyesSession,
   type AgentEyesState,
   type AgentIpcRequest,
+  type AgentMcpServerSetting,
   type AgentMemory,
   type AgentMemorySettings,
   type AgentModelOption,
@@ -20,6 +21,7 @@ import {
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   isAgentActivity,
+  isAgentMcpServerSetting,
   isAgentMemory,
   isAgentMemorySettings,
   isAgentModel,
@@ -27,12 +29,14 @@ import {
   isChannelMessage,
   isChannelTask,
   isKeptDraft,
+  isMcpServer,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
   isSidebarLayout,
   isWorkspaceChannel,
   type KeptDraft,
+  type McpServer,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -355,6 +359,22 @@ function decodeAgentMemories(value: unknown): AgentMemory[] {
   return value.filter(isAgentMemory);
 }
 
+/** COSGRAL W2: MCP decoders. */
+function decodeMcpServer(value: unknown): McpServer {
+  if (!isMcpServer(value)) throw new Error("Invalid MCP server response.");
+  return value;
+}
+
+function decodeMcpServers(value: unknown): McpServer[] {
+  if (!Array.isArray(value)) throw new Error("Invalid MCP server list response.");
+  return value.filter(isMcpServer);
+}
+
+function decodeAgentMcpSettings(value: unknown): AgentMcpServerSetting[] {
+  if (!Array.isArray(value)) throw new Error("Invalid MCP settings response.");
+  return value.filter(isAgentMcpServerSetting);
+}
+
 function decodeAgentMemorySettings(value: unknown): AgentMemorySettings {
   if (!isAgentMemorySettings(value)) throw new Error("Invalid memory settings response.");
   return value;
@@ -520,6 +540,15 @@ const openbotApi: OpenBotDesktopApi = {
     searchAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memorySearchAgentMemories, input, decodeAgentMemories),
     getAgentSettings: (botId) => invokeAgent(IPC_CHANNELS.memoryGetAgentSettings, botId, decodeAgentMemorySettings),
     setAgentLimit: (input) => invokeAgent(IPC_CHANNELS.memorySetAgentLimit, input, decodeAgentMemorySettings),
+  },
+  mcp: {
+    list: () => invokeAgent(IPC_CHANNELS.mcpList, null, decodeMcpServers),
+    add: (input) => invokeAgent(IPC_CHANNELS.mcpAdd, input, decodeMcpServer),
+    update: (input) => invokeAgent(IPC_CHANNELS.mcpUpdate, input, decodeMcpServer),
+    remove: (input) => invokeAgent(IPC_CHANNELS.mcpRemove, input, decodeVoid),
+    reconnect: (input) => invokeAgent(IPC_CHANNELS.mcpReconnect, input, decodeMcpServer),
+    listAgentSettings: (botId) => invokeAgent(IPC_CHANNELS.mcpListAgentSettings, botId, decodeAgentMcpSettings),
+    setAgentEnabled: (input) => invokeAgent(IPC_CHANNELS.mcpSetAgentEnabled, input, decodeAgentMcpSettings),
   },
   channels: {
     listMemories: (channelId) => invokeAgent(IPC_CHANNELS.channelsListMemories, channelId, decodeChannelMemories),

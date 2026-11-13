@@ -3,7 +3,9 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { McpServerConfig, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import { Client as McpClient } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClaudeAgentClient } from "./claude-client";
@@ -165,6 +167,81 @@ describe("ClaudeAgentClient", () => {
     expect(serverNames).toEqual(
       expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes", "cosgral_channels", "cosgral_cards"]),
     );
+    await client.stop();
+  });
+
+  it("COSGRAL W2: turns MCP namespaces of dynamicTools into proxy MCP servers and updates them on resume", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    let servers: Record<string, McpServerConfig> = {};
+    const query = new TestQuery(new TestQueue<TestStreamMessage>());
+    const client = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, (params) => {
+      servers = { ...(params.options?.mcpServers ?? {}) };
+      return query;
+    });
+    client.start();
+    const requests: Array<{ method: string; params: unknown }> = [];
+    client.on("request", (request) => {
+      requests.push(request);
+      client.respond(request.id, {
+        success: true,
+        contentItems: [{ type: "inputText", text: "cosgral-mcp-echo: hi" }],
+      });
+    });
+    const echoNamespace = {
+      type: "namespace",
+      name: "mcp_local_echo",
+      description: "Echo server",
+      tools: [
+        {
+          type: "function",
+          name: "echo",
+          description: "Echo the text",
+          inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
+        },
+      ],
+    };
+    const base = { cwd: root, model: "claude-sonnet-5", developerInstructions: "", runtimeWorkspaceRoots: [root] };
+    const started = await client.request(
+      "thread/start",
+      { ...base, dynamicTools: [echoNamespace] },
+      decodeThreadResponse,
+    );
+
+    const proxy = servers.mcp_local_echo;
+    if (!proxy || !("instance" in proxy)) throw new Error("No MCP proxy server for Claude.");
+    const [serverSide, clientSide] = InMemoryTransport.createLinkedPair();
+    await proxy.instance.connect(serverSide);
+    const mcpClient = new McpClient({ name: "test", version: "1" });
+    await mcpClient.connect(clientSide);
+    expect((await mcpClient.listTools()).tools).toEqual([
+      expect.objectContaining({
+        name: "echo",
+        description: "Echo the text",
+        inputSchema: echoNamespace.tools[0]?.inputSchema,
+      }),
+    ]);
+    const result = await mcpClient.callTool({ name: "echo", arguments: { text: "hi" } });
+    expect(result.content).toEqual([{ type: "text", text: "cosgral-mcp-echo: hi" }]);
+    expect(requests[0]).toMatchObject({
+      method: "item/tool/call",
+      params: { threadId: started.thread.id, namespace: "mcp_local_echo", tool: "echo", arguments: { text: "hi" } },
+    });
+    await mcpClient.close();
+
+    await client.request(
+      "thread/resume",
+      { ...base, threadId: started.thread.id, dynamicTools: [] },
+      decodeThreadResponse,
+    );
+    const switched = query.mcpServerSets.at(-1) ?? {};
+    expect(Object.keys(switched)).toContain("openbot");
+    expect(Object.keys(switched)).not.toContain("mcp_local_echo");
+    await client.request(
+      "thread/resume",
+      { ...base, threadId: started.thread.id, dynamicTools: [] },
+      decodeThreadResponse,
+    );
+    expect(query.mcpServerSets).toHaveLength(1);
     await client.stop();
   });
 
@@ -414,6 +491,16 @@ class TestQuery implements AsyncIterable<TestStreamMessage> {
     _maxThinkingTokens: number | null,
     _thinkingDisplay?: "summarized" | "omitted" | null,
   ): Promise<void> {}
+
+  /** COSGRAL W2: the server sets Claude was switched to during the session. */
+  readonly mcpServerSets: Array<Record<string, McpServerConfig>> = [];
+
+  async setMcpServers(
+    servers: Record<string, McpServerConfig>,
+  ): Promise<{ added: string[]; removed: string[]; errors: Record<string, string> }> {
+    this.mcpServerSets.push(servers);
+    return { added: [], removed: [], errors: {} };
+  }
 
   close(): void {
     this.output.close();

@@ -6,20 +6,23 @@ import {
   type CanUseTool,
   createSdkMcpServer,
   getSessionMessages,
+  type McpServerConfig,
   type PermissionResult,
   query,
   type SDKUserMessage,
   tool,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { MEMORY_LIMITS } from "@openbot/contracts/ipc";
-import { type DynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CallToolRequestSchema, type CallToolResult, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { MCP_NAMESPACE_PREFIX, MEMORY_LIMITS } from "@openbot/contracts/ipc";
+import { type DynamicRecord, isDynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { z } from "zod";
 import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
 import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
+import type { McpDynamicNamespace } from "./mcp-manager";
 import { MEMORY_TOOL_DESCRIPTIONS } from "./memory-service";
 import {
   type AccountReadResult,
@@ -52,6 +55,8 @@ interface ThreadConfig {
   developerInstructions: string;
   additionalDirectories: string[];
   persistSession: boolean;
+  /** COSGRAL W2: tool namespaces of the MCP servers the agent has on (from dynamicTools). */
+  mcpNamespaces: McpDynamicNamespace[];
 }
 
 interface ActiveTurn {
@@ -95,6 +100,8 @@ interface ClaudeQuery extends AsyncIterable<ClaudeStreamMessage> {
     maxThinkingTokens: number | null,
     thinkingDisplay?: "summarized" | "omitted" | null,
   ): Promise<void>;
+  /** COSGRAL W2: replace the session's SDK MCP servers (an agent's MCP switches changed). */
+  setMcpServers(servers: Record<string, McpServerConfig>): Promise<unknown>;
   close(): void;
 }
 
@@ -158,8 +165,16 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       }
       case "thread/resume": {
         const threadId = requiredString(params, "threadId");
-        if (!this.#threads.has(threadId)) {
+        const runtime = this.#threads.get(threadId);
+        if (!runtime) {
           await this.#startThread(threadId, readThreadConfig(params), true);
+        } else {
+          // COSGRAL W2: the agent's MCP servers changed; switch the running session's servers.
+          const namespaces = readMcpNamespaces(params);
+          if (JSON.stringify(namespaces) !== JSON.stringify(runtime.config.mcpNamespaces)) {
+            runtime.config = { ...runtime.config, mcpNamespaces: namespaces };
+            await runtime.query.setMcpServers(this.#createOpenBotServers(threadId, namespaces));
+          }
         }
         return decoder({ thread: { id: threadId } });
       }
@@ -239,7 +254,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       }
       return this.#requestUserInput(threadId, toolInput, options.toolUseID ?? randomUUID());
     };
-    const mcpServers = this.#createOpenBotServers(threadId);
+    const mcpServers = this.#createOpenBotServers(threadId, config.mcpNamespaces);
     const claudeQuery = this.#createQuery({
       prompt: input,
       options: {
@@ -473,10 +488,12 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     return { thread: { id: threadId, turns } };
   }
 
-  #createOpenBotServers(threadId: string) {
+  #createOpenBotServers(threadId: string, mcpNamespaces: McpDynamicNamespace[] = []) {
     const call = (namespace: string, name: string, args: unknown) =>
       this.#callDynamicTool(threadId, namespace, name, args);
     return {
+      // COSGRAL W2: MCP servers of the program, proxied; every call goes back to AgentService.
+      ...Object.fromEntries(mcpNamespaces.map((namespace) => [namespace.name, mcpProxyServer(namespace, call)])),
       [CHANNEL_NAMESPACE]: createSdkMcpServer({
         name: CHANNEL_NAMESPACE,
         version: "0.1.0",
@@ -748,9 +765,59 @@ function readThreadConfig(params: unknown): ThreadConfig {
     developerInstructions: getString(params, "developerInstructions") ?? "",
     additionalDirectories: [...new Set([cwd, ...roots])],
     persistSession: !isRecord(params) || params.persistSession !== false,
+    mcpNamespaces: readMcpNamespaces(params),
   };
 }
 
+/** COSGRAL W2: the mcp_* namespaces AgentService put into dynamicTools for this agent. */
+function readMcpNamespaces(params: unknown): McpDynamicNamespace[] {
+  const tools = isRecord(params) && Array.isArray(params.dynamicTools) ? params.dynamicTools : [];
+  const namespaces: McpDynamicNamespace[] = [];
+  for (const entry of tools) {
+    if (!isDynamicRecord(entry) || entry.type !== "namespace" || !isString(entry.name)) continue;
+    if (!entry.name.startsWith(MCP_NAMESPACE_PREFIX) || !Array.isArray(entry.tools)) continue;
+    namespaces.push({
+      type: "namespace",
+      name: entry.name,
+      description: isString(entry.description) ? entry.description : entry.name,
+      tools: entry.tools.flatMap((tool) =>
+        isDynamicRecord(tool) && isString(tool.name)
+          ? [
+              {
+                type: "function" as const,
+                name: tool.name,
+                description: isString(tool.description) ? tool.description : tool.name,
+                inputSchema: isDynamicRecord(tool.inputSchema) ? tool.inputSchema : { type: "object", properties: {} },
+              },
+            ]
+          : [],
+      ),
+    });
+  }
+  return namespaces;
+}
+
+/**
+ * COSGRAL W2: an in-process MCP server for Claude that shows one program MCP server's tools with their
+ * original JSON schemas and sends each call back to AgentService (same path as Codex dynamic tools).
+ */
+function mcpProxyServer(
+  namespace: McpDynamicNamespace,
+  call: (namespace: string, name: string, args: unknown) => Promise<CallToolResult>,
+): { type: "sdk"; name: string; instance: McpServer } {
+  const instance = new McpServer({ name: namespace.name, version: "0.1.0" }, { capabilities: { tools: {} } });
+  instance.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: namespace.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: { ...tool.inputSchema, type: "object" as const },
+    })),
+  }));
+  instance.server.setRequestHandler(CallToolRequestSchema, async (request) =>
+    call(namespace.name, request.params.name, request.params.arguments ?? {}),
+  );
+  return { type: "sdk", name: namespace.name, instance };
+}
 function requiredString(value: unknown, key: string): string {
   const result = getString(value, key);
   if (!result) throw new Error(`${key} is required.`);

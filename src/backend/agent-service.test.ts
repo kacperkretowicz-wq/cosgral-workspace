@@ -368,6 +368,85 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(service?.listPendingRequests()).toEqual([]);
   });
 
+  it("COSGRAL W2: gives an agent the tools of its enabled MCP servers, runs their calls and drops them after the switch is off", async () => {
+    const { store, mailbox } = stores();
+    const enabled = new Map([["chief", true]]);
+    const calls: Array<{ botId: string; namespace: string; tool: string; args: unknown }> = [];
+    const mcp = {
+      toolsFor: (botId: string) =>
+        enabled.get(botId)
+          ? [
+              {
+                type: "namespace" as const,
+                name: "mcp_local_echo",
+                description: "Echo server",
+                tools: [
+                  {
+                    type: "function" as const,
+                    name: "echo",
+                    description: "Echo",
+                    inputSchema: { type: "object", properties: { text: { type: "string" } } },
+                  },
+                ],
+              },
+            ]
+          : [],
+      callTool: async (botId: string, namespace: string, tool: string, args: unknown) => {
+        calls.push({ botId, namespace, tool, args });
+        return { success: true, contentItems: [{ type: "inputText" as const, text: "cosgral-mcp-echo: hi" }] };
+      },
+      deleteAgent: () => undefined,
+    };
+    const clients: FakeAgentClient[] = [];
+    service = new AgentService(
+      store,
+      mailbox,
+      fakeBrowser(),
+      null,
+      30_000,
+      "codex",
+      (provider) => {
+        const client = new FakeAgentClient(provider, "DONE", false);
+        if (provider === "codex") clients.push(client);
+        return client;
+      },
+      null,
+      null,
+      mcp,
+    );
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "Use the echo tool" });
+    await waitFor(() => events.some((event) => event.type === "turn-started"));
+    const codex = clients[0];
+    const threadStart = codex?.requests.find((request) => request.method === "thread/start");
+    const turnStart = codex?.requests.find((request) => request.method === "turn/start");
+    if (!codex || !turnStart) throw new Error("The turn did not start.");
+    expect(JSON.stringify(threadStart?.params)).toContain('"name":"mcp_local_echo"');
+
+    const threadId = stringParam(turnStart.params, "threadId");
+    const turnId = turnStartedId(events);
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "mcp-call",
+      params: { threadId, turnId, callId: "c1", namespace: "mcp_local_echo", tool: "echo", arguments: { text: "hi" } },
+    });
+    await waitFor(() => codex.responses.some((response) => response.id === "mcp-call"));
+    expect(codex.responses.find((response) => response.id === "mcp-call")).toMatchObject({
+      result: { success: true, contentItems: [{ type: "inputText", text: "cosgral-mcp-echo: hi" }] },
+    });
+    expect(calls).toEqual([{ botId: "chief", namespace: "mcp_local_echo", tool: "echo", args: { text: "hi" } }]);
+
+    codex.emit("notification", notification("turn/completed", { threadId, turn: { id: turnId, status: "completed" } }));
+    await waitFor(() => service?.listQueue("chief").deliveries[0]?.status === "completed");
+    enabled.set("chief", false);
+    await service.sendMessage({ botId: "chief", text: "Again" });
+    await waitFor(() => codex.requests.some((request) => request.method === "thread/resume"));
+    const resume = codex.requests.find((request) => request.method === "thread/resume");
+    expect(JSON.stringify(resume?.params)).not.toContain("mcp_local_echo");
+  });
+
   it("COSGRAL W2: an essential memory saved with the remember tool is in the prompt of the next conversation after a restart", async () => {
     const { store, mailbox } = stores();
     const clients: FakeAgentClient[] = [];
