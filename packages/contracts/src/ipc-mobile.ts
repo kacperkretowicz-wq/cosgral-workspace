@@ -7,6 +7,7 @@
 // It is NOT encrypted: use a trusted network or a tunnel (VPN). Chat and answers from the phone come later (rows 43–44).
 
 import { isPendingAgentRequestKind, type PendingAgentRequestKind } from "./ipc-attention";
+import type { AgentApprovalKind, ConversationMessageAuthor } from "./ipc-conversation";
 import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export const MOBILE_PROTOCOL_VERSION = 1;
@@ -128,6 +129,9 @@ export interface MobileNeedsYouItem {
   kind: PendingAgentRequestKind;
   title: string;
   createdAt: string | null;
+  /** COSGRAL W3 (phone API): "computer" when the phone may only show it; `computerReason` says why. */
+  answerOn?: MobileAnswerPlace;
+  computerReason?: string | null;
 }
 
 /** The QR text: `cosgral://pair?v=1&t=<ticket>&u=<address>&u=<address>…`. */
@@ -238,7 +242,9 @@ export function isMobileNeedsYouItem(value: unknown): value is MobileNeedsYouIte
     isString(value.botId) &&
     isPendingAgentRequestKind(value.kind) &&
     isString(value.title) &&
-    isNullableString(value.createdAt)
+    isNullableString(value.createdAt) &&
+    (value.answerOn === undefined || isOneOf(MOBILE_ANSWER_PLACES, value.answerOn)) &&
+    (value.computerReason === undefined || isNullableString(value.computerReason))
   );
 }
 
@@ -256,4 +262,273 @@ export interface MobileDesktopApi {
   listDevices: () => Promise<MobileDevice[]>;
   /** Takes the device's token away at once. */
   revokeDevice: (input: MobileDeviceIdInput) => Promise<MobileState>;
+}
+
+// -- Phone API (rows 43–44) --------------------------------------------------------------------------------------
+// The same device token and the same limits as pairing. A phone reads and writes the chat with agents, answers the
+// cards it may answer, follows a stream of events, and creates or edits agents' profiles. It never changes permissions,
+// Computer Use, the Vault, remote desktop, MCP, voice or Mobile Connect itself: those answer 403 "use the computer".
+
+export const MOBILE_PHONE_LIMITS = {
+  /** Characters of one message from the phone. */
+  messageText: 20_000,
+  /** Request body of a message, an answer or an agent profile. */
+  messageBodyBytes: 64 * 1024,
+  messagesPage: 30,
+  messagesPageMax: 100,
+  /** Messages, answers and agent changes per device and minute. */
+  writesPerMinute: 30,
+  streamsPerDevice: 2,
+  streams: 20,
+  /** Characters of a draft shown on the phone so the person can decide. */
+  draftPreview: 4_000,
+  /** Characters of a command shown with its approval. */
+  command: 500,
+  promptAnswers: 8,
+  promptAnswerText: 2_000,
+  /** A comment line on the stream so connections stay open. */
+  heartbeatMs: 25_000,
+} as const;
+
+export const MOBILE_PHONE_PATHS = {
+  threads: "/v1/threads",
+  events: "/v1/events",
+  templates: "/v1/templates",
+  agents: "/v1/agents",
+  needsYou: "/v1/needs-you",
+} as const;
+
+export const mobilePhonePath = {
+  agent: (botId: string) => `/v1/agents/${encodeURIComponent(botId)}`,
+  messages: (botId: string) => `/v1/agents/${encodeURIComponent(botId)}/messages`,
+  needsYouItem: (id: string) => `/v1/needs-you/${encodeURIComponent(id)}`,
+  answer: (id: string) => `/v1/needs-you/${encodeURIComponent(id)}/answer`,
+} as const;
+
+/** `/v1/<part>…` a phone may not use (403). */
+export const MOBILE_COMPUTER_ONLY = [
+  "computer-use",
+  "vault",
+  "remote-desktop",
+  "devices",
+  "settings",
+  "permissions",
+  "mcp",
+  "voice",
+  "mobile",
+] as const;
+
+export const MOBILE_ANSWER_PLACES = ["phone", "computer"] as const;
+export type MobileAnswerPlace = (typeof MOBILE_ANSWER_PLACES)[number];
+
+/** GET MOBILE_PHONE_PATHS.threads: one conversation per agent. */
+export interface MobileThread {
+  botId: string;
+  threadId: string | null;
+  name: string;
+  preview: string;
+  updatedAt: string | null;
+}
+
+export interface MobileMessage {
+  id: string;
+  author: ConversationMessageAuthor;
+  text: string;
+  createdAt: string;
+  status: "streaming" | "completed" | "failed" | "interrupted";
+  itemType: string | null;
+  /** Number of attachments (files stay on the computer). */
+  attachments: number;
+}
+
+/** GET mobilePhonePath.messages(botId)?before=<id>&limit=<n>: oldest first; `nextBefore` loads older ones. */
+export interface MobileMessagePage {
+  botId: string;
+  messages: MobileMessage[];
+  nextBefore: string | null;
+}
+
+/** POST mobilePhonePath.messages(botId). */
+export interface MobileSendMessageRequest {
+  text: string;
+  replyToMessageId?: string | null;
+}
+
+export interface MobileSendMessageResponse {
+  messageId: string;
+}
+
+interface MobileDetailBase {
+  item: MobileNeedsYouItem;
+}
+
+/** GET mobilePhonePath.needsYouItem(id): what the phone needs to decide, nothing more. */
+export type MobileNeedsYouDetail =
+  | (MobileDetailBase & {
+      kind: "prompt";
+      questions: Array<{ id: string; header: string; question: string; options: string[] | null }>;
+    })
+  | (MobileDetailBase & {
+      kind: "approval";
+      approvalKind: AgentApprovalKind;
+      command: string | null;
+      reason: string | null;
+    })
+  | (MobileDetailBase & {
+      kind: "draft-preview";
+      variant: "draft" | "confirm";
+      recipient: string | null;
+      channel: string | null;
+      preview: string;
+    })
+  | (MobileDetailBase & { kind: "browser-takeover" | "vault-request" });
+
+/** POST mobilePhonePath.answer(id). Questions: an option or your own words (up to 8 answers each). */
+export type MobileAnswerRequest =
+  | { kind: "prompt"; answers: Record<string, string[]> }
+  | { kind: "approval"; decision: "accept" | "decline" }
+  | { kind: "draft-preview"; decision: "send" | "edit" | "keep-draft"; feedback?: string; text?: string };
+
+export interface MobileAnswerResponse {
+  ok: true;
+}
+
+/** GET MOBILE_PHONE_PATHS.events (text/event-stream). Content stays short: the phone loads details itself. */
+export type MobileStreamEvent =
+  | { type: "needs-you"; items: MobileNeedsYouItem[] }
+  | { type: "conversation"; botId: string }
+  | { type: "agents"; agents: MobileAgentSummary[] };
+
+export interface MobileAgentDetail extends MobileAgentSummary {
+  /** The agent's description: how it works and what it does. */
+  instructions: string;
+}
+
+export interface MobileTemplateSummary {
+  id: string;
+  name: string;
+  role: string;
+  summary: string;
+}
+
+/** POST MOBILE_PHONE_PATHS.agents: the agent creator, from a template, fields or both. */
+export interface MobileCreateAgentRequest {
+  templateId?: string;
+  name?: string;
+  role?: string;
+  instructions?: string;
+  /** One of BOT_AVATAR_HUES. */
+  avatarHue?: number;
+}
+
+export interface MobileCreateAgentResponse {
+  agent: MobileAgentDetail;
+  /** What the creator could not do; the agent exists anyway. */
+  warnings: string[];
+}
+
+/** PATCH mobilePhonePath.agent(botId): the profile only (tools, models, skills and memory: on the computer). */
+export interface MobileUpdateAgentRequest {
+  name?: string;
+  role?: string;
+  instructions?: string;
+  avatarHue?: number;
+}
+
+export interface MobileErrorResponse {
+  error: string;
+}
+
+const STREAM_TYPES = ["needs-you", "conversation", "agents"] as const;
+
+export function formatMobileStreamEvent(event: MobileStreamEvent): string {
+  return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+}
+
+/** Complete events in `buffer`, and the rest to keep for the next chunk. Comments and bad events are skipped. */
+export function parseMobileStreamEvents(buffer: string): { events: MobileStreamEvent[]; rest: string } {
+  const blocks = buffer.replace(/\r\n/g, "\n").split("\n\n");
+  const rest = blocks.pop() ?? "";
+  const events: MobileStreamEvent[] = [];
+  for (const block of blocks) {
+    const data = block
+      .split("\n")
+      .filter((line) => line.startsWith("data: "))
+      .map((line) => line.slice(6))
+      .join("\n");
+    if (!data) continue;
+    try {
+      const value = JSON.parse(data);
+      if (isMobileStreamEvent(value)) events.push(value);
+    } catch {
+      // Not an event of this protocol.
+    }
+  }
+  return { events, rest };
+}
+
+function isMobileMessage(value: unknown): value is MobileMessage {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isOneOf(["user", "assistant", "agent", "system"], value.author) &&
+    isString(value.text) &&
+    isString(value.createdAt) &&
+    isOneOf(["streaming", "completed", "failed", "interrupted"], value.status) &&
+    isNullableString(value.itemType) &&
+    isNumber(value.attachments)
+  );
+}
+
+export function isMobileMessagePage(value: unknown): value is MobileMessagePage {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.botId) &&
+    Array.isArray(value.messages) &&
+    value.messages.every(isMobileMessage) &&
+    isNullableString(value.nextBefore)
+  );
+}
+
+export function isMobileNeedsYouDetail(value: unknown): value is MobileNeedsYouDetail {
+  if (!isDynamicRecord(value) || !isMobileNeedsYouItem(value.item)) return false;
+  switch (value.kind) {
+    case "prompt":
+      return (
+        Array.isArray(value.questions) &&
+        value.questions.every(
+          (question) =>
+            isDynamicRecord(question) &&
+            isString(question.id) &&
+            isString(question.header) &&
+            isString(question.question) &&
+            (question.options === null || (Array.isArray(question.options) && question.options.every(isString))),
+        )
+      );
+    case "approval":
+      return isString(value.approvalKind) && isNullableString(value.command) && isNullableString(value.reason);
+    case "draft-preview":
+      return (
+        isOneOf(["draft", "confirm"], value.variant) &&
+        isNullableString(value.recipient) &&
+        isNullableString(value.channel) &&
+        isString(value.preview)
+      );
+    case "browser-takeover":
+    case "vault-request":
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function isMobileAgentDetail(value: unknown): value is MobileAgentDetail {
+  return isMobileAgentSummary(value) && isDynamicRecord(value) && isString(value.instructions);
+}
+
+export function isMobileStreamEvent(value: unknown): value is MobileStreamEvent {
+  if (!isDynamicRecord(value) || !isOneOf(STREAM_TYPES, value.type)) return false;
+  if (value.type === "needs-you") return Array.isArray(value.items) && value.items.every(isMobileNeedsYouItem);
+  if (value.type === "conversation") return isString(value.botId);
+  return Array.isArray(value.agents) && value.agents.every(isMobileAgentSummary);
 }

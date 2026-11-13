@@ -22,12 +22,14 @@ import {
   type MobileExposure,
   type MobileNeedsYouItem,
   type MobilePairingTicket,
-  type MobilePairResponse,
   type MobileState,
   type PendingAgentRequest,
   type StartMobilePairingInput,
 } from "@openbot/contracts/ipc";
-import { type DynamicRecord, isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { HttpError, readJson, sendJson } from "./mobile-http";
+import type { MobilePhoneApi } from "./mobile-phone-api";
+import { phoneAnswerPolicy } from "./mobile-policy";
 import { buildPairingQr } from "./mobile-qr";
 import type { MobileStore } from "./mobile-store";
 
@@ -47,6 +49,8 @@ export interface MobileConnectOptions {
   emit: (event: AgentEvent) => void;
   now?: () => Date;
   interfaces?: () => InterfaceMap;
+  /** COSGRAL W3 (rows 43–44): chat, answers, events and agents for paired phones. */
+  phone?: MobilePhoneApi;
 }
 
 interface OpenPairing {
@@ -57,15 +61,6 @@ interface OpenPairing {
   consentPending: boolean;
   cancelled: boolean;
   timer: NodeJS.Timeout;
-}
-
-class HttpError extends Error {
-  readonly status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
 }
 
 const PHONE_PATHS = new Set<string>([MOBILE_API_PATHS.me, MOBILE_API_PATHS.agents, MOBILE_API_PATHS.needsYou]);
@@ -194,6 +189,8 @@ export class MobileConnect {
   /** The device's token stops working at once. */
   async revokeDevice(input: MobileDeviceIdInput): Promise<MobileState> {
     if (!this.#options.store.removeDevice(input.deviceId)) throw new Error("This device is no longer paired.");
+    // COSGRAL W3: its open event streams end at once too.
+    this.#options.phone?.disconnect(input.deviceId);
     this.#changed();
     return this.getState();
   }
@@ -246,6 +243,7 @@ export class MobileConnect {
     this.#server = null;
     this.#port = null;
     if (!server) return;
+    this.#options.phone?.closeAll();
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
@@ -260,18 +258,25 @@ export class MobileConnect {
         await this.#pair(request, response, address);
         return;
       }
-      if (PHONE_PATHS.has(path)) {
-        if (request.method !== "GET") throw new HttpError(405, "Use GET.");
+      if (PHONE_PATHS.has(path) && request.method === "GET") {
         const device = this.#authenticate(request, address);
-        if (path === MOBILE_API_PATHS.me) send(response, 200, { protocol: MOBILE_PROTOCOL_VERSION, device });
-        else if (path === MOBILE_API_PATHS.agents) send(response, 200, { agents: this.#options.agents() });
-        else send(response, 200, { items: this.#options.needsYou() });
+        if (path === MOBILE_API_PATHS.me) sendJson(response, 200, { protocol: MOBILE_PROTOCOL_VERSION, device });
+        else if (path === MOBILE_API_PATHS.agents) sendJson(response, 200, { agents: this.#options.agents() });
+        else sendJson(response, 200, { items: this.#options.needsYou() });
         return;
+      }
+      const phone = this.#options.phone;
+      if (phone && path.startsWith("/v1/")) {
+        const device = this.#authenticate(request, address);
+        const query = new URLSearchParams((request.url ?? "").split("?")[1] ?? "");
+        if (await phone.handle({ request, response, path, query, device })) return;
+      } else if (PHONE_PATHS.has(path)) {
+        throw new HttpError(405, "Use GET.");
       }
       throw new HttpError(404, "Not found.");
     } catch (error) {
-      if (error instanceof HttpError) send(response, error.status, { error: error.message });
-      else send(response, 500, { error: "Something went wrong on the computer." });
+      if (error instanceof HttpError) sendJson(response, error.status, { error: error.message });
+      else sendJson(response, 500, { error: "Something went wrong on the computer." });
     }
   }
 
@@ -357,7 +362,7 @@ export class MobileConnect {
       address,
       now: new Date(this.#now()),
     });
-    send(response, 200, { protocol: MOBILE_PROTOCOL_VERSION, deviceId: device.id, token });
+    sendJson(response, 200, { protocol: MOBILE_PROTOCOL_VERSION, deviceId: device.id, token });
     this.#options.emit({ type: "mobile-pairing-completed", device });
     this.#changed();
   }
@@ -448,6 +453,11 @@ export function mobileNeedsYou(requests: PendingAgentRequest[]): MobileNeedsYouI
 }
 
 function needsYouItem(request: PendingAgentRequest): MobileNeedsYouItem {
+  const reason = phoneAnswerPolicy(request);
+  return { ...summaryItem(request), answerOn: reason ? "computer" : "phone", computerReason: reason };
+}
+
+function summaryItem(request: PendingAgentRequest): MobileNeedsYouItem {
   switch (request.kind) {
     case "prompt": {
       const question = request.questions[0];
@@ -509,45 +519,6 @@ function item(
 
 function digest(value: string): Buffer {
   return createHash("sha256").update(value, "utf8").digest();
-}
-
-async function readJson(request: IncomingMessage): Promise<DynamicRecord> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  let tooLarge = false;
-  for await (const chunk of request) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-    size += buffer.length;
-    if (size > MOBILE_LIMITS.bodyBytes) tooLarge = true;
-    else chunks.push(buffer);
-  }
-  if (tooLarge) throw new HttpError(413, `The request has at most ${MOBILE_LIMITS.bodyBytes} bytes.`);
-  let value: unknown;
-  try {
-    value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch {
-    throw new HttpError(400, "The request is not valid JSON.");
-  }
-  if (!isDynamicRecord(value)) throw new HttpError(400, "The request must be a JSON object.");
-  return value;
-}
-
-/** What the phone API answers. */
-type PhoneAnswer =
-  | { error: string }
-  | MobilePairResponse
-  | { protocol: number; device: MobileDevice }
-  | { agents: MobileAgentSummary[] }
-  | { items: MobileNeedsYouItem[] };
-
-function send(response: ServerResponse, status: number, body: PhoneAnswer): void {
-  if (response.headersSent || response.destroyed) return;
-  response.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "x-content-type-options": "nosniff",
-  });
-  response.end(JSON.stringify(body));
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
