@@ -53,6 +53,7 @@ import {
   type VaultRequest,
   type VaultRequestResolution,
 } from "./ipc-vault";
+import { isVoiceState, type VoiceState } from "./ipc-voice";
 import { isWorkflow, isWorkflowRun, type Workflow, type WorkflowRun } from "./ipc-workflows";
 import {
   type ChannelMemory,
@@ -586,6 +587,8 @@ export type AgentEvent =
   | { type: "workflow-run-changed"; run: WorkflowRun }
   /** COSGRAL W3: the Marketplace catalog or an install state changed; replace the whole list. */
   | { type: "marketplace-changed"; items: MarketplaceItem[] }
+  /** COSGRAL W3: voice state changed (speaking, a download's progress, a model, the settings); replace it. */
+  | { type: "voice-changed"; state: VoiceState }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -709,6 +712,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isWorkflowRun(value.run);
     case "marketplace-changed":
       return Array.isArray(value.items) && value.items.every(isMarketplaceItem);
+    case "voice-changed":
+      return isVoiceState(value.state);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

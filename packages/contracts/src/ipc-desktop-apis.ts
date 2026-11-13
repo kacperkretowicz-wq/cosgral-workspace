@@ -200,6 +200,7 @@ import type {
   VaultItemSummary,
   VaultStatus,
 } from "./ipc-vault";
+import type { VoiceDesktopApi } from "./ipc-voice";
 import type {
   CreateWorkflowInput,
   RunWorkflowInput,
@@ -614,6 +615,8 @@ export interface OpenBotDesktopApi {
   remoteDesktop?: RemoteDesktopDesktopApi;
   /** COSGRAL W3 local Marketplace (this computer only). Optional until every renderer mock implements it. */
   marketplace?: MarketplaceDesktopApi;
+  /** COSGRAL W3 local voice (this computer only). Optional until every renderer mock implements it. */
+  voice?: VoiceDesktopApi;
 }
 
 /**

@@ -80,6 +80,7 @@ import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
+import { createVoiceApi } from "./voice-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
@@ -764,6 +765,7 @@ const openbotApi: OpenBotDesktopApi = {
   appSettings: createAppSettingsApi(invokeAgent),
   onboarding: createOnboardingApi(invokeAgent),
   marketplace: createMarketplaceApi(invokeAgent, decodeBot),
+  voice: createVoiceApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

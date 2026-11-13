@@ -51,6 +51,7 @@ import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
 import { TeamChatStore } from "../backend/team-chat-store";
+import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
@@ -179,6 +180,7 @@ import { TeamStore } from "./team-store";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
+import { createVoice, registerVoiceIpc } from "./voice-ipc";
 import { registerWorkflowIpc } from "./workflow-ipc";
 
 if (!app.isPackaged) {
@@ -250,6 +252,7 @@ let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
+let voiceService: VoiceService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -819,6 +822,7 @@ function registerIpcHandlers(
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
+  registerVoiceIpc(() => voiceService);
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
     service: () => service,
@@ -1329,6 +1333,12 @@ if (!hasSingleInstanceLock) {
             mainWindow.webContents.send(IPC_CHANNELS.remoteDesktopFrame, frame);
         },
       });
+      // COSGRAL W3: voice on this computer (Windows voices; whisper.cpp only after the person approves it on a card).
+      voiceService = createVoice({
+        userDataPath: app.getPath("userData"),
+        confirm: (request) => service.confirmForPerson(null, request),
+        emit: (event) => forwardAgentEvent("local", event),
+      });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({
         userDataPath: app.getPath("userData"),
@@ -1744,6 +1754,7 @@ async function prepareForShutdown(): Promise<void> {
   await (hostService?.shutdown() ?? Promise.resolve());
   dockWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
+  await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   // COSGRAL W3: open workflow runs end as failed while the database is still open.
   workflowManager?.stop();
