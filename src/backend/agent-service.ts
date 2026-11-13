@@ -32,6 +32,7 @@ import type {
   ConversationWithReadState,
   DeleteDraftInput,
   DraftAttachment,
+  DraftPreviewResolution,
   ImageGenerationInfo,
   KeptDraft,
   PendingAgentPrompt,
@@ -563,6 +564,23 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W2: the host's encryption for the Vault (Electron safeStorage in the app). */
   useSecretBox(box: SecretBox): void {
     this.#secretBox = box;
+  }
+
+  /**
+   * COSGRAL W3: a confirm card that is not part of an agent turn (remote desktop consent). It shows in the row of
+   * `botId`, or of the first agent. Cards belong to agents, so this fails when there is no agent.
+   */
+  confirmForPerson(
+    botId: string | null,
+    input: { title: string; preview: string; recipient?: string; channel?: string },
+  ): Promise<DraftPreviewResolution> {
+    const bots = this.listBots();
+    const bot = bots.find((candidate) => candidate.id === botId) ?? bots[0];
+    if (!bot) return Promise.reject(new Error("Create an agent first: the card appears in an agent's row."));
+    return this.#cards.confirmAction(
+      { botId: bot.id, threadId: bot.threadId ?? "", providerThreadId: "remote-desktop", turnId: "remote-desktop" },
+      input,
+    );
   }
 
   /** COSGRAL W2: the local Vault (IPC `vault:*` and the agents' `cosgral_vault` tools). */

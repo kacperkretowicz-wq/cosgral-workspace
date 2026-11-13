@@ -74,6 +74,7 @@ import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } fro
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
+import { createRemoteDesktopApi } from "./remote-desktop-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
@@ -723,6 +724,7 @@ const openbotApi: OpenBotDesktopApi = {
   computerUse: createComputerUseApi(invokeAgent),
   dock: createDockApi(invokeAgent),
   island: createIslandApi(invokeAgent),
+  remoteDesktop: createRemoteDesktopApi(invokeAgent),
   agentSettings: createAgentSettingsApi(invokeAgent, decodeBot),
   appSettings: createAppSettingsApi(invokeAgent),
   onboarding: createOnboardingApi(invokeAgent),

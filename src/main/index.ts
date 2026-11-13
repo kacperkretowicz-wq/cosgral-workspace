@@ -148,7 +148,14 @@ import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } 
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerProviderIpc } from "./provider-ipc";
+import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
+import {
+  closeRemoteDesktop,
+  createRemoteDesktop,
+  type RemoteDesktopRuntime,
+  registerRemoteDesktopIpc,
+} from "./remote-desktop-ipc";
 import { RemoteMacManager } from "./remote-mac";
 import {
   decodeAccountUsage,
@@ -236,6 +243,7 @@ let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
+let remoteDesktop: RemoteDesktopRuntime | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -804,6 +812,7 @@ function registerIpcHandlers(
   });
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
+  registerRemoteDesktopIpc(() => remoteDesktop);
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
     service: () => service,
@@ -1294,6 +1303,24 @@ if (!hasSingleInstanceLock) {
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
       service.useProviders(providerRegistry);
       registerProviderIpc(providerRegistry);
+      // COSGRAL W3: remote desktop. The host has its own Windows driver, separate from Computer Use, and asks its owner
+      // on a confirm card; the pictures of a host this computer looks at go to the main window only.
+      remoteDesktop = createRemoteDesktop({
+        userDataPath: app.getPath("userData"),
+        secretBox: electronSecretBox(),
+        driver:
+          process.platform === "win32"
+            ? new WindowsComputerDriver({ workDir: join(app.getPath("userData"), "remote-desktop") })
+            : null,
+        frames: new ElectronFrameSource(),
+        confirm: (botId, request) => service.confirmForPerson(botId, request),
+        canAsk: () => service.listBots().length > 0,
+        emit: (event) => forwardAgentEvent("local", event),
+        sendFrame: (frame) => {
+          if (mainWindow && !mainWindow.isDestroyed())
+            mainWindow.webContents.send(IPC_CHANNELS.remoteDesktopFrame, frame);
+        },
+      });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({
         userDataPath: app.getPath("userData"),
@@ -1683,6 +1710,7 @@ async function prepareForShutdown(): Promise<void> {
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
   dockWindows?.destroy();
+  await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
