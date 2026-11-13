@@ -110,6 +110,8 @@ interface NamedTool {
 export class AgentSettingsService {
   readonly #deps: AgentSettingsDeps;
   readonly #ready = new WeakSet<DatabaseSync>();
+  #appCache: { language: AppLanguage | null; notifications: NotificationPreferences } | null = null;
+  #appCacheDb: DatabaseSync | null = null;
 
   constructor(deps: AgentSettingsDeps) {
     this.#deps = deps;
@@ -287,12 +289,22 @@ export class AgentSettingsService {
          ON CONFLICT(setting_key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at`,
       )
       .run(JSON.stringify(stored), this.#now());
+    this.#appCache = null;
     const settings = this.appSettings();
     this.#deps.emit({ type: "app-settings-changed", settings });
     return settings;
   }
 
+  /** Read on every forwarded agent event (notifications), so it is cached until the next save. */
   #readAppSetting(): { language: AppLanguage | null; notifications: NotificationPreferences } {
+    if (!this.#appCache || this.#appCacheDb !== this.#deps.database.connection) {
+      this.#appCache = this.#loadAppSetting();
+      this.#appCacheDb = this.#deps.database.connection;
+    }
+    return structuredClone(this.#appCache);
+  }
+
+  #loadAppSetting(): { language: AppLanguage | null; notifications: NotificationPreferences } {
     const defaults = { language: null, notifications: defaultNotificationPreferences() };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;

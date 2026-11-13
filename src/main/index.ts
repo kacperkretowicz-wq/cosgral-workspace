@@ -1084,9 +1084,10 @@ function configureApplicationMenu(service: AgentService, updater: UpdateService)
 function forwardAgentEvent(serverId: string, event: AgentEvent): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(IPC_CHANNELS.agentEvent, { serverId, event });
-  if (mainWindow.isFocused() || !Notification.isSupported()) return;
+  const preferences = agentService?.agentSettings.appSettings().notifications;
+  if ((mainWindow.isFocused() && preferences?.onlyWhenUnfocused !== false) || !Notification.isSupported()) return;
 
-  const content = notificationForAgentEvent(event, agentService?.listBots() ?? []);
+  const content = notificationForAgentEvent(event, agentService?.listBots() ?? [], preferences);
   if (!content) return;
   const notification = new Notification(content);
   notification.on("click", () => {
