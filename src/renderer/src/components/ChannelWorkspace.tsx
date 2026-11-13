@@ -89,10 +89,13 @@ export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }
       unsubscribe();
     };
   });
-  async function send(text: string) {
+  async function send(text: string, replyToMessageId?: string) {
     const api = window.openbot.channels;
     if (!api?.sendMessage) throw new Error("Sending is unavailable in this build.");
-    const result = await api.sendMessage({ channelId: selected(), text });
+    const supportsReplies = "supportsMessageReplies" in api && api.supportsMessageReplies === true;
+    if (replyToMessageId && !supportsReplies) throw new Error("Replies are not available in this build.");
+    const input = { channelId: selected(), text, ...(replyToMessageId ? { replyToMessageId } : {}) };
+    const result = await api.sendMessage(input);
     if (result.message.channelId === selected()) {
       applyMessage(result.message);
       applyTask(result.task);
@@ -142,6 +145,11 @@ export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }
               bots={props.bots}
               messages={messages()}
               tasks={tasks()}
+              supportsReplies={
+                !!window.openbot.channels &&
+                "supportsMessageReplies" in window.openbot.channels &&
+                window.openbot.channels.supportsMessageReplies === true
+              }
               onSend={send}
               onResume={(id) => void action(id)}
               onReassign={(id, botId) => void action(id, botId)}

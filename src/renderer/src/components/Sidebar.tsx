@@ -41,7 +41,7 @@ import { AlertDialog, Badge, Button, ContextMenu, Input, Popover } from "./ui";
 export interface NeedsYouSidebarItem {
   botId: string;
   botName: string;
-  kind: "question" | "approval" | "takeover";
+  kind: "question" | "approval" | "takeover" | "vault";
   summary: string;
 }
 
@@ -672,7 +672,13 @@ export function Sidebar(props: SidebarProps) {
                       <span class="bot-row-heading">
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
-                          {item.kind === "question" ? "Question" : item.kind === "takeover" ? "Browser" : "Approval"}
+                          {item.kind === "question"
+                            ? "Question"
+                            : item.kind === "takeover"
+                              ? "Browser"
+                              : item.kind === "vault"
+                                ? "Vault"
+                                : "Approval"}
                         </Badge>
                       </span>
                       <span class="bot-row-preview">{item.summary}</span>

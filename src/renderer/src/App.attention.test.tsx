@@ -70,6 +70,26 @@ afterEach(() => {
 });
 
 describe("App open cards after a reload", () => {
+  it("restores a Vault request and resolves the chosen candidate", async () => {
+    const request = {
+      requestId: "vault-1",
+      botId: "chief",
+      threadId: "t",
+      turnId: "turn",
+      mode: "choose" as const,
+      kind: "login" as const,
+      reason: "Sign in",
+      origin: "https://example.com",
+      label: null,
+      candidateIds: ["vault-demo"],
+      createdAt: "2026-11-12T10:00:00Z",
+    };
+    mountApp({ pendingRequests: [{ kind: "vault-request", request }] });
+    const decision = within(await screen.findByRole("region", { name: "Decision" }));
+    expect(needsYou().getByText("Sign in")).toBeInTheDocument();
+    await fireEvent.click(await decision.findByRole("button", { name: /Demo login/ }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Decision" })).not.toBeInTheDocument());
+  });
   it("shows browser requests in Needs you and updates the pinned action", async () => {
     mountApp();
     await screen.findByRole("heading", { name: "Chief" });

@@ -55,6 +55,22 @@ const pending: PendingAgentRequest[] = [
 ];
 
 describe("cardsFromPending (after a window reload)", () => {
+  it("restores Vault requests", () => {
+    const request = {
+      requestId: "v1",
+      botId: "chief",
+      threadId: "t",
+      turnId: "turn",
+      mode: "choose" as const,
+      kind: "login" as const,
+      reason: "Sign in",
+      origin: null,
+      label: null,
+      candidateIds: ["item"],
+      createdAt: "2026-11-12T10:00:04Z",
+    };
+    expect(cardsFromPending([{ kind: "vault-request", request }]).map((card) => card.kind)).toEqual(["vault-request"]);
+  });
   it("keeps prompts, approvals and browser takeovers, oldest first", () => {
     const cards = cardsFromPending([
       ...pending,

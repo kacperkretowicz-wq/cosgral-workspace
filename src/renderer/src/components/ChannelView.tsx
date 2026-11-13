@@ -9,13 +9,15 @@ export function ChannelView(props: {
   bots: Person[];
   messages: ChannelMessage[];
   tasks: ChannelTask[];
-  onSend: (text: string) => Promise<void>;
+  onSend: (text: string, replyToMessageId?: string) => Promise<void>;
+  supportsReplies?: boolean;
   onResume: (id: string) => void;
   onReassign: (id: string, botId: string) => void;
 }) {
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
   const [memoryOpen, setMemoryOpen] = createSignal(false);
   const [text, setText] = createSignal("");
+  const [reply, setReply] = createSignal<ChannelMessage>();
   const [sending, setSending] = createSignal(false);
   const [error, setError] = createSignal("");
   const name = (id: string | null) => (id === null ? "You" : (props.bots.find((bot) => bot.id === id)?.name ?? id));
@@ -24,8 +26,9 @@ export function ChannelView(props: {
     setSending(true);
     setError("");
     try {
-      await props.onSend(text().trim());
+      await props.onSend(text().trim(), reply()?.id);
       setText("");
+      setReply(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send message");
     } finally {
@@ -119,6 +122,15 @@ export function ChannelView(props: {
                     )}
                   </Show>
                   <p class="channel-prewrap">{message.text}</p>
+                  <Show when={props.supportsReplies}>
+                    <button
+                      type="button"
+                      aria-label={`Reply to ${message.text.slice(0, 100)}`}
+                      onClick={() => setReply(message)}
+                    >
+                      Reply
+                    </button>
+                  </Show>
                 </article>
               )}
             </For>
@@ -132,6 +144,16 @@ export function ChannelView(props: {
           }}
         >
           <label for="channel-message-input">New message to channel lead</label>
+          <Show when={reply()}>
+            {(item) => (
+              <p>
+                Replying to: {item().text.slice(0, 100)}{" "}
+                <button type="button" onClick={() => setReply(undefined)}>
+                  Cancel reply
+                </button>
+              </p>
+            )}
+          </Show>
           <textarea
             id="channel-message-input"
             maxlength={32000}

@@ -59,6 +59,7 @@ import type {
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
+import { isString } from "@openbot/contracts/runtime-values";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -81,6 +82,7 @@ import {
 } from "./fixtures";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockW2 } from "./mock-w2";
+import { createMockW2Ui2 } from "./mock-w2-ui2";
 
 type Listener<T> = (value: T) => void;
 
@@ -170,7 +172,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
   let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
   let pending = clone(options.pendingRequests ?? []);
-  let mockChannels: import("@openbot/contracts/ipc").WorkspaceChannel[] = [
+  const mockChannels: import("@openbot/contracts/ipc").WorkspaceChannel[] = [
     {
       id: "demo-channel",
       name: "project",
@@ -210,12 +212,17 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       createdAt: "2026-11-13T00:01:00Z",
     },
   ];
-  let mockTasks: import("@openbot/contracts/ipc").ChannelTask[] = ["paused", "running", "done"].map((state, index) => ({
+  const demoTasks: { state: import("@openbot/contracts/ipc").ChannelTaskState; title: string }[] = [
+    { state: "paused", title: "Review the plan" },
+    { state: "running", title: "Collect evidence" },
+    { state: "done", title: "Define scope" },
+  ];
+  let mockTasks: import("@openbot/contracts/ipc").ChannelTask[] = demoTasks.map(({ state, title }, index) => ({
     id: `demo-task-${index}`,
     channelId: "demo-channel",
     ownerBotId: index === 1 ? "research" : "chief",
-    state: state as import("@openbot/contracts/ipc").ChannelTaskState,
-    title: ["Review the plan", "Collect evidence", "Define scope"][index]!,
+    state,
+    title,
     requestMessageId: "demo-message",
     resultMessageId: null,
     parentTaskId: null,
@@ -295,6 +302,19 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         return;
       case "draft-preview-resolved":
         pending = pending.filter((card) => !(card.kind === "draft-preview" && card.card.requestId === event.requestId));
+        return;
+      case "vault-request":
+        pending = [
+          ...pending.filter(
+            (card) => !(card.kind === "vault-request" && card.request.requestId === event.request.requestId),
+          ),
+          { kind: "vault-request", request: event.request },
+        ];
+        return;
+      case "vault-request-resolved":
+        pending = pending.filter(
+          (card) => !(card.kind === "vault-request" && card.request.requestId === event.requestId),
+        );
         return;
       case "browser-takeover":
         pending = [
@@ -468,16 +488,36 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   }
 
   const w2 = createMockW2(emitAgentEvent);
+  const w2ui2 = createMockW2Ui2(emitAgentEvent, (requestId, decline) => {
+    const card = pending.find((item) => item.kind === "vault-request" && item.request.requestId === requestId);
+    if (card?.kind !== "vault-request") throw new Error("Request is no longer open");
+    emitAgentEvent({
+      type: "vault-request-resolved",
+      requestId,
+      botId: card.request.botId,
+      resolution: decline ? "declined" : "provided",
+    });
+  });
   const api: OpenBotDesktopApi = {
+    ...w2ui2,
     memory: w2.memory,
     skills: w2.skills,
     mcp: w2.mcp,
     channels: {
       ...w2.channels,
+      ...{ supportsMessageReplies: true },
       list: async () => clone(mockChannels),
       listMessages: async ({ channelId }) => clone(mockMessages.filter((item) => item.channelId === channelId)),
       listTasks: async (channelId) => clone(mockTasks.filter((item) => item.channelId === channelId)),
-      sendMessage: async ({ channelId, text }) => {
+      sendMessage: async (input) => {
+        const { channelId, text } = input;
+        const replyToMessageId =
+          "replyToMessageId" in input && isString(input.replyToMessageId) ? input.replyToMessageId : null;
+        if (
+          replyToMessageId &&
+          !mockMessages.some((item) => item.id === replyToMessageId && item.channelId === channelId)
+        )
+          throw new Error("This message is not in the channel.");
         const now = new Date().toISOString();
         const id = `demo-${Date.now()}`;
         const message: import("@openbot/contracts/ipc").ChannelMessage = {
@@ -487,13 +527,15 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
           authorBotId: null,
           kind: "human",
           text,
-          replyToMessageId: null,
+          replyToMessageId,
           resultVersion: null,
           superseded: false,
           createdAt: now,
         };
+        const template = mockTasks[0];
+        if (!template) throw new Error("Demo task template unavailable");
         const task = {
-          ...mockTasks[0]!,
+          ...template,
           id,
           channelId,
           title: text.slice(0, 120),

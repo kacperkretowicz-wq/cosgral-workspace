@@ -132,12 +132,12 @@ describe("App page rail", () => {
     await screen.findByRole("heading", { name: "Chief" });
     const list = screen.getByRole("navigation", { name: "Chat list" });
 
-    await fireEvent.click(screen.getByRole("button", { name: "Schedule" }));
-    const soon = await screen.findByRole("region", { name: "Schedule" });
+    await fireEvent.click(screen.getByRole("button", { name: "Tasks" }));
+    const soon = await screen.findByRole("region", { name: "Tasks" });
     expect(within(soon).getByText("Coming soon")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chief" })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Chat list" })).toBe(list);
-    expect(screen.getByRole("button", { name: "Schedule" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Tasks" })).toHaveAttribute("aria-current", "page");
 
     await fireEvent.click(screen.getByRole("button", { name: "Marketplace" }));
     expect(await screen.findByRole("region", { name: "Marketplace" })).toBeInTheDocument();
