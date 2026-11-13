@@ -3,7 +3,15 @@ import { For } from "solid-js";
 import { Button } from "./ui";
 
 /** COSGRAL page rail: vertical page switcher beside the server rail. */
-export type PageId = "agents" | "schedule" | "tasks" | "workflows" | "usage" | "library" | "marketplace";
+export type PageId =
+  | "agents"
+  | "schedule"
+  | "tasks"
+  | "workflows"
+  | "usage"
+  | "library"
+  | "marketplace"
+  | "remote-desktop";
 
 export const PAGE_RAIL_ITEMS: ReadonlyArray<{ id: PageId; label: string }> = [
   { id: "agents", label: "Agents" },
@@ -13,6 +21,7 @@ export const PAGE_RAIL_ITEMS: ReadonlyArray<{ id: PageId; label: string }> = [
   { id: "usage", label: "Usage" },
   { id: "library", label: "Library" },
   { id: "marketplace", label: "Marketplace" },
+  { id: "remote-desktop", label: "Remote desktop" },
 ];
 
 interface PageRailProps {
@@ -24,6 +33,13 @@ interface PageRailProps {
 
 function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
   switch (props.page) {
+    case "remote-desktop":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <rect x="2.5" y="3.5" width="15" height="10" rx="1.5" />
+          <path d="M7 16.5h6M10 13.5v3" />
+        </svg>
+      );
     case "agents":
       return (
         <svg aria-hidden="true" viewBox="0 0 20 20">

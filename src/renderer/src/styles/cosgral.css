@@ -254,6 +254,23 @@
   display: block;
 }
 
+.remote-desktop-page section {
+  margin-block: 24px;
+}
+.remote-desktop-stop {
+  background: var(--openbot-danger);
+  color: white;
+  padding: 12px 18px;
+  font-weight: 700;
+}
+.remote-desktop-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #17171b;
+  margin-block: 12px;
+}
+
 /* Sidebar folders ---------------------------------------------------------
    Folders sit above the agents of their level and read as quiet labels: one 30px line, muted text,
    a chevron that turns when open. Agents keep their 54px tile and move right by one step per level. */

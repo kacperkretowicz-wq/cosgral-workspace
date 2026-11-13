@@ -54,6 +54,7 @@ import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
+import { RemoteDesktopPage } from "./components/RemoteDesktopPage";
 import { RoutinePanel } from "./components/RoutinePanel";
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar } from "./components/Sidebar";
@@ -1912,13 +1913,17 @@ export function App() {
               <Show when={activePage() === "workflows"}>
                 <WorkflowsPage />
               </Show>
+              <Show when={activePage() === "remote-desktop"}>
+                <RemoteDesktopPage />
+              </Show>
               <Show
                 when={
                   activePage() !== "agents" &&
                   activePage() !== "library" &&
                   activePage() !== "schedule" &&
                   activePage() !== "marketplace" &&
-                  activePage() !== "workflows"
+                  activePage() !== "workflows" &&
+                  activePage() !== "remote-desktop"
                 }
               >
                 <ComingSoon title={activePageTitle()} />
