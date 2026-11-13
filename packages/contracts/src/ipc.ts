@@ -7,5 +7,6 @@ export * from "./ipc-conversation";
 export * from "./ipc-desktop-apis";
 export * from "./ipc-eyes";
 export * from "./ipc-sidebar";
+export * from "./ipc-skills";
 export * from "./ipc-team-host";
 export * from "./ipc-workspace-channels";
