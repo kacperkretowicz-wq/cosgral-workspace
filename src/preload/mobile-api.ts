@@ -21,6 +21,7 @@ export function createMobileApi(invoke: Invoke): MobileDesktopApi {
     disable: () => invoke(IPC_CHANNELS.mobileDisable, null, decodeState),
     listDevices: () => invoke(IPC_CHANNELS.mobileListDevices, null, decodeDevices),
     revokeDevice: (input) => invoke(IPC_CHANNELS.mobileRevokeDevice, input, decodeState),
+    rotateCertificate: () => invoke(IPC_CHANNELS.mobileRotateCertificate, null, decodeState),
   };
 }
 

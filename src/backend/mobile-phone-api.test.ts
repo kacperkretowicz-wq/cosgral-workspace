@@ -191,13 +191,14 @@ function fakeHost() {
   };
   const host: MobilePhoneHost = {
     bots: () => [...bots.values()],
-    readConversation: async (botId) => ({
-      botId,
-      threadId: `thread-${botId}`,
-      activeTurnId: null,
-      revision: 1,
-      messages: conversation,
-    }),
+    // Like the database page: the newest `limit` messages before the cursor, oldest first; null for a bad cursor.
+    messages: async (_botId, page) => {
+      const end =
+        page.before === null ? conversation.length : conversation.findIndex((item) => item.id === page.before);
+      if (end < 0) return null;
+      const start = Math.max(0, end - page.limit);
+      return { messages: conversation.slice(start, end), hasMore: start > 0 };
+    },
     sendMessage: async (input) => {
       state.sent.push(input);
       return { messageId: `sent-${state.sent.length}`, deliveries: [] };
@@ -283,13 +284,14 @@ async function request(
   return { status: response.status, body: isDynamicRecord(json) ? json : {} };
 }
 
-async function openStream(base: string, token: string) {
+async function openStream(base: string, token: string, lastEventId?: string) {
   const controller = new AbortController();
   const response = await fetch(`${base}${MOBILE_PHONE_PATHS.events}`, {
-    headers: { authorization: `Bearer ${token}` },
+    headers: { authorization: `Bearer ${token}`, ...(lastEventId ? { "last-event-id": lastEventId } : {}) },
     signal: controller.signal,
   });
   const events: MobileStreamEvent[] = [];
+  const ids: string[] = [];
   let done = false;
   let buffer = "";
   const reading = (async () => {
@@ -303,6 +305,7 @@ async function openStream(base: string, token: string) {
         const parsed = parseMobileStreamEvents(buffer + decoder.decode(chunk.value, { stream: true }));
         buffer = parsed.rest;
         events.push(...parsed.events);
+        if (parsed.lastEventId) ids.push(parsed.lastEventId);
       }
     } catch {
       // Aborted by the test.
@@ -323,7 +326,20 @@ async function openStream(base: string, token: string) {
     while (!done && Date.now() < until) await new Promise((resolve) => setTimeout(resolve, 10));
     return done;
   };
-  return { status: response.status, events, next, ended, close: () => controller.abort(), reading };
+  return {
+    status: response.status,
+    events,
+    ids,
+    next,
+    ended,
+    close: () => controller.abort(),
+    reading,
+  };
+}
+
+async function until(check: () => boolean): Promise<void> {
+  const end = Date.now() + 3_000;
+  while (!check() && Date.now() < end) await new Promise((resolve) => setTimeout(resolve, 10));
 }
 
 describe("phone chat (row 43)", () => {
@@ -495,7 +511,47 @@ describe("phone chat (row 43)", () => {
     const deviceId = (await mobile.getState()).devices[0]?.id ?? "";
     await mobile.revokeDevice({ deviceId });
     expect(await stream.ended()).toBe(true);
+    // The program's events stay followed for the resume window, and stop when the server stops.
+    await mobile.close();
     expect(state.listeners.size).toBe(0);
+  });
+
+  it("resumes after Last-Event-ID without losing or repeating events, and starts fresh after a too long gap", async () => {
+    const { base, token, emit } = await setup();
+    const delta = (botId: string): AgentEvent => ({
+      type: "conversation-delta",
+      botId,
+      threadId: "t",
+      turnId: "u",
+      messageId: "m",
+      delta: "x",
+      createdAt: "2026-11-13T19:10:00.000Z",
+      revision: 2,
+    });
+    const first = await openStream(base, token);
+    await first.next("needs-you", 0);
+    emit(delta("scout"));
+    await first.next("conversation", 0);
+    await until(() => first.ids.length >= 2);
+    const seen = first.ids.at(-1) ?? "";
+    first.close();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    emit(delta("writer"));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    const second = await openStream(base, token, seen);
+    expect(await second.next("conversation", 0)).toEqual({ type: "conversation", botId: "writer" });
+    expect(second.events.filter((event) => event.type === "conversation" && event.botId === "scout")).toEqual([]);
+    expect(second.events.some((event) => event.type === "needs-you")).toBe(false);
+    second.close();
+
+    for (let index = 0; index <= MOBILE_PHONE_LIMITS.replayEvents; index += 1) emit(delta(`bot-${index}`));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const late = await openStream(base, token, seen);
+    const snapshot = await late.next("needs-you", 0);
+    expect(snapshot.type).toBe("needs-you");
+    expect(late.events[0]?.type).toBe("needs-you");
+    late.close();
   });
 });
 

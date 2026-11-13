@@ -1,0 +1,12 @@
+{
+  "name": "COSGRAL Workspace",
+  "short_name": "COSGRAL",
+  "description": "Your agents and what needs you, from this phone.",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b0c",
+  "theme_color": "#161617",
+  "icons": [{ "src": "/app/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

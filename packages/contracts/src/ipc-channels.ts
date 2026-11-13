@@ -143,6 +143,7 @@ export const IPC_CHANNELS = {
   mobileDisable: "mobile:disable",
   mobileListDevices: "mobile:list-devices",
   mobileRevokeDevice: "mobile:revoke-device",
+  mobileRotateCertificate: "mobile:rotate-certificate",
   agentEvent: "agent:event",
   sidebarGetLayout: "sidebar:get-layout",
   sidebarCreateFolder: "sidebar:create-folder",

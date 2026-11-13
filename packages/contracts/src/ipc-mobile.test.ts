@@ -25,6 +25,8 @@ const state = {
   exposure: "lan",
   port: 47_930,
   urls: ["http://127.0.0.1:47930", "http://192.168.1.10:47930"],
+  transport: "plain",
+  fingerprint: null,
   unencrypted: true,
   pairing: { expiresAt: AT, attemptsLeft: 5, consentPending: false },
   devices: [device],
@@ -36,7 +38,7 @@ describe("W3 mobile contract", () => {
   it("accepts the state, devices and a pairing ticket", () => {
     expect(isMobileState(state)).toBe(true);
     expect(isMobileState({ ...state, exposure: "internet" })).toBe(false);
-    expect(isMobileState({ ...state, unencrypted: false })).toBe(false);
+    expect(isMobileState({ ...state, unencrypted: "no" })).toBe(false);
     expect(isMobileState({ ...state, pairing: null, port: null, enabled: false })).toBe(true);
     expect(isMobileDevice(device)).toBe(true);
     expect(isMobileDevice({ ...device, tokenHash: "x", id: 1 })).toBe(false);
@@ -48,6 +50,8 @@ describe("W3 mobile contract", () => {
         qrSvg: "<svg/>",
         qrDataUrl: "data:image/svg+xml;base64,PHN2Zy8+",
         urls: state.urls,
+        appUrl: "http://127.0.0.1:47930/app/",
+        fingerprint: null,
         expiresAt: AT,
         state,
       }),
@@ -61,6 +65,7 @@ describe("W3 mobile contract", () => {
       protocol: MOBILE_PROTOCOL_VERSION,
       ticket: TICKET,
       urls: state.urls,
+      fingerprint: null,
     });
     expect(() => parseMobilePairingPayload("https://example.com")).toThrow("not a COSGRAL pairing code");
     expect(() =>

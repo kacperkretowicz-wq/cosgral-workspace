@@ -3,8 +3,9 @@
 // you, and the phone gets its own device token (shown to the phone once, kept only as a hash). With that token the
 // phone reads the agents and what needs the person. Removing a device takes its token away at once.
 //
-// Transport: plain HTTP on this computer, loopback by default; the local network only when the person turns it on.
-// It is NOT encrypted: use a trusted network or a tunnel (VPN). Chat and answers from the phone come later (rows 43–44).
+// Transport (COSGRAL W3-BE7): HTTPS with a self-signed certificate made on this computer; its SHA-256 fingerprint is in
+// the QR code and the client pins it. Loopback by default; the local network only when the person turns it on, and
+// only with TLS. Plain HTTP is left for loopback when this computer cannot keep the certificate key safe (and tests).
 
 import { isPendingAgentRequestKind, type PendingAgentRequestKind } from "./ipc-attention";
 import type { AgentApprovalKind, ConversationMessageAuthor } from "./ipc-conversation";
@@ -41,10 +42,31 @@ export const MOBILE_API_PATHS = {
   needsYou: "/v1/needs-you",
 } as const;
 
+/** "tls": HTTPS with the pinned certificate; "plain": HTTP, loopback only. */
+export const MOBILE_TRANSPORTS = ["tls", "plain"] as const;
+export type MobileTransport = (typeof MOBILE_TRANSPORTS)[number];
+
+/** What TLS with a pinned fingerprint protects, and what it does not (shown with Mobile Connect). */
 export const MOBILE_TRANSPORT_WARNING =
-  "Traffic between the phone and this computer is not encrypted. Use it only on a network you trust, or through a tunnel such as a VPN.";
+  "Traffic between the phone and this computer is encrypted. The computer proves who it is with the certificate fingerprint from the QR code: an app that pins it cannot be fooled by another device on the network. A web browser cannot pin it, so compare the fingerprint the first time it warns about the certificate. Encryption does not help if the phone or this computer is in someone else's hands: remove a lost phone at once.";
+
+/** Plain HTTP (loopback only). */
+export const MOBILE_PLAIN_TRANSPORT_WARNING =
+  "Traffic between the phone and this computer is not encrypted. It stays on this computer (loopback); use it only through a tunnel you trust, such as a VPN or USB forwarding.";
 
 const TICKET = /^[A-Za-z0-9_-]{22,64}$/;
+const FINGERPRINT = /^[0-9a-f]{64}$/;
+
+/** "AB:CD:…" (as browsers and Node show it) from 64 hex digits. */
+export function formatMobileFingerprint(hex: string): string {
+  return (hex.toUpperCase().match(/.{2}/g) ?? []).join(":");
+}
+
+/** True when a certificate's SHA-256 (any case, with or without ":") is the pinned one. */
+export function mobileFingerprintMatches(pinnedHex: string, presented: string): boolean {
+  const clean = presented.replace(/:/g, "").toLowerCase();
+  return FINGERPRINT.test(clean) && clean === pinnedHex.toLowerCase();
+}
 
 export interface MobileDevice {
   id: string;
@@ -70,8 +92,12 @@ export interface MobileState {
   port: number | null;
   /** Addresses a phone can use (loopback always; local network addresses with "lan"). */
   urls: string[];
-  /** Always true in this version: show MOBILE_TRANSPORT_WARNING. */
-  unencrypted: true;
+  /** "tls": show MOBILE_TRANSPORT_WARNING; "plain": show MOBILE_PLAIN_TRANSPORT_WARNING. */
+  transport: MobileTransport;
+  /** SHA-256 of the certificate as "AB:CD:…" (show it for comparison), or null without TLS. */
+  fingerprint: string | null;
+  /** True with plain HTTP. */
+  unencrypted: boolean;
   pairing: MobilePairing | null;
   devices: MobileDevice[];
   unavailableReason: string | null;
@@ -86,12 +112,19 @@ export interface StartMobilePairingInput {
 export interface MobilePairingTicket {
   /** The ticket alone, for typing or pasting on the phone. */
   ticket: string;
-  /** The text inside the QR code (see `parseMobilePairingPayload`). */
+  /**
+   * The text inside the QR code: the web app link with the ticket and fingerprint in its fragment, so a phone camera
+   * opens it (see `parseMobilePairingPayload`, which also reads `cosgral://pair`).
+   */
   qrPayload: string;
   qrSvg: string;
   /** `data:image/svg+xml;base64,…` of `qrSvg`, for an <img>. */
   qrDataUrl: string;
   urls: string[];
+  /** The phone web app (`…/app/`) on the address in the QR code. */
+  appUrl: string;
+  /** 64 hex digits of the certificate's SHA-256, or null without TLS. */
+  fingerprint: string | null;
   expiresAt: string;
   state: MobileState;
 }
@@ -134,30 +167,61 @@ export interface MobileNeedsYouItem {
   computerReason?: string | null;
 }
 
-/** The QR text: `cosgral://pair?v=1&t=<ticket>&u=<address>&u=<address>…`. */
-export function buildMobilePairingPayload(input: { ticket: string; urls: string[] }): string {
-  const parts = [
+function pairingParams(input: { ticket: string; urls: string[]; fingerprint?: string | null }): string {
+  return [
     `v=${MOBILE_PROTOCOL_VERSION}`,
     `t=${input.ticket}`,
+    ...(input.fingerprint ? [`f=${input.fingerprint}`] : []),
     ...input.urls.map((url) => `u=${encodeURIComponent(url)}`),
-  ];
-  return `cosgral://pair?${parts.join("&")}`;
+  ].join("&");
 }
 
-/** What the phone reads from the QR text; throws when it is not a valid pairing code. */
-export function parseMobilePairingPayload(text: string): { protocol: number; ticket: string; urls: string[] } {
+/** The native pairing code: `cosgral://pair?v=1&t=<ticket>&f=<fingerprint>&u=<address>…`. */
+export function buildMobilePairingPayload(input: {
+  ticket: string;
+  urls: string[];
+  fingerprint?: string | null;
+}): string {
+  return `cosgral://pair?${pairingParams(input)}`;
+}
+
+/** The web app link: `https://<address>/app/#v=1&t=…`; the fragment never reaches a server. */
+export function buildMobileWebPairingUrl(input: {
+  appUrl: string;
+  ticket: string;
+  urls: string[];
+  fingerprint?: string | null;
+}): string {
+  return `${input.appUrl.split("#")[0]}#${pairingParams(input)}`;
+}
+
+/** What the phone reads from either pairing code; throws when it is not a valid one. */
+export function parseMobilePairingPayload(text: string): {
+  protocol: number;
+  ticket: string;
+  urls: string[];
+  fingerprint: string | null;
+} {
   let url: URL;
   try {
     url = new URL(text.trim());
   } catch {
     throw new Error("This is not a COSGRAL pairing code.");
   }
-  if (url.protocol !== "cosgral:" || url.hostname !== "pair") throw new Error("This is not a COSGRAL pairing code.");
-  const protocol = Number(url.searchParams.get("v"));
+  let params: URLSearchParams;
+  if (url.protocol === "cosgral:" && url.hostname === "pair") params = url.searchParams;
+  else if ((url.protocol === "https:" || url.protocol === "http:") && url.hash.length > 1) {
+    params = new URLSearchParams(url.hash.slice(1));
+  } else throw new Error("This is not a COSGRAL pairing code.");
+  const protocol = Number(params.get("v"));
   if (!Number.isInteger(protocol) || protocol < 1) throw new Error("The pairing code has no version.");
-  const ticket = url.searchParams.get("t") ?? "";
+  const ticket = params.get("t") ?? "";
   if (!TICKET.test(ticket)) throw new Error("The pairing code has no valid ticket.");
-  const urls = url.searchParams.getAll("u");
+  const fingerprint = params.get("f");
+  if (fingerprint !== null && !FINGERPRINT.test(fingerprint)) {
+    throw new Error("The pairing code has an invalid certificate fingerprint.");
+  }
+  const urls = params.getAll("u");
   if (!urls.length) throw new Error("The pairing code has no address.");
   for (const address of urls) {
     let parsed: URL;
@@ -170,7 +234,7 @@ export function parseMobilePairingPayload(text: string): { protocol: number; tic
       throw new Error("The pairing code has an invalid address.");
     }
   }
-  return { protocol, ticket, urls };
+  return { protocol, ticket, urls, fingerprint };
 }
 
 function isNullableString(value: unknown): value is string | null {
@@ -197,7 +261,9 @@ export function isMobileState(value: unknown): value is MobileState {
     (value.port === null || isNumber(value.port)) &&
     Array.isArray(value.urls) &&
     value.urls.every(isString) &&
-    value.unencrypted === true &&
+    isOneOf(MOBILE_TRANSPORTS, value.transport) &&
+    isNullableString(value.fingerprint) &&
+    isBoolean(value.unencrypted) &&
     (value.pairing === null ||
       (isDynamicRecord(value.pairing) &&
         isString(value.pairing.expiresAt) &&
@@ -219,6 +285,8 @@ export function isMobilePairingTicket(value: unknown): value is MobilePairingTic
     value.qrDataUrl.startsWith("data:image/svg+xml;base64,") &&
     Array.isArray(value.urls) &&
     value.urls.every(isString) &&
+    isString(value.appUrl) &&
+    isNullableString(value.fingerprint) &&
     isString(value.expiresAt) &&
     isMobileState(value.state)
   );
@@ -262,6 +330,11 @@ export interface MobileDesktopApi {
   listDevices: () => Promise<MobileDevice[]>;
   /** Takes the device's token away at once. */
   revokeDevice: (input: MobileDeviceIdInput) => Promise<MobileState>;
+  /**
+   * A new certificate (new fingerprint). Every paired phone pinned the old one, so all of them are removed and must
+   * pair again; ask the person first.
+   */
+  rotateCertificate: () => Promise<MobileState>;
 }
 
 // -- Phone API (rows 43–44) --------------------------------------------------------------------------------------
@@ -288,6 +361,12 @@ export const MOBILE_PHONE_LIMITS = {
   promptAnswerText: 2_000,
   /** A comment line on the stream so connections stay open. */
   heartbeatMs: 25_000,
+  /** Numbered events kept for phones that reconnect with Last-Event-ID; after a longer gap they get a fresh list. */
+  replayEvents: 200,
+  /** How long the program's events stay followed after the last stream closed, so a reconnect loses nothing. */
+  resumeWindowMs: 10 * 60_000,
+  /** A stream that does not read more than this ends (the phone resumes by number). */
+  streamBacklogBytes: 256 * 1024,
 } as const;
 
 export const MOBILE_PHONE_PATHS = {
@@ -441,18 +520,27 @@ export interface MobileErrorResponse {
 
 const STREAM_TYPES = ["needs-you", "conversation", "agents"] as const;
 
-export function formatMobileStreamEvent(event: MobileStreamEvent): string {
-  return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+/** One stream event; with `id` the phone can resume after it (Last-Event-ID). */
+export function formatMobileStreamEvent(event: MobileStreamEvent, id?: number): string {
+  return `${id === undefined ? "" : `id: ${id}\n`}event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
 /** Complete events in `buffer`, and the rest to keep for the next chunk. Comments and bad events are skipped. */
-export function parseMobileStreamEvents(buffer: string): { events: MobileStreamEvent[]; rest: string } {
+export function parseMobileStreamEvents(buffer: string): {
+  events: MobileStreamEvent[];
+  rest: string;
+  /** The id of the last numbered event in `buffer` (send it as Last-Event-ID when reconnecting), or null. */
+  lastEventId: string | null;
+} {
   const blocks = buffer.replace(/\r\n/g, "\n").split("\n\n");
   const rest = blocks.pop() ?? "";
   const events: MobileStreamEvent[] = [];
+  let lastEventId: string | null = null;
   for (const block of blocks) {
-    const data = block
-      .split("\n")
+    const lines = block.split("\n");
+    const id = lines.find((line) => line.startsWith("id: "))?.slice(4) ?? null;
+    if (id !== null) lastEventId = id;
+    const data = lines
       .filter((line) => line.startsWith("data: "))
       .map((line) => line.slice(6))
       .join("\n");
@@ -464,7 +552,7 @@ export function parseMobileStreamEvents(buffer: string): { events: MobileStreamE
       // Not an event of this protocol.
     }
   }
-  return { events, rest };
+  return { events, rest, lastEventId };
 }
 
 function isMobileMessage(value: unknown): value is MobileMessage {

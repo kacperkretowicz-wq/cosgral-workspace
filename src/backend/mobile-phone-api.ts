@@ -14,7 +14,6 @@ import {
   type BotAvatarHue,
   type BotSummary,
   type ConversationMessage,
-  type ConversationSnapshot,
   type CreateAgentInput,
   type CreateAgentResult,
   formatMobileStreamEvent,
@@ -40,7 +39,14 @@ import { phoneAnswerPolicy } from "./mobile-policy";
 /** What the phone API needs from the program (AgentService in the app). */
 export interface MobilePhoneHost {
   bots: () => BotSummary[];
-  readConversation: (botId: string) => Promise<ConversationSnapshot>;
+  /**
+   * One page of an agent's conversation, read from the store with a limit (never the whole conversation): the newest
+   * `limit` messages before `before` (or the newest ones), oldest first. Null when `before` is not a message of it.
+   */
+  messages: (
+    botId: string,
+    page: { before: string | null; limit: number },
+  ) => Promise<{ messages: ConversationMessage[]; hasMore: boolean } | null>;
   sendMessage: (input: SendMessageInput) => Promise<QueuedMessageReceipt>;
   pending: () => PendingAgentRequest[];
   respondToPrompt: (input: RespondToPromptInput) => Promise<void>;
@@ -130,10 +136,21 @@ export class MobilePhoneApi {
   #unsubscribe: (() => void) | null = null;
   #needsYouTimer: NodeJS.Timeout | null = null;
   readonly #conversationTimers = new Map<string, NodeJS.Timeout>();
+  // Resume (Last-Event-ID). Every stream event has a number. The buffer keeps the LATEST event of each kind (the Needs
+  // you list, the agents list, one "changed" per agent), which loses nothing: each one replaces the earlier ones. It
+  // holds at most MOBILE_PHONE_LIMITS.replayEvents entries; a phone that left before an entry that was pushed out
+  // (or before this run of the program, or before the buffer was dropped) gets a fresh Needs you list instead.
+  readonly #log = new Map<string, { id: number; text: string }>();
+  #lastId: number;
+  #evictedId: number;
+  #idleTimer: NodeJS.Timeout | null = null;
 
   constructor(options: MobilePhoneApiOptions) {
     this.#host = options.host;
     this.#options = options;
+    // Numbers start at the clock, so numbers from an earlier run of the program are never inside this run's buffer.
+    this.#lastId = (options.now?.() ?? new Date()).getTime();
+    this.#evictedId = this.#lastId;
   }
 
   /** False when the path is not part of the phone API (the server answers 404). */
@@ -181,10 +198,7 @@ export class MobilePhoneApi {
   /** Server stop: every stream ends. */
   closeAll(): void {
     for (const stream of [...this.#streams]) this.#end(stream);
-    if (this.#needsYouTimer) clearTimeout(this.#needsYouTimer);
-    this.#needsYouTimer = null;
-    for (const timer of this.#conversationTimers.values()) clearTimeout(timer);
-    this.#conversationTimers.clear();
+    this.#stopFollowing();
   }
 
   // -- chat (row 43) --------------------------------------------------------------------------------------------
@@ -208,19 +222,13 @@ export class MobilePhoneApi {
     if (!Number.isInteger(limit) || limit < 1 || limit > MOBILE_PHONE_LIMITS.messagesPageMax) {
       throw new HttpError(400, `limit is from 1 to ${MOBILE_PHONE_LIMITS.messagesPageMax}.`);
     }
-    const snapshot = await this.#host.readConversation(botId);
-    const messages = snapshot.messages.filter((message) => message.text.trim() || message.attachments?.length);
-    const before = input.query.get("before");
-    let end = messages.length;
-    if (before !== null) {
-      end = messages.findIndex((message) => message.id === before);
-      if (end < 0) throw new HttpError(400, "before is not a message of this conversation.");
-    }
-    const start = Math.max(0, end - limit);
+    const page = await hostCall(() => this.#host.messages(botId, { before: input.query.get("before"), limit }));
+    if (!page) throw new HttpError(400, "before is not a message of this conversation.");
+    // Empty messages (tool steps without text) are left out of the page; the cursor still counts them.
     sendJson(input.response, 200, {
       botId,
-      messages: messages.slice(start, end).map(phoneMessage),
-      nextBefore: start > 0 ? (messages[start]?.id ?? null) : null,
+      messages: page.messages.filter((message) => message.text.trim() || message.attachments?.length).map(phoneMessage),
+      nextBefore: page.hasMore ? (page.messages[0]?.id ?? null) : null,
     });
   }
 
@@ -292,6 +300,7 @@ export class MobilePhoneApi {
     if (own >= MOBILE_PHONE_LIMITS.streamsPerDevice || this.#streams.size >= MOBILE_PHONE_LIMITS.streams) {
       throw new HttpError(429, "Too many open event streams; close one first.");
     }
+    const resumeFrom = lastEventId(input.request.headers["last-event-id"]);
     const response = input.response;
     response.writeHead(200, {
       "content-type": "text/event-stream; charset=utf-8",
@@ -304,15 +313,44 @@ export class MobilePhoneApi {
     const stream: Stream = { deviceId: input.device.id, response, heartbeat };
     this.#streams.add(stream);
     response.once("close", () => this.#end(stream));
+    this.#follow();
+    response.write("retry: 3000\n\n");
+    if (resumeFrom !== null && resumeFrom >= this.#evictedId && resumeFrom <= this.#lastId) {
+      // Resume: only what came after the last event the phone saw, oldest first.
+      for (const entry of this.#log.values()) if (entry.id > resumeFrom) response.write(entry.text);
+    } else {
+      // First connection, a gap beyond the buffer, or numbers from another run: start with the current list.
+      response.write(this.#record("needs-you", { type: "needs-you", items: mobileNeedsYou(this.#host.pending()) }));
+    }
+  }
+
+  /** The program's events are followed while a stream is open and for the resume window after the last one closed. */
+  #follow(): void {
+    if (this.#idleTimer) clearTimeout(this.#idleTimer);
+    this.#idleTimer = null;
     this.#unsubscribe ??= this.#host.subscribe((event) => this.#onEvent(event));
-    response.write(formatMobileStreamEvent({ type: "needs-you", items: mobileNeedsYou(this.#host.pending()) }));
+  }
+
+  #stopFollowing(): void {
+    if (this.#idleTimer) clearTimeout(this.#idleTimer);
+    this.#idleTimer = null;
+    this.#unsubscribe?.();
+    this.#unsubscribe = null;
+    if (this.#needsYouTimer) clearTimeout(this.#needsYouTimer);
+    this.#needsYouTimer = null;
+    for (const timer of this.#conversationTimers.values()) clearTimeout(timer);
+    this.#conversationTimers.clear();
+    // Events that come while nobody follows are not kept, so no earlier number may resume across this point.
+    this.#log.clear();
+    this.#lastId += 1;
+    this.#evictedId = this.#lastId;
   }
 
   #onEvent(event: AgentEvent): void {
     if (NEEDS_YOU_EVENTS.has(event.type)) {
       this.#needsYouTimer ??= setTimeout(() => {
         this.#needsYouTimer = null;
-        this.#broadcast({ type: "needs-you", items: mobileNeedsYou(this.#host.pending()) });
+        this.#publish("needs-you", { type: "needs-you", items: mobileNeedsYou(this.#host.pending()) });
       }, this.#options.needsYouDelayMs ?? 200);
       return;
     }
@@ -321,17 +359,36 @@ export class MobilePhoneApi {
       if (!botId || this.#conversationTimers.has(botId)) return;
       const timer = setTimeout(() => {
         this.#conversationTimers.delete(botId);
-        this.#broadcast({ type: "conversation", botId });
+        this.#publish(`conversation:${botId}`, { type: "conversation", botId });
       }, this.#options.conversationDelayMs ?? 500);
       this.#conversationTimers.set(botId, timer);
       return;
     }
-    if (event.type === "bots-changed") this.#broadcast({ type: "agents", agents: mobileAgents(event.bots) });
+    if (event.type === "bots-changed") this.#publish("agents", { type: "agents", agents: mobileAgents(event.bots) });
   }
 
-  #broadcast(event: MobileStreamEvent): void {
-    const text = formatMobileStreamEvent(event);
-    for (const stream of this.#streams) stream.response.write(text);
+  /** Numbers the event and keeps it as the latest of its kind (`key`); returns what goes on the wire. */
+  #record(key: string, event: MobileStreamEvent): string {
+    this.#lastId += 1;
+    const text = formatMobileStreamEvent(event, this.#lastId);
+    this.#log.delete(key);
+    this.#log.set(key, { id: this.#lastId, text });
+    while (this.#log.size > MOBILE_PHONE_LIMITS.replayEvents) {
+      const oldest = this.#log.entries().next().value;
+      if (!oldest) break;
+      this.#evictedId = Math.max(this.#evictedId, oldest[1].id);
+      this.#log.delete(oldest[0]);
+    }
+    return text;
+  }
+
+  #publish(key: string, event: MobileStreamEvent): void {
+    const text = this.#record(key, event);
+    for (const stream of [...this.#streams]) {
+      // A phone that does not read lets nothing pile up: its stream ends and it resumes by number.
+      if (stream.response.writableLength > MOBILE_PHONE_LIMITS.streamBacklogBytes) this.#end(stream);
+      else stream.response.write(text);
+    }
   }
 
   #end(stream: Stream): void {
@@ -339,9 +396,9 @@ export class MobilePhoneApi {
     clearInterval(stream.heartbeat);
     if (!stream.response.writableEnded) stream.response.end();
     stream.response.socket?.destroy();
-    if (this.#streams.size === 0) {
-      this.#unsubscribe?.();
-      this.#unsubscribe = null;
+    if (this.#streams.size === 0 && this.#unsubscribe && !this.#idleTimer) {
+      this.#idleTimer = setTimeout(() => this.#stopFollowing(), MOBILE_PHONE_LIMITS.resumeWindowMs);
+      this.#idleTimer.unref();
     }
   }
 
@@ -584,6 +641,12 @@ function agentDetail(bot: BotSummary): MobileAgentDetail {
     }),
     instructions: bot.description,
   };
+}
+
+/** The number in a Last-Event-ID header, or null (missing or not a number this server issued). */
+function lastEventId(header: string | string[] | undefined): number | null {
+  const value = Array.isArray(header) ? header[0] : header;
+  return value !== undefined && /^\d{1,16}$/.test(value.trim()) ? Number(value.trim()) : null;
 }
 
 function eventBotId(event: AgentEvent): string | null {
