@@ -11,7 +11,8 @@ export type PageId =
   | "usage"
   | "library"
   | "marketplace"
-  | "remote-desktop";
+  | "remote-desktop"
+  | "phone";
 
 export const PAGE_RAIL_ITEMS: ReadonlyArray<{ id: PageId; label: string }> = [
   { id: "agents", label: "Agents" },
@@ -22,6 +23,7 @@ export const PAGE_RAIL_ITEMS: ReadonlyArray<{ id: PageId; label: string }> = [
   { id: "library", label: "Library" },
   { id: "marketplace", label: "Marketplace" },
   { id: "remote-desktop", label: "Remote desktop" },
+  { id: "phone", label: "Phone" },
 ];
 
 interface PageRailProps {
@@ -38,6 +40,13 @@ function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
         <svg aria-hidden="true" viewBox="0 0 20 20">
           <rect x="2.5" y="3.5" width="15" height="10" rx="1.5" />
           <path d="M7 16.5h6M10 13.5v3" />
+        </svg>
+      );
+    case "phone":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <rect x="6" y="2.5" width="8" height="15" rx="2" />
+          <path d="M9 14.8h2" />
         </svg>
       );
     case "agents":

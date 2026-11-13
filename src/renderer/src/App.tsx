@@ -52,6 +52,7 @@ import { JoinServerDialog } from "./components/JoinServerDialog";
 import { LibraryPanel } from "./components/LibraryPanel";
 import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
+import { MobileConnectPage } from "./components/MobileConnectPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
@@ -1917,6 +1918,9 @@ export function App() {
               <Show when={activePage() === "remote-desktop"}>
                 <RemoteDesktopPage />
               </Show>
+              <Show when={activePage() === "phone"}>
+                <MobileConnectPage />
+              </Show>
               <Show
                 when={
                   activePage() !== "agents" &&
@@ -1924,7 +1928,8 @@ export function App() {
                   activePage() !== "schedule" &&
                   activePage() !== "marketplace" &&
                   activePage() !== "workflows" &&
-                  activePage() !== "remote-desktop"
+                  activePage() !== "remote-desktop" &&
+                  activePage() !== "phone"
                 }
               >
                 <ComingSoon title={activePageTitle()} />
