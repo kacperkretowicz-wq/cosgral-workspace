@@ -540,6 +540,15 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
       expect(current.listActivity().find((row) => row.botId === "chief")?.limit).toBeNull();
     });
 
+    it("leaves no empty answer from the limited attempt", async () => {
+      const { current } = await acpService(["acp:backup"], "acp:limited");
+      await current.sendMessage({ botId: "chief", text: "hello" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "completed");
+      const snapshot = await current.readConversation("chief");
+      const answers = snapshot.messages.filter((message) => message.author === "assistant");
+      expect(answers.map((message) => message.text.trim() !== "")).toEqual([true]);
+    });
+
     it("never switches the model on a user error", async () => {
       const { current, events } = await acpService(["acp:limited"], "acp:backup");
       await current.sendMessage({ botId: "chief", text: "BADINPUT please" });

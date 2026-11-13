@@ -168,6 +168,12 @@ describe("AcpAgentClient", () => {
       message: expect.stringContaining("Usage limit"),
     });
     expect(errorOf(limited)).toMatchObject({ resetsAt: expect.any(Number) });
+    // A failed attempt without text leaves no empty answer behind (the turn may move to a fallback model).
+    expect(
+      notifications.some(
+        (item) => item.method === "item/completed" && isDynamicRecord(item.params) && item.params.turnId === limited,
+      ),
+    ).toBe(false);
 
     const down = await turn(client, thread.id, "UNAVAILABLE");
     await waitFor(() => Boolean(completed(notifications, down)));

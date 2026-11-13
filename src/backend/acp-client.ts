@@ -394,10 +394,12 @@ export class AcpAgentClient extends EventEmitter<ClientEvents> implements AgentC
     const turn = thread.activeTurn;
     if (!turn || turn.id !== turnId) return;
     thread.activeTurn = null;
-    this.emit("notification", {
-      method: "item/completed",
-      params: { threadId: thread.id, turnId, item: { id: turn.itemId, type: "agentMessage", text: turn.text } },
-    });
+    // No empty answer when the agent said nothing (a failed attempt may move to a fallback model).
+    if (turn.text)
+      this.emit("notification", {
+        method: "item/completed",
+        params: { threadId: thread.id, turnId, item: { id: turn.itemId, type: "agentMessage", text: turn.text } },
+      });
     if (error) {
       const classified = classifyAcpError(error);
       this.emit("notification", {
