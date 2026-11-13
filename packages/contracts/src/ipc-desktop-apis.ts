@@ -109,6 +109,13 @@ import type {
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
 import type {
+  DeleteVaultItemInput,
+  RespondToVaultRequestInput,
+  SaveVaultItemInput,
+  VaultItemSummary,
+  VaultStatus,
+} from "./ipc-vault";
+import type {
   ChannelMemberInput,
   ChannelMemory,
   ChannelMessage,
@@ -233,6 +240,21 @@ export interface SkillsDesktopApi {
   uninstall: (input: UninstallSkillInput) => Promise<void>;
 }
 
+/**
+ * COSGRAL W2: the local Vault (see ipc-vault.ts). Secrets go in only through `save`; nothing returns them.
+ * Vault requests of agents come with `agent.listPendingRequests()` and the `vault-request` event.
+ */
+export interface VaultDesktopApi {
+  status: () => Promise<VaultStatus>;
+  /** Summaries without secret values, newest first. */
+  list: () => Promise<VaultItemSummary[]>;
+  /** A new item, or a change of `id` that keeps every secret field left out. */
+  save: (input: SaveVaultItemInput) => Promise<VaultItemSummary>;
+  delete: (input: DeleteVaultItemInput) => Promise<void>;
+  /** Answer an agent's request with the item to use (saved now or chosen), or decline it. */
+  respondToRequest: (input: RespondToVaultRequestInput) => Promise<void>;
+}
+
 export interface BrowserDesktopApi {
   open: (input: BrowserOpenInput) => Promise<BrowserTab>;
   activate: (tabId: string) => Promise<void>;
@@ -326,4 +348,6 @@ export interface OpenBotDesktopApi {
   memory?: MemoryDesktopApi;
   /** COSGRAL W2 skill library (this computer only). Optional until every renderer mock implements it. */
   skills?: SkillsDesktopApi;
+  /** COSGRAL W2 local Vault (this computer only). Optional until every renderer mock implements it. */
+  vault?: VaultDesktopApi;
 }
