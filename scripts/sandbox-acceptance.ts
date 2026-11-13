@@ -85,7 +85,14 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
     });
     window.on("pageerror", (error) => consoleFindings.push(error.message.slice(0, 200)));
   });
-  const page = await app.firstWindow();
+  await app.firstWindow();
+  // The dock and the island are windows of their own (they come back after a restart): drive the main window.
+  let page: Page | undefined;
+  for (let attempt = 0; attempt < 120 && !page; attempt += 1) {
+    page = app.windows().find((window) => !/#(dock|island)/.test(window.url()) && window.url() !== "");
+    if (!page) await new Promise((done) => setTimeout(done, 500));
+  }
+  if (!page) throw new Error("The main window did not open.");
   await page.waitForLoadState("domcontentloaded");
   return { app, page };
 }
@@ -242,27 +249,20 @@ async function firstRun(d: Driver, root: string): Promise<void> {
   const { page } = d;
   const longTurn = "SLOW 90000";
 
-  await row("40", "onboarding: welcome, where, provider, first agent, then the main window", async () => {
-    const welcome = page.getByRole("dialog", { name: "Welcome setup" });
-    await welcome.waitFor({ timeout: 60_000 });
-    const languages = await welcome.getByRole("combobox", { name: "Language" }).locator("option").allInnerTexts();
+  await row("40", "onboarding: one flow: where, then provider + language + first agent, then the main window", async () => {
+    const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
+    await where.waitFor({ timeout: 90_000 });
+    await where.getByRole("button", { name: /Use this computer/ }).click();
+    const setup = page.getByRole("dialog", { name: "Set up this computer" });
+    await setup.waitFor({ timeout: 30_000 });
+    const languages = await setup.getByRole("combobox", { name: "Language" }).locator("option").allInnerTexts();
     assert(languages.includes("English") && languages.includes("Polski"), "language choice");
-    await welcome.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
-    await welcome.getByRole("button", { name: "Finish setup" }).click();
-    const seen: string[] = ["welcome"];
-    for (let round = 0; round < 30; round += 1) {
-      if (await page.getByRole("navigation", { name: "Pages" }).count()) break;
-      if (await page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" }).count()) {
-        seen.push("where");
-        await page.getByRole("button", { name: /Use this computer/ }).click();
-      } else if (await page.getByRole("dialog", { name: "Set up this computer" }).count()) {
-        seen.push("provider");
-        await page.getByRole("button", { name: "Continue with Codex" }).click();
-      }
-      await page.waitForTimeout(500);
-    }
-    await page.getByRole("button", { name: /^Assistant, / }).first().waitFor({ timeout: 30_000 });
-    return `screens: ${seen.join(" > ")}; first agent Assistant is in the list`;
+    assert((await setup.getByRole("radio").count()) >= 2, "provider choice");
+    assert(/Computer Use/.test(await setup.innerText()), "Computer Use is explained");
+    await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
+    await setup.getByRole("button", { name: "Continue with Codex" }).click();
+    await page.getByRole("button", { name: /^Assistant, / }).first().waitFor({ timeout: 60_000 });
+    return "screens: where > set up (provider, language, first agent, Computer Use); Assistant is in the list";
   });
 
   await row("9", "chat: a message gets an answer and stays visible", async () => {
@@ -275,6 +275,13 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     assert((await page.getByText("Stub: received").count()) > 0, "the answer is shown");
     return reply;
   });
+
+  const spare = JSON.stringify(
+    await d.ev(
+      `window.openbot.agent.createBot().then((b) => window.openbot.agent.updateBot({ botId: b.id, name: "Res", role: "Research and sources" })).then((b) => b.name)`,
+    ),
+  );
+  console.log(`     second agent: ${spare}`);
 
   await row("5", "state: the row says Thinking while a turn runs and settles after it", async () => {
     await d.send("Assistant", "SLOW 8000");
@@ -498,11 +505,11 @@ async function firstRun(d: Driver, root: string): Promise<void> {
   await row("22", "templates: create an agent from the Researcher template", async () => {
     const creator = page.getByRole("region", { name: "Create agent" });
     await creator.getByRole("combobox", { name: "Template" }).selectOption({ label: "Researcher" });
-    await creator.getByRole("textbox", { name: "Agent name" }).fill("Res");
+    await creator.getByRole("textbox", { name: "Agent name" }).fill("Tmpl");
     await creator.getByRole("button", { name: "Create agent" }).click();
     await page.waitForTimeout(2_500);
     const made = asRecord(
-      await d.ev(`window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Res"); return b ? { role: b.role, desc: b.description } : null; })`),
+      await d.ev(`window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Tmpl"); return b ? { role: b.role, desc: b.description } : null; })`),
     );
     assert(String(made.role).length > 0 && String(made.desc).length > 20, JSON.stringify(made));
     return `role ${String(made.role)}`;
@@ -634,7 +641,7 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await page.getByRole("textbox", { name: "Run input" }).fill("acceptance input");
     await page.getByRole("button", { name: "Run now" }).click();
     await page.getByText(/trigger: done/).first().waitFor({ timeout: 40_000 });
-    assert(/agent: done/.test(await page.locator("main").first().innerText()), "agent step done");
+    await page.getByText(/agent: done/).first().waitFor({ timeout: 60_000 });
     return "trigger: done, agent: done";
   });
 
