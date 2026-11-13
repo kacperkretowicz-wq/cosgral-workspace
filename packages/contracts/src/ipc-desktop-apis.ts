@@ -187,6 +187,15 @@ import type {
   VaultStatus,
 } from "./ipc-vault";
 import type {
+  CreateWorkflowInput,
+  RunWorkflowInput,
+  UpdateWorkflowInput,
+  Workflow,
+  WorkflowIdInput,
+  WorkflowRun,
+  WorkflowRunIdInput,
+} from "./ipc-workflows";
+import type {
   ChannelMemberInput,
   ChannelMemory,
   ChannelMessage,
@@ -337,6 +346,23 @@ export interface RoutinesDesktopApi {
   listRuns: (input: RoutineIdInput) => Promise<RoutineRun[]>;
   /** A new webhook secret, shown once; the old one stops working. */
   regenerateSecret: (input: RoutineIdInput) => Promise<RoutineWithSecret>;
+}
+
+/** COSGRAL W3: workflows drawn on a canvas (see ipc-workflows.ts). This computer only. */
+export interface WorkflowsDesktopApi {
+  /** Oldest first. */
+  list: () => Promise<Workflow[]>;
+  /** Refused with the list of problems when `workflowProblems` finds any, or an agent or channel is unknown. */
+  create: (input: CreateWorkflowInput) => Promise<Workflow>;
+  update: (input: UpdateWorkflowInput) => Promise<Workflow>;
+  /** Also removes its runs. */
+  delete: (input: WorkflowIdInput) => Promise<void>;
+  /** Start a run now; a paused workflow, or one that is already running, is refused. */
+  run: (input: RunWorkflowInput) => Promise<WorkflowRun>;
+  /** Ends an open run as "cancelled" and closes its approval card. */
+  cancelRun: (input: WorkflowRunIdInput) => Promise<WorkflowRun>;
+  /** Newest first, at most the last 100. */
+  listRuns: (input: WorkflowIdInput) => Promise<WorkflowRun[]>;
 }
 
 /** COSGRAL W2: MCP servers of the program and the per-agent switch (see ipc-mcp.ts). */
@@ -550,6 +576,8 @@ export interface OpenBotDesktopApi {
   vault?: VaultDesktopApi;
   /** COSGRAL W2: routines and webhooks. Optional until every renderer mock implements it. */
   routines?: RoutinesDesktopApi;
+  /** COSGRAL W3: workflows. Optional until every renderer mock implements it. */
+  workflows?: WorkflowsDesktopApi;
   /** COSGRAL W2 shared tables (this computer only). Optional until every renderer mock implements it. */
   tables?: TablesDesktopApi;
   /** COSGRAL W2 file library (this computer only). Optional until every renderer mock implements it. */

@@ -32,6 +32,7 @@ import type {
   ConversationWithReadState,
   DeleteDraftInput,
   DraftAttachment,
+  DraftPreviewResolution,
   ImageGenerationInfo,
   KeptDraft,
   PendingAgentPrompt,
@@ -118,6 +119,7 @@ import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
 import { SKILLS_DYNAMIC_TOOLS, SKILLS_NAMESPACE, SkillTools, skillInstructions } from "./skill-tools";
 import { type SecretBox, VaultStore } from "./vault-store";
 import { VAULT_DYNAMIC_TOOLS, VAULT_INSTRUCTIONS, VAULT_NAMESPACE, VaultRequests, VaultTools } from "./vault-tools";
+import type { WorkflowRunner } from "./workflow-manager";
 
 interface AgentServiceEvents {
   event: [event: AgentEvent];
@@ -712,6 +714,49 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           .deliveries.find((delivery) => delivery.status === "running" || delivery.status === "starting")?.id ?? null,
       botExists: (botId) => this.#store.list().some((bot) => bot.id === botId),
     };
+  }
+
+  /** COSGRAL W3: how a workflow's agent steps use the agent's queue and read the reply of that turn. */
+  workflowRunner(): WorkflowRunner {
+    const { start, deliveryStatus, botExists } = this.routineRunner();
+    return {
+      start,
+      deliveryStatus,
+      botExists,
+      deliveryOutput: async (botId, deliveryId) => {
+        const turnId = this.#mailbox.getDelivery(deliveryId)?.delivery.turnId;
+        if (!turnId) return null;
+        const { messages } = await this.readConversation(botId);
+        const reply = [...messages]
+          .reverse()
+          .find(
+            (message) =>
+              message.author === "assistant" &&
+              message.turnId === turnId &&
+              message.itemType !== "commentary" &&
+              message.text.trim(),
+          );
+        return reply?.text ?? null;
+      },
+    };
+  }
+
+  /** COSGRAL W3: the confirm card of a workflow's approval step, under this agent's row in Needs you. */
+  confirmWorkflowStep(
+    botId: string,
+    runId: string,
+    input: { title: string; preview: string },
+  ): Promise<DraftPreviewResolution> {
+    const providerThreadId = `workflow:${runId}`;
+    return this.#cards.confirmAction(
+      { botId, threadId: this.#publicThreadId(botId, providerThreadId), providerThreadId, turnId: providerThreadId },
+      input,
+    );
+  }
+
+  /** COSGRAL W3: closes the open approval card of a workflow run (nothing counts as approved). */
+  closeWorkflowStep(runId: string): void {
+    this.#cards.expireTurn(`workflow:${runId}`, `workflow:${runId}`);
   }
 
   listActivity(): AgentActivity[] {

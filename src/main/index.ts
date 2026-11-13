@@ -52,6 +52,8 @@ import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { WebhookReceiver } from "../backend/webhook-receiver";
+import { WorkflowManager } from "../backend/workflow-manager";
+import { WorkflowStore } from "../backend/workflow-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
@@ -169,6 +171,7 @@ import { TeamStore } from "./team-store";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
+import { registerWorkflowIpc } from "./workflow-ipc";
 
 if (!app.isPackaged) {
   const profile = readDevelopmentProfile(process.env.OPENBOT_DEV_PROFILE);
@@ -228,6 +231,8 @@ let routineManager: RoutineManager | null = null;
 let webhookReceiverService: WebhookReceiver | null = null;
 /** COSGRAL W3: ACP agents, fallback models, usage and limits; its reset timer stops on exit. */
 let providerRegistry: ProviderRegistry | null = null;
+/** COSGRAL W3: workflows; open runs end as failed on exit. */
+let workflowManager: WorkflowManager | null = null;
 const DEFAULT_WEBHOOK_PORT = 47900;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
@@ -1313,7 +1318,10 @@ if (!hasSingleInstanceLock) {
       const routines: RoutineManager = new RoutineManager({
         store: routineStore,
         runner: service.routineRunner(),
-        emit: (event) => forwardAgentEvent("local", event),
+        emit: (event) => {
+          forwardAgentEvent("local", event);
+          workflowManager?.handleEvent(event); // COSGRAL W3: a routine run can start a workflow
+        },
         receiverUrl: (): string | null => webhookReceiver.url(),
       });
       service.useRoutines(routines);
@@ -1332,6 +1340,28 @@ if (!hasSingleInstanceLock) {
       );
       channelEngineService = engine;
       channelStore.on("event", (event) => forwardAgentEvent("local", event));
+      // COSGRAL W3: workflows (this computer only): agent steps use the agents' queue, approvals the confirm card.
+      workflowManager = new WorkflowManager({
+        store: new WorkflowStore(store.database),
+        runner: service.workflowRunner(),
+        approvals: {
+          confirm: (botId, runId, input) => service.confirmWorkflowStep(botId, runId, input),
+          close: (runId) => service.closeWorkflowStep(runId),
+        },
+        channels: {
+          exists: (channelId) => channelStore.list().some((channel) => channel.id === channelId && !channel.archived),
+          post: (channelId, text) => {
+            channelStore.addMessage({ channelId, authorBotId: null, kind: "system", text });
+          },
+        },
+        routines: {
+          exists: (routineId) => routineStore.list().some((routine) => routine.id === routineId),
+          name: (routineId) => routineStore.list().find((routine) => routine.id === routineId)?.name ?? null,
+        },
+        emit: (event) => forwardAgentEvent("local", event),
+      });
+      workflowManager.start();
+      registerWorkflowIpc(workflowManager);
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1684,6 +1714,8 @@ async function prepareForShutdown(): Promise<void> {
   await (hostService?.shutdown() ?? Promise.resolve());
   dockWindows?.destroy();
   await (browserHost?.destroy() ?? Promise.resolve());
+  // COSGRAL W3: open workflow runs end as failed while the database is still open.
+  workflowManager?.stop();
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
   await (mcpManager?.stop() ?? Promise.resolve());

@@ -6,7 +6,14 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
-import type { AgentEvent, AgentModelId, BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
+import type {
+  AgentEvent,
+  AgentModelId,
+  BrowserControlState,
+  BrowserTab,
+  WorkflowEdge,
+  WorkflowNode,
+} from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
@@ -20,6 +27,8 @@ import { channelFixture, channelTaskFixture } from "./testing/channel-fixtures";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { FakeComputerDriver, fakeWindow } from "./testing/fake-computer-driver";
+import { WorkflowManager } from "./workflow-manager";
+import { WorkflowStore } from "./workflow-store";
 
 let root: string;
 let logPath: string;
@@ -671,7 +680,7 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
       await store.getOrCreate("chief");
       registry.setFallbackModels({ botId: "chief", fallbackModels });
       await current.updateBot({ botId: "chief", model });
-      return { current, events, registry };
+      return { current, events, registry, store };
     }
 
     async function lastAssistant(current: AgentService): Promise<string> {
@@ -738,6 +747,113 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
         limitId: "acp:limited",
         resetsAt: expect.any(Number),
       });
+    });
+  });
+
+  describe("COSGRAL W3: workflows on a real AgentService", () => {
+    const ACP_STUB = join(__dirname, "testing", "acp-stub.mjs");
+    const trigger: WorkflowNode = {
+      id: "start",
+      type: "trigger",
+      title: "Start",
+      x: 0,
+      y: 0,
+      trigger: { kind: "manual" },
+    };
+    const ask: WorkflowNode = {
+      id: "ask",
+      type: "agent",
+      title: "Ask",
+      x: 1,
+      y: 0,
+      botId: "chief",
+      prompt: "Say hi to {{input}}",
+    };
+    const approve: WorkflowNode = {
+      id: "approve",
+      type: "approval",
+      title: "Approve",
+      x: 2,
+      y: 0,
+      botId: "chief",
+      text: "Post this? {{previous}}",
+    };
+    const post: WorkflowNode = {
+      id: "post",
+      type: "channel-output",
+      title: "Post",
+      x: 3,
+      y: 0,
+      channelId: "chan",
+      text: "{{steps.ask}}",
+    };
+    const edges: WorkflowEdge[] = [
+      { id: "e1", from: "start", to: "ask", on: "next" },
+      { id: "e2", from: "ask", to: "approve", on: "next" },
+      { id: "e3", from: "approve", to: "post", on: "allow" },
+    ];
+
+    async function workflows() {
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const current = service;
+      const registry = new ProviderRegistry({
+        database: store.database,
+        emit: (event) => current.relay(event),
+        timers: false,
+      });
+      current.useProviders(registry);
+      await current.initialize();
+      registry.saveAcpAgent({ id: "stub", name: "ACP stub", command: process.execPath, args: [ACP_STUB, "stub"] });
+      await store.getOrCreate("chief");
+      await current.updateBot({ botId: "chief", model: "acp:stub" });
+      const posts: string[] = [];
+      const manager = new WorkflowManager({
+        store: new WorkflowStore(store.database),
+        runner: current.workflowRunner(),
+        approvals: {
+          confirm: (botId, runId, input) => current.confirmWorkflowStep(botId, runId, input),
+          close: (runId) => current.closeWorkflowStep(runId),
+        },
+        channels: { exists: (channelId) => channelId === "chan", post: (_channelId, text) => posts.push(text) },
+        routines: { exists: () => false, name: () => null },
+        emit: (event) => current.relay(event),
+        pollMs: 20,
+      });
+      const workflow = manager.create({ name: "Reply flow", nodes: [trigger, ask, approve, post], edges });
+      const card = () => current.listPendingRequests().find((request) => request.kind === "draft-preview");
+      return { current, manager, workflow, posts, card };
+    }
+
+    it("uses the agent's real reply, shows the approval as a confirm card and goes on after Confirm", async () => {
+      const { current, manager, workflow, posts, card } = await workflows();
+      const run = manager.run({ workflowId: workflow.id, input: "Anna" });
+      await waitFor(() => card() !== undefined);
+      const open = card();
+      if (open?.kind !== "draft-preview") throw new Error("Expected the approval card.");
+      expect(open.card).toMatchObject({ botId: "chief", variant: "confirm", title: "Reply flow: Approve" });
+      expect(open.card.preview).toContain('ACP stub (not a model): received "[COSGRAL workflow run]');
+      expect(manager.listRuns({ workflowId: workflow.id })[0]).toMatchObject({ id: run.id, status: "waiting" });
+
+      await current.respondToDraftPreview({ requestId: open.card.requestId, decision: "send" });
+      await manager.idle();
+      expect(posts).toHaveLength(1);
+      expect(posts[0]).toContain('[Workflow "Reply flow"] ');
+      expect(posts[0]).toContain("ACP stub (not a model)");
+      expect(manager.listRuns({ workflowId: workflow.id })[0]).toMatchObject({ status: "done" });
+      expect(current.listPendingRequests()).toEqual([]);
+    });
+
+    it("closes the approval card when the run is cancelled, and posts nothing", async () => {
+      const { current, manager, workflow, posts, card } = await workflows();
+      const run = manager.run({ workflowId: workflow.id, input: "Anna" });
+      await waitFor(() => card() !== undefined);
+      manager.cancelRun({ runId: run.id });
+      await waitFor(() => card() === undefined);
+      await manager.idle();
+      expect(posts).toEqual([]);
+      expect(manager.listRuns({ workflowId: workflow.id })[0]).toMatchObject({ status: "cancelled" });
+      expect(current.listPendingRequests()).toEqual([]);
     });
   });
 

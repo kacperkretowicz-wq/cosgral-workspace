@@ -344,6 +344,22 @@ const SCHEMA_SQL = `
     models_json TEXT NOT NULL CHECK(json_valid(models_json)),
     updated_at TEXT NOT NULL
   );
+  -- COSGRAL W3: workflows (canvas graphs) and their runs.
+  CREATE TABLE IF NOT EXISTS projection_workflows (
+    workflow_id TEXT PRIMARY KEY,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_workflow_runs (
+    run_id TEXT PRIMARY KEY,
+    workflow_id TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS workflow_runs_workflow ON projection_workflow_runs(workflow_id, started_at);
   -- COSGRAL W2: routines (schedule and webhook). secret_encrypted is the encrypted webhook signing secret.
   CREATE TABLE IF NOT EXISTS projection_routines (
     routine_id TEXT PRIMARY KEY,
