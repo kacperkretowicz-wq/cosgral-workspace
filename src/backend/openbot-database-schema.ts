@@ -319,6 +319,15 @@ const SCHEMA_SQL = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json)),
     PRIMARY KEY (bot_id, skill_id)
   );
+  -- COSGRAL W2: the local Vault. summary_json never holds a secret value; every value of an item is in
+  -- secret_box, encrypted by the operating system (Electron safeStorage). Nothing goes to the event log.
+  CREATE TABLE IF NOT EXISTS projection_vault_items (
+    item_id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    summary_json TEXT NOT NULL CHECK(json_valid(summary_json)),
+    secret_box TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {
