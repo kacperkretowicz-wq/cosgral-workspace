@@ -247,6 +247,61 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     });
   });
 
+  it("lets an agent create a library skill with cosgral_skills and installs it for that agent only", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "skill-call-1",
+      params: {
+        threadId,
+        turnId,
+        callId: "call-skill",
+        namespace: "cosgral_skills",
+        tool: "create_skill",
+        arguments: {
+          skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\nSteps.\n",
+        },
+      },
+    });
+    await waitFor(() => codex.responses.some((response) => response.id === "skill-call-1"));
+    expect(codex.responses.find((response) => response.id === "skill-call-1")).toMatchObject({
+      result: { success: true },
+    });
+    expect(service?.skillLibrary.list()).toEqual([expect.objectContaining({ name: "weekly-report", version: 1 })]);
+    expect(await service?.skillLibrary.listInstalls()).toEqual([
+      expect.objectContaining({ botId: "chief", installedVersion: 1 }),
+    ]);
+    expect(events.some((event) => event.type === "skills-changed" && event.skills.length === 1)).toBe(true);
+    expect(events.some((event) => event.type === "skill-installs-changed" && event.installs.length === 1)).toBe(true);
+    const threadStart = codex.requests.find((request) => request.method === "thread/start");
+    expect(threadStart?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([expect.objectContaining({ name: "cosgral_skills" })]),
+    });
+  });
+
+  it("lists the agent's installed skills in the instructions of its thread", async () => {
+    let codex: FakeAgentClient | undefined;
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "DONE", false);
+      if (provider === "codex") codex = client;
+      return client;
+    });
+    await service.initialize();
+    await store.getOrCreate("chief");
+    const skill = await service.skillLibrary.create({
+      source: { kind: "inline", skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n" },
+      authorBotId: null,
+    });
+    const install = await service.skillLibrary.install({ skillId: skill.id, botId: "chief" });
+    await service.sendMessage({ botId: "chief", text: "Prepare the report" });
+    await waitFor(() => Boolean(codex?.requests.some((request) => request.method === "thread/start")));
+    const threadStart = codex?.requests.find((request) => request.method === "thread/start");
+    const instructions = stringParam(threadStart?.params, "developerInstructions");
+    expect(instructions).toContain("weekly-report (version 1): Builds the weekly report.");
+    expect(instructions).toContain(join(install.path, "SKILL.md"));
+  });
+
   it("keeps a draft with Keep draft and lets the user delete it", async () => {
     const { codex, events, threadId, turnId } = await startManualTurn();
     codex.emit("request", {

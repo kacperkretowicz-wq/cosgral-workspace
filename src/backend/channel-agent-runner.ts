@@ -14,6 +14,7 @@ import {
   getRecord,
   getString,
 } from "./protocol";
+import { SKILLS_NAMESPACE } from "./skill-tools";
 
 interface Session {
   client: AgentClient;
@@ -35,6 +36,8 @@ interface Options {
   register: (threadId: string, botId: string) => void;
   clear: (threadId: string, turnId: string | null) => void;
   event?: (event: AgentEvent) => void;
+  /** COSGRAL W2: extra instructions for this member, e.g. its installed skills. */
+  instructions?: (botId: string) => string;
 }
 
 /** Provider threads here never become a DM provider session, mailbox delivery or conversation. */
@@ -85,6 +88,7 @@ export class ChannelAgentRunner implements ChannelRunner {
           `Channel: ${input.channel.name}. Instructions: ${input.channel.instructions}`,
           `This channel is ${input.channel.isolated ? "isolated" : "shared"}; no direct-message context or memory is included.`,
           CARDS_INSTRUCTIONS,
+          ...(this.#options.instructions ? [this.#options.instructions(bot.id)] : []),
         ].join("\n"),
         dynamicTools: [...this.#options.tools(), CHANNEL_DYNAMIC_TOOLS],
       },
@@ -244,6 +248,7 @@ export class ChannelAgentRunner implements ChannelRunner {
             params.namespace !== "openbot_browser" &&
             params.namespace !== "cosgral_eyes" &&
             params.namespace !== CARDS_NAMESPACE &&
+            params.namespace !== SKILLS_NAMESPACE &&
             !(params.namespace === "openbot" && params.tool === "ask_user")
           )
             throw new Error("This tool is outside the channel's scope.");
