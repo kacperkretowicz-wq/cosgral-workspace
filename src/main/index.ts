@@ -142,6 +142,7 @@ import {
   RemoteServerManager,
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
+import { enforceSingleInstance } from "./single-instance";
 import { TeamStore } from "./team-store";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
@@ -157,7 +158,7 @@ if (!app.isPackaged && process.env.COSGRAL_FAKE_CAMERA === "1") {
   app.commandLine.appendSwitch("use-fake-device-for-media-stream");
 }
 if (process.platform === "win32") app.setAppUserModelId("pl.cosgral.workspace");
-const hasSingleInstanceLock = app.requestSingleInstanceLock();
+enforceSingleInstance(app);
 const appVariant = readAppVariant(process.env.OPENBOT_APP_VARIANT, app.isPackaged);
 const appIconPath = resolveAppIconPath({
   variant: appVariant,
@@ -1086,31 +1087,86 @@ app.on("open-url", (event, url) => {
   acceptOpenbotUrl(url);
 });
 
-if (!hasSingleInstanceLock) {
-  app.quit();
-} else {
-  app.on("second-instance", (_event, argv) => {
-    const deepLink = argv.find((value) => value.startsWith("cosgral://join?") || value.startsWith("cosgral://update?"));
-    if (deepLink) acceptOpenbotUrl(deepLink);
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-  });
+app.on("second-instance", (_event, argv) => {
+  const deepLink = argv.find((value) => value.startsWith("cosgral://join?") || value.startsWith("cosgral://update?"));
+  if (deepLink) acceptOpenbotUrl(deepLink);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
 
-  void app
-    .whenReady()
-    .then(async () => {
-      if (process.platform === "darwin") app.setAsDefaultProtocolClient("cosgral");
-      if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
-      configureContentSecurityPolicy();
-      mainWindow = createWindow();
-      // COSGRAL: local owner profile by default; the hosted account service only when OPENBOT_AUTH_API_URL is set.
-      centralAuthManager = createAccountManager({
-        accountServiceUrl: process.env.OPENBOT_AUTH_API_URL,
-        localProfilePath: join(app.getPath("userData"), LOCAL_OWNER_FILE),
-        centralStoragePath: join(app.getPath("userData"), CENTRAL_AUTH_FILE),
-        defaultName: localOwnerName(),
+void app
+  .whenReady()
+  .then(async () => {
+    if (process.platform === "darwin") app.setAsDefaultProtocolClient("cosgral");
+    if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
+    configureContentSecurityPolicy();
+    mainWindow = createWindow();
+    // COSGRAL: local owner profile by default; the hosted account service only when OPENBOT_AUTH_API_URL is set.
+    centralAuthManager = createAccountManager({
+      accountServiceUrl: process.env.OPENBOT_AUTH_API_URL,
+      localProfilePath: join(app.getPath("userData"), LOCAL_OWNER_FILE),
+      centralStoragePath: join(app.getPath("userData"), CENTRAL_AUTH_FILE),
+      defaultName: localOwnerName(),
+      encrypt: (value) => {
+        if (!safeStorage.isEncryptionAvailable()) {
+          throw new Error("macOS secure storage is unavailable.");
+        }
+        return safeStorage.encryptString(value);
+      },
+      decrypt: (value) => safeStorage.decryptString(value),
+    });
+    centralAuthManager.on("changed", forwardCentralAuth);
+    const accountInitialization = centralAuthManager.initialize();
+    if (centralAuthManager instanceof LocalOwnerAccount) await accountInitialization;
+    const store = new BotStore(app.getPath("userData"), homedir());
+    await store.initialize();
+    mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
+    await mailboxStore.initialize();
+    configureApplicationProtocol();
+    browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
+    await browserHost.restore();
+    const setupFile = join(app.getPath("userData"), SETUP_FILE);
+    const setupState = await readSetupState(setupFile);
+    // COSGRAL: agent eyes; pictures stay in userData/eyes and expire.
+    const eyes = new EyesService({
+      capture: new ElectronEyesCapture(),
+      storageRoot: join(app.getPath("userData"), EYES_FOLDER),
+    });
+    void eyes.cleanup().catch((error) => console.error("Unable to clean agent eyes pictures:", error));
+    eyes.on("changed", (state) => showEyesIndicator(state.sessions.length > 0));
+    agentService = new AgentService(
+      store,
+      mailboxStore,
+      browserHost,
+      readComputerUsePrerequisites,
+      30_000,
+      setupState.preferredProvider ?? "codex",
+      null,
+      eyes,
+    );
+    const service = agentService;
+    // COSGRAL W1: sidebar folders live in the same local database.
+    const sidebarStore = new SidebarStore(store.database);
+    // COSGRAL W1-BE2: channels and their tasks, members are existing agents.
+    const channelStore = new ChannelStore(store.database, {
+      botExists: (botId) => service.listBots().some((bot) => bot.id === botId),
+    });
+    const engine = new ChannelEngine(
+      channelStore,
+      { run: (input) => service.runChannelTurn(input), available: (id) => service.canRunChannelTurn(id) },
+      { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
+    );
+    channelEngineService = engine;
+    channelStore.on("event", (event) => forwardAgentEvent("local", event));
+    configureAttachmentProtocol(mailboxStore, service);
+    const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
+    await teamStore.initialize();
+    const teamChatStore = new TeamChatStore(store.database);
+    const remoteDesktopCredentials = new RemoteDesktopCredentialStore(
+      join(app.getPath("userData"), REMOTE_DESKTOP_CREDENTIAL_FILE),
+      {
         encrypt: (value) => {
           if (!safeStorage.isEncryptionAvailable()) {
             throw new Error("macOS secure storage is unavailable.");
@@ -1118,245 +1174,186 @@ if (!hasSingleInstanceLock) {
           return safeStorage.encryptString(value);
         },
         decrypt: (value) => safeStorage.decryptString(value),
-      });
-      centralAuthManager.on("changed", forwardCentralAuth);
-      const accountInitialization = centralAuthManager.initialize();
-      if (centralAuthManager instanceof LocalOwnerAccount) await accountInitialization;
-      const store = new BotStore(app.getPath("userData"), homedir());
-      await store.initialize();
-      mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
-      await mailboxStore.initialize();
-      configureApplicationProtocol();
-      browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
-      await browserHost.restore();
-      const setupFile = join(app.getPath("userData"), SETUP_FILE);
-      const setupState = await readSetupState(setupFile);
-      // COSGRAL: agent eyes; pictures stay in userData/eyes and expire.
-      const eyes = new EyesService({
-        capture: new ElectronEyesCapture(),
-        storageRoot: join(app.getPath("userData"), EYES_FOLDER),
-      });
-      void eyes.cleanup().catch((error) => console.error("Unable to clean agent eyes pictures:", error));
-      eyes.on("changed", (state) => showEyesIndicator(state.sessions.length > 0));
-      agentService = new AgentService(
-        store,
-        mailboxStore,
-        browserHost,
-        readComputerUsePrerequisites,
-        30_000,
-        setupState.preferredProvider ?? "codex",
-        null,
-        eyes,
-      );
-      const service = agentService;
-      // COSGRAL W1: sidebar folders live in the same local database.
-      const sidebarStore = new SidebarStore(store.database);
-      // COSGRAL W1-BE2: channels and their tasks, members are existing agents.
-      const channelStore = new ChannelStore(store.database, {
-        botExists: (botId) => service.listBots().some((bot) => bot.id === botId),
-      });
-      const engine = new ChannelEngine(
-        channelStore,
-        { run: (input) => service.runChannelTurn(input), available: (id) => service.canRunChannelTurn(id) },
-        { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
-      );
-      channelEngineService = engine;
-      channelStore.on("event", (event) => forwardAgentEvent("local", event));
-      configureAttachmentProtocol(mailboxStore, service);
-      const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
-      await teamStore.initialize();
-      const teamChatStore = new TeamChatStore(store.database);
-      const remoteDesktopCredentials = new RemoteDesktopCredentialStore(
-        join(app.getPath("userData"), REMOTE_DESKTOP_CREDENTIAL_FILE),
-        {
-          encrypt: (value) => {
-            if (!safeStorage.isEncryptionAvailable()) {
-              throw new Error("macOS secure storage is unavailable.");
-            }
-            return safeStorage.encryptString(value);
-          },
-          decrypt: (value) => safeStorage.decryptString(value),
-        },
-      );
-      await remoteDesktopCredentials.initialize();
-      hostService = new HostService({
-        store: teamStore,
-        agents: service,
-        mailbox: mailboxStore,
-        browser: browserHost,
-        chat: teamChatStore,
-        logDirectory: join(app.getPath("userData"), "logs", "remote"),
-        getSignedInUser: () => {
-          if (!centralAuthManager) throw new Error("The account service is not ready.");
-          return centralAuthManager.getSignedInUser();
-        },
-        redeemCentralTicket: (ticket, serverId) => {
-          if (!centralAuthManager) return Promise.resolve(null);
-          return centralAuthManager.redeemTeamAuthTicket(ticket, serverId);
-        },
-        sendTeamInviteEmail: (input) => {
-          if (!centralAuthManager) throw new Error("The account service is not ready.");
-          return centralAuthManager.sendTeamInviteEmail(input);
-        },
-        getRemoteDesktopPassword: () => remoteDesktopCredentials.getPassword(),
-        setRemoteDesktopPassword: (password) => remoteDesktopCredentials.setPassword(password),
-        provisionTeamTunnel: (input) => {
-          if (!centralAuthManager) throw new Error("The account service is not ready.");
-          return centralAuthManager.provisionTeamTunnel(input);
-        },
-      });
-      const signedInState = centralAuthManager.getState();
-      if (signedInState.status === "signed_in") {
-        await hostService.syncSignedInAccount(signedInState.user);
-      }
-      remoteServerManager = new RemoteServerManager(
-        join(app.getPath("userData"), REMOTE_SERVERS_FILE),
-        {
-          encrypt: (value) => {
-            if (!safeStorage.isEncryptionAvailable()) {
-              throw new Error("macOS secure storage is unavailable.");
-            }
-            return safeStorage.encryptString(value);
-          },
-          decrypt: (value) => safeStorage.decryptString(value),
-        },
-        {
-          createTeamAuthTicket: (serverId) => {
-            if (!centralAuthManager) throw new Error("The account service is not ready.");
-            return centralAuthManager.createTeamAuthTicket(serverId);
-          },
-          getEmail: () => {
-            if (!centralAuthManager) throw new Error("The account service is not ready.");
-            return centralAuthManager.getSignedInUser().email;
-          },
-        },
-      );
-      await remoteServerManager.initialize();
-      remoteMacManager = new RemoteMacManager({
-        logDirectory: join(app.getPath("userData"), "logs", "remote"),
-        resolveRemoteDesktop: (serverId) => {
-          if (!remoteServerManager) throw new Error("The remote server service is not ready.");
-          return remoteServerManager.getRemoteDesktopAccess(serverId);
-        },
-      });
-      if (pendingAddressUpdateUrl) {
-        const updateUrl = pendingAddressUpdateUrl;
-        pendingAddressUpdateUrl = null;
-        void remoteServerManager.updateAddress(updateUrl).catch((error) => {
-          const message = error instanceof Error ? error.message : "The server address was not updated.";
-          dialog.showErrorBox("COSGRAL server update failed", message);
-        });
-      }
-      const host = hostService;
-      const remoteMac = remoteMacManager;
-      const remoteServers = remoteServerManager;
-      const { autoUpdater } = electronUpdater;
-      updateService = new UpdateService(autoUpdater, {
-        currentVersion: app.getVersion(),
-        enabled:
-          app.isPackaged &&
-          supportsInstalledUpdates(process.platform) &&
-          existsSync(join(process.resourcesPath, "app-update.yml")),
-        beforeInstall: prepareForShutdown,
-      });
-      service.on("event", (event) => forwardAgentEvent("local", event));
-      service.on("event", (event) => {
-        if (event.type === "turn-completed" || event.type === "queue-changed") engine.reconcile();
-      });
-      // COSGRAL W1: a deleted agent leaves its folder.
-      service.on("event", (event) => {
-        if (event.type !== "bots-changed") return;
-        try {
-          if (
-            sidebarStore.pruneItems(
-              "agent",
-              event.bots.map((bot) => bot.id),
-            )
-          ) {
-            forwardSidebarLayout(sidebarStore.layout());
-          }
-        } catch (error) {
-          console.error("Unable to update sidebar folders:", error);
-        }
-        // COSGRAL W1-BE2: and its channels; a deleted lead hands the role and open tasks to the next member.
-        try {
-          const changed = channelStore.pruneBots(event.bots.map((bot) => bot.id));
-          if (changed.tasks.length) engine.reconcile();
-        } catch (error) {
-          console.error("Unable to update channels:", error);
-        }
-      });
-      host.on("changed", forwardHostStatus);
-      host.on("presence", (snapshot) => forwardTeamPresence("local", snapshot));
-      host.on("directMessage", (event) => forwardDirectMessage("local", event));
-      host.on("directTyping", (event) => forwardDirectTyping("local", event));
-      remoteMac.on("changed", forwardRemoteMacSessions);
-      remoteServers.on("changed", forwardServers);
-      remoteServers.on("agent", (serverId, event) => {
-        forwardAgentEvent(serverId, event);
-      });
-      remoteServers.on("presence", forwardTeamPresence);
-      remoteServers.on("directMessage", forwardDirectMessage);
-      remoteServers.on("directTyping", forwardDirectTyping);
-      updateService.on("status", forwardUpdateStatus);
-      updateService.start();
-      const agentInitialization = new AgentInitializationGate(async () => {
-        await service.initialize();
-        engine.start();
-      });
-      registerIpcHandlers(
-        service,
-        mailboxStore,
-        browserHost,
-        updateService,
-        setupFile,
-        () => agentInitialization.start(),
-        host,
-        remoteMac,
-        remoteServers,
-        centralAuthManager,
-        sidebarStore,
-        channelStore,
-        engine,
-      );
-      configureApplicationMenu(service, updateService);
-      await loadRenderer(mainWindow);
-      if (pendingInviteUrl) {
-        mainWindow.webContents.send(IPC_CHANNELS.serversInvite, pendingInviteUrl);
-        pendingInviteUrl = null;
-      }
-      const teamIdentity = teamStore.getIdentity();
-      if (
-        shouldAutoStartHost({
-          configured: Boolean(teamIdentity),
-          enabledOnLaunch: teamIdentity?.enabledOnLaunch ?? false,
-        })
-      ) {
-        void host.start().catch((error) => console.error("Unable to republish this COSGRAL Workspace:", error));
-      }
-      void agentInitialization.start().catch((error) => {
-        console.error("Unable to initialize the local agent backend:", error);
-      });
-
-      app.on("activate", () => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.show();
-          return;
-        }
-        mainWindow = createWindow();
-        void loadRenderer(mainWindow);
-      });
-    })
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("COSGRAL Workspace failed to start:", error);
-      dialog.showErrorBox(
-        "COSGRAL Workspace couldn’t start",
-        `${message}\n\nYour local data was not reset or overwritten. See the troubleshooting guide for recovery steps.`,
-      );
-      app.quit();
+      },
+    );
+    await remoteDesktopCredentials.initialize();
+    hostService = new HostService({
+      store: teamStore,
+      agents: service,
+      mailbox: mailboxStore,
+      browser: browserHost,
+      chat: teamChatStore,
+      logDirectory: join(app.getPath("userData"), "logs", "remote"),
+      getSignedInUser: () => {
+        if (!centralAuthManager) throw new Error("The account service is not ready.");
+        return centralAuthManager.getSignedInUser();
+      },
+      redeemCentralTicket: (ticket, serverId) => {
+        if (!centralAuthManager) return Promise.resolve(null);
+        return centralAuthManager.redeemTeamAuthTicket(ticket, serverId);
+      },
+      sendTeamInviteEmail: (input) => {
+        if (!centralAuthManager) throw new Error("The account service is not ready.");
+        return centralAuthManager.sendTeamInviteEmail(input);
+      },
+      getRemoteDesktopPassword: () => remoteDesktopCredentials.getPassword(),
+      setRemoteDesktopPassword: (password) => remoteDesktopCredentials.setPassword(password),
+      provisionTeamTunnel: (input) => {
+        if (!centralAuthManager) throw new Error("The account service is not ready.");
+        return centralAuthManager.provisionTeamTunnel(input);
+      },
     });
-}
+    const signedInState = centralAuthManager.getState();
+    if (signedInState.status === "signed_in") {
+      await hostService.syncSignedInAccount(signedInState.user);
+    }
+    remoteServerManager = new RemoteServerManager(
+      join(app.getPath("userData"), REMOTE_SERVERS_FILE),
+      {
+        encrypt: (value) => {
+          if (!safeStorage.isEncryptionAvailable()) {
+            throw new Error("macOS secure storage is unavailable.");
+          }
+          return safeStorage.encryptString(value);
+        },
+        decrypt: (value) => safeStorage.decryptString(value),
+      },
+      {
+        createTeamAuthTicket: (serverId) => {
+          if (!centralAuthManager) throw new Error("The account service is not ready.");
+          return centralAuthManager.createTeamAuthTicket(serverId);
+        },
+        getEmail: () => {
+          if (!centralAuthManager) throw new Error("The account service is not ready.");
+          return centralAuthManager.getSignedInUser().email;
+        },
+      },
+    );
+    await remoteServerManager.initialize();
+    remoteMacManager = new RemoteMacManager({
+      logDirectory: join(app.getPath("userData"), "logs", "remote"),
+      resolveRemoteDesktop: (serverId) => {
+        if (!remoteServerManager) throw new Error("The remote server service is not ready.");
+        return remoteServerManager.getRemoteDesktopAccess(serverId);
+      },
+    });
+    if (pendingAddressUpdateUrl) {
+      const updateUrl = pendingAddressUpdateUrl;
+      pendingAddressUpdateUrl = null;
+      void remoteServerManager.updateAddress(updateUrl).catch((error) => {
+        const message = error instanceof Error ? error.message : "The server address was not updated.";
+        dialog.showErrorBox("COSGRAL server update failed", message);
+      });
+    }
+    const host = hostService;
+    const remoteMac = remoteMacManager;
+    const remoteServers = remoteServerManager;
+    const { autoUpdater } = electronUpdater;
+    updateService = new UpdateService(autoUpdater, {
+      currentVersion: app.getVersion(),
+      enabled:
+        app.isPackaged &&
+        supportsInstalledUpdates(process.platform) &&
+        existsSync(join(process.resourcesPath, "app-update.yml")),
+      beforeInstall: prepareForShutdown,
+    });
+    service.on("event", (event) => forwardAgentEvent("local", event));
+    service.on("event", (event) => {
+      if (event.type === "turn-completed" || event.type === "queue-changed") engine.reconcile();
+    });
+    // COSGRAL W1: a deleted agent leaves its folder.
+    service.on("event", (event) => {
+      if (event.type !== "bots-changed") return;
+      try {
+        if (
+          sidebarStore.pruneItems(
+            "agent",
+            event.bots.map((bot) => bot.id),
+          )
+        ) {
+          forwardSidebarLayout(sidebarStore.layout());
+        }
+      } catch (error) {
+        console.error("Unable to update sidebar folders:", error);
+      }
+      // COSGRAL W1-BE2: and its channels; a deleted lead hands the role and open tasks to the next member.
+      try {
+        const changed = channelStore.pruneBots(event.bots.map((bot) => bot.id));
+        if (changed.tasks.length) engine.reconcile();
+      } catch (error) {
+        console.error("Unable to update channels:", error);
+      }
+    });
+    host.on("changed", forwardHostStatus);
+    host.on("presence", (snapshot) => forwardTeamPresence("local", snapshot));
+    host.on("directMessage", (event) => forwardDirectMessage("local", event));
+    host.on("directTyping", (event) => forwardDirectTyping("local", event));
+    remoteMac.on("changed", forwardRemoteMacSessions);
+    remoteServers.on("changed", forwardServers);
+    remoteServers.on("agent", (serverId, event) => {
+      forwardAgentEvent(serverId, event);
+    });
+    remoteServers.on("presence", forwardTeamPresence);
+    remoteServers.on("directMessage", forwardDirectMessage);
+    remoteServers.on("directTyping", forwardDirectTyping);
+    updateService.on("status", forwardUpdateStatus);
+    updateService.start();
+    const agentInitialization = new AgentInitializationGate(async () => {
+      await service.initialize();
+      engine.start();
+    });
+    registerIpcHandlers(
+      service,
+      mailboxStore,
+      browserHost,
+      updateService,
+      setupFile,
+      () => agentInitialization.start(),
+      host,
+      remoteMac,
+      remoteServers,
+      centralAuthManager,
+      sidebarStore,
+      channelStore,
+      engine,
+    );
+    configureApplicationMenu(service, updateService);
+    await loadRenderer(mainWindow);
+    if (pendingInviteUrl) {
+      mainWindow.webContents.send(IPC_CHANNELS.serversInvite, pendingInviteUrl);
+      pendingInviteUrl = null;
+    }
+    const teamIdentity = teamStore.getIdentity();
+    if (
+      shouldAutoStartHost({
+        configured: Boolean(teamIdentity),
+        enabledOnLaunch: teamIdentity?.enabledOnLaunch ?? false,
+      })
+    ) {
+      void host.start().catch((error) => console.error("Unable to republish this COSGRAL Workspace:", error));
+    }
+    void agentInitialization.start().catch((error) => {
+      console.error("Unable to initialize the local agent backend:", error);
+    });
+
+    app.on("activate", () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        return;
+      }
+      mainWindow = createWindow();
+      void loadRenderer(mainWindow);
+    });
+  })
+  .catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("COSGRAL Workspace failed to start:", error);
+    dialog.showErrorBox(
+      "COSGRAL Workspace couldn’t start",
+      `${message}\n\nYour local data was not reset or overwritten. See the troubleshooting guide for recovery steps.`,
+    );
+    app.quit();
+  });
 
 /** COSGRAL: until the UI indicator lands, the window title shows that an agent is looking. */
 function showEyesIndicator(looking: boolean): void {
