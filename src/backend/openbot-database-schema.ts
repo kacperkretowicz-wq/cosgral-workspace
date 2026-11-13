@@ -331,6 +331,34 @@ const SCHEMA_SQL = `
     updated_at TEXT NOT NULL,
     last_event_sequence INTEGER NOT NULL
   );
+  -- COSGRAL W2: routines (schedule and webhook). secret_encrypted is the encrypted webhook signing secret.
+  CREATE TABLE IF NOT EXISTS projection_routines (
+    routine_id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    secret_encrypted TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_routine_runs (
+    run_id TEXT PRIMARY KEY,
+    routine_id TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS routine_runs_routine ON projection_routine_runs(routine_id, started_at);
+  -- COSGRAL W2: webhook delivery ids seen in the last 7 days (a repeat starts nothing).
+  CREATE TABLE IF NOT EXISTS projection_webhook_deliveries (
+    routine_id TEXT NOT NULL,
+    delivery_id TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    PRIMARY KEY(routine_id, delivery_id)
+  );
+  CREATE TABLE IF NOT EXISTS projection_routine_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
   -- COSGRAL W2: an agent's switch per MCP server; no row means on (lead decision 2).
   CREATE TABLE IF NOT EXISTS projection_agent_mcp_settings (
     agent_id TEXT NOT NULL,
