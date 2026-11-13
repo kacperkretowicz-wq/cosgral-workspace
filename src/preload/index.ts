@@ -47,6 +47,8 @@ import {
   isSkillVersion,
   isVaultItemSummary,
   isVaultStatus,
+  isWorkflow,
+  isWorkflowRun,
   isWorkspaceChannel,
   type KeptDraft,
   type LocalSkill,
@@ -66,6 +68,8 @@ import {
   type SidebarFolderChange,
   type SidebarLayout,
   type UpdateStatus,
+  type Workflow,
+  type WorkflowRun,
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
@@ -455,6 +459,27 @@ function decodeModelIds(value: unknown): AgentModelId[] {
   return value.filter(isAgentModel);
 }
 
+/** COSGRAL W3: workflow decoders. */
+function decodeWorkflows(value: unknown): Workflow[] {
+  if (!Array.isArray(value)) throw new Error("Invalid workflow list response.");
+  return value.filter(isWorkflow);
+}
+
+function decodeWorkflow(value: unknown): Workflow {
+  if (!isWorkflow(value)) throw new Error("Invalid workflow response.");
+  return value;
+}
+
+function decodeWorkflowRun(value: unknown): WorkflowRun {
+  if (!isWorkflowRun(value)) throw new Error("Invalid workflow run response.");
+  return value;
+}
+
+function decodeWorkflowRuns(value: unknown): WorkflowRun[] {
+  if (!Array.isArray(value)) throw new Error("Invalid workflow run list response.");
+  return value.filter(isWorkflowRun);
+}
+
 function decodeRoutines(value: unknown): Routine[] {
   if (!Array.isArray(value)) throw new Error("Invalid routine list response.");
   return value.filter(isRoutine);
@@ -665,6 +690,15 @@ const openbotApi: OpenBotDesktopApi = {
     runNow: (input) => invokeAgent(IPC_CHANNELS.routinesRunNow, input, decodeRoutineRun),
     listRuns: (input) => invokeAgent(IPC_CHANNELS.routinesListRuns, input, decodeRoutineRuns),
     regenerateSecret: (input) => invokeAgent(IPC_CHANNELS.routinesRegenerateSecret, input, decodeRoutineWithSecret),
+  },
+  workflows: {
+    list: () => invokeAgent(IPC_CHANNELS.workflowsList, null, decodeWorkflows),
+    create: (input) => invokeAgent(IPC_CHANNELS.workflowsCreate, input, decodeWorkflow),
+    update: (input) => invokeAgent(IPC_CHANNELS.workflowsUpdate, input, decodeWorkflow),
+    delete: (input) => invokeAgent(IPC_CHANNELS.workflowsDelete, input, decodeVoid),
+    run: (input) => invokeAgent(IPC_CHANNELS.workflowsRun, input, decodeWorkflowRun),
+    cancelRun: (input) => invokeAgent(IPC_CHANNELS.workflowsCancelRun, input, decodeWorkflowRun),
+    listRuns: (input) => invokeAgent(IPC_CHANNELS.workflowsListRuns, input, decodeWorkflowRuns),
   },
   providers: {
     listAcpAgents: () => invokeAgent(IPC_CHANNELS.providersListAcpAgents, null, decodeAcpAgents),
