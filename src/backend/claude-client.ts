@@ -21,6 +21,7 @@ import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
 import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
+import { COMPUTER_NAMESPACE, COMPUTER_TOOL_SPECS } from "./computer-use";
 import { DATA_TOOL_SPECS } from "./data-tools";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
 import type { McpDynamicNamespace } from "./mcp-manager";
@@ -527,6 +528,14 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         version: "0.1.0",
         tools: VAULT_TOOL_SPECS.map((spec) =>
           tool(spec.name, spec.description, spec.schema, (args) => call(VAULT_NAMESPACE, spec.name, args)),
+        ),
+      }),
+      // COSGRAL W3: Computer Use; AgentService asks for consent and the calls fail where it is unavailable.
+      [COMPUTER_NAMESPACE]: createSdkMcpServer({
+        name: COMPUTER_NAMESPACE,
+        version: "0.1.0",
+        tools: COMPUTER_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(COMPUTER_NAMESPACE, spec.name, args)),
         ),
       }),
       // COSGRAL W2: shared tables and the file library (cosgral_tables, cosgral_library).

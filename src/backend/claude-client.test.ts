@@ -177,6 +177,7 @@ describe("ClaudeAgentClient", () => {
         "cosgral_routines",
         "cosgral_tables",
         "cosgral_library",
+        "cosgral_computer",
       ]),
     );
     await client.stop();

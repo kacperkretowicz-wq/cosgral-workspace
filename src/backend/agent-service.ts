@@ -68,6 +68,7 @@ import { ChannelAgentRunner } from "./channel-agent-runner";
 import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
 import { ClaudeAgentClient } from "./claude-client";
 import { type ClaudeCliInfo, CodexCliError, type CodexCliInfo, resolveClaudeCli, resolveCodexCli } from "./cli";
+import { COMPUTER_NAMESPACE, ComputerUseController } from "./computer-use";
 import { ConversationReadStore } from "./conversation-read-store";
 import {
   mergeConversationSnapshots,
@@ -313,6 +314,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #vaultTools: VaultTools;
   /** COSGRAL W2: shared tables and the file library, for agents (tools) and the person (IPC). */
   readonly sharedData: SharedDataTools;
+  /** COSGRAL W3: Computer Use; the host gives the desktop driver with `computerUse.useDriver()`. */
+  readonly computerUse: ComputerUseController;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
   readonly #loadedThreads = new Set<string>();
@@ -424,6 +427,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       sharedRoot: store.sharedRoot,
       emit: (event) => this.#emit(event),
     });
+    this.computerUse = new ComputerUseController({
+      confirm: (context, input) => this.#cards.confirmAction(context, input),
+      botName: (botId) => this.#store.list().find((bot) => bot.id === botId)?.name ?? botId,
+      vaultContains: (text) => this.#vault.containsSecretValue(text),
+      emit: (event) => this.#emit(event),
+    });
     this.#skills.on("skills-changed", (skills) => this.#emit({ type: "skills-changed", skills }));
     this.#skills.on("installs-changed", (installs) => this.#emit({ type: "skill-installs-changed", installs }));
     this.#channelRunner = new ChannelAgentRunner({
@@ -446,6 +455,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         SKILLS_DYNAMIC_TOOLS,
         VAULT_DYNAMIC_TOOLS,
         ...DATA_DYNAMIC_TOOLS,
+        ...this.computerUse.dynamicTools(),
         ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
         ...this.#mcpTools(botId),
         ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
@@ -779,6 +789,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#cards.expireAll();
     this.#vaultRequests.expireAll();
     this.#eyes?.stop({});
+    void this.computerUse.close();
     for (const [botId, snapshot] of this.#snapshots) {
       if (!snapshot.activeTurnId) continue;
       const session = this.#store.activeProviderSession(botId);
@@ -1371,6 +1382,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           }
           if (this.sharedData.handles(request.params.namespace)) {
             client.respond(request.id, await this.#handleDataTool(request.params));
+            return;
+          }
+          if (request.params.namespace === COMPUTER_NAMESPACE) {
+            client.respond(request.id, await this.#handleComputerTool(request.params));
             return;
           }
           if (request.params.namespace === CARDS_NAMESPACE) {
@@ -2475,6 +2490,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #clearPendingRequestsForTurn(threadId: string, turnId: string): void {
+    this.computerUse.endTurn(threadId, turnId);
     this.#cards.expireTurn(threadId, turnId);
     this.#vaultRequests.expireTurn(threadId, turnId);
     for (const [requestId, pending] of this.#pendingPrompts) {
@@ -2568,6 +2584,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       SKILLS_DYNAMIC_TOOLS,
       VAULT_DYNAMIC_TOOLS,
       ...DATA_DYNAMIC_TOOLS,
+      ...this.computerUse.dynamicTools(),
       ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
       ...this.#mcpTools(botId),
       ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
@@ -2606,6 +2623,23 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   /** COSGRAL W2: `cosgral_tables` and `cosgral_library` calls of the agent that owns this thread. */
+  /** COSGRAL W3: `cosgral_computer` calls; the controller asks the person with a confirm card first. */
+  async #handleComputerTool(params: DynamicToolCallParams): Promise<DynamicToolResult> {
+    const botId = this.#threadToBot.get(params.threadId);
+    if (!botId || this.#stopping) {
+      return {
+        success: false,
+        contentItems: [{ type: "inputText", text: "Computer Use is not available in this turn." }],
+      };
+    }
+    return this.computerUse.handleDynamicTool(params, {
+      botId,
+      threadId: this.#publicThreadId(botId, params.threadId),
+      providerThreadId: params.threadId,
+      turnId: params.turnId,
+    });
+  }
+
   async #handleDataTool(params: DynamicToolCallParams): Promise<DynamicToolResult> {
     const botId = this.#threadToBot.get(params.threadId);
     const bot = botId ? this.#store.list().find((candidate) => candidate.id === botId) : undefined;

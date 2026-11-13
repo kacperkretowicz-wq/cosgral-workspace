@@ -83,6 +83,8 @@ export const IPC_CHANNELS = {
   libraryDelete: "library:delete",
   libraryOpen: "library:open",
   libraryAttachToDraft: "library:attach-to-draft",
+  computerUseGetState: "computer-use:get-state",
+  computerUseStop: "computer-use:stop",
   agentEvent: "agent:event",
   sidebarGetLayout: "sidebar:get-layout",
   sidebarCreateFolder: "sidebar:create-folder",

@@ -60,6 +60,35 @@ it("gives a human request to the lead, runs helpers and wakes the parent once wi
   expect(store.listTasks(channel.id)).toHaveLength(3);
 });
 
+it("lets a person reply to a message of the same channel and refuses a message of another channel", async () => {
+  const { engine, store, channel } = await setup(async () => turn("Done"));
+  const first = engine.sendMessage({ channelId: channel.id, text: "First request" });
+  await until(() => store.getTask(first.task.id).state === "done");
+  const resultId = store.getTask(first.task.id).resultMessageId ?? "missing";
+
+  const reply = engine.sendMessage({ channelId: channel.id, text: "One more change", replyToMessageId: resultId });
+  expect(reply.message.replyToMessageId).toBe(resultId);
+  expect(store.getMessage(channel.id, reply.message.id).replyToMessageId).toBe(resultId);
+  expect(
+    engine.sendMessage({ channelId: channel.id, text: "New topic", replyToMessageId: null }).message,
+  ).toMatchObject({
+    replyToMessageId: null,
+  });
+
+  const other = store.create({
+    name: "other",
+    title: "Other",
+    instructions: "Short",
+    memberBotIds: ["lead"],
+    leadBotId: "lead",
+    isolated: true,
+  });
+  expect(() => engine.sendMessage({ channelId: other.id, text: "Wrong place", replyToMessageId: resultId })).toThrow(
+    /not in the channel/,
+  );
+  expect(store.listTasks(other.id)).toEqual([]);
+});
+
 it("never keeps the lead's waiting text as the result when helpers finish before the lead's turn ends", async () => {
   let leadTurns = 0;
   const { engine, store, channel } = await setup(async (input) => {
