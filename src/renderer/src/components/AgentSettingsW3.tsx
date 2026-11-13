@@ -7,6 +7,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
 
 export function AgentTemplateCreator(props: {
   templates: AgentTemplate[];
@@ -59,6 +60,8 @@ export function AgentSettingsW3(props: { botId: string }) {
   const [chosen, setChosen] = createSignal("");
   const [error, setError] = createSignal("");
   const [notice, setNotice] = createSignal("");
+  const [failedStage, setFailedStage] = createSignal<SaveStage | null>(null);
+  const [saving, setSaving] = createSignal(false);
   async function refresh() {
     const api = window.openbot.agentSettings;
     if (!api) {
@@ -82,31 +85,54 @@ export function AgentSettingsW3(props: { botId: string }) {
   onSettled(() => {
     void refresh();
   });
-  async function save() {
+  async function save(start: SaveStage = "profile") {
     const value = settings();
-    if (!value || !window.openbot.agentSettings) return;
-    try {
-      await window.openbot.agentSettings.update({
-        botId: props.botId,
-        name: value.bot.name,
-        role: value.bot.role,
-        description: value.bot.description,
-        model: value.bot.model,
-        tools: Object.fromEntries(value.tools.map((tool) => [tool.group, tool.enabled])),
-      });
-      if (window.openbot.providers)
-        await window.openbot.providers.setFallbackModels({ botId: props.botId, fallbackModels: fallbacks() });
+    const api = window.openbot.agentSettings;
+    if (!value || !api || saving()) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    const result = await saveAgentSettingsStages(
+      () =>
+        api.update({
+          botId: props.botId,
+          name: value.bot.name,
+          role: value.bot.role,
+          description: value.bot.description,
+          model: value.bot.model,
+          tools: Object.fromEntries(value.tools.map((tool) => [tool.group, tool.enabled])),
+        }),
+      () => {
+        const providers = window.openbot.providers;
+        if (!providers) return Promise.reject(new Error("Fallback model service is unavailable."));
+        return providers.setFallbackModels({ botId: props.botId, fallbackModels: fallbacks() });
+      },
+      start,
+    );
+    setSaving(false);
+    setFailedStage(result.failed);
+    if (result.failed === null) {
       setNotice("Settings saved.");
       setError("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save settings.");
-    }
+    } else
+      setError(
+        result.failed === "profile"
+          ? `Profile save failed; fallback models were not saved. ${result.message}`
+          : `Profile saved, but fallback models were not saved. ${result.message}`,
+      );
   }
   return (
     <section aria-label="Advanced agent settings">
       <h3>Agent profile and tools</h3>
       <Show when={error()}>
         <p role="alert">{error()}</p>
+      </Show>
+      <Show when={failedStage()}>
+        {(stage) => (
+          <button type="button" disabled={saving()} onClick={() => void save(stage())}>
+            {stage() === "fallback" ? "Retry fallback models" : "Retry profile and fallback models"}
+          </button>
+        )}
       </Show>
       <Show when={notice()}>
         <p role="status">{notice()}</p>
@@ -233,7 +259,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                 Add fallback
               </button>
             </fieldset>
-            <button type="button" onClick={() => void save()}>
+            <button type="button" disabled={saving()} onClick={() => void save()}>
               Save settings
             </button>
           </>

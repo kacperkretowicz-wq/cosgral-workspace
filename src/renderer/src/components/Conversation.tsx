@@ -207,6 +207,19 @@ export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
   const imageGenerationUnavailable = () => Boolean(props.bot && isClaudeModel(props.bot.model));
   const [drafts, setDrafts] = createSignal<Record<string, ComposerDraft>>({});
+  const [voicePlaybackEnabled, setVoicePlaybackEnabled] = createSignal(false);
+  onSettled(() => {
+    const api = window.openbot.voice;
+    if (!api) return;
+    void api
+      .getState()
+      .then((state) => setVoicePlaybackEnabled(state.settings.enabled && state.speech.available))
+      .catch(() => setVoicePlaybackEnabled(false));
+    return window.openbot.agent.onEvent((event) => {
+      if (event.type === "voice-changed")
+        setVoicePlaybackEnabled(event.state.settings.enabled && event.state.speech.available);
+    });
+  });
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
@@ -1841,7 +1854,7 @@ export function Conversation(props: ConversationProps) {
                                 />
                               </div>
                               <Show when={message.author === "bot" && !message.streaming && message.body.trim()}>
-                                <VoicePlayback text={message.body} />
+                                <VoicePlayback text={message.body} enabled={voicePlaybackEnabled()} />
                               </Show>
                               <MessageActions
                                 message={message}

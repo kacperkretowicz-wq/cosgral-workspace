@@ -1,23 +1,11 @@
 import { VOICE_LIMITS } from "@openbot/contracts/ipc";
-import { createEffect, createSignal, onSettled, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import type { BotMessage } from "../data";
 
-export function VoicePlayback(props: { text: string }) {
-  const [enabled, setEnabled] = createSignal(false);
+export function VoicePlayback(props: { text: string; enabled: boolean }) {
   const [error, setError] = createSignal("");
-  onSettled(() => {
-    const api = window.openbot.voice;
-    if (!api) return;
-    void api
-      .getState()
-      .then((state) => setEnabled(state.settings.enabled && state.speech.available))
-      .catch(() => setEnabled(false));
-    return window.openbot.agent.onEvent((event) => {
-      if (event.type === "voice-changed") setEnabled(event.state.settings.enabled && event.state.speech.available);
-    });
-  });
   return (
-    <Show when={enabled()}>
+    <Show when={props.enabled}>
       <span>
         <button
           type="button"
@@ -52,6 +40,8 @@ export function VoiceAutoRead(props: { botId: string; messages: BotMessage[] }) 
         author: message.author,
         streaming: message.streaming,
         animate: message.animate,
+        kind: message.kind,
+        itemType: message.itemType,
       })),
     }),
     ({ bot, messages }) => {
@@ -68,6 +58,9 @@ export function VoiceAutoRead(props: { botId: string; messages: BotMessage[] }) 
       for (const message of messages) {
         if (
           message.author !== "bot" ||
+          message.kind === "thinking" ||
+          message.kind === "exchange" ||
+          message.itemType === "commentary" ||
           message.streaming ||
           seen.has(message.id) ||
           !message.body.trim() ||

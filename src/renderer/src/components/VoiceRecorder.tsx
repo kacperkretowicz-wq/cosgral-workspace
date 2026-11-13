@@ -124,12 +124,18 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
   onSettled(() => {
     const api = window.openbot.voice;
     if (!api) return;
+    let receivedEvent = false;
     void api
       .getState()
-      .then((state) => setEnabled(state.settings.enabled))
-      .catch(() => setEnabled(false));
+      .then((state) => {
+        if (active && !receivedEvent) setEnabled(state.settings.enabled);
+      })
+      .catch(() => {
+        if (active && !receivedEvent) setEnabled(false);
+      });
     return window.openbot.agent.onEvent((event) => {
       if (event.type === "voice-changed") {
+        receivedEvent = true;
         setEnabled(event.state.settings.enabled);
         if (!event.state.settings.enabled) {
           generation++;
