@@ -31,7 +31,8 @@ interface Session {
 interface Options {
   client: (botId: string) => Promise<AgentClient>;
   bot: (botId: string) => BotSummary;
-  tools: () => unknown[];
+  /** The dynamic tools of one member agent's channel turn (COSGRAL W2: its MCP servers included). */
+  tools: (botId: string) => unknown[];
   commonRequest: (client: AgentClient, request: AppServerRequest) => Promise<void>;
   register: (threadId: string, botId: string) => void;
   clear: (threadId: string, turnId: string | null) => void;
@@ -90,7 +91,7 @@ export class ChannelAgentRunner implements ChannelRunner {
           CARDS_INSTRUCTIONS,
           ...(this.#options.instructions ? [this.#options.instructions(bot.id)] : []),
         ].join("\n"),
-        dynamicTools: [...this.#options.tools(), CHANNEL_DYNAMIC_TOOLS],
+        dynamicTools: [...this.#options.tools(bot.id), CHANNEL_DYNAMIC_TOOLS],
       },
       decodeThreadResponse,
     );

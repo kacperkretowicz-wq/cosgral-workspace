@@ -319,6 +319,27 @@ const SCHEMA_SQL = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json)),
     PRIMARY KEY (bot_id, skill_id)
   );
+  -- COSGRAL W2: MCP servers shared by the program. secrets_encrypted holds the encrypted secret
+  -- values (never plain text); config_json holds only what is safe to show.
+  CREATE TABLE IF NOT EXISTS projection_mcp_servers (
+    server_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    transport TEXT NOT NULL CHECK(transport IN ('stdio', 'http')),
+    config_json TEXT NOT NULL CHECK(json_valid(config_json)),
+    secrets_encrypted TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  -- COSGRAL W2: an agent's switch per MCP server; no row means on (lead decision 2).
+  CREATE TABLE IF NOT EXISTS projection_agent_mcp_settings (
+    agent_id TEXT NOT NULL,
+    server_id TEXT NOT NULL REFERENCES projection_mcp_servers(server_id) ON DELETE CASCADE,
+    enabled INTEGER NOT NULL CHECK(enabled IN (0, 1)),
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL,
+    PRIMARY KEY(agent_id, server_id)
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

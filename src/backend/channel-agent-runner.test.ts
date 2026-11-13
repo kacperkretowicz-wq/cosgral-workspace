@@ -50,10 +50,15 @@ function input(signal: AbortSignal): ChannelRunInput {
 
 it("registers channel tools on a fresh ephemeral thread without reusing a DM session", async () => {
   const client = new Client();
+  const toolsFor: string[] = [];
   const runner = new ChannelAgentRunner({
     client: async () => client,
     bot: channelBotFixture,
-    tools: () => [],
+    // COSGRAL W2: the member's own tools (its MCP servers) come from its bot id.
+    tools: (botId) => {
+      toolsFor.push(botId);
+      return [{ type: "namespace", name: "mcp_local_echo", tools: [] }];
+    },
     commonRequest: async () => {},
     register: () => {},
     clear: () => {},
@@ -65,9 +70,13 @@ it("registers channel tools on a fresh ephemeral thread without reusing a DM ses
     method: "thread/start",
     params: {
       ephemeral: true,
-      dynamicTools: expect.arrayContaining([expect.objectContaining({ name: "cosgral_channels" })]),
+      dynamicTools: expect.arrayContaining([
+        expect.objectContaining({ name: "cosgral_channels" }),
+        expect.objectContaining({ name: "mcp_local_echo" }),
+      ]),
     },
   });
+  expect(toolsFor).toEqual([channelTaskFixture().ownerBotId]);
   expect(client.requests.some((r) => r.method === "thread/resume")).toBe(false);
   const threadId = getString(client.requests[1].params, "threadId");
   runner.request(client, {

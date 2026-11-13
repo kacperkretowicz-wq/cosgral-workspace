@@ -43,6 +43,8 @@ import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
+import { McpManager } from "../backend/mcp-manager";
+import { McpStore, type SecretBox } from "../backend/mcp-store";
 import { SidebarStore } from "../backend/sidebar-store";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { AgentInitializationGate } from "./agent-initialization";
@@ -83,6 +85,13 @@ import {
   parseSendChannelMessage,
   parseUpdateChannel,
 } from "./ipc/channel-inputs";
+import {
+  parseAddMcpServer,
+  parseMcpBotId,
+  parseMcpServerId,
+  parseSetAgentMcpServer,
+  parseUpdateMcpServer,
+} from "./ipc/mcp-inputs";
 import {
   parseAgentMemoryBotId,
   parseDeleteAgentMemory,
@@ -197,6 +206,8 @@ let mainWindow: BrowserWindow | null = null;
 let browserHost: BrowserHost | null = null;
 let agentService: AgentService | null = null;
 let channelEngineService: ChannelEngine | null = null;
+/** COSGRAL W2: MCP connections; stopped on exit so stdio servers do not outlive the program. */
+let mcpManager: McpManager | null = null;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
@@ -262,6 +273,7 @@ function registerIpcHandlers(
   sidebar: SidebarStore,
   channels: ChannelStore,
   channelEngine: ChannelEngine,
+  mcp: McpManager,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -844,6 +856,26 @@ function registerIpcHandlers(
     if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
     return service.memoryStore.setLimit(parsed);
   });
+  // COSGRAL W2: MCP servers shared by the program and each agent's switch (this computer only).
+  handleTrusted(IPC_CHANNELS.mcpList, (input: unknown) =>
+    parseAgentRequest(input).serverId === "local" ? mcp.list() : [],
+  );
+  handleTrusted(IPC_CHANNELS.mcpAdd, (input: unknown) => mcp.add(localMcpInput(input, parseAddMcpServer)));
+  handleTrusted(IPC_CHANNELS.mcpUpdate, (input: unknown) => mcp.update(localMcpInput(input, parseUpdateMcpServer)));
+  handleTrusted(IPC_CHANNELS.mcpRemove, async (input: unknown) => {
+    await mcp.remove(localMcpInput(input, parseMcpServerId));
+    return null;
+  });
+  handleTrusted(IPC_CHANNELS.mcpReconnect, (input: unknown) => mcp.reconnect(localMcpInput(input, parseMcpServerId)));
+  handleTrusted(IPC_CHANNELS.mcpListAgentSettings, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? mcp.listAgentSettings(parseMcpBotId(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.mcpSetAgentEnabled, (input: unknown) => {
+    const parsed = localMcpInput(input, parseSetAgentMcpServer);
+    if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
+    return mcp.setAgentEnabled(parsed);
+  });
   // COSGRAL W2: the person's side of channel memory; the channel engine owns the pool.
   handleTrusted(IPC_CHANNELS.channelsListMemories, (input: unknown) => {
     const scoped = parseAgentRequest(input);
@@ -1138,6 +1170,12 @@ if (!hasSingleInstanceLock) {
       });
       void eyes.cleanup().catch((error) => console.error("Unable to clean agent eyes pictures:", error));
       eyes.on("changed", (state) => showEyesIndicator(state.sessions.length > 0));
+      // COSGRAL W2: MCP servers of the program; secrets encrypted with safeStorage (DPAPI on Windows).
+      const mcp = new McpManager({
+        store: new McpStore(store.database, electronSecretBox()),
+        emit: (event) => forwardAgentEvent("local", event),
+      });
+      mcpManager = mcp;
       agentService = new AgentService(
         store,
         mailboxStore,
@@ -1147,6 +1185,8 @@ if (!hasSingleInstanceLock) {
         setupState.preferredProvider ?? "codex",
         null,
         eyes,
+        null,
+        mcp,
       );
       const service = agentService;
       // COSGRAL W1: sidebar folders live in the same local database.
@@ -1318,7 +1358,10 @@ if (!hasSingleInstanceLock) {
         sidebarStore,
         channelStore,
         engine,
+        mcp,
       );
+      // COSGRAL W2: connect the saved MCP servers in the background.
+      void mcp.start().catch((error) => console.error("Unable to start MCP servers:", error));
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
       if (pendingInviteUrl) {
@@ -1378,6 +1421,12 @@ function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
 }
 
 /** COSGRAL W1-BE2: channel changes are kept on this computer only. */
+function localMcpInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("MCP servers are available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
 function localMemoryInput<T>(input: unknown, parse: (payload: unknown) => T): T {
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("Agent memory is available only on this computer for now.");
@@ -1474,6 +1523,17 @@ async function prepareForShutdown(): Promise<void> {
   await (hostService?.shutdown() ?? Promise.resolve());
   await (browserHost?.destroy() ?? Promise.resolve());
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
+  // COSGRAL W2: stop stdio MCP servers so no process is left behind.
+  await (mcpManager?.stop() ?? Promise.resolve());
+}
+
+/** COSGRAL W2: Electron safeStorage as the MCP secret box; no plain-text fallback. */
+function electronSecretBox(): SecretBox {
+  return {
+    canEncrypt: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain).toString("base64"),
+    decrypt: (cipher) => safeStorage.decryptString(Buffer.from(cipher, "base64")),
+  };
 }
 
 function routeUpdateBot(

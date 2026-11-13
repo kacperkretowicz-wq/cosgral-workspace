@@ -50,7 +50,12 @@ import type {
   UpdateBotInput,
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
-import { isClaudeModel, isImageGenerationAspectRatio, isReasoningEffort } from "@openbot/contracts/ipc";
+import {
+  isClaudeModel,
+  isImageGenerationAspectRatio,
+  isReasoningEffort,
+  MCP_NAMESPACE_PREFIX,
+} from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
@@ -73,6 +78,7 @@ import {
 import { DraftStore } from "./draft-store";
 import { EYES_DYNAMIC_TOOLS, EYES_NAMESPACE, type EyesCallContext } from "./eyes-service";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
+import type { McpDynamicNamespace } from "./mcp-manager";
 import { isMemoryToolName, MEMORY_DYNAMIC_TOOLS, MemoryService } from "./memory-service";
 import { MemoryStore } from "./memory-store";
 import {
@@ -141,6 +147,13 @@ interface PendingApproval {
 }
 
 /** COSGRAL: agent eyes (see eyes-service.ts); null when the host cannot capture. */
+/** COSGRAL W2: what AgentService needs from the MCP servers of the program (McpManager). */
+export interface AgentMcp {
+  toolsFor(botId: string): McpDynamicNamespace[];
+  callTool(botId: string, namespace: string, tool: string, args: unknown): Promise<DynamicToolResult>;
+  deleteAgent(botId: string): void;
+}
+
 export interface AgentEyes {
   on(event: "changed", listener: (state: AgentEyesState) => void): unknown;
   getState(): AgentEyesState;
@@ -256,6 +269,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #eyes: AgentEyes | null;
   /** COSGRAL W2: private agent memory (tools, essential block in the prompt). */
   readonly #memory: MemoryService;
+  /** COSGRAL W2: MCP servers of the program; their tools go to the agents that have them on. */
+  readonly #mcp: AgentMcp | null;
+  /** COSGRAL W2: the MCP tool set each provider thread was started or resumed with. */
+  readonly #mcpToolSignatures = new Map<string, string>();
   readonly #channelRunner: ChannelAgentRunner;
   /** COSGRAL W1-BE3: draft preview / confirm cards and browser takeovers. */
   readonly #cards: ActionCards;
@@ -305,6 +322,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     clientFactory: AgentClientFactory | null = null,
     eyes: AgentEyes | null = null,
     memory: MemoryService | null = null,
+    mcp: AgentMcp | null = null,
   ) {
     super();
     this.#store = store;
@@ -318,6 +336,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#eyes = eyes;
     this.#memory = memory ?? new MemoryService(new MemoryStore(store.database));
     this.#memory.on("event", (event: AgentEvent) => this.#emit(event));
+    this.#mcp = mcp;
     this.#drafts = new DraftStore(store.database);
     this.#cards = new ActionCards({
       emit: (event) => this.#emit(event),
@@ -347,12 +366,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         if (!bot) throw new Error("Unknown channel member.");
         return bot;
       },
-      tools: () => [
-        BROWSER_DYNAMIC_TOOLS,
+      tools: (botId) => [
+        // COSGRAL W2: spread like #dynamicTools (it was passed as one nested array).
+        ...BROWSER_DYNAMIC_TOOLS,
         { ...OPENBOT_DYNAMIC_TOOLS, tools: OPENBOT_DYNAMIC_TOOLS.tools.filter((t) => t.name === "ask_user") },
         CARDS_DYNAMIC_TOOLS,
         SKILLS_DYNAMIC_TOOLS,
         ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
+        ...this.#mcpTools(botId),
       ],
       instructions: (botId) => skillInstructions(this.#skills.installedFor(botId)),
       commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
@@ -562,6 +583,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W2: the agent's private memory goes with it. Before the agent's own deletion, which
     // also clears the event log of everything filed under the agent's id, this deletion included.
     this.#memory.store.deleteAllForAgent(botId);
+    // COSGRAL W2: so do its MCP switches.
+    this.#mcp?.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
     this.#snapshots.delete(botId);
@@ -1115,7 +1138,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const session = this.#store.activeProviderSession(bot.id);
     if (session) {
       this.#threadToBot.set(session.externalSessionId, bot.id);
-      if (!this.#loadedThreads.has(session.externalSessionId)) {
+      // COSGRAL W2: a changed MCP tool set (server added, removed, reconnected or switched) needs a resume.
+      const mcpChanged = this.#mcpToolSignatures.get(session.externalSessionId) !== this.#mcpSignature(bot.id);
+      if (!this.#loadedThreads.has(session.externalSessionId) || mcpChanged) {
         await this.#resumeThread(currentBot, client, session.externalSessionId);
       }
       return session.externalSessionId;
@@ -1133,7 +1158,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         developerInstructions: this.#buildDeveloperInstructions(currentBot),
         ephemeral: false,
         serviceName: "openbot",
-        dynamicTools: this.#dynamicTools(),
+        dynamicTools: this.#dynamicTools(currentBot.id),
       },
       decodeThreadResponse,
     );
@@ -1141,6 +1166,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#store.bindProviderSession(bot.id, externalThreadId);
     this.#threadToBot.set(externalThreadId, bot.id);
     this.#loadedThreads.add(externalThreadId);
+    this.#mcpToolSignatures.set(externalThreadId, this.#mcpSignature(bot.id));
     this.#ensureSnapshot(bot.id, publicThreadId);
     const handoff = this.#buildProviderHandoff(bot.id, publicThreadId);
     if (handoff) this.#pendingHandoffs.set(externalThreadId, handoff);
@@ -1157,7 +1183,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       approvalPolicy: "on-request",
       sandbox: "danger-full-access",
       developerInstructions: this.#buildDeveloperInstructions(bot),
-      dynamicTools: this.#dynamicTools(),
+      dynamicTools: this.#dynamicTools(bot.id),
     };
 
     try {
@@ -1168,6 +1194,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       await client.request("thread/resume", params, decodeRecordResponse);
     }
     this.#loadedThreads.add(externalThreadId);
+    this.#mcpToolSignatures.set(externalThreadId, this.#mcpSignature(bot.id));
   }
 
   async #requestWithArchivedThreadRecovery<T>(
@@ -1232,6 +1259,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
               return;
             }
             client.respond(request.id, await this.#handleOpenBotTool(request.params));
+            return;
+          }
+          if (request.params.namespace?.startsWith(MCP_NAMESPACE_PREFIX)) {
+            client.respond(request.id, await this.#handleMcpTool(request.params));
             return;
           }
           if (request.params.namespace === EYES_NAMESPACE) {
@@ -2391,13 +2422,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       .deliveries.some((delivery) => delivery.status === "starting" || delivery.status === "running");
   }
 
-  #dynamicTools() {
+  #dynamicTools(botId: string) {
     return [
       ...BROWSER_DYNAMIC_TOOLS,
       OPENBOT_DYNAMIC_TOOLS,
       CARDS_DYNAMIC_TOOLS,
       SKILLS_DYNAMIC_TOOLS,
       ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
+      ...this.#mcpTools(botId),
     ];
   }
 
@@ -2413,6 +2445,27 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       workspacePath: bot.workspacePath,
       sharedRoot: this.#store.sharedRoot,
     });
+  }
+
+  /** COSGRAL W2: the tool namespaces of the MCP servers this agent has on (empty without MCP). */
+  #mcpTools(botId: string) {
+    return this.#mcp?.toolsFor(botId) ?? [];
+  }
+
+  #mcpSignature(botId: string): string {
+    return JSON.stringify(this.#mcpTools(botId));
+  }
+
+  /** COSGRAL W2: a call of an MCP server tool, for the agent that owns the provider thread. */
+  async #handleMcpTool(params: DynamicToolCallParams): Promise<DynamicToolResult> {
+    const botId = this.#threadToBot.get(params.threadId);
+    if (!this.#mcp || !botId) {
+      return {
+        success: false,
+        contentItems: [{ type: "inputText", text: "MCP tools are not available in this turn." }],
+      };
+    }
+    return this.#mcp.callTool(botId, params.namespace ?? "", params.tool, params.arguments);
   }
 
   /** COSGRAL W1-BE3: `cosgral_cards` calls; they wait for the user like questions do. */

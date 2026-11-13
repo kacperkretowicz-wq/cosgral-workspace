@@ -6,6 +6,7 @@ export * from "./ipc-channels";
 export * from "./ipc-conversation";
 export * from "./ipc-desktop-apis";
 export * from "./ipc-eyes";
+export * from "./ipc-mcp";
 export * from "./ipc-memory";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
