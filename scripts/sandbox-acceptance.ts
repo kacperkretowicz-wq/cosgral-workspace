@@ -30,6 +30,9 @@ interface Result {
 }
 
 const results: Result[] = [];
+let resultsFile = "";
+// COSGRAL_ONLY=41,39,R1 runs only those rows (with --keep, on the data of an earlier run).
+const only = (process.env.COSGRAL_ONLY ?? "").split(",").map((part) => part.trim()).filter(Boolean);
 const consoleFindings: string[] = [];
 
 function asRecord(value: unknown): DynamicRecord {
@@ -89,7 +92,7 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
   // The dock and the island are windows of their own (they come back after a restart): drive the main window.
   let page: Page | undefined;
   for (let attempt = 0; attempt < 120 && !page; attempt += 1) {
-    page = app.windows().find((window) => !/#(dock|island)/.test(window.url()) && window.url() !== "");
+    page = app.windows().find((window) => /^openbot-app:/.test(window.url()) && !/#(dock|island)/.test(window.url()));
     if (!page) await new Promise((done) => setTimeout(done, 500));
   }
   if (!page) throw new Error("The main window did not open.");
@@ -98,6 +101,7 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
 }
 
 async function row(id: string, name: string, work: () => Promise<string | undefined>): Promise<void> {
+  if (only.length && !only.includes(id)) return;
   const started = Date.now();
   try {
     const detail = (await work()) ?? "";
@@ -108,6 +112,8 @@ async function row(id: string, name: string, work: () => Promise<string | undefi
     results.push({ row: id, name, ok: false, detail, ms: Date.now() - started });
     console.log(`FAIL [${id}] ${name}: ${detail.slice(0, 160)}`);
   }
+  // Written after every row, so a run that is cut short still leaves what it saw.
+  if (resultsFile) await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
 }
 
 // -- Helpers that run inside the window (strings: the window cannot import) ---------------------------------------
@@ -276,12 +282,14 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     return reply;
   });
 
-  const spare = JSON.stringify(
-    await d.ev(
-      `window.openbot.agent.createBot().then((b) => window.openbot.agent.updateBot({ botId: b.id, name: "Res", role: "Research and sources" })).then((b) => b.name)`,
-    ),
-  );
-  console.log(`     second agent: ${spare}`);
+  if (!only.length) {
+    const spare = JSON.stringify(
+      await d.ev(
+        `window.openbot.agent.createBot().then((b) => window.openbot.agent.updateBot({ botId: b.id, name: "Res", role: "Research and sources" })).then((b) => b.name)`,
+      ),
+    );
+    console.log(`     second agent: ${spare}`);
+  }
 
   await row("5", "state: the row says Thinking while a turn runs and settles after it", async () => {
     await d.send("Assistant", "SLOW 8000");
@@ -518,10 +526,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
   await row("41", "Marketplace: search, open, install a skill for an agent, uninstall listed", async () => {
     await d.openPage("Marketplace");
     const main = page.locator("main").first();
-    await main.getByRole("textbox", { name: "Search" }).fill("meeting");
+    await main.getByRole("searchbox", { name: "Search" }).fill("meeting");
     await main.getByRole("button", { name: "Search", exact: true }).click();
     await page.waitForTimeout(1_200);
-    await main.getByRole("button", { name: "Meeting notes" }).last().click();
+    await main.getByRole("button", { name: /^Meeting notes/ }).last().click();
     await main.getByRole("combobox", { name: "Agent" }).selectOption({ label: "Assistant" });
     await main.getByRole("button", { name: "Install", exact: true }).click();
     await page.waitForTimeout(2_500);
@@ -790,7 +798,7 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await d.openPage("Settings");
     const app = page.getByRole("region", { name: "Application settings" });
     await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "Polski" });
-    await app.getByRole("checkbox", { name: "needs-input desktop" }).uncheck();
+    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).uncheck();
     await app.getByRole("button", { name: "Save application settings" }).click();
     await page.waitForTimeout(2_000);
     const saved = asRecord(await d.ev("window.openbot.appSettings.get()"));
@@ -798,7 +806,7 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     assert.equal(asRecord(asRecord(asRecord(saved.notifications).matrix)["needs-input"]).desktop, false);
     const stillEnglish = await page.getByRole("button", { name: "Save application settings" }).count();
     await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "English" });
-    await app.getByRole("checkbox", { name: "needs-input desktop" }).check();
+    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).check();
     await app.getByRole("button", { name: "Save application settings" }).click();
     await page.waitForTimeout(1_500);
     await page.getByRole("button", { name: "Cancel" }).click();
@@ -917,6 +925,7 @@ async function secondRun(d: Driver): Promise<void> {
 async function main(): Promise<void> {
   const root = sandboxRoot();
   const evidence = join(root, "evidence");
+  resultsFile = join(evidence, only.length ? "acceptance-rerun.json" : "acceptance.json");
   if (!process.argv.includes("--keep")) await rm(root, { recursive: true, force: true });
   for (const folder of [join(root, "home", "AppData", "Roaming"), join(root, "home", "AppData", "Local"), join(root, "tmp"), evidence]) {
     await mkdir(folder, { recursive: true });
@@ -935,7 +944,7 @@ async function main(): Promise<void> {
   } finally {
     await second.app.close().catch(() => undefined);
   }
-  await writeFile(join(evidence, "acceptance.json"), JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
+  await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
   const failed = results.filter((result) => !result.ok);
   console.log(`\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`);
   for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 200)}`);
