@@ -2,7 +2,7 @@
 // drives it like a person would, with the deterministic Codex fixture instead of a model. It collects the console of
 // the window and the output of the main process, takes screenshots and writes evidence into the sandbox.
 //
-//   COSGRAL_SANDBOX_ROOT=<folder> COSGRAL_NODE_PATH=<node.exe> node scripts/sandbox-e2e.ts [--keep]
+//   COSGRAL_SANDBOX_ROOT=<folder> node scripts/sandbox-e2e.ts [--keep]    (or: bun run sandbox:e2e)
 //
 // The sandbox folder gets its own USERPROFILE, APPDATA, LOCALAPPDATA and TEMP, so the data of the person's own
 // programs is never touched (the program keeps everything under APPDATA and the home folder). Without --keep the
@@ -200,7 +200,9 @@ async function installFixture(root: string): Promise<{ codex: string; claude: st
   await mkdir(folder, { recursive: true });
   await writeFile(join(folder, "codex.cjs"), await readFile(join(repo, "src/backend/testing/channel-codex.cjs")));
   const codex = join(folder, "codex.cmd");
-  await writeFile(codex, `@echo off\r\n"${process.env.COSGRAL_NODE_PATH ?? "node"}" "%~dp0codex.cjs" %*\r\n`);
+  // The stand-in runs on Electron's own Node mode, like in start-cosgral-sandbox.cmd, so no separate Node is needed.
+  const electronExe = join(repo, "node_modules", "electron", "dist", "electron.exe");
+  await writeFile(codex, `@echo off\r\nset ELECTRON_RUN_AS_NODE=1\r\n"${electronExe}" "%~dp0codex.cjs" %*\r\n`);
   return { codex, claude: join(folder, "missing-claude.exe") };
 }
 
