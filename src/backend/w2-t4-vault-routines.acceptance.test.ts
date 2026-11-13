@@ -110,7 +110,10 @@ function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
 
 async function main() {
   const root = process.env.COSGRAL_VAULT_ROUTINES_SANDBOX;
-  assert(root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)), "Sandbox USERPROFILE");
+  assert(
+    root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)),
+    "Sandbox USERPROFILE",
+  );
   assert(process.env.APPDATA?.startsWith(root) && process.env.LOCALAPPDATA?.startsWith(root), "Sandbox APPDATA");
   await mkdir(root, { recursive: true });
 
@@ -181,7 +184,10 @@ async function main() {
   note(
     "vault-save-kinds",
     [login, card, contact, apiKey].every((item) => Boolean(item.id)) && store.list().length >= 4,
-    `kinds=${store.list().map((i) => i.kind).join(",")}`,
+    `kinds=${store
+      .list()
+      .map((i) => i.kind)
+      .join(",")}`,
   );
 
   const listed = store.list();
@@ -411,7 +417,11 @@ async function main() {
     timers: false,
   });
   await manager2.start();
-  note("routine-persists", manager2.list().some((r) => r.id === scheduled.id), `count=${manager2.list().length}`);
+  note(
+    "routine-persists",
+    manager2.list().some((r) => r.id === scheduled.id),
+    `count=${manager2.list().length}`,
+  );
   const skipped = manager2.listRuns({ routineId: scheduled.id }).find((r) => r.status === "skipped");
   note(
     "routine-no-catch-up",
@@ -453,11 +463,7 @@ async function main() {
     `status=${accepted.status}`,
   );
 
-  const bad = await manager2.handleWebhook(
-    createdWh.routine.id,
-    { ...good.headers, signature: "v1,AAAA" },
-    good.body,
-  );
+  const bad = await manager2.handleWebhook(createdWh.routine.id, { ...good.headers, signature: "v1,AAAA" }, good.body);
   note("webhook-bad-401", bad.status === 401 && runner2.started.length === 1, `status=${bad.status}`);
 
   const big = webhookRequest(secret, `{"x":"${"a".repeat(ROUTINE_LIMITS.webhookBody)}"}`, "msg_big", clock2.now);
