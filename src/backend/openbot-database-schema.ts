@@ -331,6 +331,18 @@ const SCHEMA_SQL = `
     updated_at TEXT NOT NULL,
     last_event_sequence INTEGER NOT NULL
   );
+  -- COSGRAL W3: ACP agents (Agent Client Protocol programs) and each agent's ordered fallback models.
+  CREATE TABLE IF NOT EXISTS projection_acp_agents (
+    acp_id TEXT PRIMARY KEY,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_agent_fallback_models (
+    agent_id TEXT PRIMARY KEY,
+    models_json TEXT NOT NULL CHECK(json_valid(models_json)),
+    updated_at TEXT NOT NULL
+  );
   -- COSGRAL W2: routines (schedule and webhook). secret_encrypted is the encrypted webhook signing secret.
   CREATE TABLE IF NOT EXISTS projection_routines (
     routine_id TEXT PRIMARY KEY,
