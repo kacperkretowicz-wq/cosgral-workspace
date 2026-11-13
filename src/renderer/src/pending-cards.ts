@@ -5,15 +5,45 @@
 // and drops a card when its `prompt-resolved` / `approval-resolved` event arrives. Every function
 // here is pure; `App.tsx` owns the signal.
 
-import type { AgentApproval, AgentEvent, PendingAgentRequest } from "@openbot/contracts/ipc";
+import type {
+  AgentApproval,
+  AgentEvent,
+  PendingAgentRequest,
+  DraftPreviewCard,
+  BrowserTakeoverRequest,
+  BrowserTakeoverPhase,
+} from "@openbot/contracts/ipc";
 
 export type PromptEvent = Extract<AgentEvent, { type: "prompt" }>;
 
-export type PendingCardKind = "prompt" | "approval";
+export type PendingCardKind = "prompt" | "approval" | "draft-preview" | "browser-takeover";
 
 export type PendingCard =
   | { kind: "prompt"; requestId: string | number; botId: string; createdAt: string; prompt: PromptEvent }
-  | { kind: "approval"; requestId: string | number; botId: string; createdAt: string; approval: AgentApproval };
+  | { kind: "approval"; requestId: string | number; botId: string; createdAt: string; approval: AgentApproval }
+  | { kind: "draft-preview"; requestId: string; botId: string; createdAt: string; card: DraftPreviewCard }
+  | {
+      kind: "browser-takeover";
+      requestId: string;
+      botId: string;
+      createdAt: string;
+      request: BrowserTakeoverRequest;
+      phase: BrowserTakeoverPhase;
+    };
+
+export function draftCard(card: DraftPreviewCard): PendingCard {
+  return { kind: "draft-preview", requestId: card.requestId, botId: card.botId, createdAt: card.createdAt, card };
+}
+export function takeoverCard(request: BrowserTakeoverRequest, phase: BrowserTakeoverPhase = "requested"): PendingCard {
+  return {
+    kind: "browser-takeover",
+    requestId: request.requestId,
+    botId: request.botId,
+    createdAt: request.createdAt,
+    request,
+    phase,
+  };
+}
 
 /** A number and a string with the same text are one request. */
 export function cardKey(kind: PendingCardKind, requestId: string | number): string {
@@ -41,6 +71,10 @@ export function cardsFromPending(requests: readonly PendingAgentRequest[]): Pend
       cards.push(promptCard({ type: "prompt", requestId, botId, threadId, turnId, questions }, request.createdAt));
     } else if (request.kind === "approval") {
       cards.push(approvalCard(request.approval, request.createdAt));
+    } else if (request.kind === "draft-preview") {
+      cards.push(draftCard(request.card));
+    } else if (request.kind === "browser-takeover") {
+      cards.push(takeoverCard(request.request, request.phase));
     }
   }
   return sortOldestFirst(cards);
@@ -81,7 +115,10 @@ export function mergeHydrated(
 ): PendingCard[] {
   const fromBackend = fetched.filter((card) => !seen.resolvedKeys.has(keyOf(card)));
   const live = current.filter((card) => seen.liveKeys.has(keyOf(card)) && !seen.resolvedKeys.has(keyOf(card)));
-  return live.reduce<PendingCard[]>((cards, card) => addCard(cards, card), sortOldestFirst(fromBackend));
+  return live.reduce<PendingCard[]>(
+    (cards, card) => addCard(removeCard(cards, card.kind, card.requestId), card),
+    sortOldestFirst(fromBackend),
+  );
 }
 
 /** The card the sticky Decision shows for an agent: its oldest open card, question or approval. */

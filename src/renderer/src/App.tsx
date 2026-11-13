@@ -60,6 +60,8 @@ import {
   cardKey,
   cardsFromPending,
   clearBotCards,
+  draftCard,
+  takeoverCard,
   mergeHydrated,
   oldestCardForBot,
   type PendingCard,
@@ -601,6 +603,27 @@ export function App() {
         return;
       case "approval-resolved":
         dropCard("approval", event.requestId);
+        return;
+      case "draft-preview":
+        addLiveCard(draftCard(event.card));
+        return;
+      case "draft-preview-resolved":
+        dropCard("draft-preview", event.requestId);
+        return;
+      case "browser-takeover":
+        addLiveCard(takeoverCard(event.request));
+        return;
+      case "browser-takeover-changed":
+        if (event.phase === "taken-over") {
+          if (attentionSeen.loading > 0) attentionSeen.liveKeys.add(cardKey("browser-takeover", event.requestId));
+          setPendingCards((current) =>
+            current.map((card) =>
+              card.kind === "browser-takeover" && card.requestId === event.requestId
+                ? { ...card, phase: event.phase }
+                : card,
+            ),
+          );
+        } else dropCard("browser-takeover", event.requestId);
         return;
       case "sidebar-layout-changed":
         layoutSeen.changed = true;
@@ -1840,6 +1863,7 @@ export function App() {
                   remoteDesktopRequest={remoteDesktopRequest()}
                   prompt={activePrompt()}
                   approval={activeApproval()}
+                  actionCard={activeDecisionCard()}
                   activeTurnId={activeBot() ? activeTurns()[activeBot()?.id ?? ""] : null}
                   agentPickerOpen={agentPickerOpen()}
                   globalOverlayOpen={globalSearchOpen()}

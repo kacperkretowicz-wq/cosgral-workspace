@@ -78,6 +78,8 @@ import {
   RemoteMacPanel,
 } from "./RemoteMacPanel";
 import { StickyDecision } from "./StickyDecision";
+import { ActionCard } from "./ActionCard";
+import type { PendingCard } from "../pending-cards";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
 
 type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
@@ -109,6 +111,7 @@ interface ConversationProps {
   remoteDesktopRequest: number;
   prompt: Extract<AgentEvent, { type: "prompt" }> | undefined;
   approval: Extract<AgentEvent, { type: "approval" }>["approval"] | undefined;
+  actionCard?: PendingCard;
   /** COSGRAL: agents that are looking at a window, screen or camera right now. */
   eyes?: AgentEyesState;
   onStopEyes?: (input: StopAgentEyesInput) => void;
@@ -1377,6 +1380,37 @@ export function Conversation(props: ConversationProps) {
     if (browserTabs().length === 0) void openBrowserAddress();
   }
 
+  let shownTakeoverId: string | undefined;
+  createEffect(
+    () => props.actionCard,
+    (card) => {
+      if (card?.kind !== "browser-takeover" || card.phase !== "taken-over") {
+        shownTakeoverId = undefined;
+        return;
+      }
+      if (shownTakeoverId === card.requestId) return;
+      shownTakeoverId = card.requestId;
+      props.onActivateBrowserTab(card.request.tabId);
+      setActiveRightPanel("browser");
+    },
+  );
+
+  async function respondActionDraft(input: import("@openbot/contracts/ipc").RespondToDraftPreviewInput) {
+    const respond = window.openbot.agent.respondToDraftPreview;
+    if (!respond) throw new Error("Draft actions are unavailable in this build.");
+    await respond(input);
+  }
+
+  async function respondActionTakeover(input: import("@openbot/contracts/ipc").RespondToBrowserTakeoverInput) {
+    const respond = window.openbot.agent.respondToBrowserTakeover;
+    if (!respond) throw new Error("Browser takeover is unavailable in this build.");
+    await respond(input);
+    if (input.action === "take-over" && props.actionCard?.kind === "browser-takeover") {
+      props.onActivateBrowserTab(props.actionCard.request.tabId);
+      setActiveRightPanel("browser");
+    }
+  }
+
   function hideBrowserPanel() {
     setActiveRightPanel("none");
     void window.openbot.browser.setVisible({ visible: false });
@@ -1856,6 +1890,21 @@ export function Conversation(props: ConversationProps) {
               );
             }}
           </For>
+          <Show
+            when={
+              props.actionCard?.kind === "draft-preview" || props.actionCard?.kind === "browser-takeover"
+                ? props.actionCard
+                : undefined
+            }
+          >
+            {(card) => (
+              <ActionCard
+                card={card() as Extract<PendingCard, { kind: "draft-preview" | "browser-takeover" }>}
+                onDraft={respondActionDraft}
+                onTakeover={respondActionTakeover}
+              />
+            )}
+          </Show>
           <AgentActivityIndicator bot={props.bot} state={visibleAgentActivity()} />
         </Show>
       </div>
@@ -1866,6 +1915,24 @@ export function Conversation(props: ConversationProps) {
         onAnswerPrompt={props.onAnswerPrompt}
         onRespondToApproval={props.onRespondToApproval}
       />
+      <Show
+        when={
+          props.actionCard?.kind === "draft-preview" || props.actionCard?.kind === "browser-takeover"
+            ? props.actionCard
+            : undefined
+        }
+      >
+        {(card) => (
+          <div class="sticky-decision" role="region" aria-label="Decision">
+            <div class="sticky-decision-kicker">Decision · pinned</div>
+            <ActionCard
+              card={card() as Extract<PendingCard, { kind: "draft-preview" | "browser-takeover" }>}
+              onDraft={respondActionDraft}
+              onTakeover={respondActionTakeover}
+            />
+          </div>
+        )}
+      </Show>
 
       <Show when={!props.prompt && !props.approval}>
         <div class="composer-wrap">

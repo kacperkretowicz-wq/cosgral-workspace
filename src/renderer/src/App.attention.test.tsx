@@ -70,6 +70,53 @@ afterEach(() => {
 });
 
 describe("App open cards after a reload", () => {
+  it("shows browser requests in Needs you and updates the pinned action", async () => {
+    mountApp();
+    await screen.findByRole("heading", { name: "Chief" });
+    controls().emitAgentEvent({
+      type: "browser-takeover",
+      request: {
+        requestId: "b1",
+        botId: "chief",
+        threadId: "thread-chief",
+        turnId: "turn-1",
+        tabId: "tab-1",
+        url: "https://example.com",
+        reason: "Sign in",
+        createdAt: "2026-11-12T10:00:00.000Z",
+      },
+    });
+    const decision = await screen.findByRole("region", { name: "Decision" });
+    expect(needsYou().getByText("Sign in")).toBeInTheDocument();
+    await fireEvent.click(within(decision).getByRole("button", { name: "Take over" }));
+    await within(decision).findByRole("button", { name: "Return to agent" });
+    await waitFor(() => expect(within(decision).getByRole("button", { name: "Return to agent" })).toBeEnabled());
+    await fireEvent.click(within(decision).getByRole("button", { name: "Return to agent" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Decision" })).not.toBeInTheDocument());
+  });
+  it("restores a draft in chat and Decision, then keeps it without sending", async () => {
+    const card = {
+      requestId: "d1",
+      botId: "chief",
+      threadId: "thread-chief",
+      turnId: "turn-1",
+      variant: "draft" as const,
+      title: "Send the update?",
+      recipient: "Alex",
+      channel: "email",
+      preview: "Exact message",
+      draftId: null,
+      createdAt: "2026-11-12T10:00:00.000Z",
+    };
+    mountApp({ pendingRequests: [{ kind: "draft-preview", card }] });
+    const decision = await screen.findByRole("region", { name: "Decision" });
+    expect(within(decision).getByText("Exact message")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Exact message")).toHaveLength(2));
+    expect(needsYou().getByText("Send the update?")).toBeInTheDocument();
+    await fireEvent.click(within(decision).getByRole("button", { name: "Keep draft" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Decision" })).not.toBeInTheDocument());
+    expect(await controls().api.agent.listDrafts?.()).toHaveLength(1);
+  });
   it("seeds Needs you and the pinned Decision from listPendingRequests", async () => {
     mountApp({ pendingRequests: openCards });
     await screen.findByRole("heading", { name: "Chief" });

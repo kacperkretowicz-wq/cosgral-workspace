@@ -169,6 +169,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
   let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
   let pending = clone(options.pendingRequests ?? []);
+  const keptDrafts: import("@openbot/contracts/ipc").KeptDraft[] = [];
   const activityByBot = new Map<string, AgentActivity>(
     clone(options.activity ?? []).map((activity) => [activity.botId, activity]),
   );
@@ -228,6 +229,32 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         return;
       case "approval-resolved":
         pending = pending.filter((card) => !(card.kind === "approval" && card.approval.requestId === event.requestId));
+        return;
+      case "draft-preview":
+        pending = [
+          ...pending.filter((card) => !(card.kind === "draft-preview" && card.card.requestId === event.card.requestId)),
+          { kind: "draft-preview", card: event.card },
+        ];
+        return;
+      case "draft-preview-resolved":
+        pending = pending.filter((card) => !(card.kind === "draft-preview" && card.card.requestId === event.requestId));
+        return;
+      case "browser-takeover":
+        pending = [
+          ...pending.filter(
+            (card) => !(card.kind === "browser-takeover" && card.request.requestId === event.request.requestId),
+          ),
+          { kind: "browser-takeover", request: event.request, phase: "requested" },
+        ];
+        return;
+      case "browser-takeover-changed":
+        pending = pending.flatMap((card) =>
+          card.kind === "browser-takeover" && card.request.requestId === event.requestId
+            ? event.phase === "taken-over"
+              ? [{ ...card, phase: event.phase }]
+              : []
+            : [card],
+        );
         return;
       case "activity-changed":
         activityByBot.set(event.activity.botId, clone(event.activity));
@@ -633,6 +660,45 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
       respondToPrompt: async (input: RespondToPromptInput) => respondToPrompt(input),
       respondToApproval: async (input: RespondToApprovalInput) => respondToApproval(input),
+      respondToDraftPreview: async (input) => {
+        const item = pending.find((card) => card.kind === "draft-preview" && card.card.requestId === input.requestId);
+        if (item?.kind !== "draft-preview") throw new Error("Card is no longer open");
+        if (input.decision === "keep-draft")
+          keptDrafts.unshift({
+            id: item.card.draftId ?? item.card.requestId,
+            botId: item.card.botId,
+            threadId: item.card.threadId,
+            variant: item.card.variant,
+            title: item.card.title,
+            recipient: item.card.recipient,
+            channel: item.card.channel,
+            preview: item.card.preview,
+            keptAt: new Date().toISOString(),
+          });
+        emitAgentEvent({
+          type: "draft-preview-resolved",
+          requestId: input.requestId,
+          botId: item.card.botId,
+          resolution: input.decision,
+        });
+      },
+      respondToBrowserTakeover: async (input) => {
+        const item = pending.find(
+          (card) => card.kind === "browser-takeover" && card.request.requestId === input.requestId,
+        );
+        if (item?.kind !== "browser-takeover") throw new Error("Card is no longer open");
+        emitAgentEvent({
+          type: "browser-takeover-changed",
+          requestId: input.requestId,
+          botId: item.request.botId,
+          phase: input.action === "take-over" ? "taken-over" : input.action === "return" ? "returned" : "declined",
+        });
+      },
+      listDrafts: async () => clone(keptDrafts),
+      deleteDraft: async ({ draftId }) => {
+        const index = keptDrafts.findIndex((draft) => draft.id === draftId);
+        if (index >= 0) keptDrafts.splice(index, 1);
+      },
       // Optional in the contract until Backend makes them required (see docs/cosgral-raporty/ui-w1-ui1.md).
       getEyesState: async () => clone(eyesState),
       stopEyes: async (input: StopAgentEyesInput) => stopEyes(input),
