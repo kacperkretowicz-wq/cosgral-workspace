@@ -34,3 +34,17 @@ Stan: 13.11.2026. Żaden test odbioru z tej specyfikacji nie został uruchomiony
 | 2.6 | Brzeg: wyłączenie / usunięcie | Usunięcie lub wyłączenie serwera zabiera narzędzia agentom od następnej tury; trwające wywołanie kończy się błędem, nie cichym sukcesem. | Usunąć MCP w trakcie → kolejne tool-calle tego serwera zawodzą; lista narzędzi bez niego. |
 
 **Kontrakt (MCP):** `McpServer {id, name, transport, status, errorMessage?}`, metody add/update/remove/list, zdarzenie `mcp-servers-changed`, opcjonalnie per-bot enable; zgody tooli przez istniejący mechanizm approval.
+
+## 3. Vault (wiersz 26)
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 3.1 | Rodzaje elementów | Vault trzyma: **loginy** (strona + user + hasło), **karty**, **kontakty**, **klucze API**, **TOTP** (sekret authenticatora); każdy element ma etykietę i da się wyszukać. | Zapisać po jednym elemencie każdego rodzaju → lista pokazuje je po restarcie (bez jawnego sekretu w podglądzie listy). |
+| 3.2 | Szyfrowanie | Sekrety w magazynie OS (`safeStorage` / Credential Manager); **nie** w logach, czacie ani zwykłej bazie plaintext. | Zrzut logów po użyciu hasła → brak hasła/TOTP w plain text. |
+| 3.3 | Agent używa bez ujawniania | Agent prosi o element (lub program podsuwa pasujący); wypełnia formularz / `submit_secret` **bez** wklejenia sekretu do treści odpowiedzi w czacie. | Agent loguje się hasłem z Vault → w historii czatu nie ma hasła; strona jest zalogowana. |
+| 3.4 | Prośba o brakujący element | Gdy Vault nie ma pasującego loginu/karty/kontaktu, program prosi człowieka o dodanie (`request_vault_item`); nic nie wymyśla. | Zadanie wymaga karty, której nie ma → karta prośby; po dodaniu agent kontynuuje. |
+| 3.5 | TOTP / 2FA | Przy włączaniu 2FA agent wybiera metodę authenticator; zapisuje setup key przy loginie; kod generuje program i podaje przez submit_secret (nie cytuje sekretu w czacie). | Zapisać twoStepKey → agent podaje aktualny kod; sekret nie pojawia się w wiadomości. |
+| 3.6 | Konektory zewnętrzne | Opcjonalnie 1Password / Bitwarden / Proton jako źródła; element z konektora zachowuje te same reguły nieujawniania. | Podłączyć konektor (gdy dostępny) → agent bierze login stamtąd bez paste hasła w czacie. Brak konektora → tylko lokalny Vault. |
+| 3.7 | Brzeg: wiele dopasowań | Gdy >1 element pasuje do zadania, program **pyta** człowieka, którego użyć. | Dwa loginy do tej samej domeny → wybór; bez wyboru agent nie zgaduje. |
+
+**Kontrakt (Vault):** `VaultItem` z `kind: login|card|contact|apiKey|totp`, metody list/save/delete/request; narzędzia agenta tylko przez bezpieczne API (wypełnij / submit), nigdy raw secret w eventach UI czatu.
