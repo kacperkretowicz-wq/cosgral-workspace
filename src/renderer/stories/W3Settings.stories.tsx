@@ -1,9 +1,11 @@
+import { createSignal } from "solid-js";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { AgentTemplateCreator } from "../src/components/AgentSettingsW3";
-import { OnboardingW3 } from "../src/components/AppSettingsW3";
+import { type OnboardingChoice, OnboardingFields } from "../src/components/AppSettingsW3";
 import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
 function Preview(props: { theme: StoryTheme }) {
+  const [choice, setChoice] = createSignal<OnboardingChoice>({ language: "en", firstAgent: null });
   return (
     <ThemeFrame theme={props.theme} style="padding: 24px; min-height: 100vh">
       <AgentTemplateCreator
@@ -12,7 +14,7 @@ function Preview(props: { theme: StoryTheme }) {
           throw new Error("Demo only");
         }}
       />
-      <OnboardingW3
+      <OnboardingFields
         state={{
           completed: false,
           language: "en",
@@ -21,7 +23,8 @@ function Preview(props: { theme: StoryTheme }) {
           proposals: [],
           computerUse: { available: false, reason: "Not available in preview" },
         }}
-        complete={async () => undefined}
+        value={choice()}
+        onChange={setChoice}
       />
     </ThemeFrame>
   );

@@ -259,21 +259,24 @@
   touch-action: none;
 }
 
-.remote-desktop-page section {
-  margin-block: 24px;
+/* Sections of the page are spaced by the page grid (cosgral-pages.css). The emergency stop uses the danger
+   button colors with a red outline: readable in both themes (white on the dark theme's light red was ~2.6:1). */
+.w2-library .remote-desktop-stop {
+  border-color: var(--openbot-danger);
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+  font-weight: var(--openbot-weight-semibold);
 }
-.remote-desktop-stop {
-  background: var(--openbot-danger);
-  color: white;
-  padding: 12px 18px;
-  font-weight: 700;
+.w2-library .remote-desktop-stop:hover:not(:disabled) {
+  background: var(--openbot-danger-strong);
+  color: var(--openbot-text-primary);
 }
 .remote-desktop-canvas {
   display: block;
   max-width: 100%;
   height: auto;
+  border-radius: var(--openbot-radius-md);
   background: #17171b;
-  margin-block: 12px;
 }
 
 .remote-desktop-safety {
@@ -731,44 +734,7 @@
 .channel-composer button {
   justify-self: end;
 }
-.w2-panel {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--openbot-border);
-  border-radius: 8px;
-  min-width: 0;
-}
-.w2-panel h3,
-.w2-panel p {
-  margin: 0;
-}
-.w2-panel label {
-  display: grid;
-  gap: 4px;
-}
-.w2-panel input,
-.w2-panel select,
-.w2-panel textarea,
-.w2-panel button {
-  color: inherit;
-  background: var(--openbot-bg-control);
-  border: 1px solid var(--openbot-border-strong);
-  border-radius: 6px;
-  padding: 6px 8px;
-  max-width: 100%;
-}
-.w2-panel textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-.w2-panel button {
-  cursor: pointer;
-}
-.w2-panel button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
+/* .w2-panel and its controls: see cosgral-pages.css (one look for all rail pages). */
 .w2-item {
   display: grid;
   gap: 6px;
@@ -792,7 +758,8 @@
 /* Mobile Connect and Providers pages (W3-UI6) ------------------------------------------------------------------- */
 .mobile-connect-page,
 .providers-page {
-  max-width: 760px;
+  /* W3-BE9: same reading column as the other rail pages (cosgral-pages.css). */
+  max-width: none;
 }
 .mobile-section {
   display: grid;

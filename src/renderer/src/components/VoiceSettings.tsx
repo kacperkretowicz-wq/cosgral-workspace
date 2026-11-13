@@ -12,7 +12,7 @@ export function VoiceSettingsView(props: {
 }) {
   const settings = () => props.state.settings;
   return (
-    <section aria-label="Voice settings">
+    <section class="ui-card cosgral-settings-block cosgral-form" aria-label="Voice settings">
       <h2>Voice</h2>
       <p>Audio stays on this computer. The first download requires approval on a Needs you card.</p>
       <label>
@@ -149,10 +149,13 @@ export function VoiceSettings() {
       setError("Voice is unavailable in this build.");
       return;
     }
+    // W3-BE9: the Windows voice list comes from PowerShell and can take seconds; show the settings first.
+    void api
+      .listVoices()
+      .then(setVoices)
+      .catch(() => undefined);
     try {
-      const [next, list] = await Promise.all([api.getState(), api.listVoices()]);
-      setState(next);
-      setVoices(list);
+      setState(await api.getState());
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load voice.");

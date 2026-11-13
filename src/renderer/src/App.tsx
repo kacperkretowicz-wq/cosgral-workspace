@@ -41,7 +41,7 @@ import type {
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
 import { AccountLogin } from "./components/AccountLogin";
-import { OnboardingW3Gate } from "./components/AppSettingsW3";
+import type { OnboardingChoice } from "./components/AppSettingsW3";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
@@ -64,6 +64,8 @@ import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
+import { TasksPage } from "./components/TasksPage";
+import { UsagePage } from "./components/UsagePage";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
@@ -252,7 +254,6 @@ export function App() {
   );
   const [leftPanelAutoCompact, setLeftPanelAutoCompact] = createSignal(false);
   const [setupState, setSetupState] = createSignal<AppSetupState | null>(null);
-  const [showProviderSetup, setShowProviderSetup] = createSignal(false);
   const [setupLoaded, setSetupLoaded] = createSignal(false);
   const [centralAuth, setCentralAuth] = createSignal<CentralAuthState>({
     status: "loading",
@@ -1537,8 +1538,13 @@ export function App() {
     setLeftPanelAutoCompact(false);
   }
 
-  async function saveSetup(preferredProvider: AgentProviderId): Promise<void> {
-    const state = await window.openbot.saveSetup({ preferredProvider });
+  async function saveSetup(preferredProvider: AgentProviderId, onboarding?: OnboardingChoice): Promise<void> {
+    // COSGRAL W3: on the first run, onboarding saves the provider (started once), the language and the first agent.
+    const onboardingApi = onboarding ? window.openbot.onboarding : undefined;
+    if (onboarding && onboardingApi) await onboardingApi.complete({ preferredProvider, ...onboarding });
+    const state = onboardingApi
+      ? await window.openbot.getSetupState()
+      : await window.openbot.saveSetup({ preferredProvider });
     flush(() => {
       setSetupState(state);
       setPermissionsOpen(false);
@@ -1776,26 +1782,15 @@ export function App() {
           <Show
             when={setupState()?.completed}
             fallback={
-              <Show
-                when={window.openbot.onboarding && !showProviderSetup()}
-                fallback={
-                  <InitialSetup
-                    state={setupState() ?? { completed: false, preferredProvider: null }}
-                    agentStatus={agentStatus()}
-                    platform={appInfo()?.platform ?? "darwin"}
-                    accountEmail={account().email}
-                    onSave={saveSetup}
-                    onJoinRemote={joinRemoteDuringSetup}
-                    onLogout={logoutCentralAccount}
-                  />
-                }
-              >
-                <OnboardingW3Gate
-                  onComplete={async () => {
-                    setShowProviderSetup(true);
-                  }}
-                />
-              </Show>
+              <InitialSetup
+                state={setupState() ?? { completed: false, preferredProvider: null }}
+                agentStatus={agentStatus()}
+                platform={appInfo()?.platform ?? "darwin"}
+                accountEmail={account().email}
+                onSave={saveSetup}
+                onJoinRemote={joinRemoteDuringSetup}
+                onLogout={logoutCentralAccount}
+              />
             }
           >
             <div
@@ -1900,6 +1895,7 @@ export function App() {
               />
               <Show when={activePage() === "library"}>
                 <main class="w2-library">
+                  <h1>Library</h1>
                   <SkillsSettings />
                   <VaultPanel />
                   <TablesPanel />
@@ -1909,6 +1905,7 @@ export function App() {
               </Show>
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">
+                  <h1>Schedule</h1>
                   <RoutinePanel bots={botList()} />
                 </main>
               </Show>
@@ -1927,6 +1924,12 @@ export function App() {
               <Show when={activePage() === "phone"}>
                 <MobileConnectPage />
               </Show>
+              <Show when={activePage() === "tasks"}>
+                <TasksPage bots={botList()} />
+              </Show>
+              <Show when={activePage() === "usage"}>
+                <UsagePage />
+              </Show>
               <Show
                 when={
                   activePage() !== "agents" &&
@@ -1936,7 +1939,9 @@ export function App() {
                   activePage() !== "workflows" &&
                   activePage() !== "remote-desktop" &&
                   activePage() !== "phone" &&
-                  activePage() !== "providers"
+                  activePage() !== "providers" &&
+                  activePage() !== "tasks" &&
+                  activePage() !== "usage"
                 }
               >
                 <ComingSoon title={activePageTitle()} />

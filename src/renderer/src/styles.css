@@ -6,6 +6,7 @@
 @import "./styles/conversation.css";
 @import "./styles/settings-modal.css";
 @import "./styles/cosgral.css";
+@import "./styles/cosgral-pages.css";
 
 :root {
   color-scheme: dark;

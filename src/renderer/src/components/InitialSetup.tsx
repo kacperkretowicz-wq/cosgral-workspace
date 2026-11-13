@@ -8,9 +8,10 @@ import type {
   JoinServerInput,
   MacPermissionId,
   MacPermissionsState,
+  OnboardingState,
 } from "@openbot/contracts/ipc";
-import { createEffect, createMemo, createSignal, For, flush, onCleanup, Show, untrack } from "solid-js";
-import { AppSettingsW3 } from "./AppSettingsW3";
+import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
+import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
 import { Button, Dialog, Textarea } from "./ui";
 import { VoiceSettings } from "./VoiceSettings";
@@ -21,7 +22,8 @@ interface InitialSetupProps {
   agentStatus: AgentStatus;
   platform: DesktopPlatform;
   accountEmail: string;
-  onSave: (provider: AgentProviderId) => Promise<void>;
+  /** `onboarding` is set on the first run when the program has onboarding (language and first agent). */
+  onSave: (provider: AgentProviderId, onboarding?: OnboardingChoice) => Promise<void>;
   onJoinRemote: (input: JoinServerInput, provider: AgentProviderId) => Promise<void>;
   onLogout: () => Promise<void>;
   onClose?: () => void;
@@ -66,7 +68,22 @@ export function InitialSetup(props: InitialSetupProps) {
   const [permissionBusy, setPermissionBusy] = createSignal<MacPermissionId | null>(null);
   const [error, setError] = createSignal("");
   const [inviteUrl, setInviteUrl] = createSignal("");
+  const [onboarding, setOnboarding] = createSignal<OnboardingState>();
+  const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({ language: "en", firstAgent: null });
   let permissionRevision = 0;
+
+  // First run only: the onboarding questions join this step, so there is one flow and one provider question.
+  onSettled(() => {
+    if (untrack(() => props.reviewing)) return;
+    void window.openbot.onboarding
+      ?.getState()
+      .then((state) => {
+        if (state.completed) return;
+        setOnboardingChoice((choice) => ({ ...choice, language: state.language ?? choice.language }));
+        setOnboarding(state);
+      })
+      .catch(() => undefined);
+  });
   const providerOptions = createMemo<ProviderPickerOption[]>(() =>
     PROVIDERS.map((provider) => {
       const status = props.agentStatus.providers?.find((candidate) => candidate.id === provider.id);
@@ -144,7 +161,7 @@ export function InitialSetup(props: InitialSetupProps) {
     setSaving(true);
     setError("");
     try {
-      await props.onSave(provider);
+      await props.onSave(provider, onboarding() && !props.reviewing ? onboardingChoice() : undefined);
     } catch (cause) {
       setError(errorMessage(cause, "COSGRAL Workspace could not save your local setup."));
       setSaving(false);
@@ -165,7 +182,7 @@ export function InitialSetup(props: InitialSetupProps) {
   }
 
   const title = () => {
-    if (props.reviewing) return "Providers & permissions";
+    if (props.reviewing) return props.platform === "darwin" ? "Providers & permissions" : "Settings";
     if (route() === "local") return "Set up this computer";
     if (route() === "remote") return "Connect to a host";
     return "Where will COSGRAL Workspace run?";
@@ -173,7 +190,9 @@ export function InitialSetup(props: InitialSetupProps) {
 
   const description = () => {
     if (props.reviewing) {
-      return "Choose the default provider for local agents and review macOS permissions.";
+      return props.platform === "darwin"
+        ? "Choose the default provider for local agents and review macOS permissions."
+        : "Default provider for local agents, language, notifications and voice.";
     }
     if (route() === "local") {
       return "Agents, conversations, and files stay on this computer.";
@@ -220,10 +239,6 @@ export function InitialSetup(props: InitialSetupProps) {
             <Dialog.Description as="p" id="initial-setup-description" class="initial-setup-intro">
               {description()}
             </Dialog.Description>
-            <Show when={props.reviewing}>
-              <AppSettingsW3 />
-              <VoiceSettings />
-            </Show>
           </header>
 
           <Show when={!props.reviewing && route() === null}>
@@ -280,6 +295,17 @@ export function InitialSetup(props: InitialSetupProps) {
                 onChange={setSelectedProvider}
               />
 
+              <Show when={!props.reviewing && onboarding()}>
+                {(state) => (
+                  <OnboardingFields
+                    state={state()}
+                    value={onboardingChoice()}
+                    disabled={saving()}
+                    onChange={setOnboardingChoice}
+                  />
+                )}
+              </Show>
+
               <Show when={props.platform === "darwin"}>
                 <section class="mac-permissions" aria-labelledby="mac-permissions-title">
                   <div class="mac-permissions-heading">
@@ -312,6 +338,10 @@ export function InitialSetup(props: InitialSetupProps) {
                     </For>
                   </div>
                 </section>
+              </Show>
+              <Show when={props.reviewing}>
+                <AppSettingsW3 />
+                <VoiceSettings />
               </Show>
             </div>
           </Show>
