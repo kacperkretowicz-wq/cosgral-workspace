@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { AgentEvent } from "@openbot/contracts/ipc";
 import { AgentService } from "../src/backend/agent-service";
 import { BotStore } from "../src/backend/bot-store";
@@ -9,6 +9,7 @@ import { ChannelStore } from "../src/backend/channel-store";
 import { DraftStore } from "../src/backend/draft-store";
 import { MailboxStore } from "../src/backend/mailbox-store";
 import { OpenBotDatabase } from "../src/backend/openbot-database";
+import { SkillLibrary } from "../src/backend/skill-library";
 import { writeFakeCli } from "../src/backend/testing/fake-cli";
 
 async function main() {
@@ -147,6 +148,25 @@ async function main() {
     await wait(() => store.getTask(takeover.id).state === "done");
     assert.equal(resultText(store, channel.id, takeover.id), "Stub: takeover returned");
     assert.deepEqual(browserCalls, ["snapshot"]);
+    // W2: an agent creates a skill, revises it from the version it read, and installs the new version.
+    const skillTask = engine.sendMessage({ channelId: channel.id, text: "SKILL SMOKE" }).task;
+    await wait(() => ["done", "failed"].includes(store.getTask(skillTask.id).state));
+    assert.equal(resultText(store, channel.id, skillTask.id), "Stub: skill created and revised");
+    const skill = service.skillLibrary.findByName("weekly-report");
+    assert(skill && skill.version === 2 && skill.createdByBotId === lead.id);
+    assert.deepEqual(
+      service.skillLibrary.listVersions(skill.id).map((version) => [version.version, version.note]),
+      [
+        [1, null],
+        [2, "Add totals"],
+      ],
+    );
+    const [leadInstall] = await service.skillLibrary.listInstalls({ botId: lead.id });
+    assert(leadInstall && leadInstall.installedVersion === 2 && !leadInstall.modifiedLocally);
+    assert.equal((await service.skillLibrary.listInstalls({ botId: a.id })).length, 0, "Only the author gets it");
+    const skillCheck = engine.sendMessage({ channelId: channel.id, text: "SKILL CHECK" }).task;
+    await wait(() => store.getTask(skillCheck.id).state === "done");
+    assert.equal(resultText(store, channel.id, skillCheck.id), "Stub: skill in instructions");
     const stopped = engine.sendMessage({ channelId: channel.id, text: "STOP SMOKE", resourceKey: "browser" }).task;
     await wait(() => store.getTask(stopped.id).state === "running");
     engine.actOnTask({ taskId: stopped.id, action: "stop" });
@@ -174,6 +194,19 @@ async function main() {
     await reopened.initialize();
     assert.equal(new ChannelStore(reopened).listMessages(channel.id).length, storeMessageCount(messages, events));
     assert.equal(new DraftStore(reopened).list().length, 1, "The kept draft survives a restart");
+    // W2: the library version and the agent's installed copy survive a restart.
+    const workspaces = new Map([lead, a, b].map((bot) => [bot.id, bot.workspacePath]));
+    const skillsAfterRestart = new SkillLibrary({
+      database: reopened,
+      root: join(dirname(bots.sharedRoot), "Skills"),
+      workspaceFor: (botId) => workspaces.get(botId) ?? null,
+    });
+    const restored = skillsAfterRestart.findByName("weekly-report");
+    assert(restored && restored.version === 2, "The skill version survives a restart");
+    assert.match((await skillsAfterRestart.read({ skillId: restored.id, version: 1 })).skillMd, /1\. Read the table\./);
+    assert.match((await skillsAfterRestart.read({ skillId: restored.id })).skillMd, /2\. Add totals\./);
+    const [installAfterRestart] = await skillsAfterRestart.listInstalls({ botId: lead.id });
+    assert(installAfterRestart?.installedVersion === 2 && !installAfterRestart.modifiedLocally);
     reopened.close();
     console.log(
       JSON.stringify({
@@ -184,6 +217,8 @@ async function main() {
         fastHelperWaitingTextNotResult: true,
         draftCardSend: true,
         draftCardKeptDrafts: 1,
+        skillCreatedRevisedInstalled: true,
+        skillVersionAfterRestart: 2,
         browserTakeoverReturned: true,
         assignmentLimit: 8,
         humanResume: true,

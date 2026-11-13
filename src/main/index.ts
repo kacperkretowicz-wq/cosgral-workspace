@@ -113,6 +113,16 @@ import {
   parseSidebarFolderId,
   parseUpdateSidebarFolder,
 } from "./ipc/sidebar-inputs";
+import {
+  parseDeleteSkill,
+  parseInstallSkill,
+  parseListSkillInstalls,
+  parseReadSkill,
+  parseRestoreSkillVersion,
+  parseSkillId,
+  parseUninstallSkill,
+  parseUpdateSkillInstall,
+} from "./ipc/skill-inputs";
 import { isObject, requireString } from "./ipc/validation";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
@@ -703,6 +713,36 @@ function registerIpcHandlers(
     if (scoped.serverId !== "local") throw new Error("Drafts are kept on this computer only.");
     service.deleteDraft(parseDeleteDraft(scoped.payload));
   });
+  // COSGRAL W2: the skill library of this computer; remote servers have none yet.
+  handleTrusted(IPC_CHANNELS.skillsList, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.skillLibrary.list() : [];
+  });
+  handleTrusted(IPC_CHANNELS.skillsRead, (input: unknown) =>
+    service.skillLibrary.read(localSkillInput(input, parseReadSkill)),
+  );
+  handleTrusted(IPC_CHANNELS.skillsListVersions, (input: unknown) =>
+    service.skillLibrary.listVersions(localSkillInput(input, parseSkillId).skillId),
+  );
+  handleTrusted(IPC_CHANNELS.skillsRestoreVersion, (input: unknown) =>
+    service.skillLibrary.restoreVersion(localSkillInput(input, parseRestoreSkillVersion)),
+  );
+  handleTrusted(IPC_CHANNELS.skillsDelete, (input: unknown) =>
+    service.skillLibrary.delete(localSkillInput(input, parseDeleteSkill)),
+  );
+  handleTrusted(IPC_CHANNELS.skillsListInstalls, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? service.skillLibrary.listInstalls(parseListSkillInstalls(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.skillsInstall, (input: unknown) =>
+    service.skillLibrary.install(localSkillInput(input, parseInstallSkill)),
+  );
+  handleTrusted(IPC_CHANNELS.skillsUpdate, (input: unknown) =>
+    service.skillLibrary.update(localSkillInput(input, parseUpdateSkillInstall)),
+  );
+  handleTrusted(IPC_CHANNELS.skillsUninstall, (input: unknown) =>
+    service.skillLibrary.uninstall(localSkillInput(input, parseUninstallSkill)),
+  );
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1347,6 +1387,13 @@ function localMemoryInput<T>(input: unknown, parse: (payload: unknown) => T): T 
 function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T {
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("Channels are available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
+/** COSGRAL W2: skill library requests are for this computer only. */
+function localSkillInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("The skill library is available only on this computer for now.");
   return parse(scoped.payload);
 }
 

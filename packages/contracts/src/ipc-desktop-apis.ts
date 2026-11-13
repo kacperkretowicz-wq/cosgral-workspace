@@ -67,6 +67,20 @@ import type {
   UpdateSidebarFolderInput,
 } from "./ipc-sidebar";
 import type {
+  DeleteSkillInput,
+  InstallSkillInput,
+  ListSkillInstallsInput,
+  LocalSkill,
+  ReadSkillInput,
+  RestoreSkillVersionInput,
+  SkillContent,
+  SkillIdInput,
+  SkillInstall,
+  SkillVersion,
+  UninstallSkillInput,
+  UpdateSkillInstallInput,
+} from "./ipc-skills";
+import type {
   ConfigureHostInput,
   ConfigureRemoteDesktopInput,
   CreateTeamInviteInput,
@@ -199,6 +213,26 @@ export interface MemoryDesktopApi {
   setAgentLimit: (input: SetAgentMemoryLimitInput) => Promise<AgentMemorySettings>;
 }
 
+/** COSGRAL W2: the local skill library and the skills installed for each agent (see ipc-skills.ts). */
+export interface SkillsDesktopApi {
+  /** Library skills, by name. */
+  list: () => Promise<LocalSkill[]>;
+  /** SKILL.md and the file list of one version (latest when `version` is omitted). */
+  read: (input: ReadSkillInput) => Promise<SkillContent>;
+  /** Every stored version, oldest first. */
+  listVersions: (input: SkillIdInput) => Promise<SkillVersion[]>;
+  /** Rollback: a new library version with the content of an older one; installed copies stay as they are. */
+  restoreVersion: (input: RestoreSkillVersionInput) => Promise<LocalSkill>;
+  /** Removes the skill and its versions, and uninstalls it from every agent. */
+  delete: (input: DeleteSkillInput) => Promise<void>;
+  listInstalls: (input?: ListSkillInstallsInput) => Promise<SkillInstall[]>;
+  /** Gives one agent its own copy of a version. Other agents are not changed. */
+  install: (input: InstallSkillInput) => Promise<SkillInstall>;
+  /** Moves an agent's copy to the latest version; a changed copy needs `overwriteLocalChanges`. */
+  update: (input: UpdateSkillInstallInput) => Promise<SkillInstall>;
+  uninstall: (input: UninstallSkillInput) => Promise<void>;
+}
+
 export interface BrowserDesktopApi {
   open: (input: BrowserOpenInput) => Promise<BrowserTab>;
   activate: (tabId: string) => Promise<void>;
@@ -290,4 +324,6 @@ export interface OpenBotDesktopApi {
   channels?: ChannelsDesktopApi;
   /** COSGRAL W2: agent and channel memory. Optional until every renderer mock implements it. */
   memory?: MemoryDesktopApi;
+  /** COSGRAL W2 skill library (this computer only). Optional until every renderer mock implements it. */
+  skills?: SkillsDesktopApi;
 }

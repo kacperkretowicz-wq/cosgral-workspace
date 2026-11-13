@@ -33,6 +33,7 @@ import {
   type ThreadResponse,
   type TurnResponse,
 } from "./protocol";
+import { SKILLS_NAMESPACE, SKILLS_TOOL_SPECS } from "./skill-tools";
 
 const execFileAsync = promisify(execFile);
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
@@ -490,6 +491,14 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         version: "0.1.0",
         tools: CARDS_TOOL_SPECS.map((spec) =>
           tool(spec.name, spec.description, spec.schema, (args) => call(CARDS_NAMESPACE, spec.name, args)),
+        ),
+      }),
+      // COSGRAL W2: the local skill library (create, revise, read, install for oneself).
+      [SKILLS_NAMESPACE]: createSdkMcpServer({
+        name: SKILLS_NAMESPACE,
+        version: "0.1.0",
+        tools: SKILLS_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(SKILLS_NAMESPACE, spec.name, args)),
         ),
       }),
       openbot_browser: createSdkMcpServer({

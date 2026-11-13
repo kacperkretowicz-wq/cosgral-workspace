@@ -23,6 +23,7 @@ import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
+import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
 import {
   type ChannelMemory,
   type ChannelMessage,
@@ -485,6 +486,10 @@ export type AgentEvent =
   | { type: "draft-preview-resolved"; requestId: string; botId: string; resolution: DraftPreviewResolution }
   /** COSGRAL W1-BE3: the kept drafts of every agent, newest first; replace the whole list. */
   | { type: "drafts-changed"; drafts: KeptDraft[] }
+  /** COSGRAL W2: the skill library changed (new skill, new version, rollback, deletion); replace the list. */
+  | { type: "skills-changed"; skills: LocalSkill[] }
+  /** COSGRAL W2: installed skills of the agents changed; replace the list. */
+  | { type: "skill-installs-changed"; installs: SkillInstall[] }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -557,6 +562,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isString(value.requestId) && isString(value.botId) && isDraftPreviewResolution(value.resolution);
     case "drafts-changed":
       return Array.isArray(value.drafts) && value.drafts.every(isKeptDraft);
+    case "skills-changed":
+      return Array.isArray(value.skills) && value.skills.every(isLocalSkill);
+    case "skill-installs-changed":
+      return Array.isArray(value.installs) && value.installs.every(isSkillInstall);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

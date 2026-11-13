@@ -175,6 +175,44 @@ it("interrupts a turn whose started notification arrives after the user's Stop",
   expect(interrupted).toBe(true);
 });
 
+it("gives a channel member its installed skills and lets it use the skill library", async () => {
+  const client = new Client();
+  const handled: Array<string | null> = [];
+  const runner = new ChannelAgentRunner({
+    client: async () => client,
+    bot: channelBotFixture,
+    tools: () => [],
+    commonRequest: async (_client, request) => {
+      handled.push(getString(request.params, "namespace"));
+    },
+    register: () => {},
+    clear: () => {},
+    instructions: (botId) => `Installed skills of ${botId}: weekly-report`,
+  });
+  const work = runner.run(input(new AbortController().signal));
+  await new Promise((r) => setTimeout(r, 0));
+  expect(getString(client.requests[0]?.params, "developerInstructions")).toContain(
+    "Installed skills of a: weekly-report",
+  );
+  const threadId = getString(client.requests[1]?.params, "threadId");
+  runner.request(client, {
+    id: "skill",
+    method: "item/tool/call",
+    params: {
+      threadId,
+      turnId: "turn",
+      callId: "skill",
+      namespace: "cosgral_skills",
+      tool: "list_local_skills",
+      arguments: {},
+    },
+  });
+  await new Promise((r) => setTimeout(r, 0));
+  expect(handled).toEqual(["cosgral_skills"]);
+  runner.notification({ method: "turn/completed", params: { threadId, turn: { id: "turn", status: "completed" } } });
+  await work;
+});
+
 it("lets a channel turn show a card to the user and marks its task waiting meanwhile", async () => {
   const client = new Client();
   const handled: Array<string | null> = [];

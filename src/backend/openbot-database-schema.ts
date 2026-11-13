@@ -301,6 +301,24 @@ const SCHEMA_SQL = `
     updated_at TEXT NOT NULL,
     last_event_sequence INTEGER NOT NULL
   );
+  -- COSGRAL W2: the local skill library (files of each version live in ~/COSGRAL Workspace/Skills).
+  CREATE TABLE IF NOT EXISTS projection_skills (
+    skill_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE TABLE IF NOT EXISTS projection_skill_versions (
+    skill_id TEXT NOT NULL REFERENCES projection_skills(skill_id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    PRIMARY KEY (skill_id, version)
+  );
+  CREATE TABLE IF NOT EXISTS projection_skill_installs (
+    bot_id TEXT NOT NULL,
+    skill_id TEXT NOT NULL REFERENCES projection_skills(skill_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    PRIMARY KEY (bot_id, skill_id)
+  );
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {
