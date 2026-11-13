@@ -42,6 +42,8 @@ import { createEffect, createMemo, createSignal, createStore, flush, onSettled, 
 import { AccountLogin } from "./components/AccountLogin";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
+import { SkillsSettings } from "./components/SkillsSettings";
+import { McpSettings } from "./components/McpSettings";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
@@ -1840,7 +1842,13 @@ export function App() {
                   },
                 }}
               />
-              <Show when={activePage() !== "agents"}>
+              <Show when={activePage() === "library"}>
+                <main class="w2-library">
+                  <SkillsSettings />
+                  <McpSettings />
+                </main>
+              </Show>
+              <Show when={activePage() !== "agents" && activePage() !== "library"}>
                 <ComingSoon title={activePageTitle()} />
               </Show>
               <Show when={activePage() === "agents" ? activeDirectMember() : undefined} keyed>
