@@ -33,6 +33,7 @@ export function AgentMemorySettingsView(props: { botId: string }) {
   }
   onSettled(() => {
     void refresh();
+    if (!window.openbot.memory) return;
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "agent-memory-changed" && event.botId === props.botId) void refresh();
     });
@@ -99,6 +100,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
   }
   onSettled(() => {
     void refresh();
+    if (!window.openbot.channels?.listMemories) return;
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "channel-memory-changed" && event.channelId === props.channelId) void refresh();
     });

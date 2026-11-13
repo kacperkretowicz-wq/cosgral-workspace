@@ -80,6 +80,7 @@ import {
   STORY_USAGE,
 } from "./fixtures";
 import { createMockSidebar } from "./mock-sidebar";
+import { createMockW2 } from "./mock-w2";
 
 type Listener<T> = (value: T) => void;
 
@@ -466,8 +467,13 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     };
   }
 
+  const w2 = createMockW2(emitAgentEvent);
   const api: OpenBotDesktopApi = {
+    memory: w2.memory,
+    skills: w2.skills,
+    mcp: w2.mcp,
     channels: {
+      ...w2.channels,
       list: async () => clone(mockChannels),
       listMessages: async ({ channelId }) => clone(mockMessages.filter((item) => item.channelId === channelId)),
       listTasks: async (channelId) => clone(mockTasks.filter((item) => item.channelId === channelId)),

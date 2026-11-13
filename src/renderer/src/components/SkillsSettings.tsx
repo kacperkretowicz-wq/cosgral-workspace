@@ -51,6 +51,7 @@ export function SkillsSettings(props: { botId?: string }) {
   }
   onSettled(() => {
     void refresh();
+    if (!window.openbot.skills) return;
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "skills-changed" || event.type === "skill-installs-changed") void refresh();
     });
@@ -82,8 +83,12 @@ export function SkillsSettings(props: { botId?: string }) {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm("Delete this skill and uninstall it from all agents?"))
-                        void run(() => window.openbot.skills!.delete({ skillId: skill.id }));
+                      if (window.confirm("Delete this skill and uninstall it from all agents?")) {
+                        const force = window.confirm(
+                          "Also remove installed copies with local changes? Choose Cancel to preserve them.",
+                        );
+                        void run(() => window.openbot.skills!.delete({ skillId: skill.id, force }));
+                      }
                     }}
                   >
                     Delete

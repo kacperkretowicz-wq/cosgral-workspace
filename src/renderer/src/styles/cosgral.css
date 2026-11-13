@@ -705,3 +705,14 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.w2-library {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  color: var(--openbot-text-primary);
+  background: var(--openbot-bg-canvas);
+}

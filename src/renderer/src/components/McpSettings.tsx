@@ -38,6 +38,7 @@ export function McpSettings(props: { botId?: string }) {
   }
   onSettled(() => {
     void refresh();
+    if (!window.openbot.mcp) return;
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "mcp-servers-changed" || (event.type === "agent-mcp-changed" && event.botId === props.botId))
         void refresh();

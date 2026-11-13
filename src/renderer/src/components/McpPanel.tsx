@@ -16,6 +16,7 @@ export function McpPanel(props: {
   const [url, setUrl] = createSignal("");
   const [secretName, setSecretName] = createSignal("");
   const [secretValue, setSecretValue] = createSignal("");
+  const [secrets, setSecrets] = createSignal<Record<string, string>>({});
   return (
     <section class="w2-panel" aria-label={props.agent ? "Agent MCP servers" : "MCP servers"}>
       <h3>{props.agent ? "Agent MCP servers" : "MCP servers"}</h3>
@@ -112,16 +113,32 @@ export function McpPanel(props: {
         <button
           type="button"
           onClick={() => {
-            const secrets = secretName().trim() ? { [secretName().trim()]: secretValue() } : undefined;
+            if (!secretName().trim()) return;
+            setSecrets((old) => ({ ...old, [secretName().trim()]: secretValue() }));
+            setSecretName("");
+            setSecretValue("");
+          }}
+        >
+          Add secret field
+        </button>
+        <Show when={Object.keys(secrets()).length}>
+          <p>Ready: {Object.keys(secrets()).join(", ")}</p>
+        </Show>
+        <button
+          type="button"
+          onClick={() => {
+            const values = { ...secrets(), ...(secretName().trim() ? { [secretName().trim()]: secretValue() } : {}) };
             props.onAdd({
               name: name().trim(),
               transport: transport(),
               ...(transport() === "stdio"
                 ? { command: command().trim(), args: args().split("\n").filter(Boolean) }
                 : { url: url().trim() }),
-              secrets,
+              secrets: Object.keys(values).length ? values : undefined,
             });
             setSecretValue("");
+            setSecretName("");
+            setSecrets({});
           }}
         >
           Add server
