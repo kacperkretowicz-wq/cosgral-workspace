@@ -2,31 +2,10 @@ import type { AppSettings } from "@openbot/contracts/ipc";
 import { defaultNotificationPreferences, SETTINGS_TABS } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AppSettingsW3, OnboardingW3 } from "./AppSettingsW3";
+import { AppSettingsW3 } from "./AppSettingsW3";
 
 afterEach(() => vi.unstubAllGlobals());
-
-describe("onboarding", () => {
-  it("passes the chosen language and provider once on completion", async () => {
-    const complete = vi.fn().mockResolvedValue(undefined);
-    render(() => (
-      <OnboardingW3
-        state={{
-          completed: false,
-          language: null,
-          preferredProvider: null,
-          firstAgentId: null,
-          proposals: [],
-          computerUse: { available: false, reason: "Unavailable" },
-        }}
-        complete={complete}
-      />
-    ));
-    await fireEvent.change(screen.getByLabelText("Language"), { target: { value: "pl" } });
-    await fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
-    expect(complete).toHaveBeenCalledWith({ language: "pl", preferredProvider: "codex", firstAgent: null });
-  });
-});
+// The first-run (onboarding) fields are tested with the setup step: InitialSetup.onboarding.test.tsx.
 
 function settings(): AppSettings {
   return {

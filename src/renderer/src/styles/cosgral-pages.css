@@ -359,3 +359,17 @@
   font-size: var(--openbot-text-lg);
   line-height: var(--openbot-leading-lg);
 }
+
+/* First run: language, first agent and Computer Use on the "Set up this computer" step (one flow). */
+.onboarding-fields {
+  display: grid;
+  gap: var(--openbot-space-4);
+  margin-top: var(--openbot-space-6);
+}
+
+.onboarding-computer-use {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-top: 1px solid var(--openbot-border);
+  padding-top: var(--openbot-space-4);
+}

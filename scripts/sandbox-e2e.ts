@@ -269,24 +269,24 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
 /** Goes through the first-run screens when they are shown; returns once the main window with the page rail is up. */
 async function reachMainWindow(page: Page, choose: { agent: string | null }): Promise<string[]> {
   const seen: string[] = [];
-  const welcome = page.getByRole("dialog", { name: "Welcome setup" });
   const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
   const local = page.getByRole("dialog", { name: "Set up this computer" });
   const pages = page.getByRole("navigation", { name: "Pages" });
   for (let round = 0; round < 40; round += 1) {
     if (await pages.count()) return seen;
-    if (await welcome.count()) {
-      seen.push("welcome");
-      if (choose.agent) await page.getByRole("combobox", { name: "First agent" }).selectOption({ label: choose.agent });
-      await page.getByRole("button", { name: "Finish setup" }).click({ timeout: 10_000 });
-      await welcome.waitFor({ state: "detached", timeout: 15_000 });
-    } else if (await where.count()) {
+    if (await where.count()) {
       seen.push("where");
       await page.getByRole("button", { name: /Use this computer/ }).click({ timeout: 10_000 });
       await where.waitFor({ state: "detached", timeout: 15_000 });
     } else if (await local.count()) {
+      // W3-BE9: one first-run flow; language and the first agent are fields of this step.
       seen.push("local");
-      await page.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 10_000 });
+      if (choose.agent) {
+        const firstAgent = page.getByRole("combobox", { name: "First agent" });
+        const option = firstAgent.locator("option", { hasText: choose.agent }).first();
+        await firstAgent.selectOption((await option.getAttribute("value")) ?? "");
+      }
+      await page.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 30_000 });
       await local.waitFor({ state: "detached", timeout: 15_000 });
     }
     await page.waitForTimeout(500);
