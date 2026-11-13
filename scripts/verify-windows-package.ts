@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, open, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
@@ -86,12 +86,47 @@ for (const [fuse, expected] of expectedFuses) {
   }
 }
 
+await expectNoBundledClaude(resourcesPath);
+
 await verifyLaunch(executablePath);
 
 console.log(`Verified ${appPath}`);
 console.log(
-  `COSGRAL Workspace ${packageJson.version} · Windows x64 · metadata · licenses · ASAR integrity · hardened fuses · launch`,
+  `COSGRAL Workspace ${packageJson.version} · Windows x64 · metadata · licenses · ASAR integrity · hardened fuses · no bundled Claude CLI · launch`,
 );
+
+/**
+ * COSGRAL (lead decision W1): Claude runs from the installed Claude CLI (`pathToClaudeCodeExecutable`).
+ * The SDK's own native CLI package (about 300 MB) is never used, so it must not ship in the package.
+ */
+async function expectNoBundledClaude(resources: string): Promise<void> {
+  const pattern = /claude-agent-sdk-(win32|darwin|linux)/;
+  let unpacked: string[] = [];
+  try {
+    unpacked = await readdir(resolve(resources, "app.asar.unpacked", "node_modules", "@anthropic-ai"));
+  } catch {
+    unpacked = [];
+  }
+  const header = await asarHeader(resolve(resources, "app.asar"));
+  if (unpacked.some((name) => pattern.test(name)) || pattern.test(header)) {
+    throw new Error("The package still ships the SDK's bundled Claude CLI. Claude must start from the installed CLI.");
+  }
+}
+
+/** The JSON file list at the start of an ASAR archive (Chromium pickle: its length is at byte 12). */
+async function asarHeader(path: string): Promise<string> {
+  const file = await open(path, "r");
+  try {
+    const prefix = Buffer.alloc(16);
+    await file.read(prefix, 0, 16, 0);
+    const length = prefix.readUInt32LE(12);
+    const header = Buffer.alloc(length);
+    await file.read(header, 0, length, 16);
+    return header.toString("utf8");
+  } finally {
+    await file.close();
+  }
+}
 
 function expectEqual(actual: unknown, expected: unknown, label: string): void {
   if (actual !== expected) {
@@ -129,7 +164,9 @@ async function verifyLaunch(executable: string): Promise<void> {
       new Promise<never>((_, reject) => {
         child.once("exit", (code, signal) => {
           reject(
-            new Error(`Packaged COSGRAL Workspace exited during launch (${signal ?? `code ${String(code)}`}): ${stderr.trim()}`),
+            new Error(
+              `Packaged COSGRAL Workspace exited during launch (${signal ?? `code ${String(code)}`}): ${stderr.trim()}`,
+            ),
           );
         });
       }),

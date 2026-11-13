@@ -7,6 +7,8 @@ import {
   isBrowserTakeoverRequest,
   isDraftPreviewCard,
   isDraftPreviewResolution,
+  isKeptDraft,
+  type KeptDraft,
 } from "./ipc-action-cards";
 import {
   type AgentActivity,
@@ -19,9 +21,18 @@ import {
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
-import { type AgentMemory, type ChannelMemory, isAgentMemory, isChannelMemory } from "./ipc-memory";
+import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
-import { type ChannelTask, isChannelTask, isWorkspaceChannel, type WorkspaceChannel } from "./ipc-workspace-channels";
+import {
+  type ChannelMemory,
+  type ChannelMessage,
+  type ChannelTask,
+  isChannelMemory,
+  isChannelMessage,
+  isChannelTask,
+  isWorkspaceChannel,
+  type WorkspaceChannel,
+} from "./ipc-workspace-channels";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked" | "stopped";
@@ -467,15 +478,19 @@ export type AgentEvent =
   | { type: "channels-changed"; channels: WorkspaceChannel[] }
   /** COSGRAL W1 (engine in W1-BE2): one channel task was created or changed. */
   | { type: "task-changed"; task: ChannelTask }
+  | { type: "channel-message"; message: ChannelMessage }
+  | { type: "channel-message-changed"; message: ChannelMessage }
   /** COSGRAL W1: an agent shows a draft before sending it in the user's name. */
   | { type: "draft-preview"; card: DraftPreviewCard }
   | { type: "draft-preview-resolved"; requestId: string; botId: string; resolution: DraftPreviewResolution }
+  /** COSGRAL W1-BE3: the kept drafts of every agent, newest first; replace the whole list. */
+  | { type: "drafts-changed"; drafts: KeptDraft[] }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
   /** COSGRAL W2: an agent's saved memories changed. */
   | { type: "agent-memory-changed"; botId: string; action: "saved" | "deleted"; memory: AgentMemory }
-  /** COSGRAL W2: a channel's shared memories changed. */
+  /** COSGRAL W2: a channel's shared memories changed (an agent or a person saved, edited or deleted one). */
   | { type: "channel-memory-changed"; channelId: string; action: "saved" | "deleted"; memory: ChannelMemory }
   | { type: "error"; botId?: string; code: string; message: string };
 
@@ -533,19 +548,22 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.channels) && value.channels.every(isWorkspaceChannel);
     case "task-changed":
       return isChannelTask(value.task);
+    case "channel-message":
+    case "channel-message-changed":
+      return isChannelMessage(value.message);
     case "draft-preview":
       return isDraftPreviewCard(value.card);
     case "draft-preview-resolved":
       return isString(value.requestId) && isString(value.botId) && isDraftPreviewResolution(value.resolution);
+    case "drafts-changed":
+      return Array.isArray(value.drafts) && value.drafts.every(isKeptDraft);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":
       return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
     case "agent-memory-changed":
       return (
-        isString(value.botId) &&
-        (value.action === "saved" || value.action === "deleted") &&
-        isAgentMemory(value.memory)
+        isString(value.botId) && (value.action === "saved" || value.action === "deleted") && isAgentMemory(value.memory)
       );
     case "channel-memory-changed":
       return (

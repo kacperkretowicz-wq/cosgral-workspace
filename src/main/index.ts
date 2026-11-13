@@ -39,6 +39,8 @@ import { AgentService } from "../backend/agent-service";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
+import { ChannelEngine } from "../backend/channel-engine";
+import { ChannelStore } from "../backend/channel-store";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { SidebarStore } from "../backend/sidebar-store";
@@ -70,6 +72,27 @@ import {
 import { parseMacPermission, parseProvider } from "./ipc/app-inputs";
 import { parseAvatarImage } from "./ipc/avatar-inputs";
 import { parseBrowserOpen, parseVisibility } from "./ipc/browser-inputs";
+import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./ipc/card-inputs";
+import {
+  parseChannelId,
+  parseChannelMember,
+  parseChannelTaskAction,
+  parseCreateChannel,
+  parseListChannelMessages,
+  parseReassignChannelTask,
+  parseSendChannelMessage,
+  parseUpdateChannel,
+} from "./ipc/channel-inputs";
+import {
+  parseAgentMemoryBotId,
+  parseDeleteAgentMemory,
+  parseDeleteChannelMemory,
+  parseListAgentMemories,
+  parseSaveAgentMemory,
+  parseSaveChannelMemory,
+  parseSearchAgentMemories,
+  parseSetAgentMemoryLimit,
+} from "./ipc/memory-inputs";
 import {
   parseCreateTeamInvite,
   parseDirectTyping,
@@ -90,16 +113,6 @@ import {
   parseSidebarFolderId,
   parseUpdateSidebarFolder,
 } from "./ipc/sidebar-inputs";
-import {
-  parseDeleteAgentMemory,
-  parseDeleteChannelMemory,
-  parseListAgentMemories,
-  parseListChannelMemories,
-  parseSaveAgentMemory,
-  parseSaveChannelMemory,
-  parseSearchAgentMemories,
-} from "./ipc/memory-inputs";
-import { MemoryStore } from "../backend/memory-store";
 import { isObject, requireString } from "./ipc/validation";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
@@ -173,6 +186,7 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null;
 let browserHost: BrowserHost | null = null;
 let agentService: AgentService | null = null;
+let channelEngineService: ChannelEngine | null = null;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
@@ -236,7 +250,8 @@ function registerIpcHandlers(
   remoteServers: RemoteServerManager,
   centralAuth: AccountManager,
   sidebar: SidebarStore,
-  memoryStore: MemoryStore,
+  channels: ChannelStore,
+  channelEngine: ChannelEngine,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -668,6 +683,26 @@ function registerIpcHandlers(
     const { serverId } = parseAgentRequest(input);
     return serverId === "local" ? service.listActivity() : [];
   });
+  // COSGRAL W1-BE3: draft preview / confirm cards, browser takeovers and kept drafts; this computer only.
+  handleTrusted(IPC_CHANNELS.agentRespondToDraftPreview, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Draft cards are available on this computer only.");
+    return service.respondToDraftPreview(parseDraftPreviewResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentRespondToBrowserTakeover, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Browser takeover is available on this computer only.");
+    return service.respondToBrowserTakeover(parseBrowserTakeoverResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentListDrafts, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.listDrafts() : [];
+  });
+  handleTrusted(IPC_CHANNELS.agentDeleteDraft, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Drafts are kept on this computer only.");
+    service.deleteDraft(parseDeleteDraft(scoped.payload));
+  });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -694,84 +729,91 @@ function registerIpcHandlers(
   );
   handleTrusted(IPC_CHANNELS.sidebarMoveItem, (input: unknown) => {
     const parsed = localSidebarInput(input, parseMoveSidebarItem);
-    if (parsed.itemKind === "channel") throw new Error("Channels are not available yet.");
-    if (!service.listBots().some((bot) => bot.id === parsed.itemId)) throw new Error("This agent no longer exists.");
+    if (parsed.itemKind === "channel") {
+      if (!channels.list().some((channel) => channel.id === parsed.itemId)) {
+        throw new Error("This channel no longer exists.");
+      }
+    } else if (!service.listBots().some((bot) => bot.id === parsed.itemId)) {
+      throw new Error("This agent no longer exists.");
+    }
     return forwardSidebarLayout(sidebar.moveItem(parsed));
   });
+  // COSGRAL W1-BE2: channels and channel tasks of this computer; remote servers have none yet.
+  handleTrusted(IPC_CHANNELS.channelsList, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? channels.list() : [];
+  });
+  handleTrusted(IPC_CHANNELS.channelsListTasks, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? channels.listTasks(parseChannelId(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.channelsListMessages, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") return [];
+    const parsed = parseListChannelMessages(scoped.payload);
+    return channels.listMessages(parsed.channelId, parsed);
+  });
+  handleTrusted(IPC_CHANNELS.channelsSendMessage, (input: unknown) =>
+    channelEngine.sendMessage(localChannelInput(input, parseSendChannelMessage)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsCreate, (input: unknown) =>
+    channels.create(localChannelInput(input, parseCreateChannel)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsUpdate, (input: unknown) =>
+    channels.update(localChannelInput(input, parseUpdateChannel)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsAddMember, (input: unknown) =>
+    channels.addMember(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsRemoveMember, (input: unknown) =>
+    channels.removeMember(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsSetLead, (input: unknown) =>
+    channels.setLead(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsTaskAction, (input: unknown) =>
+    channelEngine.actOnTask(localChannelInput(input, parseChannelTaskAction)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsReassignTask, (input: unknown) =>
+    channelEngine.reassignTask(localChannelInput(input, parseReassignChannelTask)),
+  );
 
-  // COSGRAL W2: agent and channel memory
+  // COSGRAL W2: an agent's private memory (agent settings page). Same rules and events as the agent tools.
   handleTrusted(IPC_CHANNELS.memoryListAgentMemories, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") return [];
-    const parsed = parseListAgentMemories(payload);
-    return memoryStore.listAgentMemories(parsed.botId, parsed.inclusion);
+    const parsed = localMemoryInput(input, parseListAgentMemories);
+    return service.memoryStore.listAgentMemories(parsed.botId, parsed.inclusion);
   });
   handleTrusted(IPC_CHANNELS.memorySaveAgentMemory, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
-    const parsed = parseSaveAgentMemory(payload);
-    const saved = memoryStore.saveAgentMemory(parsed);
-    forwardAgentEvent("local", {
-      type: "agent-memory-changed",
-      botId: saved.botId,
-      action: "saved",
-      memory: saved,
-    });
-    return saved;
+    const parsed = localMemoryInput(input, parseSaveAgentMemory);
+    if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
+    return service.memoryService.save(parsed);
   });
   handleTrusted(IPC_CHANNELS.memoryDeleteAgentMemory, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
-    const parsed = parseDeleteAgentMemory(payload);
-    const deleted = memoryStore.deleteAgentMemory(parsed);
-    if (deleted) {
-      forwardAgentEvent("local", {
-        type: "agent-memory-changed",
-        botId: deleted.botId,
-        action: "deleted",
-        memory: deleted,
-      });
-    }
+    const parsed = localMemoryInput(input, parseDeleteAgentMemory);
+    service.memoryService.delete(parsed.botId, parsed.memoryId);
     return null;
   });
-  handleTrusted(IPC_CHANNELS.memorySearchAgentMemories, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") return [];
-    const parsed = parseSearchAgentMemories(payload);
-    return memoryStore.searchAgentMemories(parsed);
+  handleTrusted(IPC_CHANNELS.memorySearchAgentMemories, (input: unknown) =>
+    service.memoryStore.searchAgentMemories(localMemoryInput(input, parseSearchAgentMemories)),
+  );
+  handleTrusted(IPC_CHANNELS.memoryGetAgentSettings, (input: unknown) =>
+    service.memoryStore.settings(localMemoryInput(input, parseAgentMemoryBotId)),
+  );
+  handleTrusted(IPC_CHANNELS.memorySetAgentLimit, (input: unknown) => {
+    const parsed = localMemoryInput(input, parseSetAgentMemoryLimit);
+    if (!service.listBots().some((bot) => bot.id === parsed.botId)) throw new Error("This agent no longer exists.");
+    return service.memoryStore.setLimit(parsed);
   });
-  handleTrusted(IPC_CHANNELS.memoryListChannelMemories, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") return [];
-    const parsed = parseListChannelMemories(payload);
-    return memoryStore.listChannelMemories(parsed.channelId);
+  // COSGRAL W2: the person's side of channel memory; the channel engine owns the pool.
+  handleTrusted(IPC_CHANNELS.channelsListMemories, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? channels.listMemory(parseChannelId(scoped.payload)) : [];
   });
-  handleTrusted(IPC_CHANNELS.memorySaveChannelMemory, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
-    const parsed = parseSaveChannelMemory(payload);
-    const saved = memoryStore.saveChannelMemory(parsed);
-    forwardAgentEvent("local", {
-      type: "channel-memory-changed",
-      channelId: saved.channelId,
-      action: "saved",
-      memory: saved,
-    });
-    return saved;
-  });
-  handleTrusted(IPC_CHANNELS.memoryDeleteChannelMemory, (input: unknown) => {
-    const { serverId, payload } = parseAgentRequest(input);
-    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
-    const parsed = parseDeleteChannelMemory(payload);
-    const deleted = memoryStore.deleteChannelMemory(parsed);
-    if (deleted) {
-      forwardAgentEvent("local", {
-        type: "channel-memory-changed",
-        channelId: deleted.channelId,
-        action: "deleted",
-        memory: deleted,
-      });
-    }
+  handleTrusted(IPC_CHANNELS.channelsSaveMemory, (input: unknown) =>
+    channels.saveMemoryByPerson(localChannelInput(input, parseSaveChannelMemory)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsDeleteMemory, (input: unknown) => {
+    channels.forgetMemory(localChannelInput(input, parseDeleteChannelMemory));
     return null;
   });
 
@@ -1069,8 +1111,17 @@ if (!hasSingleInstanceLock) {
       const service = agentService;
       // COSGRAL W1: sidebar folders live in the same local database.
       const sidebarStore = new SidebarStore(store.database);
-      // COSGRAL W2: memory store in the same database.
-      const memoryStore = new MemoryStore(store.database);
+      // COSGRAL W1-BE2: channels and their tasks, members are existing agents.
+      const channelStore = new ChannelStore(store.database, {
+        botExists: (botId) => service.listBots().some((bot) => bot.id === botId),
+      });
+      const engine = new ChannelEngine(
+        channelStore,
+        { run: (input) => service.runChannelTurn(input), available: (id) => service.canRunChannelTurn(id) },
+        { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
+      );
+      channelEngineService = engine;
+      channelStore.on("event", (event) => forwardAgentEvent("local", event));
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1169,6 +1220,9 @@ if (!hasSingleInstanceLock) {
         beforeInstall: prepareForShutdown,
       });
       service.on("event", (event) => forwardAgentEvent("local", event));
+      service.on("event", (event) => {
+        if (event.type === "turn-completed" || event.type === "queue-changed") engine.reconcile();
+      });
       // COSGRAL W1: a deleted agent leaves its folder.
       service.on("event", (event) => {
         if (event.type !== "bots-changed") return;
@@ -1183,6 +1237,13 @@ if (!hasSingleInstanceLock) {
           }
         } catch (error) {
           console.error("Unable to update sidebar folders:", error);
+        }
+        // COSGRAL W1-BE2: and its channels; a deleted lead hands the role and open tasks to the next member.
+        try {
+          const changed = channelStore.pruneBots(event.bots.map((bot) => bot.id));
+          if (changed.tasks.length) engine.reconcile();
+        } catch (error) {
+          console.error("Unable to update channels:", error);
         }
       });
       host.on("changed", forwardHostStatus);
@@ -1199,7 +1260,10 @@ if (!hasSingleInstanceLock) {
       remoteServers.on("directTyping", forwardDirectTyping);
       updateService.on("status", forwardUpdateStatus);
       updateService.start();
-      const agentInitialization = new AgentInitializationGate(() => service.initialize());
+      const agentInitialization = new AgentInitializationGate(async () => {
+        await service.initialize();
+        engine.start();
+      });
       registerIpcHandlers(
         service,
         mailboxStore,
@@ -1212,7 +1276,8 @@ if (!hasSingleInstanceLock) {
         remoteServers,
         centralAuthManager,
         sidebarStore,
-        memoryStore,
+        channelStore,
+        engine,
       );
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
@@ -1270,6 +1335,19 @@ function localSidebarInput<T>(input: unknown, parse: (payload: unknown) => T): T
 function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
   forwardAgentEvent("local", { type: "sidebar-layout-changed", layout });
   return layout;
+}
+
+/** COSGRAL W1-BE2: channel changes are kept on this computer only. */
+function localMemoryInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Agent memory is available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
+function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Channels are available only on this computer for now.");
+  return parse(scoped.payload);
 }
 
 function parseStopEyes(value: unknown): StopAgentEyesInput {
@@ -1348,7 +1426,7 @@ async function prepareForShutdown(): Promise<void> {
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
   await (browserHost?.destroy() ?? Promise.resolve());
-  await (agentService?.stop() ?? Promise.resolve());
+  await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
 }
 
 function routeUpdateBot(

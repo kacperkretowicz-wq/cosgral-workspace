@@ -219,7 +219,70 @@ const SCHEMA_SQL = `
     last_event_sequence INTEGER NOT NULL,
     PRIMARY KEY(item_kind, item_id)
   );
-  -- COSGRAL W2: agent and channel memories
+  -- COSGRAL W1-BE2: channels with a lead agent, and channel tasks.
+  CREATE TABLE IF NOT EXISTS projection_channels (
+    channel_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    lead_bot_id TEXT,
+    member_bot_ids_json TEXT NOT NULL CHECK(json_valid(member_bot_ids_json)),
+    isolated INTEGER NOT NULL CHECK(isolated IN (0, 1)),
+    archived INTEGER NOT NULL CHECK(archived IN (0, 1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_tasks (
+    task_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    owner_bot_id TEXT NOT NULL,
+    state TEXT NOT NULL,
+    title TEXT NOT NULL,
+    request_message_id TEXT NOT NULL,
+    result_message_id TEXT,
+    parent_task_id TEXT,
+    dependency_task_ids_json TEXT NOT NULL CHECK(json_valid(dependency_task_ids_json)),
+    resource_key TEXT,
+    assignment_count INTEGER NOT NULL,
+    archived_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS channel_tasks_channel
+    ON projection_channel_tasks(channel_id, created_at);
+  CREATE TABLE IF NOT EXISTS projection_channel_task_runtime (
+    task_id TEXT PRIMARY KEY REFERENCES projection_channel_tasks(task_id) ON DELETE CASCADE,
+    runtime_json TEXT NOT NULL CHECK(json_valid(runtime_json))
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_messages (
+    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id TEXT NOT NULL UNIQUE,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS channel_messages_channel ON projection_channel_messages(channel_id, ordinal);
+  CREATE TABLE IF NOT EXISTS projection_channel_memories (
+    memory_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_assignments (
+    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id TEXT NOT NULL REFERENCES projection_channel_tasks(task_id) ON DELETE CASCADE,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  -- COSGRAL W1-BE3: drafts the user kept unsent from a draft preview / confirm card.
+  CREATE TABLE IF NOT EXISTS projection_kept_drafts (
+    draft_id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    kept_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS kept_drafts_kept_at ON projection_kept_drafts(kept_at);
+  -- COSGRAL W2: private agent memories ("essential" = always in the prompt, "searchable" = found with a tool).
+  -- Channel memory is separate: projection_channel_memories above (channel engine, W1-BE2).
   CREATE TABLE IF NOT EXISTS projection_agent_memories (
     memory_id TEXT PRIMARY KEY,
     agent_id TEXT NOT NULL,
@@ -231,16 +294,13 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS agent_memories_agent
     ON projection_agent_memories(agent_id, inclusion, updated_at DESC);
-  CREATE TABLE IF NOT EXISTS projection_channel_memories (
-    memory_id TEXT PRIMARY KEY,
-    channel_id TEXT NOT NULL,
-    text TEXT NOT NULL,
-    created_at TEXT NOT NULL,
+  -- COSGRAL W2: the per-agent memory limit a person set (absent = default 512).
+  CREATE TABLE IF NOT EXISTS projection_agent_memory_settings (
+    agent_id TEXT PRIMARY KEY,
+    max_memories INTEGER NOT NULL CHECK(max_memories >= 1),
     updated_at TEXT NOT NULL,
     last_event_sequence INTEGER NOT NULL
   );
-  CREATE INDEX IF NOT EXISTS channel_memories_channel
-    ON projection_channel_memories(channel_id, updated_at DESC);
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

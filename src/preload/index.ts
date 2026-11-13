@@ -6,11 +6,14 @@ import {
   type AgentEyesState,
   type AgentIpcRequest,
   type AgentMemory,
+  type AgentMemorySettings,
   type AgentModelOption,
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
   type ChannelMemory,
+  type ChannelMessage,
+  type ChannelTask,
   type ConversationReadState,
   type ConversationWithReadState,
   type DraftAttachment,
@@ -18,12 +21,18 @@ import {
   IPC_CHANNELS,
   isAgentActivity,
   isAgentMemory,
+  isAgentMemorySettings,
   isAgentModel,
   isChannelMemory,
+  isChannelMessage,
+  isChannelTask,
+  isKeptDraft,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
   isSidebarLayout,
+  isWorkspaceChannel,
+  type KeptDraft,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
   type QueuedMessageReceipt,
@@ -35,6 +44,7 @@ import {
   type SidebarFolderChange,
   type SidebarLayout,
   type UpdateStatus,
+  type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
@@ -309,6 +319,12 @@ function decodePendingRequests(value: unknown): PendingAgentRequest[] {
   return value.filter(isPendingAgentRequest);
 }
 
+/** COSGRAL W1-BE3: kept drafts; malformed entries are dropped. */
+function decodeDrafts(value: unknown): KeptDraft[] {
+  if (!Array.isArray(value)) throw new Error("Invalid drafts response.");
+  return value.filter(isKeptDraft);
+}
+
 /** COSGRAL W1: agent row states; malformed entries are dropped. */
 function decodeActivities(value: unknown): AgentActivity[] {
   if (!Array.isArray(value)) throw new Error("Invalid agent activity response.");
@@ -328,7 +344,7 @@ function decodeSidebarFolderChange(value: unknown): SidebarFolderChange {
   return { folder: value.folder, layout: value.layout };
 }
 
-/** COSGRAL W2: memory decoders */
+/** COSGRAL W2: memory decoders. */
 function decodeAgentMemory(value: unknown): AgentMemory {
   if (!isAgentMemory(value)) throw new Error("Invalid agent memory response.");
   return value;
@@ -339,6 +355,11 @@ function decodeAgentMemories(value: unknown): AgentMemory[] {
   return value.filter(isAgentMemory);
 }
 
+function decodeAgentMemorySettings(value: unknown): AgentMemorySettings {
+  if (!isAgentMemorySettings(value)) throw new Error("Invalid memory settings response.");
+  return value;
+}
+
 function decodeChannelMemory(value: unknown): ChannelMemory {
   if (!isChannelMemory(value)) throw new Error("Invalid channel memory response.");
   return value;
@@ -347,6 +368,38 @@ function decodeChannelMemory(value: unknown): ChannelMemory {
 function decodeChannelMemories(value: unknown): ChannelMemory[] {
   if (!Array.isArray(value)) throw new Error("Invalid channel memories response.");
   return value.filter(isChannelMemory);
+}
+
+/** COSGRAL W1-BE2: channels and channel tasks. */
+function decodeChannel(value: unknown): WorkspaceChannel {
+  if (!isWorkspaceChannel(value)) throw new Error("Invalid channel response.");
+  return value;
+}
+
+function decodeChannels(value: unknown): WorkspaceChannel[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel list response.");
+  return value.filter(isWorkspaceChannel);
+}
+
+function decodeChannelTask(value: unknown): ChannelTask {
+  if (!isChannelTask(value)) throw new Error("Invalid channel task response.");
+  return value;
+}
+
+function decodeChannelTasks(value: unknown): ChannelTask[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel task list response.");
+  return value.filter(isChannelTask);
+}
+
+function decodeChannelMessages(value: unknown): ChannelMessage[] {
+  if (!Array.isArray(value) || !value.every(isChannelMessage)) throw new Error("Invalid channel history response.");
+  return value;
+}
+
+function decodeChannelReceipt(value: unknown): { message: ChannelMessage; task: ChannelTask } {
+  if (!isDynamicRecord(value) || !isChannelMessage(value.message) || !isChannelTask(value.task))
+    throw new Error("Invalid channel message response.");
+  return { message: value.message, task: value.task };
 }
 
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
@@ -439,6 +492,10 @@ const openbotApi: OpenBotDesktopApi = {
     stopEyes: (input) => invokeAgent(IPC_CHANNELS.agentStopEyes, input, decodeEyesState),
     listPendingRequests: () => invokeAgent(IPC_CHANNELS.agentListPendingRequests, null, decodePendingRequests),
     listActivity: () => invokeAgent(IPC_CHANNELS.agentListActivity, null, decodeActivities),
+    respondToDraftPreview: (input) => invokeAgent(IPC_CHANNELS.agentRespondToDraftPreview, input, decodeVoid),
+    respondToBrowserTakeover: (input) => invokeAgent(IPC_CHANNELS.agentRespondToBrowserTakeover, input, decodeVoid),
+    listDrafts: () => invokeAgent(IPC_CHANNELS.agentListDrafts, null, decodeDrafts),
+    deleteDraft: (input) => invokeAgent(IPC_CHANNELS.agentDeleteDraft, input, decodeVoid),
     onEvent: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: ScopedAgentEvent) => {
         if (payload.serverId === selectedServerId) listener(payload.event);
@@ -461,12 +518,24 @@ const openbotApi: OpenBotDesktopApi = {
     saveAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memorySaveAgentMemory, input, decodeAgentMemory),
     deleteAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memoryDeleteAgentMemory, input, decodeVoid),
     searchAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memorySearchAgentMemories, input, decodeAgentMemories),
-    listChannelMemories: (input) => {
-      const channelId = typeof input === "string" ? input : input.channelId;
-      return invokeAgent(IPC_CHANNELS.memoryListChannelMemories, { channelId }, decodeChannelMemories);
-    },
-    saveChannelMemory: (input) => invokeAgent(IPC_CHANNELS.memorySaveChannelMemory, input, decodeChannelMemory),
-    deleteChannelMemory: (input) => invokeAgent(IPC_CHANNELS.memoryDeleteChannelMemory, input, decodeVoid),
+    getAgentSettings: (botId) => invokeAgent(IPC_CHANNELS.memoryGetAgentSettings, botId, decodeAgentMemorySettings),
+    setAgentLimit: (input) => invokeAgent(IPC_CHANNELS.memorySetAgentLimit, input, decodeAgentMemorySettings),
+  },
+  channels: {
+    listMemories: (channelId) => invokeAgent(IPC_CHANNELS.channelsListMemories, channelId, decodeChannelMemories),
+    saveMemory: (input) => invokeAgent(IPC_CHANNELS.channelsSaveMemory, input, decodeChannelMemory),
+    deleteMemory: (input) => invokeAgent(IPC_CHANNELS.channelsDeleteMemory, input, decodeVoid),
+    listMessages: (input) => invokeAgent(IPC_CHANNELS.channelsListMessages, input, decodeChannelMessages),
+    sendMessage: (input) => invokeAgent(IPC_CHANNELS.channelsSendMessage, input, decodeChannelReceipt),
+    list: () => invokeAgent(IPC_CHANNELS.channelsList, null, decodeChannels),
+    listTasks: (channelId) => invokeAgent(IPC_CHANNELS.channelsListTasks, channelId, decodeChannelTasks),
+    create: (input) => invokeAgent(IPC_CHANNELS.channelsCreate, input, decodeChannel),
+    update: (input) => invokeAgent(IPC_CHANNELS.channelsUpdate, input, decodeChannel),
+    addMember: (input) => invokeAgent(IPC_CHANNELS.channelsAddMember, input, decodeChannel),
+    removeMember: (input) => invokeAgent(IPC_CHANNELS.channelsRemoveMember, input, decodeChannel),
+    setLead: (input) => invokeAgent(IPC_CHANNELS.channelsSetLead, input, decodeChannel),
+    actOnTask: (input) => invokeAgent(IPC_CHANNELS.channelsTaskAction, input, decodeChannelTask),
+    reassignTask: (input) => invokeAgent(IPC_CHANNELS.channelsReassignTask, input, decodeChannelTask),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

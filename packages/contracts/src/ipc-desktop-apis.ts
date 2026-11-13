@@ -1,4 +1,9 @@
-import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "./ipc-action-cards";
+import type {
+  DeleteDraftInput,
+  KeptDraft,
+  RespondToBrowserTakeoverInput,
+  RespondToDraftPreviewInput,
+} from "./ipc-action-cards";
 import type {
   AppInfo,
   AppSetupState,
@@ -42,14 +47,14 @@ import type {
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
   AgentMemory,
-  ChannelMemory,
+  AgentMemorySettings,
   DeleteAgentMemoryInput,
   DeleteChannelMemoryInput,
   ListAgentMemoriesInput,
-  ListChannelMemoriesInput,
   SaveAgentMemoryInput,
   SaveChannelMemoryInput,
   SearchAgentMemoriesInput,
+  SetAgentMemoryLimitInput,
 } from "./ipc-memory";
 import type {
   CreateSidebarFolderInput,
@@ -89,7 +94,19 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
-import type { ChannelTask, WorkspaceChannel } from "./ipc-workspace-channels";
+import type {
+  ChannelMemberInput,
+  ChannelMemory,
+  ChannelMessage,
+  ChannelTask,
+  ChannelTaskActionInput,
+  CreateWorkspaceChannelInput,
+  ListChannelMessagesInput,
+  ReassignChannelTaskInput,
+  SendChannelMessageInput,
+  UpdateWorkspaceChannelInput,
+  WorkspaceChannel,
+} from "./ipc-workspace-channels";
 
 export interface AgentDesktopApi {
   getStatus: () => Promise<AgentStatus>;
@@ -125,8 +142,13 @@ export interface AgentDesktopApi {
   listPendingRequests?: () => Promise<PendingAgentRequest[]>;
   /** COSGRAL W1: the row state of every agent; then follow `activity-changed`. */
   listActivity?: () => Promise<AgentActivity[]>;
+  /** COSGRAL W1-BE3: decide a draft preview / confirm card (local server only). */
   respondToDraftPreview?: (input: RespondToDraftPreviewInput) => Promise<void>;
+  /** COSGRAL W1-BE3: take over, return or decline a browser takeover request (local server only). */
   respondToBrowserTakeover?: (input: RespondToBrowserTakeoverInput) => Promise<void>;
+  /** COSGRAL W1-BE3: drafts kept with "keep-draft", newest first; then follow `drafts-changed`. */
+  listDrafts?: () => Promise<KeptDraft[]>;
+  deleteDraft?: (input: DeleteDraftInput) => Promise<void>;
   onEvent: (listener: (event: AgentEvent) => void) => () => void;
 }
 
@@ -141,24 +163,40 @@ export interface SidebarDesktopApi {
   moveItem: (input: MoveSidebarItemInput) => Promise<SidebarLayout>;
 }
 
-/** COSGRAL W1: channels and channel tasks, read side (engine and writes in W1-BE2). */
+/** COSGRAL W1: channels and channel tasks (see ipc-workspace-channels.ts). */
 export interface ChannelsDesktopApi {
+  /** Optional until all renderer mocks implement channel history/composer. */
+  listMessages?: (input: ListChannelMessagesInput) => Promise<ChannelMessage[]>;
+  sendMessage?: (input: SendChannelMessageInput) => Promise<{ message: ChannelMessage; task: ChannelTask }>;
   list: () => Promise<WorkspaceChannel[]>;
+  /** All tasks of the channel, archived ones included (filter on `archivedAt`). */
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
-  listMemories?: (input: ListChannelMemoriesInput | string) => Promise<ChannelMemory[]>;
+  /** COSGRAL W2: the channel's shared memory, oldest first. Optional until every renderer mock has it. */
+  listMemories?: (channelId: string) => Promise<ChannelMemory[]>;
+  /** A person adds an entry (no memoryId) or edits one (memoryId). At most 500 characters. */
   saveMemory?: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
   deleteMemory?: (input: DeleteChannelMemoryInput) => Promise<void>;
+  create: (input: CreateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  update: (input: UpdateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  addMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  removeMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  setLead: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  /** Stop, pause, resume, archive or restore a task. */
+  actOnTask: (input: ChannelTaskActionInput) => Promise<ChannelTask>;
+  reassignTask: (input: ReassignChannelTaskInput) => Promise<ChannelTask>;
 }
 
-/** COSGRAL W2: agent and channel memory (see ipc-memory.ts). */
+/** COSGRAL W2: an agent's private memory, for the agent settings page (see ipc-memory.ts). */
 export interface MemoryDesktopApi {
+  /** Newest change first. */
   listAgentMemories: (input: ListAgentMemoriesInput) => Promise<AgentMemory[]>;
+  /** Add (no memoryId) or edit (memoryId). Adding at the storage limit rejects with a clear message. */
   saveAgentMemory: (input: SaveAgentMemoryInput) => Promise<AgentMemory>;
   deleteAgentMemory: (input: DeleteAgentMemoryInput) => Promise<void>;
-  searchAgentMemories?: (input: SearchAgentMemoriesInput) => Promise<AgentMemory[]>;
-  listChannelMemories: (input: ListChannelMemoriesInput | string) => Promise<ChannelMemory[]>;
-  saveChannelMemory: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
-  deleteChannelMemory: (input: DeleteChannelMemoryInput) => Promise<void>;
+  searchAgentMemories: (input: SearchAgentMemoriesInput) => Promise<AgentMemory[]>;
+  getAgentSettings: (botId: string) => Promise<AgentMemorySettings>;
+  /** Change the storage limit; a limit below the saved count keeps every entry and only blocks new ones. */
+  setAgentLimit: (input: SetAgentMemoryLimitInput) => Promise<AgentMemorySettings>;
 }
 
 export interface BrowserDesktopApi {

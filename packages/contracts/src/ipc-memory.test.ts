@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   type AgentMemory,
-  CHANNEL_MEMORY_LIMITS,
+  CHANNEL_LIMITS,
   type ChannelMemory,
   isAgentEvent,
   isAgentMemory,
+  isAgentMemorySettings,
   isChannelMemory,
   isMemoryInclusion,
   MEMORY_LIMITS,
@@ -23,9 +24,9 @@ describe("memory IPC contract", () => {
   const sampleChannelMemory: ChannelMemory = {
     id: "cmem-1",
     channelId: "chan-1",
+    authorBotId: "bot-1",
     text: "Channel objective: COSGRAL Workspace",
     createdAt: "2026-11-13T00:00:00.000Z",
-    updatedAt: "2026-11-13T00:00:00.000Z",
   };
 
   it("validates memory inclusion modes", () => {
@@ -51,7 +52,28 @@ describe("memory IPC contract", () => {
   it("validates memory limits", () => {
     expect(MEMORY_LIMITS.defaultMaxMemoriesPerBot).toBe(512);
     expect(MEMORY_LIMITS.essentialPromptByteLimit).toBe(8192);
-    expect(CHANNEL_MEMORY_LIMITS.maxTextLength).toBe(500);
+    expect(CHANNEL_LIMITS.memoryEntry).toBe(500);
+  });
+
+  it("accepts a channel entry added by a person (no author) and an edited one", () => {
+    expect(isChannelMemory({ ...sampleChannelMemory, authorBotId: null, updatedAt: "2026-11-13T01:00:00.000Z" })).toBe(
+      true,
+    );
+    expect(isChannelMemory({ ...sampleChannelMemory, updatedAt: 5 })).toBe(false);
+  });
+
+  it("validates memory settings", () => {
+    const settings = {
+      botId: "bot-1",
+      maxMemories: 512,
+      customLimit: false,
+      essentialCount: 1,
+      searchableCount: 2,
+      essentialInPrompt: 1,
+      essentialPromptBytes: 900,
+    };
+    expect(isAgentMemorySettings(settings)).toBe(true);
+    expect(isAgentMemorySettings({ ...settings, customLimit: "no" })).toBe(false);
   });
 
   it("accepts agent-memory-changed events", () => {

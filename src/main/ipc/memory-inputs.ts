@@ -1,17 +1,18 @@
-// COSGRAL W2: input validation for memory IPC calls
+// COSGRAL W2: input validation for memory IPC calls (agent memory and the person's side of channel memory).
 
 import {
   type DeleteAgentMemoryInput,
   type DeleteChannelMemoryInput,
+  isMemoryInclusion,
   type ListAgentMemoriesInput,
-  type ListChannelMemoriesInput,
+  MEMORY_LIMITS,
   type MemoryInclusion,
   type SaveAgentMemoryInput,
   type SaveChannelMemoryInput,
   type SearchAgentMemoriesInput,
-  isMemoryInclusion,
+  type SetAgentMemoryLimitInput,
 } from "@openbot/contracts/ipc";
-import { isNumber, isString } from "@openbot/contracts/runtime-values";
+import { isNumber } from "@openbot/contracts/runtime-values";
 import { isObject, requireString } from "./validation";
 
 export function parseListAgentMemories(value: unknown): ListAgentMemoriesInput {
@@ -26,16 +27,13 @@ export function parseSaveAgentMemory(value: unknown): SaveAgentMemoryInput {
   const botId = requireString(value.botId, "botId");
   const text = requireString(value.text, "text");
   const inclusion = value.inclusion !== undefined ? parseMemoryInclusion(value.inclusion) : undefined;
-  const memoryId =
-    value.memoryId !== undefined && value.memoryId !== null ? requireString(value.memoryId, "memoryId") : undefined;
+  const memoryId = optionalId(value.memoryId);
   return { botId, text, inclusion, memoryId };
 }
 
 export function parseDeleteAgentMemory(value: unknown): DeleteAgentMemoryInput {
   if (!isObject(value)) throw new Error("Agent memory details are required.");
-  const botId = requireString(value.botId, "botId");
-  const memoryId = requireString(value.memoryId, "memoryId");
-  return { botId, memoryId };
+  return { botId: requireString(value.botId, "botId"), memoryId: requireString(value.memoryId, "memoryId") };
 }
 
 export function parseSearchAgentMemories(value: unknown): SearchAgentMemoriesInput {
@@ -46,32 +44,41 @@ export function parseSearchAgentMemories(value: unknown): SearchAgentMemoriesInp
   return { botId, query, limit };
 }
 
-export function parseListChannelMemories(value: unknown): ListChannelMemoriesInput {
-  if (isString(value)) return { channelId: value };
-  if (!isObject(value)) throw new Error("Channel memory request details are required.");
-  const channelId = requireString(value.channelId, "channelId");
-  return { channelId };
+export function parseAgentMemoryBotId(value: unknown): string {
+  return requireString(value, "botId");
+}
+
+export function parseSetAgentMemoryLimit(value: unknown): SetAgentMemoryLimitInput {
+  if (!isObject(value)) throw new Error("Memory limit details are required.");
+  const botId = requireString(value.botId, "botId");
+  const max = value.maxMemories;
+  if (max === null) return { botId, maxMemories: null };
+  if (!isNumber(max) || !Number.isInteger(max) || max < 1 || max > MEMORY_LIMITS.maxMemoriesPerBotCeiling) {
+    throw new Error(`maxMemories must be a whole number from 1 to ${MEMORY_LIMITS.maxMemoriesPerBotCeiling}, or null.`);
+  }
+  return { botId, maxMemories: max };
 }
 
 export function parseSaveChannelMemory(value: unknown): SaveChannelMemoryInput {
   if (!isObject(value)) throw new Error("Channel memory details are required.");
   const channelId = requireString(value.channelId, "channelId");
   const text = requireString(value.text, "text");
-  const memoryId =
-    value.memoryId !== undefined && value.memoryId !== null ? requireString(value.memoryId, "memoryId") : undefined;
-  return { channelId, text, memoryId };
+  return { channelId, text, memoryId: optionalId(value.memoryId) };
 }
 
 export function parseDeleteChannelMemory(value: unknown): DeleteChannelMemoryInput {
   if (!isObject(value)) throw new Error("Channel memory details are required.");
-  const channelId = requireString(value.channelId, "channelId");
-  const memoryId = requireString(value.memoryId, "memoryId");
-  return { channelId, memoryId };
+  return {
+    channelId: requireString(value.channelId, "channelId"),
+    memoryId: requireString(value.memoryId, "memoryId"),
+  };
+}
+
+function optionalId(value: unknown): string | undefined {
+  return value === undefined || value === null ? undefined : requireString(value, "memoryId");
 }
 
 function parseMemoryInclusion(value: unknown): MemoryInclusion {
-  if (!isMemoryInclusion(value)) {
-    throw new Error("inclusion must be essential or searchable.");
-  }
+  if (!isMemoryInclusion(value)) throw new Error("inclusion must be essential or searchable.");
   return value;
 }

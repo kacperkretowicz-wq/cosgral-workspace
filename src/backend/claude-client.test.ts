@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import { isString } from "@openbot/contracts/runtime-values";
+import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClaudeAgentClient } from "./claude-client";
 import {
@@ -68,9 +68,11 @@ describe("ClaudeAgentClient", () => {
 
     const output = new TestQueue<TestStreamMessage>();
     let prompt: AsyncIterable<SDKUserMessage> | null = null;
+    let claudeExecutable: string | undefined;
     const generator = new TestQuery(output);
     const client = new ClaudeAgentClient({ executable, version: "2.1.231" }, (params) => {
       if (!isString(params.prompt)) prompt = params.prompt;
+      claudeExecutable = params.options?.pathToClaudeCodeExecutable;
       return generator;
     });
     const notifications: Array<{ method: string; params: unknown }> = [];
@@ -102,6 +104,8 @@ describe("ClaudeAgentClient", () => {
     );
 
     if (prompt === null) throw new Error("Claude prompt was not initialized.");
+    // COSGRAL: Claude always runs from the installed CLI; the package does not ship the SDK's own claude.exe.
+    expect(claudeExecutable).toBe(executable);
     const promptStream: AsyncIterable<SDKUserMessage> = prompt;
     let sent: SDKUserMessage | undefined;
     for await (const message of promptStream) {
@@ -158,7 +162,42 @@ describe("ClaudeAgentClient", () => {
       decodeThreadResponse,
     );
 
-    expect(serverNames).toEqual(expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes"]));
+    expect(serverNames).toEqual(
+      expect.arrayContaining(["openbot_browser", "openbot", "cosgral_eyes", "cosgral_channels", "cosgral_cards"]),
+    );
+    await client.stop();
+  });
+
+  it("COSGRAL W2: gives Claude the same memory tools on the openbot server and the memory block in the system prompt", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    let openbotTools: string[] = [];
+    let appended = "";
+    const client = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, (params) => {
+      const server = params.options?.mcpServers?.openbot;
+      // The SDK keeps registered tools in a private field of its MCP server; the test only reads their names.
+      const fields = server && "instance" in server ? Object.entries(server.instance) : [];
+      const registered = fields.find(([key]) => key === "_registeredTools")?.[1];
+      openbotTools = isDynamicRecord(registered) ? Object.keys(registered) : [];
+      const systemPrompt = params.options?.systemPrompt;
+      appended = isDynamicRecord(systemPrompt) && isString(systemPrompt.append) ? systemPrompt.append : "";
+      return new TestQuery(new TestQueue<TestStreamMessage>());
+    });
+    client.start();
+
+    await client.request(
+      "thread/start",
+      {
+        cwd: root,
+        model: "claude-sonnet-5",
+        developerInstructions: "Be concise.\n<cosgral_saved_memories>Drink: tea</cosgral_saved_memories>",
+        runtimeWorkspaceRoots: [root],
+      },
+      decodeThreadResponse,
+    );
+
+    expect(openbotTools).toEqual(expect.arrayContaining(["remember", "search_memories", "forget_memory"]));
+    expect(openbotTools).not.toContain("channel_remember");
+    expect(appended).toContain("Drink: tea");
     await client.stop();
   });
 

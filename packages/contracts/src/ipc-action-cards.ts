@@ -6,11 +6,34 @@
 // asks the user to take over the tab; after "return" the agent continues in the same tab.
 //
 // The engine behind both cards follows the Tester's description W1-T1; field names are agreed here.
+// Lead decision (W1): the draft preview and the confirm card are one card type with variants.
 
 import { isDynamicRecord, isOneOf, isString } from "./runtime-values";
 
+/** Field limits of the action cards, shared by the agent tools and the IPC parsers. */
+export const ACTION_CARD_LIMITS = {
+  title: 200,
+  recipient: 300,
+  channel: 60,
+  preview: 20_000,
+  feedback: 2_000,
+  reason: 300,
+  keptDrafts: 200,
+} as const;
+
+/**
+ * "draft": something the agent sends in the user's name (a message, an e-mail); buttons Send / Edit / Keep draft.
+ * "confirm": another outward action in the user's name (a post, a deletion, a payment); the same three decisions,
+ * shown as Confirm / Edit / Cancel.
+ */
+export const DRAFT_PREVIEW_VARIANTS = ["draft", "confirm"] as const;
+export type DraftPreviewVariant = (typeof DRAFT_PREVIEW_VARIANTS)[number];
+
 export const DRAFT_PREVIEW_DECISIONS = ["send", "edit", "keep-draft"] as const;
-/** "send": send as shown. "edit": the agent revises it (see `feedback`). "keep-draft": keep it unsent. */
+/**
+ * "send": approve exactly what the card shows, once, for these recipients. "edit": the agent revises it (see
+ * `feedback` and `text`) and shows a new card. "keep-draft": nothing goes out; the draft is kept (see `KeptDraft`).
+ */
 export type DraftPreviewDecision = (typeof DRAFT_PREVIEW_DECISIONS)[number];
 
 /** How a draft preview card ended; "expired": its turn ended or stopped first. */
@@ -22,6 +45,7 @@ export interface DraftPreviewCard {
   botId: string;
   threadId: string;
   turnId: string;
+  variant: DraftPreviewVariant;
   /** The question on the card, e.g. "Send this e-mail to Anna?" */
   title: string;
   /** Who gets it (a name or an address), or null when the agent does not say. */
@@ -30,6 +54,8 @@ export interface DraftPreviewCard {
   channel: string | null;
   /** The draft text exactly as it would go out. */
   preview: string;
+  /** Set when the agent reopens a kept draft (`KeptDraft.id`). */
+  draftId: string | null;
   createdAt: string;
 }
 
@@ -38,6 +64,25 @@ export interface RespondToDraftPreviewInput {
   decision: DraftPreviewDecision;
   /** With "edit": what to change, in the user's words. Optional. */
   feedback?: string;
+  /** With "edit": the user's own new version of the text. The agent shows a new card before it goes out. */
+  text?: string;
+}
+
+/** A draft the user kept unsent ("keep-draft"). It survives restarts until it is sent again or deleted. */
+export interface KeptDraft {
+  id: string;
+  botId: string;
+  threadId: string;
+  variant: DraftPreviewVariant;
+  title: string;
+  recipient: string | null;
+  channel: string | null;
+  preview: string;
+  keptAt: string;
+}
+
+export interface DeleteDraftInput {
+  draftId: string;
 }
 
 /**
@@ -84,11 +129,28 @@ export function isDraftPreviewCard(value: unknown): value is DraftPreviewCard {
     isString(value.botId) &&
     isString(value.threadId) &&
     isString(value.turnId) &&
+    isOneOf(DRAFT_PREVIEW_VARIANTS, value.variant) &&
     isString(value.title) &&
     (value.recipient === null || isString(value.recipient)) &&
     (value.channel === null || isString(value.channel)) &&
     isString(value.preview) &&
+    (value.draftId === null || isString(value.draftId)) &&
     isString(value.createdAt)
+  );
+}
+
+export function isKeptDraft(value: unknown): value is KeptDraft {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.botId) &&
+    isString(value.threadId) &&
+    isOneOf(DRAFT_PREVIEW_VARIANTS, value.variant) &&
+    isString(value.title) &&
+    (value.recipient === null || isString(value.recipient)) &&
+    (value.channel === null || isString(value.channel)) &&
+    isString(value.preview) &&
+    isString(value.keptAt)
   );
 }
 
