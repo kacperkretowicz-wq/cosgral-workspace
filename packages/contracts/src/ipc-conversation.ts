@@ -45,6 +45,7 @@ import {
   type VaultRequest,
   type VaultRequestResolution,
 } from "./ipc-vault";
+import { isWorkflow, isWorkflowRun, type Workflow, type WorkflowRun } from "./ipc-workflows";
 import {
   type ChannelMemory,
   type ChannelMessage,
@@ -561,6 +562,10 @@ export type AgentEvent =
   | { type: "acp-agents-changed"; agents: AcpAgentConfig[] }
   /** COSGRAL W2: a routine run started, finished, or was skipped or ignored. */
   | { type: "routine-run"; run: RoutineRun }
+  /** COSGRAL W3: the workflow list changed (saved, edited, paused, a run started or ended); replace the list. */
+  | { type: "workflows-changed"; workflows: Workflow[] }
+  /** COSGRAL W3: a workflow run started or changed (a step finished, an approval opened or was decided). */
+  | { type: "workflow-run-changed"; run: WorkflowRun }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -668,6 +673,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.routines) && value.routines.every(isRoutine);
     case "routine-run":
       return isRoutineRun(value.run);
+    case "workflows-changed":
+      return Array.isArray(value.workflows) && value.workflows.every(isWorkflow);
+    case "workflow-run-changed":
+      return isWorkflowRun(value.run);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":
