@@ -19,6 +19,7 @@ describe("PageRail", () => {
       "Library",
       "Marketplace",
       "Remote desktop",
+      "Providers",
       "Phone",
       "Settings",
     ]);

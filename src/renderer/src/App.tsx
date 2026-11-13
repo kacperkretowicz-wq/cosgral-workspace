@@ -55,6 +55,7 @@ import { McpSettings } from "./components/McpSettings";
 import { MobileConnectPage } from "./components/MobileConnectPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
+import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { RoutinePanel } from "./components/RoutinePanel";
 import { ServerRail } from "./components/ServerRail";
@@ -1918,6 +1919,9 @@ export function App() {
               <Show when={activePage() === "remote-desktop"}>
                 <RemoteDesktopPage />
               </Show>
+              <Show when={activePage() === "providers"}>
+                <ProvidersPage />
+              </Show>
               <Show when={activePage() === "phone"}>
                 <MobileConnectPage />
               </Show>
@@ -1929,7 +1933,8 @@ export function App() {
                   activePage() !== "marketplace" &&
                   activePage() !== "workflows" &&
                   activePage() !== "remote-desktop" &&
-                  activePage() !== "phone"
+                  activePage() !== "phone" &&
+                  activePage() !== "providers"
                 }
               >
                 <ComingSoon title={activePageTitle()} />
