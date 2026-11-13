@@ -1351,7 +1351,7 @@ if (!hasSingleInstanceLock) {
         confirm: (request) => service.confirmForPerson(null, request),
         canAsk: () => service.listBots().length > 0,
         emit: (event) => forwardAgentEvent("local", event),
-        phone: mobilePhoneHost(service),
+        phone: mobilePhoneHost(service, store.database),
         secretBox: electronSecretBox(),
       });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).

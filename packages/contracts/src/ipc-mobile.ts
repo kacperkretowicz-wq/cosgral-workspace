@@ -361,6 +361,12 @@ export const MOBILE_PHONE_LIMITS = {
   promptAnswerText: 2_000,
   /** A comment line on the stream so connections stay open. */
   heartbeatMs: 25_000,
+  /** Numbered events kept for phones that reconnect with Last-Event-ID; after a longer gap they get a fresh list. */
+  replayEvents: 200,
+  /** How long the program's events stay followed after the last stream closed, so a reconnect loses nothing. */
+  resumeWindowMs: 10 * 60_000,
+  /** A stream that does not read more than this ends (the phone resumes by number). */
+  streamBacklogBytes: 256 * 1024,
 } as const;
 
 export const MOBILE_PHONE_PATHS = {
@@ -514,18 +520,27 @@ export interface MobileErrorResponse {
 
 const STREAM_TYPES = ["needs-you", "conversation", "agents"] as const;
 
-export function formatMobileStreamEvent(event: MobileStreamEvent): string {
-  return `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+/** One stream event; with `id` the phone can resume after it (Last-Event-ID). */
+export function formatMobileStreamEvent(event: MobileStreamEvent, id?: number): string {
+  return `${id === undefined ? "" : `id: ${id}\n`}event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
 /** Complete events in `buffer`, and the rest to keep for the next chunk. Comments and bad events are skipped. */
-export function parseMobileStreamEvents(buffer: string): { events: MobileStreamEvent[]; rest: string } {
+export function parseMobileStreamEvents(buffer: string): {
+  events: MobileStreamEvent[];
+  rest: string;
+  /** The id of the last numbered event in `buffer` (send it as Last-Event-ID when reconnecting), or null. */
+  lastEventId: string | null;
+} {
   const blocks = buffer.replace(/\r\n/g, "\n").split("\n\n");
   const rest = blocks.pop() ?? "";
   const events: MobileStreamEvent[] = [];
+  let lastEventId: string | null = null;
   for (const block of blocks) {
-    const data = block
-      .split("\n")
+    const lines = block.split("\n");
+    const id = lines.find((line) => line.startsWith("id: "))?.slice(4) ?? null;
+    if (id !== null) lastEventId = id;
+    const data = lines
       .filter((line) => line.startsWith("data: "))
       .map((line) => line.slice(6))
       .join("\n");
@@ -537,7 +552,7 @@ export function parseMobileStreamEvents(buffer: string): { events: MobileStreamE
       // Not an event of this protocol.
     }
   }
-  return { events, rest };
+  return { events, rest, lastEventId };
 }
 
 function isMobileMessage(value: unknown): value is MobileMessage {

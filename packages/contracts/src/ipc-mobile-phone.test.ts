@@ -49,6 +49,16 @@ describe("W3 phone API contract", () => {
     expect(parseMobileStreamEvents("event: x\ndata: {nope\n\n").events).toEqual([]);
   });
 
+  it("numbers stream events so a phone can resume after the last one it saw", () => {
+    const chunk = `retry: 3000\n\n${formatMobileStreamEvent({ type: "conversation", botId: "a" }, 41)}${formatMobileStreamEvent({ type: "conversation", botId: "b" }, 42)}`;
+    expect(chunk).toContain("id: 41\n");
+    const parsed = parseMobileStreamEvents(chunk);
+    expect(parsed.events.map((event) => event.type === "conversation" && event.botId)).toEqual(["a", "b"]);
+    expect(parsed.lastEventId).toBe("42");
+    expect(parseMobileStreamEvents(formatMobileStreamEvent({ type: "agents", agents: [] })).lastEventId).toBeNull();
+    expect(MOBILE_PHONE_LIMITS.replayEvents).toBeGreaterThan(0);
+  });
+
   it("checks pages, details, agents and stream events", () => {
     expect(isMobileNeedsYouItem(item)).toBe(true);
     expect(isMobileNeedsYouItem({ ...item, answerOn: "watch" })).toBe(false);

@@ -313,6 +313,44 @@ export class OpenBotDatabase {
     };
   }
 
+  /**
+   * COSGRAL W3-BE7: one page of a thread's messages (the newest `limit` before `beforeMessageId`), oldest first, read
+   * with LIMIT instead of the whole thread. Null when the cursor is not a message of this thread.
+   */
+  readThreadMessagesPage(
+    threadId: string,
+    input: { beforeMessageId: string | null; limit: number },
+  ): { messages: ConversationMessage[]; hasMore: boolean } | null {
+    const order = "ORDER BY created_at DESC, ordinal DESC, message_id DESC LIMIT ?";
+    let rows: unknown[];
+    if (input.beforeMessageId) {
+      const anchor = this.connection
+        .prepare(
+          "SELECT created_at, ordinal, message_id FROM projection_thread_messages WHERE thread_id = ? AND message_id = ?",
+        )
+        .get(threadId, input.beforeMessageId);
+      if (!isDynamicRecord(anchor)) return null;
+      rows = this.connection
+        .prepare(
+          `SELECT message_json FROM projection_thread_messages
+           WHERE thread_id = ? AND (created_at, ordinal, message_id) < (?, ?, ?) ${order}`,
+        )
+        .all(threadId, String(anchor.created_at), Number(anchor.ordinal), String(anchor.message_id), input.limit + 1);
+    } else {
+      rows = this.connection
+        .prepare(`SELECT message_json FROM projection_thread_messages WHERE thread_id = ? ${order}`)
+        .all(threadId, input.limit + 1);
+    }
+    const page = databaseRows(rows);
+    return {
+      messages: page
+        .slice(0, input.limit)
+        .reverse()
+        .map((row) => JSON.parse(requiredStringColumn(row, "message_json"))),
+      hasMore: page.length > input.limit,
+    };
+  }
+
   persistConversation(
     snapshot: ConversationSnapshot,
     eventType: string,

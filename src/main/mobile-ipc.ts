@@ -13,6 +13,7 @@ import type { AgentService } from "../backend/agent-service";
 import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-connect";
 import { MobilePhoneApi, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
+import type { OpenBotDatabase } from "../backend/openbot-database";
 import type { SecretBox } from "../backend/vault-store";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import { parseMobileDeviceId, parseStartMobilePairing } from "./ipc/mobile-inputs";
@@ -36,7 +37,6 @@ export interface MobileRuntimeOptions {
 export type MobileAgentService = Pick<
   AgentService,
   | "listBots"
-  | "readConversation"
   | "sendMessage"
   | "listPendingRequests"
   | "respondToPrompt"
@@ -49,11 +49,24 @@ export type MobileAgentService = Pick<
   | "agentSettings"
 >;
 
-/** The phone API on top of the same calls the window uses. */
-export function mobilePhoneHost(service: MobileAgentService): MobilePhoneHost {
+/**
+ * The phone API on top of the same calls the window uses. Chat pages are read from the database with a limit (the
+ * saved conversation, which the program flushes while an answer is being written); the whole conversation is never
+ * loaded for the phone.
+ */
+export function mobilePhoneHost(
+  service: MobileAgentService,
+  database: Pick<OpenBotDatabase, "readThreadMessagesPage">,
+): MobilePhoneHost {
   return {
     bots: () => service.listBots(),
-    readConversation: (botId) => service.readConversation(botId),
+    messages: async (botId, page) => {
+      const bot = service.listBots().find((candidate) => candidate.id === botId);
+      if (!bot) return null;
+      // An agent that has not talked yet has no thread: an empty page.
+      if (!bot.threadId) return page.before === null ? { messages: [], hasMore: false } : null;
+      return database.readThreadMessagesPage(bot.threadId, { beforeMessageId: page.before, limit: page.limit });
+    },
     sendMessage: (input) => service.sendMessage(input),
     pending: () => service.listPendingRequests(),
     respondToPrompt: (input) => service.respondToPrompt(input),
