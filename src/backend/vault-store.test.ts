@@ -213,4 +213,17 @@ describe("vault store", () => {
     expect(store.resolveApiKey("TEST_API_KEY")).toBe(API_KEY);
     expect(store.resolveApiKey("MISSING_KEY")).toBeNull();
   });
+
+  it("COSGRAL W3: tells whether a text contains a saved value, so Computer Use never types it", async () => {
+    const { store } = await open();
+    await saveAll(store);
+    expect(store.containsSecretValue(`my password is ${PASSWORD}`)).toBe(true);
+    expect(store.containsSecretValue("4242-4242-4242-4242")).toBe(true);
+    expect(store.containsSecretValue(`key=${API_KEY}`)).toBe(true);
+    expect(store.containsSecretValue(TWO_STEP.toLowerCase())).toBe(true);
+    expect(store.containsSecretValue(`write to ${CONTACT_EMAIL.toUpperCase()}`)).toBe(true);
+    expect(store.containsSecretValue("Hello, the report is ready")).toBe(false);
+    expect(store.containsSecretValue(`cvc ${CVC} and year 2029`)).toBe(false);
+    expect(store.containsSecretValue("")).toBe(false);
+  });
 });
