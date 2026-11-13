@@ -2,7 +2,7 @@
 
 Gałąź `team/kk/w3-remote-desktop` (z `codex/cosgral-desktop` @ `90d109c3b`), worktree `Shared\cosgral-wt\desktop-kk`.
 
-**Stan: etap 1 z 3 gotowy (plan + kontrakt). Silnik hosta i klienta w toku.**
+**Stan: etapy 1–3 napisane i zacommitowane (kontrakt, protokół, magazyn, host, klient, Electron, IPC, preload, testy). Brakuje: próby dwóch instancji w piaskownicy i lintu `agent-service.ts` (zob. „Czego jeszcze nie sprawdziłem”).**
 
 ## Decyzja lidera (PLAN.md „Decyzje lidera do W3” pkt 1)
 
@@ -13,12 +13,13 @@ Własny protokół przez WebSocket z tokenem. Obraz z `desktopCapturer`, sterowa
 | Etap | Co | Gdzie |
 |---|---|---|
 | 1 ✓ | Kontrakt: typy, limity, wejścia, stany, API okna, zdarzenia | `packages/contracts/src/ipc-remote-desktop.ts` (+ test) |
-| 2 | Protokół (czysta logika): wiadomości, dowód HMAC, ramka binarna | `src/backend/remote-desktop-protocol.ts` |
-| 2 | Magazyn: token (zaszyfrowany), lista widzów, ustawienia | `src/backend/remote-desktop-store.ts` |
-| 2 | Host: serwer WebSocket, uwierzytelnienie, zgoda, sesje, strumień klatek, odbiór wejścia, rozłączenie | `src/backend/remote-desktop-host.ts` |
-| 2 | Klient: połączenie, klatki, wejście | `src/backend/remote-desktop-client.ts` |
-| 3 | Electron: przechwytywanie ekranu, IPC, preload, wpięcie w `main` | `src/main/remote-desktop-*.ts`, `src/preload/remote-desktop-api.ts` |
-| 3 | Testy, test integracyjny host↔klient na loopback, próba w piaskownicy (dwie instancje) | testy + `Shared\cosgral-data\desktop-kk` |
+| 2 ✓ | Protokół (czysta logika): wiadomości, dowód HMAC, ramka binarna | `src/backend/remote-desktop-protocol.ts` |
+| 2 ✓ | Magazyn: token (zaszyfrowany), lista widzów, ustawienia | `src/backend/remote-desktop-store.ts` |
+| 2 ✓ | Host: serwer WebSocket, uwierzytelnienie, zgoda, sesje, strumień klatek, odbiór wejścia, rozłączenie | `src/backend/remote-desktop-host.ts` |
+| 2 ✓ | Klient: połączenie, klatki, wejście | `src/backend/remote-desktop-client.ts` |
+| 3 ✓ | Electron: przechwytywanie ekranu (`desktopCapturer`), walidacja wejść IPC, IPC, preload, wpięcie w `main` | `src/main/remote-desktop-{capture,ipc}.ts`, `src/main/ipc/remote-desktop-inputs.ts`, `src/preload/remote-desktop-api.ts` |
+| 3 ✓ | Testy, w tym integracyjny host↔klient na prawdziwym WebSocket (loopback) | `src/backend/remote-desktop-*.test.ts`, `src/main/ipc/remote-desktop-inputs.test.ts` |
+| 3 ✗ | Próba w piaskownicy z dwiema instancjami programu | jeszcze nie zrobiona |
 
 Ekranów nie robię (UI). Silnik da się w pełni sterować przez `window.openbot.remoteDesktop`.
 
@@ -73,6 +74,32 @@ Plik `packages/contracts/src/ipc-remote-desktop.ts`, opisy w kodzie. Skrót:
 - Zdarzenia `remote-desktop-host-changed {state}` i `remote-desktop-client-changed {state}`.
 - Ekran hosta: przełącznik, adres z `listening.urls`, token (raz), lista widzów z polityką, aktywna sesja z „Stop” i „Tylko podgląd”. Ekran klienta: adres + token + tryb, widok klatki, klik i klawisze jako `sendInput` (pozycja = ułamek klatki). Wskaźnik „ktoś steruje tym komputerem” z przyciskiem Stop ma być stale widoczny na hoście.
 
+## Wpięcie w program (zmiany we wspólnych plikach, tylko dodatki)
+
+- `src/main/index.ts`: `createRemoteDesktop(...)` po rejestrze dostawców (własna instancja `WindowsComputerDriver` z osobnym katalogiem roboczym, nie współdzielona z Computer Use), `registerRemoteDesktopIpc`, `closeRemoteDesktop` przy zamykaniu. Klatki klienta idą tylko do głównego okna.
+- `src/backend/agent-service.ts`: jedna metoda `confirmForPerson(botId, {title, preview, ...})` (karta zgody poza turą agenta; bez agenta zwraca błąd „Create an agent first”).
+- `src/preload/index.ts`: `remoteDesktop: createRemoteDesktopApi(invokeAgent)`.
+- `packages/contracts/src/ipc-desktop-apis.ts`: tylko poprawione komentarze: `enable` zawsze robi NOWY token (stary przestaje działać), `disable` też unieważnia token.
+- `vitest.config.ts`: alias `ws` na wersję Node (wtyczka Solid wybierała wersję przeglądarkową bez serwera i test hosta się nie ładował). Dotyczy tylko testów; program używa prawdziwego `ws`.
+
+## Co działa (wyniki z mojego uruchomienia przed zapisem, 13.11)
+
+- Testy zdalnego pulpitu: **56/56** zielone, w tym test integracyjny host↔klient na prawdziwym WebSocket na loopback (uwierzytelnienie HMAC, zgoda, odmowa, zajęty host, wejście, rozłączenie).
+- `typecheck`: OK (contracts, node, renderer, storybook, API). Build: OK.
+- Biome: formatowanie poprawione, lint 5 z 6 serii plików czysty (0 uwag).
+
 ## Czego jeszcze nie sprawdziłem
 
-Silnik, klient, testy integracyjne i próba w piaskownicy są w etapach 2–3.
+1. **Lint `src/backend/agent-service.ts` nie skończył się** (bardzo duży plik, przekroczył limit czasu przy obciążonej maszynie). Moja zmiana w nim to 1 import i jedna metoda (18 linii), ale lint nie potwierdza jej czystości. Pozostałe pliki z tej serii (trzy małe) też miały być lintowane osobno, ich wynik niepotwierdzony.
+2. **Próby w piaskownicy z dwiema instancjami programu** nie robiłem. Nie widziałem więc prawdziwego przechwytywania ekranu (`desktopCapturer`), realnego sterowania przez sterownik Windows ani karty zgody w prawdziwym oknie. Wszystko to było sprawdzone tylko atrapami (fałszywy sterownik, źródło klatek) w testach.
+3. **Testów nie powtarzałem po ostatnim zapisie.** Wyniki wyżej pochodzą z mojego przebiegu tuż przed commitem. Właściciel zalecił pominięcie testów, więc przy zapisie niczego nie uruchamiałem.
+4. **Pełnego `bun run test` nie robiłem** (maszyna się dławiła, a właściciel zalecił pomijanie). Wpływ `vitest.config.ts` (alias `ws`) na resztę testów niezmierzony.
+5. **Wydajność i opóźnienie** strumienia (JPEG, ramki po jednej na raz) niemierzone. **Brak szyfrowania ruchu** poza tunelem, zob. wyżej.
+6. **Brak ekranów.** Nie ma UI hosta ani klienta, to zadanie UI na podstawie kontraktu wyżej.
+
+## Do zrobienia w W3-KK2 (po scaleniu)
+
+1. Lint `agent-service.ts` i trzech małych plików z serii 6 przez `heavy.ps1`.
+2. Próba w piaskownicy: dwie instancje (osobne `USERPROFILE`/`APPDATA`/`LOCALAPPDATA`), włączenie hosta, połączenie klienta, karta zgody, klatki, klik, Stop, rozłączenie.
+3. Zatwierdzenie 6 decyzji (już zatwierdzone przez lidera w W3-KK1).
+4. UI dla kontraktu (osobne zadanie).
