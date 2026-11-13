@@ -101,6 +101,7 @@ import type {
   SearchAgentMemoriesInput,
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
+import type { MobileDesktopApi } from "./ipc-mobile";
 import type {
   AcpAgentConfig,
   AcpAgentIdInput,
@@ -617,6 +618,8 @@ export interface OpenBotDesktopApi {
   marketplace?: MarketplaceDesktopApi;
   /** COSGRAL W3 local voice (this computer only). Optional until every renderer mock implements it. */
   voice?: VoiceDesktopApi;
+  /** COSGRAL W3 Mobile Connect (this computer only). Optional until every renderer mock implements it. */
+  mobile?: MobileDesktopApi;
 }
 
 /**
