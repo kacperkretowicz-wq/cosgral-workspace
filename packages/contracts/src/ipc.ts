@@ -13,6 +13,7 @@ export * from "./ipc-library";
 export * from "./ipc-mcp";
 export * from "./ipc-memory";
 export * from "./ipc-providers";
+export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";

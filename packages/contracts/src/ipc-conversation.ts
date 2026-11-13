@@ -34,6 +34,12 @@ import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
+import {
+  isRemoteDesktopClientState,
+  isRemoteDesktopHostState,
+  type RemoteDesktopClientState,
+  type RemoteDesktopHostState,
+} from "./ipc-remote-desktop";
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
@@ -541,6 +547,10 @@ export type AgentEvent =
   | { type: "island-changed"; state: IslandState }
   /** COSGRAL W3: the island was clicked; the main window opens this agent and its Needs you card. */
   | { type: "island-open-request"; botId: string; request: IslandRequestRef | null }
+  /** COSGRAL W3: this computer as a remote desktop host changed (sharing, token, viewers, consent); replace the state. */
+  | { type: "remote-desktop-host-changed"; state: RemoteDesktopHostState }
+  /** COSGRAL W3: this computer as a remote desktop viewer changed (connection phase, picture size); replace the state. */
+  | { type: "remote-desktop-client-changed"; state: RemoteDesktopClientState }
   /** COSGRAL W3: an agent's tool switches changed; read its settings again (profile changes come as bots-changed). */
   | { type: "agent-settings-changed"; botId: string }
   /** COSGRAL W3: saved agent templates changed; replace the whole list. */
@@ -657,6 +667,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isIslandState(value.state);
     case "island-open-request":
       return isString(value.botId) && (value.request === null || isIslandRequestRef(value.request));
+    case "remote-desktop-host-changed":
+      return isRemoteDesktopHostState(value.state);
+    case "remote-desktop-client-changed":
+      return isRemoteDesktopClientState(value.state);
     case "agent-settings-changed":
       return isString(value.botId);
     case "agent-templates-changed":

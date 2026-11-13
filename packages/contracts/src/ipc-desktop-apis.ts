@@ -108,6 +108,19 @@ import type {
   SaveAcpAgentInput,
 } from "./ipc-providers";
 import type {
+  ConnectRemoteDesktopInput,
+  EnableRemoteDesktopInput,
+  RemoteDesktopClientState,
+  RemoteDesktopFrame,
+  RemoteDesktopHostState,
+  RemoteDesktopInput,
+  RemoteDesktopPeerInput,
+  RemoteDesktopTokenResult,
+  SetRemoteDesktopPeerPolicyInput,
+  SetRemoteDesktopSessionModeInput,
+  StopRemoteDesktopInput,
+} from "./ipc-remote-desktop";
+import type {
   CreateRoutineInput,
   Routine,
   RoutineIdInput,
@@ -568,6 +581,47 @@ export interface OpenBotDesktopApi {
   appSettings?: AppSettingsDesktopApi;
   /** COSGRAL W3 onboarding (this computer only). Optional until every renderer mock implements it. */
   onboarding?: OnboardingDesktopApi;
+  /** COSGRAL W3 remote desktop (this computer only). Optional until every renderer mock implements it. */
+  remoteDesktop?: RemoteDesktopDesktopApi;
+}
+
+/**
+ * COSGRAL W3: remote desktop between two Windows computers (see ipc-remote-desktop.ts). `host` is this computer shared
+ * to others, `client` is this computer looking at another one. Changes come as `remote-desktop-host-changed` and
+ * `remote-desktop-client-changed`; the pictures come through `onFrame` (not through `agent.onEvent`). The consent card
+ * for a new viewer is a confirm card in Needs you. Stop is local and ends every session at once.
+ */
+export interface RemoteDesktopDesktopApi {
+  host: RemoteDesktopHostDesktopApi;
+  client: RemoteDesktopClientDesktopApi;
+  /** Pictures of the host that this computer looks at; at most `REMOTE_DESKTOP_LIMITS.framesPerSecond` a second. */
+  onFrame: (listener: (frame: RemoteDesktopFrame) => void) => () => void;
+}
+
+export interface RemoteDesktopHostDesktopApi {
+  getState: () => Promise<RemoteDesktopHostState>;
+  /** Starts listening and returns the token once. When sharing was on already, the token is made again. */
+  enable: (input?: EnableRemoteDesktopInput) => Promise<RemoteDesktopTokenResult>;
+  /** Stops listening and ends every session. The token stays valid for the next `enable`. */
+  disable: () => Promise<RemoteDesktopHostState>;
+  /** A new token; viewers that are connected stay, new ones need the new token. Returned once. */
+  regenerateToken: () => Promise<RemoteDesktopTokenResult>;
+  setPeerPolicy: (input: SetRemoteDesktopPeerPolicyInput) => Promise<RemoteDesktopHostState>;
+  /** Forgets a viewer (its session ends). The next connection asks again. */
+  removePeer: (input: RemoteDesktopPeerInput) => Promise<RemoteDesktopHostState>;
+  /** "control" to "view" takes the mouse and keyboard away at once; "view" to "control" is refused (the viewer asks anew). */
+  setSessionMode: (input: SetRemoteDesktopSessionModeInput) => Promise<RemoteDesktopHostState>;
+  /** Ends one session or all of them at once; interrupts an input in progress. */
+  stop: (input?: StopRemoteDesktopInput) => Promise<RemoteDesktopHostState>;
+}
+
+export interface RemoteDesktopClientDesktopApi {
+  getState: () => Promise<RemoteDesktopClientState>;
+  /** Resolves when the owner of the host answered ("connected") or the attempt failed ("failed"; see `error`). */
+  connect: (input: ConnectRemoteDesktopInput) => Promise<RemoteDesktopClientState>;
+  disconnect: () => Promise<RemoteDesktopClientState>;
+  /** Fire and forget; refused in "view" mode. Rate limited by the host. */
+  sendInput: (input: RemoteDesktopInput) => Promise<void>;
 }
 
 /**
