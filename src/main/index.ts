@@ -58,6 +58,8 @@ import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
+import { registerDockIpc } from "./dock-ipc";
+import { createDockWindows, type DockWindows } from "./dock-windows";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
 import {
@@ -232,6 +234,7 @@ let hostService: HostService | null = null;
 let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
+let dockWindows: DockWindows | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -799,6 +802,7 @@ function registerIpcHandlers(
     prepareDraft: (paths) => service.prepareAttachments(paths),
   });
   registerComputerUseIpc(() => service.computerUse);
+  registerDockIpc(() => dockWindows?.controller ?? null);
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1031,8 +1035,10 @@ function createWindow(): BrowserWindow {
       window.hide();
     }
   });
+  window.on("focus", () => dockWindows?.controller?.mainWindowFocused());
   window.on("closed", () => {
     if (mainWindow === window) mainWindow = null;
+    if (!isQuitting) dockWindows?.controller?.mainWindowClosed();
   });
 
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -1047,6 +1053,14 @@ function createWindow(): BrowserWindow {
   });
 
   return window;
+}
+
+/** COSGRAL W3: "Open COSGRAL" in the dock; the main window again, created when it was closed. */
+async function openMainWindowFromDock(): Promise<BrowserWindow> {
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+  mainWindow = createWindow();
+  await loadRenderer(mainWindow);
+  return mainWindow;
 }
 
 function loadRenderer(window: BrowserWindow): Promise<void> {
@@ -1086,6 +1100,7 @@ function configureApplicationMenu(service: AgentService, updater: UpdateService)
 }
 
 function forwardAgentEvent(serverId: string, event: AgentEvent): void {
+  dockWindows?.forward(serverId, event);
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(IPC_CHANNELS.agentEvent, { serverId, event });
   if (mainWindow.isFocused() || !Notification.isSupported()) return;
@@ -1268,6 +1283,17 @@ if (!hasSingleInstanceLock) {
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
       service.useProviders(providerRegistry);
       registerProviderIpc(providerRegistry);
+      // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
+      dockWindows = createDockWindows({
+        userDataPath: app.getPath("userData"),
+        preloadPath: join(__dirname, "../preload/index.cjs"),
+        iconPath: appIconPath,
+        mainWindow: () => mainWindow,
+        openMainWindow: openMainWindowFromDock,
+        emit: (event) => forwardAgentEvent("local", event),
+        quit: () => app.quit(),
+        agents: () => agentService,
+      });
       // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
       const routineStore = new RoutineStore(store.database, electronSecretBox());
       const webhookReceiver: WebhookReceiver = new WebhookReceiver({
@@ -1465,6 +1491,7 @@ if (!hasSingleInstanceLock) {
       })().catch((error) => console.error("Unable to start routines:", error));
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
+      dockWindows?.controller?.start();
       if (pendingInviteUrl) {
         mainWindow.webContents.send(IPC_CHANNELS.serversInvite, pendingInviteUrl);
         pendingInviteUrl = null;
@@ -1644,6 +1671,7 @@ async function prepareForShutdown(): Promise<void> {
   remoteServerManager?.stop();
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
+  dockWindows?.destroy();
   await (browserHost?.destroy() ?? Promise.resolve());
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.

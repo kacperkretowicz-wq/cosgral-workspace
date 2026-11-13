@@ -1,0 +1,250 @@
+/* COSGRAL W3: minimal dock and island views; final design by the UI Designer. */
+
+.dock-window {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100vh;
+  padding: 0 12px 12px;
+  overflow-y: auto;
+  background: var(--openbot-bg-sidebar);
+  color: var(--openbot-text-primary);
+  font-size: 13px;
+}
+
+.dock-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  background: var(--openbot-bg-sidebar);
+  -webkit-app-region: drag;
+}
+
+.dock-header-actions {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.dock-chip,
+.dock-icon {
+  border: 1px solid var(--openbot-border);
+  border-radius: 6px;
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-secondary);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.dock-chip:hover,
+.dock-icon:hover {
+  background: var(--openbot-bg-control-hover);
+  color: var(--openbot-text-primary);
+}
+
+.dock-chip.is-active {
+  border-color: var(--openbot-border-focus);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.dock-icon {
+  padding: 2px 6px;
+}
+
+.dock-note,
+.dock-error {
+  margin: 0;
+  color: var(--openbot-text-muted);
+}
+
+.dock-error {
+  color: var(--openbot-danger, #f87171);
+}
+
+.dock-pin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--openbot-text-muted);
+}
+
+.dock-pin select,
+.dock-composer input {
+  flex: 1;
+  border: 1px solid var(--openbot-border);
+  border-radius: 6px;
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-primary);
+  padding: 4px 6px;
+}
+
+.dock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dock-item {
+  border: 1px solid var(--openbot-border);
+  border-radius: 8px;
+  background: var(--openbot-bg-surface);
+  padding: 6px;
+}
+
+.dock-item.is-open {
+  border-color: var(--openbot-border-strong);
+}
+
+.dock-item-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-item-name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: var(--openbot-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dock-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--openbot-text-dim);
+}
+
+.dock-dot.is-working {
+  background: var(--openbot-accent);
+}
+
+.dock-dot.is-waiting {
+  background: var(--openbot-warning, #f5b942);
+}
+
+.dock-dot.is-error,
+.dock-dot.is-limited {
+  background: var(--openbot-danger, #f87171);
+}
+
+.dock-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dock-message {
+  margin: 0;
+  border-radius: 6px;
+  background: var(--openbot-bg-surface-raised);
+  padding: 6px 8px;
+  white-space: pre-wrap;
+}
+
+.dock-message.is-user {
+  align-self: flex-end;
+  background: var(--openbot-accent-soft);
+}
+
+.dock-composer {
+  display: flex;
+  gap: 6px;
+}
+
+.dock-hidden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--openbot-text-muted);
+}
+
+html.is-island,
+html.is-island body {
+  background: transparent;
+  overflow: hidden;
+}
+
+.island {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  margin: 6px;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: 26px;
+  background: var(--openbot-bg-overlay);
+  color: var(--openbot-text-primary);
+  font-size: 13px;
+}
+
+.island-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 0 8px 0 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.island-kind {
+  flex: none;
+  border-radius: 10px;
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
+.island.is-takeover .island-kind,
+.island.is-approval .island-kind,
+.island.is-question .island-kind {
+  background: rgba(245, 185, 66, 0.18);
+  color: var(--openbot-warning, #f5b942);
+}
+
+.island.is-error .island-kind {
+  background: rgba(248, 113, 113, 0.18);
+  color: var(--openbot-danger, #f87171);
+}
+
+.island-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.island-count {
+  flex: none;
+  border-radius: 10px;
+  background: var(--openbot-bg-control-active);
+  padding: 0 7px;
+}
+
+.island-dismiss {
+  margin-right: 10px;
+  border: 0;
+  background: none;
+  color: var(--openbot-text-muted);
+  cursor: pointer;
+}
