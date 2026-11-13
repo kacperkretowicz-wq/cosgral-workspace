@@ -1,10 +1,10 @@
 # Parytet 0.68 — W1 + W2/W3/M (B2a + B2b)
 
-Stan: 13.11.2026 (W2-T3). Baza COSGRAL = OpenBot 0.1.11 (`a6fe240`, opis w `package.json`). Opis zachowania 0.68: własnymi słowami, bez fragmentów kodu i bez kopiowania tekstów UI.
+Stan: 13.11.2026 (W2-T4). Baza COSGRAL = OpenBot 0.1.11 (`a6fe240`, opis w `package.json`). Opis zachowania 0.68: własnymi słowami, bez fragmentów kodu i bez kopiowania tekstów UI.
 
 **Źródła:** mapa UX 0.67.1 (`docs/cosgral-raporty/claude-k-openbot-ux-map.md` na `codex/cosgral-workspace`), publiczny [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md) i [changelog v0.68.0](https://github.com/nightly-labs/openbot/releases/tag/v0.68.0), statyczna lista paczki `app.asar` (8250 wpisów + nazwy chunków; B2b: `Shared\cosgral-data\desktop-tester\rea-0.68-b2b`), kod worktree `desktop-tester` @ `codex/cosgral-desktop` `5934131e3`. REA CLI: timeout 600 s w B2a (6502 pliki, pusty wynik) → B2b nie powtarza tej samej próby; obowiązuje fallback statyczny.
 
-**Legenda stanu (kolumna):** jest = pokryte end-to-end w bieżącym COSGRAL · częściowo = zalążek / brakuje stanów · brak = nie ma odpowiednika. Istnienie pliku nie dowodzi pełnej funkcji. **Odbiór W1-T2** (UI/rdzeń): `docs/cosgral/odbior-runda1.md` + `docs/cosgral-raporty/tester-w1-odbior.md`. **Odbiór W1-T3** (silnik kanałów/kart, API): `docs/cosgral-raporty/tester-w1-t3-odbior.md`. **Odbiór W2-T2** (pamięć, API): `docs/cosgral-raporty/tester-w2-t2-pamiec.md` @ `08e8cbbe4`. **Odbiór W2-T3** (skille + MCP, API): `docs/cosgral-raporty/tester-w2-t3-skille-mcp.md` @ `8de3a8380`.
+**Legenda stanu (kolumna):** jest = pokryte end-to-end w bieżącym COSGRAL · częściowo = zalążek / brakuje stanów · brak = nie ma odpowiednika. Istnienie pliku nie dowodzi pełnej funkcji. **Odbiór W1-T2** (UI/rdzeń): `docs/cosgral/odbior-runda1.md` + `docs/cosgral-raporty/tester-w1-odbior.md`. **Odbiór W1-T3** (silnik kanałów/kart, API): `docs/cosgral-raporty/tester-w1-t3-odbior.md`. **Odbiór W2-T2** (pamięć, API): `docs/cosgral-raporty/tester-w2-t2-pamiec.md` @ `08e8cbbe4`. **Odbiór W2-T3** (skille + MCP, API): `docs/cosgral-raporty/tester-w2-t3-skille-mcp.md` @ `8de3a8380`. **Odbiór W2-T4** (Vault + rutyny/webhooki, API): `docs/cosgral-raporty/tester-w2-t4-vault-rutyny.md` @ `ad9a6a5b6`.
 
 ## W1 — nawigacja, czat, kanały, panel, kolejka, wyszukiwanie
 
@@ -49,10 +49,10 @@ W kanale jest przełącznik Chat | Zadania w tej samej rozmowie (bez zmiany kana
 | Fala | Wiersze | Jest | Częściowo | Brak |
 |---|---|---|---|---|
 | W1 | 1–19 | 1 | 16 | 2 |
-| W2 | 20–31 | 0 | 8 | 4 |
+| W2 | 20–31 | 0 | 10 | 2 |
 | W3 | 32–41 | 0 | 6 | 4 |
 | M | 42–44 | 0 | 0 | 3 |
-| **Razem** | **1–44** | **1** | **30** | **13** |
+| **Razem** | **1–44** | **1** | **32** | **11** |
 
 ### Według obszaru (skrót)
 
@@ -61,8 +61,8 @@ W kanale jest przełącznik Chat | Zadania w tej samej rozmowie (bez zmiany kana
 | Nawigacja (W1) | 0 | 6 | 2 |
 | Czat i karty (W1) | 0 | 5 | 0 |
 | Kanały / panel / kolejka / search (W1) | 1 | 5 | 0 |
-| Agenci / pamięć / skille / MCP / Vault (W2) | 0 | 5 | 2 |
-| Rutyny / przepływy / tabele / pliki / przeglądarka+ (W2) | 0 | 3 | 2 |
+| Agenci / pamięć / skille / MCP / Vault (W2) | 0 | 6 | 1 |
+| Rutyny / przepływy / tabele / pliki / przeglądarka+ (W2) | 0 | 4 | 1 |
 | CU / remote / głos / dostawcy / zespół (W3) | 0 | 4 | 1 |
 | Dok / wyspa / ustawienia / onboarding / marketplace (W3) | 0 | 2 | 3 |
 | Telefon (M) | 0 | 0 | 3 |
@@ -123,8 +123,8 @@ W kanale jest przełącznik Chat | Zadania w tej samej rozmowie (bez zmiany kana
 | 23 | Pamięć | Wspomnienia „zawsze” vs „w razie potrzeby”, wyszukiwanie, ręczne dodawanie, osobna pula per agent i per kanał. | Częściowo — backend (KAPI W2-H1): essential/searchable, budżet 8192 B, limit, izolacja, pamięć kanału 500 znaków. Odbiór API W2-T2 ✓. UI ustawień / przeglądu wspomnień — brak. Prawdziwy Codex resume — nie sprawdzono. | W2 | Zapisać wspomnienie „zawsze” → widać je w kolejnej rozmowie bez ponownego podawania. |
 | 24 | Skille | Lokalna biblioteka skilli, wersje, aktualizacja/naprawa, instalacja z Marketplace, przypisanie do agenta. | Częściowo — backend (W2-BE1): create/revise/restore, limity 200 plików/10 MB, instalacja per agent, ochrona lokalnej kopii. Odbiór API W2-T3 ✓. UI biblioteki / ustawień skilli — brak. Marketplace — W3. | W2 | Agent tworzy skill → widać go w bibliotece; drugi agent może go dodać. |
 | 25 | MCP | Panel serwerów MCP, połączenie, narzędzia dostępne dla agentów, obsługa logowania do MCP. | Częściowo — backend (W2-K2): stdio + HTTP, narzędzia `mcp_*`, przełącznik per agent, needs-login przy 401, sekrety szyfrowane. Odbiór API W2-T3 ✓ (stdio; HTTP na żywo nie — Avast). UI panelu MCP — brak. | W2 | Dodać serwer MCP → agent widzi jego narzędzia w kolejnej turze. |
-| 26 | Vault | Loginy, karty, kontakty, klucze API, TOTP; agent bierze element bez ujawniania sekretu w czacie; konektory 1Password/Bitwarden/Proton. | Brak — brak `VaultPanel` / magazynu sekretów UI; sekrety konta idą innymi ścieżkami. | W2 | Zapisać login → agent prosi o element i wypełnia formularz bez pokazania hasła w czacie. |
-| 27 | Rutyny i webhooki | Harmonogram (kalendarz, strefa, następne uruchomienie), webhook z filtrami, historia uruchomień, feed na serwerze. | Brak — brak strony Harmonogram/Rutyny; w 0.68 `routine-schedule-ui`, `RoutineWebhookTrigger`. | W2 | Utworzyć rutynę codzienną → odpala się o wskazanej godzinie i zostawia wynik. |
+| 26 | Vault | Loginy, karty, kontakty, klucze API, TOTP; agent bierze element bez ujawniania sekretu w czacie; konektory 1Password/Bitwarden/Proton. | Częściowo — backend (W2-BE2): rodzaje + TOTP, lista bez sekretów, fill w przeglądarce, login tylko na swojej stronie, vault-request, karta po confirm. Odbiór API W2-T4 ✓ (Electron fill: dowód Backendu). UI Vault — brak. Konektory — W3. | W2 | Zapisać login → agent prosi o element i wypełnia formularz bez pokazania hasła w czacie. |
+| 27 | Rutyny i webhooki | Harmonogram (kalendarz, strefa, następne uruchomienie), webhook z filtrami, historia uruchomień, feed na serwerze. | Częściowo — backend (W2-K3): interval/daily/cron, strefa, bez nadrabiania, webhook loopback + podpis, sekret raz. Odbiór API W2-T4 ✓. UI Harmonogram — brak. Publiczny URL — W3. | W2 | Utworzyć rutynę codzienną → odpala się o wskazanej godzinie i zostawia wynik. |
 | 28 | Przepływy pracy | Płótno z węzłami, wyzwalacz, kroki z zatwierdzeniem, wyjścia, integracje. | Brak — brak `WorkflowsPage` / canvas w bazie. | W2 | Zbudować prosty przepływ z jednym krokiem → uruchomienie kończy się widocznym wynikiem. |
 | 29 | Tabele | Wspólne tabele agentów (kto prowadzi, usuwanie dla wszystkich), nie tylko tabela w markdownie czatu. | Częściowo — `DataTable.tsx` renderuje tabele **w czacie**; brak wspólnej bazy tabel między agentami jak w mapie 0.68. | W2 | Utworzyć wspólną tabelę → dwóch agentów czyta te same wiersze po restarcie. |
 | 30 | Pliki · biblioteka | Biblioteka plików (siatka/lista), zaznaczanie, pobieranie, sprzątanie, pliki maszyny. | Częściowo — załączniki i mailbox (`mailbox-store.ts`, karty załączników); brak osobnej Biblioteki (`LibraryPanel` w 0.68). | W2 | Wrzuć plik do biblioteki → widać go na liście i da się pobrać po restarcie. |
