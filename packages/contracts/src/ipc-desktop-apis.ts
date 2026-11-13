@@ -28,6 +28,7 @@ import type {
   SaveSetupInput,
   UpdateStatus,
 } from "./ipc-app-auth";
+import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
@@ -620,6 +621,8 @@ export interface OpenBotDesktopApi {
   voice?: VoiceDesktopApi;
   /** COSGRAL W3 Mobile Connect (this computer only). Optional until every renderer mock implements it. */
   mobile?: MobileDesktopApi;
+  /** COSGRAL W3-KK3 "always allow" rules of approval cards (this computer only). Optional until every mock has it. */
+  approvalRules?: ApprovalRulesDesktopApi;
 }
 
 /**

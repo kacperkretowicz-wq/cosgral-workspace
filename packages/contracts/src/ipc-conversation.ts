@@ -11,6 +11,7 @@ import {
   type KeptDraft,
 } from "./ipc-action-cards";
 import { type AgentTemplate, type AppSettings, isAgentTemplate, isAppSettings } from "./ipc-agent-settings";
+import { type ApprovalRule, type ApprovalRuleScope, isApprovalRuleList } from "./ipc-approval-rules";
 import {
   type AgentActivity,
   type ApprovalResolution,
@@ -479,6 +480,11 @@ export interface AgentApproval {
 export interface RespondToApprovalInput {
   requestId: string | number;
   decision: "accept" | "decline";
+  /**
+   * COSGRAL W3-KK3: with "accept", also save an "always" rule for this agent and this kind of request (see
+   * ipc-approval-rules.ts). Only the window of this computer sends it; the phone and remote servers never do.
+   */
+  always?: ApprovalRuleScope;
 }
 
 export type AgentEvent =
@@ -603,6 +609,8 @@ export type AgentEvent =
   | { type: "mobile-changed"; state: MobileState }
   /** COSGRAL W3: a phone was paired after the person approved it. */
   | { type: "mobile-pairing-completed"; device: MobileDevice }
+  /** COSGRAL W3-KK3: the "always allow" rules changed (made, used, revoked); replace the whole list. */
+  | { type: "approval-rules-changed"; rules: ApprovalRule[] }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -732,6 +740,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isMobileState(value.state);
     case "mobile-pairing-completed":
       return isMobileDevice(value.device);
+    case "approval-rules-changed":
+      return isApprovalRuleList(value.rules);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

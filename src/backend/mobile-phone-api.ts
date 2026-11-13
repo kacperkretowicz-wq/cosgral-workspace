@@ -126,6 +126,7 @@ const COMPUTER_LABELS: Record<(typeof MOBILE_COMPUTER_ONLY)[number], string> = {
   mcp: "MCP servers",
   voice: "Voice",
   mobile: "Mobile Connect",
+  "approval-rules": "Always-allow rules",
 };
 
 export class MobilePhoneApi {
