@@ -33,6 +33,9 @@ import {
   isMcpServer,
   isPendingAgentRequest,
   isReasoningEffort,
+  isRoutine,
+  isRoutineRun,
+  isRoutineWithSecret,
   isSidebarFolder,
   isSidebarLayout,
   isSkillContent,
@@ -46,6 +49,9 @@ import {
   type PendingAgentRequest,
   type QueuedMessageReceipt,
   type QueueSnapshot,
+  type Routine,
+  type RoutineRun,
+  type RoutineWithSecret,
   type ScopedAgentEvent,
   type ScopedDirectMessageEvent,
   type ScopedDirectTypingEvent,
@@ -395,6 +401,32 @@ function decodeAgentMemories(value: unknown): AgentMemory[] {
   return value.filter(isAgentMemory);
 }
 
+/** COSGRAL W2: routine decoders. */
+function decodeRoutine(value: unknown): Routine {
+  if (!isRoutine(value)) throw new Error("Invalid routine response.");
+  return value;
+}
+
+function decodeRoutines(value: unknown): Routine[] {
+  if (!Array.isArray(value)) throw new Error("Invalid routine list response.");
+  return value.filter(isRoutine);
+}
+
+function decodeRoutineRun(value: unknown): RoutineRun {
+  if (!isRoutineRun(value)) throw new Error("Invalid routine run response.");
+  return value;
+}
+
+function decodeRoutineRuns(value: unknown): RoutineRun[] {
+  if (!Array.isArray(value)) throw new Error("Invalid routine history response.");
+  return value.filter(isRoutineRun);
+}
+
+function decodeRoutineWithSecret(value: unknown): RoutineWithSecret {
+  if (!isRoutineWithSecret(value)) throw new Error("Invalid routine response.");
+  return value;
+}
+
 /** COSGRAL W2: MCP decoders. */
 function decodeMcpServer(value: unknown): McpServer {
   if (!isMcpServer(value)) throw new Error("Invalid MCP server response.");
@@ -576,6 +608,15 @@ const openbotApi: OpenBotDesktopApi = {
     searchAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memorySearchAgentMemories, input, decodeAgentMemories),
     getAgentSettings: (botId) => invokeAgent(IPC_CHANNELS.memoryGetAgentSettings, botId, decodeAgentMemorySettings),
     setAgentLimit: (input) => invokeAgent(IPC_CHANNELS.memorySetAgentLimit, input, decodeAgentMemorySettings),
+  },
+  routines: {
+    list: (botId) => invokeAgent(IPC_CHANNELS.routinesList, botId ?? null, decodeRoutines),
+    create: (input) => invokeAgent(IPC_CHANNELS.routinesCreate, input, decodeRoutineWithSecret),
+    update: (input) => invokeAgent(IPC_CHANNELS.routinesUpdate, input, decodeRoutine),
+    delete: (input) => invokeAgent(IPC_CHANNELS.routinesDelete, input, decodeVoid),
+    runNow: (input) => invokeAgent(IPC_CHANNELS.routinesRunNow, input, decodeRoutineRun),
+    listRuns: (input) => invokeAgent(IPC_CHANNELS.routinesListRuns, input, decodeRoutineRuns),
+    regenerateSecret: (input) => invokeAgent(IPC_CHANNELS.routinesRegenerateSecret, input, decodeRoutineWithSecret),
   },
   mcp: {
     list: () => invokeAgent(IPC_CHANNELS.mcpList, null, decodeMcpServers),

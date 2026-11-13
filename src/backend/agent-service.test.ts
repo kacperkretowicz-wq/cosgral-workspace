@@ -423,6 +423,59 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(service?.listPendingRequests()).toEqual([]);
   });
 
+  it("COSGRAL W2: gives agents the routine tools, routes their calls and runs routine turns through the queue", async () => {
+    const { store, mailbox } = stores();
+    const calls: Array<{ botId: string; tool: string; args: unknown }> = [];
+    const clients: FakeAgentClient[] = [];
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "DONE", false);
+      if (provider === "codex") clients.push(client);
+      return client;
+    });
+    service.useRoutines({
+      handleTool: (botId, tool, args) => {
+        calls.push({ botId, tool, args });
+        return { success: true, contentItems: [{ type: "inputText", text: '{"routines":[]}' }] };
+      },
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+
+    const runner = service.routineRunner();
+    const deliveryId = await runner.start("chief", "[COSGRAL routine run] Ping");
+    await waitFor(() => events.some((event) => event.type === "turn-started"));
+    expect(runner.botExists("chief")).toBe(true);
+    expect(runner.botExists("ghost")).toBe(false);
+    expect(runner.deliveryStatus("chief", deliveryId)).toBe("running");
+    expect(runner.runningDeliveryId("chief")).toBe(deliveryId);
+
+    const codex = clients[0];
+    const threadStart = codex?.requests.find((request) => request.method === "thread/start");
+    const turnStart = codex?.requests.find((request) => request.method === "turn/start");
+    if (!codex || !turnStart) throw new Error("The routine turn did not start.");
+    expect(JSON.stringify(threadStart?.params)).toContain('"name":"cosgral_routines"');
+    expect(JSON.stringify(turnStart.params)).toContain("[COSGRAL routine run] Ping");
+
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "routine-call",
+      params: {
+        threadId: stringParam(turnStart.params, "threadId"),
+        turnId: turnStartedId(events),
+        callId: "c1",
+        namespace: "cosgral_routines",
+        tool: "list_routines",
+        arguments: {},
+      },
+    });
+    await waitFor(() => codex.responses.some((response) => response.id === "routine-call"));
+    expect(codex.responses.find((response) => response.id === "routine-call")).toMatchObject({
+      result: { success: true },
+    });
+    expect(calls).toEqual([{ botId: "chief", tool: "list_routines", args: {} }]);
+  });
+
   it("COSGRAL W2: gives an agent the tools of its enabled MCP servers, runs their calls and drops them after the switch is off", async () => {
     const { store, mailbox } = stores();
     const enabled = new Map([["chief", true]]);

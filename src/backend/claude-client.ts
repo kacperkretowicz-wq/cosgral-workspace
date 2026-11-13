@@ -36,6 +36,7 @@ import {
   type ThreadResponse,
   type TurnResponse,
 } from "./protocol";
+import { ROUTINE_TOOL_SPECS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { SKILLS_NAMESPACE, SKILLS_TOOL_SPECS } from "./skill-tools";
 
 const execFileAsync = promisify(execFile);
@@ -503,6 +504,14 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         ),
       }),
       // COSGRAL W1-BE3: draft preview / confirm cards and browser takeovers; AgentService waits for the user.
+      // COSGRAL W2: routines and webhooks; RoutineManager acts only on the calling agent's routines.
+      [ROUTINES_NAMESPACE]: createSdkMcpServer({
+        name: ROUTINES_NAMESPACE,
+        version: "0.1.0",
+        tools: ROUTINE_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(ROUTINES_NAMESPACE, spec.name, args)),
+        ),
+      }),
       [CARDS_NAMESPACE]: createSdkMcpServer({
         name: CARDS_NAMESPACE,
         version: "0.1.0",

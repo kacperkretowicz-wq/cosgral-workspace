@@ -172,6 +172,8 @@ describe("ClaudeAgentClient", () => {
         "cosgral_channels",
         "cosgral_cards",
         "cosgral_skills",
+        // COSGRAL W2: routines and webhooks.
+        "cosgral_routines",
       ]),
     );
     await client.stop();

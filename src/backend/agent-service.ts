@@ -103,6 +103,8 @@ import {
   type ResponseDecoder,
   type ThreadItem,
 } from "./protocol";
+import type { RoutineRunner } from "./routine-manager";
+import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
 import { SKILLS_DYNAMIC_TOOLS, SKILLS_NAMESPACE, SkillTools, skillInstructions } from "./skill-tools";
 
@@ -148,6 +150,11 @@ interface PendingApproval {
 
 /** COSGRAL: agent eyes (see eyes-service.ts); null when the host cannot capture. */
 /** COSGRAL W2: what AgentService needs from the MCP servers of the program (McpManager). */
+/** COSGRAL W2: what AgentService needs from the routines (RoutineManager). */
+export interface AgentRoutines {
+  handleTool(botId: string, tool: string, args: unknown): DynamicToolResult;
+}
+
 export interface AgentMcp {
   toolsFor(botId: string): McpDynamicNamespace[];
   callTool(botId: string, namespace: string, tool: string, args: unknown): Promise<DynamicToolResult>;
@@ -271,6 +278,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #memory: MemoryService;
   /** COSGRAL W2: MCP servers of the program; their tools go to the agents that have them on. */
   readonly #mcp: AgentMcp | null;
+  /** COSGRAL W2: routines and webhooks; attached after construction by the program. */
+  #routines: AgentRoutines | null = null;
   /** COSGRAL W2: the MCP tool set each provider thread was started or resumed with. */
   readonly #mcpToolSignatures = new Map<string, string>();
   readonly #channelRunner: ChannelAgentRunner;
@@ -374,6 +383,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         SKILLS_DYNAMIC_TOOLS,
         ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
         ...this.#mcpTools(botId),
+        ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
       ],
       instructions: (botId) => skillInstructions(this.#skills.installedFor(botId)),
       commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
@@ -476,6 +486,29 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   /** COSGRAL W1: the row state of every agent. */
+  /** COSGRAL W2: attach the routines; their tools go to every agent from its next thread start or resume. */
+  useRoutines(routines: AgentRoutines): void {
+    this.#routines = routines;
+  }
+
+  /** COSGRAL W2: how routines start and follow agent turns (the agent's normal message queue). */
+  routineRunner(): RoutineRunner {
+    return {
+      start: async (botId, text) => {
+        const receipt = await this.sendMessage({ botId, text });
+        const deliveryId = receipt.deliveries[0]?.id;
+        if (!deliveryId) throw new Error("The routine message was not queued.");
+        return deliveryId;
+      },
+      deliveryStatus: (_botId, deliveryId) => this.#mailbox.getDelivery(deliveryId)?.delivery.status ?? null,
+      runningDeliveryId: (botId) =>
+        this.#mailbox
+          .listQueue(botId)
+          .deliveries.find((delivery) => delivery.status === "running" || delivery.status === "starting")?.id ?? null,
+      botExists: (botId) => this.#store.list().some((bot) => bot.id === botId),
+    };
+  }
+
   listActivity(): AgentActivity[] {
     return this.#activity.list();
   }
@@ -1259,6 +1292,19 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
               return;
             }
             client.respond(request.id, await this.#handleOpenBotTool(request.params));
+            return;
+          }
+          if (request.params.namespace === ROUTINES_NAMESPACE) {
+            const botId = this.#threadToBot.get(request.params.threadId);
+            client.respond(
+              request.id,
+              this.#routines && botId
+                ? this.#routines.handleTool(botId, request.params.tool, request.params.arguments)
+                : {
+                    success: false,
+                    contentItems: [{ type: "inputText", text: "Routines are not available in this turn." }],
+                  },
+            );
             return;
           }
           if (request.params.namespace?.startsWith(MCP_NAMESPACE_PREFIX)) {
@@ -2430,6 +2476,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       SKILLS_DYNAMIC_TOOLS,
       ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
       ...this.#mcpTools(botId),
+      ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
     ];
   }
 

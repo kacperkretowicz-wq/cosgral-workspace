@@ -45,8 +45,11 @@ import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
+import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
+import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
 import { TeamChatStore } from "../backend/team-chat-store";
+import { WebhookReceiver } from "../backend/webhook-receiver";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
@@ -102,6 +105,7 @@ import {
   parseSearchAgentMemories,
   parseSetAgentMemoryLimit,
 } from "./ipc/memory-inputs";
+import { parseCreateRoutine, parseRoutineId, parseRoutinesBotId, parseUpdateRoutine } from "./ipc/routine-inputs";
 import {
   parseCreateTeamInvite,
   parseDirectTyping,
@@ -210,6 +214,10 @@ let agentService: AgentService | null = null;
 let channelEngineService: ChannelEngine | null = null;
 /** COSGRAL W2: MCP connections; stopped on exit so stdio servers do not outlive the program. */
 let mcpManager: McpManager | null = null;
+/** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
+let routineManager: RoutineManager | null = null;
+let webhookReceiverService: WebhookReceiver | null = null;
+const DEFAULT_WEBHOOK_PORT = 47900;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
@@ -276,6 +284,7 @@ function registerIpcHandlers(
   channels: ChannelStore,
   channelEngine: ChannelEngine,
   mcp: McpManager,
+  routines: RoutineManager,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -859,6 +868,30 @@ function registerIpcHandlers(
     return service.memoryStore.setLimit(parsed);
   });
   // COSGRAL W2: MCP servers shared by the program and each agent's switch (this computer only).
+  // COSGRAL W2: routines and webhooks (this computer only). A person's webhook secret is returned once.
+  handleTrusted(IPC_CHANNELS.routinesList, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? routines.list(parseRoutinesBotId(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.routinesCreate, (input: unknown) =>
+    routines.create(localRoutineInput(input, parseCreateRoutine), "person"),
+  );
+  handleTrusted(IPC_CHANNELS.routinesUpdate, (input: unknown) =>
+    routines.update(localRoutineInput(input, parseUpdateRoutine)),
+  );
+  handleTrusted(IPC_CHANNELS.routinesDelete, (input: unknown) => {
+    routines.delete(localRoutineInput(input, parseRoutineId));
+    return null;
+  });
+  handleTrusted(IPC_CHANNELS.routinesRunNow, (input: unknown) =>
+    routines.runNow(localRoutineInput(input, parseRoutineId)),
+  );
+  handleTrusted(IPC_CHANNELS.routinesListRuns, (input: unknown) =>
+    routines.listRuns(localRoutineInput(input, parseRoutineId)),
+  );
+  handleTrusted(IPC_CHANNELS.routinesRegenerateSecret, (input: unknown) =>
+    routines.regenerateSecret(localRoutineInput(input, parseRoutineId)),
+  );
   handleTrusted(IPC_CHANNELS.mcpList, (input: unknown) =>
     parseAgentRequest(input).serverId === "local" ? mcp.list() : [],
   );
@@ -1191,6 +1224,20 @@ if (!hasSingleInstanceLock) {
         mcp,
       );
       const service = agentService;
+      // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
+      const routineStore = new RoutineStore(store.database, electronSecretBox());
+      const webhookReceiver: WebhookReceiver = new WebhookReceiver({
+        handle: (routineId, headers, body): Promise<WebhookAnswer> => routines.handleWebhook(routineId, headers, body),
+      });
+      const routines: RoutineManager = new RoutineManager({
+        store: routineStore,
+        runner: service.routineRunner(),
+        emit: (event) => forwardAgentEvent("local", event),
+        receiverUrl: (): string | null => webhookReceiver.url(),
+      });
+      service.useRoutines(routines);
+      routineManager = routines;
+      webhookReceiverService = webhookReceiver;
       // COSGRAL W1: sidebar folders live in the same local database.
       const sidebarStore = new SidebarStore(store.database);
       // COSGRAL W1-BE2: channels and their tasks, members are existing agents.
@@ -1361,9 +1408,17 @@ if (!hasSingleInstanceLock) {
         channelStore,
         engine,
         mcp,
+        routines,
       );
       // COSGRAL W2: connect the saved MCP servers in the background.
       void mcp.start().catch((error) => console.error("Unable to start MCP servers:", error));
+      // COSGRAL W2: open the webhook receiver (same port as last time when free), then plan routines.
+      void (async () => {
+        const preferred = Number(routineStore.setting("receiverPort") ?? DEFAULT_WEBHOOK_PORT);
+        const base = await webhookReceiver.start(Number.isInteger(preferred) ? preferred : DEFAULT_WEBHOOK_PORT);
+        routineStore.setSetting("receiverPort", new URL(base).port);
+        await routines.start();
+      })().catch((error) => console.error("Unable to start routines:", error));
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
       if (pendingInviteUrl) {
@@ -1423,6 +1478,12 @@ function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
 }
 
 /** COSGRAL W1-BE2: channel changes are kept on this computer only. */
+function localRoutineInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Routines are available only on this computer for now.");
+  return parse(scoped.payload);
+}
+
 function localMcpInput<T>(input: unknown, parse: (payload: unknown) => T): T {
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("MCP servers are available only on this computer for now.");
@@ -1527,6 +1588,9 @@ async function prepareForShutdown(): Promise<void> {
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
   await (mcpManager?.stop() ?? Promise.resolve());
+  // COSGRAL W2: no routine runs and no webhook receiver after exit.
+  routineManager?.stop();
+  await (webhookReceiverService?.stop() ?? Promise.resolve());
 }
 
 /** COSGRAL W2: Electron safeStorage as the MCP secret box; no plain-text fallback. */
