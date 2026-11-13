@@ -7,16 +7,100 @@ import type {
   WorkflowRun,
 } from "@openbot/contracts/ipc";
 import { WORKFLOW_EDGE_KINDS, workflowProblems } from "@openbot/contracts/ipc";
-import { createSignal, For, onSettled, Show } from "solid-js";
+import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 
 function routineId(node: Extract<WorkflowNode, { type: "trigger" }>): string {
   return node.trigger.kind === "routine" ? node.trigger.routineId : "";
 }
 
-export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: WorkflowGraph) => void }) {
+type ResourceOption = { id: string; name: string };
+export function WorkflowCanvas(
+  props: WorkflowGraph & {
+    onChange: (graph: WorkflowGraph) => void;
+    bots?: ResourceOption[];
+    channels?: ResourceOption[];
+    routines?: ResourceOption[];
+  },
+) {
   const [from, setFrom] = createSignal("");
   const [to, setTo] = createSignal("");
   const [edgeKind, setEdgeKind] = createSignal<WorkflowEdgeKind>("next");
+  const [connecting, setConnecting] = createSignal<{ from: string; x: number; y: number }>();
+  let canvas: HTMLElement | undefined;
+  let cancelPointer: (() => void) | undefined;
+  onCleanup(() => cancelPointer?.());
+  function startDrag(event: PointerEvent, node: WorkflowNode) {
+    if (event.button !== 0) return;
+    cancelPointer?.();
+    event.preventDefault();
+    const startX = event.clientX,
+      startY = event.clientY,
+      initialX = node.x,
+      initialY = node.y;
+    const move = (e: PointerEvent) => {
+      const current = props.nodes.find((item) => item.id === node.id);
+      if (current)
+        update({
+          ...current,
+          x: Math.max(0, Math.round(initialX + e.clientX - startX)),
+          y: Math.max(0, Math.round(initialY + e.clientY - startY)),
+        });
+    };
+    const end = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      cancelPointer = undefined;
+    };
+    cancelPointer = end;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  }
+  function startConnection(event: PointerEvent, node: WorkflowNode) {
+    if (event.button !== 0 || !canvas) return;
+    cancelPointer?.();
+    event.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const position = (e: PointerEvent) => ({
+      x: e.clientX - rect.left + (canvas?.scrollLeft ?? 0),
+      y: e.clientY - rect.top + (canvas?.scrollTop ?? 0),
+    });
+    setConnecting({ from: node.id, ...position(event) });
+    const move = (e: PointerEvent) => setConnecting({ from: node.id, ...position(e) });
+    const end = (e: PointerEvent) => {
+      const target = document
+        .elementFromPoint(e.clientX, e.clientY)
+        ?.closest("[data-workflow-node]")
+        ?.getAttribute("data-workflow-node");
+      if (target && target !== node.id && props.nodes.some((item) => item.id === target)) {
+        props.onChange({
+          nodes: props.nodes,
+          edges: [
+            ...props.edges,
+            {
+              id: `edge-${Date.now()}`,
+              from: node.id,
+              to: target,
+              on: node.type === "approval" ? (edgeKind() === "deny" ? "deny" : "allow") : "next",
+            },
+          ],
+        });
+      }
+      cancel();
+    };
+    const cancel = () => {
+      setConnecting(undefined);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", cancel);
+      cancelPointer = undefined;
+    };
+    cancelPointer = cancel;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", cancel);
+  }
   function update(node: WorkflowNode) {
     props.onChange({ nodes: props.nodes.map((n) => (n.id === node.id ? node : n)), edges: props.edges });
   }
@@ -53,7 +137,7 @@ export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: Workfl
           Add channel output
         </button>
       </div>
-      <section class="workflow-canvas" aria-label="Workflow canvas">
+      <section ref={canvas} class="workflow-canvas" aria-label="Workflow canvas">
         <svg class="workflow-connections" aria-hidden="true">
           <For each={props.edges}>
             {(edge) => {
@@ -71,11 +155,40 @@ export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: Workfl
               );
             }}
           </For>
+          <Show when={connecting()}>
+            {(link) => (
+              <line
+                x1={(props.nodes.find((node) => node.id === link().from)?.x ?? 0) + 110}
+                y1={(props.nodes.find((node) => node.id === link().from)?.y ?? 0) + 20}
+                x2={link().x}
+                y2={link().y}
+                stroke-dasharray="5 4"
+              />
+            )}
+          </Show>
         </svg>
         <For each={props.nodes}>
           {(node) => (
-            <article class="workflow-node" style={{ left: `${node.x}px`, top: `${node.y}px` }}>
-              <strong>{node.type}</strong>
+            <article
+              class="workflow-node"
+              data-workflow-node={node.id}
+              style={{ left: `${node.x}px`, top: `${node.y}px` }}
+            >
+              <button
+                type="button"
+                class="workflow-drag"
+                aria-label={`Move ${node.title}; use X and Y fields with a keyboard`}
+                onPointerDown={(event) => startDrag(event, node)}
+              >
+                {node.type} · Move
+              </button>
+              <button
+                type="button"
+                onPointerDown={(event) => startConnection(event, node)}
+                aria-label={`Drag connection from ${node.title}; use Connections controls for keyboard`}
+              >
+                Connect by drag
+              </button>
               <label>
                 Title <input value={node.title} onInput={(e) => update({ ...node, title: e.currentTarget.value })} />
               </label>
@@ -115,13 +228,24 @@ export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: Workfl
                       <option value="routine">Routine</option>
                     </select>
                     <Show when={trigger().trigger.kind === "routine"}>
-                      <input
-                        aria-label="Routine ID"
+                      <select
+                        aria-label="Routine"
                         value={routineId(trigger())}
-                        onInput={(e) =>
+                        onChange={(e) =>
                           update({ ...trigger(), trigger: { kind: "routine", routineId: e.currentTarget.value } })
                         }
-                      />
+                      >
+                        <option value="">Choose routine</option>
+                        <Show
+                          when={
+                            routineId(trigger()) &&
+                            !(props.routines ?? []).some((item) => item.id === routineId(trigger()))
+                          }
+                        >
+                          <option value={routineId(trigger())}>Unavailable: {routineId(trigger())}</option>
+                        </Show>
+                        <For each={props.routines ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
+                      </select>
                     </Show>
                   </label>
                 )}
@@ -129,22 +253,38 @@ export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: Workfl
               <Show when={node.type === "agent" || node.type === "approval" ? node : undefined}>
                 {(agent) => (
                   <label>
-                    Agent ID{" "}
-                    <input
+                    Agent{" "}
+                    <select
                       value={agent().botId}
-                      onInput={(e) => update({ ...agent(), botId: e.currentTarget.value })}
-                    />
+                      onChange={(e) => update({ ...agent(), botId: e.currentTarget.value })}
+                    >
+                      <option value="">Choose agent</option>
+                      <Show when={agent().botId && !(props.bots ?? []).some((item) => item.id === agent().botId)}>
+                        <option value={agent().botId}>Unavailable: {agent().botId}</option>
+                      </Show>
+                      <For each={props.bots ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
+                    </select>
                   </label>
                 )}
               </Show>
               <Show when={node.type === "channel-output" ? node : undefined}>
                 {(channel) => (
                   <label>
-                    Channel ID{" "}
-                    <input
+                    Channel{" "}
+                    <select
                       value={channel().channelId}
-                      onInput={(e) => update({ ...channel(), channelId: e.currentTarget.value })}
-                    />
+                      onChange={(e) => update({ ...channel(), channelId: e.currentTarget.value })}
+                    >
+                      <option value="">Choose channel</option>
+                      <Show
+                        when={
+                          channel().channelId && !(props.channels ?? []).some((item) => item.id === channel().channelId)
+                        }
+                      >
+                        <option value={channel().channelId}>Unavailable: {channel().channelId}</option>
+                      </Show>
+                      <For each={props.channels ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
+                    </select>
                   </label>
                 )}
               </Show>
@@ -258,12 +398,33 @@ export function WorkflowCanvas(props: WorkflowGraph & { onChange: (graph: Workfl
 
 export function WorkflowsPage() {
   const [items, setItems] = createSignal<Workflow[]>([]);
+  const [bots, setBots] = createSignal<ResourceOption[]>([]);
+  const [channels, setChannels] = createSignal<ResourceOption[]>([]);
+  const [routines, setRoutines] = createSignal<ResourceOption[]>([]);
   const [selected, setSelected] = createSignal<string>("");
   const [name, setName] = createSignal("New workflow");
   const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
   const [runs, setRuns] = createSignal<WorkflowRun[]>([]);
   const [input, setInput] = createSignal("");
   const [error, setError] = createSignal("");
+  async function refreshResources() {
+    const [nextBots, nextChannels, nextRoutines] = await Promise.allSettled([
+      window.openbot.agent.listBots(),
+      window.openbot.channels?.list() ?? Promise.resolve([]),
+      window.openbot.routines?.list() ?? Promise.resolve([]),
+    ]);
+    if (nextBots.status === "fulfilled") setBots(nextBots.value.map((bot) => ({ id: bot.id, name: bot.name })));
+    if (nextChannels.status === "fulfilled")
+      setChannels(
+        nextChannels.value
+          .filter((channel) => !channel.archived)
+          .map((channel) => ({ id: channel.id, name: channel.title || channel.name })),
+      );
+    if (nextRoutines.status === "fulfilled")
+      setRoutines(nextRoutines.value.map((routine) => ({ id: routine.id, name: routine.name })));
+    if ([nextBots, nextChannels, nextRoutines].some((result) => result.status === "rejected"))
+      setError("Could not load all agents, channels or routines.");
+  }
   async function refresh() {
     const api = window.openbot.workflows;
     if (!api) {
@@ -302,8 +463,11 @@ export function WorkflowsPage() {
   }
   onSettled(() => {
     void refresh();
+    void refreshResources();
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "workflows-changed" || event.type === "workflow-run-changed") void refresh();
+      if (event.type === "bots-changed" || event.type === "channels-changed" || event.type === "routines-changed")
+        void refreshResources();
     });
     return off;
   });
@@ -338,7 +502,14 @@ export function WorkflowsPage() {
       <label>
         Name <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
-      <WorkflowCanvas nodes={graph().nodes} edges={graph().edges} onChange={setGraph} />
+      <WorkflowCanvas
+        nodes={graph().nodes}
+        edges={graph().edges}
+        onChange={setGraph}
+        bots={bots()}
+        channels={channels()}
+        routines={routines()}
+      />
       <button
         type="button"
         disabled={!name().trim() || workflowProblems(graph()).length > 0}
