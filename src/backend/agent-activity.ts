@@ -75,10 +75,19 @@ export class AgentActivityTracker {
       case "prompt":
       case "prompt-resolved":
       case "approval-resolved":
+      case "draft-preview-resolved":
+      case "browser-takeover-changed":
         this.#refresh(event.botId);
         return;
       case "approval":
         this.#refresh(event.approval.botId);
+        return;
+      // COSGRAL W1-BE3: draft previews and browser takeovers wait for the user too.
+      case "draft-preview":
+        this.#refresh(event.card.botId);
+        return;
+      case "browser-takeover":
+        this.#refresh(event.request.botId);
         return;
       case "queue-changed":
       case "conversation":

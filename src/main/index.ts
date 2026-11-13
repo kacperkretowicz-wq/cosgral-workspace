@@ -39,6 +39,8 @@ import { AgentService } from "../backend/agent-service";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
+import { ChannelEngine } from "../backend/channel-engine";
+import { ChannelStore } from "../backend/channel-store";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { SidebarStore } from "../backend/sidebar-store";
@@ -70,6 +72,17 @@ import {
 import { parseMacPermission, parseProvider } from "./ipc/app-inputs";
 import { parseAvatarImage } from "./ipc/avatar-inputs";
 import { parseBrowserOpen, parseVisibility } from "./ipc/browser-inputs";
+import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./ipc/card-inputs";
+import {
+  parseChannelId,
+  parseChannelMember,
+  parseChannelTaskAction,
+  parseCreateChannel,
+  parseListChannelMessages,
+  parseReassignChannelTask,
+  parseSendChannelMessage,
+  parseUpdateChannel,
+} from "./ipc/channel-inputs";
 import {
   parseCreateTeamInvite,
   parseDirectTyping,
@@ -163,6 +176,7 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null;
 let browserHost: BrowserHost | null = null;
 let agentService: AgentService | null = null;
+let channelEngineService: ChannelEngine | null = null;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
 let hostService: HostService | null = null;
@@ -226,6 +240,8 @@ function registerIpcHandlers(
   remoteServers: RemoteServerManager,
   centralAuth: AccountManager,
   sidebar: SidebarStore,
+  channels: ChannelStore,
+  channelEngine: ChannelEngine,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -657,6 +673,26 @@ function registerIpcHandlers(
     const { serverId } = parseAgentRequest(input);
     return serverId === "local" ? service.listActivity() : [];
   });
+  // COSGRAL W1-BE3: draft preview / confirm cards, browser takeovers and kept drafts; this computer only.
+  handleTrusted(IPC_CHANNELS.agentRespondToDraftPreview, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Draft cards are available on this computer only.");
+    return service.respondToDraftPreview(parseDraftPreviewResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentRespondToBrowserTakeover, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Browser takeover is available on this computer only.");
+    return service.respondToBrowserTakeover(parseBrowserTakeoverResponse(scoped.payload));
+  });
+  handleTrusted(IPC_CHANNELS.agentListDrafts, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.listDrafts() : [];
+  });
+  handleTrusted(IPC_CHANNELS.agentDeleteDraft, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Drafts are kept on this computer only.");
+    service.deleteDraft(parseDeleteDraft(scoped.payload));
+  });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -683,10 +719,54 @@ function registerIpcHandlers(
   );
   handleTrusted(IPC_CHANNELS.sidebarMoveItem, (input: unknown) => {
     const parsed = localSidebarInput(input, parseMoveSidebarItem);
-    if (parsed.itemKind === "channel") throw new Error("Channels are not available yet.");
-    if (!service.listBots().some((bot) => bot.id === parsed.itemId)) throw new Error("This agent no longer exists.");
+    if (parsed.itemKind === "channel") {
+      if (!channels.list().some((channel) => channel.id === parsed.itemId)) {
+        throw new Error("This channel no longer exists.");
+      }
+    } else if (!service.listBots().some((bot) => bot.id === parsed.itemId)) {
+      throw new Error("This agent no longer exists.");
+    }
     return forwardSidebarLayout(sidebar.moveItem(parsed));
   });
+  // COSGRAL W1-BE2: channels and channel tasks of this computer; remote servers have none yet.
+  handleTrusted(IPC_CHANNELS.channelsList, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? channels.list() : [];
+  });
+  handleTrusted(IPC_CHANNELS.channelsListTasks, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    return scoped.serverId === "local" ? channels.listTasks(parseChannelId(scoped.payload)) : [];
+  });
+  handleTrusted(IPC_CHANNELS.channelsListMessages, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") return [];
+    const parsed = parseListChannelMessages(scoped.payload);
+    return channels.listMessages(parsed.channelId, parsed);
+  });
+  handleTrusted(IPC_CHANNELS.channelsSendMessage, (input: unknown) =>
+    channelEngine.sendMessage(localChannelInput(input, parseSendChannelMessage)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsCreate, (input: unknown) =>
+    channels.create(localChannelInput(input, parseCreateChannel)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsUpdate, (input: unknown) =>
+    channels.update(localChannelInput(input, parseUpdateChannel)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsAddMember, (input: unknown) =>
+    channels.addMember(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsRemoveMember, (input: unknown) =>
+    channels.removeMember(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsSetLead, (input: unknown) =>
+    channels.setLead(localChannelInput(input, parseChannelMember)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsTaskAction, (input: unknown) =>
+    channelEngine.actOnTask(localChannelInput(input, parseChannelTaskAction)),
+  );
+  handleTrusted(IPC_CHANNELS.channelsReassignTask, (input: unknown) =>
+    channelEngine.reassignTask(localChannelInput(input, parseReassignChannelTask)),
+  );
 
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);
@@ -982,6 +1062,17 @@ if (!hasSingleInstanceLock) {
       const service = agentService;
       // COSGRAL W1: sidebar folders live in the same local database.
       const sidebarStore = new SidebarStore(store.database);
+      // COSGRAL W1-BE2: channels and their tasks, members are existing agents.
+      const channelStore = new ChannelStore(store.database, {
+        botExists: (botId) => service.listBots().some((bot) => bot.id === botId),
+      });
+      const engine = new ChannelEngine(
+        channelStore,
+        { run: (input) => service.runChannelTurn(input), available: (id) => service.canRunChannelTurn(id) },
+        { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
+      );
+      channelEngineService = engine;
+      channelStore.on("event", (event) => forwardAgentEvent("local", event));
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1080,6 +1171,9 @@ if (!hasSingleInstanceLock) {
         beforeInstall: prepareForShutdown,
       });
       service.on("event", (event) => forwardAgentEvent("local", event));
+      service.on("event", (event) => {
+        if (event.type === "turn-completed" || event.type === "queue-changed") engine.reconcile();
+      });
       // COSGRAL W1: a deleted agent leaves its folder.
       service.on("event", (event) => {
         if (event.type !== "bots-changed") return;
@@ -1094,6 +1188,13 @@ if (!hasSingleInstanceLock) {
           }
         } catch (error) {
           console.error("Unable to update sidebar folders:", error);
+        }
+        // COSGRAL W1-BE2: and its channels; a deleted lead hands the role and open tasks to the next member.
+        try {
+          const changed = channelStore.pruneBots(event.bots.map((bot) => bot.id));
+          if (changed.tasks.length) engine.reconcile();
+        } catch (error) {
+          console.error("Unable to update channels:", error);
         }
       });
       host.on("changed", forwardHostStatus);
@@ -1110,7 +1211,10 @@ if (!hasSingleInstanceLock) {
       remoteServers.on("directTyping", forwardDirectTyping);
       updateService.on("status", forwardUpdateStatus);
       updateService.start();
-      const agentInitialization = new AgentInitializationGate(() => service.initialize());
+      const agentInitialization = new AgentInitializationGate(async () => {
+        await service.initialize();
+        engine.start();
+      });
       registerIpcHandlers(
         service,
         mailboxStore,
@@ -1123,6 +1227,8 @@ if (!hasSingleInstanceLock) {
         remoteServers,
         centralAuthManager,
         sidebarStore,
+        channelStore,
+        engine,
       );
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);
@@ -1180,6 +1286,13 @@ function localSidebarInput<T>(input: unknown, parse: (payload: unknown) => T): T
 function forwardSidebarLayout(layout: SidebarLayout): SidebarLayout {
   forwardAgentEvent("local", { type: "sidebar-layout-changed", layout });
   return layout;
+}
+
+/** COSGRAL W1-BE2: channel changes are kept on this computer only. */
+function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("Channels are available only on this computer for now.");
+  return parse(scoped.payload);
 }
 
 function parseStopEyes(value: unknown): StopAgentEyesInput {
@@ -1258,7 +1371,7 @@ async function prepareForShutdown(): Promise<void> {
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
   await (browserHost?.destroy() ?? Promise.resolve());
-  await (agentService?.stop() ?? Promise.resolve());
+  await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
 }
 
 function routeUpdateBot(

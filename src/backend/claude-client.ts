@@ -14,7 +14,9 @@ import {
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { type DynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { z } from "zod";
+import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
+import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
 import {
@@ -473,6 +475,21 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     const call = (namespace: string, name: string, args: unknown) =>
       this.#callDynamicTool(threadId, namespace, name, args);
     return {
+      [CHANNEL_NAMESPACE]: createSdkMcpServer({
+        name: CHANNEL_NAMESPACE,
+        version: "0.1.0",
+        tools: CHANNEL_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(CHANNEL_NAMESPACE, spec.name, args)),
+        ),
+      }),
+      // COSGRAL W1-BE3: draft preview / confirm cards and browser takeovers; AgentService waits for the user.
+      [CARDS_NAMESPACE]: createSdkMcpServer({
+        name: CARDS_NAMESPACE,
+        version: "0.1.0",
+        tools: CARDS_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(CARDS_NAMESPACE, spec.name, args)),
+        ),
+      }),
       openbot_browser: createSdkMcpServer({
         name: "openbot_browser",
         version: "0.1.0",

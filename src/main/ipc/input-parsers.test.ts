@@ -20,6 +20,15 @@ import {
 } from "./agent-inputs";
 import { parseMacPermission, parseProvider } from "./app-inputs";
 import { parseBrowserOpen, parseVisibility } from "./browser-inputs";
+import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./card-inputs";
+import {
+  parseChannelId,
+  parseChannelMember,
+  parseChannelTaskAction,
+  parseCreateChannel,
+  parseReassignChannelTask,
+  parseUpdateChannel,
+} from "./channel-inputs";
 import {
   parseCreateTeamInvite,
   parseHostConfig,
@@ -290,6 +299,89 @@ describe("sidebar IPC input parsing", () => {
     expect(() => parseMoveSidebarItem({ itemKind: "person", itemId: "u1", folderId: null, position: 0 })).toThrowError(
       "itemKind must be agent or channel.",
     );
+  });
+});
+
+describe("channel IPC input parsing", () => {
+  it("parses channel and task requests", () => {
+    expect(
+      parseCreateChannel({
+        name: "launch-plan",
+        title: "",
+        instructions: "",
+        memberBotIds: ["chief", "writer"],
+        leadBotId: "chief",
+        isolated: false,
+      }),
+    ).toEqual({
+      name: "launch-plan",
+      title: "",
+      instructions: "",
+      memberBotIds: ["chief", "writer"],
+      leadBotId: "chief",
+      isolated: false,
+    });
+    expect(parseUpdateChannel({ channelId: "c1", archived: true })).toEqual({ channelId: "c1", archived: true });
+    expect(parseChannelMember({ channelId: "c1", botId: "writer" })).toEqual({ channelId: "c1", botId: "writer" });
+    expect(parseChannelTaskAction({ taskId: "t1", action: "archive" })).toEqual({ taskId: "t1", action: "archive" });
+    expect(parseReassignChannelTask({ taskId: "t1", ownerBotId: "writer" })).toEqual({
+      taskId: "t1",
+      ownerBotId: "writer",
+    });
+    expect(parseChannelId("c1")).toBe("c1");
+  });
+
+  it("rejects malformed channel requests", () => {
+    expect(() =>
+      parseCreateChannel({ name: "x", title: "", instructions: "", memberBotIds: "chief", leadBotId: "chief" }),
+    ).toThrowError("memberBotIds must be a list of agent ids.");
+    expect(() =>
+      parseCreateChannel({
+        name: "x",
+        title: "",
+        instructions: "",
+        memberBotIds: ["chief"],
+        leadBotId: "chief",
+        isolated: "no",
+      }),
+    ).toThrowError("isolated must be true or false.");
+    expect(() => parseUpdateChannel({ channelId: "c1", title: 5 })).toThrowError("title must be text.");
+    expect(() => parseChannelTaskAction({ taskId: "t1", action: "delete" })).toThrowError(
+      "action must be stop, pause, resume, archive or restore.",
+    );
+  });
+});
+
+describe("action card IPC input parsing", () => {
+  it("parses decisions on draft cards, browser takeovers and kept drafts", () => {
+    expect(parseDraftPreviewResponse({ requestId: "card-1", decision: "send" })).toEqual({
+      requestId: "card-1",
+      decision: "send",
+    });
+    expect(
+      parseDraftPreviewResponse({ requestId: "card-1", decision: "edit", feedback: "Warmer", text: "Dear Anna" }),
+    ).toEqual({ requestId: "card-1", decision: "edit", feedback: "Warmer", text: "Dear Anna" });
+    expect(parseBrowserTakeoverResponse({ requestId: "takeover-1", action: "take-over" })).toEqual({
+      requestId: "takeover-1",
+      action: "take-over",
+    });
+    expect(parseDeleteDraft({ draftId: "card-1" })).toEqual({ draftId: "card-1" });
+  });
+
+  it("rejects malformed card decisions", () => {
+    expect(() => parseDraftPreviewResponse({ requestId: "card-1", decision: "sent" })).toThrowError(
+      "decision must be send, edit or keep-draft.",
+    );
+    expect(() => parseDraftPreviewResponse({ requestId: "card-1", decision: "send", text: "Other" })).toThrowError(
+      "Only edit can carry new text.",
+    );
+    expect(() =>
+      parseDraftPreviewResponse({ requestId: "card-1", decision: "edit", feedback: "x".repeat(2_001) }),
+    ).toThrowError("feedback is too long.");
+    expect(() => parseBrowserTakeoverResponse({ requestId: "takeover-1", action: "steal" })).toThrowError(
+      "action must be take-over, return or decline.",
+    );
+    expect(() => parseDeleteDraft({})).toThrowError("draftId is required.");
   });
 });
 

@@ -1,4 +1,9 @@
-import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "./ipc-action-cards";
+import type {
+  DeleteDraftInput,
+  KeptDraft,
+  RespondToBrowserTakeoverInput,
+  RespondToDraftPreviewInput,
+} from "./ipc-action-cards";
 import type {
   AppInfo,
   AppSetupState,
@@ -78,7 +83,18 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
-import type { ChannelTask, WorkspaceChannel } from "./ipc-workspace-channels";
+import type {
+  ChannelMemberInput,
+  ChannelMessage,
+  ChannelTask,
+  ChannelTaskActionInput,
+  CreateWorkspaceChannelInput,
+  ListChannelMessagesInput,
+  ReassignChannelTaskInput,
+  SendChannelMessageInput,
+  UpdateWorkspaceChannelInput,
+  WorkspaceChannel,
+} from "./ipc-workspace-channels";
 
 export interface AgentDesktopApi {
   getStatus: () => Promise<AgentStatus>;
@@ -114,8 +130,13 @@ export interface AgentDesktopApi {
   listPendingRequests?: () => Promise<PendingAgentRequest[]>;
   /** COSGRAL W1: the row state of every agent; then follow `activity-changed`. */
   listActivity?: () => Promise<AgentActivity[]>;
+  /** COSGRAL W1-BE3: decide a draft preview / confirm card (local server only). */
   respondToDraftPreview?: (input: RespondToDraftPreviewInput) => Promise<void>;
+  /** COSGRAL W1-BE3: take over, return or decline a browser takeover request (local server only). */
   respondToBrowserTakeover?: (input: RespondToBrowserTakeoverInput) => Promise<void>;
+  /** COSGRAL W1-BE3: drafts kept with "keep-draft", newest first; then follow `drafts-changed`. */
+  listDrafts?: () => Promise<KeptDraft[]>;
+  deleteDraft?: (input: DeleteDraftInput) => Promise<void>;
   onEvent: (listener: (event: AgentEvent) => void) => () => void;
 }
 
@@ -130,10 +151,22 @@ export interface SidebarDesktopApi {
   moveItem: (input: MoveSidebarItemInput) => Promise<SidebarLayout>;
 }
 
-/** COSGRAL W1: channels and channel tasks, read side (engine and writes in W1-BE2). */
+/** COSGRAL W1: channels and channel tasks (see ipc-workspace-channels.ts). */
 export interface ChannelsDesktopApi {
+  /** Optional until all renderer mocks implement channel history/composer. */
+  listMessages?: (input: ListChannelMessagesInput) => Promise<ChannelMessage[]>;
+  sendMessage?: (input: SendChannelMessageInput) => Promise<{ message: ChannelMessage; task: ChannelTask }>;
   list: () => Promise<WorkspaceChannel[]>;
+  /** All tasks of the channel, archived ones included (filter on `archivedAt`). */
   listTasks: (channelId: string) => Promise<ChannelTask[]>;
+  create: (input: CreateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  update: (input: UpdateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
+  addMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  removeMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  setLead: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
+  /** Stop, pause, resume, archive or restore a task. */
+  actOnTask: (input: ChannelTaskActionInput) => Promise<ChannelTask>;
+  reassignTask: (input: ReassignChannelTaskInput) => Promise<ChannelTask>;
 }
 
 export interface BrowserDesktopApi {
