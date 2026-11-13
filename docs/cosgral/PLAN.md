@@ -56,6 +56,27 @@
 7. **Foldery (pytania Backendu):** duplikat folderu nie kopiuje agentów; w pasku najpierw foldery, potem agenci. Tester potwierdza to w odbiorze; jeśli 0.68 działa inaczej, zmieniamy.
 8. **Postęp w kanale:** członek może pokazywać plan (lista kroków z odhaczeniem) i krótkie notatki z postępu, które po wyniku są oznaczone jako zastąpione.
 
+## Decyzje lidera do W2 (13.11, odpowiedzi na pytania z `spec-w2.md` §8)
+
+1. **Limity skilla:** jeden folder ze `SKILL.md`, najwyżej 200 plików i 10 MB na folder (tak działa 0.68 widziane przez agenta). Liczby w jednym miejscu konfiguracji.
+2. **Serwery MCP:** lista serwerów jest wspólna dla całego programu, a każdy agent ma od pierwszego dnia własny przełącznik włącz / wyłącz (nowy agent: włączone).
+3. **Vault:** w W2 tylko lokalny Vault na `safeStorage`. Konektory 1Password / Bitwarden / Proton są w W3.
+4. **Rutyny i webhooki:** w W2 harmonogram lokalny i odbiornik webhooków na loopback (Standard Webhooks, sekret pokazany raz, limity z 0.68). Publiczny adres (przekaźnik) jest w W3, bez konta OpenBota. Przy wyłączonym programie rutyny nie biegną; po starcie bez nadrabiania.
+5. **Tabele:** pole wersji wiersza. Zapis ze starą wersją dostaje błąd konfliktu z aktualnym wierszem; bez cichego nadpisania.
+6. **Pliki:** jeden magazyn plików, dwa widoki: biblioteka plików i załączniki czatu.
+7. **Przepływy (wiersz 28):** pełne płótno po Vault i rutynach, na początku W3.
+
+## Runda W2 (od 13.11, 02:30)
+
+| Zadanie | Kto | Zakres |
+|---|---|---|
+| W2-H1 | KAPI | Pamięć agentów (scalone `00874ad8e`) |
+| W2-BE1 | Backend | Skille: biblioteka, wersje, narzędzia agenta |
+| W2-K2 | KAPI | Serwery MCP: dodanie, logowanie, narzędzia dla agentów, przełącznik na agenta |
+| W1-UI3 | UI | Karty szkicu i przejęcia, potem widok kanału i Chat \| Zadania |
+| W2-T2 | Tester | Odbiór pamięci w piaskownicy (skille po scaleniu W2-BE1) |
+| H3 | Hydra | Druga instancja kończy się po ~6 s zamiast < 3 s: przyczyna i drobna poprawka |
+
 ## Runda W1-2 (od 12.11, 21:10)
 
 | Zadanie | Kto | Zakres |
