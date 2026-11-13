@@ -169,6 +169,62 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
   let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
   let pending = clone(options.pendingRequests ?? []);
+  let mockChannels: import("@openbot/contracts/ipc").WorkspaceChannel[] = [
+    {
+      id: "demo-channel",
+      name: "project",
+      title: "Project",
+      instructions: "Coordinate the work and share progress.",
+      leadBotId: "chief",
+      memberBotIds: ["chief", "research"],
+      isolated: true,
+      archived: false,
+      createdAt: "2026-11-13T00:00:00Z",
+      updatedAt: "2026-11-13T00:00:00Z",
+    },
+  ];
+  let mockMessages: import("@openbot/contracts/ipc").ChannelMessage[] = [
+    {
+      id: "demo-message",
+      channelId: "demo-channel",
+      taskId: null,
+      authorBotId: null,
+      kind: "human",
+      text: "Prepare the release plan.",
+      replyToMessageId: null,
+      resultVersion: null,
+      superseded: false,
+      createdAt: "2026-11-13T00:00:00Z",
+    },
+    {
+      id: "demo-note",
+      channelId: "demo-channel",
+      taskId: "demo-task",
+      authorBotId: "chief",
+      kind: "note",
+      text: "Reviewing the requirements.",
+      replyToMessageId: "demo-message",
+      resultVersion: null,
+      superseded: false,
+      createdAt: "2026-11-13T00:01:00Z",
+    },
+  ];
+  let mockTasks: import("@openbot/contracts/ipc").ChannelTask[] = ["paused", "running", "done"].map((state, index) => ({
+    id: `demo-task-${index}`,
+    channelId: "demo-channel",
+    ownerBotId: index === 1 ? "research" : "chief",
+    state: state as import("@openbot/contracts/ipc").ChannelTaskState,
+    title: ["Review the plan", "Collect evidence", "Define scope"][index]!,
+    requestMessageId: "demo-message",
+    resultMessageId: null,
+    parentTaskId: null,
+    dependencyTaskIds: [],
+    resourceKey: null,
+    assignmentCount: 1,
+    archivedAt: null,
+    createdAt: "2026-11-13T00:00:00Z",
+    updatedAt: "2026-11-13T00:00:00Z",
+  }));
   const keptDrafts: import("@openbot/contracts/ipc").KeptDraft[] = [];
   const activityByBot = new Map<string, AgentActivity>(
     clone(options.activity ?? []).map((activity) => [activity.botId, activity]),
@@ -411,6 +467,73 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   }
 
   const api: OpenBotDesktopApi = {
+    channels: {
+      list: async () => clone(mockChannels),
+      listMessages: async ({ channelId }) => clone(mockMessages.filter((item) => item.channelId === channelId)),
+      listTasks: async (channelId) => clone(mockTasks.filter((item) => item.channelId === channelId)),
+      sendMessage: async ({ channelId, text }) => {
+        const now = new Date().toISOString();
+        const id = `demo-${Date.now()}`;
+        const message: import("@openbot/contracts/ipc").ChannelMessage = {
+          id,
+          channelId,
+          taskId: id,
+          authorBotId: null,
+          kind: "human",
+          text,
+          replyToMessageId: null,
+          resultVersion: null,
+          superseded: false,
+          createdAt: now,
+        };
+        const task = {
+          ...mockTasks[0]!,
+          id,
+          channelId,
+          title: text.slice(0, 120),
+          requestMessageId: id,
+          state: "queued" as const,
+          createdAt: now,
+          updatedAt: now,
+        };
+        mockMessages = [...mockMessages, message];
+        mockTasks = [...mockTasks, task];
+        emitAgentEvent({ type: "channel-message", message });
+        emitAgentEvent({ type: "task-changed", task });
+        return clone({ message, task });
+      },
+      actOnTask: async ({ taskId, action }) => {
+        const old = mockTasks.find((task) => task.id === taskId);
+        if (!old || action !== "resume") throw new Error("Task action unavailable");
+        const task = { ...old, state: "queued" as const };
+        mockTasks = mockTasks.map((item) => (item.id === taskId ? task : item));
+        emitAgentEvent({ type: "task-changed", task });
+        return clone(task);
+      },
+      reassignTask: async ({ taskId, ownerBotId }) => {
+        const old = mockTasks.find((task) => task.id === taskId);
+        if (!old) throw new Error("Task not found");
+        const task = { ...old, ownerBotId, state: "queued" as const };
+        mockTasks = mockTasks.map((item) => (item.id === taskId ? task : item));
+        emitAgentEvent({ type: "task-changed", task });
+        return clone(task);
+      },
+      create: async () => {
+        throw new Error("Not implemented in demo");
+      },
+      update: async () => {
+        throw new Error("Not implemented in demo");
+      },
+      addMember: async () => {
+        throw new Error("Not implemented in demo");
+      },
+      removeMember: async () => {
+        throw new Error("Not implemented in demo");
+      },
+      setLead: async () => {
+        throw new Error("Not implemented in demo");
+      },
+    },
     getAppInfo: async () => clone(appInfo),
     getSetupState: async () => clone(setupState),
     saveSetup: async ({ preferredProvider }) => {
