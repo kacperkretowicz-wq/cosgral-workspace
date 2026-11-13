@@ -600,9 +600,9 @@ export interface RemoteDesktopDesktopApi {
 
 export interface RemoteDesktopHostDesktopApi {
   getState: () => Promise<RemoteDesktopHostState>;
-  /** Starts listening and returns the token once. When sharing was on already, the token is made again. */
+  /** Starts listening with a NEW token, returned once (also when sharing was on already: the old token stops working). */
   enable: (input?: EnableRemoteDesktopInput) => Promise<RemoteDesktopTokenResult>;
-  /** Stops listening and ends every session. The token stays valid for the next `enable`. */
+  /** Stops listening and ends every session. The next `enable` makes a new token. */
   disable: () => Promise<RemoteDesktopHostState>;
   /** A new token; viewers that are connected stay, new ones need the new token. Returned once. */
   regenerateToken: () => Promise<RemoteDesktopTokenResult>;
