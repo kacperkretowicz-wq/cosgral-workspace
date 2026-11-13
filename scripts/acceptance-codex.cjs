@@ -6,6 +6,7 @@
 //   FILES <folder>     asks to change files in a folder (approval card, grant root)
 //   PERMS <folder>     asks for read and write permission in a folder
 //   DRAFT              shows a draft/confirm card ("Send the summary to Anna?") and reports the decision
+//   USAGELIMIT         fails like a usage limit on the Terra model, answers "Stub: ran on <model>" on any other
 //   FAIL               ends the turn as failed
 //   LIMITON / LIMITOFF the Codex usage window is full until its reset / not full
 //   TOOLS              lists the tools the program gave this thread
@@ -45,6 +46,8 @@ const complete = (threadId, turnId, text, status = "completed", error = null) =>
       params: { threadId, turnId, item: { id: randomUUID(), type: "agentMessage", text } },
     });
   }
+  // Like Codex: the reason comes as an "error" notification of the turn, then the turn completes as failed.
+  if (error) out({ method: "error", params: { threadId, turnId, message: error } });
   out({
     method: "turn/completed",
     params: { threadId, turn: { id: turnId, status, ...(error ? { error: { message: error } } : {}) } },
@@ -122,6 +125,12 @@ async function direct(threadId, turnId, text) {
       channel: "email",
     });
     return complete(threadId, turnId, `Stub: draft ${result.text}`);
+  }
+  if (text.startsWith("USAGELIMIT")) {
+    // Fails on the Terra model like a provider at its usage limit; any other model answers (a fallback model).
+    if (String(lastTurnStart.model).includes("terra"))
+      return complete(threadId, turnId, null, "failed", "You've hit your usage limit. Try again later.");
+    return complete(threadId, turnId, `Stub: ran on ${lastTurnStart.model}`);
   }
   if (text.startsWith("FAIL")) return complete(threadId, turnId, null, "failed", "Sandbox failure: the provider said no.");
   if (text.startsWith("LIMITON")) {
