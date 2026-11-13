@@ -61,6 +61,8 @@ interface SidebarProps {
   needsYouItems?: NeedsYouSidebarItem[];
   /** COSGRAL: agents that are looking at a window, screen or camera right now. */
   lookingBotIds?: string[];
+  computerUsingBotIds?: string[];
+  onStopComputerUse?: (botId: string) => void;
   /** COSGRAL: local owner profile: no account service, so no email and no sign out. */
   localProfile?: boolean;
   /** COSGRAL W1: user folders. Without a layout the agent list stays flat. */
@@ -788,6 +790,18 @@ export function Sidebar(props: SidebarProps) {
                           {(state) => <span class="sr-only">{sidebarAgentStateLabel(state())}</span>}
                         </Show>
                       </ContextMenu.Trigger>
+                      <Show when={props.computerUsingBotIds?.includes(bot.id)}>
+                        <div class="computer-use-row" role="status">
+                          <span>Controlling computer</span>{" "}
+                          <button
+                            type="button"
+                            aria-label={`Stop computer control for ${bot.name}`}
+                            onClick={() => props.onStopComputerUse?.(bot.id)}
+                          >
+                            Stop
+                          </button>
+                        </div>
+                      </Show>
                       <ContextMenu.Portal>
                         <ContextMenu.Content class="bot-context-menu" aria-label="Agent actions">
                           <ContextMenu.Item

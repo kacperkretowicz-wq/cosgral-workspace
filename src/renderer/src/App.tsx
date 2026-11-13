@@ -228,6 +228,7 @@ export function App() {
   const [pendingCards, setPendingCards] = createSignal<PendingCard[]>([]);
   // COSGRAL W1: the row state of each agent as the backend sees it (waiting, working, limited, error, idle).
   const [sidebarLayout, setSidebarLayout] = createSignal<SidebarLayout | null>(null);
+  const [computerUsingBotIds, setComputerUsingBotIds] = createSignal<string[]>([]);
   const [activities, setActivities] = createSignal<Record<string, AgentActivity>>({});
   const [appInfo, setAppInfo] = createSignal<AppInfo | null>(null);
   const [agentStatus, setAgentStatus] = createSignal<AgentStatus>(FALLBACK_STATUS);
@@ -524,6 +525,10 @@ export function App() {
       .getEyesState?.()
       .then(setEyesState)
       .catch(() => undefined);
+    void window.openbot.computerUse
+      ?.getState()
+      .then((state) => setComputerUsingBotIds(state.sessions.map((s) => s.botId)))
+      .catch(() => undefined);
     return cleanup;
   });
 
@@ -587,6 +592,9 @@ export function App() {
         return;
       case "eyes-changed":
         setEyesState(event.state);
+        return;
+      case "computer-use-changed":
+        setComputerUsingBotIds(event.state.sessions.map((session) => session.botId));
         return;
       case "turn-started":
         clearRecentReply(event.botId);
@@ -1805,6 +1813,13 @@ export function App() {
                 folderActions={folderLayout() ? folderActions : undefined}
                 needsYouItems={needsYouItems()}
                 lookingBotIds={lookingBotIds()}
+                computerUsingBotIds={computerUsingBotIds()}
+                onStopComputerUse={(botId) =>
+                  void window.openbot.computerUse
+                    ?.stop({ botId })
+                    .then((state) => setComputerUsingBotIds(state.sessions.map((s) => s.botId)))
+                    .catch((error) => appendUiError(botId, error, "Stop failed"))
+                }
                 localProfile={localProfile()}
                 onSelectBot={selectBot}
                 onSelectChannels={() => {
