@@ -21,3 +21,16 @@ Stan: 13.11.2026. Żaden test odbioru z tej specyfikacji nie został uruchomiony
 | 1.9 | Brzeg: zaufane katalogi projektu | Skill z folderu projektu (np. `.agents/skills`) działa tylko gdy katalog jest na liście zaufanych ścieżek konfiguracji. | Skill poza zaufaną ścieżką → niedostępny / odrzucony; w zaufanej — widoczny. |
 
 **Dla kontraktu Hydry (skille):** encja `LocalSkill {id, name, description, version, createdAt, updatedAt, …}`, instalacja per agent `{botId, skillId, installedVersion, modifiedLocally}`, narzędzia agenta: `create_skill`, `list_local_skills`, `read_local_skill`, `revise_skill`, `install_local_skill`; zdarzenie zmiany biblioteki / instalacji dla UI.
+
+## 2. Serwery MCP (wiersz 25)
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 2.1 | Panel / dodanie | Człowiek dodaje **obcy** serwer MCP (adres / komenda startu / transport) w ustawieniach; serwer pojawia się na liście ze stanem (sprawdzanie / dostępny / błąd / wymaga logowania). | Dodać serwer MCP → widać go na liście; po restarcie nadal tam jest. |
+| 2.2 | Logowanie do MCP | Gdy serwer wymaga OAuth / klucza / sesji, program prowadzi logowanie; przy aktywnym logowaniu odmowa wywołania jest jasna (nie „zawieszenie”). Tokeny sesji MCP **nie** trafiają do logów. | Serwer z OAuth → po zalogowaniu stan „dostępny”; bez logowania agent nie dostaje narzędzi albo dostaje komunikat sign-in. |
+| 2.3 | Narzędzia dla agentów | Po udanym połączeniu (i kluczu, gdy potrzeba) narzędzia tego MCP są widoczne dla wskazanych agentów w kolejnej turze; Claude dostaje je zaraz po podaniu klucza API aplikacji MCP. | Po dodaniu MCP agent w następnej turze woła narzędzie serwera i dostaje wynik. |
+| 2.4 | Zgoda na narzędzie | Przy trybie „pytaj najpierw” wywołanie MCP wymaga zgody człowieka (Always allow / odmowa); Full access nie pyta przy każdym callu po pierwszej zgodzie na dostęp. | Ask first → karta zgody; Always allow → kolejne wywołanie bez karty; odmowa → agent nie dostaje wyniku narzędzia. |
+| 2.5 | TLS / sieć | Agent za korporacyjnym TLS dostaje certyfikaty systemowe, żeby MCP za inspection działało. | Za proxy z własnym CA → wywołanie MCP nie pada na „certificate”; bez CA — błąd TLS z czytelnym komunikatem. |
+| 2.6 | Brzeg: wyłączenie / usunięcie | Usunięcie lub wyłączenie serwera zabiera narzędzia agentom od następnej tury; trwające wywołanie kończy się błędem, nie cichym sukcesem. | Usunąć MCP w trakcie → kolejne tool-calle tego serwera zawodzą; lista narzędzi bez niego. |
+
+**Kontrakt (MCP):** `McpServer {id, name, transport, status, errorMessage?}`, metody add/update/remove/list, zdarzenie `mcp-servers-changed`, opcjonalnie per-bot enable; zgody tooli przez istniejący mechanizm approval.
