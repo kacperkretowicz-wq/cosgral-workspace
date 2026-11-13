@@ -256,6 +256,33 @@ async function direct(threadId, turnId, text, cwd) {
     complete(threadId, turnId, `DATA-RESULT ${JSON.stringify({ saved, path: got.path, sent })}`);
     return;
   }
+  // W3-BE1: Computer Use on a fake desktop driver (no real mouse or keyboard).
+  if (text.includes("COMPUTER WORK")) {
+    const shot = await use("cosgral_computer", "screenshot", {});
+    const listed = await use("cosgral_computer", "list_windows", {});
+    const target = listed.windows.find((window) => window.title === "COSGRAL test window");
+    const x = target.bounds.x + Math.floor(target.bounds.width / 2);
+    const y = target.bounds.y + Math.floor(target.bounds.height / 2);
+    const clicked = await use("cosgral_computer", "click", { x, y });
+    const typed = await use("cosgral_computer", "type_text", { text: "Hello from COSGRAL" });
+    const keys = await use("cosgral_computer", "press_keys", { keys: "ctrl+s" });
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({ shot, windows: listed.windows, target: { x, y }, clicked, typed, keys })}`,
+    );
+    return;
+  }
+  const attempt = /COMPUTER TRY (\w+) (\{.*\})/.exec(text);
+  if (attempt) {
+    const response = await call(threadId, turnId, attempt[1], JSON.parse(attempt[2]), "cosgral_computer");
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({ success: response.success, text: response.contentItems[0]?.text ?? "" })}`,
+    );
+    return;
+  }
   complete(threadId, turnId, "Stub: received");
 }
 process.stdin.setEncoding("utf8");
