@@ -1895,6 +1895,7 @@ export function App() {
               />
               <Show when={activePage() === "library"}>
                 <main class="w2-library">
+                  <h1>Library</h1>
                   <SkillsSettings />
                   <VaultPanel />
                   <TablesPanel />
@@ -1904,6 +1905,7 @@ export function App() {
               </Show>
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">
+                  <h1>Schedule</h1>
                   <RoutinePanel bots={botList()} />
                 </main>
               </Show>

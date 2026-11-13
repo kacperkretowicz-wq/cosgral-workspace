@@ -118,7 +118,7 @@ async function both(page: Page, out: string, name: string): Promise<void> {
   const style = await page.addStyleTag({ content: LIGHT_CSS });
   await page.waitForTimeout(250);
   await page.screenshot({ path: join(out, `${name}-light.png`) });
-  await style.evaluate((node) => node.remove());
+  await style.evaluate((node) => node.parentNode?.removeChild(node));
 }
 
 /** Screenshots of a scrolling element from top to bottom (at most 4 views). */
@@ -217,6 +217,10 @@ async function main(): Promise<void> {
     }
     await rail.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByRole("dialog").first().waitFor({ timeout: 10_000 });
+    await page
+      .getByRole("region", { name: "Voice settings" })
+      .waitFor({ timeout: 15_000 })
+      .catch(() => undefined);
     await scrolled(page, out, "20-settings", ".initial-setup-screen");
   } finally {
     await writeFile(join(out, "console.txt"), `${findings.join("\n")}\n`);

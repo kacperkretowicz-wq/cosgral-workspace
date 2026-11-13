@@ -507,3 +507,78 @@
   background: var(--openbot-accent-soft);
   color: var(--openbot-accent-text);
 }
+
+/* Marketplace and Remote desktop rows (W3-BE9) -------------------------------------------------------------- */
+
+.marketplace-filters {
+  grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(120px, 1fr)) auto;
+  align-items: end;
+}
+
+.marketplace-list > li {
+  padding: 0;
+}
+
+.w2-library .marketplace-item {
+  width: 100%;
+  height: auto;
+  display: grid;
+  justify-content: stretch;
+  justify-items: start;
+  gap: 2px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: 10px var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  line-height: var(--openbot-leading-md);
+  text-align: left;
+  white-space: normal;
+}
+
+.marketplace-item strong {
+  font-weight: var(--openbot-weight-medium);
+}
+
+.marketplace-item small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+.w2-library .marketplace-item:hover:not(:disabled) {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.w2-library .marketplace-item:active:not(:disabled) {
+  transform: none;
+}
+
+.marketplace-detail pre {
+  max-height: 280px;
+  overflow: auto;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  padding: var(--openbot-space-3);
+  font-size: var(--openbot-text-sm);
+  white-space: pre-wrap;
+}
+
+.remote-desktop-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  gap: var(--openbot-space-3);
+}
+
+.remote-desktop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}
+
+/* A list row that starts with a choice (radio or checkbox label) keeps its buttons together on the right. */
+:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]) > li > label:first-child) {
+  flex: 1 1 auto;
+}

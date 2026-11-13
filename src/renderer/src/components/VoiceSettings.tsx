@@ -149,10 +149,13 @@ export function VoiceSettings() {
       setError("Voice is unavailable in this build.");
       return;
     }
+    // W3-BE9: the Windows voice list comes from PowerShell and can take seconds; show the settings first.
+    void api
+      .listVoices()
+      .then(setVoices)
+      .catch(() => undefined);
     try {
-      const [next, list] = await Promise.all([api.getState(), api.listVoices()]);
-      setState(next);
-      setVoices(list);
+      setState(await api.getState());
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load voice.");
