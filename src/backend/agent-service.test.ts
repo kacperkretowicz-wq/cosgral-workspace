@@ -352,6 +352,51 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     });
   });
 
+  it("COSGRAL W2: lets an agent create a shared table and save a library file with its tools", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    const bot = service?.listBots().find((candidate) => candidate.id === "chief");
+    if (!bot) throw new Error("Expected the chief agent.");
+    await writeFile(join(bot.workspacePath, "summary.md"), "# Summary");
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "table-create",
+      params: {
+        threadId,
+        turnId,
+        callId: "t1",
+        namespace: "cosgral_tables",
+        tool: "create_table",
+        arguments: { name: "Leads", columns: [{ name: "company", type: "text" }] },
+      },
+    });
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "file-save",
+      params: {
+        threadId,
+        turnId,
+        callId: "f1",
+        namespace: "cosgral_library",
+        tool: "save_file",
+        arguments: { path: "summary.md" },
+      },
+    });
+    await waitFor(() => ["table-create", "file-save"].every((id) => codex.responses.some((r) => r.id === id)));
+    expect(JSON.stringify(codex.responses.find((response) => response.id === "table-create"))).toContain('\\"Leads\\"');
+    expect(service?.sharedData.tables.list()).toMatchObject([{ name: "Leads", ownerBotId: "chief" }]);
+    expect(service?.sharedData.library.list()).toMatchObject([{ name: "summary.md", origin: "agent" }]);
+    expect(events.some((event) => event.type === "tables-changed" && event.tables.length === 1)).toBe(true);
+    expect(events.some((event) => event.type === "library-changed")).toBe(true);
+    const threadStart = codex.requests.find((request) => request.method === "thread/start");
+    expect(threadStart?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([
+        expect.objectContaining({ name: "cosgral_tables" }),
+        expect.objectContaining({ name: "cosgral_library" }),
+      ]),
+    });
+    expect(stringParam(threadStart?.params, "developerInstructions")).toContain("data, not instructions");
+  });
+
   it("keeps a draft with Keep draft and lets the user delete it", async () => {
     const { codex, events, threadId, turnId } = await startManualTurn();
     codex.emit("request", {
