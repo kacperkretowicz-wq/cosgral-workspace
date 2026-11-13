@@ -165,7 +165,7 @@ export function InitialSetup(props: InitialSetupProps) {
   }
 
   const title = () => {
-    if (props.reviewing) return "Providers & permissions";
+    if (props.reviewing) return props.platform === "darwin" ? "Providers & permissions" : "Settings";
     if (route() === "local") return "Set up this computer";
     if (route() === "remote") return "Connect to a host";
     return "Where will COSGRAL Workspace run?";
@@ -173,7 +173,9 @@ export function InitialSetup(props: InitialSetupProps) {
 
   const description = () => {
     if (props.reviewing) {
-      return "Choose the default provider for local agents and review macOS permissions.";
+      return props.platform === "darwin"
+        ? "Choose the default provider for local agents and review macOS permissions."
+        : "Default provider for local agents, language, notifications and voice.";
     }
     if (route() === "local") {
       return "Agents, conversations, and files stay on this computer.";
@@ -220,10 +222,6 @@ export function InitialSetup(props: InitialSetupProps) {
             <Dialog.Description as="p" id="initial-setup-description" class="initial-setup-intro">
               {description()}
             </Dialog.Description>
-            <Show when={props.reviewing}>
-              <AppSettingsW3 />
-              <VoiceSettings />
-            </Show>
           </header>
 
           <Show when={!props.reviewing && route() === null}>
@@ -312,6 +310,10 @@ export function InitialSetup(props: InitialSetupProps) {
                     </For>
                   </div>
                 </section>
+              </Show>
+              <Show when={props.reviewing}>
+                <AppSettingsW3 />
+                <VoiceSettings />
               </Show>
             </div>
           </Show>

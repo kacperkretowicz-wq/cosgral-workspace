@@ -1,0 +1,361 @@
+/* COSGRAL W3-BE9: one look for the rail pages and the settings sections.
+   Several W3 screens (Marketplace, Workflows, Remote desktop, Voice, application settings) were written as plain
+   semantic HTML. Tailwind's preflight removes the browser's own styles, so they rendered as bare text. This layer
+   gives that HTML the look of the shared primitives (ui-card, ui-heading, ui-native-select, ui-button) that the
+   Phone and Providers pages already use.
+   Everything here is wrapped in :where() so it has no specificity: any component class (and every ui-* primitive)
+   still wins, and the rules only fill in what plain elements are missing. Tokens only; no new colors. */
+
+/* Page frame ------------------------------------------------------------------------------------------------- */
+
+.w2-library {
+  grid-template-columns: minmax(0, 880px);
+  gap: var(--openbot-space-4);
+  padding: 44px 40px 56px;
+  font-size: var(--openbot-text-md);
+  line-height: var(--openbot-leading-md);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(h1, h2, h3, h4) {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: var(--openbot-tracking-tight);
+}
+
+:where(.w2-library) :where(h1) {
+  font-size: var(--openbot-text-2xl);
+  line-height: var(--openbot-leading-2xl);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(h2) {
+  font-size: var(--openbot-text-xl);
+  line-height: var(--openbot-leading-xl);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(h3, h4) {
+  font-size: var(--openbot-text-lg);
+  line-height: var(--openbot-leading-lg);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(p) {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--openbot-text-secondary);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where([role="alert"]) {
+  color: var(--openbot-danger);
+}
+
+/* Sections: a top-level section of a page reads as one card, like ui-card on Phone and Providers. Nested
+   sections stay flat (no cards inside cards); they are separated by space only. */
+:where(.w2-library) > :where(section, form, article):where(:not(.ui-card, .w2-panel)),
+:where(.w2-library) > :where(div:not([class])) > :where(section, form, article):where(:not(.ui-card, .w2-panel)),
+.w2-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--openbot-space-3);
+  min-width: 0;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(section section, section form) {
+  display: grid;
+  gap: var(--openbot-space-3);
+  min-width: 0;
+}
+
+/* Form controls -------------------------------------------------------------------------------------------- */
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(label) {
+  display: grid;
+  gap: var(--openbot-space-1-5);
+  min-width: 0;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+  line-height: var(--openbot-leading-sm);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(label:has(> input[type="checkbox"], > input[type="radio"])) {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-regular);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block)
+  :where(
+    input:not(.ui-input, [type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]),
+    select:not(.ui-native-select),
+    textarea:not(.ui-textarea)
+  ) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--openbot-control-md);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  outline: 0;
+  background: var(--openbot-bg-control);
+  padding-inline: var(--openbot-space-3);
+  color: var(--openbot-text-primary);
+  font: inherit;
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-regular);
+  transition:
+    border-color var(--openbot-duration-normal) ease,
+    box-shadow var(--openbot-duration-normal) ease;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(textarea:not(.ui-textarea)) {
+  height: auto;
+  min-height: 76px;
+  resize: vertical;
+  padding-block: var(--openbot-space-2);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block)
+  :where(input:not([type="checkbox"], [type="radio"]), select, textarea):focus-visible {
+  border-color: var(--openbot-border-focus);
+  box-shadow: var(--openbot-focus-ring);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block) :where(input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block, .composer-wrap)
+  :where(input[type="checkbox"], input[type="radio"]) {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--openbot-accent);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(input::placeholder, textarea::placeholder) {
+  color: var(--openbot-text-placeholder);
+}
+
+/* Buttons: plain buttons look like the secondary ui-button. */
+:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)) {
+  min-width: 0;
+  height: var(--openbot-control-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: var(--openbot-space-1-5);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  padding: 0 var(--openbot-space-3);
+  color: var(--openbot-text-secondary);
+  font: inherit;
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--openbot-duration-normal) ease,
+    color var(--openbot-duration-normal) ease,
+    transform var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):hover:not(:disabled) {
+  background: var(--openbot-bg-control-hover);
+  color: var(--openbot-text-primary);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):focus-visible {
+  outline: 0;
+  box-shadow: var(--openbot-focus-ring);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+/* A primitive button inside a grid card keeps its own width instead of stretching across the card. */
+:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block) :where(.ui-button:not(.ui-button-full)) {
+  justify-self: start;
+}
+
+/* A row of controls (a div that holds only buttons, or label + controls side by side). */
+:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> button)) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--openbot-space-2);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> label + label)) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--openbot-space-3);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> label + label) > label) {
+  flex: 1 1 180px;
+}
+
+/* Lists and tables ----------------------------------------------------------------------------------------- */
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) > :where(li) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-2) var(--openbot-space-3);
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--openbot-border);
+  color: var(--openbot-text-primary);
+  overflow-wrap: anywhere;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) > :where(li:first-child) {
+  border-top: 0;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(table),
+.cosgral-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--openbot-text-md);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(caption),
+.cosgral-settings-table caption {
+  padding-bottom: var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  text-align: left;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(th, td),
+.cosgral-settings-table :where(th, td) {
+  padding: var(--openbot-space-2) var(--openbot-space-3) var(--openbot-space-2) 0;
+  border-top: 1px solid var(--openbot-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(thead th),
+.cosgral-settings-table :where(thead th) {
+  border-top: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form) :where(tbody th),
+.cosgral-settings-table :where(tbody th) {
+  color: var(--openbot-text-primary);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.cosgral-settings-table :where(thead th:not(:first-child), td) {
+  width: 96px;
+  text-align: center;
+}
+
+/* Disclosure (details/summary) reads as a quiet control, not a browser triangle. */
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(summary) {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1) var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+  list-style: none;
+  cursor: pointer;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(summary)::-webkit-details-marker {
+  display: none;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(summary)::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--openbot-duration-fast) ease;
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(details[open] > summary)::before {
+  transform: rotate(45deg);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(summary):hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-secondary);
+}
+
+:where(.w2-library, .w2-panel, .cosgral-form, .composer-wrap) :where(summary):focus-visible {
+  outline: 0;
+  box-shadow: var(--openbot-focus-ring);
+}
+
+/* Settings sections inside the settings dialog ------------------------------------------------------------- */
+
+.cosgral-settings-block {
+  display: grid;
+  gap: var(--openbot-space-3);
+  margin-top: var(--openbot-space-4);
+  padding: var(--openbot-space-4);
+  font-size: var(--openbot-text-md);
+  line-height: var(--openbot-leading-md);
+  text-align: left;
+}
+
+.cosgral-settings-field {
+  max-width: 240px;
+}
+
+.cosgral-settings-check {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+}
+
+.cosgral-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--openbot-space-2);
+}
+
+.cosgral-settings-block > :where(h2) {
+  font-size: var(--openbot-text-lg);
+  line-height: var(--openbot-leading-lg);
+}

@@ -12,7 +12,7 @@ export function VoiceSettingsView(props: {
 }) {
   const settings = () => props.state.settings;
   return (
-    <section aria-label="Voice settings">
+    <section class="ui-card cosgral-settings-block cosgral-form" aria-label="Voice settings">
       <h2>Voice</h2>
       <p>Audio stays on this computer. The first download requires approval on a Needs you card.</p>
       <label>

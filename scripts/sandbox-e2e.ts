@@ -550,7 +550,7 @@ async function main(): Promise<void> {
         const added = findings.slice(before).filter((finding) => finding.level !== "warning");
         assert(added.length === 0, `console: ${added.map((finding) => finding.text.slice(0, 160)).join(" | ")}`);
         // Settings is a full-screen dialog: leave it again.
-        const settings = page.getByRole("dialog", { name: "Providers & permissions" });
+        const settings = page.getByRole("dialog", { name: /^(Settings|Providers & permissions)$/ });
         if (await settings.count()) {
           await settings.getByRole("button", { name: "Cancel" }).click();
           await settings.waitFor({ state: "detached", timeout: 10_000 });
