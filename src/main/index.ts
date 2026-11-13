@@ -151,6 +151,7 @@ import {
   RemoteServerManager,
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
+import { enforceSingleInstance } from "./single-instance";
 import { TeamStore } from "./team-store";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
@@ -166,7 +167,8 @@ if (!app.isPackaged && process.env.COSGRAL_FAKE_CAMERA === "1") {
   app.commandLine.appendSwitch("use-fake-device-for-media-stream");
 }
 if (process.platform === "win32") app.setAppUserModelId("pl.cosgral.workspace");
-const hasSingleInstanceLock = app.requestSingleInstanceLock();
+// COSGRAL H3: a duplicate instance exits at once (app.quit() here took ~6 s on Windows).
+const hasSingleInstanceLock = enforceSingleInstance(app);
 const appVariant = readAppVariant(process.env.OPENBOT_APP_VARIANT, app.isPackaged);
 const appIconPath = resolveAppIconPath({
   variant: appVariant,
