@@ -54,7 +54,7 @@ import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
-import { RemoteDesktopPage } from "./components/RemoteDesktopPage";
+import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { RoutinePanel } from "./components/RoutinePanel";
 import { ServerRail } from "./components/ServerRail";
 import { Sidebar } from "./components/Sidebar";
@@ -1806,6 +1806,7 @@ export function App() {
               ]}
               style={`--left-panel-width: ${leftPanelCompact() ? LEFT_PANEL_COMPACT : leftPanelWidth()}px`}
             >
+              <RemoteDesktopSafety />
               <Show when={appInfo()?.platform === "darwin" || appInfo()?.platform === "win32"}>
                 <ServerRail
                   platform={appInfo()?.platform ?? "darwin"}

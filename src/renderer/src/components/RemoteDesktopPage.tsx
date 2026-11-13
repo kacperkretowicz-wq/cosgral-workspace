@@ -3,7 +3,6 @@ import type {
   RemoteDesktopFrame,
   RemoteDesktopInput,
   RemoteDesktopMode,
-
 } from "@openbot/contracts/ipc";
 import {
   emptyRemoteDesktopClientState,
@@ -11,6 +10,54 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+
+export function RemoteDesktopSafetyBanner(props: { count: number; onStop: () => void }) {
+  return (
+    <Show when={props.count > 0}>
+      <aside class="remote-desktop-safety" aria-label="Remote desktop sharing">
+        <span>Remote viewer connected</span>{" "}
+        <button type="button" class="remote-desktop-stop" onClick={props.onStop}>
+          Stop all remote sessions
+        </button>
+      </aside>
+    </Show>
+  );
+}
+
+export function RemoteDesktopSafety() {
+  const [count, setCount] = createSignal(0);
+  const [error, setError] = createSignal("");
+  onSettled(() => {
+    const api = window.openbot.remoteDesktop;
+    if (!api) return;
+    void api.host
+      .getState()
+      .then((state) => setCount(state.sessions.length))
+      .catch((e) => setError(String(e)));
+    return window.openbot.agent.onEvent((event) => {
+      if (event.type === "remote-desktop-host-changed") setCount(event.state.sessions.length);
+    });
+  });
+  return (
+    <>
+      <RemoteDesktopSafetyBanner
+        count={count()}
+        onStop={() =>
+          void window.openbot.remoteDesktop?.host
+            .stop()
+            .then((state) => {
+              setCount(state.sessions.length);
+              setError("");
+            })
+            .catch((e) => setError(e instanceof Error ? e.message : "Stop failed."))
+        }
+      />
+      <Show when={error()}>
+        <p role="alert">{error()}</p>
+      </Show>
+    </>
+  );
+}
 
 export function RemoteDesktopToken(props: { token: string; onClose: () => void }) {
   const [message, setMessage] = createSignal("");
@@ -128,6 +175,7 @@ export function RemoteDesktopPage() {
         if (event.state.phase !== "connected") {
           lastSeq = -1;
           lastFrameAt = 0;
+          canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
         }
       }
     });
@@ -257,9 +305,7 @@ export function RemoteDesktopPage() {
                     onChange={(e) => {
                       const policy = e.currentTarget.value;
                       if (api && (policy === "ask" || policy === "allow" || policy === "block"))
-                        void hostAction(() =>
-                          api.host.setPeerPolicy({ peerId: peer.id, policy }),
-                        );
+                        void hostAction(() => api.host.setPeerPolicy({ peerId: peer.id, policy }));
                     }}
                   >
                     <option value="ask">Ask</option>
@@ -329,6 +375,7 @@ export function RemoteDesktopPage() {
         <Show when={client().error}>
           <p role="alert">{client().error}</p>
         </Show>
+        <p>In control mode, focus the screen to send keys. Press F10 to leave the remote screen.</p>
         <canvas
           ref={canvas}
           class="remote-desktop-canvas"
@@ -354,6 +401,11 @@ export function RemoteDesktopPage() {
           }}
           onKeyDown={(e) => {
             if (client().mode !== "control" || client().phase !== "connected") return;
+            if (e.key === "F10") {
+              e.preventDefault();
+              e.currentTarget.blur();
+              return;
+            }
             e.preventDefault();
             if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) send({ type: "text", text: e.key });
             else {

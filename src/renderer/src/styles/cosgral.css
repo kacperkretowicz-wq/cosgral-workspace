@@ -254,6 +254,11 @@
   display: block;
 }
 
+.workflow-drag {
+  cursor: grab;
+  touch-action: none;
+}
+
 .remote-desktop-page section {
   margin-block: 24px;
 }
@@ -269,6 +274,16 @@
   height: auto;
   background: #17171b;
   margin-block: 12px;
+}
+
+.remote-desktop-safety {
+  position: fixed;
+  z-index: 1000;
+  top: 12px;
+  right: 12px;
+  padding: 10px;
+  background: var(--openbot-bg-surface-raised);
+  border: 1px solid var(--openbot-danger);
 }
 
 /* Sidebar folders ---------------------------------------------------------
