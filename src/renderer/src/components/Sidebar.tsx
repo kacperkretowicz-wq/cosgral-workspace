@@ -68,6 +68,7 @@ interface SidebarProps {
   /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
   folderActions?: SidebarFolderActions;
   onSelectBot: (botId: string) => void;
+  onSelectChannels?: () => void;
   onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
@@ -588,6 +589,16 @@ export function Sidebar(props: SidebarProps) {
         ]}
         onScroll={() => updateScrollFade()}
       >
+        <Show when={props.onSelectChannels && !props.compact}>
+          <section class="sidebar-chat-group">
+            <header>
+              <h2>Channels</h2>
+            </header>
+            <Button type="button" class="bot-row" onClick={() => props.onSelectChannels?.()}>
+              Browse channels
+            </Button>
+          </section>
+        </Show>
         <Show
           when={filteredBots().length > 0 || filteredPeople().length > 0}
           fallback={

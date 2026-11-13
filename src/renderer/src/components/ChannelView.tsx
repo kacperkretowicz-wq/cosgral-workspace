@@ -126,7 +126,7 @@ export function ChannelView(props: {
           <label for="channel-message-input">New message to channel lead</label>
           <textarea
             id="channel-message-input"
-            maxLength={32000}
+            maxlength={32000}
             value={text()}
             onInput={(e) => setText(e.currentTarget.value)}
           />

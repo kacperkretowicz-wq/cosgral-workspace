@@ -42,6 +42,7 @@ import { createEffect, createMemo, createSignal, createStore, flush, onSettled, 
 import { AccountLogin } from "./components/AccountLogin";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
+import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
@@ -206,6 +207,7 @@ export function App() {
     sessions: [],
   });
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
+  const [channelsOpen, setChannelsOpen] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
   const [settingsRequest, setSettingsRequest] = createSignal<{
     botId: string;
@@ -932,6 +934,7 @@ export function App() {
   }
 
   function selectBot(botId: string) {
+    setChannelsOpen(false);
     setActivePage("agents");
     setAgentPickerOpen(false);
     const directMemberId = activeDirectMemberId();
@@ -1785,8 +1788,17 @@ export function App() {
                 lookingBotIds={lookingBotIds()}
                 localProfile={localProfile()}
                 onSelectBot={selectBot}
+                onSelectChannels={() => {
+                  setActivePage("agents");
+                  setActiveDirectMemberId(null);
+                  setAgentPickerOpen(false);
+                  setChannelsOpen(true);
+                }}
                 onSelectNeedsYou={selectBot}
-                onSelectPerson={(memberId) => void selectDirectMember(memberId)}
+                onSelectPerson={(memberId) => {
+                  setChannelsOpen(false);
+                  void selectDirectMember(memberId);
+                }}
                 onCreateBot={openAgentPicker}
                 onEditBot={editBot}
                 onDeleteBot={deleteBot}
@@ -1840,7 +1852,10 @@ export function App() {
                   />
                 )}
               </Show>
-              <Show when={activePage() === "agents" && !activeDirectMember()}>
+              <Show when={activePage() === "agents" && channelsOpen()}>
+                <ChannelWorkspace bots={botList()} />
+              </Show>
+              <Show when={activePage() === "agents" && !activeDirectMember() && !channelsOpen()}>
                 <Conversation
                   agentStatus={agentStatus()}
                   bot={activeBot()}
