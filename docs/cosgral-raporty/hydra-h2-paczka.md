@@ -42,8 +42,8 @@
 
 ## Środowisko testowe i izolacja
 
-- **Worktree:** `C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\desktop-hydra`
-- **Profil piaskownicy:** `C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\desktop-hydra\sandbox-h2`
+- **Worktree:** `Shared\cosgral-wt\desktop-hydra`
+- **Profil piaskownicy:** `Shared\cosgral-data\desktop-hydra\sandbox-h2`
   - `USERPROFILE`: `...\sandbox-h2\home`
   - `APPDATA`: `...\sandbox-h2\home\AppData\Roaming`
   - `LOCALAPPDATA`: `...\sandbox-h2\home\AppData\Local`
@@ -61,7 +61,7 @@
 ## Pliki dowodowe poza repozytorium
 
 Wszystkie artefakty testowe i logi znajdują się w:  
-`C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\desktop-hydra\`
+`Shared\cosgral-data\desktop-hydra\`
 - `verify-package-h2.ps1` – skrypt weryfikujący z procedurą pomiarową
 - `sandbox-h2\` – izolowane katalogi użytkownika i profil danych
 - `dist\` (w worktree) – zbudowana paczka NSIS oraz katalog `win-unpacked` (ignorowane przez git)

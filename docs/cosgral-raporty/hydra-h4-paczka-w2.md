@@ -53,8 +53,8 @@
 
 ## Środowisko testowe i izolacja
 
-- **Worktree:** `C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\desktop-hydra`
-- **Piaskownice testowe:** `C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\desktop-hydra\`
+- **Worktree:** `Shared\cosgral-wt\desktop-hydra`
+- **Piaskownice testowe:** `Shared\cosgral-data\desktop-hydra\`
   - `sandbox-h4` — pomiary czasu drugiej instancji
   - `sandbox-h4-turn` — pełny start paczki i tura na atrapie Codex
   - `sandbox-h4-memory` — test odbioru pamięci agentów
@@ -72,7 +72,7 @@
 ## Pliki dowodowe poza repozytorium
 
 Wszystkie artefakty testowe i logi znajdują się w:  
-`C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\desktop-hydra\`
+`Shared\cosgral-data\desktop-hydra\`
 - `run-sandbox-h4.ps1` — sterownik uruchomienia paczki i tury CDP
 - `verify-package-h4.ps1` — procedura 3 pomiarów wyjścia duplikatu
 - `run-smoke-tests-h4.ps1` — sterownik testów smoke pamięci i kanałów

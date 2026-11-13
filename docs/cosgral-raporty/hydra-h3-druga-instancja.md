@@ -82,7 +82,7 @@ Wszystkie pomiary poniżej limitu 3 000 ms.
 ## Wynik `bun scripts/verify-windows-package.ts`
 
 ```text
-Verified C:\Users\x1 Yoga\OpenBot\Shared\cosgral-wt\desktop-hydra\dist\win-unpacked
+Verified Shared\cosgral-wt\desktop-hydra\dist\win-unpacked
 COSGRAL Workspace 0.2.0 · Windows x64 · metadata · licenses · ASAR integrity · hardened fuses · no bundled Claude CLI · launch
 ```
 Kod wyjścia: **0** (Sukces).

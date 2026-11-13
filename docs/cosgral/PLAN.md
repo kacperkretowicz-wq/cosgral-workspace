@@ -101,7 +101,7 @@
 ## Narzędzia
 
 ```powershell
-$env:PATH = "C:\Users\x1 Yoga\OpenBot\Shared\tools\bun;C:\Users\x1 Yoga\OpenBot\Shared\tools\node;C:\Users\x1 Yoga\OpenBot\Shared\tools\git\cmd;$env:PATH"
+$env:PATH = "Shared\tools\bun;Shared\tools\node;Shared\tools\git\cmd;$env:PATH"
 bun install; bun run typecheck:node; bun run build
 ```
 
@@ -155,3 +155,17 @@ Uruchamianie na próbę zawsze z osobnymi `USERPROFILE`, `APPDATA` i `LOCALAPPDA
 4. Każdą zmianę pliku z bazy dopisujemy do tabeli w `COSGRAL-CHANGES.md`.
 5. Gotowe = testy + dowód (log lub zrzut) + raport w `docs/cosgral-raporty/<rola>-<temat>.md`. Commit z trailerem `Co-authored-by: OpenBot <335604065+openbotgit[bot]@users.noreply.github.com>`. Bez push, dopóki właściciel nie da tokenu.
 6. Serwery tylko na loopback, sekrety poza repo i czatem.
+
+## Decyzje lidera do W3 (13.11.2026, na prośbę właściciela: lider odpowiada na pytania i decyduje)
+
+Odpowiedzi na pytania otwarte z `spec-w3.md` §11 i na decyzje KK Spajacza (dok i wyspa).
+
+1. **Zdalny pulpit (wiersz 33):** własny protokół przez WebSocket z uwierzytelnieniem (token), obraz z `desktopCapturer`, sterowanie przez istniejący sterownik Computer Use. Bez VNC i bez RDP jako zależności. Dojście do hosta: loopback, sieć lokalna albo tunel, który zapewnia osoba (np. VPN). Bez konta OpenBota. Zgoda zdalnego pulpitu jest osobna od Computer Use (spec 2.4), Stop zawsze lokalny.
+2. **Głos (34):** najpierw lokalnie. Odczyt: głosy systemowe Windows. Mowa na tekst: lokalny model (whisper.cpp), pobierany na życzenie, bez wysyłania dźwięku poza komputer. Usługa online tylko jako późniejsza opcja, wyłączona domyślnie.
+3. **Publiczny adres webhooków i klient webowy:** poza W3. Zostaje loopback + tunel osoby. Bez przekaźnika.
+4. **Zespół (36):** W3 = loopback, sieć lokalna i tunel osoby. Zdalne zaproszenia przez internet później.
+5. **Marketplace (41):** katalog lokalny z własnymi treściami (seed w repo). Wtyczki z własnymi połączeniami do W4.
+6. **Macierz powiadomień (8.2):** zdarzenia: potrzebna decyzja (Needs you), zatwierdzenie, szkic do wysłania, prośba o Vault, przejęcie przeglądarki, zgoda Computer Use, zadanie kanału gotowe / nieudane / wstrzymane, nowa wiadomość, błąd rutyny, limit dostawcy lub model zapasowy. Backend może dopisać zdarzenia, nie usuwa.
+7. **Dok i wyspa (KK, 6 decyzji):** wszystkie zatwierdzone: dok widoczny = zamknięcie okna nie kończy programu; kolejność stanów wyspy przejęcie > zatwierdzenie > pytanie > błąd > wiadomość > pracuje; pusta wyspa się chowa; „nowa wiadomość” tylko bez fokusu; wyspa zawsze na wierzchu, dok nie; tylko ten komputer.
+8. **Przepływy (28):** KAPI (silnik i kontrakt `ipc-workflows.ts`), potem UI robi płótno. **Marketplace:** Backend Expert po W3-BE2.
+9. **Repo publiczne:** ścieżka profilu Windows usunięta z dokumentów lokalnie (commit lidera). Push i zmiana domyślnej gałęzi na GitHubie nie są robione bez właściciela. Zrzuty ekranu i skrypty piaskownicy nie wchodzą do repo.

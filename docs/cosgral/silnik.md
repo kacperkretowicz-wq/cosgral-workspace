@@ -94,7 +94,7 @@ Każdy punkt ma kryterium odbioru. Kolejność odpowiada falom z planu.
 Worktree `Shared\cosgral-wt\desktop-backend`, gałąź `team/backend/b1-local-core` od `23ca29fa9`. Logi: `Shared\cosgral-data\desktop-backend\logs\`.
 
 ```powershell
-$env:PATH = "C:\Users\x1 Yoga\OpenBot\Shared\tools\bun;C:\Users\x1 Yoga\OpenBot\Shared\tools\node;C:\Users\x1 Yoga\OpenBot\Shared\tools\git\cmd;$env:PATH"
+$env:PATH = "Shared\tools\bun;Shared\tools\node;Shared\tools\git\cmd;$env:PATH"
 bun install                  # 560 s, EXIT 0
 bun run typecheck:node       # 31 s, EXIT 0
 bun run typecheck:renderer   # 43 s, EXIT 0
@@ -123,7 +123,7 @@ bun run build                # 28 s, EXIT 0
 - **Uwaga do procedury piaskownicy w planie:** Electron wylicza `appData` jako `%USERPROFILE%\AppData\Roaming`, a nie z `%APPDATA%`. Bez folderów `AppData\Roaming` i `AppData\Local` wewnątrz udawanego `USERPROFILE` start kończy się błędem `Failed to get 'appData' path`. Działający układ:
 
 ```powershell
-$sb = "C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\<rola>\sandbox\home"
+$sb = "Shared\cosgral-data\<rola>\sandbox\home"
 New-Item -ItemType Directory -Force "$sb\AppData\Roaming", "$sb\AppData\Local\Temp" | Out-Null
 $env:USERPROFILE = $sb; $env:APPDATA = "$sb\AppData\Roaming"; $env:LOCALAPPDATA = "$sb\AppData\Local"
 $env:TEMP = "$sb\AppData\Local\Temp"; $env:TMP = $env:TEMP

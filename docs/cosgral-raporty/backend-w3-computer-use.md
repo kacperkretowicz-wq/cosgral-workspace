@@ -111,7 +111,7 @@ Ta rozmowa to wątek kanału działający obok głównego czatu właściciela. W
 - gotowy jest skrypt `scripts/computer-use-desktop-smoke.ts`. Otwiera własne małe okno z polem tekstowym (na wierzchu), steruje tylko nim (`scopeWindowHandle`), klika w pole, wpisuje tekst sprawdzany przez plik, robi Stop w trakcie i sprawdza odmowę punktu poza oknem. Bez `COSGRAL_ALLOW_REAL_DESKTOP=yes` nic nie robi. **Do uruchomienia** w głównym czacie albo przez Testera, gdy nikt nie używa komputera:
 
 ```powershell
-$env:COSGRAL_COMPUTER_SANDBOX = "C:\Users\x1 Yoga\OpenBot\Shared\cosgral-data\desktop-backend\sandbox-w3-desktop"
+$env:COSGRAL_COMPUTER_SANDBOX = "Shared\cosgral-data\desktop-backend\sandbox-w3-desktop"
 $env:COSGRAL_ALLOW_REAL_DESKTOP = "yes"
 bun build scripts/computer-use-desktop-smoke.ts --target=node --format=cjs --outfile "$env:COSGRAL_COMPUTER_SANDBOX\desktop-smoke.cjs"
 node "$env:COSGRAL_COMPUTER_SANDBOX\desktop-smoke.cjs"
