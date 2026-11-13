@@ -149,6 +149,7 @@ import { isObject, requireString } from "./ipc/validation";
 import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
+import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
 import { RemoteMacManager } from "./remote-mac";
@@ -818,6 +819,8 @@ function registerIpcHandlers(
       await initializeAgent();
     },
   });
+  // COSGRAL W3: the local Marketplace (catalog of our own skills and agents).
+  registerMarketplaceIpc(() => service.marketplace);
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);

@@ -81,6 +81,7 @@ import type {
   OpenLibraryFileInput,
   SaveChatAttachmentInput,
 } from "./ipc-library";
+import type { MarketplaceDesktopApi } from "./ipc-marketplace";
 import type {
   AddMcpServerInput,
   AgentMcpServerSetting,
@@ -596,6 +597,8 @@ export interface OpenBotDesktopApi {
   appSettings?: AppSettingsDesktopApi;
   /** COSGRAL W3 onboarding (this computer only). Optional until every renderer mock implements it. */
   onboarding?: OnboardingDesktopApi;
+  /** COSGRAL W3 local Marketplace (this computer only). Optional until every renderer mock implements it. */
+  marketplace?: MarketplaceDesktopApi;
 }
 
 /**

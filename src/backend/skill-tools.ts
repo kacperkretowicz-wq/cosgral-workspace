@@ -6,6 +6,14 @@ import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { SKILL_LIMITS, type SkillInstall } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { z } from "zod";
+import type { CardContext } from "./action-cards";
+import {
+  handleMarketplaceTool,
+  MARKETPLACE_INSTRUCTIONS,
+  MARKETPLACE_TOOL_NAMES,
+  MARKETPLACE_TOOL_SPECS,
+  type MarketplaceToolHost,
+} from "./marketplace-tools";
 import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
 import type { InstalledSkillSummary, SkillLibrary, SkillSource } from "./skill-library";
 
@@ -50,12 +58,15 @@ export const SKILLS_TOOL_SPECS: Array<{ name: string; description: string; schem
       "Install a library skill for yourself (latest version unless you give one), or move your copy to the latest or a given version. A copy you changed is never replaced unless overwriteLocalChanges is true.",
     schema: { name, version: version.optional(), overwriteLocalChanges: z.boolean().optional() },
   },
+  // COSGRAL W3: search the local Marketplace and suggest an item (installs only after the person approves).
+  ...MARKETPLACE_TOOL_SPECS,
 ];
 
 export const SKILLS_DYNAMIC_TOOLS = {
   type: "namespace",
   name: SKILLS_NAMESPACE,
-  description: "Create, revise, read and install reusable skills from this computer's local skill library.",
+  description:
+    "Create, revise, read and install reusable skills from this computer's local skill library, and search or suggest ready items from the local Marketplace.",
   tools: SKILLS_TOOL_SPECS.map((spec) => ({
     type: "function",
     name: spec.name,
@@ -68,12 +79,15 @@ export interface SkillToolContext {
   botId: string;
   workspacePath: string;
   sharedRoot: string;
+  /** COSGRAL W3: the turn, for the confirm card of a Marketplace suggestion. */
+  card?: CardContext;
 }
 
 /** Instructions that tell an agent about its installed skills (direct and channel threads). */
 export function skillInstructions(skills: InstalledSkillSummary[]): string {
   const lines = [
     `Reusable procedures live in this computer's skill library; use ${SKILLS_NAMESPACE} to list, read, create, revise and install them. When the user asks to save a workflow as a skill, or corrects how you follow one of your skills, create or revise it there. Read a skill's SKILL.md before you follow it.`,
+    MARKETPLACE_INSTRUCTIONS,
   ];
   if (skills.length) {
     lines.push("Your installed skills:");
@@ -86,14 +100,19 @@ export function skillInstructions(skills: InstalledSkillSummary[]): string {
 
 export class SkillTools {
   readonly #library: SkillLibrary;
+  readonly #marketplace: () => MarketplaceToolHost | null;
 
-  constructor(library: SkillLibrary) {
+  constructor(library: SkillLibrary, marketplace: () => MarketplaceToolHost | null = () => null) {
     this.#library = library;
+    this.#marketplace = marketplace;
   }
 
   async handleDynamicTool(params: DynamicToolCallParams, context: SkillToolContext): Promise<DynamicToolResult> {
     try {
       const args = isDynamicRecord(params.arguments) ? params.arguments : {};
+      if (MARKETPLACE_TOOL_NAMES.has(params.tool)) {
+        return textResult(await handleMarketplaceTool(this.#marketplace(), params.tool, args, context));
+      }
       switch (params.tool) {
         case "list_local_skills":
           return textResult({ skills: await this.#list(context.botId) });

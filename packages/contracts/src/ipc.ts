@@ -10,6 +10,7 @@ export * from "./ipc-desktop-apis";
 export * from "./ipc-dock";
 export * from "./ipc-eyes";
 export * from "./ipc-library";
+export * from "./ipc-marketplace";
 export * from "./ipc-mcp";
 export * from "./ipc-memory";
 export * from "./ipc-providers";
