@@ -43,7 +43,6 @@ import { AccountLogin } from "./components/AccountLogin";
 import { OnboardingW3Gate } from "./components/AppSettingsW3";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
-import { MarketplacePage } from "./components/MarketplacePage";
 import { Conversation } from "./components/Conversation";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
@@ -51,6 +50,7 @@ import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
 import { LibraryPanel } from "./components/LibraryPanel";
+import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
@@ -61,9 +61,10 @@ import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
 import { VaultPanel } from "./components/VaultPanel";
+import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
-import { needsYouItemsFromCards } from "./needs-you";
 import { selectIslandCard } from "./island-selection";
+import { needsYouItemsFromCards } from "./needs-you";
 import {
   addCard,
   approvalCard,
@@ -228,7 +229,9 @@ export function App() {
   } | null>(null);
   // COSGRAL W1: every open question/approval card, oldest first. The backend keeps them until resolved.
   const [pendingCards, setPendingCards] = createSignal<PendingCard[]>([]);
-  const [islandTarget, setIslandTarget] = createSignal<Extract<AgentEvent, { type: "island-open-request" }> | null>(null);
+  const [islandTarget, setIslandTarget] = createSignal<Extract<AgentEvent, { type: "island-open-request" }> | null>(
+    null,
+  );
   // COSGRAL W1: the row state of each agent as the backend sees it (waiting, working, limited, error, idle).
   const [sidebarLayout, setSidebarLayout] = createSignal<SidebarLayout | null>(null);
   const [computerUsingBotIds, setComputerUsingBotIds] = createSignal<string[]>([]);
@@ -1903,8 +1906,21 @@ export function App() {
                   <RoutinePanel bots={botList()} />
                 </main>
               </Show>
-              <Show when={activePage() === "marketplace"}><MarketplacePage bots={botList()} /></Show>
-              <Show when={activePage() !== "agents" && activePage() !== "library" && activePage() !== "schedule" && activePage() !== "marketplace"}>
+              <Show when={activePage() === "marketplace"}>
+                <MarketplacePage bots={botList()} />
+              </Show>
+              <Show when={activePage() === "workflows"}>
+                <WorkflowsPage />
+              </Show>
+              <Show
+                when={
+                  activePage() !== "agents" &&
+                  activePage() !== "library" &&
+                  activePage() !== "schedule" &&
+                  activePage() !== "marketplace" &&
+                  activePage() !== "workflows"
+                }
+              >
                 <ComingSoon title={activePageTitle()} />
               </Show>
               <Show when={activePage() === "agents" ? activeDirectMember() : undefined} keyed>
