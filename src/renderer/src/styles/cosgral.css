@@ -214,6 +214,16 @@
   color: var(--openbot-danger);
 }
 
+.computer-use-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px 8px 48px;
+  color: var(--openbot-warning);
+  font-size: 12px;
+}
+
 /* Sidebar folders ---------------------------------------------------------
    Folders sit above the agents of their level and read as quiet labels: one 30px line, muted text,
    a chevron that turns when open. Agents keep their 54px tile and move right by one step per level. */

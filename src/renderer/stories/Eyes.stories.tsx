@@ -109,6 +109,8 @@ function SidebarFrame(props: { theme: StoryTheme }) {
         updateStatus={STORY_UPDATE_STATUS}
         agentStates={{ chief: { kind: "working" } }}
         lookingBotIds={["research"]}
+        computerUsingBotIds={["sales"]}
+        onStopComputerUse={fn()}
         localProfile
         onSelectBot={fn()}
         onSelectPerson={fn()}

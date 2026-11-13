@@ -52,6 +52,15 @@ function renderSidebar(extra: Partial<Parameters<typeof Sidebar>[0]> = {}) {
 }
 
 describe("Sidebar agent eyes", () => {
+  it("stops computer control without opening the agent chat", async () => {
+    const stop = vi.fn();
+    const select = vi.fn();
+    renderSidebar({ computerUsingBotIds: ["research"], onStopComputerUse: stop, onSelectBot: select });
+    expect(screen.getByText("Controlling computer")).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Stop computer control for Research" }));
+    expect(stop).toHaveBeenCalledWith("research");
+    expect(select).not.toHaveBeenCalled();
+  });
   it("marks only the agent that is looking", () => {
     renderSidebar({ lookingBotIds: ["research"] });
     const researchRow = screen.getByRole("button", { name: /^Research.*Looking\./ });
