@@ -106,6 +106,7 @@ Zdarzenia (agent.onEvent):
 | `bun run typecheck` (contracts, node, renderer, storybook, api) | exit 0 |
 | Nowe testy: `ipc-providers` 3, `acp-client` 5, `provider-registry` 5, `provider-sessions-migration` 2, `provider-inputs` 3, `agent-service` (W3) 5 | zielone |
 | Całe `bun run test` na końcowym kodzie (start 06:05, po `13175d4a1`) | **123 pliki, 872/872**, exit 0 (log `logs\w3-providers-test-full.log`). Integracja miała 849 |
+| Po scaleniu integracji `5368cc9a5` do gałęzi (commit `c544c67e9`; 2 konflikty: `COSGRAL-CHANGES.md` i `ipc-desktop-apis.ts`, obie strony zachowane) | typecheck exit 0, build OK, Biome 0 błędów na 26 plikach gałęzi, całe `bun run test`: **137 plików, 936/936** (log `logs\w3-providers-merge-test-full.log`). Kontrakt `ipc-providers.ts` bez zmian |
 | Biome na zmienionych plikach | 0 błędów; poprawki automatyczne tylko w moich liniach |
 
 **TDD:**
