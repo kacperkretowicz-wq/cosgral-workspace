@@ -582,3 +582,11 @@
 :where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]) > li > label:first-child) {
   flex: 1 1 auto;
 }
+
+/* No card inside a card: a panel nested in a panel is a plain group. */
+.w2-panel .w2-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
