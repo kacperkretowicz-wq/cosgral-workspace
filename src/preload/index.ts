@@ -35,6 +35,8 @@ import {
   isSkillContent,
   isSkillInstall,
   isSkillVersion,
+  isVaultItemSummary,
+  isVaultStatus,
   isWorkspaceChannel,
   type KeptDraft,
   type LocalSkill,
@@ -325,6 +327,22 @@ function decodePendingRequests(value: unknown): PendingAgentRequest[] {
 }
 
 /** COSGRAL W2: the skill library; malformed list entries are dropped. */
+/** COSGRAL W2: Vault summaries; anything that is not a secret-free summary is dropped. */
+function decodeVaultItems(value: unknown) {
+  if (!Array.isArray(value)) throw new Error("Invalid Vault list response.");
+  return value.filter(isVaultItemSummary);
+}
+
+function decodeVaultItem(value: unknown) {
+  if (!isVaultItemSummary(value)) throw new Error("Invalid Vault item response.");
+  return value;
+}
+
+function decodeVaultStatus(value: unknown) {
+  if (!isVaultStatus(value)) throw new Error("Invalid Vault status response.");
+  return value;
+}
+
 function decodeSkills(value: unknown): LocalSkill[] {
   if (!Array.isArray(value)) throw new Error("Invalid skill list response.");
   return value.filter(isLocalSkill);
@@ -583,6 +601,13 @@ const openbotApi: OpenBotDesktopApi = {
     install: (input) => invokeAgent(IPC_CHANNELS.skillsInstall, input, decodeSkillInstall),
     update: (input) => invokeAgent(IPC_CHANNELS.skillsUpdate, input, decodeSkillInstall),
     uninstall: (input) => invokeAgent(IPC_CHANNELS.skillsUninstall, input, decodeVoid),
+  },
+  vault: {
+    status: () => invokeAgent(IPC_CHANNELS.vaultStatus, null, decodeVaultStatus),
+    list: () => invokeAgent(IPC_CHANNELS.vaultList, null, decodeVaultItems),
+    save: (input) => invokeAgent(IPC_CHANNELS.vaultSave, input, decodeVaultItem),
+    delete: (input) => invokeAgent(IPC_CHANNELS.vaultDelete, input, decodeVoid),
+    respondToRequest: (input) => invokeAgent(IPC_CHANNELS.vaultRespondToRequest, input, decodeVoid),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
