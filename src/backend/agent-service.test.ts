@@ -326,6 +326,38 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(settings.tools.find((tool) => tool.group === "vault")).toMatchObject({ enabled: false });
   });
 
+  it("COSGRAL W3: creates an agent from a template with its tools, skills and starting memories", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.skillLibrary.create({
+      source: { kind: "inline", skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n" },
+      authorBotId: null,
+    });
+    const { bot, warnings } = await service.agentTemplates.createAgent({
+      templateId: "builtin:writer",
+      name: "Pen",
+      skills: ["weekly-report", "missing-skill"],
+    });
+    expect(bot).toMatchObject({ name: "Pen", role: "Writing and editing", avatarHue: 30 });
+    expect(warnings).toEqual(['Skill "missing-skill" is not in the skill library.']);
+    expect(service.agentSettings.toolSwitches(bot.id)).toEqual({ computer: false, routines: false });
+    expect(service.skillLibrary.installedFor(bot.id).map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(service.memoryStore.listAgentMemories(bot.id, "essential").map((memory) => memory.text)).toContain(
+      "Plain words, short sentences, no filler.",
+    );
+    expect(events.some((event) => event.type === "bots-changed")).toBe(true);
+    expect(events.some((event) => event.type === "agent-memory-changed" && event.botId === bot.id)).toBe(true);
+
+    const saved = await service.agentTemplates.saveFromAgent({ botId: bot.id, includeMemories: true });
+    expect(saved).toMatchObject({ origin: "saved", skills: ["weekly-report"], tools: { computer: false } });
+    const settings = await service.agentSettings.get(bot.id);
+    expect(settings.skills.map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(settings.memory.essentialCount).toBe(2);
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();

@@ -63,6 +63,7 @@ import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE }
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentSettingsService } from "./agent-settings";
+import { AgentTemplates } from "./agent-templates";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
@@ -322,6 +323,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly computerUse: ComputerUseController;
   /** COSGRAL W3: tool switches, the full settings read and save, and app settings (language, notifications). */
   readonly agentSettings: AgentSettingsService;
+  /** COSGRAL W3: built-in and saved agent templates, and the agent creator. */
+  readonly agentTemplates: AgentTemplates;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
   readonly #loadedThreads = new Set<string>();
@@ -458,6 +461,24 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         eyes: this.#eyes !== null,
         routines: this.#routines !== null,
       }),
+      emit: (event) => this.#emit(event),
+    });
+    this.agentTemplates = new AgentTemplates({
+      database: store.database,
+      createBot: () => this.createBot(),
+      updateBot: (input) => this.updateBot(input),
+      bot: (botId) => this.#store.list().find((bot) => bot.id === botId) ?? null,
+      setTools: (botId, tools) => this.agentSettings.setTools(botId, tools),
+      toolSwitches: (botId) => this.agentSettings.toolSwitches(botId),
+      installSkill: async (botId, name) => {
+        const skill = this.#skills.findByName(name);
+        if (!skill) return `Skill "${name}" is not in the skill library.`;
+        await this.#skills.install({ skillId: skill.id, botId });
+        return null;
+      },
+      skillNames: async (botId) => this.#skills.installedFor(botId).map((skill) => skill.name),
+      saveEssentialMemory: (botId, text) => this.#memory.save({ botId, text, inclusion: "essential" }),
+      essentialMemories: (botId) => this.#memory.store.listAgentMemories(botId, "essential").map((item) => item.text),
       emit: (event) => this.#emit(event),
     });
     this.#skills.on("skills-changed", (skills) => this.#emit({ type: "skills-changed", skills }));
