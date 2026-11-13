@@ -77,7 +77,7 @@ export class ChannelEngine {
     const channel = this.#store.get(input.channelId);
     const resource =
       input.resourceKey === undefined ? this.#resource(channel.leadBotId) : channelResourceKey(input.resourceKey);
-    const result = this.#store.submit(channel.id, input.text, resource);
+    const result = this.#store.submit(channel.id, input.text, resource, input.replyToMessageId);
     this.#schedule();
     return result;
   }

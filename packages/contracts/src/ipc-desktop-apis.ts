@@ -17,6 +17,7 @@ import type {
 } from "./ipc-app-auth";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
+import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type {
   AccountUsage,
   AgentEvent,
@@ -345,6 +346,16 @@ export interface TablesDesktopApi {
  * COSGRAL W2: the file library (see ipc-library.ts): one store, two views. `list` returns library files
  * (origin "upload" or "agent") and chat attachments (origin "chat"). Changes come as `library-changed`.
  */
+/**
+ * COSGRAL W3: Computer Use (see ipc-computer-use.ts). The consent card is a confirm card in Needs you; changes come
+ * as `computer-use-changed`.
+ */
+export interface ComputerUseDesktopApi {
+  getState: () => Promise<ComputerUseState>;
+  /** Ends the session at once and takes the permission back: one agent with `botId`, otherwise every agent. */
+  stop: (input?: StopComputerUseInput) => Promise<ComputerUseState>;
+}
+
 export interface LibraryDesktopApi {
   /** Newest first. */
   list: (input?: ListLibraryInput) => Promise<LibraryItem[]>;
@@ -467,4 +478,6 @@ export interface OpenBotDesktopApi {
   tables?: TablesDesktopApi;
   /** COSGRAL W2 file library (this computer only). Optional until every renderer mock implements it. */
   library?: LibraryDesktopApi;
+  /** COSGRAL W3 Computer Use (this computer only). Optional until every renderer mock implements it. */
+  computerUse?: ComputerUseDesktopApi;
 }

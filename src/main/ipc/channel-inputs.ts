@@ -31,6 +31,10 @@ export function parseSendChannelMessage(value: unknown): SendChannelMessageInput
       throw new Error("resourceKey must be text or null.");
     input.resourceKey = channelResourceKey(value.resourceKey);
   }
+  if (value.replyToMessageId !== undefined) {
+    input.replyToMessageId =
+      value.replyToMessageId === null ? null : requireString(value.replyToMessageId, "replyToMessageId");
+  }
   return input;
 }
 

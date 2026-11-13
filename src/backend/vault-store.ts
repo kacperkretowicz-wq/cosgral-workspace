@@ -157,6 +157,32 @@ export class VaultStore extends EventEmitter<{ changed: [items: VaultItemSummary
     throw new Error("This Vault item has no two-step key.");
   }
 
+  /**
+   * COSGRAL W3: true when the text contains a saved value (password, card number, API key, two-step secret, contact
+   * detail), so Computer Use never types Vault values outside the program's browser. Values shorter than 5
+   * characters (a CVC) are not compared; card numbers are compared by their digits.
+   */
+  containsSecretValue(text: string): boolean {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    const digits = text.replace(/\D/g, "");
+    for (const row of this.#rows()) {
+      let secrets: VaultSecrets;
+      try {
+        secrets = this.#decrypt(row);
+      } catch {
+        continue;
+      }
+      if (secrets.kind === "card") {
+        const number = secrets.number.replace(/\D/g, "");
+        if (number.length >= 12 && digits.includes(number)) return true;
+        continue;
+      }
+      if (secretTexts(secrets).some((value) => value.length >= 5 && lower.includes(value.toLowerCase()))) return true;
+    }
+    return false;
+  }
+
   /** The value of a saved API key by its variable name, for tools inside the program; null when missing. */
   resolveApiKey(name: string): string | null {
     const item = this.list({ kind: "apiKey" }).find((candidate) => candidate.name === name);
@@ -200,6 +226,22 @@ export class VaultStore extends EventEmitter<{ changed: [items: VaultItemSummary
       throw new Error("This Vault item cannot be decrypted on this computer.");
     }
     return value;
+  }
+}
+
+/** The text values of an item that Computer Use must never type (card numbers are compared by digits). */
+function secretTexts(secrets: VaultSecrets): string[] {
+  switch (secrets.kind) {
+    case "login":
+      return [secrets.password, ...(secrets.twoStepKey ? [secrets.twoStepKey.secret] : [])];
+    case "card":
+      return [secrets.number];
+    case "contact":
+      return [secrets.email, secrets.phone, secrets.address].filter((value): value is string => value !== null);
+    case "apiKey":
+      return [secrets.value];
+    case "totp":
+      return [secrets.config.secret];
   }
 }
 

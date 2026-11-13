@@ -429,12 +429,17 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
   }
 
   /** The request and its task are committed together, before the scheduler can see either. */
-  submit(channelId: string, text: string, resourceKey?: string | null): { message: ChannelMessage; task: ChannelTask } {
+  submit(
+    channelId: string,
+    text: string,
+    resourceKey?: string | null,
+    replyToMessageId?: string | null,
+  ): { message: ChannelMessage; task: ChannelTask } {
     // createTask validates membership and resource first; both writes use the same dispatch via pending message.
     const channel = this.get(channelId);
     if (channel.archived || !channel.leadBotId) throw new Error("This channel has no available lead or is archived.");
     const key = channelResourceKey(resourceKey);
-    const message = this.#message({ channelId, authorBotId: null, kind: "human", text });
+    const message = this.#message({ channelId, authorBotId: null, kind: "human", text, replyToMessageId });
     const at = this.#isoNow();
     const task: ChannelTask = {
       id: randomUUID(),
