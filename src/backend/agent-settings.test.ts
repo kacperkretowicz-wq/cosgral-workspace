@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent, BotSummary, UpdateBotInput } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
-import { AgentSettingsService } from "./agent-settings";
+import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 
 const roots: string[] = [];
@@ -203,5 +203,10 @@ describe("AgentSettingsService", () => {
     const reopened = await open(dir);
     expect(reopened.service.appSettings()).toMatchObject({ language: "pl", languageChosen: true });
     expect(reopened.service.appSettings().notifications.matrix.finished.desktop).toBe(false);
+  });
+
+  it("marks the tabs of the features built into the program as available (voice needs Windows speech)", () => {
+    expect(builtInTabFeatures("win32")).toEqual({ voice: true, mobile: true, dock: true, island: true });
+    expect(builtInTabFeatures("linux")).toEqual({ voice: false, mobile: true, dock: true, island: true });
   });
 });

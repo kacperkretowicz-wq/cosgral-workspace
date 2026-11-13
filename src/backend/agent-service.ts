@@ -65,7 +65,7 @@ import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
-import { AgentSettingsService } from "./agent-settings";
+import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { AgentTemplates } from "./agent-templates";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { BotStore } from "./bot-store";
@@ -478,6 +478,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         eyes: this.#eyes !== null,
         routines: this.#routines !== null,
       }),
+      tabFeatures: () => builtInTabFeatures(process.platform),
       emit: (event) => this.#emit(event),
     });
     this.agentTemplates = new AgentTemplates({
