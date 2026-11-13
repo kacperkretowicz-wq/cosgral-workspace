@@ -195,16 +195,29 @@ async function main(): Promise<void> {
     await page.waitForTimeout(800);
     await page.getByText("Stub: received").last().hover();
     await both(page, out, "01-chat-hover");
-    // One channel with one task, so the Tasks page has rows to show.
-    await page.evaluate(`(async () => {
+    // A channel with only its lead and one message: the task should go queued -> running -> done (W3-BE10).
+    const states = await page.evaluate(`(async () => {
       const api = window.openbot.channels;
-      if (!api || (await api.list()).length) return;
+      if (!api) return { skipped: "no channels API" };
       const bot = (await window.openbot.agent.listBots()).find((item) => item.name === "New agent");
-      if (!bot) return;
-      const channel = await api.create({ name: "polish", title: "Polish", instructions: "", memberBotIds: [bot.id], leadBotId: bot.id, isolated: false });
-      await api.sendMessage({ channelId: channel.id, text: "Check the polish run" });
+      if (!bot) return { skipped: "no agent" };
+      const name = "solo-" + Date.now().toString(36);
+      const channel = await api.create({ name, title: "Solo", instructions: "", memberBotIds: [bot.id], leadBotId: bot.id, isolated: false });
+      const seen = [];
+      const off = window.openbot.agent.onEvent((event) => {
+        if (event.type === "task-changed" && event.task.channelId === channel.id) seen.push(event.task.state);
+      });
+      const sent = await api.sendMessage({ channelId: channel.id, text: "Check the polish run" });
+      seen.unshift(sent.task.state);
+      for (let i = 0; i < 60 && !["done", "failed", "cancelled"].includes(seen[seen.length - 1]); i += 1)
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      off();
+      const messages = await api.listMessages({ channelId: channel.id });
+      return { states: seen, last: (await api.listTasks(channel.id))[0]?.state, result: messages.filter((m) => m.kind === "result").map((m) => m.text) };
     })()`);
-    await page.waitForTimeout(3000);
+    console.log(`solo channel: ${JSON.stringify(states)}`);
+    await writeFile(join(out, "channel-states.json"), `${JSON.stringify(states, null, 2)}
+`);
     const rail = page.getByRole("navigation", { name: "Pages" });
     for (const [index, name] of PAGES.entries()) {
       await rail.getByRole("button", { name, exact: true }).click();
