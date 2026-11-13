@@ -55,7 +55,7 @@ const pending: PendingAgentRequest[] = [
 ];
 
 describe("cardsFromPending (after a window reload)", () => {
-  it("keeps prompts and approvals, oldest first, and drops card kinds this window cannot show", () => {
+  it("keeps prompts, approvals and browser takeovers, oldest first", () => {
     const cards = cardsFromPending([
       ...pending,
       {
@@ -77,6 +77,7 @@ describe("cardsFromPending (after a window reload)", () => {
       "prompt:p1",
       "approval:a1",
       "approval:a2",
+      "browser-takeover:b1",
     ]);
   });
 

@@ -509,3 +509,45 @@
     animation: none;
   }
 }
+.action-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--openbot-border-strong);
+  background: var(--openbot-bg-surface);
+  border-radius: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.action-card-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  margin: 0;
+}
+.action-card textarea {
+  width: 100%;
+  min-height: 8rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 8px;
+}
+.action-card-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.action-card-buttons button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.action-card-buttons button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
