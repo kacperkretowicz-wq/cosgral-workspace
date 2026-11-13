@@ -6,7 +6,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
-import type { AgentEvent, BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
+import type { AgentEvent, AgentModelId, BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
@@ -15,6 +15,7 @@ import { BotStore } from "./bot-store";
 import { type EyesCapture, type EyesFrame, EyesService, type EyesSourceInfo } from "./eyes-service";
 import { MailboxStore } from "./mailbox-store";
 import { type AppServerNotification, getString, type RequestId, type ResponseDecoder, type RpcError } from "./protocol";
+import { ProviderRegistry } from "./provider-registry";
 import { channelFixture, channelTaskFixture } from "./testing/channel-fixtures";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
@@ -471,6 +472,93 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     await waitFor(() => events.some((event) => event.type === "draft-preview-resolved"));
     expect(events.find((event) => event.type === "draft-preview-resolved")).toMatchObject({ resolution: "expired" });
     expect(service?.listPendingRequests()).toEqual([]);
+  });
+
+  describe("COSGRAL W3: ACP agents and fallback models", () => {
+    const ACP_STUB = join(__dirname, "testing", "acp-stub.mjs");
+
+    async function acpService(fallbackModels: AgentModelId[], model: AgentModelId) {
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const current = service;
+      const events: AgentEvent[] = [];
+      current.on("event", (event) => events.push(event));
+      const registry = new ProviderRegistry({
+        database: store.database,
+        emit: (event) => current.relay(event),
+        timers: false,
+      });
+      current.useProviders(registry);
+      await current.initialize();
+      for (const [id, extra] of [
+        ["stub", []],
+        ["limited", ["--always-limit"]],
+        ["backup", []],
+      ] as const) {
+        registry.saveAcpAgent({ id, name: `ACP ${id}`, command: process.execPath, args: [ACP_STUB, id, ...extra] });
+      }
+      await store.getOrCreate("chief");
+      registry.setFallbackModels({ botId: "chief", fallbackModels });
+      await current.updateBot({ botId: "chief", model });
+      return { current, events, registry };
+    }
+
+    async function lastAssistant(current: AgentService): Promise<string> {
+      const snapshot = await current.readConversation("chief");
+      return [...snapshot.messages].reverse().find((message) => message.author === "assistant")?.text ?? "";
+    }
+
+    it("runs a turn on an ACP agent that calls a program tool through the bridge", async () => {
+      const { current } = await acpService([], "acp:stub");
+      await current.sendMessage({ botId: "chief", text: "TOOL openbot__list_agents" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "completed");
+      expect(await lastAssistant(current)).toContain("openbot__list_agents -> ok:");
+      expect(await lastAssistant(current)).toContain('"agents"');
+    });
+
+    it("moves a turn that hits a usage limit to the next fallback model and says so", async () => {
+      const { current, events, registry } = await acpService(["acp:backup"], "acp:limited");
+      await current.sendMessage({ botId: "chief", text: "hello" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "completed");
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "model-fallback",
+          botId: "chief",
+          fromModel: "acp:limited",
+          toModel: "acp:backup",
+        }),
+      );
+      expect(current.listBots().find((bot) => bot.id === "chief")).toMatchObject({
+        model: "acp:limited",
+        activeModel: "acp:backup",
+      });
+      const answer = await lastAssistant(current);
+      expect(answer).toContain("ACP stub (not a model)");
+      expect(answer).toContain("[COSGRAL: this turn runs on the fallback model acp:backup");
+      expect(registry.listUsage()).toContainEqual(expect.objectContaining({ model: "acp:limited", state: "limited" }));
+      expect(current.listQueue("chief").deliveries).toHaveLength(1);
+      expect(current.listActivity().find((row) => row.botId === "chief")?.limit).toBeNull();
+    });
+
+    it("never switches the model on a user error", async () => {
+      const { current, events } = await acpService(["acp:limited"], "acp:backup");
+      await current.sendMessage({ botId: "chief", text: "BADINPUT please" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "failed");
+      expect(events.some((event) => event.type === "model-fallback")).toBe(false);
+    });
+
+    it("never loops when every model is limited, and the agent row shows the ACP limit", async () => {
+      const { current, events } = await acpService([], "acp:limited");
+      await current.sendMessage({ botId: "chief", text: "hello" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "failed");
+      expect(events.some((event) => event.type === "model-fallback")).toBe(false);
+      expect(current.listQueue("chief").deliveries).toHaveLength(1);
+      expect(current.listActivity().find((row) => row.botId === "chief")?.limit).toMatchObject({
+        provider: "acp",
+        limitId: "acp:limited",
+        resetsAt: expect.any(Number),
+      });
+    });
   });
 
   it("COSGRAL W2: gives agents the routine tools, routes their calls and runs routine turns through the queue", async () => {

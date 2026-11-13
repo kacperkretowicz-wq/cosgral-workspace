@@ -63,7 +63,7 @@ async function prompt(id, params) {
   const first = !session.prompted;
   session.prompted = true;
   const said = text.split("</cosgral_instructions>").pop().trim();
-  if (said.includes("LIMIT")) {
+  if (said.includes("LIMIT") || process.argv.includes("--always-limit")) {
     return write({
       id,
       error: {

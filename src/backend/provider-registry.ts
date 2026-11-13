@@ -196,7 +196,7 @@ export class ProviderRegistry {
   /** For the agent row: the limit of the provider (or ACP agent) the agent works with now. */
   limitFor(provider: AgentProviderId, model: AgentModelId): AgentActivityLimit | null {
     const block = this.#blockFor(model);
-    if (!block || block.state !== "limited") return null;
+    if (block?.state !== "limited") return null;
     return { provider, limitId: scopeOf(model), resetsAt: block.resetsAt };
   }
 

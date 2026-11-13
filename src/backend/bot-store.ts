@@ -54,6 +54,8 @@ export const DEFAULT_REASONING_EFFORT: AgentReasoningEffort = "medium";
 
 export class BotStore {
   readonly #statePath: string;
+  /** COSGRAL W3: fallback models in use, per agent (in memory only). */
+  readonly #activeModels = new Map<string, BotSummary["model"]>();
   readonly #botsRoot: string;
   readonly #sharedRoot: string;
   readonly #downloadsRoot: string;
@@ -127,7 +129,23 @@ export class BotStore {
   }
 
   list(): BotSummary[] {
-    return this.#state.bots.map((bot) => ({ ...bot }));
+    return this.#state.bots.map((bot) => this.#withActiveModel({ ...bot }));
+  }
+
+  /** COSGRAL W3: run the agent's turns on a fallback model (null = its own model again). Not saved. */
+  setActiveModel(id: string, model: BotSummary["model"] | null): void {
+    const bot = this.#requireBot(id);
+    if (model === null || model === bot.model) this.#activeModels.delete(id);
+    else this.#activeModels.set(id, model);
+  }
+
+  #withActiveModel(bot: BotSummary): BotSummary {
+    const active = this.#activeModels.get(bot.id);
+    return active ? { ...bot, activeModel: active } : bot;
+  }
+
+  #effectiveModel(bot: BotSummary): BotSummary["model"] {
+    return this.#activeModels.get(bot.id) ?? bot.model;
   }
 
   async createBot(): Promise<BotSummary> {
@@ -155,6 +173,8 @@ export class BotStore {
     if (input.notifications !== undefined) bot.notifications = input.notifications;
     if (input.model !== undefined) {
       bot.model = input.model;
+      // COSGRAL W3: a model the person picks ends any fallback in use.
+      this.#activeModels.delete(bot.id);
     }
     if (input.reasoningEffort !== undefined) bot.reasoningEffort = input.reasoningEffort;
     if (input.avatarSeed !== undefined) bot.avatarSeed = input.avatarSeed;
@@ -264,7 +284,7 @@ export class BotStore {
   activeProviderSession(id: string): ProviderSession | null {
     const bot = this.#requireBot(id);
     if (!bot.threadId) return null;
-    return this.#database.activeProviderSession(bot.threadId, providerForStoredModel(bot.model));
+    return this.#database.activeProviderSession(bot.threadId, providerForStoredModel(this.#effectiveModel(bot)));
   }
 
   bindProviderSession(id: string, externalSessionId: string): ProviderSession {
@@ -272,9 +292,9 @@ export class BotStore {
     if (!bot.threadId) throw new Error(`Agent ${id} does not have a COSGRAL Workspace thread.`);
     return this.#database.bindProviderSession({
       threadId: bot.threadId,
-      provider: providerForStoredModel(bot.model),
+      provider: providerForStoredModel(this.#effectiveModel(bot)),
       externalSessionId,
-      model: bot.model,
+      model: this.#effectiveModel(bot),
       effort: bot.reasoningEffort,
     });
   }

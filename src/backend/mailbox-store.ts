@@ -734,8 +734,9 @@ export class MailboxStore {
     });
   }
 
-  async restoreQueued(deliveryId: string): Promise<void> {
-    await this.#updateDelivery(deliveryId, ["starting"], {
+  async restoreQueued(deliveryId: string, from: QueueDeliveryStatus[] = ["starting"]): Promise<void> {
+    // COSGRAL W3: also from "running", when a turn moves to a fallback model.
+    await this.#updateDelivery(deliveryId, from, {
       status: "queued",
       turnId: null,
       error: null,

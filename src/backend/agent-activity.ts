@@ -27,6 +27,8 @@ export interface AgentActivitySources {
   pendingRequests(botId: string): number;
   working(botId: string): boolean;
   provider(bot: BotSummary): AgentProvider;
+  /** COSGRAL W3: the usage limit of other providers (and ACP agents); Codex keeps its own usage windows. */
+  providerLimit?(bot: BotSummary): AgentActivityLimit | null;
   emit(activity: AgentActivity): void;
   /** A Codex limit has just reset: read fresh usage. */
   limitReset(): void;
@@ -98,6 +100,9 @@ export class AgentActivityTracker {
       case "conversation":
         this.#refresh(event.snapshot.botId);
         return;
+      case "provider-usage-changed":
+        this.#refreshAll();
+        return;
       case "usage-changed":
         this.#codexUsage = structuredClone(event.usage);
         this.#scheduleLimitCheck();
@@ -163,7 +168,10 @@ export class AgentActivityTracker {
   #state(bot: BotSummary): ActivityState {
     const pendingRequests = this.#sources.pendingRequests(bot.id);
     const working = this.#sources.working(bot.id);
-    const limit = this.#sources.provider(bot) === "codex" ? exhaustedCodexLimit(this.#codexUsage, this.#now()) : null;
+    const limit =
+      this.#sources.provider(bot) === "codex"
+        ? exhaustedCodexLimit(this.#codexUsage, this.#now())
+        : (this.#sources.providerLimit?.(bot) ?? null);
     const error = this.#errors.get(bot.id) ?? null;
     return {
       botId: bot.id,

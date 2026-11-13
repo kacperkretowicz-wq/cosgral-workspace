@@ -52,12 +52,14 @@ import type {
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import {
+  isAcpModel,
   isClaudeModel,
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
@@ -104,6 +106,7 @@ import {
   type ResponseDecoder,
   type ThreadItem,
 } from "./protocol";
+import type { ProviderRegistry } from "./provider-registry";
 import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
@@ -296,6 +299,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #mcp: AgentMcp | null;
   /** COSGRAL W2: routines and webhooks; attached after construction by the program. */
   #routines: AgentRoutines | null = null;
+  /** COSGRAL W3: ACP agents, fallback models and provider usage; attached after construction. */
+  #providers: ProviderRegistry | null = null;
+  /** COSGRAL W3: models already tried per message (delivery), so a fallback never loops. */
+  readonly #triedModels = new Map<string, Set<string>>();
+  /** COSGRAL W3: the usage-limit / unavailability error of a turn, read when the turn fails. */
+  readonly #turnFailures = new Map<
+    string,
+    { kind: "usage-limit" | "unavailable" | null; resetsAt: number | null; message: string }
+  >();
   /** COSGRAL W2: the MCP tool set each provider thread was started or resumed with. */
   readonly #mcpToolSignatures = new Map<string, string>();
   readonly #channelRunner: ChannelAgentRunner;
@@ -462,6 +474,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       pendingRequests: (botId) => this.#pendingRequestCount(botId),
       working: (botId) => this.#isWorking(botId),
       provider: (bot) => providerForBot(bot),
+      providerLimit: (bot) => this.#providers?.limitFor(providerForBot(bot), bot.activeModel ?? bot.model) ?? null,
       emit: (activity) => this.emit("event", { type: "activity-changed", activity }),
       limitReset: () => {
         const client = this.#clients.get("codex");
@@ -559,6 +572,57 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** COSGRAL W1: the row state of every agent. */
   /** COSGRAL W2: attach the routines; their tools go to every agent from its next thread start or resume. */
+  /** COSGRAL W3: attach the provider registry (ACP agents, fallback models, usage). */
+  useProviders(providers: ProviderRegistry): void {
+    this.#providers = providers;
+  }
+
+  /** COSGRAL W3: an event of a helper (provider registry) goes out like the service's own. */
+  relay(event: AgentEvent): void {
+    this.#emit(event);
+  }
+
+  /** COSGRAL W3: the model this message's turn uses: the agent's own, or the first usable fallback not tried yet. */
+  #selectTurnModel(bot: BotSummary, deliveryId: string): BotSummary {
+    const providers = this.#providers;
+    if (!providers) return bot;
+    const current = this.#store.list().find((candidate) => candidate.id === bot.id) ?? bot;
+    const previous = current.activeModel ?? current.model;
+    const tried = this.#triedModels.get(deliveryId) ?? new Set<string>();
+    if (this.#triedModels.size > 500) this.#triedModels.clear();
+    this.#triedModels.set(deliveryId, tried);
+    const choice = providers.chooseModel(current.id, current.model, tried) ?? previous;
+    tried.add(choice);
+    if (choice === previous) return current;
+    this.#store.setActiveModel(current.id, choice);
+    this.#emit({
+      type: "model-fallback",
+      botId: current.id,
+      fromModel: previous,
+      toModel: choice,
+      reason: choice === current.model ? `${current.model} is available again.` : `${previous} is not available now.`,
+    });
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    return this.#store.list().find((candidate) => candidate.id === current.id) ?? current;
+  }
+
+  /** COSGRAL W3: a turn that failed on a usage limit or unavailability goes back to the queue for the next model. */
+  async #retryOnFallback(botId: string, turnId: string, deliveries: DeliveryContext[]): Promise<boolean> {
+    const failure = this.#turnFailures.get(turnId);
+    this.#turnFailures.delete(turnId);
+    const providers = this.#providers;
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    const delivery = deliveries.length === 1 ? deliveries[0]?.delivery : undefined;
+    if (!providers || !failure || !bot || !delivery) return false;
+    const model = bot.activeModel ?? bot.model;
+    if (!providers.reportFailure(model, failure)) return false;
+    const tried = this.#triedModels.get(delivery.id) ?? new Set([model]);
+    if (!providers.chooseModel(botId, bot.model, tried)) return false;
+    await this.#mailbox.restoreQueued(delivery.id, ["running"]);
+    this.#emitQueue(botId);
+    this.#scheduleDrain(botId);
+    return true;
+  }
   useRoutines(routines: AgentRoutines): void {
     this.#routines = routines;
   }
@@ -690,6 +754,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#memory.store.deleteAllForAgent(botId);
     // COSGRAL W2: so do its MCP switches.
     this.#mcp?.deleteAgent(botId);
+    // COSGRAL W3: and its fallback list.
+    this.#providers?.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
     this.#snapshots.delete(botId);
@@ -1075,12 +1141,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       let client: AgentClient | null = null;
       let cli: CodexCliInfo | ClaudeCliInfo | null = null;
       try {
-        cli = provider === "codex" ? await resolveCodexCli() : await resolveClaudeCli();
+        cli = provider === "codex" ? await resolveCodexCli() : provider === "acp" ? ACP_CLI : await resolveClaudeCli();
         client = this.#clientFactory
           ? this.#clientFactory(provider, cli)
           : provider === "codex"
             ? new CodexAppServerClient(cli.executable, this.#requestTimeoutMs)
-            : new ClaudeAgentClient(cli);
+            : provider === "acp"
+              ? new AcpAgentClient({ agents: () => this.#providers?.listAcpAgents() ?? [] })
+              : new ClaudeAgentClient(cli);
         this.#bindClient(client);
         client.start();
         await client.request(
@@ -1256,7 +1324,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const response = await client.request(
       "thread/start",
       {
-        model: currentBot.model,
+        model: currentBot.activeModel ?? currentBot.model,
         effort: currentBot.reasoningEffort,
         cwd: currentBot.workspacePath,
         runtimeWorkspaceRoots: [currentBot.workspacePath, this.#store.sharedRoot],
@@ -1283,7 +1351,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   async #resumeThread(bot: BotSummary, client: AgentClient, externalThreadId: string): Promise<void> {
     const params = {
       threadId: externalThreadId,
-      model: bot.model,
+      model: bot.activeModel ?? bot.model,
       effort: bot.reasoningEffort,
       cwd: bot.workspacePath,
       runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
@@ -1563,7 +1631,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     try {
       await this.#mailbox.markStarting(delivery.id);
       this.#emitQueue(delivery.recipientBotId);
-      const bot = await this.#store.getOrCreate(delivery.recipientBotId);
+      const bot = this.#selectTurnModel(await this.#store.getOrCreate(delivery.recipientBotId), delivery.id);
       await this.ensureProvider(providerForBot(bot));
       const client = this.#requireReadyClient(providerForBot(bot));
       const threadId = await this.#ensureThread(bot, client);
@@ -1576,6 +1644,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
       const displayText = displayAttachmentReferences(delivery.text, delivery.attachments);
       let text = displayText || "The user shared attached local files.";
+      // COSGRAL W3: the agent learns which model answers when it is a fallback.
+      if (bot.activeModel)
+        text = `[COSGRAL: this turn runs on the fallback model ${bot.activeModel} because ${bot.model} is not available now.]\n\n${text}`;
       const handoff = this.#pendingHandoffs.get(threadId);
       if (handoff) {
         text = `${handoff}\n\n--- current message ---\n${text}`;
@@ -1657,7 +1728,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         "turn/start",
         {
           threadId,
-          model: bot.model,
+          model: bot.activeModel ?? bot.model,
           effort: bot.reasoningEffort,
           clientUserMessageId: delivery.id,
           input,
@@ -1997,6 +2068,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       case "warning": {
         const message = getString(params, "message") ?? notification.method;
         if (notification.method === "warning" && isNonActionableCodexWarning(message)) return;
+        // COSGRAL W3: remember why a turn failed; a usage limit or unavailability may move it to a fallback model.
+        const failedTurn = getString(params, "turnId");
+        if (notification.method === "error" && failedTurn)
+          this.#turnFailures.set(failedTurn, turnFailure(params, message));
         this.#emitError(`agent_${notification.method}`, message, botId);
       }
     }
@@ -2025,7 +2100,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           message.itemType !== "commentary" &&
           message.text.trim(),
       );
-    if (deliveries.length > 0) {
+    const movedToFallback = status === "failed" && (await this.#retryOnFallback(botId, turnId, deliveries));
+    if (movedToFallback) for (const moved of deliveries) this.#syncDeliveryMessage(snapshot, moved.delivery.id);
+    if (deliveries.length > 0 && !movedToFallback) {
       const terminal = status === "failed" ? "failed" : status === "interrupted" ? "interrupted" : "completed";
       for (const delivery of deliveries) {
         await this.#mailbox.markTerminal(delivery.delivery.id, terminal);
@@ -2911,6 +2988,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const rateLimits = await client.request("account/rateLimits/read", undefined, decodeAccountRateLimitsReadResult);
     const usage = normalizeAccountUsage(rateLimits);
     this.#emit({ type: "usage-changed", usage: structuredClone(usage) });
+    this.#providers?.updateCodexUsage(usage);
     return structuredClone(usage);
   }
 
@@ -3328,15 +3406,30 @@ function cleanModelName(value: string | undefined, fallback: string): string {
 }
 
 function providerForModel(model: BotSummary["model"]): AgentProvider {
-  return isClaudeModel(model) ? "claude" : "codex";
+  return isAcpModel(model) ? "acp" : isClaudeModel(model) ? "claude" : "codex";
 }
 
 function providerForBot(bot: BotSummary): AgentProvider {
-  return providerForModel(bot.model);
+  return providerForModel(bot.activeModel ?? bot.model);
 }
 
-function providerLabel(provider: AgentProvider): "Claude" | "Codex" {
-  return provider === "claude" ? "Claude" : "Codex";
+/** COSGRAL W3: ACP agents are configured programs, not one CLI. */
+const ACP_CLI: CodexCliInfo = { executable: "acp", version: "acp" };
+
+/** COSGRAL W3: whether a failed turn's error is a usage limit or unavailability (ACP gives errorKind; Codex and Claude only text). */
+function turnFailure(
+  params: unknown,
+  message: string,
+): { kind: "usage-limit" | "unavailable" | null; resetsAt: number | null; message: string } {
+  const kind = getString(params, "errorKind");
+  const resetsAt = isRecord(params) && isNumber(params.resetsAt) ? params.resetsAt : null;
+  if (kind === "usage-limit" || kind === "unavailable") return { kind, resetsAt, message };
+  if (isRecord(params) && "errorKind" in params) return { kind: null, resetsAt: null, message };
+  return classifyAcpError(new Error(message));
+}
+
+function providerLabel(provider: AgentProvider): "Claude" | "Codex" | "ACP agent" {
+  return provider === "claude" ? "Claude" : provider === "acp" ? "ACP agent" : "Codex";
 }
 
 function toThreadItem(value: DynamicRecord): ThreadItem | null {

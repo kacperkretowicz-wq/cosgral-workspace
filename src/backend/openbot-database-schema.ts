@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { isString } from "@openbot/contracts/runtime-values";
 
 const SCHEMA_VERSION = 4;
 
@@ -47,7 +48,7 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS projection_provider_sessions (
     id TEXT PRIMARY KEY,
     thread_id TEXT NOT NULL REFERENCES projection_threads(thread_id) ON DELETE CASCADE,
-    provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude')),
+    provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp')),
     external_session_id TEXT NOT NULL,
     model TEXT NOT NULL,
     effort TEXT NOT NULL,
@@ -393,6 +394,7 @@ const SCHEMA_SQL = `
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {
   db.exec(SCHEMA_SQL);
+  widenProviderSessions(db);
   const applied = db.prepare("SELECT version FROM schema_migrations WHERE version = ?").get(SCHEMA_VERSION);
   if (applied) return;
   db.prepare(
@@ -425,4 +427,59 @@ export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().
      FROM projection_direct_threads`,
   ).run(appliedAt);
   db.prepare("INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)").run(SCHEMA_VERSION, appliedAt);
+}
+
+/**
+ * COSGRAL W3: provider sessions of ACP agents. A database made before W3 has a CHECK that allows only
+ * codex and claude; SQLite cannot change a CHECK, so the table is rebuilt once (SQLite's documented
+ * procedure: foreign keys off, copy, rename, check, foreign keys on). Idempotent, no version change.
+ */
+function widenProviderSessions(db: DatabaseSync): void {
+  const row = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'projection_provider_sessions'")
+    .get();
+  const sql = row && isString(row.sql) ? row.sql : "";
+  if (!sql || sql.includes("'acp'")) return;
+  const foreignKeys = db.prepare("PRAGMA foreign_keys").get()?.foreign_keys === 1;
+  db.exec("PRAGMA foreign_keys = OFF");
+  try {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.exec(`
+        CREATE TABLE projection_provider_sessions_w3 (
+          id TEXT PRIMARY KEY,
+          thread_id TEXT NOT NULL REFERENCES projection_threads(thread_id) ON DELETE CASCADE,
+          provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp')),
+          external_session_id TEXT NOT NULL,
+          model TEXT NOT NULL,
+          effort TEXT NOT NULL,
+          state TEXT NOT NULL CHECK(state IN ('active', 'inactive', 'failed')),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          resume_cursor TEXT,
+          last_event_sequence INTEGER NOT NULL,
+          UNIQUE(provider, external_session_id)
+        );
+        INSERT INTO projection_provider_sessions_w3 (
+          id, thread_id, provider, external_session_id, model, effort, state, created_at, updated_at,
+          resume_cursor, last_event_sequence
+        )
+        SELECT id, thread_id, provider, external_session_id, model, effort, state, created_at, updated_at,
+          resume_cursor, last_event_sequence
+        FROM projection_provider_sessions;
+        DROP TABLE projection_provider_sessions;
+        ALTER TABLE projection_provider_sessions_w3 RENAME TO projection_provider_sessions;
+        CREATE INDEX IF NOT EXISTS provider_sessions_thread
+          ON projection_provider_sessions(thread_id, provider, state);
+      `);
+      const broken = db.prepare("PRAGMA foreign_key_check").all();
+      if (broken.length > 0) throw new Error("Provider sessions migration left broken links.");
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  } finally {
+    if (foreignKeys) db.exec("PRAGMA foreign_keys = ON");
+  }
 }
