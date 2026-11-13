@@ -169,6 +169,8 @@ describe("Mobile Connect pairing", () => {
         kind: "prompt",
         title: "Budget: How much can I spend?",
         createdAt: "2026-11-13T18:00:00.000Z",
+        answerOn: "phone",
+        computerReason: null,
       },
       {
         id: "take-1",
@@ -176,6 +178,8 @@ describe("Mobile Connect pairing", () => {
         kind: "browser-takeover",
         title: "Sign in to your bank",
         createdAt: "2026-11-13T18:01:00.000Z",
+        answerOn: "computer",
+        computerReason: "Taking over the browser needs the computer.",
       },
     ]);
     const me = await call(base, MOBILE_API_PATHS.me, { token });

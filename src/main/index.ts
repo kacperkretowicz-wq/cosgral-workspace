@@ -152,7 +152,7 @@ import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } 
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
-import { createMobileConnect, registerMobileIpc } from "./mobile-ipc";
+import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -1351,6 +1351,7 @@ if (!hasSingleInstanceLock) {
         confirm: (request) => service.confirmForPerson(null, request),
         canAsk: () => service.listBots().length > 0,
         emit: (event) => forwardAgentEvent("local", event),
+        phone: mobilePhoneHost(service),
       });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({
