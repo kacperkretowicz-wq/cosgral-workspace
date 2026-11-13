@@ -1352,6 +1352,7 @@ if (!hasSingleInstanceLock) {
         canAsk: () => service.listBots().length > 0,
         emit: (event) => forwardAgentEvent("local", event),
         phone: mobilePhoneHost(service),
+        secretBox: electronSecretBox(),
       });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({

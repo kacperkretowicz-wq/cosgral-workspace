@@ -9,7 +9,7 @@ import {
   isMobilePairingTicket,
   MOBILE_API_PATHS,
   MOBILE_LIMITS,
-  MOBILE_TRANSPORT_WARNING,
+  MOBILE_PLAIN_TRANSPORT_WARNING,
   type PendingAgentRequest,
   parseMobilePairingPayload,
 } from "@openbot/contracts/ipc";
@@ -150,7 +150,7 @@ describe("Mobile Connect pairing", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0]?.preview).toContain("Pixel 9");
     expect(cards[0]?.preview).toContain("127.0.0.1");
-    expect(cards[0]?.preview).toContain(MOBILE_TRANSPORT_WARNING);
+    expect(cards[0]?.preview).toContain(MOBILE_PLAIN_TRANSPORT_WARNING);
     expect(events.some((event) => event.type === "mobile-pairing-completed" && event.device.name === "Pixel 9")).toBe(
       true,
     );

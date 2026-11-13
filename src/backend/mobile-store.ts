@@ -12,9 +12,19 @@ import {
   type MobileExposure,
 } from "@openbot/contracts/ipc";
 import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import type { MobileCertificate } from "./mobile-certificate";
+import type { SecretBox } from "./vault-store";
 
 interface StoredDevice extends MobileDevice {
   tokenHash: string;
+}
+
+/** COSGRAL W3-BE7: the TLS certificate; the private key only encrypted by the program's secret box. */
+interface StoredCertificate {
+  certPem: string;
+  keyCipher: string;
+  fingerprint: string;
+  notAfter: string;
 }
 
 interface StoredFile {
@@ -22,6 +32,15 @@ interface StoredFile {
   exposure: MobileExposure;
   port: number;
   devices: StoredDevice[];
+  tls: StoredCertificate | null;
+}
+
+/** The certificate with its decrypted key, for the HTTPS server only. */
+export interface MobileStoredCertificate {
+  certPem: string;
+  keyPem: string;
+  fingerprint: string;
+  notAfter: string;
 }
 
 export interface MobileSettings {
@@ -40,11 +59,63 @@ export function hashToken(token: string): string {
 
 export class MobileStore {
   readonly #file: string;
+  readonly #box: SecretBox | null;
   #data: StoredFile;
 
-  constructor(file: string) {
+  /** Without a secret box (or one that cannot encrypt) there is no TLS: plain HTTP on loopback only. */
+  constructor(file: string, secretBox?: SecretBox) {
     this.#file = file;
+    this.#box = secretBox ?? null;
     this.#data = read(file);
+  }
+
+  /** True when the certificate key can be kept encrypted, so TLS is used. */
+  canEncrypt(): boolean {
+    try {
+      return this.#box?.canEncrypt() === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** The saved certificate with its key, or null when there is none or its key cannot be read. */
+  certificate(): MobileStoredCertificate | null {
+    const tls = this.#data.tls;
+    if (!tls || !this.#box || !this.canEncrypt()) return null;
+    try {
+      const keyPem = this.#box.decrypt(tls.keyCipher);
+      return { certPem: tls.certPem, keyPem, fingerprint: tls.fingerprint, notAfter: tls.notAfter };
+    } catch {
+      return null;
+    }
+  }
+
+  /** The fingerprint of the saved certificate, without decrypting its key. */
+  certificateFingerprint(): string | null {
+    return this.#data.tls?.fingerprint ?? null;
+  }
+
+  saveCertificate(certificate: MobileCertificate): void {
+    if (!this.#box || !this.canEncrypt()) throw new Error("This computer cannot keep the certificate key safe.");
+    this.#data = {
+      ...this.#data,
+      tls: {
+        certPem: certificate.certPem,
+        keyCipher: this.#box.encrypt(certificate.keyPem),
+        fingerprint: certificate.fingerprint,
+        notAfter: certificate.notAfter,
+      },
+    };
+    this.#save();
+  }
+
+  /** Every paired phone is removed (after a new certificate: they pinned the old one). Returns how many. */
+  removeAllDevices(): number {
+    const count = this.#data.devices.length;
+    if (count === 0) return 0;
+    this.#data = { ...this.#data, devices: [] };
+    this.#save();
+    return count;
   }
 
   settings(): MobileSettings {
@@ -139,7 +210,13 @@ function publicDevice(device: StoredDevice): MobileDevice {
 }
 
 function read(file: string): StoredFile {
-  const empty: StoredFile = { enabled: false, exposure: "loopback", port: MOBILE_DEFAULT_PORT, devices: [] };
+  const empty: StoredFile = {
+    enabled: false,
+    exposure: "loopback",
+    port: MOBILE_DEFAULT_PORT,
+    devices: [],
+    tls: null,
+  };
   if (!existsSync(file)) return empty;
   try {
     const value = JSON.parse(readFileSync(file, "utf8"));
@@ -171,6 +248,20 @@ function read(file: string): StoredFile {
       exposure: isOneOf(MOBILE_EXPOSURES, value.exposure) ? value.exposure : "loopback",
       port: isNumber(value.port) && Number.isInteger(value.port) ? value.port : MOBILE_DEFAULT_PORT,
       devices,
+      tls:
+        isDynamicRecord(value.tls) &&
+        isString(value.tls.certPem) &&
+        isString(value.tls.keyCipher) &&
+        isString(value.tls.fingerprint) &&
+        /^[0-9a-f]{64}$/.test(value.tls.fingerprint) &&
+        isString(value.tls.notAfter)
+          ? {
+              certPem: value.tls.certPem,
+              keyCipher: value.tls.keyCipher,
+              fingerprint: value.tls.fingerprint,
+              notAfter: value.tls.notAfter,
+            }
+          : null,
     };
   } catch {
     return empty;

@@ -5,15 +5,18 @@
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { createServer as createHttpsServer, type Server as HttpsServer } from "node:https";
 import { networkInterfaces } from "node:os";
 import {
   type AgentEvent,
   type BotSummary,
-  buildMobilePairingPayload,
+  buildMobileWebPairingUrl,
   type DraftPreviewResolution,
+  formatMobileFingerprint,
   MOBILE_API_PATHS,
   MOBILE_EXPOSURES,
   MOBILE_LIMITS,
+  MOBILE_PLAIN_TRANSPORT_WARNING,
   MOBILE_PROTOCOL_VERSION,
   MOBILE_TRANSPORT_WARNING,
   type MobileAgentSummary,
@@ -23,15 +26,17 @@ import {
   type MobileNeedsYouItem,
   type MobilePairingTicket,
   type MobileState,
+  type MobileTransport,
   type PendingAgentRequest,
   type StartMobilePairingInput,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { createMobileCertificate } from "./mobile-certificate";
 import { HttpError, readJson, sendJson } from "./mobile-http";
 import type { MobilePhoneApi } from "./mobile-phone-api";
 import { phoneAnswerPolicy } from "./mobile-policy";
 import { buildPairingQr } from "./mobile-qr";
-import type { MobileStore } from "./mobile-store";
+import type { MobileStore, MobileStoredCertificate } from "./mobile-store";
 
 type InterfaceMap = Record<
   string,
@@ -67,9 +72,10 @@ const PHONE_PATHS = new Set<string>([MOBILE_API_PATHS.me, MOBILE_API_PATHS.agent
 
 export class MobileConnect {
   readonly #options: MobileConnectOptions;
-  #server: Server | null = null;
+  #server: Server | HttpsServer | null = null;
   #exposure: MobileExposure;
   #port: number | null = null;
+  #transport: MobileTransport = "plain";
   #pairing: OpenPairing | null = null;
   #unavailable: string | null = null;
   readonly #failures = new Map<string, number[]>();
@@ -94,12 +100,16 @@ export class MobileConnect {
 
   getState(): MobileState {
     const pairing = this.#openPairing();
+    const transport = this.#transportNow();
+    const fingerprint = transport === "tls" ? this.#options.store.certificateFingerprint() : null;
     return {
       enabled: this.#server !== null,
       exposure: this.#exposure,
       port: this.#port,
       urls: this.#server && this.#port !== null ? this.#urls() : [],
-      unencrypted: true,
+      transport,
+      fingerprint: fingerprint ? formatMobileFingerprint(fingerprint) : null,
+      unencrypted: transport === "plain",
       pairing: pairing
         ? {
             expiresAt: new Date(pairing.expiresAt).toISOString(),
@@ -127,6 +137,11 @@ export class MobileConnect {
     const port = input.port ?? saved.port;
     if (!Number.isInteger(port) || (port !== 0 && (port < 1_024 || port > 65_535))) {
       throw new Error("The port is 0 (any free port) or from 1024 to 65535.");
+    }
+    if (exposure === "lan" && !this.#options.store.canEncrypt()) {
+      throw new Error(
+        "The local network needs an encrypted connection, but this computer cannot keep the certificate key safe right now.",
+      );
     }
     const restart =
       !this.#server ||
@@ -157,7 +172,10 @@ export class MobileConnect {
     pairing.timer.unref();
     this.#pairing = pairing;
     const urls = this.#urls();
-    const qrPayload = buildMobilePairingPayload({ ticket, urls });
+    const fingerprint = this.#transport === "tls" ? this.#options.store.certificateFingerprint() : null;
+    // The QR code opens the phone web app on the address a phone can reach (the local network one when there is one).
+    const appUrl = `${urls.find((url) => !url.includes("//127.0.0.1:")) ?? urls[0] ?? ""}/app/`;
+    const qrPayload = buildMobileWebPairingUrl({ appUrl, ticket, urls, fingerprint });
     const qr = buildPairingQr(qrPayload);
     this.#changed();
     return {
@@ -166,9 +184,31 @@ export class MobileConnect {
       qrSvg: qr.svg,
       qrDataUrl: qr.dataUrl,
       urls,
+      appUrl,
+      fingerprint,
       expiresAt: new Date(expiresAt).toISOString(),
       state: this.getState(),
     };
+  }
+
+  /**
+   * A new certificate and fingerprint. Every paired phone pinned the old one, so all are removed (their tokens stop
+   * working) and pair again with a new QR code. The server restarts with the new certificate when it runs.
+   */
+  async rotateCertificate(): Promise<MobileState> {
+    if (!this.#options.store.canEncrypt()) {
+      throw new Error("This computer cannot keep a certificate key safe, so Mobile Connect stays on plain loopback.");
+    }
+    this.#clearPairing();
+    this.#newCertificate();
+    if (this.#server) {
+      const exposure = this.#exposure;
+      const port = this.#port ?? this.#options.store.settings().port;
+      await this.#closeServer();
+      await this.#start(exposure, port);
+    }
+    this.#changed();
+    return this.getState();
   }
 
   cancelPairing(): MobileState {
@@ -216,9 +256,15 @@ export class MobileConnect {
 
   async #listen(exposure: MobileExposure, port: number): Promise<void> {
     const host = exposure === "lan" ? "0.0.0.0" : "127.0.0.1";
-    const server = createServer((request, response) => {
+    const handler = (request: IncomingMessage, response: ServerResponse) => {
       void this.#handle(request, response);
-    });
+    };
+    // COSGRAL W3-BE7: HTTPS whenever the key can be kept safe; plain HTTP only on loopback (checked by the caller).
+    const certificate = this.#options.store.canEncrypt() ? this.#certificate() : null;
+    const server = certificate
+      ? createHttpsServer({ key: certificate.keyPem, cert: certificate.certPem, minVersion: "TLSv1.2" }, handler)
+      : createServer(handler);
+    this.#transport = certificate ? "tls" : "plain";
     server.requestTimeout = MOBILE_LIMITS.ticketTtlMs + 60_000;
     server.headersTimeout = 15_000;
     server.keepAliveTimeout = 5_000;
@@ -236,6 +282,38 @@ export class MobileConnect {
     this.#server = server;
     this.#exposure = exposure;
     this.#port = isDynamicRecord(address) && isNumber(address.port) ? address.port : port;
+  }
+
+  /** The saved certificate, or a new one when there is none, it cannot be read, or it ends within a day. */
+  #certificate(): MobileStoredCertificate {
+    const saved = this.#options.store.certificate();
+    if (saved && Date.parse(saved.notAfter) - this.#now() > 86_400_000) return saved;
+    return this.#newCertificate();
+  }
+
+  /** A new certificate; phones that pinned an older one are removed. */
+  #newCertificate(): MobileStoredCertificate {
+    const ips = mobileUrls("lan", 1, this.#options.interfaces?.())
+      .map((url) => new URL(url).hostname)
+      .filter((host) => host !== "127.0.0.1");
+    const certificate = createMobileCertificate({ now: new Date(this.#now()), ips });
+    const replaced = this.#options.store.certificateFingerprint() !== null;
+    this.#options.store.saveCertificate(certificate);
+    if (replaced || this.#options.store.listDevices().length > 0) {
+      this.#options.store.removeAllDevices();
+      this.#options.phone?.closeAll();
+    }
+    return {
+      certPem: certificate.certPem,
+      keyPem: certificate.keyPem,
+      fingerprint: certificate.fingerprint,
+      notAfter: certificate.notAfter,
+    };
+  }
+
+  #transportNow(): MobileTransport {
+    if (this.#server) return this.#transport;
+    return this.#options.store.canEncrypt() ? "tls" : "plain";
   }
 
   async #closeServer(): Promise<void> {
@@ -336,7 +414,7 @@ export class MobileConnect {
             `Phone: ${name}${isString(platform) && platform ? ` (${platform})` : ""}`,
             `Address: ${address}`,
             "After pairing it can see your agents and what needs you. You can remove it at any time in Settings → Mobile Connect.",
-            MOBILE_TRANSPORT_WARNING,
+            this.#transport === "tls" ? MOBILE_TRANSPORT_WARNING : MOBILE_PLAIN_TRANSPORT_WARNING,
           ].join("\n"),
         }),
         Math.max(1_000, pairing.expiresAt - this.#now()),
@@ -408,7 +486,9 @@ export class MobileConnect {
   }
 
   #urls(): string[] {
-    return this.#port === null ? [] : mobileUrls(this.#exposure, this.#port, this.#options.interfaces?.());
+    if (this.#port === null) return [];
+    const scheme = this.#transport === "tls" ? "https" : "http";
+    return mobileUrls(this.#exposure, this.#port, this.#options.interfaces?.(), scheme);
   }
 
   #changed(): void {
@@ -425,13 +505,14 @@ export function mobileUrls(
   exposure: MobileExposure,
   port: number,
   interfaces: InterfaceMap = networkInterfaces(),
+  scheme: "http" | "https" = "http",
 ): string[] {
-  const urls = [`http://127.0.0.1:${port}`];
+  const urls = [`${scheme}://127.0.0.1:${port}`];
   if (exposure !== "lan") return urls;
   for (const entries of Object.values(interfaces)) {
     for (const entry of entries ?? []) {
       if ((entry.family === "IPv4" || entry.family === 4) && !entry.internal)
-        urls.push(`http://${entry.address}:${port}`);
+        urls.push(`${scheme}://${entry.address}:${port}`);
     }
   }
   return urls;

@@ -13,6 +13,7 @@ import type { AgentService } from "../backend/agent-service";
 import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-connect";
 import { MobilePhoneApi, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
+import type { SecretBox } from "../backend/vault-store";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import { parseMobileDeviceId, parseStartMobilePairing } from "./ipc/mobile-inputs";
 import { handleTrusted } from "./trusted-ipc";
@@ -27,6 +28,8 @@ export interface MobileRuntimeOptions {
   emit: (event: AgentEvent) => void;
   /** COSGRAL W3 (rows 43–44): the program behind the phone API; without it phones only read agents and Needs you. */
   phone?: MobilePhoneHost;
+  /** COSGRAL W3-BE7: keeps the TLS key encrypted (safeStorage); without it only plain loopback works. */
+  secretBox?: SecretBox;
 }
 
 /** What the phone API uses of the agent service. */
@@ -75,7 +78,7 @@ export function mobilePhoneHost(service: MobileAgentService): MobilePhoneHost {
 
 export function createMobileConnect(options: MobileRuntimeOptions): MobileConnect {
   const mobile = new MobileConnect({
-    store: new MobileStore(join(options.userDataPath, "mobile.json")),
+    store: new MobileStore(join(options.userDataPath, "mobile.json"), options.secretBox),
     agents: () => mobileAgents(options.bots()),
     needsYou: () => mobileNeedsYou(options.pending()),
     confirm: options.confirm,
@@ -104,4 +107,5 @@ export function registerMobileIpc(mobile: () => MobileConnect | null): void {
   handleTrusted(IPC_CHANNELS.mobileRevokeDevice, (input: unknown) =>
     current().revokeDevice(parseMobileDeviceId(payload(input))),
   );
+  handleTrusted(IPC_CHANNELS.mobileRotateCertificate, () => current().rotateCertificate());
 }
