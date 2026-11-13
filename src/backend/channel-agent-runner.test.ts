@@ -228,9 +228,17 @@ it("gives a channel member its installed skills and lets it use the skill librar
       arguments: {},
     },
   });
+  for (const namespace of ["cosgral_tables", "cosgral_library", "cosgral_computer"]) {
+    runner.request(client, {
+      id: namespace,
+      method: "item/tool/call",
+      params: { threadId, turnId: "turn", callId: namespace, namespace, tool: "list", arguments: {} },
+    });
+  }
   await new Promise((r) => setTimeout(r, 0));
-  expect(handled).toEqual(["cosgral_skills", "cosgral_vault"]);
+  expect(handled).toEqual(["cosgral_skills", "cosgral_vault", "cosgral_tables", "cosgral_library", "cosgral_computer"]);
   expect(getString(client.requests[0]?.params, "developerInstructions")).toContain("cosgral_vault");
+  expect(getString(client.requests[0]?.params, "developerInstructions")).toContain("cosgral_tables");
   runner.notification({ method: "turn/completed", params: { threadId, turn: { id: "turn", status: "completed" } } });
   await work;
 });

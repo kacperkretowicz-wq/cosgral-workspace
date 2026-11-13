@@ -189,6 +189,102 @@ async function run(threadId, turnId, context) {
   await call(threadId, turnId, "result", { text: "Stub combined result version 2" });
   complete(threadId, turnId, "Stub: combined");
 }
+// W2-BE3: direct turns (plain text, not a channel context). Shared tables and the file library, fixture data only.
+const seenRows = new Map();
+async function direct(threadId, turnId, text, cwd) {
+  const use = async (namespace, tool, args) => {
+    const response = await call(threadId, turnId, tool, args, namespace);
+    if (!response.success) throw new Error(`${tool}: ${response.contentItems[0]?.text}`);
+    return JSON.parse(response.contentItems[0].text);
+  };
+  if (text.includes("DATA CREATE")) {
+    const created = await use("cosgral_tables", "create_table", {
+      name: "Sandbox leads",
+      columns: [
+        { name: "company", type: "text" },
+        { name: "value", type: "number" },
+        { name: "won", type: "boolean" },
+      ],
+    });
+    const inserted = await use("cosgral_tables", "insert_rows", {
+      table: "Sandbox leads",
+      rows: [{ company: "Test Co", value: 100, won: false }],
+    });
+    complete(threadId, turnId, `DATA-RESULT ${JSON.stringify({ created, inserted })}`);
+    return;
+  }
+  if (text.includes("DATA READ")) {
+    const read = await use("cosgral_tables", "query_rows", {
+      table: "sandbox leads",
+      filters: [{ column: "company", op: "eq", value: "Test Co" }],
+    });
+    const row = read.rows[0];
+    seenRows.set(threadId, { rowId: row.id, version: row.version });
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({ rowId: row.id, version: row.version, note: read.note })}`,
+    );
+    return;
+  }
+  const write = /DATA WRITE (\d+)/.exec(text);
+  if (write) {
+    const seen = seenRows.get(threadId);
+    const response = await call(
+      threadId,
+      turnId,
+      "update_row",
+      { table: "Sandbox leads", rowId: seen.rowId, expectedVersion: seen.version, values: { value: Number(write[1]) } },
+      "cosgral_tables",
+    );
+    complete(threadId, turnId, `DATA-RESULT ${response.contentItems[0].text}`);
+    return;
+  }
+  const file = /DATA FILE to (\S+)/.exec(text);
+  if (file) {
+    require("node:fs").writeFileSync(
+      require("node:path").join(cwd, "sandbox-report.md"),
+      "# Sandbox report\nFixture data only.\n",
+    );
+    const saved = await use("cosgral_library", "save_file", { path: "sandbox-report.md" });
+    const got = await use("cosgral_library", "get_file", { fileId: saved.file.id });
+    const sent = await use("openbot", "send_message", {
+      recipientBotIds: [file[1]],
+      text: "Sandbox report attached",
+      paths: [got.path],
+    });
+    complete(threadId, turnId, `DATA-RESULT ${JSON.stringify({ saved, path: got.path, sent })}`);
+    return;
+  }
+  // W3-BE1: Computer Use on a fake desktop driver (no real mouse or keyboard).
+  if (text.includes("COMPUTER WORK")) {
+    const shot = await use("cosgral_computer", "screenshot", {});
+    const listed = await use("cosgral_computer", "list_windows", {});
+    const target = listed.windows.find((window) => window.title === "COSGRAL test window");
+    const x = target.bounds.x + Math.floor(target.bounds.width / 2);
+    const y = target.bounds.y + Math.floor(target.bounds.height / 2);
+    const clicked = await use("cosgral_computer", "click", { x, y });
+    const typed = await use("cosgral_computer", "type_text", { text: "Hello from COSGRAL" });
+    const keys = await use("cosgral_computer", "press_keys", { keys: "ctrl+s" });
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({ shot, windows: listed.windows, target: { x, y }, clicked, typed, keys })}`,
+    );
+    return;
+  }
+  const attempt = /COMPUTER TRY (\w+) (\{.*\})/.exec(text);
+  if (attempt) {
+    const response = await call(threadId, turnId, attempt[1], JSON.parse(attempt[2]), "cosgral_computer");
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({ success: response.success, text: response.contentItems[0]?.text ?? "" })}`,
+    );
+    return;
+  }
+  complete(threadId, turnId, "Stub: received");
+}
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => {
   buffer += chunk;
@@ -239,8 +335,17 @@ process.stdin.on("data", (chunk) => {
         turns.set(turn, { ended: false });
         reply({ turn: { id: turn, status: "inProgress", items: [] } });
         out({ method: "turn/started", params: { threadId: tid, turn: { id: turn } } });
+        let context = null;
+        try {
+          context = JSON.parse(params.input[0].text);
+        } catch {
+          context = null;
+        }
         setTimeout(
-          () => run(tid, turn, JSON.parse(params.input[0].text)).catch((e) => complete(tid, turn, String(e), "failed")),
+          () =>
+            (context ? run(tid, turn, context) : direct(tid, turn, params.input[0]?.text ?? "", params.cwd)).catch(
+              (e) => complete(tid, turn, String(e), "failed"),
+            ),
           20,
         );
         break;

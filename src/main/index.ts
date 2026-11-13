@@ -41,6 +41,7 @@ import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
+import { WindowsComputerDriver } from "../backend/computer-driver-windows";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
@@ -54,6 +55,8 @@ import { WebhookReceiver } from "../backend/webhook-receiver";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
+import { registerComputerUseIpc } from "./computer-use-ipc";
+import { registerSharedDataIpc } from "./data-ipc";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
@@ -789,6 +792,13 @@ function registerIpcHandlers(
   handleTrusted(IPC_CHANNELS.vaultRespondToRequest, (input: unknown) =>
     service.respondToVaultRequest(localVaultInput(input, parseRespondToVaultRequest)),
   );
+  // COSGRAL W2: shared tables and the file library of this computer.
+  registerSharedDataIpc({
+    data: () => service.sharedData,
+    window: () => mainWindow,
+    prepareDraft: (paths) => service.prepareAttachments(paths),
+  });
+  registerComputerUseIpc(() => service.computerUse);
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1248,6 +1258,11 @@ if (!hasSingleInstanceLock) {
       );
       // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
       agentService.useSecretBox(electronSecretBox());
+      // COSGRAL W3: Computer Use drives the Windows desktop through its own PowerShell helper.
+      if (process.platform === "win32")
+        agentService.computerUse.useDriver(
+          new WindowsComputerDriver({ workDir: join(app.getPath("userData"), "computer-use") }),
+        );
       const service = agentService;
       // COSGRAL W3: ACP agents, fallback models, usage and limits (this computer only).
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
@@ -1777,7 +1792,9 @@ function configureAttachmentProtocol(mailbox: MailboxStore, agents: AgentService
     try {
       const url = new URL(request.url);
       const id = url.pathname.split("/").filter(Boolean).at(-1);
-      const attachment = id ? await mailbox.resolveAttachment(id) : null;
+      const attachment = id
+        ? ((await mailbox.resolveAttachment(id)) ?? (await agents.sharedData.library.resolve(id)))
+        : null;
       if (!attachment) return new Response("Not found", { status: 404 });
       return new Response(await readFile(attachment.path), {
         headers: {

@@ -1031,7 +1031,7 @@ async function sha256(path: string): Promise<string> {
     .digest("hex");
 }
 
-function sanitizeName(path: string): string {
+export function sanitizeName(path: string): string {
   const value = basename(path)
     .replace(/[^\p{L}\p{N}._ -]+/gu, "-")
     .replace(/^\.+/, "")
@@ -1062,7 +1062,7 @@ function uniqueName(name: string, used: Set<string>): string {
   return result;
 }
 
-function attachmentMetadata(
+export function attachmentMetadata(
   name: string,
   explicitMimeType?: string,
 ): { kind: AttachmentKind; mimeType: string; previewKind: AttachmentPreviewKind } {
@@ -1094,7 +1094,7 @@ function attachmentMetadata(
   return { kind: previewKind === "image" ? "image" : "file", mimeType, previewKind };
 }
 
-function attachmentPreviewUrl(id: string): string {
+export function attachmentPreviewUrl(id: string): string {
   return `openbot-attachment://file/${id}`;
 }
 

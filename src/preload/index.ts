@@ -70,6 +70,8 @@ import {
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { createComputerUseApi } from "./computer-use-api";
+import { createLibraryApi, createTablesApi } from "./data-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
@@ -714,6 +716,9 @@ const openbotApi: OpenBotDesktopApi = {
     delete: (input) => invokeAgent(IPC_CHANNELS.vaultDelete, input, decodeVoid),
     respondToRequest: (input) => invokeAgent(IPC_CHANNELS.vaultRespondToRequest, input, decodeVoid),
   },
+  tables: createTablesApi(invokeAgent),
+  library: createLibraryApi(invokeAgent, decodeDraftAttachments),
+  computerUse: createComputerUseApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

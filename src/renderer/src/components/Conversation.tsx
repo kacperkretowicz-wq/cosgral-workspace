@@ -78,6 +78,9 @@ import {
   RemoteMacPanel,
 } from "./RemoteMacPanel";
 import { StickyDecision } from "./StickyDecision";
+import { AgentMemorySettingsView } from "./MemorySettings";
+import { SkillsSettings } from "./SkillsSettings";
+import { McpSettings } from "./McpSettings";
 import { ActionCard } from "./ActionCard";
 import type { PendingCard } from "../pending-cards";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
@@ -2365,6 +2368,15 @@ export function Conversation(props: ConversationProps) {
             </Button>
           </header>
           <div class="agent-settings-content">
+            <Show when={props.bot?.id} keyed>
+              {(botId) => (
+                <>
+                  <AgentMemorySettingsView botId={botId} />
+                  <SkillsSettings botId={botId} />
+                  <McpSettings botId={botId} />
+                </>
+              )}
+            </Show>
             <div ref={(element) => (avatarPickerRoot = element)} class="agent-settings-avatar-picker">
               <Popover.Root
                 open={avatarPickerOpen()}

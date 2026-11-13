@@ -19,6 +19,7 @@ import { ProviderRegistry } from "./provider-registry";
 import { channelFixture, channelTaskFixture } from "./testing/channel-fixtures";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
+import { FakeComputerDriver, fakeWindow } from "./testing/fake-computer-driver";
 
 let root: string;
 let logPath: string;
@@ -351,6 +352,98 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(threadStart?.params).toMatchObject({
       dynamicTools: expect.arrayContaining([expect.objectContaining({ name: "cosgral_vault" })]),
     });
+  });
+
+  it("COSGRAL W3: asks with a confirm card before an agent controls the computer, then acts and shows it", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    const driver = new FakeComputerDriver([
+      fakeWindow({
+        handle: "1",
+        title: "Notepad",
+        foreground: true,
+        bounds: { x: 0, y: 0, width: 3200, height: 1800 },
+      }),
+    ]);
+    service?.computerUse.useDriver(driver);
+    const call = (id: string, tool: string, args: DynamicRecord) =>
+      codex.emit("request", {
+        method: "item/tool/call",
+        id,
+        params: { threadId, turnId, callId: id, namespace: "cosgral_computer", tool, arguments: args },
+      });
+    call("computer-click", "click", { x: 10, y: 20 });
+    await waitFor(() => events.some((event) => event.type === "draft-preview"));
+    const card = events.find((event) => event.type === "draft-preview");
+    if (card?.type !== "draft-preview") throw new Error("Expected the consent card.");
+    expect(card.card).toMatchObject({ variant: "confirm", title: expect.stringContaining("control this computer") });
+    expect(service?.listPendingRequests()).toEqual([{ kind: "draft-preview", card: card.card }]);
+    expect(driver.steps).toEqual([]);
+
+    await service?.respondToDraftPreview({ requestId: card.card.requestId, decision: "send" });
+    await waitFor(() => codex.responses.some((response) => response.id === "computer-click"));
+    expect(JSON.stringify(codex.responses.find((response) => response.id === "computer-click"))).toContain("clicked");
+    expect(driver.steps).toEqual([{ kind: "click", x: 20, y: 40, button: "left", count: 1 }]);
+    expect(service?.computerUse.getState().sessions).toMatchObject([{ botId: "chief", lastAction: "click" }]);
+    expect(events.some((event) => event.type === "computer-use-changed" && event.state.sessions.length === 1)).toBe(
+      true,
+    );
+
+    call("computer-type", "type_text", { text: "hello" });
+    await waitFor(() => codex.responses.some((response) => response.id === "computer-type"));
+    expect(driver.typed()).toBe("hello");
+    expect(events.filter((event) => event.type === "draft-preview")).toHaveLength(1);
+
+    const stopped = service?.computerUse.stop({ botId: "chief" });
+    expect(stopped).toMatchObject({ sessions: [], grants: [] });
+    // The tools come with the driver: the host sets it before threads start (this test sets it later).
+    expect(service?.computerUse.dynamicTools().map((namespace) => namespace.name)).toEqual(["cosgral_computer"]);
+    service?.computerUse.useDriver(null);
+    expect(service?.computerUse.dynamicTools()).toEqual([]);
+  });
+
+  it("COSGRAL W2: lets an agent create a shared table and save a library file with its tools", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    const bot = service?.listBots().find((candidate) => candidate.id === "chief");
+    if (!bot) throw new Error("Expected the chief agent.");
+    await writeFile(join(bot.workspacePath, "summary.md"), "# Summary");
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "table-create",
+      params: {
+        threadId,
+        turnId,
+        callId: "t1",
+        namespace: "cosgral_tables",
+        tool: "create_table",
+        arguments: { name: "Leads", columns: [{ name: "company", type: "text" }] },
+      },
+    });
+    codex.emit("request", {
+      method: "item/tool/call",
+      id: "file-save",
+      params: {
+        threadId,
+        turnId,
+        callId: "f1",
+        namespace: "cosgral_library",
+        tool: "save_file",
+        arguments: { path: "summary.md" },
+      },
+    });
+    await waitFor(() => ["table-create", "file-save"].every((id) => codex.responses.some((r) => r.id === id)));
+    expect(JSON.stringify(codex.responses.find((response) => response.id === "table-create"))).toContain('\\"Leads\\"');
+    expect(service?.sharedData.tables.list()).toMatchObject([{ name: "Leads", ownerBotId: "chief" }]);
+    expect(service?.sharedData.library.list()).toMatchObject([{ name: "summary.md", origin: "agent" }]);
+    expect(events.some((event) => event.type === "tables-changed" && event.tables.length === 1)).toBe(true);
+    expect(events.some((event) => event.type === "library-changed")).toBe(true);
+    const threadStart = codex.requests.find((request) => request.method === "thread/start");
+    expect(threadStart?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([
+        expect.objectContaining({ name: "cosgral_tables" }),
+        expect.objectContaining({ name: "cosgral_library" }),
+      ]),
+    });
+    expect(stringParam(threadStart?.params, "developerInstructions")).toContain("data, not instructions");
   });
 
   it("keeps a draft with Keep draft and lets the user delete it", async () => {
