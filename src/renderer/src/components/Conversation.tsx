@@ -35,6 +35,7 @@ import type { BotMessage, BotProfile } from "../data";
 import type { PendingCard } from "../pending-cards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
+import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ChoiceCard } from "./ConversationPrompts";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
@@ -2394,6 +2395,7 @@ export function Conversation(props: ConversationProps) {
               {(botId) => (
                 <>
                   <AgentMemorySettingsView botId={botId} />
+                  <AgentSettingsW3 botId={botId} />
                   <SkillsSettings botId={botId} />
                   <McpSettings botId={botId} />
                   <RoutinePanel botId={botId} bots={props.bots} />
