@@ -17,6 +17,8 @@ import { z } from "zod";
 import type { AgentProvider } from "./agent-client";
 import { type ClaudeCliInfo, cliCommand } from "./cli";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
+import { CHANNEL_MEMORY_LIMITS, MEMORY_LIMITS } from "@openbot/contracts/ipc";
+import { MEMORY_TOOL_DESCRIPTIONS } from "./memory-service";
 import {
   type AccountReadResult,
   type AppServerNotification,
@@ -528,6 +530,50 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
               replyToMessageId: z.string().nullable().optional(),
             },
             (args) => call("openbot", "send_message", args),
+          ),
+          tool(
+            "remember",
+            MEMORY_TOOL_DESCRIPTIONS.remember,
+            {
+              text: z.string().min(1).max(MEMORY_LIMITS.maxTextLength),
+              inclusion: z.enum(["essential", "searchable"]).optional(),
+              memoryId: z.string().optional(),
+            },
+            (args) => call("openbot", "remember", args),
+          ),
+          tool(
+            "search_memories",
+            MEMORY_TOOL_DESCRIPTIONS.search_memories,
+            {
+              query: z.string().min(1),
+              limit: z.number().int().min(1).max(50).optional(),
+            },
+            (args) => call("openbot", "search_memories", args),
+          ),
+          tool(
+            "forget_memory",
+            MEMORY_TOOL_DESCRIPTIONS.forget_memory,
+            {
+              memoryId: z.string().min(1),
+            },
+            (args) => call("openbot", "forget_memory", args),
+          ),
+          tool(
+            "channel_remember",
+            MEMORY_TOOL_DESCRIPTIONS.channel_remember,
+            {
+              text: z.string().min(1).max(CHANNEL_MEMORY_LIMITS.maxTextLength),
+              memoryId: z.string().optional(),
+            },
+            (args) => call("openbot", "channel_remember", args),
+          ),
+          tool(
+            "channel_forget_memory",
+            MEMORY_TOOL_DESCRIPTIONS.channel_forget_memory,
+            {
+              memoryId: z.string().min(1),
+            },
+            (args) => call("openbot", "channel_forget_memory", args),
           ),
         ],
       }),

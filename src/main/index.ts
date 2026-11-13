@@ -90,6 +90,16 @@ import {
   parseSidebarFolderId,
   parseUpdateSidebarFolder,
 } from "./ipc/sidebar-inputs";
+import {
+  parseDeleteAgentMemory,
+  parseDeleteChannelMemory,
+  parseListAgentMemories,
+  parseListChannelMemories,
+  parseSaveAgentMemory,
+  parseSaveChannelMemory,
+  parseSearchAgentMemories,
+} from "./ipc/memory-inputs";
+import { MemoryStore } from "../backend/memory-store";
 import { isObject, requireString } from "./ipc/validation";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
@@ -226,6 +236,7 @@ function registerIpcHandlers(
   remoteServers: RemoteServerManager,
   centralAuth: AccountManager,
   sidebar: SidebarStore,
+  memoryStore: MemoryStore,
 ): void {
   handleTrusted(IPC_CHANNELS.getAppInfo, (): AppInfo => {
     const platform = process.platform;
@@ -688,6 +699,82 @@ function registerIpcHandlers(
     return forwardSidebarLayout(sidebar.moveItem(parsed));
   });
 
+  // COSGRAL W2: agent and channel memory
+  handleTrusted(IPC_CHANNELS.memoryListAgentMemories, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") return [];
+    const parsed = parseListAgentMemories(payload);
+    return memoryStore.listAgentMemories(parsed.botId, parsed.inclusion);
+  });
+  handleTrusted(IPC_CHANNELS.memorySaveAgentMemory, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
+    const parsed = parseSaveAgentMemory(payload);
+    const saved = memoryStore.saveAgentMemory(parsed);
+    forwardAgentEvent("local", {
+      type: "agent-memory-changed",
+      botId: saved.botId,
+      action: "saved",
+      memory: saved,
+    });
+    return saved;
+  });
+  handleTrusted(IPC_CHANNELS.memoryDeleteAgentMemory, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
+    const parsed = parseDeleteAgentMemory(payload);
+    const deleted = memoryStore.deleteAgentMemory(parsed);
+    if (deleted) {
+      forwardAgentEvent("local", {
+        type: "agent-memory-changed",
+        botId: deleted.botId,
+        action: "deleted",
+        memory: deleted,
+      });
+    }
+    return null;
+  });
+  handleTrusted(IPC_CHANNELS.memorySearchAgentMemories, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") return [];
+    const parsed = parseSearchAgentMemories(payload);
+    return memoryStore.searchAgentMemories(parsed);
+  });
+  handleTrusted(IPC_CHANNELS.memoryListChannelMemories, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") return [];
+    const parsed = parseListChannelMemories(payload);
+    return memoryStore.listChannelMemories(parsed.channelId);
+  });
+  handleTrusted(IPC_CHANNELS.memorySaveChannelMemory, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
+    const parsed = parseSaveChannelMemory(payload);
+    const saved = memoryStore.saveChannelMemory(parsed);
+    forwardAgentEvent("local", {
+      type: "channel-memory-changed",
+      channelId: saved.channelId,
+      action: "saved",
+      memory: saved,
+    });
+    return saved;
+  });
+  handleTrusted(IPC_CHANNELS.memoryDeleteChannelMemory, (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    if (serverId !== "local") throw new Error("Memory is available only on this computer for now.");
+    const parsed = parseDeleteChannelMemory(payload);
+    const deleted = memoryStore.deleteChannelMemory(parsed);
+    if (deleted) {
+      forwardAgentEvent("local", {
+        type: "channel-memory-changed",
+        channelId: deleted.channelId,
+        action: "deleted",
+        memory: deleted,
+      });
+    }
+    return null;
+  });
+
   handleTrusted(IPC_CHANNELS.browserOpen, (input: unknown) => {
     const parsed = parseBrowserOpen(input);
     return remoteServers.activeServerId === "local"
@@ -982,6 +1069,8 @@ if (!hasSingleInstanceLock) {
       const service = agentService;
       // COSGRAL W1: sidebar folders live in the same local database.
       const sidebarStore = new SidebarStore(store.database);
+      // COSGRAL W2: memory store in the same database.
+      const memoryStore = new MemoryStore(store.database);
       configureAttachmentProtocol(mailboxStore, service);
       const teamStore = new TeamStore(join(app.getPath("userData"), TEAM_FILE));
       await teamStore.initialize();
@@ -1123,6 +1212,7 @@ if (!hasSingleInstanceLock) {
         remoteServers,
         centralAuthManager,
         sidebarStore,
+        memoryStore,
       );
       configureApplicationMenu(service, updateService);
       await loadRenderer(mainWindow);

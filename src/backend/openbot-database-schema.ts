@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -219,6 +219,28 @@ const SCHEMA_SQL = `
     last_event_sequence INTEGER NOT NULL,
     PRIMARY KEY(item_kind, item_id)
   );
+  -- COSGRAL W2: agent and channel memories
+  CREATE TABLE IF NOT EXISTS projection_agent_memories (
+    memory_id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    inclusion TEXT NOT NULL CHECK(inclusion IN ('essential', 'searchable')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS agent_memories_agent
+    ON projection_agent_memories(agent_id, inclusion, updated_at DESC);
+  CREATE TABLE IF NOT EXISTS projection_channel_memories (
+    memory_id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_event_sequence INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS channel_memories_channel
+    ON projection_channel_memories(channel_id, updated_at DESC);
 `;
 
 export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().toISOString()): void {

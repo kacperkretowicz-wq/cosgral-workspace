@@ -5,17 +5,21 @@ import {
   type AgentEyesSession,
   type AgentEyesState,
   type AgentIpcRequest,
+  type AgentMemory,
   type AgentModelOption,
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
+  type ChannelMemory,
   type ConversationReadState,
   type ConversationWithReadState,
   type DraftAttachment,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   isAgentActivity,
+  isAgentMemory,
   isAgentModel,
+  isChannelMemory,
   isPendingAgentRequest,
   isReasoningEffort,
   isSidebarFolder,
@@ -324,6 +328,27 @@ function decodeSidebarFolderChange(value: unknown): SidebarFolderChange {
   return { folder: value.folder, layout: value.layout };
 }
 
+/** COSGRAL W2: memory decoders */
+function decodeAgentMemory(value: unknown): AgentMemory {
+  if (!isAgentMemory(value)) throw new Error("Invalid agent memory response.");
+  return value;
+}
+
+function decodeAgentMemories(value: unknown): AgentMemory[] {
+  if (!Array.isArray(value)) throw new Error("Invalid agent memories response.");
+  return value.filter(isAgentMemory);
+}
+
+function decodeChannelMemory(value: unknown): ChannelMemory {
+  if (!isChannelMemory(value)) throw new Error("Invalid channel memory response.");
+  return value;
+}
+
+function decodeChannelMemories(value: unknown): ChannelMemory[] {
+  if (!Array.isArray(value)) throw new Error("Invalid channel memories response.");
+  return value.filter(isChannelMemory);
+}
+
 function isQueueSnapshot(value: unknown): value is QueueSnapshot {
   return isDynamicRecord(value) && isString(value.botId) && isBoolean(value.paused) && Array.isArray(value.deliveries);
 }
@@ -430,6 +455,18 @@ const openbotApi: OpenBotDesktopApi = {
     duplicateFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDuplicateFolder, input, decodeSidebarFolderChange),
     deleteFolder: (input) => invokeAgent(IPC_CHANNELS.sidebarDeleteFolder, input, decodeSidebarLayout),
     moveItem: (input) => invokeAgent(IPC_CHANNELS.sidebarMoveItem, input, decodeSidebarLayout),
+  },
+  memory: {
+    listAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memoryListAgentMemories, input, decodeAgentMemories),
+    saveAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memorySaveAgentMemory, input, decodeAgentMemory),
+    deleteAgentMemory: (input) => invokeAgent(IPC_CHANNELS.memoryDeleteAgentMemory, input, decodeVoid),
+    searchAgentMemories: (input) => invokeAgent(IPC_CHANNELS.memorySearchAgentMemories, input, decodeAgentMemories),
+    listChannelMemories: (input) => {
+      const channelId = typeof input === "string" ? input : input.channelId;
+      return invokeAgent(IPC_CHANNELS.memoryListChannelMemories, { channelId }, decodeChannelMemories);
+    },
+    saveChannelMemory: (input) => invokeAgent(IPC_CHANNELS.memorySaveChannelMemory, input, decodeChannelMemory),
+    deleteChannelMemory: (input) => invokeAgent(IPC_CHANNELS.memoryDeleteChannelMemory, input, decodeVoid),
   },
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

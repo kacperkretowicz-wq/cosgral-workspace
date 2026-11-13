@@ -37,6 +37,15 @@ import {
   parseSidebarFolderId,
   parseUpdateSidebarFolder,
 } from "./sidebar-inputs";
+import {
+  parseDeleteAgentMemory,
+  parseDeleteChannelMemory,
+  parseListAgentMemories,
+  parseListChannelMemories,
+  parseSaveAgentMemory,
+  parseSaveChannelMemory,
+  parseSearchAgentMemories,
+} from "./memory-inputs";
 import { requireString } from "./validation";
 
 describe("app IPC input parsing", () => {
@@ -290,6 +299,53 @@ describe("sidebar IPC input parsing", () => {
     expect(() => parseMoveSidebarItem({ itemKind: "person", itemId: "u1", folderId: null, position: 0 })).toThrowError(
       "itemKind must be agent or channel.",
     );
+  });
+});
+
+describe("memory IPC input parsing", () => {
+  it("parses valid agent memory inputs", () => {
+    expect(parseListAgentMemories({ botId: "b1", inclusion: "essential" })).toEqual({
+      botId: "b1",
+      inclusion: "essential",
+    });
+    expect(parseSaveAgentMemory({ botId: "b1", text: "Some memory", inclusion: "searchable", memoryId: "m1" })).toEqual({
+      botId: "b1",
+      text: "Some memory",
+      inclusion: "searchable",
+      memoryId: "m1",
+    });
+    expect(parseDeleteAgentMemory({ botId: "b1", memoryId: "m1" })).toEqual({
+      botId: "b1",
+      memoryId: "m1",
+    });
+    expect(parseSearchAgentMemories({ botId: "b1", query: "test query", limit: 5 })).toEqual({
+      botId: "b1",
+      query: "test query",
+      limit: 5,
+    });
+  });
+
+  it("parses valid channel memory inputs", () => {
+    expect(parseListChannelMemories("c1")).toEqual({ channelId: "c1" });
+    expect(parseListChannelMemories({ channelId: "c1" })).toEqual({ channelId: "c1" });
+    expect(parseSaveChannelMemory({ channelId: "c1", text: "Channel info", memoryId: "cm1" })).toEqual({
+      channelId: "c1",
+      text: "Channel info",
+      memoryId: "cm1",
+    });
+    expect(parseDeleteChannelMemory({ channelId: "c1", memoryId: "cm1" })).toEqual({
+      channelId: "c1",
+      memoryId: "cm1",
+    });
+  });
+
+  it("rejects invalid memory inputs", () => {
+    expect(() => parseListAgentMemories({ botId: "b1", inclusion: "invalid" })).toThrowError(
+      "inclusion must be essential or searchable.",
+    );
+    expect(() => parseSaveAgentMemory({ botId: "b1", text: " " })).toThrowError("text is required.");
+    expect(() => parseDeleteAgentMemory({ botId: "b1", memoryId: " " })).toThrowError("memoryId is required.");
+    expect(() => parseSaveChannelMemory({ channelId: " ", text: "test" })).toThrowError("channelId is required.");
   });
 });
 
