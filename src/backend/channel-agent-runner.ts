@@ -4,6 +4,7 @@ import { CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import type { AgentClient } from "./agent-client";
 import type { ChannelRunInput, ChannelRunner, ChannelTurnResult } from "./channel-engine";
 import { CHANNEL_DYNAMIC_TOOLS, CHANNEL_NAMESPACE } from "./channel-tools";
+import { COMPUTER_NAMESPACE } from "./computer-use";
 import { DATA_INSTRUCTIONS, LIBRARY_NAMESPACE, TABLES_NAMESPACE } from "./data-tools";
 import {
   type AppServerNotification,
@@ -257,6 +258,7 @@ export class ChannelAgentRunner implements ChannelRunner {
             params.namespace !== VAULT_NAMESPACE &&
             params.namespace !== TABLES_NAMESPACE &&
             params.namespace !== LIBRARY_NAMESPACE &&
+            params.namespace !== COMPUTER_NAMESPACE &&
             !(params.namespace === "openbot" && params.tool === "ask_user")
           )
             throw new Error("This tool is outside the channel's scope.");
