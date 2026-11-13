@@ -26,6 +26,10 @@ files:
   - package.json
   - LICENSE
   - NOTICE
+  # COSGRAL (lead decision W1): Claude runs from the installed Claude CLI (pathToClaudeCodeExecutable).
+  # The SDK's own native CLI package (claude.exe, about 300 MB) is never used, so it does not ship.
+  - "!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**"
+  - "!**/node_modules/@anthropic-ai/claude-agent-sdk-*"
 extraResources:
   - from: build/icon-production.png
     to: icons/icon-production.png

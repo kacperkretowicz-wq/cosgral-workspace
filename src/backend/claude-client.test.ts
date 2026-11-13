@@ -68,9 +68,11 @@ describe("ClaudeAgentClient", () => {
 
     const output = new TestQueue<TestStreamMessage>();
     let prompt: AsyncIterable<SDKUserMessage> | null = null;
+    let claudeExecutable: string | undefined;
     const generator = new TestQuery(output);
     const client = new ClaudeAgentClient({ executable, version: "2.1.231" }, (params) => {
       if (!isString(params.prompt)) prompt = params.prompt;
+      claudeExecutable = params.options?.pathToClaudeCodeExecutable;
       return generator;
     });
     const notifications: Array<{ method: string; params: unknown }> = [];
@@ -102,6 +104,8 @@ describe("ClaudeAgentClient", () => {
     );
 
     if (prompt === null) throw new Error("Claude prompt was not initialized.");
+    // COSGRAL: Claude always runs from the installed CLI; the package does not ship the SDK's own claude.exe.
+    expect(claudeExecutable).toBe(executable);
     const promptStream: AsyncIterable<SDKUserMessage> = prompt;
     let sent: SDKUserMessage | undefined;
     for await (const message of promptStream) {

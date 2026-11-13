@@ -100,6 +100,35 @@ Testy TDD: `channel-history.test.ts`, `channel-engine.test.ts`, `channel-agent-r
 
 Piaskownica jest headless: prawdziwe AgentService, AppServerClient, SQLite i ChannelEngine + osobny proces atrapy Codex. Przeglądarka w tej próbie jest atrapą (nie jest sterowany pulpit). Skrypt `scripts/channel-sandbox-smoke.ts`, protokół atrapy `src/backend/testing/channel-codex.cjs`. Dowody i profile poza repo: `Shared/cosgral-data/desktop-backend/sandbox-w1-be2-engine*`. Brak prawdziwych tur modelu.
 
+Karty (W1-BE3, kod commita kart):
+
+| Sprawdzenie | Wynik | Dowód |
+|---|---|---|
+| Całe `bun run test` | **678/678**, 90/90 plików | `logs\w1-be3-full-test.log` |
+| `typecheck:contracts`, `typecheck:node`, `typecheck:renderer` | exit 0 | `logs\w1-be3-typecheck-2.log` |
+| Testy TDD (czerwone przed kodem) | `action-cards.test.ts` 8, `draft-store.test.ts` 3, `agent-service.test.ts` +4, `channel-agent-runner.test.ts` +1, `claude-client.test.ts` (serwer `cosgral_cards`), `input-parsers.test.ts` +2, `ipc-w1.test.ts` (wariant karty, `drafts-changed`) | repo |
+| Piaskownica (atrapa Codex, tury kanału) | `ok: true`: karta → zadanie `waiting` → Send → agent dostaje `send`; Keep draft → szkic w bazie także po ponownym otwarciu; przejęcie → `take-over` aktywuje kartę `tab-1` → `return` → agent robi `snapshot` tej samej karty | `sandbox-w1-be3-cards\evidence.json` |
+
+## Paczka bez `claude.exe`
+
+- Skąd był: opcjonalna paczka SDK `@anthropic-ai/claude-agent-sdk-win32-x64` (304 MB) w `app.asar.unpacked`. Program jej nie używa: `ClaudeAgentClient` zawsze podaje SDK `pathToClaudeCodeExecutable` = zainstalowane Claude CLI (test w `claude-client.test.ts`).
+- Zmiana: wykluczenie w `electron-builder.yml`; `scripts/verify-windows-package.ts` sprawdza `app.asar.unpacked` i nagłówek `app.asar` i pada, gdyby dołączone CLI wróciło (czerwone na starej paczce z 12.11: „still ships the SDK's bundled Claude CLI”).
+- Wynik `bun run dist:win`: instalator **102,7 MB** (było 169 MB), `win-unpacked` 447 MB (było ok. 751 MB). Log: `logs\w1-be3-dist-win.log`.
+- Start z zainstalowanego CLI: paczka w piaskownicy z zastępczym „zainstalowanym” CLI (`claude-installed-stub\claude.cmd`, bez modelu i sieci) działa po 15 s i wywołuje to CLI: `--version`, potem `auth status --json`. Skrypt `claude-from-installed-cli.ps1`, log `logs\w1-be3-claude-installed-cli.log`.
+- Weryfikacja paczki w piaskownicy: metadane, licencje, bezpieczniki, brak dołączonego CLI i pierwszy start przechodzą. Pada znany z B1 próg „druga instancja kończy się w 3 s”: druga instancja kończy się poprawnie (kod 0) po **5,1 s** (3/3; w B1 7,8–8,0 s). Progu nie zmieniałem. Log: `logs\w1-be3-verify-package.log`.
+- Nie sprawdzone: prawdziwa tura Claude przez SDK. Na tym komputerze nie ma zainstalowanego Claude CLI ani logowania. NSIS nie był instalowany (zapis do rejestru prawdziwego profilu).
+
 ## Commity i przekazanie
 
-Do uzupełnienia po weryfikacji. Bez push; każdy nowy commit z wymaganym trailerem. Lider scala po review. UI korzysta z kontraktu powyżej. Instalator bez `claude.exe`, karta szkicu i przejęcie przeglądarki nie wchodzą w to zadanie.
+Gałąź `team/backend/w1-be2`, bez push, każdy commit z trailerem. Lider scala po review.
+
+| Commit | Zakres |
+|---|---|
+| `3ffeac7ce` | Scalenie integracji `341ae769b` (W1-UI2, W1-T2) |
+| `a2fa8b9f5` | Silnik kanałów (W1-BE2): lider, zadania, narzędzia kanału, IPC wiadomości |
+| `08966b877` | Karty akcji (W1-BE3): szkic / potwierdzenie, zachowane szkice, przejęcie przeglądarki |
+| ostatni commit gałęzi | Paczka bez `claude.exe`, weryfikacja paczki, ten raport |
+
+Dla UI (kolejne zadanie): kanały i zadania na prawdziwych danych (`channels.*`), karta szkicu w dwóch wariantach, karta przejęcia z panelem przeglądarki w fazie `taken-over`, lista zachowanych szkiców. Atrapa w `mock-openbot.ts` nie ma jeszcze nowych metod kart; wszystkie są opcjonalne.
+
+Otwarte: próg 3 s drugiej instancji w weryfikacji paczki (znany z B1, teraz 5,1 s); prawdziwa tura Claude nie była sprawdzona (brak CLI na tym komputerze).
