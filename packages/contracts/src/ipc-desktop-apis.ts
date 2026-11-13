@@ -46,6 +46,14 @@ import type {
 } from "./ipc-conversation";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
+  LibraryFileIdInput,
+  LibraryItem,
+  LibraryUsage,
+  ListLibraryInput,
+  OpenLibraryFileInput,
+  SaveChatAttachmentInput,
+} from "./ipc-library";
+import type {
   AddMcpServerInput,
   AgentMcpServerSetting,
   McpServer,
@@ -88,6 +96,18 @@ import type {
   UninstallSkillInput,
   UpdateSkillInstallInput,
 } from "./ipc-skills";
+import type {
+  CreateTableInput,
+  DeleteTableRowInput,
+  InsertTableRowsInput,
+  QueryTableRowsInput,
+  SharedTable,
+  TableIdInput,
+  TableRow,
+  TableRowPage,
+  TableWriteResult,
+  UpdateTableRowInput,
+} from "./ipc-tables";
 import type {
   ConfigureHostInput,
   ConfigureRemoteDesktopInput,
@@ -280,6 +300,46 @@ export interface VaultDesktopApi {
   respondToRequest: (input: RespondToVaultRequestInput) => Promise<void>;
 }
 
+/**
+ * COSGRAL W2: shared tables (see ipc-tables.ts), the same data every agent reads and writes.
+ * Changes come as `tables-changed` and `table-rows-changed` events.
+ */
+export interface TablesDesktopApi {
+  /** Every table, by name. */
+  list: () => Promise<SharedTable[]>;
+  create: (input: CreateTableInput) => Promise<SharedTable>;
+  /** Deletes the table and its rows for every agent. */
+  delete: (input: TableIdInput) => Promise<void>;
+  queryRows: (input: QueryTableRowsInput) => Promise<TableRowPage>;
+  insertRows: (input: InsertTableRowsInput) => Promise<TableRow[]>;
+  /** A stale `expectedVersion` returns `conflict` with the current row and writes nothing. */
+  updateRow: (input: UpdateTableRowInput) => Promise<TableWriteResult>;
+  deleteRow: (input: DeleteTableRowInput) => Promise<TableWriteResult>;
+}
+
+/**
+ * COSGRAL W2: the file library (see ipc-library.ts): one store, two views. `list` returns library files
+ * (origin "upload" or "agent") and chat attachments (origin "chat"). Changes come as `library-changed`.
+ */
+export interface LibraryDesktopApi {
+  /** Newest first. */
+  list: (input?: ListLibraryInput) => Promise<LibraryItem[]>;
+  /** Space used by library files (chat attachments are not counted) and the limit. */
+  usage: () => Promise<LibraryUsage>;
+  /** Opens the system file picker and saves the chosen files in the library. */
+  choose: () => Promise<LibraryItem[]>;
+  /** Saves dropped or pasted files in the library. */
+  addFiles: (files: File[]) => Promise<LibraryItem[]>;
+  /** Keeps a copy of a chat attachment among the library files. */
+  saveFromChat: (input: SaveChatAttachmentInput) => Promise<LibraryItem>;
+  /** Deletes a library file and frees its space. A chat attachment stays with its message. */
+  delete: (input: LibraryFileIdInput) => Promise<void>;
+  /** "download" asks where to save a copy; "reveal" shows the file in its folder. */
+  open: (input: OpenLibraryFileInput) => Promise<void>;
+  /** Adds the file to the composer as an attachment of the next message, like a picked file. */
+  attachToDraft: (input: LibraryFileIdInput) => Promise<DraftAttachment>;
+}
+
 export interface BrowserDesktopApi {
   open: (input: BrowserOpenInput) => Promise<BrowserTab>;
   activate: (tabId: string) => Promise<void>;
@@ -377,4 +437,8 @@ export interface OpenBotDesktopApi {
   mcp?: McpDesktopApi;
   /** COSGRAL W2 local Vault (this computer only). Optional until every renderer mock implements it. */
   vault?: VaultDesktopApi;
+  /** COSGRAL W2 shared tables (this computer only). Optional until every renderer mock implements it. */
+  tables?: TablesDesktopApi;
+  /** COSGRAL W2 file library (this computer only). Optional until every renderer mock implements it. */
+  library?: LibraryDesktopApi;
 }
