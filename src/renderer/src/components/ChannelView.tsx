@@ -1,6 +1,7 @@
 import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
+import { ChannelMemorySettingsView } from "./MemorySettings";
 
 type Person = { id: string; name: string };
 export function ChannelView(props: {
@@ -13,6 +14,7 @@ export function ChannelView(props: {
   onReassign: (id: string, botId: string) => void;
 }) {
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
+  const [memoryOpen, setMemoryOpen] = createSignal(false);
   const [text, setText] = createSignal("");
   const [sending, setSending] = createSignal(false);
   const [error, setError] = createSignal("");
@@ -43,6 +45,12 @@ export function ChannelView(props: {
             <p class="channel-prewrap">{props.channel.instructions}</p>
           </details>
         </Show>
+        <details onToggle={(event) => setMemoryOpen(event.currentTarget.open)}>
+          <summary>Channel memory</summary>
+          <Show when={memoryOpen()}>
+            <ChannelMemorySettingsView channelId={props.channel.id} />
+          </Show>
+        </details>
         <ChatTasksSwitch mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
       </header>
       <Show
