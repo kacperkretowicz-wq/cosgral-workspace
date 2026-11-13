@@ -20,6 +20,7 @@ import {
   type PromptResolution,
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
+import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
@@ -512,6 +513,8 @@ export type AgentEvent =
   | { type: "table-rows-changed"; tableId: string; rowIds: string[] }
   /** COSGRAL W2: files of the library or chat attachments were added or deleted; read the list again. */
   | { type: "library-changed"; fileIds: string[] }
+  /** COSGRAL W3: who controls the computer and which conversations may; replace the whole state. */
+  | { type: "computer-use-changed"; state: ComputerUseState }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -608,6 +611,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isString(value.tableId) && Array.isArray(value.rowIds) && value.rowIds.every(isString);
     case "library-changed":
       return Array.isArray(value.fileIds) && value.fileIds.every(isString);
+    case "computer-use-changed":
+      return isComputerUseState(value.state);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":
