@@ -8,6 +8,7 @@ export * from "./ipc-desktop-apis";
 export * from "./ipc-eyes";
 export * from "./ipc-mcp";
 export * from "./ipc-memory";
+export * from "./ipc-routines";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
 export * from "./ipc-team-host";
