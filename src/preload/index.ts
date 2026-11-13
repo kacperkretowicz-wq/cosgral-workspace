@@ -1,5 +1,6 @@
 import {
   type AccountUsage,
+  type AcpAgentConfig,
   type AgentActivity,
   type AgentEyesGrant,
   type AgentEyesSession,
@@ -8,6 +9,7 @@ import {
   type AgentMcpServerSetting,
   type AgentMemory,
   type AgentMemorySettings,
+  type AgentModelId,
   type AgentModelOption,
   type AgentStatus,
   type AttachmentImportEvent,
@@ -20,6 +22,7 @@ import {
   type DraftAttachment,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
+  isAcpAgentConfig,
   isAgentActivity,
   isAgentMcpServerSetting,
   isAgentMemory,
@@ -32,6 +35,7 @@ import {
   isLocalSkill,
   isMcpServer,
   isPendingAgentRequest,
+  isProviderUsage,
   isReasoningEffort,
   isRoutine,
   isRoutineRun,
@@ -49,6 +53,7 @@ import {
   type McpServer,
   type OpenBotDesktopApi,
   type PendingAgentRequest,
+  type ProviderUsage,
   type QueuedMessageReceipt,
   type QueueSnapshot,
   type Routine,
@@ -204,6 +209,7 @@ function isBotSummary(value: unknown): value is BotSummary {
     isString(value.description) &&
     isBoolean(value.notifications) &&
     isAgentModel(value.model) &&
+    (value.activeModel === undefined || isAgentModel(value.activeModel)) &&
     isReasoningEffort(value.reasoningEffort) &&
     nullableString(value.threadId, "thread ID") &&
     isString(value.workspacePath) &&
@@ -425,6 +431,27 @@ function decodeRoutine(value: unknown): Routine {
   return value;
 }
 
+/** COSGRAL W3: provider decoders. */
+function decodeAcpAgents(value: unknown): AcpAgentConfig[] {
+  if (!Array.isArray(value)) throw new Error("Invalid ACP agent list response.");
+  return value.filter(isAcpAgentConfig);
+}
+
+function decodeAcpAgent(value: unknown): AcpAgentConfig {
+  if (!isAcpAgentConfig(value)) throw new Error("Invalid ACP agent response.");
+  return value;
+}
+
+function decodeProviderUsage(value: unknown): ProviderUsage[] {
+  if (!Array.isArray(value)) throw new Error("Invalid provider usage response.");
+  return value.filter(isProviderUsage);
+}
+
+function decodeModelIds(value: unknown): AgentModelId[] {
+  if (!Array.isArray(value)) throw new Error("Invalid fallback models response.");
+  return value.filter(isAgentModel);
+}
+
 function decodeRoutines(value: unknown): Routine[] {
   if (!Array.isArray(value)) throw new Error("Invalid routine list response.");
   return value.filter(isRoutine);
@@ -635,6 +662,14 @@ const openbotApi: OpenBotDesktopApi = {
     runNow: (input) => invokeAgent(IPC_CHANNELS.routinesRunNow, input, decodeRoutineRun),
     listRuns: (input) => invokeAgent(IPC_CHANNELS.routinesListRuns, input, decodeRoutineRuns),
     regenerateSecret: (input) => invokeAgent(IPC_CHANNELS.routinesRegenerateSecret, input, decodeRoutineWithSecret),
+  },
+  providers: {
+    listAcpAgents: () => invokeAgent(IPC_CHANNELS.providersListAcpAgents, null, decodeAcpAgents),
+    saveAcpAgent: (input) => invokeAgent(IPC_CHANNELS.providersSaveAcpAgent, input, decodeAcpAgent),
+    removeAcpAgent: (input) => invokeAgent(IPC_CHANNELS.providersRemoveAcpAgent, input, decodeVoid),
+    listUsage: () => invokeAgent(IPC_CHANNELS.providersListUsage, null, decodeProviderUsage),
+    getFallbackModels: (botId) => invokeAgent(IPC_CHANNELS.providersGetFallbackModels, botId, decodeModelIds),
+    setFallbackModels: (input) => invokeAgent(IPC_CHANNELS.providersSetFallbackModels, input, decodeModelIds),
   },
   mcp: {
     list: () => invokeAgent(IPC_CHANNELS.mcpList, null, decodeMcpServers),

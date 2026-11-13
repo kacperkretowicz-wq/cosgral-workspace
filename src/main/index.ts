@@ -45,6 +45,7 @@ import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
+import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
@@ -140,6 +141,7 @@ import { isObject, requireString } from "./ipc/validation";
 import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
+import { registerProviderIpc } from "./provider-ipc";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
 import { RemoteMacManager } from "./remote-mac";
 import {
@@ -218,6 +220,8 @@ let mcpManager: McpManager | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
 let webhookReceiverService: WebhookReceiver | null = null;
+/** COSGRAL W3: ACP agents, fallback models, usage and limits; its reset timer stops on exit. */
+let providerRegistry: ProviderRegistry | null = null;
 const DEFAULT_WEBHOOK_PORT = 47900;
 let mailboxStore: MailboxStore | null = null;
 let updateService: UpdateService | null = null;
@@ -1245,6 +1249,10 @@ if (!hasSingleInstanceLock) {
       // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
       agentService.useSecretBox(electronSecretBox());
       const service = agentService;
+      // COSGRAL W3: ACP agents, fallback models, usage and limits (this computer only).
+      providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
+      service.useProviders(providerRegistry);
+      registerProviderIpc(providerRegistry);
       // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
       const routineStore = new RoutineStore(store.database, electronSecretBox());
       const webhookReceiver: WebhookReceiver = new WebhookReceiver({
@@ -1628,6 +1636,7 @@ async function prepareForShutdown(): Promise<void> {
   // COSGRAL W2: no routine runs and no webhook receiver after exit.
   routineManager?.stop();
   await (webhookReceiverService?.stop() ?? Promise.resolve());
+  providerRegistry?.stop();
 }
 
 function routeUpdateBot(
