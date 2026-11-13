@@ -200,62 +200,66 @@ export function RemoteDesktopPage() {
         <Show when={!host().available}>
           <p>{host().unavailableReason ?? "Sharing is unavailable."}</p>
         </Show>
-        <label>
-          Exposure{" "}
-          <select
-            value={exposure()}
-            disabled={host().enabled}
-            onChange={(e) => setExposure(e.currentTarget.value === "lan" ? "lan" : "loopback")}
+        <div class="remote-desktop-fields">
+          <label>
+            Exposure{" "}
+            <select
+              value={exposure()}
+              disabled={host().enabled}
+              onChange={(e) => setExposure(e.currentTarget.value === "lan" ? "lan" : "loopback")}
+            >
+              <option value="loopback">This computer / tunnel</option>
+              <option value="lan">Local network</option>
+            </select>
+          </label>
+          <label>
+            Port{" "}
+            <input
+              type="number"
+              min="0"
+              max="65535"
+              value={port()}
+              disabled={host().enabled}
+              onInput={(e) => setPort(Number(e.currentTarget.value))}
+            />
+          </label>
+        </div>
+        <div class="remote-desktop-actions">
+          <Show
+            when={!host().enabled}
+            fallback={
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToken("");
+                    if (api) void hostAction(() => api.host.disable());
+                  }}
+                >
+                  Disable sharing
+                </button>{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (api) void tokenAction(() => api.host.regenerateToken());
+                  }}
+                >
+                  Generate new token
+                </button>
+              </>
+            }
           >
-            <option value="loopback">This computer / tunnel</option>
-            <option value="lan">Local network</option>
-          </select>
-        </label>
-        <label>
-          Port{" "}
-          <input
-            type="number"
-            min="0"
-            max="65535"
-            value={port()}
-            disabled={host().enabled}
-            onInput={(e) => setPort(Number(e.currentTarget.value))}
-          />
-        </label>
-        <Show
-          when={!host().enabled}
-          fallback={
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setToken("");
-                  if (api) void hostAction(() => api.host.disable());
-                }}
-              >
-                Disable sharing
-              </button>{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  if (api) void tokenAction(() => api.host.regenerateToken());
-                }}
-              >
-                Generate new token
-              </button>
-            </>
-          }
-        >
-          <button
-            type="button"
-            disabled={!host().available}
-            onClick={() => {
-              if (api) void tokenAction(() => api.host.enable({ exposure: exposure(), port: port() }));
-            }}
-          >
-            Enable sharing
-          </button>
-        </Show>
+            <button
+              type="button"
+              disabled={!host().available}
+              onClick={() => {
+                if (api) void tokenAction(() => api.host.enable({ exposure: exposure(), port: port() }));
+              }}
+            >
+              Enable sharing
+            </button>
+          </Show>
+        </div>
         <Show when={token()}>{(value) => <RemoteDesktopToken token={value()} onClose={() => setToken("")} />}</Show>
         <For each={host().listening?.urls ?? []}>{(url) => <p>{url}</p>}</For>
         <p>Requests awaiting approval: {host().consentPending}</p>
@@ -328,46 +332,50 @@ export function RemoteDesktopPage() {
       </section>
       <section>
         <h2>Connect to another computer</h2>
-        <label>
-          Address <input value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
-        </label>
-        <label>
-          Token{" "}
-          <input
-            type="password"
-            value={clientToken()}
-            onInput={(e) => setClientToken(e.currentTarget.value)}
-            autocomplete="off"
-          />
-        </label>
-        <label>
-          Mode{" "}
-          <select value={mode()} onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}>
-            <option value="view">View</option>
-            <option value="control">Control</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          disabled={!api || !address().trim() || !clientToken() || client().phase === "connecting"}
-          onClick={() => {
-            if (!api) return;
-            const input = { address: address().trim(), token: clientToken(), mode: mode() };
-            setClientToken("");
-            void clientAction(() => api.client.connect(input));
-          }}
-        >
-          Connect
-        </button>
-        <button
-          type="button"
-          disabled={!api || client().phase === "idle"}
-          onClick={() => {
-            if (api) void clientAction(() => api.client.disconnect());
-          }}
-        >
-          Disconnect
-        </button>
+        <div class="remote-desktop-fields">
+          <label>
+            Address <input value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
+          </label>
+          <label>
+            Token{" "}
+            <input
+              type="password"
+              value={clientToken()}
+              onInput={(e) => setClientToken(e.currentTarget.value)}
+              autocomplete="off"
+            />
+          </label>
+          <label>
+            Mode{" "}
+            <select value={mode()} onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}>
+              <option value="view">View</option>
+              <option value="control">Control</option>
+            </select>
+          </label>
+        </div>
+        <div class="remote-desktop-actions">
+          <button
+            type="button"
+            disabled={!api || !address().trim() || !clientToken() || client().phase === "connecting"}
+            onClick={() => {
+              if (!api) return;
+              const input = { address: address().trim(), token: clientToken(), mode: mode() };
+              setClientToken("");
+              void clientAction(() => api.client.connect(input));
+            }}
+          >
+            Connect
+          </button>
+          <button
+            type="button"
+            disabled={!api || client().phase === "idle"}
+            onClick={() => {
+              if (api) void clientAction(() => api.client.disconnect());
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
         <p role="status">
           Status: {client().phase}
           {client().mode ? ` · ${client().mode}` : ""}

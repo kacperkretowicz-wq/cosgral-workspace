@@ -19,7 +19,7 @@ export function MarketplaceDetail(props: {
 }) {
   const item = () => props.details.item;
   return (
-    <section aria-label="Item details">
+    <section class="marketplace-detail" aria-label="Item details">
       <h2>{item().title}</h2>
       <p>{item().description}</p>
       <p>
@@ -169,13 +169,14 @@ export function MarketplacePage(props: { bots: Person[] }) {
       </Show>
       <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
       <form
+        class="marketplace-filters"
         onSubmit={(e) => {
           e.preventDefault();
           void refresh();
         }}
       >
-        <label>
-          Search <input value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
+        <label class="marketplace-search">
+          Search <input type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
         </label>
         <label>
           Kind{" "}
@@ -206,34 +207,6 @@ export function MarketplacePage(props: { bots: Person[] }) {
         </label>
         <button type="submit">Search</button>
       </form>
-      <h2>Suggestions</h2>
-      <ul>
-        <For each={suggestions()}>
-          {(suggestion) => (
-            <li>
-              <button type="button" onClick={() => void choose(suggestion.item)}>
-                {suggestion.item.title}
-              </button>{" "}
-              — {suggestion.reason}
-            </li>
-          )}
-        </For>
-      </ul>
-      <h2>Catalog</h2>
-      <Show when={items().length} fallback={<p>No matching items.</p>}>
-        <ul>
-          <For each={items()}>
-            {(item) => (
-              <li>
-                <button type="button" onClick={() => void choose(item)}>
-                  {item.title}
-                </button>{" "}
-                — {item.summary}
-              </li>
-            )}
-          </For>
-        </ul>
-      </Show>
       <Show when={details()}>
         {(value) => (
           <MarketplaceDetail
@@ -248,6 +221,34 @@ export function MarketplacePage(props: { bots: Person[] }) {
             onUninstall={(id) => void uninstall(id)}
           />
         )}
+      </Show>
+      <h2>Suggestions</h2>
+      <ul class="marketplace-list">
+        <For each={suggestions()}>
+          {(suggestion) => (
+            <li>
+              <button type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
+                <strong>{suggestion.item.title}</strong>
+                <small>{suggestion.reason}</small>
+              </button>
+            </li>
+          )}
+        </For>
+      </ul>
+      <h2>Catalog</h2>
+      <Show when={items().length} fallback={<p>No matching items.</p>}>
+        <ul class="marketplace-list">
+          <For each={items()}>
+            {(item) => (
+              <li>
+                <button type="button" class="marketplace-item" onClick={() => void choose(item)}>
+                  <strong>{item.title}</strong>
+                  <small>{item.summary}</small>
+                </button>
+              </li>
+            )}
+          </For>
+        </ul>
       </Show>
     </main>
   );

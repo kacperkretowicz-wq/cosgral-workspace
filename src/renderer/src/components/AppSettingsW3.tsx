@@ -1,7 +1,14 @@
-import type { AppLanguage, AppSettings, CompleteOnboardingInput, OnboardingState } from "@openbot/contracts/ipc";
+import type {
+  AppLanguage,
+  AppSettings,
+  CompleteOnboardingInput,
+  NotificationChannel,
+  NotificationEvent,
+  OnboardingState,
+} from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { Dialog } from "./ui";
+import { Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
 
 export function AppSettingsW3() {
   const [settings, setSettings] = createSignal<AppSettings>();
@@ -25,17 +32,20 @@ export function AppSettingsW3() {
     }
   }
   return (
-    <section aria-label="Application settings">
-      <h2>Application settings</h2>
+    <Card class="cosgral-settings-block" role="region" aria-labelledby="app-settings-title">
+      <Heading as="h2" size="sm" id="app-settings-title">
+        Application settings
+      </Heading>
       <Show when={error()}>
-        <p role="alert">{error()}</p>
+        <Text as="p" tone="danger" role="alert">
+          {error()}
+        </Text>
       </Show>
       <Show when={settings()}>
         {(value) => (
           <>
-            <label>
-              Language{" "}
-              <select
+            <Field label="Language" class="cosgral-settings-field">
+              <NativeSelect
                 value={value().language}
                 onChange={(e) => {
                   const language = e.currentTarget.value;
@@ -44,26 +54,26 @@ export function AppSettingsW3() {
               >
                 <option value="en">English</option>
                 <option value="pl">Polski</option>
-              </select>
-            </label>
-            <table>
+              </NativeSelect>
+            </Field>
+            <table class="cosgral-settings-table">
               <caption>Notifications</caption>
               <thead>
                 <tr>
-                  <th>Event</th>
-                  <For each={NOTIFICATION_CHANNELS}>{(channel) => <th>{channel}</th>}</For>
+                  <th scope="col">Event</th>
+                  <For each={NOTIFICATION_CHANNELS}>{(channel) => <th scope="col">{CHANNEL_LABELS[channel]}</th>}</For>
                 </tr>
               </thead>
               <tbody>
                 <For each={NOTIFICATION_EVENTS}>
                   {(event) => (
                     <tr>
-                      <th>{event}</th>
+                      <th scope="row">{EVENT_LABELS[event]}</th>
                       <For each={NOTIFICATION_CHANNELS}>
                         {(channel) => (
                           <td>
                             <input
-                              aria-label={`${event} ${channel}`}
+                              aria-label={`${EVENT_LABELS[event]}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
                               type="checkbox"
                               checked={value().notifications.matrix[event][channel]}
                               onChange={(e) =>
@@ -93,7 +103,7 @@ export function AppSettingsW3() {
                 </For>
               </tbody>
             </table>
-            <label>
+            <label class="cosgral-settings-check">
               <input
                 type="checkbox"
                 checked={value().notifications.onlyWhenUnfocused}
@@ -103,141 +113,95 @@ export function AppSettingsW3() {
                       s && { ...s, notifications: { ...s.notifications, onlyWhenUnfocused: e.currentTarget.checked } },
                   )
                 }
-              />{" "}
-              Notify only when unfocused
+              />
+              Only notify while COSGRAL is in the background
             </label>
-            <h3>Settings sections</h3>
-            <ul>
-              <For each={value().tabs}>
-                {(tab) => (
-                  <li>
-                    {tab.id}
-                    {tab.available ? "" : " — unavailable"}
-                  </li>
-                )}
-              </For>
-            </ul>
-            <button type="button" onClick={() => void save()}>
-              Save application settings
-            </button>
+            <div class="cosgral-settings-actions">
+              <Button type="button" onClick={() => void save()}>
+                Save application settings
+              </Button>
+            </div>
           </>
         )}
       </Show>
-    </section>
+    </Card>
   );
 }
 
-export function OnboardingW3(props: {
+const EVENT_LABELS: Record<NotificationEvent, string> = {
+  finished: "Agent finished",
+  failed: "Agent failed",
+  "needs-input": "Needs your answer",
+  "needs-approval": "Needs your approval",
+  takeover: "Needs you to take over",
+  "channel-result": "Channel result",
+};
+
+const CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  desktop: "Notification",
+  sound: "Sound",
+};
+
+/** What the first run adds to choosing a provider: the language, the first agent and what Computer Use can do. */
+export interface OnboardingChoice {
+  language: AppLanguage;
+  firstAgent: CompleteOnboardingInput["firstAgent"];
+}
+
+/**
+ * The onboarding questions as fields of the first-run "Set up this computer" step, so the provider is asked
+ * once (by the provider picker above them, which also shows whether each provider is signed in).
+ */
+export function OnboardingFields(props: {
   state: OnboardingState;
-  complete: (input: CompleteOnboardingInput) => Promise<unknown>;
+  value: OnboardingChoice;
+  disabled?: boolean;
+  onChange: (value: OnboardingChoice) => void;
 }) {
-  const [language, setLanguage] = createSignal<AppLanguage>(props.state.language ?? "en");
-  const [provider, setProvider] = createSignal<"codex" | "claude">(
-    props.state.preferredProvider === "claude" ? "claude" : "codex",
-  );
-  const [template, setTemplate] = createSignal("");
-  const [busy, setBusy] = createSignal(false);
-  const [done, setDone] = createSignal(false);
-  const [error, setError] = createSignal("");
-  async function finish() {
-    if (busy() || done()) return;
-    setBusy(true);
-    try {
-      await props.complete({
-        language: language(),
-        preferredProvider: provider(),
-        firstAgent: template() ? { templateId: template() } : null,
-      });
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not finish setup.");
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
-    <Show when={!done() && !props.state.completed}>
-      <Dialog.Root open>
-        <main class="initial-setup-screen">
-          <Dialog.Content as="section" class="initial-setup" aria-label="Welcome setup">
-            <h1>Welcome to COSGRAL</h1>
-            <label>
-              Language{" "}
-              <select
-                value={language()}
-                onChange={(e) => {
-                  if (e.currentTarget.value === "en" || e.currentTarget.value === "pl")
-                    setLanguage(e.currentTarget.value);
-                }}
-              >
-                <option value="en">English</option>
-                <option value="pl">Polski</option>
-              </select>
-            </label>
-            <label>
-              Provider{" "}
-              <select
-                value={provider()}
-                onChange={(e) => {
-                  if (e.currentTarget.value === "codex" || e.currentTarget.value === "claude")
-                    setProvider(e.currentTarget.value);
-                }}
-              >
-                <option value="codex">Codex</option>
-                <option value="claude">Claude</option>
-              </select>
-            </label>
-            <label>
-              First agent{" "}
-              <select value={template()} onChange={(e) => setTemplate(e.currentTarget.value)}>
-                <option value="">Choose later</option>
-                <For each={props.state.proposals}>
-                  {(proposal) => (
-                    <option value={proposal.id}>
-                      {proposal.name} — {proposal.summary}
-                    </option>
-                  )}
-                </For>
-              </select>
-            </label>
-            <h2>Computer Use</h2>
-            <p>
-              {props.state.computerUse.available
-                ? "Available; actions require your approval."
-                : (props.state.computerUse.reason ?? "Unavailable on this computer.")}
-            </p>
-            <Show when={error()}>
-              <p role="alert">{error()}</p>
-            </Show>
-            <button type="button" disabled={busy()} onClick={() => void finish()}>
-              Finish setup
-            </button>
-          </Dialog.Content>
-        </main>
-      </Dialog.Root>
-    </Show>
-  );
-}
-
-export function OnboardingW3Gate(props: { onComplete: (provider: "codex" | "claude") => Promise<void> }) {
-  const [state, setState] = createSignal<OnboardingState>();
-  onSettled(() => {
-    void window.openbot.onboarding?.getState().then(setState);
-  });
-  return (
-    <Show when={state()}>
-      {(current) => (
-        <OnboardingW3
-          state={current()}
-          complete={async (input) => {
-            const api = window.openbot.onboarding;
-            if (!api) throw new Error("Onboarding unavailable.");
-            const next = await api.complete(input);
-            await props.onComplete(input.preferredProvider === "claude" ? "claude" : "codex");
-            setState(next);
+    <div class="onboarding-fields">
+      <Field label="Language">
+        <NativeSelect
+          value={props.value.language}
+          disabled={props.disabled}
+          onChange={(e) => {
+            const language = e.currentTarget.value;
+            if (language === "en" || language === "pl") props.onChange({ ...props.value, language });
           }}
-        />
-      )}
-    </Show>
+        >
+          <option value="en">English</option>
+          <option value="pl">Polski</option>
+        </NativeSelect>
+      </Field>
+      <Field label="First agent" description="Made from a template right after setup. You can add more agents later.">
+        <NativeSelect
+          value={props.value.firstAgent?.templateId ?? ""}
+          disabled={props.disabled}
+          onChange={(e) => {
+            const templateId = e.currentTarget.value;
+            props.onChange({ ...props.value, firstAgent: templateId ? { templateId } : null });
+          }}
+        >
+          <option value="">Choose later</option>
+          <For each={props.state.proposals}>
+            {(proposal) => (
+              <option value={proposal.id}>
+                {proposal.name}: {proposal.summary}
+              </option>
+            )}
+          </For>
+        </NativeSelect>
+      </Field>
+      <div class="onboarding-computer-use">
+        <Text as="strong" variant="label-sm">
+          Computer Use
+        </Text>
+        <Text as="p" tone="muted">
+          {props.state.computerUse.available
+            ? "Available; every action asks for your approval first."
+            : (props.state.computerUse.reason ?? "Not available on this computer.")}
+        </Text>
+      </div>
+    </div>
   );
 }

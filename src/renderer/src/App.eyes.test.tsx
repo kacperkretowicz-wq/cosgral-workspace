@@ -127,20 +127,21 @@ describe("App local profile", () => {
 });
 
 describe("App page rail", () => {
-  it("shows Coming soon for other pages and keeps the agent list mounted", async () => {
+  it("opens the other pages and keeps the agent list mounted", async () => {
     mountApp();
     await screen.findByRole("heading", { name: "Chief" });
     const list = screen.getByRole("navigation", { name: "Chat list" });
 
+    // W3-BE9: Tasks is a real page now (channel tasks), no longer Coming soon.
     await fireEvent.click(screen.getByRole("button", { name: "Tasks" }));
-    const soon = await screen.findByRole("region", { name: "Tasks" });
-    expect(within(soon).getByText("Coming soon")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Tasks", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chief" })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Chat list" })).toBe(list);
     expect(screen.getByRole("button", { name: "Tasks" })).toHaveAttribute("aria-current", "page");
 
     await fireEvent.click(screen.getByRole("button", { name: "Marketplace" }));
-    expect(await screen.findByRole("region", { name: "Marketplace" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Marketplace", level: 1 })).toBeInTheDocument();
 
     await fireEvent.click(screen.getByRole("button", { name: "Agents" }));
     expect(await screen.findByRole("heading", { name: "Chief" })).toBeInTheDocument();
@@ -152,10 +153,10 @@ describe("App page rail", () => {
     mountApp();
     await screen.findByRole("heading", { name: "Chief" });
     await fireEvent.click(screen.getByRole("button", { name: "Usage" }));
-    await screen.findByRole("region", { name: "Usage" });
+    await screen.findByRole("heading", { name: "Usage", level: 1 });
     await fireEvent.click(screen.getByRole("button", { name: /^Research,/ }));
     expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Usage" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Usage", level: 1 })).not.toBeInTheDocument();
   });
 
   it("opens the existing settings dialog from the rail without changing page", async () => {
