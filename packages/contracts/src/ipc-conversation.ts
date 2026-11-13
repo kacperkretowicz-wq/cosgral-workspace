@@ -10,6 +10,7 @@ import {
   isKeptDraft,
   type KeptDraft,
 } from "./ipc-action-cards";
+import { type AgentTemplate, type AppSettings, isAgentTemplate, isAppSettings } from "./ipc-agent-settings";
 import {
   type AgentActivity,
   type ApprovalResolution,
@@ -540,6 +541,12 @@ export type AgentEvent =
   | { type: "island-changed"; state: IslandState }
   /** COSGRAL W3: the island was clicked; the main window opens this agent and its Needs you card. */
   | { type: "island-open-request"; botId: string; request: IslandRequestRef | null }
+  /** COSGRAL W3: an agent's tool switches changed; read its settings again (profile changes come as bots-changed). */
+  | { type: "agent-settings-changed"; botId: string }
+  /** COSGRAL W3: saved agent templates changed; replace the whole list. */
+  | { type: "agent-templates-changed"; templates: AgentTemplate[] }
+  /** COSGRAL W3: language, notification matrix or settings tabs changed. */
+  | { type: "app-settings-changed"; settings: AppSettings }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -650,6 +657,12 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isIslandState(value.state);
     case "island-open-request":
       return isString(value.botId) && (value.request === null || isIslandRequestRef(value.request));
+    case "agent-settings-changed":
+      return isString(value.botId);
+    case "agent-templates-changed":
+      return Array.isArray(value.templates) && value.templates.every(isAgentTemplate);
+    case "app-settings-changed":
+      return isAppSettings(value.settings);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

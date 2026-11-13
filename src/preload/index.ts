@@ -70,6 +70,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
@@ -722,6 +723,9 @@ const openbotApi: OpenBotDesktopApi = {
   computerUse: createComputerUseApi(invokeAgent),
   dock: createDockApi(invokeAgent),
   island: createIslandApi(invokeAgent),
+  agentSettings: createAgentSettingsApi(invokeAgent, decodeBot),
+  appSettings: createAppSettingsApi(invokeAgent),
+  onboarding: createOnboardingApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

@@ -1,4 +1,5 @@
 export * from "./ipc-action-cards";
+export * from "./ipc-agent-settings";
 export * from "./ipc-app-auth";
 export * from "./ipc-attention";
 export * from "./ipc-browser";

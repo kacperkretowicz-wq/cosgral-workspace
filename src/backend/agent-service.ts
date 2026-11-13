@@ -14,6 +14,7 @@ import type {
   AgentEvent,
   AgentEyesRequest,
   AgentEyesState,
+  AgentMcpServerSetting,
   AgentModelOption,
   AgentPromptQuestion,
   AgentProviderStatus,
@@ -63,6 +64,8 @@ import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
+import { AgentSettingsService } from "./agent-settings";
+import { AgentTemplates } from "./agent-templates";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
@@ -169,6 +172,8 @@ export interface AgentMcp {
   toolsFor(botId: string): McpDynamicNamespace[];
   callTool(botId: string, namespace: string, tool: string, args: unknown): Promise<DynamicToolResult>;
   deleteAgent(botId: string): void;
+  /** COSGRAL W3: the per-agent server switches, for the agent settings read. */
+  listAgentSettings?(botId: string): AgentMcpServerSetting[];
 }
 
 export interface AgentEyes {
@@ -328,6 +333,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly sharedData: SharedDataTools;
   /** COSGRAL W3: Computer Use; the host gives the desktop driver with `computerUse.useDriver()`. */
   readonly computerUse: ComputerUseController;
+  /** COSGRAL W3: tool switches, the full settings read and save, and app settings (language, notifications). */
+  readonly agentSettings: AgentSettingsService;
+  /** COSGRAL W3: built-in and saved agent templates, and the agent creator. */
+  readonly agentTemplates: AgentTemplates;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
   readonly #loadedThreads = new Set<string>();
@@ -445,6 +454,45 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       vaultContains: (text) => this.#vault.containsSecretValue(text),
       emit: (event) => this.#emit(event),
     });
+    this.agentSettings = new AgentSettingsService({
+      database: store.database,
+      bot: (botId) => this.#store.list().find((bot) => bot.id === botId) ?? null,
+      models: () => this.listModels(),
+      updateBot: (input) => this.updateBot(input),
+      memory: (botId) => this.#memory.store.settings(botId),
+      skills: async (botId) =>
+        (await this.#skills.listInstalls({ botId })).map(({ skillId, name, installedVersion, updateAvailable }) => ({
+          skillId,
+          name,
+          installedVersion,
+          updateAvailable,
+        })),
+      mcp: (botId) => this.#mcp?.listAgentSettings?.(botId) ?? [],
+      availability: () => ({
+        computer: this.computerUse.available,
+        eyes: this.#eyes !== null,
+        routines: this.#routines !== null,
+      }),
+      emit: (event) => this.#emit(event),
+    });
+    this.agentTemplates = new AgentTemplates({
+      database: store.database,
+      createBot: () => this.createBot(),
+      updateBot: (input) => this.updateBot(input),
+      bot: (botId) => this.#store.list().find((bot) => bot.id === botId) ?? null,
+      setTools: (botId, tools) => this.agentSettings.setTools(botId, tools),
+      toolSwitches: (botId) => this.agentSettings.toolSwitches(botId),
+      installSkill: async (botId, name) => {
+        const skill = this.#skills.findByName(name);
+        if (!skill) return `Skill "${name}" is not in the skill library.`;
+        await this.#skills.install({ skillId: skill.id, botId });
+        return null;
+      },
+      skillNames: async (botId) => this.#skills.installedFor(botId).map((skill) => skill.name),
+      saveEssentialMemory: (botId, text) => this.#memory.save({ botId, text, inclusion: "essential" }),
+      essentialMemories: (botId) => this.#memory.store.listAgentMemories(botId, "essential").map((item) => item.text),
+      emit: (event) => this.#emit(event),
+    });
     this.#skills.on("skills-changed", (skills) => this.#emit({ type: "skills-changed", skills }));
     this.#skills.on("installs-changed", (installs) => this.#emit({ type: "skill-installs-changed", installs }));
     this.#channelRunner = new ChannelAgentRunner({
@@ -472,7 +520,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         ...this.#mcpTools(botId),
         ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
       ],
-      instructions: (botId) => skillInstructions(this.#skills.installedFor(botId)),
+      filterTools: (botId, tools) => this.agentSettings.filterDynamicTools(botId, tools),
+      instructions: (botId) =>
+        [skillInstructions(this.#skills.installedFor(botId)), this.agentSettings.instructions(botId)].join("\n"),
       commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
       register: (threadId, botId) => {
         this.#threadToBot.set(threadId, botId);
@@ -775,6 +825,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#mcp?.deleteAgent(botId);
     // COSGRAL W3: and its fallback list.
     this.#providers?.deleteAgent(botId);
+    this.agentSettings.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
     this.#snapshots.delete(botId);
@@ -1429,6 +1480,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           return;
         case "item/tool/call": {
           if (!isDynamicToolCall(request.params)) throw new Error("Invalid dynamic tool request.");
+          // COSGRAL W3: a tool group the person switched off for this agent.
+          const switchedOff = this.agentSettings.blockedTool(
+            this.#threadToBot.get(request.params.threadId),
+            request.params,
+          );
+          if (switchedOff) {
+            client.respond(request.id, { success: false, contentItems: [{ type: "inputText", text: switchedOff }] });
+            return;
+          }
           if (request.params.namespace === OPENBOT_BROWSER_NAMESPACE) {
             // COSGRAL W1-BE3: a tab a person took over is theirs until they give it back.
             const blocked = this.#cards.blockedBrowserTool(request.params);
@@ -2654,7 +2714,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #dynamicTools(botId: string) {
-    return [
+    return this.agentSettings.filterTools(botId, [
       ...BROWSER_DYNAMIC_TOOLS,
       OPENBOT_DYNAMIC_TOOLS,
       CARDS_DYNAMIC_TOOLS,
@@ -2665,7 +2725,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       ...(this.#eyes ? [EYES_DYNAMIC_TOOLS] : []),
       ...this.#mcpTools(botId),
       ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
-    ];
+    ]);
   }
 
   /** COSGRAL W2: `cosgral_vault` calls; values go into the browser, never back to the agent. */
@@ -2739,7 +2799,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #mcpSignature(botId: string): string {
-    return JSON.stringify(this.#mcpTools(botId));
+    return JSON.stringify([this.#mcpTools(botId), this.agentSettings.signature(botId)]);
   }
 
   /** COSGRAL W2: a call of an MCP server tool, for the agent that owns the provider thread. */
@@ -3111,13 +3171,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #buildDeveloperInstructions(bot: BotSummary): string {
     // COSGRAL W2: essential memories as they are when the conversation (thread) starts or resumes.
     const memoryPrompt = this.#memory.store.essentialPrompt(bot.id);
-    return developerInstructions(
+    const instructions = developerInstructions(
       bot,
       this.#store.sharedRoot,
       this.#eyes !== null,
       this.#skills.installedFor(bot.id),
       memoryPrompt.block,
     );
+    // COSGRAL W3: switched-off tools and the person's language.
+    const settings = this.agentSettings.instructions(bot.id);
+    return settings ? `${instructions}\n${settings}` : instructions;
   }
 }
 

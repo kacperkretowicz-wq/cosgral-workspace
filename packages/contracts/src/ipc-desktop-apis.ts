@@ -5,6 +5,19 @@ import type {
   RespondToDraftPreviewInput,
 } from "./ipc-action-cards";
 import type {
+  AgentSettings,
+  AgentTemplate,
+  AgentTemplateIdInput,
+  AppSettings,
+  CompleteOnboardingInput,
+  CreateAgentInput,
+  CreateAgentResult,
+  OnboardingState,
+  SaveAgentTemplateInput,
+  UpdateAgentSettingsInput,
+  UpdateAppSettingsInput,
+} from "./ipc-agent-settings";
+import type {
   AppInfo,
   AppSetupState,
   CentralAuthDesktopApi,
@@ -383,6 +396,36 @@ export interface TablesDesktopApi {
  * COSGRAL W3: Computer Use (see ipc-computer-use.ts). The consent card is a confirm card in Needs you; changes come
  * as `computer-use-changed`.
  */
+/**
+ * COSGRAL W3: full agent settings, templates and the agent creator (see ipc-agent-settings.ts). Changes come as
+ * `agent-settings-changed`, `agent-templates-changed` and, for name, model and the rest of the profile, `bots-changed`.
+ */
+export interface AgentSettingsDesktopApi {
+  get: (botId: string) => Promise<AgentSettings>;
+  /** One save for the whole screen; returns the settings after the change. */
+  update: (input: UpdateAgentSettingsInput) => Promise<AgentSettings>;
+  /** Built-in templates first, then saved ones. */
+  listTemplates: () => Promise<AgentTemplate[]>;
+  saveTemplate: (input: SaveAgentTemplateInput) => Promise<AgentTemplate>;
+  /** Saved templates only; built-in ones cannot be deleted. */
+  deleteTemplate: (input: AgentTemplateIdInput) => Promise<void>;
+  /** The agent creator. */
+  createAgent: (input: CreateAgentInput) => Promise<CreateAgentResult>;
+}
+
+/** COSGRAL W3: language, the notification matrix and which settings tabs exist. */
+export interface AppSettingsDesktopApi {
+  get: () => Promise<AppSettings>;
+  update: (input: UpdateAppSettingsInput) => Promise<AppSettings>;
+}
+
+/** COSGRAL W3: onboarding (language, first provider, first agent from a proposal, Computer Use). */
+export interface OnboardingDesktopApi {
+  getState: () => Promise<OnboardingState>;
+  /** Saves the language and the provider, starts it and creates the first agent from the chosen proposal. */
+  complete: (input: CompleteOnboardingInput) => Promise<OnboardingState>;
+}
+
 export interface ComputerUseDesktopApi {
   getState: () => Promise<ComputerUseState>;
   /** Ends the session at once and takes the permission back: one agent with `botId`, otherwise every agent. */
@@ -519,6 +562,12 @@ export interface OpenBotDesktopApi {
   dock?: DockDesktopApi;
   /** COSGRAL W3 Dynamic Island (this computer only). Optional until every renderer mock implements it. */
   island?: IslandDesktopApi;
+  /** COSGRAL W3 agent settings, templates and creator (this computer only). Optional until every mock has it. */
+  agentSettings?: AgentSettingsDesktopApi;
+  /** COSGRAL W3 app settings (this computer only). Optional until every renderer mock implements it. */
+  appSettings?: AppSettingsDesktopApi;
+  /** COSGRAL W3 onboarding (this computer only). Optional until every renderer mock implements it. */
+  onboarding?: OnboardingDesktopApi;
 }
 
 /**

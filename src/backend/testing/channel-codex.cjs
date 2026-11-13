@@ -283,6 +283,26 @@ async function direct(threadId, turnId, text, cwd) {
     );
     return;
   }
+  // W3-BE2: what the thread was started or resumed with (tools and instructions).
+  if (text.includes("SETTINGS CHECK")) {
+    const params = threads.get(threadId) ?? {};
+    const tools = [];
+    for (const item of params.dynamicTools ?? []) {
+      tools.push(item.name);
+      if (item.name === "openbot") for (const tool of item.tools ?? []) tools.push(`openbot.${tool.name}`);
+    }
+    const instructions = params.developerInstructions ?? "";
+    complete(
+      threadId,
+      turnId,
+      `DATA-RESULT ${JSON.stringify({
+        tools,
+        polish: instructions.includes("Polish"),
+        switchedOff: (/switched off these tools for you: ([^.]+)\./.exec(instructions) ?? [])[1] ?? null,
+      })}`,
+    );
+    return;
+  }
   complete(threadId, turnId, "Stub: received");
 }
 process.stdin.setEncoding("utf8");
@@ -327,6 +347,10 @@ process.stdin.on("data", (chunk) => {
         break;
       }
       case "thread/read":
+        reply({ thread: { id: params.threadId, turns: [] } });
+        break;
+      case "thread/resume":
+        threads.set(params.threadId, params);
         reply({ thread: { id: params.threadId, turns: [] } });
         break;
       case "turn/start": {

@@ -281,6 +281,84 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     });
   });
 
+  it("COSGRAL W3: leaves switched-off tool groups out of the thread, refuses their calls and says so", async () => {
+    let codex: FakeAgentClient | undefined;
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "DONE", false);
+      if (provider === "codex") codex = client;
+      return client;
+    });
+    await service.initialize();
+    await store.getOrCreate("chief");
+    await service.agentSettings.update({ botId: "chief", tools: { vault: false, messaging: false } });
+    await service.agentSettings.updateAppSettings({ language: "pl" });
+    await service.sendMessage({ botId: "chief", text: "Hello" });
+    await waitFor(() => Boolean(codex?.requests.some((request) => request.method === "thread/start")));
+    const threadStart = codex?.requests.find((request) => request.method === "thread/start");
+    const tools = JSON.stringify(threadStart?.params);
+    expect(tools).not.toContain('"cosgral_vault"');
+    expect(tools).not.toContain('"send_message"');
+    expect(tools).toContain('"ask_user"');
+    expect(tools).toContain('"cosgral_skills"');
+    const instructions = stringParam(threadStart?.params, "developerInstructions");
+    expect(instructions).toContain("switched off these tools for you: Vault, messaging other agents");
+    expect(instructions).toContain("Polish");
+
+    // FakeAgentClient names its first thread "codex-session-1".
+    const providerThread = "codex-session-1";
+    codex?.emit("request", {
+      method: "item/tool/call",
+      id: "vault-blocked",
+      params: {
+        threadId: providerThread,
+        turnId: "turn",
+        callId: "v1",
+        namespace: "cosgral_vault",
+        tool: "list_vault_items",
+        arguments: {},
+      },
+    });
+    await waitFor(() => Boolean(codex?.responses.some((response) => response.id === "vault-blocked")));
+    expect(JSON.stringify(codex?.responses.find((response) => response.id === "vault-blocked"))).toContain(
+      "switched off the Vault",
+    );
+    const settings = await service.agentSettings.get("chief");
+    expect(settings.tools.find((tool) => tool.group === "vault")).toMatchObject({ enabled: false });
+  });
+
+  it("COSGRAL W3: creates an agent from a template with its tools, skills and starting memories", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.skillLibrary.create({
+      source: { kind: "inline", skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n" },
+      authorBotId: null,
+    });
+    const { bot, warnings } = await service.agentTemplates.createAgent({
+      templateId: "builtin:writer",
+      name: "Pen",
+      skills: ["weekly-report", "missing-skill"],
+    });
+    expect(bot).toMatchObject({ name: "Pen", role: "Writing and editing", avatarHue: 30 });
+    expect(warnings).toEqual(['Skill "missing-skill" is not in the skill library.']);
+    expect(service.agentSettings.toolSwitches(bot.id)).toEqual({ computer: false, routines: false });
+    expect(service.skillLibrary.installedFor(bot.id).map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(service.memoryStore.listAgentMemories(bot.id, "essential").map((memory) => memory.text)).toContain(
+      "Plain words, short sentences, no filler.",
+    );
+    expect(events.some((event) => event.type === "bots-changed")).toBe(true);
+    expect(events.some((event) => event.type === "agent-memory-changed" && event.botId === bot.id)).toBe(true);
+
+    const saved = await service.agentTemplates.saveFromAgent({ botId: bot.id, includeMemories: true });
+    expect(saved).toMatchObject({ origin: "saved", skills: ["weekly-report"], tools: { computer: false } });
+    const settings = await service.agentSettings.get(bot.id);
+    expect(settings.skills.map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(settings.memory.essentialCount).toBe(2);
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();

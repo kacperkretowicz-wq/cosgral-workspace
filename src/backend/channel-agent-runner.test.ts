@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { EventEmitter } from "node:events";
+import { isDynamicRecord } from "@openbot/contracts/runtime-values";
 import { expect, it } from "vitest";
 import type { AgentClient } from "./agent-client";
 import { ChannelAgentRunner } from "./channel-agent-runner";
@@ -182,6 +183,33 @@ it("interrupts a turn whose started notification arrives after the user's Stop",
   release({ turn: { id: "turn", status: "inProgress", items: [] } });
   await work;
   expect(interrupted).toBe(true);
+});
+
+it("COSGRAL W3: leaves out the tool groups the person switched off for a channel member", async () => {
+  const client = new Client();
+  const filtered: string[] = [];
+  const runner = new ChannelAgentRunner({
+    client: async () => client,
+    bot: channelBotFixture,
+    tools: () => [{ name: "openbot_browser" }, { name: "cosgral_vault" }],
+    filterTools: (botId, tools) => {
+      filtered.push(botId);
+      return tools.filter((tool) => JSON.stringify(tool) !== JSON.stringify({ name: "cosgral_vault" }));
+    },
+    commonRequest: async () => {},
+    register: () => {},
+    clear: () => {},
+  });
+  const work = runner.run(input(new AbortController().signal));
+  await new Promise((r) => setTimeout(r, 0));
+  const params = client.requests[0]?.params;
+  const tools = JSON.stringify(isDynamicRecord(params) ? params.dynamicTools : null);
+  expect(tools).toContain("openbot_browser");
+  expect(tools).not.toContain("cosgral_vault");
+  expect(filtered).toEqual(["a"]);
+  const threadId = getString(client.requests[1]?.params, "threadId");
+  runner.notification({ method: "turn/completed", params: { threadId, turn: { id: "turn", status: "completed" } } });
+  await work;
 });
 
 it("gives a channel member its installed skills and lets it use the skill library", async () => {

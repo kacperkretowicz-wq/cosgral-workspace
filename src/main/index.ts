@@ -54,6 +54,7 @@ import { TeamChatStore } from "../backend/team-chat-store";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
+import { registerAgentSettingsIpc } from "./agent-settings-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
@@ -803,6 +804,15 @@ function registerIpcHandlers(
   });
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
+  // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
+  registerAgentSettingsIpc({
+    service: () => service,
+    setupFile,
+    applyProvider: async (provider) => {
+      await service.setPreferredProvider(provider);
+      await initializeAgent();
+    },
+  });
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1103,9 +1113,10 @@ function forwardAgentEvent(serverId: string, event: AgentEvent): void {
   dockWindows?.forward(serverId, event);
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(IPC_CHANNELS.agentEvent, { serverId, event });
-  if (mainWindow.isFocused() || !Notification.isSupported()) return;
+  const preferences = agentService?.agentSettings.appSettings().notifications;
+  if ((mainWindow.isFocused() && preferences?.onlyWhenUnfocused !== false) || !Notification.isSupported()) return;
 
-  const content = notificationForAgentEvent(event, agentService?.listBots() ?? []);
+  const content = notificationForAgentEvent(event, agentService?.listBots() ?? [], preferences);
   if (!content) return;
   const notification = new Notification(content);
   notification.on("click", () => {
