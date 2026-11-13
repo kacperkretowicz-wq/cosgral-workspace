@@ -373,3 +373,61 @@
   border-top: 1px solid var(--openbot-border);
   padding-top: var(--openbot-space-4);
 }
+
+/* Voice in the conversation (W3-BE9) ------------------------------------------------------------------------ */
+
+/* "Read aloud" is a message action: same 24px icon button, shown on hover/focus like the other actions, and
+   kept visible while this reply is being read (then the same button stops it). */
+.voice-playback .message-action-button svg {
+  fill: none;
+}
+
+.voice-playback .message-action-button[aria-pressed="true"] {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.voice-playback .message-action-button[aria-pressed="true"] svg rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+.voice-playback-error,
+.voice-recorder-error {
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-xs);
+  line-height: var(--openbot-leading-xs);
+}
+
+/* "Record voice" sits in the composer like the attach button: a 28px round icon button. */
+.voice-recorder {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+}
+
+.voice-recorder .composer-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.voice-recorder .voice-button-active[aria-pressed="true"] svg rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+.voice-recorder .composer-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+/* "Choose from library" above the composer: a quiet disclosure with a little space before the composer. */
+.composer-wrap > details {
+  margin-bottom: var(--openbot-space-1-5);
+}

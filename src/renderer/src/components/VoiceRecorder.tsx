@@ -155,11 +155,34 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
   return (
     <Show when={window.openbot.voice && enabled()}>
       <span class="voice-recorder">
-        <button type="button" disabled={busy()} onClick={() => (recording() ? void finish() : void start())}>
-          {recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
+        <button
+          type="button"
+          class={["composer-button", { "voice-button-active": recording() }]}
+          aria-label={recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
+          title={recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
+          aria-pressed={recording() ? "true" : "false"}
+          aria-busy={busy() ? "true" : undefined}
+          disabled={busy()}
+          onClick={() => (recording() ? void finish() : void start())}
+        >
+          <Show
+            when={recording()}
+            fallback={
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="7.5" y="3" width="5" height="9" rx="2.5" />
+                <path d="M5 9.5a5 5 0 0 0 10 0M10 14.5V17" />
+              </svg>
+            }
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <rect x="6" y="6" width="8" height="8" rx="1.5" />
+            </svg>
+          </Show>
         </button>
         <Show when={error()}>
-          <span role="alert">{error()}</span>
+          <span class="voice-recorder-error" role="alert">
+            {error()}
+          </span>
         </Show>
       </span>
     </Show>

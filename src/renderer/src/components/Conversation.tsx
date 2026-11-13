@@ -1856,7 +1856,11 @@ export function Conversation(props: ConversationProps) {
                                 />
                               </div>
                               <Show when={message.author === "bot" && !message.streaming && message.body.trim()}>
-                                <VoicePlayback text={message.body} enabled={voicePlaybackEnabled()} />
+                                <VoicePlayback
+                                  messageId={message.id}
+                                  text={message.body}
+                                  enabled={voicePlaybackEnabled()}
+                                />
                               </Show>
                               <MessageActions
                                 message={message}
