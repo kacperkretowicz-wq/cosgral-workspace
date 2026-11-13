@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readSetupState, writeSetupState } from "./setup-store";
+import { readSetupRecord, readSetupState, writeSetupState } from "./setup-store";
 
 const roots: string[] = [];
 
@@ -39,6 +39,24 @@ describe("setup store", () => {
       completed: true,
       preferredProvider: "claude",
     });
+  });
+
+  it("COSGRAL W3: keeps the first agent of onboarding when the provider changes later", async () => {
+    const root = await temporaryRoot();
+    const path = join(root, "openbot-setup-v2.json");
+    await expect(readSetupRecord(path)).resolves.toEqual({
+      completed: false,
+      preferredProvider: null,
+      firstAgentId: null,
+    });
+    await writeSetupState(path, "codex", "bot-1");
+    await writeSetupState(path, "claude");
+    await expect(readSetupRecord(path)).resolves.toEqual({
+      completed: true,
+      preferredProvider: "claude",
+      firstAgentId: "bot-1",
+    });
+    await expect(readSetupState(path)).resolves.toEqual({ completed: true, preferredProvider: "claude" });
   });
 });
 
