@@ -190,6 +190,21 @@ async function main(): Promise<void> {
     await page.getByRole("button", { name: "Send message" }).click({ timeout: 90_000 });
     await page.getByText("Stub: received").first().waitFor({ timeout: 45_000 });
     await both(page, out, "01-chat");
+    // Voice on (sandbox only), so "Read aloud" shows; message actions appear on hover like in normal use.
+    await page.evaluate("window.openbot.voice?.updateSettings({ enabled: true })").catch(() => undefined);
+    await page.waitForTimeout(800);
+    await page.getByText("Stub: received").last().hover();
+    await both(page, out, "01-chat-hover");
+    // One channel with one task, so the Tasks page has rows to show.
+    await page.evaluate(`(async () => {
+      const api = window.openbot.channels;
+      if (!api || (await api.list()).length) return;
+      const bot = (await window.openbot.agent.listBots()).find((item) => item.name === "New agent");
+      if (!bot) return;
+      const channel = await api.create({ name: "polish", title: "Polish", instructions: "", memberBotIds: [bot.id], leadBotId: bot.id, isolated: false });
+      await api.sendMessage({ channelId: channel.id, text: "Check the polish run" });
+    })()`);
+    await page.waitForTimeout(3000);
     const rail = page.getByRole("navigation", { name: "Pages" });
     for (const [index, name] of PAGES.entries()) {
       await rail.getByRole("button", { name, exact: true }).click();

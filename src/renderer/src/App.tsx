@@ -64,6 +64,8 @@ import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
+import { TasksPage } from "./components/TasksPage";
+import { UsagePage } from "./components/UsagePage";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
@@ -1920,6 +1922,12 @@ export function App() {
               <Show when={activePage() === "phone"}>
                 <MobileConnectPage />
               </Show>
+              <Show when={activePage() === "tasks"}>
+                <TasksPage bots={botList()} />
+              </Show>
+              <Show when={activePage() === "usage"}>
+                <UsagePage />
+              </Show>
               <Show
                 when={
                   activePage() !== "agents" &&
@@ -1929,7 +1937,9 @@ export function App() {
                   activePage() !== "workflows" &&
                   activePage() !== "remote-desktop" &&
                   activePage() !== "phone" &&
-                  activePage() !== "providers"
+                  activePage() !== "providers" &&
+                  activePage() !== "tasks" &&
+                  activePage() !== "usage"
                 }
               >
                 <ComingSoon title={activePageTitle()} />

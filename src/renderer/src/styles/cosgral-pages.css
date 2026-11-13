@@ -431,3 +431,79 @@
 .composer-wrap > details {
   margin-bottom: var(--openbot-space-1-5);
 }
+
+/* Tasks page (W3-BE9) ------------------------------------------------------------------------------------- */
+
+.tasks-filter {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-1-5);
+}
+
+.tasks-card {
+  container-type: inline-size;
+  padding: var(--openbot-space-1) var(--openbot-space-4);
+}
+
+.tasks-empty {
+  padding: var(--openbot-space-3) 0;
+}
+
+.tasks-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tasks-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--openbot-space-3);
+  padding: var(--openbot-space-3) 0;
+  border-top: 1px solid var(--openbot-border);
+}
+
+.tasks-row:first-child {
+  border-top: 0;
+}
+
+.tasks-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tasks-title {
+  overflow-wrap: anywhere;
+}
+
+.tasks-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--openbot-space-1-5);
+  min-width: 0;
+}
+
+@container (max-width: 560px) {
+  .tasks-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .tasks-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* The chosen filter reads in both themes: accent tint instead of the light "primary" fill. */
+.tasks-filter .ui-button[aria-pressed="true"] {
+  border-color: var(--openbot-accent-strong);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
