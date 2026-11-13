@@ -4,7 +4,7 @@
 **Źródła:** obserwacja OpenBota 0.68 jako członek kanału (ten projekt), [README 0.68](https://github.com/nightly-labs/openbot/blob/v0.68.0/README.md), lista `docs/cosgral/parytet-0.68.md` wiersze 12–15. Bez kopiowania tekstów UI i bez kodu nowszego niż `a6fe240`.  
 **Kontrakt uzgodniony (Backend↔UI):** `ChannelTask {id, channelId, ownerBotId, state: queued|running|waiting|done|failed|cancelled, title, requestMessageId, resultMessageId|null, updatedAt}`, zdarzenie `task-changed`, `channels.listTasks(channelId)`. Poniżej: gdzie 0.68 wymaga **więcej** pól lub stanów.
 
-Stan: 12.11.2026. Żaden test odbioru z tej specyfikacji nie został uruchomiony w COSGRAL.
+Stan: 13.11.2026. Odbiór silnika (API/smoke) W1-T3: `docs/cosgral-raporty/tester-w1-t3-odbior.md`. UI kanału/kart nadal do W1-UI3.
 
 ## 1. Kanał
 
