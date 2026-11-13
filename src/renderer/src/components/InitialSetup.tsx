@@ -10,6 +10,7 @@ import type {
   MacPermissionsState,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, Show, untrack } from "solid-js";
+import { AppSettingsW3 } from "./AppSettingsW3";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
 import { Button, Dialog, Textarea } from "./ui";
 
@@ -218,6 +219,9 @@ export function InitialSetup(props: InitialSetupProps) {
             <Dialog.Description as="p" id="initial-setup-description" class="initial-setup-intro">
               {description()}
             </Dialog.Description>
+            <Show when={props.reviewing}>
+              <AppSettingsW3 />
+            </Show>
           </header>
 
           <Show when={!props.reviewing && route() === null}>

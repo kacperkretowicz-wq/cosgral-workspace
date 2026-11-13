@@ -40,6 +40,7 @@ import type {
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
 import { AccountLogin } from "./components/AccountLogin";
+import { OnboardingW3Gate } from "./components/AppSettingsW3";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
@@ -242,6 +243,7 @@ export function App() {
   );
   const [leftPanelAutoCompact, setLeftPanelAutoCompact] = createSignal(false);
   const [setupState, setSetupState] = createSignal<AppSetupState | null>(null);
+  const [showProviderSetup, setShowProviderSetup] = createSignal(false);
   const [setupLoaded, setSetupLoaded] = createSignal(false);
   const [centralAuth, setCentralAuth] = createSignal<CentralAuthState>({
     status: "loading",
@@ -1758,15 +1760,26 @@ export function App() {
           <Show
             when={setupState()?.completed}
             fallback={
-              <InitialSetup
-                state={setupState() ?? { completed: false, preferredProvider: null }}
-                agentStatus={agentStatus()}
-                platform={appInfo()?.platform ?? "darwin"}
-                accountEmail={account().email}
-                onSave={saveSetup}
-                onJoinRemote={joinRemoteDuringSetup}
-                onLogout={logoutCentralAccount}
-              />
+              <Show
+                when={window.openbot.onboarding && !showProviderSetup()}
+                fallback={
+                  <InitialSetup
+                    state={setupState() ?? { completed: false, preferredProvider: null }}
+                    agentStatus={agentStatus()}
+                    platform={appInfo()?.platform ?? "darwin"}
+                    accountEmail={account().email}
+                    onSave={saveSetup}
+                    onJoinRemote={joinRemoteDuringSetup}
+                    onLogout={logoutCentralAccount}
+                  />
+                }
+              >
+                <OnboardingW3Gate
+                  onComplete={async () => {
+                    setShowProviderSetup(true);
+                  }}
+                />
+              </Show>
             }
           >
             <div
