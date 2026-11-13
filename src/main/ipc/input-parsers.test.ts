@@ -57,6 +57,7 @@ import {
   parseUpdateSkillInstall,
 } from "./skill-inputs";
 import { requireString } from "./validation";
+import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./vault-inputs";
 
 describe("app IPC input parsing", () => {
   it("parses setup and permission values", () => {
@@ -425,6 +426,90 @@ describe("skill IPC input parsing", () => {
     expect(() => parseInstallSkill({ skillId: "s1" })).toThrowError("botId is required.");
     expect(() => parseUpdateSkillInstall({ skillId: "s1", botId: "chief", overwriteLocalChanges: 1 })).toThrowError(
       "overwriteLocalChanges must be true or false.",
+    );
+  });
+});
+
+describe("vault IPC input parsing", () => {
+  it("parses items of every kind, deletions and answers to agent requests", () => {
+    expect(
+      parseSaveVaultItem({
+        kind: "login",
+        url: "https://bank.example",
+        username: "tester",
+        password: "Test-Pass-1234!",
+      }),
+    ).toEqual({ kind: "login", url: "https://bank.example", username: "tester", password: "Test-Pass-1234!" });
+    expect(
+      parseSaveVaultItem({
+        kind: "login",
+        id: "v1",
+        url: "https://bank.example",
+        username: "tester",
+        twoStepKey: null,
+      }),
+    ).toEqual({
+      kind: "login",
+      id: "v1",
+      url: "https://bank.example",
+      username: "tester",
+      twoStepKey: null,
+    });
+    expect(
+      parseSaveVaultItem({
+        kind: "card",
+        holderName: "Test Holder",
+        number: "4242 4242 4242 4242",
+        expiryMonth: 12,
+        expiryYear: 2029,
+        cvc: "123",
+      }),
+    ).toMatchObject({ kind: "card", expiryMonth: 12, expiryYear: 2029 });
+    expect(parseSaveVaultItem({ kind: "contact", name: "Test Person", email: "t@example.invalid" })).toMatchObject({
+      kind: "contact",
+      name: "Test Person",
+    });
+    expect(parseSaveVaultItem({ kind: "apiKey", name: "TEST_API_KEY", value: "test-key" })).toMatchObject({
+      kind: "apiKey",
+    });
+    expect(parseSaveVaultItem({ kind: "totp", issuer: "Test Service", secret: "JBSWY3DPEHPK3PXP" })).toMatchObject({
+      kind: "totp",
+    });
+    expect(parseDeleteVaultItem({ itemId: "v1" })).toEqual({ itemId: "v1" });
+    expect(parseRespondToVaultRequest({ requestId: "vault-1", itemId: "v1" })).toEqual({
+      requestId: "vault-1",
+      itemId: "v1",
+    });
+    expect(parseRespondToVaultRequest({ requestId: "vault-1", decline: true })).toEqual({
+      requestId: "vault-1",
+      decline: true,
+    });
+  });
+
+  it("rejects malformed Vault requests without repeating a value", () => {
+    expect(() => parseSaveVaultItem({ kind: "password", value: "x" })).toThrowError(
+      "kind must be login, card, contact, apiKey or totp.",
+    );
+    expect(() =>
+      parseSaveVaultItem({ kind: "login", url: "https://bank.example", username: "tester", password: 5 }),
+    ).toThrowError("password must be text.");
+    expect(() =>
+      parseSaveVaultItem({
+        kind: "card",
+        holderName: "Test Holder",
+        number: "4242",
+        expiryMonth: "12",
+        expiryYear: 2029,
+      }),
+    ).toThrowError("expiryMonth must be a whole number.");
+    expect(() => parseSaveVaultItem({ kind: "apiKey", name: "TEST_API_KEY", value: "x".repeat(8_193) })).toThrowError(
+      "value is too long.",
+    );
+    expect(() => parseRespondToVaultRequest({ requestId: "vault-1" })).toThrowError(
+      "Give the item to use, or decline the request.",
+    );
+    expect(() => parseRespondToVaultRequest({ requestId: "vault-1", itemId: "v1", decline: true })).toThrowError(
+      "Give the item to use, or decline the request.",
     );
   });
 });

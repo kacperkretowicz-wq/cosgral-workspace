@@ -77,7 +77,12 @@ export class AgentActivityTracker {
       case "approval-resolved":
       case "draft-preview-resolved":
       case "browser-takeover-changed":
+      case "vault-request-resolved":
         this.#refresh(event.botId);
+        return;
+      // COSGRAL W2: an agent waits for a Vault item from the person.
+      case "vault-request":
+        this.#refresh(event.request.botId);
         return;
       case "approval":
         this.#refresh(event.approval.botId);

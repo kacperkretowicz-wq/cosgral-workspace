@@ -133,6 +133,7 @@ import {
   parseUpdateSkillInstall,
 } from "./ipc/skill-inputs";
 import { isObject, requireString } from "./ipc/validation";
+import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -757,6 +758,24 @@ function registerIpcHandlers(
   handleTrusted(IPC_CHANNELS.skillsUninstall, (input: unknown) =>
     service.skillLibrary.uninstall(localSkillInput(input, parseUninstallSkill)),
   );
+  // COSGRAL W2: the local Vault of this computer. Nothing here returns a secret value.
+  handleTrusted(IPC_CHANNELS.vaultStatus, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.vault.status() : { encryptionAvailable: false, items: 0 };
+  });
+  handleTrusted(IPC_CHANNELS.vaultList, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    return serverId === "local" ? service.vault.list() : [];
+  });
+  handleTrusted(IPC_CHANNELS.vaultSave, (input: unknown) =>
+    service.vault.save(localVaultInput(input, parseSaveVaultItem)),
+  );
+  handleTrusted(IPC_CHANNELS.vaultDelete, (input: unknown) => {
+    service.vault.delete(localVaultInput(input, parseDeleteVaultItem).itemId);
+  });
+  handleTrusted(IPC_CHANNELS.vaultRespondToRequest, (input: unknown) =>
+    service.respondToVaultRequest(localVaultInput(input, parseRespondToVaultRequest)),
+  );
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
   handleTrusted(IPC_CHANNELS.sidebarGetLayout, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -1190,6 +1209,8 @@ if (!hasSingleInstanceLock) {
         null,
         mcp,
       );
+      // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
+      agentService.useSecretBox(electronSecretBox());
       const service = agentService;
       // COSGRAL W1: sidebar folders live in the same local database.
       const sidebarStore = new SidebarStore(store.database);
@@ -1442,6 +1463,22 @@ function localChannelInput<T>(input: unknown, parse: (payload: unknown) => T): T
 }
 
 /** COSGRAL W2: skill library requests are for this computer only. */
+/** COSGRAL W2: Vault requests are for this computer only. */
+function localVaultInput<T>(input: unknown, parse: (payload: unknown) => T): T {
+  const scoped = parseAgentRequest(input);
+  if (scoped.serverId !== "local") throw new Error("The Vault is available only on this computer.");
+  return parse(scoped.payload);
+}
+
+/** COSGRAL W2: Electron safeStorage as the SecretBox of the Vault and MCP; without OS encryption nothing is saved. */
+function electronSecretBox(): SecretBox {
+  return {
+    canEncrypt: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain).toString("base64"),
+    decrypt: (cipher) => safeStorage.decryptString(Buffer.from(cipher, "base64")),
+  };
+}
+
 function localSkillInput<T>(input: unknown, parse: (payload: unknown) => T): T {
   const scoped = parseAgentRequest(input);
   if (scoped.serverId !== "local") throw new Error("The skill library is available only on this computer for now.");
@@ -1527,15 +1564,6 @@ async function prepareForShutdown(): Promise<void> {
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
   await (mcpManager?.stop() ?? Promise.resolve());
-}
-
-/** COSGRAL W2: Electron safeStorage as the MCP secret box; no plain-text fallback. */
-function electronSecretBox(): SecretBox {
-  return {
-    canEncrypt: () => safeStorage.isEncryptionAvailable(),
-    encrypt: (plain) => safeStorage.encryptString(plain).toString("base64"),
-    decrypt: (cipher) => safeStorage.decryptString(Buffer.from(cipher, "base64")),
-  };
 }
 
 function routeUpdateBot(

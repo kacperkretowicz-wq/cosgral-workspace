@@ -11,4 +11,5 @@ export * from "./ipc-memory";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
 export * from "./ipc-team-host";
+export * from "./ipc-vault";
 export * from "./ipc-workspace-channels";

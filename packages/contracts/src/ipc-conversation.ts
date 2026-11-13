@@ -26,6 +26,14 @@ import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
 import {
+  isVaultItemSummary,
+  isVaultRequest,
+  isVaultRequestResolution,
+  type VaultItemSummary,
+  type VaultRequest,
+  type VaultRequestResolution,
+} from "./ipc-vault";
+import {
   type ChannelMemory,
   type ChannelMessage,
   type ChannelTask,
@@ -491,6 +499,11 @@ export type AgentEvent =
   | { type: "skills-changed"; skills: LocalSkill[] }
   /** COSGRAL W2: installed skills of the agents changed; replace the list. */
   | { type: "skill-installs-changed"; installs: SkillInstall[] }
+  /** COSGRAL W2: Vault items changed; summaries only, never a secret value. Replace the list. */
+  | { type: "vault-changed"; items: VaultItemSummary[] }
+  /** COSGRAL W2: an agent needs a Vault item (add or choose); a Needs you card. */
+  | { type: "vault-request"; request: VaultRequest }
+  | { type: "vault-request-resolved"; requestId: string; botId: string; resolution: VaultRequestResolution }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -571,6 +584,12 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.skills) && value.skills.every(isLocalSkill);
     case "skill-installs-changed":
       return Array.isArray(value.installs) && value.installs.every(isSkillInstall);
+    case "vault-changed":
+      return Array.isArray(value.items) && value.items.every(isVaultItemSummary);
+    case "vault-request":
+      return isVaultRequest(value.request);
+    case "vault-request-resolved":
+      return isString(value.requestId) && isString(value.botId) && isVaultRequestResolution(value.resolution);
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

@@ -7,6 +7,7 @@
 
 import type { BrowserTakeoverPhase, BrowserTakeoverRequest, DraftPreviewCard } from "./ipc-action-cards";
 import type { AgentApproval, AgentPromptQuestion, AgentProviderId } from "./ipc-conversation";
+import { isVaultRequest, type VaultRequest } from "./ipc-vault";
 import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 /** An open question card; the same fields as the `prompt` event. */
@@ -40,14 +41,27 @@ export interface PendingBrowserTakeover {
   phase: Extract<BrowserTakeoverPhase, "requested" | "taken-over">;
 }
 
+/** COSGRAL W2: an agent needs a Vault item: add a missing one, or choose between matches. */
+export interface PendingVaultRequest {
+  kind: "vault-request";
+  request: VaultRequest;
+}
+
 /** Everything that waits for the user, oldest first. */
 export type PendingAgentRequest =
   | PendingAgentPrompt
   | PendingAgentApproval
   | PendingDraftPreview
-  | PendingBrowserTakeover;
+  | PendingBrowserTakeover
+  | PendingVaultRequest;
 
-export const PENDING_AGENT_REQUEST_KINDS = ["prompt", "approval", "draft-preview", "browser-takeover"] as const;
+export const PENDING_AGENT_REQUEST_KINDS = [
+  "prompt",
+  "approval",
+  "draft-preview",
+  "browser-takeover",
+  "vault-request",
+] as const;
 export type PendingAgentRequestKind = (typeof PENDING_AGENT_REQUEST_KINDS)[number];
 
 /** How a question card ended. "skipped": answered with no answers. "expired": its turn ended or stopped first. */
@@ -161,6 +175,8 @@ export function isPendingAgentRequest(value: unknown): value is PendingAgentRequ
         isString(value.request.botId) &&
         isOneOf(["requested", "taken-over"], value.phase)
       );
+    case "vault-request":
+      return isVaultRequest(value.request);
     default:
       return false;
   }

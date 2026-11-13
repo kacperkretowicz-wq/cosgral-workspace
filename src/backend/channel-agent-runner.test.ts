@@ -216,8 +216,21 @@ it("gives a channel member its installed skills and lets it use the skill librar
       arguments: {},
     },
   });
+  runner.request(client, {
+    id: "vault",
+    method: "item/tool/call",
+    params: {
+      threadId,
+      turnId: "turn",
+      callId: "vault",
+      namespace: "cosgral_vault",
+      tool: "list_vault_items",
+      arguments: {},
+    },
+  });
   await new Promise((r) => setTimeout(r, 0));
-  expect(handled).toEqual(["cosgral_skills"]);
+  expect(handled).toEqual(["cosgral_skills", "cosgral_vault"]);
+  expect(getString(client.requests[0]?.params, "developerInstructions")).toContain("cosgral_vault");
   runner.notification({ method: "turn/completed", params: { threadId, turn: { id: "turn", status: "completed" } } });
   await work;
 });

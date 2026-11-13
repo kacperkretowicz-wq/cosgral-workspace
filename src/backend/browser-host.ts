@@ -57,6 +57,8 @@ interface BrowserSnapshot {
     role: string | null;
     name: string;
     disabled: boolean;
+    /** COSGRAL W2: the input type (e.g. "password", "email"), so an agent finds the fields for Vault tools. */
+    inputType?: string | null;
   }>;
 }
 
@@ -317,6 +319,30 @@ export class BrowserHost {
       await delay(250);
       const nextRevision = tab.revision + 1;
       return this.#readSnapshot(tab, nextRevision);
+    });
+  }
+
+  /**
+   * COSGRAL W2: types a Vault value into an element. Unlike `act`, it returns nothing about the page, marks the
+   * element so later snapshots never show its value, and keeps the snapshot revision.
+   */
+  async typeSecret(tabId: string, revision: number, ref: string, value: string): Promise<void> {
+    await this.#enqueue(tabId, async (tab) => {
+      if (revision !== tab.revision) {
+        throw new Error("Stale browser references. Take a fresh snapshot before typing.");
+      }
+      const wasVisible = tab.view.getVisible();
+      if (!wasVisible) {
+        tab.view.setVisible(true);
+        tab.view.webContents.invalidate();
+      }
+      tab.view.webContents.focus();
+      try {
+        if (!wasVisible) await delay(250);
+        await withTimeout(typeSecretInto(tab.view.webContents, ref, value), 10_000, "Typing a Vault value timed out.");
+      } finally {
+        if (!wasVisible) tab.view.setVisible(false);
+      }
     });
   }
 
@@ -849,13 +875,17 @@ function snapshotScript(revision: number): string {
     const elements = nodes.map((node, index) => {
       const ref = revision + ':' + index;
       node.setAttribute('data-openbot-ref', ref);
-      const name = (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.innerText || node.value || '').trim().slice(0, 500);
+      // COSGRAL W2: never show the value of a password field or of a field the Vault typed into.
+      const secret = node.getAttribute('data-cosgral-secret') === '1' || (node instanceof HTMLInputElement && node.type === 'password');
+      const value = secret ? '' : (node.value || '');
+      const name = (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.innerText || value || '').trim().slice(0, 500);
       return {
         ref,
         tag: node.tagName.toLowerCase(),
         role: node.getAttribute('role'),
         name,
         disabled: Boolean(node.disabled || node.getAttribute('aria-disabled') === 'true'),
+        inputType: node instanceof HTMLInputElement ? node.type : null,
       };
     });
     return {
@@ -865,6 +895,22 @@ function snapshotScript(revision: number): string {
       elements,
     };
   })()`;
+}
+
+/** COSGRAL W2: the value goes in through the debugger's insertText, never through page script source. */
+async function typeSecretInto(contents: WebContents, ref: string, value: string): Promise<void> {
+  await contents.executeJavaScript(
+    `(() => {
+      const node = document.querySelector('[data-openbot-ref=${JSON.stringify(ref)}]');
+      if (!(node instanceof HTMLElement)) throw new Error('Element reference is no longer available.');
+      if (!('value' in node) && !node.isContentEditable) throw new Error('Element does not accept text.');
+      node.setAttribute('data-cosgral-secret', '1');
+      node.focus();
+      if (typeof node.select === 'function') node.select();
+    })()`,
+    true,
+  );
+  await withDevToolsDebugger(contents, () => contents.debugger.sendCommand("Input.insertText", { text: value }));
 }
 
 async function performAction(contents: WebContents, action: BrowserAction): Promise<void> {

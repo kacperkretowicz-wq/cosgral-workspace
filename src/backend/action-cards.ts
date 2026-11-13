@@ -15,6 +15,7 @@ import {
   type BrowserTakeoverAction,
   type BrowserTakeoverPhase,
   type BrowserTakeoverRequest,
+  DRAFT_PREVIEW_RESOLUTIONS,
   DRAFT_PREVIEW_VARIANTS,
   type DraftPreviewCard,
   type DraftPreviewResolution,
@@ -104,6 +105,8 @@ interface OpenDraft {
   sequence: number;
   providerThreadId: string;
   resolve: (result: DynamicToolResult) => void;
+  /** False for a confirmation the program asks itself (e.g. a payment card): "keep-draft" then only cancels. */
+  keepable: boolean;
 }
 
 interface OpenTakeover {
@@ -166,7 +169,7 @@ export class ActionCards {
     }
     let draftId = card.draftId;
     let draftsChanged = false;
-    if (input.decision === "keep-draft") {
+    if (input.decision === "keep-draft" && open.keepable) {
       draftId = draftId ?? card.requestId;
       // Saved before the card closes: when the store refuses, the card stays open.
       this.#options.drafts.save({
@@ -278,7 +281,22 @@ export class ActionCards {
     for (const [requestId, open] of this.#takeovers) this.#finishTakeover(requestId, open, "expired");
   }
 
-  #confirm(context: CardContext, args: DynamicRecord): Promise<DynamicToolResult> {
+  /**
+   * COSGRAL W2: a confirm card the program itself asks before an action in the user's name (e.g. typing a
+   * payment card). Resolves with the person's decision; "keep-draft" (Cancel) keeps nothing.
+   */
+  async confirmAction(
+    context: CardContext,
+    input: { title: string; preview: string; recipient?: string; channel?: string },
+  ): Promise<DraftPreviewResolution> {
+    const result = await this.#confirm(context, { ...input, variant: "confirm" }, false);
+    const item = result.contentItems[0];
+    if (!result.success || item?.type !== "inputText") throw new Error(item?.type === "inputText" ? item.text : "");
+    const value = JSON.parse(item.text);
+    return isDynamicRecord(value) && isOneOf(DRAFT_PREVIEW_RESOLUTIONS, value.decision) ? value.decision : "expired";
+  }
+
+  #confirm(context: CardContext, args: DynamicRecord, keepable = true): Promise<DynamicToolResult> {
     const draftId = optionalText(args, "draftId", ID_LIMIT);
     const kept = draftId === null ? null : this.#options.drafts.get(draftId);
     if (draftId !== null && (!kept || kept.botId !== context.botId)) {
@@ -309,7 +327,13 @@ export class ActionCards {
       createdAt,
     };
     return new Promise((resolve) => {
-      this.#drafts.set(card.requestId, { card, sequence, providerThreadId: context.providerThreadId, resolve });
+      this.#drafts.set(card.requestId, {
+        card,
+        sequence,
+        providerThreadId: context.providerThreadId,
+        resolve,
+        keepable,
+      });
       this.#options.emit({ type: "draft-preview", card: structuredClone(card) });
     });
   }
