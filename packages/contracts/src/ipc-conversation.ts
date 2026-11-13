@@ -306,10 +306,19 @@ export interface QueueDelivery {
   createdAt: string;
 }
 
+/** COSGRAL W3: whether a queued message can be steered into the running turn on this agent's provider. */
+export interface QueueSteerSupport {
+  available: boolean;
+  /** Why not, in a short sentence (null when available). */
+  reason: string | null;
+}
+
 export interface QueueSnapshot {
   botId: string;
   paused: boolean;
   deliveries: QueueDelivery[];
+  /** COSGRAL W3: set by the program; absent in snapshots from older servers (treat as available). */
+  steer?: QueueSteerSupport;
 }
 
 export interface ConversationMessage {

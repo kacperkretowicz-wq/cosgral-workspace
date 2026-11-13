@@ -9,6 +9,8 @@ interface QueuePanelProps {
   deliveries: QueueDelivery[];
   paused: boolean;
   canSteer: boolean;
+  /** COSGRAL W3: why steering is unavailable on this provider; shown instead of "Steer message". */
+  steerReason?: string | null;
   onSteer: (deliveryId: string) => void;
   onCancel: (deliveryId: string) => void;
   onEdit: (delivery: QueueDelivery) => void;
@@ -126,6 +128,8 @@ export function QueuePanel(props: QueuePanelProps) {
     props.onReorder(ids);
   }
 
+  const steerTooltip = () => (props.steerReason ? `Steer unavailable: ${props.steerReason}` : "Steer message");
+
   function messagePreview(delivery: QueueDelivery): string {
     return delivery.text.trim() || delivery.attachments.map((attachment) => attachment.name).join(", ") || "Attachment";
   }
@@ -235,11 +239,12 @@ export function QueuePanel(props: QueuePanelProps) {
                       disabled={!props.canSteer || delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
                       aria-label={`Steer queued message ${delivery.position ?? ""}`}
-                      onPointerEnter={(event) => openActionTooltip(event.currentTarget, "Steer message")}
-                      onMouseEnter={(event) => openActionTooltip(event.currentTarget, "Steer message")}
+                      title={props.steerReason ?? undefined}
+                      onPointerEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
+                      onMouseEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
                       onPointerLeave={(event) => closeActionTooltip(event.currentTarget)}
                       onMouseLeave={(event) => closeActionTooltip(event.currentTarget)}
-                      onFocus={(event) => openActionTooltip(event.currentTarget, "Steer message")}
+                      onFocus={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
                       onBlur={(event) => closeActionTooltip(event.currentTarget)}
                       onKeyDown={closeActionTooltipOnEscape}
                       onClick={() => {

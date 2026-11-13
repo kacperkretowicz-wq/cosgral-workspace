@@ -114,6 +114,7 @@ import {
   type ThreadItem,
 } from "./protocol";
 import type { ProviderRegistry } from "./provider-registry";
+import { steerSupport, withSteerSupport } from "./queue-steer";
 import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
@@ -1058,7 +1059,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   listQueue(botId: string): QueueSnapshot {
-    return this.#mailbox.listQueue(botId);
+    return this.#queueSnapshot(botId);
+  }
+
+  /** COSGRAL W3: the queue plus whether this agent's provider can steer (see queue-steer.ts). */
+  #queueSnapshot(botId: string): QueueSnapshot {
+    const snapshot = this.#mailbox.listQueue(botId);
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    return bot ? withSteerSupport(snapshot, providerForBot(bot)) : snapshot;
   }
 
   async cancelQueuedMessage(botId: string, deliveryId: string): Promise<void> {
@@ -1087,6 +1095,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async steerQueuedMessage(input: SteerQueuedMessageInput): Promise<void> {
     const bot = await this.#store.getOrCreate(input.botId);
+    const support = steerSupport(providerForBot(bot));
+    if (!support.available) throw new Error(support.reason ?? "Steering is unavailable for this agent.");
     const client = this.#requireReadyClient(providerForBot(bot));
     const session = this.#store.activeProviderSession(bot.id);
     const snapshot = this.#ensureSnapshot(bot.id, bot.threadId);
@@ -2095,7 +2105,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #emitQueue(botId: string): void {
-    this.#emit({ type: "queue-changed", snapshot: this.#mailbox.listQueue(botId) });
+    this.#emit({ type: "queue-changed", snapshot: this.#queueSnapshot(botId) });
     const affectedBots = new Set([botId, ...this.#mailbox.senderBotIdsForRecipient(botId)]);
     for (const affectedBotId of affectedBots) {
       const snapshot = this.#snapshots.get(affectedBotId);

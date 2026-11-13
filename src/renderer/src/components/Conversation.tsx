@@ -2037,7 +2037,8 @@ export function Conversation(props: ConversationProps) {
             <QueuePanel
               deliveries={props.queue?.deliveries ?? []}
               paused={Boolean(props.queue?.paused)}
-              canSteer={Boolean(props.activeTurnId)}
+              canSteer={Boolean(props.activeTurnId) && props.queue?.steer?.available !== false}
+              steerReason={props.queue?.steer?.reason ?? null}
               onSteer={props.onSteerQueuedMessage}
               onCancel={props.onCancelQueuedMessage}
               onEdit={editQueuedMessage}
