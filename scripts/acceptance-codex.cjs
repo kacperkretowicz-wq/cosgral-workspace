@@ -57,7 +57,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function direct(threadId, turnId, text) {
   const tool = async (namespace, name, args) => {
-    const response = await ask("item/tool/call", { threadId, turnId, callId: randomUUID(), namespace, tool: name, arguments: args });
+    const response = await ask("item/tool/call", {
+      threadId,
+      turnId,
+      callId: randomUUID(),
+      namespace,
+      tool: name,
+      arguments: args,
+    });
     return { success: response.success, text: response.contentItems?.[0]?.text ?? "" };
   };
   if (text.startsWith("SLOW")) {
@@ -115,7 +122,11 @@ async function direct(threadId, turnId, text) {
       reason: "Acceptance run",
       permissions: { fileSystem: { read: [folder], write: [folder] }, network: { enabled: false } },
     });
-    return complete(threadId, turnId, `Stub: permissions ${Object.keys(result.permissions ?? {}).length ? "granted" : "denied"}`);
+    return complete(
+      threadId,
+      turnId,
+      `Stub: permissions ${Object.keys(result.permissions ?? {}).length ? "granted" : "denied"}`,
+    );
   }
   if (text.startsWith("DRAFT")) {
     const result = await tool("cosgral_cards", "confirm", {
@@ -132,7 +143,8 @@ async function direct(threadId, turnId, text) {
       return complete(threadId, turnId, null, "failed", "You've hit your usage limit. Try again later.");
     return complete(threadId, turnId, `Stub: ran on ${lastTurnStart.model}`);
   }
-  if (text.startsWith("FAIL")) return complete(threadId, turnId, null, "failed", "Sandbox failure: the provider said no.");
+  if (text.startsWith("FAIL"))
+    return complete(threadId, turnId, null, "failed", "Sandbox failure: the provider said no.");
   if (text.startsWith("LIMITON")) {
     limitResetsAt = Math.floor(Date.now() / 1000) + 3 * 3600;
     out({ method: "account/rateLimits/updated", params: { rateLimits: limits() } });
@@ -160,20 +172,36 @@ async function direct(threadId, turnId, text) {
   if (text.startsWith("INSTRHAS ")) {
     const needle = text.slice(9).trim();
     const all = threads.get(threadId)?.developerInstructions ?? "";
-    return complete(threadId, turnId, `Stub: instructions ${all.includes(needle) ? "have" : "lack"} "${needle}" (length ${all.length})`);
+    return complete(
+      threadId,
+      turnId,
+      `Stub: instructions ${all.includes(needle) ? "have" : "lack"} "${needle}" (length ${all.length})`,
+    );
   }
   if (text.startsWith("INSTR")) {
-    return complete(threadId, turnId, `Stub: instructions ${(threads.get(threadId)?.developerInstructions ?? "").slice(0, 4000)}`);
+    return complete(
+      threadId,
+      turnId,
+      `Stub: instructions ${(threads.get(threadId)?.developerInstructions ?? "").slice(0, 4000)}`,
+    );
   }
   if (text.startsWith("MODEL")) {
-    return complete(threadId, turnId, `Stub: model ${JSON.stringify({ model: lastTurnStart.model ?? null, effort: lastTurnStart.effort ?? null })}`);
+    return complete(
+      threadId,
+      turnId,
+      `Stub: model ${JSON.stringify({ model: lastTurnStart.model ?? null, effort: lastTurnStart.effort ?? null })}`,
+    );
   }
   return complete(threadId, turnId, "Stub: received");
 }
 
 function limits() {
   return limitResetsAt
-    ? { limitId: "codex", primary: { usedPercent: 100, windowDurationMins: 300, resetsAt: limitResetsAt }, secondary: null }
+    ? {
+        limitId: "codex",
+        primary: { usedPercent: 100, windowDurationMins: 300, resetsAt: limitResetsAt },
+        secondary: null,
+      }
     : { limitId: "codex", primary: { usedPercent: 10, windowDurationMins: 300, resetsAt: null }, secondary: null };
 }
 
@@ -233,7 +261,11 @@ process.stdin.on("data", (chunk) => {
         reply({ turn: { id: turnId, status: "inProgress", items: [] } });
         out({ method: "turn/started", params: { threadId, turn: { id: turnId } } });
         const text = params.input?.[0]?.text ?? "";
-        setTimeout(() => direct(threadId, turnId, text).catch((error) => complete(threadId, turnId, null, "failed", String(error))), 20);
+        setTimeout(
+          () =>
+            direct(threadId, turnId, text).catch((error) => complete(threadId, turnId, null, "failed", String(error))),
+          20,
+        );
         break;
       }
       case "turn/steer":

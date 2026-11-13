@@ -16,7 +16,7 @@ import { Agent, request } from "node:https";
 import { dirname, join, resolve, sep } from "node:path";
 import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
-import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isDynamicRecord, isNumber } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -32,7 +32,10 @@ interface Result {
 const results: Result[] = [];
 let resultsFile = "";
 // COSGRAL_ONLY=41,39,R1 runs only those rows (with --keep, on the data of an earlier run).
-const only = (process.env.COSGRAL_ONLY ?? "").split(",").map((part) => part.trim()).filter(Boolean);
+const only = (process.env.COSGRAL_ONLY ?? "")
+  .split(",")
+  .map((part) => part.trim())
+  .filter(Boolean);
 const consoleFindings: string[] = [];
 
 function asRecord(value: unknown): DynamicRecord {
@@ -46,7 +49,10 @@ function list(value: unknown): DynamicRecord[] {
 function sandboxRoot(): string {
   const root = process.env.COSGRAL_SANDBOX_ROOT ? resolve(process.env.COSGRAL_SANDBOX_ROOT) : "";
   assert(root, "COSGRAL_SANDBOX_ROOT must point to a folder for the sandbox profile");
-  assert(!resolve(repo).startsWith(root + sep) && root !== resolve(repo), "The sandbox must not contain the repository");
+  assert(
+    !resolve(repo).startsWith(root + sep) && root !== resolve(repo),
+    "The sandbox must not contain the repository",
+  );
   return root;
 }
 
@@ -74,12 +80,20 @@ async function installFixture(root: string): Promise<{ codex: string; claude: st
   return { codex: join(folder, "codex.cmd"), claude: join(folder, "missing-claude.exe") };
 }
 
-async function launch(root: string, fixture: { codex: string; claude: string }): Promise<{ app: ElectronApplication; page: Page }> {
+async function launch(
+  root: string,
+  fixture: { codex: string; claude: string },
+): Promise<{ app: ElectronApplication; page: Page }> {
   const app = await electron.launch({
     executablePath: join(repo, "node_modules", "electron", "dist", "electron.exe"),
     args: [repo],
     cwd: repo,
-    env: { ...process.env, ...sandboxEnvironment(root), OPENBOT_CODEX_PATH: fixture.codex, OPENBOT_CLAUDE_PATH: fixture.claude },
+    env: {
+      ...process.env,
+      ...sandboxEnvironment(root),
+      OPENBOT_CODEX_PATH: fixture.codex,
+      OPENBOT_CLAUDE_PATH: fixture.claude,
+    },
     timeout: 90_000,
   });
   app.on("window", (window) => {
@@ -113,7 +127,8 @@ async function row(id: string, name: string, work: () => Promise<string | undefi
     console.log(`FAIL [${id}] ${name}: ${detail.slice(0, 160)}`);
   }
   // Written after every row, so a run that is cut short still leaves what it saw.
-  if (resultsFile) await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
+  if (resultsFile)
+    await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
 }
 
 // -- Helpers that run inside the window (strings: the window cannot import) ---------------------------------------
@@ -127,12 +142,16 @@ class Driver {
     this.evidence = evidence;
   }
 
-  async ev<T = unknown>(expression: string): Promise<T> {
-    return (await this.page.evaluate(expression)) as T;
+  async ev(expression: string): Promise<unknown> {
+    return this.page.evaluate(expression);
   }
 
   async botId(name: string): Promise<string> {
-    return String(await this.ev(`window.openbot.agent.listBots().then((bots) => (bots.find((b) => b.name === ${JSON.stringify(name)}) || {}).id)`));
+    return String(
+      await this.ev(
+        `window.openbot.agent.listBots().then((bots) => (bots.find((b) => b.name === ${JSON.stringify(name)}) || {}).id)`,
+      ),
+    );
   }
 
   async send(name: string, text: string): Promise<void> {
@@ -163,7 +182,12 @@ class Driver {
   }
 
   async rowLabel(name: string): Promise<string> {
-    return (await this.page.getByRole("button", { name: new RegExp(`^${name}, `) }).first().getAttribute("aria-label")) ?? "";
+    return (
+      (await this.page
+        .getByRole("button", { name: new RegExp(`^${name}, `) })
+        .first()
+        .getAttribute("aria-label")) ?? ""
+    );
   }
 
   async dump(name: string): Promise<void> {
@@ -178,7 +202,10 @@ class Driver {
 
   async openAgent(name: string): Promise<void> {
     await this.openPage("Agents");
-    await this.page.getByRole("button", { name: new RegExp(`^${name}, `) }).first().click();
+    await this.page
+      .getByRole("button", { name: new RegExp(`^${name}, `) })
+      .first()
+      .click();
     await this.page.waitForTimeout(1_200);
   }
 }
@@ -188,7 +215,11 @@ class Driver {
 function pinnedAgent(fingerprintHex: string): Agent {
   const agent = new Agent({ keepAlive: false });
   agent.createConnection = (options, callback) => {
-    const socket = connect({ host: String(options.host ?? "127.0.0.1"), port: Number(options.port), rejectUnauthorized: false });
+    const socket = connect({
+      host: String(options.host ?? "127.0.0.1"),
+      port: Number(options.port),
+      rejectUnauthorized: false,
+    });
     socket.once("secureConnect", () => {
       const seen = socket.getPeerCertificate().fingerprint256.replace(/:/g, "").toLowerCase();
       if (seen === fingerprintHex.toLowerCase()) callback?.(null, socket);
@@ -255,28 +286,44 @@ async function firstRun(d: Driver, root: string): Promise<void> {
   const { page } = d;
   const longTurn = "SLOW 90000";
 
-  await row("40", "onboarding: one flow: where, then provider + language + first agent, then the main window", async () => {
-    const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
-    await where.waitFor({ timeout: 90_000 });
-    await where.getByRole("button", { name: /Use this computer/ }).click();
-    const setup = page.getByRole("dialog", { name: "Set up this computer" });
-    await setup.waitFor({ timeout: 30_000 });
-    const languages = await setup.getByRole("combobox", { name: "Language" }).locator("option").allInnerTexts();
-    assert(languages.includes("English") && languages.includes("Polski"), "language choice");
-    assert((await setup.getByRole("radio").count()) >= 2, "provider choice");
-    assert(/Computer Use/.test(await setup.innerText()), "Computer Use is explained");
-    await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
-    await setup.getByRole("button", { name: "Continue with Codex" }).click();
-    await page.getByRole("button", { name: /^Assistant, / }).first().waitFor({ timeout: 60_000 });
-    return "screens: where > set up (provider, language, first agent, Computer Use); Assistant is in the list";
-  });
+  await row(
+    "40",
+    "onboarding: one flow: where, then provider + language + first agent, then the main window",
+    async () => {
+      const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
+      await where.waitFor({ timeout: 90_000 });
+      await where.getByRole("button", { name: /Use this computer/ }).click();
+      const setup = page.getByRole("dialog", { name: "Set up this computer" });
+      await setup.waitFor({ timeout: 30_000 });
+      const languages = await setup.getByRole("combobox", { name: "Language" }).locator("option").allInnerTexts();
+      assert(languages.includes("English") && languages.includes("Polski"), "language choice");
+      assert((await setup.getByRole("radio").count()) >= 2, "provider choice");
+      assert(/Computer Use/.test(await setup.innerText()), "Computer Use is explained");
+      await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
+      await setup.getByRole("button", { name: "Continue with Codex" }).click();
+      await page
+        .getByRole("button", { name: /^Assistant, / })
+        .first()
+        .waitFor({ timeout: 60_000 });
+      return "screens: where > set up (provider, language, first agent, Computer Use); Assistant is in the list";
+    },
+  );
 
   await row("9", "chat: a message gets an answer and stays visible", async () => {
     await d.openAgent("Assistant");
     // A new agent first asks for a model and a specialty: pick a model, answer the question by its label.
-    await page.getByRole("button", { name: "Onboarding model: Luna" }).click({ timeout: 10_000 }).catch(() => undefined);
-    await page.getByRole("option", { name: /^Luna/ }).click({ timeout: 5_000 }).catch(() => undefined);
-    await page.getByText("Work & projects", { exact: true }).click({ timeout: 8_000 }).catch(() => undefined);
+    await page
+      .getByRole("button", { name: "Onboarding model: Luna" })
+      .click({ timeout: 10_000 })
+      .catch(() => undefined);
+    await page
+      .getByRole("option", { name: /^Luna/ })
+      .click({ timeout: 5_000 })
+      .catch(() => undefined);
+    await page
+      .getByText("Work & projects", { exact: true })
+      .click({ timeout: 8_000 })
+      .catch(() => undefined);
     const reply = await d.answer("Assistant", "Stub: received", 45_000);
     assert((await page.getByText("Stub: received").count()) > 0, "the answer is shown");
     return reply;
@@ -311,14 +358,18 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await d.send("Assistant", "Q3 third");
     const queue = page.getByRole("region", { name: "Message queue" });
     await queue.waitFor({ timeout: 15_000 });
-    const names = async () => queue.getByRole("group").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+    const names = async () =>
+      queue.getByRole("group").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
     assert.equal((await names()).length, 3, "three queued");
     await page.getByRole("group", { name: /^Queued message 2:/ }).focus();
     await page.keyboard.press("Alt+ArrowUp");
     await page.waitForTimeout(1_200);
     assert((await names())[0]?.includes("Q2 second"), "Q2 moved first");
     await page.getByRole("button", { name: /^Edit queued message 1/ }).click();
-    await page.getByRole("textbox", { name: /Message Assistant/ }).first().fill("Q2 edited");
+    await page
+      .getByRole("textbox", { name: /Message Assistant/ })
+      .first()
+      .fill("Q2 edited");
     await page.getByRole("button", { name: "Save queued message" }).click();
     await page.waitForTimeout(1_200);
     assert((await names())[0]?.includes("Q2 edited"), "edit saved");
@@ -362,35 +413,39 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     return "section counted the card, click opened it, answering cleared it";
   });
 
-  await row("11", "approval card: Reject, Approve, Always allow, prefix match, chained command still asks", async () => {
-    await d.openAgent("Assistant");
-    await d.send("Assistant", "RUN git status --short");
-    const card = page.getByRole("region", { name: "Agent approval" });
-    await card.waitFor({ timeout: 20_000 });
-    await card.getByRole("button", { name: "Reject" }).click();
-    await d.answer("Assistant", "command decision decline", 30_000);
-    await d.send("Assistant", "RUN git status --short");
-    await card.waitFor({ timeout: 20_000 });
-    await card.getByRole("button", { name: "Approve" }).click();
-    await d.answer("Assistant", "command decision accept", 30_000);
-    await d.send("Assistant", "RUN git status --short");
-    await card.getByRole("button", { name: "Always allow…" }).click();
-    await card.getByRole("combobox").last().selectOption("git status");
-    await card.getByRole("button", { name: "Always allow", exact: true }).click();
-    await d.answer("Assistant", "command decision accept", 30_000);
-    await d.send("Assistant", "RUN git status --porcelain");
-    await page.waitForTimeout(5_000);
-    assert.equal(await card.count(), 0, "no card for a matching command");
-    await d.send("Assistant", "RUN git push origin main");
-    await card.waitFor({ timeout: 20_000 });
-    await card.getByRole("button", { name: "Reject" }).click();
-    await page.waitForTimeout(2_000);
-    await d.send("Assistant", "RUN git status; echo x");
-    await card.waitFor({ timeout: 20_000 });
-    assert(/Only once/.test(await card.innerText()), "a chained command says: only once");
-    await card.getByRole("button", { name: "Reject" }).click();
-    return "Always allow saved 'git status'; the matching command was allowed without a card";
-  });
+  await row(
+    "11",
+    "approval card: Reject, Approve, Always allow, prefix match, chained command still asks",
+    async () => {
+      await d.openAgent("Assistant");
+      await d.send("Assistant", "RUN git status --short");
+      const card = page.getByRole("region", { name: "Agent approval" });
+      await card.waitFor({ timeout: 20_000 });
+      await card.getByRole("button", { name: "Reject" }).click();
+      await d.answer("Assistant", "command decision decline", 30_000);
+      await d.send("Assistant", "RUN git status --short");
+      await card.waitFor({ timeout: 20_000 });
+      await card.getByRole("button", { name: "Approve" }).click();
+      await d.answer("Assistant", "command decision accept", 30_000);
+      await d.send("Assistant", "RUN git status --short");
+      await card.getByRole("button", { name: "Always allow…" }).click();
+      await card.getByRole("combobox").last().selectOption("git status");
+      await card.getByRole("button", { name: "Always allow", exact: true }).click();
+      await d.answer("Assistant", "command decision accept", 30_000);
+      await d.send("Assistant", "RUN git status --porcelain");
+      await page.waitForTimeout(5_000);
+      assert.equal(await card.count(), 0, "no card for a matching command");
+      await d.send("Assistant", "RUN git push origin main");
+      await card.waitFor({ timeout: 20_000 });
+      await card.getByRole("button", { name: "Reject" }).click();
+      await page.waitForTimeout(2_000);
+      await d.send("Assistant", "RUN git status; echo x");
+      await card.waitFor({ timeout: 20_000 });
+      assert(/Only once/.test(await card.innerText()), "a chained command says: only once");
+      await card.getByRole("button", { name: "Reject" }).click();
+      return "Always allow saved 'git status'; the matching command was allowed without a card";
+    },
+  );
 
   await row("12", "draft card: Send, Keep draft, Edit", async () => {
     const decision = page.getByRole("region", { name: "Decision" });
@@ -432,7 +487,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
 
   await row("18", "search in the conversation (Ctrl+F)", async () => {
     await d.openAgent("Assistant");
-    await page.locator("main").first().click({ position: { x: 300, y: 300 } });
+    await page
+      .locator("main")
+      .first()
+      .click({ position: { x: 300, y: 300 } });
     await page.keyboard.press("Control+f");
     const box = page.getByRole("searchbox", { name: "Search messages" });
     await box.fill("Q2 edited");
@@ -472,7 +530,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       await page.getByRole("button", { name: "Create" }).click();
       await page.waitForTimeout(1_200);
     }
-    await page.getByRole("button", { name: /^Assistant, / }).first().click({ button: "right" });
+    await page
+      .getByRole("button", { name: /^Assistant, / })
+      .first()
+      .click({ button: "right" });
     await page.getByRole("menuitem", { name: "Move to…" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Inner" }).click();
     await page.waitForTimeout(1_000);
@@ -517,7 +578,9 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await creator.getByRole("button", { name: "Create agent" }).click();
     await page.waitForTimeout(2_500);
     const made = asRecord(
-      await d.ev(`window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Tmpl"); return b ? { role: b.role, desc: b.description } : null; })`),
+      await d.ev(
+        `window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Tmpl"); return b ? { role: b.role, desc: b.description } : null; })`,
+      ),
     );
     assert(String(made.role).length > 0 && String(made.desc).length > 20, JSON.stringify(made));
     return `role ${String(made.role)}`;
@@ -529,7 +592,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await main.getByRole("searchbox", { name: "Search" }).fill("meeting");
     await main.getByRole("button", { name: "Search", exact: true }).click();
     await page.waitForTimeout(1_200);
-    await main.getByRole("button", { name: /^Meeting notes/ }).last().click();
+    await main
+      .getByRole("button", { name: /^Meeting notes/ })
+      .last()
+      .click();
     await main.getByRole("combobox", { name: "Agent" }).selectOption({ label: "Assistant" });
     await main.getByRole("button", { name: "Install", exact: true }).click();
     await page.waitForTimeout(2_500);
@@ -540,11 +606,24 @@ async function firstRun(d: Driver, root: string): Promise<void> {
   });
 
   await row("29", "tables: one agent creates a shared table, another reads it, the Library shows it", async () => {
-    await d.ask("Assistant", 'TOOL cosgral_tables create_table {"name":"Accept leads","columns":[{"name":"company","type":"text"},{"name":"value","type":"number"}]}', "Accept leads", 30_000);
-    await d.ask("Assistant", 'TOOL cosgral_tables insert_rows {"table":"Accept leads","rows":[{"company":"Test Co","value":100},{"company":"Other Co","value":5}]}', "inserted", 30_000);
+    await d.ask(
+      "Assistant",
+      'TOOL cosgral_tables create_table {"name":"Accept leads","columns":[{"name":"company","type":"text"},{"name":"value","type":"number"}]}',
+      "Accept leads",
+      30_000,
+    );
+    await d.ask(
+      "Assistant",
+      'TOOL cosgral_tables insert_rows {"table":"Accept leads","rows":[{"company":"Test Co","value":100},{"company":"Other Co","value":5}]}',
+      "inserted",
+      30_000,
+    );
     const read = await d.ask("Res", 'TOOL cosgral_tables query_rows {"table":"Accept leads"}', '\\"total\\":2', 30_000);
     await d.openPage("Library");
-    await page.getByRole("region", { name: "Shared tables" }).getByRole("combobox", { name: "Table" }).selectOption({ label: "Accept leads" });
+    await page
+      .getByRole("region", { name: "Shared tables" })
+      .getByRole("combobox", { name: "Table" })
+      .selectOption({ label: "Accept leads" });
     await page.waitForTimeout(1_500);
     assert(/Test Co/.test(await page.getByRole("region", { name: "Shared tables" }).innerText()), "rows in the UI");
     return read.slice(0, 80);
@@ -552,11 +631,18 @@ async function firstRun(d: Driver, root: string): Promise<void> {
 
   await row("30", "files: an agent saves a file; the Library lists it", async () => {
     const info = asRecord(
-      await d.ev(`window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Assistant"); return { ws: b.workspacePath }; })`),
+      await d.ev(
+        `window.openbot.agent.listBots().then((bots) => { const b = bots.find((x) => x.name === "Assistant"); return { ws: b.workspacePath }; })`,
+      ),
     );
     await mkdir(String(info.ws), { recursive: true });
     await writeFile(join(String(info.ws), "accept-report.md"), "# Acceptance report\nFixture data only.\n");
-    await d.ask("Assistant", 'TOOL cosgral_library save_file {"path":"accept-report.md"}', '\\"origin\\":\\"agent\\"', 30_000);
+    await d.ask(
+      "Assistant",
+      'TOOL cosgral_library save_file {"path":"accept-report.md"}',
+      '\\"origin\\":\\"agent\\"',
+      30_000,
+    );
     await d.openPage("Library");
     await page.waitForTimeout(1_500);
     assert(/accept-report\.md/.test(await page.getByRole("region", { name: "File library" }).innerText()), "listed");
@@ -596,7 +682,11 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     const until = Date.now() + 30_000;
     let state = "";
     while (Date.now() < until) {
-      state = JSON.stringify(await d.ev("window.openbot.mcp.list().then((l) => l.map((s) => ({ n: s.name, st: s.status, t: s.tools.map((x) => x.name || x) })))"));
+      state = JSON.stringify(
+        await d.ev(
+          "window.openbot.mcp.list().then((l) => l.map((s) => ({ n: s.name, st: s.status, t: s.tools.map((x) => x.name || x) })))",
+        ),
+      );
       if (state.includes("available") && state.includes("echo")) break;
       await page.waitForTimeout(1_000);
     }
@@ -648,8 +738,14 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await page.waitForTimeout(1_500);
     await page.getByRole("textbox", { name: "Run input" }).fill("acceptance input");
     await page.getByRole("button", { name: "Run now" }).click();
-    await page.getByText(/trigger: done/).first().waitFor({ timeout: 40_000 });
-    await page.getByText(/agent: done/).first().waitFor({ timeout: 60_000 });
+    await page
+      .getByText(/trigger: done/)
+      .first()
+      .waitFor({ timeout: 40_000 });
+    await page
+      .getByText(/agent: done/)
+      .first()
+      .waitFor({ timeout: 60_000 });
     return "trigger: done, agent: done";
   });
 
@@ -666,12 +762,20 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     );
     try {
       const address = site.address();
-      const port = typeof address === "object" && address ? address.port : 0;
-      const opened = await d.ask("Assistant", `TOOL openbot_browser open {"url":"http://127.0.0.1:${port}/"}`, "Acceptance page", 40_000);
+      const port = isDynamicRecord(address) && isNumber(address.port) ? address.port : 0;
+      const opened = await d.ask(
+        "Assistant",
+        `TOOL openbot_browser open {"url":"http://127.0.0.1:${port}/"}`,
+        "Acceptance page",
+        40_000,
+      );
       const tab = /\\"id\\":\\"([0-9a-f-]{36})\\"/.exec(opened)?.[1];
       assert(tab, `tab id in: ${opened.slice(0, 160)}`);
       await d.openAgent("Assistant");
-      await d.send("Assistant", `TOOL cosgral_cards request_takeover {"tabId":"${tab}","reason":"Sign in to continue"}`);
+      await d.send(
+        "Assistant",
+        `TOOL cosgral_cards request_takeover {"tabId":"${tab}","reason":"Sign in to continue"}`,
+      );
       const decision = page.getByRole("region", { name: "Decision" });
       await decision.getByRole("button", { name: "Take over" }).click({ timeout: 25_000 });
       await decision.getByRole("button", { name: "Return to agent" }).click({ timeout: 10_000 });
@@ -701,57 +805,81 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await fallbacks.getByRole("button", { name: "Save order" }).click();
     await page.waitForTimeout(1_500);
     const saved = JSON.stringify(
-      await d.ev(`window.openbot.agent.listBots().then((bots) => window.openbot.providers.getFallbackModels(bots.find((b) => b.name === "Assistant").id))`),
+      await d.ev(
+        `window.openbot.agent.listBots().then((bots) => window.openbot.providers.getFallbackModels(bots.find((b) => b.name === "Assistant").id))`,
+      ),
     );
     assert(saved.includes("gpt-5.6-sol"), saved);
     return `fallback saved ${saved}; switching to a second provider is not checkable here`;
   });
 
-  await row("16", "side panel: the browser panel and the settings panel open; the right panel resizes by keyboard", async () => {
-    await d.openAgent("Assistant");
-    await page.getByRole("button", { name: "Open computer" }).click();
-    await page.getByRole("complementary", { name: "Browser" }).waitFor({ timeout: 15_000 });
-    const separator = page.getByRole("separator", { name: /Resize right panel/ }).first();
-    const before = Number(await separator.getAttribute("aria-valuenow"));
-    await separator.focus();
-    await page.keyboard.press("ArrowLeft");
-    await page.keyboard.press("ArrowLeft");
-    const after = Number(await separator.getAttribute("aria-valuenow"));
-    assert(after !== before, `width ${before} -> ${after}`);
-    await page.getByRole("button", { name: "Close details" }).click().catch(() => undefined);
-    return `browser panel; width ${before} -> ${after}`;
-  });
+  await row(
+    "16",
+    "side panel: the browser panel and the settings panel open; the right panel resizes by keyboard",
+    async () => {
+      await d.openAgent("Assistant");
+      await page.getByRole("button", { name: "Open computer" }).click();
+      await page.getByRole("complementary", { name: "Browser" }).waitFor({ timeout: 15_000 });
+      const separator = page.getByRole("separator", { name: /Resize right panel/ }).first();
+      const before = Number(await separator.getAttribute("aria-valuenow"));
+      await separator.focus();
+      await page.keyboard.press("ArrowLeft");
+      await page.keyboard.press("ArrowLeft");
+      const after = Number(await separator.getAttribute("aria-valuenow"));
+      assert(after !== before, `width ${before} -> ${after}`);
+      await page
+        .getByRole("button", { name: "Close details" })
+        .click()
+        .catch(() => undefined);
+      return `browser panel; width ${before} -> ${after}`;
+    },
+  );
 
-  await row("33", "remote desktop: host on loopback, wrong token refused, consent card declined, no session", async () => {
-    const enabled = asRecord(await d.ev("window.openbot.remoteDesktop.host.enable({ exposure: 'loopback', port: 0 })"));
-    const urls = list([asRecord(asRecord(enabled.state).listening)]).flatMap((x) => (Array.isArray(x.urls) ? x.urls.map(String) : []));
-    const address = urls[0] ?? "";
-    assert(/^ws:\/\/127\.0\.0\.1:\d+$/.test(address), `address ${address}`);
-    const wrong = String(
-      await d.ev(
-        `window.openbot.remoteDesktop.client.connect({ address: ${JSON.stringify(address)}, token: "wrong-token-123456789012345678", mode: "view" }).catch(() => null).then(() => new Promise((r) => setTimeout(r, 4000))).then(() => window.openbot.remoteDesktop.client.getState().then((s) => s.phase + ":" + s.error))`,
-      ),
-    );
-    assert(/failed:The token is wrong/.test(wrong), wrong);
-    await d.ev("window.openbot.remoteDesktop.client.disconnect().catch(() => null)");
-    void d.ev(`window.openbot.remoteDesktop.client.connect({ address: ${JSON.stringify(address)}, token: ${JSON.stringify(String(enabled.token))}, mode: "view" }).catch(() => null)`);
-    let cardId = "";
-    for (let attempt = 0; attempt < 40 && !cardId; attempt += 1) {
-      await page.waitForTimeout(500);
-      for (const item of list(await d.ev("window.openbot.agent.listPendingRequests()"))) {
-        const card = asRecord(item.card);
-        if (item.kind === "draft-preview" && /to see this computer/.test(String(card.title))) cardId = String(card.requestId);
+  await row(
+    "33",
+    "remote desktop: host on loopback, wrong token refused, consent card declined, no session",
+    async () => {
+      const enabled = asRecord(
+        await d.ev("window.openbot.remoteDesktop.host.enable({ exposure: 'loopback', port: 0 })"),
+      );
+      const urls = list([asRecord(asRecord(enabled.state).listening)]).flatMap((x) =>
+        Array.isArray(x.urls) ? x.urls.map(String) : [],
+      );
+      const address = urls[0] ?? "";
+      assert(/^ws:\/\/127\.0\.0\.1:\d+$/.test(address), `address ${address}`);
+      const wrong = String(
+        await d.ev(
+          `window.openbot.remoteDesktop.client.connect({ address: ${JSON.stringify(address)}, token: "wrong-token-123456789012345678", mode: "view" }).catch(() => null).then(() => new Promise((r) => setTimeout(r, 4000))).then(() => window.openbot.remoteDesktop.client.getState().then((s) => s.phase + ":" + s.error))`,
+        ),
+      );
+      assert(/failed:The token is wrong/.test(wrong), wrong);
+      await d.ev("window.openbot.remoteDesktop.client.disconnect().catch(() => null)");
+      void d.ev(
+        `window.openbot.remoteDesktop.client.connect({ address: ${JSON.stringify(address)}, token: ${JSON.stringify(String(enabled.token))}, mode: "view" }).catch(() => null)`,
+      );
+      let cardId = "";
+      for (let attempt = 0; attempt < 40 && !cardId; attempt += 1) {
+        await page.waitForTimeout(500);
+        for (const item of list(await d.ev("window.openbot.agent.listPendingRequests()"))) {
+          const card = asRecord(item.card);
+          if (item.kind === "draft-preview" && /to see this computer/.test(String(card.title)))
+            cardId = String(card.requestId);
+        }
       }
-    }
-    assert(cardId, "the consent card shows up in Needs you");
-    await d.ev(`window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cardId)}, decision: "keep-draft" })`);
-    await page.waitForTimeout(3_000);
-    const after = String(await d.ev("window.openbot.remoteDesktop.client.getState().then((s) => s.phase + ':' + s.error)"));
-    assert(/failed:The owner of that computer said no/.test(after), after);
-    const host = asRecord(await d.ev("window.openbot.remoteDesktop.host.disable()"));
-    assert(host.enabled === false, "host disabled");
-    return "token refused; consent declined; the screen was never captured";
-  });
+      assert(cardId, "the consent card shows up in Needs you");
+      await d.ev(
+        `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cardId)}, decision: "keep-draft" })`,
+      );
+      await page.waitForTimeout(3_000);
+      const after = String(
+        await d.ev("window.openbot.remoteDesktop.client.getState().then((s) => s.phase + ':' + s.error)"),
+      );
+      assert(/failed:The owner of that computer said no/.test(after), after);
+      const host = asRecord(await d.ev("window.openbot.remoteDesktop.host.disable()"));
+      assert(host.enabled === false, "host disabled");
+      return "token refused; consent declined; the screen was never captured";
+    },
+  );
 
   await row("37", "dock: pin an agent, show the dock window, chat from it", async () => {
     const id = await d.botId("Assistant");
@@ -760,7 +888,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     let dock: Page | undefined;
     for (let attempt = 0; attempt < 30 && !dock; attempt += 1) {
       await page.waitForTimeout(500);
-      dock = page.context().pages().find((candidate) => /#dock/.test(candidate.url()));
+      dock = page
+        .context()
+        .pages()
+        .find((candidate) => /#dock/.test(candidate.url()));
     }
     assert(dock, "the dock window opened");
     await dock.getByRole("button", { name: "Assistant" }).click();
@@ -768,7 +899,9 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     await dock.keyboard.press("Enter");
     await d.answer("Assistant", "Stub: received", 40_000);
     const got = JSON.stringify(
-      await d.ev(`window.openbot.agent.readConversation(${JSON.stringify(id)}).then((c) => c.messages.slice(-3).map((m) => m.text))`),
+      await d.ev(
+        `window.openbot.agent.readConversation(${JSON.stringify(id)}).then((c) => c.messages.slice(-3).map((m) => m.text))`,
+      ),
     );
     assert(got.includes("hello from the dock"), got);
     await d.ev("window.openbot.dock.setVisible({ visible: false })");
@@ -785,7 +918,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       if (status.includes('"kind":"question"')) break;
     }
     assert(status.includes('"kind":"question"') && status.includes('"botName":"Res"'), status);
-    const island = page.context().pages().find((candidate) => /#island/.test(candidate.url()));
+    const island = page
+      .context()
+      .pages()
+      .find((candidate) => /#island/.test(candidate.url()));
     assert(island, "the island window exists");
     await island.getByRole("button", { name: /Question/ }).click();
     await page.getByRole("region", { name: "Decision" }).waitFor({ timeout: 20_000 });
@@ -818,7 +954,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     const started = asRecord(await d.ev("window.openbot.mobile.startPairing({ exposure: 'loopback', port: 0 })"));
     const fingerprint = String(started.fingerprint ?? "");
     const base = (Array.isArray(started.urls) ? started.urls.map(String) : [])[0] ?? "";
-    assert(/^https:\/\/127\.0\.0\.1:\d+$/.test(base) && /^[0-9a-f]{64}$/.test(fingerprint), "TLS address and fingerprint");
+    assert(
+      /^https:\/\/127\.0\.0\.1:\d+$/.test(base) && /^[0-9a-f]{64}$/.test(fingerprint),
+      "TLS address and fingerprint",
+    );
     assert(String(started.qrDataUrl).startsWith("data:image/svg+xml;base64,"), "QR code image");
     const paired = pinned(`${base}/v1/pair`, fingerprint, {
       method: "POST",
@@ -829,11 +968,14 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       await page.waitForTimeout(250);
       for (const item of list(await d.ev("window.openbot.agent.listPendingRequests()"))) {
         const card = asRecord(item.card);
-        if (item.kind === "draft-preview" && String(card.title).startsWith("Pair a phone")) cardId = String(card.requestId);
+        if (item.kind === "draft-preview" && String(card.title).startsWith("Pair a phone"))
+          cardId = String(card.requestId);
       }
     }
     assert(cardId, "pairing consent card in Needs you");
-    await d.ev(`window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cardId)}, decision: "send" })`);
+    await d.ev(
+      `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cardId)}, decision: "send" })`,
+    );
     const answer = await paired;
     assert.equal(answer.status, 200);
     const token = String(asRecord(answer.json).token ?? "");
@@ -841,7 +983,11 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     const assistant = agents.find((item) => item.name === "Assistant");
     assert(assistant, "the phone lists the agents");
     const messagesUrl = `${base}/v1/agents/${encodeURIComponent(String(assistant.id))}/messages`;
-    const sent = await pinned(messagesUrl, fingerprint, { method: "POST", token, body: { text: "Hello from the phone" } });
+    const sent = await pinned(messagesUrl, fingerprint, {
+      method: "POST",
+      token,
+      body: { text: "Hello from the phone" },
+    });
     assert.equal(sent.status, 202);
     await d.answer("Assistant", "Stub: received", 40_000);
     // A question on the computer is answered from the phone.
@@ -853,7 +999,9 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       itemId = String(needs[0]?.id ?? "");
     }
     assert(itemId, "the question is listed for the phone");
-    const detail = asRecord((await pinned(`${base}/v1/needs-you/${encodeURIComponent(itemId)}`, fingerprint, { token })).json);
+    const detail = asRecord(
+      (await pinned(`${base}/v1/needs-you/${encodeURIComponent(itemId)}`, fingerprint, { token })).json,
+    );
     const questionId = String(list(detail.questions)[0]?.id ?? "format");
     const replied = await pinned(`${base}/v1/needs-you/${encodeURIComponent(itemId)}/answer`, fingerprint, {
       method: "POST",
@@ -868,7 +1016,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       token,
       body: { name: "Phone made", role: "Made on the phone", instructions: "Answer briefly." },
     });
-    assert(created.status === 200 || created.status === 201, `create answered ${created.status}: ${created.text.slice(0, 120)}`);
+    assert(
+      created.status === 200 || created.status === 201,
+      `create answered ${created.status}: ${created.text.slice(0, 120)}`,
+    );
     const onComputer = await d.botId("Phone made");
     assert(onComputer && onComputer !== "undefined", "the agent made on the phone is on the computer");
     const vault = await pinned(`${base}/v1/vault/items`, fingerprint, { token });
@@ -881,9 +1032,15 @@ async function secondRun(d: Driver): Promise<void> {
   const { page } = d;
   await row("R1", "restart: no first-run screens, same agents, history stays", async () => {
     await page.getByRole("navigation", { name: "Pages" }).waitFor({ timeout: 90_000 });
-    const names = JSON.stringify(await d.ev("window.openbot.agent.listBots().then((b) => b.map((x) => x.name).sort())"));
+    const names = JSON.stringify(
+      await d.ev("window.openbot.agent.listBots().then((b) => b.map((x) => x.name).sort())"),
+    );
     assert(names.includes("Assistant") && names.includes("Res") && names.includes("Phone made"), names);
-    const text = String(await d.ev(`window.openbot.agent.listBots().then(async (bots) => (await window.openbot.agent.readConversation(bots.find((b) => b.name === "Assistant").id)).messages.map((m) => m.text).join("|"))`));
+    const text = String(
+      await d.ev(
+        `window.openbot.agent.listBots().then(async (bots) => (await window.openbot.agent.readConversation(bots.find((b) => b.name === "Assistant").id)).messages.map((m) => m.text).join("|"))`,
+      ),
+    );
     assert(text.includes("Hello from the phone") && text.includes("Stub: received"), "history");
     return names;
   });
@@ -899,17 +1056,21 @@ async function secondRun(d: Driver): Promise<void> {
     assert(JSON.stringify(await d.ev("window.openbot.workflows.list()")).includes("New workflow"), "workflow");
     return "all present";
   });
-  await row("R3", "restart: the always-memory and the skill are in the next conversation, model and MCP tools too", async () => {
-    const memory = await d.ask("Assistant", "INSTRHAS tea, no sugar", "Stub: instructions", 60_000);
-    assert(/have/.test(memory), memory);
-    const skill = await d.ask("Assistant", "INSTRHAS meeting-notes", "Stub: instructions", 40_000);
-    assert(/have/.test(skill), skill);
-    const tools = await d.ask("Assistant", "TOOLS", "Stub: tools", 40_000);
-    assert(tools.includes("mcp_demo.echo"), "MCP tool in the thread");
-    const model = await d.ask("Assistant", "MODEL", "Stub: model", 40_000);
-    assert(model.includes("gpt-5.6-terra"), model);
-    return "memory, skill, MCP tool and model persisted";
-  });
+  await row(
+    "R3",
+    "restart: the always-memory and the skill are in the next conversation, model and MCP tools too",
+    async () => {
+      const memory = await d.ask("Assistant", "INSTRHAS tea, no sugar", "Stub: instructions", 60_000);
+      assert(/have/.test(memory), memory);
+      const skill = await d.ask("Assistant", "INSTRHAS meeting-notes", "Stub: instructions", 40_000);
+      assert(/have/.test(skill), skill);
+      const tools = await d.ask("Assistant", "TOOLS", "Stub: tools", 40_000);
+      assert(tools.includes("mcp_demo.echo"), "MCP tool in the thread");
+      const model = await d.ask("Assistant", "MODEL", "Stub: model", 40_000);
+      assert(model.includes("gpt-5.6-terra"), model);
+      return "memory, skill, MCP tool and model persisted";
+    },
+  );
   await row("R4", "restart: the browser tabs are still there", async () => {
     const tabs = await d.ask("Assistant", "TOOL openbot_browser list_tabs {}", "tabs", 40_000);
     assert(/127\.0\.0\.1:\d+/.test(tabs), tabs.slice(0, 120));
@@ -927,7 +1088,12 @@ async function main(): Promise<void> {
   const evidence = join(root, "evidence");
   resultsFile = join(evidence, only.length ? "acceptance-rerun.json" : "acceptance.json");
   if (!process.argv.includes("--keep")) await rm(root, { recursive: true, force: true });
-  for (const folder of [join(root, "home", "AppData", "Roaming"), join(root, "home", "AppData", "Local"), join(root, "tmp"), evidence]) {
+  for (const folder of [
+    join(root, "home", "AppData", "Roaming"),
+    join(root, "home", "AppData", "Local"),
+    join(root, "tmp"),
+    evidence,
+  ]) {
     await mkdir(folder, { recursive: true });
   }
   const fixture = await installFixture(root);
@@ -946,7 +1112,9 @@ async function main(): Promise<void> {
   }
   await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
   const failed = results.filter((result) => !result.ok);
-  console.log(`\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`);
+  console.log(
+    `\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`,
+  );
   for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 200)}`);
   process.exit(failed.length ? 1 : 0);
 }
