@@ -45,6 +45,19 @@ import type {
   UpdateBotInput,
   UpdateQueuedMessageInput,
 } from "./ipc-conversation";
+import type {
+  DockAgentInput,
+  DockState,
+  IslandState,
+  OpenDockChatInput,
+  PinDockAgentInput,
+  ReorderDockInput,
+  SetDockPinHiddenInput,
+  SetDockSizeInput,
+  SetDockVisibleInput,
+  SetIslandEnabledInput,
+  ShowMainWindowInput,
+} from "./ipc-dock";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
   LibraryFileIdInput,
@@ -480,4 +493,37 @@ export interface OpenBotDesktopApi {
   library?: LibraryDesktopApi;
   /** COSGRAL W3 Computer Use (this computer only). Optional until every renderer mock implements it. */
   computerUse?: ComputerUseDesktopApi;
+  /** COSGRAL W3 agent dock (this computer only). Optional until every renderer mock implements it. */
+  dock?: DockDesktopApi;
+  /** COSGRAL W3 Dynamic Island (this computer only). Optional until every renderer mock implements it. */
+  island?: IslandDesktopApi;
+}
+
+/**
+ * COSGRAL W3: the agent dock (see ipc-dock.ts). Every call returns the whole new state; every window also gets
+ * `dock-changed`. The mini chats use the usual `agent` API (readConversation, sendMessage, onEvent).
+ */
+export interface DockDesktopApi {
+  getState: () => Promise<DockState>;
+  /** Pinning an agent that is already pinned moves it; more than `DOCK_LIMITS.pins` agents is an error. */
+  pin: (input: PinDockAgentInput) => Promise<DockState>;
+  unpin: (input: DockAgentInput) => Promise<DockState>;
+  reorder: (input: ReorderDockInput) => Promise<DockState>;
+  setPinHidden: (input: SetDockPinHiddenInput) => Promise<DockState>;
+  setSize: (input: SetDockSizeInput) => Promise<DockState>;
+  /** Shows or hides the dock window. */
+  setVisible: (input: SetDockVisibleInput) => Promise<DockState>;
+  openChat: (input: OpenDockChatInput) => Promise<DockState>;
+  /** "Open COSGRAL": the main window again (created when it was closed), at an agent or a card when given. */
+  showMainWindow: (input?: ShowMainWindowInput) => Promise<void>;
+}
+
+/** COSGRAL W3: the Dynamic Island (see ipc-dock.ts). Changes come as `island-changed`. */
+export interface IslandDesktopApi {
+  getState: () => Promise<IslandState>;
+  setEnabled: (input: SetIslandEnabledInput) => Promise<IslandState>;
+  /** The click on the island: opens the main window at the card of the shown state (`island-open-request`). */
+  activate: () => Promise<IslandState>;
+  /** Hides a "message" or "error" state until something new happens. */
+  dismiss: () => Promise<IslandState>;
 }

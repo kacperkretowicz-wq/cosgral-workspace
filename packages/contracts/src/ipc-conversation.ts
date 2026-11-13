@@ -21,6 +21,14 @@ import {
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
+import {
+  type DockState,
+  type IslandRequestRef,
+  type IslandState,
+  isDockState,
+  isIslandRequestRef,
+  isIslandState,
+} from "./ipc-dock";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
@@ -515,6 +523,12 @@ export type AgentEvent =
   | { type: "library-changed"; fileIds: string[] }
   /** COSGRAL W3: who controls the computer and which conversations may; replace the whole state. */
   | { type: "computer-use-changed"; state: ComputerUseState }
+  /** COSGRAL W3: the dock changed (pins, order, size, visibility, open chat); replace the whole state. */
+  | { type: "dock-changed"; state: DockState }
+  /** COSGRAL W3: the Dynamic Island shows another state; replace the whole state. */
+  | { type: "island-changed"; state: IslandState }
+  /** COSGRAL W3: the island was clicked; the main window opens this agent and its Needs you card. */
+  | { type: "island-open-request"; botId: string; request: IslandRequestRef | null }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -613,6 +627,12 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.fileIds) && value.fileIds.every(isString);
     case "computer-use-changed":
       return isComputerUseState(value.state);
+    case "dock-changed":
+      return isDockState(value.state);
+    case "island-changed":
+      return isIslandState(value.state);
+    case "island-open-request":
+      return isString(value.botId) && (value.request === null || isIslandRequestRef(value.request));
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

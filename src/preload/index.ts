@@ -67,6 +67,7 @@ import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } fr
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
+import { createDockApi, createIslandApi } from "./dock-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
@@ -684,6 +685,8 @@ const openbotApi: OpenBotDesktopApi = {
   tables: createTablesApi(invokeAgent),
   library: createLibraryApi(invokeAgent, decodeDraftAttachments),
   computerUse: createComputerUseApi(invokeAgent),
+  dock: createDockApi(invokeAgent),
+  island: createIslandApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

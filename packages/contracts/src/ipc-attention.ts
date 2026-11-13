@@ -64,6 +64,10 @@ export const PENDING_AGENT_REQUEST_KINDS = [
 ] as const;
 export type PendingAgentRequestKind = (typeof PENDING_AGENT_REQUEST_KINDS)[number];
 
+export function isPendingAgentRequestKind(value: unknown): value is PendingAgentRequestKind {
+  return isOneOf(PENDING_AGENT_REQUEST_KINDS, value);
+}
+
 /** How a question card ended. "skipped": answered with no answers. "expired": its turn ended or stopped first. */
 export const PROMPT_RESOLUTIONS = ["answered", "skipped", "expired"] as const;
 export type PromptResolution = (typeof PROMPT_RESOLUTIONS)[number];
