@@ -48,3 +48,18 @@ Stan: 13.11.2026. Żaden test odbioru z tej specyfikacji nie został uruchomiony
 | 3.7 | Brzeg: wiele dopasowań | Gdy >1 element pasuje do zadania, program **pyta** człowieka, którego użyć. | Dwa loginy do tej samej domeny → wybór; bez wyboru agent nie zgaduje. |
 
 **Kontrakt (Vault):** `VaultItem` z `kind: login|card|contact|apiKey|totp`, metody list/save/delete/request; narzędzia agenta tylko przez bezpieczne API (wypełnij / submit), nigdy raw secret w eventach UI czatu.
+
+## 4. Rutyny i webhooki (wiersz 27)
+
+| # | Temat | Zachowanie 0.68 | Test odbioru |
+|---|---|---|---|
+| 4.1 | Harmonogram | Rutyna ma kalendarz / cron / „codziennie o…”, **strefę czasową** użytkownika i podgląd **następnego uruchomienia**. | Utworzyć rutynę codzienną w strefie użytkownika → widać next run; po restarcie harmonogram ten sam. |
+| 4.2 | Program wyłączony | Gdy host/program **nie działa**, zaplanowane uruchomienia **nie** startują w tle „w chmurze same z siebie”; webhooki wymagają online hosta (relay nie trzyma kolejki offline). | Wyłączyć program przed godziną rutyny → po starcie widać pominięcie / brak runu w oknie offline; nie ma ukrytego runu bez historii. |
+| 4.3 | Historia uruchomień | Każdy run ma wpis w historii (start, wynik, błąd, ignored); cichy koniec możliwy (`[SILENT]`). | Odpalenie testowe → wpis w historii ze statusem. |
+| 4.4 | Webhook | Rutyna typu Webhook ma URL + signing secret (Standard Webhooks / nagłówki OpenBot); filtr typu zdarzenia i do 128 filtrów JSON Pointer; max **64** webhook routines na host; body ≤ 64 KiB. | Utworzyć webhook → URL; signed POST → run; zły podpis → 401; za duże body → 413. |
+| 4.5 | Secret webhooka | Secret pokazywany **raz** (lub regeneracja); agent tworzący webhook **nie** dostaje secretu — tylko człowiek na karcie / w edytorze. | Agent create_webhook_routine → w odpowiedzi agenta brak secretu; karta dla człowieka ma secret/URL. |
+| 4.6 | Deduplikacja | Ten sam `delivery-id` + body w oknie retencji (7 dni) nie startuje drugiego runu (`200`). | Ponowić ten sam delivery-id → jeden run w historii. |
+| 4.7 | Pauza / limity | Wstrzymana rutyna nie biegnie (test event też nie); limity częstości / 429 przy nadmiarze; run kanału może zakończyć właściciel jako failed. | Pause → POST dostaje 202 bez nowego runu; Resume → kolejne zdarzenie odpala. |
+| 4.8 | Kto tworzy webhook z czatu | Tylko wiadomość **człowieka** może tworzyć/zmieniać webhook routine; run rutyny ani inny agent nie. | Routine run próbuje create_webhook → odrzucone; człowiek w czacie → OK. |
+
+**Kontrakt (rutyny):** `Routine {id, scope: agent|channel, trigger: schedule|webhook, timezone, nextRunAt, paused, …}`, historia runów, IPC create/update/delete/list; webhook: URL, filters, test-event.
