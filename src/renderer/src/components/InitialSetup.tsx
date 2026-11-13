@@ -13,6 +13,7 @@ import { createEffect, createMemo, createSignal, For, flush, onCleanup, Show, un
 import { AppSettingsW3 } from "./AppSettingsW3";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
 import { Button, Dialog, Textarea } from "./ui";
+import { VoiceSettings } from "./VoiceSettings";
 
 interface InitialSetupProps {
   reviewing?: boolean;
@@ -221,6 +222,7 @@ export function InitialSetup(props: InitialSetupProps) {
             </Dialog.Description>
             <Show when={props.reviewing}>
               <AppSettingsW3 />
+              <VoiceSettings />
             </Show>
           </header>
 

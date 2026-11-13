@@ -88,6 +88,8 @@ import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
+import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
+import { VoiceRecorder } from "./VoiceRecorder";
 
 type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
 
@@ -205,6 +207,19 @@ export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
   const imageGenerationUnavailable = () => Boolean(props.bot && isClaudeModel(props.bot.model));
   const [drafts, setDrafts] = createSignal<Record<string, ComposerDraft>>({});
+  const [voicePlaybackEnabled, setVoicePlaybackEnabled] = createSignal(false);
+  onSettled(() => {
+    const api = window.openbot.voice;
+    if (!api) return;
+    void api
+      .getState()
+      .then((state) => setVoicePlaybackEnabled(state.settings.enabled && state.speech.available))
+      .catch(() => setVoicePlaybackEnabled(false));
+    return window.openbot.agent.onEvent((event) => {
+      if (event.type === "voice-changed")
+        setVoicePlaybackEnabled(event.state.settings.enabled && event.state.speech.available);
+    });
+  });
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
@@ -1783,6 +1798,9 @@ export function Conversation(props: ConversationProps) {
               </Show>
             </article>
           </Show>
+          <Show when={props.bot?.id} keyed>
+            {(botId) => <VoiceAutoRead botId={botId} messages={props.messages} />}
+          </Show>
           <For each={props.messages}>
             {(message) => {
               const animateEntrance = untrack(() => message.animate === true && markMessageSeen(message.id));
@@ -1835,6 +1853,9 @@ export function Conversation(props: ConversationProps) {
                                   onDownload={(attachment) => attachmentAction(attachment, "download")}
                                 />
                               </div>
+                              <Show when={message.author === "bot" && !message.streaming && message.body.trim()}>
+                                <VoicePlayback text={message.body} enabled={voicePlaybackEnabled()} />
+                              </Show>
                               <MessageActions
                                 message={message}
                                 pickerOpen={openReactionMessageId() === message.id}
@@ -2041,6 +2062,18 @@ export function Conversation(props: ConversationProps) {
             }}
           </Show>
           <div class="composer">
+            <Show when={props.bot?.id} keyed>
+              {(botId) => (
+                <VoiceRecorder
+                  onTranscript={(text) =>
+                    setDrafts((current) => {
+                      const draft = current[botId] ?? EMPTY_DRAFT;
+                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
+                    })
+                  }
+                />
+              )}
+            </Show>
             <Popover.Root open={showAttachments()} placement="top-start" gutter={4} onOpenChange={setShowAttachments}>
               <Popover.Trigger
                 as={Button}
