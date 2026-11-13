@@ -18,6 +18,22 @@ describe("channel workspace", () => {
     ));
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
     await screen.findByText("Prepare the release plan.");
+    mock.emitAgentEvent({
+      type: "channel-message-changed",
+      message: {
+        id: "demo-note",
+        channelId: "demo-channel",
+        taskId: "demo-task",
+        authorBotId: "chief",
+        kind: "note",
+        text: "Reviewing the requirements.",
+        replyToMessageId: "demo-message",
+        resultVersion: null,
+        superseded: true,
+        createdAt: "2026-11-13T00:01:00Z",
+      },
+    });
+    await screen.findByText(/Superseded/);
     await fireEvent.input(screen.getByLabelText("New message to channel lead"), {
       target: { value: "Check the dates" },
     });

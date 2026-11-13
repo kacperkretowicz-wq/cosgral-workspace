@@ -798,7 +798,13 @@ export function App() {
   }
 
   function isAgentChatOpen(botId: string): boolean {
-    return activePage() === "agents" && !agentPickerOpen() && !activeDirectMemberId() && activeBot()?.id === botId;
+    return (
+      activePage() === "agents" &&
+      !channelsOpen() &&
+      !agentPickerOpen() &&
+      !activeDirectMemberId() &&
+      activeBot()?.id === botId
+    );
   }
 
   function autoMarkAgentMessageRead(botId: string, messageId: string): void {
@@ -1772,7 +1778,7 @@ export function App() {
               <Sidebar
                 serverName={activeServer()?.name ?? "Local"}
                 bots={botList()}
-                activeBotId={activeDirectMemberId() ? "" : (activeBot()?.id ?? "")}
+                activeBotId={activeDirectMemberId() || channelsOpen() ? "" : (activeBot()?.id ?? "")}
                 people={directPeople()}
                 directThreads={directThreads()}
                 activeDirectMemberId={activeDirectMemberId()}
