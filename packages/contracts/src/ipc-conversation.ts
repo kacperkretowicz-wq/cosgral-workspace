@@ -21,6 +21,7 @@ import {
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import {
@@ -492,6 +493,10 @@ export type AgentEvent =
   | { type: "agent-memory-changed"; botId: string; action: "saved" | "deleted"; memory: AgentMemory }
   /** COSGRAL W2: a channel's shared memories changed (an agent or a person saved, edited or deleted one). */
   | { type: "channel-memory-changed"; channelId: string; action: "saved" | "deleted"; memory: ChannelMemory }
+  /** COSGRAL W2: the MCP server list, a status or a tool list changed; replace the whole list. */
+  | { type: "mcp-servers-changed"; servers: McpServer[] }
+  /** COSGRAL W2: one agent's MCP switches changed; replace that agent's settings. */
+  | { type: "agent-mcp-changed"; botId: string; settings: AgentMcpServerSetting[] }
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -561,6 +566,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":
       return isString(value.requestId) && isString(value.botId) && isBrowserTakeoverPhase(value.phase);
+    case "mcp-servers-changed":
+      return Array.isArray(value.servers) && value.servers.every(isMcpServer);
+    case "agent-mcp-changed":
+      return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":
       return (
         isString(value.botId) && (value.action === "saved" || value.action === "deleted") && isAgentMemory(value.memory)

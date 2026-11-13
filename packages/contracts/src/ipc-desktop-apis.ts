@@ -46,6 +46,14 @@ import type {
 } from "./ipc-conversation";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
+  AddMcpServerInput,
+  AgentMcpServerSetting,
+  McpServer,
+  McpServerIdInput,
+  SetAgentMcpServerInput,
+  UpdateMcpServerInput,
+} from "./ipc-mcp";
+import type {
   AgentMemory,
   AgentMemorySettings,
   DeleteAgentMemoryInput,
@@ -199,6 +207,23 @@ export interface MemoryDesktopApi {
   setAgentLimit: (input: SetAgentMemoryLimitInput) => Promise<AgentMemorySettings>;
 }
 
+/** COSGRAL W2: MCP servers of the program and the per-agent switch (see ipc-mcp.ts). */
+export interface McpDesktopApi {
+  /** Every server with its status and tools. Secret values are never returned, only their names. */
+  list: () => Promise<McpServer[]>;
+  /** Adds the server and starts connecting ("checking"); the result of the check comes as `mcp-servers-changed`. */
+  add: (input: AddMcpServerInput) => Promise<McpServer>;
+  /** Changes the server and reconnects it. */
+  update: (input: UpdateMcpServerInput) => Promise<McpServer>;
+  /** Removes the server; its tools leave every agent from the next turn and running calls fail. */
+  remove: (input: McpServerIdInput) => Promise<void>;
+  /** Connects again, e.g. after a login or a fixed command. */
+  reconnect: (input: McpServerIdInput) => Promise<McpServer>;
+  /** One entry per server for this agent (servers are on unless the person switched them off). */
+  listAgentSettings: (botId: string) => Promise<AgentMcpServerSetting[]>;
+  setAgentEnabled: (input: SetAgentMcpServerInput) => Promise<AgentMcpServerSetting[]>;
+}
+
 export interface BrowserDesktopApi {
   open: (input: BrowserOpenInput) => Promise<BrowserTab>;
   activate: (tabId: string) => Promise<void>;
@@ -290,4 +315,6 @@ export interface OpenBotDesktopApi {
   channels?: ChannelsDesktopApi;
   /** COSGRAL W2: agent and channel memory. Optional until every renderer mock implements it. */
   memory?: MemoryDesktopApi;
+  /** COSGRAL W2: MCP servers. Optional until every renderer mock implements it. */
+  mcp?: McpDesktopApi;
 }
