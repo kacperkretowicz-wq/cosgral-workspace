@@ -62,6 +62,7 @@ import { TablesPanel } from "./components/TablesPanel";
 import { VaultPanel } from "./components/VaultPanel";
 import type { BotMessage, BotProfile } from "./data";
 import { needsYouItemsFromCards } from "./needs-you";
+import { selectIslandCard } from "./island-selection";
 import {
   addCard,
   approvalCard,
@@ -70,7 +71,6 @@ import {
   clearBotCards,
   draftCard,
   mergeHydrated,
-  oldestCardForBot,
   type PendingCard,
   type PendingCardKind,
   promptCard,
@@ -227,6 +227,7 @@ export function App() {
   } | null>(null);
   // COSGRAL W1: every open question/approval card, oldest first. The backend keeps them until resolved.
   const [pendingCards, setPendingCards] = createSignal<PendingCard[]>([]);
+  const [islandTarget, setIslandTarget] = createSignal<Extract<AgentEvent, { type: "island-open-request" }> | null>(null);
   // COSGRAL W1: the row state of each agent as the backend sees it (waiting, working, limited, error, idle).
   const [sidebarLayout, setSidebarLayout] = createSignal<SidebarLayout | null>(null);
   const [computerUsingBotIds, setComputerUsingBotIds] = createSignal<string[]>([]);
@@ -558,6 +559,10 @@ export function App() {
 
   function handleAgentEvent(event: AgentEvent) {
     switch (event.type) {
+      case "island-open-request":
+        setIslandTarget(event);
+        selectBot(event.botId);
+        return;
       case "status":
         setAgentStatus(event.status);
         if (event.status.phase === "ready") {
@@ -963,6 +968,7 @@ export function App() {
   }
 
   function selectBot(botId: string) {
+    if (islandTarget()?.botId !== botId) setIslandTarget(null);
     setChannelsOpen(false);
     setActivePage("agents");
     setAgentPickerOpen(false);
@@ -1455,7 +1461,8 @@ export function App() {
   // The sticky Decision shows the oldest open card of this agent; the next one follows once it is resolved.
   const activeDecisionCard = createMemo(() => {
     const bot = activeBot();
-    return bot ? oldestCardForBot(pendingCards(), bot.id) : undefined;
+    const target = islandTarget();
+    return bot ? selectIslandCard(pendingCards(), bot.id, target?.botId === bot.id ? target.request : null) : undefined;
   });
   const activePrompt = createMemo(() => {
     const card = activeDecisionCard();
