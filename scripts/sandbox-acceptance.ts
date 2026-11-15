@@ -816,6 +816,33 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     },
   );
 
+  await row(
+    "24c",
+    "skills: a second agent adds the skill the first agent created; the first agent's copy is not changed",
+    async () => {
+      const first = await d.botId("Assistant");
+      const second = await d.botId("Res");
+      const installOf = async (botId: string) =>
+        list(await d.ev(`window.openbot.skills.listInstalls({ botId: ${JSON.stringify(botId)} })`)).find(
+          (item) => item.name === "acceptance-skill",
+        );
+      await d.send("Res", `TOOL cosgral_skills install_local_skill ${JSON.stringify({ name: "acceptance-skill" })}`);
+      const end = Date.now() + 45_000;
+      while (Date.now() < end && !(await installOf(second))) await page.waitForTimeout(500);
+      const added = await installOf(second);
+      const kept = await installOf(first);
+      assert(
+        added && added.installedVersion === added.latestVersion,
+        `second agent has the latest: ${JSON.stringify(added)}`,
+      );
+      assert(
+        kept && kept.installedVersion === 2,
+        `the first agent's copy stays on its version: ${JSON.stringify(kept)}`,
+      );
+      return `Res installed acceptance-skill v${added.installedVersion}; Assistant's own copy stays on v${kept.installedVersion}`;
+    },
+  );
+
   await row("29", "tables: one agent creates a shared table, another reads it, the Library shows it", async () => {
     await d.ask(
       "Assistant",
