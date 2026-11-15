@@ -1,6 +1,7 @@
 import type { AddMcpServerInput, AgentMcpServerSetting, McpServer } from "@openbot/contracts/ipc";
 import { isOneOf } from "@openbot/contracts/runtime-values";
 import { createSignal, For, Show } from "solid-js";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 const MCP_TRANSPORTS = ["stdio", "http"] as const;
 
@@ -40,22 +41,24 @@ export function McpPanel(props: {
               when={props.agent}
               fallback={
                 <div>
-                  <button type="button" onClick={() => props.onReconnect(server.id)}>
+                  <Button unstyled type="button" onClick={() => props.onReconnect(server.id)}>
                     Reconnect
-                  </button>{" "}
-                  <button
+                  </Button>{" "}
+                  <Button
+                    unstyled
                     type="button"
                     onClick={() => {
                       if (window.confirm(`Remove ${server.name} for all agents?`)) props.onRemove(server.id);
                     }}
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
               }
             >
               <label>
-                <input
+                <Input
+                  unstyled
                   type="checkbox"
                   checked={props.settings.find((setting) => setting.serverId === server.id)?.enabled ?? true}
                   onChange={(e) => props.onToggle(server.id, e.currentTarget.checked)}
@@ -70,11 +73,12 @@ export function McpPanel(props: {
         <h4>Add server</h4>
         <label>
           Server name
-          <input aria-label="Server name" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+          <Input unstyled aria-label="Server name" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
           Transport
-          <select
+          <NativeSelect
+            unstyled
             aria-label="Transport"
             value={transport()}
             onChange={(e) => {
@@ -84,40 +88,47 @@ export function McpPanel(props: {
           >
             <option value="stdio">stdio</option>
             <option value="http">HTTP</option>
-          </select>
+          </NativeSelect>
         </label>
         <Show
           when={transport() === "stdio"}
           fallback={
             <label>
               URL
-              <input aria-label="URL" value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
+              <Input unstyled aria-label="URL" value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
             </label>
           }
         >
           <label>
             Command
-            <input value={command()} onInput={(e) => setCommand(e.currentTarget.value)} />
+            <Input unstyled value={command()} onInput={(e) => setCommand(e.currentTarget.value)} />
           </label>
           <label>
             Arguments (one per line)
-            <textarea value={args()} onInput={(e) => setArgs(e.currentTarget.value)} />
+            <Textarea unstyled value={args()} onInput={(e) => setArgs(e.currentTarget.value)} />
           </label>
         </Show>
         <label>
           Secret name
-          <input aria-label="Secret name" value={secretName()} onInput={(e) => setSecretName(e.currentTarget.value)} />
+          <Input
+            unstyled
+            aria-label="Secret name"
+            value={secretName()}
+            onInput={(e) => setSecretName(e.currentTarget.value)}
+          />
         </label>
         <label>
           Secret value
-          <input
+          <Input
+            unstyled
             aria-label="Secret value"
             type="password"
             value={secretValue()}
             onInput={(e) => setSecretValue(e.currentTarget.value)}
           />
         </label>
-        <button
+        <Button
+          unstyled
           type="button"
           onClick={() => {
             if (!secretName().trim()) return;
@@ -127,11 +138,12 @@ export function McpPanel(props: {
           }}
         >
           Add secret field
-        </button>
+        </Button>
         <Show when={Object.keys(secrets()).length}>
           <p>Ready: {Object.keys(secrets()).join(", ")}</p>
         </Show>
-        <button
+        <Button
+          unstyled
           type="button"
           onClick={() => {
             const values = { ...secrets(), ...(secretName().trim() ? { [secretName().trim()]: secretValue() } : {}) };
@@ -149,7 +161,7 @@ export function McpPanel(props: {
           }}
         >
           Add server
-        </button>
+        </Button>
       </Show>
     </section>
   );

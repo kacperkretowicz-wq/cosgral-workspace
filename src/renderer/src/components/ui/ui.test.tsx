@@ -178,4 +178,41 @@ describe("UI primitives", () => {
     expect(screen.getByText("⌘K")).toHaveClass("ui-kbd");
     expect(screen.getByRole("separator", { name: "Section break" })).toBeInTheDocument();
   });
+
+  it("preserves feature classes and native checkbox state when unstyled", async () => {
+    const [checked, setChecked] = createSignal(false);
+    render(() => (
+      <label>
+        Enable tool
+        <Input
+          unstyled
+          type="checkbox"
+          class="feature-checkbox"
+          checked={checked()}
+          onChange={(event) => setChecked(event.currentTarget.checked)}
+        />
+      </label>
+    ));
+    const checkbox = screen.getByRole("checkbox", { name: "Enable tool" });
+    expect(checkbox).toHaveClass("feature-checkbox");
+    expect(checkbox).not.toHaveClass("ui-input");
+    await fireEvent.click(checkbox);
+    expect(checked()).toBe(true);
+    expect(checkbox).toBeChecked();
+  });
+  it("preserves native submit behavior and feature button classes", async () => {
+    const submit = vi.fn((event: Event) => event.preventDefault());
+    render(() => (
+      <form onSubmit={submit}>
+        <Button unstyled type="submit" class="feature-submit">
+          Apply feature
+        </Button>
+      </form>
+    ));
+    const button = screen.getByRole("button", { name: "Apply feature" });
+    expect(button).toHaveClass("feature-submit");
+    expect(button).not.toHaveClass("ui-button");
+    await fireEvent.click(button);
+    expect(submit).toHaveBeenCalledOnce();
+  });
 });

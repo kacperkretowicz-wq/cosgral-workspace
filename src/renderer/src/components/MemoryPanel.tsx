@@ -1,5 +1,6 @@
 import { type AgentMemorySettings, isMemoryInclusion, type MemoryInclusion } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type Entry = { id: string; text: string; inclusion?: MemoryInclusion };
 export function MemoryPanel(props: {
@@ -39,7 +40,8 @@ export function MemoryPanel(props: {
             </p>
             <label>
               Memory limit{" "}
-              <input
+              <Input
+                unstyled
                 type="number"
                 min="0"
                 max="10000"
@@ -56,7 +58,7 @@ export function MemoryPanel(props: {
       </Show>
       <Show when={props.onSearch}>
         <label>
-          Search memories <input type="search" onInput={(e) => props.onSearch?.(e.currentTarget.value)} />
+          Search memories <Input unstyled type="search" onInput={(e) => props.onSearch?.(e.currentTarget.value)} />
         </label>
       </Show>
       <For each={props.entries}>
@@ -67,7 +69,8 @@ export function MemoryPanel(props: {
               <small>{entry.inclusion === "essential" ? "Always" : "When needed"}</small>
             </Show>
             <div>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   setText(entry.text);
@@ -76,22 +79,24 @@ export function MemoryPanel(props: {
                 }}
               >
                 Edit
-              </button>{" "}
-              <button
+              </Button>{" "}
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   if (window.confirm("Delete this memory?")) void run(() => props.onDelete(entry.id));
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </article>
         )}
       </For>
       <label>
         Memory text
-        <textarea
+        <Textarea
+          unstyled
           aria-label="Memory text"
           maxlength={props.channel ? 500 : 10000}
           value={text()}
@@ -101,7 +106,8 @@ export function MemoryPanel(props: {
       <Show when={!props.channel}>
         <label>
           Inclusion{" "}
-          <select
+          <NativeSelect
+            unstyled
             aria-label="Inclusion"
             value={inclusion()}
             onChange={(e) => {
@@ -111,10 +117,11 @@ export function MemoryPanel(props: {
           >
             <option value="searchable">When needed</option>
             <option value="essential">Always</option>
-          </select>
+          </NativeSelect>
         </label>
       </Show>
-      <button
+      <Button
+        unstyled
         type="button"
         disabled={busy() || !text().trim()}
         onClick={() =>
@@ -126,9 +133,10 @@ export function MemoryPanel(props: {
         }
       >
         Save memory
-      </button>
+      </Button>
       <Show when={editing()}>
-        <button
+        <Button
+          unstyled
           type="button"
           onClick={() => {
             setEditing(undefined);
@@ -136,7 +144,7 @@ export function MemoryPanel(props: {
           }}
         >
           Cancel edit
-        </button>
+        </Button>
       </Show>
       <Show when={error()}>
         <p role="alert">{error()}</p>
