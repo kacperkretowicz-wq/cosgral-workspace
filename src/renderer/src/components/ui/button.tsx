@@ -4,7 +4,7 @@ import { omit, Show } from "solid-js";
 import { Spinner } from "./surface";
 import { cx } from "./utils";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "link";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "danger-solid" | "link";
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 export interface ButtonProps

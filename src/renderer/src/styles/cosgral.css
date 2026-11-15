@@ -271,7 +271,7 @@
 }
 .w2-library .remote-desktop-stop:hover:not(:disabled) {
   background: var(--openbot-danger-strong);
-  color: var(--openbot-text-primary);
+  color: var(--openbot-text-on-danger);
 }
 .remote-desktop-canvas {
   display: block;

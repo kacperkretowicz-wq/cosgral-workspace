@@ -3,6 +3,8 @@ import { expect, fireEvent, fn, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import type { SidebarAgentState } from "../src/components/Sidebar";
 import { Sidebar } from "../src/components/Sidebar";
+import { FolderDeleteDialog } from "../src/components/SidebarFolders";
+import { contrastRatio } from "./contrast";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -157,5 +159,52 @@ export const AccountMenu: Story = {
 export const Linux: Story = {
   args: {
     appInfo: { ...STORY_APP_INFO, platform: "linux" },
+  },
+};
+
+export const Channels: Story = {
+  args: { onSelectChannels: fn() },
+  decorators: [(Story) => <div style={{ width: "280px", height: "100vh" }}>{Story()}</div>],
+  play: async ({ canvas, args, userEvent }) => {
+    const browse = canvas.getByRole("button", { name: "Browse channels" });
+    const create = canvas.getByRole("button", { name: "New channel" });
+    await expect(browse.querySelector("svg")).not.toBeNull();
+    await expect(create.querySelector("svg")).not.toBeNull();
+    await expect(getComputedStyle(browse).backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+    browse.focus();
+    await expect(browse).toHaveFocus();
+    await expect(getComputedStyle(browse).boxShadow).not.toBe("none");
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSelectChannels).toHaveBeenCalledWith();
+    await userEvent.tab();
+    await expect(create).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSelectChannels).toHaveBeenCalledWith(true);
+  },
+};
+
+export const AgentDeleteContrast: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const tile = canvas.getByRole("button", { name: /Chief, Chief of staff/ });
+    const rect = tile.getBoundingClientRect();
+    fireEvent.contextMenu(tile, { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 });
+    const body = within(canvasElement.ownerDocument.body);
+    const menu = await body.findByRole("menu", { name: "Agent actions" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Delete agent" }));
+    const dialog = await body.findByRole("alertdialog", { name: "Delete Chief?" });
+    const button = within(dialog).getByRole("button", { name: "Delete" });
+    const style = getComputedStyle(button);
+    await expect(contrastRatio(style.color, style.backgroundColor)).toBeGreaterThanOrEqual(4.5);
+  },
+};
+export const FolderDeleteContrast: Story = {
+  render: () => <FolderDeleteDialog name="Demo folder" onConfirm={async () => {}} onClose={() => {}} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole("alertdialog", {
+      name: "Delete Demo folder?",
+    });
+    const button = within(dialog).getByRole("button", { name: "Delete folder" });
+    const style = getComputedStyle(button);
+    await expect(contrastRatio(style.color, style.backgroundColor)).toBeGreaterThanOrEqual(4.5);
   },
 };
