@@ -1,5 +1,6 @@
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { join } from "node:path";
+import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 
 // The Codex fixture of the sandbox scripts must handle channels of any size: a channel with only its lead (the
@@ -9,7 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 interface Message {
   id?: string | number;
   method?: string;
-  params?: Record<string, unknown>;
+  params?: DynamicRecord;
   result?: unknown;
 }
 
@@ -71,13 +72,36 @@ function context(members: string[], title = "Plan the launch") {
 async function startTurn(fixture: ReturnType<typeof startFixture>, members: string[]) {
   fixture.send({ id: 1, method: "thread/start", params: {} });
   const thread = await fixture.next((m) => m.id === 1);
-  const threadId = (thread.result as { thread: { id: string } }).thread.id;
+  const threadId = threadIdOf(thread);
+  if (threadId === undefined) throw new Error("thread/start did not return a thread id");
   fixture.send({
     id: 2,
     method: "turn/start",
     params: { threadId, input: [{ type: "text", text: JSON.stringify(context(members)) }] },
   });
   return threadId;
+}
+
+// Narrow the loosely typed JSON-RPC payloads by checking their shape instead of asserting it.
+function threadIdOf(message: Message): string | undefined {
+  const result = message.result;
+  if (!isDynamicRecord(result) || !isDynamicRecord(result.thread)) return undefined;
+  return isString(result.thread.id) ? result.thread.id : undefined;
+}
+
+function turnStatusOf(message: Message): string | undefined {
+  const turn = message.params?.turn;
+  return isDynamicRecord(turn) && isString(turn.status) ? turn.status : undefined;
+}
+
+function itemTextOf(message: Message | undefined): string | undefined {
+  const item = message?.params?.item;
+  return isDynamicRecord(item) && isString(item.text) ? item.text : undefined;
+}
+
+function toolArgumentsOf(message: Message): DynamicRecord | undefined {
+  const args = message.params?.arguments;
+  return isDynamicRecord(args) ? args : undefined;
 }
 
 const turnCompleted = (m: Message) => m.method === "turn/completed";
@@ -88,9 +112,9 @@ describe("channel Codex fixture", () => {
     const fixture = startFixture();
     await startTurn(fixture, ["lead"]);
     const done = await fixture.next(turnCompleted);
-    expect((done.params?.turn as { status: string }).status).toBe("completed");
-    const text = fixture.seen.find((m) => m.method === "item/completed")?.params?.item as { text: string };
-    expect(text.text).toBe("Stub lead result: Plan the launch");
+    expect(turnStatusOf(done)).toBe("completed");
+    const completedItem = fixture.seen.find((m) => m.method === "item/completed");
+    expect(itemTextOf(completedItem)).toBe("Stub lead result: Plan the launch");
     expect(fixture.seen.some(toolCall)).toBe(false);
   });
 
@@ -102,15 +126,14 @@ describe("channel Codex fixture", () => {
     const remember = await fixture.next((m) => toolCall(m) && m.params?.tool === "remember");
     answer(remember, "{}");
     const first = await fixture.next((m) => toolCall(m) && m.params?.tool === "assign");
-    expect((first.params?.arguments as { ownerBotId: string }).ownerBotId).toBe("a");
+    expect(toolArgumentsOf(first)?.ownerBotId).toBe("a");
     answer(first, JSON.stringify({ id: "child-1" }));
     const second = await fixture.next(
-      (m) =>
-        toolCall(m) && m.params?.tool === "assign" && (m.params.arguments as { ownerBotId: string }).ownerBotId === "b",
+      (m) => toolCall(m) && m.params?.tool === "assign" && toolArgumentsOf(m)?.ownerBotId === "b",
     );
-    expect((second.params?.arguments as { dependencyTaskIds: string[] }).dependencyTaskIds).toEqual(["child-1"]);
+    expect(toolArgumentsOf(second)?.dependencyTaskIds).toEqual(["child-1"]);
     answer(second, JSON.stringify({ id: "child-2" }));
     const done = await fixture.next(turnCompleted);
-    expect((done.params?.turn as { status: string }).status).toBe("completed");
+    expect(turnStatusOf(done)).toBe("completed");
   });
 });
