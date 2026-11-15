@@ -29,7 +29,8 @@
       "!**/routeTree.gen.ts",
       "!tools/biome/anti-slop",
       "!coverage",
-      "!.agents"
+      "!.agents",
+      "!graphify-out"
     ]
   },
   "formatter": {
