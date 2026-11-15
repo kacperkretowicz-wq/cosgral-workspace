@@ -62,7 +62,15 @@ async function prompt(id, params) {
     .join("\n");
   const first = !session.prompted;
   session.prompted = true;
-  const said = text.split("</cosgral_instructions>").pop().trim();
+  // A switch from another provider brings the earlier conversation along ("--- current message ---") and the program adds a
+  // [COSGRAL: ...] banner when the agent runs on a fallback model: only the message itself chooses what the stub does.
+  const said = text
+    .split("</cosgral_instructions>")
+    .pop()
+    .split("--- current message ---")
+    .pop()
+    .replace(/^s*[COSGRAL:[^]]*]s*/, "")
+    .trim();
   if (said.includes("LIMIT") || process.argv.includes("--always-limit")) {
     return write({
       id,

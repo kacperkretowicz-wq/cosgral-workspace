@@ -874,44 +874,34 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       await writeFile(source, body);
       // The native file pickers and the shell cannot be driven from outside: answer them in the main process and
       // record what the program asks the shell to do. The program's own file handling runs unchanged.
-      const shellLog = join(inbox, "shell-calls.jsonl");
-      await rm(shellLog, { force: true });
       await app.evaluate(
-        ({ dialog, shell }, paths) => {
-          const { appendFileSync } = require("node:fs");
+        ({ app: electronApp, dialog, shell }, paths) => {
+          const calls: Array<{ call: string; target: string }> = [];
+          const original = electronApp.getPath.bind(electronApp);
+          // The sandbox profile has no Downloads folder the system can resolve: give the program one.
+          Object.assign(electronApp, {
+            getPath: (name: Parameters<typeof original>[0]) => (name === "downloads" ? paths.inbox : original(name)),
+          });
           Object.assign(dialog, {
             showOpenDialog: async () => ({ canceled: false, filePaths: [paths.source] }),
             showSaveDialog: async () => ({ canceled: false, filePath: paths.copy }),
           });
           Object.assign(shell, {
+            acceptCalls: calls,
             openPath: async (target: string) => {
-              appendFileSync(
-                paths.log,
-                `${JSON.stringify({ call: "open", target })}
-`,
-              );
+              calls.push({ call: "open", target });
               return "";
             },
             showItemInFolder: (target: string) => {
-              appendFileSync(
-                paths.log,
-                `${JSON.stringify({ call: "reveal", target })}
-`,
-              );
+              calls.push({ call: "reveal", target });
             },
           });
         },
-        { source, copy, log: shellLog },
+        { source, copy, inbox },
       );
       const shellCalls = async (kind: string): Promise<string[]> => {
-        const { readFile: read } = await import("node:fs/promises");
-        const text = await read(shellLog, "utf8").catch(() => "");
-        return text
-          .split(/\r?\n/)
-          .filter(Boolean)
-          .map((line) => asRecord(JSON.parse(line)))
-          .filter((entry) => entry.call === kind)
-          .map((entry) => String(entry.target));
+        const calls = list(await app.evaluate(({ shell }) => Object.fromEntries(Object.entries(shell)).acceptCalls));
+        return calls.filter((entry) => entry.call === kind).map((entry) => String(entry.target));
       };
       await d.openPage("Library");
       const panel = page.getByRole("region", { name: "File library" });
@@ -1250,29 +1240,62 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       );
       const assistant = await d.botId("Assistant");
       await d.ev(
-        `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, models: ["acp:demo-acp"] })`,
+        `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: ["acp:demo-acp"] })`,
       );
-      // The Providers page is open while the switch happens: it lists the model-fallback events.
-      await d.openPage("Providers");
-      await d.send("Assistant", "LIMITON");
-      await until("Codex is limited", async () => (await codexState()) === "limited");
-      await d.send("Assistant", "hello on the other provider");
-      const reply = await d.answer("Assistant", "ACP stub", 60_000);
-      assert(/received/.test(reply), `the ACP agent answered: ${reply.slice(0, 120)}`);
-      assert((await activeModel()) === "acp:demo-acp", `active model: ${await activeModel()}`);
-      const notice = page.getByText(/Assistant switched from .+ to acp:demo-acp/).first();
-      await notice.waitFor({ timeout: 15_000 });
-      const noticeText = await notice.innerText();
-      await d.dump("providers-fallback-row-35b");
-      // Back: another Codex agent clears the window (it has no fallback, so it stays on Codex); the next message of
-      // the first agent returns to its own model.
-      await d.send("Res", "LIMITOFF");
-      await until("Codex is available again", async () => (await codexState()) === "ok");
-      await d.send("Assistant", "hello again");
-      await d.answer("Assistant", "Stub: received", 60_000);
-      await until("back on its own model", async () => (await activeModel()) === "null");
-      await d.ev(`window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, models: [] })`);
-      return `Codex limited > Assistant answered from the ACP agent (activeModel acp:demo-acp); notice in Providers: "${noticeText.slice(0, 90)}"; limit cleared > back on its own model`;
+      try {
+        // The Providers page is open while the switch happens: it lists the model-fallback events.
+        await d.openPage("Providers");
+        const diagnose = async () =>
+          JSON.stringify({
+            activeModel: await activeModel(),
+            row: (await d.rowLabel("Assistant")).slice(0, 220),
+            recent: list(
+              await d.ev(
+                `window.openbot.agent.readConversation(${JSON.stringify(assistant)}).then((c) => c.messages.slice(-4))`,
+              ),
+            ).map((m) => `${m.author}:${String(m.text).slice(0, 70)}`),
+            usage: list(await d.ev("window.openbot.providers.listUsage()")).map(
+              (u) => `${u.provider}:${u.model ?? ""}:${u.state}`,
+            ),
+            acp: list(await d.ev("window.openbot.providers.listAcpAgents()")).map(
+              (a) => `${a.id}:${a.command ? "cmd" : "none"}`,
+            ),
+          });
+        await d.send("Assistant", "LIMITON");
+        await until("Codex is limited", async () => (await codexState()) === "limited").catch(async (error) => {
+          throw new Error(`${error instanceof Error ? error.message : String(error)} | ${await diagnose()}`);
+        });
+        await d.send("Assistant", "hello on the other provider");
+        const reply = await d.answer("Assistant", "ACP stub", 60_000).catch(async (error) => {
+          throw new Error(`${error instanceof Error ? error.message : String(error)} | ${await diagnose()}`);
+        });
+        assert(/received/.test(reply), `the ACP agent answered: ${reply.slice(0, 120)}`);
+        assert((await activeModel()) === "acp:demo-acp", `active model: ${await activeModel()}`);
+        const notice = page.getByText(/Assistant switched from .+ to acp:demo-acp/).first();
+        await notice.waitFor({ timeout: 15_000 });
+        const noticeText = await notice.innerText();
+        await d.dump("providers-fallback-row-35b");
+        // Back: another Codex agent clears the window (it has no fallback, so it stays on Codex); the next message of
+        // the first agent returns to its own model.
+        await d.send("Res", "LIMITOFF");
+        await until("Codex is available again", async () => (await codexState()) === "ok");
+        await d.send("Assistant", "hello again");
+        await d.answer("Assistant", "Stub: received", 60_000);
+        await until("back on its own model", async () => (await activeModel()) === "null");
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: [] })`,
+        );
+        return `Codex limited > Assistant answered from the ACP agent (activeModel acp:demo-acp); notice in Providers: "${noticeText.slice(0, 90)}"; limit cleared > back on its own model`;
+      } finally {
+        // Leave nothing behind: the full window is cleared by another Codex agent, the fallback list is emptied.
+        await d.send("Res", "LIMITOFF").catch(() => undefined);
+        await until("Codex is available again", async () => (await codexState()) === "ok", 20_000).catch(
+          () => undefined,
+        );
+        await d
+          .ev(`window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: [] })`)
+          .catch(() => undefined);
+      }
     },
   );
 
