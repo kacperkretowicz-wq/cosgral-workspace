@@ -1,5 +1,6 @@
 import type { AgentMemorySettings, MemoryInclusion } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+
 type Entry = { id: string; text: string; inclusion?: MemoryInclusion };
 export function MemoryPanel(props: {
   entries: Entry[];

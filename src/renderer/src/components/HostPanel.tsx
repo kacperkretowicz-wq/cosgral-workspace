@@ -127,7 +127,9 @@ export function HostPanel(props: HostPanelProps) {
                   {props.status.configured ? "Published access" : "This COSGRAL Workspace"}
                 </span>
                 <Dialog.Title as="h2" id="host-title">
-                  {props.status.configured ? (props.status.serverName ?? "COSGRAL server") : "Publish this COSGRAL Workspace"}
+                  {props.status.configured
+                    ? (props.status.serverName ?? "COSGRAL server")
+                    : "Publish this COSGRAL Workspace"}
                 </Dialog.Title>
               </div>
               <Button type="button" aria-label="Close" onClick={props.onClose}>
@@ -515,8 +517,8 @@ function HostSetup(props: {
   return (
     <div class="remote-host-setup">
       <p>
-        Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public
-        address. Only people you invite can sign in.
+        Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a
+        secure public address. Only people you invite can sign in.
       </p>
       <label class="remote-field">
         <span>Server name</span>

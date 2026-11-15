@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { describe, expect, it } from "vitest";
 import { createMockOpenBot } from "../../stories/mock-openbot";
-import { AgentMemorySettingsView, ChannelMemorySettingsView } from "./MemorySettings";
 import { McpSettings } from "./McpSettings";
+import { AgentMemorySettingsView, ChannelMemorySettingsView } from "./MemorySettings";
 
 describe("W2 settings with mock API", () => {
   it("saves agent and channel memories and updates after events", async () => {

@@ -1,11 +1,12 @@
 /**
  * Rasterize COSGRAL icon SVG to PNG + ICO. Own mark (not OpenBot artwork).
  */
-import { Resvg } from "@resvg/resvg-js";
-import pngToIco from "png-to-ico";
-import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync, rmSync } from "node:fs";
+
+import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Resvg } from "@resvg/resvg-js";
+import pngToIco from "png-to-ico";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const svg = readFileSync(join(root, "build", "icon.svg"));

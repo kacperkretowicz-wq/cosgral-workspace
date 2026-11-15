@@ -29,9 +29,7 @@ export function ChatTasksSwitch(props: ChatTasksSwitchProps) {
       >
         Tasks
       </Button>
-      <Show when={props.channelLabel}>
-        {(label) => <span class="chat-tasks-switch-context">{label()}</span>}
-      </Show>
+      <Show when={props.channelLabel}>{(label) => <span class="chat-tasks-switch-context">{label()}</span>}</Show>
     </div>
   );
 }

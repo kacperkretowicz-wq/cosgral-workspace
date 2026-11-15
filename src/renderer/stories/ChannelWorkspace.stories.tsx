@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { onCleanup } from "solid-js";
+import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { ChannelWorkspace } from "../src/components/ChannelWorkspace";
 import { createMockOpenBot } from "./mock-openbot";
-import { ThemeFrame, type StoryTheme } from "./theme-frame";
+import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
 function Scene(props: { theme: StoryTheme }) {
   const mock = createMockOpenBot();

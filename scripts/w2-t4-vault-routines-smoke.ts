@@ -9,8 +9,8 @@ import type { AgentEvent, BrowserTab, DraftPreviewResolution, QueueDeliveryStatu
 import { ROUTINE_LIMITS } from "@openbot/contracts/ipc";
 import { isDynamicRecord } from "@openbot/contracts/runtime-values";
 import type { CardContext } from "../src/backend/action-cards";
-import type { DynamicToolCallParams, DynamicToolResult } from "../src/backend/protocol";
 import { OpenBotDatabase } from "../src/backend/openbot-database";
+import type { DynamicToolCallParams, DynamicToolResult } from "../src/backend/protocol";
 import { RoutineManager, type RoutineRunner } from "../src/backend/routine-manager";
 import { RoutineStore } from "../src/backend/routine-store";
 import { totp } from "../src/backend/totp";

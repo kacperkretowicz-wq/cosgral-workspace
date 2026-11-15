@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { ActionCard } from "../src/components/ActionCard";
 import { draftCard, takeoverCard } from "../src/pending-cards";
-import { ThemeFrame, type StoryTheme } from "./theme-frame";
+import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
 const draft = draftCard({
   requestId: "draft",

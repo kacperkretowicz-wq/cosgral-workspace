@@ -1,7 +1,7 @@
+import type { AgentApproval } from "@openbot/contracts/ipc";
 import { render, screen } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { StickyDecision } from "./StickyDecision";
-import type { AgentApproval } from "@openbot/contracts/ipc";
 
 const prompt = {
   type: "prompt" as const,
@@ -60,9 +60,7 @@ describe("StickyDecision", () => {
     ));
     const region = screen.getByRole("region", { name: "Decision" });
     expect(region).toBeInTheDocument();
-    expect(region.querySelector(".approval-question-prompt")).toHaveTextContent(
-      "Which A+B+C variant ships in W1?",
-    );
+    expect(region.querySelector(".approval-question-prompt")).toHaveTextContent("Which A+B+C variant ships in W1?");
     expect(screen.getByText("Decision · pinned")).toBeInTheDocument();
   });
 
