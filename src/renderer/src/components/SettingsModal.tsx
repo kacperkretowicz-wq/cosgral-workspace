@@ -147,7 +147,8 @@ export function SettingsModal(props: SettingsModalProps) {
                 {navItems.map((item) => {
                   const NavIcon = item.icon;
                   return (
-                    <button
+                    <Button
+                      unstyled
                       type="button"
                       class="settings-modal-nav-item"
                       aria-current={item.current ? "page" : undefined}
@@ -161,7 +162,7 @@ export function SettingsModal(props: SettingsModalProps) {
                           Soon
                         </span>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </nav>

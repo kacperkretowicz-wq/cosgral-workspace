@@ -796,13 +796,14 @@ export function Sidebar(props: SidebarProps) {
                       <Show when={props.computerUsingBotIds?.includes(bot.id)}>
                         <div class="computer-use-row" role="status">
                           <span>Controlling computer</span>{" "}
-                          <button
+                          <Button
+                            unstyled
                             type="button"
                             aria-label={`Stop computer control for ${bot.name}`}
                             onClick={() => props.onStopComputerUse?.(bot.id)}
                           >
                             Stop
-                          </button>
+                          </Button>
                         </div>
                       </Show>
                       <ContextMenu.Portal>

@@ -1,6 +1,7 @@
 import type { LocalSkill, SkillContent, SkillInstall, SkillVersion } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { SkillsPanel } from "./SkillsPanel";
+import { Button } from "./ui";
 export function SkillsSettings(props: { botId?: string }) {
   function skillsApi() {
     const api = window.openbot.skills;
@@ -87,10 +88,11 @@ export function SkillsSettings(props: { botId?: string }) {
                     {skill.name} · v{skill.version}
                   </strong>
                   <p>{skill.description}</p>
-                  <button type="button" onClick={() => void inspect(skill.id)}>
+                  <Button unstyled type="button" onClick={() => void inspect(skill.id)}>
                     View versions
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    unstyled
                     type="button"
                     onClick={() => {
                       if (window.confirm("Delete this skill and uninstall it from all agents?")) {
@@ -102,7 +104,7 @@ export function SkillsSettings(props: { botId?: string }) {
                     }}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </article>
               )}
             </For>
@@ -132,10 +134,11 @@ export function SkillsSettings(props: { botId?: string }) {
               {(version) => (
                 <div>
                   Version {version.version}{" "}
-                  <button type="button" onClick={() => void inspect(item().skill.id, version.version)}>
+                  <Button unstyled type="button" onClick={() => void inspect(item().skill.id, version.version)}>
                     View
-                  </button>{" "}
-                  <button
+                  </Button>{" "}
+                  <Button
+                    unstyled
                     type="button"
                     onClick={() => {
                       if (window.confirm(`Restore version ${version.version} as a new library version?`))
@@ -145,13 +148,13 @@ export function SkillsSettings(props: { botId?: string }) {
                     }}
                   >
                     Restore
-                  </button>
+                  </Button>
                 </div>
               )}
             </For>
-            <button type="button" onClick={() => setContent(undefined)}>
+            <Button unstyled type="button" onClick={() => setContent(undefined)}>
               Close
-            </button>
+            </Button>
           </section>
         )}
       </Show>

@@ -1,6 +1,7 @@
 import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
 import type { PendingCard } from "../pending-cards";
+import { Button, Textarea } from "./ui";
 
 type Action = Extract<PendingCard, { kind: "draft-preview" | "browser-takeover" }>;
 export function ActionCard(props: {
@@ -48,7 +49,12 @@ export function ActionCard(props: {
             <Show when={editing()} fallback={<pre class="action-card-preview">{item().card.preview}</pre>}>
               <label>
                 Draft text
-                <textarea aria-label="Draft text" value={text()} onInput={(e) => setText(e.currentTarget.value)} />
+                <Textarea
+                  unstyled
+                  aria-label="Draft text"
+                  value={text()}
+                  onInput={(e) => setText(e.currentTarget.value)}
+                />
               </label>
             </Show>
             <div class="action-card-buttons">
@@ -56,7 +62,8 @@ export function ActionCard(props: {
                 when={!editing()}
                 fallback={
                   <>
-                    <button
+                    <Button
+                      unstyled
                       type="button"
                       disabled={busy()}
                       onClick={() =>
@@ -64,30 +71,32 @@ export function ActionCard(props: {
                       }
                     >
                       Request revision
-                    </button>
-                    <button type="button" onClick={() => setEditing(false)}>
+                    </Button>
+                    <Button unstyled type="button" onClick={() => setEditing(false)}>
                       Back
-                    </button>
+                    </Button>
                   </>
                 }
               >
-                <button
+                <Button
+                  unstyled
                   type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "send" }))}
                 >
                   {item().card.variant === "draft" ? "Send" : "Confirm"}
-                </button>
-                <button type="button" disabled={busy()} onClick={() => setEditing(true)}>
+                </Button>
+                <Button unstyled type="button" disabled={busy()} onClick={() => setEditing(true)}>
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
+                  unstyled
                   type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "keep-draft" }))}
                 >
                   {item().card.variant === "draft" ? "Keep draft" : "Cancel"}
-                </button>
+                </Button>
               </Show>
             </div>
           </>
@@ -104,7 +113,8 @@ export function ActionCard(props: {
                 when={item().phase === "taken-over"}
                 fallback={
                   <>
-                    <button
+                    <Button
+                      unstyled
                       type="button"
                       disabled={busy()}
                       onClick={() =>
@@ -112,8 +122,9 @@ export function ActionCard(props: {
                       }
                     >
                       Take over
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      unstyled
                       type="button"
                       disabled={busy()}
                       onClick={() =>
@@ -121,17 +132,18 @@ export function ActionCard(props: {
                       }
                     >
                       Decline
-                    </button>
+                    </Button>
                   </>
                 }
               >
-                <button
+                <Button
+                  unstyled
                   type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onTakeover({ requestId: item().requestId, action: "return" }))}
                 >
                   Return to agent
-                </button>
+                </Button>
               </Show>
             </div>
           </>

@@ -3960,14 +3960,14 @@
 }
 
 .attachment-reference-visual > span {
-  font-size: 8px;
+  font-size: var(--openbot-text-tiny);
   font-weight: 750;
   letter-spacing: -0.2px;
   line-height: 1;
 }
 
 .attachment-reference-visual[data-badge-length="4"] > span {
-  font-size: 7px;
+  font-size: var(--openbot-text-micro);
   letter-spacing: -0.4px;
 }
 
@@ -4217,7 +4217,7 @@
 
 .chat-tasks-switch-tab-active {
   background: var(--openbot-accent);
-  color: #fff;
+  color: var(--openbot-contrast-white);
 }
 
 .chat-tasks-switch-context {
@@ -4910,7 +4910,8 @@
   left: 24px;
   overflow: visible;
   border: 1px solid var(--openbot-queue-border);
-  border-radius: 20px 20px var(--openbot-radius-lg) var(--openbot-radius-lg);
+  border-radius: var(--openbot-radius-sheet) var(--openbot-radius-sheet) var(--openbot-radius-lg)
+    var(--openbot-radius-lg);
   background: var(--openbot-queue-surface);
   padding-bottom: var(--queue-composer-overlap);
   box-shadow: none;
@@ -5050,7 +5051,7 @@
   background: var(--openbot-bg-canvas);
   color: var(--openbot-queue-action);
   font-family: var(--openbot-font-mono);
-  font-size: 7px;
+  font-size: var(--openbot-text-micro);
   line-height: 1;
 }
 
@@ -5081,7 +5082,7 @@
   min-width: 0;
   overflow: hidden;
   color: inherit;
-  font-size: 15px;
+  font-size: var(--openbot-text-body-large);
   line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;

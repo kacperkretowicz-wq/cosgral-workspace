@@ -15,6 +15,8 @@ export interface ButtonProps
   class?: JSX.HTMLAttributes<HTMLElement>["class"];
   children?: JSX.Element;
   disabled?: boolean;
+  /** Keep an existing feature stylesheet in control during primitive migration. */
+  unstyled?: boolean;
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
@@ -28,6 +30,7 @@ export function Button(props: ButtonProps): JSX.Element {
   const others = omit(
     local,
     "class",
+    "unstyled",
     "children",
     "variant",
     "size",
@@ -40,7 +43,7 @@ export function Button(props: ButtonProps): JSX.Element {
   );
   return (
     <button
-      class={cx("ui-button", local.fullWidth && "ui-button-full", local.class)}
+      class={cx(!local.unstyled && "ui-button", local.fullWidth && "ui-button-full", local.class)}
       data-variant={local.variant ?? "secondary"}
       data-size={local.size ?? "md"}
       disabled={Boolean(local.disabled || local.loading)}

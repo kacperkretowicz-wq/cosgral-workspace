@@ -1,5 +1,6 @@
 import type { DraftAttachment, LibraryItem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input } from "./ui";
 export function LibraryItems(props: {
   items: LibraryItem[];
   onAttach?: (id: string) => void;
@@ -15,23 +16,24 @@ export function LibraryItems(props: {
             {item.origin} · {item.size} bytes
           </small>
           <div>
-            <button type="button" onClick={() => props.onOpen(item.id)}>
+            <Button unstyled type="button" onClick={() => props.onOpen(item.id)}>
               Open
-            </button>{" "}
+            </Button>{" "}
             <Show when={props.onAttach}>
-              <button type="button" onClick={() => props.onAttach?.(item.id)}>
+              <Button unstyled type="button" onClick={() => props.onAttach?.(item.id)}>
                 Attach
-              </button>
+              </Button>
             </Show>{" "}
             <Show when={item.origin !== "chat"}>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   if (window.confirm(`Delete ${item.name}?`)) props.onDelete(item.id);
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </Show>
           </div>
         </article>
@@ -90,7 +92,8 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
       </Show>
       <label>
         Search files
-        <input
+        <Input
+          unstyled
           type="search"
           value={query()}
           onInput={(e) => {
@@ -99,7 +102,8 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
           }}
         />
       </label>
-      <button
+      <Button
+        unstyled
         type="button"
         onClick={() =>
           void action(async () => {
@@ -110,7 +114,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
         }
       >
         Add files
-      </button>
+      </Button>
       <LibraryItems
         items={items()}
         onOpen={(fileId) =>

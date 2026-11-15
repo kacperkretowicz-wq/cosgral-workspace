@@ -5,6 +5,8 @@ import { cx } from "./utils";
 export type ControlSize = "sm" | "md" | "lg";
 
 interface ControlOptions {
+  /** Preserve feature styles, including native checkbox/file control appearance. */
+  unstyled?: boolean;
   size?: ControlSize;
   invalid?: boolean;
 }
@@ -26,6 +28,7 @@ export function Input(props: InputProps): JSX.Element {
   const others = omit(
     props,
     "class",
+    "unstyled",
     "size",
     "invalid",
     "id",
@@ -41,7 +44,7 @@ export function Input(props: InputProps): JSX.Element {
     return (
       <input
         {...others}
-        class={cx("ui-input", local.class)}
+        class={cx(!local.unstyled && "ui-input", local.class)}
         data-size={local.size ?? "md"}
         id={local.id ?? field?.controlId}
         aria-describedby={describedBy()}
@@ -55,7 +58,7 @@ export function Input(props: InputProps): JSX.Element {
   return (
     <input
       {...others}
-      class={cx("ui-input", local.class)}
+      class={cx(!local.unstyled && "ui-input", local.class)}
       data-size={local.size ?? "md"}
       id={local.id ?? field?.controlId}
       aria-describedby={describedBy()}
@@ -76,6 +79,7 @@ export function Textarea(props: TextareaProps): JSX.Element {
   const others = omit(
     props,
     "class",
+    "unstyled",
     "size",
     "invalid",
     "id",
@@ -91,7 +95,7 @@ export function Textarea(props: TextareaProps): JSX.Element {
     return (
       <textarea
         {...others}
-        class={cx("ui-textarea", local.class)}
+        class={cx(!local.unstyled && "ui-textarea", local.class)}
         data-size={local.size ?? "md"}
         id={local.id ?? field?.controlId}
         aria-describedby={describedBy()}
@@ -105,7 +109,7 @@ export function Textarea(props: TextareaProps): JSX.Element {
   return (
     <textarea
       {...others}
-      class={cx("ui-textarea", local.class)}
+      class={cx(!local.unstyled && "ui-textarea", local.class)}
       data-size={local.size ?? "md"}
       id={local.id ?? field?.controlId}
       aria-describedby={describedBy()}
@@ -126,6 +130,7 @@ export function NativeSelect(props: NativeSelectProps): JSX.Element {
   const others = omit(
     props,
     "class",
+    "unstyled",
     "size",
     "invalid",
     "id",
@@ -141,7 +146,7 @@ export function NativeSelect(props: NativeSelectProps): JSX.Element {
     return (
       <select
         {...others}
-        class={cx("ui-native-select", local.class)}
+        class={cx(!local.unstyled && "ui-native-select", local.class)}
         data-size={local.size ?? "md"}
         id={local.id ?? field?.controlId}
         aria-describedby={describedBy()}
@@ -155,7 +160,7 @@ export function NativeSelect(props: NativeSelectProps): JSX.Element {
   return (
     <select
       {...others}
-      class={cx("ui-native-select", local.class)}
+      class={cx(!local.unstyled && "ui-native-select", local.class)}
       data-size={local.size ?? "md"}
       id={local.id ?? field?.controlId}
       aria-describedby={describedBy()}

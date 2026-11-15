@@ -1,5 +1,6 @@
 import type { SharedTable, TableRow, TableValues, TableWriteResult } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect } from "./ui";
 export function RowEditor(props: {
   table: SharedTable;
   row?: TableRow;
@@ -38,7 +39,8 @@ export function RowEditor(props: {
             <Show
               when={column.type === "boolean"}
               fallback={
-                <input
+                <Input
+                  unstyled
                   aria-label={column.name}
                   type={column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}
                   value={String(values()[column.name] ?? "")}
@@ -52,7 +54,8 @@ export function RowEditor(props: {
                 />
               }
             >
-              <select
+              <NativeSelect
+                unstyled
                 aria-label={column.name}
                 value={
                   values()[column.name] === null || values()[column.name] === undefined
@@ -69,7 +72,7 @@ export function RowEditor(props: {
                 <option value="">Empty</option>
                 <option value="true">True</option>
                 <option value="false">False</option>
-              </select>
+              </NativeSelect>
             </Show>
           </label>
         )}
@@ -82,21 +85,21 @@ export function RowEditor(props: {
           <div role="alert">
             <p>This row changed since you opened it. Current version {current().version}:</p>
             <pre class="channel-prewrap">{JSON.stringify(current().values, null, 2)}</pre>
-            <button type="button" onClick={() => void save(current().version)}>
+            <Button unstyled type="button" onClick={() => void save(current().version)}>
               Apply my changes
-            </button>
-            <button type="button" onClick={props.onDone}>
+            </Button>
+            <Button unstyled type="button" onClick={props.onDone}>
               Keep current
-            </button>
+            </Button>
           </div>
         )}
       </Show>
-      <button type="button" onClick={() => void save()}>
+      <Button unstyled type="button" onClick={() => void save()}>
         Save row
-      </button>
-      <button type="button" onClick={props.onDone}>
+      </Button>
+      <Button unstyled type="button" onClick={props.onDone}>
         Cancel
-      </button>
+      </Button>
     </section>
   );
 }
@@ -177,7 +180,8 @@ export function TablesPanel() {
       </Show>
       <label>
         Table
-        <select
+        <NativeSelect
+          unstyled
           value={selected()}
           onChange={(e) => {
             setSelected(e.currentTarget.value);
@@ -188,38 +192,39 @@ export function TablesPanel() {
         >
           <option value="">Select a table</option>
           <For each={tables()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-        </select>
+        </NativeSelect>
       </label>
       <Show when={table()}>
         {(current) => (
           <>
             <label>
               Filter first text column
-              <input value={filter()} onInput={(e) => setFilter(e.currentTarget.value)} />
+              <Input unstyled value={filter()} onInput={(e) => setFilter(e.currentTarget.value)} />
             </label>
-            <button type="button" onClick={() => void loadRows()}>
+            <Button unstyled type="button" onClick={() => void loadRows()}>
               Search rows
-            </button>
-            <button type="button" onClick={() => setEditing("new")}>
+            </Button>
+            <Button unstyled type="button" onClick={() => setEditing("new")}>
               Add row
-            </button>
+            </Button>
             <For each={rows()}>
               {(row) => (
                 <article class="w2-item">
                   <strong>Version {row.version}</strong>
                   <pre class="channel-prewrap">{JSON.stringify(row.values, null, 2)}</pre>
                   <div>
-                    <button type="button" onClick={() => setEditing(row)}>
+                    <Button unstyled type="button" onClick={() => setEditing(row)}>
                       Edit
-                    </button>{" "}
-                    <button
+                    </Button>{" "}
+                    <Button
+                      unstyled
                       type="button"
                       onClick={() => {
                         if (window.confirm("Delete this row?")) void remove(row);
                       }}
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </article>
               )}
@@ -255,12 +260,12 @@ export function TablesPanel() {
                 <div role="alert">
                   <p>Row changed since you opened it. Current version {row().version}:</p>
                   <pre>{JSON.stringify(row().values, null, 2)}</pre>
-                  <button type="button" onClick={() => void remove(row())}>
+                  <Button unstyled type="button" onClick={() => void remove(row())}>
                     Delete current version
-                  </button>
-                  <button type="button" onClick={() => setConflict(undefined)}>
+                  </Button>
+                  <Button unstyled type="button" onClick={() => setConflict(undefined)}>
                     Keep current
-                  </button>
+                  </Button>
                 </div>
               )}
             </Show>

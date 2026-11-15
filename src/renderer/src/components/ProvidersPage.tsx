@@ -257,7 +257,7 @@ export function AcpAgentsSection(props: {
                     </Button>
                   }
                 >
-                  <div class="providers-confirm" role="alertdialog" aria-label={`Confirm removing ${agent.name}`}>
+                  <fieldset class="providers-confirm" aria-label={`Confirm removing ${agent.name}`}>
                     <Text tone="danger">
                       Agents set to {acpModelId(agent.id)} can no longer use it. Remove {agent.name}?
                     </Text>
@@ -267,7 +267,7 @@ export function AcpAgentsSection(props: {
                     <Button type="button" size="sm" onClick={() => setRemoving(null)}>
                       Keep
                     </Button>
-                  </div>
+                  </fieldset>
                 </Show>
               </li>
             )}

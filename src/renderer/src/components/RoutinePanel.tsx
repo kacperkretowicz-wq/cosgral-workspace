@@ -1,5 +1,6 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type Bot = { id: string; name: string };
 type FormTrigger = "interval" | "daily" | "cron" | "webhook";
@@ -48,21 +49,27 @@ export function RoutineForm(props: {
       <h3>Create routine</h3>
       <label>
         Agent
-        <select value={bot()} disabled={!!props.botId} onChange={(e) => setBot(e.currentTarget.value)}>
+        <NativeSelect unstyled value={bot()} disabled={!!props.botId} onChange={(e) => setBot(e.currentTarget.value)}>
           <For each={props.bots}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Routine name
-        <input aria-label="Routine name" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+        <Input unstyled aria-label="Routine name" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
       <label>
         Instructions
-        <textarea aria-label="Instructions" value={prompt()} onInput={(e) => setPrompt(e.currentTarget.value)} />
+        <Textarea
+          unstyled
+          aria-label="Instructions"
+          value={prompt()}
+          onInput={(e) => setPrompt(e.currentTarget.value)}
+        />
       </label>
       <label>
         Trigger
-        <select
+        <NativeSelect
+          unstyled
           aria-label="Trigger"
           value={trigger()}
           onChange={(e) => {
@@ -74,12 +81,13 @@ export function RoutineForm(props: {
           <option value="daily">Daily</option>
           <option value="cron">Cron</option>
           <option value="webhook">Webhook</option>
-        </select>
+        </NativeSelect>
       </label>
       <Show when={trigger() === "interval"}>
         <label>
           Minutes
-          <input
+          <Input
+            unstyled
             type="number"
             min="1"
             max="10080"
@@ -91,25 +99,36 @@ export function RoutineForm(props: {
       <Show when={trigger() === "daily"}>
         <label>
           Time
-          <input aria-label="Time" type="time" value={time()} onInput={(e) => setTime(e.currentTarget.value)} />
+          <Input
+            unstyled
+            aria-label="Time"
+            type="time"
+            value={time()}
+            onInput={(e) => setTime(e.currentTarget.value)}
+          />
         </label>
       </Show>
       <Show when={trigger() === "cron"}>
         <label>
           Cron expression
-          <input value={cron()} onInput={(e) => setCron(e.currentTarget.value)} />
+          <Input unstyled value={cron()} onInput={(e) => setCron(e.currentTarget.value)} />
         </label>
       </Show>
       <label>
         Time zone
-        <input value={timezone()} onInput={(e) => setTimezone(e.currentTarget.value)} />
+        <Input unstyled value={timezone()} onInput={(e) => setTimezone(e.currentTarget.value)} />
       </label>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
-      <button type="button" disabled={!bot() || !name().trim() || !prompt().trim()} onClick={() => void create()}>
+      <Button
+        unstyled
+        type="button"
+        disabled={!bot() || !name().trim() || !prompt().trim()}
+        onClick={() => void create()}
+      >
         Create routine
-      </button>
+      </Button>
     </section>
   );
 }
@@ -188,7 +207,8 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
             </p>
             <Show when={routine.webhook}>
               <p>Webhook: {routine.webhook?.url}</p>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   if (window.confirm("Replace the webhook secret? Existing senders must be updated."))
@@ -199,10 +219,11 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 }}
               >
                 Generate new secret
-              </button>
+              </Button>
             </Show>
             <div>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() =>
                   void run(async () => {
@@ -211,8 +232,9 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 }
               >
                 {routine.paused ? "Resume" : "Pause"}
-              </button>{" "}
-              <button
+              </Button>{" "}
+              <Button
+                unstyled
                 type="button"
                 disabled={routine.paused}
                 onClick={() =>
@@ -222,10 +244,10 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 }
               >
                 Run now
-              </button>{" "}
-              <button type="button" onClick={() => void loadHistory(routine.id)}>
+              </Button>{" "}
+              <Button unstyled type="button" onClick={() => void loadHistory(routine.id)}>
                 History
-              </button>
+              </Button>
             </div>
             <Show when={history() === routine.id}>
               <For each={runs()} fallback={<p>No runs yet.</p>}>
@@ -245,17 +267,18 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
           <div role="alert">
             <strong>Copy this secret now. It will not be shown again.</strong>
             <code>{value()}</code>
-            <button
+            <Button
+              unstyled
               type="button"
               onClick={() =>
                 void navigator.clipboard.writeText(value()).catch(() => setError("Could not copy secret."))
               }
             >
               Copy secret
-            </button>
-            <button type="button" onClick={() => setSecret("")}>
+            </Button>
+            <Button unstyled type="button" onClick={() => setSecret("")}>
               Done
-            </button>
+            </Button>
           </div>
         )}
       </Show>

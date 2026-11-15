@@ -11,6 +11,8 @@
 :root {
   color-scheme: dark;
   /* Grok Bot-inspired neutral system. Keep UI colors here, not in components. */
+  --openbot-contrast-white: #fff;
+  --openbot-bg-remote-canvas: #17171b;
   --openbot-bg-canvas: #070707;
   --openbot-bg-sidebar: #111111;
   --openbot-bg-surface: #262626;
@@ -120,6 +122,12 @@
   --openbot-vnc-background: var(--openbot-bg-canvas);
   --openbot-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --openbot-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --openbot-text-micro: 7px;
+  --openbot-text-tiny: 8px;
+  --openbot-text-body-large: 15px;
+  --openbot-text-section: 1.2rem;
+  --openbot-radius-card: 10px;
+  --openbot-radius-sheet: 20px;
   --openbot-text-2xs: 10px;
   --openbot-text-xs: 11px;
   --openbot-text-sm: 12px;

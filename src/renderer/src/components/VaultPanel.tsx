@@ -7,6 +7,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { isString } from "@openbot/contracts/runtime-values";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 export function VaultForm(props: {
   initial?: VaultItemSummary;
@@ -101,7 +102,8 @@ export function VaultForm(props: {
       <h3>{props.initial ? "Edit item" : "Add item"}</h3>
       <label>
         Kind
-        <select
+        <NativeSelect
+          unstyled
           aria-label="Kind"
           disabled={!!props.initial || !!props.kind}
           value={kind()}
@@ -115,24 +117,25 @@ export function VaultForm(props: {
           <option value="contact">Contact</option>
           <option value="apiKey">API key</option>
           <option value="totp">Authenticator</option>
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Label
-        <input value={label()} onInput={(e) => setLabel(e.currentTarget.value)} />
+        <Input unstyled value={label()} onInput={(e) => setLabel(e.currentTarget.value)} />
       </label>
       <Show when={kind() === "login"}>
         <label>
           Site URL
-          <input value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
+          <Input unstyled value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
         </label>
         <label>
           Username
-          <input value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
+          <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
         </label>
         <label>
           Password
-          <input
+          <Input
+            unstyled
             aria-label="Password"
             type="password"
             autocomplete="new-password"
@@ -142,17 +145,24 @@ export function VaultForm(props: {
         </label>
         <label>
           Two-step key
-          <input type="password" autocomplete="off" value={key()} onInput={(e) => setKey(e.currentTarget.value)} />
+          <Input
+            unstyled
+            type="password"
+            autocomplete="off"
+            value={key()}
+            onInput={(e) => setKey(e.currentTarget.value)}
+          />
         </label>
       </Show>
       <Show when={kind() === "card"}>
         <label>
           Cardholder
-          <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+          <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
           Card number
-          <input
+          <Input
+            unstyled
             type="password"
             autocomplete="off"
             value={secret()}
@@ -161,49 +171,56 @@ export function VaultForm(props: {
         </label>
         <label>
           Expiry month
-          <input type="number" value={month()} onInput={(e) => setMonth(e.currentTarget.value)} />
+          <Input unstyled type="number" value={month()} onInput={(e) => setMonth(e.currentTarget.value)} />
         </label>
         <label>
           Expiry year
-          <input type="number" value={year()} onInput={(e) => setYear(e.currentTarget.value)} />
+          <Input unstyled type="number" value={year()} onInput={(e) => setYear(e.currentTarget.value)} />
         </label>
         <label>
           Security code
-          <input type="password" autocomplete="off" value={key()} onInput={(e) => setKey(e.currentTarget.value)} />
+          <Input
+            unstyled
+            type="password"
+            autocomplete="off"
+            value={key()}
+            onInput={(e) => setKey(e.currentTarget.value)}
+          />
         </label>
       </Show>
       <Show when={kind() === "contact"}>
         <label>
           Name
-          <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+          <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
           Email
-          <input value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
+          <Input unstyled value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
         </label>
         <label>
           Phone
-          <input value={phone()} onInput={(e) => setPhone(e.currentTarget.value)} />
+          <Input unstyled value={phone()} onInput={(e) => setPhone(e.currentTarget.value)} />
         </label>
         <label>
           Address
-          <textarea value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
+          <Textarea unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
         </label>
       </Show>
       <Show when={kind() === "apiKey" || kind() === "totp"}>
         <label>
           {kind() === "apiKey" ? "Variable name" : "Issuer"}
-          <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+          <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <Show when={kind() === "totp"}>
           <label>
             Account
-            <input value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
+            <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
           </label>
         </Show>
         <label>
           Secret
-          <input
+          <Input
+            unstyled
             type="password"
             autocomplete="off"
             value={secret()}
@@ -223,13 +240,13 @@ export function VaultForm(props: {
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
-      <button type="button" disabled={busy()} onClick={() => void save()}>
+      <Button unstyled type="button" disabled={busy()} onClick={() => void save()}>
         Save item
-      </button>
+      </Button>
       <Show when={props.onCancel}>
-        <button type="button" onClick={() => props.onCancel?.()}>
+        <Button unstyled type="button" onClick={() => props.onCancel?.()}>
           Cancel
-        </button>
+        </Button>
       </Show>
     </section>
   );
@@ -295,7 +312,8 @@ export function VaultPanel() {
               {item.kind} {item.origin ?? item.name ?? item.cardLast4 ?? ""}
             </span>
             <div>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   setAdding(false);
@@ -303,8 +321,9 @@ export function VaultPanel() {
                 }}
               >
                 Edit
-              </button>{" "}
-              <button
+              </Button>{" "}
+              <Button
+                unstyled
                 type="button"
                 onClick={() => {
                   const vault = window.openbot.vault;
@@ -316,12 +335,13 @@ export function VaultPanel() {
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </article>
         )}
       </For>
-      <button
+      <Button
+        unstyled
         type="button"
         disabled={!status()?.encryptionAvailable}
         onClick={() => {
@@ -330,7 +350,7 @@ export function VaultPanel() {
         }}
       >
         Add item
-      </button>
+      </Button>
       <Show when={editing() ?? (adding() ? "new" : undefined)} keyed>
         {(item) => (
           <VaultForm

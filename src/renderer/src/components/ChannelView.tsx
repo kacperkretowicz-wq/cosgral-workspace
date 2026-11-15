@@ -1,8 +1,8 @@
 import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
-import { Button, NativeSelect, Textarea } from "./ui";
+import { Button, NativeSelect, Textarea, ViewTabPanel } from "./ui";
 
 type Person = { id: string; name: string };
 export function ChannelView(props: {
@@ -15,6 +15,7 @@ export function ChannelView(props: {
   onResume: (id: string) => void;
   onReassign: (id: string, botId: string) => void;
 }) {
+  const tabsId = createUniqueId();
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
   const [memoryOpen, setMemoryOpen] = createSignal(false);
   const [text, setText] = createSignal("");
@@ -55,12 +56,12 @@ export function ChannelView(props: {
             <ChannelMemorySettingsView channelId={props.channel.id} />
           </Show>
         </details>
-        <ChatTasksSwitch mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
+        <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
       </header>
       <Show
         when={mode() === "chat"}
         fallback={
-          <section class="channel-view-content" aria-label="Channel tasks">
+          <ViewTabPanel idPrefix={tabsId} value="tasks" class="channel-view-content">
             <Show when={props.tasks.some((task) => !task.archivedAt)} fallback={<p>No tasks in this channel.</p>}>
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
@@ -96,78 +97,81 @@ export function ChannelView(props: {
                 )}
               </For>
             </Show>
-          </section>
+          </ViewTabPanel>
         }
       >
-        <section class="channel-view-content" aria-label="Channel messages">
-          <Show when={props.messages.length} fallback={<p>No messages yet.</p>}>
-            <For each={props.messages}>
-              {(message) => (
-                <article class="channel-item" id={`channel-message-${message.id}`}>
-                  <strong>{name(message.authorBotId)}</strong>{" "}
-                  <small>
-                    {message.kind}
-                    {message.resultVersion !== null ? ` · version ${message.resultVersion}` : ""}
-                    {message.superseded ? " · Superseded" : ""}
-                  </small>
-                  <Show when={message.replyToMessageId}>
-                    {(id) => (
+        <ViewTabPanel idPrefix={tabsId} value="chat" class="channel-chat-panel">
+          <section class="channel-view-content" aria-label="Channel messages">
+            <Show when={props.messages.length} fallback={<p>No messages yet.</p>}>
+              <For each={props.messages}>
+                {(message) => (
+                  <article class="channel-item" id={`channel-message-${message.id}`}>
+                    <strong>{name(message.authorBotId)}</strong>{" "}
+                    <small>
+                      {message.kind}
+                      {message.resultVersion !== null ? ` · version ${message.resultVersion}` : ""}
+                      {message.superseded ? " · Superseded" : ""}
+                    </small>
+                    <Show when={message.replyToMessageId}>
+                      {(id) => (
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            document.getElementById(`channel-message-${id()}`)?.scrollIntoView({ block: "center" })
+                          }
+                        >
+                          ↳{" "}
+                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? "Earlier message"}
+                        </Button>
+                      )}
+                    </Show>
+                    <p class="channel-prewrap">{message.text}</p>
+                    <Show when={props.supportsReplies}>
                       <Button
                         type="button"
-                        onClick={() =>
-                          document.getElementById(`channel-message-${id()}`)?.scrollIntoView({ block: "center" })
-                        }
+                        aria-label={`Reply to ${message.text.slice(0, 100)}`}
+                        onClick={() => setReply(message)}
                       >
-                        ↳ {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? "Earlier message"}
+                        Reply
                       </Button>
-                    )}
-                  </Show>
-                  <p class="channel-prewrap">{message.text}</p>
-                  <Show when={props.supportsReplies}>
-                    <Button
-                      type="button"
-                      aria-label={`Reply to ${message.text.slice(0, 100)}`}
-                      onClick={() => setReply(message)}
-                    >
-                      Reply
-                    </Button>
-                  </Show>
-                </article>
+                    </Show>
+                  </article>
+                )}
+              </For>
+            </Show>
+          </section>
+          <form
+            class="channel-composer"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send();
+            }}
+          >
+            <label for="channel-message-input">New message to channel lead</label>
+            <Show when={reply()}>
+              {(item) => (
+                <p>
+                  Replying to: {item().text.slice(0, 100)}{" "}
+                  <Button type="button" onClick={() => setReply(undefined)}>
+                    Cancel reply
+                  </Button>
+                </p>
               )}
-            </For>
-          </Show>
-        </section>
-        <form
-          class="channel-composer"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void send();
-          }}
-        >
-          <label for="channel-message-input">New message to channel lead</label>
-          <Show when={reply()}>
-            {(item) => (
-              <p>
-                Replying to: {item().text.slice(0, 100)}{" "}
-                <Button type="button" onClick={() => setReply(undefined)}>
-                  Cancel reply
-                </Button>
-              </p>
-            )}
-          </Show>
-          <Textarea
-            id="channel-message-input"
-            maxlength={32000}
-            value={text()}
-            onInput={(e) => setText(e.currentTarget.value)}
-          />
-          <Show when={error()}>
-            <p role="alert">{error()}</p>
-          </Show>
-          <Button type="submit" disabled={sending() || !text().trim()}>
-            Send
-          </Button>
-        </form>
+            </Show>
+            <Textarea
+              id="channel-message-input"
+              maxlength={32000}
+              value={text()}
+              onInput={(e) => setText(e.currentTarget.value)}
+            />
+            <Show when={error()}>
+              <p role="alert">{error()}</p>
+            </Show>
+            <Button type="submit" disabled={sending() || !text().trim()}>
+              Send
+            </Button>
+          </form>
+        </ViewTabPanel>
       </Show>
     </main>
   );

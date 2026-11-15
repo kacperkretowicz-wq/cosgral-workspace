@@ -6,3 +6,5 @@ export * from "./icons";
 export * from "./surface";
 export * from "./switch";
 export * from "./typography";
+
+export * from "./view-tabs";

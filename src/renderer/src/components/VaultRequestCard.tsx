@@ -1,5 +1,6 @@
 import type { VaultItemSummary, VaultRequest } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button } from "./ui";
 import { VaultForm } from "./VaultPanel";
 export function VaultRequestCard(props: { request: VaultRequest }) {
   const [items, setItems] = createSignal<VaultItemSummary[]>([]);
@@ -42,9 +43,9 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
       <Show when={props.request.mode === "choose"}>
         <For each={items().filter((item) => props.request.candidateIds.includes(item.id))}>
           {(item) => (
-            <button type="button" disabled={busy()} onClick={() => void respond(item.id)}>
+            <Button unstyled type="button" disabled={busy()} onClick={() => void respond(item.id)}>
               {item.label} {item.username ?? item.cardLast4 ?? ""}
-            </button>
+            </Button>
           )}
         </For>
         <Show when={!items().some((item) => props.request.candidateIds.includes(item.id))}>
@@ -55,9 +56,9 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
         <Show
           when={!savedId()}
           fallback={
-            <button type="button" disabled={busy()} onClick={() => void respond(savedId())}>
+            <Button unstyled type="button" disabled={busy()} onClick={() => void respond(savedId())}>
               Use saved item
-            </button>
+            </Button>
           }
         >
           <VaultForm
@@ -72,9 +73,9 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
           />
         </Show>
       </Show>
-      <button type="button" disabled={busy()} onClick={() => void respond(undefined, true)}>
+      <Button unstyled type="button" disabled={busy()} onClick={() => void respond(undefined, true)}>
         Decline
-      </button>
+      </Button>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>

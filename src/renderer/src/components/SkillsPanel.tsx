@@ -1,5 +1,6 @@
 import type { LocalSkill, SkillInstall } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
+import { Button } from "./ui";
 export function SkillsPanel(props: {
   skills: LocalSkill[];
   installs: SkillInstall[];
@@ -21,15 +22,15 @@ export function SkillsPanel(props: {
                   {skill.name} · v{skill.version}
                 </strong>
                 <p>{skill.description}</p>
-                <button type="button" onClick={() => props.onInspect(skill.id)}>
+                <Button unstyled type="button" onClick={() => props.onInspect(skill.id)}>
                   View skill
-                </button>
+                </Button>
                 <Show
                   when={install()}
                   fallback={
-                    <button type="button" onClick={() => props.onInstall(skill.id)}>
+                    <Button unstyled type="button" onClick={() => props.onInstall(skill.id)}>
                       Install
-                    </button>
+                    </Button>
                   }
                 >
                   {(item) => (
@@ -39,7 +40,8 @@ export function SkillsPanel(props: {
                         {item().modifiedLocally ? " · locally modified" : ""}
                       </small>
                       <Show when={item().updateAvailable}>
-                        <button
+                        <Button
+                          unstyled
                           type="button"
                           onClick={() => {
                             if (
@@ -50,16 +52,17 @@ export function SkillsPanel(props: {
                           }}
                         >
                           Update
-                        </button>
+                        </Button>
                       </Show>
-                      <button
+                      <Button
+                        unstyled
                         type="button"
                         onClick={() => {
                           if (window.confirm("Uninstall this skill from this agent?")) props.onUninstall(skill.id);
                         }}
                       >
                         Uninstall
-                      </button>
+                      </Button>
                     </>
                   )}
                 </Show>

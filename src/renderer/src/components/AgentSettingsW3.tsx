@@ -8,6 +8,7 @@ import type {
 import { isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 export function AgentTemplateCreator(props: {
   templates: AgentTemplate[];
@@ -34,17 +35,17 @@ export function AgentTemplateCreator(props: {
       <h3>Create agent</h3>
       <label>
         Template{" "}
-        <select value={template()} onChange={(e) => setTemplate(e.currentTarget.value)}>
+        <NativeSelect unstyled value={template()} onChange={(e) => setTemplate(e.currentTarget.value)}>
           <option value="">Start from scratch</option>
           <For each={props.templates}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-        </select>
+        </NativeSelect>
       </label>
       <label>
-        Agent name <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+        Agent name <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
-      <button type="button" disabled={!name().trim() && !template()} onClick={() => void create()}>
+      <Button unstyled type="button" disabled={!name().trim() && !template()} onClick={() => void create()}>
         Create agent
-      </button>
+      </Button>
       <Show when={message()}>
         <p role="status">{message()}</p>
       </Show>
@@ -129,9 +130,9 @@ export function AgentSettingsW3(props: { botId: string }) {
       </Show>
       <Show when={failedStage()}>
         {(stage) => (
-          <button type="button" disabled={saving()} onClick={() => void save(stage())}>
+          <Button unstyled type="button" disabled={saving()} onClick={() => void save(stage())}>
             {stage() === "fallback" ? "Retry fallback models" : "Retry profile and fallback models"}
-          </button>
+          </Button>
         )}
       </Show>
       <Show when={notice()}>
@@ -143,21 +144,24 @@ export function AgentSettingsW3(props: { botId: string }) {
             <p>Provider: {value().provider}</p>
             <label>
               Name{" "}
-              <input
+              <Input
+                unstyled
                 value={value().bot.name}
                 onInput={(e) => setSettings((s) => s && { ...s, bot: { ...s.bot, name: e.currentTarget.value } })}
               />
             </label>
             <label>
               Role{" "}
-              <input
+              <Input
+                unstyled
                 value={value().bot.role}
                 onInput={(e) => setSettings((s) => s && { ...s, bot: { ...s.bot, role: e.currentTarget.value } })}
               />
             </label>
             <label>
               Description{" "}
-              <textarea
+              <Textarea
+                unstyled
                 value={value().bot.description}
                 onInput={(e) =>
                   setSettings((s) => s && { ...s, bot: { ...s.bot, description: e.currentTarget.value } })
@@ -166,7 +170,8 @@ export function AgentSettingsW3(props: { botId: string }) {
             </label>
             <label>
               Model{" "}
-              <select
+              <NativeSelect
+                unstyled
                 value={value().bot.model}
                 onChange={(e) => {
                   const model = e.currentTarget.value;
@@ -174,14 +179,15 @@ export function AgentSettingsW3(props: { botId: string }) {
                 }}
               >
                 <For each={value().models}>{(model) => <option value={model.id}>{model.name}</option>}</For>
-              </select>
+              </NativeSelect>
             </label>
             <fieldset>
               <legend>Tools</legend>
               <For each={value().tools}>
                 {(tool) => (
                   <label>
-                    <input
+                    <Input
+                      unstyled
                       type="checkbox"
                       checked={tool.enabled}
                       disabled={!tool.available}
@@ -210,7 +216,8 @@ export function AgentSettingsW3(props: { botId: string }) {
                   {(model, index) => (
                     <li>
                       {model}{" "}
-                      <button
+                      <Button
+                        unstyled
                         type="button"
                         disabled={index() === 0}
                         onClick={() =>
@@ -222,18 +229,20 @@ export function AgentSettingsW3(props: { botId: string }) {
                         }
                       >
                         Move up
-                      </button>{" "}
-                      <button
+                      </Button>{" "}
+                      <Button
+                        unstyled
                         type="button"
                         onClick={() => setFallbacks((items) => items.filter((_, i) => i !== index()))}
                       >
                         Remove
-                      </button>
+                      </Button>
                     </li>
                   )}
                 </For>
               </ol>
-              <select
+              <NativeSelect
+                unstyled
                 aria-label="Add fallback model"
                 value={chosen()}
                 onChange={(e) => setChosen(e.currentTarget.value)}
@@ -246,8 +255,9 @@ export function AgentSettingsW3(props: { botId: string }) {
                 >
                   {(model) => <option value={model.id}>{model.name}</option>}
                 </For>
-              </select>
-              <button
+              </NativeSelect>
+              <Button
+                unstyled
                 type="button"
                 disabled={!chosen() || fallbacks().length >= 4}
                 onClick={() => {
@@ -257,16 +267,17 @@ export function AgentSettingsW3(props: { botId: string }) {
                 }}
               >
                 Add fallback
-              </button>
+              </Button>
             </fieldset>
-            <button type="button" disabled={saving()} onClick={() => void save()}>
+            <Button unstyled type="button" disabled={saving()} onClick={() => void save()}>
               Save settings
-            </button>
+            </Button>
           </>
         )}
       </Show>
       <h3>Templates</h3>
-      <button
+      <Button
+        unstyled
         type="button"
         onClick={() =>
           void window.openbot.agentSettings
@@ -276,14 +287,15 @@ export function AgentSettingsW3(props: { botId: string }) {
         }
       >
         Save agent as template
-      </button>
+      </Button>
       <ul>
         <For each={templates()}>
           {(item) => (
             <li>
               {item.name} — {item.summary}{" "}
               <Show when={item.origin === "saved"}>
-                <button
+                <Button
+                  unstyled
                   type="button"
                   onClick={() =>
                     void window.openbot.agentSettings
@@ -293,7 +305,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                   }
                 >
                   Delete
-                </button>
+                </Button>
               </Show>
             </li>
           )}

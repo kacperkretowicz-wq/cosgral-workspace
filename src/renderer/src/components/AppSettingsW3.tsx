@@ -8,7 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
+import { Button, Card, Field, Heading, Input, NativeSelect, Text } from "./ui";
 
 export function AppSettingsW3() {
   const [settings, setSettings] = createSignal<AppSettings>();
@@ -72,7 +72,8 @@ export function AppSettingsW3() {
                       <For each={NOTIFICATION_CHANNELS}>
                         {(channel) => (
                           <td>
-                            <input
+                            <Input
+                              unstyled
                               aria-label={`${EVENT_LABELS[event]}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
                               type="checkbox"
                               checked={value().notifications.matrix[event][channel]}
@@ -104,7 +105,8 @@ export function AppSettingsW3() {
               </tbody>
             </table>
             <label class="cosgral-settings-check">
-              <input
+              <Input
+                unstyled
                 type="checkbox"
                 checked={value().notifications.onlyWhenUnfocused}
                 onChange={(e) =>

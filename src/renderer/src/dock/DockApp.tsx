@@ -1,3 +1,4 @@
+import { Button, Input, NativeSelect } from "../components/ui";
 // COSGRAL W3: the dock window (`#dock`). A working minimal view on the dock contract; the UI Designer owns the final
 // screen. Mini chats use the usual agent API.
 
@@ -98,26 +99,28 @@ export function DockApp() {
         <div class="dock-header-actions">
           <For each={DOCK_SIZES}>
             {(size) => (
-              <button
+              <Button
+                unstyled
                 type="button"
                 class={`dock-chip${dock().size === size ? " is-active" : ""}`}
                 onClick={() => void run(() => api.dock?.setSize({ size }) ?? Promise.resolve(undefined))}
               >
                 {size[0]?.toUpperCase()}
-              </button>
+              </Button>
             )}
           </For>
-          <button type="button" class="dock-chip" onClick={() => void api.dock?.showMainWindow()}>
+          <Button unstyled type="button" class="dock-chip" onClick={() => void api.dock?.showMainWindow()}>
             Open COSGRAL
-          </button>
-          <button
+          </Button>
+          <Button
+            unstyled
             type="button"
             class="dock-chip"
             title="Hide the dock"
             onClick={() => void run(() => api.dock?.setVisible({ visible: false }) ?? Promise.resolve(undefined))}
           >
             ×
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -128,7 +131,8 @@ export function DockApp() {
       <Show when={unpinned().length > 0}>
         <label class="dock-pin">
           <span>Pin an agent</span>
-          <select
+          <NativeSelect
+            unstyled
             onChange={(event) => {
               const botId = event.currentTarget.value;
               event.currentTarget.value = "";
@@ -137,7 +141,7 @@ export function DockApp() {
           >
             <option value="">Choose…</option>
             <For each={unpinned()}>{(bot) => <option value={bot.id}>{bot.name}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
       </Show>
 
@@ -146,7 +150,8 @@ export function DockApp() {
           {(pin) => (
             <li class={`dock-item${dock().openBotId === pin.botId ? " is-open" : ""}`}>
               <div class="dock-item-row">
-                <button
+                <Button
+                  unstyled
                   type="button"
                   class="dock-item-name"
                   onClick={() =>
@@ -159,14 +164,15 @@ export function DockApp() {
                 >
                   <span class={`dock-dot is-${activity()[pin.botId] ?? "idle"}`} />
                   {name(pin.botId)}
-                </button>
-                <button type="button" class="dock-icon" title="Move up" onClick={() => move(pin.botId, -1)}>
+                </Button>
+                <Button unstyled type="button" class="dock-icon" title="Move up" onClick={() => move(pin.botId, -1)}>
                   ↑
-                </button>
-                <button type="button" class="dock-icon" title="Move down" onClick={() => move(pin.botId, 1)}>
+                </Button>
+                <Button unstyled type="button" class="dock-icon" title="Move down" onClick={() => move(pin.botId, 1)}>
                   ↓
-                </button>
-                <button
+                </Button>
+                <Button
+                  unstyled
                   type="button"
                   class="dock-icon"
                   title="Hide"
@@ -177,15 +183,16 @@ export function DockApp() {
                   }
                 >
                   –
-                </button>
-                <button
+                </Button>
+                <Button
+                  unstyled
                   type="button"
                   class="dock-icon"
                   title="Unpin"
                   onClick={() => void run(() => api.dock?.unpin({ botId: pin.botId }) ?? Promise.resolve(undefined))}
                 >
                   ×
-                </button>
+                </Button>
               </div>
               <Show when={dock().openBotId === pin.botId}>
                 <div class="dock-chat">
@@ -201,14 +208,15 @@ export function DockApp() {
                       void send(pin.botId);
                     }}
                   >
-                    <input
+                    <Input
+                      unstyled
                       value={draft()}
                       placeholder={`Message ${name(pin.botId)}`}
                       onInput={(event) => setDraft(event.currentTarget.value)}
                     />
-                    <button type="submit" class="dock-chip">
+                    <Button unstyled type="submit" class="dock-chip">
                       Send
-                    </button>
+                    </Button>
                   </form>
                 </div>
               </Show>
@@ -222,7 +230,8 @@ export function DockApp() {
           <span>Hidden</span>
           <For each={hidden()}>
             {(pin) => (
-              <button
+              <Button
+                unstyled
                 type="button"
                 class="dock-chip"
                 onClick={() =>
@@ -232,7 +241,7 @@ export function DockApp() {
                 }
               >
                 {name(pin.botId)}
-              </button>
+              </Button>
             )}
           </For>
         </div>

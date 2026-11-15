@@ -1,5 +1,6 @@
 import { checkVoiceWav, encodeVoiceWav, VOICE_LIMITS, VOICE_SAMPLE_RATE } from "@openbot/contracts/ipc";
 import { createSignal, onCleanup, onSettled, Show } from "solid-js";
+import { Button } from "./ui";
 
 export function samplesToVoiceWav(chunks: Float32Array[], rate: number): Uint8Array {
   const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -155,7 +156,8 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
   return (
     <Show when={window.openbot.voice && enabled()}>
       <span class="voice-recorder">
-        <button
+        <Button
+          unstyled
           type="button"
           class={["composer-button", { "voice-button-active": recording() }]}
           aria-label={recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
@@ -178,7 +180,7 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
               <rect x="6" y="6" width="8" height="8" rx="1.5" />
             </svg>
           </Show>
-        </button>
+        </Button>
         <Show when={error()}>
           <span class="voice-recorder-error" role="alert">
             {error()}
