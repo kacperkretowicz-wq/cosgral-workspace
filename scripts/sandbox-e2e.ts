@@ -715,6 +715,13 @@ async function main(): Promise<void> {
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, "keep me");
   }
+  // Files that must go: one in the program's data folder, one in the agents' shared folder (the start recreates
+  // empty folders, so the files are the proof).
+  const doomed = [join(userData, "wipe-me.txt"), join(home, "COSGRAL Workspace", "Shared", "wipe-me.txt")];
+  for (const file of doomed) {
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, "delete me");
+  }
   await rm(join(userData, "escape"), { force: true, recursive: false }).catch(() => undefined);
   await symlink(join(root, "outside"), join(userData, "escape"), "junction");
   const fourth = await launch(root, fixture);
@@ -734,6 +741,7 @@ async function main(): Promise<void> {
       const settings = page.getByRole("dialog", { name: /^(Settings|Providers & permissions)$/ });
       await settings.getByRole("button", { name: "Delete my data…" }).click({ timeout: 15_000 });
       await settings.getByLabel("Type DELETE to confirm").fill("DELETE");
+      await settings.getByRole("button", { name: "Delete and restart" }).scrollIntoViewIfNeeded();
       await dump(page, evidence, "10-delete-my-data");
       const exited = new Promise<void>((resolveExit) => app.process().once("exit", () => resolveExit()));
       await settings.getByRole("button", { name: "Delete and restart" }).click();
@@ -758,7 +766,7 @@ async function main(): Promise<void> {
         "No agent is left",
       );
       assert(!existsSync(`${userData}.wipe-pending`), "The marker is gone");
-      assert(!existsSync(join(home, "COSGRAL Workspace", "Shared")), "The agents' shared folder is gone");
+      for (const file of doomed) assert(!existsSync(file), `Deleted: ${file.slice(root.length)}`);
       for (const file of sentinels)
         assert.equal(await readFile(file, "utf8"), "keep me", `Kept: ${file.slice(root.length)}`);
       await dump(fifth.page, evidence, "11-after-wipe");
