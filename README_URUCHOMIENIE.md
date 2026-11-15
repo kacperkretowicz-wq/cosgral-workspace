@@ -107,3 +107,7 @@ Program działa w piaskownicy; Codex czyta swoje logowanie z `CODEX_HOME` na mie
 - **„Complete agent CLI setup to start” w polu wiadomości:** program nie widzi Codex ani Claude albo nie jesteś zalogowany (punkt 4). Karta nad rozmową podaje powód; po poprawce wybierz **Try again** (bez restartu programu).
 - **„couldn’t start” zaraz po zamknięciu lub awarii:** program sam czeka kilka sekund na zwolnienie bazy; gdy dalej nie może, poczekaj chwilę i uruchom go ponownie. Dane nie są zmieniane.
 - **Chcesz zacząć od zera:** zamknij program i skasuj foldery z punktu 3 (albo użyj `--reset` w piaskownicy).
+
+## W4-UI1: kanały (oczekuje na odbiór okna)
+
+W pasku bocznym wybierz **New channel** albo **Browse channels** i **New channel**. Wpisz nazwę (małe litery, cyfry, myślniki), wybierz członków i lidera spośród nich. **Edit channel** zmienia tytuł, skład, lidera i instrukcje. Krótka nazwa pozostaje stała. **Reply** odpowiada na wiadomość. Krok `channel UI: create, edit and reply` w `sandbox:e2e` czeka na odbiór.

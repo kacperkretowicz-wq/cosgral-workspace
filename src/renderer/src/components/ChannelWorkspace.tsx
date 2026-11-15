@@ -16,12 +16,15 @@ export function ChannelWorkspace(props: {
   const [error, setError] = createSignal("");
   const [loading, setLoading] = createSignal(false);
   const [editor, setEditor] = createSignal<"new" | WorkspaceChannel>();
-  createEffect(() => {
-    if (props.createRequested) {
-      setEditor("new");
-      props.onCreateHandled?.();
-    }
-  });
+  createEffect(
+    () => props.createRequested,
+    (requested) => {
+      if (requested) {
+        setEditor("new");
+        props.onCreateHandled?.();
+      }
+    },
+  );
   let generation = 0;
   let channelRevision = 0;
   let changes: Array<{ type: "message"; item: ChannelMessage } | { type: "task"; item: ChannelTask }> = [];

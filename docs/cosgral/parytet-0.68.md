@@ -166,3 +166,7 @@ W paczce desktop 0.68 widać ślad powierzchni telefonu (np. asset `smartphone-*
 1. **Klient:** natywny (Expo/Capacitor) vs PWA do hosta na Windows (plan COSGRAL dopuszcza PWA/Tailscale na start).
 2. **Transport:** tylko loopback+LAN vs tunel; jak wystawić Mobile Connect bez chmury OpenBot.
 3. **Zakres MVP telefonu:** czat + Needs you + powiadomienia najpierw; tworzenie agentów i OTA później.
+
+### W4-UI1 — uzupełnienie wierszy 14–15 (15.11.2026)
+
+Częściowo: New channel w pasku bocznym i workspace, tworzenie i edycja tytułu/składu/lidera/instrukcji, flaga odpowiedzi w preload. Krótka nazwa nie jest edytowalna w kontrakcie. Testy UI i krok `channel UI: create, edit and reply` w `scripts/sandbox-e2e.ts`; odbiór okna i zrzut oczekują. Raport: `docs/cosgral-raporty/ui-w4-ui1.md`.

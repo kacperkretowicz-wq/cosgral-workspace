@@ -80,6 +80,7 @@ export function ChannelEditor(props: {
                       <Button
                         type="button"
                         aria-pressed={members().includes(bot.id) ? "true" : "false"}
+                        variant={members().includes(bot.id) ? "primary" : "secondary"}
                         disabled={!members().includes(bot.id) && members().length >= 20}
                         onClick={() =>
                           setMembers((old) =>
