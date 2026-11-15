@@ -44,6 +44,8 @@ function renderSidebar(
     actions?: SidebarFolderActions;
     compact?: boolean;
     onSelectChannels?: (create?: boolean) => void;
+    onMarkBotRead?: (botId: string) => Promise<void>;
+    onSelectBot?: (botId: string) => void;
   } = {},
 ) {
   return render(() => (
@@ -63,7 +65,8 @@ function renderSidebar(
       layout={props.layout}
       folderActions={props.actions}
       onSelectChannels={props.onSelectChannels}
-      onSelectBot={vi.fn()}
+      onMarkBotRead={props.onMarkBotRead}
+      onSelectBot={props.onSelectBot ?? vi.fn()}
       onSelectPerson={vi.fn()}
       onCreateBot={vi.fn()}
       onEditBot={vi.fn()}
@@ -327,5 +330,66 @@ describe("Sidebar folders", () => {
     expect(select).toHaveBeenLastCalledWith();
     await fireEvent.click(screen.getByRole("button", { name: "New channel" }));
     expect(select).toHaveBeenLastCalledWith(true);
+  });
+
+  it("marks a background agent read without selecting its conversation", async () => {
+    const read = vi.fn().mockResolvedValue(undefined);
+    const select = vi.fn();
+    renderSidebar({ onMarkBotRead: read, onSelectBot: select });
+    expect(read).not.toHaveBeenCalled();
+    openMenu(screen.getByRole("button", { name: /^Research,/ }));
+    await fireEvent.pointerUp(
+      within(await latestMenu("Agent actions")).getByRole("menuitem", { name: "Mark as read" }),
+      { button: 0 },
+    );
+    await waitFor(() => expect(read).toHaveBeenCalledWith("research"));
+    expect(select).not.toHaveBeenCalled();
+  });
+  it("keeps read failures visible and allows retry", async () => {
+    const read = vi.fn().mockRejectedValueOnce(new Error("Could not save read state")).mockResolvedValue(undefined);
+    renderSidebar({ onMarkBotRead: read });
+    const row = screen.getByRole("button", { name: /^Research,/ });
+    openMenu(row);
+    await fireEvent.pointerUp(
+      within(await latestMenu("Agent actions")).getByRole("menuitem", { name: "Mark as read" }),
+      { button: 0 },
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not save read state");
+    closeOpenMenus();
+    await waitFor(() => expect(row).toHaveAttribute("data-closed"));
+    openMenu(row);
+    await fireEvent.pointerUp(
+      within(await latestMenu("Agent actions")).getByRole("menuitem", { name: "Mark as read" }),
+      { button: 0 },
+    );
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+  });
+
+  it("does not repeat a read while its previous save is pending", async () => {
+    let finish: () => void = () => {};
+    const read = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    renderSidebar({ onMarkBotRead: read });
+    const row = screen.getByRole("button", { name: /^Research,/ });
+    openMenu(row);
+    await fireEvent.pointerUp(
+      within(await latestMenu("Agent actions")).getByRole("menuitem", { name: "Mark as read" }),
+      { button: 0 },
+    );
+    closeOpenMenus();
+    await waitFor(() => expect(row).toHaveAttribute("data-closed"));
+    openMenu(row);
+    const pending = within(await latestMenu("Agent actions")).getByRole("menuitem", { name: "Marking as read…" });
+    await fireEvent.pointerUp(pending, { button: 0 });
+    expect(read).toHaveBeenCalledOnce();
+    finish();
+    await waitFor(() =>
+      expect(within(document.body).getAllByRole("menuitem", { name: "Mark as read" }).length).toBeGreaterThan(0),
+    );
   });
 });

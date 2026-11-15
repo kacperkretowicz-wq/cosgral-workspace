@@ -40,6 +40,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
+import { markSidebarConversationRead } from "./agent-read-actions";
 import { AccountLogin } from "./components/AccountLogin";
 import type { OnboardingChoice } from "./components/AppSettingsW3";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
@@ -1298,6 +1299,14 @@ export function App() {
     }
   }
 
+  async function markSidebarAgentRead(botId: string): Promise<void> {
+    const serverId = activeServer()?.id;
+    const state = await markSidebarConversationRead(window.openbot.agent, botId, () => serverId === activeServer()?.id);
+    if (serverId !== activeServer()?.id) return;
+    applyConversationReadState(botId, state);
+    clearRecentReply(botId);
+  }
+
   async function markAgentMessagesRead(botId = activeBot()?.id, throughMessageId?: string | null): Promise<void> {
     if (!botId) return;
     const boundary =
@@ -1848,6 +1857,7 @@ export function App() {
                 }
                 localProfile={localProfile()}
                 onSelectBot={selectBot}
+                onMarkBotRead={markSidebarAgentRead}
                 onSelectChannels={(create) => {
                   setCreateChannel(!!create);
                   setActivePage("agents");
