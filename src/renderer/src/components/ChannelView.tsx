@@ -2,6 +2,7 @@ import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/con
 import { createSignal, For, Show } from "solid-js";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
+import { Button, NativeSelect, Textarea } from "./ui";
 
 type Person = { id: string; name: string };
 export function ChannelView(props: {
@@ -76,20 +77,20 @@ export function ChannelView(props: {
                       <p>{task.pauseReason}</p>
                     </Show>
                     <Show when={task.state === "paused"}>
-                      <button type="button" onClick={() => props.onResume(task.id)}>
+                      <Button type="button" onClick={() => props.onResume(task.id)}>
                         Resume
-                      </button>
+                      </Button>
                     </Show>
                     <label>
                       {" "}
                       Reassign{" "}
-                      <select
+                      <NativeSelect
                         aria-label={`Reassign ${task.title}`}
                         value={task.ownerBotId}
                         onChange={(e) => props.onReassign(task.id, e.currentTarget.value)}
                       >
                         <For each={props.channel.memberBotIds}>{(id) => <option value={id}>{name(id)}</option>}</For>
-                      </select>
+                      </NativeSelect>
                     </label>
                   </article>
                 )}
@@ -111,25 +112,25 @@ export function ChannelView(props: {
                   </small>
                   <Show when={message.replyToMessageId}>
                     {(id) => (
-                      <button
+                      <Button
                         type="button"
                         onClick={() =>
                           document.getElementById(`channel-message-${id()}`)?.scrollIntoView({ block: "center" })
                         }
                       >
                         ↳ {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? "Earlier message"}
-                      </button>
+                      </Button>
                     )}
                   </Show>
                   <p class="channel-prewrap">{message.text}</p>
                   <Show when={props.supportsReplies}>
-                    <button
+                    <Button
                       type="button"
                       aria-label={`Reply to ${message.text.slice(0, 100)}`}
                       onClick={() => setReply(message)}
                     >
                       Reply
-                    </button>
+                    </Button>
                   </Show>
                 </article>
               )}
@@ -148,13 +149,13 @@ export function ChannelView(props: {
             {(item) => (
               <p>
                 Replying to: {item().text.slice(0, 100)}{" "}
-                <button type="button" onClick={() => setReply(undefined)}>
+                <Button type="button" onClick={() => setReply(undefined)}>
                   Cancel reply
-                </button>
+                </Button>
               </p>
             )}
           </Show>
-          <textarea
+          <Textarea
             id="channel-message-input"
             maxlength={32000}
             value={text()}
@@ -163,9 +164,9 @@ export function ChannelView(props: {
           <Show when={error()}>
             <p role="alert">{error()}</p>
           </Show>
-          <button type="submit" disabled={sending() || !text().trim()}>
+          <Button type="submit" disabled={sending() || !text().trim()}>
             Send
-          </button>
+          </Button>
         </form>
       </Show>
     </main>

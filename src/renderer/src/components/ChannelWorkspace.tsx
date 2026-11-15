@@ -1,14 +1,27 @@
 import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
-import { createSignal, For, onSettled, Show } from "solid-js";
+import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import { ChannelEditor } from "./ChannelEditor";
 import { ChannelView } from "./ChannelView";
+import { Button } from "./ui";
 
-export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }) {
+export function ChannelWorkspace(props: {
+  bots: { id: string; name: string }[];
+  createRequested?: boolean;
+  onCreateHandled?: () => void;
+}) {
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [selected, setSelected] = createSignal("");
   const [messages, setMessages] = createSignal<ChannelMessage[]>([]);
   const [tasks, setTasks] = createSignal<ChannelTask[]>([]);
   const [error, setError] = createSignal("");
   const [loading, setLoading] = createSignal(false);
+  const [editor, setEditor] = createSignal<"new" | WorkspaceChannel>();
+  createEffect(() => {
+    if (props.createRequested) {
+      setEditor("new");
+      props.onCreateHandled?.();
+    }
+  });
   let generation = 0;
   let channelRevision = 0;
   let changes: Array<{ type: "message"; item: ChannelMessage } | { type: "task"; item: ChannelTask }> = [];
@@ -89,6 +102,9 @@ export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }
       unsubscribe();
     };
   });
+  function rememberChannel(saved: WorkspaceChannel) {
+    setChannels((old) => upsert(old, saved));
+  }
   async function send(text: string, replyToMessageId?: string) {
     const api = window.openbot.channels;
     if (!api?.sendMessage) throw new Error("Sending is unavailable in this build.");
@@ -117,21 +133,25 @@ export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }
     <div class="channel-workspace">
       <aside aria-label="Channels">
         <h2>Channels</h2>
+        <Button onClick={() => setEditor("new")}>New channel</Button>
         <Show when={channels().length} fallback={<p>No channels yet.</p>}>
           <For each={channels().filter((item) => !item.archived)}>
             {(item) => (
-              <button
+              <Button
                 type="button"
                 aria-pressed={selected() === item.id ? "true" : "false"}
                 onClick={() => void choose(item.id)}
               >
                 # {item.title || item.name}
-              </button>
+              </Button>
             )}
           </For>
         </Show>
       </aside>
       <div class="channel-workspace-main">
+        <Show when={channel()}>
+          <Button onClick={() => setEditor(channel())}>Edit channel</Button>
+        </Show>
         <Show when={error()}>
           <p role="alert">{error()}</p>
         </Show>
@@ -157,6 +177,37 @@ export function ChannelWorkspace(props: { bots: { id: string; name: string }[] }
           )}
         </Show>
       </div>
+      <Show when={editor()} keyed>
+        {(editing) => (
+          <ChannelEditor
+            bots={props.bots}
+            channel={editing === "new" ? undefined : editing}
+            onClose={() => setEditor(undefined)}
+            onSave={async (input) => {
+              const api = window.openbot.channels;
+              if (!api) throw new Error("Channels are unavailable.");
+              let saved: WorkspaceChannel;
+              if (editing === "new") saved = await api.create(input);
+              else {
+                const current = (await api.list()).find((item) => item.id === editing.id);
+                if (!current) throw new Error("This channel no longer exists.");
+                for (const botId of input.memberBotIds.filter((id) => !current.memberBotIds.includes(id)))
+                  await api.addMember({ channelId: current.id, botId });
+                await api.setLead({ channelId: current.id, botId: input.leadBotId });
+                for (const botId of current.memberBotIds.filter((id) => !input.memberBotIds.includes(id)))
+                  await api.removeMember({ channelId: current.id, botId });
+                saved = await api.update({
+                  channelId: current.id,
+                  title: input.title,
+                  instructions: input.instructions,
+                });
+              }
+              rememberChannel(saved);
+              await choose(saved.id);
+            }}
+          />
+        )}
+      </Show>{" "}
     </div>
   );
 }

@@ -285,6 +285,7 @@ export interface SidebarDesktopApi {
 
 /** COSGRAL W1: channels and channel tasks (see ipc-workspace-channels.ts). */
 export interface ChannelsDesktopApi {
+  readonly supportsMessageReplies?: boolean;
   /** Optional until all renderer mocks implement channel history/composer. */
   listMessages?: (input: ListChannelMessagesInput) => Promise<ChannelMessage[]>;
   sendMessage?: (input: SendChannelMessageInput) => Promise<{ message: ChannelMessage; task: ChannelTask }>;

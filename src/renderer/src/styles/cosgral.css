@@ -940,3 +940,11 @@
   border-top: 1px solid var(--openbot-border);
   overflow-wrap: anywhere;
 }
+
+.channel-editor-fields {
+  display: grid;
+  gap: var(--openbot-space-4);
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
