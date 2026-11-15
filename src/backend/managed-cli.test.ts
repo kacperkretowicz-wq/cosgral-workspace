@@ -221,9 +221,15 @@ describe("managed CLI engine (W5-BE1)", () => {
     expect(existsSync(join(root, "cli", "codex", "0.1.0"))).toBe(false);
     expect(existsSync(join(root, "cli", "codex", "0.2.0", "codex.exe"))).toBe(true);
 
+    // A folder left by an update whose old CLI was still running, and a half-finished download: gone at next start.
+    await mkdir(join(root, "cli", "codex", "0.1.0"), { recursive: true });
+    await mkdir(join(root, "cli", "codex", ".0.3.0.download"), { recursive: true });
     const again = make();
     await again.init();
     expect(again.state("codex")).toMatchObject({ source: "managed", managedVersion: "0.2.0", autoUpdate: true });
+    expect(existsSync(join(root, "cli", "codex", "0.1.0"))).toBe(false);
+    expect(existsSync(join(root, "cli", "codex", ".0.3.0.download"))).toBe(false);
+    expect(existsSync(join(root, "cli", "codex", "0.2.0", "codex.exe"))).toBe(true);
   });
 
   it("refuses a file that fails the SHA-256 check, without a second try, and keeps nothing", async () => {

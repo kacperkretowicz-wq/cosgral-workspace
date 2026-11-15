@@ -7,8 +7,8 @@
 // folder). Only downloaded CLIs are removed, never a custom or system one. Order of use: custom path > downloaded >
 // system PATH (cli.ts asks `resolve()`).
 
-import { existsSync } from "node:fs";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   ManagedCliId,
@@ -89,12 +89,15 @@ export class ManagedCliManager {
     }
   }
 
-  /** Reads the saved settings and looks for system CLIs. */
+  /**
+   * Reads the saved settings (synchronously, so `resolve()` knows the custom and downloaded CLI before the first agent
+   * starts), then looks for system CLIs.
+   */
   async init(): Promise<void> {
     if (this.#loaded) return;
     this.#loaded = true;
     try {
-      const saved = JSON.parse(await readFile(this.#settingsFile(), "utf8"));
+      const saved = JSON.parse(readFileSync(this.#settingsFile(), "utf8"));
       for (const id of MANAGED_CLI_IDS) {
         const entry = isDynamicRecord(saved) ? saved[id] : null;
         if (isDynamicRecord(entry)) this.#stored.set(id, parseStored(entry));
@@ -106,8 +109,28 @@ export class ManagedCliManager {
       const stored = this.#get(id);
       if (stored.managedVersion && !existsSync(this.#executable(id, stored.managedVersion)))
         stored.managedVersion = null;
-      await this.#refreshSystem(id);
     }
+    await this.refreshSystem();
+    for (const id of MANAGED_CLI_IDS) await this.#pruneOld(id);
+  }
+
+  /**
+   * Removes older version folders and half-finished downloads left behind (Windows cannot delete a CLI that was still
+   * running during an update; the next start tries again). Only inside this CLI's folder.
+   */
+  async #pruneOld(id: ManagedCliId): Promise<void> {
+    const folder = join(this.#deps.root, id);
+    const keep = this.#get(id).managedVersion;
+    const entries = await readdir(folder).catch((): string[] => []);
+    for (const entry of entries) {
+      if (entry === keep) continue;
+      await rm(join(folder, entry), { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+
+  /** Looks for system CLIs again (at start, and when the window asks for the list). */
+  async refreshSystem(): Promise<void> {
+    for (const id of MANAGED_CLI_IDS) await this.#refreshSystem(id);
   }
 
   /** For cli.ts: the custom path (used alone) and the downloaded executable (tried before PATH). */
