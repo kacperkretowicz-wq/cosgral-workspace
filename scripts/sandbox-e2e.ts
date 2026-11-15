@@ -552,6 +552,26 @@ async function main(): Promise<void> {
       );
       assert(Array.isArray(outcome.result) && outcome.result.length > 0, "The task has a result message");
     });
+    await step("providers: a missing Claude CLI is Not installed in the status and in Usage", async () => {
+      // W4-BE1: onboarding reads the status, Providers and Usage read listUsage; they must say the same.
+      const seen = asRecord(
+        await page.evaluate(`(async () => {
+          const status = await window.openbot.agent.getStatus();
+          const usage = await window.openbot.providers.listUsage();
+          return {
+            status: (status.providers ?? []).find((item) => item.id === "claude")?.state ?? null,
+            usage: usage.find((item) => item.provider === "claude") ?? null,
+            codex: usage.find((item) => item.provider === "codex")?.state ?? null,
+          };
+        })()`),
+      );
+      console.log(`     providers: ${JSON.stringify(seen)}`);
+      assert.equal(seen.status, "not-installed");
+      const usage = asRecord(seen.usage);
+      assert.equal(usage.state, "unavailable", "Usage does not call a missing CLI available");
+      assert(String(usage.reason).startsWith("Not installed"), `Usage says why: ${String(usage.reason)}`);
+      assert.equal(seen.codex, "ok");
+    });
     await step("ipc: every read-only call of window.openbot answers", async () => {
       const answers = await page.evaluate(GETTER_SMOKE);
       const results = (Array.isArray(answers) ? answers : []).map((item) => {

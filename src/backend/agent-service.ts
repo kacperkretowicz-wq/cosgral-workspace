@@ -3286,6 +3286,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       ...patch,
       capabilities: patch.capabilities ?? this.#status.capabilities,
     };
+    if (patch.providers) this.#providers?.setProviderStatuses(patch.providers); // COSGRAL W4-BE1: one source
     this.#emit({ type: "status", status: this.getStatus() });
   }
 

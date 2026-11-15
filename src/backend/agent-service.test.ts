@@ -149,6 +149,25 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect((await service.readConversation("chief")).activeTurnId ?? null).toBeNull();
   });
 
+  // W4-BE1: onboarding (AgentStatus.providers) and Usage/Providers (registry) never disagree about a missing CLI.
+  it("reports a missing Claude CLI as Not installed in the status and in usage", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const current = service;
+    const registry = new ProviderRegistry({
+      database: store.database,
+      emit: (event) => current.relay(event),
+      timers: false,
+    });
+    current.useProviders(registry);
+    await current.initialize();
+    const claudeStatus = current.getStatus().providers?.find((item) => item.id === "claude");
+    expect(claudeStatus?.state).toBe("not-installed");
+    const claudeUsage = registry.listUsage().find((item) => item.provider === "claude");
+    expect(claudeUsage).toMatchObject({ state: "unavailable", reason: expect.stringMatching(/^Not installed/) });
+    expect(registry.listUsage().find((item) => item.provider === "codex")?.state).toBe("ok");
+  });
+
   it("does not surface the skills context-budget notice as an agent error", async () => {
     process.env.OPENBOT_FAKE_WARNING = "Skill descriptions were shortened to fit the skills context budget.";
     const { store, mailbox } = stores();
