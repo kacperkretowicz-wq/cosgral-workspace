@@ -50,13 +50,17 @@ export async function resolveCodexCli(): Promise<CodexCliInfo> {
       failures.push(
         error instanceof CodexCliError
           ? error
-          : new CodexCliError("Codex CLI was found but could not be started.", "invalid"),
+          : error instanceof CliTimeoutError
+            ? new CodexCliError(CLI_TIMEOUT_MESSAGE("Codex"), "invalid")
+            : new CodexCliError("Codex CLI was found but could not be started.", "invalid"),
       );
     }
   }
 
   const outdated = failures.find((failure) => failure.code === "outdated");
   if (outdated) throw outdated;
+  const slow = failures.find((failure) => failure.message === CLI_TIMEOUT_MESSAGE("Codex"));
+  if (slow) throw slow;
   if (failures.length > 0) {
     throw new CodexCliError(
       "Codex CLI was found but could not be started. Run `codex --version` in a new terminal.",
@@ -65,10 +69,13 @@ export async function resolveCodexCli(): Promise<CodexCliInfo> {
   }
 
   throw new CodexCliError(
-    "Codex CLI was not found. Install Codex, run `codex login`, then restart COSGRAL Workspace.",
+    "Codex CLI was not found. Install Codex, run `codex login`, then choose Try again.",
     "missing",
   );
 }
+
+const CLI_TIMEOUT_MESSAGE = (name: "Codex" | "Claude") =>
+  `${name} CLI did not answer within ${CLI_VERSION_TIMEOUT_MS / 1000} s (twice). The computer may be busy; choose Try again.`;
 
 export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
   const candidates = await collectCandidates("claude", process.env.OPENBOT_CLAUDE_PATH);
@@ -94,7 +101,7 @@ export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
   }
 
   throw new CodexCliError(
-    "Claude CLI was not found. Install Claude Code, run `claude auth login`, then restart COSGRAL Workspace.",
+    "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.",
     "missing",
   );
 }
@@ -225,15 +232,39 @@ export function cliCommand(
 
 const SAFE_SHIM_ARGUMENT = /^[\w:/.=-]+$/u;
 
-async function readCliVersion(candidate: string): Promise<string> {
+/**
+ * COSGRAL W4-BE2: how long `<cli> --version` may take. A first start on a busy Windows computer (antivirus scan,
+ * little free memory, a Node-based shim) took longer than the old 5 s, and the CLI was then reported as broken.
+ */
+export const CLI_VERSION_TIMEOUT_MS = 20_000;
+
+export async function readCliVersion(candidate: string, timeoutMs = CLI_VERSION_TIMEOUT_MS): Promise<string> {
   const { command, args, windowsVerbatimArguments } = cliCommand(candidate, ["--version"]);
-  const { stdout } = await execFileAsync(command, args, {
-    timeout: 5_000,
-    maxBuffer: 64 * 1024,
-    windowsHide: process.platform === "win32",
-    windowsVerbatimArguments,
-  });
-  return stdout;
+  const run = () =>
+    execFileAsync(command, args, {
+      timeout: timeoutMs,
+      maxBuffer: 64 * 1024,
+      windowsHide: process.platform === "win32",
+      windowsVerbatimArguments,
+    });
+  try {
+    return (await run()).stdout;
+  } catch (error) {
+    if (!isTimeout(error)) throw error;
+    // One more try: the second start is usually fast once the files are cached.
+    try {
+      return (await run()).stdout;
+    } catch (again) {
+      if (isTimeout(again)) throw new CliTimeoutError();
+      throw again;
+    }
+  }
+}
+
+export class CliTimeoutError extends Error {}
+
+function isTimeout(error: unknown): boolean {
+  return error instanceof Error && "killed" in error && error.killed === true;
 }
 
 async function isExecutable(path: string): Promise<boolean> {

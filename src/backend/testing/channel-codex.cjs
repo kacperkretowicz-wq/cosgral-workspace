@@ -1,5 +1,8 @@
 // Deterministic Codex App Server fixture. No model, network, browser or credentials.
 const { randomUUID } = require("node:crypto");
+// W4-BE2: the sandbox script switches the stand-in off with a marker file (a CLI that cannot start).
+if (process.env.COSGRAL_FIXTURE_DOWN && require("node:fs").existsSync(process.env.COSGRAL_FIXTURE_DOWN))
+  process.exit(1);
 if (process.argv.includes("--version")) {
   console.log("codex-cli 0.144.1");
   process.exit(0);
@@ -167,21 +170,29 @@ async function run(threadId, turnId, context) {
     complete(threadId, turnId, "Stub: fast combined");
     return;
   }
+  // W3-BE10: helpers are the members other than the task's owner. A channel with only its lead (the first channel
+  // a person usually makes) has none: the lead answers at once instead of assigning work to nobody.
+  const helpers = members.filter((member) => member !== task.ownerBotId);
+  if (!helpers.length) {
+    complete(threadId, turnId, `Stub lead result: ${task.title}`);
+    return;
+  }
   const results = context.history.filter((m) => m.kind === "result" && m.text.startsWith("Stub helper result:"));
   if (!results.length) {
     await call(threadId, turnId, "remember", { text: "Sandbox channel memory only" });
     const first = await call(threadId, turnId, "assign", {
-      ownerBotId: members[1],
+      ownerBotId: helpers[0],
       text: "Facts",
       resourceKey: "browser",
     });
     const child = JSON.parse(first.contentItems[0].text);
-    await call(threadId, turnId, "assign", {
-      ownerBotId: members[2],
-      text: "Verify",
-      resourceKey: "browser",
-      dependencyTaskIds: [child.id],
-    });
+    if (helpers[1])
+      await call(threadId, turnId, "assign", {
+        ownerBotId: helpers[1],
+        text: "Verify",
+        resourceKey: "browser",
+        dependencyTaskIds: [child.id],
+      });
     complete(threadId, turnId, "Stub: waiting for members");
     return;
   }

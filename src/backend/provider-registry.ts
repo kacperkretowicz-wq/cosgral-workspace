@@ -10,6 +10,7 @@ import {
   type AgentEvent,
   type AgentModelId,
   type AgentProviderId,
+  type AgentProviderStatus,
   type FallbackModelsInput,
   isAcpAgentConfig,
   isAcpAgentId,
@@ -63,6 +64,8 @@ export class ProviderRegistry {
   readonly #timers: boolean;
   readonly #blocks = new Map<string, Block>();
   #codexUsage: AccountUsage | null = null;
+  /** COSGRAL W4-BE1: the engine's CLI states (the same ones onboarding shows); empty until the engine reports. */
+  #cliStates = new Map<"codex" | "claude", AgentProviderStatus>();
   #timer: NodeJS.Timeout | null = null;
 
   constructor(options: ProviderRegistryOptions) {
@@ -200,11 +203,39 @@ export class ProviderRegistry {
     return { provider, limitId: scopeOf(model), resetsAt: block.resetsAt };
   }
 
+  /**
+   * COSGRAL W4-BE1: the agent engine tells the registry what it knows about each CLI (installed, signed in, started).
+   * Usage and the Providers page then say the same as onboarding instead of assuming every provider is fine.
+   */
+  setProviderStatuses(statuses: readonly AgentProviderStatus[]): void {
+    let changed = false;
+    for (const status of statuses) {
+      if (status.id !== "codex" && status.id !== "claude") continue;
+      const before = this.#cliStates.get(status.id);
+      if (before?.state === status.state && before.message === status.message) continue;
+      this.#cliStates.set(status.id, { ...status });
+      changed = true;
+    }
+    if (changed) this.#changed();
+  }
+
   listUsage(): ProviderUsage[] {
     const nowSeconds = Math.floor(this.#now() / 1000);
     const usage: ProviderUsage[] = [];
     const codex = this.#codexWindow(nowSeconds);
     for (const provider of ["codex", "claude"] as const) {
+      const cli = this.#cliStates.get(provider);
+      if (cli && cli.state !== "available") {
+        usage.push({
+          provider,
+          model: null,
+          state: "unavailable",
+          resetsAt: null,
+          usedPercent: provider === "codex" ? codex.usedPercent : null,
+          reason: cliReason(cli),
+        });
+        continue;
+      }
       const block = this.#activeBlock(provider, nowSeconds);
       const limited = provider === "codex" && codex.limitedUntil !== null;
       usage.push({
@@ -308,4 +339,20 @@ function text(row: DynamicRecord, key: string): string {
   const value = row[key];
   if (!isString(value)) throw new Error(`Invalid provider column ${key}.`);
   return value;
+}
+
+const CLI_STATE_LABELS: Record<AgentProviderStatus["state"], string> = {
+  "not-started": "Checking",
+  checking: "Checking",
+  available: "Available",
+  "sign-in-required": "Sign in required",
+  "not-installed": "Not installed",
+  outdated: "Update required",
+  error: "Unavailable",
+};
+
+/** COSGRAL W4-BE1: the same words as the provider picker in onboarding (ProviderPicker), then the engine's reason. */
+function cliReason(status: AgentProviderStatus): string {
+  const label = CLI_STATE_LABELS[status.state];
+  return status.message ? `${label}: ${status.message}`.slice(0, 300) : label;
 }

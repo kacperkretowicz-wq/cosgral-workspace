@@ -590,3 +590,11 @@
   background: transparent;
   padding: 0;
 }
+
+/* Agent setup card: "Try again" next to "Setup guide" (W4-BE2). */
+.agent-setup-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}

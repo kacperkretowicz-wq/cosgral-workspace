@@ -68,6 +68,7 @@
     "typecheck:mobile-app": "tsc --noEmit -p src/mobile-app/tsconfig.json",
     "build:mobile-app": "bun scripts/build-mobile-app.ts",
     "sandbox:e2e": "node scripts/sandbox-e2e.ts",
+    "sandbox:real-codex": "node scripts/sandbox-real-codex.ts",
     "typecheck": "bun run typecheck:contracts && bun run typecheck:node && bun run typecheck:renderer && bun run typecheck:storybook && bun run typecheck:api && bun run typecheck:mobile-app",
     "lint": "biome check .",
     "format": "biome check --write .",

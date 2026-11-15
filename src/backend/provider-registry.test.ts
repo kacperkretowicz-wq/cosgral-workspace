@@ -153,3 +153,57 @@ describe("ProviderRegistry", () => {
     expect(registry.isUsable("gpt-5.6-luna")).toBe(true);
   });
 });
+
+// W4-BE1: Providers and Usage say what onboarding says. The engine's provider states (AgentStatus.providers) are the
+// one source; the registry never shows a missing or signed-out CLI as available.
+describe("provider state from the engine", () => {
+  it("shows a CLI that is not installed or not signed in as unavailable, with the engine's reason", async () => {
+    const { registry, events } = await setup();
+    registry.setProviderStatuses([
+      { id: "codex", state: "available", version: "0.150.0", message: null },
+      {
+        id: "claude",
+        state: "not-installed",
+        version: null,
+        message: "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.",
+      },
+    ]);
+    const usage = registry.listUsage();
+    expect(usage.find((item) => item.provider === "codex")).toMatchObject({ state: "ok", reason: null });
+    expect(usage.find((item) => item.provider === "claude")).toMatchObject({
+      state: "unavailable",
+      reason: expect.stringContaining("Not installed"),
+    });
+    expect(events.at(-1)).toMatchObject({ type: "provider-usage-changed" });
+
+    registry.setProviderStatuses([
+      { id: "codex", state: "sign-in-required", version: "0.150.0", message: "Run `codex login` to use Codex." },
+      { id: "claude", state: "checking", version: null, message: null },
+    ]);
+    const next = registry.listUsage();
+    expect(next.find((item) => item.provider === "codex")).toMatchObject({
+      state: "unavailable",
+      reason: expect.stringContaining("Sign in required"),
+    });
+    expect(next.find((item) => item.provider === "claude")).toMatchObject({
+      state: "unavailable",
+      reason: "Checking",
+    });
+  });
+
+  it("keeps a usage limit when the CLI is available", async () => {
+    const { registry } = await setup();
+    registry.setProviderStatuses([{ id: "codex", state: "available", version: "1", message: null }]);
+    registry.reportFailure("gpt-5.6-luna", { kind: "usage-limit", message: "Limit reached", resetsAt: null });
+    expect(registry.listUsage().find((item) => item.provider === "codex")?.state).toBe("limited");
+  });
+
+  it("emits nothing when the states did not change", async () => {
+    const { registry, events } = await setup();
+    const statuses = [{ id: "codex" as const, state: "available" as const, version: "1", message: null }];
+    registry.setProviderStatuses(statuses);
+    const count = events.length;
+    registry.setProviderStatuses(structuredClone(statuses));
+    expect(events.length).toBe(count);
+  });
+});

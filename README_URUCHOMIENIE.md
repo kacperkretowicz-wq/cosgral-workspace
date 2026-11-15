@@ -80,16 +80,30 @@ set COSGRAL_SANDBOX_ROOT=C:\temp\cosgral-sandbox
 bun run sandbox:e2e
 ```
 
-Skrypt uruchamia prawdziwy program w piaskownicy z atrapą Codex i przechodzi ścieżkę użytkownika: ekrany pierwszego uruchomienia, nowy agent, wiadomość z odpowiedzią, restart z zachowaną historią, każda strona szyny stron (z zebraną konsolą), odczyty całego `window.openbot`, parowanie telefonu przez TLS z przypiętym odciskiem, narzędzie agenta. Dowody (zrzuty ekranu, `run.json`) trafiają do `%COSGRAL_SANDBOX_ROOT%\evidence`.
+Skrypt uruchamia prawdziwy program w piaskownicy z atrapą Codex i przechodzi ścieżkę użytkownika: ekrany pierwszego uruchomienia, nowy agent, wiadomość z odpowiedzią, restart z zachowaną historią, każda strona szyny stron (z zebraną konsolą), odczyty całego `window.openbot`, parowanie telefonu przez TLS z przypiętym odciskiem, narzędzie agenta, kanał z liderem i członkiem (zadanie kończy się „Done”), zgodny stan dostawców (brak Claude = „Not installed” wszędzie) i CLI, które nie wstaje (karta z powodem i „Try again”). Dowody (zrzuty ekranu, `run.json`) trafiają do `%COSGRAL_SANDBOX_ROOT%\evidence`.
+
+### Test połączeń z prawdziwym Codex
+
+Gdy Codex jest zalogowany (`codex login status` pokazuje „Logged in using ChatGPT”), krótki test z prawdziwym modelem (4 tury po jednym słowie: rozmowa, karta pytania, karta zgody, kanał z liderem):
+
+```bat
+set COSGRAL_SANDBOX_ROOT=C:	empcosgral-real
+set COSGRAL_REAL_CODEX_PATH=<pełna ścieżka do codex.exe albo codex.cmd>
+set CODEX_HOME=%USERPROFILE%.codex
+bun run sandbox:real-codex
+```
+
+Program działa w piaskownicy; Codex czyta swoje logowanie z `CODEX_HOME` na miejscu (nic nie jest kopiowane ani wypisywane) i zapisuje tam swoje pliki sesji. Wynik z czasami: `%COSGRAL_SANDBOX_ROOT%eal-codex.json`.
 
 ## 7. Czego jeszcze nie ma w oknie programu
 
-- Strony „Tasks” i „Usage” pokazują „Coming soon”.
-- Ekran Mobile Connect (kod QR, urządzenia) i ekran dostawców z limitami są w trakcie budowy. Silnik telefonu działa i jest sprawdzony testem; aplikacja telefonu jest pod adresem pokazanym w parowaniu (`…/app/`).
-- Ekran powitalny i część Ustawień mają surowy wygląd (jeszcze bez stylów).
+- Okno „Nowy kanał” (kanał zakłada się dziś przez API; W4-UI1).
+- Motyw jasny i polskie napisy w oknie (W7).
+- Pełna lista: `docs/cosgral/PLAN-W4.md`.
 
 ## 8. Gdy coś nie działa
 
 - **Okno się nie otwiera:** uruchom `node_modules\electron\dist\electron.exe .` w wierszu poleceń i odczytaj komunikat.
-- **„Complete agent CLI setup to start” w polu wiadomości:** program nie widzi Codex ani Claude albo nie jesteś zalogowany (punkt 4).
+- **„Complete agent CLI setup to start” w polu wiadomości:** program nie widzi Codex ani Claude albo nie jesteś zalogowany (punkt 4). Karta nad rozmową podaje powód; po poprawce wybierz **Try again** (bez restartu programu).
+- **„couldn’t start” zaraz po zamknięciu lub awarii:** program sam czeka kilka sekund na zwolnienie bazy; gdy dalej nie może, poczekaj chwilę i uruchom go ponownie. Dane nie są zmieniane.
 - **Chcesz zacząć od zera:** zamknij program i skasuj foldery z punktu 3 (albo użyj `--reset` w piaskownicy).

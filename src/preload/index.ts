@@ -626,6 +626,7 @@ const openbotApi: OpenBotDesktopApi = {
   },
   agent: {
     getStatus: () => invokeAgent(IPC_CHANNELS.agentGetStatus, null, decodeAgentStatus),
+    retryStart: () => invokeAgent(IPC_CHANNELS.agentRetryStart, null, decodeAgentStatus),
     getUsage: () => invokeAgent(IPC_CHANNELS.agentGetUsage, null, decodeAccountUsage),
     listModels: () => invokeAgent(IPC_CHANNELS.agentListModels, null, decodeAgentModels),
     listBots: () => invokeAgent(IPC_CHANNELS.agentListBots, null, decodeBots),
