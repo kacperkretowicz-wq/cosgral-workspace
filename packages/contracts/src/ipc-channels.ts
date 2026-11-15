@@ -146,6 +146,9 @@ export const IPC_CHANNELS = {
   mobileListDevices: "mobile:list-devices",
   mobileRevokeDevice: "mobile:revoke-device",
   mobileRotateCertificate: "mobile:rotate-certificate",
+  /** COSGRAL W4-BE5: "Delete my data" (this computer only). */
+  appDataDescribeWipe: "app-data:describe-wipe",
+  appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",
   approvalRulesRevoke: "approval-rules:revoke",
   agentEvent: "agent:event",

@@ -598,3 +598,25 @@
   flex-wrap: wrap;
   gap: var(--openbot-space-2);
 }
+
+/* "Delete my data" in Settings (W4-BE5). */
+.data-wipe-confirm {
+  display: grid;
+  gap: var(--openbot-space-2);
+}
+
+.data-wipe-list {
+  display: grid;
+  gap: var(--openbot-space-1-5);
+  margin: 0 0 var(--openbot-space-2);
+  padding-left: var(--openbot-space-4);
+}
+
+.data-wipe-list > li {
+  display: grid;
+  gap: 2px;
+}
+
+.data-wipe-path {
+  overflow-wrap: anywhere;
+}

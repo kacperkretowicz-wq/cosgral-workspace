@@ -10,7 +10,8 @@
 // Run it with Node (Playwright's Electron launcher does not finish its handshake under Bun).
 
 import assert from "node:assert/strict";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import type { IncomingHttpHeaders } from "node:http";
 import { Agent, request } from "node:https";
 import { dirname, join, resolve, sep } from "node:path";
@@ -256,6 +257,8 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
       OPENBOT_CLAUDE_PATH: fixture.claude,
       // W4-BE2: while this file exists the Codex stand-in refuses to start (a CLI that cannot start).
       COSGRAL_FIXTURE_DOWN: join(root, "fixture", "codex-down"),
+      // W4-BE5: after "Delete my data" the program only quits; this script starts it again itself.
+      COSGRAL_WIPE_NO_RELAUNCH: "1",
     },
     timeout: 60_000,
   });
@@ -698,6 +701,79 @@ async function main(): Promise<void> {
   } finally {
     await rm(down, { force: true });
     await third.app.close().catch(() => undefined);
+  }
+  // W4-BE5: "Delete my data" removes the COSGRAL folders only. Sentinels: the regular OpenBot folder, the Codex
+  // sign-in folder, a file outside, and a junction inside the data folder that points outside (never followed).
+  const home = join(root, "home");
+  const userData = join(home, "AppData", "Roaming", "COSGRAL Workspace Dev");
+  const sentinels = [
+    join(home, "AppData", "Roaming", "OpenBot", "sentinel.txt"),
+    join(home, ".codex", "sentinel.txt"),
+    join(root, "outside", "sentinel.txt"),
+  ];
+  for (const file of sentinels) {
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, "keep me");
+  }
+  // Files that must go: one in the program's data folder, one in the agents' shared folder (the start recreates
+  // empty folders, so the files are the proof).
+  const doomed = [join(userData, "wipe-me.txt"), join(home, "COSGRAL Workspace", "Shared", "wipe-me.txt")];
+  for (const file of doomed) {
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, "delete me");
+  }
+  await rm(join(userData, "escape"), { force: true, recursive: false }).catch(() => undefined);
+  await symlink(join(root, "outside"), join(userData, "escape"), "junction");
+  const fourth = await launch(root, fixture);
+  const later: { fifth: Session | null } = { fifth: null };
+  try {
+    await step("data wipe: Delete my data restarts into onboarding, keeps everything outside COSGRAL", async () => {
+      const { page, app } = fourth;
+      await page
+        .getByRole("region", { name: "Agents" })
+        .getByRole("button", { name: /^New agent/ })
+        .first()
+        .waitFor({ timeout: 30_000 });
+      await page
+        .getByRole("navigation", { name: "Pages" })
+        .getByRole("button", { name: "Settings", exact: true })
+        .click();
+      const settings = page.getByRole("dialog", { name: /^(Settings|Providers & permissions)$/ });
+      await settings.getByRole("button", { name: "Delete my data…" }).click({ timeout: 15_000 });
+      await settings.getByLabel("Type DELETE to confirm").fill("DELETE");
+      await settings.getByRole("button", { name: "Delete and restart" }).scrollIntoViewIfNeeded();
+      await dump(page, evidence, "10-delete-my-data");
+      const exited = new Promise<void>((resolveExit) => app.process().once("exit", () => resolveExit()));
+      await settings.getByRole("button", { name: "Delete and restart" }).click();
+      await Promise.race([
+        exited,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("The program did not quit")), 60_000)),
+      ]);
+      assert(existsSync(`${userData}.wipe-pending`), "The wipe marker sits next to the data folder");
+
+      const fifth = await launch(root, fixture);
+      later.fifth = fifth;
+      const seen = await reachMainWindow(fifth.page, { agent: null });
+      console.log(`     after wipe: first-run screens ${seen.join(" -> ") || "(none)"}`);
+      assert(seen.length > 0, "The first-run screens show again");
+      await fifth.page.waitForTimeout(1500);
+      assert.equal(
+        await fifth.page
+          .getByRole("region", { name: "Agents" })
+          .getByRole("button", { name: /^New agent/ })
+          .count(),
+        0,
+        "No agent is left",
+      );
+      assert(!existsSync(`${userData}.wipe-pending`), "The marker is gone");
+      for (const file of doomed) assert(!existsSync(file), `Deleted: ${file.slice(root.length)}`);
+      for (const file of sentinels)
+        assert.equal(await readFile(file, "utf8"), "keep me", `Kept: ${file.slice(root.length)}`);
+      await dump(fifth.page, evidence, "11-after-wipe");
+    });
+  } finally {
+    await fourth.app.close().catch(() => undefined);
+    await later.fifth?.app.close().catch(() => undefined);
   }
   await writeFile(
     join(evidence, "run.json"),

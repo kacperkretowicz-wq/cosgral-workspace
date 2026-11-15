@@ -12,6 +12,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
+import { DataWipeSection } from "./DataWipeSection";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
 import { Button, Dialog, Textarea } from "./ui";
 import { VoiceSettings } from "./VoiceSettings";
@@ -342,6 +343,7 @@ export function InitialSetup(props: InitialSetupProps) {
               <Show when={props.reviewing}>
                 <AppSettingsW3 />
                 <VoiceSettings />
+                <DataWipeSection />
               </Show>
             </div>
           </Show>
