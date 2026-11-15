@@ -63,13 +63,13 @@ export const ComingSoonLight: Story = {
 };
 
 export const InTheApp: Story = {
-  name: "In the app (Schedule shows Coming soon, Agents keeps its list)",
+  name: "In the app (Schedule opens the routines page, Agents keeps its list)",
   render: () => <MockedApp />,
   play: async ({ canvas, userEvent }) => {
     await canvas.findByRole("heading", { name: "Chief" });
     await expect(canvas.getByRole("navigation", { name: "Pages" })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Schedule" }));
-    await expect(canvas.findByText("Coming soon")).resolves.toBeInTheDocument();
+    await expect(canvas.findByRole("heading", { name: "Schedule" })).resolves.toBeInTheDocument();
     await expect(canvas.getByRole("navigation", { name: "Chat list" })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Agents" }));
     await expect(canvas.findByRole("heading", { name: "Chief" })).resolves.toBeInTheDocument();
