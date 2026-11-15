@@ -725,6 +725,7 @@ const openbotApi: OpenBotDesktopApi = {
     setAgentEnabled: (input) => invokeAgent(IPC_CHANNELS.mcpSetAgentEnabled, input, decodeAgentMcpSettings),
   },
   channels: {
+    supportsMessageReplies: true,
     listMemories: (channelId) => invokeAgent(IPC_CHANNELS.channelsListMemories, channelId, decodeChannelMemories),
     saveMemory: (input) => invokeAgent(IPC_CHANNELS.channelsSaveMemory, input, decodeChannelMemory),
     deleteMemory: (input) => invokeAgent(IPC_CHANNELS.channelsDeleteMemory, input, decodeVoid),

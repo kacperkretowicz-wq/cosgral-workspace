@@ -70,7 +70,7 @@ interface SidebarProps {
   /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
   folderActions?: SidebarFolderActions;
   onSelectBot: (botId: string) => void;
-  onSelectChannels?: () => void;
+  onSelectChannels?: (create?: boolean) => void;
   onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
@@ -598,6 +598,9 @@ export function Sidebar(props: SidebarProps) {
             </header>
             <Button type="button" class="bot-row" onClick={() => props.onSelectChannels?.()}>
               Browse channels
+            </Button>
+            <Button type="button" class="bot-row" onClick={() => props.onSelectChannels?.(true)}>
+              New channel
             </Button>
           </section>
         </Show>

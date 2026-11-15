@@ -224,6 +224,7 @@ export function App() {
   });
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [channelsOpen, setChannelsOpen] = createSignal(false);
+  const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
   const [settingsRequest, setSettingsRequest] = createSignal<{
     botId: string;
@@ -1847,7 +1848,8 @@ export function App() {
                 }
                 localProfile={localProfile()}
                 onSelectBot={selectBot}
-                onSelectChannels={() => {
+                onSelectChannels={(create) => {
+                  setCreateChannel(!!create);
                   setActivePage("agents");
                   setActiveDirectMemberId(null);
                   setAgentPickerOpen(false);
@@ -1962,7 +1964,11 @@ export function App() {
                 )}
               </Show>
               <Show when={activePage() === "agents" && channelsOpen()}>
-                <ChannelWorkspace bots={botList()} />
+                <ChannelWorkspace
+                  bots={botList()}
+                  createRequested={createChannel()}
+                  onCreateHandled={() => setCreateChannel(false)}
+                />
               </Show>
               <Show when={activePage() === "agents" && !activeDirectMember() && !channelsOpen()}>
                 <Conversation

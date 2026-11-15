@@ -507,6 +507,44 @@ async function main(): Promise<void> {
       assert(tables.includes("Sandbox leads"), `The table is listed through the window's API: ${tables.slice(0, 200)}`);
       await dump(page, evidence, "07-agent-tools");
     });
+    await step("channel UI: create, edit and reply", async () => {
+      await page.getByRole("button", { name: "New channel", exact: true }).first().click();
+      let dialog = page.getByRole("dialog");
+      await dialog.getByLabel("Channel name", { exact: true }).fill(`ui-${Date.now().toString(36)}`);
+      await dialog.getByLabel("Display title").fill("UI acceptance");
+      await dialog.getByRole("button", { name: "New agent", exact: true }).click();
+      const botId = await page.evaluate(
+        async () => (await window.openbot.agent.listBots()).find((bot) => bot.name === "New agent")?.id,
+      );
+      assert(botId, "The sandbox agent exists");
+      await dialog.getByLabel("Lead agent").selectOption(botId);
+      await dialog.getByLabel("Channel instructions").fill("Answer briefly.");
+      await dialog.getByRole("button", { name: "Create channel", exact: true }).click();
+      await dialog.waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "Edit channel", exact: true }).click();
+      dialog = page.getByRole("dialog");
+      await dialog.getByLabel("Display title").fill("UI acceptance edited");
+      await dialog.getByRole("button", { name: "Save changes" }).click();
+      await dialog.waitFor({ state: "hidden" });
+      await page.getByRole("heading", { name: "UI acceptance edited", exact: true }).waitFor();
+      await page.getByLabel("New message to channel lead").fill("UI reply target");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      await page.getByRole("button", { name: "Reply to UI reply target", exact: true }).click();
+      await page.getByLabel("New message to channel lead").fill("UI reply linked");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      await page.getByText("UI reply linked", { exact: true }).waitFor();
+      const linked = await page.evaluate(async () => {
+        const api = window.openbot.channels;
+        const channel = (await api.list()).find((item) => item.title === "UI acceptance edited");
+        const messages = await api.listMessages({ channelId: channel.id });
+        return (
+          messages.find((item) => item.text === "UI reply linked")?.replyToMessageId ===
+          messages.find((item) => item.text === "UI reply target")?.id
+        );
+      });
+      assert(linked, "The reply links to its parent in the engine");
+      await dump(page, evidence, "channel-ui");
+    });
     await step("channel: the lead delegates to a member and the task ends Done", async () => {
       // W4-BE2: a new channel with a lead and one member; one message from the person. The Codex fixture's lead
       // assigns the work to the member, waits for its result and then answers: queued -> running -> waiting -> done.
