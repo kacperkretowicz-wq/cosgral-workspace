@@ -1,11 +1,9 @@
-import { createSignal } from "solid-js";
+import type { CentralAuthUser } from "@openbot/contracts/ipc";
+import { fn } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
-import { MOCK_CHANNEL_TASKS } from "../src/channel-tasks";
-import { ChannelTasksPanel } from "../src/components/ChannelTasksPanel";
-import { ChatTasksSwitch } from "../src/components/ChatTasksSwitch";
-import { StickyDecision } from "../src/components/StickyDecision";
 import type { NeedsYouSidebarItem } from "../src/components/Sidebar";
 import { Sidebar } from "../src/components/Sidebar";
+import { StickyDecision } from "../src/components/StickyDecision";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -14,8 +12,6 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "./fixtures";
-import type { CentralAuthUser } from "@openbot/contracts/ipc";
-import { fn } from "storybook/test";
 
 const account: CentralAuthUser = {
   id: "user-1",
@@ -59,22 +55,8 @@ const prompt = {
   ],
 };
 
-function ChannelShell() {
-  const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
-  return (
-    <div style={{ display: "flex", "flex-direction": "column", height: "100%", background: "var(--openbot-bg-app)" }}>
-      <ChatTasksSwitch mode={mode()} onChange={setMode} channelLabel="# project-cosgral · Lead + 3" />
-      {mode() === "tasks" ? (
-        <ChannelTasksPanel tasks={MOCK_CHANNEL_TASKS} />
-      ) : (
-        <div style={{ padding: "16px", color: "var(--openbot-text-secondary)" }}>Channel chat timeline (mock).</div>
-      )}
-    </div>
-  );
-}
-
 const meta = {
-  title: "Better/Lepszy A+B+C",
+  title: "Better/Lepszy A+B",
   parameters: { layout: "fullscreen" },
 } satisfies Meta;
 
@@ -147,22 +129,6 @@ export const StickyDecisionCard: Story = {
         onAnswerPrompt={async () => true}
         onRespondToApproval={async () => true}
       />
-    </div>
-  ),
-};
-
-export const ChatTasks: Story = {
-  name: "C · Chat | Tasks",
-  render: () => <ChannelShell />,
-};
-
-export const ChatTasksDark: Story = {
-  name: "C · Chat | Tasks (dark)",
-  parameters: { backgrounds: { default: "dark" } },
-  globals: { theme: "dark" },
-  render: () => (
-    <div data-theme="dark" style={{ height: "100vh", background: "#0b0c10" }}>
-      <ChannelShell />
     </div>
   ),
 };
