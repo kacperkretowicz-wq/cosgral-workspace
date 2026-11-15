@@ -2,7 +2,25 @@
 
 **Stan: 16.11.2026, integracja `codex/cosgral-desktop` @ `d4f20c515`.** Dokument zbiera w jednym miejscu wszystko, co czeka na właściciela. Pisał KAPI (W4-H3), tylko ze źródeł w repo i z dokumentu `luki-070`. Czego nie ma w źródłach, jest oznaczone „brak w źródłach”.
 
-## Na górze
+## Odpowiedzi właściciela (16.11.2026, zapisane w `PLAN-W5.md` pkt 1–5)
+
+**Z 15 wierszy: 4 rozstrzygnięte wprost, 6 zaakceptowanych jako rekomendacja lidera, 2 czekają na osobną zgodę, 3 nadal otwarte.** Reszta dokumentu opisuje stan sprzed tych odpowiedzi; ta sekcja ma pierwszeństwo.
+
+| Wiersze | Stan | Co odpowiedział właściciel |
+|---|---|---|
+| 1 | **TAK** | Bramka G1 potwierdzona; W5 ruszył. |
+| 2 | **TAK** | CLI pobierane automatycznie, ale konfigurowalnie jak w OpenBocie: przełącznik „aktualizuj automatycznie”, przypięcie wersji, ręczne „Sprawdź / Zaktualizuj / Usuń”, własna ścieżka CLI. |
+| 3 | **TAK** | Pula kont konfigurowalna jak w OpenBocie (wiele kont na dostawcę, konto per agent, kolejność, włączanie i wyłączanie, limit kont domyślnie 3 i zmienny). Tylko konta właściciela. |
+| 5 | **TAK** (część) | Klucze API w `safeStorage` włączone w W5-BE3. Kto płaci i jaki limit: nadal brak w źródłach. |
+| 4, 8, 9, 12, 13, 14 | zaakceptowane | „Na wszystko, idziemy dalej”: zgoda na rekomendacje lidera z tego dokumentu (`PLAN-W5.md` pkt 2). To odczyt lidera; własnych słów właściciela przy tych wierszach brak. |
+| 6, 7 | **czeka na osobną zgodę** | Repo publiczne czy prywatne, domyślna gałąź i przepisanie historii z force-push: wyjątek z `PLAN-W5.md` pkt 2, lider niczego nie robi bez wyraźnej zgody. |
+| 10 | otwarte | Rekomendacja przyjęta (próba tylko na czystym koncie), ale potrzebne konto lub maszyna od właściciela i termin. |
+| 11, 15 | otwarte | Lider nie ma stanowiska (brak w źródłach), więc „na wszystko” niczego tu nie rozstrzyga. |
+| 16–18 | później | Bez zmian. |
+
+**Dla raportu 8:30 zostają do odpowiedzi właściciela:** wiersze 6 i 7 (repo, historia), 10 (konto lub maszyna do próby instalatora), 11 (aktualizacje), 15 (ochrona gałęzi i CI), kto płaci za klucze API (część wiersza 5).
+
+## Na górze (stan sprzed odpowiedzi)
 
 **15 decyzji do podjęcia teraz + 3 na później.** Czas na odpowiedź: ok. 10 min.
 

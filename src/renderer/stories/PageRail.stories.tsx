@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import { expect, fn } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { App } from "../src/App";
 import { ComingSoon } from "../src/components/ComingSoon";
@@ -7,10 +7,13 @@ import { type PageId, PageRail } from "../src/components/PageRail";
 import { createMockOpenBot } from "./mock-openbot";
 import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
-function RailShell(props: { theme: StoryTheme; initial?: PageId }) {
+function RailShell(props: { theme: StoryTheme; initial?: PageId; height?: string }) {
   const [page, setPage] = createSignal<PageId>(props.initial ?? "agents");
   return (
-    <ThemeFrame theme={props.theme} style="height: 100vh; --page-rail-width: 54px; --left-header-height: 38px;">
+    <ThemeFrame
+      theme={props.theme}
+      style={`height: ${props.height ?? "100vh"}; --page-rail-width: 54px; --left-header-height: 38px;`}
+    >
       <div style="display: flex; width: 100%; height: 100%;">
         <div style="width: 54px; display: flex;">
           <PageRail active={page()} onSelect={setPage} onOpenSettings={fn()} />
@@ -74,4 +77,21 @@ export const InTheApp: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Agents" }));
     await expect(canvas.findByRole("heading", { name: "Chief" })).resolves.toBeInTheDocument();
   },
+};
+
+export const Overflow: Story = {
+  render: () => <RailShell theme="dark" initial="phone" height="300px" />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const more = await canvas.findByRole("button", { name: "More pages (current: Phone)" });
+    await expect(canvas.getByRole("button", { name: "Settings" })).toBeVisible();
+    await userEvent.click(more);
+    const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "More pages" });
+    await expect(within(menu).getByRole("menuitem", { name: "Phone" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Library" }));
+    await expect(canvas.getByRole("heading", { name: "Library" })).toBeVisible();
+  },
+};
+export const OverflowLight: Story = {
+  ...Overflow,
+  render: () => <RailShell theme="light" initial="phone" height="300px" />,
 };

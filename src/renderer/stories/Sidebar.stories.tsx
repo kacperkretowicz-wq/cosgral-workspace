@@ -208,3 +208,30 @@ export const FolderDeleteContrast: Story = {
     await expect(contrastRatio(style.color, style.backgroundColor)).toBeGreaterThanOrEqual(4.5);
   },
 };
+
+export const MarkAsRead: Story = {
+  args: { onMarkBotRead: fn(async () => {}) },
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const row = canvas.getByRole("button", { name: /^Research,/ });
+    const rect = row.getBoundingClientRect();
+    fireEvent.contextMenu(row, { clientX: rect.left + 8, clientY: rect.top + 8 });
+    const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "Agent actions" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Mark as read" }));
+    await expect(args.onMarkBotRead).toHaveBeenCalledWith("research");
+  },
+};
+export const ReadSaveError: Story = {
+  args: {
+    onMarkBotRead: async () => {
+      throw new Error("Could not save the read state. Try again.");
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const row = canvas.getByRole("button", { name: /^Research,/ });
+    const rect = row.getBoundingClientRect();
+    fireEvent.contextMenu(row, { clientX: rect.left + 8, clientY: rect.top + 8 });
+    const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "Agent actions" });
+    await userEvent.click(within(menu).getByRole("menuitem", { name: "Mark as read" }));
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Could not save the read state");
+  },
+};

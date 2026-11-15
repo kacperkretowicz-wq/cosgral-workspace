@@ -174,3 +174,7 @@ W paczce desktop 0.68 widać ślad powierzchni telefonu (np. asset `smartphone-*
 ### W4-UI1 — uzupełnienie wierszy 14–15 (15.11.2026)
 
 Częściowo: New channel w pasku bocznym i workspace, tworzenie i edycja tytułu/składu/lidera/instrukcji, flaga odpowiedzi w preload. Krótka nazwa nie jest edytowalna w kontrakcie. Testy UI i krok `channel UI: create, edit and reply` w `scripts/sandbox-e2e.ts`; odbiór okna i zrzut oczekują. Raport: `docs/cosgral-raporty/ui-w4-ui1.md`.
+
+### W4-UI4 — wiersze 2 i 3, kod do odbioru (16.11.2026)
+
+Status obu wierszy pozostaje **częściowo**, bez zmiany wyniku procentowego. Doszły responsywne **More pages** i **Mark as read** z menu agenta; komponenty sprawdzone jednostkowo i w Chromium/Storybooku. Dwa nowe kroki sandbox:e2e oczekują na KK. Pozostałe luki: duplikat agenta, nowy wątek, osobne okno, ukrywanie i trwałe przypinanie stron — brak odpowiednich kontraktów. Dokładna lista metod i proponowanych kształtów: `docs/cosgral-raporty/ui-w4-ui4.md`. Historyczny odbiór W3 opisany w tabeli nie został zastąpiony niepotwierdzonym statusem „jest”.

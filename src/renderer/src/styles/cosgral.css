@@ -959,3 +959,35 @@
 .channel-chat-panel {
   display: contents;
 }
+
+/* Overflow keeps Settings reachable when the page rail is shorter than its page list. */
+.page-rail {
+  min-height: 0;
+  overflow-y: auto;
+}
+.page-rail-list {
+  min-height: 0;
+}
+.page-rail-tools {
+  flex-shrink: 0;
+}
+.page-rail-overflow-menu {
+  max-height: min(70vh, var(--kb-popper-content-available-height, 70vh));
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
+}
+.page-rail-overflow-menu svg {
+  width: var(--openbot-icon-md);
+  height: var(--openbot-icon-md);
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sidebar-row-action-error {
+  margin: var(--openbot-space-2);
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-sm);
+}

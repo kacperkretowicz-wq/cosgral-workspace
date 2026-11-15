@@ -510,6 +510,61 @@ async function main(): Promise<void> {
       assert(tables.includes("Sandbox leads"), `The table is listed through the window's API: ${tables.slice(0, 200)}`);
       await dump(page, evidence, "07-agent-tools");
     });
+    await step("navigation: mark a background agent read from its row menu", async () => {
+      const helperId = String(
+        await page.evaluate(`(async () => {
+        const api = window.openbot;
+        const helper = (await api.agentSettings.createAgent({ name: "Unread helper" })).bot;
+        await api.agent.sendMessage({ botId: helper.id, text: "Sidebar read test" });
+        return helper.id;
+      })()`),
+      );
+      await page.waitForFunction(
+        `async () => {
+        const snapshot = await window.openbot.agent.readConversation(${JSON.stringify(helperId)});
+        return !snapshot.activeTurnId && snapshot.messages.some((item) => item.author === "assistant");
+      }`,
+        undefined,
+        { timeout: 45_000 },
+      );
+      await page
+        .getByRole("navigation", { name: "Chat list" })
+        .getByRole("button", { name: /^Unread helper,/ })
+        .click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Mark as read", exact: true }).click();
+      await page.waitForFunction(
+        `async () => {
+        const api = window.openbot.agent;
+        const snapshot = await api.readConversation(${JSON.stringify(helperId)});
+        const state = (await api.listConversationReads())[${JSON.stringify(helperId)}];
+        return state?.unreadCount === 0 && state.throughMessageId === snapshot.messages.at(-1)?.id;
+      }`,
+        undefined,
+        { timeout: 15_000 },
+      );
+      await page.getByRole("heading", { name: "New agent", level: 1 }).waitFor();
+      await dump(page, evidence, "navigation-mark-read");
+    });
+    await step("navigation: overflow pages remain reachable in a short viewport", async () => {
+      const bounds = asRecord(await page.evaluate("({ width: innerWidth, height: innerHeight })"));
+      const previousViewport = page.viewportSize() ?? { width: Number(bounds.width), height: Number(bounds.height) };
+      try {
+        await page.setViewportSize({ width: 1100, height: 400 });
+        await page.getByRole("button", { name: /^More pages/ }).click();
+        await page
+          .getByRole("menu", { name: "More pages" })
+          .getByRole("menuitem", { name: "Library", exact: true })
+          .click();
+        await page.getByRole("heading", { name: "Library", exact: true }).waitFor();
+        await dump(page, evidence, "navigation-overflow");
+      } finally {
+        await page.setViewportSize(previousViewport);
+        await page
+          .getByRole("navigation", { name: "Pages" })
+          .getByRole("button", { name: "Agents", exact: true })
+          .click();
+      }
+    });
     await step("channel UI: create, edit and reply", async () => {
       await page.getByRole("button", { name: "New channel", exact: true }).first().click();
       let dialog = page.getByRole("dialog");
