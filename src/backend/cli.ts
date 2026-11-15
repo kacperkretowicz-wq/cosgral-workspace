@@ -239,7 +239,20 @@ const SAFE_SHIM_ARGUMENT = /^[\w:/.=-]+$/u;
 export const CLI_VERSION_TIMEOUT_MS = 20_000;
 
 export async function readCliVersion(candidate: string, timeoutMs = CLI_VERSION_TIMEOUT_MS): Promise<string> {
-  const { command, args, windowsVerbatimArguments } = cliCommand(candidate, ["--version"]);
+  return runCliWithRetry(candidate, ["--version"], timeoutMs);
+}
+
+/**
+ * COSGRAL W4-BE2/BE3: runs a short CLI check (`--version`, `auth status`) with a long limit and one more try after a
+ * timeout; a second timeout throws CliTimeoutError, so callers can say "did not answer" instead of guessing.
+ * Other failures (non-zero exit, missing file) throw the execFile error, which keeps stdout for callers that read it.
+ */
+export async function runCliWithRetry(
+  candidate: string,
+  cliArgs: readonly string[],
+  timeoutMs = CLI_VERSION_TIMEOUT_MS,
+): Promise<string> {
+  const { command, args, windowsVerbatimArguments } = cliCommand(candidate, cliArgs);
   const run = () =>
     execFileAsync(command, args, {
       timeout: timeoutMs,
