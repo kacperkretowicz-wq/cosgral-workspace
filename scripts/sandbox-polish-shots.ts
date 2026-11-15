@@ -216,8 +216,11 @@ async function main(): Promise<void> {
       return { states: seen, last: (await api.listTasks(channel.id))[0]?.state, result: messages.filter((m) => m.kind === "result").map((m) => m.text) };
     })()`);
     console.log(`solo channel: ${JSON.stringify(states)}`);
-    await writeFile(join(out, "channel-states.json"), `${JSON.stringify(states, null, 2)}
-`);
+    await writeFile(
+      join(out, "channel-states.json"),
+      `${JSON.stringify(states, null, 2)}
+`,
+    );
     const rail = page.getByRole("navigation", { name: "Pages" });
     for (const [index, name] of PAGES.entries()) {
       await rail.getByRole("button", { name, exact: true }).click();

@@ -494,7 +494,8 @@ async function main(): Promise<void> {
       await dump(page, evidence, "05-after-restart");
     });
     await step("agent tools: the agent builds a shared table through the program's tool bridge", async () => {
-      await page.getByRole("textbox", { name: "Message New agent" }).fill("DATA CREATE");
+      // After a restart the agent CLI connects again; the composer stays disabled until then.
+      await page.getByRole("textbox", { name: "Message New agent" }).fill("DATA CREATE", { timeout: 90_000 });
       await page.getByRole("button", { name: "Send message" }).click();
       await page
         .getByText(/DATA-RESULT/)
@@ -503,6 +504,51 @@ async function main(): Promise<void> {
       const tables = JSON.stringify(await page.evaluate("window.openbot.tables.list()"));
       assert(tables.includes("Sandbox leads"), `The table is listed through the window's API: ${tables.slice(0, 200)}`);
       await dump(page, evidence, "07-agent-tools");
+    });
+    await step("channel: the lead delegates to a member and the task ends Done", async () => {
+      // W4-BE2: a new channel with a lead and one member; one message from the person. The Codex fixture's lead
+      // assigns the work to the member, waits for its result and then answers: queued -> running -> waiting -> done.
+      const outcome = asRecord(
+        await page.evaluate(`(async () => {
+          const api = window.openbot.channels;
+          const bots = await window.openbot.agent.listBots();
+          const lead = bots.find((bot) => bot.name === "New agent");
+          const helper = (await window.openbot.agentSettings.createAgent({ name: "Channel helper" })).bot;
+          const channel = await api.create({
+            name: "e2e-" + Date.now().toString(36), title: "E2E channel", instructions: "",
+            memberBotIds: [lead.id, helper.id], leadBotId: lead.id, isolated: true,
+          });
+          const states = [];
+          const off = window.openbot.agent.onEvent((event) => {
+            if (event.type === "task-changed" && event.task.channelId === channel.id && !event.task.parentTaskId)
+              states.push(event.task.state);
+          });
+          const sent = await api.sendMessage({ channelId: channel.id, text: "Plan the sandbox launch" });
+          let task = sent.task;
+          for (let i = 0; i < 240 && !["done", "failed", "cancelled"].includes(task.state); i += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            task = (await api.listTasks(channel.id)).find((item) => item.id === sent.task.id) ?? task;
+          }
+          off();
+          const tasks = await api.listTasks(channel.id);
+          const messages = await api.listMessages({ channelId: channel.id });
+          return {
+            state: task.state,
+            states,
+            helperTasks: tasks.filter((item) => item.parentTaskId === task.id).map((item) => ({ owner: item.ownerBotId === helper.id ? "helper" : "other", state: item.state })),
+            result: messages.filter((m) => m.kind === "result" && m.taskId === task.id).map((m) => m.text),
+          };
+        })()`),
+      );
+      console.log(`     channel: ${JSON.stringify(outcome)}`);
+      await writeFile(join(evidence, "channel-outcome.json"), JSON.stringify(outcome, null, 2));
+      assert.equal(outcome.state, "done", "The lead's task ends Done");
+      const helpers = Array.isArray(outcome.helperTasks) ? outcome.helperTasks.map(asRecord) : [];
+      assert(
+        helpers.some((item) => item.owner === "helper" && item.state === "done"),
+        "The member's task ends Done",
+      );
+      assert(Array.isArray(outcome.result) && outcome.result.length > 0, "The task has a result message");
     });
     await step("ipc: every read-only call of window.openbot answers", async () => {
       const answers = await page.evaluate(GETTER_SMOKE);

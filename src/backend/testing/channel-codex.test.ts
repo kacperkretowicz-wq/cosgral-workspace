@@ -105,7 +105,8 @@ describe("channel Codex fixture", () => {
     expect((first.params?.arguments as { ownerBotId: string }).ownerBotId).toBe("a");
     answer(first, JSON.stringify({ id: "child-1" }));
     const second = await fixture.next(
-      (m) => toolCall(m) && m.params?.tool === "assign" && (m.params.arguments as { ownerBotId: string }).ownerBotId === "b",
+      (m) =>
+        toolCall(m) && m.params?.tool === "assign" && (m.params.arguments as { ownerBotId: string }).ownerBotId === "b",
     );
     expect((second.params?.arguments as { dependencyTaskIds: string[] }).dependencyTaskIds).toEqual(["child-1"]);
     answer(second, JSON.stringify({ id: "child-2" }));
