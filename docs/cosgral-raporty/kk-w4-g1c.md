@@ -25,7 +25,7 @@ Liczyłem kontrast tekstu tokenu na każdym ciemnym tle, na którym może leże�
 |---|---|---|
 | `#e47d75` (było) | 3,92:1 (raised + soft) | 4,41:1 |
 | `#e8827a` (propozycja z W4-T3) | 4,14:1 (raised + soft) | 4,66:1 |
-| **`#e88f88` (wybrane)** | **4,56:1** | 5,0:1 |
+| **`#e88f88` (wybrane)** | **4,56:1** | 5,14:1 |
 
 Dlaczego nie `#e8827a`: na `raised` + `danger-soft` daje 4,14:1, a tak (menu na surface z podświetleniem hover i plakietki na `raised`) tekst może leżeć. `#e88f88` to najmniejsze rozjaśnienie, przy którym najgorszy realny przypadek ≥ 4,5:1.
 
@@ -33,13 +33,13 @@ Użycia jako tło lub ramka (kropki stanu, pulsująca kropka oczu, ramki): to el
 
 **Skutek uboczny (nie naprawiany, poza zgodą):** przycisk „Delete” w oknie usuwania agenta i folderu (`.bot-delete-confirm`) ma jasny tekst `#f2f2f2` na wypełnieniu `--openbot-danger`. Było 2,50:1 (już poniżej 4,5:1), jest 2,15:1. Propozycja na osobne zadanie: ciemny tekst `--openbot-text-on-light` (7,65:1 na nowym kolorze).
 
-**Nie policzyłem:** `bg-control-active` + `danger-soft` (stan wciśnięty przycisku ze stłumionym tłem): 4,10:1 przy nowej wartości; nie znalazłem komponentu, który tak układa tło, ale nie zbadałem każdego stanu.
+**Nie policzyłem:** `bg-control-active` + `danger-soft` (stan wciśnięty przycisku ze stłumionym tłem): 3,93:1 przy nowej wartości; nie znalazłem komponentu, który tak układa tło, ale nie zbadałem każdego stanu.
 
 ## 2. Jasny podgląd (8 historii)
 
 Przyczyna była inna niż „złe kolory”. Arkusz aplikacji definiuje aliasy typu `--openbot-active: var(--openbot-bg-surface)` na `:root`. Zmienna CSS jest rozwiązywana tam, gdzie jest zadeklarowana, więc ramka podglądu nadpisywała tokeny bazowe, ale aliasy zostawały ciemne: wiersz agenta miał tło `#262626` i tekst `#14141c` (1,21:1). Naprawa w `theme-frame.tsx` (tylko podgląd):
 
-1. Ramka deklaruje aliasy ponownie (`LIGHT_ALIASES`, 36 zmiennych), więc idą za jasnymi wartościami.
+1. Ramka deklaruje aliasy ponownie (`LIGHT_ALIASES`, 38 zmiennych), więc idą za jasnymi wartościami.
 2. Kolory jasnego podglądu przyciemnione do ≥ 4,5:1 na tłach jasnych i na nakładkach soft: warning `#9a6b12` → `#6e4a0d`, danger `#b3261e` → `#aa241d`, success `#1d7a3f` → `#1a6e39`, unread `#74b9ff` → `#1f5fbf`.
 3. Jasne wartości dla tokenów tabel i nakładek (`--openbot-bg-overlay`, `--openbot-command-overlay`, `--openbot-bg-glass`, `--openbot-data-table-*`), które były ciemne w jasnym podglądzie.
 4. Reguła tylko w podglądzie: etykieta przycisku zatwierdzenia jest biała (`.approval-button-primary`). Przycisk wypełnia się kolorem success z ciemnym tekstem; na ciemnozielonym (wymagany dla tekstu plakietek) nie da się mieć obu 4,5:1 jednym tokenem.
