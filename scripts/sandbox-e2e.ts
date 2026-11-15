@@ -513,10 +513,12 @@ async function main(): Promise<void> {
       await dialog.getByLabel("Channel name", { exact: true }).fill(`ui-${Date.now().toString(36)}`);
       await dialog.getByLabel("Display title").fill("UI acceptance");
       await dialog.getByRole("button", { name: "New agent", exact: true }).click();
-      const botId = await page.evaluate(
-        async () => (await window.openbot.agent.listBots()).find((bot) => bot.name === "New agent")?.id,
+      const botId = String(
+        await page.evaluate(
+          `window.openbot.agent.listBots().then((bots) => bots.find((bot) => bot.name === "New agent")?.id ?? "")`,
+        ),
       );
-      assert(botId, "The sandbox agent exists");
+      assert(botId.length > 0, "The sandbox agent exists");
       await dialog.getByLabel("Lead agent").selectOption(botId);
       await dialog.getByLabel("Channel instructions").fill("Answer briefly.");
       await dialog.getByRole("button", { name: "Create channel", exact: true }).click();
@@ -533,15 +535,15 @@ async function main(): Promise<void> {
       await page.getByLabel("New message to channel lead").fill("UI reply linked");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await page.getByText("UI reply linked", { exact: true }).waitFor();
-      const linked = await page.evaluate(async () => {
+      const linked = await page.evaluate(`(async () => {
         const api = window.openbot.channels;
         const channel = (await api.list()).find((item) => item.title === "UI acceptance edited");
+        if (!channel) return false;
         const messages = await api.listMessages({ channelId: channel.id });
-        return (
-          messages.find((item) => item.text === "UI reply linked")?.replyToMessageId ===
-          messages.find((item) => item.text === "UI reply target")?.id
-        );
-      });
+        const target = messages.find((item) => item.text === "UI reply target");
+        const reply = messages.find((item) => item.text === "UI reply linked");
+        return Boolean(target && reply && reply.replyToMessageId === target.id);
+      })()`);
       assert(linked, "The reply links to its parent in the engine");
       await dump(page, evidence, "channel-ui");
     });
