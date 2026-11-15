@@ -53,3 +53,7 @@ Nie objęte bramką `check`: `sandbox:e2e` i skrypt odbioru (w prawdziwym oknie;
 
 ## Dalej (skrót; pełne tabele w dokumencie źródłowym)
 W5 subskrypcje bez terminala (CLI zarządzane, logowanie, klucze w safeStorage, wiele kont, endpointy/Ollama, 8 modeli zapasowych) · W6 wątki, kontekst, plan, subagenci, akcje na wiadomościach · W7 motyw jasny, polski, ustawienia w jednym oknie, kierunek wyglądu OpenBot + Grok Bot (nie Paperclip) · W8 poziomy dostępu, piaskownica Windows, profile przeglądarki, przestrzenie klientów, budżety · W9 telefon poza domem (Tailscale), push, PIN · W10 integracje.
+
+
+## Aktualizacja 16.11.2026 00:22
+Bramka G1 **potwierdzona przez właściciela** (16.11.2026). Start W5: `docs/cosgral/PLAN-W5.md`.
