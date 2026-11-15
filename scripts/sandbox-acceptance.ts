@@ -586,6 +586,83 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     return `role ${String(made.role)}`;
   });
 
+  await row(
+    "14",
+    "channels in the window: New channel with a lead and two agents, edit, message, replies, stop and resume",
+    async () => {
+      await d.openAgent("Assistant");
+      const channelName = `accept-${Date.now().toString(36)}`;
+      await page.getByRole("button", { name: "New channel", exact: true }).first().click();
+      let dialog = page.getByRole("dialog");
+      await dialog.getByLabel("Channel name", { exact: true }).fill(channelName);
+      await dialog.getByLabel("Display title").fill("Accept team");
+      for (const member of ["Assistant", "Res", "Tmpl"])
+        await dialog.getByRole("button", { name: member, exact: true }).click();
+      const leadId = await d.botId("Assistant");
+      await dialog.getByLabel("Lead agent").selectOption(leadId);
+      await dialog.getByLabel("Channel instructions").fill("Work together and answer briefly.");
+      await dialog.getByRole("button", { name: "Create channel", exact: true }).click();
+      await dialog.waitFor({ state: "hidden", timeout: 20_000 });
+      await page.getByRole("heading", { name: "Accept team", exact: true }).waitFor({ timeout: 20_000 });
+      const info = asRecord(
+        await d.ev(
+          `window.openbot.channels.list().then((all) => { const c = all.find((x) => x.name === ${JSON.stringify(channelName)}); return c ? { id: c.id, members: c.memberBotIds.length, lead: c.leadBotId } : null; })`,
+        ),
+      );
+      assert(info.id && info.members === 3 && info.lead === leadId, `channel from the window: ${JSON.stringify(info)}`);
+
+      // Edit: the title and the instructions change, the short name stays.
+      await page.getByRole("button", { name: "Edit channel", exact: true }).click();
+      dialog = page.getByRole("dialog");
+      assert(await dialog.getByLabel("Channel name", { exact: true }).isDisabled(), "the short name cannot be edited");
+      await dialog.getByLabel("Display title").fill("Accept team edited");
+      await dialog.getByRole("button", { name: "Save changes" }).click();
+      await dialog.waitFor({ state: "hidden", timeout: 20_000 });
+      await page.getByRole("heading", { name: "Accept team edited", exact: true }).waitFor({ timeout: 20_000 });
+
+      // A message of the person: the lead delegates to the two other members, who finish their tasks.
+      await page.getByLabel("New message to channel lead").fill("Prepare the weekly summary");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      await page.getByText("Stub combined result").first().waitFor({ timeout: 90_000 });
+      const tasks = list(await d.ev(`window.openbot.channels.listTasks(${JSON.stringify(String(info.id))})`));
+      const main = tasks.find((task) => task.title === "Prepare the weekly summary");
+      assert(main && main.state === "done" && main.ownerBotId === leadId, `the lead's task: ${JSON.stringify(main)}`);
+      const helpers = tasks.filter((task) => task.parentTaskId === main.id);
+      assert(
+        helpers.length === 2 && helpers.every((task) => task.state === "done" && task.ownerBotId !== leadId),
+        `helper tasks: ${JSON.stringify(helpers)}`,
+      );
+      const owners = new Set(helpers.map((task) => String(task.ownerBotId)));
+      assert(owners.size === 2, "the two helpers are two different members");
+
+      // Reply to a message: the new message links to its parent in the engine.
+      await page.getByRole("button", { name: "Reply to Prepare the weekly summary", exact: true }).click();
+      await page.getByLabel("New message to channel lead").fill("A reply from the person");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      await page.getByText("A reply from the person", { exact: true }).waitFor({ timeout: 20_000 });
+      const linked = await d.ev(
+        `window.openbot.channels.listMessages({ channelId: ${JSON.stringify(String(info.id))} }).then((all) => { const parent = all.find((m) => m.text === "Prepare the weekly summary"); const reply = all.find((m) => m.text === "A reply from the person"); return Boolean(parent && reply && reply.replyToMessageId === parent.id); })`,
+      );
+      assert(linked === true, "the reply is linked to its parent");
+
+      // Stop and resume in the Tasks page: a task that never finishes is paused, resumed and stopped.
+      await page.getByLabel("New message to channel lead").fill("HOLD this task");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      await d.openPage("Tasks");
+      const rowOf = () => page.locator("li.tasks-row", { hasText: "HOLD this task" });
+      await rowOf().waitFor({ timeout: 30_000 });
+      await rowOf().getByText("Running", { exact: true }).waitFor({ timeout: 30_000 });
+      await rowOf().getByRole("button", { name: "Pause", exact: true }).click();
+      await rowOf().getByText("Paused", { exact: true }).waitFor({ timeout: 30_000 });
+      await rowOf().getByRole("button", { name: "Resume", exact: true }).click();
+      await rowOf().getByText("Running", { exact: true }).waitFor({ timeout: 30_000 });
+      await rowOf().getByRole("button", { name: "Stop", exact: true }).click();
+      await rowOf().getByText("Stopped", { exact: true }).waitFor({ timeout: 30_000 });
+      await d.dump("channel-row-14");
+      return "created in the window with a lead and 2 members; edit; lead delegated to 2 members (done); reply linked; Pause > Resume > Stop in Tasks";
+    },
+  );
+
   await row("41", "Marketplace: search, open, install a skill for an agent, uninstall listed", async () => {
     await d.openPage("Marketplace");
     const main = page.locator("main").first();
