@@ -1,3 +1,4 @@
+﻿import { ManagedCliSection } from "./ManagedCliSection";
 import type {
   AcpAgentConfig,
   AgentModelId,
@@ -305,7 +306,7 @@ export function AcpAgentsSection(props: {
             You can add up to {PROVIDER_LIMITS.acpAgents} ACP agents.
           </Text>
         </Show>
-        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Adding…">
+        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Addingâ€¦">
           Add agent
         </Button>
       </form>
@@ -435,7 +436,7 @@ export function FallbackOrder(props: {
           }}
         >
           <option value="">
-            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback model…"}
+            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback modelâ€¦"}
           </option>
           <For each={addable()}>{(option) => <option value={option.id}>{option.name}</option>}</For>
         </NativeSelect>
@@ -608,6 +609,7 @@ export function ProvidersPage() {
           {error()}
         </Text>
       </Show>
+      <ManagedCliSection />
       <ProviderUsageList
         usage={usage()}
         acpAgents={acpAgents()}
@@ -683,3 +685,4 @@ export function ProvidersPage() {
     </main>
   );
 }
+
