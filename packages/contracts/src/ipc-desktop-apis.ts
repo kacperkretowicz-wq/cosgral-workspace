@@ -232,6 +232,8 @@ export interface AgentDesktopApi {
   listModels: () => Promise<AgentModelOption[]>;
   listBots: () => Promise<BotSummary[]>;
   createBot: () => Promise<BotSummary>;
+  /** COSGRAL W4-BE2: start the agent CLIs again after a failed start; answers with the new status. This computer only. */
+  retryStart?: () => Promise<AgentStatus>;
   updateBot: (input: UpdateBotInput) => Promise<BotSummary>;
   setAvatar: (input: SetAgentAvatarInput) => Promise<BotSummary>;
   deleteBot: (botId: string) => Promise<void>;

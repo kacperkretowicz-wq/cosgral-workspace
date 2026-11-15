@@ -116,6 +116,45 @@ interface MailboxProjectionState {
  * A command appends events, changes projections, and stores its receipt in one
  * SQLite transaction. Providers never receive direct access to this database.
  */
+/** SQLite result codes (low byte of an extended code) that a moment of waiting can clear. */
+const TRANSIENT_SQLITE_CODES = new Set([5 /* BUSY */, 6 /* LOCKED */, 10 /* IOERR */, 14 /* CANTOPEN */]);
+
+/** COSGRAL W4-BE2: an error from opening the database that may pass after the previous process is gone. */
+export function isTransientSqliteOpenError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const errcode = isDynamicRecord(error) ? error.errcode : undefined;
+  if (isNumber(errcode)) return TRANSIENT_SQLITE_CODES.has(errcode & 0xff);
+  return /disk I\/O error|database is locked|unable to open database/i.test(error.message);
+}
+
+/**
+ * COSGRAL W4-BE2: open with a few short waits (about 4 s in total) when the files are still held, then fail with a
+ * message that says what to do. Other errors (for example a damaged file) fail at once and are never retried.
+ */
+export async function openWithRetry<T>(
+  open: () => Promise<T>,
+  options: { delaysMs?: readonly number[]; wait?: (ms: number) => Promise<void> } = {},
+): Promise<T> {
+  const delays = options.delaysMs ?? [250, 500, 1000, 2000];
+  const wait = options.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await open();
+    } catch (error) {
+      if (!isTransientSqliteOpenError(error)) throw error;
+      const delay = delays[attempt];
+      if (delay === undefined) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `The COSGRAL Workspace database is still in use by a program that just closed (${reason}). Wait a few seconds and start COSGRAL Workspace again.`,
+          { cause: error },
+        );
+      }
+      await wait(delay);
+    }
+  }
+}
+
 export class OpenBotDatabase {
   readonly path: string;
   readonly #legacyBackupRoot: string;
@@ -129,20 +168,24 @@ export class OpenBotDatabase {
   async initialize(): Promise<void> {
     if (this.#db) return;
     await mkdir(dirname(this.path), { recursive: true, mode: 0o700 });
-    const db = new DatabaseSync(this.path);
-    try {
-      db.exec("PRAGMA journal_mode = WAL");
-      db.exec("PRAGMA foreign_keys = ON");
-      db.exec("PRAGMA busy_timeout = 5000");
-      db.exec("PRAGMA synchronous = NORMAL");
-      this.#db = db;
-      this.#migrate();
-      await chmod(this.path, 0o600);
-    } catch (error) {
-      db.close();
-      this.#db = null;
-      throw error;
-    }
+    // COSGRAL W4-BE2: right after a crash Windows may still hold the old process's handles on the WAL files for a
+    // few seconds ("disk I/O error"). Wait for locks first (busy_timeout before anything else) and try again.
+    await openWithRetry(async () => {
+      const db = new DatabaseSync(this.path);
+      try {
+        db.exec("PRAGMA busy_timeout = 5000");
+        db.exec("PRAGMA journal_mode = WAL");
+        db.exec("PRAGMA foreign_keys = ON");
+        db.exec("PRAGMA synchronous = NORMAL");
+        this.#db = db;
+        this.#migrate();
+        await chmod(this.path, 0o600);
+      } catch (error) {
+        db.close();
+        this.#db = null;
+        throw error;
+      }
+    });
   }
 
   close(): void {

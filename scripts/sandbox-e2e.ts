@@ -254,6 +254,8 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
       ...sandboxEnvironment(root),
       OPENBOT_CODEX_PATH: fixture.codex,
       OPENBOT_CLAUDE_PATH: fixture.claude,
+      // W4-BE2: while this file exists the Codex stand-in refuses to start (a CLI that cannot start).
+      COSGRAL_FIXTURE_DOWN: join(root, "fixture", "codex-down"),
     },
     timeout: 60_000,
   });
@@ -605,6 +607,37 @@ async function main(): Promise<void> {
     }
   } finally {
     await second.app.close().catch(() => undefined);
+  }
+  // W4-BE2: the agent CLI cannot start. The window says so, keeps nothing "Working", and "Try again" recovers.
+  const down = join(root, "fixture", "codex-down");
+  await writeFile(down, "down");
+  const third = await launch(root, fixture);
+  try {
+    const { page } = third;
+    await step("blocked: a CLI that cannot start shows the reason and Try again, nothing stays Working", async () => {
+      await page
+        .getByRole("region", { name: "Agents" })
+        .getByRole("button", { name: /^New agent/ })
+        .first()
+        .click();
+      const card = page.locator(".agent-setup-card");
+      await card.getByRole("button", { name: "Try again" }).waitFor({ timeout: 90_000 });
+      const text = (await card.innerText()).replace(/\s+/g, " ");
+      console.log(`     card: ${text.slice(0, 200)}`);
+      assert(/could not be started|did not answer/i.test(text), "The card names the reason");
+      assert.equal(await page.getByRole("status", { name: /is working/i }).count(), 0, "Nothing shows Working");
+      await dump(page, evidence, "08-blocked");
+      await rm(down, { force: true });
+      await card.getByRole("button", { name: "Try again" }).click();
+      const box = page.getByRole("textbox", { name: "Message New agent" });
+      await box.fill("Hello after Try again", { timeout: 90_000 });
+      await page.getByRole("button", { name: "Send message" }).click();
+      await page.getByText("Stub: received").last().waitFor({ timeout: 45_000 });
+      await dump(page, evidence, "09-after-try-again");
+    });
+  } finally {
+    await rm(down, { force: true });
+    await third.app.close().catch(() => undefined);
   }
   await writeFile(
     join(evidence, "run.json"),

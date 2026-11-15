@@ -230,6 +230,8 @@ export function Conversation(props: ConversationProps) {
   let libraryOwner: string | undefined;
   const [attachmentBusy, setAttachmentBusy] = createSignal(false);
   const [composerError, setComposerError] = createSignal<string | null>(null);
+  // COSGRAL W4-BE2: "Try again" on the agent setup card while the CLIs restart.
+  const [retryingStart, setRetryingStart] = createSignal(false);
   const [markingRead, setMarkingRead] = createSignal(false);
   const [settingsSaveError, setSettingsSaveError] = createSignal<string | null>(null);
   const [submitting, setSubmitting] = createSignal(false);
@@ -1743,16 +1745,36 @@ export function Conversation(props: ConversationProps) {
                 </p>
               </div>
               <Show when={props.agentStatus.phase !== "starting" && props.agentStatus.phase !== "restarting"}>
-                <Button
-                  type="button"
-                  onClick={() =>
-                    void props
-                      .onOpenAgentSetup()
-                      .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
-                  }
-                >
-                  Setup guide
-                </Button>
+                <div class="agent-setup-actions">
+                  <Show when={props.agentStatus.phase === "blocked" && window.openbot.agent.retryStart}>
+                    {(retryStart) => (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        loading={retryingStart()}
+                        loadingLabel="Starting…"
+                        onClick={() => {
+                          setRetryingStart(true);
+                          void retryStart()()
+                            .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
+                            .finally(() => setRetryingStart(false));
+                        }}
+                      >
+                        Try again
+                      </Button>
+                    )}
+                  </Show>
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      void props
+                        .onOpenAgentSetup()
+                        .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
+                    }
+                  >
+                    Setup guide
+                  </Button>
+                </div>
               </Show>
             </section>
           </Show>

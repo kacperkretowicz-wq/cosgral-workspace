@@ -964,6 +964,39 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     });
   }
 
+  /**
+   * COSGRAL W4-BE2: the person's "Try again" after the agent CLIs could not start (slow first start, a CLI that was
+   * installed or signed in meanwhile). Starts every provider again with a fresh restart budget.
+   */
+  async retryStart(): Promise<AgentStatus> {
+    if (!this.#initialized || this.#stopping) throw new Error("COSGRAL Workspace is not running.");
+    if (this.#status.phase === "starting" || this.#status.phase === "restarting") return this.getStatus();
+    if (this.#restartTimer) clearTimeout(this.#restartTimer);
+    this.#restartTimer = null;
+    this.#restartAttempts = 0;
+    await this.#connect("restarting", ["codex", "claude"]);
+    return this.getStatus();
+  }
+
+  /**
+   * COSGRAL W4-BE2: no CLI runs, so no turn can confirm. Messages that were starting or running (for example from
+   * before a crash) end as interrupted, never repeated, so nothing stays "Working" and the queue can move on later.
+   */
+  async #releaseUnconfirmedDeliveries(): Promise<void> {
+    for (const { delivery } of this.#mailbox.unresolvedDeliveries()) {
+      await this.#mailbox
+        .recoverAsInterrupted(delivery.id, "The agent CLI could not start, so this message did not finish.")
+        .catch(() => undefined);
+      const snapshot = this.#snapshots.get(delivery.recipientBotId);
+      if (snapshot && (!delivery.turnId || snapshot.activeTurnId === delivery.turnId)) {
+        snapshot.activeTurnId = null;
+        this.#syncDeliveryMessage(snapshot, delivery.id);
+        this.#emitConversation(snapshot);
+      }
+      this.#emitQueue(delivery.recipientBotId);
+    }
+  }
+
   async ensureProvider(provider: AgentProvider): Promise<void> {
     if (this.#clients.has(provider)) return;
     let start = this.#providerStarts.get(provider);
@@ -1392,6 +1425,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         capabilities: { ...this.#status.capabilities, chat: "unavailable" },
         message: failures.join(" "),
       });
+      await this.#releaseUnconfirmedDeliveries();
       return;
     }
 
@@ -1466,9 +1500,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
               phase: "blocked",
               providers,
               capabilities: { ...this.#status.capabilities, chat: "unavailable" },
-              message: `${providerLabel(client.provider)} stopped repeatedly. Restart COSGRAL Workspace after checking the CLI.`,
+              message: `${providerLabel(client.provider)} stopped repeatedly. Check the CLI, then choose Try again.`,
             },
       );
+      if (!anotherProviderIsReady) void this.#releaseUnconfirmedDeliveries();
       return;
     }
 

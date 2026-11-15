@@ -21,6 +21,8 @@ export const IPC_CHANNELS = {
   maintenanceExportData: "maintenance:export-data",
   maintenanceExportDiagnostics: "maintenance:export-diagnostics",
   agentGetStatus: "agent:get-status",
+  /** COSGRAL W4-BE2: start the agent CLIs again after they could not start ("Try again"). */
+  agentRetryStart: "agent:retry-start",
   agentGetUsage: "agent:get-usage",
   agentListModels: "agent:list-models",
   agentListBots: "agent:list-bots",

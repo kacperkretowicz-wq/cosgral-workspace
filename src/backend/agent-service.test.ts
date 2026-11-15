@@ -95,6 +95,60 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect((await service.readConversation(bot.id)).messages).toEqual(before.messages);
     expect(store.activeProviderSession(bot.id)).toBeNull();
   });
+  // W4-BE2: when the agent CLI cannot start, nothing may stay "Working" and the person can try again.
+  it("refuses a message while the CLI cannot start and sends it after a retry", async () => {
+    let failing = true;
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      if (failing) throw new Error("Codex CLI did not answer in time.");
+      return new FakeAgentClient(provider);
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    expect(service.getStatus().phase).toBe("blocked");
+    expect(service.getStatus().message).toContain("did not answer in time");
+
+    // The base refuses to queue for a CLI that is not ready (a clear error in the composer, nothing stuck).
+    await expect(service.sendMessage({ botId: "chief", text: "Hello" })).rejects.toThrow("did not answer in time");
+    expect(service.listQueue("chief").deliveries).toEqual([]);
+
+    failing = false;
+    const status = await service.retryStart();
+    expect(status.phase).toBe("ready");
+    await service.sendMessage({ botId: "chief", text: "Hello after a retry" });
+    await waitFor(() => events.some((event) => event.type === "turn-completed"));
+    expect(service.listQueue("chief").deliveries.some((delivery) => delivery.status === "queued")).toBe(false);
+  });
+
+  it("does not leave a message Working when the CLI cannot start after a restart", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(
+      store,
+      mailbox,
+      fakeBrowser(),
+      null,
+      30_000,
+      "codex",
+      (provider) => new FakeAgentClient(provider, "unused", false),
+    );
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "A turn that never finishes" });
+    await waitFor(() => service?.listQueue("chief").deliveries.some((delivery) => delivery.status === "running"));
+    await service.stop();
+
+    const again = stores();
+    service = new AgentService(again.store, again.mailbox, fakeBrowser(), null, 30_000, "codex", () => {
+      throw new Error("Codex CLI did not answer in time.");
+    });
+    await service.initialize();
+    expect(service.getStatus().phase).toBe("blocked");
+    const statuses = service.listQueue("chief").deliveries.map((delivery) => delivery.status);
+    expect(statuses).not.toContain("running");
+    expect(statuses).not.toContain("starting");
+    expect((await service.readConversation("chief")).activeTurnId ?? null).toBeNull();
+  });
+
   it("does not surface the skills context-budget notice as an agent error", async () => {
     process.env.OPENBOT_FAKE_WARNING = "Skill descriptions were shortened to fit the skills context budget.";
     const { store, mailbox } = stores();

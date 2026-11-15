@@ -460,6 +460,11 @@ function registerIpcHandlers(
       ? service.getStatus()
       : remoteServers.request("/v1/agents/status", {}, serverId, decodeAgentStatus);
   });
+  handleTrusted(IPC_CHANNELS.agentRetryStart, (input: unknown) => {
+    const { serverId } = parseAgentRequest(input);
+    if (serverId !== "local") throw new Error("Try again restarts the agent CLIs on this computer only.");
+    return service.retryStart();
+  });
   handleTrusted(IPC_CHANNELS.agentGetUsage, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
     return serverId === "local"

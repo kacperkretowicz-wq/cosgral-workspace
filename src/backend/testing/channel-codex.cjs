@@ -1,5 +1,8 @@
 // Deterministic Codex App Server fixture. No model, network, browser or credentials.
 const { randomUUID } = require("node:crypto");
+// W4-BE2: the sandbox script switches the stand-in off with a marker file (a CLI that cannot start).
+if (process.env.COSGRAL_FIXTURE_DOWN && require("node:fs").existsSync(process.env.COSGRAL_FIXTURE_DOWN))
+  process.exit(1);
 if (process.argv.includes("--version")) {
   console.log("codex-cli 0.144.1");
   process.exit(0);
