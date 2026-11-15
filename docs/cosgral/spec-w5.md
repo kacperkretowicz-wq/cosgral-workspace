@@ -104,13 +104,13 @@ To jest opis zachowania „co program ma robić” i tabela kryteriów odbioru. 
 
 | Nr | Kryterium | Jak sprawdzić | Kto |
 |---|---|---|---|
-| C01 | Bez zgody na karcie nic się nie pobiera (wiersz 1). | J: menedżer CLI na atrapie serwera plików; zero żądań przed zgodą. E: karta w „Needs you”. | Backend (BE1), UI Designer (karta) |
+| C01 | Bez zgody na karcie nic się nie pobiera; do zgody stan CLI ma fazę `awaiting-approval` (wiersz 1). | J: menedżer CLI na atrapie serwera plików; zero żądań przed zgodą. E: karta w „Needs you”. | Backend (BE1), UI Designer (karta) |
 | C02 | Po zgodzie widać postęp i fazy; zdarzenie `managed-cli-changed` przy każdej zmianie; agent rusza po instalacji bez restartu (wiersz 2). | J + E z atrapą serwera plików. | Backend (BE1) |
 | C03 | Zła suma SHA-256: plik odrzucony i usunięty, stan „error”, nic nie uruchomione (wiersz 3). | J. | Backend (BE1) |
 | C04 | Przerwane pobranie i brak sieci: błąd, „Try again”, brak półpliku uznanego za CLI (wiersz 3). | J (przerwanie w połowie, ponowienie). | Backend (BE1) |
 | C05 | Folder per wersja pod katalogiem danych COSGRAL, bez uprawnień administratora, systemowe CLI nietknięte (wiersze 2, 8). | J (ścieżki w folderze tymczasowym; sprawdzenie, że systemowy plik atrapy się nie zmienił). | Backend (BE1) |
 | C06 | Auto-aktualizacja (domyślnie włączona): nowsza wersja → pobranie, SHA-256, przełączenie bez karty; trwająca tura nie jest przerywana (wiersz 4). | J. | Backend (BE1) |
-| C07 | Wyłączone „aktualizuj automatycznie”: nic się nie pobiera samo; „Sprawdź” i „Zaktualizuj” działają na żądanie (wiersz 5). | J + E. | Backend (BE1), UI Designer |
+| C07 | Wyłączone „aktualizuj automatycznie”: nic się nie pobiera samo; „Sprawdź” (`checkCli`, bez pobierania) i „Zaktualizuj” (`updateCli`) działają na żądanie (wiersz 5). | J + E. | Backend (BE1), UI Designer |
 | C08 | Przypięta wersja nie jest podmieniana przy włączonej auto-aktualizacji; „odepnij” wraca do najnowszej (wiersz 6). | J. | Backend (BE1) |
 | C09 | Kolejność wykrywania: własna ścieżka → pobrane (przypięte) → `PATH` → znane foldery; zła własna ścieżka daje czytelny błąd, bez zawieszenia (wiersz 7). | J z atrapami w czterech miejscach. | Backend (BE1) |
 | C10 | „Usuń” usuwa tylko źródło „managed”; dla systemowego i własnej ścieżki odmowa (wiersz 8). | J (próba usunięcia systemowego pliku atrapy: plik zostaje). | Backend (BE1) |
@@ -206,7 +206,7 @@ Zasady wspólne: logowanie robi **tylko człowiek** w oknie programu, w piaskown
 - **Zachowania OpenBota 0.70 na żywo.** Nie uruchamiałem go ani nie czytałem jego kodu. Opieram się na dokumencie źródłowym `luki-070.txt`, który opisuje dostawców w kilku zdaniach, jednym wierszu tabeli luk i tabeli zadań W5. Raportu roboczego z „sekcji 3”, o którym wspomina tabela zadań, **nie ma** w `Shared\cosgral-docs` (jest tylko `luki-070.txt`). Szczegóły UI i kolejności w puli OpenBota: brak w źródłach.
 - **Oficjalnych źródeł pobierania CLI, sum SHA-256 i poleceń logowania w trybie bez terminala** (ryzyka R2, R3). Nie sprawdzałem ich; zadanie BE1 i BE2.
 - **Warunków planów ChatGPT i Claude** (R1) i kosztów kluczy API.
-- **Kontraktu `ipc-subscriptions.ts`:** nie istniał w momencie pisania (Backend robi BE1). Pola, których wymagają decyzje właściciela, a których spec-be §4.2 nie ma: kolejność kont w puli, limit liczby kont, `autoUpdate`, `customPath` i kanał `subscriptions:set-cli-settings` (te trzy podał lider w zleceniu BE1). Kryteria P04 i P05 zakładają ich dopisanie.
+- **Kontraktu `ipc-subscriptions.ts` w całości.** Przeczytałem tylko część CLI z nowej gałęzi `team/backend/w5-be1` @ `1f521605d` (nie scalona): zgadza się z kryteriami C01–C13 (`checkCli`, `installCli`, `updateCli`, `removeCli`, `pinCli`, `setCliSettings`, fazy z `awaiting-approval`, `autoUpdate`, `customPath`, kolejność własna ścieżka → pobrane → system). Części kont i puli jeszcze nie ma (to BE2 i K1). Pola, których wymagają decyzje właściciela, a których spec-be §4.2 nie ma: kolejność kont w puli i limit liczby kont. Kryteria P04 i P05 zakładają ich dopisanie.
 - **Dzisiejszego stanu kodu** poza przeczytaniem `ipc-providers.ts` (limit 4 modeli zapasowych, `ProviderUsage`) i wiersza 35 parytetu. Nie uruchamiałem testów, typecheck ani biome (limit sprzętu, dokument to tylko Markdown).
 - **Wymagań „propozycja T1”** (m.in. wiersze 3, 12, 14, 22, 31, 35): to moje dopowiedzenia, których nie ma w źródłach; lider ma je potwierdzić albo skreślić.
 - **Zgodności liczb w podsumowaniu** z innymi dokumentami: policzyłem je z tabel w tym pliku.
