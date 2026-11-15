@@ -14,6 +14,8 @@
 //   INSTRHAS <text>    reports whether the thread's instructions contain the text
 //   INSTR              reports the instructions the thread was started with (first 4000 characters)
 //   MODEL              reports the model and effort of the last turn/start
+//   (channel turns, i.e. a JSON channel context: the lead delegates to the other members and combines their results;
+//    a task whose title starts with HOLD never finishes, so it can be paused, resumed and stopped)
 // Anything else gets "Stub: received". Messages that are JSON are channel turns: this stand-in does not run those
 // (the acceptance run uses src/backend/testing/channel-codex.cjs for channels).
 const { randomUUID } = require("node:crypto");
@@ -195,6 +197,46 @@ async function direct(threadId, turnId, text) {
   return complete(threadId, turnId, "Stub: received");
 }
 
+/** A channel turn: the message is a JSON context with the assignment and the members. */
+async function channel(threadId, turnId, context) {
+  const task = context.assignment;
+  const members = context.members;
+  const call = async (tool, args) =>
+    ask("item/tool/call", {
+      threadId,
+      turnId,
+      callId: randomUUID(),
+      namespace: "cosgral_channels",
+      tool,
+      arguments: args,
+    });
+  if (String(task.title).startsWith("HOLD")) return; // stays running until it is stopped or paused
+  if (task.parentTaskId) return complete(threadId, turnId, `Stub helper result: ${task.title}`);
+  const helpers = members.filter((member) => member !== task.ownerBotId);
+  if (!helpers.length) return complete(threadId, turnId, `Stub lead result: ${task.title}`);
+  const results = (context.history ?? []).filter(
+    (m) => m.kind === "result" && String(m.text).startsWith("Stub helper result:"),
+  );
+  if (!results.length) {
+    await call("assign", { ownerBotId: helpers[0], text: "Facts" });
+    if (helpers[1]) await call("assign", { ownerBotId: helpers[1], text: "Verify" });
+    return complete(threadId, turnId, "Stub: waiting for members");
+  }
+  await call("result", { text: "Stub combined result" });
+  return complete(threadId, turnId, "Stub: combined");
+}
+
+/** The JSON channel context of a channel turn, or null for a plain message. */
+function channelContext(text) {
+  if (!text.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(text);
+    return parsed.assignment ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function limits() {
   return limitResetsAt
     ? {
@@ -261,11 +303,9 @@ process.stdin.on("data", (chunk) => {
         reply({ turn: { id: turnId, status: "inProgress", items: [] } });
         out({ method: "turn/started", params: { threadId, turn: { id: turnId } } });
         const text = params.input?.[0]?.text ?? "";
-        setTimeout(
-          () =>
-            direct(threadId, turnId, text).catch((error) => complete(threadId, turnId, null, "failed", String(error))),
-          20,
-        );
+        const context = channelContext(text);
+        const work = () => (context ? channel(threadId, turnId, context) : direct(threadId, turnId, text));
+        setTimeout(() => work().catch((error) => complete(threadId, turnId, null, "failed", String(error))), 20);
         break;
       }
       case "turn/steer":
