@@ -68,6 +68,17 @@ win:
     - target: nsis
       arch:
         - x64
+# COSGRAL W4-BE4 (W4-H2 preparation): the Windows installer as it already behaved, now written down, plus the lead's
+# decision that uninstalling keeps the person's data (%APPDATA%\COSGRAL Workspace and the agents' folder in the home
+# folder). Removing data is a separate, explicit action, never a side effect of uninstalling.
+nsis:
+  oneClick: true
+  perMachine: false
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ${productName}
+  runAfterFinish: true
 dmg:
   title: ${productName} ${version}
   backgroundColor: "#0b0d0e"
