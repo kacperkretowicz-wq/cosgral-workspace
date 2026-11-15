@@ -220,7 +220,11 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
         ...(result.developmentCode ? { developmentCode: result.developmentCode } : {}),
       });
     } catch (error) {
-      const issue = centralAuthIssue(error, "email_sign_in_start_failed", "COSGRAL Workspace could not send the sign-in code.");
+      const issue = centralAuthIssue(
+        error,
+        "email_sign_in_start_failed",
+        "COSGRAL Workspace could not send the sign-in code.",
+      );
       if (existingChallenge) {
         return this.#setState({ ...existingChallenge, issue });
       }

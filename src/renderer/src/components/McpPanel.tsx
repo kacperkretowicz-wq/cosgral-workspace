@@ -1,5 +1,9 @@
 import type { AddMcpServerInput, AgentMcpServerSetting, McpServer } from "@openbot/contracts/ipc";
+import { isOneOf } from "@openbot/contracts/runtime-values";
 import { createSignal, For, Show } from "solid-js";
+
+const MCP_TRANSPORTS = ["stdio", "http"] as const;
+
 export function McpPanel(props: {
   servers: McpServer[];
   settings: AgentMcpServerSetting[];
@@ -73,7 +77,10 @@ export function McpPanel(props: {
           <select
             aria-label="Transport"
             value={transport()}
-            onChange={(e) => setTransport(e.currentTarget.value as "stdio" | "http")}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              if (isOneOf(MCP_TRANSPORTS, value)) setTransport(value);
+            }}
           >
             <option value="stdio">stdio</option>
             <option value="http">HTTP</option>

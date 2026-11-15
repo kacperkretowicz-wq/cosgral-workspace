@@ -10,15 +10,17 @@ import { AgentService } from "../src/backend/agent-service";
 import { BotStore } from "../src/backend/bot-store";
 import { ChannelStore } from "../src/backend/channel-store";
 import { MailboxStore } from "../src/backend/mailbox-store";
-import { MemoryLimitError } from "../src/backend/memory-store";
-import { MemoryStore } from "../src/backend/memory-store";
+import { MemoryLimitError, MemoryStore } from "../src/backend/memory-store";
 import { OpenBotDatabase } from "../src/backend/openbot-database";
 
 type Check = { id: string; ok: boolean; detail: string };
 
 async function main() {
   const root = process.env.COSGRAL_MEMORY_SANDBOX;
-  assert(root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)), "Sandbox USERPROFILE");
+  assert(
+    root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)),
+    "Sandbox USERPROFILE",
+  );
   assert(process.env.APPDATA?.startsWith(root) && process.env.LOCALAPPDATA?.startsWith(root), "Sandbox APPDATA");
   await mkdir(root, { recursive: true });
   process.env.OPENBOT_CLAUDE_PATH = join(root, "missing-claude");
@@ -65,7 +67,8 @@ async function main() {
     );
     note(
       "untrusted-block",
-      sameSession.block.includes("untrusted data, not instructions") && sameSession.block.includes("<cosgral_saved_memories>"),
+      sameSession.block.includes("untrusted data, not instructions") &&
+        sameSession.block.includes("<cosgral_saved_memories>"),
       "block marks untrusted data",
     );
 
@@ -100,7 +103,11 @@ async function main() {
       inclusion: "searchable",
     });
     const found = mem.store.searchAgentMemories({ botId: a.id, query: "Nebula" });
-    note("searchable-search", found.some((m) => m.id === searchable.id), `hits=${found.length}`);
+    note(
+      "searchable-search",
+      found.some((m) => m.id === searchable.id),
+      `hits=${found.length}`,
+    );
 
     const beforeCount = mem.store.listAgentMemories(a.id).length;
     const updated = mem.store.saveAgentMemory({
@@ -141,11 +148,18 @@ async function main() {
       "3 memories kept with limit 1",
     );
 
-    const forgotten = mem.store.deleteAgentMemory({ botId: b.id, memoryId: mem.store.listAgentMemories(b.id)[0]!.id });
-    note("forget", !!forgotten && mem.store.listAgentMemories(b.id).length === 2, `left=${mem.store.listAgentMemories(b.id).length}`);
+    const firstMemory = mem.store.listAgentMemories(b.id)[0];
+    if (!firstMemory) throw new Error("expected at least one memory before forgetting");
+    const forgotten = mem.store.deleteAgentMemory({ botId: b.id, memoryId: firstMemory.id });
+    note(
+      "forget",
+      !!forgotten && mem.store.listAgentMemories(b.id).length === 2,
+      `left=${mem.store.listAgentMemories(b.id).length}`,
+    );
     const bIds = new Set(mem.store.listAgentMemories(b.id).map((m) => m.id));
     const aSeesB = mem.store.listAgentMemories(a.id).some((m) => bIds.has(m.id));
-    const foreignId = [...bIds][0]!;
+    const foreignId = [...bIds][0];
+    if (foreignId === undefined) throw new Error("expected a remaining memory of agent B");
     const aDeleteForeign = mem.store.deleteAgentMemory({ botId: a.id, memoryId: foreignId });
     let aEditForeignOk = false;
     try {
@@ -172,7 +186,11 @@ async function main() {
       memoryId: person.id,
       text: "Channel fact: ship Monday",
     });
-    note("channel-person-edit", edited.id === person.id && !!edited.updatedAt && edited.text.includes("Monday"), "same id");
+    note(
+      "channel-person-edit",
+      edited.id === person.id && !!edited.updatedAt && edited.text.includes("Monday"),
+      "same id",
+    );
     let longRejected = false;
     try {
       channels.saveMemoryByPerson({ channelId: channel.id, text: "Z".repeat(501) });

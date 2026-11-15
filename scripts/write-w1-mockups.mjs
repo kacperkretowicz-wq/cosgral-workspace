@@ -1,7 +1,7 @@
-import { Resvg } from "@resvg/resvg-js";
-import { writeFileSync, mkdirSync, copyFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Resvg } from "@resvg/resvg-js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "docs", "cosgral", "ui-w1");

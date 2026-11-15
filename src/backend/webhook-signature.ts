@@ -14,7 +14,8 @@ export function signWebhook(secret: string, id: string, timestampSeconds: number
   return `v1,${digest(secret, id, String(timestampSeconds), body).toString("base64")}`;
 }
 
-export type WebhookVerification = { ok: true } | { ok: false; reason: string };
+export type WebhookRejection = "missing headers" | "timestamp out of range" | "bad signature";
+export type WebhookVerification = { ok: true } | { ok: false; reason: WebhookRejection };
 
 export function verifyWebhook(
   secret: string,

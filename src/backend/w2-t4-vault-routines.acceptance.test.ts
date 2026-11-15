@@ -1,14 +1,15 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { AgentEvent, BrowserTab, DraftPreviewResolution, QueueDeliveryStatus } from "@openbot/contracts/ipc";
 import { ROUTINE_LIMITS } from "@openbot/contracts/ipc";
-import { isDynamicRecord } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
+import { describe, expect, it } from "vitest";
 import type { CardContext } from "./action-cards";
-import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
 import { OpenBotDatabase } from "./openbot-database";
+import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
 import { RoutineManager, type RoutineRunner } from "./routine-manager";
 import { RoutineStore } from "./routine-store";
 import { totp } from "./totp";
@@ -48,7 +49,7 @@ function textOf(result: DynamicToolResult): string {
   return result.contentItems.map((item) => (item.type === "inputText" ? item.text : "")).join("");
 }
 
-function payload(result: DynamicToolResult): Record<string, unknown> {
+function payload(result: DynamicToolResult): DynamicRecord {
   const raw = textOf(result);
   const value = JSON.parse(raw);
   if (!isDynamicRecord(value)) throw new Error("Expected JSON object");
@@ -97,7 +98,7 @@ function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
   const found: string[] = [];
   for (const table of tables) {
-    if (!isDynamicRecord(table) || typeof table.name !== "string" || table.name.startsWith("sqlite_")) continue;
+    if (!isDynamicRecord(table) || !isString(table.name) || table.name.startsWith("sqlite_")) continue;
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
       const blob = JSON.stringify(row);
       for (const needle of needles) {
@@ -503,21 +504,35 @@ async function main() {
 
 describe("W2-T4 vault+routines acceptance", () => {
   it("runs sandbox checks and writes evidence", async () => {
-    const root = "C:\\Users\\x1 Yoga\\OpenBot\\Shared\\cosgral-data\\desktop-tester\\sandbox-w2-t4-vault-routines";
-    const { mkdir, rm } = await import("node:fs/promises");
-    await rm(root, { recursive: true, force: true }).catch(() => undefined);
-    await mkdir(join(root, "home", "AppData", "Roaming"), { recursive: true });
-    await mkdir(join(root, "home", "AppData", "Local", "Temp"), { recursive: true });
-    process.env.COSGRAL_VAULT_ROUTINES_SANDBOX = root;
-    process.env.USERPROFILE = join(root, "home");
-    process.env.HOME = join(root, "home");
-    process.env.APPDATA = join(root, "home", "AppData", "Roaming");
-    process.env.LOCALAPPDATA = join(root, "home", "AppData", "Local");
-    process.env.TEMP = join(root, "home", "AppData", "Local", "Temp");
-    process.env.TMP = process.env.TEMP;
-    await main();
-    const evidence = JSON.parse(await (await import("node:fs/promises")).readFile(join(root, "evidence.json"), "utf8"));
-    expect(evidence.ok).toBe(true);
-    expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    // The sandbox lives in a temp folder (or in COSGRAL_ACCEPTANCE_ROOT), never at a fixed machine path.
+    const { mkdir, mkdtemp, readFile, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const customRoot = process.env.COSGRAL_ACCEPTANCE_ROOT;
+    const root = customRoot
+      ? join(customRoot, "sandbox-w2-t4-vault-routines")
+      : await mkdtemp(join(tmpdir(), "cosgral-w2-t4-"));
+    const savedEnvironment = { ...process.env };
+    try {
+      await rm(root, { recursive: true, force: true }).catch(() => undefined);
+      await mkdir(join(root, "home", "AppData", "Roaming"), { recursive: true });
+      await mkdir(join(root, "home", "AppData", "Local", "Temp"), { recursive: true });
+      process.env.COSGRAL_VAULT_ROUTINES_SANDBOX = root;
+      process.env.USERPROFILE = join(root, "home");
+      process.env.HOME = join(root, "home");
+      process.env.APPDATA = join(root, "home", "AppData", "Roaming");
+      process.env.LOCALAPPDATA = join(root, "home", "AppData", "Local");
+      process.env.TEMP = join(root, "home", "AppData", "Local", "Temp");
+      process.env.TMP = process.env.TEMP;
+      await main();
+      const evidence = JSON.parse(await readFile(join(root, "evidence.json"), "utf8"));
+      expect(evidence.ok).toBe(true);
+      expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    } finally {
+      for (const key of Object.keys(process.env)) {
+        if (!(key in savedEnvironment)) delete process.env[key];
+      }
+      Object.assign(process.env, savedEnvironment);
+      if (!customRoot) await rm(root, { recursive: true, force: true }).catch(() => undefined);
+    }
   }, 120_000);
 });

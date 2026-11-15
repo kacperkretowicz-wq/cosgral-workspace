@@ -3,12 +3,17 @@
  * Leaves identifiers: @openbot/*, OpenBotDesktopApi, window.openbot, createMockOpenBot,
  * OpenBotDatabase, isOpenBot*, exportOpenBotData, MockOpenBot*.
  */
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
-import { join, extname, dirname } from "node:path";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const roots = [join(root, "src", "renderer"), join(root, "src", "main"), join(root, "src", "backend"), join(root, "tests")];
+const roots = [
+  join(root, "src", "renderer"),
+  join(root, "src", "main"),
+  join(root, "src", "backend"),
+  join(root, "tests"),
+];
 
 const TEXT_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".css", ".html", ".md", ".json"]);
 
@@ -23,16 +28,28 @@ const PHRASES = [
     "COSGRAL Workspace could not reach the account service. Check your connection and try again.",
   ],
   ["OpenBot still can’t reach the account service.", "COSGRAL Workspace still can’t reach the account service."],
-  ["OpenBot can’t reach the account service right now.", "COSGRAL Workspace can’t reach the account service right now."],
+  [
+    "OpenBot can’t reach the account service right now.",
+    "COSGRAL Workspace can’t reach the account service right now.",
+  ],
   ["OpenBot couldn’t restart sign in. Try again.", "COSGRAL Workspace couldn’t restart sign in. Try again."],
-  ["OpenBot could not start the local remote desktop bridge.", "COSGRAL Workspace could not start the local remote desktop bridge."],
-  ["OpenBot could not authorize Remote Desktop access.", "COSGRAL Workspace could not authorize Remote Desktop access."],
+  [
+    "OpenBot could not start the local remote desktop bridge.",
+    "COSGRAL Workspace could not start the local remote desktop bridge.",
+  ],
+  [
+    "OpenBot could not authorize Remote Desktop access.",
+    "COSGRAL Workspace could not authorize Remote Desktop access.",
+  ],
   ["OpenBot could not read macOS permissions.", "COSGRAL Workspace could not read macOS permissions."],
   ["OpenBot could not open this macOS permission.", "COSGRAL Workspace could not open this macOS permission."],
   ["OpenBot could not save your local setup.", "COSGRAL Workspace could not save your local setup."],
   ["OpenBot could not connect to this host.", "COSGRAL Workspace could not connect to this host."],
   ["OpenBot could not send the sign-in code.", "COSGRAL Workspace could not send the sign-in code."],
-  ["OpenBot could not make this image small enough. Choose a simpler image.", "COSGRAL Workspace could not make this image small enough. Choose a simpler image."],
+  [
+    "OpenBot could not make this image small enough. Choose a simpler image.",
+    "COSGRAL Workspace could not make this image small enough. Choose a simpler image.",
+  ],
   [
     "Install and sign in to Codex CLI or Claude CLI, then restart OpenBot.",
     "Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace.",
@@ -44,14 +61,26 @@ const PHRASES = [
     "Paste the one-time invitation link. You will join with your signed-in OpenBot account.",
     "Paste the one-time invitation link. You will join with your signed-in COSGRAL account.",
   ],
-  ["Use an invitation from the person who runs your OpenBot host.", "Use an invitation from the person who runs your COSGRAL host."],
+  [
+    "Use an invitation from the person who runs your OpenBot host.",
+    "Use an invitation from the person who runs your COSGRAL host.",
+  ],
   [
     "Use this computer, or connect to an OpenBot host that runs somewhere else.",
     "Use this computer, or connect to a COSGRAL host that runs somewhere else.",
   ],
-  ["Use Codex or Claude locally. Keep all OpenBot data here.", "Use Codex or Claude locally. Keep all COSGRAL data here."],
-  ["Run Codex or Claude locally. Keep all OpenBot data here.", "Run Codex or Claude locally. Keep all COSGRAL data here."],
-  ["Use agents and conversations from an existing OpenBot host.", "Use agents and conversations from an existing COSGRAL host."],
+  [
+    "Use Codex or Claude locally. Keep all OpenBot data here.",
+    "Use Codex or Claude locally. Keep all COSGRAL data here.",
+  ],
+  [
+    "Run Codex or Claude locally. Keep all OpenBot data here.",
+    "Run Codex or Claude locally. Keep all COSGRAL data here.",
+  ],
+  [
+    "Use agents and conversations from an existing OpenBot host.",
+    "Use agents and conversations from an existing COSGRAL host.",
+  ],
   [
     "This removes the agent, its OpenBot queue, and managed files used only by that conversation. Its",
     "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its",
@@ -69,12 +98,24 @@ const PHRASES = [
     "Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public",
   ],
   ["Make this OpenBot public before inviting people.", "Make this COSGRAL Workspace public before inviting people."],
-  ["Make this OpenBot public before creating an invite.", "Make this COSGRAL Workspace public before creating an invite."],
+  [
+    "Make this OpenBot public before creating an invite.",
+    "Make this COSGRAL Workspace public before creating an invite.",
+  ],
   ["Make this OpenBot public first.", "Make this COSGRAL Workspace public first."],
   ["Name this OpenBot before publishing it.", "Name this COSGRAL Workspace before publishing it."],
-  ["Publishing this OpenBot through its secure address…", "Publishing this COSGRAL Workspace through its secure address…"],
-  ["This OpenBot and Remote Desktop are publicly reachable.", "This COSGRAL Workspace and Remote Desktop are publicly reachable."],
-  ["This OpenBot is public. Only invited people can sign in.", "This COSGRAL Workspace is public. Only invited people can sign in."],
+  [
+    "Publishing this OpenBot through its secure address…",
+    "Publishing this COSGRAL Workspace through its secure address…",
+  ],
+  [
+    "This OpenBot and Remote Desktop are publicly reachable.",
+    "This COSGRAL Workspace and Remote Desktop are publicly reachable.",
+  ],
+  [
+    "This OpenBot is public. Only invited people can sign in.",
+    "This COSGRAL Workspace is public. Only invited people can sign in.",
+  ],
   [
     "This OpenBot is public. Add the dedicated VNC password to enable Remote Desktop.",
     "This COSGRAL Workspace is public. Add the dedicated VNC password to enable Remote Desktop.",
@@ -119,13 +160,19 @@ const PHRASES = [
   ["OpenBot-diagnostics-", "COSGRAL-diagnostics-"],
   ["filters paste through the OpenBot alphabet", "filters paste through the COSGRAL alphabet"],
   ["uses the verified OpenBot email as the team identity", "uses the verified COSGRAL email as the team identity"],
-  ["allows only the OpenBot email that created the host to own it", "allows only the COSGRAL email that created the host to own it"],
+  [
+    "allows only the OpenBot email that created the host to own it",
+    "allows only the COSGRAL email that created the host to own it",
+  ],
   [
     "joins an email-bound invitation with a verified OpenBot account",
     "joins an email-bound invitation with a verified COSGRAL account",
   ],
   ["parses an OpenBot invitation", "parses a COSGRAL invitation"],
-  ["accepts only the packaged OpenBot application origin", "accepts only the packaged COSGRAL Workspace application origin"],
+  [
+    "accepts only the packaged OpenBot application origin",
+    "accepts only the packaged COSGRAL Workspace application origin",
+  ],
   ["openbot-logo-production.png", "cosgral-logo-production.png"],
   ["openbot-logo-dev.png", "cosgral-logo-dev.png"],
   ["openbot-logo-preview.png", "cosgral-logo-preview.png"],
@@ -175,7 +222,10 @@ for (const file of files) {
     const line = lines[i];
     if (!line.includes("OpenBot")) continue;
     if (shouldSkipIdentifierLine(line)) continue;
-    lines[i] = line.replaceAll("OpenBot Workspace", "COSGRAL Workspace").replaceAll("an OpenBot", "a COSGRAL Workspace").replaceAll("OpenBot", "COSGRAL Workspace");
+    lines[i] = line
+      .replaceAll("OpenBot Workspace", "COSGRAL Workspace")
+      .replaceAll("an OpenBot", "a COSGRAL Workspace")
+      .replaceAll("OpenBot", "COSGRAL Workspace");
   }
   text = lines.join("\n");
 
@@ -195,7 +245,7 @@ for (const file of files) {
     .replaceAll('value="openbot">COSGRAL Workspace</option>', 'value="openbot">COSGRAL</option>')
     .replaceAll('name: "COSGRAL Workspace"', 'name: "COSGRAL"')
     .replaceAll('account-login-wordmark">COSGRAL Workspace</span>', 'account-login-wordmark">COSGRAL</span>')
-    .replaceAll("?? \"COSGRAL Workspace\"", '?? "COSGRAL"')
+    .replaceAll('?? "COSGRAL Workspace"', '?? "COSGRAL"')
     .replaceAll("?? 'COSGRAL Workspace'", "?? 'COSGRAL'");
 
   if (text !== original) {

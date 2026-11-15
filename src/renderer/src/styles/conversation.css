@@ -4226,61 +4226,6 @@
   font-size: var(--openbot-text-sm);
 }
 
-.channel-tasks-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-}
-
-.channel-tasks-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.channel-task-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid var(--openbot-border-subtle);
-  border-radius: var(--openbot-radius-md);
-  background: var(--openbot-bg-surface);
-}
-
-.channel-task-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.channel-task-copy strong {
-  color: var(--openbot-text-primary);
-  font-size: var(--openbot-text-sm);
-}
-
-.channel-task-copy span {
-  color: var(--openbot-text-muted);
-  font-size: var(--openbot-text-xs);
-}
-
-.channel-task-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.channel-tasks-empty {
-  margin: 24px 0;
-  color: var(--openbot-text-muted);
-  text-align: center;
-}
-
 .composer-wrap {
   position: relative;
   flex: 0 0 auto;

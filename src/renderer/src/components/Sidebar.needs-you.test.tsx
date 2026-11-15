@@ -1,7 +1,6 @@
+import type { CentralAuthUser } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
-import type { CentralAuthUser } from "@openbot/contracts/ipc";
-import { Sidebar } from "./Sidebar";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -9,6 +8,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "../../stories/fixtures";
+import { Sidebar } from "./Sidebar";
 
 const account: CentralAuthUser = {
   id: "user-1",

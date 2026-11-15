@@ -14,12 +14,10 @@ describe("RowEditor", () => {
       createdAt: "",
       updatedAt: "",
     };
-    const save = vi
-      .fn()
-      .mockResolvedValue({
-        status: "conflict",
-        current: { ...row, version: 2, values: { Name: "New", Note: "Other change" } },
-      });
+    const save = vi.fn().mockResolvedValue({
+      status: "conflict",
+      current: { ...row, version: 2, values: { Name: "New", Note: "Other change" } },
+    });
     render(() => (
       <RowEditor
         table={{

@@ -1,15 +1,15 @@
 import type {
   AgentEvent,
+  AgentMcpServerSetting,
   AgentMemory,
   AgentMemorySettings,
   ChannelMemory,
   LocalSkill,
-  SkillInstall,
-  McpServer,
-  AgentMcpServerSetting,
-  MemoryDesktopApi,
-  SkillsDesktopApi,
   McpDesktopApi,
+  McpServer,
+  MemoryDesktopApi,
+  SkillInstall,
+  SkillsDesktopApi,
 } from "@openbot/contracts/ipc";
 export function createMockW2(emit: (event: AgentEvent) => void) {
   const now = () => new Date().toISOString();

@@ -2,6 +2,16 @@ import type { LocalSkill, SkillContent, SkillInstall, SkillVersion } from "@open
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { SkillsPanel } from "./SkillsPanel";
 export function SkillsSettings(props: { botId?: string }) {
+  function skillsApi() {
+    const api = window.openbot.skills;
+    if (!api) throw new Error("Skills are unavailable in this build.");
+    return api;
+  }
+  function agentBotId(): string {
+    const botId = props.botId;
+    if (!botId) throw new Error("No agent selected.");
+    return botId;
+  }
   const [skills, setSkills] = createSignal<LocalSkill[]>([]);
   const [installs, setInstalls] = createSignal<SkillInstall[]>([]);
   const [content, setContent] = createSignal<SkillContent>();
@@ -87,7 +97,7 @@ export function SkillsSettings(props: { botId?: string }) {
                         const force = window.confirm(
                           "Also remove installed copies with local changes? Choose Cancel to preserve them.",
                         );
-                        void run(() => window.openbot.skills!.delete({ skillId: skill.id, force }));
+                        void run(() => skillsApi().delete({ skillId: skill.id, force }));
                       }
                     }}
                   >
@@ -103,11 +113,11 @@ export function SkillsSettings(props: { botId?: string }) {
           skills={skills()}
           installs={installs()}
           onInspect={(id) => void inspect(id)}
-          onInstall={(skillId) => void run(() => window.openbot.skills!.install({ skillId, botId: props.botId! }))}
+          onInstall={(skillId) => void run(() => skillsApi().install({ skillId, botId: agentBotId() }))}
           onUpdate={(skillId, overwriteLocalChanges) =>
-            void run(() => window.openbot.skills!.update({ skillId, botId: props.botId!, overwriteLocalChanges }))
+            void run(() => skillsApi().update({ skillId, botId: agentBotId(), overwriteLocalChanges }))
           }
-          onUninstall={(skillId) => void run(() => window.openbot.skills!.uninstall({ skillId, botId: props.botId! }))}
+          onUninstall={(skillId) => void run(() => skillsApi().uninstall({ skillId, botId: agentBotId() }))}
         />
       </Show>
       <Show when={content()}>
@@ -130,7 +140,7 @@ export function SkillsSettings(props: { botId?: string }) {
                     onClick={() => {
                       if (window.confirm(`Restore version ${version.version} as a new library version?`))
                         void run(() =>
-                          window.openbot.skills!.restoreVersion({ skillId: item().skill.id, version: version.version }),
+                          skillsApi().restoreVersion({ skillId: item().skill.id, version: version.version }),
                         );
                     }}
                   >

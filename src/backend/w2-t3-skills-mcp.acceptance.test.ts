@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 import { SKILL_LIMITS } from "@openbot/contracts/ipc";
-import { isDynamicRecord, isNumber } from "@openbot/contracts/runtime-values";
+import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { describe, expect, it } from "vitest";
 import { McpManager } from "./mcp-manager";
 import { McpStore, type SecretBox } from "./mcp-store";
 import { OpenBotDatabase } from "./openbot-database";
@@ -33,7 +34,10 @@ async function settled(manager: McpManager, serverId: string) {
 
 async function main() {
   const root = process.env.COSGRAL_SKILLS_MCP_SANDBOX;
-  assert(root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)), "Sandbox USERPROFILE");
+  assert(
+    root && process.env.USERPROFILE && resolve(process.env.USERPROFILE).startsWith(resolve(root)),
+    "Sandbox USERPROFILE",
+  );
   assert(process.env.APPDATA?.startsWith(root) && process.env.LOCALAPPDATA?.startsWith(root), "Sandbox APPDATA");
   await mkdir(root, { recursive: true });
 
@@ -95,7 +99,11 @@ async function main() {
 
   // Author auto-install on create — other agent only via person install API
   const authorInstalls = await library.listInstalls({ botId: "chief" });
-  note("skill-author-installed", authorInstalls.some((i) => i.skillId === created.id), `installs=${authorInstalls.length}`);
+  note(
+    "skill-author-installed",
+    authorInstalls.some((i) => i.skillId === created.id),
+    `installs=${authorInstalls.length}`,
+  );
   const otherBefore = await library.listInstalls({ botId: "helper" });
   note("skill-other-not-auto", !otherBefore.some((i) => i.skillId === created.id), "helper has no install");
   await library.install({ skillId: created.id, botId: "helper", version: 2 });
@@ -107,8 +115,21 @@ async function main() {
   );
 
   // Local modification protection
-  const installPath = join(root, "home", "COSGRAL Workspace", "Bots", "chief", ".cosgral", "skills", "weekly-report", "SKILL.md");
-  await writeFile(installPath, `${await (await import("node:fs/promises")).readFile(installPath, "utf8")}\n# local edit\n`);
+  const installPath = join(
+    root,
+    "home",
+    "COSGRAL Workspace",
+    "Bots",
+    "chief",
+    ".cosgral",
+    "skills",
+    "weekly-report",
+    "SKILL.md",
+  );
+  await writeFile(
+    installPath,
+    `${await (await import("node:fs/promises")).readFile(installPath, "utf8")}\n# local edit\n`,
+  );
   let protectedOk = false;
   let protectMsg = "";
   try {
@@ -135,10 +156,7 @@ async function main() {
 
   const manyDir = join(root, "draft-many");
   await mkdir(manyDir, { recursive: true });
-  await writeFile(
-    join(manyDir, "SKILL.md"),
-    "---\nname: too-many-files\ndescription: Limit check.\n---\nBody\n",
-  );
+  await writeFile(join(manyDir, "SKILL.md"), "---\nname: too-many-files\ndescription: Limit check.\n---\nBody\n");
   for (let i = 0; i < SKILL_LIMITS.files + 1; i++) {
     await writeFile(join(manyDir, `f${i}.txt`), "x");
   }
@@ -152,10 +170,7 @@ async function main() {
 
   const fatDir = join(root, "draft-fat");
   await mkdir(fatDir, { recursive: true });
-  await writeFile(
-    join(fatDir, "SKILL.md"),
-    "---\nname: too-big-skill\ndescription: Size limit check.\n---\nBody\n",
-  );
+  await writeFile(join(fatDir, "SKILL.md"), "---\nname: too-big-skill\ndescription: Size limit check.\n---\nBody\n");
   await writeFile(join(fatDir, "blob.bin"), Buffer.alloc(SKILL_LIMITS.totalBytes + 1, 0x61));
   try {
     await library.create({ source: { kind: "folder", path: fatDir }, authorBotId: "chief" });
@@ -204,7 +219,10 @@ async function main() {
   note(
     "skill-after-restart",
     library2.list().some((s) => s.id === skillId && s.version >= 3),
-    `versions=${library2.listVersions(skillId).map((v) => v.version).join(",")}`,
+    `versions=${library2
+      .listVersions(skillId)
+      .map((v) => v.version)
+      .join(",")}`,
   );
 
   // --- MCP ---
@@ -231,7 +249,11 @@ async function main() {
   );
 
   const toolsChief = manager.toolsFor("chief");
-  note("mcp-tools-visible", toolsChief.some((n) => n.name === "mcp_local_echo"), `ns=${toolsChief.map((n) => n.name)}`);
+  note(
+    "mcp-tools-visible",
+    toolsChief.some((n) => n.name === "mcp_local_echo"),
+    `ns=${toolsChief.map((n) => n.name)}`,
+  );
   const call = await manager.callTool("chief", "mcp_local_echo", "echo", { text: "hello-w2t3" });
   note(
     "mcp-tool-call",
@@ -254,7 +276,11 @@ async function main() {
   note("mcp-switch-off-tools", manager.toolsFor("chief").length === 0, "chief tools empty");
   note("mcp-switch-other-keeps", manager.toolsFor("helper").length === 1, "helper still has tools");
   const offCall = await manager.callTool("chief", "mcp_local_echo", "echo", { text: "x" });
-  note("mcp-switch-off-call", !offCall.success && /switched off/i.test(JSON.stringify(offCall)), JSON.stringify(offCall).slice(0, 160));
+  note(
+    "mcp-switch-off-call",
+    !offCall.success && /switched off/i.test(JSON.stringify(offCall)),
+    JSON.stringify(offCall).slice(0, 160),
+  );
 
   // 401 needs-login (HTTP path without Avast interference — plain /rpc 401)
   const httpServers: ReturnType<typeof createServer>[] = [];
@@ -299,7 +325,11 @@ async function main() {
     `status=${afterRestart.status}`,
   );
   // Switch should persist (chief still off)
-  note("mcp-switch-persists", manager2.toolsFor("chief").length === 0 && manager2.toolsFor("helper").length === 1, "chief off, helper on");
+  note(
+    "mcp-switch-persists",
+    manager2.toolsFor("chief").length === 0 && manager2.toolsFor("helper").length === 1,
+    "chief off, helper on",
+  );
   await manager2.stop();
   for (const server of httpServers) server.close();
   db2.close();
@@ -327,7 +357,7 @@ function scanDb(database: OpenBotDatabase, needle: string): string[] {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
   const found: string[] = [];
   for (const table of tables) {
-    if (!isDynamicRecord(table) || typeof table.name !== "string" || table.name.startsWith("sqlite_")) continue;
+    if (!isDynamicRecord(table) || !isString(table.name) || table.name.startsWith("sqlite_")) continue;
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
       if (JSON.stringify(row).includes(needle)) found.push(table.name);
     }
@@ -335,27 +365,37 @@ function scanDb(database: OpenBotDatabase, needle: string): string[] {
   return found;
 }
 
-
-
 describe("W2-T3 skills+MCP acceptance", () => {
   it("runs sandbox checks and writes evidence", async () => {
-    const root = "C:\\Users\\x1 Yoga\\OpenBot\\Shared\\cosgral-data\\desktop-tester\\sandbox-w2-t3-skills-mcp";
-    const { mkdir, rm } = await import("node:fs/promises");
-    await rm(root, { recursive: true, force: true }).catch(() => undefined);
-    await mkdir(root + "\\home\\AppData\\Roaming", { recursive: true });
-    await mkdir(root + "\\home\\AppData\\Local\\Temp", { recursive: true });
-    process.env.COSGRAL_SKILLS_MCP_SANDBOX = root;
-    process.env.USERPROFILE = root + "\\home";
-    process.env.HOME = root + "\\home";
-    process.env.APPDATA = root + "\\home\\AppData\\Roaming";
-    process.env.LOCALAPPDATA = root + "\\home\\AppData\\Local";
-    process.env.TEMP = root + "\\home\\AppData\\Local\\Temp";
-    process.env.TMP = process.env.TEMP;
-    await main();
-    const evidence = JSON.parse(await (await import("node:fs/promises")).readFile(root + "\\evidence.json", "utf8"));
-    expect(evidence.ok).toBe(true);
-    expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    // The sandbox lives in a temp folder (or in COSGRAL_ACCEPTANCE_ROOT), never at a fixed machine path.
+    const { mkdir, mkdtemp, readFile, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const customRoot = process.env.COSGRAL_ACCEPTANCE_ROOT;
+    const root = customRoot
+      ? join(customRoot, "sandbox-w2-t3-skills-mcp")
+      : await mkdtemp(join(tmpdir(), "cosgral-w2-t3-"));
+    const savedEnvironment = { ...process.env };
+    try {
+      await rm(root, { recursive: true, force: true }).catch(() => undefined);
+      await mkdir(join(root, "home", "AppData", "Roaming"), { recursive: true });
+      await mkdir(join(root, "home", "AppData", "Local", "Temp"), { recursive: true });
+      process.env.COSGRAL_SKILLS_MCP_SANDBOX = root;
+      process.env.USERPROFILE = join(root, "home");
+      process.env.HOME = join(root, "home");
+      process.env.APPDATA = join(root, "home", "AppData", "Roaming");
+      process.env.LOCALAPPDATA = join(root, "home", "AppData", "Local");
+      process.env.TEMP = join(root, "home", "AppData", "Local", "Temp");
+      process.env.TMP = process.env.TEMP;
+      await main();
+      const evidence = JSON.parse(await readFile(join(root, "evidence.json"), "utf8"));
+      expect(evidence.ok).toBe(true);
+      expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    } finally {
+      for (const key of Object.keys(process.env)) {
+        if (!(key in savedEnvironment)) delete process.env[key];
+      }
+      Object.assign(process.env, savedEnvironment);
+      if (!customRoot) await rm(root, { recursive: true, force: true }).catch(() => undefined);
+    }
   }, 120_000);
 });
-
-

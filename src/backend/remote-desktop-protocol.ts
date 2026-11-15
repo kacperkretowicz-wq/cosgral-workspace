@@ -95,7 +95,6 @@ export type HostMessage =
 
 const CLIENT_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
-
 export function newToken(): string {
   return randomBytes(REMOTE_DESKTOP_LIMITS.tokenBytes).toString("base64url");
 }

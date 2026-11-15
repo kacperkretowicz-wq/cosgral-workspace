@@ -2,6 +2,16 @@ import type { AgentMcpServerSetting, McpServer } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
 import { McpPanel } from "./McpPanel";
 export function McpSettings(props: { botId?: string }) {
+  function mcpApi() {
+    const api = window.openbot.mcp;
+    if (!api) throw new Error("MCP is unavailable in this build.");
+    return api;
+  }
+  function agentBotId(): string {
+    const botId = props.botId;
+    if (!botId) throw new Error("No agent selected.");
+    return botId;
+  }
   const [servers, setServers] = createSignal<McpServer[]>([]);
   const [settings, setSettings] = createSignal<AgentMcpServerSetting[]>([]);
   const [error, setError] = createSignal("");
@@ -57,11 +67,11 @@ export function McpSettings(props: { botId?: string }) {
         servers={servers()}
         settings={settings()}
         agent={!!props.botId}
-        onAdd={(input) => void run(() => window.openbot.mcp!.add(input))}
-        onRemove={(serverId) => void run(() => window.openbot.mcp!.remove({ serverId }))}
-        onReconnect={(serverId) => void run(() => window.openbot.mcp!.reconnect({ serverId }))}
+        onAdd={(input) => void run(() => mcpApi().add(input))}
+        onRemove={(serverId) => void run(() => mcpApi().remove({ serverId }))}
+        onReconnect={(serverId) => void run(() => mcpApi().reconnect({ serverId }))}
         onToggle={(serverId, enabled) =>
-          void run(() => window.openbot.mcp!.setAgentEnabled({ botId: props.botId!, serverId, enabled }))
+          void run(() => mcpApi().setAgentEnabled({ botId: agentBotId(), serverId, enabled }))
         }
       />
     </>

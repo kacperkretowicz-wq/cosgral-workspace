@@ -1,10 +1,10 @@
 import { onCleanup } from "solid-js";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
+import { McpSettings } from "../src/components/McpSettings";
 import { AgentMemorySettingsView, ChannelMemorySettingsView } from "../src/components/MemorySettings";
 import { SkillsSettings } from "../src/components/SkillsSettings";
-import { McpSettings } from "../src/components/McpSettings";
 import { createMockOpenBot } from "./mock-openbot";
-import { ThemeFrame, type StoryTheme } from "./theme-frame";
+import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
 function Scene(props: { theme: StoryTheme }) {
   const mock = createMockOpenBot();

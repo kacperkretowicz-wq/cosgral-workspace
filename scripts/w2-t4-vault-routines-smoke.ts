@@ -7,10 +7,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { AgentEvent, BrowserTab, DraftPreviewResolution, QueueDeliveryStatus } from "@openbot/contracts/ipc";
 import { ROUTINE_LIMITS } from "@openbot/contracts/ipc";
-import { isDynamicRecord } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { CardContext } from "../src/backend/action-cards";
-import type { DynamicToolCallParams, DynamicToolResult } from "../src/backend/protocol";
 import { OpenBotDatabase } from "../src/backend/openbot-database";
+import type { DynamicToolCallParams, DynamicToolResult } from "../src/backend/protocol";
 import { RoutineManager, type RoutineRunner } from "../src/backend/routine-manager";
 import { RoutineStore } from "../src/backend/routine-store";
 import { totp } from "../src/backend/totp";
@@ -50,7 +50,7 @@ function textOf(result: DynamicToolResult): string {
   return result.contentItems.map((item) => (item.type === "inputText" ? item.text : "")).join("");
 }
 
-function payload(result: DynamicToolResult): Record<string, unknown> {
+function payload(result: DynamicToolResult): DynamicRecord {
   const raw = textOf(result);
   const value = JSON.parse(raw);
   if (!isDynamicRecord(value)) throw new Error("Expected JSON object");
@@ -99,7 +99,7 @@ function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
   const found: string[] = [];
   for (const table of tables) {
-    if (!isDynamicRecord(table) || typeof table.name !== "string" || table.name.startsWith("sqlite_")) continue;
+    if (!isDynamicRecord(table) || !isString(table.name) || table.name.startsWith("sqlite_")) continue;
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
       const blob = JSON.stringify(row);
       for (const needle of needles) {
