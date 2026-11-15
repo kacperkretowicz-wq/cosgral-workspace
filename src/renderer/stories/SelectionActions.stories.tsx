@@ -49,6 +49,21 @@ function SelectionActionsDemo(props: {
   );
 }
 
+/**
+ * The toolbar animates its width when it mounts (240 ms). Measuring it right after it appears catches the animation
+ * halfway on a slow machine and the width check below then fails by a few pixels, so wait until it stops moving.
+ */
+async function settledWidth(element: HTMLElement): Promise<number> {
+  let previous = -1;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const width = element.getBoundingClientRect().width;
+    if (Math.abs(width - previous) < 0.01) return width;
+    previous = width;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return previous;
+}
+
 const meta = {
   title: "Conversation/SelectionActions",
   component: SelectionActionsDemo,
@@ -66,7 +81,7 @@ export const CustomInstruction: Story = {
     await selectionActionsReady(page);
     const toolbar = page.getByRole("toolbar", { name: "Actions for selected text" });
     const input = await page.findByRole("textbox", { name: "Describe edits" });
-    const initialWidth = toolbar.getBoundingClientRect().width;
+    const initialWidth = await settledWidth(toolbar);
     await userEvent.type(input, "M");
     await new Promise((resolve) => setTimeout(resolve, 450));
     expect(Math.abs(toolbar.getBoundingClientRect().width - initialWidth)).toBeLessThan(1);
