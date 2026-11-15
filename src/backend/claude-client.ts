@@ -1,7 +1,5 @@
-import { execFile } from "node:child_process";
 import { randomUUID, type UUID } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { promisify } from "node:util";
 import {
   type CanUseTool,
   createSdkMcpServer,
@@ -20,7 +18,7 @@ import { z } from "zod";
 import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
 import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
-import { type ClaudeCliInfo, cliCommand } from "./cli";
+import { CLI_VERSION_TIMEOUT_MS, type ClaudeCliInfo, CliTimeoutError, CodexCliError, runCliWithRetry } from "./cli";
 import { COMPUTER_NAMESPACE, COMPUTER_TOOL_SPECS } from "./computer-use";
 import { DATA_TOOL_SPECS } from "./data-tools";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
@@ -42,7 +40,6 @@ import { ROUTINE_TOOL_SPECS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { SKILLS_NAMESPACE, SKILLS_TOOL_SPECS } from "./skill-tools";
 import { VAULT_NAMESPACE, VAULT_TOOL_SPECS } from "./vault-tools";
 
-const execFileAsync = promisify(execFile);
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 type ClaudeEffort = (typeof CLAUDE_EFFORTS)[number];
 
@@ -221,34 +218,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
   }
 
   async #readAccount(): Promise<AccountReadResult> {
-    try {
-      // COSGRAL: no `shell: true`; it broke CLI paths with spaces on Windows.
-      const { command, args, windowsVerbatimArguments } = cliCommand(this.#cli.executable, [
-        "auth",
-        "status",
-        "--json",
-      ]);
-      const { stdout } = await execFileAsync(command, args, {
-        timeout: 5_000,
-        maxBuffer: 64 * 1024,
-        windowsHide: true,
-        windowsVerbatimArguments,
-      });
-      const status = JSON.parse(stdout);
-      if (!isRecord(status) || status.loggedIn !== true) {
-        return { account: null, requiresOpenaiAuth: false };
-      }
-      return {
-        account: {
-          type: "claude",
-          email: isString(status.email) ? status.email : null,
-          planType: isString(status.subscriptionType) ? status.subscriptionType : null,
-        },
-        requiresOpenaiAuth: false,
-      };
-    } catch {
-      return { account: null, requiresOpenaiAuth: false };
-    }
+    return readClaudeAuthStatus(this.#cli.executable);
   }
 
   async #startThread(threadId: string, config: ThreadConfig, resume: boolean): Promise<void> {
@@ -920,4 +890,43 @@ function thinkingTokens(effort: string): number {
 
 function isUuid(value: string): value is UUID {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+/**
+ * COSGRAL W4-BE3: reads `claude auth status --json` (no `shell: true`; it broke paths with spaces on Windows).
+ * The old check had 5 s and turned any failure into "signed out", so a slow start on a busy computer showed a false
+ * "Sign in required". Now: 20 s and one more try; "signed out" only when the CLI says `loggedIn: false` (its JSON is
+ * read also from a non-zero exit); no answer twice throws "did not answer" (the provider shows "Unavailable").
+ */
+export async function readClaudeAuthStatus(
+  executable: string,
+  timeoutMs = CLI_VERSION_TIMEOUT_MS,
+): Promise<AccountReadResult> {
+  let stdout: string;
+  try {
+    stdout = await runCliWithRetry(executable, ["auth", "status", "--json"], timeoutMs);
+  } catch (error) {
+    if (error instanceof CliTimeoutError) {
+      throw new CodexCliError(
+        `Claude CLI did not answer "claude auth status" within ${Math.round(timeoutMs / 1000)} s (twice). The computer may be busy; choose Try again.`,
+        "invalid",
+      );
+    }
+    stdout = isDynamicRecord(error) && isString(error.stdout) ? error.stdout : "";
+  }
+  let status: unknown = null;
+  try {
+    status = JSON.parse(stdout);
+  } catch {
+    status = null;
+  }
+  if (!isRecord(status) || status.loggedIn !== true) return { account: null, requiresOpenaiAuth: false };
+  return {
+    account: {
+      type: "claude",
+      email: isString(status.email) ? status.email : null,
+      planType: isString(status.subscriptionType) ? status.subscriptionType : null,
+    },
+    requiresOpenaiAuth: false,
+  };
 }
