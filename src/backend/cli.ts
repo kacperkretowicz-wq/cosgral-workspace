@@ -133,20 +133,7 @@ async function collectCandidates(command: "codex" | "claude", configuredPath: st
   if (override) return [override];
 
   if (process.platform === "win32") {
-    try {
-      const { stdout } = await execFileAsync("where.exe", [command], {
-        timeout: 5_000,
-        maxBuffer: 64 * 1024,
-      });
-      candidates.push(
-        ...stdout
-          .split(/\r?\n/u)
-          .map((path) => path.trim())
-          .filter(Boolean),
-      );
-    } catch {
-      // Known Windows install locations are checked next.
-    }
+    candidates.push(...(await windowsPathCandidates(command)));
     candidates.push(...windowsFallbackPaths(command));
   } else {
     try {
@@ -162,6 +149,26 @@ async function collectCandidates(command: "codex" | "claude", configuredPath: st
   }
 
   return [...new Set(candidates)];
+}
+
+/**
+ * COSGRAL W4-BE4: the PATH entries for a CLI on Windows (`where.exe <command>`). It had 5 s; on a busy computer the
+ * lookup timed out and a CLI installed only on PATH looked "Not installed". Now the same long limit and one more try
+ * as `codex --version`. Any failure (not on PATH, no answer) leaves the known install folders to the caller.
+ */
+export async function windowsPathCandidates(
+  command: "codex" | "claude",
+  run: (candidate: string, args: readonly string[], timeoutMs: number) => Promise<string> = runCliWithRetry,
+): Promise<string[]> {
+  try {
+    const stdout = await run("where.exe", [command], CLI_VERSION_TIMEOUT_MS);
+    return stdout
+      .split(/\r?\n/u)
+      .map((path) => path.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 export function windowsFallbackPaths(
