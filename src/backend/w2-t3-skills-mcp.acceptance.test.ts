@@ -339,22 +339,36 @@ function scanDb(database: OpenBotDatabase, needle: string): string[] {
 
 describe("W2-T3 skills+MCP acceptance", () => {
   it("runs sandbox checks and writes evidence", async () => {
-    const root = "C:\\Users\\x1 Yoga\\OpenBot\\Shared\\cosgral-data\\desktop-tester\\sandbox-w2-t3-skills-mcp";
-    const { mkdir, rm } = await import("node:fs/promises");
-    await rm(root, { recursive: true, force: true }).catch(() => undefined);
-    await mkdir(root + "\\home\\AppData\\Roaming", { recursive: true });
-    await mkdir(root + "\\home\\AppData\\Local\\Temp", { recursive: true });
-    process.env.COSGRAL_SKILLS_MCP_SANDBOX = root;
-    process.env.USERPROFILE = root + "\\home";
-    process.env.HOME = root + "\\home";
-    process.env.APPDATA = root + "\\home\\AppData\\Roaming";
-    process.env.LOCALAPPDATA = root + "\\home\\AppData\\Local";
-    process.env.TEMP = root + "\\home\\AppData\\Local\\Temp";
-    process.env.TMP = process.env.TEMP;
-    await main();
-    const evidence = JSON.parse(await (await import("node:fs/promises")).readFile(root + "\\evidence.json", "utf8"));
-    expect(evidence.ok).toBe(true);
-    expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    // The sandbox lives in a temp folder (or in COSGRAL_ACCEPTANCE_ROOT), never at a fixed machine path.
+    const { mkdir, mkdtemp, readFile, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const customRoot = process.env.COSGRAL_ACCEPTANCE_ROOT;
+    const root = customRoot
+      ? join(customRoot, "sandbox-w2-t3-skills-mcp")
+      : await mkdtemp(join(tmpdir(), "cosgral-w2-t3-"));
+    const savedEnvironment = { ...process.env };
+    try {
+      await rm(root, { recursive: true, force: true }).catch(() => undefined);
+      await mkdir(join(root, "home", "AppData", "Roaming"), { recursive: true });
+      await mkdir(join(root, "home", "AppData", "Local", "Temp"), { recursive: true });
+      process.env.COSGRAL_SKILLS_MCP_SANDBOX = root;
+      process.env.USERPROFILE = join(root, "home");
+      process.env.HOME = join(root, "home");
+      process.env.APPDATA = join(root, "home", "AppData", "Roaming");
+      process.env.LOCALAPPDATA = join(root, "home", "AppData", "Local");
+      process.env.TEMP = join(root, "home", "AppData", "Local", "Temp");
+      process.env.TMP = process.env.TEMP;
+      await main();
+      const evidence = JSON.parse(await readFile(join(root, "evidence.json"), "utf8"));
+      expect(evidence.ok).toBe(true);
+      expect(evidence.checks.length).toBeGreaterThanOrEqual(20);
+    } finally {
+      for (const key of Object.keys(process.env)) {
+        if (!(key in savedEnvironment)) delete process.env[key];
+      }
+      Object.assign(process.env, savedEnvironment);
+      if (!customRoot) await rm(root, { recursive: true, force: true }).catch(() => undefined);
+    }
   }, 120_000);
 });
 
