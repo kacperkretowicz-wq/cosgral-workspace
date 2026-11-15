@@ -41,13 +41,17 @@ export class HttpsDownloadSource implements DownloadSource {
   readonly #maxRedirects: number;
   readonly #idleTimeoutMs: number;
 
-  constructor(options: { maxRedirects?: number; idleTimeoutMs?: number } = {}) {
+  readonly #checkUrl: (value: string) => URL;
+
+  /** COSGRAL W5-BE1: `checkUrl` lets another feature (managed CLIs) use its own list of official hosts. */
+  constructor(options: { maxRedirects?: number; idleTimeoutMs?: number; checkUrl?: (value: string) => URL } = {}) {
     this.#maxRedirects = options.maxRedirects ?? 5;
     this.#idleTimeoutMs = options.idleTimeoutMs ?? 60_000;
+    this.#checkUrl = options.checkUrl ?? checkDownloadUrl;
   }
 
   async open(address: string, signal: AbortSignal): Promise<DownloadResponse> {
-    let current = checkDownloadUrl(address);
+    let current = this.#checkUrl(address);
     for (let hop = 0; hop <= this.#maxRedirects; hop += 1) {
       const response = await new Promise<import("node:http").IncomingMessage>((resolve, reject) => {
         const request = get(
@@ -61,7 +65,7 @@ export class HttpsDownloadSource implements DownloadSource {
       const status = response.statusCode ?? 0;
       if (status >= 300 && status < 400 && response.headers.location) {
         response.resume();
-        current = checkDownloadUrl(new URL(response.headers.location, current).toString());
+        current = this.#checkUrl(new URL(response.headers.location, current).toString());
         continue;
       }
       if (status !== 200) {
@@ -85,10 +89,12 @@ export interface VerifiedDownloadInput {
   destination: string;
   signal: AbortSignal;
   onProgress?: (receivedBytes: number) => void;
+  /** COSGRAL W5-BE1: the allowed-address check of the feature (default: the voice hosts). */
+  checkUrl?: (value: string) => URL;
 }
 
 export async function downloadVerified(input: VerifiedDownloadInput): Promise<void> {
-  checkDownloadUrl(input.url);
+  (input.checkUrl ?? checkDownloadUrl)(input.url);
   const partial = `${input.destination}.part`;
   await mkdir(dirname(input.destination), { recursive: true });
   const output = createWriteStream(partial);
