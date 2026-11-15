@@ -2,6 +2,8 @@
 
 Data: 15.11.2026. Integracja `codex/cosgral-desktop` @ `ebe31c8c1`, gałąź robocza `team/kk/w4-g1b`.
 
+> **Aktualizacja:** G1 domknięte w W4-T4, pełne `bun run check` zielone. Szczegóły: `kk-w4-g1c.md`. Ten raport opisuje stan sprzed poprawek.
+
 ## Wynik w jednej linii
 
 **G1 nadal czerwone: pełne `bun run check` pada na `test:storybook`: 12 z 209 testów w przebiegu, po poprawce jednego nieaktualnego testu zostaje 11, wszystkie to kontrast kolorów.** `test:visual` jest teraz zielone (4/4, stabilne). Żadnej regresji nie wprowadziło W4: te same błędy są na końcu W3 (`ea54e157d`), a na oryginalnym imporcie bazy (`a04be4c22`) wszystkie 159 testów przechodzi.

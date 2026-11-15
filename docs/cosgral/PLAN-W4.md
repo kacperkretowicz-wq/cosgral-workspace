@@ -20,6 +20,24 @@
 - Kod nigdy nie zabija wszystkich procesów `bun`; tylko własny PID.
 
 ## Krok 1 · W4 (bramka G1: `bun run check` zielony, `sandbox:e2e` 19/19, raport T2 bez blokerów)
+
+**Stan bramki G1 (15.11.2026): `bun run check` ZIELONY** — jedno polecenie, exit 0, 709 s, kod @ `8bbaf2175` (gałąź `team/kk/w4-g1c`, nie wypchnięta; dalsze commity tylko dokumentacja). Raport: `docs/cosgral-raporty/kk-w4-g1c.md`. Potwierdzenie bramki przez właściciela (decyzja 5) nadal czeka.
+
+| Etap | Wynik | Co |
+|---|---|---|
+| `check:ui` | zielony | dług natywnych kontrolek 0/0 |
+| `lint` (Biome) | zielony | |
+| `typecheck` (node + renderer) | zielony | |
+| `test` | zielony | 212 plików, 1343 testy (359 s) |
+| `test:storybook` | zielony | 50 plików, 209 testów (97 s) |
+| `test:visual` | zielony | 4 testy (8,5 s), obrazy Windows z W4-T3 |
+| `test:api` | zielony | 6 plików, 29 testów |
+| `test:browser` | zielony | smoke BrowserHost w Electronie |
+| `api:build` | zielony | |
+| `build-storybook` | zielony | |
+| `build` | zielony | |
+
+Nie objęte bramką `check`: `sandbox:e2e` i skrypt odbioru (w prawdziwym oknie; ostatnio 24/24 u lidera i 38/38 u KK na wcześniejszych SHA, po W4-T4 nie powtarzane), instalator na czystym koncie.
 | ID | Kto | Zadanie | Stan 15.11 |
 |---|---|---|---|
 | W4-L1 | Okiestrator | tabela dla 0.70 w miejsce parytet-0.68, poprawić README_URUCHOMIENIE | w toku (parytet 0.68 zaktualizowany do 34,5/44 przez KK) |
