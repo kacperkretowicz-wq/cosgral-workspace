@@ -87,7 +87,8 @@ async function firstRun(page: Page): Promise<void> {
     if ((await where.count()) && (await where.isEnabled())) await where.click();
     else if (await setup.count()) {
       const claude = setup.getByRole("radio", { name: /^Claude/ });
-      if ((await claude.count()) && (await claude.isEnabled().catch(() => false))) await claude.check({ force: true }).catch(() => undefined);
+      if ((await claude.count()) && (await claude.isEnabled().catch(() => false)))
+        await claude.check({ force: true }).catch(() => undefined);
       const go = setup.getByRole("button", { name: /^Continue with/ });
       if ((await go.count()) && (await go.isEnabled())) await go.click();
     }
@@ -160,11 +161,21 @@ const SAFE_STATUS = `window.openbot.agent.getStatus().then((s) => ({
 
 async function main(): Promise<void> {
   const root = resolve(required("COSGRAL_SANDBOX_ROOT"));
-  assert(!resolve(repo).startsWith(root + sep) && root !== resolve(repo), "The sandbox must not contain the repository");
+  assert(
+    !resolve(repo).startsWith(root + sep) && root !== resolve(repo),
+    "The sandbox must not contain the repository",
+  );
   assert(existsSync(required("COSGRAL_REAL_CLAUDE_PATH")), "COSGRAL_REAL_CLAUDE_PATH must be the Claude executable");
-  assert(existsSync(required("COSGRAL_REAL_CLAUDE_CONFIG_DIR")), "COSGRAL_REAL_CLAUDE_CONFIG_DIR must be an existing folder (used in place)");
+  assert(
+    existsSync(required("COSGRAL_REAL_CLAUDE_CONFIG_DIR")),
+    "COSGRAL_REAL_CLAUDE_CONFIG_DIR must be an existing folder (used in place)",
+  );
   await rm(root, { recursive: true, force: true });
-  for (const folder of [join(root, "home", "AppData", "Roaming"), join(root, "home", "AppData", "Local"), join(root, "tmp")]) {
+  for (const folder of [
+    join(root, "home", "AppData", "Roaming"),
+    join(root, "home", "AppData", "Local"),
+    join(root, "tmp"),
+  ]) {
     await mkdir(folder, { recursive: true });
   }
   const turns: Turn[] = [];
@@ -180,7 +191,9 @@ async function main(): Promise<void> {
         const claude = status.providers.find((provider) => provider.id === "claude");
         if (claude?.state === "sign-in-required") {
           signedOut = true;
-          throw new Error("Claude CLI reports: Sign in required. The person must run `claude auth login`; this script does not sign in.");
+          throw new Error(
+            "Claude CLI reports: Sign in required. The person must run `claude auth login`; this script does not sign in.",
+          );
         }
         if (status.phase === "ready" && claude?.state === "available") break;
         await page.waitForTimeout(1000);
