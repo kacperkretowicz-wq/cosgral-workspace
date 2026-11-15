@@ -36,7 +36,7 @@ import {
 } from "./SidebarFolders";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
-import { AlertDialog, Badge, Button, ContextMenu, Input, Popover } from "./ui";
+import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover } from "./ui";
 
 export interface NeedsYouSidebarItem {
   botId: string;
@@ -70,6 +70,7 @@ interface SidebarProps {
   /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
   folderActions?: SidebarFolderActions;
   onSelectBot: (botId: string) => void;
+  onMarkBotRead?: (botId: string) => Promise<void>;
   onSelectChannels?: (create?: boolean) => void;
   onSelectNeedsYou?: (botId: string) => void;
   onSelectPerson: (memberId: string) => void;
@@ -237,6 +238,22 @@ function LogoutIcon() {
 }
 
 export function Sidebar(props: SidebarProps) {
+  const [readBusy, setReadBusy] = createSignal(false);
+  const [rowActionError, setRowActionError] = createSignal("");
+  async function markRead(botId: string) {
+    if (readBusy() || !props.onMarkBotRead) return;
+    const name = props.bots.find((bot) => bot.id === botId)?.name ?? "this agent";
+    setReadBusy(true);
+    setRowActionError("");
+    try {
+      await props.onMarkBotRead(botId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Try again.";
+      setRowActionError(`Could not mark ${name} as read. ${message}`);
+    } finally {
+      setReadBusy(false);
+    }
+  }
   const [query, setQuery] = createSignal("");
   const [deleteTargetId, setDeleteTargetId] = createSignal<string | null>(null);
   const [deleting, setDeleting] = createSignal(false);
@@ -579,6 +596,11 @@ export function Sidebar(props: SidebarProps) {
         </Button>
       </div>
 
+      <Show when={rowActionError()}>
+        <p role="alert" class="sidebar-row-action-error">
+          {rowActionError()}
+        </p>
+      </Show>
       <nav
         ref={(element) => (botList = element)}
         aria-label="Chat list"
@@ -819,6 +841,12 @@ export function Sidebar(props: SidebarProps) {
                             <EditIcon />
                             <span>Edit agent</span>
                           </ContextMenu.Item>
+                          <Show when={props.onMarkBotRead}>
+                            <ContextMenu.Item disabled={readBusy()} onSelect={() => void markRead(bot.id)}>
+                              <Check class="bot-context-icon" aria-hidden="true" />
+                              <span>{readBusy() ? "Marking as read…" : "Mark as read"}</span>
+                            </ContextMenu.Item>
+                          </Show>
                           <Show when={props.layout && props.folderActions}>
                             <ContextMenu.Item onSelect={() => setFolderDialog({ kind: "move-agent", botId: bot.id })}>
                               <FolderMoveIcon />

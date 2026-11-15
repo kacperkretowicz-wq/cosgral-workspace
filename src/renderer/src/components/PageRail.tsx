@@ -1,6 +1,6 @@
 import type { JSX } from "@solidjs/web";
-import { For } from "solid-js";
-import { Button } from "./ui";
+import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, DropdownMenu, Ellipsis } from "./ui";
 
 /** COSGRAL page rail: vertical page switcher beside the server rail. */
 export type PageId =
@@ -122,10 +122,42 @@ function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
 }
 
 export function PageRail(props: PageRailProps) {
+  const [visibleCount, setVisibleCount] = createSignal(PAGE_RAIL_ITEMS.length);
+  let rail: HTMLElement | undefined;
+  let tools: HTMLDivElement | undefined;
+  const hidden = () => PAGE_RAIL_ITEMS.slice(visibleCount());
+  const hiddenActive = () => hidden().find((item) => item.id === props.active);
+  onSettled(() => {
+    function measure() {
+      if (!rail || !tools) return;
+      const button = rail.querySelector<HTMLElement>(".page-rail-list > button");
+      const height = button?.getBoundingClientRect().height ?? 0;
+      if (rail.clientHeight <= 0 || height <= 0) return;
+      const style = getComputedStyle(rail);
+      const list = rail.querySelector(".page-rail-list");
+      const gap = list ? Number.parseFloat(getComputedStyle(list).rowGap) || 0 : 0;
+      const available =
+        rail.clientHeight -
+        (Number.parseFloat(style.paddingTop) || 0) -
+        (Number.parseFloat(style.paddingBottom) || 0) -
+        tools.getBoundingClientRect().height;
+      const slots = Math.max(0, Math.floor((available + gap) / (height + gap)));
+      setVisibleCount(slots >= PAGE_RAIL_ITEMS.length ? PAGE_RAIL_ITEMS.length : Math.max(0, slots - 1));
+    }
+    const observer = new ResizeObserver(measure);
+    if (rail) observer.observe(rail);
+    if (tools) observer.observe(tools);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  });
   return (
-    <nav class="page-rail panel-edge" aria-label="Pages">
+    <nav ref={(element) => (rail = element)} class="page-rail panel-edge" aria-label="Pages">
       <div class="page-rail-list">
-        <For each={PAGE_RAIL_ITEMS}>
+        <For each={PAGE_RAIL_ITEMS.slice(0, visibleCount())}>
           {(item) => (
             <Button
               type="button"
@@ -141,8 +173,42 @@ export function PageRail(props: PageRailProps) {
             </Button>
           )}
         </For>
+        <Show when={hidden().length > 0}>
+          <DropdownMenu.Root placement="right-start" gutter={8} modal={false}>
+            <DropdownMenu.Trigger
+              as={Button}
+              type="button"
+              variant="ghost"
+              class={["page-rail-button", { "page-rail-button-active": !!hiddenActive() }]}
+              aria-label={hiddenActive() ? `More pages (current: ${hiddenActive()?.label})` : "More pages"}
+              title="More pages"
+            >
+              <span class="page-rail-mark" />
+              <Ellipsis aria-hidden="true" />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                class="bot-context-menu page-rail-overflow-menu"
+                aria-label="More pages"
+                aria-labelledby={undefined}
+              >
+                <For each={hidden()}>
+                  {(item) => (
+                    <DropdownMenu.Item
+                      aria-current={props.active === item.id ? "page" : undefined}
+                      onSelect={() => props.onSelect(item.id)}
+                    >
+                      <PageIcon page={item.id} />
+                      <span>{item.label}</span>
+                    </DropdownMenu.Item>
+                  )}
+                </For>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        </Show>
       </div>
-      <div class="page-rail-tools">
+      <div ref={(element) => (tools = element)} class="page-rail-tools">
         <Button
           type="button"
           variant="ghost"
