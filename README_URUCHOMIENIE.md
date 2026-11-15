@@ -87,17 +87,27 @@ Skrypt uruchamia prawdziwy program w piaskownicy z atrapą Codex i przechodzi ś
 Gdy Codex jest zalogowany (`codex login status` pokazuje „Logged in using ChatGPT”), krótki test z prawdziwym modelem (4 tury po jednym słowie: rozmowa, karta pytania, karta zgody, kanał z liderem):
 
 ```bat
-set COSGRAL_SANDBOX_ROOT=C:	empcosgral-real
+set COSGRAL_SANDBOX_ROOT=C:\temp\cosgral-real
 set COSGRAL_REAL_CODEX_PATH=<pełna ścieżka do codex.exe albo codex.cmd>
-set CODEX_HOME=%USERPROFILE%.codex
+set CODEX_HOME=%USERPROFILE%\.codex
 bun run sandbox:real-codex
 ```
 
-Program działa w piaskownicy; Codex czyta swoje logowanie z `CODEX_HOME` na miejscu (nic nie jest kopiowane ani wypisywane) i zapisuje tam swoje pliki sesji. Wynik z czasami: `%COSGRAL_SANDBOX_ROOT%eal-codex.json`.
+Program działa w piaskownicy; Codex czyta swoje logowanie z `CODEX_HOME` na miejscu (nic nie jest kopiowane ani wypisywane) i zapisuje tam swoje pliki sesji. Wynik z czasami: `%COSGRAL_SANDBOX_ROOT%\real-codex.json`.
+
+### Test połączeń z prawdziwym Claude
+
+Analogicznie, gdy Claude CLI jest zainstalowany i zalogowany (jeśli program pokaże „Sign in required”, zaloguj się sam: `claude auth login`). Test robi 4 krótkie tury (rozmowa, karta pytania, karta zgody, kanał z liderem):
+
+```bat
+set COSGRAL_SANDBOX_ROOT=C:\temp\cosgral-real-claude
+bun run sandbox:real-claude
+```
+
+Logowanie zostaje tam, gdzie jest; skrypt go nie czyta, nie kopiuje i nie wypisuje.
 
 ## 7. Czego jeszcze nie ma w oknie programu
 
-- Okno „Nowy kanał” (kanał zakłada się dziś przez API; W4-UI1).
 - Motyw jasny i polskie napisy w oknie (W7).
 - Pełna lista: `docs/cosgral/PLAN-W4.md`.
 
