@@ -1,35 +1,26 @@
 import { Show } from "solid-js";
 import type { ChannelViewMode } from "../channel-tasks";
-import { Button } from "./ui";
-
-interface ChatTasksSwitchProps {
+import { ViewTabList } from "./ui";
+export function ChatTasksSwitch(props: {
   mode: ChannelViewMode;
+  idPrefix: string;
   onChange: (mode: ChannelViewMode) => void;
   channelLabel?: string;
-}
-
-export function ChatTasksSwitch(props: ChatTasksSwitchProps) {
+}) {
   return (
-    <div class="chat-tasks-switch" role="tablist" aria-label="Channel view">
-      <Button
-        type="button"
-        role="tab"
-        aria-selected={props.mode === "chat" ? "true" : "false"}
-        class={["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === "chat" }]}
-        onClick={() => props.onChange("chat")}
-      >
-        Chat
-      </Button>
-      <Button
-        type="button"
-        role="tab"
-        aria-selected={props.mode === "tasks" ? "true" : "false"}
-        class={["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === "tasks" }]}
-        onClick={() => props.onChange("tasks")}
-      >
-        Tasks
-      </Button>
+    <ViewTabList
+      idPrefix={props.idPrefix}
+      value={props.mode}
+      onChange={(value) => props.onChange(value === "tasks" ? "tasks" : "chat")}
+      tabs={[
+        { value: "chat", label: "Chat" },
+        { value: "tasks", label: "Tasks" },
+      ]}
+      label="Channel view"
+      class="chat-tasks-switch"
+      tabClass={(value) => ["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === value }]}
+    >
       <Show when={props.channelLabel}>{(label) => <span class="chat-tasks-switch-context">{label()}</span>}</Show>
-    </div>
+    </ViewTabList>
   );
 }

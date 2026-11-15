@@ -235,7 +235,7 @@ export function MobileConnectView(props: MobileConnectViewProps) {
               </Button>
             }
           >
-            <div class="mobile-confirm" role="alertdialog" aria-label="Confirm certificate rotation">
+            <fieldset class="mobile-confirm" aria-label="Confirm certificate rotation">
               <Text as="p" tone="danger">
                 This removes {props.state.devices.length} paired {props.state.devices.length === 1 ? "phone" : "phones"}{" "}
                 at once. They stop working until paired again.
@@ -256,7 +256,7 @@ export function MobileConnectView(props: MobileConnectViewProps) {
                   Keep the current certificate
                 </Button>
               </div>
-            </div>
+            </fieldset>
           </Show>
         </Card>
       </Show>

@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { cssDeclarationValues } from "./ui-foundation-css";
+
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const rendererRoot = resolve(projectRoot, "src/renderer/src");
 const uiRoot = resolve(rendererRoot, "components/ui");
@@ -70,9 +72,13 @@ const featureStyles = filesUnder(resolve(rendererRoot, "styles"))
   .map((path) => readFileSync(path, "utf8"))
   .join("\n");
 const legacyStyles = `${styles.slice(paletteEnd + 3)}\n${featureStyles}`;
+const declarationValues = cssDeclarationValues(legacyStyles);
 const colorLiteralCount =
-  matches(legacyStyles, /#[\da-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)/giu) +
-  matches(legacyStyles, /(?<![-\w])(?:white|black|red|blue|green|yellow|purple|orange|gray|grey|pink)(?![-\w])/giu);
+  matches(declarationValues, /#[\da-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)/giu) +
+  matches(
+    declarationValues,
+    /(?<![-\w])(?:white|black|red|blue|green|yellow|purple|orange|gray|grey|pink)(?![-\w])/giu,
+  );
 const debtBudgets = [
   ["ręczne złożone role ARIA", manualCompositeCount, 0],
   ["literały kolorów poza paletą", colorLiteralCount, 0],
