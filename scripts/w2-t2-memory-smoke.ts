@@ -148,7 +148,9 @@ async function main() {
       "3 memories kept with limit 1",
     );
 
-    const forgotten = mem.store.deleteAgentMemory({ botId: b.id, memoryId: mem.store.listAgentMemories(b.id)[0]!.id });
+    const firstMemory = mem.store.listAgentMemories(b.id)[0];
+    if (!firstMemory) throw new Error("expected at least one memory before forgetting");
+    const forgotten = mem.store.deleteAgentMemory({ botId: b.id, memoryId: firstMemory.id });
     note(
       "forget",
       !!forgotten && mem.store.listAgentMemories(b.id).length === 2,
@@ -156,7 +158,8 @@ async function main() {
     );
     const bIds = new Set(mem.store.listAgentMemories(b.id).map((m) => m.id));
     const aSeesB = mem.store.listAgentMemories(a.id).some((m) => bIds.has(m.id));
-    const foreignId = [...bIds][0]!;
+    const foreignId = [...bIds][0];
+    if (foreignId === undefined) throw new Error("expected a remaining memory of agent B");
     const aDeleteForeign = mem.store.deleteAgentMemory({ botId: a.id, memoryId: foreignId });
     let aEditForeignOk = false;
     try {

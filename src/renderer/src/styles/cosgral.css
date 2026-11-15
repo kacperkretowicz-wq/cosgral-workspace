@@ -83,6 +83,17 @@
   height: 20px;
 }
 
+/* Coming soon ----------------------------------------------------------- */
+
+.coming-soon {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--openbot-bg-canvas);
+}
+
 /* The page rail adds a column; the conversation (or Coming soon) moves one to the right. */
 .app-frame-with-page-rail .conversation-panel,
 .app-frame-with-page-rail .direct-conversation,
@@ -97,16 +108,7 @@
   grid-column: 5;
 }
 
-/* Coming soon ----------------------------------------------------------- */
-
-.coming-soon {
-  position: relative;
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  background: var(--openbot-bg-canvas);
-}
+/* Coming soon (continued; the base .coming-soon rule is above the grid placement rules) ---- */
 
 .coming-soon-drag {
   height: 38px;

@@ -1,7 +1,25 @@
+import type { BrowserTakeoverRequest, DraftPreviewCard } from "@openbot/contracts/ipc";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { ActionCard } from "../src/components/ActionCard";
-import { draftCard, takeoverCard } from "../src/pending-cards";
+import type { PendingCard } from "../src/pending-cards";
 import { type StoryTheme, ThemeFrame } from "./theme-frame";
+
+type DraftAction = Extract<PendingCard, { kind: "draft-preview" }>;
+type TakeoverAction = Extract<PendingCard, { kind: "browser-takeover" }>;
+
+function draftCard(card: DraftPreviewCard): DraftAction {
+  return { kind: "draft-preview", requestId: card.requestId, botId: card.botId, createdAt: card.createdAt, card };
+}
+function takeoverCard(request: BrowserTakeoverRequest): TakeoverAction {
+  return {
+    kind: "browser-takeover",
+    requestId: request.requestId,
+    botId: request.botId,
+    createdAt: request.createdAt,
+    request,
+    phase: "requested",
+  };
+}
 
 const draft = draftCard({
   requestId: "draft",
@@ -42,21 +60,9 @@ const confirm = draftCard({
 function Scene(props: { theme: StoryTheme }) {
   return (
     <ThemeFrame theme={props.theme} style="padding: 24px; width: 520px; display: grid; gap: 20px;">
-      <ActionCard
-        card={draft as Extract<typeof draft, { kind: "draft-preview" }>}
-        onDraft={async () => {}}
-        onTakeover={async () => {}}
-      />
-      <ActionCard
-        card={takeover as Extract<typeof takeover, { kind: "browser-takeover" }>}
-        onDraft={async () => {}}
-        onTakeover={async () => {}}
-      />
-      <ActionCard
-        card={confirm as Extract<typeof confirm, { kind: "draft-preview" }>}
-        onDraft={async () => {}}
-        onTakeover={async () => {}}
-      />
+      <ActionCard card={draft} onDraft={async () => {}} onTakeover={async () => {}} />
+      <ActionCard card={takeover} onDraft={async () => {}} onTakeover={async () => {}} />
+      <ActionCard card={confirm} onDraft={async () => {}} onTakeover={async () => {}} />
     </ThemeFrame>
   );
 }

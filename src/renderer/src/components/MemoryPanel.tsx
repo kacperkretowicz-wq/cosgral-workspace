@@ -1,4 +1,4 @@
-import type { AgentMemorySettings, MemoryInclusion } from "@openbot/contracts/ipc";
+import { type AgentMemorySettings, isMemoryInclusion, type MemoryInclusion } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
 
 type Entry = { id: string; text: string; inclusion?: MemoryInclusion };
@@ -44,7 +44,11 @@ export function MemoryPanel(props: {
                 min="0"
                 max="10000"
                 value={s().maxMemories}
-                onChange={(e) => void run(() => props.onLimit!(Number(e.currentTarget.value)))}
+                onChange={(e) => {
+                  const onLimit = props.onLimit;
+                  const limit = Number(e.currentTarget.value);
+                  if (onLimit) void run(() => onLimit(limit));
+                }}
               />
             </label>
           </>
@@ -100,7 +104,10 @@ export function MemoryPanel(props: {
           <select
             aria-label="Inclusion"
             value={inclusion()}
-            onChange={(e) => setInclusion(e.currentTarget.value as MemoryInclusion)}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              if (isMemoryInclusion(value)) setInclusion(value);
+            }}
           >
             <option value="searchable">When needed</option>
             <option value="essential">Always</option>

@@ -5,7 +5,7 @@ import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 import { SKILL_LIMITS } from "@openbot/contracts/ipc";
-import { isDynamicRecord, isNumber } from "@openbot/contracts/runtime-values";
+import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { describe, expect, it } from "vitest";
 import { McpManager } from "./mcp-manager";
 import { McpStore, type SecretBox } from "./mcp-store";
@@ -357,7 +357,7 @@ function scanDb(database: OpenBotDatabase, needle: string): string[] {
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
   const found: string[] = [];
   for (const table of tables) {
-    if (!isDynamicRecord(table) || typeof table.name !== "string" || table.name.startsWith("sqlite_")) continue;
+    if (!isDynamicRecord(table) || !isString(table.name) || table.name.startsWith("sqlite_")) continue;
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
       if (JSON.stringify(row).includes(needle)) found.push(table.name);
     }

@@ -57,6 +57,7 @@ export function ActionCard(props: {
                 fallback={
                   <>
                     <button
+                      type="button"
                       disabled={busy()}
                       onClick={() =>
                         void run(() => props.onDraft({ requestId: item().requestId, decision: "edit", text: text() }))
@@ -64,20 +65,24 @@ export function ActionCard(props: {
                     >
                       Request revision
                     </button>
-                    <button onClick={() => setEditing(false)}>Back</button>
+                    <button type="button" onClick={() => setEditing(false)}>
+                      Back
+                    </button>
                   </>
                 }
               >
                 <button
+                  type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "send" }))}
                 >
                   {item().card.variant === "draft" ? "Send" : "Confirm"}
                 </button>
-                <button disabled={busy()} onClick={() => setEditing(true)}>
+                <button type="button" disabled={busy()} onClick={() => setEditing(true)}>
                   Edit
                 </button>
                 <button
+                  type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "keep-draft" }))}
                 >
@@ -100,6 +105,7 @@ export function ActionCard(props: {
                 fallback={
                   <>
                     <button
+                      type="button"
                       disabled={busy()}
                       onClick={() =>
                         void run(() => props.onTakeover({ requestId: item().requestId, action: "take-over" }))
@@ -108,6 +114,7 @@ export function ActionCard(props: {
                       Take over
                     </button>
                     <button
+                      type="button"
                       disabled={busy()}
                       onClick={() =>
                         void run(() => props.onTakeover({ requestId: item().requestId, action: "decline" }))
@@ -119,6 +126,7 @@ export function ActionCard(props: {
                 }
               >
                 <button
+                  type="button"
                   disabled={busy()}
                   onClick={() => void run(() => props.onTakeover({ requestId: item().requestId, action: "return" }))}
                 >
