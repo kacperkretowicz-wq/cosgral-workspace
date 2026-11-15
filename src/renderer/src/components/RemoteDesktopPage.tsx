@@ -10,15 +10,16 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect } from "./ui";
 
 export function RemoteDesktopSafetyBanner(props: { count: number; onStop: () => void }) {
   return (
     <Show when={props.count > 0}>
       <aside class="remote-desktop-safety" aria-label="Remote desktop sharing">
         <span>Remote viewer connected</span>{" "}
-        <button type="button" class="remote-desktop-stop" onClick={props.onStop}>
+        <Button unstyled type="button" class="remote-desktop-stop" onClick={props.onStop}>
           Stop all remote sessions
-        </button>
+        </Button>
       </aside>
     </Show>
   );
@@ -66,7 +67,8 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
       <h3>Save this token</h3>
       <p>This token is shown only once. Anyone with it can request access; share it privately.</p>
       <code>{props.token}</code>{" "}
-      <button
+      <Button
+        unstyled
         type="button"
         onClick={() =>
           void navigator.clipboard
@@ -76,13 +78,13 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
         }
       >
         Copy token
-      </button>
+      </Button>
       <Show when={message()}>
         <p role="status">{message()}</p>
       </Show>
-      <button type="button" onClick={props.onClose}>
+      <Button unstyled type="button" onClick={props.onClose}>
         I saved the token
-      </button>
+      </Button>
     </section>
   );
 }
@@ -203,18 +205,20 @@ export function RemoteDesktopPage() {
         <div class="remote-desktop-fields">
           <label>
             Exposure{" "}
-            <select
+            <NativeSelect
+              unstyled
               value={exposure()}
               disabled={host().enabled}
               onChange={(e) => setExposure(e.currentTarget.value === "lan" ? "lan" : "loopback")}
             >
               <option value="loopback">This computer / tunnel</option>
               <option value="lan">Local network</option>
-            </select>
+            </NativeSelect>
           </label>
           <label>
             Port{" "}
-            <input
+            <Input
+              unstyled
               type="number"
               min="0"
               max="65535"
@@ -229,7 +233,8 @@ export function RemoteDesktopPage() {
             when={!host().enabled}
             fallback={
               <>
-                <button
+                <Button
+                  unstyled
                   type="button"
                   onClick={() => {
                     setToken("");
@@ -237,19 +242,21 @@ export function RemoteDesktopPage() {
                   }}
                 >
                   Disable sharing
-                </button>{" "}
-                <button
+                </Button>{" "}
+                <Button
+                  unstyled
                   type="button"
                   onClick={() => {
                     if (api) void tokenAction(() => api.host.regenerateToken());
                   }}
                 >
                   Generate new token
-                </button>
+                </Button>
               </>
             }
           >
-            <button
+            <Button
+              unstyled
               type="button"
               disabled={!host().available}
               onClick={() => {
@@ -257,13 +264,14 @@ export function RemoteDesktopPage() {
               }}
             >
               Enable sharing
-            </button>
+            </Button>
           </Show>
         </div>
         <Show when={token()}>{(value) => <RemoteDesktopToken token={value()} onClose={() => setToken("")} />}</Show>
         <For each={host().listening?.urls ?? []}>{(url) => <p>{url}</p>}</For>
         <p>Requests awaiting approval: {host().consentPending}</p>
-        <button
+        <Button
+          unstyled
           type="button"
           class="remote-desktop-stop"
           disabled={!api}
@@ -272,7 +280,7 @@ export function RemoteDesktopPage() {
           }}
         >
           Stop all remote sessions
-        </button>
+        </Button>
         <h3>Connected viewers</h3>
         <Show when={host().sessions.length} fallback={<p>No viewers connected.</p>}>
           <ul>
@@ -281,7 +289,8 @@ export function RemoteDesktopPage() {
                 <li>
                   {session.label} · {session.mode} <Show when={session.paused}> · paused: {session.paused}</Show>{" "}
                   <Show when={session.mode === "control"}>
-                    <button
+                    <Button
+                      unstyled
                       type="button"
                       onClick={() => {
                         if (api)
@@ -289,7 +298,7 @@ export function RemoteDesktopPage() {
                       }}
                     >
                       View only
-                    </button>
+                    </Button>
                   </Show>
                 </li>
               )}
@@ -304,7 +313,8 @@ export function RemoteDesktopPage() {
                 {peer.label}{" "}
                 <label>
                   Policy{" "}
-                  <select
+                  <NativeSelect
+                    unstyled
                     value={peer.policy}
                     onChange={(e) => {
                       const policy = e.currentTarget.value;
@@ -315,16 +325,17 @@ export function RemoteDesktopPage() {
                     <option value="ask">Ask</option>
                     <option value="allow">Allow</option>
                     <option value="block">Block</option>
-                  </select>
+                  </NativeSelect>
                 </label>{" "}
-                <button
+                <Button
+                  unstyled
                   type="button"
                   onClick={() => {
                     if (api) void hostAction(() => api.host.removePeer({ peerId: peer.id }));
                   }}
                 >
                   Remove viewer
-                </button>
+                </Button>
               </li>
             )}
           </For>
@@ -334,11 +345,12 @@ export function RemoteDesktopPage() {
         <h2>Connect to another computer</h2>
         <div class="remote-desktop-fields">
           <label>
-            Address <input value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
+            Address <Input unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
           </label>
           <label>
             Token{" "}
-            <input
+            <Input
+              unstyled
               type="password"
               value={clientToken()}
               onInput={(e) => setClientToken(e.currentTarget.value)}
@@ -347,14 +359,19 @@ export function RemoteDesktopPage() {
           </label>
           <label>
             Mode{" "}
-            <select value={mode()} onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}>
+            <NativeSelect
+              unstyled
+              value={mode()}
+              onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}
+            >
               <option value="view">View</option>
               <option value="control">Control</option>
-            </select>
+            </NativeSelect>
           </label>
         </div>
         <div class="remote-desktop-actions">
-          <button
+          <Button
+            unstyled
             type="button"
             disabled={!api || !address().trim() || !clientToken() || client().phase === "connecting"}
             onClick={() => {
@@ -365,8 +382,9 @@ export function RemoteDesktopPage() {
             }}
           >
             Connect
-          </button>
-          <button
+          </Button>
+          <Button
+            unstyled
             type="button"
             disabled={!api || client().phase === "idle"}
             onClick={() => {
@@ -374,7 +392,7 @@ export function RemoteDesktopPage() {
             }}
           >
             Disconnect
-          </button>
+          </Button>
         </div>
         <p role="status">
           Status: {client().phase}

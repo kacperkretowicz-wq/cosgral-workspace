@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { WORKFLOW_EDGE_KINDS, workflowProblems } from "@openbot/contracts/ipc";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 function routineId(node: Extract<WorkflowNode, { type: "trigger" }>): string {
   return node.trigger.kind === "routine" ? node.trigger.routineId : "";
@@ -124,18 +125,18 @@ export function WorkflowCanvas(
   return (
     <section aria-label="Workflow editor">
       <div>
-        <button type="button" onClick={() => add("trigger")}>
+        <Button unstyled type="button" onClick={() => add("trigger")}>
           Add trigger
-        </button>{" "}
-        <button type="button" onClick={() => add("agent")}>
+        </Button>{" "}
+        <Button unstyled type="button" onClick={() => add("agent")}>
           Add agent
-        </button>{" "}
-        <button type="button" onClick={() => add("approval")}>
+        </Button>{" "}
+        <Button unstyled type="button" onClick={() => add("approval")}>
           Add approval
-        </button>{" "}
-        <button type="button" onClick={() => add("channel-output")}>
+        </Button>{" "}
+        <Button unstyled type="button" onClick={() => add("channel-output")}>
           Add channel output
-        </button>
+        </Button>
       </div>
       <section ref={canvas} class="workflow-canvas" aria-label="Workflow canvas">
         <svg class="workflow-connections" aria-hidden="true">
@@ -174,27 +175,31 @@ export function WorkflowCanvas(
               data-workflow-node={node.id}
               style={{ left: `${node.x}px`, top: `${node.y}px` }}
             >
-              <button
+              <Button
+                unstyled
                 type="button"
                 class="workflow-drag"
                 aria-label={`Move ${node.title}; use X and Y fields with a keyboard`}
                 onPointerDown={(event) => startDrag(event, node)}
               >
                 {node.type} · Move
-              </button>
-              <button
+              </Button>
+              <Button
+                unstyled
                 type="button"
                 onPointerDown={(event) => startConnection(event, node)}
                 aria-label={`Drag connection from ${node.title}; use Connections controls for keyboard`}
               >
                 Connect by drag
-              </button>
+              </Button>
               <label>
-                Title <input value={node.title} onInput={(e) => update({ ...node, title: e.currentTarget.value })} />
+                Title{" "}
+                <Input unstyled value={node.title} onInput={(e) => update({ ...node, title: e.currentTarget.value })} />
               </label>
               <label>
                 X{" "}
-                <input
+                <Input
+                  unstyled
                   type="number"
                   value={node.x}
                   onInput={(e) => update({ ...node, x: Number(e.currentTarget.value) || 0 })}
@@ -202,7 +207,8 @@ export function WorkflowCanvas(
               </label>
               <label>
                 Y{" "}
-                <input
+                <Input
+                  unstyled
                   type="number"
                   value={node.y}
                   onInput={(e) => update({ ...node, y: Number(e.currentTarget.value) || 0 })}
@@ -212,7 +218,8 @@ export function WorkflowCanvas(
                 {(trigger) => (
                   <label>
                     Trigger{" "}
-                    <select
+                    <NativeSelect
+                      unstyled
                       value={trigger().trigger.kind}
                       onChange={(e) =>
                         update({
@@ -226,9 +233,10 @@ export function WorkflowCanvas(
                     >
                       <option value="manual">Manual</option>
                       <option value="routine">Routine</option>
-                    </select>
+                    </NativeSelect>
                     <Show when={trigger().trigger.kind === "routine"}>
-                      <select
+                      <NativeSelect
+                        unstyled
                         aria-label="Routine"
                         value={routineId(trigger())}
                         onChange={(e) =>
@@ -245,7 +253,7 @@ export function WorkflowCanvas(
                           <option value={routineId(trigger())}>Unavailable: {routineId(trigger())}</option>
                         </Show>
                         <For each={props.routines ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-                      </select>
+                      </NativeSelect>
                     </Show>
                   </label>
                 )}
@@ -254,7 +262,8 @@ export function WorkflowCanvas(
                 {(agent) => (
                   <label>
                     Agent{" "}
-                    <select
+                    <NativeSelect
+                      unstyled
                       value={agent().botId}
                       onChange={(e) => update({ ...agent(), botId: e.currentTarget.value })}
                     >
@@ -263,7 +272,7 @@ export function WorkflowCanvas(
                         <option value={agent().botId}>Unavailable: {agent().botId}</option>
                       </Show>
                       <For each={props.bots ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-                    </select>
+                    </NativeSelect>
                   </label>
                 )}
               </Show>
@@ -271,7 +280,8 @@ export function WorkflowCanvas(
                 {(channel) => (
                   <label>
                     Channel{" "}
-                    <select
+                    <NativeSelect
+                      unstyled
                       value={channel().channelId}
                       onChange={(e) => update({ ...channel(), channelId: e.currentTarget.value })}
                     >
@@ -284,7 +294,7 @@ export function WorkflowCanvas(
                         <option value={channel().channelId}>Unavailable: {channel().channelId}</option>
                       </Show>
                       <For each={props.channels ?? []}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-                    </select>
+                    </NativeSelect>
                   </label>
                 )}
               </Show>
@@ -292,7 +302,8 @@ export function WorkflowCanvas(
                 {(agent) => (
                   <label>
                     Instruction{" "}
-                    <textarea
+                    <Textarea
+                      unstyled
                       value={agent().prompt}
                       onInput={(e) => update({ ...agent(), prompt: e.currentTarget.value })}
                     />
@@ -303,14 +314,16 @@ export function WorkflowCanvas(
                 {(textNode) => (
                   <label>
                     Text{" "}
-                    <textarea
+                    <Textarea
+                      unstyled
                       value={textNode().text}
                       onInput={(e) => update({ ...textNode(), text: e.currentTarget.value })}
                     />
                   </label>
                 )}
               </Show>
-              <button
+              <Button
+                unstyled
                 type="button"
                 onClick={() =>
                   props.onChange({
@@ -320,7 +333,7 @@ export function WorkflowCanvas(
                 }
               >
                 Remove step
-              </button>
+              </Button>
             </article>
           )}
         </For>
@@ -329,21 +342,22 @@ export function WorkflowCanvas(
         <legend>Connections</legend>
         <label>
           From{" "}
-          <select value={from()} onChange={(e) => setFrom(e.currentTarget.value)}>
+          <NativeSelect unstyled value={from()} onChange={(e) => setFrom(e.currentTarget.value)}>
             <option value="">Choose</option>
             <For each={props.nodes}>{(n) => <option value={n.id}>{n.title}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           To{" "}
-          <select value={to()} onChange={(e) => setTo(e.currentTarget.value)}>
+          <NativeSelect unstyled value={to()} onChange={(e) => setTo(e.currentTarget.value)}>
             <option value="">Choose</option>
             <For each={props.nodes}>{(n) => <option value={n.id}>{n.title}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Path{" "}
-          <select
+          <NativeSelect
+            unstyled
             value={edgeKind()}
             onChange={(e) => {
               const kind = WORKFLOW_EDGE_KINDS.find((v) => v === e.currentTarget.value);
@@ -351,9 +365,10 @@ export function WorkflowCanvas(
             }}
           >
             <For each={WORKFLOW_EDGE_KINDS}>{(kind) => <option value={kind}>{kind}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
-        <button
+        <Button
+          unstyled
           type="button"
           disabled={!from() || !to()}
           onClick={() =>
@@ -364,21 +379,22 @@ export function WorkflowCanvas(
           }
         >
           Connect
-        </button>
+        </Button>
         <ul>
           <For each={props.edges}>
             {(edge) => (
               <li>
                 {props.nodes.find((n) => n.id === edge.from)?.title} →{" "}
                 {props.nodes.find((n) => n.id === edge.to)?.title} ({edge.on}){" "}
-                <button
+                <Button
+                  unstyled
                   type="button"
                   onClick={() =>
                     props.onChange({ nodes: props.nodes, edges: props.edges.filter((e) => e.id !== edge.id) })
                   }
                 >
                   Remove connection
-                </button>
+                </Button>
               </li>
             )}
           </For>
@@ -477,7 +493,8 @@ export function WorkflowsPage() {
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
-      <button
+      <Button
+        unstyled
         type="button"
         onClick={() => {
           setSelected("");
@@ -487,20 +504,20 @@ export function WorkflowsPage() {
         }}
       >
         New workflow
-      </button>
+      </Button>
       <ul>
         <For each={items()}>
           {(item) => (
             <li>
-              <button type="button" onClick={() => choose(item)}>
+              <Button unstyled type="button" onClick={() => choose(item)}>
                 {item.name}
-              </button>
+              </Button>
             </li>
           )}
         </For>
       </ul>
       <label>
-        Name <input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+        Name <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
       <WorkflowCanvas
         nodes={graph().nodes}
@@ -510,15 +527,17 @@ export function WorkflowsPage() {
         channels={channels()}
         routines={routines()}
       />
-      <button
+      <Button
+        unstyled
         type="button"
         disabled={!name().trim() || workflowProblems(graph()).length > 0}
         onClick={() => void save()}
       >
         Save workflow
-      </button>
+      </Button>
       <Show when={selected()}>
-        <button
+        <Button
+          unstyled
           type="button"
           onClick={() => {
             if (window.confirm("Delete this workflow and its history?"))
@@ -534,11 +553,12 @@ export function WorkflowsPage() {
           }}
         >
           Delete workflow
-        </button>
+        </Button>
         <label>
-          Run input <textarea value={input()} onInput={(e) => setInput(e.currentTarget.value)} />
+          Run input <Textarea unstyled value={input()} onInput={(e) => setInput(e.currentTarget.value)} />
         </label>
-        <button
+        <Button
+          unstyled
           type="button"
           onClick={() =>
             void window.openbot.workflows
@@ -548,7 +568,7 @@ export function WorkflowsPage() {
           }
         >
           Run now
-        </button>
+        </Button>
         <h2>Run history</h2>
         <ul>
           <For each={runs()}>
@@ -556,7 +576,8 @@ export function WorkflowsPage() {
               <li>
                 {run.status} · {run.startedAt}{" "}
                 <Show when={run.status === "running" || run.status === "waiting"}>
-                  <button
+                  <Button
+                    unstyled
                     type="button"
                     onClick={() =>
                       void window.openbot.workflows
@@ -566,7 +587,7 @@ export function WorkflowsPage() {
                     }
                   >
                     Cancel run
-                  </button>
+                  </Button>
                 </Show>
                 <Show when={run.error}>
                   <p>{run.error}</p>

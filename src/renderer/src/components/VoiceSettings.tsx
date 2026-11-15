@@ -1,5 +1,6 @@
 import type { UpdateVoiceSettingsInput, VoiceInfo, VoiceModelId, VoiceState } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect } from "./ui";
 
 export function VoiceSettingsView(props: {
   state: VoiceState;
@@ -16,7 +17,8 @@ export function VoiceSettingsView(props: {
       <h2>Voice</h2>
       <p>Audio stays on this computer. The first download requires approval on a Needs you card.</p>
       <label>
-        <input
+        <Input
+          unstyled
           type="checkbox"
           checked={settings().enabled}
           onChange={(e) => props.update({ enabled: e.currentTarget.checked })}
@@ -30,7 +32,8 @@ export function VoiceSettingsView(props: {
       </p>
       <label>
         Voice{" "}
-        <select
+        <NativeSelect
+          unstyled
           value={settings().voiceId ?? ""}
           onChange={(e) => props.update({ voiceId: e.currentTarget.value || null })}
         >
@@ -42,11 +45,12 @@ export function VoiceSettingsView(props: {
               </option>
             )}
           </For>
-        </select>
+        </NativeSelect>
       </label>
       <label>
         Speed{" "}
-        <input
+        <Input
+          unstyled
           type="number"
           min="0.5"
           max="2"
@@ -56,7 +60,8 @@ export function VoiceSettingsView(props: {
         />
       </label>
       <label>
-        <input
+        <Input
+          unstyled
           type="checkbox"
           checked={settings().autoRead}
           onChange={(e) => props.update({ autoRead: e.currentTarget.checked })}
@@ -65,7 +70,8 @@ export function VoiceSettingsView(props: {
       </label>
       <label>
         Recording language{" "}
-        <select
+        <NativeSelect
+          unstyled
           value={settings().language}
           onChange={(e) => {
             const value = e.currentTarget.value;
@@ -75,7 +81,7 @@ export function VoiceSettingsView(props: {
           <option value="auto">Automatic</option>
           <option value="en">English</option>
           <option value="pl">Polski</option>
-        </select>
+        </NativeSelect>
       </label>
       <p>
         Runtime: {props.state.transcription.runtime.state} ·{" "}
@@ -97,7 +103,8 @@ export function VoiceSettingsView(props: {
           {(model) => (
             <li>
               <label>
-                <input
+                <Input
+                  unstyled
                   type="radio"
                   name="voice-model"
                   checked={settings().modelId === model.id}
@@ -116,25 +123,25 @@ export function VoiceSettingsView(props: {
               <Show
                 when={model.state === "downloading"}
                 fallback={
-                  <button type="button" onClick={() => props.download(model.id)}>
+                  <Button unstyled type="button" onClick={() => props.download(model.id)}>
                     Download
-                  </button>
+                  </Button>
                 }
               >
-                <button type="button" onClick={() => props.cancel(model.id)}>
+                <Button unstyled type="button" onClick={() => props.cancel(model.id)}>
                   Cancel download
-                </button>
+                </Button>
               </Show>
-              <button type="button" disabled={model.state !== "ready"} onClick={() => props.remove(model.id)}>
+              <Button unstyled type="button" disabled={model.state !== "ready"} onClick={() => props.remove(model.id)}>
                 Delete model
-              </button>
+              </Button>
             </li>
           )}
         </For>
       </ul>
-      <button type="button" onClick={props.removeRuntime}>
+      <Button unstyled type="button" onClick={props.removeRuntime}>
         Delete runtime and revoke consent
-      </button>
+      </Button>
     </section>
   );
 }

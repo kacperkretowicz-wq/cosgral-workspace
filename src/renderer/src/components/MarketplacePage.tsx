@@ -7,6 +7,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { MARKETPLACE_CATEGORIES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { Button, Input, NativeSelect } from "./ui";
 
 type Person = { id: string; name: string };
 export function MarketplaceDetail(props: {
@@ -48,30 +49,31 @@ export function MarketplaceDetail(props: {
       <Show when={item().kind === "skill"}>
         <label>
           Agent{" "}
-          <select value={props.selectedBot} onChange={(e) => props.onSelectBot(e.currentTarget.value)}>
+          <NativeSelect unstyled value={props.selectedBot} onChange={(e) => props.onSelectBot(e.currentTarget.value)}>
             <option value="">Choose an agent</option>
             <For each={props.bots}>{(bot) => <option value={bot.id}>{bot.name}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
       </Show>
       <Show when={item().libraryState === "local"}>
         <p>A local skill with this name already exists; installation is disabled.</p>
       </Show>
-      <button
+      <Button
+        unstyled
         type="button"
         disabled={item().libraryState === "local" || (item().kind === "skill" && !props.selectedBot)}
         onClick={props.onInstall}
       >
         {item().libraryState === "outdated" ? "Update" : "Install"}
-      </button>
+      </Button>
       <ul>
         <For each={item().installedBotIds}>
           {(id) => (
             <li>
               {props.bots.find((bot) => bot.id === id)?.name ?? id}{" "}
-              <button type="button" onClick={() => props.onUninstall(id)}>
+              <Button unstyled type="button" onClick={() => props.onUninstall(id)}>
                 {item().kind === "agent" ? "Delete agent" : "Uninstall"}
-              </button>
+              </Button>
             </li>
           )}
         </For>
@@ -176,11 +178,12 @@ export function MarketplacePage(props: { bots: Person[] }) {
         }}
       >
         <label class="marketplace-search">
-          Search <input type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
+          Search <Input unstyled type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
         </label>
         <label>
           Kind{" "}
-          <select
+          <NativeSelect
+            unstyled
             value={kind()}
             onChange={(e) => {
               const v = e.currentTarget.value;
@@ -190,11 +193,12 @@ export function MarketplacePage(props: { bots: Person[] }) {
             <option value="">All</option>
             <option value="skill">Skills</option>
             <option value="agent">Agents</option>
-          </select>
+          </NativeSelect>
         </label>
         <label>
           Category{" "}
-          <select
+          <NativeSelect
+            unstyled
             value={category()}
             onChange={(e) => {
               const found = MARKETPLACE_CATEGORIES.find((c) => c === e.currentTarget.value);
@@ -203,9 +207,11 @@ export function MarketplacePage(props: { bots: Person[] }) {
           >
             <option value="">All</option>
             <For each={MARKETPLACE_CATEGORIES}>{(c) => <option value={c}>{c}</option>}</For>
-          </select>
+          </NativeSelect>
         </label>
-        <button type="submit">Search</button>
+        <Button unstyled type="submit">
+          Search
+        </Button>
       </form>
       <Show when={details()}>
         {(value) => (
@@ -227,10 +233,10 @@ export function MarketplacePage(props: { bots: Person[] }) {
         <For each={suggestions()}>
           {(suggestion) => (
             <li>
-              <button type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
+              <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
                 <strong>{suggestion.item.title}</strong>
                 <small>{suggestion.reason}</small>
-              </button>
+              </Button>
             </li>
           )}
         </For>
@@ -241,10 +247,10 @@ export function MarketplacePage(props: { bots: Person[] }) {
           <For each={items()}>
             {(item) => (
               <li>
-                <button type="button" class="marketplace-item" onClick={() => void choose(item)}>
+                <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(item)}>
                   <strong>{item.title}</strong>
                   <small>{item.summary}</small>
-                </button>
+                </Button>
               </li>
             )}
           </For>

@@ -1,3 +1,4 @@
+import { Button } from "../components/ui";
 // COSGRAL W3: the Dynamic Island window (`#island`). A working minimal view on the island contract; the UI Designer
 // owns the final look. A click opens the main window at the Needs you card.
 
@@ -29,7 +30,7 @@ export function IslandApp() {
     <Show when={state().status}>
       {(status) => (
         <div class={`island is-${status().kind}`} data-testid="island">
-          <button type="button" class="island-main" onClick={() => void window.openbot.island?.activate()}>
+          <Button unstyled type="button" class="island-main" onClick={() => void window.openbot.island?.activate()}>
             <span class="island-kind">{LABELS[status().kind]}</span>
             <span class="island-text">
               <strong>{status().botName}</strong> {status().summary}
@@ -37,16 +38,17 @@ export function IslandApp() {
             <Show when={state().waiting > 1}>
               <span class="island-count">{state().waiting}</span>
             </Show>
-          </button>
+          </Button>
           <Show when={status().kind === "message" || status().kind === "error"}>
-            <button
+            <Button
+              unstyled
               type="button"
               class="island-dismiss"
               title="Dismiss"
               onClick={() => void window.openbot.island?.dismiss().then(setState)}
             >
               ×
-            </button>
+            </Button>
           </Show>
         </div>
       )}
