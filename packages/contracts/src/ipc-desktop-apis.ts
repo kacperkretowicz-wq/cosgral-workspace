@@ -156,6 +156,7 @@ import type {
   UninstallSkillInput,
   UpdateSkillInstallInput,
 } from "./ipc-skills";
+import type { SubscriptionsDesktopApi } from "./ipc-subscriptions";
 import type {
   CreateTableInput,
   DeleteTableRowInput,
@@ -629,6 +630,8 @@ export interface OpenBotDesktopApi {
   approvalRules?: ApprovalRulesDesktopApi;
   /** COSGRAL W4-BE5 "Delete my data" (this computer only). Optional until every renderer mock implements it. */
   appData?: AppDataDesktopApi;
+  /** COSGRAL W5 subscriptions: managed CLIs (BE1), later accounts and keys. Optional until every mock implements it. */
+  subscriptions?: SubscriptionsDesktopApi;
 }
 
 /**

@@ -29,6 +29,8 @@ import type {
   JoinServerInput,
   MacPermissionId,
   MacPermissionsState,
+  ManagedCliId,
+  ManagedCliState,
   OpenAttachmentInput,
   OpenBotDesktopApi,
   PendingAgentRequest,
@@ -142,6 +144,26 @@ function clone<T>(value: T): T {
 }
 
 export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBotControls {
+  const managedCli = new Map<ManagedCliId, ManagedCliState>(
+    (["codex", "claude"] as const).map((id) => [
+      id,
+      {
+        id,
+        source: id === "codex" ? "system" : "none",
+        executable: id === "codex" ? "codex.cmd" : null,
+        version: id === "codex" ? "0.167.2" : null,
+        managedVersion: null,
+        pinnedVersion: null,
+        latestVersion: null,
+        autoUpdate: true,
+        customPath: null,
+        phase: "idle",
+        progress: null,
+        error: null,
+        checkedAt: null,
+      },
+    ]),
+  );
   const appInfo = clone(options.appInfo ?? STORY_APP_INFO);
   const defaultAuthState: CentralAuthState = {
     status: "signed_in",
@@ -1154,7 +1176,54 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         return () => remoteMacListeners.delete(listener);
       },
     },
+    // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).
+    subscriptions: {
+      listCli: async () => clone([...managedCli.values()]),
+      checkCli: async ({ id }) =>
+        updateCli(id, { latestVersion: id === "codex" ? "0.170.0" : "2.1.330", checkedAt: new Date().toISOString() }),
+      installCli: async ({ id, version }) => installMockCli(id, version),
+      updateCli: async ({ id }) => installMockCli(id),
+      removeCli: async ({ id }) =>
+        updateCli(id, {
+          managedVersion: null,
+          ...(managedCli.get(id)?.source === "managed" ? { source: "none", executable: null, version: null } : {}),
+        }),
+      pinCli: async ({ id, version }) => updateCli(id, { pinnedVersion: version }),
+      setCliSettings: async ({ id, autoUpdate, customPath }) =>
+        updateCli(id, {
+          ...(autoUpdate === undefined ? {} : { autoUpdate }),
+          ...(customPath === undefined
+            ? {}
+            : customPath === null
+              ? { customPath: null, source: managedCli.get(id)?.managedVersion ? "managed" : "none" }
+              : { customPath, source: "custom", executable: customPath }),
+        }),
+    },
   };
+
+  function updateCli(id: ManagedCliId, patch: Partial<ManagedCliState>): ManagedCliState {
+    const current = managedCli.get(id);
+    if (!current) throw new Error("Unknown CLI.");
+    const next = { ...current, ...patch };
+    managedCli.set(id, next);
+    emitAgentEvent({ type: "managed-cli-changed", state: clone(next) });
+    return clone(next);
+  }
+
+  async function installMockCli(id: ManagedCliId, version?: string): Promise<ManagedCliState> {
+    const target = version ?? managedCli.get(id)?.pinnedVersion ?? (id === "codex" ? "0.170.0" : "2.1.330");
+    updateCli(id, { phase: "downloading", progress: { receivedBytes: 0, totalBytes: 40_000_000 }, error: null });
+    updateCli(id, { phase: "downloading", progress: { receivedBytes: 20_000_000, totalBytes: 40_000_000 } });
+    updateCli(id, { phase: "verifying", progress: null });
+    return updateCli(id, {
+      phase: "idle",
+      managedVersion: target,
+      latestVersion: target,
+      ...(managedCli.get(id)?.customPath
+        ? {}
+        : { source: "managed", executable: `managed/${id}/${target}`, version: target }),
+    });
+  }
 
   return {
     api,

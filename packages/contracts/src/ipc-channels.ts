@@ -147,6 +147,14 @@ export const IPC_CHANNELS = {
   mobileRevokeDevice: "mobile:revoke-device",
   mobileRotateCertificate: "mobile:rotate-certificate",
   /** COSGRAL W4-BE5: "Delete my data" (this computer only). */
+  /** COSGRAL W5-BE1: managed agent CLIs (this computer only). */
+  subscriptionsListCli: "subscriptions:list-cli",
+  subscriptionsCheckCli: "subscriptions:check-cli",
+  subscriptionsInstallCli: "subscriptions:install-cli",
+  subscriptionsUpdateCli: "subscriptions:update-cli",
+  subscriptionsRemoveCli: "subscriptions:remove-cli",
+  subscriptionsPinCli: "subscriptions:pin-cli",
+  subscriptionsSetCliSettings: "subscriptions:set-cli-settings",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

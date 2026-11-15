@@ -83,6 +83,7 @@ import { createDockApi, createIslandApi } from "./dock-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMobileApi } from "./mobile-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
+import { createSubscriptionsApi } from "./subscriptions-api";
 import { createVoiceApi } from "./voice-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
@@ -774,6 +775,7 @@ const openbotApi: OpenBotDesktopApi = {
   mobile: createMobileApi(invokeAgent),
   approvalRules: createApprovalRulesApi(invokeAgent),
   appData: createAppDataApi(invokeAgent),
+  subscriptions: createSubscriptionsApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
