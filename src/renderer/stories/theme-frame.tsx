@@ -29,6 +29,7 @@ const LIGHT_TOKENS: Record<string, string> = {
   "--openbot-accent-soft": "rgba(77, 68, 214, 0.12)",
   "--openbot-warning": "#6e4a0d",
   "--openbot-warning-soft": "rgba(154, 107, 18, 0.14)",
+  "--openbot-text-on-danger": "var(--openbot-contrast-white)",
   "--openbot-danger": "#aa241d",
   "--openbot-danger-soft": "rgba(179, 38, 30, 0.1)",
   "--openbot-danger-strong": "#8f1c16",

@@ -38,7 +38,14 @@ const layout: SidebarLayout = {
   ],
 };
 
-function renderSidebar(props: { layout?: SidebarLayout; actions?: SidebarFolderActions; compact?: boolean } = {}) {
+function renderSidebar(
+  props: {
+    layout?: SidebarLayout;
+    actions?: SidebarFolderActions;
+    compact?: boolean;
+    onSelectChannels?: (create?: boolean) => void;
+  } = {},
+) {
   return render(() => (
     <Sidebar
       serverName="Local"
@@ -55,6 +62,7 @@ function renderSidebar(props: { layout?: SidebarLayout; actions?: SidebarFolderA
       agentStates={{}}
       layout={props.layout}
       folderActions={props.actions}
+      onSelectChannels={props.onSelectChannels}
       onSelectBot={vi.fn()}
       onSelectPerson={vi.fn()}
       onCreateBot={vi.fn()}
@@ -310,5 +318,14 @@ describe("Sidebar folders", () => {
     openMenu(screen.getByRole("button", { name: /^Chief, Chief of staff/ }));
     const menu = await latestMenu("Agent actions");
     expect(within(menu).queryByRole("menuitem", { name: "Move to…" })).not.toBeInTheDocument();
+  });
+
+  it("opens channel browsing and creation through their separate actions", async () => {
+    const select = vi.fn();
+    renderSidebar({ onSelectChannels: select });
+    await fireEvent.click(screen.getByRole("button", { name: "Browse channels" }));
+    expect(select).toHaveBeenLastCalledWith();
+    await fireEvent.click(screen.getByRole("button", { name: "New channel" }));
+    expect(select).toHaveBeenLastCalledWith(true);
   });
 });

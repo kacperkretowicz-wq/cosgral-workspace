@@ -152,6 +152,16 @@
 :where(.ui-button)[data-variant="danger"] {
   background: var(--openbot-danger-soft);
   color: var(--openbot-danger);
+  /* Text changes polarity on hover; cross-fading it would briefly lose contrast. */
+  transition:
+    opacity var(--openbot-duration-normal) ease,
+    transform var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.ui-button[data-variant="danger-solid"] {
+  border-color: var(--openbot-danger);
+  background: var(--openbot-danger);
+  color: var(--openbot-text-on-danger);
 }
 
 :where(.ui-button)[data-variant="link"] {
@@ -173,9 +183,10 @@
     color: var(--openbot-text-primary);
   }
 
-  :where(.ui-button)[data-variant="danger"]:hover:not(:disabled) {
+  :where(.ui-button)[data-variant="danger"]:hover:not(:disabled),
+  .ui-button[data-variant="danger-solid"]:hover:not(:disabled) {
     background: var(--openbot-danger-strong);
-    color: var(--openbot-text-primary);
+    color: var(--openbot-text-on-danger);
   }
 
   :where(.ui-button)[data-variant="link"]:hover:not(:disabled) {
@@ -558,4 +569,16 @@
   .ui-skeleton {
     animation-duration: 1.8s;
   }
+}
+
+/* A solid destructive action keeps its label legible even while it is unavailable. */
+.ui-button[data-variant="danger-solid"]:active:not(:disabled) {
+  border-color: var(--openbot-danger-strong);
+  background: var(--openbot-danger-strong);
+  color: var(--openbot-text-on-danger);
+}
+.ui-button[data-variant="danger-solid"]:disabled {
+  opacity: 1;
+  border-color: var(--openbot-text-on-danger);
+  border-style: dashed;
 }

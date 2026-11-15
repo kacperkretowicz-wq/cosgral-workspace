@@ -596,12 +596,14 @@ export function Sidebar(props: SidebarProps) {
             <header>
               <h2>Channels</h2>
             </header>
-            <Button type="button" class="bot-row" onClick={() => props.onSelectChannels?.()}>
-              Browse channels
-            </Button>
-            <Button type="button" class="bot-row" onClick={() => props.onSelectChannels?.(true)}>
-              New channel
-            </Button>
+            <div class="sidebar-channel-actions">
+              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.()}>
+                <SearchIcon /> Browse channels
+              </Button>
+              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.(true)}>
+                <PlusIcon /> New channel
+              </Button>
+            </div>
           </section>
         </Show>
         <Show
@@ -1070,6 +1072,7 @@ export function Sidebar(props: SidebarProps) {
                     </Button>
                     <Button
                       type="button"
+                      variant="danger-solid"
                       class="bot-delete-confirm"
                       disabled={deleting()}
                       onClick={() => void confirmDelete()}

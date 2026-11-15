@@ -343,7 +343,13 @@ export function FolderDeleteDialog(props: { name: string; onConfirm: () => Promi
               <Button type="button" disabled={busy()} onClick={props.onClose}>
                 Cancel
               </Button>
-              <Button type="button" class="bot-delete-confirm" disabled={busy()} onClick={() => void confirm()}>
+              <Button
+                type="button"
+                variant="danger-solid"
+                class="bot-delete-confirm"
+                disabled={busy()}
+                onClick={() => void confirm()}
+              >
                 {busy() ? "Deleting…" : "Delete folder"}
               </Button>
             </div>

@@ -2157,23 +2157,13 @@ textarea {
     opacity var(--openbot-duration-fast) ease;
 }
 
-.bot-delete-actions button:hover {
+.bot-delete-actions button:hover:not(:disabled) {
   background: var(--openbot-border);
 }
 
 .bot-delete-actions button:disabled {
   cursor: default;
   opacity: 0.55;
-}
-
-.bot-delete-actions .bot-delete-confirm {
-  border-color: var(--openbot-danger);
-  background: var(--openbot-danger);
-  color: var(--openbot-text-primary);
-}
-
-.bot-delete-actions .bot-delete-confirm:hover {
-  background: var(--openbot-danger);
 }
 
 @keyframes bot-context-in {
@@ -3153,4 +3143,19 @@ textarea {
 .bot-context-menu .bot-context-danger:focus-visible {
   background: var(--openbot-bg-control-hover);
   color: var(--openbot-danger);
+}
+
+.sidebar-channel-actions {
+  display: grid;
+  gap: var(--openbot-space-2);
+}
+.sidebar-channel-actions .ui-button {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: var(--openbot-control-lg);
+}
+.sidebar-channel-actions .ui-button > svg {
+  width: var(--openbot-icon-md);
+  height: var(--openbot-icon-md);
+  flex: 0 0 auto;
 }

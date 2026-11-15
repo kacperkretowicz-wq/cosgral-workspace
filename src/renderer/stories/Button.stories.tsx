@@ -1,5 +1,9 @@
+import { expect } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { Button, Heading, IconButton, Search } from "../src/components/ui";
+
+import { contrastRatio } from "./contrast";
+import { ThemeFrame } from "./theme-frame";
 
 const meta = {
   title: "Foundations/Button",
@@ -38,5 +42,50 @@ export const Gallery: Story = {
         </IconButton>
       </div>
     </main>
+  ),
+};
+
+const dangerStates: Story = {
+  render: () => (
+    <ThemeFrame theme="dark">
+      <main class="foundation-story">
+        <Heading as="h1">Destructive actions</Heading>
+        <Button variant="danger-solid">Delete item</Button>
+        <Button variant="danger-solid" disabled>
+          Delete unavailable
+        </Button>
+        <Button variant="danger">Soft danger</Button>
+      </main>
+    </ThemeFrame>
+  ),
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole("button", { name: "Delete item" });
+    const disabled = canvas.getByRole("button", { name: "Delete unavailable" });
+    const assertContrast = (element: HTMLElement) => {
+      const style = getComputedStyle(element);
+      expect(contrastRatio(style.color, style.backgroundColor)).toBeGreaterThanOrEqual(4.5);
+    };
+    assertContrast(button);
+    assertContrast(disabled);
+    await expect(getComputedStyle(disabled).opacity).toBe("1");
+    await expect(disabled).toBeDisabled();
+    button.focus();
+    await expect(button).toHaveFocus();
+  },
+};
+export const DangerFilled: Story = dangerStates;
+export const DangerFilledLight: Story = {
+  ...dangerStates,
+  render: () => (
+    <ThemeFrame theme="light">
+      <main class="foundation-story">
+        <Heading as="h1">Destructive actions</Heading>
+        <Button variant="danger-solid">Delete item</Button>
+        <Button variant="danger-solid" disabled>
+          Delete unavailable
+        </Button>
+        <Button variant="danger">Soft danger</Button>
+      </main>
+    </ThemeFrame>
   ),
 };
