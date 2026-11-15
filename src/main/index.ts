@@ -60,10 +60,12 @@ import { WorkflowStore } from "../backend/workflow-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
+import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
+import { runPendingDataWipe } from "./data-wipe";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
 import { registerDockIpc } from "./dock-ipc";
 import { createDockWindows, type DockWindows } from "./dock-windows";
@@ -199,6 +201,8 @@ if (!app.isPackaged && process.env.COSGRAL_FAKE_CAMERA === "1") {
 if (process.platform === "win32") app.setAppUserModelId("pl.cosgral.workspace");
 // COSGRAL H3: a duplicate instance exits at once (app.quit() here took ~6 s on Windows).
 const hasSingleInstanceLock = enforceSingleInstance(app);
+// COSGRAL W4-BE5: a requested "Delete my data" runs here, before the database or Chromium's profile is opened.
+const pendingDataWipe = hasSingleInstanceLock ? startDataWipe() : null;
 const appVariant = readAppVariant(process.env.OPENBOT_APP_VARIANT, app.isPackaged);
 const appIconPath = resolveAppIconPath({
   variant: appVariant,
@@ -835,6 +839,7 @@ function registerIpcHandlers(
   registerVoiceIpc(() => voiceService);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
+  registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
     service: () => service,
@@ -1264,6 +1269,11 @@ if (!hasSingleInstanceLock) {
       if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
       configureContentSecurityPolicy();
       mainWindow = createWindow();
+      if (pendingDataWipe?.error || pendingDataWipe?.failures.length)
+        dialog.showErrorBox(
+          "Some COSGRAL data could not be deleted",
+          pendingDataWipe.error ?? `Still in use: ${pendingDataWipe.failures.slice(0, 10).join(", ")}`,
+        );
       // COSGRAL: local owner profile by default; the hosted account service only when OPENBOT_AUTH_API_URL is set.
       centralAuthManager = createAccountManager({
         accountServiceUrl: process.env.OPENBOT_AUTH_API_URL,
@@ -1773,6 +1783,27 @@ app.on("before-quit", (event) => {
   event.preventDefault();
   void prepareForShutdown().finally(() => app.quit());
 });
+
+/** COSGRAL W4-BE5: the folders of "Delete my data" (checked again by the guard in data-wipe.ts). */
+function dataWipePaths(): { userData: string; home: string; appData: string } {
+  return { userData: app.getPath("userData"), home: homedir(), appData: app.getPath("appData") };
+}
+
+function startDataWipe(): { error: string | null; failures: string[] } | null {
+  try {
+    const outcome = runPendingDataWipe(dataWipePaths());
+    return outcome && { error: null, failures: outcome.failures };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error), failures: [] };
+  }
+}
+
+/** COSGRAL W4-BE5: stop agents and servers, then restart; the sandbox test sets COSGRAL_WIPE_NO_RELAUNCH to start it itself. */
+async function stopAndRestartForWipe(): Promise<void> {
+  await prepareForShutdown();
+  if (process.env.COSGRAL_WIPE_NO_RELAUNCH !== "1") app.relaunch();
+  app.quit();
+}
 
 async function prepareForShutdown(): Promise<void> {
   if (shutdownStarted) return;
