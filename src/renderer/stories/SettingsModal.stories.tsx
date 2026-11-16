@@ -58,37 +58,38 @@ export const Interactive: Story = {
     await expect(body.getByRole("button", { name: "Advanced" })).toBeDisabled();
 
     await userEvent.click(body.getByRole("button", { name: "Appearance" }));
-    await expect(body.getByRole("dialog", { name: "Appearance" })).toBeVisible();
+    await body.findByRole("dialog", { name: "Appearance" });
     const theme = await body.findByLabelText("Theme");
     await waitFor(() => expect(theme).toBeEnabled());
     await userEvent.selectOptions(theme, "light");
     await waitFor(() => expect(theme).toHaveValue("light"));
+    await waitFor(() => expect(theme).toBeEnabled());
     await expect((await window.openbot.appSettings?.get())?.theme).toBe("light");
     await userEvent.click(body.getByRole("button", { name: "General" }));
-    await expect(body.getByRole("dialog", { name: "General" })).toBeVisible();
+    dialog = await body.findByRole("dialog", { name: "General" });
 
     const launchSwitch = body.getByRole("switch", { name: "Launch COSGRAL Workspace at login" });
     await expect(launchSwitch).toBeChecked();
     await userEvent.click(launchSwitch);
-    await expect(launchSwitch).not.toBeChecked();
+    await waitFor(() => expect(launchSwitch).not.toBeChecked());
 
     await userEvent.click(body.getByRole("button", { name: "Close settings" }));
-    await expect(dialog).toHaveAttribute("data-motion", "closing");
-    await waitFor(() => expect(body.queryByRole("dialog", { name: "General" })).not.toBeInTheDocument());
+    // The Solid effect and the 120 ms exit animation are scheduled separately from userEvent.
+    // Assert removal of the captured dialog, including hidden nodes, rather than a transient frame.
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
 
     await userEvent.click(trigger);
     dialog = await body.findByRole("dialog", { name: "General" });
     await waitFor(() => expect(dialog).toBeVisible());
     await userEvent.keyboard("{Escape}");
-    await expect(dialog).toHaveAttribute("data-motion", "closing");
-    await waitFor(() => expect(body.queryByRole("dialog", { name: "General" })).not.toBeInTheDocument());
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
 
     await userEvent.click(trigger);
-    await body.findByRole("dialog", { name: "General" });
+    dialog = await body.findByRole("dialog", { name: "General" });
     await userEvent.click(body.getByTestId("settings-modal-backdrop"));
-    await waitFor(() => expect(body.queryByRole("dialog", { name: "General" })).not.toBeInTheDocument());
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
     await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
