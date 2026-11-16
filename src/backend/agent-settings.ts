@@ -18,11 +18,14 @@ import {
   type AgentToolGroup,
   type AgentToolSwitches,
   APP_LANGUAGES,
+  APP_PAGE_IDS,
   type AppLanguage,
+  type AppPageId,
   type AppSettings,
   type BotSummary,
   defaultNotificationPreferences,
   isClaudeModel,
+  isPinnedPageIdList,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   type NotificationPreferences,
@@ -107,6 +110,13 @@ export interface AgentSettingsDeps {
   now?: () => Date;
 }
 
+/** What is kept in projection_app_settings under the key 'app'. */
+interface StoredAppSetting {
+  language: AppLanguage | null;
+  notifications: NotificationPreferences;
+  pinnedPageIds: AppPageId[];
+}
+
 interface NamedTool {
   name: string;
   tools?: ReadonlyArray<{ name: string }>;
@@ -115,7 +125,7 @@ interface NamedTool {
 export class AgentSettingsService {
   readonly #deps: AgentSettingsDeps;
   readonly #ready = new WeakSet<DatabaseSync>();
-  #appCache: { language: AppLanguage | null; notifications: NotificationPreferences } | null = null;
+  #appCache: StoredAppSetting | null = null;
   #appCacheDb: DatabaseSync | null = null;
 
   constructor(deps: AgentSettingsDeps) {
@@ -260,6 +270,7 @@ export class AgentSettingsService {
       language: stored.language ?? "en",
       languageChosen: stored.language !== null,
       notifications: stored.notifications,
+      navigation: { pinnedPageIds: stored.pinnedPageIds },
       tabs: SETTINGS_TABS.map((id) => {
         const feature = TAB_FEATURES[id];
         const base = feature === "computer" ? availability.computer !== false : feature !== "missing";
@@ -288,6 +299,12 @@ export class AgentSettingsService {
         stored.notifications.onlyWhenUnfocused = input.notifications.onlyWhenUnfocused === true;
       }
     }
+    if (input.navigation !== undefined) {
+      if (!isPinnedPageIdList(input.navigation.pinnedPageIds)) {
+        throw new Error("pinnedPageIds must list known pages, each at most once.");
+      }
+      stored.pinnedPageIds = [...input.navigation.pinnedPageIds];
+    }
     this.#db()
       .prepare(
         `INSERT INTO projection_app_settings (setting_key, value_json, updated_at) VALUES ('app', ?, ?)
@@ -301,7 +318,7 @@ export class AgentSettingsService {
   }
 
   /** Read on every forwarded agent event (notifications), so it is cached until the next save. */
-  #readAppSetting(): { language: AppLanguage | null; notifications: NotificationPreferences } {
+  #readAppSetting(): StoredAppSetting {
     if (!this.#appCache || this.#appCacheDb !== this.#deps.database.connection) {
       this.#appCache = this.#loadAppSetting();
       this.#appCacheDb = this.#deps.database.connection;
@@ -309,8 +326,12 @@ export class AgentSettingsService {
     return structuredClone(this.#appCache);
   }
 
-  #loadAppSetting(): { language: AppLanguage | null; notifications: NotificationPreferences } {
-    const defaults = { language: null, notifications: defaultNotificationPreferences() };
+  #loadAppSetting(): StoredAppSetting {
+    const defaults: StoredAppSetting = {
+      language: null,
+      notifications: defaultNotificationPreferences(),
+      pinnedPageIds: [],
+    };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;
     let parsed: unknown;
@@ -334,7 +355,13 @@ export class AgentSettingsService {
     if (isBoolean(storedNotifications.onlyWhenUnfocused)) {
       notifications.onlyWhenUnfocused = storedNotifications.onlyWhenUnfocused;
     }
-    return { language: isOneOf(APP_LANGUAGES, parsed.language) ? parsed.language : null, notifications };
+    // Stored ids are checked again: an unknown or repeated id (older or edited data) is dropped, not trusted.
+    const pinnedPageIds = keepPinnedPages(Array.isArray(parsed.pinnedPageIds) ? parsed.pinnedPageIds : []);
+    return {
+      language: isOneOf(APP_LANGUAGES, parsed.language) ? parsed.language : null,
+      notifications,
+      pinnedPageIds,
+    };
   }
 
   #requireBot(botId: string): BotSummary {
@@ -372,6 +399,13 @@ function groupOfOpenBotTool(tool: string): AgentToolGroup | null {
   if (tool === "send_message") return "messaging";
   if (isMemoryToolName(tool)) return "memory";
   return null;
+}
+
+/** Known page ids in stored order, each once. */
+function keepPinnedPages(value: unknown[]): AppPageId[] {
+  const kept: AppPageId[] = [];
+  for (const id of value) if (isOneOf(APP_PAGE_IDS, id) && !kept.includes(id)) kept.push(id);
+  return kept;
 }
 
 function parseSwitches(json: string): AgentToolSwitches {

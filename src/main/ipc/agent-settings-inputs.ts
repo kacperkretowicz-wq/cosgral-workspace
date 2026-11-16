@@ -10,7 +10,9 @@ import {
   APP_LANGUAGES,
   type CompleteOnboardingInput,
   type CreateAgentInput,
+  type DuplicateAgentInput,
   isAgentModel,
+  isPinnedPageIdList,
   isReasoningEffort,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
@@ -46,6 +48,13 @@ export function parseUpdateAgentSettings(value: unknown): UpdateAgentSettingsInp
   if (input.model !== undefined) result.model = model(input.model);
   if (input.reasoningEffort !== undefined) result.reasoningEffort = effort(input.reasoningEffort);
   if (input.tools !== undefined) result.tools = tools(input.tools);
+  return result;
+}
+
+export function parseDuplicateAgent(value: unknown): DuplicateAgentInput {
+  const input = record(value, "duplicate agent", ["sourceBotId", "name"]);
+  const result: DuplicateAgentInput = { sourceBotId: requireString(input.sourceBotId, "sourceBotId") };
+  if (input.name !== undefined) result.name = text(input.name, "name", INPUT_LIMITS.agentName);
   return result;
 }
 
@@ -98,7 +107,7 @@ export function parseAgentTemplateId(value: unknown): AgentTemplateIdInput {
 }
 
 export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
-  const input = record(value, "app settings", ["language", "notifications"]);
+  const input = record(value, "app settings", ["language", "notifications", "navigation"]);
   const result: UpdateAppSettingsInput = {};
   if (input.language !== undefined) {
     if (!isOneOf(APP_LANGUAGES, input.language)) throw new Error("language must be en or pl.");
@@ -125,6 +134,13 @@ export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
       parsed.onlyWhenUnfocused = flag(notifications.onlyWhenUnfocused, "onlyWhenUnfocused");
     }
     result.notifications = parsed;
+  }
+  if (input.navigation !== undefined) {
+    const navigation = record(input.navigation, "navigation", ["pinnedPageIds"]);
+    if (!isPinnedPageIdList(navigation.pinnedPageIds)) {
+      throw new Error("pinnedPageIds must list known pages, each at most once.");
+    }
+    result.navigation = { pinnedPageIds: [...navigation.pinnedPageIds] };
   }
   return result;
 }

@@ -85,8 +85,12 @@ describe("W3 agent settings contract", () => {
       languageChosen: true,
       notifications,
       tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "voice" })),
+      navigation: { pinnedPageIds: ["library", "agents"] },
     };
     expect(isAppSettings(settings)).toBe(true);
+    expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "nope"] } })).toBe(false);
+    expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "library"] } })).toBe(false);
+    expect(isAppSettings({ ...settings, navigation: undefined })).toBe(false);
     expect(isAppSettings({ ...settings, language: "xx" })).toBe(false);
     expect(isAppSettings({ ...settings, notifications: { ...notifications, matrix: {} } })).toBe(false);
   });
@@ -112,7 +116,13 @@ describe("W3 agent settings contract", () => {
     expect(
       isAgentEvent({
         type: "app-settings-changed",
-        settings: { language: "en", languageChosen: false, notifications: defaultNotificationPreferences(), tabs: [] },
+        settings: {
+          language: "en",
+          languageChosen: false,
+          notifications: defaultNotificationPreferences(),
+          tabs: [],
+          navigation: { pinnedPageIds: [] },
+        },
       }),
     ).toBe(true);
     expect(isAgentEvent({ type: "agent-templates-changed" })).toBe(false);
