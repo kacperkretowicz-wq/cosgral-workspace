@@ -75,6 +75,8 @@ export class ProviderRegistry {
   /** COSGRAL W4-BE1: the engine's CLI states (the same ones onboarding shows); empty until the engine reports. */
   #cliStates = new Map<"codex" | "claude", AgentProviderStatus>();
   #timer: NodeJS.Timeout | null = null;
+  /** W5-BE5: whether an own model endpoint still exists; null = not known here (endpoint models count as present). */
+  #endpointExists: ((endpointId: string) => boolean) | null = null;
 
   constructor(options: ProviderRegistryOptions) {
     this.#database = options.database;
@@ -86,6 +88,11 @@ export class ProviderRegistry {
   stop(): void {
     if (this.#timer) clearTimeout(this.#timer);
     this.#timer = null;
+  }
+
+  /** W5-BE5: the endpoints the program knows, so a fallback model of a removed endpoint is shown but never tried. */
+  useEndpointLookup(exists: (endpointId: string) => boolean): void {
+    this.#endpointExists = exists;
   }
 
   listAcpAgents(): AcpAgentConfig[] {
@@ -169,8 +176,16 @@ export class ProviderRegistry {
     const general = this.#ownFallbackModels(GENERAL_FALLBACK_SCOPE) ?? [];
     const list = own ?? general;
     // An ACP model whose agent was removed stays in the list (adding the agent again revives it) but is never tried.
+    // The same for a model of an own endpoint that was removed (W5-BE5).
     const present = new Set(this.listAcpAgents().map((agent) => acpModelId(agent.id)));
-    const missing = { has: (model: AgentModelId) => isAcpModel(model) && !present.has(model) };
+    const endpointExists = this.#endpointExists;
+    const endpointGone = (model: AgentModelId) => {
+      const endpointId = parseEndpointModel(model)?.endpointId;
+      return endpointId !== undefined && endpointExists !== null && !endpointExists(endpointId);
+    };
+    const missing = {
+      has: (model: AgentModelId) => (isAcpModel(model) && !present.has(model)) || endpointGone(model),
+    };
     return {
       botId,
       own,
@@ -225,10 +240,21 @@ export class ProviderRegistry {
     return this.#blockFor(model) === null;
   }
 
-  /** The first usable model of [own model, …fallbacks] not tried for this message yet; null when none is left. */
-  chooseModel(botId: string, model: AgentModelId, tried: ReadonlySet<string>): AgentModelId | null {
+  /**
+   * The first usable model of [own model, …fallbacks] not tried for this message yet; null when none is left.
+   * W5-BE5: `accountFree` says the agent's account pool still has a free account of that provider: then a Codex or
+   * Claude limit known here (the last account's limit, the usage window of this computer's account) does not hold,
+   * because the accounts come before the fallback models.
+   */
+  chooseModel(
+    botId: string,
+    model: AgentModelId,
+    tried: ReadonlySet<string>,
+    accountFree?: (provider: AgentProviderId) => boolean,
+  ): AgentModelId | null {
     for (const candidate of [model, ...this.getFallbackInfo(botId).effective]) {
-      if (!tried.has(candidate) && this.isUsable(candidate)) return candidate;
+      if (tried.has(candidate)) continue;
+      if (this.isUsable(candidate) || accountFree?.(providerOfModel(candidate))) return candidate;
     }
     return null;
   }

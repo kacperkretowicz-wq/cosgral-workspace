@@ -349,9 +349,40 @@ describe("ProviderRegistry fallback lists (W5-BE4)", () => {
     expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("claude-sonnet-5");
   });
 
-  it("chooses by models only: the call has no account input, so a fallback never moves an agent to another account", async () => {
+  it("chooses models only: it never picks an account, so a fallback never moves an agent to another account", async () => {
     const { registry } = await setup();
     registry.setFallbackModels({ botId: "chief", fallbackModels: ["gpt-5.6-terra"] });
     expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("gpt-5.6-terra");
+  });
+
+  it("W5-BE5: a free account of the pool lifts a Codex limit known here, and only for that provider", async () => {
+    const { registry } = await setup();
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["gpt-5.6-terra", "claude-sonnet-5"] });
+    registry.reportFailure("gpt-5.6-luna", { kind: "usage-limit", resetsAt: null, message: "limit" });
+    registry.reportFailure("claude-sonnet-5", { kind: "usage-limit", resetsAt: null, message: "limit" });
+    const codexFree = (provider: string) => provider === "codex";
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(), codexFree)).toBe("gpt-5.6-luna");
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]), codexFree)).toBe("gpt-5.6-terra");
+    // No free account: the limit holds for every Codex model, and a Claude limit is not lifted by a Codex account.
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(), () => false)).toBeNull();
+    expect(
+      registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna", "gpt-5.6-terra"]), codexFree),
+    ).toBeNull();
+  });
+
+  it("W5-BE5: skips a model of a removed own endpoint and shows it as unavailable", async () => {
+    const { registry } = await setup();
+    const kept = "endpoint:local-llm/llama3:8b";
+    const gone = "endpoint:old-box/llama3:8b";
+    registry.setFallbackModels({ botId: "chief", fallbackModels: [gone, kept] });
+    // Without a lookup (no endpoint store attached) the list is taken as it is.
+    expect(registry.getFallbackInfo("chief")).toMatchObject({ effective: [gone, kept], unavailable: [] });
+    registry.useEndpointLookup((id) => id === "local-llm");
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      own: [gone, kept],
+      effective: [kept],
+      unavailable: [gone],
+    });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe(kept);
   });
 });

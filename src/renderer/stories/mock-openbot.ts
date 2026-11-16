@@ -93,6 +93,7 @@ import {
 import { createMockAccounts } from "./mock-accounts";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
+import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -703,6 +704,18 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         emitAgentEvent({ type: "app-settings-changed", settings: clone(appSettingsState) });
         return clone(appSettingsState);
       },
+    },
+    providers: {
+      ...createMockFallbackModelsApi(),
+      listAcpAgents: async () => [],
+      saveAcpAgent: async (input) => ({
+        ...input,
+        args: input.args ?? [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+      removeAcpAgent: async () => {},
+      listUsage: async () => [],
     },
     agent: {
       getStatus: async () => clone(agentStatus),

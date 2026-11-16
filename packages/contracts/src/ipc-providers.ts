@@ -89,7 +89,7 @@ export interface FallbackModelsInfo {
   general: AgentModelId[];
   /** What is really tried, in order: `own`, else `general`, without models that cannot run now. */
   effective: AgentModelId[];
-  /** Models of the list that cannot run now (an ACP agent that was removed); shown, never tried. */
+  /** Models of the list that cannot run now (an ACP agent or own endpoint that was removed); shown, never tried. */
   unavailable: AgentModelId[];
 }
 
