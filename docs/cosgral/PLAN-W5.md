@@ -13,14 +13,14 @@
 ## Kolejność zadań (z spec-w5 §3)
 | Kolejność | ID | Kto | Zadanie | Stan |
 |---|---|---|---|---|
-| 0 | W5-T1 | KAPI (doc, lekkie) | Kryteria odbioru W5 własnymi słowami, `docs/cosgral/spec-w5.md` | do przydziału |
-| 1 | W5-BE1 | Backend | Kontrakt `ipc-subscriptions.ts` (najpierw, atrapy dla UI) i CLI zarządzane (pobranie, SHA-256, przypięcie, auto-aktualizacja, własna ścieżka) | do przydziału |
-| 2 | W5-BE2 | Backend | Logowanie i wylogowanie w aplikacji | po BE1 |
+| 0 | W5-T1 | KAPI (doc, lekkie) | Kryteria odbioru W5 własnymi słowami, `docs/cosgral/spec-w5.md` | **zrobione**: 64 kryteria (`team/kapi/w5-t1` @ `8c1fe4ef1`), scalone |
+| 1 | W5-BE1 | Backend | Kontrakt `ipc-subscriptions.ts` (najpierw, atrapy dla UI) i CLI zarządzane (pobranie, SHA-256, przypięcie, auto-aktualizacja, własna ścieżka) | **zrobione**: kontrakt, silnik, IPC i krok e2e (`team/backend/w5-be1` @ `d7f7a3fae`), scalone w `7ea9afcfe`, `sandbox:e2e` 27/27 u lidera. Odbiór kryteriów C01–C13 przez KK jeszcze nie zrobiony |
+| 2 | W5-BE2 | Backend | Logowanie i wylogowanie w aplikacji | w toku: kontrakt kont gotowy (`team/backend/w5-be2` @ `e1f60cd87`), silnik i testy na fałszywym CLI w toku |
 | 3 | W5-K1 | KAPI | Konta i pula (konfigurowalna), wybór konta per agent, przejście przy limicie | po BE2 |
 | 3 | W5-BE3 | Backend | Klucze API w safeStorage | po BE2 |
 | 4 | W5-K2 | KAPI | Endpointy OpenAI-compatible, Ollama, LM Studio | po K1 |
 | 4 | W5-BE4 | Backend | 8 modeli zapasowych, przejście przed pierwszą akcją | po K1 |
-| 5 | W5-UI1/UI2 | UI Designer | Strona Dostawcy, krok „połącz”, użycie i limity | po kontraktach |
+| 5 | W5-UI1/UI2 | UI Designer | Strona Dostawcy, krok „połącz”, użycie i limity | UI1a (CLI zarządzane, zgoda, onboarding) oddane: `team/ui/w5-ui1` @ `f490cb3c8`, w chwili zapisu (16.11, ok. 01:30) jeszcze nie scalone; UI2 (konta) czeka na silnik BE2 |
 | 6 | W5-T2 | KK (+ właściciel) | Odbiór na czystym koncie Windows i prawdziwych kontach, bramka G2 | na końcu |
 
-Równolegle (nie W5): W4-T5 (KK, wiersze 24/26/30/35) i W4-UI4 (UI Designer, wiersze 2/3).
+Równolegle (nie W5): W4-T5 (KK, wiersze 24/26/30/35) i W4-UI4 (UI Designer, wiersze 2/3) zrobione i scalone; w toku W4-T6 (KK: poprawka pobierania z biblioteki i pełne `bun run check` na zintegrowanym kodzie) oraz W4-K3 (KAPI: kontrakty do wierszy 2 i 3).
