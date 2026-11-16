@@ -9,6 +9,7 @@ export * from "./ipc-app-data";
 export * from "./ipc-approval-rules";
 export * from "./ipc-attention";
 export * from "./ipc-browser";
+export * from "./ipc-browser-profiles";
 export * from "./ipc-budgets";
 export * from "./ipc-channels";
 export * from "./ipc-computer-use";

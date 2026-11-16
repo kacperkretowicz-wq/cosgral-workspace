@@ -97,6 +97,7 @@ import { createMockAccounts } from "./mock-accounts";
 import { createMockAcpLogin } from "./mock-acp-login";
 import { createMockAcpPresets } from "./mock-acp-presets";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
+import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockBudgets } from "./mock-budgets";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
@@ -1370,6 +1371,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     spaces: createMockSpaces((event) => emitAgentEvent(event)),
     // COSGRAL W8-KK2: budgets (demo; `simulate.record` plays a finished turn).
     budgets: createMockBudgets((event) => emitAgentEvent(event)),
+    // COSGRAL W8-KK3: browser profiles per agent (demo; `simulate.tabs` sets the open pages).
+    browserProfiles: createMockBrowserProfiles((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).
