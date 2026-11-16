@@ -1,5 +1,22 @@
-.context-panel { display: grid; gap: var(--openbot-space-2); padding: var(--openbot-space-3); border: 1px solid var(--openbot-border); border-radius: var(--openbot-radius-md); background: var(--openbot-bg-surface); }
-.context-panel-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--openbot-space-2); }
-.context-meter { width: 100%; height: var(--openbot-space-2); }
+.context-panel {
+  display: grid;
+  gap: var(--openbot-space-2);
+  padding: var(--openbot-space-3);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+}
+.context-panel-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}
+.context-meter {
+  width: 100%;
+  height: var(--openbot-space-2);
+}
 
-.context-panel > .ui-button { justify-self: start; }
+.context-panel > .ui-button {
+  justify-self: start;
+}

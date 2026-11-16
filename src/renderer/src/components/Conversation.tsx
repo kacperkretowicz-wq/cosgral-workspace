@@ -1,4 +1,3 @@
-import {ContextIndicator} from "./ContextIndicator";
 import {
   attachmentReferenceIds,
   expandAttachmentReferences,
@@ -43,6 +42,7 @@ import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
 import type { AccountNotice } from "./account-usage-view";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
+import { ContextIndicator } from "./ContextIndicator";
 import { ChoiceCard } from "./ConversationPrompts";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
@@ -1696,7 +1696,7 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </header>
 
-      <Show when={props.bot}>{bot=><ContextIndicator botId={bot().id} threadId={bot().threadId}/>}</Show>
+      <Show when={props.bot}>{(bot) => <ContextIndicator botId={bot().id} threadId={bot().threadId} />}</Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>
