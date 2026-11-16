@@ -1,10 +1,18 @@
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 import { expect, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { SettingsModal } from "../src/components/SettingsModal";
 import { Button, Heading, Text } from "../src/components/ui";
+import { createMockOpenBot } from "./mock-openbot";
 
 function SettingsModalStory(props: { initialOpen: boolean }) {
+  const previousApi = window.openbot;
+  const mock = createMockOpenBot();
+  window.openbot = mock.api;
+  onCleanup(() => {
+    mock.dispose();
+    window.openbot = previousApi;
+  });
   const [open, setOpen] = createSignal(props.initialOpen);
 
   return (
@@ -45,9 +53,19 @@ export const Interactive: Story = {
     let dialog = await body.findByRole("dialog", { name: "General" });
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(body.getByTestId("settings-modal-scroll-frame")).toHaveAttribute("data-scroll-down");
-    await expect(body.getByRole("button", { name: "Appearance" })).toBeDisabled();
+    await expect(body.getByRole("button", { name: "Appearance" })).toBeEnabled();
     await expect(body.getByRole("button", { name: "Notifications" })).toBeDisabled();
     await expect(body.getByRole("button", { name: "Advanced" })).toBeDisabled();
+
+    await userEvent.click(body.getByRole("button", { name: "Appearance" }));
+    await expect(body.getByRole("dialog", { name: "Appearance" })).toBeVisible();
+    const theme = await body.findByLabelText("Theme");
+    await waitFor(() => expect(theme).toBeEnabled());
+    await userEvent.selectOptions(theme, "light");
+    await waitFor(() => expect(theme).toHaveValue("light"));
+    await expect((await window.openbot.appSettings?.get())?.theme).toBe("light");
+    await userEvent.click(body.getByRole("button", { name: "General" }));
+    await expect(body.getByRole("dialog", { name: "General" })).toBeVisible();
 
     const launchSwitch = body.getByRole("switch", { name: "Launch COSGRAL Workspace at login" });
     await expect(launchSwitch).toBeChecked();

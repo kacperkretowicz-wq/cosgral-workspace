@@ -150,3 +150,5 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 
 | 16.11.2026 | contracts app settings, backend settings store/input parser, renderer theme bootstrap/tokens/Appearance, Storybook and focused tests, UI gate | W7-UI1: persistent dark/light/system theme, default system, shared production light palette and AA contrast checks |
 | 16.11.2026 | App/attention test fixtures, Sidebar and its Needs you test | W6-UI1-FIX: multicast event mock, active-thread Vault fixture, compatible accessible-name prefix and callback arguments; no assertions removed |
+
+| 16.11.2026 | SettingsModal.stories.tsx | W6-UI3-FIX: replace obsolete disabled Appearance expectation with navigation and persisted-theme checks; retain disabled checks for unfinished sections |
