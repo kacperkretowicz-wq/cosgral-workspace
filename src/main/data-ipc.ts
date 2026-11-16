@@ -2,7 +2,6 @@
 // skill library): with a remote server selected, lists come back empty and changes are refused.
 
 import { copyFile } from "node:fs/promises";
-import { join } from "node:path";
 import { type DraftAttachment, IPC_CHANNELS, LIBRARY_LIMITS } from "@openbot/contracts/ipc";
 import { app, type BrowserWindow, dialog, type OpenDialogOptions, type SaveDialogOptions, shell } from "electron";
 import type { SharedDataTools } from "../backend/data-tools";
@@ -19,6 +18,7 @@ import {
   parseTableId,
   parseUpdateTableRow,
 } from "./ipc/data-inputs";
+import { defaultSavePath } from "./save-path";
 import { handleTrusted } from "./trusted-ipc";
 
 export interface SharedDataIpcOptions {
@@ -89,7 +89,7 @@ export function registerSharedDataIpc(options: SharedDataIpcOptions): void {
       return;
     }
     const window = options.window();
-    const saveOptions: SaveDialogOptions = { defaultPath: join(app.getPath("downloads"), file.name) };
+    const saveOptions: SaveDialogOptions = { defaultPath: defaultSavePath(file.name, (name) => app.getPath(name)) };
     const result = window ? await dialog.showSaveDialog(window, saveOptions) : await dialog.showSaveDialog(saveOptions);
     if (result.canceled || !result.filePath) return;
     await copyFile(file.path, result.filePath);
