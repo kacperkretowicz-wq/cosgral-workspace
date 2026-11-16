@@ -282,6 +282,8 @@ async function main(): Promise<void> {
       "isolation note: what the real CLIs see of this computer, whatever the sandbox profile says",
       async () => {
         // Real CLIs find the person's own sign-in even with another USERPROFILE (they ask Windows for the home folder).
+        // The program reads the CLIs again some seconds after the start: look after that.
+        await window_.waitForTimeout(15_000);
         await waitUntil(
           "the accounts are read",
           async () => list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).length > 0,
