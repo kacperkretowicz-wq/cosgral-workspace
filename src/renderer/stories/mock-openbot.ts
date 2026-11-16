@@ -706,7 +706,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
     },
     providers: {
-      ...createMockFallbackModelsApi(),
+      ...createMockFallbackModelsApi([], { agentModels: Object.fromEntries(bots.map((bot) => [bot.id, bot.model])) }),
       listAcpAgents: async () => [],
       saveAcpAgent: async (input) => ({
         ...input,

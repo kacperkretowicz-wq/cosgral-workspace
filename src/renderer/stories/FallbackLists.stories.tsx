@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 export const GeneralList: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    const r = within(await c.findByRole("region", { name: "Fallback models" }));
+    const r = within(await c.findByRole("region", { name: "All providers fallback list" }));
     await expect(await r.findByText("Unavailable")).toBeInTheDocument();
     await userEvent.click(r.getByRole("button", { name: "Move acp:removed up" }));
     await userEvent.click(r.getByRole("button", { name: "Save order" }));
@@ -43,12 +43,11 @@ export const GeneralList: Story = {
 export const Inherited: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    const r = within(await c.findByRole("region", { name: "Fallback models" }));
+    const r = within(await c.findByRole("group", { name: "Agent fallback settings" }));
     const select = r.getByLabelText("Agent");
     if (!(select instanceof HTMLSelectElement)) throw new Error("Expected an agent select.");
-    await expect(await r.findByText("Unavailable")).toBeInTheDocument();
-    await userEvent.selectOptions(select, select.options[1].value);
-    await expect(await r.findByText("Inherited from general list")).toBeInTheDocument();
-    await expect(r.getByRole("button", { name: "Reset to general list" })).toBeDisabled();
+    await userEvent.selectOptions(select, select.options[0].value);
+    await expect(await r.findByText("Using provider and all-provider lists")).toBeInTheDocument();
+    await expect(r.getByRole("button", { name: "Reset to provider list" })).toBeDisabled();
   },
 };
