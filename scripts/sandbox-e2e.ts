@@ -31,6 +31,7 @@ interface Finding {
 
 const findings: Finding[] = [];
 const steps: Array<{ name: string; ok: boolean; detail?: string; ms: number }> = [];
+let failureDump: ((name: string) => Promise<void>) | undefined;
 const mainOutput: string[] = [];
 const MESSAGE = "Hello from the sandbox";
 const PHONE_MESSAGE = "Hello from the sandbox phone";
@@ -302,6 +303,8 @@ async function step<T>(name: string, work: () => Promise<T>): Promise<T | undefi
     const detail = error instanceof Error ? error.message : String(error);
     steps.push({ name, ok: false, detail, ms: Date.now() - started });
     console.log(`FAIL ${name}: ${detail.split("\n")[0]}`);
+    // What the window showed when the step failed (in the sandbox folder, never in the repository).
+    await failureDump?.(`fail-${steps.length}`).catch(() => undefined);
     return undefined;
   }
 }
@@ -334,6 +337,7 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
   const page = await app.firstWindow();
   watch(page, "main");
   await page.waitForLoadState("domcontentloaded");
+  failureDump = (name) => dump(page, join(root, "evidence"), name);
   return { app, page };
 }
 
