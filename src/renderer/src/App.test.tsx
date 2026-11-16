@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 let emitAgentEvent: ((event: AgentEvent) => void) | undefined;
+const agentEventListeners = new Set<(event: AgentEvent) => void>();
 let emitAttachmentImport: ((event: AttachmentImportEvent) => void) | undefined;
 let emitUpdateStatus: ((status: UpdateStatus) => void) | undefined;
 let emitAuth: ((state: CentralAuthState) => void) | undefined;
@@ -67,7 +68,10 @@ async function confirmOnboardingModel(): Promise<void> {
 
 describe("COSGRAL Workspace connected desktop shell", () => {
   beforeEach(() => {
-    emitAgentEvent = undefined;
+    agentEventListeners.clear();
+    emitAgentEvent = (event) => {
+      for (const listener of agentEventListeners) listener(event);
+    };
     emitAttachmentImport = undefined;
     emitUpdateStatus = undefined;
     emitAuth = undefined;
@@ -255,8 +259,8 @@ describe("COSGRAL Workspace connected desktop shell", () => {
           respondToPrompt: vi.fn().mockResolvedValue(undefined),
           respondToApproval: vi.fn().mockResolvedValue(undefined),
           onEvent: vi.fn((listener) => {
-            emitAgentEvent = listener;
-            return () => undefined;
+            agentEventListeners.add(listener);
+            return () => agentEventListeners.delete(listener);
           }),
         },
         browser: {
