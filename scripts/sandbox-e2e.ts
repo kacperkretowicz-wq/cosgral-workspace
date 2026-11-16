@@ -841,10 +841,8 @@ async function main(): Promise<void> {
       assert.equal(asRecord(account.login).phase, "success", "The fake sign-in finishes");
       assert.equal(account.loggedIn, true);
       assert.equal(account.plan, "ChatGPT");
-      assert(
-        String(asRecord(account.login).url ?? "").startsWith("https://example.invalid/"),
-        "The sign-in page is shown",
-      );
+      // The sign-in page is shown while waiting (unit tests); after success the link is cleared.
+      assert.equal(asRecord(account.login).url, null, "The sign-in link is cleared after success");
 
       const out = await call(`logoutAccount({ id: ${JSON.stringify(id)} })`);
       assert.equal(out.loggedIn, false, "Signed out");
