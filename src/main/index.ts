@@ -77,6 +77,7 @@ import {
   parseCancelQueuedMessage,
   parseImportAttachments,
   parseInterrupt,
+  parseListBots,
   parseMarkConversationRead,
   parseMessageReaction,
   parseOpenAttachment,
@@ -84,6 +85,7 @@ import {
   parseReorderQueue,
   parseSendMessage,
   parseSetAgentAvatar,
+  parseSetBotHidden,
   parseSetQueuePaused,
   parseSteerQueuedMessage,
   parseUpdateBot,
@@ -483,11 +485,14 @@ function registerIpcHandlers(
       ? service.listModels()
       : remoteServers.request("/v1/agents/models", {}, serverId, decodeAgentModelOptions);
   });
-  handleTrusted(IPC_CHANNELS.agentListBots, (input: unknown) => {
-    const { serverId } = parseAgentRequest(input);
-    return serverId === "local"
-      ? service.listBots()
-      : remoteServers.request("/v1/agents", {}, serverId, decodeBotSummaries);
+  handleTrusted(IPC_CHANNELS.agentListBots, async (input: unknown) => {
+    const { serverId, payload } = parseAgentRequest(input);
+    const options = parseListBots(payload);
+    const bots =
+      serverId === "local"
+        ? service.listBots()
+        : await remoteServers.request("/v1/agents", {}, serverId, decodeBotSummaries);
+    return options.includeHidden === false ? bots.filter((bot) => bot.hidden !== true) : bots;
   });
   handleTrusted(IPC_CHANNELS.agentCreateBot, (input: unknown) => {
     const { serverId } = parseAgentRequest(input);
@@ -505,6 +510,12 @@ function registerIpcHandlers(
     return scoped.serverId === "local"
       ? service.setAvatar(parsed.botId, parsed.image)
       : remoteServers.setAgentAvatar(parsed.botId, parsed.image, scoped.serverId);
+  });
+  handleTrusted(IPC_CHANNELS.agentSetBotHidden, (input: unknown) => {
+    const scoped = parseAgentRequest(input);
+    if (scoped.serverId !== "local") throw new Error("Hiding an agent works on this computer only.");
+    const parsed = parseSetBotHidden(scoped.payload);
+    return service.setBotHidden(parsed.botId, parsed.hidden);
   });
   handleTrusted(IPC_CHANNELS.agentDeleteBot, (input: unknown) => {
     const scoped = parseAgentRequest(input);

@@ -121,3 +121,12 @@ Logowanie zostaje tam, gdzie jest; skrypt go nie czyta, nie kopiuje i nie wypisu
 ## W4-UI1: kanały (oczekuje na odbiór okna)
 
 W pasku bocznym wybierz **New channel** albo **Browse channels** i **New channel**. Wpisz nazwę (małe litery, cyfry, myślniki), wybierz członków i lidera spośród nich. **Edit channel** zmienia tytuł, skład, lidera i instrukcje. Krótka nazwa pozostaje stała. **Reply** odpowiada na wiadomość. Krok `channel UI: create, edit and reply` w `sandbox:e2e` czeka na odbiór.
+
+## W4-K3: nowe metody kontraktu (czekają na UI)
+
+Backend i kontrakty gotowe, **okno programu ich jeszcze nie wywołuje** (wiersze 2 i 3 parytetu zostają „częściowo” do czasu podłączenia UI i odbioru). Szczegóły i kształty: `docs/cosgral-raporty/kapi-w4-k3.md`.
+
+- **Przypinanie stron szyny:** `window.openbot.appSettings.update({ navigation: { pinnedPageIds } })`; odczyt `AppSettings.navigation`; zdarzenie `app-settings-changed`.
+- **Ukrywanie agenta:** `window.openbot.agent.setBotHidden({ botId, hidden })`, pole `BotSummary.hidden`, `listBots({ includeHidden })` (bez argumentu: wszyscy; `false`: tylko widoczni). Ukryty agent nadal działa.
+- **Duplikowanie agenta:** `window.openbot.agent.duplicateBot({ sourceBotId, name? })` → `{ bot, warnings }`; kopia ma ustawienia, skille i narzędzia źródła, ale **bez pamięci i historii**; nazwa „<nazwa> kopia”, potem „kopia 2”.
+- **Nie ma jeszcze:** wielu wątków na agenta (W6-BE1) i osobnego okna rozmowy.

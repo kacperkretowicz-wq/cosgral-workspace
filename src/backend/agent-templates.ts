@@ -9,12 +9,15 @@ import type { DatabaseSync } from "node:sqlite";
 import {
   AGENT_TEMPLATE_LIMITS,
   type AgentEvent,
+  type AgentMcpServerSetting,
+  type AgentModelId,
   type AgentTemplate,
   type AgentToolSwitches,
   BOT_AVATAR_HUES,
   type BotSummary,
   type CreateAgentInput,
   type CreateAgentResult,
+  type DuplicateAgentInput,
   isAgentTemplate,
   type SaveAgentTemplateInput,
   SKILL_LIMITS,
@@ -144,6 +147,13 @@ export interface AgentTemplatesDeps {
   skillNames: (botId: string) => Promise<string[]>;
   saveEssentialMemory: (botId: string, text: string) => void;
   essentialMemories: (botId: string) => string[];
+  /** COSGRAL W4-K3 (duplicate): names of every agent, so a copy's name is free. */
+  botNames?: () => string[];
+  /** COSGRAL W4-K3 (duplicate): the per-agent MCP switches and the fallback models of an agent. */
+  mcpSettings?: (botId: string) => AgentMcpServerSetting[];
+  setMcpEnabled?: (botId: string, serverId: string, enabled: boolean) => void;
+  fallbackModels?: (botId: string) => AgentModelId[];
+  setFallbackModels?: (botId: string, models: AgentModelId[]) => void;
   emit: (event: AgentEvent) => void;
   now?: () => Date;
 }
@@ -219,6 +229,83 @@ export class AgentTemplates {
       }
     }
     return { bot: this.#deps.bot(created.id) ?? created, warnings };
+  }
+
+  /**
+   * COSGRAL W4-K3: a new agent that starts with the source's settings (see DuplicateAgentInput for what is and is not
+   * copied). Like the creator, it checks the input first; what it then cannot do becomes a warning and the copy stays.
+   */
+  async duplicateAgent(input: DuplicateAgentInput): Promise<CreateAgentResult> {
+    const source = this.#deps.bot(input.sourceBotId);
+    if (!source) throw new Error(`Agent "${input.sourceBotId}" no longer exists.`);
+    const name = optionalText(input.name, "Agent name", AGENT_TEMPLATE_LIMITS.name) || this.#copyName(source.name);
+    const tools = this.#deps.toolSwitches(source.id);
+    const skills = await this.#deps.skillNames(source.id);
+    const mcpOff = (this.#deps.mcpSettings?.(source.id) ?? []).filter((server) => !server.enabled);
+    const fallbacks = this.#deps.fallbackModels?.(source.id) ?? [];
+
+    const created = await this.#deps.createBot();
+    const warnings: string[] = [];
+    const profile: UpdateBotInput = {
+      botId: created.id,
+      name,
+      role: source.role,
+      description: source.description,
+      reasoningEffort: source.reasoningEffort,
+      notifications: source.notifications,
+    };
+    if (isOneOf(BOT_AVATAR_HUES, source.avatarHue)) profile.avatarHue = source.avatarHue;
+    try {
+      await this.#deps.updateBot(profile);
+    } catch (error) {
+      warnings.push(`The profile could not be copied: ${errorText(error)}`);
+    }
+    if (source.model !== created.model) {
+      try {
+        await this.#deps.updateBot({ botId: created.id, model: source.model });
+      } catch (error) {
+        warnings.push(
+          `Model ${source.model} could not be set: ${errorText(error)} The copy uses ${this.#deps.bot(created.id)?.model ?? created.model}.`,
+        );
+      }
+    }
+    try {
+      if (Object.keys(tools).length > 0) this.#deps.setTools(created.id, tools);
+    } catch (error) {
+      warnings.push(`The tool switches could not be copied: ${errorText(error)}`);
+    }
+    for (const skill of skills) {
+      try {
+        const warning = await this.#deps.installSkill(created.id, skill);
+        if (warning) warnings.push(warning);
+      } catch (error) {
+        warnings.push(`Skill "${skill}" was not installed: ${errorText(error)}`);
+      }
+    }
+    for (const server of mcpOff) {
+      try {
+        this.#deps.setMcpEnabled?.(created.id, server.serverId, false);
+      } catch (error) {
+        warnings.push(`The MCP switch of "${server.serverId}" could not be copied: ${errorText(error)}`);
+      }
+    }
+    try {
+      if (fallbacks.length > 0) this.#deps.setFallbackModels?.(created.id, fallbacks);
+    } catch (error) {
+      warnings.push(`The fallback models could not be copied: ${errorText(error)}`);
+    }
+    return { bot: this.#deps.bot(created.id) ?? created, warnings };
+  }
+
+  /** "<name> kopia", then "<name> kopia 2", "<name> kopia 3" ... (a copy of a copy keeps the original name). */
+  #copyName(sourceName: string): string {
+    const taken = new Set((this.#deps.botNames?.() ?? []).map((name) => name.trim().toLowerCase()));
+    const root = sourceName.replace(/ kopia(?: \d+)?$/i, "").trim() || sourceName;
+    for (let number = 1; ; number += 1) {
+      const suffix = number === 1 ? " kopia" : ` kopia ${number}`;
+      const candidate = `${root.slice(0, Math.max(1, AGENT_TEMPLATE_LIMITS.name - suffix.length)).trimEnd()}${suffix}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
   }
 
   async saveFromAgent(input: SaveAgentTemplateInput): Promise<AgentTemplate> {

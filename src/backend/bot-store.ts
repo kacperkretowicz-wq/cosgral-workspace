@@ -184,6 +184,15 @@ export class BotStore {
     return { ...bot };
   }
 
+  /** COSGRAL W4-K3: hide the agent from the sidebar or show it again. Not activity: `updatedAt` stays as it is. */
+  async setHidden(id: string, hidden: boolean): Promise<BotSummary> {
+    const bot = this.#requireBot(id);
+    if (hidden) bot.hidden = true;
+    else delete bot.hidden;
+    this.#persist(hidden ? "agent.hidden" : "agent.shown");
+    return { ...bot };
+  }
+
   async setAvatar(botId: string, image: AvatarImageInput | null): Promise<BotSummary> {
     const operation = this.#avatarUpdateQueue.then(() => this.#setAvatar(botId, image));
     this.#avatarUpdateQueue = operation.then(
