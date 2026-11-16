@@ -792,6 +792,9 @@ export function App() {
         if (activitySeen.loading > 0) activitySeen.changedBotIds.add(event.activity.botId);
         setActivities((current) => ({ ...current, [event.activity.botId]: event.activity }));
         return;
+      case "access-denied":
+        appendUiError(event.botId, event.message, "Access denied");
+        return;
       case "error":
         if (event.botId) appendUiError(event.botId, event.message, "Error");
     }

@@ -1,5 +1,6 @@
 import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
 import { AppearanceSettings } from "./AppearanceSettings";
+import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import {
   Badge,
@@ -219,6 +220,7 @@ export function SettingsModal(props: SettingsModalProps) {
                       </section>
 
                       <ContextSettingsSection />
+                      <BudgetSettings />
                       <section class="settings-modal-group" aria-labelledby="settings-workspace">
                         <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
                           Workspace
