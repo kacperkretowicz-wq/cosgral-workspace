@@ -43,6 +43,7 @@ beforeAll(async () => {
   const { registerThreadsIpc } = await import("./threads-ipc");
   const { registerWindowsIpc } = await import("./windows-ipc");
   const { registerSpacesIpc } = await import("./spaces-ipc");
+  const { registerBudgetsIpc } = await import("./budgets-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -50,6 +51,7 @@ beforeAll(async () => {
   registerMessageActionsIpc(() => null);
   registerWindowsIpc(() => null);
   registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
+  registerBudgetsIpc(() => null);
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -92,6 +94,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("windows:").length).toBe(4);
     // COSGRAL W8-KK1: the client spaces.
     expect(channelsOf("spaces:").length).toBe(8);
+    // COSGRAL W8-KK2: the budgets.
+    expect(channelsOf("budgets:").length).toBe(4);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -108,6 +112,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "message-actions:",
         "windows:",
         "spaces:",
+        "budgets:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -142,6 +147,22 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("spaces:delete", "local", { id: "client-0001" })).threw).toMatch(/confirmation/);
     expect((await call("spaces:switch", "local", { id: "../main", confirm: true })).threw).toMatch(/space id/);
     expect((await call("spaces:list", "local", null)).threw).toMatch(/still starting/);
+    // W8-KK2: a bad budget request is refused by the parser before the program is asked.
+    expect(
+      (
+        await call("budgets:set", "local", {
+          scope: { kind: "space" },
+          period: "day",
+          tokenLimit: -1,
+          costLimitUsd: null,
+          hardStop: true,
+        })
+      ).threw,
+    ).toMatch(/token limit/);
+    expect((await call("budgets:export-csv", "local", { from: "2026-11-30", to: "2026-11-01" })).threw).toMatch(
+      /not be after/,
+    );
+    expect((await call("budgets:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

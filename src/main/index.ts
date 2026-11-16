@@ -42,6 +42,7 @@ import { ApprovalRulesStore } from "../backend/approval-rules";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
+import { BudgetMeter } from "../backend/budget-meter";
 import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
@@ -68,6 +69,7 @@ import { registerApiKeysIpc } from "./api-keys-ipc";
 import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
+import { registerBudgetsIpc } from "./budgets-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerContextIpc } from "./context-ipc";
 import { ConversationWindows } from "./conversation-windows";
@@ -282,6 +284,8 @@ let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
+// COSGRAL W8-KK2: the budgets and the cost counter of the space the program runs on.
+let budgetMeter: BudgetMeter | null = null;
 // COSGRAL W6-KK3: the separate conversation windows (the rule keeper and the Electron windows it uses).
 let conversationWindows: ConversationWindows | null = null;
 let conversationWindowHost: ElectronConversationWindowHost | null = null;
@@ -889,6 +893,7 @@ function registerIpcHandlers(
   // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);
+  registerBudgetsIpc(() => budgetMeter);
   registerSpacesIpc({
     store: () => spaceStore,
     emit: (event) => forwardAgentEvent("local", event),
@@ -1351,6 +1356,7 @@ if (!hasSingleInstanceLock) {
       const store = new BotStore(app.getPath("userData"), runningSpace.home);
       await store.initialize();
       mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
+      budgetMeter = new BudgetMeter({ database: store.database, emit: (event) => forwardAgentEvent("local", event) });
       await mailboxStore.initialize();
       configureApplicationProtocol();
       browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
