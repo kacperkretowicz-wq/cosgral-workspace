@@ -1,4 +1,4 @@
-﻿import type { AccountsSnapshot } from "@openbot/contracts/ipc";
+import type { AccountsSnapshot } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
 import { safeCliError } from "./ManagedCliSection";
 export function accountError(error: unknown) {
@@ -13,7 +13,10 @@ export function useAccounts() {
     const serial = ++generation;
     try {
       const value = await window.openbot.subscriptions?.listAccounts();
-      if (serial === generation) setSnapshot(value);
+      if (serial === generation) {
+        setSnapshot(value);
+        setError("");
+      }
     } catch (e) {
       setError(accountError(e));
     }

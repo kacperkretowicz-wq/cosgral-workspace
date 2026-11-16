@@ -132,3 +132,39 @@ it("loads account snapshots and shows full capacity", async () => {
   await screen.findByRole("heading", { name: "Praca" });
   expect(screen.getByText(/Osiągnięto maksymalną liczbę/)).toBeInTheDocument();
 });
+
+it("preserves a code draft and focus across snapshots, then clears it on completion", async () => {
+  let emit: (event: import("@openbot/contracts/ipc").AgentEvent) => void = () => {};
+  const snapshot = {
+    accounts: [{ ...account, login: { ...account.login, phase: "code-required" as const } }],
+    pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true as const },
+    assignments: [],
+  };
+  vi.stubGlobal("openbot", {
+    subscriptions: { listAccounts: async () => snapshot },
+    agent: {
+      onEvent: (listener: typeof emit) => {
+        emit = listener;
+        return () => {};
+      },
+    },
+  });
+  render(() => <ProviderAccounts />);
+  const input = await screen.findByLabelText("Kod logowania");
+  input.focus();
+  await fireEvent.input(input, { target: { value: "demo-draft" } });
+  emit({
+    type: "accounts-changed",
+    ...snapshot,
+    accounts: snapshot.accounts.map((a) => ({ ...a, checkedAt: "2026-11-16T00:00:00Z" })),
+  });
+  await waitFor(() => expect(screen.getByLabelText("Kod logowania")).toBe(input));
+  expect(input).toHaveValue("demo-draft");
+  expect(input).toHaveFocus();
+  emit({
+    type: "accounts-changed",
+    ...snapshot,
+    accounts: [{ ...account, loggedIn: true, login: { ...account.login, phase: "success" } }],
+  });
+  await waitFor(() => expect(screen.queryByLabelText("Kod logowania")).toBeNull());
+});

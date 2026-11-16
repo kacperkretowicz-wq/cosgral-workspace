@@ -1018,3 +1018,20 @@
   height: 100%;
   background: var(--openbot-accent);
 }
+
+.provider-accounts,
+.account-provider {
+  display: grid;
+  gap: var(--openbot-space-4);
+}
+.provider-account-card {
+  padding: var(--openbot-space-4);
+}
+.provider-account-card > .ui-button {
+  align-self: flex-start;
+}
+.account-heading {
+  justify-content: flex-start;
+  gap: var(--openbot-space-2);
+  flex-wrap: wrap;
+}

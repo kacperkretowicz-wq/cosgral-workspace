@@ -1,13 +1,13 @@
-﻿import {
+import {
   ACCOUNT_LIMITS,
   ACCOUNT_POOL_WARNING,
   type ProviderAccount,
   type ProviderAccountProvider,
   type SetAccountPoolInput,
 } from "@openbot/contracts/ipc";
-import { createSignal, For, Show } from "solid-js";
-import { useAccounts } from "./account-state";
-import { safeCliError } from "./ManagedCliSection";
+import { createEffect, createSignal, For, Show } from "solid-js";
+import { accountError, useAccounts } from "./account-state";
+
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 export type AccountAction =
   | "loginAccount"
@@ -44,12 +44,18 @@ export function ProviderAccountCard(props: {
 }) {
   const [confirm, setConfirm] = createSignal<"pool" | "remove" | null>(null);
   const [code, setCode] = createSignal("");
+  createEffect(
+    () => props.account.login.phase,
+    (phase) => {
+      if (phase !== "code-required") setCode("");
+    },
+  );
   const working = () => ["waiting-for-browser", "code-required"].includes(props.account.login.phase);
   const pool = (extra: Partial<SetAccountPoolInput>) =>
     props.onPool({ id: props.account.id, inPool: props.account.inPool, ...extra });
   return (
-    <Card class="managed-cli-card" aria-label={props.account.label}>
-      <div class="providers-heading">
+    <Card class="managed-cli-card provider-account-card" role="group" aria-label={props.account.label}>
+      <div class="providers-heading account-heading">
         <Heading as="h4" size="sm">
           {props.account.label}
         </Heading>
@@ -78,7 +84,7 @@ export function ProviderAccountCard(props: {
           tone={props.account.login.phase === "error" ? "danger" : "muted"}
           role={props.account.login.phase === "error" ? "alert" : undefined}
         >
-          {safeCliError(props.account.login.message ?? "")}
+          {accountError(props.account.login.message ?? "")}
         </Text>
       </Show>
       <Show when={working() && safeLoginUrl(props.account.login.url)}>
@@ -170,6 +176,11 @@ export function ProviderAccountCard(props: {
           Limit puli osiągnięty. Wyłącz inne konto lub zwiększ limit.
         </Text>
       </Show>
+      <Show when={props.account.inPool}>
+        <Text as="p" tone="muted">
+          Kolejność puli: {props.account.poolOrder}
+        </Text>
+      </Show>
       <div class="managed-cli-actions">
         <Button disabled={props.busy || props.account.isDefault} onClick={() => pool({ isDefault: true })}>
           Ustaw jako domyślne
@@ -192,7 +203,7 @@ export function ProviderAccountCard(props: {
         </Show>
       </div>
       <Show when={confirm()}>
-        <Card class="managed-cli-card" aria-label="Potwierdzenie zmiany konta">
+        <Card class="managed-cli-card provider-account-card" aria-label="Potwierdzenie zmiany konta">
           <Text as="p">
             {confirm() === "pool"
               ? ACCOUNT_POOL_WARNING
@@ -226,7 +237,7 @@ function AddAccount(props: {
 }) {
   const [label, setLabel] = createSignal("");
   return (
-    <Card class="managed-cli-card">
+    <Card class="managed-cli-card provider-account-card">
       <Heading as="h4" size="sm">
         Dodaj konto
       </Heading>
@@ -275,7 +286,7 @@ export function ProviderAccounts() {
     });
   }
   return (
-    <section class="providers-section" aria-label="Konta">
+    <section class="providers-section provider-accounts" aria-label="Konta">
       <Heading as="h2" size="md">
         Konta i pula
       </Heading>
@@ -295,7 +306,7 @@ export function ProviderAccounts() {
       >
         {(snapshot) => (
           <>
-            <Card class="managed-cli-card">
+            <Card class="managed-cli-card provider-account-card">
               <Field
                 label="Maks. kont w puli"
                 description={`Obecny limit: ${snapshot().pool.maxAccountsPerProvider}. Od 1 do 10, domyślnie 3. Limit obejmuje także dodawanie kont.`}
@@ -333,7 +344,7 @@ export function ProviderAccounts() {
                     .accounts.filter((a) => a.provider === provider)
                     .sort((a, b) => a.poolOrder - b.poolOrder);
                 return (
-                  <section aria-label={`Konta ${provider}`}>
+                  <section class="account-provider" aria-label={`Konta ${provider}`}>
                     <Heading as="h3" size="md">
                       {provider === "codex" ? "Codex" : "Claude"}
                     </Heading>
@@ -346,10 +357,10 @@ export function ProviderAccounts() {
                       }
                     >
                       <div class="managed-cli-grid">
-                        <For each={accounts()}>
+                        <For each={accounts()} keyed={(account) => account.id}>
                           {(account, index) => (
                             <ProviderAccountCard
-                              account={account}
+                              account={account()}
                               position={index()}
                               count={accounts().length}
                               busy={state.busy()}

@@ -98,14 +98,20 @@ export function AgentSettingsW3(props: { botId: string }) {
     setNotice("");
     const result = await saveAgentSettingsStages(
       () =>
-        api.update({
-          botId: props.botId,
-          name: value.bot.name,
-          role: value.bot.role,
-          description: value.bot.description,
-          model: value.bot.model,
-          tools: Object.fromEntries(value.tools.map((tool) => [tool.group, tool.enabled])),
-        }),
+        api
+          .update({
+            botId: props.botId,
+            name: value.bot.name,
+            role: value.bot.role,
+            description: value.bot.description,
+            model: value.bot.model,
+            tools: Object.fromEntries(value.tools.map((tool) => [tool.group, tool.enabled])),
+          })
+          .then((updated) => {
+            setSavedModel(updated.bot.model);
+            setSettings(updated);
+            return updated;
+          }),
       () => {
         const providers = window.openbot.providers;
         if (!providers) return Promise.reject(new Error("Fallback model service is unavailable."));
