@@ -1983,6 +1983,7 @@ export function App() {
                 accountUsage={accountUsage()}
                 updateStatus={updateStatus()}
                 agentStates={sidebarAgentStates()}
+                activities={activities()}
                 layout={folderLayout()}
                 folderActions={folderLayout() ? folderActions : undefined}
                 needsYouItems={needsYouItems()}

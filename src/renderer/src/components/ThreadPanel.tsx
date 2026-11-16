@@ -136,90 +136,90 @@ export function ThreadPanel(props: {
           <Switch label="Show archived threads" checked={archived()} onChange={setArchived} />
           <Show when={loaded()} fallback={<Text as="p">Loading threads...</Text>}>
             <ul class="thread-list">
-              <For each={visible()} by={(thread) => thread.id}>
+              <For each={visible()}>
                 {(thread) => (
                   <li class="thread-list-row">
                     <div>
                       <Heading as="h3" size="sm">
-                        {thread().title}
+                        {thread.title}
                       </Heading>
-                      <Badge tone={thread().state === "waiting" ? "warning" : "neutral"}>{thread().state}</Badge>
-                      <Show when={thread().active}>
+                      <Badge tone={thread.state === "waiting" ? "warning" : "neutral"}>
+                        {thread.state === "running" && !thread.active ? "Working in background" : thread.state}
+                      </Badge>
+                      <Show when={thread.active}>
                         <Badge>Current</Badge>
                       </Show>
                       <Text as="p" tone="secondary">
-                        {thread().preview || "No messages yet."}
+                        {thread.preview || "No messages yet."}
                       </Text>
                       <Text as="p" tone="secondary">
-                        {thread().unread} unread; {thread().queued} queued; {thread().needsYou} Needs you. Updated{" "}
-                        {new Date(thread().updatedAt).toLocaleString("en-US")}
+                        {thread.unread} unread; {thread.queued} queued; {thread.needsYou} Needs you. Updated{" "}
+                        {new Date(thread.updatedAt).toLocaleString("en-US")}
                       </Text>
-                      <Show when={thread().parentThreadId}>
+                      <Show when={thread.parentThreadId}>
                         <Button
                           variant="link"
                           disabled={
                             busy() ||
-                            !list()?.threads.some((t) => t.id === thread().parentThreadId && t.state !== "archived")
+                            !list()?.threads.some((t) => t.id === thread.parentThreadId && t.state !== "archived")
                           }
                           onClick={() => {
-                            const parent = list()?.threads.find((t) => t.id === thread().parentThreadId);
+                            const parent = list()?.threads.find((t) => t.id === thread.parentThreadId);
                             if (parent) select(parent);
                           }}
                         >
-                          From thread: {thread().parentTitle ?? thread().parentThreadId}
+                          From thread: {thread.parentTitle ?? thread.parentThreadId}
                         </Button>
                       </Show>
                     </div>
                     <div class="thread-actions">
                       <Show
-                        when={thread().state !== "archived"}
+                        when={thread.state !== "archived"}
                         fallback={
                           <Button
                             disabled={busy()}
                             onClick={() =>
-                              void run((service, botId) => service.restore({ botId, threadId: thread().id }))
+                              void run((service, botId) => service.restore({ botId, threadId: thread.id }))
                             }
                           >
-                            Restore {thread().title}
+                            Restore {thread.title}
                           </Button>
                         }
                       >
-                        <Button disabled={busy() || thread().active} onClick={() => select(thread())}>
-                          Open {thread().title}
+                        <Button disabled={busy() || thread.active} onClick={() => select(thread)}>
+                          Open {thread.title}
                         </Button>
                         <Button
                           disabled={busy()}
                           onClick={() => {
-                            setRename(thread().id);
-                            setTitle(thread().title);
+                            setRename(thread.id);
+                            setTitle(thread.title);
                             setDeleting(null);
                           }}
                         >
-                          Rename {thread().title}
+                          Rename {thread.title}
                         </Button>
                         <Button
                           disabled={busy()}
-                          onClick={() =>
-                            void run((service, botId) => service.archive({ botId, threadId: thread().id }))
-                          }
+                          onClick={() => void run((service, botId) => service.archive({ botId, threadId: thread.id }))}
                         >
-                          Archive {thread().title}
+                          Archive {thread.title}
                         </Button>
                       </Show>
                       <Button
                         variant="danger"
                         disabled={busy()}
                         onClick={() => {
-                          setDeleting(thread().id);
+                          setDeleting(thread.id);
                           setRename(null);
                         }}
                       >
-                        Delete {thread().title}
+                        Delete {thread.title}
                       </Button>
                     </div>
-                    <Show when={rename() === thread().id}>
+                    <Show when={rename() === thread.id}>
                       <form
-                        aria-label={`Rename ${thread().title}`}
+                        aria-label={`Rename ${thread.title}`}
                         onSubmit={(event) => {
                           event.preventDefault();
                           const problem = threadTitleProblem(title());
@@ -227,9 +227,7 @@ export function ThreadPanel(props: {
                             setError(problem);
                             return;
                           }
-                          void run((service, botId) =>
-                            service.rename({ botId, threadId: thread().id, title: title() }),
-                          );
+                          void run((service, botId) => service.rename({ botId, threadId: thread.id, title: title() }));
                         }}
                       >
                         <Field label="Thread title">
@@ -251,19 +249,17 @@ export function ThreadPanel(props: {
                         </Button>
                       </form>
                     </Show>
-                    <Show when={deleting() === thread().id}>
-                      <fieldset aria-label={`Confirm deleting ${thread().title}`}>
+                    <Show when={deleting() === thread.id}>
+                      <fieldset aria-label={`Confirm deleting ${thread.title}`}>
                         <Text as="p">
-                          Permanently delete {thread().title}, its history, queued messages and Needs you cards? This
+                          Permanently delete {thread.title}, its history, queued messages and Needs you cards? This
                           cannot be undone.
                         </Text>
                         <Button
                           variant="danger"
                           disabled={busy()}
                           onClick={() =>
-                            void run((service, botId) =>
-                              service.delete({ botId, threadId: thread().id, confirm: true }),
-                            )
+                            void run((service, botId) => service.delete({ botId, threadId: thread.id, confirm: true }))
                           }
                         >
                           Delete permanently

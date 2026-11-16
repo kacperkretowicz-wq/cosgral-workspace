@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   AccountUsage,
+  AgentActivity,
   AgentModelOption,
   AgentStatus,
   AppInfo,
@@ -66,6 +67,7 @@ interface SidebarProps {
   agentStates: Record<string, SidebarAgentState>;
   needsYouItems?: NeedsYouSidebarItem[];
   threadLists?: Record<string, ThreadList>;
+  activities?: Record<string, AgentActivity>;
   /** COSGRAL: agents that are looking at a window, screen or camera right now. */
   lookingBotIds?: string[];
   computerUsingBotIds?: string[];
@@ -861,6 +863,14 @@ export function Sidebar(props: SidebarProps) {
                           <AgentAvatar bot={bot} />
                           <Show when={props.threadLists?.[bot.id]}>
                             {(list) => <span class="bot-row-preview">{threadRowLabel(list())}</span>}
+                          </Show>
+                          <Show when={props.activities?.[bot.id]?.workingThread}>
+                            {(thread) => (
+                              <span class="bot-row-preview">
+                                {thread().background ? "Working in background: " : "Working in: "}
+                                {thread().title}
+                              </span>
+                            )}
                           </Show>
                           <Show when={props.agentStates[bot.id]}>
                             {(state) => <SidebarAgentIndicator state={state()} />}

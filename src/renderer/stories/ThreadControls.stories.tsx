@@ -94,6 +94,13 @@ export const Rename: Story = {
     await expect(await c.findByRole("heading", { name: "New milestone" })).toBeInTheDocument();
   },
 };
+export const Background: Story = {
+  play: async ({ canvasElement }) => {
+    const c = await open(canvasElement);
+    await userEvent.click(c.getByRole("button", { name: "Open Research" }));
+    await expect(await c.findByText("Working in background")).toBeInTheDocument();
+  },
+};
 export const ArchiveRestore: Story = {
   play: async ({ canvasElement }) => {
     const c = await open(canvasElement);

@@ -112,7 +112,7 @@ describe("agent threads UI", () => {
     await screen.findByRole("region", { name: "Needs you by thread" });
     await clickButton("Second: 1 Needs you");
     await waitFor(async () => expect((await f.api.list({ botId: "chief" })).activeThreadId).toBe("second"));
-    expect(screen.getByText(/2 unread; 3 queued; 1 Needs you/)).toBeInTheDocument();
+    expect(await screen.findByText(/0 unread; 3 queued; 1 Needs you/)).toBeInTheDocument();
   });
   it("keeps the actionable cards scoped to their thread and labels the combined list", async () => {
     const f = fixture();

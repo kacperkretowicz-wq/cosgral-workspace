@@ -1299,7 +1299,15 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
                     messages: [],
                   }),
           );
-          queues.set(event.botId, clone(threadQueues.get(event.activeThreadId) ?? (old.threadId === event.activeThreadId ? queues.get(event.botId) ?? emptyQueue(event.botId) : emptyQueue(event.botId))));
+          queues.set(
+            event.botId,
+            clone(
+              threadQueues.get(event.activeThreadId) ??
+                (old.threadId === event.activeThreadId
+                  ? (queues.get(event.botId) ?? emptyQueue(event.botId))
+                  : emptyQueue(event.botId)),
+            ),
+          );
           bots = bots.map((bot) => (bot.id === event.botId ? { ...bot, threadId: event.activeThreadId } : bot));
         }
         emitAgentEvent(event);
