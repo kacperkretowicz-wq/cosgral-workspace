@@ -185,6 +185,11 @@ export const IPC_CHANNELS = {
   endpointsCheck: "endpoints:check",
   endpointsDetectLocal: "endpoints:detect-local",
   // COSGRAL W6-BE2: context of a conversation.
+  // COSGRAL W6-KK3: separate conversation windows.
+  windowsOpenConversation: "windows:open-conversation",
+  windowsListOpen: "windows:list-open",
+  windowsClose: "windows:close",
+  windowsCurrent: "windows:current",
   contextGetState: "context:get-state",
   contextCompact: "context:compact",
   contextGetSettings: "context:get-settings",

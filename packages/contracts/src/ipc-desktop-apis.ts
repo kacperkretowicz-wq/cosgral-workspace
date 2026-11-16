@@ -213,6 +213,7 @@ import type {
   VaultStatus,
 } from "./ipc-vault";
 import type { VoiceDesktopApi } from "./ipc-voice";
+import type { WindowsDesktopApi } from "./ipc-windows";
 import type {
   CreateWorkflowInput,
   RunWorkflowInput,
@@ -661,6 +662,8 @@ export interface OpenBotDesktopApi {
   endpoints?: EndpointsDesktopApi;
   /** COSGRAL W6-BE2: context of a conversation (indicator, compaction, settings). Optional until every mock implements it. */
   context?: ContextDesktopApi;
+  /** COSGRAL W6-KK3: separate conversation windows (open, list, close). Optional until every mock implements it. */
+  windows?: WindowsDesktopApi;
 }
 
 /**

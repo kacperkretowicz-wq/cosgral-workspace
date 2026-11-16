@@ -91,6 +91,7 @@ import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createThreadsApi } from "./threads-api";
 import { createVoiceApi } from "./voice-api";
+import { createWindowsApi } from "./windows-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
@@ -802,6 +803,7 @@ const openbotApi: OpenBotDesktopApi = {
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
   context: createContextApi(invokeAgent),
+  windows: createWindowsApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
