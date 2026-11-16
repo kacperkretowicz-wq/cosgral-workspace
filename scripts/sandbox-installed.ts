@@ -273,7 +273,26 @@ async function main(): Promise<void> {
           `Codex state: ${String(codex.state)}`,
         );
         await window_.screenshot({ path: join(evidence, "installed-i05-main.png") });
-        return `the main window opened; Codex state '${String(codex.state)}' (${String(codex.message ?? "").slice(0, 80)}); nothing signed in, no message sent to a model`;
+        return `the main window opened; Codex state '${String(codex.state)}' (${String(codex.message ?? "").slice(0, 80)}); no message was sent to a model`;
+      },
+    );
+
+    await row(
+      "I07",
+      "isolation note: what the real CLIs see of this computer, whatever the sandbox profile says",
+      async () => {
+        // Real CLIs find the person's own sign-in even with another USERPROFILE (they ask Windows for the home folder).
+        await waitUntil(
+          "the accounts are read",
+          async () => list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).length > 0,
+          30_000,
+        );
+        const accounts = list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts);
+        const seen = accounts.map((item) => `${String(item.id)} signed-in=${String(item.loggedIn)}`).join("; ");
+        const clis = list(await ev("window.openbot.subscriptions.listCli()"))
+          .map((item) => `${String(item.id)} source=${String(item.source)}`)
+          .join("; ");
+        return `${seen}; ${clis}. A 'signed-in=true' here is the person's own sign-in on this computer, not the sandbox's: a clean-account test needs another Windows user`;
       },
     );
 
