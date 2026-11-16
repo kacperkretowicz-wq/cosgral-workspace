@@ -18,3 +18,16 @@ export function handleTrusted<Result>(channel: string, handler: (...arguments_: 
     return handler(...arguments_);
   });
 }
+
+/** COSGRAL W6-KK3: like {@link handleTrusted}, and the handler also gets the address of the page that asked (its own route). */
+export function handleTrustedFrame<Result>(
+  channel: string,
+  handler: (frameUrl: string | null, ...arguments_: unknown[]) => Result,
+): void {
+  ipcRegistry.register(channel, (event, ...arguments_: unknown[]) => {
+    if (!isTrustedRendererUrl(event.senderFrame?.url)) {
+      throw new Error("Rejected IPC request from an untrusted renderer.");
+    }
+    return handler(event.senderFrame?.url ?? null, ...arguments_);
+  });
+}

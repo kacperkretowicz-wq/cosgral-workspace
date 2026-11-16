@@ -41,11 +41,13 @@ beforeAll(async () => {
   const { registerSubscriptionsIpc } = await import("./subscriptions-ipc");
   const { registerProviderIpc } = await import("./provider-ipc");
   const { registerThreadsIpc } = await import("./threads-ipc");
+  const { registerWindowsIpc } = await import("./windows-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
   registerMessageActionsIpc(() => null);
+  registerWindowsIpc(() => null);
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -84,6 +86,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("plans:").length).toBe(2);
     // COSGRAL W6-BE3: the actions on a message.
     expect(channelsOf("message-actions:").length).toBe(5);
+    // COSGRAL W6-KK3: the separate conversation windows.
+    expect(channelsOf("windows:").length).toBe(4);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -98,6 +102,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "threads:",
         "plans:",
         "message-actions:",
+        "windows:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -123,6 +128,11 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(endpoints.threw).toMatch(/still starting/);
     const context = await call("context:get-settings", "local", null);
     expect(context.threw).toMatch(/still starting/);
+    // W6-KK3: a wrong request is refused by the parser before the program is even asked; a page that is not a
+    // conversation window is simply "no conversation" (null), not an error.
+    expect((await call("windows:open-conversation", "local", { botId: "" })).threw).toMatch(/needs an agent/);
+    expect((await call("windows:list-open", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("windows:current", "local", null)).value).toBeNull();
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

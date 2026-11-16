@@ -73,6 +73,7 @@ import {
   type VaultRequestResolution,
 } from "./ipc-vault";
 import { isVoiceState, type VoiceState } from "./ipc-voice";
+import { type ConversationWindowsChanged, isConversationWindowsChanged } from "./ipc-windows";
 import { isWorkflow, isWorkflowRun, type Workflow, type WorkflowRun } from "./ipc-workflows";
 import {
   type ChannelMemory,
@@ -667,6 +668,8 @@ export type AgentEvent =
   | ({ type: "context-changed" } & ContextChanged)
   /** COSGRAL W6-BE2: the context settings (auto-compaction, threshold) changed. */
   | ({ type: "context-settings-changed" } & ContextSettingsChanged)
+  /** COSGRAL W6-KK3: the list of open separate conversation windows changed. */
+  | ({ type: "conversation-windows-changed" } & ConversationWindowsChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -822,6 +825,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isContextState(value);
     case "context-settings-changed":
       return isContextSettings(value);
+    case "conversation-windows-changed":
+      return isConversationWindowsChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

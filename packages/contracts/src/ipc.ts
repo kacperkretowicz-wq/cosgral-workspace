@@ -32,5 +32,6 @@ export * from "./ipc-team-host";
 export * from "./ipc-threads";
 export * from "./ipc-vault";
 export * from "./ipc-voice";
+export * from "./ipc-windows";
 export * from "./ipc-workflows";
 export * from "./ipc-workspace-channels";
