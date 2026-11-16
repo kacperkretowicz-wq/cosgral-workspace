@@ -75,6 +75,7 @@ import {
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
+import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
 import { createComputerUseApi } from "./computer-use-api";
@@ -785,6 +786,7 @@ const openbotApi: OpenBotDesktopApi = {
   approvalRules: createApprovalRulesApi(invokeAgent),
   appData: createAppDataApi(invokeAgent),
   subscriptions: createSubscriptionsApi(invokeAgent),
+  apiKeys: createApiKeysApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
