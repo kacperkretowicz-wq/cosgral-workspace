@@ -13,6 +13,7 @@ function settings(): AppSettings {
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
+    navigation: { pinnedPageIds: [] },
   };
 }
 

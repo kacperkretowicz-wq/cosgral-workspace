@@ -205,6 +205,38 @@ describe("AgentSettingsService", () => {
     expect(reopened.service.appSettings().notifications.matrix.finished.desktop).toBe(false);
   });
 
+  it("pins pages to the rail: empty by default, kept in the chosen order, replaced as a whole, survives a restart", async () => {
+    const { dir, database, service, events } = await open();
+    expect(service.appSettings().navigation).toEqual({ pinnedPageIds: [] });
+
+    const pinned = await service.updateAppSettings({ navigation: { pinnedPageIds: ["library", "agents", "phone"] } });
+    expect(pinned.navigation).toEqual({ pinnedPageIds: ["library", "agents", "phone"] });
+    expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: pinned });
+    // A save without navigation keeps the pins; the language and notifications stay as they were.
+    const kept = await service.updateAppSettings({ language: "pl" });
+    expect(kept.navigation.pinnedPageIds).toEqual(["library", "agents", "phone"]);
+
+    database.close();
+    const reopened = await open(dir);
+    expect(reopened.service.appSettings().navigation.pinnedPageIds).toEqual(["library", "agents", "phone"]);
+    const cleared = await reopened.service.updateAppSettings({ navigation: { pinnedPageIds: [] } });
+    expect(cleared.navigation.pinnedPageIds).toEqual([]);
+  });
+
+  it("refuses unknown and repeated page ids and changes nothing", async () => {
+    const { service, events } = await open();
+    await service.updateAppSettings({ navigation: { pinnedPageIds: ["tasks"] } });
+    const before = events.length;
+    // What a window could send: JSON, so the unknown id is not a type error here.
+    const unknownPage = JSON.parse('{"navigation":{"pinnedPageIds":["tasks","nope"]}}');
+    await expect(service.updateAppSettings(unknownPage)).rejects.toThrow(/known pages/);
+    await expect(service.updateAppSettings({ navigation: { pinnedPageIds: ["tasks", "tasks"] } })).rejects.toThrow(
+      /at most once/,
+    );
+    expect(service.appSettings().navigation.pinnedPageIds).toEqual(["tasks"]);
+    expect(events).toHaveLength(before);
+  });
+
   it("marks the tabs of the features built into the program as available (voice needs Windows speech)", () => {
     expect(builtInTabFeatures("win32")).toEqual({ voice: true, mobile: true, dock: true, island: true });
     expect(builtInTabFeatures("linux")).toEqual({ voice: false, mobile: true, dock: true, island: true });

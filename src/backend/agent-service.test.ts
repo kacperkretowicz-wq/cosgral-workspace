@@ -442,6 +442,66 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(settings.memory.essentialCount).toBe(2);
   });
 
+  it("COSGRAL W4-K3: hiding an agent announces the change, keeps it in the engine's list and can be undone", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    const bot = await service.createBot();
+    const announced = () => events.flatMap((event) => (event.type === "bots-changed" ? [event.bots] : []));
+
+    const hidden = await service.setBotHidden(bot.id, true);
+    expect(hidden.hidden).toBe(true);
+    expect(
+      announced()
+        .at(-1)
+        ?.find((candidate) => candidate.id === bot.id)?.hidden,
+    ).toBe(true);
+    // The agent still exists for everything inside the program (channels, workflows, the dock, notifications).
+    expect(service.listBots().find((candidate) => candidate.id === bot.id)?.hidden).toBe(true);
+
+    await service.setBotHidden(bot.id, false);
+    expect(
+      announced()
+        .at(-1)
+        ?.find((candidate) => candidate.id === bot.id)?.hidden,
+    ).toBeUndefined();
+    await expect(service.setBotHidden("ghost", true)).rejects.toThrow(/Unknown bot/);
+  });
+
+  it("COSGRAL W4-K3: duplicates an agent with its settings and skills but without its memories", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.skillLibrary.create({
+      source: { kind: "inline", skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n" },
+      authorBotId: null,
+    });
+    const { bot: pen } = await service.agentTemplates.createAgent({
+      templateId: "builtin:writer",
+      name: "Pen",
+      skills: ["weekly-report"],
+    });
+    expect(service.memoryStore.listAgentMemories(pen.id, "essential").length).toBeGreaterThan(0);
+
+    const { bot: copy, warnings } = await service.agentTemplates.duplicateAgent({ sourceBotId: pen.id });
+
+    expect(warnings).toEqual([]);
+    expect(copy).toMatchObject({ name: "Pen kopia", role: pen.role, description: pen.description, model: pen.model });
+    expect(copy.id).not.toBe(pen.id);
+    expect(copy.workspacePath).not.toBe(pen.workspacePath);
+    expect(service.agentSettings.toolSwitches(copy.id)).toEqual(service.agentSettings.toolSwitches(pen.id));
+    expect(service.skillLibrary.installedFor(copy.id).map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(service.memoryStore.listAgentMemories(copy.id, "essential")).toEqual([]);
+    expect(service.listBots().map((candidate) => candidate.name)).toEqual(expect.arrayContaining(["Pen", "Pen kopia"]));
+    expect(events.some((event) => event.type === "bots-changed")).toBe(true);
+    const second = await service.agentTemplates.duplicateAgent({ sourceBotId: pen.id });
+    expect(second.bot.name).toBe("Pen kopia 2");
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();

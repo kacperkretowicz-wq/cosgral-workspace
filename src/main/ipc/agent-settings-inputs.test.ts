@@ -3,6 +3,7 @@ import {
   parseAgentTemplateId,
   parseCompleteOnboarding,
   parseCreateAgent,
+  parseDuplicateAgent,
   parseSaveAgentTemplate,
   parseSettingsBotId,
   parseUpdateAgentSettings,
@@ -52,6 +53,12 @@ describe("agent settings IPC input parsing", () => {
       language: "pl",
       notifications: { matrix: { finished: { desktop: false } }, onlyWhenUnfocused: false },
     });
+    expect(parseUpdateAppSettings({ navigation: { pinnedPageIds: ["usage", "agents"] } })).toEqual({
+      navigation: { pinnedPageIds: ["usage", "agents"] },
+    });
+    expect(parseUpdateAppSettings({ navigation: { pinnedPageIds: [] } })).toEqual({
+      navigation: { pinnedPageIds: [] },
+    });
     expect(
       parseCompleteOnboarding({
         language: "en",
@@ -75,7 +82,19 @@ describe("agent settings IPC input parsing", () => {
     expect(() => parseUpdateAgentSettings({ botId: "chief", approvalPolicy: "never" })).toThrow(/Unknown field/);
     expect(() => parseCreateAgent({ skills: "weekly-report" })).toThrow(/skills/);
     expect(() => parseCreateAgent({ memories: [5] })).toThrow(/memories/);
+    expect(parseDuplicateAgent({ sourceBotId: "ada" })).toEqual({ sourceBotId: "ada" });
+    expect(parseDuplicateAgent({ sourceBotId: "ada", name: "Ada B" })).toEqual({ sourceBotId: "ada", name: "Ada B" });
+    expect(() => parseDuplicateAgent({ name: "Ada B" })).toThrow(/sourceBotId/);
+    expect(() => parseDuplicateAgent({ sourceBotId: "ada", name: 7 })).toThrow(/name/);
+    expect(() => parseDuplicateAgent({ sourceBotId: "ada", name: "x".repeat(200) })).toThrow(/name/);
+    expect(() => parseDuplicateAgent({ sourceBotId: "ada", copyMemory: true })).toThrow();
     expect(() => parseUpdateAppSettings({ language: "de" })).toThrow(/language/);
+    expect(() => parseUpdateAppSettings({ navigation: { pinnedPageIds: ["library", "nope"] } })).toThrow(/known pages/);
+    expect(() => parseUpdateAppSettings({ navigation: { pinnedPageIds: ["library", "library"] } })).toThrow(
+      /known pages/,
+    );
+    expect(() => parseUpdateAppSettings({ navigation: { pinnedPageIds: "library" } })).toThrow(/known pages/);
+    expect(() => parseUpdateAppSettings({ navigation: { pinnedPageIds: [], extra: 1 } })).toThrow();
     expect(() => parseUpdateAppSettings({ notifications: { matrix: { finished: { pager: true } } } })).toThrow(
       /channel/,
     );

@@ -179,6 +179,8 @@ export interface AgentMcp {
   deleteAgent(botId: string): void;
   /** COSGRAL W3: the per-agent server switches, for the agent settings read. */
   listAgentSettings?(botId: string): AgentMcpServerSetting[];
+  /** COSGRAL W4-K3: set one per-agent server switch (a copy of an agent takes over the switched-off ones). */
+  setAgentEnabled?(input: { botId: string; serverId: string; enabled: boolean }): AgentMcpServerSetting[];
 }
 
 export interface AgentEyes {
@@ -501,6 +503,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       skillNames: async (botId) => this.#skills.installedFor(botId).map((skill) => skill.name),
       saveEssentialMemory: (botId, text) => this.#memory.save({ botId, text, inclusion: "essential" }),
       essentialMemories: (botId) => this.#memory.store.listAgentMemories(botId, "essential").map((item) => item.text),
+      botNames: () => this.#store.list().map((bot) => bot.name),
+      mcpSettings: (botId) => this.#mcp?.listAgentSettings?.(botId) ?? [],
+      setMcpEnabled: (botId, serverId, enabled) => {
+        this.#mcp?.setAgentEnabled?.({ botId, serverId, enabled });
+      },
+      fallbackModels: (botId) => this.#providers?.getFallbackModels(botId) ?? [],
+      setFallbackModels: (botId, models) => {
+        this.#providers?.setFallbackModels({ botId, fallbackModels: models });
+      },
       emit: (event) => this.#emit(event),
     });
     this.marketplace = new Marketplace({
@@ -887,6 +898,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async setAvatar(botId: string, image: AvatarImageInput | null): Promise<BotSummary> {
     const bot = await this.#store.setAvatar(botId, image);
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    return bot;
+  }
+
+  /** COSGRAL W4-K3: hide an agent from the sidebar or show it again. It keeps working either way. */
+  async setBotHidden(botId: string, hidden: boolean): Promise<BotSummary> {
+    const bot = await this.#store.setHidden(botId, hidden);
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     return bot;
   }

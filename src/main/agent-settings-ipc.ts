@@ -8,6 +8,7 @@ import {
   parseAgentTemplateId,
   parseCompleteOnboarding,
   parseCreateAgent,
+  parseDuplicateAgent,
   parseSaveAgentTemplate,
   parseSettingsBotId,
   parseUpdateAgentSettings,
@@ -52,6 +53,9 @@ export function registerAgentSettingsIpc(options: AgentSettingsIpcOptions): Onbo
   );
   handleTrusted(IPC_CHANNELS.agentSettingsCreateAgent, (input: unknown) =>
     templates().createAgent(local(input, parseCreateAgent)),
+  );
+  handleTrusted(IPC_CHANNELS.agentDuplicateBot, (input: unknown) =>
+    templates().duplicateAgent(local(input, parseDuplicateAgent)),
   );
   handleTrusted(IPC_CHANNELS.agentTemplatesList, (input: unknown) =>
     parseAgentRequest(input).serverId === "local" ? templates().list() : [],

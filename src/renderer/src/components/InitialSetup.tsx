@@ -1,4 +1,4 @@
-import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
+﻿import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   AgentProviderId,
   AgentProviderState,
@@ -13,6 +13,7 @@ import type {
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
 import { DataWipeSection } from "./DataWipeSection";
+import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
 import { Button, Dialog, Textarea } from "./ui";
 import { VoiceSettings } from "./VoiceSettings";
@@ -71,6 +72,7 @@ export function InitialSetup(props: InitialSetupProps) {
   const [inviteUrl, setInviteUrl] = createSignal("");
   const [onboarding, setOnboarding] = createSignal<OnboardingState>();
   const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({ language: "en", firstAgent: null });
+  const [cliReady, setCliReady] = createSignal<Record<string, boolean>>({});
   let permissionRevision = 0;
 
   // First run only: the onboarding questions join this step, so there is one flow and one provider question.
@@ -97,6 +99,17 @@ export function InitialSetup(props: InitialSetupProps) {
     }),
   );
   const availableProviders = createMemo(() => providerOptions().filter((provider) => provider.state === "available"));
+  /**
+   * The chosen provider has a CLI: the managed-CLI card says so (own path, downloaded, PATH or a known folder), or the
+   * program's own provider status already says "available" (e.g. a CLI the program was started with). Only a provider
+   * that really has none keeps Continue blocked, and then "Pobierz i przejdź dalej" is the way on.
+   */
+  const providerHasCli = () => {
+    const id = selectedProvider() ?? "";
+    return (
+      !!cliReady()[id] || providerOptions().some((provider) => provider.id === id && provider.state === "available")
+    );
+  };
 
   createEffect(
     () => ({
@@ -296,6 +309,15 @@ export function InitialSetup(props: InitialSetupProps) {
                 onChange={setSelectedProvider}
               />
 
+              <Show when={!props.reviewing && window.openbot.subscriptions && selectedProvider()} keyed>
+                {(provider) => (
+                  <ManagedCliSection
+                    provider={provider}
+                    onAvailability={(id, ready) => setCliReady((current) => ({ ...current, [id]: ready }))}
+                    onReady={() => void saveLocal()}
+                  />
+                )}
+              </Show>
               <Show when={!props.reviewing && onboarding()}>
                 {(state) => (
                   <OnboardingFields
@@ -394,6 +416,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 class="initial-setup-save"
                 disabled={
                   saving() ||
+                  (!props.reviewing && route() === "local" && !!window.openbot.subscriptions && !providerHasCli()) ||
                   (route() === "local" && !selectedProvider()) ||
                   (route() === "remote" && !inviteUrl().trim())
                 }

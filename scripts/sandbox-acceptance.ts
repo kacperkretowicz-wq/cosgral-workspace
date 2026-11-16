@@ -902,16 +902,16 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       // The native file pickers and the shell cannot be driven from outside: answer them in the main process and
       // record what the program asks the shell to do. The program's own file handling runs unchanged.
       await app.evaluate(
-        ({ app: electronApp, dialog, shell }, paths) => {
+        ({ dialog, shell }, paths) => {
           const calls: Array<{ call: string; target: string }> = [];
-          const original = electronApp.getPath.bind(electronApp);
-          // The sandbox profile has no Downloads folder the system can resolve: give the program one.
-          Object.assign(electronApp, {
-            getPath: (name: Parameters<typeof original>[0]) => (name === "downloads" ? paths.inbox : original(name)),
-          });
           Object.assign(dialog, {
             showOpenDialog: async () => ({ canceled: false, filePaths: [paths.source] }),
-            showSaveDialog: async () => ({ canceled: false, filePath: paths.copy }),
+            // The sandbox profile has no Downloads folder the system can resolve: the program must still offer a
+            // folder (Documents or temp). Record where the Save dialog was asked to start.
+            showSaveDialog: async (...args: Array<{ defaultPath?: string }>) => {
+              calls.push({ call: "save", target: String(args.map((arg) => arg.defaultPath).find(Boolean) ?? "") });
+              return { canceled: false, filePath: paths.copy };
+            },
           });
           Object.assign(shell, {
             acceptCalls: calls,
@@ -924,7 +924,7 @@ async function firstRun(d: Driver, root: string): Promise<void> {
             },
           });
         },
-        { source, copy, inbox },
+        { source, copy },
       );
       const shellCalls = async (kind: string): Promise<string[]> => {
         const calls = list(await app.evaluate(({ shell }) => Object.fromEntries(Object.entries(shell)).acceptCalls));
@@ -957,6 +957,13 @@ async function firstRun(d: Driver, root: string): Promise<void> {
       assert(fileId && fileId !== "undefined", "the file is in the library API");
       await d.ev(`window.openbot.library.open({ fileId: ${JSON.stringify(fileId)}, action: "download" })`);
       assert((await readFile(copy, "utf8")) === body, "download wrote an identical copy to the chosen path");
+      const saves = await shellCalls("save");
+      assert(
+        saves.length === 1 &&
+          basename(String(saves[0])) === "accept-added.txt" &&
+          String(saves[0]) !== "accept-added.txt",
+        `the Save dialog started in a fallback folder (${saves.length} call, bare name: ${String(saves[0]) === "accept-added.txt"})`,
+      );
       await d.ev(`window.openbot.library.open({ fileId: ${JSON.stringify(fileId)}, action: "reveal" })`);
       const revealed = await shellCalls("reveal");
       assert(revealed.length === 1, `Reveal asked the shell once: ${revealed.length}`);
