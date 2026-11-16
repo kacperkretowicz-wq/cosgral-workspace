@@ -1,4 +1,5 @@
 import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
+import { providerError } from "./provider-error";
 
 export type { FallbackModelOption } from "./fallback-order";
 export { FallbackOrder, moveItem } from "./fallback-order";
@@ -208,7 +209,7 @@ export function AcpAgentsSection(props: {
       setSubmitted(false);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not add the agent.");
+      setError(providerError(e, "Could not add the agent."));
     } finally {
       setSaving(false);
     }
@@ -218,7 +219,7 @@ export function AcpAgentsSection(props: {
       await props.onRemove(id);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not remove the agent.");
+      setError(providerError(e, "Could not remove the agent."));
     } finally {
       setRemoving(null);
     }
@@ -400,7 +401,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       .filter((option) => !options().some((existing) => existing.id === option.id)),
   ];
   const dirty = () => JSON.stringify(items()) !== JSON.stringify(saved());
-  const fail = (e: unknown, fallback: string) => setError(e instanceof Error ? e.message : fallback);
+  const fail = (e: unknown, fallback: string) => setError(providerError(e, fallback));
 
   async function loadFallbacks(id: string) {
     const api = window.openbot.providers;

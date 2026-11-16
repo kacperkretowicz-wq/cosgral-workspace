@@ -60,7 +60,7 @@ export interface AccountSwitchedView {
 /** A card in the open conversation of one agent; dismissed by the person. */
 export type AccountNotice = { id: string; botId: string } & (
   | { kind: "limit"; view: AccountLimitReachedView }
-  | { kind: "switched"; view: AccountSwitchedView }
+  | { kind: "switched"; view: AccountSwitchedView; transition?: AccountSwitched }
 );
 
 const MAX_NOTICES_PER_AGENT = 3;
@@ -104,11 +104,34 @@ export function addAccountNotice(
   event: ({ type: "account-limit-reached" } & AccountLimitReached) | ({ type: "account-switched" } & AccountSwitched),
   id: string,
 ): AccountNotice[] {
+  const previousSwitch = notices.find((notice) => notice.botId === event.botId && notice.kind === "switched");
+  const returned = previousSwitch?.kind === "switched" ? previousSwitch.transition : undefined;
+  const mergeReturn =
+    event.type === "account-switched" &&
+    event.reason === "usage-limit" &&
+    returned?.reason === "returned" &&
+    returned.provider === event.provider &&
+    returned.toAccountId === event.fromAccountId;
   const next: AccountNotice =
     event.type === "account-limit-reached"
       ? { id, botId: event.botId, kind: "limit", view: limitReachedView(event) }
-      : { id, botId: event.botId, kind: "switched", view: switchedView(event) };
-  const same = notices.filter((notice) => notice.botId === event.botId).slice(0, MAX_NOTICES_PER_AGENT - 1);
+      : {
+          id,
+          botId: event.botId,
+          kind: "switched",
+          transition: event,
+          view: {
+            ...switchedView(event),
+            ...(mergeReturn && returned
+              ? {
+                  reason: `Returned from ${returned.fromLabel} to ${returned.toLabel} after its limit reset. ${event.fromLabel} reached its usage limit again, so switched to ${event.toLabel}.`,
+                }
+              : {}),
+          },
+        };
+  const same = notices
+    .filter((notice) => notice.botId === event.botId && !(mergeReturn && notice.id === previousSwitch?.id))
+    .slice(0, MAX_NOTICES_PER_AGENT - 1);
   return [next, ...same, ...notices.filter((notice) => notice.botId !== event.botId)];
 }
 
