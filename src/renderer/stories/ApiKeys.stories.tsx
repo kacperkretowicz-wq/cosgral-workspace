@@ -1,29 +1,27 @@
 import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
-import type { ApiKeyRecord } from "../src/components/api-keys-view";
-import { ApiKeysSection, createMockApiKeys } from "../src/components/ApiKeysSection";
+import { ApiKeysSection } from "../src/components/ApiKeysSection";
+import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { ThemeFrame } from "./theme-frame";
 
-function seed(variant: "empty" | "saved" | "rejected" | "light"): ApiKeyRecord[] | undefined {
-  if (variant === "empty") return undefined;
-  if (variant === "rejected") {
-    return [
-      { provider: "openai", maskedKey: "····bad0", status: "rejected" },
-      { provider: "anthropic", maskedKey: null, status: "unchecked" },
-    ];
-  }
-  return [
-    { provider: "openai", maskedKey: "····ok12", status: "ok" },
-    { provider: "anthropic", maskedKey: null, status: "unchecked" },
-  ];
-}
-
 function Scene(props: { variant: "empty" | "saved" | "rejected" | "light" }) {
-  const api = createMockApiKeys(seed(props.variant));
+  const api = createMockApiKeysApi(0);
+  const ready = (async () => {
+    if (props.variant === "empty") return;
+    await api.set({ provider: "codex", key: props.variant === "rejected" ? "bad-demo-bad0" : "test-key-ok12" });
+    await api.check({ provider: "codex" });
+  })();
+  const client = {
+    ...api,
+    list: async () => {
+      await ready;
+      return api.list();
+    },
+  };
   return (
     <ThemeFrame theme={props.variant === "light" ? "light" : "dark"}>
       <div class="w2-library providers-page">
-        <ApiKeysSection api={api} />
+        <ApiKeysSection api={client} />
       </div>
     </ThemeFrame>
   );
@@ -56,10 +54,11 @@ export const SaveAndCheck: Story = {
     const field = openai.getByLabelText("OpenAI API key");
     await userEvent.type(field, "sk-story-4242");
     await userEvent.click(openai.getByRole("button", { name: "Save key" }));
-    await expect(await openai.findByText(/Saved key ending in ····4242/)).toBeInTheDocument();
-    await expect(field).toHaveValue("");
-    await userEvent.click(openai.getByRole("button", { name: "Check connection" }));
-    await expect(await openai.findByText("OK")).toBeInTheDocument();
+    await expect(await canvas.findByText(/Saved key: .*4242/)).toBeInTheDocument();
+    const saved = within(canvas.getByRole("group", { name: "OpenAI key" }));
+    await expect(saved.getByLabelText("OpenAI API key")).toHaveValue("");
+    await userEvent.click(saved.getByRole("button", { name: "Check connection" }));
+    await expect(await canvas.findByText("OK")).toBeInTheDocument();
   },
 };
 
@@ -75,7 +74,7 @@ export const SavedOk: Story = {
   args: { variant: "saved" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(await canvas.findByText(/····ok12/)).toBeInTheDocument();
+    await expect(await canvas.findByText(/••••ok12/)).toBeInTheDocument();
     await expect(await canvas.findByText("OK")).toBeInTheDocument();
   },
 };

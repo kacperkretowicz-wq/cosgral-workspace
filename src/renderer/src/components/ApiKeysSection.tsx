@@ -1,57 +1,10 @@
+import type { ApiKeyEntry, ApiKeyProvider, ApiKeysDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import {
-  type ApiKeyProvider,
-  type ApiKeyRecord,
-  emptyApiKeys,
-  maskApiKey,
-  providerLabel,
-  statusLabel,
-  statusTone,
-} from "./api-keys-view";
+import { emptyApiKeys, providerLabel, statusLabel, statusTone } from "./api-keys-view";
 import { Badge, Button, Card, Field, Heading, Input, Text } from "./ui";
 
-export type ApiKeysActions = {
-  list: () => Promise<ApiKeyRecord[]>;
-  set: (input: { provider: ApiKeyProvider; key: string }) => Promise<ApiKeyRecord>;
-  remove: (input: { provider: ApiKeyProvider }) => Promise<ApiKeyRecord>;
-  check: (input: { provider: ApiKeyProvider }) => Promise<ApiKeyRecord>;
-};
-
-/** In-memory mock for Storybook / unit tests until W5-BE3 IPC exists. */
-export function createMockApiKeys(seed?: ApiKeyRecord[]): ApiKeysActions {
-  let rows = seed ? structuredClone(seed) : emptyApiKeys();
-  return {
-    list: async () => structuredClone(rows),
-    set: async ({ provider, key }) => {
-      const trimmed = key.trim();
-      if (!trimmed) throw new Error("Enter an API key.");
-      if (/[\r\n\0]/.test(trimmed) || trimmed.length > 512) throw new Error("That key looks invalid.");
-      rows = rows.map((row) =>
-        row.provider === provider
-          ? { provider, maskedKey: maskApiKey(trimmed), status: "unchecked" as const }
-          : row,
-      );
-      return structuredClone(rows.find((row) => row.provider === provider)!);
-    },
-    remove: async ({ provider }) => {
-      rows = rows.map((row) =>
-        row.provider === provider ? { provider, maskedKey: null, status: "unchecked" as const } : row,
-      );
-      return structuredClone(rows.find((row) => row.provider === provider)!);
-    },
-    check: async ({ provider }) => {
-      const current = rows.find((row) => row.provider === provider);
-      if (!current?.maskedKey) throw new Error("Save a key before checking the connection.");
-      // Demo only: keys ending in "bad0" are rejected; everything else is OK.
-      const status = current.maskedKey.endsWith("bad0") ? ("rejected" as const) : ("ok" as const);
-      rows = rows.map((row) => (row.provider === provider ? { ...row, status } : row));
-      return structuredClone(rows.find((row) => row.provider === provider)!);
-    },
-  };
-}
-
 function ApiKeyCard(props: {
-  record: ApiKeyRecord;
+  record: ApiKeyEntry;
   busy: boolean;
   checking: boolean;
   onSet: (provider: ApiKeyProvider, key: string) => Promise<void>;
@@ -88,7 +41,12 @@ function ApiKeyCard(props: {
         }
       >
         <Text as="p" role="status">
-          Saved key ending in {props.record.maskedKey}
+          Saved key: {props.record.maskedKey}
+        </Text>
+      </Show>
+      <Show when={props.record.message}>
+        <Text as="p" role="status">
+          {props.record.message}
         </Text>
       </Show>
       <Field label={`${label()} API key`}>
@@ -144,11 +102,11 @@ function ApiKeyCard(props: {
   );
 }
 
-/** Providers page section: set / remove / check API keys (mock-ready). */
-export function ApiKeysSection(props: { api?: ApiKeysActions }) {
-  // Stable client for this mount (do not recreate the mock on each call).
-  const client = props.api ?? createMockApiKeys();
-  const [rows, setRows] = createSignal<ApiKeyRecord[]>(emptyApiKeys());
+/** Providers page section: set / remove / check API keys using the desktop contract. */
+export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
+  // Use the desktop API in production; stories inject the shared backend mock.
+  const client = props.api ?? window.openbot.apiKeys;
+  const [rows, setRows] = createSignal<ApiKeyEntry[]>(emptyApiKeys());
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [checking, setChecking] = createSignal<ApiKeyProvider | null>(null);
@@ -157,6 +115,7 @@ export function ApiKeysSection(props: { api?: ApiKeysActions }) {
   async function refresh() {
     const serial = ++loadGeneration;
     try {
+      if (!client) throw new Error("API keys are unavailable in this version.");
       const next = await client.list();
       if (serial !== loadGeneration) return;
       // Keep the same array reference when nothing changed so open password drafts survive the first load.
@@ -173,7 +132,7 @@ export function ApiKeysSection(props: { api?: ApiKeysActions }) {
   });
 
   async function run(work: () => Promise<void>) {
-    if (busy()) return;
+    if (busy() || checking()) return;
     setBusy(true);
     setError("");
     // Invalidate any in-flight first load so it cannot overwrite a just-saved row.
@@ -195,8 +154,8 @@ export function ApiKeysSection(props: { api?: ApiKeysActions }) {
         </Heading>
       </div>
       <Text as="p" tone="secondary">
-        Optional paid keys for OpenAI and Anthropic. Keys stay in the program vault; agents only receive them as
-        process environment for one run.
+        One API key per provider, stored encrypted. A saved key is always used, even when rejected, until you remove it
+        to return to subscription login. Changes apply when the provider process next starts.
       </Text>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
@@ -208,25 +167,29 @@ export function ApiKeysSection(props: { api?: ApiKeysActions }) {
           {(record) => (
             <ApiKeyCard
               record={record}
-              busy={busy()}
+              busy={busy() || checking() !== null || !client}
               checking={checking() === record.provider}
               onSet={async (provider, key) => {
                 await run(async () => {
+                  if (!client) throw new Error("API keys are unavailable.");
                   const next = await client.set({ provider, key });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 });
               }}
               onRemove={async (provider) => {
                 await run(async () => {
+                  if (!client) throw new Error("API keys are unavailable.");
                   const next = await client.remove({ provider });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 });
               }}
               onCheck={async (provider) => {
                 if (busy() || checking()) return;
+                loadGeneration += 1;
                 setChecking(provider);
                 setError("");
                 try {
+                  if (!client) throw new Error("API keys are unavailable.");
                   const next = await client.check({ provider });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 } catch (e) {
