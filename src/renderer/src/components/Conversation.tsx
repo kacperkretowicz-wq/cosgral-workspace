@@ -1,3 +1,4 @@
+import {ContextIndicator} from "./ContextIndicator";
 import {
   attachmentReferenceIds,
   expandAttachmentReferences,
@@ -1695,6 +1696,7 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </header>
 
+      <Show when={props.bot}>{bot=><ContextIndicator botId={bot().id} threadId={bot().threadId}/>}</Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>

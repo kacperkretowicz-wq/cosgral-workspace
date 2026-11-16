@@ -1,3 +1,4 @@
+import {ContextSettingsSection} from "./ContextSettingsSection";
 import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
 import {
   Badge,
@@ -210,6 +211,7 @@ export function SettingsModal(props: SettingsModalProps) {
                     </Card>
                   </section>
 
+                  <ContextSettingsSection/>
                   <section class="settings-modal-group" aria-labelledby="settings-workspace">
                     <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
                       Workspace
