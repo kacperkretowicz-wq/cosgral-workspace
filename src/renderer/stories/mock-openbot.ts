@@ -105,6 +105,7 @@ import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
 import { createMockMessageActions } from "./mock-message-actions";
+import { createMockMessengers } from "./mock-messengers";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
@@ -1379,6 +1380,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     browserProfiles: createMockBrowserProfiles((event) => emitAgentEvent(event)),
     // COSGRAL W10-KK1: account sign-ins for apps (demo; `simulate` plays the browser coming back).
     integrations: createMockIntegrations((event) => emitAgentEvent(event)),
+    // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
+    messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

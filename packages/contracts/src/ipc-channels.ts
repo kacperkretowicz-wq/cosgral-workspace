@@ -194,6 +194,13 @@ export const IPC_CHANNELS = {
   integrationsConnect: "integrations:connect",
   integrationsCancel: "integrations:cancel",
   integrationsDisconnect: "integrations:disconnect",
+  // COSGRAL W10-KK2: messenger bridge (Telegram).
+  messengersList: "messengers:list",
+  messengersStatus: "messengers:status",
+  messengersConnect: "messengers:connect",
+  messengersDisconnect: "messengers:disconnect",
+  messengersAllowChat: "messengers:allow-chat",
+  messengersRemoveChat: "messengers:remove-chat",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

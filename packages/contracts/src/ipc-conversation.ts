@@ -44,6 +44,7 @@ import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isMessagePinsChanged, type MessagePinsChanged } from "./ipc-message-actions";
+import { isMessengersChanged, type MessengersChanged } from "./ipc-messengers";
 import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } from "./ipc-mobile";
 import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
@@ -688,6 +689,8 @@ export type AgentEvent =
   | ({ type: "browser-profiles-changed" } & BrowserProfilesChanged)
   /** COSGRAL W10-KK1: a sign-in of an app started, ended, failed or was removed (the whole list). */
   | ({ type: "integrations-changed" } & IntegrationsChanged)
+  /** COSGRAL W10-KK2: the messenger bridge changed (connected, failed, allow list, a chat wrote that is not allowed) (the whole list). */
+  | ({ type: "messengers-changed" } & MessengersChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -863,6 +866,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isBrowserProfilesChanged(value);
     case "integrations-changed":
       return isIntegrationsChanged(value);
+    case "messengers-changed":
+      return isMessengersChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":
