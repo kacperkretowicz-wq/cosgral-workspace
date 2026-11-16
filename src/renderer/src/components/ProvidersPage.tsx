@@ -1,5 +1,4 @@
-﻿import { ManagedCliSection } from "./ManagedCliSection";
-import type {
+﻿import type {
   AcpAgentConfig,
   AgentModelId,
   AgentModelOption,
@@ -9,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { acpModelId, isAcpAgentId, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { ManagedCliSection } from "./ManagedCliSection";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Text, Textarea } from "./ui";
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -685,4 +685,3 @@ export function ProvidersPage() {
     </main>
   );
 }
-

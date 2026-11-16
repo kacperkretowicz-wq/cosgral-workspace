@@ -992,9 +992,29 @@
   font-size: var(--openbot-text-sm);
 }
 
-.managed-cli-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--openbot-space-4); }
-.managed-cli-card { display: flex; flex-direction: column; gap: var(--openbot-space-3); min-width: 0; overflow-wrap: anywhere; }
-.managed-cli-actions { display: flex; flex-wrap: wrap; gap: var(--openbot-space-2); }
-.managed-cli-track { height: 6px; background: var(--openbot-bg-secondary); overflow: hidden; }
-.managed-cli-fill { height: 100%; background: var(--openbot-accent); }
-
+.managed-cli-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--openbot-space-4);
+}
+.managed-cli-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--openbot-space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.managed-cli-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}
+.managed-cli-track {
+  height: 6px;
+  background: var(--openbot-bg-secondary);
+  overflow: hidden;
+}
+.managed-cli-fill {
+  height: 100%;
+  background: var(--openbot-accent);
+}

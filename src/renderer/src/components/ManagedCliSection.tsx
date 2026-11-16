@@ -1,5 +1,5 @@
 ﻿import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
-import { createEffect, createSignal, For, onCleanup, onSettled, Show } from "solid-js";
+import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 export type CliAction = Exclude<keyof SubscriptionsDesktopApi, "listCli">;
 export type CliInput = {
@@ -8,7 +8,7 @@ export type CliInput = {
   customPath?: string | null;
   autoUpdate?: boolean;
 };
-export function cliPathError(path: string): string {
+export function cliPathError(path: string) {
   if (!path.trim()) return "";
   return path.length > 1024 || /[\r\n\0]/.test(path) || !/^(?:[A-Za-z]:[\\/]|\/|\\\\)/.test(path.trim())
     ? "Podaj pełną ścieżkę do pliku CLI (maks. 1024 znaki)."
@@ -199,10 +199,10 @@ export function ManagedCliSection(props: {
         replace(event.state);
       }
     });
-    onCleanup(() => {
+    return () => {
       revision++;
       off?.();
-    });
+    };
   });
   async function action(method: CliAction, input: CliInput) {
     const api = window.openbot.subscriptions;

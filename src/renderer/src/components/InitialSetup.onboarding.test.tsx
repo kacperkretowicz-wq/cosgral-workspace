@@ -1,4 +1,4 @@
-import type { AgentStatus, AgentTemplate, OnboardingState } from "@openbot/contracts/ipc";
+﻿import type { AgentStatus, AgentTemplate, OnboardingState } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { InitialSetup } from "./InitialSetup";
@@ -87,4 +87,35 @@ describe("first run: one flow", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Continue with Codex" }));
     expect(onSave).toHaveBeenCalledWith("codex", undefined);
   });
+});
+
+it("downloads a missing CLI and continues without a terminal", async () => {
+  const missing = {
+    id: "codex",
+    source: "none",
+    executable: null,
+    version: null,
+    managedVersion: null,
+    pinnedVersion: null,
+    latestVersion: null,
+    autoUpdate: true,
+    customPath: null,
+    phase: "idle",
+    progress: null,
+    error: null,
+    checkedAt: null,
+  };
+  const installCli = vi
+    .fn()
+    .mockResolvedValue({ ...missing, source: "managed", version: "1.0", managedVersion: "1.0" });
+  vi.stubGlobal("openbot", {
+    subscriptions: { listCli: async () => [missing], installCli },
+    agent: { onEvent: () => () => {} },
+  });
+  const onSave = renderSetup();
+  await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
+  const download = await screen.findByRole("button", { name: "Pobierz i przejdź dalej" });
+  expect(screen.getByRole("button", { name: "Continue with Codex" })).toBeDisabled();
+  await fireEvent.click(download);
+  await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith("codex", undefined));
 });
