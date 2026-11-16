@@ -15,14 +15,14 @@ async function setup() {
   window.openbot = mock.api;
   await fallback.setFallbackModels({ botId: "*", fallbackModels: ["gpt-5.6-luna", "acp:removed"] });
   render(() => <ProvidersPage />);
-  const region = within(screen.getByRole("region", { name: "Fallback models" }));
+  const region = within(screen.getByRole("region", { name: "All providers fallback list" }));
   await waitFor(() => expect(region.getByText("Unavailable")).toBeInTheDocument());
   return { region, fallback, mock };
 }
 describe("W5 fallback lists", () => {
   it("shows the general list including unavailable models", async () => {
     const { region } = await setup();
-    expect(region.getByLabelText("Agent")).toHaveValue("*");
+    expect(region.getByRole("heading", { name: "All providers" })).toBeInTheDocument();
   });
   it("saves the whole general list after reordering", async () => {
     const { region, fallback } = await setup();
@@ -46,14 +46,15 @@ describe("W5 fallback lists", () => {
     expect((await fallback.getFallbackInfo("*")).own).toHaveLength(2);
   });
   it("shows inherited list and resets an agent override", async () => {
-    const { region, fallback, mock } = await setup();
+    const { fallback, mock } = await setup();
     const bot = (await mock.api.agent.listBots())[0];
+    const region = within(screen.getByRole("group", { name: "Agent fallback settings" }));
     await fireEvent.change(region.getByLabelText("Agent"), { target: { value: bot.id } });
-    await waitFor(() => expect(region.getByText("Inherited from general list")).toBeInTheDocument());
-    await fireEvent.click(region.getByRole("button", { name: "Remove acp:removed from fallbacks" }));
+    await region.findByText("Using provider and all-provider lists");
+    await fireEvent.change(region.getByLabelText("Add fallback model"), { target: { value: "claude-opus-5" } });
     await fireEvent.click(region.getByRole("button", { name: "Save order" }));
-    await waitFor(() => expect(region.getByRole("button", { name: "Reset to general list" })).toBeEnabled());
-    await fireEvent.click(region.getByRole("button", { name: "Reset to general list" }));
+    await waitFor(() => expect(region.getByRole("button", { name: "Reset to provider list" })).toBeEnabled());
+    await fireEvent.click(region.getByRole("button", { name: "Reset to provider list" }));
     await waitFor(async () => expect((await fallback.getFallbackInfo(bot.id)).own).toBeNull());
   });
   it("reorders with Alt+ArrowUp and saves all positions", async () => {
@@ -77,7 +78,8 @@ describe("W5 fallback lists", () => {
       fallbackModels: Array.from({ length: 8 }, (_, i): AgentModelId => `acp:demo${i}`),
     });
     render(() => <ProvidersPage />);
-    await waitFor(() => expect(screen.getByLabelText("Add fallback model")).toBeDisabled());
-    expect(screen.getByText("At most 8 models. Duplicate models cannot be added.")).toBeInTheDocument();
+    const region = within(screen.getByRole("region", { name: "All providers fallback list" }));
+    await waitFor(() => expect(region.getByLabelText("Add fallback model")).toBeDisabled());
+    expect(region.getByText("At most 8 models. Duplicate models cannot be added.")).toBeInTheDocument();
   });
 });

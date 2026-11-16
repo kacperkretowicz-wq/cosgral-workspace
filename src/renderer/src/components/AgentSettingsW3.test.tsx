@@ -82,7 +82,7 @@ it("starts blocked at eight models", async () => {
 });
 it("preserves inheritance on profile save and resets an edited override", async () => {
   const { mock, providers, set } = await fallbackPanel(1, true);
-  expect(screen.getByText("Inherited from general list")).toBeInTheDocument();
+  expect(screen.getByText("Using provider and all-provider lists")).toBeInTheDocument();
   expect(screen.getByText("Unavailable")).toBeInTheDocument();
   await fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
   await screen.findByText("Settings saved.");
@@ -91,9 +91,9 @@ it("preserves inheritance on profile save and resets an edited override", async 
   await fireEvent.click(screen.getByRole("button", { name: "Add fallback" }));
   await fireEvent.click(screen.getByRole("button", { name: "Save order" }));
   await waitFor(() => expect(screen.getByText("Agent's own list")).toBeInTheDocument());
-  await waitFor(() => expect(screen.getByRole("button", { name: "Reset to general list" })).toBeEnabled());
-  await fireEvent.click(screen.getByRole("button", { name: "Reset to general list" }));
-  await waitFor(() => expect(screen.getByText("Inherited from general list")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Reset to provider list" })).toBeEnabled());
+  await fireEvent.click(screen.getByRole("button", { name: "Reset to provider list" }));
+  await waitFor(() => expect(screen.getByText("Using provider and all-provider lists")).toBeInTheDocument());
   expect((await providers.getFallbackInfo("chief")).own).toBeNull();
   mock.dispose();
 });

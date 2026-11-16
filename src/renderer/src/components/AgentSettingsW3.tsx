@@ -10,7 +10,8 @@ import { fallbackModelsProblem, isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { AgentAccountPicker } from "./AgentAccountPicker";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
-import { FallbackOrder } from "./ProvidersPage";
+import { FallbackOrder } from "./fallback-order";
+import { FallbackChainView } from "./ProviderFallbackLists";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 export function AgentTemplateCreator(props: {
@@ -85,7 +86,7 @@ export function AgentSettingsW3(props: { botId: string }) {
       setSavedModel(value.bot.model);
       setTemplates(list);
       const info = await window.openbot.providers?.getFallbackInfo?.(props.botId);
-      const visible = info ? (info.own ?? info.general) : models;
+      const visible = info ? (info.own ?? []) : models;
       setFallbackInfo(info ?? null);
       setFallbacks(visible);
       setSavedFallbacks(visible);
@@ -255,8 +256,11 @@ export function AgentSettingsW3(props: { botId: string }) {
               }}
               onSave={() => void save("fallback")}
             />
+            <FallbackChainView info={fallbackInfo()} options={value().models} />
             <Show when={fallbackInfo()}>
-              <p role="status">{fallbackInfo()?.own === null ? "Inherited from general list" : "Agent's own list"}</p>
+              <p role="status">
+                {fallbackInfo()?.own === null ? "Using provider and all-provider lists" : "Agent's own list"}
+              </p>
               <Show when={window.openbot.providers?.resetFallbackModels}>
                 <Button
                   type="button"
@@ -267,7 +271,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                     setSaving(true);
                     try {
                       const info = await api.resetFallbackModels(props.botId);
-                      const list = info.own ?? info.general;
+                      const list = info.own ?? [];
                       setFallbackInfo(info);
                       setFallbacks(list);
                       setSavedFallbacks(list);
@@ -279,7 +283,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                     }
                   }}
                 >
-                  Reset to general list
+                  Reset to provider list
                 </Button>
               </Show>
             </Show>
