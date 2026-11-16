@@ -326,6 +326,19 @@ export class ActionCards {
     return [...drafts, ...takeovers, ...plans].sort((left, right) => left.sequence - right.sequence);
   }
 
+  /** COSGRAL W6-BE4: the `requestId` of every open card that waits in this CLI thread (a subagent's cards). */
+  requestIdsFor(providerThreadId: string): string[] {
+    return [
+      ...[...this.#drafts.values()]
+        .filter((open) => open.providerThreadId === providerThreadId)
+        .map((open) => open.card.requestId),
+      ...[...this.#takeovers.values()]
+        .filter((open) => open.providerThreadId === providerThreadId)
+        .map((open) => open.request.requestId),
+      ...(this.#plans?.requestIdsFor(providerThreadId) ?? []),
+    ];
+  }
+
   pendingCount(botId: string): number {
     let count = this.#plans?.pendingCount(botId) ?? 0;
     for (const open of this.#drafts.values()) if (open.card.botId === botId) count += 1;

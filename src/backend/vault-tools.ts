@@ -226,6 +226,13 @@ export class VaultRequests {
     return [...this.#open.values()].filter((open) => open.request.botId === botId).length;
   }
 
+  /** COSGRAL W6-BE4: the `requestId` of every open request that waits in this CLI thread (a subagent's cards). */
+  requestIdsFor(providerThreadId: string): string[] {
+    return [...this.#open.values()]
+      .filter((open) => open.providerThreadId === providerThreadId)
+      .map((open) => open.request.requestId);
+  }
+
   expireTurn(providerThreadId: string, turnId: string): void {
     for (const open of [...this.#open.values()]) {
       if (open.providerThreadId === providerThreadId && open.request.turnId === turnId) {

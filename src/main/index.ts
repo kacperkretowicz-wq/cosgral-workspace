@@ -60,6 +60,8 @@ import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
+import { registerAcpLoginIpc } from "./acp-login-ipc";
+import { registerAcpPresetsIpc } from "./acp-presets-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
@@ -194,6 +196,7 @@ import {
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
+import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";
@@ -878,6 +881,10 @@ function registerIpcHandlers(
   registerThreadsIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
   registerPlansIpc(() => agentService);
+  // COSGRAL W6-BE4: the subagents of a thread (this computer only).
+  registerSubagentsIpc(() => agentService);
+  // COSGRAL W6-BE5: signing in to ACP agents with a link and a code (this computer only).
+  registerAcpLoginIpc(() => agentService);
   // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);
@@ -1389,6 +1396,8 @@ if (!hasSingleInstanceLock) {
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
       service.useProviders(providerRegistry);
       registerProviderIpc(providerRegistry);
+      // COSGRAL W6-BE5: ready ACP agent settings (Gemini CLI, Antigravity; this computer only).
+      registerAcpPresetsIpc(() => providerRegistry);
       // COSGRAL W3-KK3: "always allow" rules of approval cards (this computer only).
       service.useApprovalRules(
         new ApprovalRulesStore({

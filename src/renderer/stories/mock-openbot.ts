@@ -93,6 +93,8 @@ import {
   STORY_USAGE,
 } from "./fixtures";
 import { createMockAccounts } from "./mock-accounts";
+import { createMockAcpLogin } from "./mock-acp-login";
+import { createMockAcpPresets } from "./mock-acp-presets";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
@@ -100,6 +102,7 @@ import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
+import { createMockSubagents } from "./mock-subagents";
 import { createMockThreads } from "./mock-threads";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -1349,6 +1352,12 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     context: createMockContext((event) => emitAgentEvent(event)),
     // COSGRAL W6-BE3: the plan card and the actions on a message (demo; `propose`, `seed`, `setBusy` are for stories).
     plans: createMockPlans((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE4: the subagents of a thread (demo; `spawn`, `complete`, ... are for stories).
+    subagents: createMockSubagents((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE5: sign in to an ACP agent with a link and a code (demo; the link is not a real page).
+    acpLogin: createMockAcpLogin((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE5: ready settings for Gemini CLI and Antigravity (demo; nothing is installed).
+    acpPresets: createMockAcpPresets(),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

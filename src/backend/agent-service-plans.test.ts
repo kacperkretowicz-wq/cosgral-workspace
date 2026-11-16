@@ -10,9 +10,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
 import { MailboxStore } from "./mailbox-store";
+import { SqlitePlanStore } from "./plan-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
-import { ThreadCli } from "./testing/thread-cli";
+import { notification, ThreadCli } from "./testing/thread-cli";
 
 let root: string;
 const services: AgentService[] = [];
@@ -167,7 +168,123 @@ describe.sequential("the plan card on the service", {
     await service.deleteThread({ botId: "chief", threadId: a, confirm: true });
     expect(await service.listPlans({ botId: "chief", threadId: a })).toEqual([]);
   });
+
+  // COSGRAL W6-BE5 (review of W6-BE3, L5): Stop on a turn with a plan (W20).
+  it("Stop on a turn with an approved plan ends the plan as stopped and leaves the agent idle", async () => {
+    const { service, cli, events } = await fixture();
+    const turn = await heldTurn(service, cli, "Do the plan");
+    cli.callTool(turn, "cosgral_cards", "propose_plan", { steps });
+    await waitFor(() => planEvents(events).length === 1);
+    const id = planEvents(events)[0]?.requestId ?? "";
+    await service.respondToPlan({ requestId: id, decision: "approve" });
+    await waitFor(() => cli.responses.length === 1);
+    cli.callTool(turn, "cosgral_cards", "update_plan", { planId: id, stepId: "s1", status: "in-progress" });
+    await waitFor(() => cli.responses.length === 2);
+
+    await service.interrupt("chief", turn.turnId);
+    expect(cli.calls("turn/interrupt")).toHaveLength(1);
+    cli.emit(
+      "notification",
+      notification("turn/completed", { threadId: turn.threadId, turn: { id: turn.turnId, status: "interrupted" } }),
+    );
+    await waitFor(() => lastPhase(events, id) === "stopped");
+    // The step that was running stays as it was (the plan shows how far it got); nothing waits for the person.
+    const listed = (await service.listPlans({ botId: "chief" })).find((item) => item.requestId === id);
+    expect(listed?.steps.map((step) => step.status)).toEqual(["in-progress", "pending"]);
+    expect(service.listPendingRequests()).toEqual([]);
+    await waitFor(
+      () => !["working", "waiting"].includes(service.listActivity().find((row) => row.botId === "chief")?.kind ?? ""),
+    );
+    // A stopped plan cannot be approved or reported on any more.
+    await expect(service.respondToPlan({ requestId: id, decision: "approve" })).rejects.toThrow(/already decided/);
+    cli.callTool(turn, "cosgral_cards", "update_plan", { planId: id, stepId: "s1", status: "done" });
+    await waitFor(() => cli.responses.length === 3);
+    expect(JSON.stringify(cli.responses[2])).toMatch(/no longer running \(stopped\)/);
+  });
+
+  it("Stop on a turn whose plan still waits for the person expires the card and tells the agent nothing is approved", async () => {
+    const { service, cli, events } = await fixture();
+    const turn = await heldTurn(service, cli, "Ask me first");
+    cli.callTool(turn, "cosgral_cards", "propose_plan", { steps });
+    await waitFor(() => planEvents(events).length === 1);
+    const id = planEvents(events)[0]?.requestId ?? "";
+    await service.interrupt("chief", turn.turnId);
+    cli.emit(
+      "notification",
+      notification("turn/completed", { threadId: turn.threadId, turn: { id: turn.turnId, status: "interrupted" } }),
+    );
+    await waitFor(() => lastPhase(events, id) === "expired");
+    await waitFor(() => cli.responses.length === 1);
+    expect(JSON.stringify(cli.responses[0])).toContain("expired");
+    expect(service.listPendingRequests()).toEqual([]);
+  });
+
+  // COSGRAL W6-BE5 (review of W6-BE3, restart): an open card does not come back as open after the program was killed.
+  it("after a crash a plan that was open is closed at the next start: proposed expires, approved stops, none can be answered", async () => {
+    const userData = join(root, "user-data");
+    const database = testDatabase(userData);
+    await database.initialize();
+    const base: AgentPlan = {
+      requestId: "plan-old-1",
+      botId: "chief",
+      threadId: "thread-before-crash",
+      turnId: "turn-before-crash",
+      title: "Before the crash",
+      summary: null,
+      steps: [
+        { id: "s1", title: "One", detail: null, status: "done" },
+        { id: "s2", title: "Two", detail: null, status: "in-progress" },
+      ],
+      phase: "approved",
+      createdAt: "2026-11-16T10:00:00.000Z",
+      decidedAt: "2026-11-16T10:00:05.000Z",
+      updatedAt: "2026-11-16T10:00:06.000Z",
+    };
+    const plans = new SqlitePlanStore(database);
+    plans.save(base);
+    plans.save({
+      ...base,
+      requestId: "plan-old-2",
+      phase: "proposed",
+      decidedAt: null,
+      createdAt: "2026-11-16T10:05:00.000Z",
+    });
+    plans.save({ ...base, requestId: "plan-old-3", phase: "completed", createdAt: "2026-11-16T09:00:00.000Z" });
+    closeTestDatabases();
+
+    const { service, events } = await fixture();
+    const listed = await service.listPlans({ botId: "chief", threadId: "thread-before-crash" });
+    expect(listed.map((item) => [item.requestId, item.phase])).toEqual([
+      ["plan-old-2", "expired"],
+      ["plan-old-1", "stopped"],
+      ["plan-old-3", "completed"],
+    ]);
+    // The progress that was recorded is kept; the window is told; nothing is left to answer.
+    expect(listed.find((item) => item.requestId === "plan-old-1")?.steps.map((step) => step.status)).toEqual([
+      "done",
+      "in-progress",
+    ]);
+    expect(
+      planEvents(events)
+        .map((item) => item.requestId)
+        .sort(),
+    ).toEqual(["plan-old-1", "plan-old-2"]);
+    expect(service.listPendingRequests()).toEqual([]);
+    await expect(service.respondToPlan({ requestId: "plan-old-2", decision: "approve" })).rejects.toThrow(
+      /already decided/,
+    );
+    await expect(service.respondToPlan({ requestId: "plan-old-1", decision: "reject" })).rejects.toThrow(
+      /already decided/,
+    );
+  });
 });
+
+/** The phase of a plan as the window last heard it. */
+function lastPhase(events: AgentEvent[], requestId: string): AgentPlan["phase"] | undefined {
+  return planEvents(events)
+    .filter((plan) => plan.requestId === requestId)
+    .at(-1)?.phase;
+}
 
 function fakeBrowser() {
   return {

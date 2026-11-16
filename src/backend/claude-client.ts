@@ -39,6 +39,7 @@ import {
 } from "./protocol";
 import { ROUTINE_TOOL_SPECS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { SKILLS_NAMESPACE, SKILLS_TOOL_SPECS } from "./skill-tools";
+import { SUBAGENT_NAMESPACE, SUBAGENT_TOOL_SPECS } from "./subagent-tools";
 import { VAULT_NAMESPACE, VAULT_TOOL_SPECS } from "./vault-tools";
 
 const CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
@@ -494,6 +495,14 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         version: "0.1.0",
         tools: CARDS_TOOL_SPECS.map((spec) =>
           tool(spec.name, spec.description, spec.schema, (args) => call(CARDS_NAMESPACE, spec.name, args)),
+        ),
+      }),
+      // COSGRAL W6-BE4: subagents; AgentService refuses a call from a subagent's own session (depth 1).
+      [SUBAGENT_NAMESPACE]: createSdkMcpServer({
+        name: SUBAGENT_NAMESPACE,
+        version: "0.1.0",
+        tools: SUBAGENT_TOOL_SPECS.map((spec) =>
+          tool(spec.name, spec.description, spec.schema, (args) => call(SUBAGENT_NAMESPACE, spec.name, args)),
         ),
       }),
       // COSGRAL W2: the local Vault; values are typed into the browser by AgentService, never returned.

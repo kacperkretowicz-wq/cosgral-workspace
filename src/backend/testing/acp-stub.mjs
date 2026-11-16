@@ -133,6 +133,9 @@ process.stdin.on("data", (chunk) => {
     const { id, method, params } = JSON.parse(line);
     if (method === "initialize") {
       write({ id, result: { protocolVersion: 1, agentCapabilities: { loadSession: false }, authMethods: [] } });
+    } else if (method === "session/new" && process.argv.includes("--needs-login")) {
+      // COSGRAL W6-BE5: an agent that is not signed in (like Antigravity before the login).
+      write({ id, error: { code: -32000, message: "Authentication required" } });
     } else if (method === "session/new") {
       const sessionId = `${name}-session-${++counter}`;
       sessions.set(sessionId, { mcpServers: params.mcpServers ?? [], prompted: false, pending: null });

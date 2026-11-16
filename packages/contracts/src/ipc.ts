@@ -1,3 +1,5 @@
+export * from "./ipc-acp-login";
+export * from "./ipc-acp-presets";
 export * from "./ipc-action-cards";
 export * from "./ipc-agent-settings";
 export * from "./ipc-api-keys";
@@ -26,6 +28,7 @@ export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
+export * from "./ipc-subagents";
 export * from "./ipc-subscriptions";
 export * from "./ipc-tables";
 export * from "./ipc-team-host";
