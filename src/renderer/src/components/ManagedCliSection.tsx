@@ -16,6 +16,7 @@ export function cliPathError(path: string) {
 }
 export function safeCliError(message: string): string {
   return message
+    .replace(/(?:Error: )?Error invoking remote method '[^']*': (?:Error: )?/g, "")
     .replace(/[A-Za-z]:[\\/][^\r\n]*/g, "[ścieżka CLI]")
     .replace(/\/(?:Users|home)\/[^\s]*/g, "[ścieżka CLI]");
 }
