@@ -4,6 +4,7 @@ import { access } from "node:fs/promises";
 import { homedir } from "node:os";
 import { extname, join, win32 } from "node:path";
 import { promisify } from "node:util";
+import { isNumber, isString } from "@openbot/contracts/runtime-values";
 
 const execFileAsync = promisify(execFile);
 const MINIMUM_CODEX_VERSION = [0, 144, 1] as const;
@@ -80,6 +81,7 @@ const CLI_TIMEOUT_MESSAGE = (name: "Codex" | "Claude") =>
 export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
   const candidates = await collectCandidates("claude", process.env.OPENBOT_CLAUDE_PATH);
   let foundCandidate = false;
+  let reason: string | null = null;
 
   for (const candidate of candidates) {
     if (!(await isExecutable(candidate))) continue;
@@ -88,14 +90,15 @@ export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
     try {
       const stdout = await readCliVersion(candidate);
       return { executable: candidate, version: parseClaudeVersion(stdout) };
-    } catch {
-      // Try the next executable candidate.
+    } catch (error) {
+      // Try the next executable candidate, but remember why this one failed (W6-KK3).
+      reason = describeCliStartFailure(error);
     }
   }
 
   if (foundCandidate) {
     throw new CodexCliError(
-      "Claude CLI was found but could not be started. Run `claude --version` in a new terminal.",
+      `Claude CLI was found but could not be started${reason ? ` (${reason})` : ""}. Run \`claude --version\` in a new terminal.`,
       "invalid",
     );
   }
@@ -294,27 +297,65 @@ export async function runCliWithRetry(
   candidate: string,
   cliArgs: readonly string[],
   timeoutMs = CLI_VERSION_TIMEOUT_MS,
+  options: CliRetryOptions = {},
 ): Promise<string> {
   const { command, args, windowsVerbatimArguments } = cliCommand(candidate, cliArgs);
-  const run = () =>
-    execFileAsync(command, args, {
-      timeout: timeoutMs,
-      maxBuffer: 64 * 1024,
-      windowsHide: process.platform === "win32",
-      windowsVerbatimArguments,
-    });
+  const exec =
+    options.exec ??
+    ((): Promise<{ stdout: string }> =>
+      execFileAsync(command, args, {
+        timeout: timeoutMs,
+        maxBuffer: 64 * 1024,
+        windowsHide: process.platform === "win32",
+        windowsVerbatimArguments,
+      }));
   try {
-    return (await run()).stdout;
+    return (await exec()).stdout;
   } catch (error) {
-    if (!isTimeout(error)) throw error;
+    const timedOut = isTimeout(error);
+    if (!timedOut && !isBlockedStart(error)) throw error;
+    // W6-KK3: a file that is still being scanned (a fresh 370 MB download, antivirus) is "in use" or "blocked" for a
+    // moment: wait a little before the second try. A timeout is retried at once, as before.
+    if (!timedOut) await new Promise((done) => setTimeout(done, options.pauseMs ?? CLI_BLOCKED_RETRY_PAUSE_MS));
     // One more try: the second start is usually fast once the files are cached.
     try {
-      return (await run()).stdout;
+      return (await exec()).stdout;
     } catch (again) {
       if (isTimeout(again)) throw new CliTimeoutError();
       throw again;
     }
   }
+}
+
+/** W6-KK3: test seams of {@link runCliWithRetry}: the process start and the pause before a retry of a blocked start. */
+export interface CliRetryOptions {
+  exec?: () => Promise<{ stdout: string }>;
+  pauseMs?: number;
+}
+
+export const CLI_BLOCKED_RETRY_PAUSE_MS = 1_500;
+
+const BLOCKED_START_CODES = new Set(["EBUSY", "EPERM", "EACCES", "ETXTBSY", "UNKNOWN"]);
+
+/** W6-KK3: the start failed because the file is in use or blocked (not because it is missing or answered with an error). */
+function isBlockedStart(error: unknown): boolean {
+  return error instanceof Error && "code" in error && isString(error.code) && BLOCKED_START_CODES.has(error.code);
+}
+
+/**
+ * W6-KK3: one plain reason why a CLI did not start, for the message the person reads. Never the raw error text (it
+ * carries the path, and so the user name) and never the output of the program.
+ */
+export function describeCliStartFailure(error: unknown): string {
+  if (error instanceof CliTimeoutError || isTimeout(error)) return "timed out starting; the computer may be busy";
+  if (error instanceof CodexCliError) return "it did not report a version this program understands";
+  if (isBlockedStart(error)) return "blocked: the file is in use or held by a virus scan";
+  if (error instanceof Error && "code" in error) {
+    if (error.code === "ENOENT") return "the file is missing";
+    if (isNumber(error.code)) return `exited with code ${error.code}`;
+    if ("signal" in error && isString(error.signal)) return `stopped by signal ${error.signal}`;
+  }
+  return "it could not be run";
 }
 
 export class CliTimeoutError extends Error {}
