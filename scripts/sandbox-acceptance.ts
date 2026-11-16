@@ -2177,6 +2177,95 @@ async function cliFourthRun(d: Driver, cli: CliStandIn): Promise<void> {
   });
 }
 
+/**
+ * O1 (W5-UI1a, criteria C01 and C02 on the first screen): a computer without any Codex CLI. Run it as
+ * COSGRAL_MODE=cli-onboarding COSGRAL_SANDBOX_ROOT=<folder> node scripts/sandbox-acceptance.ts (a fresh sandbox of its own).
+ */
+async function onboardingCliMain(root: string, evidence: string): Promise<void> {
+  resultsFile = join(evidence, "acceptance-onboarding.json");
+  const fixture = await installFixture(root);
+  const cli = await startCliStandIn(process.execPath);
+  process.env.COSGRAL_CLI_TEST_BASE = cli.base;
+  // The Codex path points at a file that does not exist: the program must treat Codex as not installed.
+  const { app, page } = await launch(root, {
+    codex: join(root, "fixture", "missing-codex.exe"),
+    claude: fixture.claude,
+  });
+  const d = new Driver(page, evidence, app);
+  try {
+    await row(
+      "O1",
+      "onboarding without a CLI: Continue is blocked, 'Pobierz i przejdź dalej' asks in a system dialog, a No downloads nothing, a Yes unblocks",
+      async () => {
+        const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
+        await where.waitFor({ timeout: 90_000 });
+        await where.getByRole("button", { name: /Use this computer/ }).click();
+        const setup = page.getByRole("dialog", { name: "Set up this computer" });
+        await setup.waitFor({ timeout: 30_000 });
+        const card = setup.locator(".managed-cli-card").first();
+        await card.waitFor({ timeout: 20_000 });
+        const proceed = setup.getByRole("button", { name: /^Continue with / });
+        assert(await proceed.isDisabled(), "Continue is blocked while the CLI is missing");
+        const cardText = await card.innerText();
+        assert(/Brak/.test(cardText), `the card says there is no CLI: ${cardText.slice(0, 120)}`);
+        assert(/Logowanie wkrótce/.test(await setup.innerText()), "the screen says sign-in is coming, in text");
+        assert(
+          (await setup.getByRole("button", { name: /Zaloguj|Log in|Sign in/ }).count()) === 0,
+          "no dead sign-in button",
+        );
+        await d.dump("cli-o1-blocked");
+        // No agent exists yet, so the program asks in a system dialog. Answer it from the main process: No, then Yes.
+        await app.evaluate(({ dialog }) => {
+          const answers = [1, 0];
+          const seen: string[] = [];
+          Object.assign(dialog, {
+            acceptSeen: seen,
+            showMessageBox: async (...args: Array<{ message?: string }>) => {
+              seen.push(String(args.map((arg) => arg.message).find(Boolean) ?? ""));
+              return { response: answers.shift() ?? 1, checkboxChecked: false };
+            },
+          });
+        });
+        const seenDialogs = async (): Promise<string[]> => {
+          const seen = await app.evaluate(({ dialog }) => Object.fromEntries(Object.entries(dialog)).acceptSeen);
+          return Array.isArray(seen) ? seen.map(String) : [];
+        };
+        const codex = async () =>
+          asRecord(list(await d.ev("window.openbot.subscriptions.listCli()")).find((state) => state.id === "codex"));
+        await card.getByRole("button", { name: "Pobierz i przejdź dalej" }).click();
+        await waitUntil(page, "the system dialog", async () => (await seenDialogs()).length === 1, 30_000);
+        assert((await seenDialogs())[0] === "Download Codex 1.0.0?", `dialog title: ${(await seenDialogs())[0]}`);
+        await waitUntil(page, "back to idle after the No", async () => (await codex()).phase === "idle", 30_000);
+        assert((await codex()).managedVersion === null && cli.fileRequests === 0, "a No downloads nothing");
+        assert(await proceed.isDisabled(), "Continue stays blocked after a No");
+        await card.getByRole("button", { name: "Pobierz i przejdź dalej" }).click();
+        await waitUntil(
+          page,
+          "the CLI is downloaded after the Yes",
+          async () => (await codex()).managedVersion === "1.0.0",
+          120_000,
+        );
+        assert(cli.fileRequests === 1, `one download (${cli.fileRequests})`);
+        await waitUntil(page, "Continue is unblocked", async () => !(await proceed.isDisabled()), 30_000);
+        await d.dump("cli-o1-unblocked");
+        await proceed.click();
+        await setup.waitFor({ state: "hidden", timeout: 90_000 });
+        return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download, Continue enabled and the setup closes";
+      },
+    );
+  } finally {
+    await app.close().catch(() => undefined);
+    await cli.close();
+  }
+  await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
+  const failed = results.filter((result) => !result.ok);
+  console.log(
+    `\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`,
+  );
+  for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 300)}`);
+  process.exit(failed.length ? 1 : 0);
+}
+
 async function main(): Promise<void> {
   const root = sandboxRoot();
   const evidence = join(root, "evidence");
@@ -2189,6 +2278,10 @@ async function main(): Promise<void> {
     evidence,
   ]) {
     await mkdir(folder, { recursive: true });
+  }
+  if (process.env.COSGRAL_MODE === "cli-onboarding") {
+    await onboardingCliMain(root, evidence);
+    return;
   }
   const fixture = await installFixture(root);
   const cliStandIn = await startCliStandIn(process.execPath);
