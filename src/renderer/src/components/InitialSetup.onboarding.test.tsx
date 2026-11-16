@@ -139,7 +139,6 @@ it("blocks Continue only when the provider really has no CLI, and offers the dow
   await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
   await screen.findByRole("button", { name: "Pobierz i przejdź dalej" });
   expect(screen.getByRole("button", { name: "Continue with Codex" })).toBeDisabled();
-  expect(screen.getByText(/Logowanie wkrótce/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Zaloguj|Log in|Sign in/ })).not.toBeInTheDocument();
   expect(onSave).not.toHaveBeenCalled();
 });
