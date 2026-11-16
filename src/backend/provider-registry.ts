@@ -16,16 +16,19 @@ import {
   type FallbackModelsInput,
   fallbackChain,
   fallbackModelsProblem,
+  fallbackScopeProblem,
   GENERAL_FALLBACK_SCOPE,
   isAcpAgentConfig,
   isAcpAgentId,
   isAcpModel,
   isClaudeModel,
   isEndpointModel,
+  isProviderFallbackScope,
   normalizeFallbackModels,
   PROVIDER_LIMITS,
   type ProviderUsage,
   parseEndpointModel,
+  providerFallbackScope,
   type SaveAcpAgentInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
@@ -78,6 +81,8 @@ export class ProviderRegistry {
   #timer: NodeJS.Timeout | null = null;
   /** W5-BE5: whether an own model endpoint still exists; null = not known here (endpoint models count as present). */
   #endpointExists: ((endpointId: string) => boolean) | null = null;
+  /** W5-BE7: the own model of an agent; null = not known here (no provider list for it). */
+  #agentModel: ((botId: string) => AgentModelId | null) | null = null;
 
   constructor(options: ProviderRegistryOptions) {
     this.#database = options.database;
@@ -147,13 +152,18 @@ export class ProviderRegistry {
     this.#emit({ type: "acp-agents-changed", agents: this.listAcpAgents() });
   }
 
-  /** The agent's own saved list (for "*": the general list); empty when none is saved. Never more than 8, no repeats. */
+  /** W5-BE7: the own model of an agent, so its provider list is known (AgentService attaches it). */
+  useAgentModelLookup(modelOf: (botId: string) => AgentModelId | null): void {
+    this.#agentModel = modelOf;
+  }
+
+  /** The saved list of `botId` (an agent, "*" or "provider:…"); empty when none is saved. Never more than 8, no repeats. */
   getFallbackModels(botId: string): AgentModelId[] {
     return this.#ownFallbackModels(botId) ?? [];
   }
 
   setFallbackModels(input: FallbackModelsInput): AgentModelId[] {
-    const problem = fallbackModelsProblem(input.fallbackModels);
+    const problem = fallbackScopeProblem(input.botId) ?? fallbackModelsProblem(input.fallbackModels);
     if (problem) throw new Error(problem);
     const models = [...input.fallbackModels];
     this.#database.connection
@@ -165,17 +175,26 @@ export class ProviderRegistry {
     return models;
   }
 
-  /** W5-BE4: the agent forgets its own list and follows the general list again (for "*": the general list is emptied). */
+  /** W5-BE4/BE7: forget the saved list of `botId`; an agent then follows its provider list and the general list. */
   resetFallbackModels(botId: string): FallbackModelsInfo {
+    const problem = fallbackScopeProblem(botId);
+    if (problem) throw new Error(problem);
     this.#database.connection.prepare("DELETE FROM projection_agent_fallback_models WHERE agent_id = ?").run(botId);
     return this.getFallbackInfo(botId);
   }
 
-  /** W5-BE4: where the list of an agent comes from and what is really tried after its own model. */
+  /** W5-BE4/BE7: the lists of an agent (or of "*" or a provider list) and the chain really tried after its own model. */
   getFallbackInfo(botId: string): FallbackModelsInfo {
+    const agent = botId !== GENERAL_FALLBACK_SCOPE && !isProviderFallbackScope(botId);
+    return this.#fallbackInfo(botId, agent ? (this.#agentModel?.(botId) ?? null) : null);
+  }
+
+  /** `ownModel`: the agent's own model (its provider list follows from it); null for "*", a provider list or not known. */
+  #fallbackInfo(botId: string, ownModel: AgentModelId | null): FallbackModelsInfo {
     const own = this.#ownFallbackModels(botId);
     const general = this.#ownFallbackModels(GENERAL_FALLBACK_SCOPE) ?? [];
-    const list = own ?? general;
+    const providerScope = ownModel ? providerFallbackScope(ownModel) : null;
+    const provider = providerScope ? this.#ownFallbackModels(providerScope) : null;
     // An ACP model whose agent was removed stays in the list (adding the agent again revives it) but is never tried.
     // The same for a model of an own endpoint that was removed (W5-BE5).
     const present = new Set(this.listAcpAgents().map((agent) => acpModelId(agent.id)));
@@ -187,22 +206,24 @@ export class ProviderRegistry {
     const missing = {
       has: (model: AgentModelId) => (isAcpModel(model) && !present.has(model)) || endpointGone(model),
     };
+    const isProviderList = isProviderFallbackScope(botId);
+    const chain = fallbackChain({
+      ownModel,
+      // A provider list is the "provider" layer; "*" is only the general list.
+      own: isProviderList || botId === GENERAL_FALLBACK_SCOPE ? null : own,
+      provider: isProviderList ? own : provider,
+      general,
+      isAvailable: (model) => !missing.has(model),
+    });
     return {
       botId,
       own,
       general,
-      effective: list.filter((model) => !missing.has(model)),
-      unavailable: list.filter((model) => missing.has(model)),
-      // W5-BE7 (step 1, contract only): the provider layer follows in the next commit.
-      providerScope: null,
-      provider: null,
-      chain: fallbackChain({
-        ownModel: null,
-        own,
-        provider: null,
-        general: own === null ? general : [],
-        isAvailable: (model) => !missing.has(model),
-      }),
+      effective: chain.filter((entry) => entry.available).map((entry) => entry.model),
+      unavailable: chain.filter((entry) => !entry.available).map((entry) => entry.model),
+      providerScope,
+      provider,
+      chain,
     };
   }
 
@@ -263,7 +284,7 @@ export class ProviderRegistry {
     tried: ReadonlySet<string>,
     accountFree?: (provider: AgentProviderId) => boolean,
   ): AgentModelId | null {
-    for (const candidate of [model, ...this.getFallbackInfo(botId).effective]) {
+    for (const candidate of [model, ...this.#fallbackInfo(botId, model).effective]) {
       if (tried.has(candidate)) continue;
       if (this.isUsable(candidate) || accountFree?.(providerOfModel(candidate))) return candidate;
     }

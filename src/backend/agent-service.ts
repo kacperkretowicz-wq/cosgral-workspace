@@ -717,6 +717,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#providers = providers;
     // W5-BE5: a fallback model of a removed own endpoint is never tried.
     providers.useEndpointLookup((id) => this.#endpoints?.get(id) != null);
+    // W5-BE7: an agent's own model says which provider list it follows.
+    providers.useAgentModelLookup((id) => this.#store.list().find((bot) => bot.id === id)?.model ?? null);
   }
 
   /** W5-BE5: whether the agent's account pool has a free account of this provider (accounts before fallback models). */
