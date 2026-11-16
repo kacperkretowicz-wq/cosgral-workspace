@@ -35,6 +35,7 @@ import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
+import type { ContextDesktopApi } from "./ipc-context";
 import type {
   AccountUsage,
   AgentEvent,
@@ -655,6 +656,8 @@ export interface OpenBotDesktopApi {
   apiKeys?: ApiKeysDesktopApi;
   /** COSGRAL W5-K2: own model endpoints (OpenAI-compatible, Ollama, LM Studio). Optional until every mock implements it. */
   endpoints?: EndpointsDesktopApi;
+  /** COSGRAL W6-BE2: context of a conversation (indicator, compaction, settings). Optional until every mock implements it. */
+  context?: ContextDesktopApi;
 }
 
 /**

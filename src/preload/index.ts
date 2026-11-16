@@ -81,6 +81,7 @@ import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
 import { createComputerUseApi } from "./computer-use-api";
+import { createContextApi } from "./context-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createEndpointsApi } from "./endpoints-api";
@@ -798,6 +799,7 @@ const openbotApi: OpenBotDesktopApi = {
   subscriptions: createSubscriptionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
+  context: createContextApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

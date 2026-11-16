@@ -184,6 +184,11 @@ export const IPC_CHANNELS = {
   endpointsRemove: "endpoints:remove",
   endpointsCheck: "endpoints:check",
   endpointsDetectLocal: "endpoints:detect-local",
+  // COSGRAL W6-BE2: context of a conversation.
+  contextGetState: "context:get-state",
+  contextCompact: "context:compact",
+  contextGetSettings: "context:get-settings",
+  contextUpdateSettings: "context:update-settings",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",
