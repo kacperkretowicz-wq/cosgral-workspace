@@ -372,14 +372,15 @@ export class BrowserHost {
     });
   }
 
-  async handleDynamicTool(params: DynamicToolCallParams): Promise<DynamicToolResult> {
+  /** `ownerBotId` (W9-BE1): the agent the program says made the call; it owns a page the call opens (null: look it up by the thread). */
+  async handleDynamicTool(params: DynamicToolCallParams, ownerBotId: string | null = null): Promise<DynamicToolResult> {
     const args = isRecord(params.arguments) ? params.arguments : {};
     this.#beginControl(params, args);
     try {
       switch (params.tool) {
         case "open": {
           const url = requiredString(args, "url", INPUT_LIMITS.browserUrl);
-          const tab = await this.open(url, params.threadId);
+          const tab = await this.open(url, params.threadId, ownerBotId);
           this.#updateControlTab(params, tab.id);
           return textResult({ tab });
         }

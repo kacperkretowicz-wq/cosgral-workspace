@@ -55,6 +55,7 @@ afterEach(async () => {
   else process.env.OPENBOT_CLAUDE_PATH = originalClaudePath;
   delete process.env.OPENBOT_FAKE_CODEX_LOG;
   delete process.env.OPENBOT_FAKE_AGENT_TOOL;
+  delete process.env.OPENBOT_FAKE_BROWSER_TOOL;
   delete process.env.OPENBOT_FAKE_AGENT_TOOL_PATHS;
   delete process.env.OPENBOT_FAKE_THREAD_READ_DELAY;
   delete process.env.OPENBOT_FAKE_AUTO_COMPLETE;
@@ -2512,6 +2513,26 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     });
   });
 
+  it("tells the browser which agent made a call, so the page opens in that agent's own profile (W9-BE1)", async () => {
+    process.env.OPENBOT_FAKE_BROWSER_TOOL = "1";
+    const { store, mailbox } = stores();
+    const calls: Array<{ tool: string; threadId: string; botId: string | null }> = [];
+    const browser = {
+      ...fakeBrowser(),
+      handleDynamicTool: async (params: { tool: string; threadId: string }, botId: string | null = null) => {
+        calls.push({ tool: params.tool, threadId: params.threadId, botId });
+        return { success: true, contentItems: [] };
+      },
+    };
+    service = new AgentService(store, mailbox, browser);
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "Open a page" });
+    await waitFor(() => calls.length === 1);
+    // The agent is named by the program (the thread it runs under belongs to it), not found again by the browser.
+    expect(calls[0]).toMatchObject({ tool: "open", botId: "chief" });
+    expect(calls[0]?.threadId).toBe("thread-1");
+  });
+
   it("fans out an idempotent agent tool message with referenced files", async () => {
     process.env.OPENBOT_FAKE_AGENT_TOOL = "1";
     const notePath = join(root, "generated-note.txt");
@@ -3189,6 +3210,9 @@ process.stdin.on("data", (chunk) => {
         const deltaDelay = Number(process.env.OPENBOT_FAKE_DELTA_DELAY || 0);
         if (deltaDelay > 0) setTimeout(writeDelta, deltaDelay);
         else writeDelta();
+        if (process.env.OPENBOT_FAKE_BROWSER_TOOL === "1" && turnCounter === 1) {
+          setTimeout(() => write({ id: "browser-tool-1", method: "item/tool/call", params: { threadId: message.params.threadId, turnId, callId: "call-b", namespace: "openbot_browser", tool: "open", arguments: { url: "https://example.com" } } }), 30);
+        }
         if (process.env.OPENBOT_FAKE_AGENT_TOOL === "1" && turnCounter === 1) {
           setTimeout(() => write({ id: "agent-tool-1", method: "item/tool/call", params: { threadId: message.params.threadId, turnId, callId: "call-1", namespace: "openbot", tool: "send_message", arguments: { recipientBotIds: ["sales-outbound", "inbox-manager"], text: "Please prepare your reports.", paths: JSON.parse(process.env.OPENBOT_FAKE_AGENT_TOOL_PATHS || "[]") } } }), 30);
         }

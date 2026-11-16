@@ -194,6 +194,11 @@ export const IPC_CHANNELS = {
   integrationsConnect: "integrations:connect",
   integrationsCancel: "integrations:cancel",
   integrationsDisconnect: "integrations:disconnect",
+  // COSGRAL W9-BE1: the phone away from home (reach, push switch). The PIN and the push subscription belong to the phone API, not to IPC.
+  phoneGetState: "phone:get-state",
+  phoneGetTailscaleGuide: "phone:get-tailscale-guide",
+  phoneSetPushEnabled: "phone:set-push-enabled",
+  phoneSendTestPush: "phone:send-test-push",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

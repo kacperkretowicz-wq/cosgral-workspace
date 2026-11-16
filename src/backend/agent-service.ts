@@ -192,7 +192,8 @@ interface AgentBrowserHost {
   endControl(threadId: string, turnId: string): void;
   /** COSGRAL W2: types a Vault value into an element of a tab and returns nothing about the page. */
   typeSecret?(tabId: string, revision: number, ref: string, value: string): Promise<void>;
-  handleDynamicTool(params: DynamicToolCallParams): Promise<DynamicToolResult>;
+  /** COSGRAL W9-BE1: `ownerBotId` = the agent that made the call (it owns a page the call opens). */
+  handleDynamicTool(params: DynamicToolCallParams, ownerBotId?: string | null): Promise<DynamicToolResult>;
   /** COSGRAL W1-BE3: open tabs, for a browser takeover request. */
   listTabs?(): BrowserTab[];
   /** COSGRAL W1-BE3: shows a tab to the person who takes it over. */
@@ -2259,7 +2260,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
               request.id,
               blocked
                 ? { success: false, contentItems: [{ type: "inputText", text: blocked }] }
-                : await this.#browser.handleDynamicTool(request.params),
+                : await this.#browser.handleDynamicTool(request.params, toolBotId ?? null),
             );
             return;
           }

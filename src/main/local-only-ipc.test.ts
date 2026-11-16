@@ -46,6 +46,7 @@ beforeAll(async () => {
   const { registerBudgetsIpc } = await import("./budgets-ipc");
   const { registerBrowserProfilesIpc } = await import("./browser-profiles-ipc");
   const { registerIntegrationsIpc } = await import("./integrations-ipc");
+  const { registerPhoneIpc } = await import("./phone-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -65,6 +66,7 @@ beforeAll(async () => {
   registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
   registerBudgetsIpc(() => null);
   registerIntegrationsIpc(() => null);
+  registerPhoneIpc(() => null);
   registerBrowserProfilesIpc({ store: () => null, clearPartition: async () => undefined, openTabs: () => 0 });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
@@ -123,6 +125,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("browser-profiles:").length).toBe(5);
     // COSGRAL W10-KK1: the account integrations.
     expect(channelsOf("integrations:").length).toBe(7);
+    // COSGRAL W9-BE1: the phone away from home.
+    expect(channelsOf("phone:").length).toBe(4);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -147,6 +151,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "budgets:",
         "browser-profiles:",
         "integrations:",
+        "phone:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -222,6 +227,10 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /single word/,
     );
     expect((await call("integrations:list", "local", null)).threw).toMatch(/still starting/);
+    // W9-BE1: a bad phone request is refused by the parser before the program is asked.
+    expect((await call("phone:set-push-enabled", "local", { enabled: "yes" })).threw).toMatch(/true or false/);
+    expect((await call("phone:send-test-push", "local", {})).threw).toMatch(/not named/);
+    expect((await call("phone:get-state", "local", null)).threw).toMatch(/not ready/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

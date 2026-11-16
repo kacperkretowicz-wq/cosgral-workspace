@@ -45,6 +45,7 @@ import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type 
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isMessagePinsChanged, type MessagePinsChanged } from "./ipc-message-actions";
 import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } from "./ipc-mobile";
+import { isPhoneAccessChanged, type PhoneAccessChanged } from "./ipc-phone-access";
 import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import {
@@ -688,6 +689,8 @@ export type AgentEvent =
   | ({ type: "browser-profiles-changed" } & BrowserProfilesChanged)
   /** COSGRAL W10-KK1: a sign-in of an app started, ended, failed or was removed (the whole list). */
   | ({ type: "integrations-changed" } & IntegrationsChanged)
+  /** COSGRAL W9-BE1: the reach of the phone, the push switch or a phone's PIN or subscription changed (the whole state). */
+  | ({ type: "phone-access-changed" } & PhoneAccessChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -863,6 +866,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isBrowserProfilesChanged(value);
     case "integrations-changed":
       return isIntegrationsChanged(value);
+    case "phone-access-changed":
+      return isPhoneAccessChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

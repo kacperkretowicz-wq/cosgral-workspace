@@ -95,6 +95,7 @@ import { createIsolationApi } from "./isolation-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
+import { createPhoneApi } from "./phone-api";
 import { createPlansApi } from "./plans-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createSpacesApi } from "./spaces-api";
@@ -826,6 +827,7 @@ const openbotApi: OpenBotDesktopApi = {
   budgets: createBudgetsApi(invokeAgent),
   browserProfiles: createBrowserProfilesApi(invokeAgent),
   integrations: createIntegrationsApi(invokeAgent),
+  phone: createPhoneApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
