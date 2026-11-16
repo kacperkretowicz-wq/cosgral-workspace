@@ -61,6 +61,7 @@ import {
   type ManagedCliState,
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
+import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {
   isVaultItemSummary,
   isVaultRequest,
@@ -323,6 +324,8 @@ export interface QueueDelivery {
   id: string;
   messageId: string;
   recipientBotId: string;
+  /** COSGRAL W6-BE1: the thread of the agent this message belongs to; missing for a message from before threads. */
+  threadId?: string;
   sender: { kind: "user" } | { kind: "bot"; botId: string };
   text: string;
   attachments: AttachmentSummary[];
@@ -653,6 +656,10 @@ export type AgentEvent =
   | ({ type: "context-changed" } & ContextChanged)
   /** COSGRAL W6-BE2: the context settings (auto-compaction, threshold) changed. */
   | ({ type: "context-settings-changed" } & ContextSettingsChanged)
+  /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
+  | ({ type: "threads-changed" } & ThreadsChanged)
+  /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
+  | ({ type: "thread-activity" } & ThreadActivity)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -800,6 +807,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isContextState(value);
     case "context-settings-changed":
       return isContextSettings(value);
+    case "threads-changed":
+      return isThreadsChanged(value);
+    case "thread-activity":
+      return isThreadActivity(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

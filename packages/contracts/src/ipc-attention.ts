@@ -8,7 +8,7 @@
 import type { BrowserTakeoverPhase, BrowserTakeoverRequest, DraftPreviewCard } from "./ipc-action-cards";
 import type { AgentApproval, AgentPromptQuestion, AgentProviderId } from "./ipc-conversation";
 import { isVaultRequest, type VaultRequest } from "./ipc-vault";
-import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
+import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 /** An open question card; the same fields as the `prompt` event. */
 export interface PendingAgentPrompt {
@@ -102,9 +102,20 @@ export interface AgentActivityError {
 
 export const ACTIVITY_ERROR_MESSAGE_LIMIT = 200;
 
+/** COSGRAL W6-BE1: the thread an agent works in. */
+export interface AgentActivityThread {
+  id: string;
+  /** The readable title of that thread (see ThreadSummary.title). */
+  title: string;
+  /** true: it is not the thread the window shows (the person switched away; the turn goes on in the background). */
+  background: boolean;
+}
+
 export interface AgentActivity {
   botId: string;
   kind: AgentActivityKind;
+  /** COSGRAL W6-BE1: while the agent works ("working" or a card waiting in a running turn), the thread it works in. */
+  workingThread?: AgentActivityThread | null;
   /** Open cards of this agent (all kinds of `PendingAgentRequest`). */
   pendingRequests: number;
   /** Set while the limit lasts, also when `kind` shows something more urgent. Codex only for now. */
@@ -147,8 +158,13 @@ export function isAgentActivity(value: unknown): value is AgentActivity {
     isNumber(value.pendingRequests) &&
     (value.limit === null || isActivityLimit(value.limit)) &&
     (value.error === null || isActivityError(value.error)) &&
+    (value.workingThread === undefined || value.workingThread === null || isActivityThread(value.workingThread)) &&
     isString(value.updatedAt)
   );
+}
+
+function isActivityThread(value: unknown): value is AgentActivityThread {
+  return isDynamicRecord(value) && isString(value.id) && isString(value.title) && isBoolean(value.background);
 }
 
 export function isPendingAgentRequest(value: unknown): value is PendingAgentRequest {

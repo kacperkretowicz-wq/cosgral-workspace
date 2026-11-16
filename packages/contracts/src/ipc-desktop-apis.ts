@@ -204,6 +204,7 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
+import type { ThreadsDesktopApi } from "./ipc-threads";
 import type {
   DeleteVaultItemInput,
   RespondToVaultRequestInput,
@@ -652,6 +653,8 @@ export interface OpenBotDesktopApi {
   appData?: AppDataDesktopApi;
   /** COSGRAL W5 subscriptions: managed CLIs (BE1), later accounts and keys. Optional until every mock implements it. */
   subscriptions?: SubscriptionsDesktopApi;
+  /** COSGRAL W6-BE1: several threads per agent (this computer only). Optional until every mock implements it. */
+  threads?: ThreadsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
   apiKeys?: ApiKeysDesktopApi;
   /** COSGRAL W5-K2: own model endpoints (OpenAI-compatible, Ollama, LM Studio). Optional until every mock implements it. */

@@ -293,6 +293,17 @@ export class OpenBotDatabase {
   }
 
   hardDeleteAgent(commandId: string, botId: string, threadId: string | null, remainingAgents: BotSummary[]): void {
+    // COSGRAL W6-BE1: every other thread of the agent goes with it.
+    const otherThreadIds = [
+      ...databaseRows(
+        this.connection
+          .prepare(
+            `SELECT thread_id FROM projection_threads WHERE agent_id = ?
+             UNION SELECT thread_id FROM projection_thread_meta WHERE agent_id = ?`,
+          )
+          .all(botId, botId),
+      ).map((row) => requiredStringColumn(row, "thread_id")),
+    ].filter((id) => id !== threadId);
     this.dispatch(
       commandId,
       [
@@ -324,6 +335,16 @@ export class OpenBotDatabase {
         if (threadId) {
           db.prepare("DELETE FROM projection_threads WHERE thread_id = ?").run(threadId);
         }
+        for (const other of otherThreadIds) {
+          db.prepare(
+            `DELETE FROM orchestration_command_receipts WHERE command_id IN (
+               SELECT DISTINCT command_id FROM orchestration_events WHERE aggregate_id = ?
+             )`,
+          ).run(other);
+          db.prepare("DELETE FROM orchestration_events WHERE aggregate_id = ?").run(other);
+          db.prepare("DELETE FROM projection_threads WHERE thread_id = ?").run(other);
+        }
+        db.prepare("DELETE FROM projection_thread_meta WHERE agent_id = ?").run(botId);
         return null;
       },
     );
@@ -415,7 +436,8 @@ export class OpenBotDatabase {
         const sequence = sequences[0] ?? snapshot.revision;
         const agent = this.listAgents().find((candidate) => candidate.id === snapshot.botId);
         if (!agent) throw new Error(`Unknown agent for conversation: ${snapshot.botId}`);
-        this.#ensureThreadProjection(db, agent, sequence);
+        // COSGRAL W6-BE1: the thread of this snapshot, not the thread that is active now (a turn may finish in the background).
+        this.#ensureThreadProjection(db, { ...agent, threadId: snapshot.threadId }, sequence);
         db.prepare(
           `UPDATE projection_threads
            SET active_turn_id = ?, updated_at = ?, last_event_sequence = ? WHERE thread_id = ?`,
@@ -523,6 +545,41 @@ export class OpenBotDatabase {
         .get(threadId, provider),
     );
     return row ? toProviderSession(row) : null;
+  }
+
+  /** COSGRAL W6-BE1: the thread a CLI session (its external id) belongs to; null when no session has that id. */
+  threadIdForProviderSession(externalSessionId: string): string | null {
+    const row = this.connection
+      .prepare("SELECT thread_id FROM projection_provider_sessions WHERE external_session_id = ? LIMIT 1")
+      .get(externalSessionId);
+    return isDynamicRecord(row) && isString(row.thread_id) ? row.thread_id : null;
+  }
+
+  /** COSGRAL W6-BE1: every CLI session of every thread of an agent. */
+  listAgentProviderSessions(agentId: string): ProviderSession[] {
+    return databaseRows(
+      this.connection
+        .prepare(
+          `SELECT s.id, s.thread_id, s.provider, s.external_session_id, s.model, s.effort, s.state,
+                  s.created_at, s.updated_at, s.resume_cursor
+           FROM projection_provider_sessions s
+           JOIN projection_threads t ON t.thread_id = s.thread_id
+           WHERE t.agent_id = ?`,
+        )
+        .all(agentId),
+    ).flatMap((row) => {
+      const decoded = decodeSessionRow(row);
+      return decoded ? [toProviderSession(decoded)] : [];
+    });
+  }
+
+  /** COSGRAL W6-BE1: the threads of an agent whose last turn never ended (the program stopped in the middle of it). */
+  threadIdsWithUnfinishedTurn(agentId: string): string[] {
+    return databaseRows(
+      this.connection
+        .prepare("SELECT thread_id FROM projection_threads WHERE agent_id = ? AND active_turn_id IS NOT NULL")
+        .all(agentId),
+    ).map((row) => requiredStringColumn(row, "thread_id"));
   }
 
   listProviderSessions(threadId: string): ProviderSession[] {

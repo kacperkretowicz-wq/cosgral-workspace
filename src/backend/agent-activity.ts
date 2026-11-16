@@ -10,6 +10,7 @@ import {
   type AgentActivityError,
   type AgentActivityKind,
   type AgentActivityLimit,
+  type AgentActivityThread,
   type AgentEvent,
   type BotSummary,
 } from "@openbot/contracts/ipc";
@@ -29,6 +30,8 @@ export interface AgentActivitySources {
   provider(bot: BotSummary): AgentProvider;
   /** COSGRAL W3: the usage limit of other providers (and ACP agents); Codex keeps its own usage windows. */
   providerLimit?(bot: BotSummary): AgentActivityLimit | null;
+  /** COSGRAL W6-BE1: the thread a working agent works in (null when it works in none that is known). */
+  workingThread?(botId: string): AgentActivityThread | null;
   emit(activity: AgentActivity): void;
   /** A Codex limit has just reset: read fresh usage. */
   limitReset(): void;
@@ -179,6 +182,9 @@ export class AgentActivityTracker {
       pendingRequests,
       limit,
       error,
+      ...(this.#sources.workingThread
+        ? { workingThread: working ? (this.#sources.workingThread(bot.id) ?? null) : null }
+        : {}),
     };
   }
 
@@ -252,6 +258,7 @@ function sameActivityState(previous: AgentActivity, next: ActivityState): boolea
     previous.kind === next.kind &&
     previous.pendingRequests === next.pendingRequests &&
     JSON.stringify(previous.limit) === JSON.stringify(next.limit) &&
-    JSON.stringify(previous.error) === JSON.stringify(next.error)
+    JSON.stringify(previous.error) === JSON.stringify(next.error) &&
+    JSON.stringify(previous.workingThread ?? null) === JSON.stringify(next.workingThread ?? null)
   );
 }

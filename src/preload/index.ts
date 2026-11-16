@@ -89,6 +89,7 @@ import { createMarketplaceApi } from "./marketplace-api";
 import { createMobileApi } from "./mobile-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
+import { createThreadsApi } from "./threads-api";
 import { createVoiceApi } from "./voice-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
@@ -797,6 +798,7 @@ const openbotApi: OpenBotDesktopApi = {
   approvalRules: createApprovalRulesApi(invokeAgent),
   appData: createAppDataApi(invokeAgent),
   subscriptions: createSubscriptionsApi(invokeAgent),
+  threads: createThreadsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
   context: createContextApi(invokeAgent),
