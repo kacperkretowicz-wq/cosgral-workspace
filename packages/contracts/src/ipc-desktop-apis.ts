@@ -1,3 +1,4 @@
+import type { AcpLoginDesktopApi } from "./ipc-acp-login";
 import type {
   DeleteDraftInput,
   KeptDraft,
@@ -663,6 +664,8 @@ export interface OpenBotDesktopApi {
   plans?: PlansDesktopApi;
   /** COSGRAL W6-BE4: the subagents of a thread, and Stop (this computer only). Optional until every mock implements it. */
   subagents?: SubagentsDesktopApi;
+  /** COSGRAL W6-BE5: sign in to an ACP agent with a link and a code (this computer only). Optional until every mock implements it. */
+  acpLogin?: AcpLoginDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */

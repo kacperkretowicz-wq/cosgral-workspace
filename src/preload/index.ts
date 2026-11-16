@@ -76,6 +76,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { createAcpLoginApi } from "./acp-login-api";
 import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
 import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
@@ -805,6 +806,7 @@ const openbotApi: OpenBotDesktopApi = {
   threads: createThreadsApi(invokeAgent),
   plans: createPlansApi(invokeAgent),
   subagents: createSubagentsApi(invokeAgent),
+  acpLogin: createAcpLoginApi(invokeAgent),
   messageActions: createMessageActionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),

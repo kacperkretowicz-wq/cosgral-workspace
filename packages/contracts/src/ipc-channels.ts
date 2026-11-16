@@ -209,6 +209,11 @@ export const IPC_CHANNELS = {
   // COSGRAL W6-BE4: subagents.
   subagentsList: "subagents:list",
   subagentsStop: "subagents:stop",
+  // COSGRAL W6-BE5: signing in to an ACP agent.
+  acpLoginList: "acp-login:list",
+  acpLoginStart: "acp-login:start",
+  acpLoginSubmitCode: "acp-login:submit-code",
+  acpLoginCancel: "acp-login:cancel",
   messageActionsRetry: "message-actions:retry",
   messageActionsEdit: "message-actions:edit",
   messageActionsDelete: "message-actions:delete",

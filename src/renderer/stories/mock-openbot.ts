@@ -93,6 +93,7 @@ import {
   STORY_USAGE,
 } from "./fixtures";
 import { createMockAccounts } from "./mock-accounts";
+import { createMockAcpLogin } from "./mock-acp-login";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
@@ -1352,6 +1353,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     plans: createMockPlans((event) => emitAgentEvent(event)),
     // COSGRAL W6-BE4: the subagents of a thread (demo; `spawn`, `complete`, ... are for stories).
     subagents: createMockSubagents((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE5: sign in to an ACP agent with a link and a code (demo; the link is not a real page).
+    acpLogin: createMockAcpLogin((event) => emitAgentEvent(event)),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

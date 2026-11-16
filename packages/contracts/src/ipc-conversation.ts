@@ -1,3 +1,4 @@
+import { type AcpLoginChanged, isAcpLoginChanged } from "./ipc-acp-login";
 import {
   type BrowserTakeoverPhase,
   type BrowserTakeoverRequest,
@@ -681,6 +682,8 @@ export type AgentEvent =
   | ({ type: "message-pins-changed" } & MessagePinsChanged)
   /** COSGRAL W6-BE4: a subagent started, wrote, waited, ended or was stopped (replace the subagent with this id). */
   | ({ type: "subagent-changed" } & SubagentChanged)
+  /** COSGRAL W6-BE5: the sign-in state of an ACP agent changed (replace the state of this agent). */
+  | ({ type: "acp-login-changed" } & AcpLoginChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -838,6 +841,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isPlanChanged(value);
     case "subagent-changed":
       return isSubagentChanged(value);
+    case "acp-login-changed":
+      return isAcpLoginChanged(value);
     case "message-pins-changed":
       return isMessagePinsChanged(value);
     case "agent-mcp-changed":
