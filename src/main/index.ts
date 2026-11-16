@@ -50,6 +50,7 @@ import { ChannelStore } from "../backend/channel-store";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
 import { EndpointStore } from "../backend/endpoint-store";
 import { EyesService } from "../backend/eyes-service";
+import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
@@ -89,6 +90,7 @@ import { createDockWindows, type DockWindows } from "./dock-windows";
 import { registerEndpointsIpc } from "./endpoints-ipc";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
+import { registerIntegrationsIpc } from "./integrations-ipc";
 import {
   parseAgentRequest,
   parseApprovalResponse,
@@ -278,6 +280,9 @@ let agentService: AgentService | null = null;
 let channelEngineService: ChannelEngine | null = null;
 /** COSGRAL W2: MCP connections; stopped on exit so stdio servers do not outlive the program. */
 let mcpManager: McpManager | null = null;
+// COSGRAL W10-KK1: the account sign-ins of the apps (OAuth in the system browser, tokens encrypted, an MCP entry per service).
+let integrationManager: IntegrationManager | null = null;
+let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
 let webhookReceiverService: WebhookReceiver | null = null;
@@ -913,6 +918,7 @@ function registerIpcHandlers(
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);
   registerBudgetsIpc(() => budgetMeter);
+  registerIntegrationsIpc(() => integrationManager);
   registerBrowserProfilesIpc({
     store: () => browserProfiles,
     clearPartition: async (partition) => {
@@ -1424,8 +1430,25 @@ if (!hasSingleInstanceLock) {
       const mcp = new McpManager({
         store: new McpStore(store.database, electronSecretBox()),
         emit: (event) => forwardAgentEvent("local", event),
+        // COSGRAL W10-KK1: the tool allowlist of the space for the app integrations.
+        toolFilter: (serverName, toolName) => integrationManager?.toolAllowed(serverName, toolName) ?? true,
       });
       mcpManager = mcp;
+      integrationManager = new IntegrationManager({
+        database: store.database,
+        box: electronSecretBox(),
+        mcp,
+        spaceId: runningSpace.id,
+        emit: (event) => forwardAgentEvent("local", event),
+        // Only an https address (the service's sign-in page) is handed to the system browser.
+        openBrowser: async (address) => {
+          const url = new URL(address);
+          if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "127.0.0.1")) {
+            throw new Error("Only a secure sign-in address can be opened.");
+          }
+          await shell.openExternal(url.toString());
+        },
+      });
       agentService = new AgentService(
         store,
         mailboxStore,
@@ -1783,6 +1806,10 @@ if (!hasSingleInstanceLock) {
       );
       // COSGRAL W2: connect the saved MCP servers in the background.
       void mcp.start().catch((error) => console.error("Unable to start MCP servers:", error));
+      // COSGRAL W10-KK1: tokens without an MCP entry are removed, and tokens that end soon are renewed every minute.
+      void integrationManager?.reconcile().catch(() => undefined);
+      integrationTimer = setInterval(() => void integrationManager?.refreshDue().catch(() => undefined), 60_000);
+      integrationTimer.unref();
       // COSGRAL W2: open the webhook receiver (same port as last time when free), then plan routines.
       void (async () => {
         const preferred = Number(routineStore.setting("receiverPort") ?? DEFAULT_WEBHOOK_PORT);
@@ -2011,6 +2038,7 @@ async function prepareForShutdown(): Promise<void> {
   workflowManager?.stop();
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
+  if (integrationTimer) clearInterval(integrationTimer);
   await (mcpManager?.stop() ?? Promise.resolve());
   // COSGRAL W2: no routine runs and no webhook receiver after exit.
   routineManager?.stop();

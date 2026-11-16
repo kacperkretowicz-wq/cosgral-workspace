@@ -45,6 +45,7 @@ beforeAll(async () => {
   const { registerSpacesIpc } = await import("./spaces-ipc");
   const { registerBudgetsIpc } = await import("./budgets-ipc");
   const { registerBrowserProfilesIpc } = await import("./browser-profiles-ipc");
+  const { registerIntegrationsIpc } = await import("./integrations-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -63,6 +64,7 @@ beforeAll(async () => {
   registerWindowsIpc(() => null);
   registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
   registerBudgetsIpc(() => null);
+  registerIntegrationsIpc(() => null);
   registerBrowserProfilesIpc({ store: () => null, clearPartition: async () => undefined, openTabs: () => 0 });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
@@ -119,6 +121,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("budgets:").length).toBe(4);
     // COSGRAL W8-KK3: the browser profiles.
     expect(channelsOf("browser-profiles:").length).toBe(5);
+    // COSGRAL W10-KK1: the account integrations.
+    expect(channelsOf("integrations:").length).toBe(7);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -142,6 +146,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "isolation:",
         "budgets:",
         "browser-profiles:",
+        "integrations:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -210,6 +215,13 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       (await call("browser-profiles:set-domains", "local", { botId: "chief", allow: ["no way"], block: [] })).threw,
     ).toMatch(/not a site name/);
     expect((await call("browser-profiles:list", "local", null)).threw).toMatch(/still starting/);
+    // W10-KK1: a bad integration request is refused by the parser before the program is asked.
+    expect((await call("integrations:connect", "local", { service: "slack" })).threw).toMatch(/one of/);
+    expect((await call("integrations:disconnect", "local", { service: "github" })).threw).toMatch(/true or false/);
+    expect((await call("integrations:configure", "local", { service: "github", clientId: "two words" })).threw).toMatch(
+      /single word/,
+    );
+    expect((await call("integrations:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.
