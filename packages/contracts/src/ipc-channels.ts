@@ -186,6 +186,12 @@ export const IPC_CHANNELS = {
   endpointsDetectLocal: "endpoints:detect-local",
   // COSGRAL W6-BE2: context of a conversation.
   // COSGRAL W6-KK3: separate conversation windows.
+  // COSGRAL W8-KK3: browser profiles per agent.
+  browserProfilesList: "browser-profiles:list",
+  browserProfilesCreate: "browser-profiles:create",
+  browserProfilesSetDomains: "browser-profiles:set-domains",
+  browserProfilesClear: "browser-profiles:clear",
+  browserProfilesDescribe: "browser-profiles:describe",
   // COSGRAL W8-KK2: budgets.
   budgetsList: "budgets:list",
   budgetsSet: "budgets:set",

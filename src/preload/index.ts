@@ -83,6 +83,7 @@ import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } fro
 import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
+import { createBrowserProfilesApi } from "./browser-profiles-api";
 import { createBudgetsApi } from "./budgets-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createContextApi } from "./context-api";
@@ -822,6 +823,7 @@ const openbotApi: OpenBotDesktopApi = {
   windows: createWindowsApi(invokeAgent),
   spaces: createSpacesApi(invokeAgent),
   budgets: createBudgetsApi(invokeAgent),
+  browserProfiles: createBrowserProfilesApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

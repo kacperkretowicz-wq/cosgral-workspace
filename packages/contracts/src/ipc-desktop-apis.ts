@@ -37,6 +37,7 @@ import type { AppDataDesktopApi } from "./ipc-app-data";
 import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
+import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type { ContextDesktopApi } from "./ipc-context";
@@ -691,6 +692,8 @@ export interface OpenBotDesktopApi {
   spaces?: SpacesDesktopApi;
   /** COSGRAL W8-KK2: budgets and the cost counter (tokens, dollars only from reported prices). Optional until every mock implements it. */
   budgets?: BudgetsDesktopApi;
+  /** COSGRAL W8-KK3: browser profiles per agent (own cookies and storage, domain lists, clear). Optional until every mock implements it. */
+  browserProfiles?: BrowserProfilesDesktopApi;
 }
 
 /**
