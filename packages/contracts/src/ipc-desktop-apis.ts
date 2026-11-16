@@ -78,6 +78,7 @@ import type {
   SetIslandEnabledInput,
   ShowMainWindowInput,
 } from "./ipc-dock";
+import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
 import type {
   LibraryFileIdInput,
@@ -643,6 +644,8 @@ export interface OpenBotDesktopApi {
   subscriptions?: SubscriptionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
   apiKeys?: ApiKeysDesktopApi;
+  /** COSGRAL W5-K2: own model endpoints (OpenAI-compatible, Ollama, LM Studio). Optional until every mock implements it. */
+  endpoints?: EndpointsDesktopApi;
 }
 
 /**

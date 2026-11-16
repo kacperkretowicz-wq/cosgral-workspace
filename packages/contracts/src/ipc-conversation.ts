@@ -31,6 +31,7 @@ import {
   isIslandRequestRef,
   isIslandState,
 } from "./ipc-dock";
+import { type EndpointModelId, isEndpointModel, isModelEndpointList, type ModelEndpoint } from "./ipc-endpoints";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
@@ -84,7 +85,7 @@ export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked
 export type CapabilityState = "ready" | "setup-required" | "unavailable";
 
 /** COSGRAL W3: "acp" = any Agent Client Protocol agent over stdio (see ipc-providers.ts). */
-export type AgentProviderId = "codex" | "claude" | "acp";
+export type AgentProviderId = "codex" | "claude" | "acp" | "endpoint";
 export type AgentProviderState =
   | "not-started"
   | "checking"
@@ -170,7 +171,7 @@ export const AGENT_MODELS = [
 ] as const;
 /** COSGRAL W3: an ACP agent added by the person, as one model: "acp:<id>". */
 export type AcpModelId = `acp:${string}`;
-export type AgentModelId = (typeof AGENT_MODELS)[number] | AcpModelId;
+export type AgentModelId = (typeof AGENT_MODELS)[number] | AcpModelId | EndpointModelId;
 
 export const AGENT_REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type AgentReasoningEffort = (typeof AGENT_REASONING_EFFORTS)[number];
@@ -187,7 +188,7 @@ export const BOT_AVATAR_HUES = [0, 30, 55, 100, 150, 185, 215, 245, 280, 320] as
 export type BotAvatarHue = (typeof BOT_AVATAR_HUES)[number];
 
 export function isAgentModel(value: unknown): value is AgentModelId {
-  return isOneOf(AGENT_MODELS, value) || isAcpModel(value);
+  return isOneOf(AGENT_MODELS, value) || isAcpModel(value) || isEndpointModel(value);
 }
 
 /** COSGRAL W3: the model id of an ACP agent. */
@@ -637,6 +638,8 @@ export type AgentEvent =
   /** COSGRAL W5-BE1: a managed CLI changed (check, download progress, install, remove, settings). */
   | { type: "managed-cli-changed"; state: ManagedCliState }
   | ({ type: "accounts-changed" } & AccountsSnapshot)
+  /** COSGRAL W5-K2: the own model endpoints changed (saved, removed, models fetched); replace the list and reload the models. */
+  | { type: "endpoints-changed"; endpoints: ModelEndpoint[] }
   /** COSGRAL W5-K1: a turn runs on another account than the agent's previous turn (limit moved it, or it is back). */
   | ({ type: "account-switched" } & AccountSwitched)
   /** COSGRAL W5-K1: an account hit its usage limit during a turn (see AccountLimitOutcome). */
@@ -774,6 +777,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isApprovalRuleList(value.rules);
     case "managed-cli-changed":
       return isManagedCliState(value.state);
+    case "endpoints-changed":
+      return isModelEndpointList(value.endpoints);
     case "accounts-changed":
       return isAccountsSnapshot(value);
     case "account-switched":

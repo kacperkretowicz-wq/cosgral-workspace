@@ -4,13 +4,7 @@
 // to test the connection. Nothing about a key goes into the event log, so this store writes with plain SQL, not with
 // `dispatch`. Every read API carries only a mask (the last 4 characters) and a state.
 
-import {
-  API_KEY_PROVIDERS,
-  type ApiKeyEntry,
-  type ApiKeyProvider,
-  type ApiKeyStatus,
-  isApiKeyProvider,
-} from "@openbot/contracts/ipc";
+import { API_KEY_PROVIDERS, type ApiKeyEntry, type ApiKeyProvider, type ApiKeyStatus } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { ApiKeySource } from "./api-key-env";
 import type { OpenBotDatabase } from "./openbot-database";
@@ -50,7 +44,8 @@ export interface ApiKeyStoreOptions {
 }
 
 interface Row {
-  provider: ApiKeyProvider;
+  /** The provider ("codex", "claude") or a slot of another owner ("endpoint:<id>", W5-K2). */
+  provider: string;
   keyCipher: string;
   keyMask: string;
   status: ApiKeyStatus;
@@ -70,7 +65,7 @@ export class ApiKeyStore implements ApiKeySource {
   readonly #fetch: typeof fetch;
   readonly #now: () => Date;
   /** Counts saves per provider, so a check that finishes after a replacement does not mark the new key. */
-  readonly #versions = new Map<ApiKeyProvider, number>();
+  readonly #versions = new Map<string, number>();
 
   constructor(database: OpenBotDatabase, box: SecretBox, options: ApiKeyStoreOptions = {}) {
     this.#database = database;
@@ -86,6 +81,33 @@ export class ApiKeyStore implements ApiKeySource {
   }
 
   set(provider: ApiKeyProvider, key: string): ApiKeyEntry {
+    this.#save(provider, key);
+    return this.#entry(provider, this.#read(provider));
+  }
+
+  /**
+   * COSGRAL W5-K2: a key of another owner (a model endpoint) in a slot of its own, in the same encrypted table.
+   * Returns only the mask. The slot name is chosen by the program ("endpoint:<id>"), never by an input.
+   */
+  setSlot(slot: string, key: string): string {
+    return this.#save(slot, key);
+  }
+
+  removeSlot(slot: string): void {
+    this.#database.connection.prepare("DELETE FROM projection_provider_api_keys WHERE provider = ?").run(slot);
+    this.#bump(slot);
+  }
+
+  /** The key in clear text, only to send it to the host it belongs to; null when there is none or it cannot be read. */
+  slotKey(slot: string): string | null {
+    return this.#plain(slot);
+  }
+
+  slotMask(slot: string): string | null {
+    return this.#read(slot)?.keyMask ?? null;
+  }
+
+  #save(provider: string, key: string): string {
     const clean = key.trim();
     if (!this.#box.canEncrypt()) throw new Error(NO_ENCRYPTION);
     let cipher: string;
@@ -105,7 +127,7 @@ export class ApiKeyStore implements ApiKeySource {
       )
       .run(provider, cipher, maskApiKey(clean), at);
     this.#bump(provider);
-    return this.#entry(provider, this.#read(provider));
+    return maskApiKey(clean);
   }
 
   remove(provider: ApiKeyProvider): ApiKeyEntry {
@@ -163,15 +185,16 @@ export class ApiKeyStore implements ApiKeySource {
     return key ? { [ENV_NAMES[provider]]: key } : {};
   }
 
-  /** Every saved key in clear text. Only for finding it in a text to redact. */
+  /** Every saved key in clear text (also the slots of endpoints). Only for finding it in a text to redact. */
   values(): string[] {
-    return API_KEY_PROVIDERS.flatMap((provider) => {
-      const key = this.#plain(provider);
+    const rows = this.#database.connection.prepare("SELECT provider FROM projection_provider_api_keys").all();
+    return rows.flatMap((row) => {
+      const key = isDynamicRecord(row) && isString(row.provider) ? this.#plain(row.provider) : null;
       return key ? [key] : [];
     });
   }
 
-  #plain(provider: ApiKeyProvider): string | null {
+  #plain(provider: string): string | null {
     const row = this.#read(provider);
     if (!row) return null;
     try {
@@ -182,13 +205,13 @@ export class ApiKeyStore implements ApiKeySource {
     }
   }
 
-  #read(provider: ApiKeyProvider): Row | null {
+  #read(provider: string): Row | null {
     const raw = this.#database.connection
       .prepare(
         "SELECT provider, key_cipher, key_mask, status, message, checked_at, updated_at FROM projection_provider_api_keys WHERE provider = ?",
       )
       .get(provider);
-    if (!isDynamicRecord(raw) || !isApiKeyProvider(raw.provider)) return null;
+    if (!isDynamicRecord(raw) || !isString(raw.provider)) return null;
     if (!isString(raw.key_cipher) || !isString(raw.key_mask) || !isString(raw.updated_at)) return null;
     const status: ApiKeyStatus = raw.status === "ok" || raw.status === "rejected" ? raw.status : "unchecked";
     return {
@@ -215,7 +238,7 @@ export class ApiKeyStore implements ApiKeySource {
       : { provider, maskedKey: null, status: "unchecked", message: null, checkedAt: null, updatedAt: null };
   }
 
-  #bump(provider: ApiKeyProvider): void {
+  #bump(provider: string): void {
     this.#versions.set(provider, (this.#versions.get(provider) ?? 0) + 1);
   }
 
