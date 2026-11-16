@@ -157,6 +157,26 @@ To jest opis zachowania „co program ma robić” i tabela kryteriów odbioru. 
 | B02 | Zbiorczy skan sekretów po wszystkich funkcjach W5: 0 trafień sztucznych kluczy, kodów i e-maili w bazie, logach, zdarzeniach, rendererze i repo. | J + skan (przed odbiorem). | KK |
 | B03 | `bun run check`, `check:ui` i `sandbox:e2e` zielone po każdej partii W5; wpisy w parytecie i `COSGRAL-CHANGES.md` w tym samym scaleniu. | Polecenia (jedno ciężkie naraz). | Lider, KK |
 
+### Stan odbioru C01–C13 (W5-T2a, 16.11.2026, integracja `ad216fe12`)
+
+Odbiór w prawdziwym oknie, atrapa serwera plików na loopback, strona Dostawcy i karta zgody (krok w `scripts/sandbox-acceptance.ts`, 13/13 oraz O1 1/1). Raport: `docs/cosgral-raporty/kk-w5-t2a.md`. **9 jest, 4 częściowo, 0 brak.**
+
+| Nr | Stan | Do T2 / właściciela |
+|---|---|---|
+| C01 | jest | — |
+| C02 | częściowo | „agent rusza po instalacji bez restartu” na prawdziwym CLI (G01, G02); fazy „sprawdzanie” i „instalowanie” za krótkie do zobaczenia |
+| C03 | jest | — |
+| C04 | jest | — |
+| C05 | jest | — |
+| C06 | częściowo | tura trwająca podczas auto-aktualizacji na prawdziwym CLI |
+| C07 | jest | — |
+| C08 | jest | — |
+| C09 | częściowo | kolejność PATH i znane foldery w oknie; usterka: surowy komunikat IPC przy złej ścieżce |
+| C10 | jest | — |
+| C11 | jest | — |
+| C12 | jest | — |
+| C13 | częściowo | odmowa dla zdalnego serwera i telefonu w oknie |
+
 ### 2B. Wymaga prawdziwych kont, kluczy albo prawdziwego źródła
 
 Zasady wspólne: logowanie robi **tylko człowiek** w oknie programu, w piaskownicy albo na profilu testowym; agenci odczytują tylko stan (np. `loggedIn`, bez e-maila i bez plików logowania). Najwyżej 4–5 krótkich tur na konto („odpowiedz słowem OK”). Pobrania prawdziwych CLI tylko w piaskownicy lub na czystym koncie Windows, nigdy na zwykłym profilu właściciela.
