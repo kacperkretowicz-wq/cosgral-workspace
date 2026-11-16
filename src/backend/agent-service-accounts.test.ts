@@ -18,11 +18,13 @@ import type {
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AccountPoolPort } from "./account-router";
+import { AcpAgentClient } from "./acp-client";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
 import { MailboxStore } from "./mailbox-store";
 import type { AppServerNotification, RequestId, ResponseDecoder, RpcError } from "./protocol";
+import { ProviderRegistry } from "./provider-registry";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 
@@ -236,13 +238,19 @@ interface Fixture {
 }
 
 /** An AgentService on fake CLIs; `scripts` are the turn scripts per account id. */
-async function fixture(scripts: Record<string, Step[]> = {}, options: { attach?: boolean } = {}): Promise<Fixture> {
+async function fixture(
+  scripts: Record<string, Step[]> = {},
+  options: { attach?: boolean; backupModel?: boolean } = {},
+): Promise<Fixture> {
   const userData = join(root, "user-data");
   const store = new BotStore(userData, join(root, "home"), testDatabase(userData));
   const mailbox = new MailboxStore(userData, store.sharedRoot, testDatabase(userData));
   const pool = new FakePool();
   const clis = new Map<string, AccountCli>();
+  let registry: ProviderRegistry | null = null;
   service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider, _cli, env) => {
+    // The fallback model is an ACP stub program: the real client talks to it; every other provider is not part of this test.
+    if (provider === "acp") return new AcpAgentClient({ agents: () => registry?.listAcpAgents() ?? [] });
     if (provider !== "codex") throw new Error("No Claude CLI in this test.");
     const accountId = env?.CODEX_HOME?.replace("state/", "") ?? SYSTEM;
     const client = new AccountCli(provider, accountId, scripts[accountId] ?? []);
@@ -252,7 +260,23 @@ async function fixture(scripts: Record<string, Step[]> = {}, options: { attach?:
   if (options.attach !== false) service.useAccounts(pool);
   const events: AgentEvent[] = [];
   service.on("event", (event) => events.push(event));
+  const current = service;
+  if (options.backupModel) {
+    registry = new ProviderRegistry({ database: store.database, emit: (event) => current.relay(event), timers: false });
+    current.useProviders(registry);
+  }
   await service.initialize();
+  if (registry) {
+    // A model of another provider as the fallback: the ACP stub (a program, not a model).
+    registry.saveAcpAgent({
+      id: "backup",
+      name: "ACP backup",
+      command: process.execPath,
+      args: [join(__dirname, "testing", "acp-stub.mjs"), "backup"],
+    });
+    await store.getOrCreate("chief");
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:backup"] });
+  }
   return { service, pool, store, events, clis };
 }
 
@@ -383,6 +407,31 @@ describe.sequential("AgentService with provider accounts", {
     expect(await answers(s)).toEqual([]);
   });
 
+  it("tries every other account before the fallback model (account layer first, then the next model)", async () => {
+    const {
+      service: s,
+      clis,
+      events,
+    } = await fixture(
+      { [SYSTEM]: [{ limit: true }], [WORK]: [{ limit: true }], [HOME]: [{ limit: true }] },
+      { backupModel: true },
+    );
+    await s.sendMessage({ botId: "chief", text: "Anything" });
+    await waitFor(() => events.some((event) => event.type === "model-fallback"));
+    await waitFor(() => completed(events).includes("completed"));
+    const order = events.flatMap((event) =>
+      event.type === "account-limit-reached"
+        ? [`limit:${event.outcome}`]
+        : event.type === "model-fallback"
+          ? ["model"]
+          : [],
+    );
+    // Two accounts hand the turn over, the third has nobody to hand it to, and only then the model changes.
+    expect(order).toEqual(["limit:switched", "limit:switched", "limit:exhausted", "model"]);
+    expect([SYSTEM, WORK, HOME].map((id) => clis.get(id)?.calls("turn/start").length)).toEqual([1, 1, 1]);
+    expect(await lastAnswer(s)).toContain("ACP stub (not a model)");
+  });
+
   it("goes back to the first account after its limit has passed", async () => {
     const { service: s, pool, clis, events } = await fixture({ [SYSTEM]: [{ limit: true }] });
     await s.sendMessage({ botId: "chief", text: "First" });
@@ -484,6 +533,11 @@ async function answers(target: AgentService): Promise<string[]> {
   return conversation.messages
     .filter((message) => message.author === "assistant" && message.text.startsWith("ANSWER_FROM_"))
     .map((message) => message.text);
+}
+
+async function lastAnswer(target: AgentService): Promise<string> {
+  const conversation = await target.readConversation("chief");
+  return [...conversation.messages].reverse().find((message) => message.author === "assistant")?.text ?? "";
 }
 
 function firstInputText(params: unknown): string | null {

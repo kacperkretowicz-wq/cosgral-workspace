@@ -2519,6 +2519,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const decision = await router.onLimit({ botId, provider, turnId, resetsAtSeconds: failure.resetsAt });
     if (decision.action === "switch") {
       this.#turnFailures.delete(turnId);
+      this.#forgetTriedModel(botId, delivery.id);
       await this.#mailbox.restoreQueued(delivery.id, ["running"]);
       this.#emitQueue(botId);
       this.#scheduleDrain(botId);
@@ -2532,6 +2533,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return "none";
   }
 
+  /** Another account answers with the same model: the model counts as not tried yet (only another model is a fallback). */
+  #forgetTriedModel(botId: string, deliveryId: string): void {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (bot) this.#triedModels.get(deliveryId)?.delete(bot.activeModel ?? bot.model);
+  }
+
   /** The turn had changed something before the limit: the person decides whether the other account repeats the request. */
   async #askToContinueOnAccount(botId: string, deliveryId: string, fromLabel: string, toLabel: string): Promise<void> {
     try {
@@ -2540,6 +2547,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         preview: `${fromLabel} reached its usage limit after this turn had already changed something (a command, a file or a tool call). Continuing starts your request again on ${toLabel}, so some of those actions may be repeated. Cancel to stop here.`,
       });
       if (answer !== "send") return;
+      this.#forgetTriedModel(botId, deliveryId);
       await this.#mailbox.restoreQueued(deliveryId, ["failed"]);
       this.#emitQueue(botId);
       this.#scheduleDrain(botId);
