@@ -238,6 +238,27 @@ Trzy poziomy (nazwy robocze; copy UI po EN do W7 i18n): **working-folder** (tylk
 
 ---
 
+## 7. Decyzje lidera (Q1–Q12, 16.11.2026)
+
+Lider zaakceptował **wszystkie** rekomendacje T1 ze §4. Zapis wiążący dla implementacji W8:
+
+| Q | Decyzja |
+|---|---|
+| Q1 | Piaskownica procesów: **AppContainer + Job Object** na Windows. **Sandbox VM** tylko lab / odbiór właściciela, nie produkt domyślny. |
+| Q2 | Gdy poziom / izolacja nie pozwala na start narzędzi dyskowych: **odmowa startu** + karta w Needs you. **Nie** ciche przejście na `full`. |
+| Q3 | Foldery **wykluczone** obowiązują także w poziomie `full`. |
+| Q4 | Poziom `full` **nie** obejmuje Computer Use ani kamery (osobne zgody jak dziś). |
+| Q5 | Przestrzeń **klienta** ≠ serwer zespołu (team server). Osobny model danych / izolacja. |
+| Q6 | Budżety: licznik **tokenów** + opcjonalnie **$**, gdy dostawca podaje cenę. |
+| Q7 | Najpierw **polityka budżetu** (twardy stop / limity), potem listy modeli zapasowych z W5. |
+| Q8 | Bramka **G5** = test piaskownicy (ucieczka) **oraz** izolacja klientów. Vault konektory (1Password/Bitwarden) **tuż po** G5, nie w środku bramki. |
+| Q9 | Import agenta ze szablonu startuje w poziomie **working-folder**. |
+| Q10 | **Allowlist MCP per przestrzeń** (klient A nie widzi serwerów klienta B). |
+| Q11 | Paperclip: inspiracja na **funkcje** budżetu (licznik, stop, CSV), **nie** na wygląd tablicy. |
+| Q12 | Skrypt testu ucieczki: utrzymują **Backend BE2 + Tester**; właściciel uruchamia na maszynie z izolacją. |
+
+---
+
 ## Commity
 
-Zobacz SHA w wyniku kanału na `team/tester/w8-spec`.
+Zobacz SHA w wyniku kanału na `team/tester/w8-spec` (decyzje §7: `team/tester/w9-spec`).
