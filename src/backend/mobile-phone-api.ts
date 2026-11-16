@@ -526,6 +526,8 @@ function pendingId(request: PendingAgentRequest): string {
     case "browser-takeover":
     case "vault-request":
       return request.request.requestId;
+    case "plan":
+      return request.plan.requestId;
   }
 }
 
@@ -569,6 +571,8 @@ function needsYouDetail(request: PendingAgentRequest): MobileNeedsYouDetail {
       return { kind: "browser-takeover", item };
     case "vault-request":
       return { kind: "vault-request", item };
+    case "plan":
+      return { kind: "plan", item };
   }
 }
 

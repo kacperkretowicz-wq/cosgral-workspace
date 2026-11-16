@@ -95,6 +95,8 @@ import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
+import { createMockMessageActions } from "./mock-message-actions";
+import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockThreads } from "./mock-threads";
 import { createMockW2 } from "./mock-w2";
@@ -1280,6 +1282,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     apiKeys: createMockApiKeysApi(),
     // COSGRAL W6-BE2: conversation context (demo; `simulate` is for stories that build the mock themselves).
     context: createMockContext((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE3: the plan card and the actions on a message (demo; `propose`, `seed`, `setBusy` are for stories).
+    plans: createMockPlans((event) => emitAgentEvent(event)),
+    messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

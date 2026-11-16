@@ -589,6 +589,8 @@ function summaryItem(request: PendingAgentRequest): MobileNeedsYouItem {
         request.request.reason,
         request.request.createdAt,
       );
+    case "plan":
+      return item(request.plan.requestId, request.plan.botId, request.kind, request.plan.title, request.plan.createdAt);
   }
 }
 

@@ -7,6 +7,7 @@
 
 import type { BrowserTakeoverPhase, BrowserTakeoverRequest, DraftPreviewCard } from "./ipc-action-cards";
 import type { AgentApproval, AgentPromptQuestion, AgentProviderId } from "./ipc-conversation";
+import { type AgentPlan, isAgentPlan } from "./ipc-plan";
 import { isVaultRequest, type VaultRequest } from "./ipc-vault";
 import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
@@ -47,13 +48,20 @@ export interface PendingVaultRequest {
   request: VaultRequest;
 }
 
-/** Everything that waits for the user, oldest first. */
+/** COSGRAL W6-BE3: an open plan card (Approve / Reject): the plan while its phase is "proposed". */
+export interface PendingAgentPlan {
+  kind: "plan";
+  plan: AgentPlan;
+}
+
+/** Everything that waits for the user, oldest first. COSGRAL W6-BE3: also a plan (Approve / Reject). */
 export type PendingAgentRequest =
   | PendingAgentPrompt
   | PendingAgentApproval
   | PendingDraftPreview
   | PendingBrowserTakeover
-  | PendingVaultRequest;
+  | PendingVaultRequest
+  | PendingAgentPlan;
 
 export const PENDING_AGENT_REQUEST_KINDS = [
   "prompt",
@@ -61,6 +69,7 @@ export const PENDING_AGENT_REQUEST_KINDS = [
   "draft-preview",
   "browser-takeover",
   "vault-request",
+  "plan",
 ] as const;
 export type PendingAgentRequestKind = (typeof PENDING_AGENT_REQUEST_KINDS)[number];
 
@@ -197,6 +206,8 @@ export function isPendingAgentRequest(value: unknown): value is PendingAgentRequ
       );
     case "vault-request":
       return isVaultRequest(value.request);
+    case "plan":
+      return isAgentPlan(value.plan) && value.plan.phase === "proposed";
     default:
       return false;
   }

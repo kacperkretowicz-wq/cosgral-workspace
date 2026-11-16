@@ -54,6 +54,7 @@ const en = {
   kindDraft: "Draft",
   kindTakeover: "Browser",
   kindVault: "Vault",
+  kindPlan: "Plan",
   cardGone: "This card is no longer open.",
   answered: "Answer sent.",
   answerAll: "Answer every question first.",
@@ -142,6 +143,7 @@ const pl: Record<keyof typeof en, string> = {
   kindDraft: "Szkic",
   kindTakeover: "Przeglądarka",
   kindVault: "Vault",
+  kindPlan: "Plan",
   cardGone: "Ta karta jest już zamknięta.",
   answered: "Odpowiedź wysłana.",
   answerAll: "Najpierw odpowiedz na każde pytanie.",
@@ -234,7 +236,7 @@ type Detail =
   | { kind: "prompt"; questions: Array<{ id: string; header: string; question: string; options: string[] | null }> }
   | { kind: "approval"; approvalKind: string; command: string | null; reason: string | null }
   | { kind: "draft-preview"; variant: string; recipient: string | null; channel: string | null; preview: string }
-  | { kind: "browser-takeover" | "vault-request" };
+  | { kind: "browser-takeover" | "vault-request" | "plan" };
 
 type StreamEvent =
   | { type: "needs-you"; items: Need[] }
@@ -336,6 +338,7 @@ function isDetail(value: unknown): value is Detail {
       );
     case "browser-takeover":
     case "vault-request":
+    case "plan":
       return true;
     default:
       return false;
@@ -1294,6 +1297,7 @@ const KIND_GLYPH: Record<string, keyof typeof ICONS> = {
   "draft-preview": "mail",
   "browser-takeover": "globe",
   "vault-request": "lock",
+  plan: "shield",
 };
 
 function kindLabel(kind: string): string {
@@ -1306,6 +1310,8 @@ function kindLabel(kind: string): string {
       return t("kindDraft");
     case "browser-takeover":
       return t("kindTakeover");
+    case "plan":
+      return t("kindPlan");
     default:
       return t("kindVault");
   }

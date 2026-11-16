@@ -461,7 +461,7 @@ export type MobileNeedsYouDetail =
       channel: string | null;
       preview: string;
     })
-  | (MobileDetailBase & { kind: "browser-takeover" | "vault-request" });
+  | (MobileDetailBase & { kind: "browser-takeover" | "vault-request" | "plan" });
 
 /** POST mobilePhonePath.answer(id). Questions: an option or your own words (up to 8 answers each). */
 export type MobileAnswerRequest =
@@ -605,6 +605,7 @@ export function isMobileNeedsYouDetail(value: unknown): value is MobileNeedsYouD
       );
     case "browser-takeover":
     case "vault-request":
+    case "plan":
       return true;
     default:
       return false;
