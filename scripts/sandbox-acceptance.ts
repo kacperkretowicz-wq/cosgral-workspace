@@ -13,10 +13,10 @@ import assert from "node:assert/strict";
 import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import type { IncomingHttpHeaders } from "node:http";
 import { Agent, request } from "node:https";
-import { dirname, join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
-import { type DynamicRecord, isDynamicRecord, isNumber } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -44,6 +44,59 @@ function asRecord(value: unknown): DynamicRecord {
 
 function list(value: unknown): DynamicRecord[] {
   return Array.isArray(value) ? value.map(asRecord) : [];
+}
+
+/**
+ * What a stand-in tool call (TOOL <namespace> <tool> <json>) reported. The agent message reads
+ * `Stub: tool {"success":…,"text":"<JSON of the tool result>"}`; this returns the inner result.
+ */
+function toolResult(answer: string): DynamicRecord {
+  const start = answer.indexOf("{");
+  if (start < 0) return { text: answer };
+  const outer = asRecord(JSON.parse(answer.slice(start)));
+  const text = isString(outer.text) ? outer.text : "";
+  try {
+    return asRecord(JSON.parse(text));
+  } catch {
+    return { text };
+  }
+}
+
+/** The page elements of a browser snapshot, wherever the tool result keeps them. */
+function snapshotOf(result: DynamicRecord): { revision: number; elements: DynamicRecord[] } {
+  const nested = asRecord(result.snapshot);
+  const holder = Array.isArray(result.elements) ? result : nested;
+  return { revision: isNumber(holder.revision) ? holder.revision : -1, elements: list(holder.elements) };
+}
+
+/** True when some file under `folder` contains `needle` (checked as bytes, so databases and logs count too). */
+async function anyFileContains(folder: string, needle: string): Promise<string | null> {
+  const { readdir, readFile, stat } = await import("node:fs/promises");
+  const bytes = Buffer.from(needle, "utf8");
+  const queue = [folder];
+  while (queue.length > 0) {
+    const current = queue.pop() ?? "";
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(path);
+        continue;
+      }
+      try {
+        if ((await stat(path)).size > 64 * 1024 * 1024) continue;
+        if ((await readFile(path)).includes(bytes)) return path;
+      } catch {
+        // A file the browser holds open is skipped.
+      }
+    }
+  }
+  return null;
 }
 
 function sandboxRoot(): string {
@@ -136,10 +189,13 @@ async function row(id: string, name: string, work: () => Promise<string | undefi
 class Driver {
   readonly page: Page;
   readonly evidence: string;
+  /** The Electron handle: answers the native file pickers and records shell calls in the main process. */
+  readonly app: ElectronApplication | undefined;
 
-  constructor(page: Page, evidence: string) {
+  constructor(page: Page, evidence: string, app?: ElectronApplication) {
     this.page = page;
     this.evidence = evidence;
+    this.app = app;
   }
 
   async ev(expression: string): Promise<unknown> {
@@ -682,6 +738,111 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     return "Meeting notes installed for Assistant";
   });
 
+  await row(
+    "24b",
+    "skills: an agent creates and revises a skill; versions, update, a changed copy is repaired, rollback",
+    async () => {
+      const text = (word: string) =>
+        `---\nname: acceptance-skill\ndescription: Greets in the acceptance run (${word})\nexample-prompt: Greet me\n---\n\n# Acceptance skill ${word}\n\nAnswer with the words acceptance skill active.\n`;
+      const botId = await d.botId("Assistant");
+      const until = async (what: string, check: () => Promise<boolean>, timeoutMs = 45_000) => {
+        const end = Date.now() + timeoutMs;
+        while (Date.now() < end) {
+          if (await check()) return;
+          await page.waitForTimeout(500);
+        }
+        throw new Error(`Timed out: ${what}`);
+      };
+      const mine = async () =>
+        list(await d.ev("window.openbot.skills.list()")).find((skill) => skill.name === "acceptance-skill");
+      const install = async () =>
+        list(await d.ev(`window.openbot.skills.listInstalls({ botId: ${JSON.stringify(botId)} })`)).find(
+          (item) => item.name === "acceptance-skill",
+        );
+      // 1. The agent creates a skill from SKILL.md text.
+      await d.send("Assistant", `TOOL cosgral_skills create_skill ${JSON.stringify({ skillMd: text("one") })}`);
+      await until("the skill is in the library", async () => (await mine())?.version === 1);
+      const created = await mine();
+      assert(created?.createdByBotId === botId, `created by the agent: ${JSON.stringify(created)}`);
+      await d.openPage("Library");
+      await page.waitForTimeout(1_000);
+      assert(/acceptance-skill/.test(await page.locator("body").innerText()), "the Library page shows the new skill");
+      // 2. The agent installs it for itself, then revises it: version 2, its copy stays on version 1.
+      await d.send(
+        "Assistant",
+        `TOOL cosgral_skills install_local_skill ${JSON.stringify({ name: "acceptance-skill" })}`,
+      );
+      await until("installed for the agent", async () => (await install())?.installedVersion === 1);
+      await d.send(
+        "Assistant",
+        `TOOL cosgral_skills revise_skill ${JSON.stringify({ name: "acceptance-skill", baseVersion: 1, skillMd: text("two") })}`,
+      );
+      await until("version 2", async () => (await mine())?.version === 2);
+      const behind = await install();
+      assert(
+        behind?.installedVersion === 1 && behind.latestVersion === 2 && behind.updateAvailable === true,
+        `update available: ${JSON.stringify(behind)}`,
+      );
+      // 3. A changed copy is never replaced silently; the person can repair it.
+      const skillId = String(created.id);
+      const { appendFile } = await import("node:fs/promises");
+      await appendFile(join(String(behind.path), "SKILL.md"), "\nLocal edit.\n");
+      const changed = await install();
+      assert(changed?.modifiedLocally === true, `change detected: ${JSON.stringify(changed)}`);
+      const refused = String(
+        await d.ev(
+          `window.openbot.skills.update({ skillId: ${JSON.stringify(skillId)}, botId: ${JSON.stringify(botId)} }).then(() => "updated", (e) => "refused: " + e.message)`,
+        ),
+      );
+      assert(refused.startsWith("refused"), `update without overwrite: ${refused}`);
+      await d.ev(
+        `window.openbot.skills.update({ skillId: ${JSON.stringify(skillId)}, botId: ${JSON.stringify(botId)}, overwriteLocalChanges: true })`,
+      );
+      const repaired = await install();
+      assert(
+        repaired?.installedVersion === 2 && repaired.modifiedLocally === false,
+        `repaired: ${JSON.stringify(repaired)}`,
+      );
+      // 4. Versions and rollback: the library keeps both, restoring version 1 makes version 3.
+      const versions = list(await d.ev(`window.openbot.skills.listVersions({ skillId: ${JSON.stringify(skillId)} })`));
+      assert(versions.length === 2, `two versions: ${JSON.stringify(versions)}`);
+      await d.ev(`window.openbot.skills.restoreVersion({ skillId: ${JSON.stringify(skillId)}, version: 1 })`);
+      const latest = asRecord(await d.ev(`window.openbot.skills.read({ skillId: ${JSON.stringify(skillId)} })`));
+      assert(
+        latest.version === 3 && String(latest.skillMd).includes("Acceptance skill one"),
+        "rollback is version 3 with the content of version 1",
+      );
+      return "agent created acceptance-skill (v1, createdByBotId = the agent), installed it, revised it (v2, update available), a locally changed copy was detected, refused without overwrite and repaired with it, 2 versions, rollback made v3";
+    },
+  );
+
+  await row(
+    "24c",
+    "skills: a second agent adds the skill the first agent created; the first agent's copy is not changed",
+    async () => {
+      const first = await d.botId("Assistant");
+      const second = await d.botId("Res");
+      const installOf = async (botId: string) =>
+        list(await d.ev(`window.openbot.skills.listInstalls({ botId: ${JSON.stringify(botId)} })`)).find(
+          (item) => item.name === "acceptance-skill",
+        );
+      await d.send("Res", `TOOL cosgral_skills install_local_skill ${JSON.stringify({ name: "acceptance-skill" })}`);
+      const end = Date.now() + 45_000;
+      while (Date.now() < end && !(await installOf(second))) await page.waitForTimeout(500);
+      const added = await installOf(second);
+      const kept = await installOf(first);
+      assert(
+        added && added.installedVersion === added.latestVersion,
+        `second agent has the latest: ${JSON.stringify(added)}`,
+      );
+      assert(
+        kept && kept.installedVersion === 2,
+        `the first agent's copy stays on its version: ${JSON.stringify(kept)}`,
+      );
+      return `Res installed acceptance-skill v${added.installedVersion}; Assistant's own copy stays on v${kept.installedVersion}`;
+    },
+  );
+
   await row("29", "tables: one agent creates a shared table, another reads it, the Library shows it", async () => {
     await d.ask(
       "Assistant",
@@ -725,6 +886,84 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     assert(/accept-report\.md/.test(await page.getByRole("region", { name: "File library" }).innerText()), "listed");
     return "accept-report.md listed with origin agent";
   });
+
+  await row(
+    "30b",
+    "files: Add files from disk through the picker, then open, download and reveal a file from the Library",
+    async () => {
+      const app = d.app;
+      assert(app, "the Electron handle is needed to answer the native pickers");
+      const inbox = join(root, "files-in");
+      await mkdir(inbox, { recursive: true });
+      const source = join(inbox, "accept-added.txt");
+      const copy = join(inbox, "downloaded-copy.txt");
+      const body = "Added from disk by the acceptance run.\n";
+      await writeFile(source, body);
+      // The native file pickers and the shell cannot be driven from outside: answer them in the main process and
+      // record what the program asks the shell to do. The program's own file handling runs unchanged.
+      await app.evaluate(
+        ({ app: electronApp, dialog, shell }, paths) => {
+          const calls: Array<{ call: string; target: string }> = [];
+          const original = electronApp.getPath.bind(electronApp);
+          // The sandbox profile has no Downloads folder the system can resolve: give the program one.
+          Object.assign(electronApp, {
+            getPath: (name: Parameters<typeof original>[0]) => (name === "downloads" ? paths.inbox : original(name)),
+          });
+          Object.assign(dialog, {
+            showOpenDialog: async () => ({ canceled: false, filePaths: [paths.source] }),
+            showSaveDialog: async () => ({ canceled: false, filePath: paths.copy }),
+          });
+          Object.assign(shell, {
+            acceptCalls: calls,
+            openPath: async (target: string) => {
+              calls.push({ call: "open", target });
+              return "";
+            },
+            showItemInFolder: (target: string) => {
+              calls.push({ call: "reveal", target });
+            },
+          });
+        },
+        { source, copy, inbox },
+      );
+      const shellCalls = async (kind: string): Promise<string[]> => {
+        const calls = list(await app.evaluate(({ shell }) => Object.fromEntries(Object.entries(shell)).acceptCalls));
+        return calls.filter((entry) => entry.call === kind).map((entry) => String(entry.target));
+      };
+      await d.openPage("Library");
+      const panel = page.getByRole("region", { name: "File library" });
+      await panel.getByRole("button", { name: "Add files" }).click();
+      const card = panel.locator("article.w2-item", { hasText: "accept-added.txt" });
+      await card.first().waitFor({ timeout: 20_000 });
+      const listed = await card.first().innerText();
+      assert(new RegExp(`${Buffer.byteLength(body)} bytes`).test(listed), `size shown: ${listed}`);
+      await card.first().getByRole("button", { name: "Open", exact: true }).click();
+      await page.waitForTimeout(1_000);
+      const opened = await shellCalls("open");
+      assert(opened.length === 1, `Open asked the shell once: ${opened.length}`);
+      const { readFile } = await import("node:fs/promises");
+      assert(opened[0] !== source, "Open uses the library's own copy, not the original file");
+      assert((await readFile(String(opened[0]), "utf8")) === body, "the library copy has the same content");
+      const hasDownloadButton =
+        (await card
+          .first()
+          .getByRole("button", { name: /Download|Save/ })
+          .count()) > 0;
+      const fileId = String(
+        await d.ev(
+          `window.openbot.library.list({}).then((files) => (files.find((f) => f.name === "accept-added.txt") || {}).id)`,
+        ),
+      );
+      assert(fileId && fileId !== "undefined", "the file is in the library API");
+      await d.ev(`window.openbot.library.open({ fileId: ${JSON.stringify(fileId)}, action: "download" })`);
+      assert((await readFile(copy, "utf8")) === body, "download wrote an identical copy to the chosen path");
+      await d.ev(`window.openbot.library.open({ fileId: ${JSON.stringify(fileId)}, action: "reveal" })`);
+      const revealed = await shellCalls("reveal");
+      assert(revealed.length === 1, `Reveal asked the shell once: ${revealed.length}`);
+      await d.dump("library-row-30b");
+      return `Add files > listed (${Buffer.byteLength(body)} bytes); Open > shell got the library copy (same content); download (API) > identical copy; reveal (API) > shell asked; Download or Reveal button in the panel: ${hasDownloadButton ? "yes" : "no (only Open, Attach, Delete)"}`;
+    },
+  );
 
   await row("26", "Vault: save a login; the secret never reaches the list, the API or the agent", async () => {
     await d.openPage("Library");
@@ -864,6 +1103,116 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     }
   });
 
+  await row(
+    "26b",
+    "Vault: the agent fills a login form on a local page; the password stays out of the UI, the chat and the disk",
+    async () => {
+      const username = "form-user";
+      const password = "F0rm-Secret-789";
+      const { createServer } = await import("node:http");
+      const seen = { posts: 0, user: "", password: "" };
+      const site = await new Promise<import("node:http").Server>((done) => {
+        const server = createServer((request, response) => {
+          response.setHeader("content-type", "text/html");
+          if (request.method === "POST") {
+            let data = "";
+            request.on("data", (chunk) => {
+              data += String(chunk);
+            });
+            request.on("end", () => {
+              const form = new URLSearchParams(data);
+              seen.posts += 1;
+              seen.user = form.get("u") ?? "";
+              seen.password = form.get("p") ?? "";
+              response.end("<html><head><title>Signed in page</title></head><body>Signed in.</body></html>");
+            });
+            return;
+          }
+          response.end(
+            '<html><head><title>Vault form page</title></head><body><form method="post" action="/login">' +
+              '<label>Username <input name="u" type="text" autocomplete="off"></label>' +
+              '<label>Password <input name="p" type="password" autocomplete="off"></label>' +
+              '<button type="submit">Sign in</button></form></body></html>',
+          );
+        });
+        server.listen(0, "127.0.0.1", () => done(server));
+      });
+      try {
+        const address = site.address();
+        const port = isDynamicRecord(address) && isNumber(address.port) ? address.port : 0;
+        const origin = `http://127.0.0.1:${port}`;
+        // 1. The person saves the login for this local site (loopback, no real service).
+        await d.openPage("Library");
+        const vault = page.getByRole("region", { name: "Vault" });
+        await vault.getByRole("button", { name: "Add item" }).click();
+        const form = page.getByRole("region", { name: "Vault item form" });
+        await form.getByRole("textbox", { name: "Label" }).fill("Local form login");
+        await form.getByRole("textbox", { name: "Site URL" }).fill(origin);
+        await form.getByRole("textbox", { name: "Username" }).fill(username);
+        await form.getByRole("textbox", { name: "Password" }).fill(password);
+        await form.getByRole("button", { name: "Save item" }).click();
+        await page.waitForTimeout(2_000);
+        // 2. The agent opens the page and reads the element references.
+        const opened = await d.ask(
+          "Assistant",
+          `TOOL openbot_browser open {"url":"${origin}/"}`,
+          "Vault form page",
+          40_000,
+        );
+        const tab = /\\"(?:tabId|id)\\":\\"([0-9a-f-]{36})\\"/.exec(opened)?.[1];
+        assert(tab, `tab id in: ${opened.slice(0, 200)}`);
+        let snapshot = snapshotOf(toolResult(opened));
+        if (snapshot.elements.length === 0) {
+          const read = await d.ask("Assistant", `TOOL openbot_browser snapshot {"tabId":"${tab}"}`, "Sign in", 40_000);
+          snapshot = snapshotOf(toolResult(read));
+        }
+        const userRef = String(
+          snapshot.elements.find((e) => e.tag === "input" && e.inputType !== "password")?.ref ?? "",
+        );
+        const passwordRef = String(snapshot.elements.find((e) => e.inputType === "password")?.ref ?? "");
+        const buttonRef = String(snapshot.elements.find((e) => e.tag === "button")?.ref ?? "");
+        assert(
+          userRef && passwordRef && buttonRef && snapshot.revision >= 0,
+          `refs: ${JSON.stringify(snapshot).slice(0, 300)}`,
+        );
+        // 3. The agent asks the Vault to fill the form: the values go straight into the page.
+        const filled = await d.ask(
+          "Assistant",
+          `TOOL cosgral_vault fill_login ${JSON.stringify({ tabId: tab, revision: snapshot.revision, usernameRef: userRef, passwordRef })}`,
+          'filled\\"',
+          40_000,
+        );
+        assert(!filled.includes(password), "the fill result does not contain the password");
+        // 4. The agent submits the form; the local site received the Vault values.
+        await d.ask(
+          "Assistant",
+          `TOOL openbot_browser act ${JSON.stringify({ tabId: tab, revision: snapshot.revision, action: { type: "click", ref: buttonRef } })}`,
+          "Signed in page",
+          40_000,
+        );
+        assert(seen.posts === 1, `the form was submitted once (${seen.posts})`);
+        assert(seen.user === username && seen.password === password, "the site received the username and the password");
+        // 5. The password is nowhere the person or the agent can read it.
+        const botId = await d.botId("Assistant");
+        const conversation = JSON.stringify(
+          await d.ev(`window.openbot.agent.readConversation(${JSON.stringify(botId)})`),
+        );
+        assert(!conversation.includes(password), "not in the agent's conversation");
+        assert(!JSON.stringify(await d.ev("window.openbot.vault.list()")).includes(password), "not in the Vault list");
+        assert(!(await page.locator("body").innerText()).includes(password), "not in the window");
+        const found = await anyFileContains(join(root, "home"), password);
+        assert(
+          found === null,
+          `the password is not in any file of the sandbox profile (found in ${found ? basename(found) : ""})`,
+        );
+        await d.dump("vault-form-row-26b");
+        return "Vault login saved for a loopback page; fill_login typed it, the form was submitted and the site got both values; not in the fill result, the conversation, the Vault list, the window or any file of the profile";
+      } finally {
+        site.close();
+      }
+    },
+  );
+
   await row("35", "providers: usage list, add an ACP agent, save a fallback order", async () => {
     await d.openPage("Providers");
     const usage = await page.getByRole("region", { name: "Provider usage" }).innerText();
@@ -889,6 +1238,93 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     assert(saved.includes("gpt-5.6-sol"), saved);
     return `fallback saved ${saved}; switching to a second provider is not checkable here`;
   });
+
+  await row(
+    "35b",
+    "providers: a full Codex window moves an agent to a fallback model of ANOTHER provider (ACP) and back",
+    async () => {
+      const stub = join(repo, "src", "backend", "testing", "acp-stub.mjs");
+      const until = async (what: string, check: () => Promise<boolean>, timeoutMs = 45_000) => {
+        const end = Date.now() + timeoutMs;
+        while (Date.now() < end) {
+          if (await check()) return;
+          await page.waitForTimeout(500);
+        }
+        throw new Error(`Timed out: ${what}`);
+      };
+      const codexState = async () =>
+        String(
+          list(await d.ev("window.openbot.providers.listUsage()")).find((usage) => usage.provider === "codex")?.state,
+        );
+      const activeModel = async () =>
+        String(
+          list(await d.ev("window.openbot.agent.listBots()")).find((bot) => bot.name === "Assistant")?.activeModel ??
+            null,
+        );
+      // The ACP agent of row 35 had a placeholder command: replace it by the ACP stand-in of the repository.
+      await d.ev(
+        `window.openbot.providers.saveAcpAgent(${JSON.stringify({ id: "demo-acp", name: "Demo ACP", command: process.execPath, args: [stub, "demo-acp"] })})`,
+      );
+      const assistant = await d.botId("Assistant");
+      await d.ev(
+        `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: ["acp:demo-acp"] })`,
+      );
+      try {
+        // The Providers page is open while the switch happens: it lists the model-fallback events.
+        await d.openPage("Providers");
+        const diagnose = async () =>
+          JSON.stringify({
+            activeModel: await activeModel(),
+            row: (await d.rowLabel("Assistant")).slice(0, 220),
+            recent: list(
+              await d.ev(
+                `window.openbot.agent.readConversation(${JSON.stringify(assistant)}).then((c) => c.messages.slice(-4))`,
+              ),
+            ).map((m) => `${m.author}:${String(m.text).slice(0, 70)}`),
+            usage: list(await d.ev("window.openbot.providers.listUsage()")).map(
+              (u) => `${u.provider}:${u.model ?? ""}:${u.state}`,
+            ),
+            acp: list(await d.ev("window.openbot.providers.listAcpAgents()")).map(
+              (a) => `${a.id}:${a.command ? "cmd" : "none"}`,
+            ),
+          });
+        await d.send("Assistant", "LIMITON");
+        await until("Codex is limited", async () => (await codexState()) === "limited").catch(async (error) => {
+          throw new Error(`${error instanceof Error ? error.message : String(error)} | ${await diagnose()}`);
+        });
+        await d.send("Assistant", "hello on the other provider");
+        const reply = await d.answer("Assistant", "ACP stub", 60_000).catch(async (error) => {
+          throw new Error(`${error instanceof Error ? error.message : String(error)} | ${await diagnose()}`);
+        });
+        assert(/received/.test(reply), `the ACP agent answered: ${reply.slice(0, 120)}`);
+        assert((await activeModel()) === "acp:demo-acp", `active model: ${await activeModel()}`);
+        const notice = page.getByText(/Assistant switched from .+ to acp:demo-acp/).first();
+        await notice.waitFor({ timeout: 15_000 });
+        const noticeText = await notice.innerText();
+        await d.dump("providers-fallback-row-35b");
+        // Back: another Codex agent clears the window (it has no fallback, so it stays on Codex); the next message of
+        // the first agent returns to its own model.
+        await d.send("Res", "LIMITOFF");
+        await until("Codex is available again", async () => (await codexState()) === "ok");
+        await d.send("Assistant", "hello again");
+        await d.answer("Assistant", "Stub: received", 60_000);
+        await until("back on its own model", async () => (await activeModel()) === "null");
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: [] })`,
+        );
+        return `Codex limited > Assistant answered from the ACP agent (activeModel acp:demo-acp); notice in Providers: "${noticeText.slice(0, 90)}"; limit cleared > back on its own model`;
+      } finally {
+        // Leave nothing behind: the full window is cleared by another Codex agent, the fallback list is emptied.
+        await d.send("Res", "LIMITOFF").catch(() => undefined);
+        await until("Codex is available again", async () => (await codexState()) === "ok", 20_000).catch(
+          () => undefined,
+        );
+        await d
+          .ev(`window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(assistant)}, fallbackModels: [] })`)
+          .catch(() => undefined);
+      }
+    },
+  );
 
   await row(
     "16",
@@ -1148,6 +1584,24 @@ async function secondRun(d: Driver): Promise<void> {
       return "memory, skill, MCP tool and model persisted";
     },
   );
+  await row(
+    "R2b",
+    "restart: the added file, the created skill (rolled back to v3) and the form login persist",
+    async () => {
+      assert(JSON.stringify(await d.ev("window.openbot.library.list({})")).includes("accept-added.txt"), "added file");
+      const skills = list(await d.ev("window.openbot.skills.list()"));
+      const created = skills.find((skill) => skill.name === "acceptance-skill");
+      assert(created && created.version === 3, `skill: ${JSON.stringify(created)}`);
+      assert(JSON.stringify(await d.ev("window.openbot.vault.list()")).includes("Local form login"), "form login");
+      return "accept-added.txt, acceptance-skill v3 and Local form login are present";
+    },
+  );
+  await row("R3b", "restart: the skill the agent created is in the next conversation's instructions", async () => {
+    const skill = await d.ask("Assistant", "INSTRHAS acceptance-skill", "acceptance-skill", 60_000);
+    assert(/have/.test(skill), skill);
+    return "the installed copy of acceptance-skill is in the instructions";
+  });
+
   await row("R4", "restart: the browser tabs are still there", async () => {
     const tabs = await d.ask("Assistant", "TOOL openbot_browser list_tabs {}", "tabs", 40_000);
     assert(/127\.0\.0\.1:\d+/.test(tabs), tabs.slice(0, 120));
@@ -1176,8 +1630,8 @@ async function main(): Promise<void> {
   const fixture = await installFixture(root);
   const first = await launch(root, fixture);
   try {
-    await firstRun(new Driver(first.page, evidence), root);
-    await new Driver(first.page, evidence).dump("final-first-run");
+    await firstRun(new Driver(first.page, evidence, first.app), root);
+    await new Driver(first.page, evidence, first.app).dump("final-first-run");
   } finally {
     await first.app.close().catch(() => undefined);
   }
