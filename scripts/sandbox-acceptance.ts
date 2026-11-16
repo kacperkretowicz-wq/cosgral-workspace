@@ -177,7 +177,11 @@ async function row(id: string, name: string, work: () => Promise<string | undefi
     results.push({ row: id, name, ok: true, detail, ms: Date.now() - started });
     console.log(`ok   [${id}] ${name}${detail ? `: ${detail.slice(0, 110)}` : ""}`);
   } catch (error) {
-    const detail = (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "";
+    const detail = (error instanceof Error ? error.message : String(error))
+      .split("\n")
+      .slice(0, 6)
+      .join(" | ")
+      .slice(0, 900);
     results.push({ row: id, name, ok: false, detail, ms: Date.now() - started });
     await dumpOnFailure?.(`fail-${id}`).catch(() => undefined);
     console.log(`FAIL [${id}] ${name}: ${detail.slice(0, 160)}`);
@@ -1760,8 +1764,9 @@ async function openCliCard(d: Driver): Promise<void> {
 }
 
 /** The card of the first download shows in the conversation of the first agent; the person answers it there. */
-async function answerCliCard(d: Driver, button: "Send" | "Keep draft"): Promise<string> {
+async function answerCliCard(d: Driver, button: "Confirm" | "Cancel"): Promise<string> {
   let title = "";
+  let botId = "";
   await waitUntil(
     d.page,
     "the download card is pending",
@@ -1771,11 +1776,18 @@ async function answerCliCard(d: Driver, button: "Send" | "Keep draft"): Promise<
         (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith("Download Codex"),
       );
       title = String(asRecord(item?.card).title ?? "");
+      botId = String(asRecord(item?.card).botId ?? "");
       return item !== undefined;
     },
     20_000,
   );
-  await d.openAgent("Assistant");
+  // The program puts the card on the first agent of the list, not necessarily the one the person is talking to.
+  const owner = String(
+    await d.ev(
+      `window.openbot.agent.listBots().then((bots) => (bots.find((b) => b.id === ${JSON.stringify(botId)}) || {}).name)`,
+    ),
+  );
+  await d.openAgent(owner);
   const decision = d.page.getByRole("region", { name: "Decision" });
   await decision.getByRole("button", { name: button, exact: true }).click({ timeout: 20_000 });
   return title;
@@ -1808,8 +1820,8 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       await waitUntil(page, "phase awaiting-approval", async () => (await codexCli(d)).phase === "awaiting-approval");
       assert(/Czeka na zgodę/.test(await cliCard(page).innerText()), "the page says it waits for the yes");
       assert(cli.fileRequests === 0, `nothing downloaded while the card waits (${cli.fileRequests} file requests)`);
-      const title = await answerCliCard(d, "Keep draft");
-      assert(/^Download Codex 1\.0\.0\?$/.test(title), `card title: ${title}`);
+      const title = await answerCliCard(d, "Cancel");
+      assert(/^Download Codex CLI 1.0.0\?$/.test(title), `card title: ${title}`);
       await openCliCard(d);
       await waitUntil(page, "back to idle", async () => (await codexCli(d)).phase === "idle");
       const after = await codexCli(d);
@@ -1818,7 +1830,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       assert(String(after.error).includes("declined"), `the page says why: ${String(after.error)}`);
       assert((await cliFolders(root, "codex")).length === 0, "no folder was created");
       await d.dump("cli-c01-declined");
-      return "card 'Download Codex 1.0.0?' in the agent's Decision; phase awaiting-approval, 0 file requests; No: idle, 'declined', nothing on disk";
+      return "card 'Download Codex CLI 1.0.0?' in the Decision of the agent the program picked; phase awaiting-approval, 0 file requests; No: idle, 'declined', nothing on disk";
     },
   );
 
@@ -1830,7 +1842,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       await d.ev("window.__cliEvents = []; true");
       await openCliCard(d);
       await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
-      await answerCliCard(d, "Send");
+      await answerCliCard(d, "Confirm");
       await openCliCard(d);
       const phases = new Set<string>();
       let sawProgress = false;
@@ -2238,7 +2250,7 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
           asRecord(list(await d.ev("window.openbot.subscriptions.listCli()")).find((state) => state.id === "codex"));
         await card.getByRole("button", { name: "Pobierz i przejdź dalej" }).click();
         await waitUntil(page, "the system dialog", async () => (await seenDialogs()).length === 1, 30_000);
-        assert((await seenDialogs())[0] === "Download Codex 1.0.0?", `dialog title: ${(await seenDialogs())[0]}`);
+        assert((await seenDialogs())[0] === "Download Codex CLI 1.0.0?", `dialog title: ${(await seenDialogs())[0]}`);
         await waitUntil(page, "back to idle after the No", async () => (await codex()).phase === "idle", 30_000);
         assert((await codex()).managedVersion === null && cli.fileRequests === 0, "a No downloads nothing");
         assert(await proceed.isDisabled(), "Continue stays blocked after a No");
@@ -2254,7 +2266,7 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
         await d.dump("cli-o1-unblocked");
         await proceed.click();
         await setup.waitFor({ state: "hidden", timeout: 90_000 });
-        return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download, Continue enabled and the setup closes";
+        return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex CLI 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download, Continue enabled and the setup closes";
       },
     );
   } finally {
