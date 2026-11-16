@@ -338,7 +338,7 @@ function pinned(
 
 // -- The run -----------------------------------------------------------------------------------------------------
 
-async function firstRun(d: Driver, root: string): Promise<void> {
+async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void> {
   const { page } = d;
   const longTurn = "SLOW 90000";
 
@@ -1546,9 +1546,10 @@ async function firstRun(d: Driver, root: string): Promise<void> {
     assert.equal(vault.status, 403, "the Vault stays on the computer");
     return `paired with pinned TLS; phone chat; question answered from the phone (${reply.slice(0, 50)}); agent created from the phone`;
   });
+  await cliFirstRun(d, root, cli);
 }
 
-async function secondRun(d: Driver): Promise<void> {
+async function secondRun(d: Driver, root: string, cli: CliStandIn): Promise<void> {
   const { page } = d;
   await row("R1", "restart: no first-run screens, same agents, history stays", async () => {
     await page.getByRole("navigation", { name: "Pages" }).waitFor({ timeout: 90_000 });
@@ -1619,6 +1620,561 @@ async function secondRun(d: Driver): Promise<void> {
     assert(state.enabled === true && state.transport === "tls", JSON.stringify(state).slice(0, 120));
     return "Mobile Connect resumed with TLS";
   });
+  await cliSecondRun(d, root, cli);
+}
+
+// -- W5-T2a: managed CLI download (criteria C01-C13 of docs/cosgral/spec-w5.md) -----------------------------------
+// A stand-in plays the official servers on loopback (the program accepts COSGRAL_CLI_TEST_BASE only when it is not
+// packaged and the address is loopback). The program's own code does everything else: the card, the download, the check,
+// the install, the pages. Nothing here reads a login or leaves the machine.
+
+interface CliStandIn {
+  /** The version the "latest release" answers with. */
+  latest: string;
+  /** Serve a file whose SHA-256 does not match the metadata. */
+  corrupt: boolean;
+  /** Cut the next download in half ("once") or every download ("always"). */
+  truncate: "none" | "once" | "always";
+  /** Send the file slowly, so the progress bar and the phases can be seen. */
+  slow: boolean;
+  fileRequests: number;
+  base: string;
+  sha256: string;
+  close: () => Promise<void>;
+}
+
+async function startCliStandIn(file: string): Promise<CliStandIn> {
+  const { createHash } = await import("node:crypto");
+  const { createReadStream } = await import("node:fs");
+  const { stat } = await import("node:fs/promises");
+  const { createServer } = await import("node:http");
+  const { Readable } = await import("node:stream");
+  const size = (await stat(file)).size;
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  const sha256 = hash.digest("hex");
+  const state: Pick<CliStandIn, "latest" | "corrupt" | "truncate" | "slow" | "fileRequests"> = {
+    latest: "1.0.0",
+    corrupt: false,
+    truncate: "none",
+    slow: false,
+    fileRequests: 0,
+  };
+  const server = createServer((request, response) => {
+    const path = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+    const base = `http://127.0.0.1:${portOfServer(server)}`;
+    const release = (version: string) => ({
+      tag_name: `rust-v${version}`,
+      assets: [
+        {
+          name: "codex-x86_64-pc-windows-msvc.exe",
+          size,
+          digest: `sha256:${sha256}`,
+          browser_download_url: `${base}/files/codex/${version}`,
+        },
+      ],
+    });
+    const tag = path.match(/^\/gh\/tags\/rust-v([0-9.]+)$/)?.[1];
+    if (path === "/gh/latest" || tag) {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(release(tag ?? state.latest)));
+      return;
+    }
+    if (/^\/files\/codex\/[0-9.]+$/.test(path)) {
+      state.fileRequests += 1;
+      response.writeHead(200, { "content-length": String(size) });
+      if (state.corrupt) {
+        response.end(Buffer.alloc(size, 0x41));
+        return;
+      }
+      const cut = state.truncate !== "none";
+      if (state.truncate === "once") state.truncate = "none";
+      const body = Readable.from(
+        (async function* () {
+          let sent = 0;
+          for await (const chunk of createReadStream(file, { highWaterMark: Math.ceil(size / 25) })) {
+            yield chunk;
+            sent += chunk.length;
+            if (cut && sent >= size / 2) {
+              response.destroy();
+              return;
+            }
+            if (state.slow) await new Promise((done) => setTimeout(done, 150));
+          }
+        })(),
+      );
+      body.pipe(response);
+      return;
+    }
+    response.writeHead(404).end();
+  });
+  await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+  return Object.assign(state, {
+    base: `http://127.0.0.1:${portOfServer(server)}`,
+    sha256,
+    close: () => new Promise<void>((done) => server.close(() => done())),
+  });
+}
+
+function portOfServer(server: import("node:http").Server): number {
+  const address = server.address();
+  return isDynamicRecord(address) && isNumber(address.port) ? address.port : 0;
+}
+
+async function waitUntil(page: Page, what: string, check: () => Promise<boolean>, timeoutMs = 45_000): Promise<void> {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    if (await check()) return;
+    await page.waitForTimeout(250);
+  }
+  throw new Error(`Timed out: ${what}`);
+}
+
+/** Version folders (and anything else) the program keeps for one CLI under its data folder. */
+async function cliFolders(root: string, id: string): Promise<string[]> {
+  const { readdir } = await import("node:fs/promises");
+  const base = join(root, "home", "AppData", "Roaming");
+  for (const app of await readdir(base).catch(() => [])) {
+    const names = await readdir(join(base, app, "cli", id)).catch(() => null);
+    if (names) return names.sort();
+  }
+  return [];
+}
+
+/** What the person sees and can do on the Providers page for one CLI (the "Narzedzia CLI" section). */
+function cliCard(page: Page) {
+  return page.locator(".managed-cli-card").filter({ has: page.getByRole("heading", { name: "Codex", exact: true }) });
+}
+
+async function codexCli(d: Driver): Promise<DynamicRecord> {
+  return asRecord(list(await d.ev("window.openbot.subscriptions.listCli()")).find((state) => state.id === "codex"));
+}
+
+async function openCliCard(d: Driver): Promise<void> {
+  await d.openPage("Providers");
+  await cliCard(d.page).first().waitFor({ timeout: 20_000 });
+}
+
+/** The card of the first download shows in the conversation of the first agent; the person answers it there. */
+async function answerCliCard(d: Driver, button: "Send" | "Keep draft"): Promise<string> {
+  let title = "";
+  await waitUntil(
+    d.page,
+    "the download card is pending",
+    async () => {
+      const pending = list(await d.ev("window.openbot.agent.listPendingRequests()"));
+      const item = pending.find(
+        (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith("Download Codex"),
+      );
+      title = String(asRecord(item?.card).title ?? "");
+      return item !== undefined;
+    },
+    20_000,
+  );
+  await d.openAgent("Assistant");
+  const decision = d.page.getByRole("region", { name: "Decision" });
+  await decision.getByRole("button", { name: button, exact: true }).click({ timeout: 20_000 });
+  return title;
+}
+
+const noProfilePath = (text: string) => !/[A-Za-z]:[\\/]|AppData|[\\/]Users[\\/]/.test(text);
+
+/** Criteria C01-C05, C09-C12 in the first start of the program. */
+async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<void> {
+  const { page } = d;
+  const { createHash } = await import("node:crypto");
+  const { readFile } = await import("node:fs/promises");
+  const fixtureFile = join(root, "fixture", "codex.cmd");
+  const fixtureHash = async () =>
+    createHash("sha256")
+      .update(await readFile(fixtureFile))
+      .digest("hex");
+  const fixtureBefore = await fixtureHash();
+
+  await row(
+    "C01",
+    "CLI: the first download waits for a card (nothing is downloaded before the yes); a No downloads nothing",
+    async () => {
+      await d.ev(
+        "window.__cliEvents = []; window.openbot.agent.onEvent((event) => { if (event.type === 'managed-cli-changed') window.__cliEvents.push(event.state.phase + ':' + (event.state.progress ? event.state.progress.receivedBytes : '')); }); true",
+      );
+      await openCliCard(d);
+      assert((await codexCli(d)).managedVersion === null, "no downloaded Codex yet");
+      await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+      await waitUntil(page, "phase awaiting-approval", async () => (await codexCli(d)).phase === "awaiting-approval");
+      assert(/Czeka na zgodę/.test(await cliCard(page).innerText()), "the page says it waits for the yes");
+      assert(cli.fileRequests === 0, `nothing downloaded while the card waits (${cli.fileRequests} file requests)`);
+      const title = await answerCliCard(d, "Keep draft");
+      assert(/^Download Codex 1\.0\.0\?$/.test(title), `card title: ${title}`);
+      await openCliCard(d);
+      await waitUntil(page, "back to idle", async () => (await codexCli(d)).phase === "idle");
+      const after = await codexCli(d);
+      assert(after.managedVersion === null, "a No installs nothing");
+      assert(cli.fileRequests === 0, "a No downloads nothing");
+      assert(String(after.error).includes("declined"), `the page says why: ${String(after.error)}`);
+      assert((await cliFolders(root, "codex")).length === 0, "no folder was created");
+      await d.dump("cli-c01-declined");
+      return "card 'Download Codex 1.0.0?' in the agent's Decision; phase awaiting-approval, 0 file requests; No: idle, 'declined', nothing on disk";
+    },
+  );
+
+  await row(
+    "C02",
+    "CLI: after the yes the page shows progress and phases, then Ready; the agent still answers",
+    async () => {
+      cli.slow = true;
+      await d.ev("window.__cliEvents = []; true");
+      await openCliCard(d);
+      await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+      await answerCliCard(d, "Send");
+      await openCliCard(d);
+      const phases = new Set<string>();
+      let sawProgress = false;
+      const end = Date.now() + 120_000;
+      while (Date.now() < end) {
+        const text = await cliCard(page).innerText();
+        for (const phase of ["Pobieranie", "Sprawdzanie SHA-256", "Instalowanie"])
+          if (text.includes(phase)) phases.add(phase);
+        const bar = cliCard(page).getByRole("progressbar", { name: "Postęp pobierania" });
+        if ((await bar.count()) > 0) {
+          const now = Number(await bar.getAttribute("aria-valuenow"));
+          if (now > 0 && now < 100) sawProgress = true;
+        }
+        if ((await codexCli(d)).managedVersion === "1.0.0" && (await codexCli(d)).phase === "idle") break;
+        await page.waitForTimeout(100);
+      }
+      cli.slow = false;
+      const state = await codexCli(d);
+      assert(
+        state.managedVersion === "1.0.0" && state.phase === "idle",
+        `installed: ${JSON.stringify({ ...state, executable: "(sandbox)" })}`,
+      );
+      assert(
+        phases.has("Pobieranie") && sawProgress,
+        `the page showed downloading with a moving bar (${[...phases].join(", ")}; bar ${sawProgress})`,
+      );
+      const events = await d.ev("window.__cliEvents");
+      const seen = Array.isArray(events) ? events.map(String) : [];
+      assert(
+        seen.some((event) => event.startsWith("downloading:")) && seen.at(-1) === "idle:",
+        `engine events: ${seen.length}`,
+      );
+      assert(cli.fileRequests === 1, `one download (${cli.fileRequests})`);
+      await d.ask("Assistant", "hello after the install", "Stub: received", 40_000);
+      await d.openPage("Providers");
+      await d.dump("cli-c02-installed");
+      return `Pobieranie shown with a moving bar (also seen: ${[...phases].filter((p) => p !== "Pobieranie").join(", ") || "no other phase long enough to catch"}); ${seen.length} managed-cli-changed events; 1 file request; Ready; the agent answers (it runs on the stand-in CLI, not on the downloaded file)`;
+    },
+  );
+
+  await row(
+    "C05",
+    "CLI: one folder per version inside the program's data, no admin rights, the system CLI is untouched",
+    async () => {
+      const state = await codexCli(d);
+      const executable = String(state.executable);
+      assert(executable.startsWith(root), "the downloaded CLI is inside the sandbox profile");
+      assert(/[\\/]cli[\\/]codex[\\/]1\.0\.0[\\/]/.test(executable), "folder per CLI and version");
+      assert(
+        (await cliFolders(root, "codex")).join(",") === "1.0.0",
+        `only the version folder exists: ${(await cliFolders(root, "codex")).join(",")}`,
+      );
+      assert((await fixtureHash()) === fixtureBefore, "the CLI the program runs (not downloaded) is untouched");
+      return "cli/codex/1.0.0 under the profile's data; the stand-in CLI file has the same SHA-256 as before; (no admin prompt: the run is a normal user)";
+    },
+  );
+
+  await row(
+    "C03",
+    "CLI: a file with the wrong SHA-256 is refused, nothing is left, there is no second try",
+    async () => {
+      cli.latest = "1.1.0";
+      cli.corrupt = true;
+      const before = cli.fileRequests;
+      await openCliCard(d);
+      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await waitUntil(page, "the SHA-256 error", async () => /SHA-256/.test(String((await codexCli(d)).error)));
+      cli.corrupt = false;
+      const state = await codexCli(d);
+      assert(state.managedVersion === "1.0.0", "the verified version stays");
+      assert(
+        cli.fileRequests - before === 1,
+        `no second try after a failed check (${cli.fileRequests - before} requests)`,
+      );
+      assert(
+        (await cliFolders(root, "codex")).join(",") === "1.0.0",
+        `nothing left on disk: ${(await cliFolders(root, "codex")).join(",")}`,
+      );
+      const shown = await cliCard(page).getByRole("alert").innerText();
+      assert(
+        /SHA-256/.test(shown) && noProfilePath(shown),
+        `the page shows the reason without a profile path: ${shown.slice(0, 80)}`,
+      );
+      assert(
+        (await cliCard(page).getByRole("button", { name: "Ponów", exact: true }).count()) === 1,
+        "Try again is offered",
+      );
+      await d.dump("cli-c03-bad-sha");
+      return "update refused with SHA-256 in the error, 1 file request, version 1.0.0 stays, no extra folder or partial file, the page offers Ponów";
+    },
+  );
+
+  await row(
+    "C04",
+    "CLI: an interrupted download is retried once; two interruptions end in an error with Try again, and no half file counts",
+    async () => {
+      // (a) one interruption: the program tries again by itself.
+      cli.latest = "1.1.0";
+      cli.truncate = "once";
+      let before = cli.fileRequests;
+      await openCliCard(d);
+      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await waitUntil(page, "version 1.1.0", async () => (await codexCli(d)).managedVersion === "1.1.0");
+      assert(cli.fileRequests - before === 2, `one interruption means one more request (${cli.fileRequests - before})`);
+      // (b) two interruptions: an error, no new version, and "Ponów" works once the network is back.
+      cli.latest = "1.2.0";
+      cli.truncate = "always";
+      before = cli.fileRequests;
+      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await waitUntil(
+        page,
+        "an error after two interruptions",
+        async () => (await codexCli(d)).phase === "error",
+        60_000,
+      );
+      const failed = await codexCli(d);
+      assert(failed.managedVersion === "1.1.0", "the working version stays");
+      assert(cli.fileRequests - before === 2, `one try and one retry (${cli.fileRequests - before})`);
+      assert(
+        (await cliFolders(root, "codex")).join(",") === "1.1.0",
+        `no half file or folder: ${(await cliFolders(root, "codex")).join(",")}`,
+      );
+      const shown = await cliCard(page).getByRole("alert").innerText();
+      assert(noProfilePath(shown), `the error has no profile path: ${shown.slice(0, 80)}`);
+      cli.truncate = "none";
+      await cliCard(page).getByRole("button", { name: "Ponów", exact: true }).click();
+      await waitUntil(page, "version 1.2.0 after Ponów", async () => (await codexCli(d)).managedVersion === "1.2.0");
+      await d.dump("cli-c04-retried");
+      return "1 cut > retried by itself (2 requests) > 1.1.0; 2 cuts > error, 1.1.0 stays, no half file, Ponów offered; Ponów > 1.2.0";
+    },
+  );
+
+  await row(
+    "C09",
+    "CLI: a custom path wins; a bad path gives a clear error without a hang; the order is custom, downloaded, system",
+    async () => {
+      await openCliCard(d);
+      const field = cliCard(page).getByRole("textbox", { name: "Własna ścieżka do CLI" });
+      await field.fill(fixtureFile);
+      await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+      await waitUntil(page, "custom path saved", async () => (await codexCli(d)).customPath === fixtureFile);
+      await waitUntil(page, "idle with a custom path", async () => (await codexCli(d)).phase === "idle");
+      const custom = await codexCli(d);
+      assert(custom.source === "custom", `source with a custom path: ${String(custom.source)}`);
+      assert(/Własna ścieżka/.test(await cliCard(page).innerText()), "the page names the source");
+      await field.fill(join(root, "does-not-exist", "codex.exe"));
+      await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+      await waitUntil(
+        page,
+        "an answer to the bad path",
+        async () => {
+          const state = await codexCli(d);
+          return state.phase === "idle" || state.phase === "error";
+        },
+        30_000,
+      );
+      const bad = await codexCli(d);
+      const shown = (await cliCard(page).innerText()).slice(0, 400);
+      assert(
+        noProfilePath(String(bad.error ?? "")) && noProfilePath(shown.replace(/Własna ścieżka do CLI/g, "")),
+        "no profile path in the answer",
+      );
+      await d.dump("cli-c09-bad-path");
+      const detailBad = `bad path: source ${String(bad.source)}, phase ${String(bad.phase)}, error ${bad.error ? "shown" : "none"}`;
+      await field.fill("");
+      await cliCard(page).getByRole("button", { name: "Wyczyść ścieżkę", exact: true }).click();
+      await waitUntil(page, "custom path cleared", async () => (await codexCli(d)).customPath === null);
+      return `good path > source custom; ${detailBad}; cleared > source ${String((await codexCli(d)).source)}`;
+    },
+  );
+
+  await row("C10", "CLI: Usuń removes only the downloaded copy, never the system or custom CLI", async () => {
+    await openCliCard(d);
+    const field = cliCard(page).getByRole("textbox", { name: "Własna ścieżka do CLI" });
+    await field.fill(fixtureFile);
+    await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+    await waitUntil(page, "custom path active", async () => (await codexCli(d)).source === "custom");
+    await cliCard(page).getByRole("button", { name: "Usuń", exact: true }).click();
+    await waitUntil(page, "downloaded copy removed", async () => (await codexCli(d)).managedVersion === null);
+    assert(
+      (await fixtureHash()) === fixtureBefore && (await readFile(fixtureFile)).length > 0,
+      "the custom CLI file is untouched",
+    );
+    assert(
+      (await cliFolders(root, "codex")).length === 0,
+      `the downloaded folder is gone: ${(await cliFolders(root, "codex")).join(",")}`,
+    );
+    assert((await codexCli(d)).source === "custom", "the custom path still works after the removal");
+    assert(
+      (await cliCard(page).getByRole("button", { name: "Usuń", exact: true }).count()) === 0,
+      "no Usuń for a CLI that is not downloaded",
+    );
+    await field.fill("");
+    await cliCard(page).getByRole("button", { name: "Wyczyść ścieżkę", exact: true }).click();
+    await waitUntil(page, "custom path cleared", async () => (await codexCli(d)).customPath === null);
+    return "with the custom path active, Usuń deleted only the downloaded folder; the custom file keeps its SHA-256; the button is gone when nothing is downloaded";
+  });
+
+  await row("C11", "CLI: after the first yes there is no card for a new download or an update", async () => {
+    cli.latest = "1.2.0";
+    const before = cli.fileRequests;
+    await openCliCard(d);
+    await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+    await waitUntil(
+      page,
+      "1.2.0 downloaded without a card",
+      async () => (await codexCli(d)).managedVersion === "1.2.0",
+      90_000,
+    );
+    const pending = list(await d.ev("window.openbot.agent.listPendingRequests()")).filter(
+      (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith("Download Codex"),
+    );
+    assert(pending.length === 0, "no download card after the first yes");
+    assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
+    return "second install (after Usuń) and the earlier updates (C03, C04) needed no card; each file was checked against its SHA-256";
+  });
+
+  await row("C12", "CLI: the page, the usage list and the engine tell the same about the CLI", async () => {
+    await d.openPage("Providers");
+    const state = await codexCli(d);
+    const usage = list(await d.ev("window.openbot.providers.listUsage()")).find((item) => item.provider === "codex");
+    const usageText = await page.getByRole("region", { name: "Provider usage" }).innerText();
+    const cliText = await cliCard(page).innerText();
+    assert(usage && usage.state !== "unavailable", `usage: ${JSON.stringify(usage)}`);
+    assert(
+      /Codex/.test(usageText) && cliText.includes(String(state.managedVersion)),
+      "both parts of the page name Codex and the downloaded version",
+    );
+    assert(/Pobrane|Własna ścieżka|Systemowe/.test(cliText), "the card names a source");
+    return `engine source ${String(state.source)}, downloaded ${String(state.managedVersion)}; usage state ${String(usage?.state)}; the card shows the same version. The onboarding screen is not part of this step (see O1)`;
+  });
+
+  // The next launches need a newer version available and auto-update left on.
+  cli.latest = "1.3.0";
+}
+
+/** C06 and the setup of C07, in the second start (auto-update runs at start). */
+async function cliSecondRun(d: Driver, root: string, cli: CliStandIn): Promise<void> {
+  const { page } = d;
+  await row(
+    "C06",
+    "CLI: auto-update at start downloads, checks and switches without a card; the old folder goes",
+    async () => {
+      const before = cli.fileRequests;
+      await waitUntil(
+        page,
+        "auto-update to 1.3.0",
+        async () => (await codexCli(d)).managedVersion === "1.3.0",
+        120_000,
+      );
+      const pending = list(await d.ev("window.openbot.agent.listPendingRequests()")).filter(
+        (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith("Download Codex"),
+      );
+      assert(pending.length === 0, "no card for an update");
+      assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
+      await waitUntil(
+        page,
+        "the old version folder is gone",
+        async () => (await cliFolders(root, "codex")).join(",") === "1.3.0",
+        20_000,
+      );
+      await d.ask("Assistant", "hello after the auto-update", "Stub: received", 40_000);
+      // Setup for C07: turn auto-update off through the page, and publish a newer version.
+      await openCliCard(d);
+      await cliCard(page).getByRole("switch", { name: "Aktualizuj automatycznie" }).click();
+      await waitUntil(page, "auto-update off", async () => (await codexCli(d)).autoUpdate === false);
+      cli.latest = "1.4.0";
+      return "after the restart 1.2.0 became 1.3.0 by itself (1 request, no card, old folder gone); then auto-update was switched off on the page for C07";
+    },
+  );
+}
+
+/** C07 and the setup of C08, in the third start. */
+async function cliThirdRun(d: Driver, cli: CliStandIn): Promise<void> {
+  const { page } = d;
+  await row(
+    "C07",
+    "CLI: with auto-update off nothing downloads by itself; Sprawdź shows the newer version; Zaktualizuj does it on demand",
+    async () => {
+      const before = cli.fileRequests;
+      await openCliCard(d);
+      await page.waitForTimeout(15_000);
+      const state = await codexCli(d);
+      assert(
+        state.autoUpdate === false && state.managedVersion === "1.3.0",
+        `the setting survived the restart: ${JSON.stringify({ ...state, executable: "(sandbox)" })}`,
+      );
+      assert(cli.fileRequests === before, `no download at start with auto-update off (${cli.fileRequests - before})`);
+      await cliCard(page).getByRole("button", { name: "Sprawdź", exact: true }).click();
+      await waitUntil(page, "Sprawdź shows 1.4.0", async () =>
+        /Najnowsza: 1\.4\.0/.test(await cliCard(page).innerText()),
+      );
+      assert(
+        cli.fileRequests === before && (await codexCli(d)).managedVersion === "1.3.0",
+        "Sprawdź downloads nothing",
+      );
+      // A turn runs while the person updates: it must finish.
+      await d.send("Assistant", "SLOW 12000");
+      await page.waitForTimeout(1_500);
+      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await waitUntil(page, "1.4.0 on demand", async () => (await codexCli(d)).managedVersion === "1.4.0", 90_000);
+      assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
+      await d.answer("Assistant", "Stub: slow done", 40_000);
+      // Setup for C08: auto-update on again, pin the current version, publish a newer one.
+      await cliCard(page).getByRole("switch", { name: "Aktualizuj automatycznie" }).click();
+      await waitUntil(page, "auto-update on", async () => (await codexCli(d)).autoUpdate === true);
+      await cliCard(page).getByRole("textbox", { name: "Przypięta wersja" }).fill("1.4.0");
+      await cliCard(page).getByRole("button", { name: "Przypnij", exact: true }).click();
+      await waitUntil(page, "pinned 1.4.0", async () => (await codexCli(d)).pinnedVersion === "1.4.0");
+      cli.latest = "1.5.0";
+      await d.dump("cli-c07-on-demand");
+      return "restart with auto-update off: 0 downloads in 15 s; Sprawdź > Najnowsza 1.4.0 without a download; Zaktualizuj > 1.4.0 (1 request) while a turn ran, and the turn finished; then auto-update on and 1.4.0 pinned for C08";
+    },
+  );
+}
+
+/** C08 and C13, in the fourth start. */
+async function cliFourthRun(d: Driver, cli: CliStandIn): Promise<void> {
+  const { page } = d;
+  await row(
+    "C08",
+    "CLI: a pinned version is not replaced with auto-update on; Odepnij goes back to the newest",
+    async () => {
+      const before = cli.fileRequests;
+      await openCliCard(d);
+      await page.waitForTimeout(15_000);
+      const state = await codexCli(d);
+      assert(
+        state.autoUpdate === true && state.pinnedVersion === "1.4.0" && state.managedVersion === "1.4.0",
+        `pinned survived the restart: ${JSON.stringify({ ...state, executable: "(sandbox)" })}`,
+      );
+      assert(cli.fileRequests === before, `no download at start for a pinned version (${cli.fileRequests - before})`);
+      await cliCard(page).getByRole("button", { name: "Odepnij", exact: true }).click();
+      await waitUntil(page, "unpinned", async () => (await codexCli(d)).pinnedVersion === null);
+      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await waitUntil(page, "1.5.0 after Odepnij", async () => (await codexCli(d)).managedVersion === "1.5.0", 90_000);
+      return "restart with 1.4.0 pinned and 1.5.0 available: nothing downloaded, 1.4.0 stays; Odepnij + Zaktualizuj > 1.5.0";
+    },
+  );
+
+  await row("C13", "CLI: the subscriptions calls exist in the local window (optional in the contract)", async () => {
+    const names = await d.ev("Object.keys(window.openbot.subscriptions || {})");
+    const have = Array.isArray(names) ? names.map(String) : [];
+    for (const name of ["listCli", "checkCli", "installCli", "updateCli", "removeCli", "pinCli", "setCliSettings"]) {
+      assert(have.includes(name), `${name} is exposed`);
+    }
+    return "the 7 CLI calls are exposed in the local window; a remote server and the phone are NOT tried here (unit test of BE1 only)";
+  });
 }
 
 async function main(): Promise<void> {
@@ -1635,19 +2191,40 @@ async function main(): Promise<void> {
     await mkdir(folder, { recursive: true });
   }
   const fixture = await installFixture(root);
+  const cliStandIn = await startCliStandIn(process.execPath);
+  process.env.COSGRAL_CLI_TEST_BASE = cliStandIn.base;
   const first = await launch(root, fixture);
   try {
-    await firstRun(new Driver(first.page, evidence, first.app), root);
+    await firstRun(new Driver(first.page, evidence, first.app), root, cliStandIn);
     await new Driver(first.page, evidence, first.app).dump("final-first-run");
   } finally {
     await first.app.close().catch(() => undefined);
   }
   const second = await launch(root, fixture);
   try {
-    await secondRun(new Driver(second.page, evidence));
+    await secondRun(new Driver(second.page, evidence, second.app), root, cliStandIn);
   } finally {
     await second.app.close().catch(() => undefined);
   }
+  // C07 and C08 need more restarts: auto-update, the switch and the pin only act when the program starts.
+  const wants = (...ids: string[]) => only.length === 0 || ids.some((id) => only.includes(id));
+  if (wants("C07")) {
+    const third = await launch(root, fixture);
+    try {
+      await cliThirdRun(new Driver(third.page, evidence, third.app), cliStandIn);
+    } finally {
+      await third.app.close().catch(() => undefined);
+    }
+  }
+  if (wants("C08", "C13")) {
+    const fourth = await launch(root, fixture);
+    try {
+      await cliFourthRun(new Driver(fourth.page, evidence, fourth.app), cliStandIn);
+    } finally {
+      await fourth.app.close().catch(() => undefined);
+    }
+  }
+  await cliStandIn.close();
   await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
   const failed = results.filter((result) => !result.ok);
   console.log(
