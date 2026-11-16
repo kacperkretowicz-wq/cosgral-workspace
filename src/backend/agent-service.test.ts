@@ -18,6 +18,7 @@ import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contract
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
+import { setApiKeySource } from "./api-key-env";
 import { ApprovalRulesStore } from "./approval-rules";
 import { BotStore } from "./bot-store";
 import { type EyesCapture, type EyesFrame, EyesService, type EyesSourceInfo } from "./eyes-service";
@@ -187,6 +188,29 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
         }),
       ]),
     );
+  });
+
+  // COSGRAL W5-BE3: a saved provider API key never reaches an error event, even when the CLI prints it.
+  it("redacts a saved API key from an agent error event", async () => {
+    const key = "test-key-0000-openai-abcd";
+    process.env.OPENBOT_FAKE_WARNING = `Warning: request failed for key ${key}`;
+    setApiKeySource({ env: () => ({}), values: () => [key] });
+    try {
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+
+      await service.sendMessage({ botId: "chief", text: "First task" });
+      await waitFor(() => events.some((event) => event.type === "error"));
+
+      const errors = events.filter((event) => event.type === "error");
+      expect(errors.length).toBeGreaterThan(0);
+      expect(JSON.stringify(events)).not.toContain(key);
+    } finally {
+      setApiKeySource(null);
+    }
   });
 
   it("ignores streamed output from a client that is still stopping", async () => {

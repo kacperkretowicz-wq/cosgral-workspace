@@ -68,6 +68,7 @@ import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { AgentTemplates } from "./agent-templates";
+import { redactApiKeys } from "./api-key-env";
 import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { ApprovalRulesStore } from "./approval-rules";
 import type { BotStore } from "./bot-store";
@@ -3512,7 +3513,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       type: "error",
       botId,
       code,
-      message: error instanceof Error ? error.message : String(error),
+      message: redactApiKeys(error instanceof Error ? error.message : String(error)), // COSGRAL W5-BE3
     });
   }
 
