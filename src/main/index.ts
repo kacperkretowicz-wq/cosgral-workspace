@@ -69,6 +69,8 @@ import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerContextIpc } from "./context-ipc";
+import { ConversationWindows } from "./conversation-windows";
+import { ElectronConversationWindowHost } from "./conversation-windows-electron";
 import { registerSharedDataIpc } from "./data-ipc";
 import { runPendingDataWipe } from "./data-wipe";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
@@ -197,6 +199,7 @@ import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
 import { createVoice, registerVoiceIpc } from "./voice-ipc";
+import { registerWindowsIpc } from "./windows-ipc";
 import { registerWorkflowIpc } from "./workflow-ipc";
 
 if (!app.isPackaged) {
@@ -269,6 +272,9 @@ let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
+// COSGRAL W6-KK3: the separate conversation windows (the rule keeper and the Electron windows it uses).
+let conversationWindows: ConversationWindows | null = null;
+let conversationWindowHost: ElectronConversationWindowHost | null = null;
 let managedCli: ManagedCliRuntime | null = null;
 let apiKeyStore: ApiKeyStore | null = null;
 // COSGRAL W5-K2: the person's own model endpoints.
@@ -868,6 +874,7 @@ function registerIpcHandlers(
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W6-BE1: the threads of an agent (this computer only).
   registerThreadsIpc(() => agentService);
+  registerWindowsIpc(() => conversationWindows);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
@@ -1178,6 +1185,8 @@ function configureApplicationMenu(service: AgentService, updater: UpdateService)
 
 function forwardAgentEvent(serverId: string, event: AgentEvent): void {
   dockWindows?.forward(serverId, event);
+  conversationWindowHost?.forward(serverId, event);
+  if (serverId === "local") conversationWindows?.observe(event);
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(IPC_CHANNELS.agentEvent, { serverId, event });
   const preferences = agentService?.agentSettings.appSettings().notifications;
@@ -1457,6 +1466,22 @@ if (!hasSingleInstanceLock) {
         emit: (event) => forwardAgentEvent("local", event),
         quit: () => app.quit(),
         agents: () => agentService,
+      });
+      // COSGRAL W6-KK3: separate conversation windows (same preload and trust as the main window).
+      conversationWindowHost = new ElectronConversationWindowHost({
+        preloadPath: join(__dirname, "../preload/index.cjs"),
+        iconPath: appIconPath,
+      });
+      conversationWindows = new ConversationWindows({
+        host: conversationWindowHost,
+        agents: {
+          agentName: (botId) => agentService?.listBots().find((bot) => bot.id === botId)?.name ?? null,
+          threads: async (botId) => {
+            if (!agentService) throw new Error("The agent is still starting.");
+            return agentService.listThreads(botId);
+          },
+        },
+        emit: (event) => forwardAgentEvent("local", event),
       });
       // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
       const routineStore = new RoutineStore(store.database, electronSecretBox());
@@ -1882,6 +1907,7 @@ async function prepareForShutdown(): Promise<void> {
   await (remoteMacManager?.stop() ?? Promise.resolve());
   await (hostService?.shutdown() ?? Promise.resolve());
   dockWindows?.destroy();
+  conversationWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
   await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   managedCli?.close();

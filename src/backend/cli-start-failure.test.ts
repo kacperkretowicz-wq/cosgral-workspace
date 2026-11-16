@@ -119,11 +119,7 @@ describe("resolveClaudeCli says why (W6-KK3)", () => {
   });
 
   it("a CLI that answers with something else: the message says the version was not understood", async () => {
-    process.env.OPENBOT_CLAUDE_PATH = await writeFakeCli(
-      join(root, "odd"),
-      "claude",
-      'process.stdout.write("hello");',
-    );
+    process.env.OPENBOT_CLAUDE_PATH = await writeFakeCli(join(root, "odd"), "claude", 'process.stdout.write("hello");');
     await expect(resolveClaudeCli()).rejects.toThrow(/could not be started \(it did not report a version/);
   });
 });
