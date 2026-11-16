@@ -101,6 +101,7 @@ import { createMockBudgets } from "./mock-budgets";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
+import { createMockIsolation } from "./mock-isolation";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
@@ -1363,6 +1364,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     acpPresets: createMockAcpPresets(),
     // COSGRAL W8-BE1: the access level and folders of an agent (demo; `allowRaise` plays the card of Needs you).
     access: createMockAccess((event) => emitAgentEvent(event)),
+    // COSGRAL W8-BE2: isolation of the processes (demo; `allowOff` plays the card of Needs you).
+    isolation: createMockIsolation((event) => emitAgentEvent(event)),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

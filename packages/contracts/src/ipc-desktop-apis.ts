@@ -85,6 +85,7 @@ import type {
 } from "./ipc-dock";
 import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
+import type { IsolationDesktopApi } from "./ipc-isolation";
 import type {
   LibraryFileIdInput,
   LibraryItem,
@@ -674,6 +675,8 @@ export interface OpenBotDesktopApi {
   acpPresets?: AcpPresetsDesktopApi;
   /** COSGRAL W8-BE1: the access level, added and excluded folders of an agent (this computer only). Optional until every mock implements it. */
   access?: AccessDesktopApi;
+  /** COSGRAL W8-BE2: what isolation of the processes this computer can do, and what is in force for each agent (this computer only). */
+  isolation?: IsolationDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */

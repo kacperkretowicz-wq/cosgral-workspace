@@ -37,6 +37,7 @@ import {
 } from "./ipc-dock";
 import { type EndpointModelId, isEndpointModel, isModelEndpointList, type ModelEndpoint } from "./ipc-endpoints";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { type IsolationChanged, isIsolationChanged } from "./ipc-isolation";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
@@ -697,6 +698,8 @@ export type AgentEvent =
   | ({ type: "access-changed" } & AccessChanged)
   /** COSGRAL W8-BE1: the program refused something an agent asked for (outside its folders, or an excluded folder). */
   | ({ type: "access-denied" } & AccessDenied)
+  /** COSGRAL W8-BE2: what isolation of the processes this computer can do changed, or an agent's isolation did (replace the whole picture). */
+  | ({ type: "isolation-changed" } & IsolationChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -864,6 +867,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isAccessChanged(value);
     case "access-denied":
       return isAccessDenied(value);
+    case "isolation-changed":
+      return isIsolationChanged(value);
     case "message-pins-changed":
       return isMessagePinsChanged(value);
     case "agent-mcp-changed":

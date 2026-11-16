@@ -84,7 +84,7 @@ export interface AccessChanged {
   access: AgentAccess;
 }
 
-export const ACCESS_DENIAL_REASONS = ["excluded", "outside-folder"] as const;
+export const ACCESS_DENIAL_REASONS = ["excluded", "outside-folder", "isolation-unavailable"] as const;
 export type AccessDenialReason = (typeof ACCESS_DENIAL_REASONS)[number];
 
 /**

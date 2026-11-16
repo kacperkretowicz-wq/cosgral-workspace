@@ -89,6 +89,7 @@ import { createContextApi } from "./context-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createEndpointsApi } from "./endpoints-api";
+import { createIsolationApi } from "./isolation-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
@@ -813,6 +814,7 @@ const openbotApi: OpenBotDesktopApi = {
   acpLogin: createAcpLoginApi(invokeAgent),
   acpPresets: createAcpPresetsApi(invokeAgent),
   access: createAccessApi(invokeAgent),
+  isolation: createIsolationApi(invokeAgent),
   messageActions: createMessageActionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
