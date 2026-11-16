@@ -23,6 +23,7 @@ import {
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
+import { type ContextChanged, type ContextSettingsChanged, isContextSettings, isContextState } from "./ipc-context";
 import {
   type DockState,
   type IslandRequestRef,
@@ -648,6 +649,10 @@ export type AgentEvent =
   | ({ type: "account-limit-reached" } & AccountLimitReached)
   /** COSGRAL W5-BE8: a turn on an account failed on the network, not on a limit; nothing switched (see AccountError). */
   | ({ type: "account-error" } & AccountError)
+  /** COSGRAL W6-BE2: the context state of one thread changed (a report, a compaction, history cleared). */
+  | ({ type: "context-changed" } & ContextChanged)
+  /** COSGRAL W6-BE2: the context settings (auto-compaction, threshold) changed. */
+  | ({ type: "context-settings-changed" } & ContextSettingsChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -791,6 +796,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isAccountLimitReached(value);
     case "account-error":
       return isAccountError(value);
+    case "context-changed":
+      return isContextState(value);
+    case "context-settings-changed":
+      return isContextSettings(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

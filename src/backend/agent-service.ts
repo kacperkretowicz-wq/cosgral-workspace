@@ -26,6 +26,8 @@ import type {
   BotSummary,
   BrowserControlState,
   BrowserTab,
+  ContextSettings,
+  ContextState,
   ConversationMessage,
   ConversationReadState,
   ConversationSnapshot,
@@ -51,6 +53,7 @@ import type {
   SteerQueuedMessageInput,
   StopAgentEyesInput,
   UpdateBotInput,
+  UpdateContextSettingsInput,
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import {
@@ -85,6 +88,7 @@ import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
 import { ClaudeAgentClient } from "./claude-client";
 import { type ClaudeCliInfo, CodexCliError, type CodexCliInfo, resolveClaudeCli, resolveCodexCli } from "./cli";
 import { COMPUTER_NAMESPACE, ComputerUseController } from "./computer-use";
+import { ContextStore, ContextTracker, canCompactProvider } from "./context-tracker";
 import { ConversationReadStore } from "./conversation-read-store";
 import {
   mergeConversationSnapshots,
@@ -213,6 +217,8 @@ interface ThreadContextBudget {
   phase: "idle" | "requested" | "running";
   compactionTurnId: string | null;
   lastCompactedTokens: number | null;
+  /** COSGRAL W6-BE2: the person asked for a compaction; it runs at the next free moment whatever the numbers say. */
+  manual: boolean;
 }
 
 interface PendingDelta {
@@ -231,7 +237,6 @@ interface ImageGenerationOperation {
   promise: Promise<void> | null;
 }
 
-const CONTEXT_COMPACTION_THRESHOLD = 0.8;
 const CONTEXT_COMPACTION_TIMEOUT_MS = 120_000;
 
 const INITIAL_STATUS: AgentStatus = {
@@ -320,6 +325,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #browser: AgentBrowserHost;
   readonly #computerUsePrerequisites: (() => ComputerUsePrerequisites) | null;
   readonly #conversationReads: ConversationReadStore;
+  /** COSGRAL W6-BE2: the context of each thread (numbers the provider reported, compactions, settings). */
+  readonly #context: ContextTracker;
   readonly #requestTimeoutMs: number;
   readonly #clientFactory: AgentClientFactory | null;
   readonly #eyes: AgentEyes | null;
@@ -423,6 +430,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#mailbox = mailbox;
     this.#browser = browser;
     this.#conversationReads = new ConversationReadStore(store.database);
+    this.#context = new ContextTracker({
+      store: new ContextStore(store.database),
+      emit: (event) => this.#emit(event),
+    });
     this.#computerUsePrerequisites = computerUsePrerequisites;
     this.#requestTimeoutMs = requestTimeoutMs;
     this.#clientFactory = clientFactory;
@@ -882,6 +893,88 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   getStatus(): AgentStatus {
     return structuredClone(this.#status);
+  }
+
+  /** COSGRAL W6-BE2: the context state of a thread (the one the window shows when none is named). */
+  contextState(botId: string, threadId?: string | null): ContextState {
+    const bot = this.#contextBot(botId);
+    const publicId = threadId ?? bot.threadId;
+    // A new agent without a conversation yet has nothing to report.
+    if (!publicId) return this.#context.state(bot.id, "", providerForBot(bot));
+    return this.#context.state(bot.id, publicId, providerForBot(bot));
+  }
+
+  /**
+   * COSGRAL W6-BE2: the person asks for a compaction. It starts now when the thread is idle, and right after the running
+   * turn otherwise (the state says "compacting" meanwhile). Only the provider's own thread of the shown conversation can be
+   * compacted for now; Claude Code, ACP agents and endpoints manage their context themselves.
+   */
+  async compactContext(botId: string, threadId?: string | null): Promise<ContextState> {
+    const bot = this.#contextBot(botId);
+    const provider = providerForBot(bot);
+    const publicId = threadId ?? bot.threadId;
+    if (!publicId) throw new Error("There is nothing to compact yet: this agent has no conversation.");
+    if (publicId !== bot.threadId) throw new Error("Only the conversation shown for this agent can be compacted.");
+    if (!canCompactProvider(provider))
+      throw new Error("This agent's provider compacts its own context; it cannot be asked to.");
+    const session = this.#store.activeProviderSession(bot.id);
+    const external = session?.externalSessionId;
+    const known = this.#context.state(bot.id, publicId, provider);
+    if (!external || known.source !== "reported" || known.used === null || known.limit === null) {
+      throw new Error("There is nothing to compact yet: no usage has been reported for this thread.");
+    }
+    const budget = this.#contextBudgets.get(external) ?? {
+      usedTokens: known.used,
+      contextWindow: known.limit,
+      pending: false,
+      phase: "idle" as const,
+      compactionTurnId: null,
+      lastCompactedTokens: null,
+      manual: false,
+    };
+    this.#contextBudgets.set(external, budget);
+    if (budget.manual || budget.phase !== "idle" || this.#compactingBots.has(bot.id)) return known;
+    budget.manual = true;
+    budget.pending = true;
+    this.#setContextCompacting(bot.id, external, true);
+    const snapshot = this.#snapshots.get(bot.id);
+    if (
+      !snapshot?.activeTurnId &&
+      !this.#drainingBots.has(bot.id) &&
+      this.#reserveContextCompaction(bot.id, external)
+    ) {
+      await this.#requestContextCompaction(bot.id, external);
+    }
+    return this.#context.state(bot.id, publicId, provider);
+  }
+
+  contextSettings(): ContextSettings {
+    return this.#context.settings();
+  }
+
+  updateContextSettings(input: UpdateContextSettingsInput): ContextSettings {
+    return this.#context.updateSettings(input);
+  }
+
+  /** COSGRAL W6-BE2: the history of a thread was cleared; its numbers and counters go with it (the memory stays). */
+  forgetContext(botId: string, threadId?: string | null): ContextState {
+    const bot = this.#contextBot(botId);
+    const publicId = threadId ?? bot.threadId;
+    if (!publicId) throw new Error("This agent has no conversation yet.");
+    return this.#context.forget(bot.id, publicId, providerForBot(bot));
+  }
+
+  #contextBot(botId: string): BotSummary {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (!bot) throw new Error("This agent does not exist.");
+    return bot;
+  }
+
+  /** Tells the context tracker (and so the window) that a compaction of the provider's thread runs or ended. */
+  #setContextCompacting(botId: string, externalThreadId: string, on: boolean): void {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (!bot) return;
+    this.#context.setCompacting(botId, this.#publicThreadId(botId, externalThreadId), providerForBot(bot), on);
   }
 
   async getUsage(): Promise<AccountUsage> {
@@ -2357,7 +2450,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         if (isString(item.type)) this.#accountRouter?.noteItem(turnId, item.type);
         if (item.type === "contextCompaction") {
           if (notification.method === "item/completed") {
-            this.#markContextCompacted(threadId);
+            this.#markContextCompacted(botId, threadId);
           }
           return;
         }
@@ -2413,7 +2506,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       }
       case "thread/tokenUsage/updated": {
         if (!threadId || !botId) return;
-        this.#updateContextBudget(threadId, params);
+        this.#updateContextBudget(botId, threadId, params);
         return;
       }
       case "thread/archived": {
@@ -2625,7 +2718,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
-  #updateContextBudget(threadId: string, params: unknown): void {
+  #updateContextBudget(botId: string, threadId: string, params: unknown): void {
     const usage = getRecord(params, "tokenUsage");
     const last = getRecord(usage, "last");
     const usedTokens = finiteNumberOrNull(last?.totalTokens);
@@ -2639,12 +2732,30 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       phase: "idle" as const,
       compactionTurnId: null,
       lastCompactedTokens: null,
+      manual: false,
     };
     budget.usedTokens = usedTokens;
     budget.contextWindow = contextWindow;
     this.#contextBudgets.set(threadId, budget);
 
-    const pressured = usedTokens / contextWindow >= CONTEXT_COMPACTION_THRESHOLD;
+    // COSGRAL W6-BE2: what the provider reported is kept per thread and shown in the window.
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (bot) {
+      this.#context.report(
+        botId,
+        this.#publicThreadId(botId, threadId),
+        providerForBot(bot),
+        usedTokens,
+        contextWindow,
+      );
+    }
+    // A compaction the person asked for runs at the next free moment, whatever the numbers say.
+    if (budget.manual) {
+      budget.pending = true;
+      return;
+    }
+    // The threshold and the switch are the person's (settings); default 90 %, and the program can be kept from doing it.
+    const pressured = this.#context.shouldAutoCompact(usedTokens, contextWindow);
     if (!pressured) {
       budget.pending = false;
       budget.lastCompactedTokens = null;
@@ -2666,6 +2777,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     budget.phase = "requested";
     this.#compactingBots.add(botId);
+    this.#setContextCompacting(botId, threadId, true);
     return true;
   }
 
@@ -2701,11 +2813,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
-  #markContextCompacted(threadId: string): void {
+  #markContextCompacted(botId: string, threadId: string): void {
     const budget = this.#contextBudgets.get(threadId);
     if (!budget) return;
     budget.pending = false;
+    budget.manual = false;
     budget.lastCompactedTokens = budget.usedTokens;
+    // COSGRAL W6-BE2: counted and shown; the old numbers stay, marked stale until the provider reports the new ones.
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (bot) this.#context.compactionDone(botId, this.#publicThreadId(botId, threadId), providerForBot(bot));
   }
 
   #finishContextCompaction(botId: string, threadId: string, status: string): void {
@@ -2723,10 +2839,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const budget = this.#contextBudgets.get(threadId);
     if (budget) {
       budget.pending = false;
+      budget.manual = false;
       budget.phase = "idle";
       budget.compactionTurnId = null;
     }
     this.#compactingBots.delete(botId);
+    this.#setContextCompacting(botId, threadId, false);
   }
 
   #clearCompactionTimer(threadId: string): void {
@@ -2736,6 +2854,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #clearCompactionRuntime(): void {
+    // COSGRAL W6-BE2: nothing is "compacting" any more once the runtime is cleared (a client restart or the end).
+    for (const [externalThreadId, budget] of this.#contextBudgets) {
+      const botId = this.#threadToBot.get(externalThreadId);
+      if (botId && (budget.manual || budget.phase !== "idle"))
+        this.#setContextCompacting(botId, externalThreadId, false);
+    }
     for (const timer of this.#compactionTimers.values()) clearTimeout(timer);
     this.#compactionTimers.clear();
     this.#compactingBots.clear();

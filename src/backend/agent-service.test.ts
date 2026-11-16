@@ -2285,7 +2285,7 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
 
   it("compacts a pressured agent context before draining its next queued message", async () => {
     process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
-    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "82000";
+    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "92000";
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser());
     const events: AgentEvent[] = [];
@@ -2313,7 +2313,7 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
 
   it("does not compact context below the safety threshold", async () => {
     process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
-    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "79000";
+    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "89000";
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser());
     await service.initialize();
@@ -2325,7 +2325,7 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
 
   it("continues queued work when context compaction is unavailable", async () => {
     process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
-    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "82000";
+    process.env.OPENBOT_FAKE_CONTEXT_USAGE = "92000";
     process.env.OPENBOT_FAKE_COMPACTION_ERROR = "1";
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser());
@@ -2343,6 +2343,166 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(events).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: "error", code: "context_compaction_failed" })]),
     );
+  });
+
+  describe("conversation context (W6-BE2)", () => {
+    const contextEvents = (events: AgentEvent[]) =>
+      events.flatMap((event) => (event.type === "context-changed" ? [event] : []));
+    const compactStarts = async () =>
+      (await protocolMessages()).filter((message) => message.method === "thread/compact/start").length;
+    const turnsDone = (events: AgentEvent[]) => events.filter((event) => event.type === "turn-completed").length;
+
+    it("without a report there are no numbers and a plain reason; an unknown agent is refused", async () => {
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      await service.initialize();
+      await store.getOrCreate("chief");
+      const state = service.contextState("chief");
+      expect(state).toMatchObject({ source: "unavailable", used: null, limit: null, percent: null, canCompact: true });
+      expect(state.unavailableReason).toMatch(/No usage has been reported/);
+      expect(() => service?.contextState("nobody")).toThrow(/does not exist/);
+      await expect(service.compactContext("chief")).rejects.toThrow(/nothing to compact yet/);
+      expect(service.contextSettings()).toEqual({ autoCompact: true, thresholdPercent: 90 });
+    });
+
+    it("what the provider reports is shown per agent with a warning from 80 percent, and nothing compacts below 90", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "85000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      await service.sendMessage({ botId: "chief", text: "Task" });
+      await waitFor(() => turnsDone(events) === 1);
+      const state = service.contextState("chief");
+      expect(state).toMatchObject({ source: "reported", used: 85_000, limit: 100_000, percent: 85, warning: true });
+      expect(state.threadId).toBe(service.listBots().find((bot) => bot.id === "chief")?.threadId);
+      expect(contextEvents(events).at(-1)).toMatchObject({ botId: "chief", percent: 85 });
+      await store.getOrCreate("sales-outbound");
+      expect(service.contextState("sales-outbound").source).toBe("unavailable");
+      expect(await compactStarts()).toBe(0);
+    });
+
+    it("a lower threshold from the settings makes the program compact by itself, and it is counted and shown", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "82000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      service.updateContextSettings({ thresholdPercent: 70 });
+      expect(events.at(-1)).toMatchObject({ type: "context-settings-changed", thresholdPercent: 70 });
+      await service.sendMessage({ botId: "chief", text: "First" });
+      await service.sendMessage({ botId: "chief", text: "Second" });
+      await waitFor(async () => (await compactStarts()) === 1 && service?.contextState("chief").compactions === 1);
+      const state = service.contextState("chief");
+      // The stand-in CLI reports usage on every turn start, so the stale mark is already gone after the second message.
+      expect(state).toMatchObject({ compacting: false, compactions: 1 });
+      expect(state.lastCompactedFromTokens).toBe(82_000);
+      expect(contextEvents(events).some((event) => event.compacting)).toBe(true);
+    });
+
+    it("automatic compaction can be switched off: the warning stays, nothing compacts, the queue goes on", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "99000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      service.updateContextSettings({ autoCompact: false });
+      await service.sendMessage({ botId: "chief", text: "First" });
+      await service.sendMessage({ botId: "chief", text: "Second" });
+      await waitFor(() => turnsDone(events) === 2);
+      expect(service.contextState("chief")).toMatchObject({ percent: 99, warning: true, compactions: 0 });
+      expect(await compactStarts()).toBe(0);
+    });
+
+    it("the person's request compacts an idle thread at once, whatever the numbers say", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "30000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      await service.sendMessage({ botId: "chief", text: "Task" });
+      await waitFor(() => turnsDone(events) === 1);
+      await service.compactContext("chief");
+      await waitFor(async () => (await compactStarts()) === 1 && service?.contextState("chief").compactions === 1);
+      expect(service.contextState("chief")).toMatchObject({ compacting: false, stale: true, used: 30_000 });
+      // A second request while nothing changed starts a second compaction only because the person asked again.
+      await service.compactContext("chief");
+      await waitFor(async () => (await compactStarts()) === 2);
+    });
+
+    it("a request during a running turn shows 'compacting' and runs right after the turn; the next message waits for it", async () => {
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "30000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      await service.sendMessage({ botId: "chief", text: "Long task" });
+      await waitFor(() => events.some((event) => event.type === "turn-started"));
+      await waitFor(() => service?.contextState("chief").source === "reported");
+      const asked = await service.compactContext("chief");
+      expect(asked.compacting).toBe(true);
+      expect(await compactStarts()).toBe(0);
+      await service.sendMessage({ botId: "chief", text: "Next" });
+      const started = events.find((event) => event.type === "turn-started");
+      if (started?.type !== "turn-started") throw new Error("Turn did not start.");
+      await service.interrupt("chief", started.turnId);
+      await waitFor(async () => (await compactStarts()) === 1 && service?.contextState("chief").compactions === 1);
+      expect(service.contextState("chief").compacting).toBe(false);
+    });
+
+    it("the state of an agent is the same after a restart of the program", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "85000";
+      const first = stores();
+      service = new AgentService(first.store, first.mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      service.updateContextSettings({ thresholdPercent: 60 });
+      await service.sendMessage({ botId: "chief", text: "Task" });
+      await waitFor(async () => (await compactStarts()) === 1 && service?.contextState("chief").compactions === 1);
+      const before = service.contextState("chief");
+      await service.stop();
+      const second = stores();
+      service = new AgentService(second.store, second.mailbox, fakeBrowser());
+      await service.initialize();
+      const after = service.contextState("chief");
+      expect(after).toMatchObject({
+        source: "reported",
+        used: before.used,
+        limit: before.limit,
+        percent: before.percent,
+        compactions: 1,
+        stale: true,
+        compacting: false,
+      });
+      expect(service.contextSettings()).toEqual({ autoCompact: true, thresholdPercent: 60 });
+    });
+
+    it("clearing a thread's history clears its numbers and counters, and only its own", async () => {
+      process.env.OPENBOT_FAKE_AUTO_COMPLETE = "DONE";
+      process.env.OPENBOT_FAKE_CONTEXT_USAGE = "40000";
+      const { store, mailbox } = stores();
+      service = new AgentService(store, mailbox, fakeBrowser());
+      const events: AgentEvent[] = [];
+      service.on("event", (event) => events.push(event));
+      await service.initialize();
+      await service.sendMessage({ botId: "chief", text: "Task" });
+      await waitFor(() => turnsDone(events) === 1);
+      expect(service.contextState("chief").percent).toBe(40);
+      const cleared = service.forgetContext("chief");
+      expect(cleared).toMatchObject({ source: "unavailable", compactions: 0 });
+      expect(service.contextState("chief").percent).toBeNull();
+    });
   });
 
   it("fans out an idempotent agent tool message with referenced files", async () => {
