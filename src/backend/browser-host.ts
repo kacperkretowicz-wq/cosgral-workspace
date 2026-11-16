@@ -13,6 +13,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { app, type BrowserWindow, type Session, session, type WebContents, WebContentsView } from "electron";
+import type { BrowserProfilePort } from "./browser-profiles";
 import { isCloseBrowserTabShortcut, isGlobalSearchShortcut } from "./browser-shortcuts";
 import { persistentBrowserUrl, xLoginUrlForLanding } from "./browser-state";
 import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
@@ -151,13 +152,22 @@ export class BrowserHost {
   #attachedView: WebContentsView | null = null;
   readonly #mountedViews = new Set<WebContentsView>();
   #persistQueue: Promise<void> = Promise.resolve();
+  /** COSGRAL W8-KK3: the browser profiles of the agents (one session partition per agent); null = one shared profile. */
+  readonly #profiles: BrowserProfilePort | null;
+  readonly #profileSessions = new Map<string, Session>();
 
-  constructor(window: BrowserWindow, downloadsRoot: string, statePath: string) {
+  constructor(
+    window: BrowserWindow,
+    downloadsRoot: string,
+    statePath: string,
+    profiles: BrowserProfilePort | null = null,
+  ) {
     this.#window = window;
     this.#downloadsRoot = downloadsRoot;
     this.#statePath = statePath;
+    this.#profiles = profiles;
     this.#session = session.fromPartition("persist:openbot-browser", { cache: true });
-    this.#configureSession();
+    this.#configureSession(this.#session);
   }
 
   async restore(): Promise<void> {
@@ -165,7 +175,12 @@ export class BrowserHost {
     if (state.tabs.length === 0) return;
 
     const tabs = state.tabs.slice(0, INPUT_LIMITS.browserTabs).map((stored) => {
-      const tab = this.#createTab(stored.id, stored.url, stored.ownerThreadId, stored.ownerBotId);
+      const tab = this.#createTab(
+        stored.id,
+        stored.url,
+        stored.ownerThreadId,
+        this.#ownerOf(stored.ownerThreadId, stored.ownerBotId),
+      );
       this.#tabs.set(tab.id, tab);
       this.#bindTabEvents(tab);
       return tab;
@@ -231,7 +246,11 @@ export class BrowserHost {
       throw new Error(`The browser can have up to ${INPUT_LIMITS.browserTabs} open tabs.`);
     }
     const normalizedUrl = normalizeBrowserUrl(url);
-    const tab = this.#createTab(randomUUID(), normalizedUrl, ownerThreadId, ownerBotId);
+    // COSGRAL W8-KK3: a page is opened in the profile of the agent behind it, and only if that profile's domain lists allow it.
+    const owner = this.#ownerOf(ownerThreadId, ownerBotId);
+    const refused = this.#profiles?.checkNavigation(owner, normalizedUrl) ?? null;
+    if (refused) throw new Error(refused);
+    const tab = this.#createTab(randomUUID(), normalizedUrl, ownerThreadId, owner);
 
     this.#tabs.set(tab.id, tab);
     this.#bindTabEvents(tab);
@@ -413,7 +432,7 @@ export class BrowserHost {
   }
 
   #createTab(id: string, requestedUrl: string, ownerThreadId: string | null, ownerBotId: string | null): InternalTab {
-    const view = this.#createView();
+    const view = this.#createView(ownerBotId);
     this.#mountView(view);
     return {
       id,
@@ -427,10 +446,10 @@ export class BrowserHost {
     };
   }
 
-  #createView(): WebContentsView {
+  #createView(ownerBotId: string | null): WebContentsView {
     const view = new WebContentsView({
       webPreferences: {
-        session: this.#session,
+        session: this.#sessionFor(ownerBotId),
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
@@ -442,19 +461,42 @@ export class BrowserHost {
     return view;
   }
 
-  #configureSession(): void {
-    const userAgent = browserUserAgent(this.#session.getUserAgent());
-    this.#session.setUserAgent(userAgent, preferredBrowserLanguageCodes());
-    this.#session.webRequest.onBeforeSendHeaders((details, callback) => {
+  /** COSGRAL W8-KK3: the owner of a tab: the agent named, else the agent that owns the CLI thread (a person's tab: none). */
+  #ownerOf(ownerThreadId: string | null, ownerBotId: string | null): string | null {
+    if (ownerBotId !== null) return ownerBotId;
+    return ownerThreadId !== null ? (this.#profiles?.botForThread(ownerThreadId) ?? null) : null;
+  }
+
+  /** COSGRAL W8-KK3: the session of an agent's profile (made and configured once); a person's tabs keep the shared one. */
+  #sessionFor(ownerBotId: string | null): Session {
+    const partition = this.#profiles?.partitionFor(ownerBotId) ?? null;
+    if (partition === null || ownerBotId === null) return this.#session;
+    const existing = this.#profileSessions.get(partition);
+    if (existing) return existing;
+    const own = session.fromPartition(partition, { cache: true });
+    this.#configureSession(own);
+    own.webRequest.onBeforeRequest((details, callback) => {
+      callback({
+        cancel: (this.#profiles?.checkRequest(ownerBotId, details.url, details.resourceType) ?? null) !== null,
+      });
+    });
+    this.#profileSessions.set(partition, own);
+    return own;
+  }
+
+  #configureSession(ses: Session): void {
+    const userAgent = browserUserAgent(ses.getUserAgent());
+    ses.setUserAgent(userAgent, preferredBrowserLanguageCodes());
+    ses.webRequest.onBeforeSendHeaders((details, callback) => {
       callback({
         requestHeaders: browserRequestHeaders(details.requestHeaders, userAgent),
       });
     });
-    this.#session.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    ses.setPermissionRequestHandler((_webContents, _permission, callback) => {
       callback(false);
     });
-    this.#session.setPermissionCheckHandler(() => false);
-    this.#session.on("will-download", (_event, item) => {
+    ses.setPermissionCheckHandler(() => false);
+    ses.on("will-download", (_event, item) => {
       const safeName = basename(item.getFilename()).replace(/[^a-zA-Z0-9._ -]/g, "_");
       const downloadPath = uniqueDownloadPath(
         this.#downloadsRoot,

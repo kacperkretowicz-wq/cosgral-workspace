@@ -24,6 +24,7 @@ import {
   type PromptResolution,
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
+import { type BrowserProfilesChanged, isBrowserProfilesChanged } from "./ipc-browser-profiles";
 import { type BudgetsChanged, isBudgetsChanged } from "./ipc-budgets";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
 import { type ContextChanged, type ContextSettingsChanged, isContextSettings, isContextState } from "./ipc-context";
@@ -37,6 +38,7 @@ import {
 } from "./ipc-dock";
 import { type EndpointModelId, isEndpointModel, isModelEndpointList, type ModelEndpoint } from "./ipc-endpoints";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { type IsolationChanged, isIsolationChanged } from "./ipc-isolation";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
@@ -358,6 +360,8 @@ export interface QueueSnapshot {
   deliveries: QueueDelivery[];
   /** COSGRAL W3: set by the program; absent in snapshots from older servers (treat as available). */
   steer?: QueueSteerSupport;
+  /** COSGRAL W8-BE2: a budget keeps the queue from starting a new turn; one plain sentence for the person (null/absent: not held). */
+  heldReason?: string | null;
 }
 
 export interface ConversationMessage {
@@ -679,6 +683,8 @@ export type AgentEvent =
   | ({ type: "spaces-changed" } & SpacesChanged)
   /** COSGRAL W8-KK2: a budget was set or cleared, or usage was counted (the whole overview). */
   | ({ type: "budgets-changed" } & BudgetsChanged)
+  /** COSGRAL W8-KK3: a browser profile was made, its domain lists changed or its sessions were cleared (the whole list). */
+  | ({ type: "browser-profiles-changed" } & BrowserProfilesChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -695,6 +701,8 @@ export type AgentEvent =
   | ({ type: "access-changed" } & AccessChanged)
   /** COSGRAL W8-BE1: the program refused something an agent asked for (outside its folders, or an excluded folder). */
   | ({ type: "access-denied" } & AccessDenied)
+  /** COSGRAL W8-BE2: what isolation of the processes this computer can do changed, or an agent's isolation did (replace the whole picture). */
+  | ({ type: "isolation-changed" } & IsolationChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -848,6 +856,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isSpacesChanged(value);
     case "budgets-changed":
       return isBudgetsChanged(value);
+    case "browser-profiles-changed":
+      return isBrowserProfilesChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":
@@ -862,6 +872,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isAccessChanged(value);
     case "access-denied":
       return isAccessDenied(value);
+    case "isolation-changed":
+      return isIsolationChanged(value);
     case "message-pins-changed":
       return isMessagePinsChanged(value);
     case "agent-mcp-changed":

@@ -97,10 +97,12 @@ import { createMockAccounts } from "./mock-accounts";
 import { createMockAcpLogin } from "./mock-acp-login";
 import { createMockAcpPresets } from "./mock-acp-presets";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
+import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockBudgets } from "./mock-budgets";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
+import { createMockIsolation } from "./mock-isolation";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
@@ -1363,6 +1365,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     acpPresets: createMockAcpPresets(),
     // COSGRAL W8-BE1: the access level and folders of an agent (demo; `allowRaise` plays the card of Needs you).
     access: createMockAccess((event) => emitAgentEvent(event)),
+    // COSGRAL W8-BE2: isolation of the processes (demo; `allowOff` plays the card of Needs you).
+    isolation: createMockIsolation((event) => emitAgentEvent(event)),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),
@@ -1370,6 +1374,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     spaces: createMockSpaces((event) => emitAgentEvent(event)),
     // COSGRAL W8-KK2: budgets (demo; `simulate.record` plays a finished turn).
     budgets: createMockBudgets((event) => emitAgentEvent(event)),
+    // COSGRAL W8-KK3: browser profiles per agent (demo; `simulate.tabs` sets the open pages).
+    browserProfiles: createMockBrowserProfiles((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

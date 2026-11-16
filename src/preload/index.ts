@@ -83,12 +83,14 @@ import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } fro
 import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
+import { createBrowserProfilesApi } from "./browser-profiles-api";
 import { createBudgetsApi } from "./budgets-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createContextApi } from "./context-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createEndpointsApi } from "./endpoints-api";
+import { createIsolationApi } from "./isolation-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
@@ -813,6 +815,7 @@ const openbotApi: OpenBotDesktopApi = {
   acpLogin: createAcpLoginApi(invokeAgent),
   acpPresets: createAcpPresetsApi(invokeAgent),
   access: createAccessApi(invokeAgent),
+  isolation: createIsolationApi(invokeAgent),
   messageActions: createMessageActionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
@@ -820,6 +823,7 @@ const openbotApi: OpenBotDesktopApi = {
   windows: createWindowsApi(invokeAgent),
   spaces: createSpacesApi(invokeAgent),
   budgets: createBudgetsApi(invokeAgent),
+  browserProfiles: createBrowserProfilesApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

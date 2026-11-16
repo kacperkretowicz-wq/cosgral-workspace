@@ -37,6 +37,7 @@ import type { AppDataDesktopApi } from "./ipc-app-data";
 import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
+import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type { ContextDesktopApi } from "./ipc-context";
@@ -85,6 +86,7 @@ import type {
 } from "./ipc-dock";
 import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
+import type { IsolationDesktopApi } from "./ipc-isolation";
 import type {
   LibraryFileIdInput,
   LibraryItem,
@@ -674,6 +676,8 @@ export interface OpenBotDesktopApi {
   acpPresets?: AcpPresetsDesktopApi;
   /** COSGRAL W8-BE1: the access level, added and excluded folders of an agent (this computer only). Optional until every mock implements it. */
   access?: AccessDesktopApi;
+  /** COSGRAL W8-BE2: what isolation of the processes this computer can do, and what is in force for each agent (this computer only). */
+  isolation?: IsolationDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
@@ -688,6 +692,8 @@ export interface OpenBotDesktopApi {
   spaces?: SpacesDesktopApi;
   /** COSGRAL W8-KK2: budgets and the cost counter (tokens, dollars only from reported prices). Optional until every mock implements it. */
   budgets?: BudgetsDesktopApi;
+  /** COSGRAL W8-KK3: browser profiles per agent (own cookies and storage, domain lists, clear). Optional until every mock implements it. */
+  browserProfiles?: BrowserProfilesDesktopApi;
 }
 
 /**
