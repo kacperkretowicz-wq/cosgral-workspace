@@ -264,7 +264,7 @@ describe("FallbackOrder", () => {
 
   it("says what happens without any fallback", () => {
     render(() => <OrderHarness initial={[]} />);
-    expect(screen.getByText(/stops when its own provider does/)).toBeInTheDocument();
+    expect(screen.getByText(/This list is empty. Later fallback layers may still apply./)).toBeInTheDocument();
   });
 });
 
