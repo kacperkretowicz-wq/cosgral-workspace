@@ -29,6 +29,8 @@ export const IPC_CHANNELS = {
   agentCreateBot: "agent:create-bot",
   agentUpdateBot: "agent:update-bot",
   agentSetAvatar: "agent:set-avatar",
+  /** COSGRAL W4-K3: hide an agent from the sidebar or show it again. */
+  agentSetBotHidden: "agent:set-bot-hidden",
   agentDeleteBot: "agent:delete-bot",
   agentReadConversation: "agent:read-conversation",
   agentListConversationReads: "agent:list-conversation-reads",

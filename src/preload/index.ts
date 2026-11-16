@@ -225,6 +225,7 @@ function isBotSummary(value: unknown): value is BotSummary {
     isBoolean(value.notifications) &&
     isAgentModel(value.model) &&
     (value.activeModel === undefined || isAgentModel(value.activeModel)) &&
+    (value.hidden === undefined || isBoolean(value.hidden)) &&
     isReasoningEffort(value.reasoningEffort) &&
     nullableString(value.threadId, "thread ID") &&
     isString(value.workspacePath) &&
@@ -631,10 +632,11 @@ const openbotApi: OpenBotDesktopApi = {
     retryStart: () => invokeAgent(IPC_CHANNELS.agentRetryStart, null, decodeAgentStatus),
     getUsage: () => invokeAgent(IPC_CHANNELS.agentGetUsage, null, decodeAccountUsage),
     listModels: () => invokeAgent(IPC_CHANNELS.agentListModels, null, decodeAgentModels),
-    listBots: () => invokeAgent(IPC_CHANNELS.agentListBots, null, decodeBots),
+    listBots: (input) => invokeAgent(IPC_CHANNELS.agentListBots, input ?? null, decodeBots),
     createBot: () => invokeAgent(IPC_CHANNELS.agentCreateBot, null, decodeBot),
     updateBot: (input) => invokeAgent(IPC_CHANNELS.agentUpdateBot, input, decodeBot),
     setAvatar: (input) => invokeAgent(IPC_CHANNELS.agentSetAvatar, input, decodeBot),
+    setBotHidden: (input) => invokeAgent(IPC_CHANNELS.agentSetBotHidden, input, decodeBot),
     deleteBot: (botId) => invokeAgent(IPC_CHANNELS.agentDeleteBot, botId, decodeVoid),
     readConversation: (botId) => invokeAgent(IPC_CHANNELS.agentReadConversation, botId, decodeConversation),
     listConversationReads: () => invokeAgent(IPC_CHANNELS.agentListConversationReads, null, decodeReadStates),

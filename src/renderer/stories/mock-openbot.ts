@@ -705,7 +705,17 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       getStatus: async () => clone(agentStatus),
       getUsage: async () => clone(usage),
       listModels: async () => clone(models),
-      listBots: async () => clone(bots),
+      listBots: async (input) =>
+        clone(input?.includeHidden === false ? bots.filter((bot) => bot.hidden !== true) : bots),
+      setBotHidden: async ({ botId, hidden }) => {
+        const current = bots.find((bot) => bot.id === botId);
+        if (!current) throw new Error("Agent not found");
+        const { hidden: _previous, ...rest } = current;
+        const updated: BotSummary = hidden ? { ...rest, hidden: true } : rest;
+        bots = bots.map((bot) => (bot.id === botId ? updated : bot));
+        emitAgentEvent({ type: "bots-changed", bots });
+        return clone(updated);
+      },
       createBot: async () => {
         const bot = createBotSummary();
         bots = [...bots, bot];

@@ -442,6 +442,34 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     expect(settings.memory.essentialCount).toBe(2);
   });
 
+  it("COSGRAL W4-K3: hiding an agent announces the change, keeps it in the engine's list and can be undone", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    const bot = await service.createBot();
+    const announced = () => events.flatMap((event) => (event.type === "bots-changed" ? [event.bots] : []));
+
+    const hidden = await service.setBotHidden(bot.id, true);
+    expect(hidden.hidden).toBe(true);
+    expect(
+      announced()
+        .at(-1)
+        ?.find((candidate) => candidate.id === bot.id)?.hidden,
+    ).toBe(true);
+    // The agent still exists for everything inside the program (channels, workflows, the dock, notifications).
+    expect(service.listBots().find((candidate) => candidate.id === bot.id)?.hidden).toBe(true);
+
+    await service.setBotHidden(bot.id, false);
+    expect(
+      announced()
+        .at(-1)
+        ?.find((candidate) => candidate.id === bot.id)?.hidden,
+    ).toBeUndefined();
+    await expect(service.setBotHidden("ghost", true)).rejects.toThrow(/Unknown bot/);
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();

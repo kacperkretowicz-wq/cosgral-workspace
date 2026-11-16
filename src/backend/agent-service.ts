@@ -891,6 +891,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return bot;
   }
 
+  /** COSGRAL W4-K3: hide an agent from the sidebar or show it again. It keeps working either way. */
+  async setBotHidden(botId: string, hidden: boolean): Promise<BotSummary> {
+    const bot = await this.#store.setHidden(botId, hidden);
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    return bot;
+  }
+
   resolveAvatar(botId: string): { path: string; mimeType: AvatarImageInput["mimeType"]; version: string } | null {
     return this.#store.resolveAvatar(botId);
   }

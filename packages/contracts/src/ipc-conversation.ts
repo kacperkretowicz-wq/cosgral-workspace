@@ -147,6 +147,8 @@ export interface BotSummary {
   avatarUrl: string | null;
   /** COSGRAL W3: set while turns run on a fallback model instead of `model` (see ipc-providers.ts). */
   activeModel?: AgentModelId;
+  /** COSGRAL W4-K3: the person hid the agent from the sidebar. It keeps working. Missing means visible. */
+  hidden?: boolean;
 }
 
 export const AGENT_MODELS = [
@@ -220,6 +222,17 @@ export interface AvatarImageInput {
 export interface SetAgentAvatarInput {
   botId: string;
   image: AvatarImageInput | null;
+}
+
+/** COSGRAL W4-K3: omitted or `includeHidden: true` = every agent (hidden ones carry `hidden: true`); `false` = only visible. */
+export interface ListBotsInput {
+  includeHidden?: boolean;
+}
+
+/** COSGRAL W4-K3: hide an agent from the sidebar (it keeps working) or show it again. */
+export interface SetBotHiddenInput {
+  botId: string;
+  hidden: boolean;
 }
 
 export type ConversationMessageAuthor = "user" | "assistant" | "agent" | "system";

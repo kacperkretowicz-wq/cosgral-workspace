@@ -46,6 +46,7 @@ import type {
   ConversationWithReadState,
   DraftAttachment,
   InterruptTurnInput,
+  ListBotsInput,
   MarkConversationReadInput,
   OpenAttachmentInput,
   QueuedMessageReceipt,
@@ -55,6 +56,7 @@ import type {
   RespondToPromptInput,
   SendMessageInput,
   SetAgentAvatarInput,
+  SetBotHiddenInput,
   SetMessageReactionInput,
   SetQueuePausedInput,
   SteerQueuedMessageInput,
@@ -232,12 +234,15 @@ export interface AgentDesktopApi {
   getStatus: () => Promise<AgentStatus>;
   getUsage: () => Promise<AccountUsage>;
   listModels: () => Promise<AgentModelOption[]>;
-  listBots: () => Promise<BotSummary[]>;
+  /** COSGRAL W4-K3: with no input, every agent (hidden ones have `hidden: true`); `{ includeHidden: false }` = only visible ones. */
+  listBots: (input?: ListBotsInput) => Promise<BotSummary[]>;
   createBot: () => Promise<BotSummary>;
   /** COSGRAL W4-BE2: start the agent CLIs again after a failed start; answers with the new status. This computer only. */
   retryStart?: () => Promise<AgentStatus>;
   updateBot: (input: UpdateBotInput) => Promise<BotSummary>;
   setAvatar: (input: SetAgentAvatarInput) => Promise<BotSummary>;
+  /** COSGRAL W4-K3: hide an agent from the sidebar or show it again; it keeps working. `bots-changed` follows. This computer only. */
+  setBotHidden: (input: SetBotHiddenInput) => Promise<BotSummary>;
   deleteBot: (botId: string) => Promise<void>;
   readConversation: (botId: string) => Promise<ConversationWithReadState>;
   listConversationReads: () => Promise<Record<string, ConversationReadState>>;

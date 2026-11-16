@@ -9,6 +9,7 @@ import {
   isAvatarSeed,
   isMessageReaction,
   isReasoningEffort,
+  type ListBotsInput,
   type MarkConversationReadInput,
   type OpenAttachmentInput,
   type ReorderQueueInput,
@@ -16,6 +17,7 @@ import {
   type RespondToPromptInput,
   type SendMessageInput,
   type SetAgentAvatarInput,
+  type SetBotHiddenInput,
   type SetMessageReactionInput,
   type SetQueuePausedInput,
   type SteerQueuedMessageInput,
@@ -86,6 +88,20 @@ export function parseMarkConversationRead(value: unknown): MarkConversationReadI
     throughMessageId:
       throughMessageId === null ? null : requireString(throughMessageId, "throughMessageId", INPUT_LIMITS.identifier),
   };
+}
+
+export function parseListBots(value: unknown): ListBotsInput {
+  if (value === null || value === undefined) return {};
+  if (!isObject(value)) throw new Error("Invalid list agents request.");
+  if (value.includeHidden === undefined) return {};
+  if (!isBoolean(value.includeHidden)) throw new Error("includeHidden must be true or false.");
+  return { includeHidden: value.includeHidden };
+}
+
+export function parseSetBotHidden(value: unknown): SetBotHiddenInput {
+  if (!isObject(value)) throw new Error("Invalid hide agent request.");
+  if (!isBoolean(value.hidden)) throw new Error("hidden must be true or false.");
+  return { botId: requireString(value.botId, "botId", INPUT_LIMITS.identifier), hidden: value.hidden };
 }
 
 export function parseUpdateBot(value: unknown): UpdateBotInput {
