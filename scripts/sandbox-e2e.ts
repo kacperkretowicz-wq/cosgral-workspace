@@ -10,14 +10,15 @@
 // Run it with Node (Playwright's Electron launcher does not finish its handshake under Bun).
 
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
-import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import type { IncomingHttpHeaders } from "node:http";
+import { createHash } from "node:crypto";
+import { createReadStream, existsSync } from "node:fs";
+import { mkdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import { Agent, request } from "node:https";
 import { dirname, join, resolve, sep } from "node:path";
 import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
-import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -196,6 +197,71 @@ function sandboxEnvironment(root: string): Record<string, string> {
   };
 }
 
+// W5-BE1: a loopback stand-in for the official CLI release servers (GitHub releases of openai/codex). The "CLI" it
+// serves is a copy of the Node that runs this script (it answers `--version`), so nothing from the internet runs.
+interface CliStandIn {
+  base: string;
+  /** Version the "latest" endpoints name. */
+  latest: string;
+  /** Serve other bytes than the release metadata says (a failed SHA-256 check). */
+  corrupt: boolean;
+  fileRequests: number;
+  sha256: string;
+  close: () => Promise<void>;
+}
+
+async function startCliStandIn(file: string): Promise<CliStandIn> {
+  const size = (await stat(file)).size;
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(file)) hash.update(chunk);
+  const sha256 = hash.digest("hex");
+  const state = { latest: "1.0.0", corrupt: false, fileRequests: 0 };
+  const server: Server = createServer((request, response) => {
+    const path = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+    const base = `http://127.0.0.1:${portOf(server)}`;
+    const release = (version: string) => ({
+      tag_name: `rust-v${version}`,
+      assets: [
+        {
+          name: "codex-x86_64-pc-windows-msvc.exe",
+          size,
+          digest: `sha256:${sha256}`,
+          browser_download_url: `${base}/files/codex/${version}`,
+        },
+      ],
+    });
+    const tag = path.match(/^\/gh\/tags\/rust-v([0-9.]+)$/)?.[1];
+    if (path === "/gh/latest" || tag) {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(release(tag ?? state.latest)));
+      return;
+    }
+    if (/^\/files\/codex\/[0-9.]+$/.test(path)) {
+      state.fileRequests += 1;
+      response.writeHead(200, { "content-length": String(size) });
+      if (state.corrupt) {
+        response.end(Buffer.alloc(size, 0x41));
+        return;
+      }
+      createReadStream(file).pipe(response);
+      return;
+    }
+    response.writeHead(404).end();
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return Object.assign(state, {
+    base: `http://127.0.0.1:${portOf(server)}`,
+    sha256,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  });
+}
+
+function portOf(server: Server): number {
+  const address = server.address();
+  if (!address || isString(address)) throw new Error("The CLI stand-in has no port.");
+  return address.port;
+}
+
 async function installFixture(root: string): Promise<{ codex: string; claude: string }> {
   const folder = join(root, "fixture");
   await mkdir(folder, { recursive: true });
@@ -312,6 +378,9 @@ async function main(): Promise<void> {
     await mkdir(folder, { recursive: true });
   }
   const fixture = await installFixture(root);
+  // W5-BE1: the official CLI release servers are replaced by a loopback stand-in (the program is not packaged).
+  const cliStandIn = await startCliStandIn(process.execPath);
+  process.env.COSGRAL_CLI_TEST_BASE = cliStandIn.base;
   const phone: { fingerprint: string; base: string } = { fingerprint: "", base: "" };
   const first = await launch(root, fixture);
   try {
@@ -670,6 +739,67 @@ async function main(): Promise<void> {
       assert(String(usage.reason).startsWith("Not installed"), `Usage says why: ${String(usage.reason)}`);
       assert.equal(seen.codex, "ok");
     });
+    await step(
+      "cli: download from the stand-in asks first, checks SHA-256, updates without a card, removes",
+      async () => {
+        // W5-BE1: the first download asks on a card in Needs you; the loopback stand-in plays the official servers.
+        const downloadCards = async () => {
+          const pending = await page.evaluate("window.openbot.agent.listPendingRequests()");
+          return (Array.isArray(pending) ? pending : [])
+            .map(asRecord)
+            .filter(
+              (item) => item.kind === "draft-preview" && String(asRecord(item.card).title).startsWith("Download Codex"),
+            )
+            .map((item) => String(asRecord(item.card).requestId));
+        };
+        const cliState = async (call: string) => asRecord(await page.evaluate(`window.openbot.subscriptions.${call}`));
+        // Started without waiting: it answers only after the card below.
+        await page.evaluate(
+          "(() => { window.__cosgralCliInstall = window.openbot.subscriptions.installCli({ id: 'codex' }); return true; })()",
+        );
+        let cards: string[] = [];
+        for (let attempt = 0; attempt < 40 && cards.length === 0; attempt += 1) {
+          await page.waitForTimeout(250);
+          cards = await downloadCards();
+        }
+        assert.equal(cards.length, 1, "One download card shows up in Needs you");
+        await page.evaluate(
+          `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cards[0])}, decision: "send" })`,
+        );
+        const installed = asRecord(await page.evaluate("window.__cosgralCliInstall"));
+        console.log(`     installed: ${JSON.stringify({ ...installed, executable: "(sandbox)" })}`);
+        assert.equal(installed.error, null, `no error: ${String(installed.error)}`);
+        assert.equal(installed.managedVersion, "1.0.0");
+        const executable = String(installed.executable);
+        assert(executable.startsWith(root), "The downloaded CLI is inside the sandbox profile");
+        const bytes = await readFile(executable);
+        assert.equal(
+          createHash("sha256").update(bytes).digest("hex"),
+          cliStandIn.sha256,
+          "The file is the verified one",
+        );
+
+        cliStandIn.latest = "1.1.0";
+        const updated = await cliState("updateCli({ id: 'codex' })");
+        assert.equal(updated.managedVersion, "1.1.0", `updated: ${String(updated.error)}`);
+        assert.equal((await downloadCards()).length, 0, "An update after the first yes needs no card");
+        assert(!existsSync(dirname(executable)), "The older version folder is gone");
+
+        cliStandIn.latest = "1.2.0";
+        cliStandIn.corrupt = true;
+        const requestsBefore = cliStandIn.fileRequests;
+        const refused = await cliState("updateCli({ id: 'codex' })");
+        cliStandIn.corrupt = false;
+        assert.match(String(refused.error), /SHA-256/, "A file that fails the check is refused");
+        assert.equal(refused.managedVersion, "1.1.0", "The verified version stays");
+        assert.equal(cliStandIn.fileRequests - requestsBefore, 1, "No second try after a failed check");
+
+        const removed = await cliState("removeCli({ id: 'codex' })");
+        assert.equal(removed.managedVersion, null);
+        assert(!existsSync(String(updated.executable)), "The downloaded CLI is removed");
+        assert(existsSync(fixture.codex), "The CLI the program runs (not downloaded) is untouched");
+      },
+    );
     await step("ipc: every read-only call of window.openbot answers", async () => {
       const answers = await page.evaluate(GETTER_SMOKE);
       const results = (Array.isArray(answers) ? answers : []).map((item) => {
@@ -829,6 +959,7 @@ async function main(): Promise<void> {
   } finally {
     await fourth.app.close().catch(() => undefined);
     await later.fifth?.app.close().catch(() => undefined);
+    await cliStandIn.close().catch(() => undefined);
   }
   await writeFile(
     join(evidence, "run.json"),
