@@ -178,6 +178,12 @@ export const IPC_CHANNELS = {
   apiKeysSet: "api-keys:set",
   apiKeysRemove: "api-keys:remove",
   apiKeysCheck: "api-keys:check",
+  // COSGRAL W5-K2: own model endpoints.
+  endpointsList: "endpoints:list",
+  endpointsSave: "endpoints:save",
+  endpointsRemove: "endpoints:remove",
+  endpointsCheck: "endpoints:check",
+  endpointsDetectLocal: "endpoints:detect-local",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

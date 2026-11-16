@@ -5,8 +5,11 @@ import type { AgentProviderId, QueueSnapshot, QueueSteerSupport } from "@openbot
 // (`acp-client.ts`) has no such request, so a message for an ACP agent waits for the turn to end.
 
 const STEER_UNAVAILABLE_ACP = "This agent's provider (ACP) cannot take new input during a turn. The message goes next.";
+const STEER_UNAVAILABLE_ENDPOINT =
+  "This agent's model endpoint cannot take new input during a turn. The message goes next.";
 
 export function steerSupport(provider: AgentProviderId): QueueSteerSupport {
+  if (provider === "endpoint") return { available: false, reason: STEER_UNAVAILABLE_ENDPOINT };
   return provider === "acp" ? { available: false, reason: STEER_UNAVAILABLE_ACP } : { available: true, reason: null };
 }
 

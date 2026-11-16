@@ -3,7 +3,7 @@ import { chmod, copyFile, mkdir, readFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { AgentProviderId, BotSummary, ConversationMessage, ConversationSnapshot } from "@openbot/contracts/ipc";
-import { isAcpModel, isClaudeModel, isImageGenerationInfo } from "@openbot/contracts/ipc";
+import { isAcpModel, isClaudeModel, isEndpointModel, isImageGenerationInfo } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { migrateOpenBotDatabase } from "./openbot-database-schema";
 
@@ -1218,7 +1218,8 @@ function decodeSessionRow(value: unknown): SessionRow | null {
   if (!row) return null;
   const provider = requiredStringColumn(row, "provider");
   const state = requiredStringColumn(row, "state");
-  if (provider !== "codex" && provider !== "claude" && provider !== "acp") throw new Error("Invalid provider column.");
+  if (provider !== "codex" && provider !== "claude" && provider !== "acp" && provider !== "endpoint")
+    throw new Error("Invalid provider column.");
   if (state !== "active" && state !== "inactive" && state !== "failed") {
     throw new Error("Invalid provider session state column.");
   }
@@ -1332,7 +1333,10 @@ function providerSessionValue(value: DynamicRecord | null): ProviderSession | nu
     !value ||
     !isString(value.id) ||
     !isString(value.threadId) ||
-    (value.provider !== "codex" && value.provider !== "claude" && value.provider !== "acp") ||
+    (value.provider !== "codex" &&
+      value.provider !== "claude" &&
+      value.provider !== "acp" &&
+      value.provider !== "endpoint") ||
     !isString(value.externalSessionId) ||
     !isString(value.model) ||
     !isString(value.effort) ||
@@ -1402,6 +1406,7 @@ function conversationSnapshotValue(value: DynamicRecord | null): ConversationSna
 }
 
 export function providerForStoredModel(model: BotSummary["model"]): AgentProviderId {
+  if (isEndpointModel(model)) return "endpoint";
   return isAcpModel(model) ? "acp" : isClaudeModel(model) ? "claude" : "codex";
 }
 

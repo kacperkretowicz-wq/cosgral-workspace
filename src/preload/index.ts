@@ -83,6 +83,7 @@ import { createApprovalRulesApi } from "./approval-rules-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
+import { createEndpointsApi } from "./endpoints-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMobileApi } from "./mobile-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
@@ -796,6 +797,7 @@ const openbotApi: OpenBotDesktopApi = {
   appData: createAppDataApi(invokeAgent),
   subscriptions: createSubscriptionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
+  endpoints: createEndpointsApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),
