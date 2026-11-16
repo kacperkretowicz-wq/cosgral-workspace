@@ -165,6 +165,7 @@ import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
+import { registerPlansIpc } from "./plans-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -868,6 +869,8 @@ function registerIpcHandlers(
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W6-BE1: the threads of an agent (this computer only).
   registerThreadsIpc(() => agentService);
+  // COSGRAL W6-BE3: the plan card (this computer only).
+  registerPlansIpc(() => agentService);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({

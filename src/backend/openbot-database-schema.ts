@@ -296,6 +296,25 @@ const SCHEMA_SQL = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json))
   );
   CREATE INDEX IF NOT EXISTS kept_drafts_kept_at ON projection_kept_drafts(kept_at);
+  -- COSGRAL W6-BE3: the plan cards of an agent's thread (Approve / Reject, progress). Kept with the conversation.
+  CREATE TABLE IF NOT EXISTS projection_plans (
+    plan_id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    thread_id TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS plans_thread ON projection_plans(agent_id, thread_id, created_at);
+  -- COSGRAL W6-BE3: messages the person pinned (they survive a restart).
+  CREATE TABLE IF NOT EXISTS projection_message_pins (
+    thread_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    agent_id TEXT NOT NULL,
+    pinned_at TEXT NOT NULL,
+    PRIMARY KEY (thread_id, message_id)
+  );
+  CREATE INDEX IF NOT EXISTS message_pins_agent ON projection_message_pins(agent_id, thread_id, pinned_at);
   -- COSGRAL W2: private agent memories ("essential" = always in the prompt, "searchable" = found with a tool).
   -- Channel memory is separate: projection_channel_memories above (channel engine, W1-BE2).
   CREATE TABLE IF NOT EXISTS projection_agent_memories (

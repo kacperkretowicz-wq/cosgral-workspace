@@ -16,6 +16,7 @@ import type {
   AgentEyesState,
   AgentMcpServerSetting,
   AgentModelOption,
+  AgentPlan,
   AgentPromptQuestion,
   AgentProviderStatus,
   AgentStatus,
@@ -40,6 +41,7 @@ import type {
   DraftPreviewResolution,
   ImageGenerationInfo,
   KeptDraft,
+  ListPlansInput,
   PendingAgentPrompt,
   PendingAgentRequest,
   PromptResolution,
@@ -50,6 +52,7 @@ import type {
   RespondToApprovalInput,
   RespondToBrowserTakeoverInput,
   RespondToDraftPreviewInput,
+  RespondToPlanInput,
   RespondToPromptInput,
   RespondToVaultRequestInput,
   SendMessageInput,
@@ -114,6 +117,7 @@ import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { isMemoryToolName, MEMORY_DYNAMIC_TOOLS, MemoryService } from "./memory-service";
 import { MemoryStore } from "./memory-store";
+import { SqlitePlanStore } from "./plan-store";
 import {
   type AccountRateLimitResult,
   type AccountRateLimitsReadResult,
@@ -363,6 +367,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W1-BE3: draft preview / confirm cards and browser takeovers. */
   readonly #cards: ActionCards;
   readonly #drafts: DraftStore;
+  /** COSGRAL W6-BE3: the plan cards of the threads. */
+  readonly #plans: SqlitePlanStore;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
   readonly #skillTools: SkillTools;
@@ -471,10 +477,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#memory.on("event", (event: AgentEvent) => this.#emit(event));
     this.#mcp = mcp;
     this.#drafts = new DraftStore(store.database);
+    this.#plans = new SqlitePlanStore(store.database);
     this.#cards = new ActionCards({
       emit: (event) => this.#emit(event),
       order: () => this.#pendingOrder(),
       drafts: this.#drafts,
+      plans: this.#plans,
       tabs: () => this.#browser.listTabs?.() ?? [],
       showTab: (tabId) => this.#browser.activate?.(tabId),
     });
@@ -745,6 +753,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W1-BE3: the user's Send / Edit / Keep draft on a draft preview or confirm card. */
   async respondToDraftPreview(input: RespondToDraftPreviewInput): Promise<void> {
     this.#cards.respondToDraftPreview(input);
+  }
+
+  /** COSGRAL W6-BE3: the user's Approve / Reject on a plan card (no editing, Q9). */
+  async respondToPlan(input: RespondToPlanInput): Promise<AgentPlan> {
+    return this.#cards.respondToPlan(input);
+  }
+
+  /** COSGRAL W6-BE3: the plans of a thread (default: the thread shown for this agent), newest first. */
+  async listPlans(input: ListPlansInput): Promise<AgentPlan[]> {
+    const threadId = input.threadId ?? (await this.#threads.activeThreadId(input.botId));
+    return threadId ? this.#cards.listPlans({ botId: input.botId, threadId }) : [];
   }
 
   /** COSGRAL W1-BE3: the user takes over a browser tab, gives it back, or declines. */
@@ -1193,6 +1212,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (this.#drafts.pruneBots(this.#store.list().map((candidate) => candidate.id))) {
       this.#emit({ type: "drafts-changed", drafts: this.#drafts.list() });
     }
+    // COSGRAL W6-BE3: so do its plans.
+    this.#plans.pruneBots(this.#store.list().map((candidate) => candidate.id));
   }
 
   async initialize(): Promise<void> {
@@ -1201,6 +1222,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#mailbox.initialize();
     // COSGRAL W6-BE1: what was sent before threads belongs to the thread each agent already had.
     await this.#threads.initialize();
+    // COSGRAL W6-BE3: no agent waits for a plan answer after a restart; open plans close (nothing counts as approved).
+    this.#cards.recoverPlans();
     this.#recoverPersistedTurns();
     this.#initialized = true;
     await this.#connect("starting", ["codex", "claude"]);
@@ -3386,6 +3409,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         case "vault-request":
           if (request.request.botId === botId) add(request.request.threadId);
           break;
+        case "plan":
+          if (request.plan.botId === botId) add(request.plan.threadId);
+          break;
       }
     }
     return counts;
@@ -3452,6 +3478,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       case "draft-preview":
         this.#reportThreadActivity(event.card.botId);
         return;
+      case "plan-changed":
+        this.#reportThreadActivity(event.plan.botId);
+        return;
       case "browser-takeover":
       case "vault-request":
         this.#reportThreadActivity(event.request.botId);
@@ -3505,8 +3534,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     if (this.#snapshots.get(input.botId)?.threadId === input.threadId) this.#snapshots.delete(input.botId);
     this.#threadActivitySignatures.delete(`${input.botId}\u0000${input.threadId}`);
-    // COSGRAL W6-BE3: its context numbers and counters go with it.
+    // COSGRAL W6-BE3: its context numbers and counters go with it, and so do its plans and pins.
     this.forgetContext(input.botId, input.threadId);
+    this.#cards.forgetThreadPlans(input.botId, input.threadId);
     return this.#afterThreadChange(input.botId, list);
   }
 

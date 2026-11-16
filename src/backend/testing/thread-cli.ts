@@ -21,6 +21,7 @@ export class ThreadCli extends EventEmitter implements AgentClient {
   failCompaction = false;
   running = false;
   #threads = 0;
+  #toolCalls = 0;
 
   start(): void {
     this.running = true;
@@ -116,8 +117,23 @@ export class ThreadCli extends EventEmitter implements AgentClient {
     send("turn/completed", { threadId, turn: { id: turnId, status: "completed" } });
   }
 
+  /** What the program answered to the CLI's own requests (tool calls, approvals), in order. */
+  readonly responses: Array<{ id: RequestId; result: unknown }> = [];
+
+  /** Asks the program for a tool of its own, like the CLI does when the model calls one. */
+  callTool(turn: { threadId: string; turnId: string }, namespace: string, tool: string, args: unknown): void {
+    this.#toolCalls += 1;
+    this.emit("request", {
+      method: "item/tool/call",
+      id: `tool-${this.#toolCalls}-${tool}`,
+      params: { ...turn, callId: `call-${tool}`, namespace, tool, arguments: args },
+    });
+  }
+
   notify(): void {}
-  respond(_id: RequestId, _result: unknown): void {}
+  respond(id: RequestId, result: unknown): void {
+    this.responses.push({ id, result });
+  }
   respondError(_id: RequestId, _error: RpcError): void {}
 }
 
