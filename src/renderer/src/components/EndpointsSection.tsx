@@ -3,6 +3,7 @@ import {
   ENDPOINT_LIMITS,
   ENDPOINT_PRESETS,
   type EndpointKind,
+  type EndpointsDesktopApi,
   endpointModelId,
   type ModelEndpoint,
 } from "@openbot/contracts/ipc";
@@ -42,8 +43,8 @@ function errorText(error: unknown, fallback: string): string {
 }
 
 /** Own model endpoints: OpenAI-compatible servers, Ollama and LM Studio (W5-K2). Nothing is contacted until you ask. */
-export function EndpointsSection() {
-  const api = window.openbot.endpoints;
+export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
+  const api = props.api ?? window.openbot.endpoints;
   const [endpoints, setEndpoints] = createSignal<ModelEndpoint[]>([]);
   const [draft, setDraft] = createSignal<Draft | null>(null);
   const [error, setError] = createSignal("");
@@ -58,7 +59,7 @@ export function EndpointsSection() {
       .list()
       .then(setEndpoints)
       .catch((e: unknown) => setError(errorText(e, "Could not load the endpoints.")));
-    const off = window.openbot.agent?.onEvent((event) => {
+    const off = window.openbot?.agent?.onEvent((event) => {
       if (event.type === "endpoints-changed") setEndpoints(event.endpoints);
     });
     return () => off?.();
