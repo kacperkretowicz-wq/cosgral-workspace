@@ -20,6 +20,22 @@
 
 **Dla raportu 8:30 zostają do odpowiedzi właściciela:** wiersze 6 i 7 (repo, historia), 10 (konto lub maszyna do próby instalatora), 11 (aktualizacje), 15 (ochrona gałęzi i CI), kto płaci za klucze API (część wiersza 5).
 
+## Nowe od 16.11 rano (z wyników W5, aktualizacja 07:50)
+
+**Do raportu 8:30: 5 punktów, z czego po korekcie 17.11 otwarte są 4 (N3 zamknięte, N4 zawężone). Żaden nie blokuje dalszej pracy; domyślne zachowanie jest w kolumnie „Bez decyzji”.** Źródła: raporty na integracji (`kk-w5-k1.md`, `kk-w5-k2.md`, `backend-w5-be3.md`, `backend-w5-be4.md`, `backend-w5-be7.md`, `backend-w6-be5.md`, `T2-odbior-czysty-windows.md`). Raporty K2 i BE4 przeczytałem 17.11; przegląd bezpieczeństwa (`tester-w5-security-review.md`) tylko w nagłówku. Korekta oparta na integracji `80941fd49`; N1, N2 i N5 sprawdziłem tylko w raportach W5 (G2b, G3b, T4, K2): nic w nich ich nie zmienia (G2b nie założył czystego konta Windows). Raportów W6 i W8 poza ACP nie czytałem.
+
+| Nr | Decyzja (1 zdanie) | Rekomendacja | Bez decyzji | Co blokuje | Źródło |
+|---|---|---|---|---|---|
+| N1 | Czy konto Windows albo maszyna do odbioru G2 na czystym Windows (G02–G12) jest gotowa i kiedy; runbook jest, potrzebne konto bez Codex i Claude w `PATH` oraz Twoje logowanie. | Tester: nowe konto Windows, ok. 20–40 min przygotowania; termin: brak w źródłach. | Bramka G2 nie zostanie zaliczona; reszta W5 idzie na atrapach. | **Bramka G2** i wiersz 10 (test instalatora na czystym koncie). | `T2-odbior-czysty-windows.md` (§1, §3, §5) |
+| N2 | Czy plain `http` do hosta spoza sieci lokalnej ma zostać odrzucany dla własnych punktów końcowych (Ollama, LM Studio, serwery zgodne z OpenAI)? | KK (W5-K2): zostawić odrzucanie, bo klucz i rozmowa poszłyby jawnie przez internet; poluzowanie to jedna reguła w `checkEndpointUrl`. | Odrzucane; własny punkt zdalny działa tylko przez https. | Nic (tylko W5-K2). | wynik W5-K2 w kanale (wykracza poza polecenie) |
+| N3 | **ZAMKNIĘTE (korekta 17.11):** listy modeli zapasowych „per dostawca” są zrobione zgodnie z Twoją decyzją z 16.11: trzy warstwy (agent, dostawca, ogólna), do 8 modeli każda, po kontach z puli. Czeka tylko odbiór ekranu list w prawdziwym oknie. | Nic do rozstrzygnięcia. | Działa tak, jak opisano. | Nic (odbiór w oknie). | `backend-w5-be7.md`, `ui-w5-ui6.md`, `tester-parytet-w5b.md` |
+| N4 | **ZAWĘŻONE (korekta 17.11):** gotowe ustawienia ACP są dla Gemini CLI i Antigravity (W6), z logowaniem w oknie. Dla OpenCode, Copilot i Cursor nadal nie ma gotowych ustawień: skąd wziąć ich polecenia i argumenty? | Brak w źródłach (specyfikacja sama mówi, że poleceń nie ma; nic nie wymyślono). | Te trzy można dodać tylko ręcznie jako własnego agenta ACP; presetów nie będzie. | Kryterium E05 w `spec-w5.md` (częściowo). | `backend-w6-be5.md` (§4), `ui-w6-ui4.md`, `spec-w5.md` |
+| N5 | Czy akceptujesz, że zmiana konta przy limicie to nowy wątek dostawcy z przekazaniem historii (kontekst może być streszczony), a zapisany klucz API jest używany zawsze aż do usunięcia (także gdy dostawca go odrzucił), od następnego startu procesu? | Brak w źródłach (opisane jako zachowanie przyjęte przez zespół, nie jako pytanie do właściciela). | Działa tak, jak opisano. | Nic; do wiadomości przy odbiorze G2. | `kk-w5-k1.md` (uwaga 3); wynik W5-UI3 w kanale („decyzja Backendu”) |
+
+**Stan innych wierszy po W5 (bez zmian):** 1, 2, 3, 4, 5, 8, 9, 12, 13, 14: rozstrzygnięte lub zaakceptowane (patrz tabela wyżej). **Nadal czekają na Twoją wyraźną zgodę wiersze 6 i 7** (widoczność repo, domyślna gałąź, przepisanie historii z force-push) oraz otwarte 11 (aktualizacje bez wydań) i 15 (ochrona gałęzi i CI). Wiersz 10 zawęża się do N1.
+
+**Czego nie sprawdziłem w tej aktualizacji:** treści raportów K2, BE4 i przeglądu bezpieczeństwa (tylko wyniki w kanale), tego, czy G2 ma ustalony termin, ani czy lider chce któryś z punktów N2–N5 w ogóle zgłaszać właścicielowi (to propozycja; N3–N5 to raczej wiadomości niż decyzje).
+
 ## Na górze (stan sprzed odpowiedzi)
 
 **15 decyzji do podjęcia teraz + 3 na później.** Czas na odpowiedź: ok. 10 min.
