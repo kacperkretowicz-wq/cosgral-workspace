@@ -204,6 +204,9 @@ export const IPC_CHANNELS = {
   providersListUsage: "providers:list-usage",
   providersGetFallbackModels: "providers:get-fallback-models",
   providersSetFallbackModels: "providers:set-fallback-models",
+  // COSGRAL W5-BE4: where an agent's fallback list comes from, and back to the general list.
+  providersGetFallbackInfo: "providers:get-fallback-info",
+  providersResetFallbackModels: "providers:reset-fallback-models",
   routinesList: "routines:list",
   routinesCreate: "routines:create",
   routinesUpdate: "routines:update",

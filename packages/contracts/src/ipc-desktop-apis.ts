@@ -111,6 +111,7 @@ import type { MobileDesktopApi } from "./ipc-mobile";
 import type {
   AcpAgentConfig,
   AcpAgentIdInput,
+  FallbackModelsInfo,
   FallbackModelsInput,
   ProviderUsage,
   SaveAcpAgentInput,
@@ -360,7 +361,12 @@ export interface ProvidersDesktopApi {
   /** One entry per provider (and per ACP agent) with limit state and reset time. */
   listUsage: () => Promise<ProviderUsage[]>;
   getFallbackModels: (botId: string) => Promise<AgentModelId[]>;
+  /** Up to 8, in order, no repeats. `botId` "*" (GENERAL_FALLBACK_SCOPE) is the general list for agents without their own. */
   setFallbackModels: (input: FallbackModelsInput) => Promise<AgentModelId[]>;
+  /** W5-BE4: the agent's own list or the general one, what is really tried, and what cannot run now. */
+  getFallbackInfo?: (botId: string) => Promise<FallbackModelsInfo>;
+  /** W5-BE4: forget the agent's own list; it follows the general list again. */
+  resetFallbackModels?: (botId: string) => Promise<FallbackModelsInfo>;
 }
 
 /** COSGRAL W2: routines and webhooks (see ipc-routines.ts). */

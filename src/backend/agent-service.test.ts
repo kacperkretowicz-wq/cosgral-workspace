@@ -878,6 +878,29 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
       expect(current.listActivity().find((row) => row.botId === "chief")?.limit).toBeNull();
     });
 
+    // COSGRAL W5-BE4: the general list serves agents without their own list; a removed model is skipped; event shape stays.
+    it("uses the general fallback list for an agent without its own list and keeps the event shape", async () => {
+      const { current, events, registry } = await acpService([], "acp:limited");
+      registry.resetFallbackModels("chief");
+      registry.setFallbackModels({ botId: "*", fallbackModels: ["acp:backup"] });
+      await current.sendMessage({ botId: "chief", text: "hello" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "completed");
+      const fallback = events.find((event) => event.type === "model-fallback");
+      expect(fallback && Object.keys(fallback).sort()).toEqual(["botId", "fromModel", "reason", "toModel", "type"]);
+      expect(fallback).toMatchObject({ fromModel: "acp:limited", toModel: "acp:backup" });
+      expect(current.listBots().find((bot) => bot.id === "chief")?.activeModel).toBe("acp:backup");
+    });
+
+    it("skips a fallback model whose ACP agent was removed and goes on to the next one", async () => {
+      const { current, events, registry } = await acpService([], "acp:limited");
+      registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:removed", "acp:backup"] });
+      await current.sendMessage({ botId: "chief", text: "hello" });
+      await waitFor(() => current.listQueue("chief").deliveries[0]?.status === "completed");
+      expect(events.filter((event) => event.type === "model-fallback")).toEqual([
+        expect.objectContaining({ fromModel: "acp:limited", toModel: "acp:backup" }),
+      ]);
+    });
+
     it("leaves no empty answer from the limited attempt", async () => {
       const { current } = await acpService(["acp:backup"], "acp:limited");
       await current.sendMessage({ botId: "chief", text: "hello" });

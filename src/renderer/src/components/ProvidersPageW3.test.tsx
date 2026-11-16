@@ -173,14 +173,18 @@ function row(index: number): HTMLElement {
   return element;
 }
 
-function OrderHarness(props: { initial: AgentModelId[]; onChange?: (items: AgentModelId[]) => void }) {
+function OrderHarness(props: {
+  initial: AgentModelId[];
+  options?: FallbackModelOption[];
+  onChange?: (items: AgentModelId[]) => void;
+}) {
   const [items, setItems] = createSignal<AgentModelId[]>(props.initial);
   return (
     <FallbackOrder
       botName="Chief"
       ownModel="gpt-5.6-luna"
       items={items()}
-      options={OPTIONS}
+      options={props.options ?? OPTIONS}
       dirty
       saving={false}
       onChange={(next) => {
@@ -236,10 +240,26 @@ describe("FallbackOrder", () => {
     expect(changed).toHaveBeenLastCalledWith(["gpt-5.6-terra", "claude-opus-5"]);
   });
 
-  it("stops at four fallback models", () => {
-    render(() => <OrderHarness initial={["gpt-5.6-terra", "claude-sonnet-5", "claude-opus-5", "claude-fable-5"]} />);
+  it("stops at eight fallback models (W5-BE4) and still allows the eighth", () => {
+    const seven: AgentModelId[] = [
+      "gpt-5.6-terra",
+      "claude-sonnet-5",
+      "claude-opus-5",
+      "claude-fable-5",
+      "acp:a",
+      "acp:b",
+      "acp:c",
+    ];
+    const options = [
+      ...OPTIONS,
+      ...(["acp:a", "acp:b", "acp:c", "acp:d", "acp:e"] as const).map((id) => ({ id, name: id })),
+    ];
+    const { unmount } = render(() => <OrderHarness initial={seven} options={options} />);
+    expect(screen.getByLabelText("Add fallback model")).not.toBeDisabled();
+    unmount();
+    render(() => <OrderHarness initial={[...seven, "acp:d"]} options={options} />);
     expect(screen.getByLabelText("Add fallback model")).toBeDisabled();
-    expect(screen.getByText("At most 4 models")).toBeInTheDocument();
+    expect(screen.getByText("At most 8 models")).toBeInTheDocument();
   });
 
   it("says what happens without any fallback", () => {
