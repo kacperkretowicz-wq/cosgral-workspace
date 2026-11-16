@@ -26,6 +26,7 @@ import type {
   ServerSummary,
   StopAgentEyesInput,
   TeamPresenceSnapshot,
+  ThreadList,
   UpdateBotInput,
 } from "@openbot/contracts/ipc";
 import { isClaudeModel } from "@openbot/contracts/ipc";
@@ -82,6 +83,7 @@ import { McpSettings } from "./McpSettings";
 import { AgentMemorySettingsView } from "./MemorySettings";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { ProviderModelPicker } from "./ProviderModelPicker";
+import { providerError } from "./provider-error";
 import {
   REMOTE_DESKTOP_PANEL_DEFAULT,
   REMOTE_DESKTOP_PANEL_MAX,
@@ -92,6 +94,7 @@ import {
 import { RoutinePanel } from "./RoutinePanel";
 import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
+import { ThreadPanel } from "./ThreadPanel";
 import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
 import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
@@ -100,6 +103,7 @@ import { VoiceRecorder } from "./VoiceRecorder";
 type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
 
 interface ConversationProps {
+  onThreadsChanged?: (list: ThreadList) => void;
   agentStatus: AgentStatus;
   bot: BotProfile | undefined;
   bots: BotProfile[];
@@ -277,6 +281,7 @@ export function Conversation(props: ConversationProps) {
   const [chatSearchOpen, setChatSearchOpen] = createSignal(false);
   const [chatSearchQuery, setChatSearchQuery] = createSignal("");
   const [chatSearchMatches, setChatSearchMatches] = createSignal<ChatSearchMatch[]>([]);
+  const [threadActionError, setThreadActionError] = createSignal("");
   const [activeChatSearchIndex, setActiveChatSearchIndex] = createSignal(-1);
   let typingIdleTimer: ReturnType<typeof setTimeout> | undefined;
   let typingBotId: string | null = null;
@@ -1695,6 +1700,10 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </header>
 
+      <Show when={threadActionError()}>
+        <p role="alert">{threadActionError()}</p>
+      </Show>
+      <Show when={props.bot}>{(bot) => <ThreadPanel botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>
@@ -1934,6 +1943,24 @@ export function Conversation(props: ConversationProps) {
                                 onReact={(emoji) => void reactToMessage(message, emoji)}
                                 onReply={() => replyToMessage(message)}
                                 onCopy={() => void copyMessage(message)}
+                                onBranch={
+                                  window.openbot.threads && props.bot?.threadId
+                                    ? () => {
+                                        const bot = props.bot;
+                                        const api = window.openbot.threads;
+                                        if (!bot?.threadId || !api) return;
+                                        void api
+                                          .branch({ botId: bot.id, threadId: bot.threadId, fromMessageId: message.id })
+                                          .then((list) => {
+                                            setThreadActionError("");
+                                            props.onThreadsChanged?.(list);
+                                          })
+                                          .catch((error) =>
+                                            setThreadActionError(providerError(error, "Could not branch the thread.")),
+                                          );
+                                      }
+                                    : undefined
+                                }
                               />
                             </div>
                             <Show when={message.reaction}>

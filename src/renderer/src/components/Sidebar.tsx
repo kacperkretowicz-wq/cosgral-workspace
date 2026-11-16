@@ -10,6 +10,7 @@ import type {
   ExternalDestination,
   SidebarLayout,
   TeamPresenceMember,
+  ThreadList,
   UpdateStatus,
 } from "@openbot/contracts/ipc";
 import { emptySidebarLayout } from "@openbot/contracts/ipc";
@@ -24,6 +25,7 @@ import {
   type SidebarFolderRow,
   type SidebarRow,
 } from "../sidebar-tree";
+import { threadRowLabel } from "../thread-view";
 import { AgentAvatar } from "./AgentAvatar";
 import { EyesBadge } from "./EyesIndicator";
 import { FallbackModelBadge } from "./FallbackModelBadge";
@@ -41,6 +43,8 @@ import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover, Switch, Text } from "./ui";
 
 export interface NeedsYouSidebarItem {
+  threadId?: string;
+  threadTitle?: string;
   botId: string;
   botName: string;
   kind: "question" | "approval" | "takeover" | "vault";
@@ -61,6 +65,7 @@ interface SidebarProps {
   updateStatus: UpdateStatus;
   agentStates: Record<string, SidebarAgentState>;
   needsYouItems?: NeedsYouSidebarItem[];
+  threadLists?: Record<string, ThreadList>;
   /** COSGRAL: agents that are looking at a window, screen or camera right now. */
   lookingBotIds?: string[];
   computerUsingBotIds?: string[];
@@ -79,7 +84,7 @@ interface SidebarProps {
   modelOptions?: AgentModelOption[];
   onMarkBotRead?: (botId: string) => Promise<void>;
   onSelectChannels?: (create?: boolean) => void;
-  onSelectNeedsYou?: (botId: string) => void;
+  onSelectNeedsYou?: (botId: string, threadId?: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
   onEditBot: (botId: string) => void;
@@ -757,8 +762,12 @@ export function Sidebar(props: SidebarProps) {
                   <Button
                     type="button"
                     class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
-                    aria-label={`${item.botName}, Needs you. ${item.summary}`}
-                    onClick={() => (props.onSelectNeedsYou ?? props.onSelectBot)(item.botId)}
+                    aria-label={`${item.botName}, ${item.threadTitle ? `Thread ${item.threadTitle}, ` : ""}Needs you. ${item.summary}`}
+                    onClick={() =>
+                      props.onSelectNeedsYou
+                        ? props.onSelectNeedsYou(item.botId, item.threadId)
+                        : props.onSelectBot(item.botId)
+                    }
                   >
                     <span class="bot-row-copy">
                       <span class="bot-row-heading">
@@ -773,6 +782,9 @@ export function Sidebar(props: SidebarProps) {
                                 : "Approval"}
                         </Badge>
                       </span>
+                      <Show when={item.threadTitle}>
+                        <span class="bot-row-preview">Thread: {item.threadTitle}</span>
+                      </Show>
                       <span class="bot-row-preview">{item.summary}</span>
                     </span>
                   </Button>
@@ -847,6 +859,9 @@ export function Sidebar(props: SidebarProps) {
                       >
                         <span class="bot-row-avatar">
                           <AgentAvatar bot={bot} />
+                          <Show when={props.threadLists?.[bot.id]}>
+                            {(list) => <span class="bot-row-preview">{threadRowLabel(list())}</span>}
+                          </Show>
                           <Show when={props.agentStates[bot.id]}>
                             {(state) => <SidebarAgentIndicator state={state()} />}
                           </Show>

@@ -1,0 +1,35 @@
+.thread-panel {
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-3);
+  background: var(--openbot-bg-surface);
+}
+.thread-panel > summary {
+  cursor: pointer;
+  color: var(--openbot-text-primary);
+}
+.thread-panel-body,
+.thread-list-row {
+  display: grid;
+  gap: var(--openbot-space-3);
+}
+.thread-panel-body {
+  margin-top: var(--openbot-space-3);
+}
+.thread-list {
+  display: grid;
+  gap: var(--openbot-space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.thread-list-row {
+  padding: var(--openbot-space-3);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+}
+.thread-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}

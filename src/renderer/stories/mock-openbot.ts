@@ -56,6 +56,7 @@ import type {
   TeamMemberSummary,
   TeamPresenceSnapshot,
   TeamSessionSummary,
+  ThreadSummary,
   UpdateBotInput,
   UpdateQueuedMessageInput,
   UpdateStatus,
@@ -199,6 +200,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   };
   const agentStatus = clone(options.agentStatus ?? STORY_AGENT_STATUS);
   let bots = clone(options.bots ?? STORY_BOT_SUMMARIES);
+  const threadSnapshots = new Map<string, ConversationSnapshot>();
+  const threadQueues = new Map<string, QueueSnapshot>();
   const models = clone(options.models ?? STORY_MODELS);
   const snapshots = clone(options.snapshots ?? STORY_SNAPSHOTS);
   let browserTabs = clone(options.browserTabs ?? STORY_BROWSER_TABS);
@@ -1275,7 +1278,57 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
     },
     // COSGRAL W6-BE1: several threads per agent (demo; `simulate` is only for stories that build the mock themselves).
-    threads: createMockThreads((event) => emitAgentEvent(event)),
+    threads: createMockThreads(
+      (event) => {
+        if (event.type === "threads-changed" && event.activeThreadId) {
+          const old = getSnapshot(event.botId);
+          if (old.threadId && old.threadId !== event.activeThreadId) {
+            threadSnapshots.set(old.threadId, clone(old));
+            const oldQueue = queues.get(event.botId);
+            if (oldQueue) threadQueues.set(old.threadId, clone(oldQueue));
+          }
+          snapshots[event.botId] = clone(
+            threadSnapshots.get(event.activeThreadId) ??
+              (old.threadId === event.activeThreadId
+                ? old
+                : {
+                    botId: event.botId,
+                    threadId: event.activeThreadId,
+                    activeTurnId: null,
+                    revision: 0,
+                    messages: [],
+                  }),
+          );
+          queues.set(event.botId, clone(threadQueues.get(event.activeThreadId) ?? (old.threadId === event.activeThreadId ? queues.get(event.botId) ?? emptyQueue(event.botId) : emptyQueue(event.botId))));
+          bots = bots.map((bot) => (bot.id === event.botId ? { ...bot, threadId: event.activeThreadId } : bot));
+        }
+        emitAgentEvent(event);
+      },
+      Object.fromEntries(
+        bots.map((bot) => {
+          const id = getSnapshot(bot.id).threadId ?? bot.threadId ?? `thread-${bot.id}`;
+          const thread: ThreadSummary = {
+            id,
+            botId: bot.id,
+            title: "New thread",
+            titled: false,
+            state: "idle",
+            active: true,
+            unread: 0,
+            queued: 0,
+            needsYou: 0,
+            createdAt: "2026-11-16T12:00:00.000Z",
+            updatedAt: "2026-11-16T12:00:00.000Z",
+            archivedAt: null,
+            preview: "",
+            parentThreadId: null,
+            parentTitle: null,
+            branchedFromMessageId: null,
+          };
+          return [bot.id, [thread]];
+        }),
+      ),
+    ),
     // COSGRAL W5-BE3: provider API keys (demo; the answers carry only a mask and a state).
     apiKeys: createMockApiKeysApi(),
     // COSGRAL W6-BE2: conversation context (demo; `simulate` is for stories that build the mock themselves).
@@ -1332,6 +1385,31 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     });
   }
 
+  if (api.threads) {
+    const threads = api.threads;
+    const branch = threads.branch;
+    threads.branch = async (input) => {
+      const current = getSnapshot(input.botId);
+      const parent = current.threadId === input.threadId ? current : threadSnapshots.get(input.threadId);
+      const index = parent?.messages.findIndex((message) => message.id === input.fromMessageId) ?? -1;
+      if (!parent || index < 0) throw new Error("That message is not in this thread.");
+      const history = clone(parent.messages.slice(0, index + 1));
+      const result = await branch(input);
+      if (result.activeThreadId) {
+        const snapshot: ConversationSnapshot = {
+          botId: input.botId,
+          threadId: result.activeThreadId,
+          activeTurnId: null,
+          revision: 0,
+          messages: history,
+        };
+        snapshots[input.botId] = snapshot;
+        threadSnapshots.set(result.activeThreadId, clone(snapshot));
+        emitAgentEvent({ type: "conversation", snapshot });
+      }
+      return result;
+    };
+  }
   return {
     api,
     emitAgentEvent,
