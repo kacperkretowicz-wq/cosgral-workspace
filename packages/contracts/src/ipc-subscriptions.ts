@@ -157,10 +157,62 @@ export interface AgentAccountAssignment {
   accountId: string | null;
 }
 
+/** COSGRAL W5-K1: the account an agent's latest turn runs on (the label, never the e-mail). In memory only. */
+export interface AgentActiveAccount {
+  botId: string;
+  accountId: string;
+  label: string;
+}
+
 export interface AccountsSnapshot {
   accounts: ProviderAccount[];
   pool: PoolSettings;
   assignments: AgentAccountAssignment[];
+  /** COSGRAL W5-K1: which account each agent that already ran a turn answers with now ("answers with account X"). */
+  active?: AgentActiveAccount[];
+}
+
+/**
+ * COSGRAL W5-K1: a turn now runs on another account than the agent's previous turn.
+ * "usage-limit": the previous account hit its limit (the pool moved on); "returned": the first account is free again.
+ */
+export const ACCOUNT_SWITCH_REASONS = ["usage-limit", "returned"] as const;
+export type AccountSwitchReason = (typeof ACCOUNT_SWITCH_REASONS)[number];
+
+export interface AccountSwitched {
+  botId: string;
+  provider: ProviderAccountProvider;
+  fromAccountId: string;
+  fromLabel: string;
+  toAccountId: string;
+  toLabel: string;
+  reason: AccountSwitchReason;
+}
+
+/**
+ * COSGRAL W5-K1: an account hit its usage limit during a turn.
+ * "switched": nothing had been changed yet, so the turn went to the next account on its own (account-switched follows);
+ * "asks": the turn had already changed something, so nothing is repeated on its own: a confirm card asks first;
+ * "exhausted": no other account of the pool is free (the model fallbacks take over, if the agent has any).
+ */
+export const ACCOUNT_LIMIT_OUTCOMES = ["switched", "asks", "exhausted"] as const;
+export type AccountLimitOutcome = (typeof ACCOUNT_LIMIT_OUTCOMES)[number];
+
+export interface AccountLimitReached {
+  botId: string;
+  provider: ProviderAccountProvider;
+  accountId: string;
+  accountLabel: string;
+  /** When the account is free again (ISO). When the provider gave no time, one hour is assumed. */
+  resetsAt: string;
+  /** True when that time is only the assumed default (the provider did not say). */
+  resetsAtAssumed: boolean;
+  outcome: AccountLimitOutcome;
+  /** The account that takes over ("switched" or "asks"); null when "exhausted". */
+  nextAccountId: string | null;
+  nextAccountLabel: string | null;
+  /** The turn had already changed something (a command, a file, a tool call) before the limit. */
+  afterAction: boolean;
 }
 
 export interface AddAccountInput {
@@ -337,7 +389,47 @@ export function isAccountsSnapshot(value: unknown): value is AccountsSnapshot {
     value.accounts.every(isProviderAccount) &&
     isPoolSettings(value.pool) &&
     Array.isArray(value.assignments) &&
-    value.assignments.every((item) => isDynamicRecord(item) && isString(item.botId) && isNullableString(item.accountId))
+    value.assignments.every(
+      (item) => isDynamicRecord(item) && isString(item.botId) && isNullableString(item.accountId),
+    ) &&
+    (value.active === undefined ||
+      (Array.isArray(value.active) &&
+        value.active.every(
+          (item) => isDynamicRecord(item) && isString(item.botId) && isString(item.accountId) && isString(item.label),
+        )))
+  );
+}
+
+export function isAccountSwitched(value: unknown): value is AccountSwitched & { type: "account-switched" } {
+  return (
+    isDynamicRecord(value) &&
+    value.type === "account-switched" &&
+    isString(value.botId) &&
+    isManagedCliId(value.provider) &&
+    isString(value.fromAccountId) &&
+    isString(value.fromLabel) &&
+    isString(value.toAccountId) &&
+    isString(value.toLabel) &&
+    isOneOf(ACCOUNT_SWITCH_REASONS, value.reason)
+  );
+}
+
+export function isAccountLimitReached(
+  value: unknown,
+): value is AccountLimitReached & { type: "account-limit-reached" } {
+  return (
+    isDynamicRecord(value) &&
+    value.type === "account-limit-reached" &&
+    isString(value.botId) &&
+    isManagedCliId(value.provider) &&
+    isString(value.accountId) &&
+    isString(value.accountLabel) &&
+    isString(value.resetsAt) &&
+    isBoolean(value.resetsAtAssumed) &&
+    isOneOf(ACCOUNT_LIMIT_OUTCOMES, value.outcome) &&
+    isNullableString(value.nextAccountId) &&
+    isNullableString(value.nextAccountLabel) &&
+    isBoolean(value.afterAction)
   );
 }
 

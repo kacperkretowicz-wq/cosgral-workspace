@@ -1419,6 +1419,8 @@ if (!hasSingleInstanceLock) {
           if (needsRestart(service.getStatus(), id)) void service.retryStart().catch(() => undefined);
         },
       });
+      // COSGRAL W5-K1: the account pool chooses which CLI answers a turn (nothing changes without extra accounts).
+      service.useAccounts(managedCli.accounts);
       // COSGRAL W3: Mobile Connect (phone pairing by QR; loopback unless the person allows the local network).
       mobileConnect = createMobileConnect({
         userDataPath: app.getPath("userData"),

@@ -24,7 +24,6 @@ function Scene(props: {
   light?: boolean;
 }) {
   const [dismissed, setDismissed] = createSignal(false);
-  const [returnArmed, setReturnArmed] = createSignal(false);
 
   const ok = accountUsageFromSources({
     account,
@@ -54,27 +53,26 @@ function Scene(props: {
         {props.variant === "limit-switched" ? (
           <AccountLimitReachedCard
             view={{
-              reason: "Codex returned a rate limit before the first action.",
+              reason: "Work Codex reached its usage limit before this turn did anything.",
               exhaustedAccountLabel: "Work Codex",
-              switchedToAccountLabel: "Home Codex",
+              outcome: "switched",
+              nextAccountLabel: "Home Codex",
               resetsAt: Math.floor(nowMs / 1000) + 7_200,
-              canReturnAfterReset: true,
-              returnAccountLabel: "Work Codex",
+              resetsAtAssumed: false,
             }}
             nowMs={nowMs}
-            onReturnAfterReset={() => setReturnArmed(true)}
             onDismiss={() => setDismissed(true)}
           />
         ) : null}
         {props.variant === "limit-all" ? (
           <AccountLimitReachedCard
             view={{
-              reason: "Every Codex account in the pool is limited.",
+              reason: "Home Codex reached its usage limit and no other account in the pool is free.",
               exhaustedAccountLabel: "Home Codex",
-              switchedToAccountLabel: null,
+              outcome: "exhausted",
+              nextAccountLabel: null,
               resetsAt: Math.floor(nowMs / 1000) + 7_200,
-              canReturnAfterReset: false,
-              returnAccountLabel: null,
+              resetsAtAssumed: true,
             }}
             nowMs={nowMs}
           />
@@ -84,12 +82,11 @@ function Scene(props: {
             view={{
               toAccountLabel: "Home Codex",
               fromAccountLabel: "Work Codex",
-              reason: "Switched before the first action of the turn.",
+              reason: "Switched because the previous account reached its usage limit.",
             }}
             onDismiss={() => setDismissed(true)}
           />
         ) : null}
-        {returnArmed() ? <p>Return after reset armed</p> : null}
         {dismissed() ? <p>Dismissed</p> : null}
       </div>
     </ThemeFrame>
@@ -142,8 +139,8 @@ export const LimitSwitched: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole("button", { name: "Return to Work Codex after reset" }));
-    await expect(body.getByText("Return after reset armed")).toBeInTheDocument();
+    await expect(canvas.getByText(/goes back to its first account by itself/)).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /Return to/ })).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }));
     await expect(body.getByText("Dismissed")).toBeInTheDocument();
   },
@@ -154,7 +151,7 @@ export const LimitAllExhausted: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(/Every account in the pool is exhausted/)).toBeInTheDocument();
-    await expect(canvas.queryByRole("button", { name: /Return to/ })).toBeNull();
+    await expect(canvas.getByText(/Assumed reset at/)).toBeInTheDocument();
   },
 };
 

@@ -157,6 +157,8 @@ export class ProviderAccounts {
   #assignments: AgentAccountAssignment[] = [];
   readonly #logins = new Map<string, AccountLogin>();
   readonly #running = new Map<string, { process: LoginProcess; timer: NodeJS.Timeout }>();
+  /** COSGRAL W5-K1: the account each agent's latest turn runs on (botId -> accountId). In memory only. */
+  readonly #active = new Map<string, string>();
 
   constructor(deps: ProviderAccountsDeps) {
     this.#deps = deps;
@@ -177,6 +179,7 @@ export class ProviderAccounts {
       accounts: this.#sorted().map((account) => this.#view(account)),
       pool: this.#pool,
       assignments: this.#assignments,
+      active: this.#activeList(),
     });
   }
 
@@ -215,6 +218,7 @@ export class ProviderAccounts {
     await this.#deleteFolder(id);
     this.#accounts = this.#accounts.filter((item) => item.id !== id);
     this.#assignments = this.#assignments.filter((item) => item.accountId !== id);
+    for (const [botId, accountId] of this.#active) if (accountId === id) this.#active.delete(botId);
     if (account.isDefault) {
       const system = this.#accounts.find((item) => item.id === `system-${account.provider}`);
       if (system) system.isDefault = true;
@@ -368,6 +372,16 @@ export class ProviderAccounts {
 
   async setPool(input: SetAccountPoolInput): Promise<AccountsSnapshot> {
     const account = this.#find(input.id);
+    // COSGRAL W5-K1: the limit counts the pool too: after a lower limit, no more accounts may join it.
+    if (input.inPool && !account.inPool) {
+      const inPool = this.#accounts.filter(
+        (item) => item.provider === account.provider && item.inPool && item.id !== account.id,
+      ).length;
+      if (inPool >= this.#pool.maxAccountsPerProvider)
+        throw new Error(
+          `The ${NAMES[account.provider]} pool has ${inPool} accounts and the limit is ${this.#pool.maxAccountsPerProvider}. Take one out of the pool or raise the limit in the pool settings.`,
+        );
+    }
     account.inPool = input.inPool;
     if (input.enabled !== undefined) account.enabled = input.enabled;
     if (input.isDefault)
@@ -392,6 +406,29 @@ export class ProviderAccounts {
     ];
     await this.#changed();
     return this.snapshot();
+  }
+
+  /**
+   * COSGRAL W5-K1: the account is limited until this time (null = free again). Set by the pool when a turn hits a
+   * usage limit; the pool also clears it when the time has passed.
+   */
+  async limitUntil(id: string, until: Date | null): Promise<ProviderAccount> {
+    const account = this.#find(id);
+    account.limitedUntil = until ? until.toISOString() : null;
+    await this.#changed();
+    return this.account(id);
+  }
+
+  /** COSGRAL W5-K1: remembers which account an agent's latest turn runs on, and tells the window. */
+  setActive(botId: string, accountId: string | null): void {
+    if (accountId === null) {
+      if (!this.#active.delete(botId)) return;
+    } else {
+      if (this.#active.get(botId) === accountId) return;
+      this.#find(accountId);
+      this.#active.set(botId, accountId);
+    }
+    this.#emit();
   }
 
   /** A lower limit keeps existing accounts; only new ones are refused. */
@@ -452,6 +489,13 @@ export class ProviderAccounts {
       return;
     }
     await rm(folder, { recursive: true, force: true });
+  }
+
+  #activeList(): Array<{ botId: string; accountId: string; label: string }> {
+    return [...this.#active].flatMap(([botId, accountId]) => {
+      const account = this.#accounts.find((item) => item.id === accountId);
+      return account ? [{ botId, accountId, label: account.label }] : [];
+    });
   }
 
   #view(account: StoredAccount): ProviderAccount {

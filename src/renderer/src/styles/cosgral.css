@@ -1155,3 +1155,10 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   flex-wrap: wrap;
   gap: var(--openbot-space-2);
 }
+
+/* COSGRAL W5-K1: account limit and switch cards above the messages of one agent. */
+.account-notices {
+  display: grid;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-4, 16px) 0;
+}

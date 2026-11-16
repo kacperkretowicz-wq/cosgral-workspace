@@ -43,16 +43,19 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
   readonly provider: AgentProvider = "codex";
   readonly #executable: string;
   readonly #requestTimeoutMs: number;
+  /** COSGRAL W5-K1: the environment of the CLI process (an account's state folder); the program's own by default. */
+  readonly #env: NodeJS.ProcessEnv;
   #decoder = new JsonLineDecoder();
   readonly #pending = new Map<RequestId, PendingRequest>();
   #process: ChildProcessWithoutNullStreams | null = null;
   #nextId = 1;
   #stopping = false;
 
-  constructor(executable: string, requestTimeoutMs = 30_000) {
+  constructor(executable: string, requestTimeoutMs = 30_000, env: NodeJS.ProcessEnv = process.env) {
     super();
     this.#executable = executable;
     this.#requestTimeoutMs = requestTimeoutMs;
+    this.#env = env;
   }
 
   get running(): boolean {
@@ -72,7 +75,8 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
     ]);
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, ...apiKeyEnv("codex") }, // COSGRAL W5-BE3: the key only for this process
+      // COSGRAL W5-K1 + W5-BE3: account env folder, then API key only for this process
+      env: { ...this.#env, ...apiKeyEnv("codex") },
       windowsHide: true,
       windowsVerbatimArguments,
     });

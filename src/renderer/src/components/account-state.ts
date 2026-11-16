@@ -26,7 +26,12 @@ export function useAccounts() {
     const off = window.openbot.agent?.onEvent((event) => {
       if (event.type === "accounts-changed") {
         generation++;
-        setSnapshot({ accounts: event.accounts, pool: event.pool, assignments: event.assignments });
+        setSnapshot({
+          accounts: event.accounts,
+          pool: event.pool,
+          assignments: event.assignments,
+          active: event.active,
+        });
       }
     });
     return () => {
