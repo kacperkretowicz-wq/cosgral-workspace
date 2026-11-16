@@ -37,6 +37,8 @@ const only = (process.env.COSGRAL_ONLY ?? "")
   .map((part) => part.trim())
   .filter(Boolean);
 const consoleFindings: string[] = [];
+/** Set by the newest Driver: a screenshot and the accessibility tree of the window when a step fails (evidence folder, never the repository). */
+let dumpOnFailure: ((name: string) => Promise<void>) | undefined;
 
 function asRecord(value: unknown): DynamicRecord {
   return isDynamicRecord(value) ? value : {};
@@ -177,6 +179,7 @@ async function row(id: string, name: string, work: () => Promise<string | undefi
   } catch (error) {
     const detail = (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "";
     results.push({ row: id, name, ok: false, detail, ms: Date.now() - started });
+    await dumpOnFailure?.(`fail-${id}`).catch(() => undefined);
     console.log(`FAIL [${id}] ${name}: ${detail.slice(0, 160)}`);
   }
   // Written after every row, so a run that is cut short still leaves what it saw.
@@ -196,6 +199,7 @@ class Driver {
     this.page = page;
     this.evidence = evidence;
     this.app = app;
+    dumpOnFailure = (name) => this.dump(name);
   }
 
   async ev(expression: string): Promise<unknown> {
