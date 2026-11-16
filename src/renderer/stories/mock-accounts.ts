@@ -1,13 +1,14 @@
 // COSGRAL W5-BE2: provider accounts and the pool for Storybook and the preview. Demo data only: nothing signs in.
 // Codex signs in "in the browser" (success after a moment); Claude asks for a pasted code first.
 
-import type {
-  AccountsSnapshot,
-  AgentEvent,
-  PoolSettings,
-  ProviderAccount,
-  ProviderAccountProvider,
-  SubscriptionsDesktopApi,
+import {
+  type AccountsSnapshot,
+  type AgentEvent,
+  DEFAULT_POOL_SETTINGS,
+  type PoolSettings,
+  type ProviderAccount,
+  type ProviderAccountProvider,
+  type SubscriptionsDesktopApi,
 } from "@openbot/contracts/ipc";
 
 type AccountMethods = Pick<
@@ -51,7 +52,7 @@ function systemAccount(provider: ProviderAccountProvider): ProviderAccount {
 
 export function createMockAccounts(emit: (event: AgentEvent) => void): AccountMethods {
   let accounts: ProviderAccount[] = [systemAccount("codex"), systemAccount("claude")];
-  let pool: PoolSettings = { maxAccountsPerProvider: 3, switchBeforeFirstAction: true };
+  let pool: PoolSettings = { ...DEFAULT_POOL_SETTINGS };
   let assignments: AccountsSnapshot["assignments"] = [];
   let counter = 0;
 
@@ -185,8 +186,8 @@ export function createMockAccounts(emit: (event: AgentEvent) => void): AccountMe
       return snapshot();
     },
     getPoolSettings: async () => structuredClone(pool),
-    setPoolSettings: async ({ maxAccountsPerProvider }) => {
-      pool = { ...pool, maxAccountsPerProvider };
+    setPoolSettings: async ({ maxAccountsPerProvider, returnAfterReset }) => {
+      pool = { ...pool, maxAccountsPerProvider, returnAfterReset: returnAfterReset ?? pool.returnAfterReset };
       changed();
       return structuredClone(pool);
     },

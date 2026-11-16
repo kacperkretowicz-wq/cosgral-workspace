@@ -60,7 +60,11 @@ afterEach(async () => {
 });
 
 /** What a fake CLI does with its next turn. */
-type Step = "answer" | { limit: true; action?: boolean; resetsInSeconds?: number; before?: () => void };
+type Step =
+  | "answer"
+  | { limit: true; action?: boolean; resetsInSeconds?: number; before?: () => void }
+  // W5-BE8: the turn fails on the network (no errorKind: the program reads it from the text).
+  | { network: string };
 
 /** A fake CLI process of one account (or of the system account): scripted turns, its own thread ids. */
 class AccountCli extends EventEmitter implements AgentClient {
@@ -132,6 +136,11 @@ class AccountCli extends EventEmitter implements AgentClient {
       send("turn/completed", { threadId, turn: { id: turnId, status: "completed" } });
       return;
     }
+    if ("network" in step) {
+      send("error", { threadId, turnId, message: step.network });
+      send("turn/completed", { threadId, turn: { id: turnId, status: "failed" } });
+      return;
+    }
     step.before?.();
     if (step.action) {
       const item = { id: `${turnId}:command`, type: "commandExecution", command: "touch file" };
@@ -163,11 +172,13 @@ class FakePool implements AccountPoolPort {
   assignments: Array<{ botId: string; accountId: string | null }> = [];
   active = new Map<string, string>();
   limitCalls: Array<{ id: string; until: string | null }> = [];
+  /** W5-BE8: the pool setting "return to the first account after the limit resets". */
+  returnAfterReset = true;
 
   snapshot(): AccountsSnapshot {
     return structuredClone({
       accounts: this.accounts,
-      pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true },
+      pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true, returnAfterReset: this.returnAfterReset },
       assignments: this.assignments,
     });
   }
@@ -452,6 +463,93 @@ describe.sequential("AgentService with provider accounts", {
     // The conversation goes on in a new thread of the first account, with the earlier history handed over.
     expect(clis.get(SYSTEM)?.calls("thread/start")).toHaveLength(2);
     expect(firstInputText(clis.get(SYSTEM)?.calls("turn/start")[1])).toContain("Second");
+  });
+
+  it("W5-BE8 F03: with 'return after reset' off the agent stays on the account it is on, until the next limit", async () => {
+    const {
+      service: s,
+      pool,
+      clis,
+      events,
+    } = await fixture({
+      [SYSTEM]: [{ limit: true }],
+      [WORK]: ["answer", { limit: true }],
+    });
+    await s.sendMessage({ botId: "chief", text: "First" });
+    await waitFor(() => completed(events).includes("completed"));
+    expect(pool.active.get("chief")).toBe(WORK);
+
+    // The first account is free again, and the person turned the return off.
+    pool.set(SYSTEM, { limitedUntil: null });
+    pool.returnAfterReset = false;
+    await s.sendMessage({ botId: "chief", text: "Second" });
+    await waitFor(() => completed(events).filter((status) => status === "failed").length === 2);
+    // The second turn ran on Work, not on the first account; Work then hit its limit and the pool moved on.
+    expect(clis.get(WORK)?.calls("turn/start")).toHaveLength(2);
+    await waitFor(() => completed(events).filter((status) => status === "completed").length === 2);
+    expect(clis.get(SYSTEM)?.calls("turn/start")).toHaveLength(2);
+    expect(pool.active.get("chief")).toBe(SYSTEM);
+    expect(switchEvents(events).map((event) => `${event.fromAccountId}>${event.toAccountId}:${event.reason}`)).toEqual([
+      `${SYSTEM}>${WORK}:usage-limit`,
+      `${WORK}>${SYSTEM}:usage-limit`,
+    ]);
+  });
+
+  it("W5-BE8 F03: with it on (the default) the agent goes back to the first account as soon as it is free", async () => {
+    const { service: s, pool, clis, events } = await fixture({ [SYSTEM]: [{ limit: true }] });
+    await s.sendMessage({ botId: "chief", text: "First" });
+    await waitFor(() => completed(events).includes("completed"));
+    pool.set(SYSTEM, { limitedUntil: null });
+    expect(pool.returnAfterReset).toBe(true);
+    await s.sendMessage({ botId: "chief", text: "Second" });
+    await waitFor(() => completed(events).length === 3);
+    expect(clis.get(SYSTEM)?.calls("turn/start")).toHaveLength(2);
+    expect(switchEvents(events).map((event) => event.reason)).toEqual(["usage-limit", "returned"]);
+  });
+
+  it.each(["fetch failed: read ECONNRESET", "HTTP 503 Service Unavailable"])(
+    "W5-BE8 F02: a network error (%s) does not count the account as at its limit and does not switch; the card says why",
+    async (message) => {
+      const { service: s, pool, clis, events } = await fixture({ [SYSTEM]: [{ network: message }] });
+      await s.sendMessage({ botId: "chief", text: "Please help" });
+      await waitFor(() => completed(events).includes("failed"));
+      await waitFor(() => events.some((event) => event.type === "account-error"));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Nothing was marked, nothing moved, no other account was started, nothing waits in the queue.
+      expect(pool.limitCalls).toEqual([]);
+      expect(pool.accounts.every((item) => item.limitedUntil === null)).toBe(true);
+      expect(clis.get(WORK)).toBeUndefined();
+      expect(limitEvents(events)).toEqual([]);
+      expect(switchEvents(events)).toEqual([]);
+      expect(completed(events)).toEqual(["failed"]);
+      expect(s.listQueue("chief").deliveries.filter((delivery) => delivery.status === "queued")).toEqual([]);
+      expect(events.filter((event) => event.type === "account-error")).toMatchObject([
+        {
+          botId: "chief",
+          provider: "codex",
+          accountId: SYSTEM,
+          accountLabel: "This computer",
+          reason: "network-error",
+        },
+      ]);
+      // The raw error text is not in the card.
+      expect(JSON.stringify(events.filter((event) => event.type === "account-error"))).not.toContain(message);
+      // The account is still the first choice for the next message.
+      await s.sendMessage({ botId: "chief", text: "Try again" });
+      await waitFor(() => completed(events).includes("completed"));
+      expect(await answers(s)).toEqual(["ANSWER_FROM_system-codex"]);
+    },
+  );
+
+  it("W5-BE8 F02: a plain error (not a limit, not the network) is no account card either", async () => {
+    const { service: s, pool, events } = await fixture({ [SYSTEM]: [{ network: "The request was refused." }] });
+    await s.sendMessage({ botId: "chief", text: "Please help" });
+    await waitFor(() => completed(events).includes("failed"));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(pool.limitCalls).toEqual([]);
+    expect(events.some((event) => event.type === "account-error" || event.type === "account-limit-reached")).toBe(
+      false,
+    );
   });
 
   it("goes on without the account when it is removed while its turn runs", async () => {

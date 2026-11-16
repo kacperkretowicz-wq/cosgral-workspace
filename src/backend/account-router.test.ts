@@ -4,11 +4,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AccountsSnapshot, ProviderAccount, ProviderAccountProvider } from "@openbot/contracts/ipc";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type AccountEvent,
   type AccountPoolPort,
   AccountRouter,
+  accountFailureKind,
+  IDLE_CLIENT_MS,
   type RoutedClient,
   sqlSessionAccounts,
 } from "./account-router";
@@ -67,13 +69,15 @@ class FakePool implements AccountPoolPort {
   assignments: Array<{ botId: string; accountId: string | null }> = [];
   active = new Map<string, string>();
   limitCalls: Array<{ id: string; until: string | null }> = [];
+  /** W5-BE8: the pool setting; left out in older snapshots = true. */
+  returnAfterReset: boolean | undefined = true;
   constructor(accounts = standardAccounts()) {
     this.accounts = accounts;
   }
   snapshot(): AccountsSnapshot {
     return structuredClone({
       accounts: this.accounts,
-      pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true },
+      pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true, returnAfterReset: this.returnAfterReset },
       assignments: this.assignments,
     });
   }
@@ -610,5 +614,203 @@ describe("which account created a provider session", () => {
       timers: false,
     });
     expect(restarted.sessionAccount("thread-2", "codex")).toBe("acc-aaaaaaaa");
+  });
+});
+
+describe("W5-BE8 F03: going back to the first account after the limit (returnAfterReset)", () => {
+  /** The first account hit its limit during a turn; 31 minutes later it is free again. */
+  async function limitedOnFirst() {
+    const ctx = setup();
+    const lane = await ctx.router.acquire("chief", "codex");
+    ctx.router.begin("chief", "codex", "turn-1", lane.accountId);
+    await ctx.router.onLimit({
+      botId: "chief",
+      provider: "codex",
+      turnId: "turn-1",
+      resetsAtSeconds: (ctx.clock.now + 30 * MINUTE) / 1000,
+    });
+    ctx.router.end("turn-1");
+    ctx.clock.now += 31 * MINUTE;
+    await ctx.router.reconcile();
+    return ctx;
+  }
+
+  it("goes back to the first account by default (true), and when an older snapshot has no such field", async () => {
+    for (const setting of [true, undefined]) {
+      const { pool, router } = await limitedOnFirst();
+      pool.returnAfterReset = setting;
+      expect(router.route("chief", "codex")).toMatchObject({ kind: "use", account: { id: "system-codex" } });
+    }
+  });
+
+  it("false: stays on the account it is on while that account can answer, though the first one is free again", async () => {
+    const { pool, router, events } = await limitedOnFirst();
+    pool.returnAfterReset = false;
+    // The turn after the limit ran on the Work account.
+    router.begin("chief", "codex", "turn-2", "acc-aaaaaaaa");
+    router.end("turn-2");
+    expect(router.route("chief", "codex")).toMatchObject({ kind: "use", account: { id: "acc-aaaaaaaa" } });
+    const lane = await router.acquire("chief", "codex");
+    expect(lane.accountId).toBe("acc-aaaaaaaa");
+    router.begin("chief", "codex", "turn-3", lane.accountId);
+    router.end("turn-3");
+    expect(events.some((event) => event.type === "account-switched" && event.reason === "returned")).toBe(false);
+    expect(pool.active.get("chief")).toBe("acc-aaaaaaaa");
+  });
+
+  it("false: the next limit moves it on, from the first account of the order that can answer", async () => {
+    const { pool, router } = await limitedOnFirst();
+    pool.returnAfterReset = false;
+    router.begin("chief", "codex", "turn-2", "acc-aaaaaaaa");
+    const decision = await router.onLimit({
+      botId: "chief",
+      provider: "codex",
+      turnId: "turn-2",
+      resetsAtSeconds: null,
+    });
+    router.end("turn-2");
+    expect(decision).toMatchObject({ action: "switch", from: { id: "acc-aaaaaaaa" }, to: { id: "system-codex" } });
+    expect(router.route("chief", "codex")).toMatchObject({ account: { id: "system-codex" } });
+  });
+
+  it("false: a change by the person wins, and a switched-off account is left", async () => {
+    const { pool, router } = await limitedOnFirst();
+    pool.returnAfterReset = false;
+    router.begin("chief", "codex", "turn-2", "acc-aaaaaaaa");
+    router.end("turn-2");
+    pool.assignments = [{ botId: "chief", accountId: "acc-bbbbbbbb" }];
+    expect(router.route("chief", "codex")).toMatchObject({ account: { id: "acc-bbbbbbbb" } });
+    pool.assignments = [];
+    pool.set("acc-aaaaaaaa", { enabled: false });
+    expect(router.route("chief", "codex")).toMatchObject({ account: { id: "system-codex" } });
+  });
+
+  it("false: another agent and another provider are not held on this agent's account", async () => {
+    const { pool, router } = await limitedOnFirst();
+    pool.returnAfterReset = false;
+    router.begin("chief", "codex", "turn-2", "acc-aaaaaaaa");
+    router.end("turn-2");
+    expect(router.route("writer", "codex")).toMatchObject({ account: { id: "system-codex" } });
+    expect(router.route("chief", "claude")).toMatchObject({ account: { id: "system-claude" } });
+  });
+});
+
+describe("W5-BE8 P10: an idle CLI process of an account stops after 5 minutes", () => {
+  function plainRouter(options: { timers: boolean; clock?: { now: number } }) {
+    const pool = new FakePool();
+    pool.assignments = [{ botId: "chief", accountId: "acc-aaaaaaaa" }];
+    const opened: FakeClient[] = [];
+    const router = new AccountRouter<FakeClient>({
+      pool,
+      openClient: async (_provider, _env, accountId) => {
+        const client = new FakeClient(accountId);
+        opened.push(client);
+        return client;
+      },
+      emit: () => undefined,
+      ...(options.clock ? { now: () => options.clock?.now ?? 0 } : {}),
+      timers: options.timers,
+    });
+    return { router, opened };
+  }
+
+  it("uses 5 minutes when no time is given, and the injected clock decides", async () => {
+    expect(IDLE_CLIENT_MS).toBe(5 * MINUTE);
+    const clock = { now: START };
+    const { router, opened } = plainRouter({ timers: false, clock });
+    const lane = await router.acquire("chief", "codex");
+    router.begin("chief", "codex", "turn-1", lane.accountId);
+    router.end("turn-1");
+    clock.now += 5 * MINUTE - 1;
+    await router.sweepIdle();
+    expect(opened[0]?.stopped).toBe(false);
+    clock.now += 2;
+    await router.sweepIdle();
+    expect(opened[0]?.stopped).toBe(true);
+    expect(router.openClients()).toEqual([]);
+  });
+
+  it("the program's own timer does it by itself, every minute, and stops with the program", async () => {
+    vi.useFakeTimers({ now: START });
+    try {
+      const { router, opened } = plainRouter({ timers: true });
+      const lane = await router.acquire("chief", "codex");
+      router.begin("chief", "codex", "turn-1", lane.accountId);
+      router.end("turn-1");
+      await vi.advanceTimersByTimeAsync(4 * MINUTE);
+      expect(opened[0]?.stopped).toBe(false);
+      await vi.advanceTimersByTimeAsync(2 * MINUTE);
+      expect(opened[0]?.stopped).toBe(true);
+      await router.stopAll();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a process with a running turn is never stopped, however long it takes", async () => {
+    const { pool, router, opened, clock } = setup();
+    pool.assignments = [{ botId: "chief", accountId: "acc-aaaaaaaa" }];
+    const lane = await router.acquire("chief", "codex");
+    router.begin("chief", "codex", "turn-1", lane.accountId);
+    clock.now += 60 * MINUTE;
+    await router.sweepIdle();
+    expect(opened[0]?.stopped).toBe(false);
+  });
+});
+
+describe("W5-BE8 F02: a network error is not a usage limit", () => {
+  it("tells a limit from a network error and from anything else", () => {
+    const failure = (kind: "usage-limit" | "unavailable" | null, message: string) => ({ kind, message });
+    expect(accountFailureKind(failure("usage-limit", "You have reached your usage limit."))).toBe("usage-limit");
+    // A limit stays a limit even when the text also talks about the network.
+    expect(accountFailureKind(failure("usage-limit", "network busy: rate limit reached"))).toBe("usage-limit");
+    for (const message of [
+      "fetch failed",
+      "read ECONNRESET",
+      "getaddrinfo ENOTFOUND api.example.com",
+      "connect ETIMEDOUT 1.2.3.4:443",
+      "error sending request for url (https://example.com)",
+      "stream disconnected before completion",
+      "You appear to be offline.",
+      "HTTP 502 Bad Gateway",
+      "503 Service Unavailable",
+      "socket hang up",
+    ])
+      expect(accountFailureKind(failure(null, message)), message).toBe("network");
+    // The provider said "unavailable" (5xx, overloaded): also not a limit.
+    expect(accountFailureKind(failure("unavailable", "The model is overloaded."))).toBe("network");
+    for (const message of ["The request was refused.", "Invalid input", "Context length exceeded"])
+      expect(accountFailureKind(failure(null, message)), message).toBe("other");
+  });
+
+  it("says why, with a fixed text and no raw error, and does not mark the account, move the agent or change the pool", async () => {
+    const { pool, router, events } = setup();
+    const lane = await router.acquire("chief", "codex");
+    router.begin("chief", "codex", "turn-1", lane.accountId);
+    router.noteNetworkError({ botId: "chief", provider: "codex", turnId: "turn-1" });
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: "account-error",
+        botId: "chief",
+        provider: "codex",
+        accountId: "system-codex",
+        accountLabel: "codex (this computer)",
+        reason: "network-error",
+        message: expect.stringMatching(/network error/i),
+      }),
+    ]);
+    expect(pool.limitCalls).toEqual([]);
+    expect(pool.accounts.every((item) => item.limitedUntil === null)).toBe(true);
+    router.end("turn-1");
+    // The next turn starts on the same account: nothing was "exhausted" and nothing switched.
+    expect(router.route("chief", "codex")).toMatchObject({ kind: "use", account: { id: "system-codex" } });
+    expect(events.filter((event) => event.type !== "account-error")).toEqual([]);
+  });
+
+  it("says nothing for a turn it does not know (no pool)", () => {
+    const { router, events } = setup([account("system-codex", "codex")]);
+    router.noteNetworkError({ botId: "chief", provider: "codex", turnId: "turn-x" });
+    expect(events).toEqual([]);
   });
 });

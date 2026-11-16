@@ -149,7 +149,19 @@ export interface PoolSettings {
   maxAccountsPerProvider: number;
   /** Switch accounts on a limit only before the first action of a turn (never repeat side effects). */
   switchBeforeFirstAction: true;
+  /**
+   * W5-BE8 (F03): true (default, also when left out) = an agent goes back to its first account as soon as that
+   * account's limit has passed. false = it stays on the account it is on until the person changes it or that account
+   * hits a limit. The program always sends it; it is optional only so that older snapshots and fixtures stay valid.
+   */
+  returnAfterReset?: boolean;
 }
+
+export const DEFAULT_POOL_SETTINGS: Required<PoolSettings> = {
+  maxAccountsPerProvider: 3,
+  switchBeforeFirstAction: true,
+  returnAfterReset: true,
+};
 
 export interface AgentAccountAssignment {
   botId: string;
@@ -215,6 +227,24 @@ export interface AccountLimitReached {
   afterAction: boolean;
 }
 
+/**
+ * COSGRAL W5-BE8 (F02): a turn on an account failed for a reason that is not a usage limit. Only "network-error" exists:
+ * no connection, a connection that dropped, or a server error (5xx, overloaded). The account is NOT counted as at its
+ * limit, nothing switches and the pool does not change; the card only says why. The text is fixed (never the raw error).
+ */
+export const ACCOUNT_ERROR_REASONS = ["network-error"] as const;
+export type AccountErrorReason = (typeof ACCOUNT_ERROR_REASONS)[number];
+
+export interface AccountError {
+  botId: string;
+  provider: ProviderAccountProvider;
+  accountId: string;
+  accountLabel: string;
+  reason: AccountErrorReason;
+  /** Readable, English, e.g. "Network error on Work. The account was not counted as at its limit; nothing was switched." */
+  message: string;
+}
+
 export interface AddAccountInput {
   provider: ProviderAccountProvider;
   label: string;
@@ -242,6 +272,8 @@ export interface SetAccountPoolInput {
 
 export interface PoolSettingsInput {
   maxAccountsPerProvider: number;
+  /** W5-BE8: left out = unchanged. */
+  returnAfterReset?: boolean;
 }
 
 /** COSGRAL W5: subscriptions API. Optional in the window until every mock has it. */
@@ -379,7 +411,13 @@ export function isProviderAccount(value: unknown): value is ProviderAccount {
 }
 
 export function isPoolSettings(value: unknown): value is PoolSettings {
-  return isDynamicRecord(value) && isNumber(value.maxAccountsPerProvider) && value.switchBeforeFirstAction === true;
+  return (
+    isDynamicRecord(value) &&
+    isNumber(value.maxAccountsPerProvider) &&
+    value.switchBeforeFirstAction === true &&
+    // W5-BE8: a sender from before the setting existed leaves it out (read as true).
+    (value.returnAfterReset === undefined || isBoolean(value.returnAfterReset))
+  );
 }
 
 export function isAccountsSnapshot(value: unknown): value is AccountsSnapshot {
@@ -430,6 +468,19 @@ export function isAccountLimitReached(
     isNullableString(value.nextAccountId) &&
     isNullableString(value.nextAccountLabel) &&
     isBoolean(value.afterAction)
+  );
+}
+
+export function isAccountError(value: unknown): value is AccountError & { type: "account-error" } {
+  return (
+    isDynamicRecord(value) &&
+    value.type === "account-error" &&
+    isString(value.botId) &&
+    isManagedCliId(value.provider) &&
+    isString(value.accountId) &&
+    isString(value.accountLabel) &&
+    isOneOf(ACCOUNT_ERROR_REASONS, value.reason) &&
+    isString(value.message)
   );
 }
 
@@ -501,7 +552,9 @@ export function parsePoolSettingsInput(value: unknown): PoolSettingsInput {
     input.maxAccountsPerProvider > max
   )
     throw new Error(`The account limit must be a whole number from ${min} to ${max}.`);
-  return { maxAccountsPerProvider: input.maxAccountsPerProvider };
+  if (input.returnAfterReset === undefined) return { maxAccountsPerProvider: input.maxAccountsPerProvider };
+  if (!isBoolean(input.returnAfterReset)) throw new Error("Returning to the first account must be true or false.");
+  return { maxAccountsPerProvider: input.maxAccountsPerProvider, returnAfterReset: input.returnAfterReset };
 }
 
 export function parseManagedCliSettingsInput(value: unknown): ManagedCliSettingsInput {

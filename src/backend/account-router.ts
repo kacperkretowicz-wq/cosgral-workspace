@@ -14,6 +14,7 @@
 
 import type { DatabaseSync } from "node:sqlite";
 import type {
+  AccountError,
   AccountLimitReached,
   AccountSwitched,
   AccountsSnapshot,
@@ -44,7 +45,24 @@ export interface SessionAccounts {
 
 export type AccountEvent =
   | ({ type: "account-switched" } & AccountSwitched)
-  | ({ type: "account-limit-reached" } & AccountLimitReached);
+  | ({ type: "account-limit-reached" } & AccountLimitReached)
+  | ({ type: "account-error" } & AccountError);
+
+const NETWORK_ERROR_TEXT =
+  /network|offline|connection (?:reset|refused|closed|lost|error|dropped)|\bECONN\w+|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|ENETUNREACH|timed? ?out|socket hang up|fetch failed|error sending request|stream disconnected|bad gateway|service unavailable|overloaded|\b5\d\d\b/i;
+
+/**
+ * W5-BE8 (F02): what a failed turn is for the account pool. Only a usage limit counts against the account; a network
+ * error (no connection, a dropped connection, a server error) never does; anything else is a plain error.
+ */
+export function accountFailureKind(failure: {
+  kind: "usage-limit" | "unavailable" | null;
+  message: string;
+}): "usage-limit" | "network" | "other" {
+  if (failure.kind === "usage-limit") return "usage-limit";
+  if (failure.kind === "unavailable" || NETWORK_ERROR_TEXT.test(failure.message)) return "network";
+  return "other";
+}
 
 export interface AccountRouterDeps<TClient extends RoutedClient> {
   pool: AccountPoolPort;
@@ -79,6 +97,12 @@ export type LimitDecision =
   | { action: "switch"; from: ProviderAccount; to: ProviderAccount }
   | { action: "ask"; from: ProviderAccount; to: ProviderAccount }
   | { action: "exhausted"; from: ProviderAccount };
+
+interface AccountPlan {
+  primary: ProviderAccount;
+  order: ProviderAccount[];
+  configured: boolean;
+}
 
 export const IDLE_CLIENT_MS = 5 * 60 * 1000;
 const ASSUMED_LIMIT_MS = PROVIDER_LIMITS.limitWithoutResetMinutes * 60 * 1000;
@@ -123,7 +147,7 @@ export class AccountRouter<TClient extends RoutedClient> {
   }
 
   /** The agent's own account first (assigned, else default), then the pool in its order. */
-  #order(botId: string, provider: ProviderAccountProvider, snapshot: AccountsSnapshot) {
+  #order(botId: string, provider: ProviderAccountProvider, snapshot: AccountsSnapshot): AccountPlan | null {
     const accounts = snapshot.accounts.filter((account) => account.provider === provider);
     const assignedId = snapshot.assignments.find((item) => item.botId === botId)?.accountId ?? null;
     const assigned = assignedId ? (accounts.find((account) => account.id === assignedId) ?? null) : null;
@@ -137,11 +161,31 @@ export class AccountRouter<TClient extends RoutedClient> {
     return { primary, order: [primary, ...members], configured };
   }
 
+  /**
+   * W5-BE8 (F03): with `returnAfterReset` off, the agent stays on the account its last turn ran on while that account can
+   * answer and the person changed nothing (the same first account as then). The first account being free again is not
+   * a reason to move. null = no such account (the normal order decides).
+   */
+  #stay(
+    botId: string,
+    snapshot: AccountsSnapshot,
+    plan: AccountPlan,
+    exclude: ReadonlySet<string>,
+  ): ProviderAccount | null {
+    if (snapshot.pool.returnAfterReset !== false) return null;
+    const last = this.#lastAccount.get(botId);
+    if (!last || last.primaryId !== plan.primary.id || last.accountId === plan.primary.id) return null;
+    const account = plan.order.find((item) => item.id === last.accountId);
+    return account && this.#usable(account, exclude) ? account : null;
+  }
+
   /** The account for the agent's next turn (never opens a process). */
   route(botId: string, provider: ProviderAccountProvider, exclude: ReadonlySet<string> = new Set()): AccountRoute {
-    const plan = this.#order(botId, provider, this.#deps.pool.snapshot());
+    const snapshot = this.#deps.pool.snapshot();
+    const plan = this.#order(botId, provider, snapshot);
     if (!plan?.configured) return { kind: "off" };
-    const chosen = plan.order.find((account) => this.#usable(account, exclude));
+    const chosen =
+      this.#stay(botId, snapshot, plan, exclude) ?? plan.order.find((account) => this.#usable(account, exclude));
     if (chosen) return { kind: "use", account: chosen };
     const considered = plan.order.filter((account) => account.enabled && !exclude.has(account.id));
     const limited = considered.filter((account) => this.#limited(account));
@@ -231,6 +275,25 @@ export class AccountRouter<TClient extends RoutedClient> {
         });
     }
     this.#deps.pool.setActive(botId, accountId);
+  }
+
+  /**
+   * W5-BE8 (F02): the turn failed on the network, not on a limit. Says so with a fixed text and changes nothing else: the
+   * account is not marked, the agent is not moved, the pool is not touched. Nothing for a turn the router does not know.
+   */
+  noteNetworkError(input: { botId: string; provider: ProviderAccountProvider; turnId: string }): void {
+    const used = this.#turns.get(input.turnId);
+    const account = used && this.#deps.pool.snapshot().accounts.find((item) => item.id === used.accountId);
+    if (!account) return;
+    this.#deps.emit({
+      type: "account-error",
+      botId: input.botId,
+      provider: input.provider,
+      accountId: account.id,
+      accountLabel: account.label,
+      reason: "network-error",
+      message: `Network error on ${account.label}. The account was not counted as at its limit; nothing was switched.`,
+    });
   }
 
   /** A turn started something besides talking (a command, a file change, a tool call): it is no longer free to repeat. */

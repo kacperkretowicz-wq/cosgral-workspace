@@ -170,7 +170,11 @@ describe("provider accounts engine (W5-BE2)", () => {
 
   it("enforces the account limit per provider (default 3, changeable)", async () => {
     const { accounts } = await setup();
-    expect(accounts.pool()).toEqual({ maxAccountsPerProvider: 3, switchBeforeFirstAction: true });
+    expect(accounts.pool()).toEqual({
+      maxAccountsPerProvider: 3,
+      switchBeforeFirstAction: true,
+      returnAfterReset: true,
+    });
     await accounts.add("claude", "One");
     await accounts.add("claude", "Two");
     await expect(accounts.add("claude", "Three")).rejects.toThrow(/limit is 3/);
@@ -179,6 +183,41 @@ describe("provider accounts engine (W5-BE2)", () => {
     expect(accounts.snapshot().accounts.filter((item) => item.provider === "claude")).toHaveLength(3);
     await accounts.setPoolSettings(4);
     await accounts.add("claude", "Three");
+  });
+
+  // COSGRAL W5-BE8 (F03): "go back to the first account after the limit resets" is a pool setting, on by default.
+  it("saves the return setting with the pool, keeps it when only the limit changes, and reads it after a restart", async () => {
+    const { accounts, make, events } = await setup();
+    expect(accounts.pool().returnAfterReset).toBe(true);
+    await accounts.setPoolSettings({ maxAccountsPerProvider: 3, returnAfterReset: false });
+    expect(accounts.pool()).toEqual({
+      maxAccountsPerProvider: 3,
+      switchBeforeFirstAction: true,
+      returnAfterReset: false,
+    });
+    expect(events.at(-1)?.pool.returnAfterReset).toBe(false);
+    // An older call with only the limit (a number or a patch without the field) leaves the return as it is.
+    await accounts.setPoolSettings(5);
+    await accounts.setPoolSettings({ maxAccountsPerProvider: 6 });
+    expect(accounts.pool()).toMatchObject({ maxAccountsPerProvider: 6, returnAfterReset: false });
+    const again = make();
+    expect(again.pool()).toMatchObject({ maxAccountsPerProvider: 6, returnAfterReset: false });
+    await again.setPoolSettings({ maxAccountsPerProvider: 6, returnAfterReset: true });
+    expect(make().pool().returnAfterReset).toBe(true);
+  });
+
+  it("reads a file saved before the setting existed as 'return' (true)", async () => {
+    const { root, make } = await setup();
+    await mkdir(root, { recursive: true });
+    await writeFile(
+      join(root, "accounts.json"),
+      JSON.stringify({
+        accounts: [],
+        pool: { maxAccountsPerProvider: 2, switchBeforeFirstAction: true },
+        assignments: [],
+      }),
+    );
+    expect(make().pool()).toEqual({ maxAccountsPerProvider: 2, switchBeforeFirstAction: true, returnAfterReset: true });
   });
 
   // COSGRAL W5-K1: the pool marks an account limited until a time, and says which account an agent answers with.
