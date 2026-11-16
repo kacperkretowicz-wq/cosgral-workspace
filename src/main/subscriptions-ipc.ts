@@ -217,6 +217,6 @@ export function registerSubscriptionsIpc(runtime: () => ManagedCliRuntime | null
   handleTrusted(IPC_CHANNELS.subscriptionsGetPoolSettings, (input: unknown) => accounts(input).accounts.pool());
   handleTrusted(IPC_CHANNELS.subscriptionsSetPoolSettings, (input: unknown) => {
     const { accounts: engine, payload } = accounts(input);
-    return engine.setPoolSettings(parsePoolSettingsInput(payload).maxAccountsPerProvider);
+    return engine.setPoolSettings(parsePoolSettingsInput(payload));
   });
 }

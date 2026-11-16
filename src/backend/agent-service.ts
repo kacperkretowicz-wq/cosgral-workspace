@@ -62,7 +62,13 @@ import {
   MCP_NAMESPACE_PREFIX,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
-import { type AccountLane, type AccountPoolPort, AccountRouter, sqlSessionAccounts } from "./account-router";
+import {
+  type AccountLane,
+  type AccountPoolPort,
+  AccountRouter,
+  accountFailureKind,
+  sqlSessionAccounts,
+} from "./account-router";
 import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
@@ -2561,6 +2567,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
     const provider = bot ? accountProviderOf(providerForBot(bot)) : null;
     const delivery = deliveries.length === 1 ? deliveries[0]?.delivery : undefined;
+    // W5-BE8 (F02): a network error is not a limit. The account is left alone and the card says why.
+    if (router && provider && failure && accountFailureKind(failure) === "network")
+      router.noteNetworkError({ botId, provider, turnId });
     if (!router || !provider || !delivery || failure?.kind !== "usage-limit") return "none";
     const decision = await router.onLimit({ botId, provider, turnId, resetsAtSeconds: failure.resetsAt });
     if (decision.action === "switch") {

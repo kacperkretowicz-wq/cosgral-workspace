@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { isAgentEvent } from "./ipc-conversation";
 import {
   ACCOUNT_POOL_WARNING,
+  DEFAULT_POOL_SETTINGS,
+  isAccountError,
   isAccountsSnapshot,
   isManagedCliState,
+  isPoolSettings,
   isProviderAccount,
   type ManagedCliState,
   type ProviderAccount,
@@ -96,6 +99,45 @@ describe("provider accounts contract (W5-BE2)", () => {
     expect(() => parsePoolSettingsInput({ maxAccountsPerProvider: 0 })).toThrow();
     expect(() => parsePoolSettingsInput({ maxAccountsPerProvider: 2.5 })).toThrow();
     expect(ACCOUNT_POOL_WARNING).toMatch(/own accounts/);
+  });
+
+  it("W5-BE8 F02: accepts the account-error event (network error) and refuses a made-up reason", () => {
+    const event = {
+      type: "account-error",
+      botId: "bot-1",
+      provider: "codex",
+      accountId: "acc-1a2b3c4d",
+      accountLabel: "Work",
+      reason: "network-error",
+      message: "Network error on Work. The account was not counted as at its limit; nothing was switched.",
+    };
+    expect(isAccountError(event)).toBe(true);
+    expect(isAgentEvent(event)).toBe(true);
+    expect(isAgentEvent({ ...event, reason: "usage-limit" })).toBe(false);
+    expect(isAgentEvent({ ...event, accountLabel: 4 })).toBe(false);
+    expect(isAgentEvent({ ...event, provider: "gemini" })).toBe(false);
+  });
+
+  it("W5-BE8: the pool setting returnAfterReset is optional in the input, a boolean in the settings, true by default", () => {
+    expect(DEFAULT_POOL_SETTINGS).toEqual({
+      maxAccountsPerProvider: 3,
+      switchBeforeFirstAction: true,
+      returnAfterReset: true,
+    });
+    // An older call with only the limit is still valid and says nothing about the return.
+    expect(parsePoolSettingsInput({ maxAccountsPerProvider: 5 })).toEqual({ maxAccountsPerProvider: 5 });
+    expect(parsePoolSettingsInput({ maxAccountsPerProvider: 5, returnAfterReset: false })).toEqual({
+      maxAccountsPerProvider: 5,
+      returnAfterReset: false,
+    });
+    expect(() => parsePoolSettingsInput({ maxAccountsPerProvider: 5, returnAfterReset: "no" })).toThrow(
+      /true or false/,
+    );
+    const pool = { maxAccountsPerProvider: 3, switchBeforeFirstAction: true, returnAfterReset: false };
+    expect(isPoolSettings(pool)).toBe(true);
+    // A snapshot from before the setting existed is still read (the program treats it as true).
+    expect(isPoolSettings({ maxAccountsPerProvider: 3, switchBeforeFirstAction: true })).toBe(true);
+    expect(isPoolSettings({ ...pool, returnAfterReset: "yes" })).toBe(false);
   });
 });
 

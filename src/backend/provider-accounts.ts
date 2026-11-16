@@ -22,6 +22,7 @@ import {
   type AccountLogin,
   type AccountsSnapshot,
   type AgentAccountAssignment,
+  DEFAULT_POOL_SETTINGS,
   type PoolSettings,
   type ProviderAccount,
   type ProviderAccountProvider,
@@ -153,7 +154,7 @@ export class ProviderAccounts {
   readonly #deps: ProviderAccountsDeps;
   readonly #runner: AccountCliRunner;
   #accounts: StoredAccount[] = [];
-  #pool: PoolSettings = { maxAccountsPerProvider: 3, switchBeforeFirstAction: true };
+  #pool: PoolSettings = { ...DEFAULT_POOL_SETTINGS };
   #assignments: AgentAccountAssignment[] = [];
   readonly #logins = new Map<string, AccountLogin>();
   readonly #running = new Map<string, { process: LoginProcess; timer: NodeJS.Timeout }>();
@@ -431,9 +432,19 @@ export class ProviderAccounts {
     this.#emit();
   }
 
-  /** A lower limit keeps existing accounts; only new ones are refused. */
-  async setPoolSettings(maxAccountsPerProvider: number): Promise<PoolSettings> {
-    this.#pool = { ...this.#pool, maxAccountsPerProvider };
+  /**
+   * A lower limit keeps existing accounts; only new ones are refused. W5-BE8: a patch `{ maxAccountsPerProvider,
+   * returnAfterReset? }` is also accepted; a field that is left out stays as it is.
+   */
+  async setPoolSettings(
+    settings: number | { maxAccountsPerProvider: number; returnAfterReset?: boolean },
+  ): Promise<PoolSettings> {
+    const patch = isNumber(settings) ? { maxAccountsPerProvider: settings } : settings;
+    this.#pool = {
+      ...this.#pool,
+      maxAccountsPerProvider: patch.maxAccountsPerProvider,
+      returnAfterReset: patch.returnAfterReset ?? this.#pool.returnAfterReset,
+    };
     await this.#changed();
     return this.pool();
   }
@@ -547,7 +558,12 @@ export class ProviderAccounts {
       if (isDynamicRecord(saved)) {
         if (Array.isArray(saved.accounts)) this.#accounts = saved.accounts.flatMap(parseStored);
         if (isDynamicRecord(saved.pool) && isNumber(saved.pool.maxAccountsPerProvider))
-          this.#pool = { maxAccountsPerProvider: saved.pool.maxAccountsPerProvider, switchBeforeFirstAction: true };
+          this.#pool = {
+            maxAccountsPerProvider: saved.pool.maxAccountsPerProvider,
+            switchBeforeFirstAction: true,
+            // Saved before W5-BE8 = no field = true.
+            returnAfterReset: saved.pool.returnAfterReset !== false,
+          };
         if (Array.isArray(saved.assignments))
           this.#assignments = saved.assignments.flatMap((item) =>
             isDynamicRecord(item) && isString(item.botId) && isString(item.accountId)
