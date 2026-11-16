@@ -2259,12 +2259,11 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
           async () => (await codex()).managedVersion === "1.0.0",
           120_000,
         );
-        assert(cli.fileRequests === 1, `one download (${cli.fileRequests})`);
-        await waitUntil(page, "Continue is unblocked", async () => !(await proceed.isDisabled()), 30_000);
-        await d.dump("cli-o1-unblocked");
-        await proceed.click();
+        assert(Number(cli.fileRequests) === 1, `one download (${cli.fileRequests})`);
+        // "Pobierz i przejdź dalej" installs and then saves the choice and goes on by itself: the setup closes.
         await setup.waitFor({ state: "hidden", timeout: 90_000 });
-        return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex CLI 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download, Continue enabled and the setup closes";
+        await d.dump("cli-o1-after-yes");
+        return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex CLI 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download and the setup closes by itself (the button installs and goes on)";
       },
     );
   } finally {
