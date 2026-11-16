@@ -198,16 +198,65 @@ class Driver {
   readonly evidence: string;
   /** The Electron handle: answers the native file pickers and records shell calls in the main process. */
   readonly app: ElectronApplication | undefined;
+  readonly devtools: Promise<import("playwright").CDPSession>;
 
   constructor(page: Page, evidence: string, app?: ElectronApplication) {
     this.page = page;
     this.evidence = evidence;
     this.app = app;
     dumpOnFailure = (name) => this.dump(name);
+    // Made while the page still answers: a stuck page cannot start a new DevTools session.
+    this.devtools = page
+      .context()
+      .newCDPSession(page)
+      .then(async (session) => {
+        await session.send("Debugger.enable");
+        return session;
+      });
+    this.devtools.catch(() => undefined);
   }
 
   async ev(expression: string): Promise<unknown> {
-    return this.page.evaluate(expression);
+    // A window that stops answering (a busy loop in the page) must not hang the whole run: after 45 s the row fails
+    // and the place where the page stands is written to the evidence (Debugger.pause through the DevTools protocol).
+    let timer: NodeJS.Timeout | undefined;
+    const stuck = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("The window does not answer (the page is stuck)")), 90_000);
+    });
+    if (process.env.COSGRAL_TRACE) console.log(`     ev> ${expression.slice(0, 110)}`);
+    try {
+      return await Promise.race([this.page.evaluate(expression), stuck]);
+    } catch (error) {
+      if (error instanceof Error && /does not answer/.test(error.message))
+        await this.pageStack().catch(() => undefined);
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Where the (stuck) page stands: the call stack at a pause, written to the evidence folder. */
+  async pageStack(): Promise<void> {
+    const cdp = await this.devtools;
+    const paused = new Promise<string>((done) => {
+      cdp.once("Debugger.paused", (event) => {
+        done(
+          event.callFrames
+            .slice(0, 25)
+            .map(
+              (frame) =>
+                `${frame.functionName || "(anonymous)"} ${frame.url.split("/").pop()}:${frame.location.lineNumber + 1}`,
+            )
+            .join("\n"),
+        );
+      });
+    });
+    await cdp.send("Debugger.pause");
+    const stack = await Promise.race([
+      paused,
+      new Promise<string>((done) => setTimeout(() => done("(no pause in 8 s)"), 8_000)),
+    ]);
+    await writeFile(join(this.evidence, `stuck-page-${Date.now()}.txt`), stack);
   }
 
   async botId(name: string): Promise<string> {
@@ -2434,6 +2483,10 @@ async function w5Main(root: string, evidence: string): Promise<void> {
   };
 
   try {
+    const installEventLog = () =>
+      d.ev(
+        "window.__w5 = []; window.openbot.agent.onEvent((event) => { if (['account-limit-reached','account-switched','model-fallback','error','turn-completed'].includes(event.type)) window.__w5.push(event); }); true",
+      );
     await row(
       "W0",
       "W5 setup: first run, an agent to talk to, a second agent, an event log in the window",
@@ -2466,12 +2519,13 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await d.ev(
           `window.openbot.agent.createBot().then((b) => window.openbot.agent.updateBot({ botId: b.id, name: "Res", role: "Research and sources" })).then((b) => b.name)`,
         );
-        await d.ev(
-          "window.__w5 = []; window.openbot.agent.onEvent((event) => { if (['account-limit-reached','account-switched','model-fallback','error','turn-completed'].includes(event.type)) window.__w5.push(event); }); true",
-        );
+        await installEventLog();
         return "Assistant (answers on the stand-in CLI) and Res exist; window event log on";
       },
     );
+
+    // A re-run of single rows on a kept profile (COSGRAL_ONLY=P04 ... --keep) skips the setup but still needs the log.
+    if (only.length > 0 && !only.includes("W0")) await installEventLog();
 
     // ---------------------------------------------------------------- accounts and the pool
     await row(
@@ -2624,6 +2678,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       "limit before the first action: the turn goes to the next account from the start; the page says so; nothing hangs",
       async () => {
         const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        await waitLimitsFree();
         const from = await eventCount();
         await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
         await d.openAgent("Assistant");
@@ -2631,7 +2686,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await d.answer("Assistant", `Stub: account ${ids.home} answered c`, 60_000);
         const events = await eventsSince(from);
         const limit = events.find((event) => event.type === "account-limit-reached");
-        const switched = events.find((event) => event.type === "account-switched");
+        const switched = events.find((event) => event.type === "account-switched" && event.reason === "usage-limit");
         assert(
           limit?.outcome === "switched" && limit.afterAction === false && limit.accountId === ids.work,
           `limit event: ${JSON.stringify(limit)}`,
@@ -2670,6 +2725,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       "limit after the first action: nothing is repeated on its own; a card in Needs you asks; Confirm continues on the next account",
       async () => {
         const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        await waitLimitsFree();
         const from = await eventCount();
         await setLimits({ [ids.work]: { resetsInSeconds: 7, action: true } });
         await d.openAgent("Res");

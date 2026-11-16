@@ -383,6 +383,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #cli = new Map<AgentProvider, CodexCliInfo | ClaudeCliInfo>();
   readonly #accounts = new Map<AgentProvider, AccountReadResult["account"]>();
   readonly #providerStarts = new Map<AgentProvider, Promise<void>>();
+  /** COSGRAL W5-K1: what happens once the window has been told that a turn ended (the card of a limit after an action). */
+  readonly #afterTurn = new Map<string, () => void>();
   /** COSGRAL W5-K2: the person's own model endpoints (null until attached). */
   #endpoints: EndpointStore | null = null;
   /** COSGRAL W5-K1: the agent whose conversation a window opened last (where a card without an agent goes). */
@@ -2497,6 +2499,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       turnId,
       status,
     });
+    const afterTurn = this.#afterTurn.get(turnId);
+    this.#afterTurn.delete(turnId);
+    afterTurn?.();
     if (shouldCompact) await this.#requestContextCompaction(botId, threadId);
     else this.#scheduleDrain(botId);
   }
@@ -2566,7 +2571,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     if (decision.action === "ask") {
       this.#turnFailures.delete(turnId);
-      void this.#askToContinueOnAccount(botId, delivery.id, decision.from.label, decision.to.label);
+      // The card goes out after `turn-completed`: the window drops the open cards of an agent when its turn ends.
+      const { from, to } = decision;
+      this.#afterTurn.set(turnId, () => void this.#askToContinueOnAccount(botId, delivery.id, from.label, to.label));
       return "asked";
     }
     return "none";
