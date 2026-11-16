@@ -83,3 +83,27 @@ describe("W5 fallback lists", () => {
     expect(region.getByText("At most 8 models. Duplicate models cannot be added.")).toBeInTheDocument();
   });
 });
+
+it("keeps the All providers group mounted while provider discovery completes", async () => {
+  const mock = createMockOpenBot();
+  dispose = mock.dispose;
+  window.openbot = mock.api;
+  const fallback = createMockFallbackModelsApi(["acp:removed"]);
+  Object.assign(mock.api.providers ?? {}, fallback);
+  await fallback.setFallbackModels({ botId: "*", fallbackModels: ["gpt-5.6-luna", "acp:removed"] });
+  render(() => <ProvidersPage />);
+  const initial = screen.getByRole("region", { name: "All providers fallback list" });
+  await waitFor(() =>
+    expect(
+      within(screen.getByRole("region", { name: "All providers fallback list" })).getByText("Unavailable"),
+    ).toBeInTheDocument(),
+  );
+  expect(screen.getByRole("region", { name: "All providers fallback list" })).toBe(initial);
+  const region = within(initial);
+  await fireEvent.change(region.getByLabelText("Add fallback model"), { target: { value: "claude-opus-5" } });
+  mock.emitAgentEvent({ type: "endpoints-changed", endpoints: [] });
+  await waitFor(() =>
+    expect(region.getByRole("button", { name: "Remove Claude Opus 5 from fallbacks" })).toBeInTheDocument(),
+  );
+  expect(region.getByRole("button", { name: "Save order" })).toBeEnabled();
+});
