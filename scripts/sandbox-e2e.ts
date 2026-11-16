@@ -584,6 +584,9 @@ async function main(): Promise<void> {
       await dump(page, evidence, "07-agent-tools");
     });
     await step("navigation: mark a background agent read from its row menu", async () => {
+      // W5-UI3: earlier runs timed out on the row regex `/^Unread helper,/` (role is optional, so
+      // the accessible name is often "Unread helper. …" without a comma). Wait for a stable unread
+      // row, then for the menu item, instead of a fixed delay.
       const helperId = String(
         await page.evaluate(`(async () => {
         const api = window.openbot;
@@ -600,11 +603,22 @@ async function main(): Promise<void> {
         undefined,
         { timeout: 45_000 },
       );
-      await page
-        .getByRole("navigation", { name: "Chat list" })
-        .getByRole("button", { name: /^Unread helper,/ })
-        .click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Mark as read", exact: true }).click();
+      await page.waitForFunction(
+        `async () => {
+        const state = (await window.openbot.agent.listConversationReads())[${JSON.stringify(helperId)}];
+        return (state?.unreadCount ?? 0) > 0;
+      }`,
+        undefined,
+        { timeout: 15_000 },
+      );
+      const list = page.getByRole("navigation", { name: "Chat list" });
+      const row = list.getByRole("button", { name: /^Unread helper(\.|,)/ });
+      await row.waitFor({ state: "visible", timeout: 30_000 });
+      await row.scrollIntoViewIfNeeded();
+      await row.click({ button: "right" });
+      const markRead = page.getByRole("menuitem", { name: "Mark as read", exact: true });
+      await markRead.waitFor({ state: "visible", timeout: 10_000 });
+      await markRead.click();
       await page.waitForFunction(
         `async () => {
         const api = window.openbot.agent;

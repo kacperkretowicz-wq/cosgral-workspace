@@ -1155,3 +1155,29 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   flex-wrap: wrap;
   gap: var(--openbot-space-2);
 }
+.api-keys-section,
+.api-keys-list,
+.api-key-card {
+  display: grid;
+  gap: var(--openbot-space-3);
+}
+.api-key-card {
+  padding: var(--openbot-space-4);
+}
+.api-key-card[data-status="rejected"] {
+  border-color: color-mix(in srgb, var(--openbot-danger) 40%, transparent);
+  background: var(--openbot-danger-soft);
+}
+.api-key-card[data-status="ok"][data-has-key="true"] {
+  border-color: color-mix(in srgb, var(--openbot-accent) 35%, transparent);
+}
+.api-key-card-head,
+.api-key-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+.api-key-card-head {
+  justify-content: space-between;
+}
