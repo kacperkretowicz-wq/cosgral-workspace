@@ -234,3 +234,19 @@ Zakres zlecenia T1: kopiuj, ponów, edytuj i wyślij ponownie, rozgałęź od te
 ## Commity
 
 Zobacz SHA w wyniku kanału na `team/tester/w6-spec`.
+
+---
+
+## 7. Decyzje lidera (16.11.2026)
+
+Przyjmuję rekomendacje T1 dla wszystkich pytań Q1–Q17, z doprecyzowaniami:
+
+1. **Q1** tura w toku dokańcza się w tle w swoim wątku; wątki są niezależne.
+2. **Q2** kolejka wiadomości per wątek. **Q3** karty „Needs you” trafiają do wątku, zbiorczy widok pokazuje nazwę wątku.
+3. **Q4** pamięć zostaje per agent (bez pamięci per wątek w W6). **Q5** archiwum odwracalne; „usuń na zawsze” osobno, z potwierdzeniem.
+4. **Q6** wskaźnik kontekstu pokazuje szacunek tylko, gdy model lub CLI podaje liczby; inaczej „niedostępne”, bez zmyślonych procentów. **Q7** auto-kompakt w tle plus zawsze ręczny i ostrzeżenie.
+5. **Q8** karta planu: reguła w kontrakcie, w W6 wyzwalacz testowy i heurystyka „wiele kroków lub narzędzia z efektem”. **Q9** plan: tylko Zatwierdź / Odrzuć.
+6. **Q10** subagenci: głębokość 1, limit równoległych w kontrakcie (domyślnie 3). **Q11** startuje agent lub człowiek, człowiek ma Stop i podgląd.
+7. **Q12** „Ponów” dodaje nową odpowiedź (oznaczona jako regeneracja), starej nie kasuje. **Q13** edycja wiadomości człowieka wymaga potwierdzenia i unieważnia odpowiedzi poniżej. **Q14** rozgałęzienie = nowy wątek z linkiem „z wątku X”.
+8. **Q15** W6-UI1 wchodzi do tej samej bramki G3 po akcjach z T1. **Q16** osobne okno nie wraca po restarcie w W6. **Q17** osobne okno to nie dok.
+9. Kolejność: W6-BE1 (wątki, kontrakt najpierw) → W6-UI2 (nowy wątek, lista, osobne okno) równolegle z W6-BE2 (kontekst), potem W6-BE3 (plan, subagenci, akcje) i W6-UI1.
