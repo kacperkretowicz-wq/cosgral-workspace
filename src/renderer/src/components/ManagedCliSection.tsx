@@ -1,3 +1,7 @@
+import { safeCliError } from "./provider-error";
+
+export { safeCliError } from "./provider-error";
+
 import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
@@ -17,12 +21,6 @@ export function cliPathError(path: string) {
   return path.length > 1024 || /[\r\n\0]/.test(path) || !/^(?:[A-Za-z]:[\\/]|\/|\\\\)/.test(path.trim())
     ? "Podaj pełną ścieżkę do pliku CLI (maks. 1024 znaki)."
     : "";
-}
-export function safeCliError(message: string): string {
-  return message
-    .replace(/(?:Error: )?Error invoking remote method '[^']*': (?:Error: )?/g, "")
-    .replace(/[A-Za-z]:[\\/][^\r\n]*/g, "[ścieżka CLI]")
-    .replace(/\/(?:Users|home)\/[^\s]*/g, "[ścieżka CLI]");
 }
 const sources = { custom: "Własna ścieżka", managed: "Pobrane", system: "Systemowe", none: "Brak" };
 const phases = {

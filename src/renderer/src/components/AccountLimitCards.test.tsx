@@ -104,3 +104,49 @@ describe("account notices of the open conversation", () => {
     expect(limitReachedView(limitEvent({ resetsAt: "not a date" })).resetsAt).toBeNull();
   });
 });
+
+it("combines a returned account followed by its next usage limit without losing the limit card", () => {
+  let notices = addAccountNotice(
+    [],
+    switchEvent({
+      reason: "returned",
+      fromAccountId: "backup",
+      fromLabel: "Backup",
+      toAccountId: "first",
+      toLabel: "First",
+    }),
+    "returned",
+  );
+  notices = addAccountNotice(notices, limitEvent({ accountId: "first", accountLabel: "First" }), "limit");
+  notices = addAccountNotice(
+    notices,
+    switchEvent({ fromAccountId: "first", fromLabel: "First", toAccountId: "other", toLabel: "Other" }),
+    "switch",
+  );
+  expect(notices.map((notice) => notice.id)).toEqual(["switch", "limit"]);
+  const newest = notices[0];
+  if (newest.kind !== "switched") throw new Error("Expected a switch.");
+  expect(newest.view.reason).toContain("Returned from Backup to First");
+  expect(newest.view.reason).toContain("First reached its usage limit again, so switched to Other");
+});
+it("does not combine switches of another provider or a different account with the same label", () => {
+  const notices = addAccountNotice(
+    [],
+    switchEvent({ reason: "returned", toAccountId: "first", toLabel: "First" }),
+    "return",
+  );
+  expect(addAccountNotice(notices, switchEvent({ provider: "claude", fromAccountId: "first" }), "claude")).toHaveLength(
+    2,
+  );
+  expect(
+    addAccountNotice(notices, switchEvent({ fromAccountId: "different", fromLabel: "First" }), "different"),
+  ).toHaveLength(2);
+  expect(addAccountNotice(notices, switchEvent({ botId: "scout", fromAccountId: "first" }), "scout")).toHaveLength(2);
+});
+it("does not hide a newer unrelated switch when an older return matches", () => {
+  let notices = addAccountNotice([], switchEvent({ reason: "returned", toAccountId: "first" }), "return");
+  notices = addAccountNotice(notices, switchEvent({ fromAccountId: "unrelated" }), "other");
+  expect(
+    addAccountNotice(notices, switchEvent({ fromAccountId: "first" }), "latest").map((notice) => notice.id),
+  ).toEqual(["latest", "other", "return"]);
+});

@@ -2,6 +2,7 @@ import type { AgentModelId, FallbackModelsInfo, ProvidersDesktopApi } from "@ope
 import { fallbackModelsProblem, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
+import { providerError } from "./provider-error";
 import { Badge, Button, Heading, Text } from "./ui";
 export interface FallbackGroup {
   scope: string;
@@ -62,7 +63,7 @@ function ProviderList(props: {
       setReady(true);
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load the list.");
+      setError(providerError(e, "Could not load the list."));
       return false;
     } finally {
       setBusy(false);
@@ -87,7 +88,7 @@ function ProviderList(props: {
         props.onSaved?.();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save the list.");
+      setError(providerError(e, "Could not save the list."));
     } finally {
       setBusy(false);
     }

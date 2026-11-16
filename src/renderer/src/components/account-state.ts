@@ -1,6 +1,6 @@
 import type { AccountsSnapshot } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
-import { safeCliError } from "./ManagedCliSection";
+import { safeCliError } from "./provider-error";
 export function accountError(error: unknown) {
   return safeCliError(error instanceof Error ? error.message : String(error)).replace(/[^\s@]+@[^\s@]+/g, "[konto]");
 }
