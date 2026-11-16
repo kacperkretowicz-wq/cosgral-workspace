@@ -1,4 +1,3 @@
-import { FallbackModelBadge } from "./FallbackModelBadge";
 import {
   attachmentReferenceIds,
   expandAttachmentReferences,
@@ -74,6 +73,7 @@ import {
   unreadMessagesDividerIsVisible,
 } from "./conversation/UnreadMessages";
 import { EyesBar } from "./EyesIndicator";
+import { FallbackModelBadge } from "./FallbackModelBadge";
 import { LibraryPanel } from "./LibraryPanel";
 import { McpSettings } from "./McpSettings";
 import { AgentMemorySettingsView } from "./MemorySettings";
@@ -1556,7 +1556,7 @@ export function Conversation(props: ConversationProps) {
                     </Button>
                   )}
                 </Show>
-                <Show when={props.bot}>{bot=><FallbackModelBadge bot={bot()} models={props.modelOptions}/>}</Show>
+                <Show when={props.bot}>{(bot) => <FallbackModelBadge bot={bot()} models={props.modelOptions} />}</Show>
               </div>
               <div class="conversation-header-actions no-drag">
                 <Show when={props.bot}>

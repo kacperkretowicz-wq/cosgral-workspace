@@ -479,7 +479,7 @@ export function FallbackInUse(props: { bots: BotSummary[]; options: FallbackMode
 // ---------------------------------------------------------------------------------------------------------------
 // The page
 
-export function ProvidersPage(props: {fallbackNotices?: string[]} = {}) {
+export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
   const [usage, setUsage] = createSignal<ProviderUsage[]>([]);
   const [acpAgents, setAcpAgents] = createSignal<AcpAgentConfig[]>([]);
   const [bots, setBots] = createSignal<BotSummary[]>([]);
@@ -582,7 +582,6 @@ export function ProvidersPage(props: {fallbackNotices?: string[]} = {}) {
       if (event.type === "provider-usage-changed") setUsage(event.usage);
       if (event.type === "acp-agents-changed") setAcpAgents(event.agents);
       if (event.type === "bots-changed") setBots(event.bots);
-
     });
     return () => {
       clearInterval(timer);

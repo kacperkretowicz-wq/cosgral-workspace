@@ -589,9 +589,11 @@ export function App() {
         setAccountUsage(event.usage);
         return;
       case "model-fallback": {
-        const bot = botList().find(item => item.id === event.botId);
-        if (bot) updateStored(bot, {...bot, activeModel: event.toModel === bot.model ? undefined : event.toModel});
-        setFallbackNotices(items => [`${bot?.name ?? "Agent"}: ${event.fromModel} → ${event.toModel}. ${event.reason}`, ...items].slice(0,5));
+        const bot = botList().find((item) => item.id === event.botId);
+        if (bot) updateStored(bot, { ...bot, activeModel: event.toModel === bot.model ? undefined : event.toModel });
+        setFallbackNotices((items) =>
+          [`${bot?.name ?? "Agent"}: ${event.fromModel} → ${event.toModel}. ${event.reason}`, ...items].slice(0, 5),
+        );
         return;
       }
       case "bots-changed":
@@ -1245,20 +1247,23 @@ export function App() {
   }
 
   async function changeBotVisibility(botId: string, hidden: boolean): Promise<void> {
-    const stored = await window.openbot.agent.setBotHidden({botId, hidden});
-    const existing=botList().find(bot=>bot.id===botId);
-    if(existing) updateStored(existing,toBotProfile(stored));
-    if(hidden && activeBotId()===botId){
-      const next=botList().find(bot=>bot.id!==botId && !bot.hidden);
-      if(next) selectBot(next.id); else setAgentPickerOpen(true);
+    const stored = await window.openbot.agent.setBotHidden({ botId, hidden });
+    const existing = botList().find((bot) => bot.id === botId);
+    if (existing) updateStored(existing, toBotProfile(stored));
+    if (hidden && activeBotId() === botId) {
+      const next = botList().find((bot) => bot.id !== botId && !bot.hidden);
+      if (next) selectBot(next.id);
+      else setAgentPickerOpen(true);
     }
   }
   async function duplicateSidebarBot(sourceBotId: string): Promise<void> {
-    const result=await window.openbot.agent.duplicateBot({sourceBotId});
-    const next=toBotProfile(result.bot);
-    setBotList(items=>items.some(bot=>bot.id===next.id)?items:[...items,createStoredProfile(next)]);
+    const result = await window.openbot.agent.duplicateBot({ sourceBotId });
+    const next = toBotProfile(result.bot);
+    setBotList((items) => (items.some((bot) => bot.id === next.id) ? items : [...items, createStoredProfile(next)]));
     selectBot(result.bot.id);
-    setAgentCopyNotice(`Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.${result.warnings.length ? ` Uwaga: ${result.warnings.join(" ")}` : ""}`);
+    setAgentCopyNotice(
+      `Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.${result.warnings.length ? ` Uwaga: ${result.warnings.join(" ")}` : ""}`,
+    );
   }
 
   async function deleteBot(botId: string) {
@@ -1888,7 +1893,7 @@ export function App() {
                 onSetBotHidden={activeServer()?.kind !== "remote" ? changeBotVisibility : undefined}
                 onDuplicateBot={activeServer()?.kind !== "remote" ? duplicateSidebarBot : undefined}
                 copyNotice={agentCopyNotice()}
-                onDismissCopyNotice={()=>setAgentCopyNotice("")}
+                onDismissCopyNotice={() => setAgentCopyNotice("")}
                 modelOptions={modelOptions()}
                 onSelectChannels={(create) => {
                   setCreateChannel(!!create);

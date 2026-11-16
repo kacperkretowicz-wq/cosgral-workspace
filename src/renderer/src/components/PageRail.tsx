@@ -128,13 +128,20 @@ export function PageRail(props: PageRailProps) {
   const pinsState = usePagePins();
   const pinIds = () => props.pinnedPageIds ?? pinsState.pins();
   const pinned = (id: PageId) => pinIds()?.includes(id) ?? false;
-  const toggle = (id: PageId) => props.onTogglePin ? props.onTogglePin(id) : void pinsState.toggle(id);
+  const toggle = (id: PageId) => (props.onTogglePin ? props.onTogglePin(id) : void pinsState.toggle(id));
   const canPin = () => !!props.onTogglePin || !!window.openbot?.appSettings;
   const [visibleCount, setVisibleCount] = createSignal(PAGE_RAIL_ITEMS.length);
   let rail: HTMLElement | undefined;
   let tools: HTMLDivElement | undefined;
-  const visible = () => { const ids=pinIds(); return ids ? [...(!ids.includes("agents") ? ["agents" as const] : []),...ids].flatMap(id => PAGE_RAIL_ITEMS.filter(page=>page.id===id)) : PAGE_RAIL_ITEMS.slice(0,visibleCount()); };
-  const hidden = () => PAGE_RAIL_ITEMS.filter(item => !visible().some(page=>page.id===item.id));
+  const visible = () => {
+    const ids = pinIds();
+    return ids
+      ? [...(!ids.includes("agents") ? ["agents" as const] : []), ...ids].flatMap((id) =>
+          PAGE_RAIL_ITEMS.filter((page) => page.id === id),
+        )
+      : PAGE_RAIL_ITEMS.slice(0, visibleCount());
+  };
+  const hidden = () => PAGE_RAIL_ITEMS.filter((item) => !visible().some((page) => page.id === item.id));
   const hiddenActive = () => hidden().find((item) => item.id === props.active);
   onSettled(() => {
     function measure() {
@@ -168,18 +175,31 @@ export function PageRail(props: PageRailProps) {
       <div class="page-rail-list">
         <For each={visible()}>
           {(item) => (
-            <ContextMenu.Root modal={false}><ContextMenu.Trigger as={Button}
-              type="button"
-              variant="ghost"
-              class={["page-rail-button", { "page-rail-button-active": props.active === item.id }]}
-              aria-label={item.label}
-              aria-current={props.active === item.id ? "page" : undefined}
-              title={item.label}
-              onClick={() => props.onSelect(item.id)}
-            >
-              <span class="page-rail-mark" />
-              <PageIcon page={item.id} />
-            </ContextMenu.Trigger><Show when={canPin()}><ContextMenu.Portal><ContextMenu.Content class="bot-context-menu" aria-label={`Menu strony ${item.label}`}><ContextMenu.Item disabled={pinsState.busy()} onSelect={()=>toggle(item.id)}>{pinned(item.id)?"Odepnij":"Przypnij"} {item.label}</ContextMenu.Item></ContextMenu.Content></ContextMenu.Portal></Show></ContextMenu.Root>
+            <ContextMenu.Root modal={false}>
+              <ContextMenu.Trigger
+                as={Button}
+                type="button"
+                variant="ghost"
+                class={["page-rail-button", { "page-rail-button-active": props.active === item.id }]}
+                aria-label={item.label}
+                aria-current={props.active === item.id ? "page" : undefined}
+                title={`${item.label}${pinned(item.id) ? " · Przypięta" : ""}`}
+                data-pinned={pinned(item.id) ? "true" : undefined}
+                onClick={() => props.onSelect(item.id)}
+              >
+                <span class="page-rail-mark" />
+                <PageIcon page={item.id} />
+              </ContextMenu.Trigger>
+              <Show when={canPin()}>
+                <ContextMenu.Portal>
+                  <ContextMenu.Content class="bot-context-menu" aria-label={`Menu strony ${item.label}`}>
+                    <ContextMenu.Item disabled={pinsState.busy()} onSelect={() => toggle(item.id)}>
+                      {pinned(item.id) ? "Odepnij" : "Przypnij"} {item.label}
+                    </ContextMenu.Item>
+                  </ContextMenu.Content>
+                </ContextMenu.Portal>
+              </Show>
+            </ContextMenu.Root>
           )}
         </For>
         <Show when={hidden().length > 0}>
@@ -203,13 +223,20 @@ export function PageRail(props: PageRailProps) {
               >
                 <For each={hidden()}>
                   {(item) => (
-                    <><DropdownMenu.Item
-                      aria-current={props.active === item.id ? "page" : undefined}
-                      onSelect={() => props.onSelect(item.id)}
-                    >
-                      <PageIcon page={item.id} />
-                      <span>{item.label}</span>
-                    </DropdownMenu.Item><Show when={canPin()}><DropdownMenu.Item disabled={pinsState.busy()} onSelect={()=>toggle(item.id)}>Przypnij {item.label}</DropdownMenu.Item></Show></>
+                    <>
+                      <DropdownMenu.Item
+                        aria-current={props.active === item.id ? "page" : undefined}
+                        onSelect={() => props.onSelect(item.id)}
+                      >
+                        <PageIcon page={item.id} />
+                        <span>{item.label}</span>
+                      </DropdownMenu.Item>
+                      <Show when={canPin()}>
+                        <DropdownMenu.Item disabled={pinsState.busy()} onSelect={() => toggle(item.id)}>
+                          Przypnij {item.label}
+                        </DropdownMenu.Item>
+                      </Show>
+                    </>
                   )}
                 </For>
               </DropdownMenu.Content>
@@ -217,7 +244,11 @@ export function PageRail(props: PageRailProps) {
           </DropdownMenu.Root>
         </Show>
       </div>
-      <Show when={pinsState.error()}><Text as="p" role="alert" class="page-rail-error">{pinsState.error()}</Text></Show>
+      <Show when={pinsState.error()}>
+        <Text as="p" role="alert" class="page-rail-error">
+          {pinsState.error()}
+        </Text>
+      </Show>
       <div ref={(element) => (tools = element)} class="page-rail-tools">
         <Button
           type="button"

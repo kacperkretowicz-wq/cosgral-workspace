@@ -7,7 +7,8 @@ import { type PageId, PageRail } from "../src/components/PageRail";
 import { createMockOpenBot } from "./mock-openbot";
 import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
-function RailShell(props: { theme: StoryTheme; initial?: PageId; height?: string }) {
+function RailShell(props: { theme: StoryTheme; initial?: PageId; height?: string; initialPins?: PageId[] }) {
+  const [pins, setPins] = createSignal<PageId[] | undefined>(props.initialPins);
   const [page, setPage] = createSignal<PageId>(props.initial ?? "agents");
   return (
     <ThemeFrame
@@ -16,7 +17,22 @@ function RailShell(props: { theme: StoryTheme; initial?: PageId; height?: string
     >
       <div style="display: flex; width: 100%; height: 100%;">
         <div style="width: 54px; display: flex;">
-          <PageRail active={page()} onSelect={setPage} onOpenSettings={fn()} />
+          <PageRail
+            active={page()}
+            pinnedPageIds={pins()}
+            onTogglePin={
+              props.initialPins
+                ? (id) =>
+                    setPins((current) =>
+                      (current ?? []).includes(id)
+                        ? (current ?? []).filter((page) => page !== id)
+                        : [...(current ?? []), id],
+                    )
+                : undefined
+            }
+            onSelect={setPage}
+            onOpenSettings={fn()}
+          />
         </div>
         <div style="flex: 1; display: grid; min-width: 0;">
           <ComingSoon title={page() === "agents" ? "Agents" : page().charAt(0).toUpperCase() + page().slice(1)} />
@@ -68,10 +84,11 @@ export const ComingSoonLight: Story = {
 export const InTheApp: Story = {
   name: "In the app (Schedule opens the routines page, Agents keeps its list)",
   render: () => <MockedApp />,
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole("heading", { name: "Chief" });
     await expect(canvas.getByRole("navigation", { name: "Pages" })).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: "Schedule" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^More pages/ }));
+    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole("menuitem", { name: "Schedule" }));
     await expect(canvas.findByRole("heading", { name: "Schedule" })).resolves.toBeInTheDocument();
     await expect(canvas.getByRole("navigation", { name: "Chat list" })).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Agents" }));
@@ -94,4 +111,14 @@ export const Overflow: Story = {
 export const OverflowLight: Story = {
   ...Overflow,
   render: () => <RailShell theme="light" initial="phone" height="300px" />,
+};
+
+export const PinnedPages: Story = {
+  render: () => <RailShell theme="dark" initial="phone" initialPins={["library", "providers"]} />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByRole("button", { name: "Library" })).toBeVisible();
+    await expect(c.getByRole("button", { name: "Providers" })).toBeVisible();
+    await expect(c.queryByRole("button", { name: "Phone" })).not.toBeInTheDocument();
+  },
 };

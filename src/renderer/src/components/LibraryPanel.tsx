@@ -19,8 +19,12 @@ export function LibraryItems(props: {
             <Button unstyled type="button" onClick={() => props.onOpen(item.id)}>
               Open
             </Button>{" "}
-            <Button type="button" variant="secondary" onClick={()=>props.onOpen(item.id,"download")}>Pobierz</Button>{" "}
-            <Button type="button" variant="secondary" onClick={()=>props.onOpen(item.id,"reveal")}>Pokaż w folderze</Button>{" "}
+            <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "download")}>
+              Pobierz
+            </Button>{" "}
+            <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "reveal")}>
+              Pokaż w folderze
+            </Button>{" "}
             <Show when={props.onAttach}>
               <Button unstyled type="button" onClick={() => props.onAttach?.(item.id)}>
                 Attach
