@@ -42,12 +42,14 @@ beforeAll(async () => {
   const { registerProviderIpc } = await import("./provider-ipc");
   const { registerThreadsIpc } = await import("./threads-ipc");
   const { registerWindowsIpc } = await import("./windows-ipc");
+  const { registerSpacesIpc } = await import("./spaces-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
   registerMessageActionsIpc(() => null);
   registerWindowsIpc(() => null);
+  registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -88,6 +90,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("message-actions:").length).toBe(5);
     // COSGRAL W6-KK3: the separate conversation windows.
     expect(channelsOf("windows:").length).toBe(4);
+    // COSGRAL W8-KK1: the client spaces.
+    expect(channelsOf("spaces:").length).toBe(8);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -103,6 +107,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "plans:",
         "message-actions:",
         "windows:",
+        "spaces:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -133,6 +138,10 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("windows:open-conversation", "local", { botId: "" })).threw).toMatch(/needs an agent/);
     expect((await call("windows:list-open", "local", null)).threw).toMatch(/still starting/);
     expect((await call("windows:current", "local", null)).value).toBeNull();
+    // W8-KK1: spaces are parsed first (a bad id or a missing confirmation is refused before the program is asked).
+    expect((await call("spaces:delete", "local", { id: "client-0001" })).threw).toMatch(/confirmation/);
+    expect((await call("spaces:switch", "local", { id: "../main", confirm: true })).threw).toMatch(/space id/);
+    expect((await call("spaces:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.
