@@ -36,11 +36,13 @@ beforeAll(async () => {
     handlers.set(channel, listener);
   };
   const { registerApiKeysIpc } = await import("./api-keys-ipc");
+  const { registerContextIpc } = await import("./context-ipc");
   const { registerEndpointsIpc } = await import("./endpoints-ipc");
   const { registerSubscriptionsIpc } = await import("./subscriptions-ipc");
   const { registerProviderIpc } = await import("./provider-ipc");
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
+  registerContextIpc(() => null);
   registerSubscriptionsIpc(() => null);
   // A registry that must never be used by a call for another server: every method fails loudly when it is called.
   const { ProviderRegistry } = await import("../backend/provider-registry");
@@ -67,6 +69,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
   it("registers the channels of keys, endpoints, accounts, CLIs and provider lists", () => {
     expect(channelsOf("api-keys:").length).toBe(4);
     expect(channelsOf("endpoints:").length).toBe(5);
+    expect(channelsOf("context:").length).toBe(4);
     expect(channelsOf("subscriptions:").length).toBeGreaterThanOrEqual(19);
     expect(channelsOf("providers:").length).toBeGreaterThanOrEqual(8);
   });
@@ -74,7 +77,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
     "refuses every such call for the server '%s'",
     async (serverId) => {
-      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:");
+      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:", "context:");
       const outcomes: string[] = [];
       for (const name of names) {
         const { threw, value } = await call(name, serverId, { provider: "codex", key: "test-key-0000-abcd", id: "x" });
@@ -97,5 +100,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(sub.threw).toMatch(/still starting/);
     const endpoints = await call("endpoints:list", "local", null);
     expect(endpoints.threw).toMatch(/still starting/);
+    const context = await call("context:get-settings", "local", null);
+    expect(context.threw).toMatch(/still starting/);
   });
 });

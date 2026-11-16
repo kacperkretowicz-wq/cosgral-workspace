@@ -68,6 +68,7 @@ import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
+import { registerContextIpc } from "./context-ipc";
 import { registerSharedDataIpc } from "./data-ipc";
 import { runPendingDataWipe } from "./data-wipe";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
@@ -861,6 +862,7 @@ function registerIpcHandlers(
   registerSubscriptionsIpc(() => managedCli);
   registerApiKeysIpc(() => apiKeyStore);
   registerEndpointsIpc(() => endpointStore);
+  registerContextIpc(() => agentService);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
