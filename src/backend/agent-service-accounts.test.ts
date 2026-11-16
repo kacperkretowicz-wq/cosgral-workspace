@@ -442,6 +442,27 @@ describe.sequential("AgentService with provider accounts", {
   });
 });
 
+describe.sequential("a confirm card without an agent (CLI download consent)", () => {
+  it("lands in the conversation the window opened last, not in the first agent of the list", async () => {
+    const { service: s, store } = await fixture();
+    await store.getOrCreate("chief");
+    await store.getOrCreate("scout");
+    const names = s.listBots().map((bot) => bot.id);
+    const first = names[0] ?? "";
+    const other = names.find((id) => id !== first) ?? "";
+    expect(other).not.toBe("");
+    // Nothing opened yet: the first agent, as before.
+    void s.confirmForPerson(null, { title: "Download the Codex CLI?", preview: "From the official source." });
+    expect(pendingCards(s).map((card) => card.botId)).toEqual([first]);
+    await s.readConversationFor(other, "local-owner");
+    void s.confirmForPerson(null, { title: "Download the Claude CLI?", preview: "From the official source." });
+    expect(pendingCards(s).find((card) => card.title === "Download the Claude CLI?")?.botId).toBe(other);
+    // An agent named by the caller still wins.
+    void s.confirmForPerson(first, { title: "Named agent", preview: "x" });
+    expect(pendingCards(s).find((card) => card.title === "Named agent")?.botId).toBe(first);
+  });
+});
+
 function completed(events: AgentEvent[]): string[] {
   return events.flatMap((event) => (event.type === "turn-completed" ? [event.status] : []));
 }

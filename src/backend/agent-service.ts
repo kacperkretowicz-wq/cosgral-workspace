@@ -379,6 +379,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #cli = new Map<AgentProvider, CodexCliInfo | ClaudeCliInfo>();
   readonly #accounts = new Map<AgentProvider, AccountReadResult["account"]>();
   readonly #providerStarts = new Map<AgentProvider, Promise<void>>();
+  /** COSGRAL W5-K1: the agent whose conversation a window opened last (where a card without an agent goes). */
+  #lastOpenedBotId: string | null = null;
   /** COSGRAL W5-K1: which provider account answers a turn (null until the accounts are attached: the old path). */
   #accountRouter: AccountRouter<AgentClient> | null = null;
   /** The CLI process a provider thread was loaded in; only for threads of account lanes (a thread lives in one account). */
@@ -607,14 +609,18 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /**
    * COSGRAL W3: a confirm card that is not part of an agent turn (remote desktop consent). It shows in the row of
-   * `botId`, or of the first agent. Cards belong to agents, so this fails when there is no agent.
+   * `botId`, else of the agent whose conversation the window opened last (W5-K1: the CLI consent card used to land in
+   * the first agent of the list), else of the first agent. Cards belong to agents, so this fails when there is no agent.
    */
   confirmForPerson(
     botId: string | null,
     input: { title: string; preview: string; recipient?: string; channel?: string },
   ): Promise<DraftPreviewResolution> {
     const bots = this.listBots();
-    const bot = bots.find((candidate) => candidate.id === botId) ?? bots[0];
+    const bot =
+      bots.find((candidate) => candidate.id === botId) ??
+      bots.find((candidate) => candidate.id === this.#lastOpenedBotId) ??
+      bots[0];
     if (!bot) return Promise.reject(new Error("Create an agent first: the card appears in an agent's row."));
     return this.#cards.confirmAction(
       { botId: bot.id, threadId: bot.threadId ?? "", providerThreadId: "remote-desktop", turnId: "remote-desktop" },
@@ -1109,6 +1115,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async readConversationFor(botId: string, memberId: string): Promise<ConversationWithReadState> {
     const snapshot = await this.readConversation(botId);
+    this.#lastOpenedBotId = botId;
     return {
       ...snapshot,
       readState: this.#conversationReads.readState(memberId, snapshot),
