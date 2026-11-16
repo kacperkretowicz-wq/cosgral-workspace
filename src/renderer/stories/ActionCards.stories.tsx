@@ -1,4 +1,4 @@
-import type { BrowserTakeoverRequest, DraftPreviewCard } from "@openbot/contracts/ipc";
+﻿import type { BrowserTakeoverRequest, DraftPreviewCard } from "@openbot/contracts/ipc";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { ActionCard } from "../src/components/ActionCard";
 import type { PendingCard } from "../src/pending-cards";
@@ -71,3 +71,29 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Dark: Story = { args: { theme: "dark" } };
 export const Light: Story = { args: { theme: "light" } };
+
+export const CliDownloadApproval: Story = {
+  args: { theme: "dark" },
+  render: () => (
+    <ThemeFrame theme="dark">
+      <ActionCard
+        card={draftCard({
+          requestId: "cli-install",
+          botId: "chief",
+          threadId: "thread",
+          turnId: "turn",
+          variant: "confirm",
+          title: "Pobrać Codex 1.0.0?",
+          recipient: null,
+          channel: null,
+          draftId: null,
+          preview:
+            "COSGRAL pobierze Codex 1.0.0 (25 MB) z oficjalnego wydania OpenAI w GitHub. Sprawdzi SHA-256. Kolejne aktualizacje zależą od Twoich ustawień.",
+          createdAt: "2026-11-16T00:00:00Z",
+        })}
+        onDraft={async () => {}}
+        onTakeover={async () => {}}
+      />
+    </ThemeFrame>
+  ),
+};
