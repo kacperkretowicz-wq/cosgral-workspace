@@ -46,7 +46,12 @@ import {
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
-import { isManagedCliState, type ManagedCliState } from "./ipc-subscriptions";
+import {
+  type AccountsSnapshot,
+  isAccountsSnapshot,
+  isManagedCliState,
+  type ManagedCliState,
+} from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
 import {
   isVaultItemSummary,
@@ -614,6 +619,7 @@ export type AgentEvent =
   | { type: "approval-rules-changed"; rules: ApprovalRule[] }
   /** COSGRAL W5-BE1: a managed CLI changed (check, download progress, install, remove, settings). */
   | { type: "managed-cli-changed"; state: ManagedCliState }
+  | ({ type: "accounts-changed" } & AccountsSnapshot)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -747,6 +753,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isApprovalRuleList(value.rules);
     case "managed-cli-changed":
       return isManagedCliState(value.state);
+    case "accounts-changed":
+      return isAccountsSnapshot(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":
