@@ -1,14 +1,21 @@
+import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
+
+export type { FallbackModelOption } from "./fallback-order";
+export { FallbackOrder, moveItem } from "./fallback-order";
+
 import type {
   AcpAgentConfig,
   AgentModelId,
   AgentModelOption,
   BotSummary,
   FallbackModelsInfo,
+  ModelEndpoint,
   ProviderUsage,
   SaveAcpAgentInput,
 } from "@openbot/contracts/ipc";
 import {
   acpModelId,
+  endpointModelId,
   fallbackModelsProblem,
   GENERAL_FALLBACK_SCOPE,
   isAcpAgentId,
@@ -19,19 +26,13 @@ import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderAccounts } from "./ProviderAccounts";
+import { FallbackChainView, ProviderFallbackLists } from "./ProviderFallbackLists";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Text, Textarea } from "./ui";
 
 // ---------------------------------------------------------------------------------------------------------------
 // Pure helpers (tested without a window)
 
 /** A new list with the item at `from` moved to `to`; the same list when either index is outside it. */
-export function moveItem<T>(items: readonly T[], from: number, to: number): T[] {
-  const copy = [...items];
-  if (from === to || from < 0 || to < 0 || from >= copy.length || to >= copy.length) return copy;
-  copy.splice(to, 0, ...copy.splice(from, 1));
-  return copy;
-}
-
 export interface AcpAgentDraft {
   id: string;
   name: string;
@@ -324,163 +325,6 @@ export function AcpAgentsSection(props: {
   );
 }
 
-export interface FallbackModelOption {
-  id: AgentModelId;
-  name: string;
-}
-
-/**
- * The order of one agent's fallback models. Drag a row, or focus it and press Alt+Up or Alt+Down; the buttons do the
- * same. The agent's own model is tried first and is not in this list.
- */
-export function FallbackOrder(props: {
-  botName: string;
-  ownModel?: AgentModelId;
-  confirmAdd?: boolean;
-  unavailable?: AgentModelId[];
-  items: AgentModelId[];
-  options: FallbackModelOption[];
-  dirty: boolean;
-  saving: boolean;
-  onChange: (items: AgentModelId[]) => void;
-  onSave: () => void;
-}) {
-  const [selected, setSelected] = createSignal<AgentModelId | null>(null);
-  const [dragFrom, setDragFrom] = createSignal<number | null>(null);
-  const [announce, setAnnounce] = createSignal("");
-  const nameOf = (id: AgentModelId) => props.options.find((option) => option.id === id)?.name ?? id;
-  const full = () => props.items.length >= PROVIDER_LIMITS.fallbackModels;
-  const addable = () => props.options.filter((o) => o.id !== props.ownModel && !props.items.includes(o.id));
-  function move(from: number, to: number) {
-    if (props.saving || to < 0 || to >= props.items.length || from === to) return;
-    const id = props.items[from];
-    props.onChange(moveItem(props.items, from, to));
-    if (id !== undefined) setAnnounce(`${nameOf(id)} moved to position ${to + 1} of ${props.items.length}.`);
-  }
-  return (
-    <section class="providers-fallback" aria-label={`Fallback models for ${props.botName}`}>
-      <Text as="p" tone="secondary">
-        After account retries, these models are tried in order. Each is tried at most once per message.
-      </Text>
-      <Show
-        when={props.items.length}
-        fallback={
-          <Text as="p" tone="muted">
-            No fallback models. {props.botName} stops when its own provider does.
-          </Text>
-        }
-      >
-        <ol class="providers-order" aria-label="Fallback order">
-          <For each={props.items}>
-            {(model, index) => (
-              <li
-                class="providers-order-item"
-                data-dragging={dragFrom() === index() ? "" : undefined}
-                draggable="true"
-                tabindex="0"
-                aria-label={`${index() + 1}. ${nameOf(model)}. Press Alt and Up or Down arrow to reorder.`}
-                onDragStart={(event) => {
-                  setDragFrom(index());
-                  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const from = dragFrom();
-                  setDragFrom(null);
-                  if (from !== null) move(from, index());
-                }}
-                onDragEnd={() => setDragFrom(null)}
-                onKeyDown={(event) => {
-                  if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
-                  event.preventDefault();
-                  move(index(), index() + (event.key === "ArrowUp" ? -1 : 1));
-                }}
-              >
-                <span class="providers-order-number" aria-hidden="true">
-                  {index() + 1}
-                </span>
-                <span class="providers-order-name">{nameOf(model)}</span>
-                <Show when={props.unavailable?.includes(model)}>
-                  <Badge tone="warning">Unavailable</Badge>
-                </Show>
-                <Button
-                  type="button"
-                  size="xs"
-                  aria-label={`Move ${nameOf(model)} up`}
-                  disabled={props.saving || index() === 0}
-                  onClick={() => move(index(), index() - 1)}
-                >
-                  Up
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  aria-label={`Move ${nameOf(model)} down`}
-                  disabled={props.saving || index() === props.items.length - 1}
-                  onClick={() => move(index(), index() + 1)}
-                >
-                  Down
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="danger"
-                  disabled={props.saving}
-                  aria-label={`Remove ${nameOf(model)} from fallbacks`}
-                  onClick={() => props.onChange(props.items.filter((_, i) => i !== index()))}
-                >
-                  Remove
-                </Button>
-              </li>
-            )}
-          </For>
-        </ol>
-      </Show>
-      <span class="providers-sr-only" role="status" aria-live="polite">
-        {announce()}
-      </span>
-      <Text as="p" tone="secondary">
-        At most {PROVIDER_LIMITS.fallbackModels} models. Duplicate models cannot be added.
-      </Text>
-      <div class="providers-add">
-        <NativeSelect
-          aria-label="Add fallback model"
-          value={props.confirmAdd ? (selected() ?? "") : ""}
-          disabled={props.saving || full() || !addable().length}
-          onChange={(event) => {
-            const chosen = addable().find((option) => option.id === event.currentTarget.value);
-            event.currentTarget.value = "";
-            if (props.confirmAdd) setSelected(chosen?.id ?? null);
-            else if (chosen && !full()) props.onChange([...props.items, chosen.id]);
-          }}
-        >
-          <option value="">
-            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback model..."}
-          </option>
-          <For each={addable()}>{(option) => <option value={option.id}>{option.name}</option>}</For>
-        </NativeSelect>
-        <Show when={props.confirmAdd}>
-          <Button
-            type="button"
-            disabled={props.saving || full() || !addable().some((option) => option.id === selected())}
-            onClick={() => {
-              const id = selected();
-              if (id && !full() && addable().some((option) => option.id === id)) props.onChange([...props.items, id]);
-              setSelected(null);
-            }}
-          >
-            Add fallback
-          </Button>
-        </Show>
-        <Button type="button" variant="primary" disabled={!props.dirty} loading={props.saving} onClick={props.onSave}>
-          Save order
-        </Button>
-      </div>
-    </section>
-  );
-}
-
 /** One line per agent that now runs on a fallback model. */
 export function FallbackInUse(props: { bots: BotSummary[]; options: FallbackModelOption[] }) {
   const nameOf = (id: AgentModelId) => props.options.find((option) => option.id === id)?.name ?? id;
@@ -517,7 +361,15 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
   const [acpAgents, setAcpAgents] = createSignal<AcpAgentConfig[]>([]);
   const [bots, setBots] = createSignal<BotSummary[]>([]);
   const [models, setModels] = createSignal<AgentModelOption[]>([]);
-  const [botId, setBotId] = createSignal<string>(GENERAL_FALLBACK_SCOPE);
+  const [endpoints, setEndpoints] = createSignal<ModelEndpoint[]>([]);
+  const [botId, setBotId] = createSignal<string>("");
+  const groups = () => [
+    { scope: "provider:codex", label: "Codex" },
+    { scope: "provider:claude", label: "Claude" },
+    ...acpAgents().map((agent) => ({ scope: `provider:acp:${agent.id}`, label: agent.name })),
+    ...endpoints().map((endpoint) => ({ scope: `provider:endpoint:${endpoint.id}`, label: endpoint.label })),
+    { scope: GENERAL_FALLBACK_SCOPE, label: "All providers" },
+  ];
   const [loadingFallbacks, setLoadingFallbacks] = createSignal(false);
   const [info, setInfo] = createSignal<FallbackModelsInfo | null>(null);
   const [saved, setSaved] = createSignal<AgentModelId[]>([]);
@@ -536,6 +388,17 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       .filter((agent) => !models().some((model) => model.id === acpModelId(agent.id)))
       .map((agent) => ({ id: acpModelId(agent.id), name: `${agent.name} (ACP)` })),
   ];
+  const modelOptions = () => [
+    ...options(),
+    ...endpoints()
+      .flatMap((endpoint) =>
+        endpoint.models.map((model) => ({
+          id: endpointModelId(endpoint.id, model),
+          name: `${endpoint.label}: ${model}`,
+        })),
+      )
+      .filter((option) => !options().some((existing) => existing.id === option.id)),
+  ];
   const dirty = () => JSON.stringify(items()) !== JSON.stringify(saved());
   const fail = (e: unknown, fallback: string) => setError(e instanceof Error ? e.message : fallback);
 
@@ -550,7 +413,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
     setLoadingFallbacks(true);
     try {
       const detail = await api.getFallbackInfo?.(id);
-      const list = detail ? (detail.own ?? detail.general) : await api.getFallbackModels(id);
+      const list = detail ? (detail.own ?? []) : await api.getFallbackModels(id);
       if (serial !== loadSerial) return;
       setInfo(detail ?? null);
       setSaved(list);
@@ -607,7 +470,10 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       setError("Providers are unavailable.");
       return;
     }
-    void loadFallbacks(GENERAL_FALLBACK_SCOPE);
+    void window.openbot.endpoints
+      ?.list()
+      .then(setEndpoints)
+      .catch((e) => fail(e, "Could not load endpoint groups."));
     void refreshUsage();
     void api
       .listAcpAgents()
@@ -629,6 +495,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       if (event.type === "provider-usage-changed") setUsage(event.usage);
       if (event.type === "acp-agents-changed") setAcpAgents(event.agents);
       if (event.type === "bots-changed") setBots(event.bots);
+      if (event.type === "endpoints-changed") setEndpoints(event.endpoints);
     });
     return () => {
       clearInterval(timer);
@@ -680,7 +547,21 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
         <Heading as="h2" size="md">
           Fallback models
         </Heading>
-        <FallbackInUse bots={bots()} options={options()} />
+        <ProviderFallbackLists
+          groups={groups()}
+          options={modelOptions()}
+          onSaved={() => {
+            const id = botId();
+            if (!id) return;
+            void window.openbot.providers
+              ?.getFallbackInfo?.(id)
+              .then((detail) => {
+                if (botId() === id) setInfo(detail);
+              })
+              .catch((e) => fail(e, "Could not refresh the chain."));
+          }}
+        />
+        <FallbackInUse bots={bots()} options={modelOptions()} />
         <Show when={props.fallbackNotices?.length}>
           <ul class="providers-list" aria-label="Recent switches">
             <For each={props.fallbackNotices ?? []}>
@@ -692,25 +573,24 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
             </For>
           </ul>
         </Show>
-        <div>
+        <fieldset aria-label="Agent fallback settings" style="border: 0; padding: 0; margin: 0; min-width: 0">
           <Field label="Agent">
             <NativeSelect
               value={botId()}
               disabled={saving()}
               onChange={(event) => chooseBot(event.currentTarget.value)}
             >
-              <option value={GENERAL_FALLBACK_SCOPE}>General list</option>
               <For each={bots()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
             </NativeSelect>
           </Field>
-          <Show when={bot() ?? { name: "General list", model: undefined }}>
+          <Show when={bot()}>
             {(current) => (
               <FallbackOrder
                 botName={current().name}
                 ownModel={current().model}
                 unavailable={info()?.unavailable}
                 items={items()}
-                options={options()}
+                options={modelOptions()}
                 dirty={dirty()}
                 saving={saving() || loadingFallbacks()}
                 onChange={(next) => {
@@ -725,9 +605,9 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
               />
             )}
           </Show>
-          <Show when={botId() !== GENERAL_FALLBACK_SCOPE}>
+          <Show when={bot()}>
             <Text as="p" role="status">
-              {info()?.own === null ? "Inherited from general list" : "Agent's own list"}
+              {info()?.own === null ? "Using provider and all-provider lists" : "Agent's own list"}
             </Text>
             <Show when={window.openbot.providers?.resetFallbackModels}>
               <Button
@@ -747,16 +627,19 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
                   }
                 }}
               >
-                Reset to general list
+                Reset to provider list
               </Button>
             </Show>
+          </Show>
+          <Show when={bot()}>
+            <FallbackChainView info={info()} options={modelOptions()} />
           </Show>
           <Show when={notice()}>
             <Text as="p" tone="success" role="status">
               {notice()}
             </Text>
           </Show>
-        </div>
+        </fieldset>
       </Card>
     </main>
   );
