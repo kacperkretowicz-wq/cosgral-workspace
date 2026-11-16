@@ -90,6 +90,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "./fixtures";
+import { createMockAccounts } from "./mock-accounts";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -1258,6 +1259,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     },
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).
     subscriptions: {
+      ...createMockAccounts((event) => emitAgentEvent(event)),
       listCli: async () => clone([...managedCli.values()]),
       checkCli: async ({ id }) =>
         updateCli(id, { latestVersion: id === "codex" ? "0.170.0" : "2.1.330", checkedAt: new Date().toISOString() }),

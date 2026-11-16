@@ -1,7 +1,7 @@
-﻿import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
+import type { ManagedCliState } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
-export type CliAction = Exclude<keyof SubscriptionsDesktopApi, "listCli">;
+export type CliAction = "checkCli" | "installCli" | "updateCli" | "removeCli" | "pinCli" | "setCliSettings";
 export type CliInput = {
   id: ManagedCliState["id"];
   version?: string | null;
@@ -238,7 +238,7 @@ export function ManagedCliSection(props: {
         {props.provider ? "Połącz dostawcę" : "Narzędzia CLI"}
       </Heading>
       <Text as="p" tone="muted">
-        Własna ścieżka → pobrane → systemowe. Pierwsze pobranie wymaga zgody. Logowanie wkrótce.
+        Własna ścieżka → pobrane → systemowe. Pierwsze pobranie wymaga zgody. Konta połączysz na stronie Dostawcy.
       </Text>
       <Show when={error()}>
         <Text as="p" role="alert" tone="danger">

@@ -7,6 +7,30 @@ if (process.argv.includes("--version")) {
   console.log("codex-cli 0.144.1");
   process.exit(0);
 }
+// W5-BE2: a fake sign-in like `codex login` (prints a sign-in page and finishes), `login status` and `logout`. Its
+// state is its own marker in CODEX_HOME (the account folder), which only this stand-in reads, like a real CLI.
+if (process.argv[2] === "login" || process.argv[2] === "logout") {
+  const fs = require("node:fs");
+  const home = process.env.CODEX_HOME || require("node:path").join(require("node:os").homedir(), ".codex");
+  const marker = require("node:path").join(home, "fixture-signed-in");
+  if (process.argv[2] === "logout") {
+    fs.rmSync(marker, { force: true });
+    console.log("Successfully logged out");
+  } else if (process.argv[3] === "status") {
+    if (fs.existsSync(marker)) console.error("Logged in using ChatGPT");
+    else console.error("Not logged in");
+    process.exit(fs.existsSync(marker) ? 0 : 1);
+  } else {
+    console.log("Starting local login server on http://localhost:1455.");
+    console.log("If your browser did not open, navigate to this URL to authenticate:");
+    console.log("https://example.invalid/oauth/authorize?client=cosgral-fixture");
+    fs.mkdirSync(home, { recursive: true });
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300); // "the person signs in in the browser"
+    fs.writeFileSync(marker, "1");
+    console.log("Successfully logged in");
+  }
+  process.exit(0);
+}
 const threads = new Map(),
   pending = new Map(),
   turns = new Map();
