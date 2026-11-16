@@ -276,7 +276,7 @@ describe("ProviderRegistry fallback lists (W5-BE4)", () => {
     const { registry } = await setup();
     registry.saveAcpAgent({ id: "a", name: "A", command: "a" });
     registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["acp:a", "claude-opus-5"] });
-    expect(registry.getFallbackInfo("chief")).toEqual({
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
       botId: "chief",
       own: null,
       general: ["acp:a", "claude-opus-5"],

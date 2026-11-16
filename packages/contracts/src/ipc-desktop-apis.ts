@@ -362,11 +362,14 @@ export interface ProvidersDesktopApi {
   /** One entry per provider (and per ACP agent) with limit state and reset time. */
   listUsage: () => Promise<ProviderUsage[]>;
   getFallbackModels: (botId: string) => Promise<AgentModelId[]>;
-  /** Up to 8, in order, no repeats. `botId` "*" (GENERAL_FALLBACK_SCOPE) is the general list for agents without their own. */
+  /**
+   * Up to 8, in order, no repeats. `botId` is an agent, "*" (GENERAL_FALLBACK_SCOPE, all providers) or, W5-BE7, a
+   * provider list "provider:codex" | "provider:claude" | "provider:acp:<id>" | "provider:endpoint:<id>".
+   */
   setFallbackModels: (input: FallbackModelsInput) => Promise<AgentModelId[]>;
-  /** W5-BE4: the agent's own list or the general one, what is really tried, and what cannot run now. */
+  /** W5-BE4/BE7: the lists and the chain an agent really tries (own → provider → general), with each model's source. */
   getFallbackInfo?: (botId: string) => Promise<FallbackModelsInfo>;
-  /** W5-BE4: forget the agent's own list; it follows the general list again. */
+  /** W5-BE4/BE7: forget the saved list of `botId`; an agent then follows its provider list and the general list. */
   resetFallbackModels?: (botId: string) => Promise<FallbackModelsInfo>;
 }
 

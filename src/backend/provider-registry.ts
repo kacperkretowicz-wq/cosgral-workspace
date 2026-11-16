@@ -14,6 +14,7 @@ import {
   acpModelId,
   type FallbackModelsInfo,
   type FallbackModelsInput,
+  fallbackChain,
   fallbackModelsProblem,
   GENERAL_FALLBACK_SCOPE,
   isAcpAgentConfig,
@@ -192,6 +193,16 @@ export class ProviderRegistry {
       general,
       effective: list.filter((model) => !missing.has(model)),
       unavailable: list.filter((model) => missing.has(model)),
+      // W5-BE7 (step 1, contract only): the provider layer follows in the next commit.
+      providerScope: null,
+      provider: null,
+      chain: fallbackChain({
+        ownModel: null,
+        own,
+        provider: null,
+        general: own === null ? general : [],
+        isAvailable: (model) => !missing.has(model),
+      }),
     };
   }
 
