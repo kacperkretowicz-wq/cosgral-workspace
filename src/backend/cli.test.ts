@@ -7,10 +7,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   CodexCliError,
   cliCommand,
+  findSystemCli,
   parseClaudeVersion,
   parseCodexVersion,
   resolveClaudeCli,
   resolveCodexCli,
+  setManagedCliResolver,
   windowsFallbackPaths,
 } from "./cli";
 
@@ -109,6 +111,34 @@ describe("Windows CLI fallback paths", () => {
     await expect(resolveCodexCli()).resolves.toMatchObject({ version: "0.144.1" });
     await expect(resolveClaudeCli()).resolves.toMatchObject({ version: "2.1.231" });
   });
+
+  it.runIf(process.platform === "win32")(
+    "W5-BE1: uses the custom path alone, else the downloaded CLI before the system one",
+    async () => {
+      await createWindowsNpmShims();
+      const root = await mkdtemp(join(tmpdir(), "openbot-cli-managed-"));
+      temporaryPaths.push(root);
+      const managed = join(root, "managed", "codex.cmd");
+      const custom = join(root, "own folder", "codex.cmd");
+      await mkdir(join(root, "managed"), { recursive: true });
+      await mkdir(join(root, "own folder"), { recursive: true });
+      await writeFile(managed, "@echo off\r\necho codex-cli 0.170.0\r\n");
+      await writeFile(custom, "@echo off\r\necho codex-cli 0.150.0\r\n");
+      let paths: { custom: string | null; managed: string | null } = { custom: null, managed };
+      setManagedCliResolver(() => paths);
+      try {
+        await expect(resolveCodexCli()).resolves.toEqual({ executable: managed, version: "0.170.0" });
+        await expect(findSystemCli("codex")).resolves.toMatchObject({ version: "0.144.1" });
+        paths = { custom, managed };
+        await expect(resolveCodexCli()).resolves.toEqual({ executable: custom, version: "0.150.0" });
+        paths = { custom: null, managed: null };
+        await expect(resolveCodexCli()).resolves.toMatchObject({ version: "0.144.1" });
+        await expect(resolveClaudeCli()).resolves.toMatchObject({ version: "2.1.231" });
+      } finally {
+        setManagedCliResolver(null);
+      }
+    },
+  );
 
   it.runIf(process.platform === "win32")("reports a CLI that exists but cannot start", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-cli-test-"));

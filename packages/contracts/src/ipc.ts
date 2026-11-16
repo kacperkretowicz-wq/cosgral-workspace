@@ -21,6 +21,7 @@ export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
+export * from "./ipc-subscriptions";
 export * from "./ipc-tables";
 export * from "./ipc-team-host";
 export * from "./ipc-vault";

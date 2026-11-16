@@ -182,6 +182,7 @@ import {
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
+import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
@@ -259,6 +260,7 @@ let remoteMacManager: RemoteMacManager | null = null;
 let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
+let managedCli: ManagedCliRuntime | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
@@ -837,6 +839,7 @@ function registerIpcHandlers(
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
   registerVoiceIpc(() => voiceService);
+  registerSubscriptionsIpc(() => managedCli);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
@@ -1368,6 +1371,35 @@ if (!hasSingleInstanceLock) {
         confirm: (request) => service.confirmForPerson(null, request),
         emit: (event) => forwardAgentEvent("local", event),
       });
+      // COSGRAL W5-BE1: managed agent CLIs (official sources, SHA-256, card before the first download). Before
+      // service.initialize(), so the first CLI lookup already knows the custom and downloaded CLI.
+      managedCli = createManagedCli({
+        userDataPath: app.getPath("userData"),
+        isPackaged: app.isPackaged,
+        testBase: process.env.COSGRAL_CLI_TEST_BASE,
+        confirmCard: (request) => service.confirmForPerson(null, request),
+        canAsk: () => service.listBots().length > 0,
+        confirmDialog: async (request) => {
+          const options = {
+            type: "question" as const,
+            buttons: ["Download", "Not now"],
+            defaultId: 0,
+            cancelId: 1,
+            title: request.title,
+            message: request.title,
+            detail: request.preview,
+          };
+          const answer =
+            mainWindow && !mainWindow.isDestroyed()
+              ? await dialog.showMessageBox(mainWindow, options)
+              : await dialog.showMessageBox(options);
+          return answer.response === 0;
+        },
+        emit: (event) => forwardAgentEvent("local", event),
+        onExecutableChanged: (id) => {
+          if (needsRestart(service.getStatus(), id)) void service.retryStart().catch(() => undefined);
+        },
+      });
       // COSGRAL W3: Mobile Connect (phone pairing by QR; loopback unless the person allows the local network).
       mobileConnect = createMobileConnect({
         userDataPath: app.getPath("userData"),
@@ -1816,6 +1848,7 @@ async function prepareForShutdown(): Promise<void> {
   dockWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
   await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
+  managedCli?.close();
   await (mobileConnect?.close() ?? Promise.resolve()).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   // COSGRAL W3: open workflow runs end as failed while the database is still open.

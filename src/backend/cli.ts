@@ -127,11 +127,47 @@ function isMinimumVersion(version: string): boolean {
   return true;
 }
 
+/** COSGRAL W5-BE1: the person's own CLI path and the CLI downloaded by COSGRAL (managed-cli.ts), when set. */
+export type ManagedCliResolver = (command: "codex" | "claude") => { custom: string | null; managed: string | null };
+let managedCliResolver: ManagedCliResolver | null = null;
+
+export function setManagedCliResolver(resolver: ManagedCliResolver | null): void {
+  managedCliResolver = resolver;
+}
+
+/**
+ * Order: the environment override (tests, development), then the person's own path (used alone), then the downloaded
+ * CLI, then the system one (PATH and the known install folders).
+ */
 async function collectCandidates(command: "codex" | "claude", configuredPath: string | undefined): Promise<string[]> {
-  const candidates: string[] = [];
   const override = configuredPath?.trim();
   if (override) return [override];
+  const own = managedCliResolver?.(command);
+  if (own?.custom) return [own.custom];
+  return [...new Set([...(own?.managed ? [own.managed] : []), ...(await systemCandidates(command))])];
+}
 
+/** COSGRAL W5-BE1: a CLI installed on the system (not the custom or downloaded one), with its version; null if none. */
+export async function findSystemCli(
+  command: "codex" | "claude",
+): Promise<{ executable: string; version: string | null } | null> {
+  for (const candidate of await systemCandidates(command)) {
+    if (!(await isExecutable(candidate))) continue;
+    try {
+      const output = await readCliVersion(candidate);
+      return {
+        executable: candidate,
+        version: command === "codex" ? parseCodexVersion(output) : parseClaudeVersion(output),
+      };
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
+}
+
+async function systemCandidates(command: "codex" | "claude"): Promise<string[]> {
+  const candidates: string[] = [];
   if (process.platform === "win32") {
     candidates.push(...(await windowsPathCandidates(command)));
     candidates.push(...windowsFallbackPaths(command));
