@@ -330,15 +330,22 @@ async function main(): Promise<void> {
           "no card for an update",
         );
         await ev(`window.openbot.subscriptions.pinCli({ id: "codex", version: null })`);
-        await ev(`window.openbot.subscriptions.updateCli({ id: "codex" })`);
+        const answer = await ev(
+          `window.openbot.subscriptions.updateCli({ id: "codex" }).then((s) => ({ v: s.managedVersion, phase: s.phase, error: s.error, latest: s.latestVersion }), (e) => ({ failed: String(e.message).slice(0, 200) }))`,
+        );
         await waitUntil(
           "the newest version is installed again",
           async () => {
             const state = await cliState("codex");
             return state.managedVersion === newest && state.phase === "idle";
           },
-          300_000,
-        );
+          120_000,
+        ).catch(async (error) => {
+          const state = await cliState("codex");
+          throw new Error(
+            `${String(error.message)}; updateCli answered ${JSON.stringify(answer)}; state now ${JSON.stringify({ v: state.managedVersion, phase: state.phase, error: state.error, latest: state.latestVersion, pinned: state.pinnedVersion })}`,
+          );
+        });
         const after = await cliState("codex");
         assert(
           after.pinnedVersion === null && isString(after.version),
