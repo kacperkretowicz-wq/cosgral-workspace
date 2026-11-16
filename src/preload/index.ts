@@ -90,6 +90,7 @@ import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
 import { createPlansApi } from "./plans-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
+import { createSpacesApi } from "./spaces-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createThreadsApi } from "./threads-api";
 import { createVoiceApi } from "./voice-api";
@@ -808,6 +809,7 @@ const openbotApi: OpenBotDesktopApi = {
   endpoints: createEndpointsApi(invokeAgent),
   context: createContextApi(invokeAgent),
   windows: createWindowsApi(invokeAgent),
+  spaces: createSpacesApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

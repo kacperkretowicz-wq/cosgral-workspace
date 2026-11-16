@@ -186,6 +186,15 @@ export const IPC_CHANNELS = {
   endpointsDetectLocal: "endpoints:detect-local",
   // COSGRAL W6-BE2: context of a conversation.
   // COSGRAL W6-KK3: separate conversation windows.
+  // COSGRAL W8-KK1: client spaces.
+  spacesList: "spaces:list",
+  spacesCreate: "spaces:create",
+  spacesRename: "spaces:rename",
+  spacesArchive: "spaces:archive",
+  spacesRestore: "spaces:restore",
+  spacesDelete: "spaces:delete",
+  spacesSwitch: "spaces:switch",
+  spacesDescribe: "spaces:describe",
   windowsOpenConversation: "windows:open-conversation",
   windowsListOpen: "windows:list-open",
   windowsClose: "windows:close",

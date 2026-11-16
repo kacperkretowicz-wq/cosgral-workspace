@@ -100,6 +100,7 @@ import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
+import { createMockSpaces } from "./mock-spaces";
 import { createMockThreads } from "./mock-threads";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -1352,6 +1353,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),
+    // COSGRAL W8-KK1: client spaces (demo; `simulate.restarted` plays the restart after a switch).
+    spaces: createMockSpaces((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

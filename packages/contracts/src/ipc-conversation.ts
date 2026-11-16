@@ -50,6 +50,7 @@ import {
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
+import { isSpacesChanged, type SpacesChanged } from "./ipc-spaces";
 import {
   type AccountError,
   type AccountLimitReached,
@@ -670,6 +671,8 @@ export type AgentEvent =
   | ({ type: "context-settings-changed" } & ContextSettingsChanged)
   /** COSGRAL W6-KK3: the list of open separate conversation windows changed. */
   | ({ type: "conversation-windows-changed" } & ConversationWindowsChanged)
+  /** COSGRAL W8-KK1: the client spaces changed (created, renamed, archived, deleted, a switch chosen). */
+  | ({ type: "spaces-changed" } & SpacesChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -827,6 +830,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isContextSettings(value);
     case "conversation-windows-changed":
       return isConversationWindowsChanged(value);
+    case "spaces-changed":
+      return isSpacesChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":
