@@ -83,6 +83,7 @@ import {
   mergeHydrated,
   type PendingCard,
   type PendingCardKind,
+  planCard,
   promptCard,
   removeCard,
   takeoverCard,
@@ -616,6 +617,18 @@ export function App() {
   );
   function handleAgentEvent(event: AgentEvent) {
     switch (event.type) {
+      case "message-pins-changed": {
+        const active =
+          threadLists()[event.botId]?.activeThreadId ?? botList().find((bot) => bot.id === event.botId)?.threadId;
+        if (active !== event.threadId) return;
+        for (const message of liveMessages()[event.botId] ?? [])
+          updateStored(message, { ...message, pinned: event.pins.some((pin) => pin.messageId === message.id) });
+        return;
+      }
+      case "plan-changed":
+        if (event.plan.phase === "proposed") addLiveCard(planCard(event.plan));
+        else dropCard("plan", event.plan.requestId);
+        return;
       case "threads-changed":
         applyThreadList(event);
         return;
@@ -2288,6 +2301,16 @@ function toBotProfile(stored: BotSummary): BotProfile {
 function toBotMessage(message: ConversationMessage): BotMessage {
   const exchangeSenderId = message.senderBotId ?? message.exchange?.senderBotId;
   return {
+    actionSubject: {
+      author: message.author,
+      source: message.source,
+      itemType: message.itemType,
+      status: message.status,
+      delivery: message.delivery,
+    },
+    pinned: message.pinned,
+    edited: message.edited,
+    regeneration: message.regeneration,
     id: message.id,
     turnId: message.turnId,
     author: message.author === "user" ? "you" : "bot",
@@ -2319,9 +2342,9 @@ function toBotMessage(message: ConversationMessage): BotMessage {
 function toBotMessages(messages: ConversationMessage[]): BotMessage[] {
   const result: BotMessage[] = [];
   const thinkingByTurn = new Map<string, BotMessage>();
-  for (const message of messages) {
+  for (const [index, message] of messages.entries()) {
     if (message.author !== "assistant" || message.itemType !== "commentary") {
-      result.push(toBotMessage(message));
+      result.push({ ...toBotMessage(message), laterMessageCount: messages.length - index - 1 });
       continue;
     }
 
@@ -2393,6 +2416,11 @@ function botProfilesEqual(left: BotProfile, right: BotProfile): boolean {
 
 function botMessagesEqual(left: BotMessage, right: BotMessage): boolean {
   return (
+    left.pinned === right.pinned &&
+    left.laterMessageCount === right.laterMessageCount &&
+    left.edited === right.edited &&
+    left.regeneration?.ofMessageId === right.regeneration?.ofMessageId &&
+    JSON.stringify(left.actionSubject) === JSON.stringify(right.actionSubject) &&
     left.id === right.id &&
     left.turnId === right.turnId &&
     left.author === right.author &&

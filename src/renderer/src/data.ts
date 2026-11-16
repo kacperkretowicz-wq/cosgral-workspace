@@ -5,6 +5,7 @@ import type {
   AttachmentSummary,
   BotAvatarHue,
   ImageGenerationInfo,
+  MessageActionSubject,
   MessageReaction,
 } from "@openbot/contracts/ipc";
 
@@ -18,6 +19,11 @@ export interface MessageCitation {
 }
 
 export interface BotMessage {
+  actionSubject?: MessageActionSubject;
+  laterMessageCount?: number;
+  pinned?: boolean;
+  edited?: boolean;
+  regeneration?: { ofMessageId: string };
   id: string;
   turnId?: string;
   author: "you" | "bot";

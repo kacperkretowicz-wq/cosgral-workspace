@@ -4,6 +4,8 @@ import type { PendingCard } from "./pending-cards";
 import { cardKey } from "./pending-cards";
 export function pendingCardThreadId(card: PendingCard): string {
   switch (card.kind) {
+    case "plan":
+      return card.plan.threadId;
     case "prompt":
       return card.prompt.threadId;
     case "approval":

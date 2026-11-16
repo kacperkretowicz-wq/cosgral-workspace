@@ -48,7 +48,7 @@ export interface NeedsYouSidebarItem {
   threadTitle?: string;
   botId: string;
   botName: string;
-  kind: "question" | "approval" | "takeover" | "vault";
+  kind: "question" | "approval" | "takeover" | "vault" | "plan";
   summary: string;
 }
 
@@ -777,13 +777,15 @@ export function Sidebar(props: SidebarProps) {
                       <span class="bot-row-heading">
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
-                          {item.kind === "question"
-                            ? "Question"
-                            : item.kind === "takeover"
-                              ? "Browser"
-                              : item.kind === "vault"
-                                ? "Vault"
-                                : "Approval"}
+                          {item.kind === "plan"
+                            ? "Plan"
+                            : item.kind === "question"
+                              ? "Question"
+                              : item.kind === "takeover"
+                                ? "Browser"
+                                : item.kind === "vault"
+                                  ? "Vault"
+                                  : "Approval"}
                         </Badge>
                       </span>
                       <Show when={item.threadTitle}>

@@ -1,0 +1,93 @@
+.thread-work-list {
+  display: grid;
+  gap: var(--openbot-space-3);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+  max-height: 20rem;
+  overflow: auto;
+}
+.thread-work-section {
+  flex: 0 0 auto;
+  padding: var(--openbot-space-2) var(--openbot-space-4);
+  color: var(--openbot-text-primary);
+}
+.thread-work-section > summary {
+  cursor: pointer;
+}
+.thread-work-list:focus-visible {
+  outline: 2px solid var(--openbot-accent-text);
+  outline-offset: -2px;
+}
+.thread-work-card {
+  display: grid;
+  gap: var(--openbot-space-3);
+  min-width: 0;
+  padding: var(--openbot-space-4);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-card);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-primary);
+  overflow-wrap: anywhere;
+}
+.sticky-decision .thread-work-card {
+  max-height: 24rem;
+  overflow: auto;
+}
+.thread-work-heading,
+.thread-work-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+.thread-work-heading {
+  justify-content: space-between;
+}
+.thread-work-steps {
+  display: grid;
+  gap: var(--openbot-space-3);
+  padding-inline-start: var(--openbot-space-6);
+}
+.thread-work-progress {
+  width: 100%;
+  accent-color: var(--openbot-accent);
+}
+.thread-work-preview {
+  white-space: pre-wrap;
+  max-height: 20rem;
+  overflow: auto;
+}
+.thread-work-action-note {
+  display: block;
+  max-width: 24rem;
+  white-space: normal;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+}
+.thread-work-message-marks {
+  display: flex;
+  gap: var(--openbot-space-3);
+}
+.thread-work-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--openbot-layer-dialog);
+  background: var(--openbot-command-overlay);
+}
+.thread-work-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--openbot-layer-dialog);
+  display: grid;
+  gap: var(--openbot-space-4);
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: var(--openbot-space-6);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-canvas);
+  color: var(--openbot-text-primary);
+  box-shadow: var(--openbot-shadow-raised);
+}
