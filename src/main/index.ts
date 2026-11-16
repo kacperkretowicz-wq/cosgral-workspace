@@ -45,6 +45,7 @@ import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
+import { EndpointStore } from "../backend/endpoint-store";
 import { EyesService } from "../backend/eyes-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
@@ -72,6 +73,7 @@ import { runPendingDataWipe } from "./data-wipe";
 import { developmentUserDataName, readDevelopmentProfile, shouldAutoStartHost } from "./development-profile";
 import { registerDockIpc } from "./dock-ipc";
 import { createDockWindows, type DockWindows } from "./dock-windows";
+import { registerEndpointsIpc } from "./endpoints-ipc";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
 import {
@@ -267,6 +269,8 @@ let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
 let managedCli: ManagedCliRuntime | null = null;
 let apiKeyStore: ApiKeyStore | null = null;
+// COSGRAL W5-K2: the person's own model endpoints.
+let endpointStore: EndpointStore | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
@@ -856,6 +860,7 @@ function registerIpcHandlers(
   registerVoiceIpc(() => voiceService);
   registerSubscriptionsIpc(() => managedCli);
   registerApiKeysIpc(() => apiKeyStore);
+  registerEndpointsIpc(() => endpointStore);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
@@ -1349,6 +1354,11 @@ if (!hasSingleInstanceLock) {
       // COSGRAL W5-BE3: provider API keys (encrypted); a provider process gets its key only as its own environment.
       apiKeyStore = new ApiKeyStore(store.database, electronSecretBox());
       setApiKeySource(apiKeyStore);
+      // COSGRAL W5-K2: own model endpoints (keys in the same encrypted store); their models join the agent models.
+      endpointStore = new EndpointStore(store.database, apiKeyStore, {
+        onChange: (endpoints) => forwardAgentEvent("local", { type: "endpoints-changed", endpoints }),
+      });
+      agentService.useEndpoints(endpointStore);
       // COSGRAL W3: Computer Use drives the Windows desktop through its own PowerShell helper.
       if (process.platform === "win32")
         agentService.computerUse.useDriver(

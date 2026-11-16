@@ -599,6 +599,13 @@ export function App() {
         );
         return;
       }
+      case "endpoints-changed":
+        // COSGRAL W5-K2: the models of the own endpoints are part of the model choice.
+        void window.openbot.agent
+          .listModels()
+          .then(setModelOptions)
+          .catch(() => undefined);
+        return;
       case "account-limit-reached":
       case "account-switched":
         setAccountNotices((items) => addAccountNotice(items, event, crypto.randomUUID()));
