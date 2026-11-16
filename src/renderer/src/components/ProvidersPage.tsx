@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   AcpAgentConfig,
   AgentModelId,
   AgentModelOption,
@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { acpModelId, isAcpAgentId, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { ManagedCliSection } from "./ManagedCliSection";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Text, Textarea } from "./ui";
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -305,7 +306,7 @@ export function AcpAgentsSection(props: {
             You can add up to {PROVIDER_LIMITS.acpAgents} ACP agents.
           </Text>
         </Show>
-        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Adding…">
+        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Addingâ€¦">
           Add agent
         </Button>
       </form>
@@ -435,7 +436,7 @@ export function FallbackOrder(props: {
           }}
         >
           <option value="">
-            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback model…"}
+            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback modelâ€¦"}
           </option>
           <For each={addable()}>{(option) => <option value={option.id}>{option.name}</option>}</For>
         </NativeSelect>
@@ -608,6 +609,7 @@ export function ProvidersPage() {
           {error()}
         </Text>
       </Show>
+      <ManagedCliSection />
       <ProviderUsageList
         usage={usage()}
         acpAgents={acpAgents()}
