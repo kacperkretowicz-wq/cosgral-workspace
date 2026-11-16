@@ -92,6 +92,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "./fixtures";
+import { createMockAccess } from "./mock-access";
 import { createMockAccounts } from "./mock-accounts";
 import { createMockAcpLogin } from "./mock-acp-login";
 import { createMockAcpPresets } from "./mock-acp-presets";
@@ -1359,6 +1360,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     acpLogin: createMockAcpLogin((event) => emitAgentEvent(event)),
     // COSGRAL W6-BE5: ready settings for Gemini CLI and Antigravity (demo; nothing is installed).
     acpPresets: createMockAcpPresets(),
+    // COSGRAL W8-BE1: the access level and folders of an agent (demo; `allowRaise` plays the card of Needs you).
+    access: createMockAccess((event) => emitAgentEvent(event)),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

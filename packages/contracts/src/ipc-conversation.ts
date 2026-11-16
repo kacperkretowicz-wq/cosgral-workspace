@@ -1,3 +1,4 @@
+import { type AccessChanged, type AccessDenied, isAccessChanged, isAccessDenied } from "./ipc-access";
 import { type AcpLoginChanged, isAcpLoginChanged } from "./ipc-acp-login";
 import {
   type BrowserTakeoverPhase,
@@ -687,6 +688,10 @@ export type AgentEvent =
   | ({ type: "subagent-changed" } & SubagentChanged)
   /** COSGRAL W6-BE5: the sign-in state of an ACP agent changed (replace the state of this agent). */
   | ({ type: "acp-login-changed" } & AcpLoginChanged)
+  /** COSGRAL W8-BE1: the access level, folders or raise of an agent changed (replace the access of this agent). */
+  | ({ type: "access-changed" } & AccessChanged)
+  /** COSGRAL W8-BE1: the program refused something an agent asked for (outside its folders, or an excluded folder). */
+  | ({ type: "access-denied" } & AccessDenied)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -848,6 +853,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isSubagentChanged(value);
     case "acp-login-changed":
       return isAcpLoginChanged(value);
+    case "access-changed":
+      return isAccessChanged(value);
+    case "access-denied":
+      return isAccessDenied(value);
     case "message-pins-changed":
       return isMessagePinsChanged(value);
     case "agent-mcp-changed":

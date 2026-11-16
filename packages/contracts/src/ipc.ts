@@ -1,3 +1,4 @@
+export * from "./ipc-access";
 export * from "./ipc-acp-login";
 export * from "./ipc-acp-presets";
 export * from "./ipc-action-cards";
