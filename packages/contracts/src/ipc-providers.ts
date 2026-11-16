@@ -13,8 +13,9 @@
 // the whole list whenever a provider hits or leaves a limit.
 
 import type { AgentModelId, AgentProviderId } from "./ipc-conversation";
-import { isAgentModel } from "./ipc-conversation";
-import { isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
+import { isAcpModel, isAgentModel, isClaudeModel } from "./ipc-conversation";
+import { isEndpointId, parseEndpointModel } from "./ipc-endpoints";
+import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export const PROVIDER_LIMITS = {
   /** ACP agent id: lowercase letter first, then lowercase letters, digits and dashes. */
@@ -81,16 +82,93 @@ export interface FallbackModelsInput {
  */
 export const GENERAL_FALLBACK_SCOPE = "*";
 
-/** W5-BE4: what an agent tries after its own model, and where that list comes from. */
+/**
+ * W5-BE7: a provider's own fallback list. `getFallbackModels`, `setFallbackModels`, `getFallbackInfo` and
+ * `resetFallbackModels` take it as `botId`, like "*": "provider:codex", "provider:claude", "provider:acp:<id>",
+ * "provider:endpoint:<id>". Its models may be of any provider.
+ */
+export const PROVIDER_FALLBACK_PREFIX = "provider:";
+
+/** W5-BE7: which layer a model of the chain comes from (shown as Agent / Provider / All providers). */
+export const FALLBACK_SOURCES = ["own", "provider", "general"] as const;
+export type FallbackSource = (typeof FALLBACK_SOURCES)[number];
+
+export interface FallbackChainEntry {
+  model: AgentModelId;
+  source: FallbackSource;
+  /** false: an ACP agent or own endpoint that was removed; shown, never tried. */
+  available: boolean;
+}
+
+/** W5-BE4/BE7: what an agent tries after its own model, and where each model comes from. */
 export interface FallbackModelsInfo {
+  /** The agent id, "*" or a provider list ("provider:…"). */
   botId: string;
-  /** The agent's own saved list; null = it follows the general list. */
+  /** The saved list of `botId` itself (an agent's own list; for "*" and "provider:…" that list); null = none saved. */
   own: AgentModelId[] | null;
   general: AgentModelId[];
-  /** What is really tried, in order: `own`, else `general`, without models that cannot run now. */
+  /** The models of `chain` that can run, in order. */
   effective: AgentModelId[];
-  /** Models of the list that cannot run now (an ACP agent or own endpoint that was removed); shown, never tried. */
+  /** The models of `chain` that cannot run now (an ACP agent or own endpoint that was removed); shown, never tried. */
   unavailable: AgentModelId[];
+  /** W5-BE7: for an agent, the provider list it follows (from its own model); null for "*" and provider lists. */
+  providerScope: string | null;
+  /** W5-BE7: the saved list of `providerScope`; null = none saved (or no provider scope). */
+  provider: AgentModelId[] | null;
+  /**
+   * W5-BE7: the whole order after the agent's own model: its own list, then its provider's list, then the general
+   * list, each model once (the first layer that lists it wins) and never the agent's own model.
+   */
+  chain: FallbackChainEntry[];
+}
+
+/** W5-BE7: the provider list a model belongs to. */
+export function providerFallbackScope(model: AgentModelId): string {
+  const endpoint = parseEndpointModel(model);
+  if (endpoint) return `${PROVIDER_FALLBACK_PREFIX}endpoint:${endpoint.endpointId}`;
+  if (isAcpModel(model)) return `${PROVIDER_FALLBACK_PREFIX}${model}`;
+  return `${PROVIDER_FALLBACK_PREFIX}${isClaudeModel(model) ? "claude" : "codex"}`;
+}
+
+export function isProviderFallbackScope(value: unknown): value is string {
+  if (!isString(value) || !value.startsWith(PROVIDER_FALLBACK_PREFIX)) return false;
+  const rest = value.slice(PROVIDER_FALLBACK_PREFIX.length);
+  if (rest === "codex" || rest === "claude") return true;
+  if (rest.startsWith("acp:")) return isAcpAgentId(rest.slice(4));
+  return rest.startsWith("endpoint:") && isEndpointId(rest.slice(9));
+}
+
+/** W5-BE7: why `botId` cannot hold a fallback list, or null (an agent id, "*" or a valid provider list). */
+export function fallbackScopeProblem(scope: unknown) {
+  if (!isString(scope) || scope.length === 0) return 'The fallback list needs an agent, "*" or a provider.';
+  if (scope.startsWith(PROVIDER_FALLBACK_PREFIX) && !isProviderFallbackScope(scope))
+    return "Unknown provider for a fallback list.";
+  return null;
+}
+
+/** W5-BE7: own list, then provider list, then general list; each model once, never `ownModel`. */
+export function fallbackChain(input: {
+  ownModel: AgentModelId | null;
+  own: readonly AgentModelId[] | null;
+  provider: readonly AgentModelId[] | null;
+  general: readonly AgentModelId[];
+  isAvailable: (model: AgentModelId) => boolean;
+}): FallbackChainEntry[] {
+  const seen = new Set<string>(input.ownModel ? [input.ownModel] : []);
+  const chain: FallbackChainEntry[] = [];
+  const layers: Array<[FallbackSource, readonly AgentModelId[] | null]> = [
+    ["own", input.own],
+    ["provider", input.provider],
+    ["general", input.general],
+  ];
+  for (const [source, models] of layers) {
+    for (const model of models ?? []) {
+      if (seen.has(model)) continue;
+      seen.add(model);
+      chain.push({ model, source, available: input.isAvailable(model) });
+    }
+  }
+  return chain;
 }
 
 /** A readable reason a list is not allowed (more than 8, a repeat, an unknown model), or null. */
@@ -119,13 +197,22 @@ export function normalizeFallbackModels(value: unknown): AgentModelId[] {
 
 export function isFallbackModelsInfo(value: unknown): value is FallbackModelsInfo {
   const isList = (list: unknown): list is AgentModelId[] => Array.isArray(list) && list.every(isAgentModel);
+  const isEntry = (entry: unknown): entry is FallbackChainEntry =>
+    isDynamicRecord(entry) &&
+    isAgentModel(entry.model) &&
+    isOneOf(FALLBACK_SOURCES, entry.source) &&
+    isBoolean(entry.available);
   return (
     isDynamicRecord(value) &&
     isString(value.botId) &&
     (value.own === null || isList(value.own)) &&
     isList(value.general) &&
     isList(value.effective) &&
-    isList(value.unavailable)
+    isList(value.unavailable) &&
+    (value.providerScope === null || isProviderFallbackScope(value.providerScope)) &&
+    (value.provider === null || isList(value.provider)) &&
+    Array.isArray(value.chain) &&
+    value.chain.every(isEntry)
   );
 }
 

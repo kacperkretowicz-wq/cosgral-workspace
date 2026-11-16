@@ -357,7 +357,7 @@ describe.sequential("accounts first, then the fallback models (K1 + BE4 + K2)", 
     expect(await lastAnswer(f.s)).toBe("ENDPOINT_llama3:8b");
   });
 
-  it("(b) an agent without its own list follows the general list, and an empty own list means no fallback", async () => {
+  it("(b) an agent without its own list follows the general list; an empty own list adds nothing (W5-BE7)", async () => {
     const f = await fixture({
       scripts: {
         [SYSTEM]: [{ limit: true }, { limit: true }],
@@ -371,17 +371,50 @@ describe.sequential("accounts first, then the fallback models (K1 + BE4 + K2)", 
     await waitFor(() => completed(f.events).includes("completed"));
     expect(f.served).toEqual(["qwen2:7b"]);
 
-    // An own, empty list wins over the general one: after the accounts nothing else is tried.
+    // W5-BE7: the layers add up, so an own empty list no longer stops the general list after the accounts.
     f.registry.setFallbackModels({ botId: "chief", fallbackModels: [] });
     clockMs += 3 * 3600 * 1000;
     f.registry.tick();
     f.pool.free(SYSTEM, WORK, HOME);
-    const before = completed(f.events).length;
     await f.s.sendMessage({ botId: "chief", text: "Own empty list" });
-    await waitFor(() => completed(f.events).length === before + 3);
-    await settle();
-    expect(completed(f.events).slice(before)).toEqual(["failed", "failed", "failed"]);
+    await waitFor(() => completed(f.events).filter((status) => status === "completed").length === 2);
+    expect(f.served).toEqual(["qwen2:7b", "qwen2:7b"]);
+  });
+
+  it("W5-BE7: after the accounts, the agent's own list comes before its provider's list", async () => {
+    const f = await fixture({
+      scripts: { [SYSTEM]: [{ limit: true }], [WORK]: [{ limit: true }], [HOME]: [{ limit: true }] },
+    });
+    f.registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: [f.endpointModel("llama3:8b")] });
+    f.registry.setFallbackModels({ botId: "provider:codex", fallbackModels: [f.endpointModel("llama3:8b")] });
+    // Another Codex model first: the Codex limit blocks it, so the next model of the own list answers.
+    f.registry.setFallbackModels({ botId: "chief", fallbackModels: [OTHER_CODEX_MODEL, f.endpointModel("qwen2:7b")] });
+    await f.s.sendMessage({ botId: "chief", text: "Anything" });
+    await waitFor(() => completed(f.events).includes("completed"));
+    expect(order(f.events)).toEqual(["limit:switched", "limit:switched", "limit:exhausted", "model"]);
     expect(f.served).toEqual(["qwen2:7b"]);
+    expect(f.registry.getFallbackInfo("chief").chain.map((entry) => entry.source)).toEqual(["own", "own", "provider"]);
+  });
+
+  it("W5-BE7: without an own list the provider list comes before the general list", async () => {
+    const f = await fixture({
+      scripts: { [SYSTEM]: [{ limit: true }], [WORK]: [{ limit: true }], [HOME]: [{ limit: true }] },
+    });
+    f.registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: [f.endpointModel("qwen2:7b")] });
+    f.registry.setFallbackModels({ botId: "provider:codex", fallbackModels: [f.endpointModel("llama3:8b")] });
+    // A Claude list is not for this Codex agent.
+    f.registry.setFallbackModels({ botId: "provider:claude", fallbackModels: [f.endpointModel("qwen2:7b")] });
+    await f.s.sendMessage({ botId: "chief", text: "Anything" });
+    await waitFor(() => completed(f.events).includes("completed"));
+    expect(f.served).toEqual(["llama3:8b"]);
+    expect(fallbacks(f.events)).toEqual([{ from: OWN_MODEL, to: f.endpointModel("llama3:8b") }]);
+    expect(f.registry.getFallbackInfo("chief")).toMatchObject({
+      providerScope: "provider:codex",
+      chain: [
+        { model: f.endpointModel("llama3:8b"), source: "provider", available: true },
+        { model: f.endpointModel("qwen2:7b"), source: "general", available: true },
+      ],
+    });
   });
 
   it("(c) a provider limit blocks all its models: another Codex model is no way around it", async () => {
@@ -533,11 +566,6 @@ function fakeBrowser() {
     endControl: () => undefined,
     handleDynamicTool: async () => ({ success: true, contentItems: [] }),
   };
-}
-
-/** Lets a queue that should stay empty show that it does. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150));
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {

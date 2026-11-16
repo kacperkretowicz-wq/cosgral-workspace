@@ -3,7 +3,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentEvent } from "@openbot/contracts/ipc";
+import type { AgentEvent, AgentModelId } from "@openbot/contracts/ipc";
 import { GENERAL_FALLBACK_SCOPE } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { ProviderRegistry } from "./provider-registry";
@@ -272,11 +272,11 @@ describe("ProviderRegistry fallback lists (W5-BE4)", () => {
     expect(registry.getFallbackModels("broken")).toEqual([]);
   });
 
-  it("an agent without its own list follows the general list; its own list, even an empty one, wins", async () => {
+  it("an agent without its own list follows the general list; its own list comes first", async () => {
     const { registry } = await setup();
     registry.saveAcpAgent({ id: "a", name: "A", command: "a" });
     registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["acp:a", "claude-opus-5"] });
-    expect(registry.getFallbackInfo("chief")).toEqual({
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
       botId: "chief",
       own: null,
       general: ["acp:a", "claude-opus-5"],
@@ -288,13 +288,16 @@ describe("ProviderRegistry fallback lists (W5-BE4)", () => {
     registry.setFallbackModels({ botId: "chief", fallbackModels: ["claude-sonnet-5"] });
     expect(registry.getFallbackInfo("chief")).toMatchObject({
       own: ["claude-sonnet-5"],
-      effective: ["claude-sonnet-5"],
+      effective: ["claude-sonnet-5", "acp:a", "claude-opus-5"],
     });
     expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("claude-sonnet-5");
 
+    // W5-BE7: the layers add up; an own list comes first, the general list still follows it.
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna", "claude-sonnet-5"]))).toBe("acp:a");
+    // An empty own list adds nothing: the general list follows (W5-BE4 stopped here).
     registry.setFallbackModels({ botId: "chief", fallbackModels: [] });
-    expect(registry.getFallbackInfo("chief")).toMatchObject({ own: [], effective: [] });
-    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBeNull();
+    expect(registry.getFallbackInfo("chief")).toMatchObject({ own: [], effective: ["acp:a", "claude-opus-5"] });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("acp:a");
 
     expect(registry.resetFallbackModels("chief")).toMatchObject({ own: null, effective: ["acp:a", "claude-opus-5"] });
     expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("acp:a");
@@ -384,5 +387,126 @@ describe("ProviderRegistry fallback lists (W5-BE4)", () => {
       unavailable: [gone],
     });
     expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe(kept);
+  });
+});
+
+describe("ProviderRegistry fallback lists per provider (W5-BE7)", () => {
+  /** The agents and their own models, as AgentService tells the registry. */
+  const MODELS: Record<string, AgentModelId> = { chief: "gpt-5.6-luna", scout: "claude-opus-5", gem: "acp:gem" };
+  async function withAgents() {
+    const setup_ = await setup();
+    setup_.registry.useAgentModelLookup((botId) => MODELS[botId] ?? null);
+    setup_.registry.saveAcpAgent({ id: "gem", name: "Gem", command: "gem" });
+    setup_.registry.saveAcpAgent({ id: "a", name: "A", command: "a" });
+    return setup_;
+  }
+
+  it("keeps a list per provider: Codex, Claude, each ACP agent and each endpoint, 0 to 8 models, the same rules", async () => {
+    const { registry } = await withAgents();
+    for (const scope of ["provider:codex", "provider:claude", "provider:acp:gem", "provider:endpoint:local-llm"]) {
+      expect(registry.setFallbackModels({ botId: scope, fallbackModels: [] })).toEqual([]);
+      expect(registry.setFallbackModels({ botId: scope, fallbackModels: [...EIGHT] })).toEqual([...EIGHT]);
+      expect(registry.getFallbackModels(scope)).toEqual([...EIGHT]);
+      expect(() => registry.setFallbackModels({ botId: scope, fallbackModels: [...EIGHT, "acp:d"] })).toThrow(/8/);
+      expect(() => registry.setFallbackModels({ botId: scope, fallbackModels: ["acp:a", "acp:a"] })).toThrow(/twice/);
+      expect(registry.getFallbackModels(scope)).toEqual([...EIGHT]);
+    }
+    expect(() => registry.setFallbackModels({ botId: "provider:openai", fallbackModels: [] })).toThrow(/provider/i);
+    expect(() => registry.resetFallbackModels("provider:acp:Bad")).toThrow(/provider/i);
+  });
+
+  it("tries the agent's own list, then its provider's list, then the general list, each model once", async () => {
+    const { registry } = await withAgents();
+    registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["acp:a", "claude-sonnet-5"] });
+    registry.setFallbackModels({ botId: "provider:codex", fallbackModels: ["claude-opus-5", "acp:a", "gpt-5.6-luna"] });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["gpt-5.6-terra"] });
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      providerScope: "provider:codex",
+      provider: ["claude-opus-5", "acp:a", "gpt-5.6-luna"],
+      effective: ["gpt-5.6-terra", "claude-opus-5", "acp:a", "claude-sonnet-5"],
+      chain: [
+        { model: "gpt-5.6-terra", source: "own", available: true },
+        { model: "claude-opus-5", source: "provider", available: true },
+        { model: "acp:a", source: "provider", available: true },
+        { model: "claude-sonnet-5", source: "general", available: true },
+      ],
+    });
+    const order: string[] = [];
+    const tried = new Set<string>();
+    for (let step = 0; step < 30; step += 1) {
+      const next = registry.chooseModel("chief", "gpt-5.6-luna", tried);
+      if (!next) break;
+      order.push(next);
+      tried.add(next);
+    }
+    // One try each, the own model first, and then it stops: no loop.
+    expect(order).toEqual(["gpt-5.6-luna", "gpt-5.6-terra", "claude-opus-5", "acp:a", "claude-sonnet-5"]);
+  });
+
+  it("gives each agent its own provider's list: a Claude agent does not get the Codex list", async () => {
+    const { registry } = await withAgents();
+    registry.setFallbackModels({ botId: "provider:codex", fallbackModels: ["claude-opus-5"] });
+    registry.setFallbackModels({ botId: "provider:claude", fallbackModels: ["gpt-5.6-sol"] });
+    registry.setFallbackModels({ botId: "provider:acp:gem", fallbackModels: ["gpt-5.6-terra"] });
+    expect(registry.getFallbackInfo("scout")).toMatchObject({
+      providerScope: "provider:claude",
+      effective: ["gpt-5.6-sol"],
+    });
+    expect(registry.getFallbackInfo("gem")).toMatchObject({
+      providerScope: "provider:acp:gem",
+      effective: ["gpt-5.6-terra"],
+    });
+    // chooseModel follows the model it is given (the agent's own model), also without the lookup.
+    expect(registry.chooseModel("other", "claude-opus-5", new Set(["claude-opus-5"]))).toBe("gpt-5.6-sol");
+    // An agent on an endpoint model follows that endpoint's list.
+    registry.setFallbackModels({ botId: "provider:endpoint:local-llm", fallbackModels: ["acp:a"] });
+    expect(
+      registry.chooseModel("other", "endpoint:local-llm/llama3:8b", new Set(["endpoint:local-llm/llama3:8b"])),
+    ).toBe("acp:a");
+  });
+
+  it("a provider limit blocks its models in every layer; a removed endpoint in a provider list is shown, never tried", async () => {
+    const { registry } = await withAgents();
+    registry.useEndpointLookup((id) => id === "local-llm");
+    registry.setFallbackModels({
+      botId: "provider:codex",
+      fallbackModels: ["gpt-5.6-terra", "endpoint:old-box/llama3:8b", "endpoint:local-llm/qwen2:7b"],
+    });
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      unavailable: ["endpoint:old-box/llama3:8b"],
+      chain: [
+        { model: "gpt-5.6-terra", source: "provider", available: true },
+        { model: "endpoint:old-box/llama3:8b", source: "provider", available: false },
+        { model: "endpoint:local-llm/qwen2:7b", source: "provider", available: true },
+      ],
+    });
+    registry.reportFailure("gpt-5.6-luna", { kind: "usage-limit", resetsAt: null, message: "limit" });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe(
+      "endpoint:local-llm/qwen2:7b",
+    );
+  });
+
+  it("reads lists saved before W5-BE7 as they were; a provider list itself shows its models and the general list", async () => {
+    const { registry } = await withAgents();
+    registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["acp:a"] });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["claude-opus-5"] });
+    expect(registry.getFallbackModels("chief")).toEqual(["claude-opus-5"]);
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      own: ["claude-opus-5"],
+      provider: null,
+      effective: ["claude-opus-5", "acp:a"],
+    });
+    registry.setFallbackModels({ botId: "provider:codex", fallbackModels: ["claude-sonnet-5"] });
+    expect(registry.getFallbackInfo("provider:codex")).toMatchObject({
+      botId: "provider:codex",
+      own: ["claude-sonnet-5"],
+      providerScope: null,
+      chain: [
+        { model: "claude-sonnet-5", source: "provider", available: true },
+        { model: "acp:a", source: "general", available: true },
+      ],
+    });
+    expect(registry.resetFallbackModels("provider:codex")).toMatchObject({ own: null });
+    expect(registry.getFallbackInfo("chief").provider).toBeNull();
   });
 });
