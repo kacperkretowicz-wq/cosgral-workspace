@@ -11,6 +11,7 @@ import {
   type CompleteOnboardingInput,
   type CreateAgentInput,
   isAgentModel,
+  isPinnedPageIdList,
   isReasoningEffort,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
@@ -98,7 +99,7 @@ export function parseAgentTemplateId(value: unknown): AgentTemplateIdInput {
 }
 
 export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
-  const input = record(value, "app settings", ["language", "notifications"]);
+  const input = record(value, "app settings", ["language", "notifications", "navigation"]);
   const result: UpdateAppSettingsInput = {};
   if (input.language !== undefined) {
     if (!isOneOf(APP_LANGUAGES, input.language)) throw new Error("language must be en or pl.");
@@ -125,6 +126,13 @@ export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
       parsed.onlyWhenUnfocused = flag(notifications.onlyWhenUnfocused, "onlyWhenUnfocused");
     }
     result.notifications = parsed;
+  }
+  if (input.navigation !== undefined) {
+    const navigation = record(input.navigation, "navigation", ["pinnedPageIds"]);
+    if (!isPinnedPageIdList(navigation.pinnedPageIds)) {
+      throw new Error("pinnedPageIds must list known pages, each at most once.");
+    }
+    result.navigation = { pinnedPageIds: [...navigation.pinnedPageIds] };
   }
   return result;
 }

@@ -192,12 +192,33 @@ export interface SettingsTab {
   available: boolean;
 }
 
+/** The pages of the page rail, in rail order (the renderer's PAGE_RAIL_ITEMS has the same ten ids). */
+export const APP_PAGE_IDS = [
+  "agents",
+  "schedule",
+  "tasks",
+  "workflows",
+  "usage",
+  "library",
+  "marketplace",
+  "remote-desktop",
+  "providers",
+  "phone",
+] as const;
+export type AppPageId = (typeof APP_PAGE_IDS)[number];
+
+export interface AppNavigationSettings {
+  /** Pages the person pinned to the rail, in the order they chose; each id at most once. Default: empty. */
+  pinnedPageIds: AppPageId[];
+}
+
 export interface AppSettings {
   language: AppLanguage;
   /** False until the person chose a language (onboarding or settings); agents then get no language note. */
   languageChosen: boolean;
   notifications: NotificationPreferences;
   tabs: SettingsTab[];
+  navigation: AppNavigationSettings;
 }
 
 export interface UpdateAppSettingsInput {
@@ -206,6 +227,18 @@ export interface UpdateAppSettingsInput {
     matrix?: Partial<Record<NotificationEvent, Partial<Record<NotificationChannel, boolean>>>>;
     onlyWhenUnfocused?: boolean;
   };
+  /** Replaces the whole pinned list (unknown ids and duplicates are refused). An empty list unpins everything. */
+  navigation?: { pinnedPageIds: AppPageId[] };
+}
+
+/** True for a list of known page ids without duplicates. */
+export function isPinnedPageIdList(value: unknown): value is AppPageId[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= APP_PAGE_IDS.length &&
+    value.every((id) => isOneOf(APP_PAGE_IDS, id)) &&
+    new Set(value).size === value.length
+  );
 }
 
 export const ONBOARDING_STEPS = ["language", "provider", "first-agent", "computer-use"] as const;
@@ -319,7 +352,9 @@ export function isAppSettings(value: unknown): value is AppSettings {
     isBoolean(value.languageChosen) &&
     isNotificationPreferences(value.notifications) &&
     Array.isArray(value.tabs) &&
-    value.tabs.every((tab) => isDynamicRecord(tab) && isOneOf(SETTINGS_TABS, tab.id) && isBoolean(tab.available))
+    value.tabs.every((tab) => isDynamicRecord(tab) && isOneOf(SETTINGS_TABS, tab.id) && isBoolean(tab.available)) &&
+    isDynamicRecord(value.navigation) &&
+    isPinnedPageIdList(value.navigation.pinnedPageIds)
   );
 }
 

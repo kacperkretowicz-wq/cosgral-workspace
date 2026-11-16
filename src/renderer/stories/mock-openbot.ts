@@ -6,6 +6,7 @@ import type {
   AgentModelOption,
   AgentStatus,
   AppInfo,
+  AppSettings,
   AppSetupState,
   AttachmentImportEvent,
   BotSummary,
@@ -60,8 +61,15 @@ import type {
   UpdateStatus,
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
-import { emptyAgentEyesState } from "@openbot/contracts/ipc";
-import { isString } from "@openbot/contracts/runtime-values";
+import {
+  defaultNotificationPreferences,
+  emptyAgentEyesState,
+  isPinnedPageIdList,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_EVENTS,
+  SETTINGS_TABS,
+} from "@openbot/contracts/ipc";
+import { isBoolean, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import {
   STORY_AGENT_STATUS,
   STORY_APP_INFO,
@@ -176,6 +184,13 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   };
   let authState = clone<CentralAuthState>(options.authState ?? defaultAuthState);
   let setupState = clone<AppSetupState>(options.setupState ?? { completed: true, preferredProvider: "codex" });
+  let appSettingsState: AppSettings = {
+    language: "en",
+    languageChosen: true,
+    notifications: defaultNotificationPreferences(),
+    tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
+    navigation: { pinnedPageIds: [] },
+  };
   const agentStatus = clone(options.agentStatus ?? STORY_AGENT_STATUS);
   let bots = clone(options.bots ?? STORY_BOT_SUMMARIES);
   const models = clone(options.models ?? STORY_MODELS);
@@ -654,6 +669,36 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       onEvent: (listener) => {
         authListeners.add(listener);
         return () => authListeners.delete(listener);
+      },
+    },
+    appSettings: {
+      get: async () => clone(appSettingsState),
+      update: async (input) => {
+        if (input.navigation && !isPinnedPageIdList(input.navigation.pinnedPageIds)) {
+          throw new Error("pinnedPageIds must list known pages, each at most once.");
+        }
+        const notifications = clone(appSettingsState.notifications);
+        for (const [event, row] of Object.entries(input.notifications?.matrix ?? {})) {
+          if (!isOneOf(NOTIFICATION_EVENTS, event)) continue;
+          for (const [channel, enabled] of Object.entries(row ?? {})) {
+            if (isOneOf(NOTIFICATION_CHANNELS, channel) && isBoolean(enabled)) {
+              notifications.matrix[event][channel] = enabled;
+            }
+          }
+        }
+        if (input.notifications?.onlyWhenUnfocused !== undefined) {
+          notifications.onlyWhenUnfocused = input.notifications.onlyWhenUnfocused;
+        }
+        appSettingsState = {
+          ...appSettingsState,
+          ...(input.language ? { language: input.language, languageChosen: true } : {}),
+          notifications,
+          navigation: input.navigation
+            ? { pinnedPageIds: [...input.navigation.pinnedPageIds] }
+            : appSettingsState.navigation,
+        };
+        emitAgentEvent({ type: "app-settings-changed", settings: clone(appSettingsState) });
+        return clone(appSettingsState);
       },
     },
     agent: {
