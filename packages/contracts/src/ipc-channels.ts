@@ -186,6 +186,11 @@ export const IPC_CHANNELS = {
   endpointsDetectLocal: "endpoints:detect-local",
   // COSGRAL W6-BE2: context of a conversation.
   // COSGRAL W6-KK3: separate conversation windows.
+  // COSGRAL W8-KK2: budgets.
+  budgetsList: "budgets:list",
+  budgetsSet: "budgets:set",
+  budgetsClear: "budgets:clear",
+  budgetsExportCsv: "budgets:export-csv",
   // COSGRAL W8-KK1: client spaces.
   spacesList: "spaces:list",
   spacesCreate: "spaces:create",

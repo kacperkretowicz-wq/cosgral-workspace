@@ -24,6 +24,7 @@ import {
   type PromptResolution,
 } from "./ipc-attention";
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
+import { type BudgetsChanged, isBudgetsChanged } from "./ipc-budgets";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
 import { type ContextChanged, type ContextSettingsChanged, isContextSettings, isContextState } from "./ipc-context";
 import {
@@ -676,6 +677,8 @@ export type AgentEvent =
   | ({ type: "conversation-windows-changed" } & ConversationWindowsChanged)
   /** COSGRAL W8-KK1: the client spaces changed (created, renamed, archived, deleted, a switch chosen). */
   | ({ type: "spaces-changed" } & SpacesChanged)
+  /** COSGRAL W8-KK2: a budget was set or cleared, or usage was counted (the whole overview). */
+  | ({ type: "budgets-changed" } & BudgetsChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -843,6 +846,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isConversationWindowsChanged(value);
     case "spaces-changed":
       return isSpacesChanged(value);
+    case "budgets-changed":
+      return isBudgetsChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":
