@@ -94,6 +94,18 @@ class FakeRunner implements RoutineRunner {
   }
 }
 
+/** Text the program generates itself: random ids (UUID), ISO times and Unix times in seconds or milliseconds. */
+const GENERATED_TEXT = [
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+  /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g,
+  /(?<!\d)1\d{9}(?:\d{3})?(?!\d)/g,
+];
+
+/** W5-BE6: the 3-digit CVC can appear inside a random id or a time by chance; that is not a leak (same as the test). */
+function hasSecret(text: string, needle: string): boolean {
+  return GENERATED_TEXT.reduce((current, pattern) => current.replace(pattern, "<generated>"), text).includes(needle);
+}
+
 function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
   const db = database.connection;
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
@@ -103,7 +115,7 @@ function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
       const blob = JSON.stringify(row);
       for (const needle of needles) {
-        if (blob.includes(needle)) found.push(`${table.name}:${needle}`);
+        if (hasSecret(blob, needle)) found.push(`${table.name}:${needle}`);
       }
     }
   }
@@ -196,7 +208,7 @@ async function main() {
   const listText = JSON.stringify(listed);
   note(
     "vault-list-no-secrets",
-    ![PASSWORD, TWO_STEP, API_KEY, CARD_NUMBER, CARD_CVC, CONTACT_EMAIL].some((s) => listText.includes(s)),
+    ![PASSWORD, TWO_STEP, API_KEY, CARD_NUMBER, CARD_CVC, CONTACT_EMAIL].some((s) => hasSecret(listText, s)),
     `items=${listed.length}`,
   );
 
