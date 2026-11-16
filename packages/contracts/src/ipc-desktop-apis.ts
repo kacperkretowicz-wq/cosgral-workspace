@@ -118,6 +118,7 @@ import type {
 } from "./ipc-memory";
 import type { MessageActionsDesktopApi } from "./ipc-message-actions";
 import type { MobileDesktopApi } from "./ipc-mobile";
+import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
 import type {
   AcpAgentConfig,
@@ -697,6 +698,8 @@ export interface OpenBotDesktopApi {
   browserProfiles?: BrowserProfilesDesktopApi;
   /** COSGRAL W10-KK1: account sign-ins for apps (GitHub, Google, Notion, Meta) as MCP servers. Optional until every mock implements it. */
   integrations?: IntegrationsDesktopApi;
+  /** COSGRAL W9-BE1: the phone away from home (Tailscale guide, push switch, PIN state of the paired phones). Optional until every mock implements it. */
+  phone?: PhoneDesktopApi;
 }
 
 /**

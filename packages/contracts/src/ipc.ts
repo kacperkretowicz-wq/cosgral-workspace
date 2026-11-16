@@ -27,6 +27,7 @@ export * from "./ipc-mcp";
 export * from "./ipc-memory";
 export * from "./ipc-message-actions";
 export * from "./ipc-mobile";
+export * from "./ipc-phone-access";
 export * from "./ipc-plan";
 export * from "./ipc-providers";
 export * from "./ipc-remote-desktop";
