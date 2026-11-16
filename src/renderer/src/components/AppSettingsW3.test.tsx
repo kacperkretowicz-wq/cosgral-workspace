@@ -10,6 +10,7 @@ afterEach(() => vi.unstubAllGlobals());
 function settings(): AppSettings {
   return {
     language: "en",
+    theme: "system",
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),

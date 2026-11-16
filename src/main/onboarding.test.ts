@@ -26,6 +26,7 @@ async function setup(options: { failAgent?: boolean } = {}) {
   const setupFile = join(root, "openbot-setup-v2.json");
   let settings: AppSettings = {
     language: "en",
+    theme: "system",
     languageChosen: false,
     notifications: defaultNotificationPreferences(),
     tabs: [],

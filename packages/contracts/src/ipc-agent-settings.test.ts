@@ -82,6 +82,7 @@ describe("W3 agent settings contract", () => {
     expect(Object.keys(notifications.matrix.finished)).toEqual([...NOTIFICATION_CHANNELS]);
     const settings = {
       language: "pl",
+      theme: "system",
       languageChosen: true,
       notifications,
       tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "voice" })),
@@ -118,6 +119,7 @@ describe("W3 agent settings contract", () => {
         type: "app-settings-changed",
         settings: {
           language: "en",
+          theme: "system",
           languageChosen: false,
           notifications: defaultNotificationPreferences(),
           tabs: [],

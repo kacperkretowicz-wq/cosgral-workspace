@@ -7,6 +7,7 @@
 @import "./styles/settings-modal.css";
 @import "./styles/cosgral.css";
 @import "./styles/cosgral-pages.css";
+@import "./styles/theme-light.css";
 
 :root {
   color-scheme: dark;

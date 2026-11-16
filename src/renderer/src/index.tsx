@@ -9,6 +9,10 @@ import "./styles.css";
 import "./dock/dock.css";
 import "./conversation-window/conversation-window.css";
 
+import { startTheme } from "./theme";
+
+startTheme();
+
 const root = document.getElementById("root");
 
 if (!root) {

@@ -1,4 +1,5 @@
 import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
+import { AppearanceSettings } from "./AppearanceSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import {
   Badge,
@@ -45,6 +46,7 @@ function closeDuration(): number {
 }
 
 export function SettingsModal(props: SettingsModalProps) {
+  const [section, setSection] = createSignal("General");
   const [rendered, setRendered] = createSignal(untrack(() => props.open));
   const [closing, setClosing] = createSignal(false);
   const [updateChecked, setUpdateChecked] = createSignal(false);
@@ -152,13 +154,14 @@ export function SettingsModal(props: SettingsModalProps) {
                       unstyled
                       type="button"
                       class="settings-modal-nav-item"
-                      aria-current={item.current ? "page" : undefined}
-                      disabled={!item.current}
-                      title={item.current ? undefined : "Coming soon"}
+                      aria-current={section() === item.label ? "page" : undefined}
+                      onClick={() => setSection(item.label)}
+                      disabled={!item.current && item.label !== "Appearance"}
+                      title={item.current || item.label === "Appearance" ? undefined : "Coming soon"}
                     >
                       <NavIcon aria-hidden="true" />
                       <span>{item.label}</span>
-                      {!item.current && (
+                      {!item.current && item.label !== "Appearance" && (
                         <span class="settings-modal-nav-status" aria-hidden="true">
                           Soon
                         </span>
@@ -172,7 +175,7 @@ export function SettingsModal(props: SettingsModalProps) {
             <div class="settings-modal-main">
               <header class="settings-modal-header">
                 <div>
-                  <Dialog.Title class="settings-modal-title">General</Dialog.Title>
+                  <Dialog.Title class="settings-modal-title">{section()}</Dialog.Title>
                   <Dialog.Description class="settings-modal-description">
                     Control how COSGRAL Workspace behaves on this computer.
                   </Dialog.Description>
@@ -194,94 +197,100 @@ export function SettingsModal(props: SettingsModalProps) {
                 data-testid="settings-modal-scroll-frame"
               >
                 <div ref={registerScrollElement} class="settings-modal-content" onScroll={updateScrollFades}>
-                  <section class="settings-modal-group" aria-labelledby="settings-app-behavior">
-                    <Heading id="settings-app-behavior" as="h3" size="sm" tone="secondary">
-                      App behavior
-                    </Heading>
-                    <Card class="settings-modal-card">
-                      <Switch
-                        defaultChecked
-                        label="Launch COSGRAL Workspace at login"
-                        description="Open the app when you sign in to this computer."
-                      />
-                      <Switch
-                        label="Keep COSGRAL Workspace running in the background"
-                        description="Keep active tasks running after you close the window."
-                      />
-                    </Card>
-                  </section>
+                  {section() === "Appearance" ? (
+                    <AppearanceSettings />
+                  ) : (
+                    <>
+                      <section class="settings-modal-group" aria-labelledby="settings-app-behavior">
+                        <Heading id="settings-app-behavior" as="h3" size="sm" tone="secondary">
+                          App behavior
+                        </Heading>
+                        <Card class="settings-modal-card">
+                          <Switch
+                            defaultChecked
+                            label="Launch COSGRAL Workspace at login"
+                            description="Open the app when you sign in to this computer."
+                          />
+                          <Switch
+                            label="Keep COSGRAL Workspace running in the background"
+                            description="Keep active tasks running after you close the window."
+                          />
+                        </Card>
+                      </section>
 
-                  <ContextSettingsSection />
-                  <section class="settings-modal-group" aria-labelledby="settings-workspace">
-                    <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
-                      Workspace
-                    </Heading>
-                    <Card class="settings-modal-card">
-                      <Switch
-                        defaultChecked
-                        label="Restore the last workspace on launch"
-                        description="Open the workspace and tasks from your previous session."
-                      />
-                      <div class="settings-modal-row">
-                        <div class="settings-modal-row-copy">
-                          <span class="settings-modal-row-title">Open external links in</span>
-                          <Text tone="muted" variant="caption">
-                            Choose where links from conversations open.
-                          </Text>
-                        </div>
-                        <NativeSelect class="settings-modal-select" size="sm" aria-label="Open external links in">
-                          <option value="browser">Default browser</option>
-                          <option value="openbot">COSGRAL</option>
-                        </NativeSelect>
-                      </div>
-                    </Card>
-                  </section>
-
-                  <section class="settings-modal-group" aria-labelledby="settings-notifications">
-                    <Heading id="settings-notifications" as="h3" size="sm" tone="secondary">
-                      Notifications
-                    </Heading>
-                    <Card class="settings-modal-card">
-                      <Switch
-                        defaultChecked
-                        label="Desktop notifications"
-                        description="Show a notification when an agent needs attention."
-                      />
-                      <Switch
-                        label="Play a sound when a task finishes"
-                        description="Use a short sound for completed tasks."
-                      />
-                    </Card>
-                  </section>
-
-                  <section class="settings-modal-group" aria-labelledby="settings-updates">
-                    <Heading id="settings-updates" as="h3" size="sm" tone="secondary">
-                      Updates
-                    </Heading>
-                    <Card class="settings-modal-card">
-                      <Switch
-                        defaultChecked
-                        label="Automatically download updates"
-                        description="Download new versions when they become available."
-                      />
-                      <div class="settings-modal-row">
-                        <div class="settings-modal-row-copy">
-                          <span class="settings-modal-row-title">COSGRAL Workspace version</span>
-                          <div class="settings-modal-version">
-                            <Text tone="muted" variant="caption">
-                              Installed version
-                            </Text>
-                            <Badge tone={updateChecked() ? "success" : "accent"}>
-                              {updateChecked() ? "Up to date" : "0.1.11"}
-                            </Badge>
+                      <ContextSettingsSection />
+                      <section class="settings-modal-group" aria-labelledby="settings-workspace">
+                        <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
+                          Workspace
+                        </Heading>
+                        <Card class="settings-modal-card">
+                          <Switch
+                            defaultChecked
+                            label="Restore the last workspace on launch"
+                            description="Open the workspace and tasks from your previous session."
+                          />
+                          <div class="settings-modal-row">
+                            <div class="settings-modal-row-copy">
+                              <span class="settings-modal-row-title">Open external links in</span>
+                              <Text tone="muted" variant="caption">
+                                Choose where links from conversations open.
+                              </Text>
+                            </div>
+                            <NativeSelect class="settings-modal-select" size="sm" aria-label="Open external links in">
+                              <option value="browser">Default browser</option>
+                              <option value="openbot">COSGRAL</option>
+                            </NativeSelect>
                           </div>
-                        </div>
-                        <Button type="button" size="sm" onClick={() => setUpdateChecked(true)}>
-                          {updateChecked() ? "Checked" : "Check for updates"}
-                        </Button>
-                      </div>
-                    </Card>
-                  </section>
+                        </Card>
+                      </section>
+
+                      <section class="settings-modal-group" aria-labelledby="settings-notifications">
+                        <Heading id="settings-notifications" as="h3" size="sm" tone="secondary">
+                          Notifications
+                        </Heading>
+                        <Card class="settings-modal-card">
+                          <Switch
+                            defaultChecked
+                            label="Desktop notifications"
+                            description="Show a notification when an agent needs attention."
+                          />
+                          <Switch
+                            label="Play a sound when a task finishes"
+                            description="Use a short sound for completed tasks."
+                          />
+                        </Card>
+                      </section>
+
+                      <section class="settings-modal-group" aria-labelledby="settings-updates">
+                        <Heading id="settings-updates" as="h3" size="sm" tone="secondary">
+                          Updates
+                        </Heading>
+                        <Card class="settings-modal-card">
+                          <Switch
+                            defaultChecked
+                            label="Automatically download updates"
+                            description="Download new versions when they become available."
+                          />
+                          <div class="settings-modal-row">
+                            <div class="settings-modal-row-copy">
+                              <span class="settings-modal-row-title">COSGRAL Workspace version</span>
+                              <div class="settings-modal-version">
+                                <Text tone="muted" variant="caption">
+                                  Installed version
+                                </Text>
+                                <Badge tone={updateChecked() ? "success" : "accent"}>
+                                  {updateChecked() ? "Up to date" : "0.1.11"}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button type="button" size="sm" onClick={() => setUpdateChecked(true)}>
+                              {updateChecked() ? "Checked" : "Check for updates"}
+                            </Button>
+                          </div>
+                        </Card>
+                      </section>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

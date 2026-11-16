@@ -1,0 +1,105 @@
+/* Shared production palette. Root selection also resolves all existing aliases. */
+:root[data-theme="light"],
+[data-story-theme="light"] {
+  color-scheme: light;
+  --openbot-bg-canvas: #f6f6f8;
+  --openbot-bg-sidebar: #ececf0;
+  --openbot-bg-surface: #ffffff;
+  --openbot-bg-surface-raised: #ffffff;
+  --openbot-bg-control: #f1f1f5;
+  --openbot-bg-control-hover: #e4e4ea;
+  --openbot-bg-control-active: #d9d9e2;
+  --openbot-border: rgba(20, 20, 30, 0.1);
+  --openbot-border-strong: #73737d;
+  --openbot-hover: rgba(20, 20, 30, 0.06);
+  --openbot-text-primary: #14141c;
+  --openbot-text-secondary: rgba(20, 20, 28, 0.78);
+  --openbot-text-muted: rgba(20, 20, 28, 0.66);
+  --openbot-text-readable: rgba(20, 20, 28, 0.66);
+  --openbot-text-dim: #595961;
+  --openbot-accent: #4d44d6;
+  --openbot-accent-text: #4038c4;
+  --openbot-accent-soft: rgba(77, 68, 214, 0.12);
+  --openbot-warning: #6e4a0d;
+  --openbot-warning-soft: rgba(154, 107, 18, 0.14);
+  --openbot-text-on-danger: var(--openbot-contrast-white);
+  --openbot-danger: #aa241d;
+  --openbot-danger-soft: rgba(179, 38, 30, 0.1);
+  --openbot-danger-strong: #8f1c16;
+  --openbot-success: #1a6e39;
+  --openbot-unread-surface: #1f5fbf;
+  --openbot-bg-overlay: rgba(255, 255, 255, 0.96);
+  --openbot-command-overlay: rgba(246, 246, 248, 0.8);
+  --openbot-bg-glass: rgba(255, 255, 255, 0.8);
+  --openbot-data-table-header-bg: #ececf0;
+  --openbot-data-table-body-bg: #ffffff;
+  --openbot-data-table-border: #d9d9e2;
+  --openbot-data-table-header-text: #4a4a58;
+  --openbot-data-table-text: #14141c;
+  --openbot-shadow-popover-ambient: rgba(20, 20, 30, 0.12);
+  --openbot-text-placeholder: #595961;
+  --openbot-border-focus: #4d44d6;
+  --openbot-focus-ring: 0 0 0 3px var(--openbot-border-focus);
+  --openbot-text-on-success: #ffffff;
+  --openbot-bg-host-canvas: #f6f6f8;
+  --openbot-bg-host-header: #ececf0;
+  --openbot-bg-host-inset: #ffffff;
+  --openbot-bg-remote-canvas: #ececf0;
+  --openbot-bg-surface-clear: rgba(255, 255, 255, 0);
+  --openbot-accent-hover: #4038c4;
+  --openbot-accent-strong: rgba(77, 68, 214, 0.25);
+  --openbot-success-soft: rgba(26, 110, 57, 0.1);
+  --openbot-success-wash: rgba(26, 110, 57, 0.04);
+  --openbot-unread-text: #ffffff;
+  --openbot-file-blue: #1f5fbf;
+  --openbot-file-orange: #985013;
+  --openbot-file-teal: #176779;
+  --openbot-file-pink: #96377f;
+  --openbot-comparison-table-yes: #1a6e39;
+  --openbot-data-table-ring: rgba(20, 20, 30, 0.18);
+}
+[data-story-theme="light"] {
+  --openbot-queue-surface: var(--openbot-bg-surface);
+  --openbot-queue-border: var(--openbot-border-strong);
+  --openbot-queue-text: var(--openbot-text-primary);
+  --openbot-queue-action: var(--openbot-text-muted);
+  --openbot-logo-dev: var(--openbot-warning);
+  --openbot-logo-preview: var(--openbot-success);
+  --openbot-unread-divider: var(--openbot-unread-surface);
+  --openbot-file-yellow: var(--openbot-warning);
+  --openbot-file-yellow-soft: var(--openbot-warning-soft);
+  --openbot-file-green: var(--openbot-success);
+  --openbot-file-green-soft: var(--openbot-success-soft);
+  --openbot-file-red: var(--openbot-danger);
+  --openbot-file-red-soft: var(--openbot-danger-soft);
+  --openbot-file-purple: var(--openbot-accent-text);
+  --openbot-white: var(--openbot-text-primary);
+  --openbot-black: var(--openbot-bg-canvas);
+  --openbot-sidebar: var(--openbot-bg-sidebar);
+  --openbot-main: var(--openbot-bg-canvas);
+  --openbot-main-deep: var(--openbot-bg-canvas);
+  --openbot-active: var(--openbot-bg-surface);
+  --openbot-line: var(--openbot-border);
+  --openbot-line-strong: var(--openbot-border-strong);
+  --openbot-muted: var(--openbot-text-muted);
+  --openbot-dim: var(--openbot-text-dim);
+  --openbot-teal: var(--openbot-success);
+  --openbot-orange: var(--openbot-warning);
+  --openbot-purple: var(--openbot-accent);
+  --openbot-blue: var(--openbot-accent);
+  --openbot-violet: var(--openbot-accent);
+  --openbot-coral: var(--openbot-danger);
+  --background: var(--openbot-bg-canvas);
+  --surface: var(--openbot-bg-surface);
+  --border: var(--openbot-border);
+  --text-primary: var(--openbot-text-primary);
+  --text-secondary: var(--openbot-text-secondary);
+  --text-muted: var(--openbot-text-muted);
+  --accent: var(--openbot-accent);
+  --danger: var(--openbot-danger);
+  --openbot-vnc-background: var(--openbot-bg-canvas);
+}
+[data-story-theme="light"] .approval-button-primary,
+:root[data-theme="light"] .approval-button-primary {
+  color: var(--openbot-text-on-success);
+}
