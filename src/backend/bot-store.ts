@@ -301,10 +301,12 @@ export class BotStore {
     return bot.threadId;
   }
 
-  activeProviderSession(id: string): ProviderSession | null {
+  /** `threadId`: a thread of the agent other than the active one (COSGRAL W6-BE1); left out: the active thread. */
+  activeProviderSession(id: string, threadId: string | null = null): ProviderSession | null {
     const bot = this.#requireBot(id);
-    if (!bot.threadId) return null;
-    return this.#database.activeProviderSession(bot.threadId, providerForStoredModel(this.#effectiveModel(bot)));
+    const thread = threadId ?? bot.threadId;
+    if (!thread) return null;
+    return this.#database.activeProviderSession(thread, providerForStoredModel(this.#effectiveModel(bot)));
   }
 
   bindProviderSession(id: string, externalSessionId: string): ProviderSession {

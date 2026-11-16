@@ -191,6 +191,7 @@ import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
+import { registerThreadsIpc } from "./threads-ipc";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
@@ -863,6 +864,8 @@ function registerIpcHandlers(
   registerEndpointsIpc(() => endpointStore);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
+  // COSGRAL W6-BE1: the threads of an agent (this computer only).
+  registerThreadsIpc(() => agentService);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({

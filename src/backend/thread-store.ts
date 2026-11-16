@@ -126,10 +126,31 @@ export class ThreadStore {
   /** One thread, for a light activity update; null when it does not exist. */
   summary(botId: string, threadId: string): ThreadSummary | null {
     const bot = this.#deps.bots.list().find((candidate) => candidate.id === botId);
-    if (!bot) return null;
-    const meta = this.#meta(threadId);
-    if (!meta || meta.agentId !== botId) return null;
-    return this.#summary(bot, meta, this.#context(bot));
+    const meta = bot ? this.#knownMeta(bot, threadId) : null;
+    return bot && meta ? this.#summary(bot, meta, this.#context(bot)) : null;
+  }
+
+  /** The title of one thread without reading its history (for the agent row); null when it does not exist. */
+  title(botId: string, threadId: string): string | null {
+    const bot = this.#deps.bots.list().find((candidate) => candidate.id === botId);
+    const meta = bot ? this.#knownMeta(bot, threadId) : null;
+    if (!meta) return null;
+    if (meta.title) return meta.title;
+    if (meta.parentTitle) return branchThreadTitle(meta.parentTitle);
+    return autoThreadTitle(this.#deps.mailbox.firstUserText(botId, threadId) ?? "") || NEW_THREAD_TITLE;
+  }
+
+  /** The row of a thread of this agent; a thread from before W6 (no row yet) gets one when it is asked about. */
+  #knownMeta(bot: BotSummary, threadId: string): Meta | null {
+    const existing = this.#meta(threadId);
+    if (existing) return existing.agentId === bot.id ? existing : null;
+    const stored = this.#db
+      .prepare("SELECT created_at FROM projection_threads WHERE thread_id = ? AND agent_id = ?")
+      .get(threadId, bot.id);
+    if (!isDynamicRecord(stored) && bot.threadId !== threadId) return null;
+    const createdAt = isDynamicRecord(stored) && isString(stored.created_at) ? stored.created_at : this.#now();
+    this.#insert({ id: threadId, agentId: bot.id, title: "", createdAt });
+    return this.#meta(threadId);
   }
 
   async create(input: CreateThreadInput): Promise<ThreadList> {

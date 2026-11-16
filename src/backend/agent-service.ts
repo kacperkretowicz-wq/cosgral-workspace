@@ -24,13 +24,16 @@ import type {
   AttachmentSummary,
   AvatarImageInput,
   BotSummary,
+  BranchThreadInput,
   BrowserControlState,
   BrowserTab,
   ConversationMessage,
   ConversationReadState,
   ConversationSnapshot,
   ConversationWithReadState,
+  CreateThreadInput,
   DeleteDraftInput,
+  DeleteThreadInput,
   DraftAttachment,
   DraftPreviewResolution,
   ImageGenerationInfo,
@@ -40,6 +43,7 @@ import type {
   PromptResolution,
   QueuedMessageReceipt,
   QueueSnapshot,
+  RenameThreadInput,
   ReorderQueueInput,
   RespondToApprovalInput,
   RespondToBrowserTakeoverInput,
@@ -50,6 +54,8 @@ import type {
   SetMessageReactionInput,
   SteerQueuedMessageInput,
   StopAgentEyesInput,
+  ThreadInput,
+  ThreadList,
   UpdateBotInput,
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
@@ -131,6 +137,7 @@ import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
 import { SKILLS_DYNAMIC_TOOLS, SKILLS_NAMESPACE, SkillTools, skillInstructions } from "./skill-tools";
+import { ThreadStore } from "./thread-store";
 import { type SecretBox, VaultStore } from "./vault-store";
 import { VAULT_DYNAMIC_TOOLS, VAULT_INSTRUCTIONS, VAULT_NAMESPACE, VaultRequests, VaultTools } from "./vault-tools";
 import type { WorkflowRunner } from "./workflow-manager";
@@ -320,6 +327,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #browser: AgentBrowserHost;
   readonly #computerUsePrerequisites: (() => ComputerUsePrerequisites) | null;
   readonly #conversationReads: ConversationReadStore;
+  /** COSGRAL W6-BE1: the threads of every agent (one is active; a running turn may belong to another). */
+  readonly #threads: ThreadStore;
   readonly #requestTimeoutMs: number;
   readonly #clientFactory: AgentClientFactory | null;
   readonly #eyes: AgentEyes | null;
@@ -366,6 +375,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly marketplace: Marketplace;
   readonly #snapshots = new Map<string, ConversationSnapshot>();
   readonly #threadToBot = new Map<string, string>();
+  /** COSGRAL W6-BE1: the thread of the window for each CLI thread (external id), so a delta does not ask the database. */
+  readonly #sessionThreads = new Map<string, string>();
+  /** COSGRAL W6-BE1: what the window was last told about each thread (key: bot, thread), to say only what changed. */
+  readonly #threadActivitySignatures = new Map<string, { signature: string; state: string }>();
   readonly #loadedThreads = new Set<string>();
   readonly #pendingPrompts = new Map<RequestId, PendingPrompt>();
   readonly #pendingApprovals = new Map<RequestId, PendingApproval>();
@@ -423,6 +436,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#mailbox = mailbox;
     this.#browser = browser;
     this.#conversationReads = new ConversationReadStore(store.database);
+    this.#threads = new ThreadStore({
+      database: store.database,
+      bots: store,
+      mailbox,
+      reads: this.#conversationReads,
+      live: {
+        runningThread: (botId) => this.#runningThread(botId),
+        needsYou: (botId) => this.#needsYouByThread(botId),
+      },
+    });
+    mailbox.useThreadResolver((botId) => this.#threads.activeThreadId(botId));
     this.#computerUsePrerequisites = computerUsePrerequisites;
     this.#requestTimeoutMs = requestTimeoutMs;
     this.#clientFactory = clientFactory;
@@ -600,6 +624,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       working: (botId) => this.#isWorking(botId),
       provider: (bot) => providerForBot(bot),
       providerLimit: (bot) => this.#providers?.limitFor(providerForBot(bot), bot.activeModel ?? bot.model) ?? null,
+      workingThread: (botId) => {
+        const id = this.#runningThread(botId);
+        const title = id ? this.#threads.title(botId, id) : null;
+        const active = this.#store.list().find((candidate) => candidate.id === botId)?.threadId;
+        return id && title ? { id, title, background: active !== id } : null;
+      },
       emit: (activity) => this.emit("event", { type: "activity-changed", activity }),
       limitReset: () => {
         const client = this.#clients.get("codex");
@@ -990,7 +1020,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       throw new Error("Stop the agent and cancel its queued messages before deleting it.");
     }
 
-    const providerSessions = bot.threadId ? this.#store.database.listProviderSessions(bot.threadId) : [];
+    // COSGRAL W6-BE1: the CLI threads of every thread of the agent.
+    const providerSessions = this.#store.database.listAgentProviderSessions(botId);
     // COSGRAL W2: the agent's private memory goes with it. Before the agent's own deletion, which
     // also clears the event log of everything filed under the agent's id, this deletion included.
     this.#memory.store.deleteAllForAgent(botId);
@@ -1007,13 +1038,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#lastConversationSignatures.delete(botId);
     this.#drainingBots.delete(botId);
     this.#scheduledDrains.delete(botId);
-    if (bot.threadId) {
-      for (const session of providerSessions) {
-        this.#threadToBot.delete(session.externalSessionId);
-        this.#loadedThreads.delete(session.externalSessionId);
-        this.#contextBudgets.delete(session.externalSessionId);
-        this.#clearCompactionTimer(session.externalSessionId);
-      }
+    for (const session of providerSessions) {
+      this.#threadToBot.delete(session.externalSessionId);
+      this.#sessionThreads.delete(session.externalSessionId);
+      this.#loadedThreads.delete(session.externalSessionId);
+      this.#contextBudgets.delete(session.externalSessionId);
+      this.#clearCompactionTimer(session.externalSessionId);
     }
     this.#compactingBots.delete(botId);
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
@@ -1029,6 +1059,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#stopping = false;
     await this.#store.initialize();
     await this.#mailbox.initialize();
+    // COSGRAL W6-BE1: what was sent before threads belongs to the thread each agent already had.
+    await this.#threads.initialize();
     this.#recoverPersistedTurns();
     this.#initialized = true;
     await this.#connect("starting", ["codex", "claude"]);
@@ -1144,6 +1176,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const bot = await this.#store.getOrCreate(botId);
     const persisted = this.#store.database.readConversation(botId, bot.threadId);
     const live = this.#snapshots.get(botId);
+    // COSGRAL W6-BE1: a turn that runs in another thread than the one shown keeps its own live snapshot; what is
+    // shown is the active thread, read as it is stored, and the running thread's snapshot is left alone.
+    if (live?.activeTurnId && live.threadId !== bot.threadId) {
+      this.#syncMailboxMessages(persisted);
+      return structuredClone(persisted);
+    }
     const snapshot = live?.activeTurnId ? mergeConversationSnapshots(persisted, live) : persisted;
     this.#syncMailboxMessages(snapshot);
     this.#snapshots.set(botId, snapshot);
@@ -1200,8 +1238,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** COSGRAL W3: the queue plus whether this agent's provider can steer (see queue-steer.ts). */
   #queueSnapshot(botId: string): QueueSnapshot {
-    const snapshot = this.#mailbox.listQueue(botId);
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    // COSGRAL W6-BE1: the queue the window shows is the queue of the thread that is active.
+    const snapshot = this.#mailbox.listQueue(botId, bot?.threadId);
     return bot ? withSteerSupport(snapshot, providerForBot(bot)) : snapshot;
   }
 
@@ -1218,7 +1257,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       input.keepAttachmentIds,
       input.attachmentDraftIds,
     );
-    const snapshot = this.#snapshots.get(input.botId);
+    const snapshot = this.#viewSnapshot(input.botId);
     if (snapshot) this.#syncMailboxMessages(snapshot);
     this.#emitQueue(input.botId);
     if (snapshot) this.#emitConversation(snapshot, "queue.message-updated");
@@ -1242,6 +1281,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const context = this.#mailbox.getDelivery(input.deliveryId);
     if (!context || context.delivery.recipientBotId !== bot.id || context.delivery.status !== "queued") {
       throw new Error("Only queued messages can be steered.");
+    }
+    // COSGRAL W6-BE1: a message can join only a turn of its own thread.
+    if (context.delivery.threadId && snapshot.threadId && context.delivery.threadId !== snapshot.threadId) {
+      throw new Error("The turn that is running belongs to another thread.");
     }
 
     const turnId = snapshot.activeTurnId;
@@ -1288,7 +1331,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     });
     const delivery = this.#mailbox.getDelivery(receipt.deliveries[0].id);
     if (!delivery) throw new Error("Unable to create queued message.");
-    const snapshot = this.#ensureSnapshot(bot.id, bot.threadId);
+    const snapshot = this.#activeThreadSnapshot(bot.id);
     this.#syncMailboxMessages(snapshot);
     await this.#store.updatePreview(
       bot.id,
@@ -1304,11 +1347,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async setMessageReaction(input: SetMessageReactionInput): Promise<void> {
     const bot = await this.#store.getOrCreate(input.botId);
-    const snapshot = this.#ensureSnapshot(bot.id, bot.threadId);
+    const snapshot = this.#activeThreadSnapshot(bot.id);
     if (!snapshot.messages.some((message) => message.id === input.messageId)) {
       await this.readConversation(bot.id);
     }
-    const current = this.#ensureSnapshot(bot.id, bot.threadId);
+    const current = this.#activeThreadSnapshot(bot.id);
     if (!current.messages.some((message) => message.id === input.messageId)) {
       throw new Error("The message is no longer available.");
     }
@@ -1930,6 +1973,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       sourcePaths: paths,
       replyToMessageId: replyToMessageId ?? null,
       idempotencyKey: `${params.threadId}:${params.turnId}:${params.callId}`,
+      // COSGRAL W6-BE1: the outgoing row belongs to the thread this turn runs in.
+      senderThreadId: this.#publicThreadId(senderBotId, params.threadId),
     });
     for (const recipient of recipientValues) {
       this.#emitQueue(recipient);
@@ -1978,7 +2023,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     try {
       const snapshot = this.#snapshots.get(botId);
       if (snapshot?.activeTurnId) return;
-      const context = this.#mailbox.nextQueued(botId);
+      // COSGRAL W6-BE1: only the queue of the active thread starts; what waits in another thread waits for it.
+      const activeThreadId = this.#store.list().find((candidate) => candidate.id === botId)?.threadId;
+      const context = this.#mailbox.nextQueued(botId, activeThreadId);
       if (!context) return;
       const bot = this.#store.list().find((candidate) => candidate.id === botId);
       const session = bot ? this.#store.activeProviderSession(botId) : null;
@@ -1989,7 +2036,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       await this.#startDelivery(context);
     } finally {
       this.#drainingBots.delete(botId);
-      if (this.#mailbox.nextQueued(botId)) this.#scheduleDrain(botId);
+      if (this.#mailbox.nextQueued(botId, this.#store.list().find((candidate) => candidate.id === botId)?.threadId)) {
+        this.#scheduleDrain(botId);
+      }
     }
   }
 
@@ -2178,7 +2227,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       try {
         const bot = this.#store.list().find((candidate) => candidate.id === delivery.recipientBotId);
         const client = bot ? this.#clientForBot(bot) : null;
-        const session = bot ? this.#store.activeProviderSession(bot.id) : null;
+        // COSGRAL W6-BE1: the CLI thread of the thread this message was sent in.
+        const session = bot ? this.#store.activeProviderSession(bot.id, delivery.threadId ?? null) : null;
         if (session && client) {
           const response = await client.request(
             "thread/read",
@@ -2206,8 +2256,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       }
       await this.#mailbox.markTerminal(delivery.id, terminal, terminal === "completed" ? null : reason);
       const bot = this.#store.list().find((candidate) => candidate.id === delivery.recipientBotId);
-      if (bot?.threadId) {
-        const snapshot = this.#store.database.readConversation(bot.id, bot.threadId);
+      const deliveryThreadId = delivery.threadId ?? bot?.threadId;
+      if (bot && deliveryThreadId) {
+        const snapshot = this.#store.database.readConversation(bot.id, deliveryThreadId);
         snapshot.activeTurnId = null;
         for (const message of snapshot.messages) {
           if (message.turnId === delivery.turnId && message.status === "streaming") {
@@ -2226,19 +2277,21 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #recoverPersistedTurns(): void {
     for (const bot of this.#store.list()) {
-      if (!bot.threadId) continue;
-      const snapshot = this.#store.database.readConversation(bot.id, bot.threadId);
-      if (!snapshot.activeTurnId) continue;
-      const turnId = snapshot.activeTurnId;
-      snapshot.activeTurnId = null;
-      for (const message of snapshot.messages) {
-        if (message.turnId === turnId && message.status === "streaming") {
-          message.status = "interrupted";
-          markIncompleteImageGeneration(message, "interrupted");
+      // COSGRAL W6-BE1: a turn may have been running in a thread other than the active one when the program stopped.
+      for (const threadId of this.#store.database.threadIdsWithUnfinishedTurn(bot.id)) {
+        const snapshot = this.#store.database.readConversation(bot.id, threadId);
+        if (!snapshot.activeTurnId) continue;
+        const turnId = snapshot.activeTurnId;
+        snapshot.activeTurnId = null;
+        for (const message of snapshot.messages) {
+          if (message.turnId === turnId && message.status === "streaming") {
+            message.status = "interrupted";
+            markIncompleteImageGeneration(message, "interrupted");
+          }
         }
+        const persisted = this.#store.database.persistConversation(snapshot, "turn.interrupted-by-restart", { turnId });
+        if (threadId === bot.threadId) this.#snapshots.set(bot.id, persisted);
       }
-      const persisted = this.#store.database.persistConversation(snapshot, "turn.interrupted-by-restart", { turnId });
-      this.#snapshots.set(bot.id, persisted);
     }
   }
 
@@ -2287,7 +2340,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #syncMailboxMessages(snapshot: ConversationSnapshot): void {
     const indexes = new Map(snapshot.messages.map((message, index) => [message.id, index]));
-    for (const mailboxMessage of this.#mailbox.conversationMessages(snapshot.botId)) {
+    for (const mailboxMessage of this.#mailbox.conversationMessages(snapshot.botId, snapshot.threadId)) {
       const index = indexes.get(mailboxMessage.id);
       if (index !== undefined) snapshot.messages[index] = mailboxMessage;
       else {
@@ -2306,11 +2359,29 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#emit({ type: "queue-changed", snapshot: this.#queueSnapshot(botId) });
     const affectedBots = new Set([botId, ...this.#mailbox.senderBotIdsForRecipient(botId)]);
     for (const affectedBotId of affectedBots) {
-      const snapshot = this.#snapshots.get(affectedBotId);
+      const snapshot = this.#viewSnapshot(affectedBotId);
       if (!snapshot) continue;
       this.#syncMailboxMessages(snapshot);
       this.#emitConversation(snapshot);
     }
+  }
+
+  /**
+   * COSGRAL W6-BE1: the conversation of the thread the window shows for this agent. When a turn runs in another
+   * thread, that thread keeps the live snapshot, and this is the active thread as it is stored.
+   */
+  #activeThreadSnapshot(botId: string): ConversationSnapshot {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    const live = this.#snapshots.get(botId);
+    if (live?.activeTurnId && live.threadId && bot?.threadId && live.threadId !== bot.threadId) {
+      return this.#store.database.readConversation(botId, bot.threadId);
+    }
+    return this.#ensureSnapshot(botId, bot?.threadId ?? null);
+  }
+
+  /** Like `#activeThreadSnapshot`, but only for an agent whose conversation was already opened or used. */
+  #viewSnapshot(botId: string): ConversationSnapshot | undefined {
+    return this.#snapshots.has(botId) ? this.#activeThreadSnapshot(botId) : undefined;
   }
 
   #handleNotification(notification: AppServerNotification): void {
@@ -3103,6 +3174,174 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return count;
   }
 
+  // --- COSGRAL W6-BE1: several threads per agent ---
+
+  /** The thread a turn of this agent runs in now, also when the person switched to another thread; null when none runs. */
+  #runningThread(botId: string): string | null {
+    const live = this.#snapshots.get(botId);
+    if (live?.activeTurnId && live.threadId) return live.threadId;
+    // A message that is starting has no turn yet.
+    const running = this.#mailbox
+      .listQueue(botId)
+      .deliveries.find((delivery) => delivery.status === "starting" || delivery.status === "running");
+    return running?.threadId ?? null;
+  }
+
+  /** Open cards of "Needs you" of this agent, per thread. */
+  #needsYouByThread(botId: string): Map<string, number> {
+    const counts = new Map<string, number>();
+    const add = (threadId: string) => counts.set(threadId, (counts.get(threadId) ?? 0) + 1);
+    for (const request of this.listPendingRequests()) {
+      switch (request.kind) {
+        case "prompt":
+          if (request.botId === botId) add(request.threadId);
+          break;
+        case "approval":
+          if (request.approval.botId === botId) add(request.approval.threadId);
+          break;
+        case "draft-preview":
+          if (request.card.botId === botId) add(request.card.threadId);
+          break;
+        case "browser-takeover":
+          if (request.request.botId === botId) add(request.request.threadId);
+          break;
+        case "vault-request":
+          if (request.request.botId === botId) add(request.request.threadId);
+          break;
+      }
+    }
+    return counts;
+  }
+
+  /**
+   * Tells the window what changed in the threads of an agent that it shows only lightly: the active thread, the thread a
+   * turn runs in, and every thread it was told about that was not idle. Says each thread only when something changed.
+   */
+  #reportThreadActivity(botId: string): void {
+    if (this.#stopping) return;
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (!bot) return;
+    const ids = new Set<string>();
+    if (bot.threadId) ids.add(bot.threadId);
+    const running = this.#runningThread(botId);
+    if (running) ids.add(running);
+    for (const [key, told] of this.#threadActivitySignatures) {
+      const [toldBot, toldThread] = key.split("\u0000");
+      if (toldBot === botId && toldThread && told.state !== "idle") ids.add(toldThread);
+    }
+    for (const threadId of ids) {
+      const key = `${botId}\u0000${threadId}`;
+      const summary = this.#threads.summary(botId, threadId);
+      if (!summary) {
+        this.#threadActivitySignatures.delete(key);
+        continue;
+      }
+      const signature = JSON.stringify([summary.state, summary.unread, summary.queued, summary.needsYou]);
+      if (this.#threadActivitySignatures.get(key)?.signature === signature) continue;
+      this.#threadActivitySignatures.set(key, { signature, state: summary.state });
+      this.#emit({
+        type: "thread-activity",
+        botId,
+        threadId,
+        state: summary.state,
+        unread: summary.unread,
+        queued: summary.queued,
+        needsYou: summary.needsYou,
+        updatedAt: summary.updatedAt,
+      });
+    }
+  }
+
+  /** Follows the events that change what a thread shows (a turn, the queue, an open card). */
+  #observeThreadEvent(event: AgentEvent): void {
+    switch (event.type) {
+      case "queue-changed":
+        this.#reportThreadActivity(event.snapshot.botId);
+        return;
+      case "turn-started":
+      case "turn-completed":
+      case "prompt":
+      case "prompt-resolved":
+      case "approval-resolved":
+      case "draft-preview-resolved":
+      case "browser-takeover-changed":
+      case "vault-request-resolved":
+        this.#reportThreadActivity(event.botId);
+        return;
+      case "approval":
+        this.#reportThreadActivity(event.approval.botId);
+        return;
+      case "draft-preview":
+        this.#reportThreadActivity(event.card.botId);
+        return;
+      case "browser-takeover":
+      case "vault-request":
+        this.#reportThreadActivity(event.request.botId);
+        return;
+      default:
+        return;
+    }
+  }
+
+  async listThreads(botId: string): Promise<ThreadList> {
+    return this.#threads.list(botId);
+  }
+
+  async createThread(input: CreateThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.create(input));
+  }
+
+  async renameThread(input: RenameThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.rename(input));
+  }
+
+  async archiveThread(input: ThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.archive(input));
+  }
+
+  async restoreThread(input: ThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.restore(input));
+  }
+
+  async selectThread(input: ThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.select(input));
+  }
+
+  async branchThread(input: BranchThreadInput): Promise<ThreadList> {
+    return this.#afterThreadChange(input.botId, await this.#threads.branch(input));
+  }
+
+  /** Deletes a thread for good (the window asked the person first; `confirm: true` says so). */
+  async deleteThread(input: DeleteThreadInput): Promise<ThreadList> {
+    const sessions = this.#store.database.listProviderSessions(input.threadId);
+    const list = await this.#threads.delete(input);
+    for (const session of sessions) {
+      this.#threadToBot.delete(session.externalSessionId);
+      this.#sessionThreads.delete(session.externalSessionId);
+      this.#loadedThreads.delete(session.externalSessionId);
+      this.#contextBudgets.delete(session.externalSessionId);
+      this.#clearCompactionTimer(session.externalSessionId);
+    }
+    if (this.#snapshots.get(input.botId)?.threadId === input.threadId) this.#snapshots.delete(input.botId);
+    this.#threadActivitySignatures.delete(`${input.botId}\u0000${input.threadId}`);
+    return this.#afterThreadChange(input.botId, list);
+  }
+
+  /** Every change of the threads: tell the window the list, the agent (its active thread), the queue and the conversation. */
+  #afterThreadChange(botId: string, list: ThreadList): ThreadList {
+    this.#emit({ type: "threads-changed", ...structuredClone(list) });
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    this.#emitQueue(botId);
+    // The window shows the active thread: send it as it is stored (nothing is written for this).
+    const shown = this.#activeThreadSnapshot(botId);
+    this.#syncMailboxMessages(shown);
+    this.#emit({ type: "conversation", snapshot: structuredClone(shown) });
+    this.#reportThreadActivity(botId);
+    // What waits in the thread that is active now may start.
+    this.#scheduleDrain(botId);
+    return list;
+  }
+
   /** The same rule as the sidebar: a running turn, or a delivery that is starting or running. */
   #isWorking(botId: string): boolean {
     if (this.#channelRunner.working(botId)) return true;
@@ -3382,6 +3621,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #ensureSnapshot(botId: string, threadId: string | null): ConversationSnapshot {
     let snapshot = this.#snapshots.get(botId);
+    // COSGRAL W6-BE1: the person switched to another thread and no turn runs in the one that was cached: forget it.
+    // While a turn runs, its thread keeps the snapshot (the turn finishes there, in the background).
+    if (snapshot && !snapshot.activeTurnId && snapshot.threadId) {
+      const active = this.#store.list().find((candidate) => candidate.id === botId)?.threadId;
+      if (active && active !== snapshot.threadId) {
+        this.#snapshots.delete(botId);
+        snapshot = undefined;
+      }
+    }
     if (!snapshot) {
       const bot = this.#store.list().find((candidate) => candidate.id === botId);
       const publicThreadId = bot?.threadId ?? threadId;
@@ -3393,8 +3641,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return snapshot;
   }
 
+  /**
+   * The thread of the window that a CLI thread (`fallback`, the CLI's own id) belongs to. COSGRAL W6-BE1: the thread of
+   * its session, not the thread that is active now: a turn goes on in its own thread after the person switched away.
+   */
   #publicThreadId(botId: string, fallback: string): string {
     if (this.#channelRunner.owns(fallback)) return fallback;
+    const known = this.#sessionThreads.get(fallback) ?? this.#store.database.threadIdForProviderSession(fallback);
+    if (known) {
+      this.#sessionThreads.set(fallback, known);
+      return known;
+    }
     return this.#store.list().find((candidate) => candidate.id === botId)?.threadId ?? fallback;
   }
 
@@ -3425,6 +3682,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       bytes: Buffer.byteLength(pending.text, "utf8"),
     });
     snapshot.revision = persisted.revision;
+    // COSGRAL W6-BE1: text of a turn in another thread than the one shown stays out of the window's live list.
+    if (!this.#isActiveThread(pending.botId, pending.publicThreadId)) return;
     this.#emit({
       type: "conversation-delta",
       botId: pending.botId,
@@ -3444,14 +3703,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #buildProviderHandoff(botId: string, threadId: string): string | null {
-    if (this.#store.database.listProviderSessions(threadId).length < 2) return null;
+    // COSGRAL W6-BE1: the first CLI thread of a branch has no history of its own: it gets the copied history, as a
+    // new account or provider does. (A first thread of any other thread has nothing to hand over.)
+    if (this.#store.database.listProviderSessions(threadId).length < 2 && !this.#threads.needsHistoryHandoff(threadId))
+      return null;
     const persisted = this.#store.database.readConversation(botId, threadId);
     const messages = mergeConversationSnapshots(persisted, {
       botId,
       threadId,
       activeTurnId: null,
       revision: persisted.revision,
-      messages: this.#mailbox.conversationMessages(botId),
+      messages: this.#mailbox.conversationMessages(botId, threadId),
     }).messages.filter(
       (message) =>
         ["user", "assistant", "agent"].includes(message.author) &&
@@ -3561,7 +3823,20 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       const persisted = this.#store.database.persistConversation(snapshot, eventType, detail);
       snapshot.revision = persisted.revision;
     }
+    // COSGRAL W6-BE1: the window shows one thread per agent and keeps one live message list for it. What happens in
+    // another thread (a turn that goes on in the background) is stored, and told as a light thread update only.
+    if (!this.#isActiveThread(snapshot.botId, snapshot.threadId)) {
+      this.#reportThreadActivity(snapshot.botId);
+      return;
+    }
     this.#emit({ type: "conversation", snapshot: structuredClone(snapshot) });
+  }
+
+  /** COSGRAL W6-BE1: whether this thread is the one the window shows for the agent (a channel's thread is not an agent's). */
+  #isActiveThread(botId: string, threadId: string | null): boolean {
+    if (!threadId || this.#channelRunner.owns(threadId)) return true;
+    const active = this.#store.list().find((candidate) => candidate.id === botId)?.threadId;
+    return !active || active === threadId;
   }
 
   #emitError(code: string, error: unknown, botId?: string): void {
@@ -3578,6 +3853,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (this.#stopping || event.type === "conversation-delta") return;
     try {
       this.#activity.observe(event);
+      this.#observeThreadEvent(event);
     } catch {
       // COSGRAL W1: the row state is a derived view; it must never break the event it follows.
     }
