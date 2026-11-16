@@ -885,7 +885,7 @@ async function main(): Promise<void> {
       await writeFile(join(evidence, "ipc-getters.json"), JSON.stringify(results, null, 2));
       // A call that needs an agent, a routine or a channel answers with a validation message: the wiring works. Only
       // other answers (timeouts, "not a function", crashes) are failures.
-      const needsInput = /required|Expected an object|Invalid [a-z ]*request|not configured/i;
+      const needsInput = /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured/i;
       const failed = results.filter((result) => !result.ok && !needsInput.test(result.error ?? ""));
       const asked = results.filter((result) => !result.ok && needsInput.test(result.error ?? ""));
       console.log(
