@@ -2983,10 +2983,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await d.ev(
           `window.openbot.agent.listBots().then((bots) => window.openbot.agent.updateBot({ botId: bots.find((b) => b.name === "Assistant").id, model: "gpt-5.6-luna" }))`,
         );
-        const botId = await d.botId("Assistant");
         const fallback = `endpoint:${endpointId}/qwen2.5-coder:7b`;
         await d.ev(
-          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botId)}, fallbackModels: [${JSON.stringify(fallback)}] })`,
+          `window.openbot.providers.setFallbackModels({ botId: "provider:codex", fallbackModels: [${JSON.stringify(fallback)}] })`,
         );
         const from = await eventCount();
         await setLimits({
@@ -3038,9 +3037,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           bot.activeModel === undefined || bot.activeModel === null,
           `back on its own model: ${String(bot.activeModel)}`,
         );
-        await d.ev(
-          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botId)}, fallbackModels: [] })`,
-        );
+        await d.ev(`window.openbot.providers.resetFallbackModels("provider:codex")`);
         return `events: ${kinds.join(" > ")}; the answer came from the endpoint; after the reset the agent was back on Work and on gpt-5.6-luna (no activeModel)`;
       },
     );
@@ -3327,6 +3324,55 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         assert(reset.own === null && sizes(reset) === 8, "after the reset the general list applies again");
         await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
         return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
+      },
+    );
+
+    await row(
+      "F03",
+      "fallback models per provider: one list for Codex, one for Claude, ACP agents and own endpoints; an agent follows its provider's list before the general one",
+      async () => {
+        const botRes = await d.botId("Res");
+        const info = async (id: string) =>
+          asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
+        await d.ev(`window.openbot.providers.setFallbackModels({ botId: "*", fallbackModels: ["claude-opus-5"] })`);
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: "provider:codex", fallbackModels: ["gpt-5.6-sol"] })`,
+        );
+        const codexAgent = await info(botRes);
+        assert(
+          codexAgent.own === null &&
+            codexAgent.source === "provider" &&
+            JSON.stringify(codexAgent.effective) === JSON.stringify(["gpt-5.6-sol"]),
+          `a Codex agent follows the Codex list: ${JSON.stringify({ source: codexAgent.source, effective: codexAgent.effective })}`,
+        );
+        const scope = await info("provider:claude");
+        assert(
+          scope.own === null && scope.source === "general",
+          "the Claude list is empty, so it follows the general one",
+        );
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: "provider:claude", fallbackModels: ["gpt-5.6-terra"] })`,
+        );
+        assert(
+          JSON.stringify((await info("provider:claude")).own) === JSON.stringify(["gpt-5.6-terra"]),
+          "the Claude list is saved",
+        );
+        await d.openPage("Providers");
+        const choices = await page
+          .getByRole("region", { name: "Fallback models" })
+          .getByLabel("Agent")
+          .locator("option")
+          .allInnerTexts();
+        for (const name of ["General list", "Codex", "Claude", "ACP agents", "Own endpoints"])
+          assert(
+            choices.some((choice) => choice.startsWith(name)),
+            `the page offers '${name}': ${choices.slice(0, 6).join(" | ")}`,
+          );
+        const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels("provider:codex")`));
+        assert(reset.own === null, "the Codex list can be reset");
+        await d.ev(`window.openbot.providers.resetFallbackModels("provider:claude")`);
+        await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
+        return "general ['claude-opus-5'], Codex ['gpt-5.6-sol']: Res (Codex model, no own list) > source 'provider', effective ['gpt-5.6-sol']; the Claude list saved separately; the page offers General, Codex, Claude, ACP agents, Own endpoints; all lists reset";
       },
     );
 
