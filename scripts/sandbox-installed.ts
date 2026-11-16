@@ -277,6 +277,104 @@ async function main(): Promise<void> {
       },
     );
 
+    // The first download of a CLI asks on a card; the page (or this script) answers it with the same call as Confirm.
+    const answerDownloadCard = async (prefix: string): Promise<string> => {
+      let requestId = "";
+      let title = "";
+      await waitUntil(
+        `the card '${prefix}'`,
+        async () => {
+          const pending = list(await ev("window.openbot.agent.listPendingRequests()"));
+          const item = pending.find(
+            (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith(prefix),
+          );
+          requestId = String(asRecord(item?.card).requestId ?? "");
+          title = String(asRecord(item?.card).title ?? "");
+          return requestId !== "";
+        },
+        30_000,
+      );
+      await ev(
+        `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(requestId)}, decision: "send" })`,
+      );
+      return title;
+    };
+    const cliState = async (id: string): Promise<DynamicRecord> =>
+      asRecord(list(await ev("window.openbot.subscriptions.listCli()")).find((item) => item.id === id));
+
+    await row(
+      "I08",
+      "G09: pin an older real Codex release, then unpin and update to the newest one (real downloads, no card after the first yes)",
+      async () => {
+        const newest = String((await cliState("codex")).managedVersion);
+        const older = process.env.COSGRAL_OLDER_CODEX ?? "0.168.0";
+        assert(older !== newest, `an older release than ${newest}`);
+        const started = Date.now();
+        await ev(`window.openbot.subscriptions.pinCli({ id: "codex", version: ${JSON.stringify(older)} })`);
+        await ev(`window.openbot.subscriptions.updateCli({ id: "codex" })`);
+        await waitUntil(
+          "the pinned version is installed",
+          async () => {
+            const state = await cliState("codex");
+            return state.managedVersion === older && state.phase === "idle";
+          },
+          300_000,
+        );
+        const pinned = await cliState("codex");
+        assert(
+          pinned.pinnedVersion === older && pinned.error === null,
+          `pinned: ${JSON.stringify({ v: pinned.managedVersion, e: pinned.error })}`,
+        );
+        assert(
+          list(await ev("window.openbot.agent.listPendingRequests()")).every((entry) => entry.kind !== "draft-preview"),
+          "no card for an update",
+        );
+        await ev(`window.openbot.subscriptions.pinCli({ id: "codex", version: null })`);
+        await ev(`window.openbot.subscriptions.updateCli({ id: "codex" })`);
+        await waitUntil(
+          "the newest version is installed again",
+          async () => {
+            const state = await cliState("codex");
+            return state.managedVersion === newest && state.phase === "idle";
+          },
+          300_000,
+        );
+        const after = await cliState("codex");
+        assert(
+          after.pinnedVersion === null && isString(after.version),
+          `after: ${JSON.stringify({ v: after.version })}`,
+        );
+        return `pinned ${older} > installed ${older} (reports version ${String(pinned.version)}); unpinned > ${newest} again, runs (${String(after.version)}); no card for either change; ${Math.round((Date.now() - started) / 1000)} s for two real downloads`;
+      },
+    );
+
+    await row(
+      "I09",
+      "the Claude CLI from its official source: card, download, SHA-256, runs (managed copy wins over the system one)",
+      async () => {
+        const first = await cliState("claude");
+        const started = Date.now();
+        void ev(`window.openbot.subscriptions.installCli({ id: "claude" })`).catch(() => undefined);
+        const title = await answerDownloadCard("Download Claude");
+        await waitUntil(
+          "Claude is installed",
+          async () => {
+            const state = await cliState("claude");
+            return isString(state.managedVersion) && state.phase === "idle";
+          },
+          300_000,
+        );
+        const state = await cliState("claude");
+        assert(state.source === "managed", `the downloaded copy is the one used: ${String(state.source)}`);
+        assert(String(state.executable).startsWith(root), "the file is inside the sandbox profile");
+        assert(
+          isString(state.version) && state.error === null,
+          `runs: ${JSON.stringify({ v: state.version, e: state.error })}`,
+        );
+        return `'${title}' (before: source ${String(first.source)}) > yes > ${String(state.managedVersion)} in ${Math.round((Date.now() - started) / 1000)} s, source managed, reports version ${String(state.version)}`;
+      },
+    );
+
     await row(
       "I07",
       "isolation note: what the real CLIs see of this computer, whatever the sandbox profile says",
