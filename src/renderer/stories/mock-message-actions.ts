@@ -57,6 +57,18 @@ export function createMockMessageActions(
     const problem = threadBusyProblem(busy.get(key(botId, threadId)) ?? { turnRunning: false, busyMessages: 0 });
     if (problem) throw new Error(problem);
   };
+  let revision = 0;
+  const changed = (botId: string, threadId: string) =>
+    emit({
+      type: "conversation",
+      snapshot: {
+        botId,
+        threadId,
+        revision: ++revision,
+        activeTurnId: null,
+        messages: structuredClone(list(botId, threadId)),
+      },
+    });
   const pinsOf = (botId: string, threadId: string) =>
     [...(pins.get(key(botId, threadId)) ?? [])].sort((a, b) => b.pinnedAt.localeCompare(a.pinnedAt));
   const newId = () => {
@@ -98,6 +110,7 @@ export function createMockMessageActions(
         status: "completed",
         regeneration: { ofMessageId },
       });
+      changed(input.botId, threadId);
       return { removedMessageIds: [], receipt: { messageId: request.id, deliveries: [] } };
     },
     edit: async (input) => {
@@ -120,6 +133,7 @@ export function createMockMessageActions(
         edited: true,
       };
       messages.push(replacement);
+      changed(input.botId, threadId);
       return { removedMessageIds, receipt: { messageId: replacement.id, deliveries: [] } };
     },
     delete: async (input) => {
@@ -131,6 +145,7 @@ export function createMockMessageActions(
       messages.splice(index, 1);
       const rest = (pins.get(key(input.botId, threadId)) ?? []).filter((pin) => pin.messageId !== found.id);
       pins.set(key(input.botId, threadId), rest);
+      changed(input.botId, threadId);
       return { removedMessageIds: [found.id], receipt: null };
     },
     pin: async (input) => {

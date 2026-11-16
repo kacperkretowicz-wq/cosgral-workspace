@@ -15,7 +15,7 @@ const PHASE_LABELS = {
 const STEP_LABELS = { pending: "Pending", "in-progress": "In progress", done: "Done", skipped: "Skipped" };
 export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
   const api = untrack(() => props.api ?? window.openbot?.plans);
-  const [value, setValue] = createSignal(props.plan);
+  const [value, setValue] = createSignal(untrack(() => props.plan));
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
   createEffect(
@@ -109,7 +109,7 @@ export function PlanPanel(props: { botId: string; threadId?: string | null; acti
   const visible = () => feed.records().filter((plan) => plan.requestId !== props.activeRequestId);
   return (
     <Show when={api && (visible().length > 0 || feed.error())}>
-      <details class="thread-work-section" open={visible().some((plan) => plan.phase === "approved")}>
+      <details class="thread-work-section" open>
         <summary>Plans ({visible().length})</summary>
         <section class="thread-work-list" aria-label="Thread plans" tabindex={0}>
           <Show when={feed.error()}>

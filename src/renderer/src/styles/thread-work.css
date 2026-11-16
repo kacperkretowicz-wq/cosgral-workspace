@@ -56,3 +56,38 @@
   max-height: 20rem;
   overflow: auto;
 }
+.thread-work-action-note {
+  display: block;
+  max-width: 24rem;
+  white-space: normal;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+}
+.thread-work-message-marks {
+  display: flex;
+  gap: var(--openbot-space-3);
+}
+.thread-work-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--openbot-layer-dialog);
+  background: var(--openbot-command-overlay);
+}
+.thread-work-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--openbot-layer-dialog);
+  display: grid;
+  gap: var(--openbot-space-4);
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: var(--openbot-space-6);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-canvas);
+  color: var(--openbot-text-primary);
+  box-shadow: var(--openbot-shadow-raised);
+}

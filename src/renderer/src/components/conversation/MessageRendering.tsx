@@ -5,6 +5,7 @@ import { createMemo, For, Show } from "solid-js";
 import { avatarHeadColor } from "../../blobatar";
 import type { BotMessage, BotProfile } from "../../data";
 import { AgentAvatar } from "../AgentAvatar";
+import { type HistoryActionContext, MessageHistoryActions } from "../MessageHistoryActions";
 import { Button, DropdownMenu } from "../ui";
 import { AttachmentCards } from "./AttachmentCards";
 import { ComparisonTable } from "./ComparisonTable";
@@ -256,6 +257,7 @@ function imageGenerationStatus(
 }
 
 export function MessageActions(props: {
+  history?: HistoryActionContext;
   message: BotMessage;
   onBranch?: () => void;
   pickerOpen: boolean;
@@ -342,20 +344,36 @@ export function MessageActions(props: {
         <ReplyIcon />
       </Button>
       <div class="message-action-popover-anchor">
-        <DropdownMenu.Root onOpenChange={props.onToggleMore} placement="top-end" gutter={6} modal={false}>
-          <DropdownMenu.Trigger class="message-action-button" aria-label="More message actions">
-            <MoreIcon />
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>
-            <Show when={props.onBranch}>
-              <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
-            </Show>
-            <DropdownMenu.Item onSelect={props.onCopy}>
-              {props.copied ? <CheckIcon /> : <CopyIcon />}
-              <span>{props.copied ? "Copied" : "Copy"}</span>
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <Show
+          when={props.history}
+          fallback={
+            <DropdownMenu.Root onOpenChange={props.onToggleMore} placement="top-end" gutter={6} modal={false}>
+              <DropdownMenu.Trigger class="message-action-button" aria-label="More message actions">
+                <MoreIcon />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>
+                <Show when={props.onBranch}>
+                  <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
+                </Show>
+                <DropdownMenu.Item onSelect={props.onCopy}>
+                  {props.copied ? <CheckIcon /> : <CopyIcon />}
+                  <span>{props.copied ? "Copied" : "Copy"}</span>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          }
+        >
+          {(history) => (
+            <MessageHistoryActions
+              {...history()}
+              message={props.message}
+              onCopy={props.onCopy}
+              onBranch={props.onBranch}
+              copied={props.copied}
+              onOpenChange={props.onToggleMore}
+            />
+          )}
+        </Show>
       </div>
     </div>
   );

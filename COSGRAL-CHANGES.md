@@ -155,3 +155,5 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 | 16.11.2026 | SettingsModal.stories.tsx | W6-UI3-FIX: replace obsolete disabled Appearance expectation with navigation and persisted-theme checks; retain disabled checks for unfinished sections |
 
 | 16.11.2026 | renderer PlanPanel, pending cards, thread records, W6 stories/tests | W6-UI3 A: plan proposals in Needs you, approve/reject, saved phases and live progress per thread |
+
+| 16.11.2026 | renderer MessageHistoryActions, message metadata, conversation mapping, action mock and W6 tests/stories | W6-UI3 B: Retry/Edit/Delete/Pin, confirmations, per-thread busy reasons, persistent marks and regenerated answer beside original |

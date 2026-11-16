@@ -97,7 +97,7 @@ import { RoutinePanel } from "./RoutinePanel";
 import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
-import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Textarea } from "./ui";
+import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Text, Textarea } from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
 import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -1707,15 +1707,6 @@ export function Conversation(props: ConversationProps) {
       </Show>
       <Show when={props.bot}>{(bot) => <ThreadPanel botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
       <Show when={props.bot}>{(bot) => <ContextIndicator botId={bot().id} threadId={bot().threadId} />}</Show>
-      <Show when={props.bot}>
-        {(bot) => (
-          <PlanPanel
-            botId={bot().id}
-            threadId={bot().threadId}
-            activeRequestId={props.actionCard?.kind === "plan" ? props.actionCard.requestId : undefined}
-          />
-        )}
-      </Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>
@@ -1935,6 +1926,28 @@ export function Conversation(props: ConversationProps) {
                               </Show>
                               <MessageActions
                                 message={message}
+                                history={
+                                  props.bot && window.openbot.messageActions
+                                    ? {
+                                        botId: props.bot.id,
+                                        threadId: props.bot.threadId,
+                                        turnRunning: Boolean(props.activeTurnId),
+                                        busyMessages:
+                                          props.queue?.deliveries.filter(
+                                            (delivery) =>
+                                              (!delivery.threadId || delivery.threadId === props.bot?.threadId) &&
+                                              (delivery.status === "queued" ||
+                                                delivery.status === "starting" ||
+                                                delivery.status === "running"),
+                                          ).length ?? 0,
+                                        laterMessages:
+                                          message.laterMessageCount ??
+                                          props.messages.length -
+                                            props.messages.findIndex((item) => item.id === message.id) -
+                                            1,
+                                      }
+                                    : undefined
+                                }
                                 pickerOpen={openReactionMessageId() === message.id}
                                 moreOpen={openMoreMessageId() === message.id}
                                 expandedEmoji={expandedEmojiMessageId() === message.id}
@@ -1975,6 +1988,23 @@ export function Conversation(props: ConversationProps) {
                                 }
                               />
                             </div>
+                            <Show
+                              when={
+                                message.pinned || message.edited || (message.regeneration && message.author === "bot")
+                              }
+                            >
+                              <div class="thread-work-message-marks">
+                                <Show when={message.pinned}>
+                                  <Text tone="secondary">Pinned</Text>
+                                </Show>
+                                <Show when={message.edited}>
+                                  <Text tone="secondary">Edited</Text>
+                                </Show>
+                                <Show when={message.regeneration && message.author === "bot"}>
+                                  <Text tone="secondary">Regenerated answer</Text>
+                                </Show>
+                              </div>
+                            </Show>
                             <Show when={message.reaction}>
                               {(reaction) => (
                                 <Button
@@ -2021,6 +2051,15 @@ export function Conversation(props: ConversationProps) {
               );
             }}
           </For>
+          <Show when={props.bot}>
+            {(bot) => (
+              <PlanPanel
+                botId={bot().id}
+                threadId={bot().threadId}
+                activeRequestId={props.actionCard?.kind === "plan" ? props.actionCard.requestId : undefined}
+              />
+            )}
+          </Show>
           <Show when={activeActionCard()}>
             {(card) => <ActionCard card={card()} onDraft={respondActionDraft} onTakeover={respondActionTakeover} />}
           </Show>

@@ -1,5 +1,5 @@
 import type { AgentEvent } from "@openbot/contracts/ipc";
-import { createEffect, createSignal, onSettled } from "solid-js";
+import { createEffect, createSignal, onSettled, untrack } from "solid-js";
 
 /** Thread-scoped saved records plus live updates; a late list never replaces a newer event. */
 export function createThreadRecords<T extends { botId: string; threadId: string }>(options: {
@@ -14,7 +14,7 @@ export function createThreadRecords<T extends { botId: string; threadId: string 
   let generation = 0;
   const changed = new Set<string>();
   const matches = (record: T) => {
-    const params = options.params();
+    const params = untrack(options.params);
     return record.botId === params.botId && (!params.threadId || record.threadId === params.threadId);
   };
   const put = (record: T) => {

@@ -1,17 +1,24 @@
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
-import { expect, it } from "vitest";
+import { beforeEach, expect, it } from "vitest";
 import { createMockOpenBot } from "../stories/mock-openbot";
 import { planFixture } from "../stories/w6-ui-fixtures";
 import { App } from "./App";
+
+beforeEach(() => {
+  localStorage.clear();
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1280 });
+});
 
 it("restores a pending plan in Needs you, answers it, and retains saved progress", async () => {
   const plan = planFixture();
   const mock = createMockOpenBot({ pendingRequests: [{ kind: "plan", plan }] });
   window.openbot = mock.api;
   if (!mock.api.plans) throw new Error("missing API");
-  mock.api.plans.list = async () => [plan];
+  let saved = plan;
+  mock.api.plans.list = async () => [saved];
   mock.api.plans.respond = async ({ decision }) => {
     const next = { ...plan, phase: decision === "approve" ? ("approved" as const) : ("rejected" as const) };
+    saved = next;
     mock.emitAgentEvent({ type: "plan-changed", plan: next });
     return next;
   };
