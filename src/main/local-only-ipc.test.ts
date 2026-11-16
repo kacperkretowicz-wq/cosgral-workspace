@@ -46,6 +46,7 @@ beforeAll(async () => {
   const { registerBudgetsIpc } = await import("./budgets-ipc");
   const { registerBrowserProfilesIpc } = await import("./browser-profiles-ipc");
   const { registerIntegrationsIpc } = await import("./integrations-ipc");
+  const { registerMessengersIpc } = await import("./messengers-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -65,6 +66,7 @@ beforeAll(async () => {
   registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
   registerBudgetsIpc(() => null);
   registerIntegrationsIpc(() => null);
+  registerMessengersIpc(() => null);
   registerBrowserProfilesIpc({ store: () => null, clearPartition: async () => undefined, openTabs: () => 0 });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
@@ -123,6 +125,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("browser-profiles:").length).toBe(5);
     // COSGRAL W10-KK1: the account integrations.
     expect(channelsOf("integrations:").length).toBe(7);
+    // COSGRAL W10-KK2: the Telegram bridge.
+    expect(channelsOf("messengers:").length).toBe(6);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -147,6 +151,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "budgets:",
         "browser-profiles:",
         "integrations:",
+        "messengers:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -222,6 +227,17 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /single word/,
     );
     expect((await call("integrations:list", "local", null)).threw).toMatch(/still starting/);
+    // W10-KK2: a bad messenger request is refused by the parser before the program is asked, and never repeats the token.
+    const badToken = await call("messengers:connect", "local", { kind: "telegram", token: "secret-value-123" });
+    expect(badToken.threw).toMatch(/bot token/);
+    expect(badToken.threw).not.toContain("secret-value-123");
+    expect((await call("messengers:connect", "local", { kind: "signal", token: "x" })).threw).toMatch(
+      /messenger is one of/,
+    );
+    expect(
+      (await call("messengers:allow-chat", "local", { kind: "telegram", chatId: "-5", botId: "chief" })).threw,
+    ).toMatch(/digits only/);
+    expect((await call("messengers:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

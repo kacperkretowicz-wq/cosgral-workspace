@@ -1,29 +1,70 @@
 # KK Fullstack W10-KK2: most do Telegrama (bot z BotFather, long polling)
 
-Data: 17.11.2026. Gałąź `team/kk/w10-kk2`. Spec: `spec-w10.md` §1D, Q10. Tylko testy jednostkowe, **żadnego prawdziwego bota, tokenu ani wywołania na zewnątrz**. `agent-service.ts` nietknięty.
+Data: 17.11.2026. Gałąź `team/kk/w10-kk2` (od integracji `b59e6492e`). Spec: `spec-w10.md` §1D, Q10. Tylko testy jednostkowe na atrapie Telegrama na `127.0.0.1`; **żadnego prawdziwego bota, tokenu ani wywołania na zewnątrz**. `agent-service.ts` nietknięty.
 
 ## Wynik w jednej linii
 
-**Etap w toku: kontrakt + atrapa (commit `fe1d73e53`) i klient Bot API z testami są gotowe. Silnik (pętla pobierania, lista dozwolonych, limity, szyfrowany token, IPC) jeszcze NIE istnieje.**
+**Gotowe: kontrakt + atrapa (osobny pierwszy commit `fe1d73e53`), klient Bot API, silnik (pętla long polling, lista dozwolonych czatów, limity, token zaszyfrowany w bazie przestrzeni), IPC tylko lokalne, przekazanie wiadomości do agenta i odpowiedzi z powrotem do czatu bez nowego narzędzia dla agenta. Czego nie widziałem: prawdziwego Telegrama, prawdziwej rozmowy z agentem w Electronie (patrz §6): to właściciel zakłada bota w BotFather i wkleja token.**
 
-## 1. Gotowe
+## 1. Co robi (po ludzku)
 
-1. Kontrakt `window.openbot.messengers` (`ipc-messengers.ts`): connect z tokenem tylko do zapisu, status, lista dozwolonych czatów (domyślnie nikt), disconnect, zdarzenie `messengers-changed`. Atrapa do Storybooka z testami.
-2. Klient `src/backend/telegram-client.ts`: `getMe`, `deleteWebhook` (bez kasowania oczekujących), `getUpdates` (long polling, tylko `message`), `sendMessage` (zwykły tekst, bez trybu formatowania).
-3. Token siedzi w adresie każdego zapytania Telegrama, więc **tekst błędu warstwy sieci nigdy nie jest używany**: każda porażka to `TelegramFailure` ze stałym zdaniem (`token-refused`, `conflict`, `rate-limited` z `retryAfterMs` 1-300 s, `network`, `rejected`). Nic tu nie loguje.
+1. Właściciel zakłada bota w BotFather (aplikacja Telegram), wkleja token w ustawieniach. Token jest tylko do zapisu: nigdzie nie wraca.
+2. Program sam pyta Telegram o nowe wiadomości (**long polling**: brak serwera, brak adresu, brak webhooka; przy łączeniu program wywołuje `deleteWebhook` bez kasowania oczekujących, bo bot z webhookiem nie daje long pollingu).
+3. **Domyślnie nikt nie ma dostępu.** Wiadomość z czatu spoza listy jest ignorowana **bez słowa do nadawcy**; ustawienia dowiadują się tylko numeru i nazwy takiego czatu (do 10 ostatnich, bez treści), żeby właściciel mógł go dopisać do listy i wskazać agenta.
+4. Wiadomość tekstowa z dozwolonego czatu prywatnego trafia do wskazanego agenta jako zwykła wiadomość z dopiskiem `[Telegram] ` (rozmowa pokazuje, skąd przyszła). Gdy agent skończy turę, odpowiedź wraca do **tego samego czatu**.
+5. Agent **nie dostaje żadnego narzędzia** do Telegrama: jedyna droga na zewnątrz to odpowiedź na wiadomość, która przyszła, do czatu, z którego przyszła. Nie może napisać do innego czatu.
 
-## 2. Testy (10, `src/backend/telegram-client.test.ts`, atrapa `fetch`, bez sieci)
+## 2. Zasady i limity
 
-Nazwa bota z `getMe`; odrzucenie odpowiedzi nie-bota; odczyt tylko znanych pól update'ów; offset; zwykły tekst z liczbowym `chat_id`; mapowanie 401/404/409/429/5xx/403; zepsute ciało i brak `ok:true`; **token nie wycieka** (komunikat, JSON, stos) mimo błędu sieci z adresem w tekście; przerwanie zewnętrzne; `deleteWebhook`.
+| Co | Zasada |
+|---|---|
+| Kto | tylko czaty **prywatne** z listy (do 20); grupy, kanały, zdjęcia, głos, pliki od obcych: ignorowane po cichu |
+| Dozwolony czat, ale nie tekst | jedno stałe zdanie „I only read plain text for now.” |
+| Długość | tekst dłuższy niż 4000 znaków nie idzie do agenta; czat dostaje stałe zdanie |
+| Tempo | 10 wiadomości na minutę na czat; powyżej: ignorowane, jedno ostrzeżenie na minutę |
+| Kolejka | do 5 czekających odpowiedzi na czat; szósta dostaje „poczekaj na odpowiedzi” |
+| Odpowiedź | dzielona na części po 4000 znaków (po końcu linii, gdy się da), najwyżej 8 części, reszta ucięta z adnotacją |
+| Czas | agent nie odpowiedział w 15 min: jedno zdanie „zajrzyj do aplikacji”, wiadomość wypada z kolejki |
+| `/start` | powitanie, nie idzie do agenta |
+| Zły agent | agent usunięty po dopisaniu czatu: stałe zdanie w czacie, nic nie idzie |
+| Awaria sieci | status `failed` ze stałym zdaniem, ponawianie samo (2 s, podwajane do 60 s; 429 czeka tyle, ile każe Telegram) |
+| Token odrzucony (401/404) | pętla się kończy, status `failed`, token zostaje do wymiany; **bez ponawiania** |
+| Konflikt (409) | stałe zdanie, że inny program czyta tego bota |
+| Zablokowany bot / zamknięty czat | odpowiedź wypada (bez ponawiania), pozostałe czaty działają dalej |
 
-Uruchomione: `vitest run src/backend/telegram-client.test.ts` (10/10), `biome check` obu plików (czysto), `tsc --noEmit -p tsconfig.node.json` (kod 0).
+Zdania wysyłane do czatu są stałe: nigdy tekst błędu agenta, sieci ani Telegrama.
 
-## 3. Jeszcze do zrobienia (kolejne kroki, jedna rzecz naraz)
+## 3. Token (najważniejsze)
 
-1. Silnik: magazyn (token szyfrowany `SecretBox`, lista dozwolonych, nieznane czaty bez treści), pętla pobierania z backoffem, limit 10 wiadomości/min na czat, tylko czaty prywatne i zwykły tekst, podział odpowiedzi na części.
-2. Podpięcie IPC (main + preload) i przekazanie wiadomości do wybranego agenta bez nowego narzędzia dla agenta.
-3. Testy silnika na atrapie usługi Telegrama na `127.0.0.1`.
+- Wpisany raz, szyfrowany `SecretBox` (safeStorage/DPAPI w programie) w tabeli `projection_messengers` **bazy bieżącej przestrzeni** (W8-KK1): bot klienta A nie jest dostępny w przestrzeni klienta B (test dwóch baz).
+- Telegram umieszcza token w adresie każdego zapytania, więc **tekst błędu warstwy sieci nie jest nigdy używany**: klient zamienia każdą awarię w `TelegramFailure` ze stałym zdaniem, silnik tylko je przekazuje. Test: sieć rzuca błąd z adresem w treści; token nie ma go w żadnym statusie, zdarzeniu, błędzie ani zdaniu do czatu.
+- Przy łączeniu token jest sprawdzany w Telegramie (`getMe`); **zły token nie jest zapisywany**. Błąd parsera nie powtarza wpisanego tekstu.
+- Token, którego sejf nie odczyta (inny komputer), jest po cichu usuwany przy starcie.
+- Rozłączenie: usuwa token i offset, zatrzymuje pętlę, porzuca czekające; lista dozwolonych zostaje.
+- Offset ostatniej wiadomości jest zapisywany po obsłużeniu: po restarcie ta sama wiadomość nie jest brana drugi raz.
 
-## 4. Czego nie sprawdzono
+## 4. Pliki
 
-Prawdziwego Telegrama, Electrona, `sandbox:e2e`, Storybooka, buildu i pełnego `check` (brak świeżego znaku lidera). `getUpdates` z długim oczekiwaniem sprawdzono tylko na atrapie.
+- `packages/contracts/src/ipc-messengers.ts` (kontrakt: typy, strażnicy, parsery, limity, reguły wspólne), kanały `messengers:*` (6), zdarzenie `messengers-changed`, pole `messengers?` w `OpenBotDesktopApi`, `src/preload/messengers-api.ts`, atrapa `src/renderer/stories/mock-messengers.ts` (+ test, 8) — **commit `fe1d73e53`**.
+- `src/backend/telegram-client.ts` (+ test, 10): klient Bot API (getMe, deleteWebhook, getUpdates, sendMessage).
+- `src/backend/messenger-bridge.ts` (+ test, 29): silnik i port agenta (`createAgentPort`), `src/backend/testing/telegram-mock.ts`: atrapa Telegrama na `127.0.0.1` (getUpdates z krótkim oczekiwaniem i offsetem).
+- `src/main/messengers-ipc.ts`: IPC tylko lokalne (`serverId !== "local"` odmowa; parsery przed pracą). `src/main/index.ts`: 14 linii (import, zmienna, rejestracja, powołanie mostu po `useSecretBox`, `resume()`, `stop()` przy zamknięciu). `src/main/local-only-ipc.test.ts`: liczba kanałów (6), lista odmów dla zdalnych, złe żądania (token bez echa).
+
+## 5. Jak wiadomość trafia do agenta bez zmiany `agent-service.ts`
+
+Tylko publiczne metody: `AgentService.sendMessage({botId, text})` zwraca `messageId`; odpowiedź odczytuje `readConversation(botId)` co 1,5 s, **tylko gdy coś czeka**. Port `createAgentPort` łączy ją z wiadomością po `turnId` wiadomości użytkownika (nadawanym przy starcie tury z kolejki): odpowiedź to ukończone teksty asystenta tej samej tury, bez `commentary`, bez innych tur; tura aktywna lub ze strumieniem = czeka; `failed`/`interrupted` = jedno zdanie o porażce; tura bez tekstu (same narzędzia) = „odpowiedział bez tekstu, zajrzyj do aplikacji”.
+
+**Szew, który podpowiadam Backendowi (nie robiłem):** zdarzenie z gotowym polem `finalText` w `turn-completed` (albo metoda `awaitReply(messageId)`) zastąpiłoby odpytywanie; teraz odpytywanie jest tanie (lokalny odczyt), ale zależy od założenia o `turnId` (§6).
+
+## 6. Czego NIE sprawdzono (uczciwie)
+
+1. **Prawdziwego Telegrama i BotFather**: właściciel zakłada bota i wkleja token; adres `https://api.telegram.org/bot<token>/<metoda>` i pola odpowiedzi pochodzą z publicznej dokumentacji Bot API, nie z wywołania.
+2. **Electrona i prawdziwej rozmowy z agentem**: założenie, że wiadomość z kolejki dostaje `turnId` po starcie tury i że odpowiedzi tej tury niosą ten sam `turnId`, wynika z czytania `mailbox-store.ts`/`agent-service.ts`, a nie z uruchomienia. Testy używają udawanej rozmowy. Jeśli założenie nie trzyma, odpowiedź nie wróci i po 15 minutach czat dostanie zdanie „zajrzyj do aplikacji” (nic się nie psuje, ale most nie działa): to pierwsza rzecz do sprawdzenia w Electronie po `GO`.
+3. Brak interfejsu ustawień (sama atrapa i kontrakt); `sandbox:e2e`, Storybook, build, pełne `check`: nie uruchamiane (lekkie zadanie, brak znaku lidera).
+4. Most startuje razem z programem (`resume()`), zanim dostawca agenta jest gotowy: wiadomość w tym oknie dostaje zdanie „agent nie mógł przyjąć wiadomości”. Kosmetyka, do poprawy po sprawdzeniu w Electronie.
+5. Odstęp 1 s na czat przy wysyłaniu wielu części odpowiedzi nie jest wymuszany (Telegram odpowie 429, silnik poczeka i ponowi; nie sprawdzone na prawdziwym Telegramie).
+6. Zdarzenie `messengers-changed` przy każdej wiadomości od znanego już obcego czatu nie jest wysyłane (tylko przy nowym), licznik pojawia się przy następnej zmianie.
+
+## 7. Uruchomione
+
+`vitest run`: `messenger-bridge.test.ts` 29/29 (3 razy z rzędu, bez migotania), `telegram-client.test.ts` 10/10, `mock-messengers.test.ts` 8/8, `local-only-ipc.test.ts` zielony; `bun run typecheck:node` i `typecheck:renderer` kod 0; `bun run lint` czysto (jedno obce ostrzeżenie w `ipc-access.test.ts` Backendu, nie ruszałem).
