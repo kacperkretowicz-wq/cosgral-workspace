@@ -2,7 +2,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentEvent, BotSummary, UpdateBotInput } from "@openbot/contracts/ipc";
+import { type AgentEvent, APP_PAGE_IDS, type BotSummary, type UpdateBotInput } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
@@ -205,9 +205,9 @@ describe("AgentSettingsService", () => {
     expect(reopened.service.appSettings().notifications.matrix.finished.desktop).toBe(false);
   });
 
-  it("pins pages to the rail: empty by default, kept in the chosen order, replaced as a whole, survives a restart", async () => {
+  it("pins pages to the rail: every page pinned by default, kept in the chosen order, replaced as a whole, survives a restart", async () => {
     const { dir, database, service, events } = await open();
-    expect(service.appSettings().navigation).toEqual({ pinnedPageIds: [] });
+    expect(service.appSettings().navigation).toEqual({ pinnedPageIds: [...APP_PAGE_IDS] });
 
     const pinned = await service.updateAppSettings({ navigation: { pinnedPageIds: ["library", "agents", "phone"] } });
     expect(pinned.navigation).toEqual({ pinnedPageIds: ["library", "agents", "phone"] });

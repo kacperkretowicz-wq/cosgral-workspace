@@ -330,7 +330,7 @@ export class AgentSettingsService {
     const defaults: StoredAppSetting = {
       language: null,
       notifications: defaultNotificationPreferences(),
-      pinnedPageIds: [],
+      pinnedPageIds: [...APP_PAGE_IDS],
     };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;
