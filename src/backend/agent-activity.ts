@@ -99,6 +99,10 @@ export class AgentActivityTracker {
       case "browser-takeover":
         this.#refresh(event.request.botId);
         return;
+      // COSGRAL W6-BE3: a plan waits for Approve / Reject.
+      case "plan-changed":
+        this.#refresh(event.plan.botId);
+        return;
       case "queue-changed":
       case "conversation":
         this.#refresh(event.snapshot.botId);

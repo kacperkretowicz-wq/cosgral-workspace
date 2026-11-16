@@ -42,6 +42,10 @@ beforeAll(async () => {
   const { registerProviderIpc } = await import("./provider-ipc");
   const { registerThreadsIpc } = await import("./threads-ipc");
   registerThreadsIpc(() => null);
+  const { registerPlansIpc } = await import("./plans-ipc");
+  registerPlansIpc(() => null);
+  const { registerMessageActionsIpc } = await import("./message-actions-ipc");
+  registerMessageActionsIpc(() => null);
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -76,12 +80,25 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("providers:").length).toBeGreaterThanOrEqual(8);
     // COSGRAL W6-BE1: the threads of an agent.
     expect(channelsOf("threads:").length).toBe(8);
+    // COSGRAL W6-BE3: the plan card.
+    expect(channelsOf("plans:").length).toBe(2);
+    // COSGRAL W6-BE3: the actions on a message.
+    expect(channelsOf("message-actions:").length).toBe(5);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
     "refuses every such call for the server '%s'",
     async (serverId) => {
-      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:", "context:", "threads:");
+      const names = channelsOf(
+        "api-keys:",
+        "endpoints:",
+        "subscriptions:",
+        "providers:",
+        "context:",
+        "threads:",
+        "plans:",
+        "message-actions:",
+      );
       const outcomes: string[] = [];
       for (const name of names) {
         const { threw, value } = await call(name, serverId, { provider: "codex", key: "test-key-0000-abcd", id: "x" });
@@ -111,5 +128,18 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     // A call that is for this computer but wrong is refused by the contract parser, before any work.
     expect((await call("threads:delete", "local", { botId: "chief", threadId: "t1" })).threw).toMatch(/confirmation/);
     expect((await call("threads:select", "local", { botId: "chief" })).threw).toMatch(/thread/i);
+    // W6-BE3: a plan answer is only "approve" or "reject" (Q9: no editing), checked before any work.
+    expect((await call("plans:respond", "local", { requestId: "p1", decision: "edit" })).threw).toMatch(/approve/);
+    expect((await call("plans:list", "local", { botId: "chief" })).threw).toMatch(/still starting/);
+    // W6-BE3: a delete without confirmation and an empty edit are refused by the contract parser, before any work.
+    expect((await call("message-actions:delete", "local", { botId: "chief", messageId: "m1" })).threw).toMatch(
+      /confirmation/,
+    );
+    expect((await call("message-actions:edit", "local", { botId: "chief", messageId: "m1", text: " " })).threw).toMatch(
+      /empty/,
+    );
+    expect(
+      (await call("message-actions:pin", "local", { botId: "chief", messageId: "m1", pinned: true })).threw,
+    ).toMatch(/still starting/);
   });
 });

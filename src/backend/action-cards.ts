@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 import {
   ACTION_CARD_LIMITS,
   type AgentEvent,
+  type AgentPlan,
   type BrowserTab,
   type BrowserTakeoverAction,
   type BrowserTakeoverPhase,
@@ -20,14 +21,20 @@ import {
   type DraftPreviewCard,
   type DraftPreviewResolution,
   type KeptDraft,
+  type PendingAgentPlan,
   type PendingBrowserTakeover,
   type PendingDraftPreview,
+  PLAN_LIMITS,
+  PLAN_STEP_STATUSES,
   type RespondToBrowserTakeoverInput,
   type RespondToDraftPreviewInput,
+  type RespondToPlanInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { z } from "zod";
 import type { KeptDraftStore } from "./draft-store";
+import { PlanCards } from "./plan-cards";
+import type { PlanStore } from "./plan-store";
 import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
 
 export const CARDS_NAMESPACE = "cosgral_cards";
@@ -57,6 +64,35 @@ export const CARDS_TOOL_SPECS: Array<{ name: string; description: string; schema
     schema: { tabId: z.string().min(1).max(ID_LIMIT), reason: z.string().min(1).max(L.reason) },
   },
   { name: "list_drafts", description: "List the drafts the user kept unsent from your earlier cards.", schema: {} },
+  {
+    // COSGRAL W6-BE3 (plan, W17-W22): the person approves or rejects; there is no editing.
+    name: "propose_plan",
+    description:
+      "Show the user a PLAN before a longer task and wait: an ordered list of steps (1-20). The user approves or rejects it; nothing is approved by silence. After approve, do the steps in order and report each with update_plan; after reject, do none of them.",
+    schema: {
+      title: z.string().max(PLAN_LIMITS.title).optional(),
+      summary: z.string().max(PLAN_LIMITS.summary).optional(),
+      steps: z
+        .array(
+          z.object({
+            title: z.string().min(1).max(PLAN_LIMITS.stepTitle),
+            detail: z.string().max(PLAN_LIMITS.stepDetail).optional(),
+          }),
+        )
+        .min(1)
+        .max(PLAN_LIMITS.steps),
+    },
+  },
+  {
+    name: "update_plan",
+    description:
+      "Report the progress of an approved plan: set a step (stepId from propose_plan) to in-progress, done or skipped. A finished step stays finished; the plan is complete when every step is done or skipped.",
+    schema: {
+      planId: z.string().min(1).max(ID_LIMIT),
+      stepId: z.string().min(1).max(ID_LIMIT),
+      status: z.enum(PLAN_STEP_STATUSES),
+    },
+  },
 ];
 
 export const CARDS_DYNAMIC_TOOLS = {
@@ -73,7 +109,7 @@ export const CARDS_DYNAMIC_TOOLS = {
 };
 
 /** Added to the developer instructions of direct and channel threads. */
-export const CARDS_INSTRUCTIONS = `Before you send, post, delete or pay anything in the user's name, show exactly what would happen with ${CARDS_NAMESPACE}.confirm and act only after "send"; one approval covers that one action once, and "edit" or "keep-draft" means nothing goes out. When a page in the built-in browser needs a person (sign-in, CAPTCHA, passkey, payment), call ${CARDS_NAMESPACE}.request_takeover and wait; after the user returns the tab, continue in the same tab.`;
+export const CARDS_INSTRUCTIONS = `Before you send, post, delete or pay anything in the user's name, show exactly what would happen with ${CARDS_NAMESPACE}.confirm and act only after "send"; one approval covers that one action once, and "edit" or "keep-draft" means nothing goes out. When a page in the built-in browser needs a person (sign-in, CAPTCHA, passkey, payment), call ${CARDS_NAMESPACE}.request_takeover and wait; after the user returns the tab, continue in the same tab. Before a task of at least 3 steps, or of at least 2 steps of which one changes something outside the conversation (runs a command, writes a file, uses a tool with an effect, sends something), show the steps with ${CARDS_NAMESPACE}.propose_plan and wait: do the steps only after the user approves, report each with ${CARDS_NAMESPACE}.update_plan, and do none of them when the user rejects.`;
 
 /** Who asks: the agent, the thread shown to the user, the provider thread and the turn. */
 export interface CardContext {
@@ -90,6 +126,8 @@ export interface ActionCardsOptions {
   /** Creation time and order shared with question and approval cards. */
   order: () => { createdAt: string; sequence: number };
   drafts: KeptDraftStore;
+  /** COSGRAL W6-BE3: where plans are kept; without it the plan tools answer that plans are not available. */
+  plans?: PlanStore;
   /** Tabs of the built-in browser; without it no takeover can be asked. */
   tabs?: () => BrowserTab[];
   /** Shows the tab to the person who takes over. */
@@ -98,7 +136,7 @@ export interface ActionCardsOptions {
   newId?: () => string;
 }
 
-export type PendingActionCard = PendingDraftPreview | PendingBrowserTakeover;
+export type PendingActionCard = PendingDraftPreview | PendingBrowserTakeover | PendingAgentPlan;
 
 interface OpenDraft {
   card: DraftPreviewCard;
@@ -136,9 +174,44 @@ export class ActionCards {
   readonly #options: ActionCardsOptions;
   readonly #drafts = new Map<string, OpenDraft>();
   readonly #takeovers = new Map<string, OpenTakeover>();
+  readonly #plans: PlanCards | null;
 
   constructor(options: ActionCardsOptions) {
     this.#options = options;
+    this.#plans = options.plans
+      ? new PlanCards({
+          emit: options.emit,
+          order: options.order,
+          store: options.plans,
+          now: () => this.#now(),
+          newId: () => this.#newId(),
+        })
+      : null;
+  }
+
+  /** COSGRAL W6-BE3: the person's Approve / Reject on a plan card. */
+  async respondToPlan(input: RespondToPlanInput): Promise<AgentPlan> {
+    return this.#needPlans().respond(input);
+  }
+
+  /** COSGRAL W6-BE3: the plans of a thread, newest first (also the ended ones). */
+  listPlans(input: { botId: string; threadId: string }): AgentPlan[] {
+    return this.#plans?.list(input) ?? [];
+  }
+
+  /** COSGRAL W6-BE3: after a restart nothing waits for an answer any more; open plans close. */
+  recoverPlans(): void {
+    this.#plans?.recover();
+  }
+
+  /** COSGRAL W6-BE3: a deleted thread takes its plans with it (an open one closes first). */
+  forgetThreadPlans(botId: string, threadId: string): void {
+    this.#plans?.forgetThread(botId, threadId);
+  }
+
+  #needPlans(): PlanCards {
+    if (!this.#plans) throw new Error("Plans are not available.");
+    return this.#plans;
   }
 
   /** An agent's `cosgral_cards` call. Waits until the user decides or the turn ends. */
@@ -152,6 +225,10 @@ export class ActionCards {
           return await this.#requestTakeover(context, args);
         case "list_drafts":
           return textResult({ drafts: this.listDrafts().filter((draft) => draft.botId === context.botId) });
+        case "propose_plan":
+          return await this.#needPlans().propose(context, args);
+        case "update_plan":
+          return this.#needPlans().update(context, args);
         default:
           throw new Error(`Unknown card tool: ${params.tool}`);
       }
@@ -245,11 +322,12 @@ export class ActionCards {
       sequence: open.sequence,
       request: { kind: "browser-takeover" as const, request: structuredClone(open.request), phase: open.phase },
     }));
-    return [...drafts, ...takeovers].sort((left, right) => left.sequence - right.sequence);
+    const plans = this.#plans?.listPending() ?? [];
+    return [...drafts, ...takeovers, ...plans].sort((left, right) => left.sequence - right.sequence);
   }
 
   pendingCount(botId: string): number {
-    let count = 0;
+    let count = this.#plans?.pendingCount(botId) ?? 0;
     for (const open of this.#drafts.values()) if (open.card.botId === botId) count += 1;
     for (const open of this.#takeovers.values()) if (open.request.botId === botId) count += 1;
     return count;
@@ -274,11 +352,13 @@ export class ActionCards {
         this.#finishTakeover(requestId, open, "expired");
       }
     }
+    this.#plans?.expireTurn(providerThreadId, turnId);
   }
 
   expireAll(): void {
     for (const [requestId, open] of this.#drafts) this.#expireDraft(requestId, open);
     for (const [requestId, open] of this.#takeovers) this.#finishTakeover(requestId, open, "expired");
+    this.#plans?.expireAll();
   }
 
   /**

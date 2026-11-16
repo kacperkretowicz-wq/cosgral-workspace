@@ -420,6 +420,8 @@ export class OpenBotDatabase {
     eventType: string,
     payload: unknown = {},
     commandId = `conversation:${eventType}:${randomUUID()}`,
+    /** COSGRAL W6-BE3: messages that left the conversation (delete, edit); their rows go in the same step. */
+    removedMessageIds: readonly string[] = [],
   ): ConversationSnapshot {
     if (!snapshot.threadId) return structuredClone(snapshot);
     return this.dispatch(
@@ -442,6 +444,15 @@ export class OpenBotDatabase {
           `UPDATE projection_threads
            SET active_turn_id = ?, updated_at = ?, last_event_sequence = ? WHERE thread_id = ?`,
         ).run(snapshot.activeTurnId, new Date().toISOString(), sequence, snapshot.threadId);
+        for (const messageId of removedMessageIds) {
+          db.prepare("DELETE FROM projection_thread_messages WHERE thread_id = ? AND message_id = ?").run(
+            snapshot.threadId,
+            messageId,
+          );
+          db.prepare("DELETE FROM projection_attachments WHERE owner_kind = 'thread-message' AND owner_id = ?").run(
+            `${snapshot.threadId}:${messageId}`,
+          );
+        }
         const upsert = db.prepare(`
           INSERT INTO projection_thread_messages (
             thread_id, message_id, turn_id, author, status, item_type, created_at,

@@ -16,6 +16,7 @@ import type {
   AgentEyesState,
   AgentMcpServerSetting,
   AgentModelOption,
+  AgentPlan,
   AgentPromptQuestion,
   AgentProviderStatus,
   AgentStatus,
@@ -35,13 +36,21 @@ import type {
   ConversationWithReadState,
   CreateThreadInput,
   DeleteDraftInput,
+  DeleteMessageInput,
   DeleteThreadInput,
   DraftAttachment,
   DraftPreviewResolution,
+  EditMessageInput,
   ImageGenerationInfo,
   KeptDraft,
+  ListPinsInput,
+  ListPlansInput,
+  MessageActionResult,
+  MessageActionTarget,
+  MessagePin,
   PendingAgentPrompt,
   PendingAgentRequest,
+  PinMessageInput,
   PromptResolution,
   QueuedMessageReceipt,
   QueueSnapshot,
@@ -50,8 +59,10 @@ import type {
   RespondToApprovalInput,
   RespondToBrowserTakeoverInput,
   RespondToDraftPreviewInput,
+  RespondToPlanInput,
   RespondToPromptInput,
   RespondToVaultRequestInput,
+  RetryMessageInput,
   SendMessageInput,
   SetMessageReactionInput,
   SteerQueuedMessageInput,
@@ -63,12 +74,17 @@ import type {
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import {
+  editNeedsConfirmation,
   isAcpModel,
   isClaudeModel,
   isEndpointModel,
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
+  messageActionProblem,
+  retrySourceIndex,
+  threadBusyProblem,
+  unavailableContextState,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import {
@@ -113,6 +129,8 @@ import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { isMemoryToolName, MEMORY_DYNAMIC_TOOLS, MemoryService } from "./memory-service";
 import { MemoryStore } from "./memory-store";
+import { MessagePinStore } from "./message-pin-store";
+import { SqlitePlanStore } from "./plan-store";
 import {
   type AccountRateLimitResult,
   type AccountRateLimitsReadResult,
@@ -362,6 +380,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W1-BE3: draft preview / confirm cards and browser takeovers. */
   readonly #cards: ActionCards;
   readonly #drafts: DraftStore;
+  /** COSGRAL W6-BE3: the plan cards of the threads. */
+  readonly #plans: SqlitePlanStore;
+  /** COSGRAL W6-BE3: the messages the person pinned. */
+  readonly #pins: MessagePinStore;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
   readonly #skillTools: SkillTools;
@@ -446,6 +468,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#context = new ContextTracker({
       store: new ContextStore(store.database),
       emit: (event) => this.#emit(event),
+      // COSGRAL W6-BE3: an archived thread, or one that does not exist, is not compacted. (No thread yet: nothing to refuse.)
+      canCompactThread: (botId, threadId) =>
+        threadId === "" || this.#threads.lookup(botId, threadId)?.archived === false,
     });
     this.#threads = new ThreadStore({
       database: store.database,
@@ -467,10 +492,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#memory.on("event", (event: AgentEvent) => this.#emit(event));
     this.#mcp = mcp;
     this.#drafts = new DraftStore(store.database);
+    this.#plans = new SqlitePlanStore(store.database);
+    this.#pins = new MessagePinStore(store.database);
     this.#cards = new ActionCards({
       emit: (event) => this.#emit(event),
       order: () => this.#pendingOrder(),
       drafts: this.#drafts,
+      plans: this.#plans,
       tabs: () => this.#browser.listTabs?.() ?? [],
       showTab: (tabId) => this.#browser.activate?.(tabId),
     });
@@ -743,6 +771,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#cards.respondToDraftPreview(input);
   }
 
+  /** COSGRAL W6-BE3: the user's Approve / Reject on a plan card (no editing, Q9). */
+  async respondToPlan(input: RespondToPlanInput): Promise<AgentPlan> {
+    return this.#cards.respondToPlan(input);
+  }
+
+  /** COSGRAL W6-BE3: the plans of a thread (default: the thread shown for this agent), newest first. */
+  async listPlans(input: ListPlansInput): Promise<AgentPlan[]> {
+    const threadId = input.threadId ?? (await this.#threads.activeThreadId(input.botId));
+    return threadId ? this.#cards.listPlans({ botId: input.botId, threadId }) : [];
+  }
+
   /** COSGRAL W1-BE3: the user takes over a browser tab, gives it back, or declines. */
   async respondToBrowserTakeover(input: RespondToBrowserTakeoverInput): Promise<void> {
     await this.#cards.respondToBrowserTakeover(input);
@@ -931,6 +970,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const publicId = threadId ?? bot.threadId;
     // A new agent without a conversation yet has nothing to report.
     if (!publicId) return this.#context.state(bot.id, "", providerForBot(bot));
+    // COSGRAL W6-BE3: a thread other than the one shown is answered for that thread, from what is stored. A thread that does
+    // not exist (or is another agent's) is "unavailable", not an error: the window may ask about a thread just deleted.
+    if (!this.#threads.lookup(bot.id, publicId)) {
+      return unavailableContextState(bot.id, publicId, "This thread does not exist.", false);
+    }
     return this.#context.state(bot.id, publicId, providerForBot(bot));
   }
 
@@ -944,10 +988,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const provider = providerForBot(bot);
     const publicId = threadId ?? bot.threadId;
     if (!publicId) throw new Error("There is nothing to compact yet: this agent has no conversation.");
-    if (publicId !== bot.threadId) throw new Error("Only the conversation shown for this agent can be compacted.");
+    // COSGRAL W6-BE3: any thread of the agent can be asked for, but only one that is not archived.
+    const found = this.#threads.lookup(bot.id, publicId);
+    if (!found) throw new Error("Unknown thread.");
+    if (found.archived) throw new Error("This thread is archived. Restore it before compacting.");
+    const shown = publicId === bot.threadId;
     if (!canCompactProvider(provider))
       throw new Error("This agent's provider compacts its own context; it cannot be asked to.");
-    const session = this.#store.activeProviderSession(bot.id);
+    const session = this.#store.activeProviderSession(bot.id, publicId);
     const external = session?.externalSessionId;
     const known = this.#context.state(bot.id, publicId, provider);
     if (!external || known.source !== "reported" || known.used === null || known.limit === null) {
@@ -964,6 +1012,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     };
     this.#contextBudgets.set(external, budget);
     if (budget.manual || budget.phase !== "idle" || this.#compactingBots.has(bot.id)) return known;
+    if (!shown) return this.#compactIdleThread(bot, publicId, external, budget);
     budget.manual = true;
     budget.pending = true;
     this.#setContextCompacting(bot.id, external, true);
@@ -976,6 +1025,39 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       await this.#requestContextCompaction(bot.id, external);
     }
     return this.#context.state(bot.id, publicId, provider);
+  }
+
+  /**
+   * COSGRAL W6-BE3: compacting a thread that is not on screen. One turn runs per agent at a time, so it is done only when
+   * the agent is idle (a turn in any thread, or another compaction, refuses it) and the CLI thread is resumable: it is
+   * resumed first when the program does not have it loaded (after a restart).
+   */
+  async #compactIdleThread(
+    bot: BotSummary,
+    publicId: string,
+    external: string,
+    budget: ThreadContextBudget,
+  ): Promise<ContextState> {
+    if (this.#runningThread(bot.id) !== null || this.#drainingBots.has(bot.id) || this.#compactingBots.has(bot.id)) {
+      throw new Error("This agent is busy with another thread. Try again when its turn has ended.");
+    }
+    const client = this.#clientForBot(bot, external);
+    if (!client || this.#status.phase !== "ready") throw new Error("The agent is not ready to compact this thread.");
+    // The CLI's answers about this thread are told to this agent (after a restart nothing has registered it yet).
+    this.#threadToBot.set(external, bot.id);
+    if (!this.#loadedThreads.has(external)) {
+      try {
+        await this.#resumeThread(bot, client, external);
+      } catch (error) {
+        throw new Error(
+          `This thread could not be resumed to compact it: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    budget.manual = true;
+    budget.pending = true;
+    if (this.#reserveContextCompaction(bot.id, external)) await this.#requestContextCompaction(bot.id, external);
+    return this.#context.state(bot.id, publicId, providerForBot(bot));
   }
 
   contextSettings(): ContextSettings {
@@ -1003,7 +1085,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** Tells the context tracker (and so the window) that a compaction of the provider's thread runs or ended. */
   #setContextCompacting(botId: string, externalThreadId: string, on: boolean): void {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
-    if (!bot) return;
+    if (!bot || this.#stopping) return;
     this.#context.setCompacting(botId, this.#publicThreadId(botId, externalThreadId), providerForBot(bot), on);
   }
 
@@ -1146,6 +1228,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (this.#drafts.pruneBots(this.#store.list().map((candidate) => candidate.id))) {
       this.#emit({ type: "drafts-changed", drafts: this.#drafts.list() });
     }
+    // COSGRAL W6-BE3: so do its plans.
+    this.#plans.pruneBots(this.#store.list().map((candidate) => candidate.id));
+    this.#pins.pruneBots(this.#store.list().map((candidate) => candidate.id));
   }
 
   async initialize(): Promise<void> {
@@ -1154,6 +1239,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#mailbox.initialize();
     // COSGRAL W6-BE1: what was sent before threads belongs to the thread each agent already had.
     await this.#threads.initialize();
+    // COSGRAL W6-BE3: no agent waits for a plan answer after a restart; open plans close (nothing counts as approved).
+    this.#cards.recoverPlans();
     this.#recoverPersistedTurns();
     this.#initialized = true;
     await this.#connect("starting", ["codex", "claude"]);
@@ -2445,6 +2532,21 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     for (const message of snapshot.messages) {
       message.reaction = reactions.get(message.id) ?? null;
     }
+    // COSGRAL W6-BE3: the pins of the thread, and the answers that belong to a retry (the turn of a regeneration request).
+    const pinned = snapshot.threadId ? this.#pins.pinnedIds(snapshot.threadId) : new Set<string>();
+    const regenerations = new Map<string, { ofMessageId: string }>();
+    for (const message of snapshot.messages) {
+      if (message.author === "user" && message.regeneration && message.turnId) {
+        regenerations.set(message.turnId, message.regeneration);
+      }
+    }
+    for (const message of snapshot.messages) {
+      message.pinned = pinned.has(message.id) ? true : undefined;
+      if (message.author === "assistant" && message.turnId) {
+        const regeneration = regenerations.get(message.turnId);
+        if (regeneration) message.regeneration = regeneration;
+      }
+    }
     sortConversationMessages(snapshot.messages);
   }
 
@@ -2478,6 +2580,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #handleNotification(notification: AppServerNotification): void {
+    // COSGRAL W6-BE3: a CLI that is still shutting down says nothing the program acts on (the database is closing).
+    if (this.#stopping) return;
     if (this.#channelRunner.notification(notification)) return;
     const params = notification.params;
     const threadId = getString(params, "threadId");
@@ -2572,7 +2676,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           this.#finishContextCompaction(botId, threadId, status);
           return;
         }
-        void this.#completeTurn(botId, threadId, turnId, status);
+        void this.#completeTurn(botId, threadId, turnId, status).catch((error) => {
+          // A turn that ends while the program stops finds its database closing: nothing to report then.
+          if (!this.#stopping) this.#emitError("turn_completion_failed", error, botId);
+        });
         return;
       }
       case "thread/tokenUsage/updated": {
@@ -2842,6 +2949,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #reserveContextCompaction(botId: string, threadId: string): boolean {
+    // COSGRAL W6-BE3: a turn that ends while the program stops must not start work on a database that is closing.
+    if (this.#stopping) return false;
     const budget = this.#contextBudgets.get(threadId);
     if (!budget?.pending || budget.phase !== "idle" || this.#compactingBots.has(botId)) {
       return false;
@@ -2855,7 +2964,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   async #requestContextCompaction(botId: string, threadId: string): Promise<void> {
     const budget = this.#contextBudgets.get(threadId);
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
-    const client = bot ? this.#clientForBot(bot) : null;
+    const client = bot ? this.#clientForBot(bot, threadId) : null;
     if (budget?.phase !== "requested" || !client || this.#status.phase !== "ready") {
       this.#releaseContextCompaction(botId, threadId);
       return;
@@ -3332,6 +3441,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         case "vault-request":
           if (request.request.botId === botId) add(request.request.threadId);
           break;
+        case "plan":
+          if (request.plan.botId === botId) add(request.plan.threadId);
+          break;
       }
     }
     return counts;
@@ -3398,6 +3510,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       case "draft-preview":
         this.#reportThreadActivity(event.card.botId);
         return;
+      case "plan-changed":
+        this.#reportThreadActivity(event.plan.botId);
+        return;
       case "browser-takeover":
       case "vault-request":
         this.#reportThreadActivity(event.request.botId);
@@ -3420,7 +3535,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   async archiveThread(input: ThreadInput): Promise<ThreadList> {
-    return this.#afterThreadChange(input.botId, await this.#threads.archive(input));
+    const list = await this.#threads.archive(input);
+    // COSGRAL W6-BE3: an archived thread keeps its history but not its context numbers and counters.
+    this.forgetContext(input.botId, input.threadId);
+    return this.#afterThreadChange(input.botId, list);
   }
 
   async restoreThread(input: ThreadInput): Promise<ThreadList> {
@@ -3448,7 +3566,194 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     if (this.#snapshots.get(input.botId)?.threadId === input.threadId) this.#snapshots.delete(input.botId);
     this.#threadActivitySignatures.delete(`${input.botId}\u0000${input.threadId}`);
+    // COSGRAL W6-BE3: its context numbers and counters go with it, and so do its plans and pins.
+    this.forgetContext(input.botId, input.threadId);
+    this.#cards.forgetThreadPlans(input.botId, input.threadId);
+    this.#pins.deleteThread(input.threadId);
     return this.#afterThreadChange(input.botId, list);
+  }
+
+  // --- COSGRAL W6-BE3: actions on a message (spec-w6.md 1E, W29-W35; Q12-Q14) ---
+
+  /** Pins or unpins a message of a thread (default: the shown thread). Works at any time, also while the agent answers. */
+  async pinMessage(input: PinMessageInput): Promise<MessagePin[]> {
+    const bot = this.#contextBot(input.botId);
+    const threadId = input.threadId ?? bot.threadId;
+    if (!threadId || !this.#threads.lookup(bot.id, threadId)) throw new Error("Unknown thread.");
+    const message = this.#messagesOfThread(bot, threadId).find((candidate) => candidate.id === input.messageId);
+    if (!message) throw new Error("That message is not in this thread.");
+    const problem = messageActionProblem("pin", message);
+    if (problem) throw new Error(problem);
+    const pins = this.#pins.set(bot.id, threadId, message.id, input.pinned, new Date().toISOString());
+    this.#emit({ type: "message-pins-changed", botId: bot.id, threadId, pins: structuredClone(pins) });
+    if (threadId === bot.threadId) this.#refreshShownConversation(bot.id);
+    return pins;
+  }
+
+  async listMessagePins(input: ListPinsInput): Promise<MessagePin[]> {
+    const bot = this.#contextBot(input.botId);
+    const threadId = input.threadId ?? bot.threadId;
+    return threadId ? this.#pins.list(threadId) : [];
+  }
+
+  /** Retry (Q12): the agent is asked the same question again; the new answer is ADDED, marked as a regeneration. */
+  async retryMessage(input: RetryMessageInput): Promise<MessageActionResult> {
+    const { bot, snapshot, message } = this.#historyTarget(input, "retry");
+    const sourceIndex = retrySourceIndex(snapshot.messages, message.id);
+    const source = snapshot.messages[sourceIndex];
+    if (!source) throw new Error("There is no message of yours before this answer to ask again.");
+    const index = snapshot.messages.findIndex((candidate) => candidate.id === message.id);
+    const ofMessageId =
+      message.author === "user"
+        ? (snapshot.messages.slice(index + 1).find((candidate) => candidate.author === "assistant")?.id ?? message.id)
+        : message.id;
+    const receipt = await this.#sendAgain(bot, source, { regenerationOf: ofMessageId });
+    this.#scheduleDrain(bot.id);
+    return { removedMessageIds: [], receipt };
+  }
+
+  /**
+   * Edit and send again (Q13): the person's own message gets new text and goes to the agent again. What the conversation
+   * said after it is removed from the thread and from what the model sees; `confirm: true` is needed when there is any.
+   */
+  async editMessage(input: EditMessageInput): Promise<MessageActionResult> {
+    const { bot, threadId, snapshot, message } = this.#historyTarget(input, "edit");
+    const index = snapshot.messages.findIndex((candidate) => candidate.id === message.id);
+    const doomed = snapshot.messages.slice(index).filter(isRemovableRow);
+    if (editNeedsConfirmation(doomed.length - 1) && input.confirm !== true) {
+      const later = doomed.length - 1;
+      throw new Error(`This removes ${later} later message${later === 1 ? "" : "s"}. Confirm to continue.`);
+    }
+    // The new message is queued first (it copies the files of the old one); nothing starts before the history is cut.
+    const receipt = await this.#sendAgain(bot, message, { text: input.text.trim(), edited: true });
+    await this.#removeMessages(bot, threadId, snapshot, doomed);
+    this.#scheduleDrain(bot.id);
+    return { removedMessageIds: doomed.map((candidate) => candidate.id), receipt };
+  }
+
+  /** Delete one message (the person's or the agent's) after confirmation. Never a whole thread. */
+  async deleteMessage(input: DeleteMessageInput): Promise<MessageActionResult> {
+    if (input.confirm !== true) throw new Error("Deleting a message needs confirmation.");
+    const { bot, threadId, snapshot, message } = this.#historyTarget(input, "delete");
+    await this.#removeMessages(bot, threadId, snapshot, [message]);
+    return { removedMessageIds: [message.id], receipt: null };
+  }
+
+  /** The shown thread, its busy check, and the message an action is about. Retry, edit and delete change history. */
+  #historyTarget(input: MessageActionTarget, action: "retry" | "edit" | "delete") {
+    const bot = this.#contextBot(input.botId);
+    const threadId = bot.threadId;
+    if (!threadId) throw new Error("This agent has no conversation yet.");
+    if (input.threadId && input.threadId !== threadId) {
+      throw new Error("Select that thread first: history changes only in the thread that is shown.");
+    }
+    const busy = threadBusyProblem({
+      turnRunning: this.#runningThread(bot.id) === threadId || this.#compactingBots.has(bot.id),
+      busyMessages: this.#mailbox
+        .listQueue(bot.id, threadId)
+        .deliveries.filter((delivery) => ["queued", "starting", "running"].includes(delivery.status)).length,
+    });
+    if (busy) throw new Error(busy);
+    const snapshot = this.#activeThreadSnapshot(bot.id);
+    this.#syncMailboxMessages(snapshot);
+    const message = snapshot.messages.find((candidate) => candidate.id === input.messageId);
+    if (!message) throw new Error("That message is not in this thread.");
+    const problem = messageActionProblem(action, message);
+    if (problem) throw new Error(problem);
+    return { bot, threadId, snapshot, message };
+  }
+
+  /** The messages of a thread as the window would show them (the shown thread live, another one as it is stored). */
+  #messagesOfThread(bot: BotSummary, threadId: string): ConversationMessage[] {
+    if (threadId === bot.threadId) {
+      const shown = this.#activeThreadSnapshot(bot.id);
+      this.#syncMailboxMessages(shown);
+      return shown.messages;
+    }
+    const stored = this.#store.database.readConversation(bot.id, threadId);
+    this.#syncMailboxMessages(stored);
+    return stored.messages;
+  }
+
+  /** Queues the text of `source` as a new message of the person (its files go with it), without starting anything. */
+  async #sendAgain(
+    bot: BotSummary,
+    source: ConversationMessage,
+    options: { text?: string; regenerationOf?: string; edited?: boolean },
+  ): Promise<QueuedMessageReceipt> {
+    await this.ensureProvider(providerForBot(bot));
+    const sourcePaths: string[] = [];
+    for (const attachment of source.attachments ?? []) {
+      const resolved = await this.#mailbox.resolveAttachment(attachment.id);
+      if (resolved) sourcePaths.push(resolved.path);
+    }
+    const receipt = await this.#mailbox.enqueue({
+      sender: { kind: "user" },
+      recipientBotIds: [bot.id],
+      text: options.text ?? source.text,
+      sourcePaths,
+      ...(options.regenerationOf ? { regenerationOf: options.regenerationOf } : {}),
+      ...(options.edited ? { edited: true } : {}),
+    });
+    const snapshot = this.#activeThreadSnapshot(bot.id);
+    this.#syncMailboxMessages(snapshot);
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    this.#emitConversation(snapshot);
+    this.#emitQueue(bot.id);
+    return receipt;
+  }
+
+  /**
+   * Takes messages out of a thread for good: the conversation, the mailbox (with files), the stored rows and the pins.
+   * What the model sees is cut too: the CLI thread that remembers them is retired, and the next turn starts a new one
+   * that is handed only what is left of the history.
+   */
+  async #removeMessages(
+    bot: BotSummary,
+    threadId: string,
+    snapshot: ConversationSnapshot,
+    removed: ConversationMessage[],
+  ): Promise<void> {
+    const ids = removed.map((message) => message.id);
+    const deliveryIds = removed.filter((message) => message.delivery).map((message) => message.id);
+    if (deliveryIds.length > 0) await this.#mailbox.removeDeliveries(bot.id, threadId, deliveryIds);
+    const gone = new Set(ids);
+    for (let index = snapshot.messages.length - 1; index >= 0; index -= 1) {
+      if (gone.has(snapshot.messages[index]?.id ?? "")) snapshot.messages.splice(index, 1);
+    }
+    const persisted = this.#store.database.persistConversation(
+      snapshot,
+      "messages.removed",
+      { messageIds: ids },
+      undefined,
+      ids,
+    );
+    snapshot.revision = persisted.revision;
+    const hadPins = ids.some((id) => this.#pins.pinnedIds(threadId).has(id));
+    this.#pins.removeMessages(threadId, ids);
+    if (hadPins) {
+      this.#emit({ type: "message-pins-changed", botId: bot.id, threadId, pins: this.#pins.list(threadId) });
+    }
+    // The CLI thread still remembers what was removed: retire it. The next turn gets a new one and the handoff of the rest.
+    for (const session of this.#store.database.listProviderSessions(threadId)) {
+      this.#loadedThreads.delete(session.externalSessionId);
+      this.#contextBudgets.delete(session.externalSessionId);
+      this.#clearCompactionTimer(session.externalSessionId);
+    }
+    this.#store.database.deactivateProviderSessions(threadId);
+    this.forgetContext(bot.id, threadId);
+    const last = snapshot.messages.filter((message) => message.author !== "system").at(-1);
+    await this.#store.updatePreview(bot.id, last?.text ?? "");
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    this.#emitConversation(snapshot);
+    this.#emitQueue(bot.id);
+  }
+
+  /** Tells the window the shown conversation again (a mark changed, such as a pin). */
+  #refreshShownConversation(botId: string): void {
+    const shown = this.#activeThreadSnapshot(botId);
+    this.#syncMailboxMessages(shown);
+    this.#emitConversation(shown);
   }
 
   /** Every change of the threads: tell the window the list, the agent (its active thread), the queue and the conversation. */
@@ -3889,13 +4194,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     ].join("\n");
   }
 
-  #clientForBot(bot: BotSummary): AgentClient | null {
+  /** `externalSessionId`: the CLI thread the request is about (W6-BE3); left out: the CLI thread of the active thread. */
+  #clientForBot(bot: BotSummary, externalSessionId?: string): AgentClient | null {
     // COSGRAL W5-K1: a thread lives in the account that made it: requests about it go to that account's CLI process.
     const router = this.#accountRouter;
     const account = accountProviderOf(providerForBot(bot));
     if (router && account) {
-      const session = this.#store.activeProviderSession(bot.id);
-      const own = session ? router.clientForSession(session.externalSessionId, account) : null;
+      const external = externalSessionId ?? this.#store.activeProviderSession(bot.id)?.externalSessionId;
+      const own = external ? router.clientForSession(external, account) : null;
       if (own) return own;
     }
     return this.#clients.get(providerForBot(bot)) ?? null;
@@ -4308,6 +4614,11 @@ function isDynamicToolCall(value: unknown): value is DynamicToolCallParams {
     isString(value.tool) &&
     "arguments" in value
   );
+}
+
+/** COSGRAL W6-BE3: a row an edit may remove. The record of mail already sent to another agent stays: it cannot be unsent. */
+function isRemovableRow(message: ConversationMessage): boolean {
+  return !message.id.startsWith("outbox-");
 }
 
 function renderHandoffMessage(message: ConversationSnapshot["messages"][number]): string {

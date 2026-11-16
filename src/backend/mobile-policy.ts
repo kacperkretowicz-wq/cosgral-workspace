@@ -23,5 +23,8 @@ export function phoneAnswerPolicy(request: PendingAgentRequest): string | null {
       return "Taking over the browser needs the computer.";
     case "vault-request":
       return "Vault items are added and chosen on the computer.";
+    case "plan":
+      // A plan lets the agent do things in the person's name: it is approved where the person can read all of it.
+      return "A plan is approved on the computer for now.";
   }
 }

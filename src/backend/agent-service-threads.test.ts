@@ -1,9 +1,7 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 // COSGRAL W6-BE1: several threads per agent on the real AgentService, with an in-process fake Codex whose turns can be
 // held open. One turn runs per agent at a time; each message, history, queue and card belongs to a thread.
 
-import { randomUUID } from "node:crypto";
-import { EventEmitter } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,15 +13,13 @@ import type {
   ThreadList,
   ThreadSummary,
 } from "@openbot/contracts/ipc";
-import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { AgentClient, AgentProvider } from "./agent-client";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
 import { MailboxStore } from "./mailbox-store";
-import type { AppServerNotification, RequestId, ResponseDecoder, RpcError } from "./protocol";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
+import { firstLine, stringParam, ThreadCli } from "./testing/thread-cli";
 
 let root: string;
 const services: AgentService[] = [];
@@ -49,87 +45,6 @@ afterEach(async () => {
   closeTestDatabases();
   await rm(root, { recursive: true, force: true });
 });
-
-/** A fake Codex: answers at once, or holds a turn open until the test finishes it. */
-class ThreadCli extends EventEmitter implements AgentClient {
-  readonly provider: AgentProvider = "codex";
-  readonly requests: Array<{ method: string; params: unknown }> = [];
-  readonly pending: Array<{ threadId: string; turnId: string; text: string }> = [];
-  hold = false;
-  running = false;
-  #threads = 0;
-
-  start(): void {
-    this.running = true;
-  }
-
-  async stop(): Promise<void> {
-    this.running = false;
-  }
-
-  calls(method: string): unknown[] {
-    return this.requests.filter((request) => request.method === method).map((request) => request.params);
-  }
-
-  /** The text of every turn started, in order. */
-  turnTexts(): string[] {
-    return this.calls("turn/start").map((params) => inputText(params));
-  }
-
-  async request<T>(method: string, params: unknown, decoder: ResponseDecoder<T>): Promise<T> {
-    this.requests.push({ method, params: structuredClone(params) });
-    let result: unknown;
-    if (method === "initialize") result = {};
-    if (method === "account/read")
-      result = { account: { type: "chatgpt", email: "codex@example.com" }, requiresOpenaiAuth: false };
-    if (method === "account/rateLimits/read") result = { rateLimits: null, rateLimitsByLimitId: null };
-    if (method === "model/list") result = { data: ["gpt-5.6-luna", "gpt-5.6-terra"].map((model) => ({ model })) };
-    if (method === "plugin/list") result = { marketplaces: [] };
-    if (method === "thread/start") {
-      this.#threads += 1;
-      result = { thread: { id: `cli-thread-${this.#threads}` } };
-    }
-    if (method === "thread/resume" || method === "thread/read")
-      result = { thread: { id: stringParam(params, "threadId"), turns: [] } };
-    if (method === "thread/compact/start" || method === "turn/interrupt") result = {};
-    if (method === "turn/start") {
-      const threadId = stringParam(params, "threadId");
-      const turnId = randomUUID();
-      const text = inputText(params);
-      setTimeout(() => {
-        if (!this.running) return;
-        this.emit("notification", notification("turn/started", { threadId, turn: { id: turnId } }));
-        if (this.hold) this.pending.push({ threadId, turnId, text });
-        else this.#answer({ threadId, turnId, text });
-      }, 0);
-      result = { turn: { id: turnId, status: "inProgress", items: [] } };
-    }
-    if (result === undefined) throw new Error(`Fake CLI does not implement ${method}.`);
-    return decoder(result);
-  }
-
-  /** Finishes the oldest held turn. */
-  finish(): void {
-    const next = this.pending.shift();
-    if (!next) throw new Error("No held turn.");
-    this.#answer(next);
-  }
-
-  #answer(turn: { threadId: string; turnId: string; text: string }): void {
-    const { threadId, turnId } = turn;
-    const itemId = `${turnId}:assistant`;
-    const answer = `ANSWER_TO[${firstLine(turn.text)}]`;
-    const send = (method: string, params: unknown) => this.emit("notification", notification(method, params));
-    send("item/started", { threadId, turnId, item: { id: itemId, type: "agentMessage", text: "" } });
-    send("item/agentMessage/delta", { threadId, turnId, itemId, delta: answer });
-    send("item/completed", { threadId, turnId, item: { id: itemId, type: "agentMessage", text: answer } });
-    send("turn/completed", { threadId, turn: { id: turnId, status: "completed" } });
-  }
-
-  notify(): void {}
-  respond(_id: RequestId, _result: unknown): void {}
-  respondError(_id: RequestId, _error: RpcError): void {}
-}
 
 interface Fixture {
   service: AgentService;
@@ -498,27 +413,6 @@ function find(list: ThreadList, id: string): ThreadSummary {
 /** The visible text of a conversation, in order (the answers of the fake included). */
 function texts(messages: ConversationMessage[]): string[] {
   return messages.filter((message) => message.text.trim()).map((message) => message.text);
-}
-
-function firstLine(value: string): string {
-  return value.split("\n")[0]?.trim() ?? "";
-}
-
-function inputText(params: unknown): string {
-  if (!isDynamicRecord(params) || !Array.isArray(params.input)) return "";
-  const first = params.input[0];
-  return isDynamicRecord(first) && isString(first.text) ? first.text : "";
-}
-
-function notification(method: string, params: unknown): AppServerNotification {
-  return { method, params };
-}
-
-function stringParam(value: unknown, key: string): string {
-  if (!isDynamicRecord(value)) throw new Error(`${key} is missing.`);
-  const result = value[key];
-  if (!isString(result)) throw new Error(`${key} is missing.`);
-  return result;
 }
 
 function fakeBrowser() {

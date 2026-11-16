@@ -214,6 +214,15 @@ function cardStatus(request: PendingAgentRequest, names: Map<string, string>): I
         { kind: request.kind, requestId: request.requestId },
         request.createdAt,
       );
+    case "plan":
+      return status(
+        "approval",
+        request.plan.botId,
+        names,
+        request.plan.title,
+        { kind: request.kind, requestId: request.plan.requestId },
+        request.plan.createdAt,
+      );
   }
 }
 
@@ -228,6 +237,8 @@ function requestBotId(request: PendingAgentRequest): string {
       return request.card.botId;
     case "prompt":
       return request.botId;
+    case "plan":
+      return request.plan.botId;
   }
 }
 

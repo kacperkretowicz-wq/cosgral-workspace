@@ -86,7 +86,9 @@ import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createEndpointsApi } from "./endpoints-api";
 import { createMarketplaceApi } from "./marketplace-api";
+import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
+import { createPlansApi } from "./plans-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createThreadsApi } from "./threads-api";
@@ -799,6 +801,8 @@ const openbotApi: OpenBotDesktopApi = {
   appData: createAppDataApi(invokeAgent),
   subscriptions: createSubscriptionsApi(invokeAgent),
   threads: createThreadsApi(invokeAgent),
+  plans: createPlansApi(invokeAgent),
+  messageActions: createMessageActionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
   context: createContextApi(invokeAgent),

@@ -37,7 +37,9 @@ import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
+import { isMessagePinsChanged, type MessagePinsChanged } from "./ipc-message-actions";
 import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } from "./ipc-mobile";
+import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import {
   isRemoteDesktopClientState,
@@ -368,6 +370,15 @@ export interface ConversationMessage {
   delivery?: Pick<QueueDelivery, "id" | "status" | "position">;
   exchange?: AgentExchangeSummary;
   reaction?: MessageReaction | null;
+  /** COSGRAL W6-BE3: the person pinned this message (it survives a restart). */
+  pinned?: boolean;
+  /** COSGRAL W6-BE3: the person edited this message and sent it again (the later conversation was removed). */
+  edited?: boolean;
+  /**
+   * COSGRAL W6-BE3 (retry): this message asks for, or is part of, a new answer to the message `ofMessageId`. The old
+   * answer is still in the conversation. The request row is quiet (the same text again); the answer is marked.
+   */
+  regeneration?: { ofMessageId: string };
 }
 
 export const MESSAGE_REACTIONS = ["👍", "👎", "❤️", "😂", "🎉", "😮"] as const;
@@ -660,6 +671,10 @@ export type AgentEvent =
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
   | ({ type: "thread-activity" } & ThreadActivity)
+  /** COSGRAL W6-BE3: a plan was proposed, decided, advanced, stopped or finished (replace the plan with this requestId). */
+  | ({ type: "plan-changed" } & PlanChanged)
+  /** COSGRAL W6-BE3: the pins of one thread changed. */
+  | ({ type: "message-pins-changed" } & MessagePinsChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -811,6 +826,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isThreadsChanged(value);
     case "thread-activity":
       return isThreadActivity(value);
+    case "plan-changed":
+      return isPlanChanged(value);
+    case "message-pins-changed":
+      return isMessagePinsChanged(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":

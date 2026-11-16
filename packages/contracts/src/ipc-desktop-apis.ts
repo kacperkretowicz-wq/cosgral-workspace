@@ -109,7 +109,9 @@ import type {
   SearchAgentMemoriesInput,
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
+import type { MessageActionsDesktopApi } from "./ipc-message-actions";
 import type { MobileDesktopApi } from "./ipc-mobile";
+import type { PlansDesktopApi } from "./ipc-plan";
 import type {
   AcpAgentConfig,
   AcpAgentIdInput,
@@ -655,6 +657,10 @@ export interface OpenBotDesktopApi {
   subscriptions?: SubscriptionsDesktopApi;
   /** COSGRAL W6-BE1: several threads per agent (this computer only). Optional until every mock implements it. */
   threads?: ThreadsDesktopApi;
+  /** COSGRAL W6-BE3: the plan card (this computer only). Optional until every mock implements it. */
+  plans?: PlansDesktopApi;
+  /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
+  messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
   apiKeys?: ApiKeysDesktopApi;
   /** COSGRAL W5-K2: own model endpoints (OpenAI-compatible, Ollama, LM Studio). Optional until every mock implements it. */
