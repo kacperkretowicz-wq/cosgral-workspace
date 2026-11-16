@@ -413,6 +413,18 @@ async function main(): Promise<void> {
             },
             60_000,
           );
+          // The CLI prints the page and the code a moment later: give it up to 15 s.
+          await waitUntil(
+            `${provider}: the CLI printed the sign-in page`,
+            async () => {
+              const found = list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).find(
+                (item) => item.id === id,
+              );
+              login = asRecord(found?.login);
+              return isString(login.url) || isString(login.userCode) || login.phase === "error";
+            },
+            15_000,
+          ).catch(() => undefined);
           const url = isString(login.url) ? new URL(login.url) : null;
           seen.push(
             `${provider}: phase '${String(login.phase)}', message '${String(login.message ?? "").slice(0, 70)}', page ${url ? `${url.origin}${url.pathname}` : "none"}, device code ${isString(login.userCode) ? "shown" : "none"}`,
