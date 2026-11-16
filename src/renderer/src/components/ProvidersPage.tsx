@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AcpAgentConfig,
   AgentModelId,
   AgentModelOption,
@@ -479,7 +479,7 @@ export function FallbackInUse(props: { bots: BotSummary[]; options: FallbackMode
 // ---------------------------------------------------------------------------------------------------------------
 // The page
 
-export function ProvidersPage() {
+export function ProvidersPage(props: {fallbackNotices?: string[]} = {}) {
   const [usage, setUsage] = createSignal<ProviderUsage[]>([]);
   const [acpAgents, setAcpAgents] = createSignal<AcpAgentConfig[]>([]);
   const [bots, setBots] = createSignal<BotSummary[]>([]);
@@ -492,7 +492,7 @@ export function ProvidersPage() {
   const [notice, setNotice] = createSignal("");
   const [saving, setSaving] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
-  const [switches, setSwitches] = createSignal<string[]>([]);
+
   let loadSerial = 0;
   const bot = () => bots().find((candidate) => candidate.id === botId());
   const options = (): FallbackModelOption[] => [
@@ -582,12 +582,7 @@ export function ProvidersPage() {
       if (event.type === "provider-usage-changed") setUsage(event.usage);
       if (event.type === "acp-agents-changed") setAcpAgents(event.agents);
       if (event.type === "bots-changed") setBots(event.bots);
-      if (event.type === "model-fallback") {
-        const name = bots().find((candidate) => candidate.id === event.botId)?.name ?? "An agent";
-        setSwitches((list) =>
-          [`${name} switched from ${event.fromModel} to ${event.toModel}: ${event.reason}`, ...list].slice(0, 5),
-        );
-      }
+
     });
     return () => {
       clearInterval(timer);
@@ -637,9 +632,9 @@ export function ProvidersPage() {
           Fallback models
         </Heading>
         <FallbackInUse bots={bots()} options={options()} />
-        <Show when={switches().length}>
+        <Show when={props.fallbackNotices?.length}>
           <ul class="providers-list" aria-label="Recent switches">
-            <For each={switches()}>
+            <For each={props.fallbackNotices ?? []}>
               {(line) => (
                 <li class="providers-row">
                   <Text tone="secondary">{line}</Text>

@@ -1,3 +1,4 @@
+import { FallbackModelBadge } from "./FallbackModelBadge";
 import {
   attachmentReferenceIds,
   expandAttachmentReferences,
@@ -1555,6 +1556,7 @@ export function Conversation(props: ConversationProps) {
                     </Button>
                   )}
                 </Show>
+                <Show when={props.bot}>{bot=><FallbackModelBadge bot={bot()} models={props.modelOptions}/>}</Show>
               </div>
               <div class="conversation-header-actions no-drag">
                 <Show when={props.bot}>

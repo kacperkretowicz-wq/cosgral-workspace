@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   AccountUsage,
+  AgentModelOption,
   AgentStatus,
   AppInfo,
   AvatarImageInput,
@@ -36,7 +37,8 @@ import {
 } from "./SidebarFolders";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
-import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover } from "./ui";
+import { FallbackModelBadge } from "./FallbackModelBadge";
+import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover, Switch, Text } from "./ui";
 
 export interface NeedsYouSidebarItem {
   botId: string;
@@ -70,6 +72,11 @@ interface SidebarProps {
   /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
   folderActions?: SidebarFolderActions;
   onSelectBot: (botId: string) => void;
+  onSetBotHidden?: (botId: string, hidden: boolean) => Promise<void>;
+  onDuplicateBot?: (botId: string) => Promise<void>;
+  copyNotice?: string;
+  onDismissCopyNotice?: () => void;
+  modelOptions?: AgentModelOption[];
   onMarkBotRead?: (botId: string) => Promise<void>;
   onSelectChannels?: (create?: boolean) => void;
   onSelectNeedsYou?: (botId: string) => void;
@@ -238,6 +245,9 @@ function LogoutIcon() {
 }
 
 export function Sidebar(props: SidebarProps) {
+  const [showHidden, setShowHidden] = createSignal(false);
+  const [agentActionBusy, setAgentActionBusy] = createSignal(false);
+  async function agentAction(change: () => Promise<void>) { if(agentActionBusy()) return; setAgentActionBusy(true); setRowActionError(""); try {await change();} catch(error){setRowActionError(error instanceof Error ? error.message : "Nie udało się zmienić agenta. Ponów akcję z menu.");} finally {setAgentActionBusy(false);} }
   const [readBusy, setReadBusy] = createSignal(false);
   const [rowActionError, setRowActionError] = createSignal("");
   async function markRead(botId: string) {
@@ -271,9 +281,10 @@ export function Sidebar(props: SidebarProps) {
   let accountAvatarInput: HTMLInputElement | undefined;
   const filteredBots = createMemo(() => {
     const normalizedQuery = query().trim().toLowerCase();
+    const visibleBots = props.bots.filter(bot=>showHidden() || bot.hidden !== true);
     return normalizedQuery
-      ? props.bots.filter((bot) => `${bot.name} ${bot.role} ${bot.preview}`.toLowerCase().includes(normalizedQuery))
-      : props.bots;
+      ? visibleBots.filter((bot) => `${bot.name} ${bot.role} ${bot.preview}`.toLowerCase().includes(normalizedQuery))
+      : visibleBots;
   });
   // COSGRAL W1: folders. Folders come before agents at each level; compact mode shows the flat list.
   type FolderDialogState =
@@ -596,6 +607,8 @@ export function Sidebar(props: SidebarProps) {
         </Button>
       </div>
 
+      <Show when={props.copyNotice}><Text as="p" role="status" class="sidebar-copy-notice">{props.copyNotice}<Button size="sm" onClick={props.onDismissCopyNotice}>Zamknij</Button></Text></Show>
+      <Show when={!props.compact && props.onSetBotHidden}><Switch class="sidebar-hidden-switch" label="Pokaż ukryte" checked={showHidden()} onChange={setShowHidden} /></Show>
       <Show when={rowActionError()}>
         <p role="alert" class="sidebar-row-action-error">
           {rowActionError()}
@@ -773,6 +786,7 @@ export function Sidebar(props: SidebarProps) {
                           {
                             "bot-row-active": props.activeBotId === bot.id,
                             "bot-row-needs-you": state()?.kind === "needs-you",
+                            "bot-row-hidden": bot.hidden === true,
                           },
                         ]}
                         aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
@@ -788,6 +802,8 @@ export function Sidebar(props: SidebarProps) {
                           </Show>
                         </span>
                         <span class="bot-row-copy">
+                          <Show when={bot.hidden}><Badge size="sm">Ukryty</Badge></Show>
+                          <FallbackModelBadge bot={bot} models={props.modelOptions} />
                           <span class="bot-row-heading">
                             <span class="bot-row-title">
                               <strong>{bot.name}</strong>
@@ -853,6 +869,8 @@ export function Sidebar(props: SidebarProps) {
                               <span>Move to…</span>
                             </ContextMenu.Item>
                           </Show>
+                          <Show when={props.onSetBotHidden}><ContextMenu.Item disabled={agentActionBusy()} onSelect={()=>void agentAction(()=>props.onSetBotHidden?.(bot.id,!bot.hidden) ?? Promise.resolve())}>{bot.hidden ? "Pokaż" : "Ukryj"}</ContextMenu.Item></Show>
+                          <Show when={props.onDuplicateBot}><ContextMenu.Item disabled={agentActionBusy()} onSelect={()=>void agentAction(()=>props.onDuplicateBot?.(bot.id) ?? Promise.resolve())}>Duplikuj</ContextMenu.Item></Show>
                           <ContextMenu.Separator class="bot-context-separator" />
                           <ContextMenu.Item
                             class="bot-context-danger"

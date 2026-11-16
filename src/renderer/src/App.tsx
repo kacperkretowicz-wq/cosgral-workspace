@@ -206,6 +206,8 @@ const ONBOARDING_PROFILES: Record<string, { role: string; description: string; f
 const LAST_POSITION = 1_000_000;
 
 export function App() {
+  const [agentCopyNotice, setAgentCopyNotice] = createSignal("");
+  const [fallbackNotices, setFallbackNotices] = createSignal<string[]>([]);
   const [botList, setBotList] = createSignal<BotProfile[]>([]);
   const [modelOptions, setModelOptions] = createSignal<AgentModelOption[]>([]);
   const [activeBotId, setActiveBotId] = createSignal("");
@@ -586,6 +588,12 @@ export function App() {
       case "usage-changed":
         setAccountUsage(event.usage);
         return;
+      case "model-fallback": {
+        const bot = botList().find(item => item.id === event.botId);
+        if (bot) updateStored(bot, {...bot, activeModel: event.toModel === bot.model ? undefined : event.toModel});
+        setFallbackNotices(items => [`${bot?.name ?? "Agent"}: ${event.fromModel} → ${event.toModel}. ${event.reason}`, ...items].slice(0,5));
+        return;
+      }
       case "bots-changed":
         applyStoredBots(event.bots);
         return;
@@ -1236,6 +1244,23 @@ export function App() {
     setSettingsRequest({ botId, nonce: Date.now() });
   }
 
+  async function changeBotVisibility(botId: string, hidden: boolean): Promise<void> {
+    const stored = await window.openbot.agent.setBotHidden({botId, hidden});
+    const existing=botList().find(bot=>bot.id===botId);
+    if(existing) updateStored(existing,toBotProfile(stored));
+    if(hidden && activeBotId()===botId){
+      const next=botList().find(bot=>bot.id!==botId && !bot.hidden);
+      if(next) selectBot(next.id); else setAgentPickerOpen(true);
+    }
+  }
+  async function duplicateSidebarBot(sourceBotId: string): Promise<void> {
+    const result=await window.openbot.agent.duplicateBot({sourceBotId});
+    const next=toBotProfile(result.bot);
+    setBotList(items=>items.some(bot=>bot.id===next.id)?items:[...items,createStoredProfile(next)]);
+    selectBot(result.bot.id);
+    setAgentCopyNotice(`Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.${result.warnings.length ? ` Uwaga: ${result.warnings.join(" ")}` : ""}`);
+  }
+
   async function deleteBot(botId: string) {
     try {
       await window.openbot.agent.deleteBot(botId);
@@ -1599,6 +1624,8 @@ export function App() {
     setAgentPickerOpen(false);
     setSettingsRequest(null);
     setBotList([]);
+    setFallbackNotices([]);
+    setAgentCopyNotice("");
     setActiveBotId("");
     setActiveDirectMemberId(null);
     setDirectConversationError(null);
@@ -1858,6 +1885,11 @@ export function App() {
                 localProfile={localProfile()}
                 onSelectBot={selectBot}
                 onMarkBotRead={markSidebarAgentRead}
+                onSetBotHidden={activeServer()?.kind !== "remote" ? changeBotVisibility : undefined}
+                onDuplicateBot={activeServer()?.kind !== "remote" ? duplicateSidebarBot : undefined}
+                copyNotice={agentCopyNotice()}
+                onDismissCopyNotice={()=>setAgentCopyNotice("")}
+                modelOptions={modelOptions()}
                 onSelectChannels={(create) => {
                   setCreateChannel(!!create);
                   setActivePage("agents");
@@ -1931,7 +1963,7 @@ export function App() {
                 <RemoteDesktopPage />
               </Show>
               <Show when={activePage() === "providers"}>
-                <ProvidersPage />
+                <ProvidersPage fallbackNotices={fallbackNotices()} />
               </Show>
               <Show when={activePage() === "phone"}>
                 <MobileConnectPage />
@@ -2113,6 +2145,8 @@ function toBotProfile(stored: BotSummary): BotProfile {
     role: stored.role,
     description: stored.description,
     notifications: stored.notifications,
+    hidden: stored.hidden,
+    activeModel: stored.activeModel,
     model: stored.model,
     reasoningEffort: stored.reasoningEffort,
     threadId: stored.threadId,
@@ -2219,6 +2253,8 @@ function botProfilesEqual(left: BotProfile, right: BotProfile): boolean {
     left.description === right.description &&
     left.notifications === right.notifications &&
     left.model === right.model &&
+    left.activeModel === right.activeModel &&
+    left.hidden === right.hidden &&
     left.reasoningEffort === right.reasoningEffort &&
     left.threadId === right.threadId &&
     left.avatarSeed === right.avatarSeed &&

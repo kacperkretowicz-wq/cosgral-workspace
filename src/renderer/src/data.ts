@@ -39,6 +39,8 @@ export interface BotMessage {
 }
 
 export interface BotProfile {
+  hidden?: boolean;
+  activeModel?: AgentModelId;
   id: string;
   name: string;
   role: string;
