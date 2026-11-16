@@ -8,6 +8,7 @@ import {
   type PermissionResult,
   query,
   type SDKUserMessage,
+  type SpawnOptions,
   tool,
 } from "@anthropic-ai/claude-agent-sdk";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -23,6 +24,7 @@ import { CLI_VERSION_TIMEOUT_MS, type ClaudeCliInfo, CliTimeoutError, CodexCliEr
 import { COMPUTER_NAMESPACE, COMPUTER_TOOL_SPECS } from "./computer-use";
 import { DATA_TOOL_SPECS } from "./data-tools";
 import { EYES_LIMITS, EYES_NAMESPACE, EYES_TOOL_DESCRIPTIONS } from "./eyes-service";
+import { spawnThroughHost } from "./isolation-host";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { MEMORY_TOOL_DESCRIPTIONS } from "./memory-service";
 import {
@@ -111,6 +113,9 @@ interface ClaudeQuery extends AsyncIterable<ClaudeStreamMessage> {
 
 type QueryFactory = (params: Parameters<typeof query>[0]) => ClaudeQuery;
 
+/** COSGRAL W8-BE2: the isolation helper for a conversation in this folder, or null to start its process plainly. */
+export type ClaudeProcessWrap = (cwd: string) => { host: string; maxProcesses: number } | null;
+
 /** COSGRAL W8-BE1: the program's answer to "may this tool run?" (the access level of the agent decides). */
 export type ClaudeToolGate = (
   threadId: string,
@@ -128,6 +133,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
   readonly #pendingServerRequests = new Map<RequestId, PendingServerRequest>();
   #running = false;
   #toolGate: ClaudeToolGate | null = null;
+  #processWrap: ClaudeProcessWrap | null = null;
 
   constructor(cli: ClaudeCliInfo, createQuery: QueryFactory = query, env: NodeJS.ProcessEnv = process.env) {
     super();
@@ -146,6 +152,11 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
    */
   useToolGate(gate: ClaudeToolGate): void {
     this.#toolGate = gate;
+  }
+
+  /** COSGRAL W8-BE2: asked at the start of each conversation, which agent's folder it is for; see `ClaudeProcessWrap`. */
+  useProcessWrap(wrap: ClaudeProcessWrap): void {
+    this.#processWrap = wrap;
   }
 
   start(): void {
@@ -254,6 +265,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       return this.#requestUserInput(threadId, toolInput, options.toolUseID ?? randomUUID());
     };
     const mcpServers = this.#createOpenBotServers(threadId, config.mcpNamespaces);
+    const wrap = this.#processWrap?.(config.cwd) ?? null;
     const claudeQuery = this.#createQuery({
       prompt: input,
       options: {
@@ -275,6 +287,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         additionalDirectories: config.additionalDirectories,
         canUseTool,
         mcpServers,
+        ...(wrap ? { spawnClaudeCodeProcess: (options: SpawnOptions) => spawnThroughHost(wrap, options) } : {}),
         env: { ...this.#env, CLAUDE_AGENT_SDK_CLIENT_APP: "openbot/0.1.0", ...apiKeyEnv("claude") }, // COSGRAL W5-K1 + W5-BE3
       },
     });

@@ -137,6 +137,7 @@ import { DraftStore } from "./draft-store";
 import { EndpointAgentClient } from "./endpoint-client";
 import type { EndpointStore } from "./endpoint-store";
 import { EYES_DYNAMIC_TOOLS, EYES_NAMESPACE, type EyesCallContext } from "./eyes-service";
+import { type IsolationCheck, IsolationService, type IsolationStore, probeIsolation } from "./isolation-service";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
 import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
@@ -385,6 +386,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #approvalRules: ApprovalRulesStore | null = null;
   /** COSGRAL W8-BE1: the access levels of the agents (attached by the program; without it nothing is narrowed). */
   #access: AccessService | null = null;
+  /** COSGRAL W8-BE2: isolation of the processes of agents (attached by the program). */
+  #isolation: IsolationService | null = null;
   /** COSGRAL W8-BE2: the token counter and the budget gate (attached by the program; without it nothing is counted or held). */
   #budgets: BudgetMeter | null = null;
   #budgetTotals: PersistentUsageTracker | null = null;
@@ -970,6 +973,27 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return this.#approvalRules;
   }
 
+  /** COSGRAL W8-BE2: attach the isolation of processes. `folder` is where the helper is built. Call `isolation.initialize()` after. */
+  useIsolation(store: IsolationStore, folder: string, check?: () => Promise<IsolationCheck>): void {
+    this.#isolation = new IsolationService({
+      store,
+      check: check ?? ((): Promise<IsolationCheck> => probeIsolation({ folder })),
+      botIds: () => this.#store.list().map((bot) => bot.id),
+      botName: (botId) => this.#store.list().find((candidate) => candidate.id === botId)?.name ?? null,
+      // Claude starts a program of its own per conversation of an agent; Codex runs one for every agent.
+      ownProcesses: (botId) => {
+        const bot = this.#store.list().find((candidate) => candidate.id === botId);
+        return bot ? providerForBot(bot) === "claude" : false;
+      },
+      confirm: (botId, input) => this.confirmForPerson(botId, input),
+      emit: (event) => this.#emit(event),
+    });
+  }
+
+  get isolation(): IsolationService | null {
+    return this.#isolation;
+  }
+
   /** COSGRAL W8-BE2: attach the budgets. Turns are counted when they end; a new turn starts only while the budget allows. */
   useBudgets(meter: BudgetMeter): void {
     this.#budgets = meter;
@@ -992,6 +1016,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       botName: (botId) => this.#store.list().find((candidate) => candidate.id === botId)?.name ?? null,
       confirm: (botId, input) => this.confirmForPerson(botId, input),
       emit: (event) => this.#emit(event),
+      // W8-BE2 (Q2): isolation on but impossible refuses the disk tools below Full access.
+      isolationRefusal: (botId, level) => this.#isolation?.refusal(botId, level) ?? null,
     });
   }
 
@@ -1386,6 +1412,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W3-KK3: and its "always allow" rules.
     this.#approvalRules?.removeForBot(botId);
     this.#access?.forgetBot(botId);
+    this.#isolation?.forgetBot(botId);
     this.agentSettings.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
@@ -1981,6 +2008,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #bindClient(client: AgentClient): void {
     // COSGRAL W8-BE1: Claude Code asks the program before a file tool or the shell runs; the level of the agent decides.
     if (client instanceof ClaudeAgentClient) {
+      // W8-BE2: the process of a conversation runs in a Job Object when the agent's isolation is on and possible.
+      client.useProcessWrap((cwd) => {
+        const bot = this.#store.list().find((candidate) => candidate.workspacePath === cwd);
+        return bot ? (this.#isolation?.wrapFor(bot.id) ?? null) : null;
+      });
       client.useToolGate(async (threadId, tool, input) => {
         const botId = this.#threadToBot.get(threadId);
         if (!botId || !this.#access) return { behavior: "allow" };
@@ -2490,6 +2522,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   async #startDelivery(context: DeliveryContext): Promise<void> {
     const { delivery, managedAttachments } = context;
     try {
+      // COSGRAL W8-BE2: no turn starts before the first check of what this computer can isolate.
+      await this.#isolation?.ready();
       await this.#mailbox.markStarting(delivery.id);
       this.#emitQueue(delivery.recipientBotId);
       const bot = this.#selectTurnModel(await this.#store.getOrCreate(delivery.recipientBotId), delivery.id);

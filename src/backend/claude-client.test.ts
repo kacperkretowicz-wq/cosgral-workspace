@@ -220,6 +220,44 @@ describe("ClaudeAgentClient", () => {
     await gated.stop();
   });
 
+  // COSGRAL W8-BE2: the process of a Claude conversation of an agent whose isolation is on runs inside a Job Object.
+  it("starts the Claude process through the isolation helper only when the program hands one out for this folder", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    const spawners: Array<unknown> = [];
+    const factory = (params: Parameters<ConstructorParameters<typeof ClaudeAgentClient>[1] & object>[0]) => {
+      spawners.push(params.options?.spawnClaudeCodeProcess);
+      return new TestQuery(new TestQueue<TestStreamMessage>());
+    };
+    const start = (client: ClaudeAgentClient) =>
+      client.request(
+        "thread/start",
+        { cwd: root, model: "claude-sonnet-5", developerInstructions: "x", runtimeWorkspaceRoots: [root] },
+        decodeThreadResponse,
+      );
+    const asked: string[] = [];
+    const plain = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, factory);
+    plain.start();
+    await start(plain);
+    const wrapped = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, factory);
+    wrapped.useProcessWrap((cwd) => {
+      asked.push(cwd);
+      return { host: "C:\\host\\cosgral-job-host.exe", maxProcesses: 512 };
+    });
+    wrapped.start();
+    await start(wrapped);
+    const declined = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, factory);
+    declined.useProcessWrap(() => null);
+    declined.start();
+    await start(declined);
+    expect(spawners[0]).toBeUndefined();
+    expect(spawners[1]).toBeInstanceOf(Function);
+    expect(asked).toEqual([root]);
+    expect(spawners[2]).toBeUndefined();
+    await plain.stop();
+    await wrapped.stop();
+    await declined.stop();
+  });
+
   it("gives Claude the agent eyes tools next to the browser and teammate tools", async () => {
     root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
     let serverNames: string[] = [];
