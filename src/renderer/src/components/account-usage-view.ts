@@ -1,9 +1,16 @@
-import type { AccountUsageWindow, ProviderAccount, ProviderUsage } from "@openbot/contracts/ipc";
+import type {
+  AccountLimitOutcome,
+  AccountLimitReached,
+  AccountSwitched,
+  AccountUsageWindow,
+  ProviderAccount,
+  ProviderUsage,
+} from "@openbot/contracts/ipc";
 
 /**
  * W5-UI2a view models for account usage and limit cards.
  * Built on ProviderAccount + AccountUsageWindow / ProviderUsage from this branch.
- * KAPI W5-K1 has not shipped a per-account usage IPC event yet — guessed fields are marked.
+ * The limit and switch cards are built from the W5-K1 events (account-limit-reached, account-switched).
  */
 
 export type AccountLimitState = "ok" | "exhausted" | "unknown";
@@ -29,23 +36,80 @@ export interface AccountUsageView {
   limitedUntil: string | null;
 }
 
-/** Guessed until K1 defines a switch event; used by conversation cards only. */
+/** W5-K1: what the conversation shows when an account hit its usage limit (built from `account-limit-reached`). */
 export interface AccountLimitReachedView {
   reason: string;
   exhaustedAccountLabel: string;
-  /** Null when every pool account is exhausted. */
-  switchedToAccountLabel: string | null;
+  /** "switched": the next account takes the turn; "asks": it had changed something, a card asks first; "exhausted": no account is free. */
+  outcome: AccountLimitOutcome;
+  /** The account that takes over (or would, after the person's answer); null when none is free. */
+  nextAccountLabel: string | null;
+  /** Unix seconds; null when there is none. */
   resetsAt: number | null;
-  /** True only when we switched away and a first-pool account can be restored after reset. */
-  canReturnAfterReset: boolean;
-  returnAccountLabel: string | null;
+  /** True when the provider gave no reset time and the program assumed one. */
+  resetsAtAssumed: boolean;
 }
 
-/** Guessed until K1 defines a switch-notice event. */
+/** W5-K1: the notice that a turn now runs on another account (built from `account-switched`). */
 export interface AccountSwitchedView {
   toAccountLabel: string;
   fromAccountLabel: string | null;
   reason: string | null;
+}
+
+/** A card in the open conversation of one agent; dismissed by the person. */
+export type AccountNotice = { id: string; botId: string } & (
+  | { kind: "limit"; view: AccountLimitReachedView }
+  | { kind: "switched"; view: AccountSwitchedView }
+);
+
+const MAX_NOTICES_PER_AGENT = 3;
+
+function limitReason(event: AccountLimitReached): string {
+  if (event.outcome === "asks") {
+    return `${event.accountLabel} reached its usage limit after this turn had already changed something. Nothing was repeated on its own.`;
+  }
+  if (event.outcome === "exhausted") {
+    return `${event.accountLabel} reached its usage limit and no other account in the pool is free.`;
+  }
+  return `${event.accountLabel} reached its usage limit before this turn did anything.`;
+}
+
+export function limitReachedView(event: AccountLimitReached): AccountLimitReachedView {
+  const resets = Date.parse(event.resetsAt);
+  return {
+    reason: limitReason(event),
+    exhaustedAccountLabel: event.accountLabel,
+    outcome: event.outcome,
+    nextAccountLabel: event.nextAccountLabel,
+    resetsAt: Number.isNaN(resets) ? null : Math.floor(resets / 1000),
+    resetsAtAssumed: event.resetsAtAssumed,
+  };
+}
+
+export function switchedView(event: AccountSwitched): AccountSwitchedView {
+  return {
+    toAccountLabel: event.toLabel,
+    fromAccountLabel: event.fromLabel,
+    reason:
+      event.reason === "returned"
+        ? "Back on the first account: its limit has passed."
+        : "Switched because the previous account reached its usage limit.",
+  };
+}
+
+/** Adds a notice of a K1 event; the newest first, a few per agent. */
+export function addAccountNotice(
+  notices: readonly AccountNotice[],
+  event: ({ type: "account-limit-reached" } & AccountLimitReached) | ({ type: "account-switched" } & AccountSwitched),
+  id: string,
+): AccountNotice[] {
+  const next: AccountNotice =
+    event.type === "account-limit-reached"
+      ? { id, botId: event.botId, kind: "limit", view: limitReachedView(event) }
+      : { id, botId: event.botId, kind: "switched", view: switchedView(event) };
+  const same = notices.filter((notice) => notice.botId === event.botId).slice(0, MAX_NOTICES_PER_AGENT - 1);
+  return [next, ...same, ...notices.filter((notice) => notice.botId !== event.botId)];
 }
 
 export function clampPercent(value: number | null): number | null {

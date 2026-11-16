@@ -5,6 +5,7 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
   const state = useAccounts();
   const accounts = () => state.snapshot()?.accounts.filter((a) => a.provider === props.provider) ?? [];
   const assigned = () => state.snapshot()?.assignments.find((a) => a.botId === props.botId)?.accountId ?? "";
+  const answeringWith = () => state.snapshot()?.active?.find((item) => item.botId === props.botId)?.label ?? "";
   return (
     <section aria-label="Konto agenta">
       <Show
@@ -52,6 +53,13 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
             </For>
           </NativeSelect>
         </Field>
+        <Show when={answeringWith()}>
+          {(label) => (
+            <Text as="p" tone="secondary" role="status">
+              Teraz odpowiada kontem: {label()}
+            </Text>
+          )}
+        </Show>
         <Show when={!window.openbot.subscriptions}>
           <Text as="p" tone="muted">
             Wybór kont niedostępny w tej wersji.

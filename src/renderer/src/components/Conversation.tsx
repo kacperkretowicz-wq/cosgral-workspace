@@ -34,10 +34,12 @@ import { normalizeAvatarFile } from "../avatar-image";
 import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
 import type { PendingCard } from "../pending-cards";
+import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
+import type { AccountNotice } from "./account-usage-view";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ChoiceCard } from "./ConversationPrompts";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
@@ -127,6 +129,9 @@ interface ConversationProps {
   /** COSGRAL: agents that are looking at a window, screen or camera right now. */
   eyes?: AgentEyesState;
   onStopEyes?: (input: StopAgentEyesInput) => void;
+  /** COSGRAL W5-K1: account limit and switch cards of this agent. */
+  accountNotices?: AccountNotice[];
+  onDismissAccountNotice?: (id: string) => void;
   onCloseAgentPicker: () => void;
   onCreateAgent: () => void;
   onSelectAgent: (botId: string) => void;
@@ -1690,6 +1695,24 @@ export function Conversation(props: ConversationProps) {
       </header>
 
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
+
+      <Show when={(props.accountNotices?.length ?? 0) > 0}>
+        <section class="account-notices" aria-label="Account notices">
+          <For each={props.accountNotices}>
+            {(notice) =>
+              notice.kind === "limit" ? (
+                <AccountLimitReachedCard
+                  view={notice.view}
+                  nowMs={Date.now()}
+                  onDismiss={() => props.onDismissAccountNotice?.(notice.id)}
+                />
+              ) : (
+                <AccountSwitchedCard view={notice.view} onDismiss={() => props.onDismissAccountNotice?.(notice.id)} />
+              )
+            }
+          </For>
+        </section>
+      </Show>
 
       <Show when={chatSearchOpen()}>
         <ChatSearch

@@ -1,4 +1,4 @@
-import type { ManagedCliState } from "@openbot/contracts/ipc";
+import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 // W5-BE2: the API also has account methods, so the CLI actions are named here (not "everything but listCli").

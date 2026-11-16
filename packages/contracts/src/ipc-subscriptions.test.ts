@@ -130,3 +130,60 @@ describe("managed CLI contract (W5-BE1)", () => {
     expect(() => parseManagedCliSettingsInput({ id: "other" })).toThrow();
   });
 });
+
+describe("account switching contract (W5-K1)", () => {
+  const limit = {
+    type: "account-limit-reached",
+    botId: "chief",
+    provider: "codex",
+    accountId: "acc-aaaaaaaa",
+    accountLabel: "Work",
+    resetsAt: "2026-11-16T13:00:00.000Z",
+    resetsAtAssumed: false,
+    outcome: "switched",
+    nextAccountId: "acc-bbbbbbbb",
+    nextAccountLabel: "Home",
+    afterAction: false,
+  };
+  const switched = {
+    type: "account-switched",
+    botId: "chief",
+    provider: "claude",
+    fromAccountId: "system-claude",
+    fromLabel: "Claude",
+    toAccountId: "acc-cccccccc",
+    toLabel: "Claude B",
+    reason: "usage-limit",
+  };
+
+  it("accepts the limit and switch events and the active account of an agent", () => {
+    expect(isAgentEvent(limit)).toBe(true);
+    expect(isAgentEvent({ ...limit, outcome: "exhausted", nextAccountId: null, nextAccountLabel: null })).toBe(true);
+    expect(isAgentEvent(switched)).toBe(true);
+    expect(isAgentEvent({ ...switched, reason: "returned" })).toBe(true);
+    const snapshot = {
+      accounts: [account],
+      pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true },
+      assignments: [],
+      active: [{ botId: "chief", accountId: account.id, label: "Work" }],
+    };
+    expect(isAccountsSnapshot(snapshot)).toBe(true);
+    expect(isAgentEvent({ type: "accounts-changed", ...snapshot })).toBe(true);
+  });
+
+  it("refuses events that do not fit (unknown outcome or reason, missing fields)", () => {
+    expect(isAgentEvent({ ...limit, outcome: "retry" })).toBe(false);
+    expect(isAgentEvent({ ...limit, afterAction: "no" })).toBe(false);
+    expect(isAgentEvent({ ...limit, botId: undefined })).toBe(false);
+    expect(isAgentEvent({ ...switched, reason: "because" })).toBe(false);
+    expect(isAgentEvent({ ...switched, toLabel: 4 })).toBe(false);
+    expect(
+      isAccountsSnapshot({
+        accounts: [account],
+        pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true },
+        assignments: [],
+        active: [{ botId: "chief", accountId: 5, label: "Work" }],
+      }),
+    ).toBe(false);
+  });
+});

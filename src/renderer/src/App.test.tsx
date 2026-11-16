@@ -3465,6 +3465,50 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
     await waitFor(() => expect(screen.queryByText(/^model zapasowy:/)).toBeNull());
   });
+  // COSGRAL W5-K1: the limit and switch events of the engine become cards in the open conversation of that agent.
+  it("shows account limit and switch cards in the conversation of that agent only, and dismisses them", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief", level: 1 });
+    emitAgentEvent?.({
+      type: "account-limit-reached",
+      botId: "chief",
+      provider: "codex",
+      accountId: "acc-aaaaaaaa",
+      accountLabel: "Work Codex",
+      resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+      resetsAtAssumed: false,
+      outcome: "switched",
+      nextAccountId: "acc-bbbbbbbb",
+      nextAccountLabel: "Home Codex",
+      afterAction: false,
+    });
+    emitAgentEvent?.({
+      type: "account-switched",
+      botId: "chief",
+      provider: "codex",
+      fromAccountId: "acc-aaaaaaaa",
+      fromLabel: "Work Codex",
+      toAccountId: "acc-bbbbbbbb",
+      toLabel: "Home Codex",
+      reason: "usage-limit",
+    });
+    emitAgentEvent?.({
+      type: "account-switched",
+      botId: "someone-else",
+      provider: "codex",
+      fromAccountId: "acc-aaaaaaaa",
+      fromLabel: "Work Codex",
+      toAccountId: "acc-cccccccc",
+      toLabel: "Other agent's account",
+      reason: "usage-limit",
+    });
+    expect(await screen.findByRole("region", { name: "Account limit reached" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Switched to account Home Codex" })).toBeInTheDocument();
+    expect(screen.queryByText(/Other agent's account/)).toBeNull();
+    const notices = screen.getByRole("region", { name: "Account notices" });
+    for (const button of within(notices).getAllByRole("button", { name: "Dismiss" })) await fireEvent.click(button);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Account notices" })).toBeNull());
+  });
   it("duplicates an agent, selects the new conversation and keeps partial warnings visible", async () => {
     window.openbot.agent.duplicateBot = vi.fn().mockResolvedValue({
       bot: { ...BOTS[0], id: "copy-chief", name: "Chief kopia" },
