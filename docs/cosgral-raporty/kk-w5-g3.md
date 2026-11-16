@@ -4,7 +4,7 @@ Data: 16.11.2026. Gałąź `team/kk/w5-g3b` (od integracji `b516ac19f`: G2b, BE7
 
 ## Wynik w jednej linii
 
-**Nowy instalator (`COSGRAL Workspace-0.2.0-x64.exe`, 108 MB, zbudowany 12:40) został zainstalowany na wierzch poprzedniego: dane i pobrane CLI zostały bez zmiany (6 plików porównanych po SHA-256), Codex 0.169.0 i Claude 2.1.325 uruchamiają się, bez nowej karty pobrania i bez błędów konsoli. Kroki W5 na integracji przeszły (28/28, po dodaniu kroków UI8 wynik końcowy niżej), `sandbox:e2e` 30 ok / 0 FAIL / 0 findings. `sandbox-installed.ts`: za drugim razem 10/10, za pierwszym 9/10 (I10, przejściowo, patrz pkt 3).**
+**Nowy instalator (`COSGRAL Workspace-0.2.0-x64.exe`, 108 MB, zbudowany 12:40) został zainstalowany na wierzch poprzedniego: dane i pobrane CLI zostały bez zmiany (6 plików porównanych po SHA-256), Codex 0.169.0 i Claude 2.1.325 uruchamiają się, bez nowej karty pobrania i bez błędów konsoli. Kroki W5 na integracji przeszły (28/28, po dodaniu kroków UI8 końcowo 29/29), `sandbox:e2e` 30 ok / 0 FAIL / 0 findings. `sandbox-installed.ts`: za drugim razem 10/10, za pierwszym 9/10 (I10, przejściowo, patrz pkt 3).**
 
 ## 1. Wyniki
 
@@ -15,7 +15,7 @@ Data: 16.11.2026. Gałąź `team/kk/w5-g3b` (od integracji `b516ac19f`: G2b, BE7
 | `sandbox:e2e` (po poprawce) | **30 ok / 0 FAIL / 0 findings** | `kk-g3b-e2e2.log` |
 | Kroki W5 (`COSGRAL_MODE=w5`) | **28/28 ok**, 0 błędów konsoli (z F02n) | `kk-g3b-w5.log` |
 | Kroki UI8 dopisane (`4b0b932ec`) | F02n sprawdza też spokojną kartę „Connection problem” (bez „limit” i „Continue”, zamykana), nowy F03r przełącznik „Return to the first account after the limit resets” (domyślnie włączony, zapis „wyłączony” i z powrotem, limit zostaje): **2/2 ok** | `kk-g3b-ui8.log` |
-| Pełny przebieg W5 z krokami UI8 | patrz wynik w kanale / uzupełnienie niżej | `kk-g3b-w5b.log` |
+| Pełny przebieg W5 z krokami UI8 (końcowy kod) | **29/29 ok**, 0 błędów konsoli | `kk-g3b-w5b.log` |
 | `bun run dist:win` | zielone, instalator 108 054 025 B | `kk-g3b-dist.log` |
 | Instalacja cicha na wierzch (`/S`, bieżący użytkownik, bez UAC) | exit 0 w 20 s | archiwum programu zmienione: `…0d9b725835` → `…ed71731551` |
 
@@ -47,4 +47,4 @@ Program **zostawiłem zainstalowany w nowej wersji** (`%LOCALAPPDATA%\Programs\c
 2. Odinstalowania po aktualizacji i prawdziwego profilu właściciela: nie uruchamiałem zainstalowanego programu na jego profilu (żadnych logowań ani danych właściciela).
 3. Czystego konta Windows i prawdziwych logowań (tylko właściciel).
 4. Kroku UI8 w Storybook (to praca UI), pełnego `bun run check`, SmartScreen (instalator bez podpisu).
-5. Procesów logowania pomocniczych po I10: sprawdzam na końcu (wynik w kanale).
+5. Po przebiegach nie zostały procesy programu ani pomocnicze procesy logowania (sprawdzone na końcu).
