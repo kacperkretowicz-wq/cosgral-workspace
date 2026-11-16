@@ -27,7 +27,7 @@ Decyzje lidera: Q16 okna nie wracają po restarcie, Q17 osobne okno to nie dok.
 3. Odmowa z czytelnym powodem: nieznany agent, agent bez rozmowy, nieznany wątek, za dużo okien.
 4. Zamknięcie okna (przez osobę lub `close`) usuwa tylko to okno; nie dotyka wątku ani tury (ta klasa nie ma drogi do silnika poza pytaniem o nazwy i wątki, W38). Zamknięty wątek można otworzyć od nowa.
 5. `live`, tytuł i życie okna idą za zdarzeniami silnika: przełączenie agenta na inny wątek = stare okno `live: false` (nie miesza wątków), powrót = znów `live`; zmiana nazwy zmienia tytuł okna; wątek usunięty na zawsze zamyka jego okno; zarchiwizowany je zostawia; usunięty agent zabiera swoje okna; koniec programu zamyka okna po cichu.
-4. Fokus okna jest śledzony.
+6. Fokus okna jest śledzony i widać go na liście.
 
 **Okno Electron (`conversation-windows-electron.ts`):** ten sam preload i te same ustawienia zaufania co główne okno (sandbox, bez node, `will-navigate` tylko dla zaufanego adresu, bez nowych okien z strony, tytuł okna należy do programu), dostaje zdarzenia agenta tego komputera jak dok.
 
@@ -51,5 +51,5 @@ Decyzje lidera: Q16 okna nie wracają po restarcie, Q17 osobne okno to nie dok.
 1. **Nie uruchamiałem Electrona**: prawdziwego otwarcia, fokusu, zamknięcia i `current()` w oknie nie widziałem. Do sprawdzenia po `GO-W6.txt` (krok odbioru: otwarcie, drugie otwarcie tego samego, dwa wątki, zamknięcie w trakcie tury).
 2. **Okno nieaktywnego wątku nie pokazuje wiadomości.** `readConversation(botId)` czyta tylko wątek aktywny, więc dopóki silnik (Backend, W6-BE3) nie umie czytać innych wątków, okno wątku, który nie jest aktywny, mówi to zamiast pokazywać cudze wiadomości. To jest granica, nie usterka okna; kontrakt (`live`) jest na to gotowy.
 3. **Decyzje:** limit 8 okien (spec: „do ustalenia”), okno zarchiwizowanego wątku zostaje otwarte, okna nie wracają po restarcie (Q16).
-4. Tekst i wygląd okna to szkic; kroki z `parseAgentRequest` itd. nie zmieniły `agent-service.ts` (zgodnie ze zleceniem).
+4. Tekst i wygląd okna to szkic do przejęcia przez UI Designera. `agent-service.ts` nie był zmieniany (zgodnie ze zleceniem).
 5. Konflikty przy scalaniu: `ipc-channels.ts`, `ipc-conversation.ts`, `ipc-desktop-apis.ts`, `ipc.ts`, `preload/index.ts`, `mock-openbot.ts`, `main/index.ts`, `local-only-ipc.test.ts`: zostawić obie strony.
