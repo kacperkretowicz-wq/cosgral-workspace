@@ -94,6 +94,7 @@ import {
 } from "./fixtures";
 import { createMockAccounts } from "./mock-accounts";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
+import { createMockBudgets } from "./mock-budgets";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
@@ -1355,6 +1356,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     windows: createMockWindows((event) => emitAgentEvent(event)),
     // COSGRAL W8-KK1: client spaces (demo; `simulate.restarted` plays the restart after a switch).
     spaces: createMockSpaces((event) => emitAgentEvent(event)),
+    // COSGRAL W8-KK2: budgets (demo; `simulate.record` plays a finished turn).
+    budgets: createMockBudgets((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

@@ -34,6 +34,7 @@ import type { AppDataDesktopApi } from "./ipc-app-data";
 import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
+import type { BudgetsDesktopApi } from "./ipc-budgets";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type { ContextDesktopApi } from "./ipc-context";
 import type {
@@ -673,6 +674,8 @@ export interface OpenBotDesktopApi {
   windows?: WindowsDesktopApi;
   /** COSGRAL W8-KK1: client spaces (separate data folders; a switch restarts the program). Optional until every mock implements it. */
   spaces?: SpacesDesktopApi;
+  /** COSGRAL W8-KK2: budgets and the cost counter (tokens, dollars only from reported prices). Optional until every mock implements it. */
+  budgets?: BudgetsDesktopApi;
 }
 
 /**

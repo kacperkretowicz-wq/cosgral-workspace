@@ -6,6 +6,7 @@ export * from "./ipc-app-data";
 export * from "./ipc-approval-rules";
 export * from "./ipc-attention";
 export * from "./ipc-browser";
+export * from "./ipc-budgets";
 export * from "./ipc-channels";
 export * from "./ipc-computer-use";
 export * from "./ipc-context";
