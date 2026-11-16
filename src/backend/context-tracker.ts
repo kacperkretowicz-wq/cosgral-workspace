@@ -167,12 +167,15 @@ export interface ContextTrackerOptions {
   store: ContextStore;
   emit: (event: AgentEvent) => void;
   now?: () => Date;
+  /** COSGRAL W6-BE3: whether a thread may be compacted at all (not an archived or a missing one). Left out: yes. */
+  canCompactThread?: (botId: string, threadId: string) => boolean;
 }
 
 export class ContextTracker {
   readonly #store: ContextStore;
   readonly #emit: (event: AgentEvent) => void;
   readonly #now: () => Date;
+  readonly #canCompactThread: (botId: string, threadId: string) => boolean;
   /** Threads with a compaction running or waiting for the running turn: not kept in the database (a restart ends it). */
   readonly #compacting = new Set<string>();
   /** What the window was last told per thread, so an unchanged report does not wake it again. */
@@ -182,6 +185,7 @@ export class ContextTracker {
     this.#store = options.store;
     this.#emit = options.emit;
     this.#now = options.now ?? (() => new Date());
+    this.#canCompactThread = options.canCompactThread ?? (() => true);
   }
 
   settings(): ContextSettings {
@@ -205,7 +209,7 @@ export class ContextTracker {
   state(botId: string, threadId: string, provider: ContextProvider): ContextState {
     const stored = this.#store.get(botId, threadId);
     const compacting = this.#compacting.has(key(botId, threadId));
-    const canCompact = canCompactProvider(provider);
+    const canCompact = canCompactProvider(provider) && this.#canCompactThread(botId, threadId);
     if (!stored || stored.used === null || stored.limit === null) {
       return {
         ...unavailableContextState(botId, threadId, unavailableReasonFor(provider), canCompact),

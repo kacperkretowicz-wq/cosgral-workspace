@@ -130,6 +130,13 @@ export class ThreadStore {
     return bot && meta ? this.#summary(bot, meta, this.#context(bot)) : null;
   }
 
+  /** Whether a thread belongs to this agent, and whether it is archived. Cheap: reads no history. Null when it does not exist. */
+  lookup(botId: string, threadId: string): { archived: boolean } | null {
+    const bot = this.#deps.bots.list().find((candidate) => candidate.id === botId);
+    const meta = bot ? this.#knownMeta(bot, threadId) : null;
+    return meta ? { archived: meta.archivedAt !== null } : null;
+  }
+
   /** The title of one thread without reading its history (for the agent row); null when it does not exist. */
   title(botId: string, threadId: string): string | null {
     const bot = this.#deps.bots.list().find((candidate) => candidate.id === botId);

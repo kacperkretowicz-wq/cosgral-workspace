@@ -69,6 +69,7 @@ import {
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
+  unavailableContextState,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import {
@@ -446,6 +447,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#context = new ContextTracker({
       store: new ContextStore(store.database),
       emit: (event) => this.#emit(event),
+      // COSGRAL W6-BE3: an archived thread, or one that does not exist, is not compacted. (No thread yet: nothing to refuse.)
+      canCompactThread: (botId, threadId) =>
+        threadId === "" || this.#threads.lookup(botId, threadId)?.archived === false,
     });
     this.#threads = new ThreadStore({
       database: store.database,
@@ -931,6 +935,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const publicId = threadId ?? bot.threadId;
     // A new agent without a conversation yet has nothing to report.
     if (!publicId) return this.#context.state(bot.id, "", providerForBot(bot));
+    // COSGRAL W6-BE3: a thread other than the one shown is answered for that thread, from what is stored. A thread that does
+    // not exist (or is another agent's) is "unavailable", not an error: the window may ask about a thread just deleted.
+    if (!this.#threads.lookup(bot.id, publicId)) {
+      return unavailableContextState(bot.id, publicId, "This thread does not exist.", false);
+    }
     return this.#context.state(bot.id, publicId, providerForBot(bot));
   }
 
@@ -944,10 +953,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const provider = providerForBot(bot);
     const publicId = threadId ?? bot.threadId;
     if (!publicId) throw new Error("There is nothing to compact yet: this agent has no conversation.");
-    if (publicId !== bot.threadId) throw new Error("Only the conversation shown for this agent can be compacted.");
+    // COSGRAL W6-BE3: any thread of the agent can be asked for, but only one that is not archived.
+    const found = this.#threads.lookup(bot.id, publicId);
+    if (!found) throw new Error("Unknown thread.");
+    if (found.archived) throw new Error("This thread is archived. Restore it before compacting.");
+    const shown = publicId === bot.threadId;
     if (!canCompactProvider(provider))
       throw new Error("This agent's provider compacts its own context; it cannot be asked to.");
-    const session = this.#store.activeProviderSession(bot.id);
+    const session = this.#store.activeProviderSession(bot.id, publicId);
     const external = session?.externalSessionId;
     const known = this.#context.state(bot.id, publicId, provider);
     if (!external || known.source !== "reported" || known.used === null || known.limit === null) {
@@ -964,6 +977,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     };
     this.#contextBudgets.set(external, budget);
     if (budget.manual || budget.phase !== "idle" || this.#compactingBots.has(bot.id)) return known;
+    if (!shown) return this.#compactIdleThread(bot, publicId, external, budget);
     budget.manual = true;
     budget.pending = true;
     this.#setContextCompacting(bot.id, external, true);
@@ -976,6 +990,39 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       await this.#requestContextCompaction(bot.id, external);
     }
     return this.#context.state(bot.id, publicId, provider);
+  }
+
+  /**
+   * COSGRAL W6-BE3: compacting a thread that is not on screen. One turn runs per agent at a time, so it is done only when
+   * the agent is idle (a turn in any thread, or another compaction, refuses it) and the CLI thread is resumable: it is
+   * resumed first when the program does not have it loaded (after a restart).
+   */
+  async #compactIdleThread(
+    bot: BotSummary,
+    publicId: string,
+    external: string,
+    budget: ThreadContextBudget,
+  ): Promise<ContextState> {
+    if (this.#runningThread(bot.id) !== null || this.#drainingBots.has(bot.id) || this.#compactingBots.has(bot.id)) {
+      throw new Error("This agent is busy with another thread. Try again when its turn has ended.");
+    }
+    const client = this.#clientForBot(bot, external);
+    if (!client || this.#status.phase !== "ready") throw new Error("The agent is not ready to compact this thread.");
+    // The CLI's answers about this thread are told to this agent (after a restart nothing has registered it yet).
+    this.#threadToBot.set(external, bot.id);
+    if (!this.#loadedThreads.has(external)) {
+      try {
+        await this.#resumeThread(bot, client, external);
+      } catch (error) {
+        throw new Error(
+          `This thread could not be resumed to compact it: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    budget.manual = true;
+    budget.pending = true;
+    if (this.#reserveContextCompaction(bot.id, external)) await this.#requestContextCompaction(bot.id, external);
+    return this.#context.state(bot.id, publicId, providerForBot(bot));
   }
 
   contextSettings(): ContextSettings {
@@ -1003,7 +1050,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** Tells the context tracker (and so the window) that a compaction of the provider's thread runs or ended. */
   #setContextCompacting(botId: string, externalThreadId: string, on: boolean): void {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
-    if (!bot) return;
+    if (!bot || this.#stopping) return;
     this.#context.setCompacting(botId, this.#publicThreadId(botId, externalThreadId), providerForBot(bot), on);
   }
 
@@ -2478,6 +2525,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #handleNotification(notification: AppServerNotification): void {
+    // COSGRAL W6-BE3: a CLI that is still shutting down says nothing the program acts on (the database is closing).
+    if (this.#stopping) return;
     if (this.#channelRunner.notification(notification)) return;
     const params = notification.params;
     const threadId = getString(params, "threadId");
@@ -2572,7 +2621,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           this.#finishContextCompaction(botId, threadId, status);
           return;
         }
-        void this.#completeTurn(botId, threadId, turnId, status);
+        void this.#completeTurn(botId, threadId, turnId, status).catch((error) => {
+          // A turn that ends while the program stops finds its database closing: nothing to report then.
+          if (!this.#stopping) this.#emitError("turn_completion_failed", error, botId);
+        });
         return;
       }
       case "thread/tokenUsage/updated": {
@@ -2842,6 +2894,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #reserveContextCompaction(botId: string, threadId: string): boolean {
+    // COSGRAL W6-BE3: a turn that ends while the program stops must not start work on a database that is closing.
+    if (this.#stopping) return false;
     const budget = this.#contextBudgets.get(threadId);
     if (!budget?.pending || budget.phase !== "idle" || this.#compactingBots.has(botId)) {
       return false;
@@ -2855,7 +2909,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   async #requestContextCompaction(botId: string, threadId: string): Promise<void> {
     const budget = this.#contextBudgets.get(threadId);
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
-    const client = bot ? this.#clientForBot(bot) : null;
+    const client = bot ? this.#clientForBot(bot, threadId) : null;
     if (budget?.phase !== "requested" || !client || this.#status.phase !== "ready") {
       this.#releaseContextCompaction(botId, threadId);
       return;
@@ -3420,7 +3474,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   async archiveThread(input: ThreadInput): Promise<ThreadList> {
-    return this.#afterThreadChange(input.botId, await this.#threads.archive(input));
+    const list = await this.#threads.archive(input);
+    // COSGRAL W6-BE3: an archived thread keeps its history but not its context numbers and counters.
+    this.forgetContext(input.botId, input.threadId);
+    return this.#afterThreadChange(input.botId, list);
   }
 
   async restoreThread(input: ThreadInput): Promise<ThreadList> {
@@ -3448,6 +3505,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     if (this.#snapshots.get(input.botId)?.threadId === input.threadId) this.#snapshots.delete(input.botId);
     this.#threadActivitySignatures.delete(`${input.botId}\u0000${input.threadId}`);
+    // COSGRAL W6-BE3: its context numbers and counters go with it.
+    this.forgetContext(input.botId, input.threadId);
     return this.#afterThreadChange(input.botId, list);
   }
 
@@ -3889,13 +3948,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     ].join("\n");
   }
 
-  #clientForBot(bot: BotSummary): AgentClient | null {
+  /** `externalSessionId`: the CLI thread the request is about (W6-BE3); left out: the CLI thread of the active thread. */
+  #clientForBot(bot: BotSummary, externalSessionId?: string): AgentClient | null {
     // COSGRAL W5-K1: a thread lives in the account that made it: requests about it go to that account's CLI process.
     const router = this.#accountRouter;
     const account = accountProviderOf(providerForBot(bot));
     if (router && account) {
-      const session = this.#store.activeProviderSession(bot.id);
-      const own = session ? router.clientForSession(session.externalSessionId, account) : null;
+      const external = externalSessionId ?? this.#store.activeProviderSession(bot.id)?.externalSessionId;
+      const own = external ? router.clientForSession(external, account) : null;
       if (own) return own;
     }
     return this.#clients.get(providerForBot(bot)) ?? null;
