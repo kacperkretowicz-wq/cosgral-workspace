@@ -124,3 +124,5 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 | 16.11.2026 | `src/backend/account-router.ts` (+ test), `src/backend/agent-service.ts` (+ `agent-service-accounts.test.ts`), `provider-accounts.ts`, `app-server-client.ts`, `claude-client.ts`, `src/main/index.ts`, `ipc-subscriptions.ts` / `ipc-conversation.ts`, karty kont w `Conversation`/`App`/`AccountLimitCards`, `ManagedCliSection.tsx` (import), `docs/cosgral-raporty/kk-w5-k1.md` | W5-K1: konto agenta wybierane przy każdej turze, limit przed pierwszą akcją przenosi turę na następne konto puli, limit po akcji pyta kartą, model zapasowy dopiero po kontach; karty UI2a podpięte do zdarzeń K1 (bez martwego przycisku powrotu); karta zgody CLI trafia do ostatnio otwartej rozmowy (usterka 2). Bez Electrona i e2e. |
 
 - W5-UI4: general and agent fallback lists (8), inheritance/reset and unavailable badges, shared fallback mock; endpoint state/preset/masked-key Storybook interactions with axe.
+
+- W5-UI5: agent settings reuse the eight-model fallback editor with inherited/unavailable/reset; preserve inheritance on profile saves; fix two mojibake ellipses in ProvidersPage.

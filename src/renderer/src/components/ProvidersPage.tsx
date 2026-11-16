@@ -316,7 +316,7 @@ export function AcpAgentsSection(props: {
             You can add up to {PROVIDER_LIMITS.acpAgents} ACP agents.
           </Text>
         </Show>
-        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Addingâ€¦">
+        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Adding...">
           Add agent
         </Button>
       </form>
@@ -336,6 +336,7 @@ export interface FallbackModelOption {
 export function FallbackOrder(props: {
   botName: string;
   ownModel?: AgentModelId;
+  confirmAdd?: boolean;
   unavailable?: AgentModelId[];
   items: AgentModelId[];
   options: FallbackModelOption[];
@@ -344,6 +345,7 @@ export function FallbackOrder(props: {
   onChange: (items: AgentModelId[]) => void;
   onSave: () => void;
 }) {
+  const [selected, setSelected] = createSignal<AgentModelId | null>(null);
   const [dragFrom, setDragFrom] = createSignal<number | null>(null);
   const [announce, setAnnounce] = createSignal("");
   const nameOf = (id: AgentModelId) => props.options.find((option) => option.id === id)?.name ?? id;
@@ -444,19 +446,33 @@ export function FallbackOrder(props: {
       <div class="providers-add">
         <NativeSelect
           aria-label="Add fallback model"
-          value=""
+          value={props.confirmAdd ? (selected() ?? "") : ""}
           disabled={props.saving || full() || !addable().length}
           onChange={(event) => {
             const chosen = addable().find((option) => option.id === event.currentTarget.value);
             event.currentTarget.value = "";
-            if (chosen && !full()) props.onChange([...props.items, chosen.id]);
+            if (props.confirmAdd) setSelected(chosen?.id ?? null);
+            else if (chosen && !full()) props.onChange([...props.items, chosen.id]);
           }}
         >
           <option value="">
-            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback modelâ€¦"}
+            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback model..."}
           </option>
           <For each={addable()}>{(option) => <option value={option.id}>{option.name}</option>}</For>
         </NativeSelect>
+        <Show when={props.confirmAdd}>
+          <Button
+            type="button"
+            disabled={props.saving || full() || !addable().some((option) => option.id === selected())}
+            onClick={() => {
+              const id = selected();
+              if (id && !full() && addable().some((option) => option.id === id)) props.onChange([...props.items, id]);
+              setSelected(null);
+            }}
+          >
+            Add fallback
+          </Button>
+        </Show>
         <Button type="button" variant="primary" disabled={!props.dirty} loading={props.saving} onClick={props.onSave}>
           Save order
         </Button>
