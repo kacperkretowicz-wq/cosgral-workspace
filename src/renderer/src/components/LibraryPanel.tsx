@@ -5,7 +5,7 @@ export function LibraryItems(props: {
   items: LibraryItem[];
   onAttach?: (id: string) => void;
   onDelete: (id: string) => void;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, action?: "open" | "download" | "reveal") => void;
 }) {
   return (
     <For each={props.items} fallback={<p>No files found.</p>}>
@@ -18,6 +18,12 @@ export function LibraryItems(props: {
           <div>
             <Button unstyled type="button" onClick={() => props.onOpen(item.id)}>
               Open
+            </Button>{" "}
+            <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "download")}>
+              Pobierz
+            </Button>{" "}
+            <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "reveal")}>
+              Pokaż w folderze
             </Button>{" "}
             <Show when={props.onAttach}>
               <Button unstyled type="button" onClick={() => props.onAttach?.(item.id)}>
@@ -117,11 +123,11 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
       </Button>
       <LibraryItems
         items={items()}
-        onOpen={(fileId) =>
+        onOpen={(fileId, fileAction = "open") =>
           void action(async () => {
             const api = window.openbot.library;
             if (!api) throw new Error("File library unavailable");
-            await api.open({ fileId, action: "open" });
+            await api.open({ fileId, action: fileAction });
           })
         }
         onDelete={(fileId) =>

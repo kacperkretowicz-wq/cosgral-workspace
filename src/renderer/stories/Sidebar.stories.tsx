@@ -235,3 +235,35 @@ export const ReadSaveError: Story = {
     await expect(await canvas.findByRole("alert")).toHaveTextContent("Could not save the read state");
   },
 };
+
+export const HiddenAgents: Story = {
+  args: {
+    bots: STORY_BOTS.map((bot, index) => ({ ...bot, hidden: index === 1 })),
+    people: [],
+    directThreads: [],
+    onSetBotHidden: fn(),
+    onDuplicateBot: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument();
+    await fireEvent.click(c.getByRole("switch", { name: "Pokaż ukryte" }));
+    await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
+  },
+};
+export const FallbackModel: Story = {
+  args: {
+    people: [],
+    directThreads: [],
+    bots: STORY_BOTS.map((bot, index) => (index === 0 ? { ...bot, activeModel: "gpt-5.6-terra" } : bot)),
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText(/^model zapasowy:/)).toBeVisible();
+  },
+};
+export const CopyWarning: Story = {
+  args: {
+    copyNotice: "Kopia gotowa. Historia i pamięć nie są kopiowane. Nie udało się skopiować jednego skilla.",
+    onDismissCopyNotice: fn(),
+  },
+};

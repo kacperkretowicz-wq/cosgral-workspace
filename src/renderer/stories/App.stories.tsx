@@ -1,5 +1,5 @@
 import { onCleanup } from "solid-js";
-import { expect, fireEvent, within } from "storybook/test";
+import { expect, fireEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { App } from "../src/App";
 import { STORY_AGENT_STATUS, STORY_BOT_SUMMARIES } from "./fixtures";
@@ -126,4 +126,50 @@ export const AgentStarting: Story = {
       }}
     />
   ),
+};
+
+export const ActiveFallback: Story = {
+  render: () => (
+    <MockedApp
+      options={{
+        bots: STORY_BOT_SUMMARIES.map((bot, index) => (index === 0 ? { ...bot, activeModel: "gpt-5.6-terra" } : bot)),
+      }}
+    />
+  ),
+  play: async ({ canvas }) => {
+    await canvas.findByRole("heading", { name: "Chief" });
+    await expect(canvas.getAllByText(/^model zapasowy:/)).toHaveLength(2);
+  },
+};
+
+export const AgentMenuActions: Story = {
+  render: () => <MockedApp />,
+  play: async ({ canvasElement, userEvent }) => {
+    const c = within(canvasElement),
+      body = within(canvasElement.ownerDocument.body);
+    const view = canvasElement.ownerDocument.defaultView;
+    if (!view) throw new Error("No story window.");
+    const errors: string[] = [];
+    const capture = (event: ErrorEvent) => errors.push(event.message);
+    view.addEventListener("error", capture);
+    try {
+      await c.findByRole("heading", { name: "Chief" });
+      await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
+      await userEvent.click(await body.findByRole("menuitem", { name: "Ukryj" }));
+      await waitFor(() => expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument());
+      await userEvent.click(c.getByRole("switch", { name: "Pokaż ukryte" }));
+      await c.findByText("Ukryty");
+      await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
+      await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
+      await userEvent.click(await body.findByRole("menuitem", { name: "Pokaż" }));
+      await waitFor(() => expect(c.queryByText("Ukryty")).not.toBeInTheDocument());
+      await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
+      await userEvent.click(await body.findByRole("menuitem", { name: "Duplikuj" }));
+      await c.findByRole("heading", { name: "Research kopia" });
+      await c.findByText(/Kopia gotowa/);
+      await expect(errors).toEqual([]);
+    } finally {
+      view.removeEventListener("error", capture);
+    }
+  },
 };

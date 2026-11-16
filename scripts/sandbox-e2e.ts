@@ -826,10 +826,61 @@ async function main(): Promise<void> {
       for (const result of failed) console.log(`       ${result.name}: ${result.error}`);
       assert(failed.length === 0, `${failed.length} calls failed: ${failed.map((result) => result.name).join(", ")}`);
     });
+    // W4-UI5: UI actions, sandbox-only accounts/data. Written for KK; not run by the UI task.
+    const navigationName = `Navigation helper ${Date.now()}`;
+    let navigationHelperId = "";
+    await step("navigation: hide and show an agent from the row menu", async () => {
+      navigationHelperId = String(
+        await page.evaluate(
+          `(async()=> (await window.openbot.agentSettings.createAgent({name:${JSON.stringify(navigationName)}})).bot.id)()`,
+        ),
+      );
+      const rows = page.getByRole("navigation", { name: "Chat list" });
+      const row = rows.getByRole("button", { name: new RegExp(`^${navigationName}`) });
+      await row.click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Ukryj", exact: true }).click();
+      await row.waitFor({ state: "detached" });
+      await page.waitForFunction(
+        `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden===true`,
+      );
+      await page.getByRole("switch", { name: "Pokaż ukryte" }).check();
+      await row.waitFor();
+      await row.click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Pokaż", exact: true }).click();
+      await page.waitForFunction(
+        `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden!==true`,
+      );
+      await page.getByRole("switch", { name: "Pokaż ukryte" }).uncheck();
+      await row.waitFor();
+      await dump(page, evidence, "navigation-hide-show");
+    });
+    await step("navigation: duplicate selects a new agent and explains excluded data", async () => {
+      const rows = page.getByRole("navigation", { name: "Chat list" });
+      await rows.getByRole("button", { name: new RegExp(`^${navigationName}`) }).click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Duplikuj", exact: true }).click();
+      await page.getByRole("heading", { name: `${navigationName} kopia`, exact: true, level: 1 }).waitFor();
+      await page.getByText(/Kopia gotowa.*Pamięć, historia/).waitFor();
+      await page.waitForFunction(
+        `async()=>{const bots=await window.openbot.agent.listBots();const source=bots.find(bot=>bot.id===${JSON.stringify(navigationHelperId)});const copy=bots.find(bot=>bot.name===${JSON.stringify(`${navigationName} kopia`)});return source && copy && source.id!==copy.id && source.workspacePath!==copy.workspacePath;}`,
+      );
+      await dump(page, evidence, "navigation-duplicate");
+      // Remove only fixtures created in these two steps and return to the original conversation.
+      await page.evaluate(
+        `(async()=>{const bots=await window.openbot.agent.listBots();for(const bot of bots)if(bot.id===${JSON.stringify(navigationHelperId)} || bot.name===${JSON.stringify(`${navigationName} kopia`)})await window.openbot.agent.deleteBot(bot.id);})()`,
+      );
+      await rows.getByRole("button", { name: /^New agent/ }).click();
+    });
+
     for (const [index, name] of PAGES.entries()) {
       await step(`page: ${name} opens without console errors`, async () => {
         const before = findings.length;
-        await page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name }).click();
+        const rail = page.getByRole("navigation", { name: "Pages" });
+        const direct = rail.getByRole("button", { name, exact: true });
+        if (await direct.count()) await direct.click();
+        else {
+          await rail.getByRole("button", { name: /^More pages/ }).click();
+          await page.getByRole("menu", { name: "More pages" }).getByRole("menuitem", { name, exact: true }).click();
+        }
         await page.waitForTimeout(2_000);
         const label = `page-${String(index + 1).padStart(2, "0")}-${name.toLowerCase().replace(/\s+/g, "-")}`;
         await dump(page, evidence, label);

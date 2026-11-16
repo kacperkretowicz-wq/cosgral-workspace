@@ -3451,6 +3451,53 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await waitFor(() => expect(scrollTo).toHaveBeenLastCalledWith({ behavior: "auto", top: 660 }));
     expect(scrollElement.scrollTop).toBe(660);
   });
+  it("shows fallback in the row and conversation without opening Providers, then clears on reset", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief", level: 1 });
+    emitAgentEvent?.({
+      type: "model-fallback",
+      botId: "chief",
+      fromModel: "gpt-5.6-luna",
+      toModel: "gpt-5.6-terra",
+      reason: "Limit",
+    });
+    await waitFor(() => expect(screen.getAllByText(/^model zapasowy:/)).toHaveLength(2));
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
+    await waitFor(() => expect(screen.queryByText(/^model zapasowy:/)).toBeNull());
+  });
+  it("duplicates an agent, selects the new conversation and keeps partial warnings visible", async () => {
+    window.openbot.agent.duplicateBot = vi.fn().mockResolvedValue({
+      bot: { ...BOTS[0], id: "copy-chief", name: "Chief kopia" },
+      warnings: ["Nie skopiowano jednego skilla."],
+    });
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief", level: 1 });
+    const row = within(screen.getByRole("navigation", { name: "Chat list" })).getByRole("button", { name: /^Chief,/ });
+    await fireEvent.contextMenu(row);
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Duplikuj" }));
+    await screen.findByRole("heading", { name: "Chief kopia", level: 1 });
+    expect(window.openbot.agent.duplicateBot).toHaveBeenCalledWith({ sourceBotId: "chief" });
+    expect(screen.getByText(/Nie skopiowano jednego skilla/)).toBeInTheDocument();
+  });
+  it("hides and shows without dropping the agent from the application list", async () => {
+    window.openbot.agent.setBotHidden = vi
+      .fn()
+      .mockImplementation(async ({ botId, hidden }) => ({ ...BOTS.find((bot) => bot.id === botId), hidden }));
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief", level: 1 });
+    const list = within(screen.getByRole("navigation", { name: "Chat list" }));
+    await fireEvent.contextMenu(list.getByRole("button", { name: /^Sales Outbound/ }));
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Ukryj" }));
+    await waitFor(() => expect(list.queryByRole("button", { name: /^Sales Outbound/ })).toBeNull());
+    await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+    const hidden = await list.findByRole("button", { name: /^Sales Outbound/ });
+    expect(hidden).toHaveClass("bot-row-hidden");
+    await fireEvent.contextMenu(hidden);
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Pokaż" }));
+    await waitFor(() =>
+      expect(window.openbot.agent.setBotHidden).toHaveBeenLastCalledWith({ botId: "sales-outbound", hidden: false }),
+    );
+  });
 });
 
 function presenceMember(id: string, email: string, name: string): TeamPresenceSnapshot["members"][number] {

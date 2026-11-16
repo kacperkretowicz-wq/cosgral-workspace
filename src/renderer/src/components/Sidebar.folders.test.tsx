@@ -8,6 +8,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "../../stories/fixtures";
+import type { BotProfile } from "../data";
 import { Sidebar } from "./Sidebar";
 import type { SidebarFolderActions } from "./SidebarFolders";
 
@@ -40,6 +41,9 @@ const layout: SidebarLayout = {
 
 function renderSidebar(
   props: {
+    bots?: BotProfile[];
+    onSetBotHidden?: (id: string, hidden: boolean) => Promise<void>;
+    onDuplicateBot?: (id: string) => Promise<void>;
     layout?: SidebarLayout;
     actions?: SidebarFolderActions;
     compact?: boolean;
@@ -51,7 +55,9 @@ function renderSidebar(
   return render(() => (
     <Sidebar
       serverName="Local"
-      bots={STORY_BOTS}
+      bots={props.bots ?? STORY_BOTS}
+      onSetBotHidden={props.onSetBotHidden}
+      onDuplicateBot={props.onDuplicateBot}
       activeBotId="chief"
       people={[]}
       directThreads={[]}
@@ -392,4 +398,44 @@ describe("Sidebar folders", () => {
       expect(within(document.body).getAllByRole("menuitem", { name: "Mark as read" }).length).toBeGreaterThan(0),
     );
   });
+});
+
+it("hides stored hidden agents, then exposes them with a Show action", async () => {
+  const change = vi.fn().mockResolvedValue(undefined);
+  renderSidebar({ bots: STORY_BOTS.map((bot, index) => ({ ...bot, hidden: index === 0 })), onSetBotHidden: change });
+  expect(screen.queryByRole("button", { name: /^Chief,/ })).toBeNull();
+  await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+  const row = await screen.findByRole("button", { name: /^Chief,/ });
+  expect(row).toHaveClass("bot-row-hidden");
+  openMenu(row);
+  const menu = await latestMenu("Agent actions");
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Pokaż" }));
+  await waitFor(() => expect(change).toHaveBeenCalledWith("chief", false));
+});
+it("offers hide and duplicate without inventing thread/window actions", async () => {
+  const change = vi.fn().mockResolvedValue(undefined),
+    duplicate = vi.fn().mockResolvedValue(undefined);
+  renderSidebar({ onSetBotHidden: change, onDuplicateBot: duplicate });
+  openMenu(screen.getByRole("button", { name: /^Research,/ }));
+  let menu = await latestMenu("Agent actions");
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Ukryj" }));
+  await waitFor(() => expect(change).toHaveBeenCalledWith("research", true));
+  closeOpenMenus();
+  await waitFor(() => expect(screen.getByRole("button", { name: /^Research,/ })).toHaveAttribute("data-closed"));
+  openMenu(screen.getByRole("button", { name: /^Research,/ }));
+  menu = await latestMenu("Agent actions");
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Duplikuj" }));
+  await waitFor(() => expect(duplicate).toHaveBeenCalledWith("research"));
+  expect(screen.queryByRole("menuitem", { name: "Nowy wątek" })).toBeNull();
+});
+
+it("refreshes folder counts when hidden agents become visible", async () => {
+  renderSidebar({
+    layout,
+    bots: STORY_BOTS.map((bot) => ({ ...bot, hidden: bot.id === "research" })),
+    onSetBotHidden: async () => {},
+  });
+  expect(screen.getByRole("button", { name: "Work, folder, 1 agent" })).toBeInTheDocument();
+  await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+  await screen.findByRole("button", { name: "Work, folder, 2 agents" });
 });
