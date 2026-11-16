@@ -3304,6 +3304,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           (Array.isArray(record.unavailable) ? record.unavailable.length : 0);
         const info = async (id: string) =>
           asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
+        await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`);
         const inherited = await info(botRes);
         assert(
           inherited.own === null &&
@@ -3316,14 +3317,21 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botRes)}, fallbackModels: ["gpt-5.6-sol", "claude-opus-5"] })`,
         );
         const own = await info(botRes);
+        // BE7: the layers add up (own first, then the provider's, then the general list), each model once: the own
+        // two come first and the rest of the general list follows.
+        const ownChain = list(own.chain).map((entry) => String(entry.source));
         assert(
-          Array.isArray(own.own) && own.own.length === 2 && Array.isArray(own.effective) && own.effective.length === 2,
-          "an own list wins",
+          Array.isArray(own.own) &&
+            own.own.length === 2 &&
+            ownChain[0] === "own" &&
+            ownChain[1] === "own" &&
+            sizes(own) === 8,
+          `an own list goes first: ${JSON.stringify({ own: own.own, chain: ownChain, size: sizes(own) })}`,
         );
         const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`));
         assert(reset.own === null && sizes(reset) === 8, "after the reset the general list applies again");
         await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
-        return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
+        return "Res: own null (inherited) > effective 8; own list of 2 > the two come first (source own), the other 6 of the general list follow; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
       },
     );
 

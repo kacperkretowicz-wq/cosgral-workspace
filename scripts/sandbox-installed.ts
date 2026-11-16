@@ -382,6 +382,49 @@ async function main(): Promise<void> {
       },
     );
 
+    // What the person sees at the sign-in screen with the REAL CLIs: the program starts the official sign-in (the CLI opens the
+    // browser on this computer; nobody signs in here) and shows its phase, the page and a code. Nothing is typed, nothing is stored.
+    await row(
+      "I10",
+      "G03/G04: the sign-in of a Codex and a Claude account starts from the page with the real CLIs and stops there (cancelled, account removed)",
+      async () => {
+        const seen: string[] = [];
+        for (const [provider, label] of [
+          ["codex", "G2 test Codex"],
+          ["claude", "G2 test Claude"],
+        ] as const) {
+          const created = asRecord(
+            await ev(
+              `window.openbot.subscriptions.addAccount({ provider: ${JSON.stringify(provider)}, label: ${JSON.stringify(label)} })`,
+            ),
+          );
+          const id = String(created.id);
+          assert(id.startsWith("acc-"), `account added: ${id}`);
+          await ev(`window.openbot.subscriptions.loginAccount({ id: ${JSON.stringify(id)} })`);
+          let login: DynamicRecord = {};
+          await waitUntil(
+            `${provider}: the sign-in shows its first state`,
+            async () => {
+              const found = list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).find(
+                (item) => item.id === id,
+              );
+              login = asRecord(found?.login);
+              return ["waiting-for-browser", "code-required", "error"].includes(String(login.phase));
+            },
+            60_000,
+          );
+          const url = isString(login.url) ? new URL(login.url) : null;
+          seen.push(
+            `${provider}: phase '${String(login.phase)}', message '${String(login.message ?? "").slice(0, 70)}', page ${url ? `${url.origin}${url.pathname}` : "none"}, device code ${isString(login.userCode) ? "shown" : "none"}`,
+          );
+          assert(login.phase !== "error", `the sign-in starts: ${String(login.message)}`);
+          await ev(`window.openbot.subscriptions.cancelLogin({ id: ${JSON.stringify(id)} })`);
+          await ev(`window.openbot.subscriptions.removeAccount({ id: ${JSON.stringify(id)} })`);
+        }
+        return seen.join("; ");
+      },
+    );
+
     await row(
       "I07",
       "isolation note: what the real CLIs see of this computer, whatever the sandbox profile says",
