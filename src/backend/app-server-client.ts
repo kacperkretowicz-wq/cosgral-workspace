@@ -2,6 +2,7 @@ import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { isNumber, isString } from "@openbot/contracts/runtime-values";
 import type { AgentProvider } from "./agent-client";
+import { apiKeyEnv, redactApiKeys } from "./api-key-env";
 import { cliCommand } from "./cli";
 import { JsonLineDecoder } from "./jsonl";
 import {
@@ -71,7 +72,7 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
     ]);
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: process.env,
+      env: { ...process.env, ...apiKeyEnv("codex") }, // COSGRAL W5-BE3: the key only for this process
       windowsHide: true,
       windowsVerbatimArguments,
     });
@@ -222,7 +223,7 @@ export class CodexAppServerClient extends EventEmitter<ClientEvents> {
 }
 
 export function redactDiagnostic(message: string): string {
-  return message
+  return redactApiKeys(message)
     .replace(/(?:sk|sess|Bearer|token)[-_a-zA-Z0-9.=]{8,}/gi, "[redacted]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
     .slice(0, 2_000);

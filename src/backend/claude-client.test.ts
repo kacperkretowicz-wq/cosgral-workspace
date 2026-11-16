@@ -8,6 +8,7 @@ import { Client as McpClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
+import { setApiKeySource } from "./api-key-env";
 import { ClaudeAgentClient } from "./claude-client";
 import {
   decodeAccountReadResult,
@@ -147,6 +148,34 @@ describe("ClaudeAgentClient", () => {
       ]),
     );
     await client.stop();
+  });
+
+  // COSGRAL W5-BE3: the saved API key goes to the Claude process only as its own environment variable.
+  it("passes the saved API key only in the environment of this Claude process", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    const seen: Array<NodeJS.ProcessEnv | undefined> = [];
+    setApiKeySource({
+      env: (provider) => (provider === "claude" ? { ANTHROPIC_API_KEY: "test-key-1111-claude" } : {}),
+      values: () => ["test-key-1111-claude"],
+    });
+    try {
+      const client = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, (params) => {
+        seen.push(params.options?.env);
+        return new TestQuery(new TestQueue<TestStreamMessage>());
+      });
+      client.start();
+      await client.request(
+        "thread/start",
+        { cwd: root, model: "claude-sonnet-5", developerInstructions: "Be concise.", runtimeWorkspaceRoots: [root] },
+        decodeThreadResponse,
+      );
+      expect(seen[0]?.ANTHROPIC_API_KEY).toBe("test-key-1111-claude");
+      expect(seen[0]?.OPENAI_API_KEY).toBeUndefined();
+      expect(process.env.ANTHROPIC_API_KEY).not.toBe("test-key-1111-claude");
+      await client.stop();
+    } finally {
+      setApiKeySource(null);
+    }
   });
 
   it("gives Claude the agent eyes tools next to the browser and teammate tools", async () => {
