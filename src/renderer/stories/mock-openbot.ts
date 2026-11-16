@@ -707,6 +707,31 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       listModels: async () => clone(models),
       listBots: async (input) =>
         clone(input?.includeHidden === false ? bots.filter((bot) => bot.hidden !== true) : bots),
+      duplicateBot: async ({ sourceBotId, name }) => {
+        const source = bots.find((bot) => bot.id === sourceBotId);
+        if (!source) throw new Error("Agent not found");
+        const taken = new Set(bots.map((bot) => bot.name.toLowerCase()));
+        let copyName = name?.trim() ?? "";
+        for (let number = 1; !copyName; number += 1) {
+          const candidate = number === 1 ? `${source.name} kopia` : `${source.name} kopia ${number}`;
+          if (!taken.has(candidate.toLowerCase())) copyName = candidate;
+        }
+        // The copy gets its own id, thread, workspace and avatar seed; history and memory stay behind.
+        const {
+          id: _id,
+          hidden: _hidden,
+          activeModel: _active,
+          workspacePath: _path,
+          avatarSeed: _seed,
+          threadId: _thread,
+          ...profile
+        } = source;
+        const copy = createBotSummary({ ...profile, name: copyName, preview: "No messages yet", updatedAt: null });
+        bots = [...bots, copy];
+        queues.set(copy.id, emptyQueue(copy.id));
+        emitAgentEvent({ type: "bots-changed", bots });
+        return clone({ bot: copy, warnings: [] });
+      },
       setBotHidden: async ({ botId, hidden }) => {
         const current = bots.find((bot) => bot.id === botId);
         if (!current) throw new Error("Agent not found");

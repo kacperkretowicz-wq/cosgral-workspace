@@ -12,6 +12,7 @@ import type {
   CompleteOnboardingInput,
   CreateAgentInput,
   CreateAgentResult,
+  DuplicateAgentInput,
   OnboardingState,
   SaveAgentTemplateInput,
   UpdateAgentSettingsInput,
@@ -243,6 +244,8 @@ export interface AgentDesktopApi {
   setAvatar: (input: SetAgentAvatarInput) => Promise<BotSummary>;
   /** COSGRAL W4-K3: hide an agent from the sidebar or show it again; it keeps working. `bots-changed` follows. This computer only. */
   setBotHidden: (input: SetBotHiddenInput) => Promise<BotSummary>;
+  /** COSGRAL W4-K3: a new agent with the source's settings but without its memory and history (see DuplicateAgentInput). This computer only. */
+  duplicateBot: (input: DuplicateAgentInput) => Promise<CreateAgentResult>;
   deleteBot: (botId: string) => Promise<void>;
   readConversation: (botId: string) => Promise<ConversationWithReadState>;
   listConversationReads: () => Promise<Record<string, ConversationReadState>>;

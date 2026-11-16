@@ -637,6 +637,13 @@ const openbotApi: OpenBotDesktopApi = {
     updateBot: (input) => invokeAgent(IPC_CHANNELS.agentUpdateBot, input, decodeBot),
     setAvatar: (input) => invokeAgent(IPC_CHANNELS.agentSetAvatar, input, decodeBot),
     setBotHidden: (input) => invokeAgent(IPC_CHANNELS.agentSetBotHidden, input, decodeBot),
+    duplicateBot: (input) =>
+      invokeAgent(IPC_CHANNELS.agentDuplicateBot, input, (value) => {
+        if (!isDynamicRecord(value) || !Array.isArray(value.warnings)) {
+          throw new Error("Invalid duplicate agent response.");
+        }
+        return { bot: decodeBot(value.bot), warnings: value.warnings.filter(isString) };
+      }),
     deleteBot: (botId) => invokeAgent(IPC_CHANNELS.agentDeleteBot, botId, decodeVoid),
     readConversation: (botId) => invokeAgent(IPC_CHANNELS.agentReadConversation, botId, decodeConversation),
     listConversationReads: () => invokeAgent(IPC_CHANNELS.agentListConversationReads, null, decodeReadStates),

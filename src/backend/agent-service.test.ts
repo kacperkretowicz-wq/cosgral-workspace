@@ -470,6 +470,38 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     await expect(service.setBotHidden("ghost", true)).rejects.toThrow(/Unknown bot/);
   });
 
+  it("COSGRAL W4-K3: duplicates an agent with its settings and skills but without its memories", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.skillLibrary.create({
+      source: { kind: "inline", skillMd: "---\nname: weekly-report\ndescription: Builds the weekly report.\n---\n" },
+      authorBotId: null,
+    });
+    const { bot: pen } = await service.agentTemplates.createAgent({
+      templateId: "builtin:writer",
+      name: "Pen",
+      skills: ["weekly-report"],
+    });
+    expect(service.memoryStore.listAgentMemories(pen.id, "essential").length).toBeGreaterThan(0);
+
+    const { bot: copy, warnings } = await service.agentTemplates.duplicateAgent({ sourceBotId: pen.id });
+
+    expect(warnings).toEqual([]);
+    expect(copy).toMatchObject({ name: "Pen kopia", role: pen.role, description: pen.description, model: pen.model });
+    expect(copy.id).not.toBe(pen.id);
+    expect(copy.workspacePath).not.toBe(pen.workspacePath);
+    expect(service.agentSettings.toolSwitches(copy.id)).toEqual(service.agentSettings.toolSwitches(pen.id));
+    expect(service.skillLibrary.installedFor(copy.id).map((skill) => skill.name)).toEqual(["weekly-report"]);
+    expect(service.memoryStore.listAgentMemories(copy.id, "essential")).toEqual([]);
+    expect(service.listBots().map((candidate) => candidate.name)).toEqual(expect.arrayContaining(["Pen", "Pen kopia"]));
+    expect(events.some((event) => event.type === "bots-changed")).toBe(true);
+    const second = await service.agentTemplates.duplicateAgent({ sourceBotId: pen.id });
+    expect(second.bot.name).toBe("Pen kopia 2");
+  });
+
   it("lists the agent's installed skills in the instructions of its thread", async () => {
     let codex: FakeAgentClient | undefined;
     const { store, mailbox } = stores();

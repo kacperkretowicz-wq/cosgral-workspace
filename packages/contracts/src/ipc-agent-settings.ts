@@ -131,6 +131,18 @@ export interface CreateAgentResult {
   warnings: string[];
 }
 
+/**
+ * COSGRAL W4-K3: a copy of an agent. Copied: profile (role, instructions = description, reasoning effort, avatar colour,
+ * notification flag), model, tool switches, installed skills (clean library copies), the MCP servers switched off for
+ * the source, and the fallback models. Not copied: memories, conversation history and threads, the workspace folder
+ * (the copy gets its own), routines, channel membership, Vault, "always allow" rules, secrets and CLI sessions.
+ */
+export interface DuplicateAgentInput {
+  sourceBotId: string;
+  /** Default: "<name> kopia", then "<name> kopia 2", "<name> kopia 3" while that name is taken. */
+  name?: string;
+}
+
 export interface SaveAgentTemplateInput {
   botId: string;
   /** Default: the agent's name. */

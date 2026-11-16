@@ -10,6 +10,7 @@ import {
   APP_LANGUAGES,
   type CompleteOnboardingInput,
   type CreateAgentInput,
+  type DuplicateAgentInput,
   isAgentModel,
   isPinnedPageIdList,
   isReasoningEffort,
@@ -47,6 +48,13 @@ export function parseUpdateAgentSettings(value: unknown): UpdateAgentSettingsInp
   if (input.model !== undefined) result.model = model(input.model);
   if (input.reasoningEffort !== undefined) result.reasoningEffort = effort(input.reasoningEffort);
   if (input.tools !== undefined) result.tools = tools(input.tools);
+  return result;
+}
+
+export function parseDuplicateAgent(value: unknown): DuplicateAgentInput {
+  const input = record(value, "duplicate agent", ["sourceBotId", "name"]);
+  const result: DuplicateAgentInput = { sourceBotId: requireString(input.sourceBotId, "sourceBotId") };
+  if (input.name !== undefined) result.name = text(input.name, "name", INPUT_LIMITS.agentName);
   return result;
 }
 
