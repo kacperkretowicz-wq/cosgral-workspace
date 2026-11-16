@@ -122,6 +122,7 @@ interface ConversationProps {
   onboardingRequest: { botId: string; nonce: number } | null;
   messageFocusRequest: { botId: string; messageId: string; nonce: number } | null;
   queue: QueueSnapshot | undefined;
+  onOpenBudget?: () => void;
   browserTabs: BrowserTab[];
   activeBrowserTabId: string | null;
   browserControlState: BrowserControlState;
@@ -2173,6 +2174,12 @@ export function Conversation(props: ConversationProps) {
               <strong>Image generation is currently available with Codex.</strong>
               <span>Switch this agent to a Codex model in Settings to generate images.</span>
             </aside>
+          </Show>
+          <Show when={props.queue?.heldReason}>
+            <div class="providers-form" role="status">
+              <Text>Message queued: {props.queue?.heldReason}</Text>
+              <Button onClick={() => props.onOpenBudget?.()}>Review budget settings</Button>
+            </div>
           </Show>
           <Show when={queueBarVisible()}>
             <QueuePanel

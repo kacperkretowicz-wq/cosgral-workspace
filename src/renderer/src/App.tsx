@@ -792,6 +792,9 @@ export function App() {
         if (activitySeen.loading > 0) activitySeen.changedBotIds.add(event.activity.botId);
         setActivities((current) => ({ ...current, [event.activity.botId]: event.activity }));
         return;
+      case "access-denied":
+        appendUiError(event.botId, event.message, "Access denied");
+        return;
       case "error":
         if (event.botId) appendUiError(event.botId, event.message, "Error");
     }
@@ -2163,6 +2166,10 @@ export function App() {
                   }
                   loaded={activeBot() ? conversationLoaded()[activeBot()?.id ?? ""] === true : false}
                   queue={activeQueue()}
+                  onOpenBudget={() => {
+                    const bot = activeBot();
+                    if (bot) setSettingsRequest({ botId: bot.id, nonce: Date.now() });
+                  }}
                   browserTabs={browserTabs()}
                   activeBrowserTabId={activeBrowserTabId()}
                   browserControlState={browserControlState()}
