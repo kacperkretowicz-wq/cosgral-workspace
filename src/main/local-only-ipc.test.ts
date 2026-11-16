@@ -47,6 +47,8 @@ beforeAll(async () => {
   registerPlansIpc(() => null);
   const { registerAcpLoginIpc } = await import("./acp-login-ipc");
   registerAcpLoginIpc(() => null);
+  const { registerAcpPresetsIpc } = await import("./acp-presets-ipc");
+  registerAcpPresetsIpc(() => null);
   const { registerSubagentsIpc } = await import("./subagents-ipc");
   registerSubagentsIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
@@ -94,6 +96,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("subagents:").length).toBe(2);
     // COSGRAL W6-BE5: signing in to ACP agents.
     expect(channelsOf("acp-login:").length).toBe(4);
+    expect(channelsOf("acp-presets:").length).toBe(2);
     // COSGRAL W6-KK3: the separate conversation windows.
     expect(channelsOf("windows:").length).toBe(4);
   });
@@ -112,6 +115,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "message-actions:",
         "subagents:",
         "acp-login:",
+        "acp-presets:",
         "windows:",
       );
       const outcomes: string[] = [];
@@ -158,6 +162,9 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     );
     expect((await call("acp-login:start", "local", { agentId: "" })).threw).toMatch(/Choose an agent/);
     expect((await call("acp-login:list", "local", null)).threw).toMatch(/still starting/);
+    // W6-BE5: a preset the program does not know is refused by the parser, before any work.
+    expect((await call("acp-presets:add", "local", { presetId: "grok" })).threw).toMatch(/ready settings/);
+    expect((await call("acp-presets:list", "local", null)).threw).toMatch(/still starting/);
     expect((await call("subagents:stop", "local", {})).threw).toMatch(/subagent/i);
     expect((await call("subagents:list", "local", { botId: "chief" })).threw).toMatch(/still starting/);
     // W6-BE3: a delete without confirmation and an empty edit are refused by the contract parser, before any work.

@@ -94,6 +94,7 @@ import {
 } from "./fixtures";
 import { createMockAccounts } from "./mock-accounts";
 import { createMockAcpLogin } from "./mock-acp-login";
+import { createMockAcpPresets } from "./mock-acp-presets";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
@@ -1355,6 +1356,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     subagents: createMockSubagents((event) => emitAgentEvent(event)),
     // COSGRAL W6-BE5: sign in to an ACP agent with a link and a code (demo; the link is not a real page).
     acpLogin: createMockAcpLogin((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE5: ready settings for Gemini CLI and Antigravity (demo; nothing is installed).
+    acpPresets: createMockAcpPresets(),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

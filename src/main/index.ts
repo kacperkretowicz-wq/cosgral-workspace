@@ -61,6 +61,7 @@ import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
 import { registerAcpLoginIpc } from "./acp-login-ipc";
+import { registerAcpPresetsIpc } from "./acp-presets-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
@@ -1395,6 +1396,8 @@ if (!hasSingleInstanceLock) {
       providerRegistry = new ProviderRegistry({ database: store.database, emit: (event) => service.relay(event) });
       service.useProviders(providerRegistry);
       registerProviderIpc(providerRegistry);
+      // COSGRAL W6-BE5: ready ACP agent settings (Gemini CLI, Antigravity; this computer only).
+      registerAcpPresetsIpc(() => providerRegistry);
       // COSGRAL W3-KK3: "always allow" rules of approval cards (this computer only).
       service.useApprovalRules(
         new ApprovalRulesStore({

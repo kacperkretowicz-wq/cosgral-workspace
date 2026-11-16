@@ -214,6 +214,8 @@ export const IPC_CHANNELS = {
   acpLoginStart: "acp-login:start",
   acpLoginSubmitCode: "acp-login:submit-code",
   acpLoginCancel: "acp-login:cancel",
+  acpPresetsList: "acp-presets:list",
+  acpPresetsAdd: "acp-presets:add",
   messageActionsRetry: "message-actions:retry",
   messageActionsEdit: "message-actions:edit",
   messageActionsDelete: "message-actions:delete",

@@ -10,7 +10,7 @@
 // The program never reads the files in which the agent keeps its login, passes the code only to the running sign-in, and keeps it
 // nowhere (not in the state, the events or messages: it is cut out of anything the agent says back).
 
-import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import {
   ACP_LOGIN_LIMITS,
   type AcpAgentConfig,
@@ -27,6 +27,7 @@ import {
   type SubmitAcpLoginCodeInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { spawnAcpAgent } from "./acp-spawn";
 
 export interface AcpLoginOptions {
   agents: () => AcpAgentConfig[];
@@ -262,11 +263,7 @@ export class AcpLogin {
 
   #launch(run: Run, args: string[], env: Record<string, string>): void {
     const { config } = run;
-    const child = spawn(config.command, args, {
-      stdio: ["pipe", "pipe", "pipe"],
-      windowsHide: true,
-      env: { ...process.env, NO_BROWSER: "true", ...env },
-    });
+    const child = spawnAcpAgent(config.command, args, { ...process.env, NO_BROWSER: "true", ...env });
     run.child = child;
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");

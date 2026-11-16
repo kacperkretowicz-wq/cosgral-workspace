@@ -7,12 +7,13 @@
 // Errors of a prompt carry `errorKind` on the "error" notification: "usage-limit" (with resetsAt when the
 // agent gives it) and "unavailable" may move the turn to a fallback model; anything else (a user error)
 // never does.
-import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { type AcpAgentConfig, isAcpModel } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { spawnAcpAgent } from "./acp-spawn";
 import { BRIDGE_ENV, type BridgeTool, bridgeFile, bridgeTools } from "./acp-tool-bridge";
 import type { AgentClient, AgentProvider } from "./agent-client";
 import type {
@@ -88,7 +89,8 @@ class AcpProcess {
     onExit: (error: Error) => void,
   ) {
     this.#onUpdate = onUpdate;
-    this.#child = spawn(config.command, config.args, { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    // COSGRAL W6-BE5: a .cmd shim (Gemini CLI from npm) starts through cmd.exe; Node cannot start it directly.
+    this.#child = spawnAcpAgent(config.command, config.args);
     this.#child.stdout.setEncoding("utf8");
     this.#child.stdout.on("data", (chunk: string) => this.#read(chunk));
     this.#child.stderr.resume();
