@@ -63,6 +63,7 @@ afterEach(async () => {
   delete process.env.OPENBOT_FAKE_ARCHIVED_THREAD;
   delete process.env.OPENBOT_FAKE_TURN_START_RESPONSE_DELAY;
   delete process.env.OPENBOT_FAKE_WARNING;
+  delete process.env.OPENBOT_FAKE_DELTA_DELAY;
   closeTestDatabases();
   await rm(root, { recursive: true, force: true });
 });
@@ -2482,8 +2483,13 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
   });
 
   it("reads the canonical SQLite conversation during an active stream", async () => {
+    // W5-BE5: under load the delta can reach the program well after `turn/started` (another stdout chunk). Make that
+    // late arrival certain (the fake CLI reads it at start), so the test cannot depend on how the output was split.
+    process.env.OPENBOT_FAKE_DELTA_DELAY = "400";
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser());
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
     await service.initialize();
     await service.sendMessage({ botId: "chief", text: "First turn" });
     await waitFor(() => service?.listQueue("chief").deliveries[0]?.status === "running");
@@ -2495,6 +2501,13 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
 
     await service.sendMessage({ botId: "chief", text: "New live turn" });
     await waitFor(() => service?.listQueue("chief").deliveries[1]?.status === "running");
+    const liveTurnId = service.listQueue("chief").deliveries[1]?.turnId;
+    // "running" only says the turn started; the streamed text is in the conversation once the engine wrote it to SQLite.
+    await waitFor(() =>
+      events.some(
+        (event) => event.type === "conversation-delta" && event.turnId === liveTurnId && event.delta === "Streaming",
+      ),
+    );
 
     const snapshot = await service.readConversation("chief");
     expect(snapshot.activeTurnId).toBe(service.listQueue("chief").deliveries[1]?.turnId);
@@ -3004,7 +3017,10 @@ process.stdin.on("data", (chunk) => {
           const totalTokens = Number(process.env.OPENBOT_FAKE_CONTEXT_USAGE);
           write({ method: "thread/tokenUsage/updated", params: { threadId: message.params.threadId, turnId, tokenUsage: { total: { totalTokens }, last: { totalTokens }, modelContextWindow: 100000 } } });
         }
-        write({ method: "item/agentMessage/delta", params: { threadId: message.params.threadId, turnId, itemId: "message-" + turnId, delta: "Streaming" } });
+        const writeDelta = () => write({ method: "item/agentMessage/delta", params: { threadId: message.params.threadId, turnId, itemId: "message-" + turnId, delta: "Streaming" } });
+        const deltaDelay = Number(process.env.OPENBOT_FAKE_DELTA_DELAY || 0);
+        if (deltaDelay > 0) setTimeout(writeDelta, deltaDelay);
+        else writeDelta();
         if (process.env.OPENBOT_FAKE_AGENT_TOOL === "1" && turnCounter === 1) {
           setTimeout(() => write({ id: "agent-tool-1", method: "item/tool/call", params: { threadId: message.params.threadId, turnId, callId: "call-1", namespace: "openbot", tool: "send_message", arguments: { recipientBotIds: ["sales-outbound", "inbox-manager"], text: "Please prepare your reports.", paths: JSON.parse(process.env.OPENBOT_FAKE_AGENT_TOOL_PATHS || "[]") } } }), 30);
         }
