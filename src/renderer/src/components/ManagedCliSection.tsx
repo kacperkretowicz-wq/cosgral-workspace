@@ -1,7 +1,11 @@
 ﻿import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
-export type CliAction = Exclude<keyof SubscriptionsDesktopApi, "listCli">;
+// W5-BE2: the API also has account methods, so the CLI actions are named here (not "everything but listCli").
+export type CliAction = Extract<
+  keyof SubscriptionsDesktopApi,
+  "checkCli" | "installCli" | "updateCli" | "removeCli" | "pinCli" | "setCliSettings"
+>;
 export type CliInput = {
   id: ManagedCliState["id"];
   version?: string | null;
