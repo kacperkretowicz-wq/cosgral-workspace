@@ -126,6 +126,18 @@ describe("App local profile", () => {
   });
 });
 
+// W4-UI5: pages are pinned to the rail by the person; the rest sit in the "More pages" menu.
+async function openPage(name: string) {
+  const direct = screen.queryByRole("button", { name });
+  if (direct) {
+    await fireEvent.click(direct);
+    return;
+  }
+  await fireEvent.pointerDown(screen.getByRole("button", { name: /^More pages/ }), { button: 0, pointerType: "mouse" });
+  const menu = await screen.findByRole("menu", { name: "More pages" });
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name }));
+}
+
 describe("App page rail", () => {
   it("opens the other pages and keeps the agent list mounted", async () => {
     mountApp();
@@ -133,14 +145,13 @@ describe("App page rail", () => {
     const list = screen.getByRole("navigation", { name: "Chat list" });
 
     // W3-BE9: Tasks is a real page now (channel tasks), no longer Coming soon.
-    await fireEvent.click(screen.getByRole("button", { name: "Tasks" }));
+    await openPage("Tasks");
     expect(await screen.findByRole("heading", { name: "Tasks", level: 1 })).toBeInTheDocument();
     expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chief" })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Chat list" })).toBe(list);
-    expect(screen.getByRole("button", { name: "Tasks" })).toHaveAttribute("aria-current", "page");
 
-    await fireEvent.click(screen.getByRole("button", { name: "Marketplace" }));
+    await openPage("Marketplace");
     expect(await screen.findByRole("heading", { name: "Marketplace", level: 1 })).toBeInTheDocument();
 
     await fireEvent.click(screen.getByRole("button", { name: "Agents" }));
@@ -152,7 +163,7 @@ describe("App page rail", () => {
   it("returns to Agents when an agent is picked in the sidebar", async () => {
     mountApp();
     await screen.findByRole("heading", { name: "Chief" });
-    await fireEvent.click(screen.getByRole("button", { name: "Usage" }));
+    await openPage("Usage");
     await screen.findByRole("heading", { name: "Usage", level: 1 });
     await fireEvent.click(screen.getByRole("button", { name: /^Research,/ }));
     expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
