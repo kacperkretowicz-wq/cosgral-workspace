@@ -99,6 +99,17 @@ export function InitialSetup(props: InitialSetupProps) {
     }),
   );
   const availableProviders = createMemo(() => providerOptions().filter((provider) => provider.state === "available"));
+  /**
+   * The chosen provider has a CLI: the managed-CLI card says so (own path, downloaded, PATH or a known folder), or the
+   * program's own provider status already says "available" (e.g. a CLI the program was started with). Only a provider
+   * that really has none keeps Continue blocked, and then "Pobierz i przejdź dalej" is the way on.
+   */
+  const providerHasCli = () => {
+    const id = selectedProvider() ?? "";
+    return (
+      !!cliReady()[id] || providerOptions().some((provider) => provider.id === id && provider.state === "available")
+    );
+  };
 
   createEffect(
     () => ({
@@ -405,10 +416,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 class="initial-setup-save"
                 disabled={
                   saving() ||
-                  (!props.reviewing &&
-                    route() === "local" &&
-                    !!window.openbot.subscriptions &&
-                    !cliReady()[selectedProvider() ?? ""]) ||
+                  (!props.reviewing && route() === "local" && !!window.openbot.subscriptions && !providerHasCli()) ||
                   (route() === "local" && !selectedProvider()) ||
                   (route() === "remote" && !inviteUrl().trim())
                 }

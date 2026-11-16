@@ -24,6 +24,12 @@ describe("managed CLI controls", () => {
     expect(cliPathError("C:\\Tools\\codex.exe")).toBe("");
     expect(safeCliError("Failed C:\\Users\\Example\\cli.exe")).not.toContain("Example");
   });
+  it("drops the technical IPC prefix and keeps the reason", () => {
+    const raw =
+      "Error: Error invoking remote method 'subscriptions:set-cli-settings': Error: No file at that path. Choose the CLI's executable.";
+    expect(safeCliError(raw)).toBe("No file at that path. Choose the CLI's executable.");
+    expect(safeCliError("Plain reason")).toBe("Plain reason");
+  });
   it("offers install, never removal for a system CLI", () => {
     render(() => <ManagedCliCard state={{ ...emptyCli, source: "system" }} onAction={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "Usuń" })).toBeNull();
