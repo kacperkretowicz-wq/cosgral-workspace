@@ -74,7 +74,7 @@ describe("App open cards after a reload", () => {
     const request = {
       requestId: "vault-1",
       botId: "chief",
-      threadId: "t",
+      threadId: "thread-chief",
       turnId: "turn",
       mode: "choose" as const,
       kind: "login" as const,

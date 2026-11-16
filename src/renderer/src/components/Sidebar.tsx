@@ -764,10 +764,12 @@ export function Sidebar(props: SidebarProps) {
                   <Button
                     type="button"
                     class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
-                    aria-label={`${item.botName}, ${item.threadTitle ? `Thread ${item.threadTitle}, ` : ""}Needs you. ${item.summary}`}
+                    aria-label={`${item.botName}, Needs you. ${item.summary}${item.threadTitle ? `, Thread ${item.threadTitle}` : ""}`}
                     onClick={() =>
                       props.onSelectNeedsYou
-                        ? props.onSelectNeedsYou(item.botId, item.threadId)
+                        ? item.threadId
+                          ? props.onSelectNeedsYou(item.botId, item.threadId)
+                          : props.onSelectNeedsYou(item.botId)
                         : props.onSelectBot(item.botId)
                     }
                   >

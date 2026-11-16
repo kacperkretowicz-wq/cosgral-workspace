@@ -1,5 +1,6 @@
 import type { CentralAuthUser } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import {
   STORY_AGENT_STATUS,
@@ -8,7 +9,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "../../stories/fixtures";
-import { Sidebar } from "./Sidebar";
+import { type NeedsYouSidebarItem, Sidebar } from "./Sidebar";
 
 const account: CentralAuthUser = {
   id: "user-1",
@@ -20,6 +21,9 @@ const account: CentralAuthUser = {
 describe("Sidebar Needs you", () => {
   it("lists waiting agents and opens the conversation on click", async () => {
     const onSelectNeedsYou = vi.fn();
+    const [items, setItems] = createSignal<NeedsYouSidebarItem[]>([
+      { botId: "research", botName: "Research", kind: "question", summary: "Which variant?" },
+    ]);
     render(() => (
       <Sidebar
         serverName="Local"
@@ -34,14 +38,7 @@ describe("Sidebar Needs you", () => {
         accountUsage={STORY_USAGE}
         updateStatus={STORY_UPDATE_STATUS}
         agentStates={{ research: { kind: "needs-you" } }}
-        needsYouItems={[
-          {
-            botId: "research",
-            botName: "Research",
-            kind: "question",
-            summary: "Which variant?",
-          },
-        ]}
+        needsYouItems={items()}
         onSelectBot={vi.fn()}
         onSelectNeedsYou={onSelectNeedsYou}
         onSelectPerson={vi.fn()}
@@ -65,5 +62,11 @@ describe("Sidebar Needs you", () => {
     expect(screen.getByText("Question")).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: /Research, Needs you/ }));
     expect(onSelectNeedsYou).toHaveBeenCalledWith("research");
+    setItems([{ ...items()[0], threadId: "thread-research", threadTitle: "Planning" }]);
+    const threaded = await screen.findByRole("button", {
+      name: "Research, Needs you. Which variant?, Thread Planning",
+    });
+    await fireEvent.click(threaded);
+    expect(onSelectNeedsYou).toHaveBeenLastCalledWith("research", "thread-research");
   });
 });
