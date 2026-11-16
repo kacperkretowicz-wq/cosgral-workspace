@@ -34,6 +34,7 @@ import { normalizeAvatarFile } from "../avatar-image";
 import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
 import type { PendingCard } from "../pending-cards";
+import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
@@ -1706,6 +1707,8 @@ export function Conversation(props: ConversationProps) {
                   nowMs={Date.now()}
                   onDismiss={() => props.onDismissAccountNotice?.(notice.id)}
                 />
+              ) : notice.kind === "error" ? (
+                <AccountErrorCard view={notice.view} onDismiss={() => props.onDismissAccountNotice?.(notice.id)} />
               ) : (
                 <AccountSwitchedCard view={notice.view} onDismiss={() => props.onDismissAccountNotice?.(notice.id)} />
               )

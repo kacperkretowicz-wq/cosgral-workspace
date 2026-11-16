@@ -138,3 +138,5 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 
 - W5-UI7: shared safe provider error formatting; merge return-then-limit account switch notices without losing transition details; document missing returnAfterReset contract (default true).
 | 16.11.2026 | `src/backend/managed-cli.ts` (+ test), `src/main/trusted-ipc.ts`, `src/main/local-only-ipc.test.ts`, `scripts/sandbox-installed.ts`, `scripts/sandbox-acceptance.ts`, `docs/cosgral-raporty/kk-w5-g2.md` | W5-G2b: instalator zbudowany i zainstalowany na tym komputerze (cicho, bez UAC), odinstalowanie zostawia dane; zainstalowany program pobiera prawdziwe CLI Codex i Claude (SHA-256), przypina starszy Codex i wraca (10/10); naprawa EPERM przy przełączaniu wersji CLI na Windows (ponowne użycie zweryfikowanego pliku); kroki P10b (bezczynny proces) i P11b (odmowa dla telefonu/zdalnego, test `local-only-ipc`); F02/F03 wg kontraktu BE7. Piaskownica nie izoluje prawdziwych CLI (widzą prawdziwe logowania). |
+
+- W5-UI8: stable fallback group identity preserves async loads/drafts; return-after-reset pool switch from BE8; scoped, dismissible network-error card without quota wording.

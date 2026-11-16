@@ -337,6 +337,19 @@ export function ProviderAccounts() {
                 Zapisz limit
               </Button>
             </Card>
+            <Switch
+              label="Return to the first account after the limit resets"
+              checked={snapshot().pool.returnAfterReset !== false}
+              disabled={state.busy() || !api()}
+              onChange={(returnAfterReset) =>
+                void state.run(async () => {
+                  await api()?.setPoolSettings({
+                    maxAccountsPerProvider: snapshot().pool.maxAccountsPerProvider,
+                    returnAfterReset,
+                  });
+                })
+              }
+            />
             <For each={["codex", "claude"] as const}>
               {(provider) => {
                 const accounts = () =>
