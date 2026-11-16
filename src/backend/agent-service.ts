@@ -56,6 +56,7 @@ import type {
 import {
   isAcpModel,
   isClaudeModel,
+  isEndpointModel,
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
@@ -88,6 +89,8 @@ import {
 } from "./conversation-snapshots";
 import { DATA_DYNAMIC_TOOLS, DATA_INSTRUCTIONS, SharedDataTools } from "./data-tools";
 import { DraftStore } from "./draft-store";
+import { EndpointAgentClient } from "./endpoint-client";
+import type { EndpointStore } from "./endpoint-store";
 import { EYES_DYNAMIC_TOOLS, EYES_NAMESPACE, type EyesCallContext } from "./eyes-service";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
 import { Marketplace } from "./marketplace";
@@ -380,6 +383,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #cli = new Map<AgentProvider, CodexCliInfo | ClaudeCliInfo>();
   readonly #accounts = new Map<AgentProvider, AccountReadResult["account"]>();
   readonly #providerStarts = new Map<AgentProvider, Promise<void>>();
+  /** COSGRAL W5-K2: the person's own model endpoints (null until attached). */
+  #endpoints: EndpointStore | null = null;
   /** COSGRAL W5-K1: the agent whose conversation a window opened last (where a card without an agent goes). */
   #lastOpenedBotId: string | null = null;
   /** COSGRAL W5-K1: which provider account answers a turn (null until the accounts are attached: the old path). */
@@ -871,7 +876,20 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   listModels(): AgentModelOption[] {
-    return structuredClone(this.#models);
+    // COSGRAL W5-K2: the models of the person's own endpoints are agent models like any other.
+    const endpointModels: AgentModelOption[] = (this.#endpoints?.modelOptions() ?? []).map((model) => ({
+      id: model.id,
+      name: model.name,
+      description: "A model on your own endpoint. Conversation only: it gets no program tools.",
+      defaultReasoningEffort: "medium",
+      supportedReasoningEfforts: ["medium"],
+    }));
+    return [...structuredClone(this.#models), ...endpointModels];
+  }
+
+  /** COSGRAL W5-K2: attach the own model endpoints (their models join the model choice; the client talks to them). */
+  useEndpoints(endpoints: EndpointStore): void {
+    this.#endpoints = endpoints;
   }
 
   async createBot(): Promise<BotSummary> {
@@ -1414,14 +1432,26 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       let client: AgentClient | null = null;
       let cli: CodexCliInfo | ClaudeCliInfo | null = null;
       try {
-        cli = provider === "codex" ? await resolveCodexCli() : provider === "acp" ? ACP_CLI : await resolveClaudeCli();
+        cli =
+          provider === "codex"
+            ? await resolveCodexCli()
+            : provider === "acp"
+              ? ACP_CLI
+              : provider === "endpoint"
+                ? ENDPOINT_CLI
+                : await resolveClaudeCli();
         client = this.#clientFactory
           ? this.#clientFactory(provider, cli)
           : provider === "codex"
             ? new CodexAppServerClient(cli.executable, this.#requestTimeoutMs)
             : provider === "acp"
               ? new AcpAgentClient({ agents: () => this.#providers?.listAcpAgents() ?? [] })
-              : new ClaudeAgentClient(cli);
+              : provider === "endpoint"
+                ? new EndpointAgentClient({
+                    resolve: (id) => this.#endpoints?.resolve(id) ?? null,
+                    models: () => this.#endpoints?.modelOptions() ?? [],
+                  })
+                : new ClaudeAgentClient(cli);
         this.#bindClient(client);
         client.start();
         await client.request(
@@ -3894,6 +3924,7 @@ function cleanModelName(value: string | undefined, fallback: string): string {
 }
 
 function providerForModel(model: BotSummary["model"]): AgentProvider {
+  if (isEndpointModel(model)) return "endpoint";
   return isAcpModel(model) ? "acp" : isClaudeModel(model) ? "claude" : "codex";
 }
 
@@ -3913,6 +3944,8 @@ function accountProviderOf(provider: AgentProvider): AccountProvider | null {
 
 /** COSGRAL W3: ACP agents are configured programs, not one CLI. */
 const ACP_CLI: CodexCliInfo = { executable: "acp", version: "acp" };
+/** COSGRAL W5-K2: a model endpoint is an address, not a CLI. */
+const ENDPOINT_CLI: CodexCliInfo = { executable: "endpoint", version: "endpoint" };
 
 /** COSGRAL W3: whether a failed turn's error is a usage limit or unavailability (ACP gives errorKind; Codex and Claude only text). */
 function turnFailure(
@@ -3926,7 +3959,8 @@ function turnFailure(
   return classifyAcpError(new Error(message));
 }
 
-function providerLabel(provider: AgentProvider): "Claude" | "Codex" | "ACP agent" {
+function providerLabel(provider: AgentProvider): "Claude" | "Codex" | "ACP agent" | "Model endpoint" {
+  if (provider === "endpoint") return "Model endpoint";
   return provider === "claude" ? "Claude" : provider === "acp" ? "ACP agent" : "Codex";
 }
 

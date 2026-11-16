@@ -17,8 +17,10 @@ import {
   isAcpModel,
   isAgentModel,
   isClaudeModel,
+  isEndpointModel,
   PROVIDER_LIMITS,
   type ProviderUsage,
+  parseEndpointModel,
   type SaveAcpAgentInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
@@ -48,12 +50,14 @@ interface Block {
 }
 
 export function providerOfModel(model: AgentModelId): AgentProviderId {
+  if (isEndpointModel(model)) return "endpoint";
   return isAcpModel(model) ? "acp" : isClaudeModel(model) ? "claude" : "codex";
 }
 
-/** Limits apply to the whole Codex or Claude account, but to each ACP agent on its own. */
+/** Limits apply to the whole Codex or Claude account, to each ACP agent on its own, and to each endpoint (all its models). */
 function scopeOf(model: AgentModelId): string {
   const provider = providerOfModel(model);
+  if (provider === "endpoint") return `endpoint:${parseEndpointModel(model)?.endpointId ?? model}`;
   return provider === "acp" ? model : provider;
 }
 

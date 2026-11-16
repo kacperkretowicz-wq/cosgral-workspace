@@ -48,7 +48,7 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS projection_provider_sessions (
     id TEXT PRIMARY KEY,
     thread_id TEXT NOT NULL REFERENCES projection_threads(thread_id) ON DELETE CASCADE,
-    provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp')),
+    provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp', 'endpoint')),
     external_session_id TEXT NOT NULL,
     model TEXT NOT NULL,
     effort TEXT NOT NULL,
@@ -446,7 +446,7 @@ export function migrateOpenBotDatabase(db: DatabaseSync, appliedAt = new Date().
 }
 
 /**
- * COSGRAL W3: provider sessions of ACP agents. A database made before W3 has a CHECK that allows only
+ * COSGRAL W3 (+ W5-K2: model endpoints): provider sessions of ACP agents and endpoints. A database made before W3 has a CHECK that allows only
  * codex and claude; SQLite cannot change a CHECK, so the table is rebuilt once (SQLite's documented
  * procedure: foreign keys off, copy, rename, check, foreign keys on). Idempotent, no version change.
  */
@@ -455,7 +455,7 @@ function widenProviderSessions(db: DatabaseSync): void {
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'projection_provider_sessions'")
     .get();
   const sql = row && isString(row.sql) ? row.sql : "";
-  if (!sql || sql.includes("'acp'")) return;
+  if (!sql || sql.includes("'endpoint'")) return;
   const foreignKeys = db.prepare("PRAGMA foreign_keys").get()?.foreign_keys === 1;
   db.exec("PRAGMA foreign_keys = OFF");
   try {
@@ -465,7 +465,7 @@ function widenProviderSessions(db: DatabaseSync): void {
         CREATE TABLE projection_provider_sessions_w3 (
           id TEXT PRIMARY KEY,
           thread_id TEXT NOT NULL REFERENCES projection_threads(thread_id) ON DELETE CASCADE,
-          provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp')),
+          provider TEXT NOT NULL CHECK(provider IN ('codex', 'claude', 'acp', 'endpoint')),
           external_session_id TEXT NOT NULL,
           model TEXT NOT NULL,
           effort TEXT NOT NULL,

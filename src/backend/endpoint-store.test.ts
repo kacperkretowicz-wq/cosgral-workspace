@@ -50,7 +50,7 @@ class FakeServer {
 
   static async start(setup: (self: FakeServer) => void = () => undefined): Promise<FakeServer> {
     const holder: { self: FakeServer | null } = { self: null };
-    const server = createServer((request, response) => holder.self?.#handle(request, response));
+    const server = createServer((request, response) => holder.self?.handle(request, response));
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const self = new FakeServer(server);
     holder.self = self;
@@ -73,7 +73,7 @@ class FakeServer {
     await new Promise<void>((resolve) => this.#server.close(() => resolve()));
   }
 
-  #handle(request: IncomingMessage, response: ServerResponse): void {
+  handle(request: IncomingMessage, response: ServerResponse): void {
     this.seen.push({
       method: request.method ?? "",
       url: request.url ?? "",
