@@ -11,8 +11,10 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { AccessSettings } from "./AccessSettings";
 import { AgentAccountPicker } from "./AgentAccountPicker";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
+import { BrowserProfileSettings } from "./BrowserProfileSettings";
 import { BudgetSettings } from "./BudgetSettings";
 import { FallbackOrder } from "./fallback-order";
+import { IsolationSettings } from "./IsolationSettings";
 import { FallbackChainView } from "./ProviderFallbackLists";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
@@ -154,6 +156,8 @@ export function AgentSettingsW3(props: { botId: string }) {
         {(id) => (
           <>
             <AccessSettings botId={id} />
+            <IsolationSettings botId={id} />
+            <BrowserProfileSettings botId={id} />
             <BudgetSettings botId={id} />
           </>
         )}

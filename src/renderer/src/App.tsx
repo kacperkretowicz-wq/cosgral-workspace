@@ -2166,6 +2166,10 @@ export function App() {
                   }
                   loaded={activeBot() ? conversationLoaded()[activeBot()?.id ?? ""] === true : false}
                   queue={activeQueue()}
+                  onOpenBudget={() => {
+                    const bot = activeBot();
+                    if (bot) setSettingsRequest({ botId: bot.id, nonce: Date.now() });
+                  }}
                   browserTabs={browserTabs()}
                   activeBrowserTabId={activeBrowserTabId()}
                   browserControlState={browserControlState()}
