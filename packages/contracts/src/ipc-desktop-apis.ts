@@ -18,6 +18,7 @@ import type {
   UpdateAgentSettingsInput,
   UpdateAppSettingsInput,
 } from "./ipc-agent-settings";
+import type { ApiKeysDesktopApi } from "./ipc-api-keys";
 import type {
   AppInfo,
   AppSetupState,
@@ -640,6 +641,8 @@ export interface OpenBotDesktopApi {
   appData?: AppDataDesktopApi;
   /** COSGRAL W5 subscriptions: managed CLIs (BE1), later accounts and keys. Optional until every mock implements it. */
   subscriptions?: SubscriptionsDesktopApi;
+  /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
+  apiKeys?: ApiKeysDesktopApi;
 }
 
 /**

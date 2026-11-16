@@ -17,6 +17,7 @@ import { type DynamicRecord, isDynamicRecord, isOneOf, isString } from "@openbot
 import { z } from "zod";
 import { CARDS_NAMESPACE, CARDS_TOOL_SPECS } from "./action-cards";
 import type { AgentProvider } from "./agent-client";
+import { apiKeyEnv } from "./api-key-env";
 import { CHANNEL_NAMESPACE, CHANNEL_TOOL_SPECS } from "./channel-tools";
 import { CLI_VERSION_TIMEOUT_MS, type ClaudeCliInfo, CliTimeoutError, CodexCliError, runCliWithRetry } from "./cli";
 import { COMPUTER_NAMESPACE, COMPUTER_TOOL_SPECS } from "./computer-use";
@@ -251,7 +252,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         additionalDirectories: config.additionalDirectories,
         canUseTool,
         mcpServers,
-        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "openbot/0.1.0" },
+        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "openbot/0.1.0", ...apiKeyEnv("claude") }, // COSGRAL W5-BE3
       },
     });
     const runtime: ThreadRuntime = {

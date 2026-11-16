@@ -36,6 +36,8 @@ import {
 } from "electron";
 import electronUpdater from "electron-updater";
 import { AgentService } from "../backend/agent-service";
+import { setApiKeySource } from "../backend/api-key-env";
+import { ApiKeyStore } from "../backend/api-key-store";
 import { ApprovalRulesStore } from "../backend/approval-rules";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
@@ -60,6 +62,7 @@ import { WorkflowStore } from "../backend/workflow-store";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
+import { registerApiKeysIpc } from "./api-keys-ipc";
 import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
@@ -263,6 +266,7 @@ let remoteServerManager: RemoteServerManager | null = null;
 let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
 let managedCli: ManagedCliRuntime | null = null;
+let apiKeyStore: ApiKeyStore | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
@@ -851,6 +855,7 @@ function registerIpcHandlers(
   registerRemoteDesktopIpc(() => remoteDesktop);
   registerVoiceIpc(() => voiceService);
   registerSubscriptionsIpc(() => managedCli);
+  registerApiKeysIpc(() => apiKeyStore);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
@@ -1341,6 +1346,9 @@ if (!hasSingleInstanceLock) {
       );
       // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
       agentService.useSecretBox(electronSecretBox());
+      // COSGRAL W5-BE3: provider API keys (encrypted); a provider process gets its key only as its own environment.
+      apiKeyStore = new ApiKeyStore(store.database, electronSecretBox());
+      setApiKeySource(apiKeyStore);
       // COSGRAL W3: Computer Use drives the Windows desktop through its own PowerShell helper.
       if (process.platform === "win32")
         agentService.computerUse.useDriver(

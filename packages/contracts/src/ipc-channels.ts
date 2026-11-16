@@ -173,6 +173,11 @@ export const IPC_CHANNELS = {
   subscriptionsAssignAccountToAgent: "subscriptions:assign-account-to-agent",
   subscriptionsGetPoolSettings: "subscriptions:get-pool-settings",
   subscriptionsSetPoolSettings: "subscriptions:set-pool-settings",
+  // COSGRAL W5-BE3: API keys of the providers.
+  apiKeysList: "api-keys:list",
+  apiKeysSet: "api-keys:set",
+  apiKeysRemove: "api-keys:remove",
+  apiKeysCheck: "api-keys:check",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

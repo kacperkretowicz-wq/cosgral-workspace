@@ -910,14 +910,14 @@ async function main(): Promise<void> {
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden===true`,
       );
-      await page.getByRole("switch", { name: "Pokaż ukryte" }).check();
+      await page.getByRole("switch", { name: "Pokaż ukryte" }).click({ force: true });
       await row.waitFor();
       await row.click({ button: "right" });
       await page.getByRole("menuitem", { name: "Pokaż", exact: true }).click();
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden!==true`,
       );
-      await page.getByRole("switch", { name: "Pokaż ukryte" }).uncheck();
+      await page.getByRole("switch", { name: "Pokaż ukryte" }).click({ force: true });
       await row.waitFor();
       await dump(page, evidence, "navigation-hide-show");
     });

@@ -91,6 +91,7 @@ import {
   STORY_USAGE,
 } from "./fixtures";
 import { createMockAccounts } from "./mock-accounts";
+import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -1257,6 +1258,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         return () => remoteMacListeners.delete(listener);
       },
     },
+    // COSGRAL W5-BE3: provider API keys (demo; the answers carry only a mask and a state).
+    apiKeys: createMockApiKeysApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).
     subscriptions: {
       ...createMockAccounts((event) => emitAgentEvent(event)),
