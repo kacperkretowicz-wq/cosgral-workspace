@@ -93,6 +93,22 @@ class FakeRunner implements RoutineRunner {
   }
 }
 
+/** Text the program generates itself: random ids (UUID), ISO times and Unix times in seconds or milliseconds. */
+const GENERATED_TEXT = [
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+  /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g,
+  /(?<!\d)1\d{9}(?:\d{3})?(?!\d)/g,
+];
+
+/**
+ * W5-BE6: the names of the secrets found in `text`. Generated text is removed first: a short secret (the 3-digit
+ * CVC) can appear inside a random id or a time by chance, and that is not a leak.
+ */
+function secretHits(text: string, secrets: Record<string, string>): string[] {
+  const scrubbed = GENERATED_TEXT.reduce((current, pattern) => current.replace(pattern, "<generated>"), text);
+  return Object.entries(secrets).flatMap(([name, value]) => (scrubbed.includes(value) ? [name] : []));
+}
+
 function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
   const db = database.connection;
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
@@ -100,10 +116,8 @@ function scanDb(database: OpenBotDatabase, needles: string[]): string[] {
   for (const table of tables) {
     if (!isDynamicRecord(table) || !isString(table.name) || table.name.startsWith("sqlite_")) continue;
     for (const row of db.prepare(`SELECT * FROM "${table.name}"`).all()) {
-      const blob = JSON.stringify(row);
-      for (const needle of needles) {
-        if (blob.includes(needle)) found.push(`${table.name}:${needle}`);
-      }
+      const named = Object.fromEntries(needles.map((needle) => [needle, needle]));
+      for (const needle of secretHits(JSON.stringify(row), named)) found.push(`${table.name}:${needle}`);
     }
   }
   return found;
@@ -192,12 +206,15 @@ async function main() {
   );
 
   const listed = store.list();
-  const listText = JSON.stringify(listed);
-  note(
-    "vault-list-no-secrets",
-    ![PASSWORD, TWO_STEP, API_KEY, CARD_NUMBER, CARD_CVC, CONTACT_EMAIL].some((s) => listText.includes(s)),
-    `items=${listed.length}`,
-  );
+  const listHits = secretHits(JSON.stringify(listed), {
+    PASSWORD,
+    TWO_STEP,
+    API_KEY,
+    CARD_NUMBER,
+    CARD_CVC,
+    CONTACT_EMAIL,
+  });
+  note("vault-list-no-secrets", listHits.length === 0, `items=${listed.length} found=${listHits.join(",") || "none"}`);
 
   // Agent fills login+totp on local page without seeing secrets
   typed.length = 0;
@@ -503,6 +520,22 @@ async function main() {
 }
 
 describe("W2-T4 vault+routines acceptance", () => {
+  // W5-BE5/BE6: the CVC "314" is three digits. It showed up by chance inside a random item id (UUID) or a timestamp in
+  // about 2.4 % of runs, and the plain substring check called that a leaked secret. Text the program generates itself
+  // (ids, times, long numbers) cannot carry a secret, so it is left out; any field taken from input is still scanned.
+  it("the secret scan ignores generated ids and times, and still finds a short secret that leaked", () => {
+    const generated = JSON.stringify([
+      { id: "a3140c2e-9b1d-4f3a-8314-0c2e9b1d4f3a", label: "test-card", cardLast4: "4242" },
+      { createdAt: "2026-11-16T08:12:31.314Z", updatedAt: "2026-11-16T08:12:31.314Z", revision: 1700000003140 },
+    ]);
+    expect(secretHits(generated, { CARD_CVC })).toEqual([]);
+    expect(secretHits(JSON.stringify([{ id: "x", label: `Card CVC ${CARD_CVC}` }]), { CARD_CVC })).toEqual([
+      "CARD_CVC",
+    ]);
+    expect(secretHits(JSON.stringify({ cvc: CARD_CVC }), { CARD_CVC, CARD_NUMBER })).toEqual(["CARD_CVC"]);
+    expect(secretHits(`{"n":"${CARD_NUMBER}"}`, { CARD_NUMBER })).toEqual(["CARD_NUMBER"]);
+  });
+
   it("runs sandbox checks and writes evidence", async () => {
     // The sandbox lives in a temp folder (or in COSGRAL_ACCEPTANCE_ROOT), never at a fixed machine path.
     const { mkdir, mkdtemp, readFile, rm } = await import("node:fs/promises");
