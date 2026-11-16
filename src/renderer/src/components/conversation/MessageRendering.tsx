@@ -257,6 +257,7 @@ function imageGenerationStatus(
 
 export function MessageActions(props: {
   message: BotMessage;
+  onBranch?: () => void;
   pickerOpen: boolean;
   moreOpen: boolean;
   expandedEmoji: boolean;
@@ -346,6 +347,9 @@ export function MessageActions(props: {
             <MoreIcon />
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>
+            <Show when={props.onBranch}>
+              <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
+            </Show>
             <DropdownMenu.Item onSelect={props.onCopy}>
               {props.copied ? <CheckIcon /> : <CopyIcon />}
               <span>{props.copied ? "Copied" : "Copy"}</span>

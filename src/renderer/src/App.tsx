@@ -35,6 +35,7 @@ import type {
   TeamMemberSummary,
   TeamPresenceSnapshot,
   TeamSessionSummary,
+  ThreadList,
   UpdateBotInput,
   UpdateStatus,
 } from "@openbot/contracts/ipc";
@@ -72,7 +73,6 @@ import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
 import { selectIslandCard } from "./island-selection";
-import { needsYouItemsFromCards } from "./needs-you";
 import {
   addCard,
   approvalCard,
@@ -89,6 +89,7 @@ import {
   vaultCard,
 } from "./pending-cards";
 import { rowStateFor, type SidebarAgentState } from "./row-activity";
+import { cardsInThread, pendingCardThreadId, threadAttentionItems } from "./thread-view";
 
 const FALLBACK_STATUS: AgentStatus = {
   phase: "starting",
@@ -214,6 +215,7 @@ export function App() {
   const [botList, setBotList] = createSignal<BotProfile[]>([]);
   const [modelOptions, setModelOptions] = createSignal<AgentModelOption[]>([]);
   const [activeBotId, setActiveBotId] = createSignal("");
+  const [threadLists, setThreadLists] = createSignal<Record<string, ThreadList>>({});
   const [liveMessages, setLiveMessages] = createSignal<Record<string, BotMessage[]>>({});
   const [uiErrors, setUiErrors] = createSignal<Record<string, BotMessage[]>>({});
   const [conversationLoaded, setConversationLoaded] = createSignal<Record<string, boolean>>({});
@@ -565,6 +567,7 @@ export function App() {
       if (!botId) return;
       void Promise.all([window.openbot.agent.readConversation(botId), window.openbot.agent.listQueue(botId)])
         .then(([snapshot, queue]) => {
+          if (threadLists()[botId]?.activeThreadId && threadLists()[botId].activeThreadId !== snapshot.threadId) return;
           setQueues((current) => ({ ...current, [botId]: queue }));
           if (snapshot.readState) applyConversationReadState(botId, snapshot.readState);
           scheduleConversation(snapshot);
@@ -573,8 +576,69 @@ export function App() {
     },
   );
 
+  function applyThreadList(next: ThreadList) {
+    const previous =
+      threadLists()[next.botId]?.activeThreadId ?? botList().find((bot) => bot.id === next.botId)?.threadId;
+    setThreadLists((current) => ({ ...current, [next.botId]: next }));
+    if (!next.activeThreadId || previous === next.activeThreadId) return;
+    const profile = botList().find((bot) => bot.id === next.botId);
+    if (profile) updateStored(profile, { ...profile, threadId: next.activeThreadId });
+    pendingConversationSnapshots.delete(next.botId);
+    setLiveMessages((current) => withoutBot(current, next.botId));
+    setConversationRevisions((current) => withoutBot(current, next.botId));
+    setConversationLoaded((current) => ({ ...current, [next.botId]: false }));
+    setActiveTurns((current) => withoutBot(current, next.botId));
+    setQueues((current) => withoutBot(current, next.botId));
+    const threadId = next.activeThreadId;
+    void Promise.all([window.openbot.agent.readConversation(next.botId), window.openbot.agent.listQueue(next.botId)])
+      .then(([snapshot, queue]) => {
+        if (threadLists()[next.botId]?.activeThreadId !== threadId || snapshot.threadId !== threadId) return;
+        setQueues((current) => ({ ...current, [next.botId]: queue }));
+        scheduleConversation(snapshot);
+      })
+      .catch((error) => appendUiError(next.botId, error, "Load thread failed"));
+  }
+  createEffect(
+    () =>
+      botList()
+        .map((bot) => bot.id)
+        .join("\n"),
+    () => {
+      const api = window.openbot.threads;
+      if (!api) return;
+      for (const bot of botList())
+        if (!threadLists()[bot.id])
+          void api
+            .list({ botId: bot.id })
+            .then(applyThreadList)
+            .catch(() => undefined);
+    },
+  );
   function handleAgentEvent(event: AgentEvent) {
     switch (event.type) {
+      case "threads-changed":
+        applyThreadList(event);
+        return;
+      case "thread-activity": {
+        const list = threadLists()[event.botId];
+        if (list)
+          applyThreadList({
+            ...list,
+            threads: list.threads.map((thread) =>
+              thread.id === event.threadId
+                ? {
+                    ...thread,
+                    state: event.state,
+                    unread: event.unread,
+                    queued: event.queued,
+                    needsYou: event.needsYou,
+                    updatedAt: event.updatedAt,
+                  }
+                : thread,
+            ),
+          });
+        return;
+      }
       case "island-open-request":
         setIslandTarget(event);
         selectBot(event.botId);
@@ -615,9 +679,16 @@ export function App() {
         applyStoredBots(event.bots);
         return;
       case "conversation":
+        if (
+          threadLists()[event.snapshot.botId]?.activeThreadId &&
+          threadLists()[event.snapshot.botId].activeThreadId !== event.snapshot.threadId
+        )
+          return;
         scheduleConversation(event.snapshot, isAgentChatOpen(event.snapshot.botId));
         return;
       case "conversation-delta":
+        if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
+          return;
         applyConversationDelta(event);
         return;
       case "queue-changed":
@@ -640,6 +711,8 @@ export function App() {
         setComputerUsingBotIds(event.state.sessions.map((session) => session.botId));
         return;
       case "turn-started":
+        if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
+          return;
         clearRecentReply(event.botId);
         setActiveTurns((current) => ({
           ...current,
@@ -647,9 +720,16 @@ export function App() {
         }));
         return;
       case "turn-completed":
+        setPendingCards((current) =>
+          threadLists()[event.botId]
+            ? current.filter((card) => card.botId !== event.botId || pendingCardThreadId(card) !== event.threadId)
+            : clearBotCards(current, event.botId),
+        );
+        if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
+          return;
         setActiveTurns((current) => ({ ...current, [event.botId]: null }));
         // The backend already sent `*-resolved` (expired) for these; this also covers older backends.
-        setPendingCards((current) => clearBotCards(current, event.botId));
+
         if (event.status === "completed") markReplyCompleted(event.botId);
         return;
       case "prompt":
@@ -841,6 +921,11 @@ export function App() {
   }
 
   function scheduleConversation(snapshot: ConversationSnapshot, markNewMessagesRead = false) {
+    if (
+      threadLists()[snapshot.botId]?.activeThreadId &&
+      threadLists()[snapshot.botId].activeThreadId !== snapshot.threadId
+    )
+      return;
     const botId = snapshot.botId;
     const appliedRevision = conversationRevisions()[botId] ?? -1;
     const pending = pendingConversationSnapshots.get(botId);
@@ -1527,7 +1612,13 @@ export function App() {
   const activeDecisionCard = createMemo(() => {
     const bot = activeBot();
     const target = islandTarget();
-    return bot ? selectIslandCard(pendingCards(), bot.id, target?.botId === bot.id ? target.request : null) : undefined;
+    return bot
+      ? selectIslandCard(
+          cardsInThread(pendingCards(), bot.id, threadLists()[bot.id]?.activeThreadId),
+          bot.id,
+          target?.botId === bot.id ? target.request : null,
+        )
+      : undefined;
   });
   const activePrompt = createMemo(() => {
     const card = activeDecisionCard();
@@ -1537,7 +1628,7 @@ export function App() {
     const card = activeDecisionCard();
     return card?.kind === "approval" ? card.approval : undefined;
   });
-  const needsYouItems = createMemo(() => needsYouItemsFromCards({ bots: botList(), cards: pendingCards() }));
+  const needsYouItems = createMemo(() => threadAttentionItems(botList(), pendingCards(), threadLists()));
 
   const sidebarAgentStates = createMemo<Record<string, SidebarAgentState>>(() => {
     const turns = activeTurns();
@@ -1892,9 +1983,11 @@ export function App() {
                 accountUsage={accountUsage()}
                 updateStatus={updateStatus()}
                 agentStates={sidebarAgentStates()}
+                activities={activities()}
                 layout={folderLayout()}
                 folderActions={folderLayout() ? folderActions : undefined}
                 needsYouItems={needsYouItems()}
+                threadLists={threadLists()}
                 lookingBotIds={lookingBotIds()}
                 computerUsingBotIds={computerUsingBotIds()}
                 onStopComputerUse={(botId) =>
@@ -1918,7 +2011,17 @@ export function App() {
                   setAgentPickerOpen(false);
                   setChannelsOpen(true);
                 }}
-                onSelectNeedsYou={selectBot}
+                onSelectNeedsYou={(botId, threadId) => {
+                  if (threadId && window.openbot.threads)
+                    void window.openbot.threads
+                      .select({ botId, threadId })
+                      .then((list) => {
+                        applyThreadList(list);
+                        selectBot(botId);
+                      })
+                      .catch((error) => appendUiError(botId, error, "Open thread failed"));
+                  else selectBot(botId);
+                }}
                 onSelectPerson={(memberId) => {
                   setChannelsOpen(false);
                   void selectDirectMember(memberId);
@@ -2035,6 +2138,7 @@ export function App() {
               </Show>
               <Show when={activePage() === "agents" && !activeDirectMember() && !channelsOpen()}>
                 <Conversation
+                  onThreadsChanged={applyThreadList}
                   agentStatus={agentStatus()}
                   bot={activeBot()}
                   bots={botList()}
