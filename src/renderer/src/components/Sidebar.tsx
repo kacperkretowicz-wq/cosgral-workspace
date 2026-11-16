@@ -868,7 +868,7 @@ export function Sidebar(props: SidebarProps) {
                         <span class="bot-row-avatar">
                           <AgentAvatar bot={bot} />
                           <Show when={props.threadLists?.[bot.id]}>
-                            {(list) => <span class="bot-row-preview">{threadRowLabel(list())}</span>}
+                            {(list) => <span class="sr-only">{threadRowLabel(list())}</span>}
                           </Show>
                           <Show when={props.activities?.[bot.id]?.workingThread}>
                             {(thread) => (

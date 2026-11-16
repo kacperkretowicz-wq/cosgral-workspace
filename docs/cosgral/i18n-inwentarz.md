@@ -136,3 +136,6 @@ Szacunek W7-UI2 (jak spec §5): **setki kluczy** EN+PL; CI 0 braków (Q5/Q12).
 ## Commity
 
 Gałąź `team/tester/w7-t2` — SHA w `channel_result`.
+
+### W6-UI5-FIX: dopisek do W7-UI2
+- Sidebar: przycisk "Pokaż ukryte" pozostaje po polsku w angielskim interfejsie. Przenieść do wspólnego katalogu EN/PL w W7-UI2; bez zmiany napisu w tej poprawce.
