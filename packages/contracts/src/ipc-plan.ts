@@ -7,7 +7,10 @@
 //
 // After "approve" the agent works through the steps and reports each one (`update_plan`), so the card shows progress.
 // After "reject" the agent is told to do none of the steps. The plan is kept (with its phase and progress) with the
-// conversation, so it is still there after a restart.
+// conversation, so its history is still there after a restart. A card that was OPEN (still waiting for an answer, or
+// approved and running) does NOT come back as open after a restart: nothing runs without the program and the agent that
+// waited is gone. It is then listed as "expired" (it was never answered) or "stopped" (it was approved but not done), and
+// it can no longer be approved. The window must not promise that an Approve survives a restart.
 //
 // The agent uses two tools of the `cosgral_cards` namespace: `propose_plan` (waits for the person) and `update_plan`.
 // Whether a plan is needed is a rule of the program's instructions to the agent (`planRequired`, Q8): the program cannot
