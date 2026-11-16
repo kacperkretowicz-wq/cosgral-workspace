@@ -7,6 +7,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { AgentAccountPicker } from "./AgentAccountPicker";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
@@ -55,6 +56,7 @@ export function AgentTemplateCreator(props: {
 }
 
 export function AgentSettingsW3(props: { botId: string }) {
+  const [savedModel, setSavedModel] = createSignal<AgentModelId>();
   const [settings, setSettings] = createSignal<AgentSettings>();
   const [templates, setTemplates] = createSignal<AgentTemplate[]>([]);
   const [fallbacks, setFallbacks] = createSignal<AgentModelId[]>([]);
@@ -76,6 +78,7 @@ export function AgentSettingsW3(props: { botId: string }) {
         window.openbot.providers?.getFallbackModels(props.botId) ?? Promise.resolve([]),
       ]);
       setSettings(value);
+      setSavedModel(value.bot.model);
       setTemplates(list);
       setFallbacks(models);
       setError("");
@@ -142,6 +145,11 @@ export function AgentSettingsW3(props: { botId: string }) {
         {(value) => (
           <>
             <p>Provider: {value().provider}</p>
+            <AgentAccountPicker
+              botId={props.botId}
+              provider={value().provider}
+              disabled={saving() || savedModel() !== value().bot.model}
+            />
             <label>
               Name{" "}
               <Input
