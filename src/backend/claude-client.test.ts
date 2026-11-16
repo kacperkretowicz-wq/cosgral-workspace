@@ -3,7 +3,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { McpServerConfig, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { CanUseTool, McpServerConfig, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { Client as McpClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
@@ -176,6 +176,48 @@ describe("ClaudeAgentClient", () => {
     } finally {
       setApiKeySource(null);
     }
+  });
+
+  // COSGRAL W8-BE1: with a tool gate Claude Code asks the program before its file tools and the shell run.
+  it("asks the tool gate for every tool, and obeys a refusal; without a gate nothing is asked", async () => {
+    root = await mkdtemp(join(tmpdir(), "openbot-claude-client-"));
+    const seen: Array<{ mode: string | undefined; canUseTool: CanUseTool | undefined }> = [];
+    const factory = (params: Parameters<ConstructorParameters<typeof ClaudeAgentClient>[1] & object>[0]) => {
+      seen.push({ mode: params.options?.permissionMode, canUseTool: params.options?.canUseTool });
+      return new TestQuery(new TestQueue<TestStreamMessage>());
+    };
+    const start = (client: ClaudeAgentClient) =>
+      client.request(
+        "thread/start",
+        { cwd: root, model: "claude-sonnet-5", developerInstructions: "x", runtimeWorkspaceRoots: [root] },
+        decodeThreadResponse,
+      );
+
+    const plain = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, factory);
+    plain.start();
+    await start(plain);
+    expect(seen[0]?.mode).toBe("bypassPermissions");
+
+    const gated = new ClaudeAgentClient({ executable: "/bin/true", version: "2.1.231" }, factory);
+    const asked: Array<{ tool: string; input: unknown }> = [];
+    gated.useToolGate(async (_thread, tool, input) => {
+      asked.push({ tool, input });
+      return tool === "Write" ? { behavior: "deny", message: "Outside the working folder." } : { behavior: "allow" };
+    });
+    gated.start();
+    await start(gated);
+    expect(seen[1]?.mode).toBe("default");
+    const canUseTool = seen[1]?.canUseTool;
+    if (!canUseTool) throw new Error("The gate was not given to Claude.");
+    const options = { signal: new AbortController().signal, toolUseID: "tool-1", requestId: "req-1" };
+    expect(await canUseTool("Bash", { command: "dir" }, options)).toMatchObject({ behavior: "allow" });
+    expect(await canUseTool("Write", { file_path: "D:\\x\\a.txt" }, options)).toEqual({
+      behavior: "deny",
+      message: "Outside the working folder.",
+    });
+    expect(asked.map((item) => item.tool)).toEqual(["Bash", "Write"]);
+    await plain.stop();
+    await gated.stop();
   });
 
   it("gives Claude the agent eyes tools next to the browser and teammate tools", async () => {

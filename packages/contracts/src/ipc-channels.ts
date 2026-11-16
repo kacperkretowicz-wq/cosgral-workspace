@@ -225,6 +225,11 @@ export const IPC_CHANNELS = {
   acpLoginCancel: "acp-login:cancel",
   acpPresetsList: "acp-presets:list",
   acpPresetsAdd: "acp-presets:add",
+  // COSGRAL W8-BE1: access levels of an agent.
+  accessGet: "access:get",
+  accessList: "access:list",
+  accessSetFolders: "access:set-folders",
+  accessSetLevel: "access:set-level",
   messageActionsRetry: "message-actions:retry",
   messageActionsEdit: "message-actions:edit",
   messageActionsDelete: "message-actions:delete",

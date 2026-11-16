@@ -1,3 +1,4 @@
+import type { AccessDesktopApi } from "./ipc-access";
 import type { AcpLoginDesktopApi } from "./ipc-acp-login";
 import type { AcpPresetsDesktopApi } from "./ipc-acp-presets";
 import type {
@@ -670,6 +671,8 @@ export interface OpenBotDesktopApi {
   acpLogin?: AcpLoginDesktopApi;
   /** COSGRAL W6-BE5: ready settings for Gemini CLI and Antigravity in Providers (this computer only). Optional until every mock implements it. */
   acpPresets?: AcpPresetsDesktopApi;
+  /** COSGRAL W8-BE1: the access level, added and excluded folders of an agent (this computer only). Optional until every mock implements it. */
+  access?: AccessDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */

@@ -47,7 +47,8 @@ export interface InheritedAccess {
 export interface SubagentRunnerOptions {
   emit: (event: AgentEvent) => void;
   store: SubagentStore;
-  client: (botId: string) => Promise<AgentClient>;
+  /** The CLI process for the subagent: the one the parent's thread runs in (its account from the pool), else the provider's own. */
+  client: (botId: string, parentProviderThreadId: string) => Promise<AgentClient>;
   bot: (botId: string) => BotSummary;
   /** The tools of the parent, WITHOUT the subagent tools: a subagent gets nothing more (and cannot start subagents). */
   tools: (botId: string) => unknown[];
@@ -358,7 +359,7 @@ export class SubagentRunner {
   async #start(session: Session, task: string): Promise<void> {
     const { subagent } = session;
     try {
-      const client = await this.#options.client(subagent.botId);
+      const client = await this.#options.client(subagent.botId, session.parentProviderThreadId);
       if (session.ended) return;
       session.client = client;
       const bot = this.#options.bot(subagent.botId);

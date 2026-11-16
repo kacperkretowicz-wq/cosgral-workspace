@@ -28,7 +28,37 @@ Mocnego argumentu za filtrem nie ma. Konsekwencja dla Q10: lista serwerów MCP j
 ```
 - Folder przestrzeni jest **obok** danych głównych, nie w nich: „Delete my data” w przestrzeni Main nie rusza danych klientów (test), a wewnątrz przestrzeni klienta strażnik czyszczenia odmawia jej folderów (test), więc nic nie zostanie skasowane przez pomyłkę.
 - Przy starcie `main/index.ts` (kilka linii przed `enableSandbox`) wybiera przestrzeń z `spaces.json`, ustawia `userData` na jej folder i podaje jej „dom” do `BotStore` i do ścieżek czyszczenia (zamiast `homedir()`). Brak wybranej przestrzeni (zarchiwizowana, folder usunięty ręcznie) = start na Main i zdanie w `problem`. Uszkodzony `spaces.json` jest odkładany obok (`.damaged-…`), program idzie na Main, foldery danych zostają nietknięte.
-- Identyfikator przestrzeni to 12 znaków `[a-z0-9]`, który jest nazwą folderu; parser odrzuca wszystko, co mogłoby wyjść z folderu (`..`, ukośniki, wielkie litery).
+- Identyfikator przestrzeni jest nazwą folderu. Program go **tworzy** jako 12 znaków szesnastkowych (`randomBytes(6).toString("hex")`, czyli `[0-9a-f]{12}`), a parser **przyjmuje** `main` albo `^[a-z0-9][a-z0-9-]{5,39}# KK Fullstack W8-KK1: przestrzenie klientów
+
+Data: 16.11.2026. Gałąź `team/kk/w8-kk1` (od integracji `61799a63c`). Spec: `spec-w8.md` §1D, W8-20…24; decyzje lidera Q5, Q9, Q10. Tylko testy jednostkowe, bez Electrona.
+
+## Wynik w jednej linii
+
+**Przestrzeń klienta to osobny folder danych z własną bazą SQLite i własnym „domem” agentów; program działa na jednej przestrzeni naraz, a przełączenie zapisuje wybór i restartuje program na wybranej. Kontrakt i mock są w osobnym pierwszym commicie `d6d7c6938`; silnik (rejestr, foldery, IPC, wpięcie w `main`) i testy w drugim. `agent-service.ts` nietknięty.**
+
+## 1. Decyzja: osobne pliki, nie filtr wierszy
+
+| | Osobny folder danych + restart (wybrane) | Jedna baza i filtr `space_id` |
+|---|---|---|
+| Wyciek przez zapomniany filtr | niemożliwy: druga baza nie jest otwarta | możliwy w każdym zapytaniu, w każdym pliku, także cudzym |
+| Vault, MCP, konta CLI, pamięć, profil przeglądarki (ciasteczka) | osobne „z natury” (leżą w folderze danych) | każda tabela i plik trzeba osobno oznaczyć |
+| Foldery robocze agentów | osobny „dom” per przestrzeń | osobna logika ścieżek |
+| Koszt | przełączenie = restart programu (kilka sekund, tury w toku się kończą) i kopie CLI per przestrzeń | brak restartu, ale zmiany w `agent-service.ts` i w każdym magazynie |
+
+Mocnego argumentu za filtrem nie ma. Konsekwencja dla Q10: lista serwerów MCP jest osobna dla każdej przestrzeni, więc „klient A nie widzi serwerów klienta B” wynika z konstrukcji. Wspólne (globalne) serwery z allowlistą to osobna, jawna funkcja: nie zbudowana.
+
+## 2. Jak to leży na dysku
+
+```
+<AppData>\COSGRAL Workspace             przestrzeń „Main”: dane, które program już ma (niczego nie przenoszę ani nie kopiuję)
+<AppData>\COSGRAL Workspace Spaces\
+    spaces.json                          lista przestrzeni i wybór
+    <id>\data                            userData przestrzeni (baza, Vault, MCP, konta, profil Chromium)
+    <id>\home                            „dom” przestrzeni: <id>\home\COSGRAL Workspace\Bots, Shared, Downloads
+```
+- Folder przestrzeni jest **obok** danych głównych, nie w nich: „Delete my data” w przestrzeni Main nie rusza danych klientów (test), a wewnątrz przestrzeni klienta strażnik czyszczenia odmawia jej folderów (test), więc nic nie zostanie skasowane przez pomyłkę.
+- Przy starcie `main/index.ts` (kilka linii przed `enableSandbox`) wybiera przestrzeń z `spaces.json`, ustawia `userData` na jej folder i podaje jej „dom” do `BotStore` i do ścieżek czyszczenia (zamiast `homedir()`). Brak wybranej przestrzeni (zarchiwizowana, folder usunięty ręcznie) = start na Main i zdanie w `problem`. Uszkodzony `spaces.json` jest odkładany obok (`.damaged-…`), program idzie na Main, foldery danych zostają nietknięte.
+ (`ipc-spaces.ts`): 6–40 małych liter, cyfr i myślników, bez myślnika na początku. Odrzuca wszystko, co mogłoby wyjść z folderu (`..`, ukośniki, wielkie litery). Poprawione 16.11 (W8-BE1, L9 z przeglądu W6-T4): wcześniej raport opisywał generator jako `[a-z0-9]`, a kontrakt jest szerszy.
 - **Usuwanie** (po `confirm: true`): kasuje wyłącznie `<Spaces>\<id>`, odmawia dla Main, dla przestrzeni, na której program działa lub która jest wybrana, i dla folderu, który jest dowiązaniem/junction (nic za nim nie jest kasowane; test).
 
 ## 3. Kontrakt (commit `d6d7c6938`) i IPC

@@ -25,6 +25,7 @@ import { BotStore } from "./bot-store";
 import { MailboxStore } from "./mailbox-store";
 import type { AppServerNotification, RequestId, ResponseDecoder, RpcError } from "./protocol";
 import { ProviderRegistry } from "./provider-registry";
+import { SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 
@@ -62,6 +63,8 @@ afterEach(async () => {
 /** What a fake CLI does with its next turn. */
 type Step =
   | "answer"
+  // W8-BE1 (L3): the turn stays open, so the agent can start a subagent inside it.
+  | "hold"
   | { limit: true; action?: boolean; resetsInSeconds?: number; before?: () => void }
   // W5-BE8: the turn fails on the network (no errorKind: the program reads it from the text).
   | { network: string };
@@ -69,6 +72,8 @@ type Step =
 /** A fake CLI process of one account (or of the system account): scripted turns, its own thread ids. */
 class AccountCli extends EventEmitter implements AgentClient {
   readonly requests: Array<{ method: string; params: unknown }> = [];
+  /** W8-BE1: turns held open by the "hold" step. */
+  readonly held: Array<{ threadId: string; turnId: string }> = [];
   running = false;
   #threads = 0;
 
@@ -127,6 +132,10 @@ class AccountCli extends EventEmitter implements AgentClient {
     if (!this.running) return;
     const send = (method: string, params: unknown) => this.emit("notification", notification(method, params));
     send("turn/started", { threadId, turn: { id: turnId } });
+    if (step === "hold") {
+      this.held.push({ threadId, turnId });
+      return;
+    }
     if (step === "answer") {
       const itemId = `${turnId}:assistant`;
       const text = `ANSWER_FROM_${this.name}`;
@@ -155,6 +164,15 @@ class AccountCli extends EventEmitter implements AgentClient {
       resetsAt: Math.floor(Date.now() / 1000) + (step.resetsInSeconds ?? 3600),
     });
     send("turn/completed", { threadId, turn: { id: turnId, status: "failed" } });
+  }
+
+  /** W8-BE1: the agent calls a tool of the program inside a held turn (like the CLI does when the model calls one). */
+  callTool(turn: { threadId: string; turnId: string }, namespace: string, tool: string, args: unknown): void {
+    this.emit("request", {
+      method: "item/tool/call",
+      id: `tool-${tool}`,
+      params: { ...turn, callId: `call-${tool}`, namespace, tool, arguments: args },
+    });
   }
 
   notify(): void {}
@@ -592,6 +610,29 @@ describe.sequential("AgentService with provider accounts", {
     expect(limitEvents(events).map((event) => event.botId)).toEqual(["chief"]);
     expect(pool.limitCalls.map((call) => call.id)).toEqual([WORK]);
   });
+
+  // COSGRAL W8-BE1 (L3 of the W6-T4 review): a subagent works on the account of its parent, not on the system account.
+  it("starts a subagent on the account its parent works on", async () => {
+    const { service: s, pool, clis, events } = await fixture({ [WORK]: ["hold"] });
+    await s.sendMessage({ botId: "chief", text: "Warm up" });
+    await waitFor(() => completed(events).length === 1);
+    pool.assign("chief", WORK);
+    await s.sendMessage({ botId: "chief", text: "Work on the work account" });
+    await waitFor(() => (clis.get(WORK)?.held.length ?? 0) === 1);
+    const work = clis.get(WORK);
+    const parentTurn = work?.held[0];
+    if (!work || !parentTurn) throw new Error("The parent turn did not start on the work account.");
+    work.callTool(parentTurn, SUBAGENT_NAMESPACE, "spawn", { task: "Side job", wait: false });
+    await waitFor(() =>
+      work.calls("thread/start").some((params) => stringField(params, "serviceName") === "cosgral-subagent"),
+    );
+    expect(
+      clis
+        .get(SYSTEM)
+        ?.calls("thread/start")
+        .some((params) => stringField(params, "serviceName") === "cosgral-subagent"),
+    ).toBe(false);
+  });
 });
 
 describe.sequential("a confirm card without an agent (CLI download consent)", () => {
@@ -647,6 +688,10 @@ function firstInputText(params: unknown): string | null {
   if (!isDynamicRecord(params) || !Array.isArray(params.input)) return null;
   const first = params.input[0];
   return isDynamicRecord(first) && isString(first.text) ? first.text : null;
+}
+
+function stringField(value: unknown, key: string): string | null {
+  return isDynamicRecord(value) && isString(value[key]) ? value[key] : null;
 }
 
 function notification(method: string, params: unknown): AppServerNotification {

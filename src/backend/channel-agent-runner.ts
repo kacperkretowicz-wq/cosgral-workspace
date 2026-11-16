@@ -44,6 +44,8 @@ interface Options {
   event?: (event: AgentEvent) => void;
   /** COSGRAL W2: extra instructions for this member, e.g. its installed skills. */
   instructions?: (botId: string) => string;
+  /** COSGRAL W8-BE1: the access level of the member (what its CLI is told); the wide access of before when left out. */
+  access?: (bot: BotSummary) => { approvalPolicy: string; sandbox: string; runtimeWorkspaceRoots: string[] };
 }
 
 /** Provider threads here never become a DM provider session, mailbox delivery or conversation. */
@@ -76,15 +78,20 @@ export class ChannelAgentRunner implements ChannelRunner {
     const client = await this.#options.client(input.task.ownerBotId);
     if (input.signal.aborted) return { status: "interrupted", text: "" };
     const bot = this.#options.bot(input.task.ownerBotId);
+    const access = this.#options.access?.(bot) ?? {
+      approvalPolicy: "on-request",
+      sandbox: "danger-full-access",
+      runtimeWorkspaceRoots: [bot.workspacePath],
+    };
     const response = await client.request(
       "thread/start",
       {
         model: bot.model,
         effort: bot.reasoningEffort,
         cwd: bot.workspacePath,
-        runtimeWorkspaceRoots: [bot.workspacePath],
-        approvalPolicy: "on-request",
-        sandbox: "danger-full-access",
+        runtimeWorkspaceRoots: access.runtimeWorkspaceRoots,
+        approvalPolicy: access.approvalPolicy,
+        sandbox: access.sandbox,
         ephemeral: true,
         serviceName: "cosgral-channel",
         developerInstructions: [

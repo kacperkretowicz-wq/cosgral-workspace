@@ -50,6 +50,8 @@ beforeAll(async () => {
   registerAcpLoginIpc(() => null);
   const { registerAcpPresetsIpc } = await import("./acp-presets-ipc");
   registerAcpPresetsIpc(() => null);
+  const { registerAccessIpc } = await import("./access-ipc");
+  registerAccessIpc(() => null);
   const { registerSubagentsIpc } = await import("./subagents-ipc");
   registerSubagentsIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
@@ -103,6 +105,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("windows:").length).toBe(4);
     // COSGRAL W8-KK1: the client spaces.
     expect(channelsOf("spaces:").length).toBe(8);
+    // COSGRAL W8-BE1: the access levels of the agents.
+    expect(channelsOf("access:").length).toBe(4);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -122,6 +126,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "acp-presets:",
         "windows:",
         "spaces:",
+        "access:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -156,6 +161,12 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("spaces:delete", "local", { id: "client-0001" })).threw).toMatch(/confirmation/);
     expect((await call("spaces:switch", "local", { id: "../main", confirm: true })).threw).toMatch(/space id/);
     expect((await call("spaces:list", "local", null)).threw).toMatch(/still starting/);
+    // W8-BE1: a wrong level or a relative folder is refused by the contract parser, before the program is asked.
+    expect((await call("access:set-level", "local", { botId: "chief", level: "root" })).threw).toMatch(/level/);
+    expect((await call("access:set-folders", "local", { botId: "chief", excludedFolders: ["docs"] })).threw).toMatch(
+      /full path/,
+    );
+    expect((await call("access:get", "local", { botId: "chief" })).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.
