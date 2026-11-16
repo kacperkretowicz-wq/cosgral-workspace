@@ -44,6 +44,7 @@ beforeAll(async () => {
   const { registerWindowsIpc } = await import("./windows-ipc");
   const { registerSpacesIpc } = await import("./spaces-ipc");
   const { registerBudgetsIpc } = await import("./budgets-ipc");
+  const { registerBrowserProfilesIpc } = await import("./browser-profiles-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -60,6 +61,7 @@ beforeAll(async () => {
   registerWindowsIpc(() => null);
   registerSpacesIpc({ store: () => null, emit: () => undefined, restart: async () => undefined });
   registerBudgetsIpc(() => null);
+  registerBrowserProfilesIpc({ store: () => null, clearPartition: async () => undefined, openTabs: () => 0 });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -111,6 +113,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("access:").length).toBe(4);
     // COSGRAL W8-KK2: the budgets.
     expect(channelsOf("budgets:").length).toBe(4);
+    // COSGRAL W8-KK3: the browser profiles.
+    expect(channelsOf("browser-profiles:").length).toBe(5);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -132,6 +136,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "spaces:",
         "access:",
         "budgets:",
+        "browser-profiles:",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -188,6 +193,12 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /not be after/,
     );
     expect((await call("budgets:list", "local", null)).threw).toMatch(/still starting/);
+    // W8-KK3: a bad browser profile request is refused by the parser before the program is asked.
+    expect((await call("browser-profiles:clear", "local", { botId: "chief" })).threw).toMatch(/confirmation/);
+    expect(
+      (await call("browser-profiles:set-domains", "local", { botId: "chief", allow: ["no way"], block: [] })).threw,
+    ).toMatch(/not a site name/);
+    expect((await call("browser-profiles:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

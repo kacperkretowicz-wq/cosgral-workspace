@@ -42,6 +42,7 @@ import { ApiKeyStore } from "../backend/api-key-store";
 import { ApprovalRulesStore } from "../backend/approval-rules";
 import { BotStore } from "../backend/bot-store";
 import { BrowserHost } from "../backend/browser-host";
+import { BrowserProfileStore, createBrowserProfilePort } from "../backend/browser-profiles";
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { BudgetMeter } from "../backend/budget-meter";
 import { ChannelEngine } from "../backend/channel-engine";
@@ -73,6 +74,7 @@ import { registerApiKeysIpc } from "./api-keys-ipc";
 import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
+import { registerBrowserProfilesIpc } from "./browser-profiles-ipc";
 import { registerBudgetsIpc } from "./budgets-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerContextIpc } from "./context-ipc";
@@ -291,6 +293,8 @@ let centralAuthManager: AccountManager | null = null;
 let dockWindows: DockWindows | null = null;
 // COSGRAL W8-KK2: the budgets and the cost counter of the space the program runs on.
 let budgetMeter: BudgetMeter | null = null;
+// COSGRAL W8-KK3: the browser profiles of the agents (one session partition each, in the folder of the running space).
+let browserProfiles: BrowserProfileStore | null = null;
 // COSGRAL W6-KK3: the separate conversation windows (the rule keeper and the Electron windows it uses).
 let conversationWindows: ConversationWindows | null = null;
 let conversationWindowHost: ElectronConversationWindowHost | null = null;
@@ -905,6 +909,16 @@ function registerIpcHandlers(
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);
   registerBudgetsIpc(() => budgetMeter);
+  registerBrowserProfilesIpc({
+    store: () => browserProfiles,
+    clearPartition: async (partition) => {
+      const own = session.fromPartition(partition, { cache: true });
+      await own.clearStorageData();
+      await own.clearCache();
+      await own.clearAuthCache();
+    },
+    openTabs: (botId) => (browserHost?.listTabs() ?? []).filter((tab) => tab.ownerBotId === botId).length,
+  });
   registerSpacesIpc({
     store: () => spaceStore,
     emit: (event) => forwardAgentEvent("local", event),
@@ -1370,7 +1384,21 @@ if (!hasSingleInstanceLock) {
       budgetMeter = new BudgetMeter({ database: store.database, emit: (event) => forwardAgentEvent("local", event) });
       await mailboxStore.initialize();
       configureApplicationProtocol();
-      browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
+      browserProfiles = new BrowserProfileStore({
+        filePath: join(app.getPath("userData"), "browser-profiles.json"),
+        spaceId: runningSpace.id,
+        emit: (event) => forwardAgentEvent("local", event),
+      });
+      browserHost = new BrowserHost(
+        mainWindow,
+        store.downloadsRoot,
+        join(app.getPath("userData"), BROWSER_STATE_FILE),
+        createBrowserProfilePort(browserProfiles, {
+          agentIds: () => store.list().map((bot) => bot.id),
+          cliThreadsOf: (botId) =>
+            store.database.listAgentProviderSessions(botId).map((entry) => entry.externalSessionId),
+        }),
+      );
       await browserHost.restore();
       const setupFile = join(app.getPath("userData"), SETUP_FILE);
       const setupState = await readSetupState(setupFile);
