@@ -83,6 +83,7 @@ import { LibraryPanel } from "./LibraryPanel";
 import { McpSettings } from "./McpSettings";
 import { AgentMemorySettingsView } from "./MemorySettings";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
+import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { providerError } from "./provider-error";
 import {
@@ -1706,6 +1707,15 @@ export function Conversation(props: ConversationProps) {
       </Show>
       <Show when={props.bot}>{(bot) => <ThreadPanel botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
       <Show when={props.bot}>{(bot) => <ContextIndicator botId={bot().id} threadId={bot().threadId} />}</Show>
+      <Show when={props.bot}>
+        {(bot) => (
+          <PlanPanel
+            botId={bot().id}
+            threadId={bot().threadId}
+            activeRequestId={props.actionCard?.kind === "plan" ? props.actionCard.requestId : undefined}
+          />
+        )}
+      </Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>
@@ -2027,6 +2037,13 @@ export function Conversation(props: ConversationProps) {
         onAnswerPrompt={props.onAnswerPrompt}
         onRespondToApproval={props.onRespondToApproval}
       />
+      <Show when={props.actionCard?.kind === "plan" ? props.actionCard.plan : undefined}>
+        {(plan) => (
+          <section class="sticky-decision" aria-label="Decision">
+            <PlanCard plan={plan()} />
+          </section>
+        )}
+      </Show>
       <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
         {(request) => (
           <section class="sticky-decision" aria-label="Decision">

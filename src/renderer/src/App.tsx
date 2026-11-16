@@ -83,6 +83,7 @@ import {
   mergeHydrated,
   type PendingCard,
   type PendingCardKind,
+  planCard,
   promptCard,
   removeCard,
   takeoverCard,
@@ -616,6 +617,10 @@ export function App() {
   );
   function handleAgentEvent(event: AgentEvent) {
     switch (event.type) {
+      case "plan-changed":
+        if (event.plan.phase === "proposed") addLiveCard(planCard(event.plan));
+        else dropCard("plan", event.plan.requestId);
+        return;
       case "threads-changed":
         applyThreadList(event);
         return;

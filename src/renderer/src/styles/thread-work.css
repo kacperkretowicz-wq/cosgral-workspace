@@ -1,0 +1,58 @@
+.thread-work-list {
+  display: grid;
+  gap: var(--openbot-space-3);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+  max-height: 20rem;
+  overflow: auto;
+}
+.thread-work-section {
+  flex: 0 0 auto;
+  padding: var(--openbot-space-2) var(--openbot-space-4);
+  color: var(--openbot-text-primary);
+}
+.thread-work-section > summary {
+  cursor: pointer;
+}
+.thread-work-list:focus-visible {
+  outline: 2px solid var(--openbot-accent-text);
+  outline-offset: -2px;
+}
+.thread-work-card {
+  display: grid;
+  gap: var(--openbot-space-3);
+  min-width: 0;
+  padding: var(--openbot-space-4);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-card);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-primary);
+  overflow-wrap: anywhere;
+}
+.sticky-decision .thread-work-card {
+  max-height: 24rem;
+  overflow: auto;
+}
+.thread-work-heading,
+.thread-work-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+.thread-work-heading {
+  justify-content: space-between;
+}
+.thread-work-steps {
+  display: grid;
+  gap: var(--openbot-space-3);
+  padding-inline-start: var(--openbot-space-6);
+}
+.thread-work-progress {
+  width: 100%;
+  accent-color: var(--openbot-accent);
+}
+.thread-work-preview {
+  white-space: pre-wrap;
+  max-height: 20rem;
+  overflow: auto;
+}

@@ -153,3 +153,5 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 | 16.11.2026 | App/attention test fixtures, Sidebar and its Needs you test | W6-UI1-FIX: multicast event mock, active-thread Vault fixture, compatible accessible-name prefix and callback arguments; no assertions removed |
 
 | 16.11.2026 | SettingsModal.stories.tsx | W6-UI3-FIX: replace obsolete disabled Appearance expectation with navigation and persisted-theme checks; retain disabled checks for unfinished sections |
+
+| 16.11.2026 | renderer PlanPanel, pending cards, thread records, W6 stories/tests | W6-UI3 A: plan proposals in Needs you, approve/reject, saved phases and live progress per thread |

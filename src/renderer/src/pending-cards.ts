@@ -8,6 +8,7 @@
 import type {
   AgentApproval,
   AgentEvent,
+  AgentPlan,
   BrowserTakeoverPhase,
   BrowserTakeoverRequest,
   DraftPreviewCard,
@@ -17,9 +18,10 @@ import type {
 
 export type PromptEvent = Extract<AgentEvent, { type: "prompt" }>;
 
-export type PendingCardKind = "prompt" | "approval" | "draft-preview" | "browser-takeover" | "vault-request";
+export type PendingCardKind = "prompt" | "approval" | "draft-preview" | "browser-takeover" | "vault-request" | "plan";
 
 export type PendingCard =
+  | { kind: "plan"; requestId: string; botId: string; createdAt: string; plan: AgentPlan }
   | { kind: "prompt"; requestId: string | number; botId: string; createdAt: string; prompt: PromptEvent }
   | { kind: "approval"; requestId: string | number; botId: string; createdAt: string; approval: AgentApproval }
   | { kind: "draft-preview"; requestId: string; botId: string; createdAt: string; card: DraftPreviewCard }
@@ -41,6 +43,10 @@ export function vaultCard(request: VaultRequest): PendingCard {
     createdAt: request.createdAt,
     request,
   };
+}
+
+export function planCard(plan: AgentPlan): PendingCard {
+  return { kind: "plan", requestId: plan.requestId, botId: plan.botId, createdAt: plan.createdAt, plan };
 }
 
 export function draftCard(card: DraftPreviewCard): PendingCard {
@@ -78,7 +84,9 @@ export function approvalCard(approval: AgentApproval, createdAt: string): Pendin
 export function cardsFromPending(requests: readonly PendingAgentRequest[]): PendingCard[] {
   const cards: PendingCard[] = [];
   for (const request of requests) {
-    if (request.kind === "prompt") {
+    if (request.kind === "plan") {
+      if (request.plan.phase === "proposed") cards.push(planCard(request.plan));
+    } else if (request.kind === "prompt") {
       const { requestId, botId, threadId, turnId, questions } = request;
       cards.push(promptCard({ type: "prompt", requestId, botId, threadId, turnId, questions }, request.createdAt));
     } else if (request.kind === "approval") {
