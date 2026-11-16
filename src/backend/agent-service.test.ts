@@ -62,10 +62,12 @@ afterEach(async () => {
   delete process.env.OPENBOT_FAKE_COMPACTION_ERROR;
   delete process.env.OPENBOT_FAKE_ARCHIVED_THREAD;
   delete process.env.OPENBOT_FAKE_TURN_START_RESPONSE_DELAY;
+  delete process.env.OPENBOT_FAKE_TURN_START_SILENT;
   delete process.env.OPENBOT_FAKE_WARNING;
   delete process.env.OPENBOT_FAKE_DELTA_DELAY;
   closeTestDatabases();
-  await rm(root, { recursive: true, force: true });
+  // COSGRAL W8-BE3-FIX: on Windows a just-killed fake CLI or the database can hold a file for a moment (EBUSY); retry only the cleanup.
+  await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 // COSGRAL: on Windows every fake CLI call starts cmd.exe and Node (0.3–1 s each), so tests near the 5 s default flake.
@@ -2271,15 +2273,20 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
   });
 
   it("waits for active queue drains before shutdown completes", async () => {
-    process.env.OPENBOT_FAKE_TURN_START_RESPONSE_DELAY = "2000";
+    // COSGRAL W8-BE3-FIX: the fake CLI receives turn/start and then stays silent (no reply, no turn/started), so the
+    // delivery is provably mid-start when the program closes. No fixed delay, no race with lifecycle events.
+    process.env.OPENBOT_FAKE_TURN_START_SILENT = "1";
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser());
     await service.initialize();
 
     await service.sendMessage({ botId: "chief", text: "Stop during startup" });
-    await waitFor(() => service?.listQueue("chief").deliveries[0]?.status === "starting");
+    await waitFor(async () => (await protocolMessages()).some((message) => message.method === "turn/start"));
+    expect(service.listQueue("chief").deliveries[0]?.status).toBe("starting");
+
     await service.stop();
 
+    // stop() returned, so the drain of the unanswered start was awaited and ended in a terminal state.
     expect(["failed", "interrupted"]).toContain(service.listQueue("chief").deliveries[0]?.status);
   });
 
@@ -3162,7 +3169,8 @@ process.stdin.on("data", (chunk) => {
         if (delay > 0) setTimeout(respond, delay);
         else respond();
       }
-      if (message.method === "turn/start") {
+      // COSGRAL W8-BE3-FIX: with OPENBOT_FAKE_TURN_START_SILENT the fake logs turn/start (above) and then says nothing.
+      if (message.method === "turn/start" && !process.env.OPENBOT_FAKE_TURN_START_SILENT) {
         const turnId = "turn-" + (++turnCounter);
         turns.set(turnId, { id: turnId, status: "inProgress", items: [] });
         const respondToStart = () => write({ id: message.id, result: { turn: { id: turnId, status: "inProgress", items: [] } } });
