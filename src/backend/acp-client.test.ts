@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { AcpAgentConfig } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
-import { AcpAgentClient } from "./acp-client";
+import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import {
   type AppServerNotification,
   type AppServerRequest,
@@ -204,5 +204,41 @@ describe("AcpAgentClient", () => {
         decodeTurnResponse,
       ),
     ).rejects.toThrow(/ghost/);
+  });
+
+  // COSGRAL W6-BE5: an agent that is not signed in shows the sign-in card; it is not an error to retry on a fallback model.
+  it("tells the program when an agent is not signed in, and turns the error into a hint", async () => {
+    const root = await mkdtemp(join(tmpdir(), "cosgral-acp-"));
+    roots.push(root);
+    const needing: string[] = [];
+    const client = new AcpAgentClient({
+      agents: () => [{ ...agent, args: [STUB, "stub", "--needs-login"] }],
+      bridgeDirectory: root,
+      onNeedsLogin: (agentId) => needing.push(agentId),
+    });
+    clients.push(client);
+    client.start();
+    await client.request("initialize", {}, decodeRecordResponse);
+    const { thread } = await client.request("thread/start", { cwd: tmpdir(), model: "acp:stub" }, decodeThreadResponse);
+    await expect(
+      client.request(
+        "turn/start",
+        { threadId: thread.id, model: "acp:stub", input: [{ type: "text", text: "hi" }] },
+        decodeTurnResponse,
+      ),
+    ).rejects.toThrow(/Authentication required.*Sign in to this agent in Providers/);
+    expect(needing).toEqual(["stub"]);
+  });
+
+  it("recognises what the real agents say when they are not signed in, and nothing else", () => {
+    for (const message of [
+      "Authentication required",
+      "Gemini API key is missing or not configured.",
+      "You are not authenticated",
+    ]) {
+      expect(classifyAcpError(new Error(message))).toMatchObject({ kind: "needs-login", resetsAt: null });
+    }
+    expect(classifyAcpError(new Error("Usage limit reached")).kind).toBe("usage-limit");
+    expect(classifyAcpError(new Error("Invalid request")).kind).toBeNull();
   });
 });

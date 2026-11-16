@@ -36,9 +36,11 @@ export interface AcpClientOptions {
   agents: () => AcpAgentConfig[];
   /** Where the bridge program is written (default: the system temp folder). */
   bridgeDirectory?: string;
+  /** COSGRAL W6-BE5: an agent said it is not signed in (so the program can show its sign-in card). */
+  onNeedsLogin?: (agentId: string) => void;
 }
 
-export type AcpErrorKind = "usage-limit" | "unavailable" | null;
+export type AcpErrorKind = "usage-limit" | "unavailable" | "needs-login" | null;
 
 interface ThreadState {
   id: string;
@@ -203,6 +205,7 @@ export class AcpAgentClient extends EventEmitter<ClientEvents> implements AgentC
   readonly provider: AgentProvider = "acp";
   readonly #agents: () => AcpAgentConfig[];
   readonly #bridgeDirectory: string | undefined;
+  readonly #onNeedsLogin: ((agentId: string) => void) | undefined;
   readonly #threads = new Map<string, ThreadState>();
   readonly #processes = new Map<string, AcpProcess>();
   readonly #pendingServerRequests = new Map<RequestId, Pending>();
@@ -215,6 +218,7 @@ export class AcpAgentClient extends EventEmitter<ClientEvents> implements AgentC
     super();
     this.#agents = options.agents;
     this.#bridgeDirectory = options.bridgeDirectory;
+    this.#onNeedsLogin = options.onNeedsLogin;
   }
 
   get running(): boolean {
@@ -350,10 +354,18 @@ export class AcpAgentClient extends EventEmitter<ClientEvents> implements AgentC
     if (!config) throw new Error(`There is no ACP agent ${agentId}; add it in Settings.`);
     const agentProcess = await this.#process(config);
     if (!thread.sessionId || thread.sessionAgent !== agentId || thread.model !== model) {
-      const session = await agentProcess.request("session/new", {
-        cwd: thread.cwd,
-        mcpServers: [await this.#bridgeServer(thread)],
-      });
+      const session = await agentProcess
+        .request("session/new", {
+          cwd: thread.cwd,
+          mcpServers: [await this.#bridgeServer(thread)],
+        })
+        .catch((error: unknown) => {
+          // COSGRAL W6-BE5: "Authentication required" is not a failure to retry: the sign-in card shows.
+          const classified = classifyAcpError(error);
+          if (classified.kind !== "needs-login") throw error;
+          this.#onNeedsLogin?.(agentId);
+          throw new Error(classified.message);
+        });
       if (!isDynamicRecord(session) || !isString(session.sessionId))
         throw new Error(`${config.name} did not open a session.`);
       Object.assign(thread, { sessionId: session.sessionId, sessionAgent: agentId, model, instructionsSent: false });
@@ -410,6 +422,8 @@ export class AcpAgentClient extends EventEmitter<ClientEvents> implements AgentC
           message: classified.message,
           errorKind: classified.kind,
           resetsAt: classified.resetsAt,
+          // COSGRAL W6-BE5: which agent (the model is "acp:<id>"), so a "needs-login" error can show its sign-in card.
+          agentId: isAcpModel(thread.model) ? thread.model.slice("acp:".length) : null,
         },
       });
     }
@@ -540,6 +554,11 @@ export function classifyAcpError(error: unknown): { message: string; kind: AcpEr
   const code = error instanceof AcpRpcError ? error.code : null;
   const data = error instanceof AcpRpcError && isDynamicRecord(error.data) ? error.data : null;
   const resetsAt = data && isNumber(data.resetsAt) ? data.resetsAt : null;
+  // COSGRAL W6-BE5: the agent is not signed in (Gemini CLI: "Gemini API key is missing or not configured."; Antigravity:
+  // "Authentication required"). Not a failure to retry on a fallback model: the person signs in (the sign-in card shows).
+  if (/authentication required|not authenticated|not signed in|api key is missing or not configured/i.test(message)) {
+    return { message: `${message} Sign in to this agent in Providers.`, kind: "needs-login", resetsAt: null };
+  }
   if (code === 429 || data?.kind === "usage_limit" || /usage limit|rate limit|quota|too many requests/i.test(message)) {
     return { message, kind: "usage-limit", resetsAt };
   }

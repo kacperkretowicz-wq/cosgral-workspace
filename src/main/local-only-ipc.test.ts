@@ -45,6 +45,8 @@ beforeAll(async () => {
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
+  const { registerAcpLoginIpc } = await import("./acp-login-ipc");
+  registerAcpLoginIpc(() => null);
   const { registerSubagentsIpc } = await import("./subagents-ipc");
   registerSubagentsIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
@@ -90,6 +92,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("message-actions:").length).toBe(5);
     // COSGRAL W6-BE4: the subagents (list and Stop; the window cannot start one, Q11).
     expect(channelsOf("subagents:").length).toBe(2);
+    // COSGRAL W6-BE5: signing in to ACP agents.
+    expect(channelsOf("acp-login:").length).toBe(4);
     // COSGRAL W6-KK3: the separate conversation windows.
     expect(channelsOf("windows:").length).toBe(4);
   });
@@ -107,6 +111,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "plans:",
         "message-actions:",
         "subagents:",
+        "acp-login:",
         "windows:",
       );
       const outcomes: string[] = [];
@@ -147,6 +152,12 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("plans:respond", "local", { requestId: "p1", decision: "edit" })).threw).toMatch(/approve/);
     expect((await call("plans:list", "local", { botId: "chief" })).threw).toMatch(/still starting/);
     // W6-BE4: Stop needs an id (checked before any work); the list answers once the program is up.
+    // W6-BE5: a sign-in code that is empty is refused by the contract parser, before any work (and never echoed).
+    expect((await call("acp-login:submit-code", "local", { agentId: "gemini", code: " " })).threw).toMatch(
+      /Paste the code/,
+    );
+    expect((await call("acp-login:start", "local", { agentId: "" })).threw).toMatch(/Choose an agent/);
+    expect((await call("acp-login:list", "local", null)).threw).toMatch(/still starting/);
     expect((await call("subagents:stop", "local", {})).threw).toMatch(/subagent/i);
     expect((await call("subagents:list", "local", { botId: "chief" })).threw).toMatch(/still starting/);
     // W6-BE3: a delete without confirmation and an empty edit are refused by the contract parser, before any work.

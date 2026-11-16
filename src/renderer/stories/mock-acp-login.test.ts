@@ -21,7 +21,7 @@ describe("mock ACP login", () => {
   it("start shows a link and asks for a code, offering only methods the program can run", async () => {
     const { events, login } = setup();
     const state = await login.start({ agentId: "gemini" });
-    expect(state).toMatchObject({ phase: "code-required", methodId: "oauth-personal" });
+    expect(state).toMatchObject({ phase: "code-required", methodId: "terminal-login" });
     expect(state.url).toMatch(/^https:\/\//);
     expect(state.methods.map((method) => method.id)).toEqual(["oauth-personal", "terminal-login"]);
     expect(events.map((event) => (event.type === "acp-login-changed" ? event.state.phase : event.type))).toEqual([

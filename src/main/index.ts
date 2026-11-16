@@ -60,6 +60,7 @@ import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
+import { registerAcpLoginIpc } from "./acp-login-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
@@ -881,6 +882,8 @@ function registerIpcHandlers(
   registerPlansIpc(() => agentService);
   // COSGRAL W6-BE4: the subagents of a thread (this computer only).
   registerSubagentsIpc(() => agentService);
+  // COSGRAL W6-BE5: signing in to ACP agents with a link and a code (this computer only).
+  registerAcpLoginIpc(() => agentService);
   // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);

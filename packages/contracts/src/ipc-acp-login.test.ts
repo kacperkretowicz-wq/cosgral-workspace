@@ -92,7 +92,10 @@ describe("ACP login contract", () => {
 
   it("chooses the method asked for, else the first, else says why not", () => {
     const methods = acpLoginMethods(AGY_METHODS);
-    expect(chooseAcpLoginMethod(methods, null).method?.id).toBe("oauth-personal");
+    // A terminal sign-in is the default (a plain oauth method may need a browser of its own); else the first.
+    expect(chooseAcpLoginMethod(methods, null).method?.id).toBe("terminal-login");
+    expect(chooseAcpLoginMethod(acpLoginMethods(GEMINI_METHODS), null).method?.id).toBe("oauth-personal");
+    expect(chooseAcpLoginMethod(methods, "oauth-business").method?.id).toBe("oauth-business");
     expect(chooseAcpLoginMethod(methods, "terminal-login").method?.id).toBe("terminal-login");
     expect(chooseAcpLoginMethod(methods, "vertex-ai")).toMatchObject({
       method: null,

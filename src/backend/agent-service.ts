@@ -7,6 +7,8 @@ import type {
   AccountUsage,
   AccountUsageLimit,
   AccountUsageWindow,
+  AcpLoginAgentInput,
+  AcpLoginState,
   AgentActivity,
   AgentApproval,
   AgentApprovalKind,
@@ -66,10 +68,12 @@ import type {
   RetryMessageInput,
   SendMessageInput,
   SetMessageReactionInput,
+  StartAcpLoginInput,
   SteerQueuedMessageInput,
   StopAgentEyesInput,
   StopSubagentInput,
   Subagent,
+  SubmitAcpLoginCodeInput,
   ThreadInput,
   ThreadList,
   UpdateBotInput,
@@ -98,6 +102,7 @@ import {
   sqlSessionAccounts,
 } from "./account-router";
 import { AcpAgentClient, classifyAcpError } from "./acp-client";
+import { AcpLogin } from "./acp-login";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
@@ -393,6 +398,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W6-BE4: subagents of the agents' threads. */
   readonly #subagents: SubagentRunner;
   readonly #subagentStore: SqliteSubagentStore;
+  /** COSGRAL W6-BE5: signing in to ACP agents with a link and a code. */
+  readonly #acpLogin: AcpLogin;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
   readonly #skillTools: SkillTools;
@@ -667,6 +674,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       event: (event) => this.#emit(event),
     });
     // COSGRAL W6-BE4: subagents run in CLI threads of their own, with the tools and the access of their parent and never more.
+    this.#acpLogin = new AcpLogin({
+      agents: () => this.#providers?.listAcpAgents() ?? [],
+      emit: (event) => this.#emit(event),
+    });
     this.#subagentStore = new SqliteSubagentStore(store.database);
     this.#subagents = new SubagentRunner({
       emit: (event) => this.#emit(event),
@@ -820,6 +831,23 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W6-BE3: the user's Approve / Reject on a plan card (no editing, Q9). */
   async respondToPlan(input: RespondToPlanInput): Promise<AgentPlan> {
     return this.#cards.respondToPlan(input);
+  }
+
+  /** COSGRAL W6-BE5: the sign-in state of every ACP agent; the sign-in itself is the person's (agents never sign in). */
+  listAcpLogins(): AcpLoginState[] {
+    return this.#acpLogin.list();
+  }
+
+  startAcpLogin(input: StartAcpLoginInput): Promise<AcpLoginState> {
+    return this.#acpLogin.start(input);
+  }
+
+  submitAcpLoginCode(input: SubmitAcpLoginCodeInput): Promise<AcpLoginState> {
+    return this.#acpLogin.submitCode(input);
+  }
+
+  cancelAcpLogin(input: AcpLoginAgentInput): Promise<AcpLoginState> {
+    return this.#acpLogin.cancel(input);
   }
 
   /** COSGRAL W6-BE4: the subagents of a thread (default: the thread shown for this agent), newest first. */
@@ -1419,6 +1447,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#clearPendingPrompts();
     this.#clearPendingApprovals();
     this.#subagents.stopAll("The program is closing.");
+    this.#acpLogin.stopAll();
     this.#cards.expireAll();
     this.#vaultRequests.expireAll();
     this.#eyes?.stop({});
@@ -1782,7 +1811,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           : provider === "codex"
             ? new CodexAppServerClient(cli.executable, this.#requestTimeoutMs)
             : provider === "acp"
-              ? new AcpAgentClient({ agents: () => this.#providers?.listAcpAgents() ?? [] })
+              ? new AcpAgentClient({
+                  agents: () => this.#providers?.listAcpAgents() ?? [],
+                  onNeedsLogin: (agentId) => this.#acpLogin.markNeedsLogin(agentId),
+                })
               : provider === "endpoint"
                 ? new EndpointAgentClient({
                     resolve: (id) => this.#endpoints?.resolve(id) ?? null,
@@ -2821,6 +2853,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         const failedTurn = getString(params, "turnId");
         if (notification.method === "error" && failedTurn)
           this.#turnFailures.set(failedTurn, turnFailure(params, message));
+        // COSGRAL W6-BE5: an ACP agent that is not signed in shows the sign-in card (an error in the chat would not help).
+        if (notification.method === "error" && getString(params, "errorKind") === "needs-login") {
+          const agentId = getString(params, "agentId");
+          if (agentId) this.#acpLogin.markNeedsLogin(agentId);
+        }
         this.#emitError(`agent_${notification.method}`, message, botId);
       }
     }
@@ -4826,7 +4863,9 @@ function turnFailure(
   const resetsAt = isRecord(params) && isNumber(params.resetsAt) ? params.resetsAt : null;
   if (kind === "usage-limit" || kind === "unavailable") return { kind, resetsAt, message };
   if (isRecord(params) && "errorKind" in params) return { kind: null, resetsAt: null, message };
-  return classifyAcpError(new Error(message));
+  const classified = classifyAcpError(new Error(message));
+  // A sign-in is the person's: it never moves a turn to a fallback model.
+  return { ...classified, kind: classified.kind === "needs-login" ? null : classified.kind };
 }
 
 function providerLabel(provider: AgentProvider): "Claude" | "Codex" | "ACP agent" | "Model endpoint" {

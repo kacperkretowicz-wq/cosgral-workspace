@@ -133,7 +133,9 @@ export function chooseAcpLoginMethod(
       ? { method: asked, problem: null }
       : { method: null, problem: "This agent does not offer that sign-in." };
   }
-  const first = methods[0];
+  // A terminal sign-in is made for a program that drives it (a link and a code); a plain "oauth" method may need a browser of its
+  // own, which some agents refuse (Antigravity). So the terminal one is the default, else the first.
+  const first = methods.find((method) => method.kind === "terminal") ?? methods[0];
   return first ? { method: first, problem: null } : { method: null, problem: "This agent offers no sign-in." };
 }
 
