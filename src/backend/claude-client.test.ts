@@ -200,6 +200,8 @@ describe("ClaudeAgentClient", () => {
         "cosgral_eyes",
         "cosgral_channels",
         "cosgral_cards",
+        // COSGRAL W6-BE4: subagents.
+        "cosgral_subagents",
         "cosgral_skills",
         "cosgral_vault",
         // COSGRAL W2: routines and webhooks.

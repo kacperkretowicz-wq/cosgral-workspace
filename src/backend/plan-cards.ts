@@ -166,6 +166,13 @@ export class PlanCards {
       }));
   }
 
+  /** COSGRAL W6-BE4: the cards of plans that wait in this CLI thread (a subagent's cards). */
+  requestIdsFor(providerThreadId: string): string[] {
+    return [...this.#open.values()]
+      .filter((open) => open.providerThreadId === providerThreadId && open.plan.phase === "proposed")
+      .map((open) => open.plan.requestId);
+  }
+
   pendingCount(botId: string): number {
     let count = 0;
     for (const open of this.#open.values()) if (open.plan.botId === botId && open.plan.phase === "proposed") count += 1;

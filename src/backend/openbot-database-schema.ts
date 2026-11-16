@@ -315,6 +315,16 @@ const SCHEMA_SQL = `
     PRIMARY KEY (thread_id, message_id)
   );
   CREATE INDEX IF NOT EXISTS message_pins_agent ON projection_message_pins(agent_id, thread_id, pinned_at);
+  -- COSGRAL W6-BE4: the subagents an agent started in a thread (state, answer). One that worked at a restart is closed.
+  CREATE TABLE IF NOT EXISTS projection_subagents (
+    subagent_id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    thread_id TEXT NOT NULL,
+    state TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json))
+  );
+  CREATE INDEX IF NOT EXISTS subagents_thread ON projection_subagents(agent_id, thread_id, created_at);
   -- COSGRAL W2: private agent memories ("essential" = always in the prompt, "searchable" = found with a tool).
   -- Channel memory is separate: projection_channel_memories above (channel engine, W1-BE2).
   CREATE TABLE IF NOT EXISTS projection_agent_memories (

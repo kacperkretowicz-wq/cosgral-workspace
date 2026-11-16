@@ -45,6 +45,7 @@ import type {
   KeptDraft,
   ListPinsInput,
   ListPlansInput,
+  ListSubagentsInput,
   MessageActionResult,
   MessageActionTarget,
   MessagePin,
@@ -67,6 +68,8 @@ import type {
   SetMessageReactionInput,
   SteerQueuedMessageInput,
   StopAgentEyesInput,
+  StopSubagentInput,
+  Subagent,
   ThreadInput,
   ThreadList,
   UpdateBotInput,
@@ -159,6 +162,9 @@ import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
 import { SKILLS_DYNAMIC_TOOLS, SKILLS_NAMESPACE, SkillTools, skillInstructions } from "./skill-tools";
+import { SubagentRunner } from "./subagent-runner";
+import { SqliteSubagentStore } from "./subagent-store";
+import { SUBAGENT_DYNAMIC_TOOLS, SUBAGENT_INSTRUCTIONS, SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { ThreadStore } from "./thread-store";
 import { type SecretBox, VaultStore } from "./vault-store";
 import { VAULT_DYNAMIC_TOOLS, VAULT_INSTRUCTIONS, VAULT_NAMESPACE, VaultRequests, VaultTools } from "./vault-tools";
@@ -384,6 +390,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #plans: SqlitePlanStore;
   /** COSGRAL W6-BE3: the messages the person pinned. */
   readonly #pins: MessagePinStore;
+  /** COSGRAL W6-BE4: subagents of the agents' threads. */
+  readonly #subagents: SubagentRunner;
+  readonly #subagentStore: SqliteSubagentStore;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
   readonly #skillTools: SkillTools;
@@ -657,6 +666,43 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       },
       event: (event) => this.#emit(event),
     });
+    // COSGRAL W6-BE4: subagents run in CLI threads of their own, with the tools and the access of their parent and never more.
+    this.#subagentStore = new SqliteSubagentStore(store.database);
+    this.#subagents = new SubagentRunner({
+      emit: (event) => this.#emit(event),
+      store: this.#subagentStore,
+      client: async (botId) => {
+        const bot = this.#store.list().find((b) => b.id === botId);
+        if (!bot) throw new Error("This agent no longer exists.");
+        await this.ensureProvider(providerForBot(bot));
+        return this.#requireReadyClient(providerForBot(bot));
+      },
+      bot: (botId) => {
+        const bot = this.#store.list().find((b) => b.id === botId);
+        if (!bot) throw new Error("Unknown agent.");
+        return bot;
+      },
+      tools: (botId) => this.#dynamicTools(botId, true),
+      instructions: (bot) => this.#buildDeveloperInstructions(bot, true),
+      // The access of the agent's own thread (its `thread/start`): a subagent gets exactly this, never more.
+      access: (bot) => ({
+        approvalPolicy: "on-request",
+        sandbox: "danger-full-access",
+        runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
+      }),
+      commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
+      register: (threadId, botId) => {
+        this.#threadToBot.set(threadId, botId);
+      },
+      clear: (threadId, turnId) => {
+        if (turnId) {
+          this.#clearPendingRequestsForTurn(threadId, turnId);
+          this.#browser.endControl(threadId, turnId);
+        }
+        this.#threadToBot.delete(threadId);
+      },
+      waitingIds: (threadId) => this.#waitingRequestIds(threadId),
+    });
     this.#activity = new AgentActivityTracker({
       listBots: () => this.#store.list(),
       pendingRequests: (botId) => this.#pendingRequestCount(botId),
@@ -774,6 +820,50 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W6-BE3: the user's Approve / Reject on a plan card (no editing, Q9). */
   async respondToPlan(input: RespondToPlanInput): Promise<AgentPlan> {
     return this.#cards.respondToPlan(input);
+  }
+
+  /** COSGRAL W6-BE4: the subagents of a thread (default: the thread shown for this agent), newest first. */
+  async listSubagents(input: ListSubagentsInput): Promise<Subagent[]> {
+    const threadId = input.threadId ?? (await this.#threads.activeThreadId(input.botId));
+    return threadId ? this.#subagents.list({ botId: input.botId, threadId }) : [];
+  }
+
+  /** COSGRAL W6-BE4: the person's Stop on a subagent (Q11: the person watches and stops; only the agent starts). */
+  async stopSubagent(input: StopSubagentInput): Promise<Subagent> {
+    return this.#subagents.stop(input.subagentId);
+  }
+
+  /** COSGRAL W6-BE4: `cosgral_subagents` calls; `spawn` and `wait` wait until the subagents have ended. */
+  async #handleSubagentsTool(params: DynamicToolCallParams): Promise<DynamicToolResult> {
+    const botId = this.#threadToBot.get(params.threadId);
+    if (!botId || this.#stopping) {
+      return {
+        success: false,
+        contentItems: [{ type: "inputText", text: "Subagents are not available in this turn." }],
+      };
+    }
+    return this.#subagents.handleTool(params, {
+      botId,
+      threadId: this.#publicThreadId(botId, params.threadId),
+      providerThreadId: params.threadId,
+      turnId: params.turnId,
+    });
+  }
+
+  /** COSGRAL W6-BE4: the `requestId` of every card that waits for the person in this CLI thread. */
+  #waitingRequestIds(providerThreadId: string): string[] {
+    const ids: string[] = [];
+    for (const pending of this.#pendingPrompts.values()) {
+      if (getString(pending.params, "threadId") === providerThreadId) ids.push(String(pending.prompt.requestId));
+    }
+    for (const pending of this.#pendingApprovals.values()) {
+      if (getString(pending.params, "threadId") === providerThreadId) ids.push(String(pending.approval.requestId));
+    }
+    return [
+      ...ids,
+      ...this.#cards.requestIdsFor(providerThreadId),
+      ...this.#vaultRequests.requestIdsFor(providerThreadId),
+    ];
   }
 
   /** COSGRAL W6-BE3: the plans of a thread (default: the thread shown for this agent), newest first. */
@@ -1195,6 +1285,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       throw new Error("Stop the agent and cancel its queued messages before deleting it.");
     }
 
+    // COSGRAL W6-BE4: its running subagents stop with it.
+    this.#subagents.stopBot(botId, "The agent was deleted.");
     // COSGRAL W6-BE1: the CLI threads of every thread of the agent.
     const providerSessions = this.#store.database.listAgentProviderSessions(botId);
     // COSGRAL W2: the agent's private memory goes with it. Before the agent's own deletion, which
@@ -1231,6 +1323,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W6-BE3: so do its plans.
     this.#plans.pruneBots(this.#store.list().map((candidate) => candidate.id));
     this.#pins.pruneBots(this.#store.list().map((candidate) => candidate.id));
+    this.#subagentStore.pruneBots(this.#store.list().map((candidate) => candidate.id));
   }
 
   async initialize(): Promise<void> {
@@ -1241,6 +1334,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#threads.initialize();
     // COSGRAL W6-BE3: no agent waits for a plan answer after a restart; open plans close (nothing counts as approved).
     this.#cards.recoverPlans();
+    // COSGRAL W6-BE4: so are subagents that were working (nothing runs without the program).
+    this.#subagents.recover();
     this.#recoverPersistedTurns();
     this.#initialized = true;
     await this.#connect("starting", ["codex", "claude"]);
@@ -1323,6 +1418,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#activity.stop();
     this.#clearPendingPrompts();
     this.#clearPendingApprovals();
+    this.#subagents.stopAll("The program is closing.");
     this.#cards.expireAll();
     this.#vaultRequests.expireAll();
     this.#eyes?.stop({});
@@ -1792,6 +1888,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #handleExit(client: AgentClient, error: Error): void {
     this.#channelRunner.clientExited(client);
+    this.#subagents.clientExited(client);
     // COSGRAL W5-K1: the CLI process of an account ended: the next turn on that account opens a new one and resumes.
     this.#accountRouter?.clientExited(client);
     for (const [threadId, owner] of this.#threadClients) {
@@ -1964,7 +2061,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   async #handleServerRequest(client: AgentClient, request: AppServerRequest, channelRequest = false): Promise<void> {
-    if (!channelRequest && this.#channelRunner.request(client, request)) return;
+    if (!channelRequest && (this.#channelRunner.request(client, request) || this.#subagents.request(client, request))) {
+      return;
+    }
     try {
       switch (request.method) {
         case "item/commandExecution/requestApproval":
@@ -2008,6 +2107,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           }
           if (request.params.namespace === SKILLS_NAMESPACE) {
             client.respond(request.id, await this.#handleSkillsTool(request.params));
+            return;
+          }
+          // COSGRAL W6-BE4: subagents; the call waits like a card does until the subagents have ended.
+          if (request.params.namespace === SUBAGENT_NAMESPACE) {
+            client.respond(request.id, await this.#handleSubagentsTool(request.params));
             return;
           }
           if (this.sharedData.handles(request.params.namespace)) {
@@ -2583,6 +2687,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W6-BE3: a CLI that is still shutting down says nothing the program acts on (the database is closing).
     if (this.#stopping) return;
     if (this.#channelRunner.notification(notification)) return;
+    // COSGRAL W6-BE4: a subagent's own CLI thread is never the agent's conversation.
+    if (this.#subagents.notification(notification)) return;
     const params = notification.params;
     const threadId = getString(params, "threadId");
     const botId = threadId ? this.#threadToBot.get(threadId) : undefined;
@@ -3330,6 +3436,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #clearPendingRequestsForTurn(threadId: string, turnId: string): void {
+    // COSGRAL W6-BE4: the turn of an agent ended or was stopped: its subagents stop with it.
+    this.#subagents.stopForTurn(threadId, turnId);
     this.computerUse.endTurn(threadId, turnId);
     this.#cards.expireTurn(threadId, turnId);
     this.#vaultRequests.expireTurn(threadId, turnId);
@@ -3490,6 +3598,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   /** Follows the events that change what a thread shows (a turn, the queue, an open card). */
   #observeThreadEvent(event: AgentEvent): void {
+    // COSGRAL W6-BE4: a card opened or closed: a subagent may wait for the person now, or work again.
+    if (SUBAGENT_WAITING_EVENTS.has(event.type)) this.#subagents.refreshWaiting();
     switch (event.type) {
       case "queue-changed":
         this.#reportThreadActivity(event.snapshot.botId);
@@ -3570,6 +3680,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.forgetContext(input.botId, input.threadId);
     this.#cards.forgetThreadPlans(input.botId, input.threadId);
     this.#pins.deleteThread(input.threadId);
+    this.#subagents.forgetThread(input.botId, input.threadId);
     return this.#afterThreadChange(input.botId, list);
   }
 
@@ -3780,11 +3891,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       .deliveries.some((delivery) => delivery.status === "starting" || delivery.status === "running");
   }
 
-  #dynamicTools(botId: string) {
+  /** `forSubagent`: the same tools WITHOUT the subagent tools (depth 1: a subagent cannot start subagents). */
+  #dynamicTools(botId: string, forSubagent = false) {
     return this.agentSettings.filterTools(botId, [
       ...BROWSER_DYNAMIC_TOOLS,
       OPENBOT_DYNAMIC_TOOLS,
       CARDS_DYNAMIC_TOOLS,
+      ...(forSubagent ? [] : [SUBAGENT_DYNAMIC_TOOLS]),
       SKILLS_DYNAMIC_TOOLS,
       VAULT_DYNAMIC_TOOLS,
       ...DATA_DYNAMIC_TOOLS,
@@ -4076,6 +4189,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
    */
   #publicThreadId(botId: string, fallback: string): string {
     if (this.#channelRunner.owns(fallback)) return fallback;
+    // COSGRAL W6-BE4: the cards of a subagent belong to the thread of its parent.
+    const parentThread = this.#subagents.publicThread(fallback);
+    if (parentThread) return parentThread;
     const known = this.#sessionThreads.get(fallback) ?? this.#store.database.threadIdForProviderSession(fallback);
     if (known) {
       this.#sessionThreads.set(fallback, known);
@@ -4289,7 +4405,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
-  #buildDeveloperInstructions(bot: BotSummary): string {
+  /** `forSubagent`: without the line about starting subagents (a subagent cannot). */
+  #buildDeveloperInstructions(bot: BotSummary, forSubagent = false): string {
     // COSGRAL W2: essential memories as they are when the conversation (thread) starts or resumes.
     const memoryPrompt = this.#memory.store.essentialPrompt(bot.id);
     const instructions = developerInstructions(
@@ -4301,7 +4418,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     );
     // COSGRAL W3: switched-off tools and the person's language.
     const settings = this.agentSettings.instructions(bot.id);
-    return settings ? `${instructions}\n${settings}` : instructions;
+    const own = settings ? `${instructions}\n${settings}` : instructions;
+    return forSubagent ? own : `${own}\n${SUBAGENT_INSTRUCTIONS}`;
   }
 }
 
@@ -4615,6 +4733,21 @@ function isDynamicToolCall(value: unknown): value is DynamicToolCallParams {
     "arguments" in value
   );
 }
+
+/** COSGRAL W6-BE4: events after which the cards that wait for the person may have changed. */
+const SUBAGENT_WAITING_EVENTS: ReadonlySet<AgentEvent["type"]> = new Set([
+  "prompt",
+  "prompt-resolved",
+  "approval",
+  "approval-resolved",
+  "draft-preview",
+  "draft-preview-resolved",
+  "browser-takeover",
+  "browser-takeover-changed",
+  "vault-request",
+  "vault-request-resolved",
+  "plan-changed",
+]);
 
 /** COSGRAL W6-BE3: a row an edit may remove. The record of mail already sent to another agent stays: it cannot be unsent. */
 function isRemovableRow(message: ConversationMessage): boolean {

@@ -194,6 +194,7 @@ import {
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
+import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";
@@ -878,6 +879,8 @@ function registerIpcHandlers(
   registerThreadsIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
   registerPlansIpc(() => agentService);
+  // COSGRAL W6-BE4: the subagents of a thread (this computer only).
+  registerSubagentsIpc(() => agentService);
   // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);

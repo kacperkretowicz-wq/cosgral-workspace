@@ -87,11 +87,17 @@ export class ThreadCli extends EventEmitter implements AgentClient {
     return decoder(result);
   }
 
-  /** Finishes the oldest held turn. */
-  finish(): void {
-    const next = this.pending.shift();
+  /** Finishes the oldest held turn, or the oldest held turn of one CLI thread. */
+  finish(threadId?: string): void {
+    const index = threadId === undefined ? 0 : this.pending.findIndex((turn) => turn.threadId === threadId);
+    const next = index < 0 ? undefined : this.pending.splice(index, 1)[0];
     if (!next) throw new Error("No held turn.");
     this.#answer(next);
+  }
+
+  /** The CLI threads started so far, in order (`cli-thread-1`, ...). */
+  startedThreads(): string[] {
+    return this.calls("thread/start").map((_params, index) => `cli-thread-${index + 1}`);
   }
 
   #answer(turn: { threadId: string; turnId: string; text: string }): void {
