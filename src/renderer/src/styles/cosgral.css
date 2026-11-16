@@ -1143,8 +1143,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   background: var(--openbot-text-muted);
 }
 .account-limit-card {
-  border-color: color-mix(in srgb, var(--openbot-danger) 40%, transparent);
-  background: var(--openbot-danger-soft);
+  border-color: var(--openbot-danger);
 }
 .account-switched-card {
   border-color: color-mix(in srgb, var(--openbot-warning) 40%, transparent);
@@ -1161,4 +1160,29 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   display: grid;
   gap: var(--space-2, 8px);
   padding: var(--space-2, 8px) var(--space-4, 16px) 0;
+}
+.api-keys-section,
+.api-keys-list,
+.api-key-card {
+  display: grid;
+  gap: var(--openbot-space-3);
+}
+.api-key-card {
+  padding: var(--openbot-space-4);
+}
+.api-key-card[data-status="rejected"] {
+  border-color: var(--openbot-danger);
+}
+.api-key-card[data-status="ok"][data-has-key="true"] {
+  border-color: var(--openbot-accent);
+}
+.api-key-card-head,
+.api-key-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+.api-key-card-head {
+  justify-content: space-between;
 }

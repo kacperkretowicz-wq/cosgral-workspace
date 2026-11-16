@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { acpModelId, isAcpAgentId, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderAccounts } from "./ProviderAccounts";
@@ -607,6 +608,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       </Show>
       <ProviderAccounts />
       <ManagedCliSection />
+      <ApiKeysSection />
       <EndpointsSection />
       <ProviderUsageList
         usage={usage()}
