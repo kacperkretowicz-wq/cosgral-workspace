@@ -364,12 +364,21 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
   const [models, setModels] = createSignal<AgentModelOption[]>([]);
   const [endpoints, setEndpoints] = createSignal<ModelEndpoint[]>([]);
   const [botId, setBotId] = createSignal<string>("");
+  // For keys items by identity: unrelated discovery updates must not remount editors or discard drafts.
+  const groupCache = new Map<string, { scope: string; label: string }>();
+  const group = (scope: string, label: string) => {
+    const existing = groupCache.get(scope);
+    if (existing?.label === label) return existing;
+    const next = { scope, label };
+    groupCache.set(scope, next);
+    return next;
+  };
   const groups = () => [
-    { scope: "provider:codex", label: "Codex" },
-    { scope: "provider:claude", label: "Claude" },
-    ...acpAgents().map((agent) => ({ scope: `provider:acp:${agent.id}`, label: agent.name })),
-    ...endpoints().map((endpoint) => ({ scope: `provider:endpoint:${endpoint.id}`, label: endpoint.label })),
-    { scope: GENERAL_FALLBACK_SCOPE, label: "All providers" },
+    group("provider:codex", "Codex"),
+    group("provider:claude", "Claude"),
+    ...acpAgents().map((agent) => group(`provider:acp:${agent.id}`, agent.name)),
+    ...endpoints().map((endpoint) => group(`provider:endpoint:${endpoint.id}`, endpoint.label)),
+    group(GENERAL_FALLBACK_SCOPE, "All providers"),
   ];
   const [loadingFallbacks, setLoadingFallbacks] = createSignal(false);
   const [info, setInfo] = createSignal<FallbackModelsInfo | null>(null);
