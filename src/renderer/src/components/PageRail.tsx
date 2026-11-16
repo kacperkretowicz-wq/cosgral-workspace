@@ -1,5 +1,6 @@
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { usePagePins } from "../page-pins";
 import { Button, ContextMenu, DropdownMenu, Ellipsis, Text } from "./ui";
 
@@ -182,9 +183,9 @@ export function PageRail(props: PageRailProps) {
                 type="button"
                 variant="ghost"
                 class={["page-rail-button", { "page-rail-button-active": props.active === item.id }]}
-                aria-label={item.label}
+                aria-label={t(item.label)}
                 aria-current={props.active === item.id ? "page" : undefined}
-                title={`${item.label}${pinned(item.id) ? " · Przypięta" : ""}`}
+                title={`${t(item.label)}${pinned(item.id) ? ` · ${t("Pinned")}` : ""}`}
                 data-pinned={pinned(item.id) ? "true" : undefined}
                 onClick={() => props.onSelect(item.id)}
               >
@@ -193,9 +194,9 @@ export function PageRail(props: PageRailProps) {
               </ContextMenu.Trigger>
               <Show when={canPin()}>
                 <ContextMenu.Portal>
-                  <ContextMenu.Content class="bot-context-menu" aria-label={`Menu strony ${item.label}`}>
+                  <ContextMenu.Content class="bot-context-menu" aria-label={`${t("Page menu")} ${t(item.label)}`}>
                     <ContextMenu.Item disabled={pinsState.busy()} onSelect={() => toggle(item.id)}>
-                      {pinned(item.id) ? "Odepnij" : "Przypnij"} {item.label}
+                      {pinned(item.id) ? t("Unpin") : t("Pin")} {t(item.label)}
                     </ContextMenu.Item>
                   </ContextMenu.Content>
                 </ContextMenu.Portal>
@@ -210,8 +211,12 @@ export function PageRail(props: PageRailProps) {
               type="button"
               variant="ghost"
               class={["page-rail-button", { "page-rail-button-active": !!hiddenActive() }]}
-              aria-label={hiddenActive() ? `More pages (current: ${hiddenActive()?.label})` : "More pages"}
-              title="More pages"
+              aria-label={
+                hiddenActive()
+                  ? `${t("More pages")} (${t("Current").toLowerCase()}: ${t(hiddenActive()?.label ?? "")})`
+                  : t("More pages")
+              }
+              title={t("More pages")}
             >
               <span class="page-rail-mark" />
               <Ellipsis aria-hidden="true" />
@@ -219,7 +224,7 @@ export function PageRail(props: PageRailProps) {
             <DropdownMenu.Portal>
               <DropdownMenu.Content
                 class="bot-context-menu page-rail-overflow-menu"
-                aria-label="More pages"
+                aria-label={t("More pages")}
                 aria-labelledby={undefined}
               >
                 <For each={hidden()}>
@@ -230,11 +235,11 @@ export function PageRail(props: PageRailProps) {
                         onSelect={() => props.onSelect(item.id)}
                       >
                         <PageIcon page={item.id} />
-                        <span>{item.label}</span>
+                        <span>{t(item.label)}</span>
                       </DropdownMenu.Item>
                       <Show when={canPin()}>
                         <DropdownMenu.Item disabled={pinsState.busy()} onSelect={() => toggle(item.id)}>
-                          Przypnij {item.label}
+                          {t("Pin")} {t(item.label)}
                         </DropdownMenu.Item>
                       </Show>
                     </>
@@ -255,8 +260,8 @@ export function PageRail(props: PageRailProps) {
           type="button"
           variant="ghost"
           class="page-rail-button"
-          aria-label="Settings"
-          title="Settings"
+          aria-label={t("Settings")}
+          title={t("Settings")}
           onClick={props.onOpenSettings}
         >
           <PageIcon page="settings" />

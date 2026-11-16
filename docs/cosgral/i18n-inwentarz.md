@@ -139,3 +139,9 @@ Gałąź `team/tester/w7-t2` — SHA w `channel_result`.
 
 ### W6-UI5-FIX: dopisek do W7-UI2
 - Sidebar: przycisk "Pokaż ukryte" pozostaje po polsku w angielskim interfejsie. Przenieść do wspólnego katalogu EN/PL w W7-UI2; bez zmiany napisu w tej poprawce.
+
+### W7-UI2: dopisane obszary W8/W10 (osobna migracja)
+- AccessSettings, BudgetSettings: poziomy dostępu, odmowy, zużycie, ostrzeżenie i wyczerpanie budżetu, koszt niedostępny, heldReason.
+- IsolationSettings, BrowserProfileSettings: active/shared-process/unavailable/off, przyczyna niedostępności, signed-out notice, domeny allow/block, potwierdzenie czyszczenia danych.
+- Integrations (kontrakt W10-KK1): Connect account, waiting-for-browser, connected, failed/needs-login, Disconnect, allowlista narzędzi. Ten etap nie tłumaczy W8 ani W10.
+- Etap PL/EN 1 obejmuje istniejące SettingsModal, AppearanceSettings, AppSettingsW3 i etykiety Sidebar/PageRail. Pełna migracja wszystkich ekranów i sześciu działających zakładek pozostaje do odbioru; sam słownik nie oznacza pełnego G4.

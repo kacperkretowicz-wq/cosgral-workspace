@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { language, setLanguage, t } from "../i18n";
 import { Button, Card, Field, Heading, Input, NativeSelect, Text } from "./ui";
 
 export function AppSettingsW3() {
@@ -16,7 +17,7 @@ export function AppSettingsW3() {
   onSettled(() => {
     void window.openbot.appSettings
       ?.get()
-      .then(setSettings)
+      .then((value) => setSettings({ ...value, language: value.languageChosen ? value.language : language() }))
       .catch((e) => setError(String(e)));
   });
   async function save() {
@@ -26,6 +27,8 @@ export function AppSettingsW3() {
       setSettings(
         await window.openbot.appSettings.update({ language: value.language, notifications: value.notifications }),
       );
+      setLanguage(value.language);
+      document.documentElement.lang = value.language;
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save settings.");
@@ -34,7 +37,7 @@ export function AppSettingsW3() {
   return (
     <Card class="cosgral-settings-block" role="region" aria-labelledby="app-settings-title">
       <Heading as="h2" size="sm" id="app-settings-title">
-        Application settings
+        {t("Application settings")}
       </Heading>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
@@ -44,7 +47,7 @@ export function AppSettingsW3() {
       <Show when={settings()}>
         {(value) => (
           <>
-            <Field label="Language" class="cosgral-settings-field">
+            <Field label={t("Language")} class="cosgral-settings-field">
               <NativeSelect
                 value={value().language}
                 onChange={(e) => {
@@ -57,24 +60,26 @@ export function AppSettingsW3() {
               </NativeSelect>
             </Field>
             <table class="cosgral-settings-table">
-              <caption>Notifications</caption>
+              <caption>{t("Notifications")}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Event</th>
-                  <For each={NOTIFICATION_CHANNELS}>{(channel) => <th scope="col">{CHANNEL_LABELS[channel]}</th>}</For>
+                  <th scope="col">{t("Event")}</th>
+                  <For each={NOTIFICATION_CHANNELS}>
+                    {(channel) => <th scope="col">{t(CHANNEL_LABELS[channel])}</th>}
+                  </For>
                 </tr>
               </thead>
               <tbody>
                 <For each={NOTIFICATION_EVENTS}>
                   {(event) => (
                     <tr>
-                      <th scope="row">{EVENT_LABELS[event]}</th>
+                      <th scope="row">{t(EVENT_LABELS[event])}</th>
                       <For each={NOTIFICATION_CHANNELS}>
                         {(channel) => (
                           <td>
                             <Input
                               unstyled
-                              aria-label={`${EVENT_LABELS[event]}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
+                              aria-label={`${t(EVENT_LABELS[event])}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
                               type="checkbox"
                               checked={value().notifications.matrix[event][channel]}
                               onChange={(e) =>
@@ -116,11 +121,11 @@ export function AppSettingsW3() {
                   )
                 }
               />
-              Only notify while COSGRAL is in the background
+              {t("Only notify while COSGRAL is in the background")}
             </label>
             <div class="cosgral-settings-actions">
               <Button type="button" onClick={() => void save()}>
-                Save application settings
+                {t("Save application settings")}
               </Button>
             </div>
           </>
@@ -162,7 +167,7 @@ export function OnboardingFields(props: {
 }) {
   return (
     <div class="onboarding-fields">
-      <Field label="Language">
+      <Field label={t("Language")}>
         <NativeSelect
           value={props.value.language}
           disabled={props.disabled}
@@ -175,7 +180,10 @@ export function OnboardingFields(props: {
           <option value="pl">Polski</option>
         </NativeSelect>
       </Field>
-      <Field label="First agent" description="Made from a template right after setup. You can add more agents later.">
+      <Field
+        label={t("First agent")}
+        description={t("Made from a template right after setup. You can add more agents later.")}
+      >
         <NativeSelect
           value={props.value.firstAgent?.templateId ?? ""}
           disabled={props.disabled}
@@ -184,7 +192,7 @@ export function OnboardingFields(props: {
             props.onChange({ ...props.value, firstAgent: templateId ? { templateId } : null });
           }}
         >
-          <option value="">Choose later</option>
+          <option value="">{t("Choose later")}</option>
           <For each={props.state.proposals}>
             {(proposal) => (
               <option value={proposal.id}>
@@ -196,7 +204,7 @@ export function OnboardingFields(props: {
       </Field>
       <div class="onboarding-computer-use">
         <Text as="strong" variant="label-sm">
-          Computer Use
+          {t("Computer Use")}
         </Text>
         <Text as="p" tone="muted">
           {props.state.computerUse.available

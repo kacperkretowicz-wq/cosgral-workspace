@@ -1,7 +1,9 @@
 import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
+import { t } from "../i18n";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
+import { LanguageSettings } from "./LanguageSettings";
 import {
   Badge,
   Bell,
@@ -145,9 +147,9 @@ export function SettingsModal(props: SettingsModalProps) {
           >
             <aside class="settings-modal-sidebar">
               <Text class="settings-modal-label" variant="label" tone="secondary">
-                Settings
+                {t("Settings")}
               </Text>
-              <nav class="settings-modal-nav" aria-label="Settings sections">
+              <nav class="settings-modal-nav" aria-label={t("Settings sections")}>
                 {navItems.map((item) => {
                   const NavIcon = item.icon;
                   return (
@@ -158,13 +160,13 @@ export function SettingsModal(props: SettingsModalProps) {
                       aria-current={section() === item.label ? "page" : undefined}
                       onClick={() => setSection(item.label)}
                       disabled={!item.current && item.label !== "Appearance"}
-                      title={item.current || item.label === "Appearance" ? undefined : "Coming soon"}
+                      title={item.current || item.label === "Appearance" ? undefined : t("Coming soon")}
                     >
                       <NavIcon aria-hidden="true" />
-                      <span>{item.label}</span>
+                      <span>{t(item.label)}</span>
                       {!item.current && item.label !== "Appearance" && (
                         <span class="settings-modal-nav-status" aria-hidden="true">
-                          Soon
+                          {t("Soon")}
                         </span>
                       )}
                     </Button>
@@ -176,14 +178,14 @@ export function SettingsModal(props: SettingsModalProps) {
             <div class="settings-modal-main">
               <header class="settings-modal-header">
                 <div>
-                  <Dialog.Title class="settings-modal-title">{section()}</Dialog.Title>
+                  <Dialog.Title class="settings-modal-title">{t(section())}</Dialog.Title>
                   <Dialog.Description class="settings-modal-description">
-                    Control how COSGRAL Workspace behaves on this computer.
+                    {t("Control how COSGRAL Workspace behaves on this computer.")}
                   </Dialog.Description>
                 </div>
                 <IconButton
-                  label="Close settings"
-                  tooltip="Close settings"
+                  label={t("Close settings")}
+                  tooltip={t("Close settings")}
                   variant="ghost"
                   onClick={() => requestOpenChange(false)}
                 >
@@ -204,42 +206,47 @@ export function SettingsModal(props: SettingsModalProps) {
                     <>
                       <section class="settings-modal-group" aria-labelledby="settings-app-behavior">
                         <Heading id="settings-app-behavior" as="h3" size="sm" tone="secondary">
-                          App behavior
+                          {t("App behavior")}
                         </Heading>
                         <Card class="settings-modal-card">
                           <Switch
                             defaultChecked
-                            label="Launch COSGRAL Workspace at login"
-                            description="Open the app when you sign in to this computer."
+                            label={t("Launch COSGRAL Workspace at login")}
+                            description={t("Open the app when you sign in to this computer.")}
                           />
                           <Switch
-                            label="Keep COSGRAL Workspace running in the background"
-                            description="Keep active tasks running after you close the window."
+                            label={t("Keep COSGRAL Workspace running in the background")}
+                            description={t("Keep active tasks running after you close the window.")}
                           />
                         </Card>
                       </section>
 
+                      <LanguageSettings />
                       <ContextSettingsSection />
                       <BudgetSettings />
                       <section class="settings-modal-group" aria-labelledby="settings-workspace">
                         <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
-                          Workspace
+                          {t("Workspace")}
                         </Heading>
                         <Card class="settings-modal-card">
                           <Switch
                             defaultChecked
-                            label="Restore the last workspace on launch"
-                            description="Open the workspace and tasks from your previous session."
+                            label={t("Restore the last workspace on launch")}
+                            description={t("Open the workspace and tasks from your previous session.")}
                           />
                           <div class="settings-modal-row">
                             <div class="settings-modal-row-copy">
-                              <span class="settings-modal-row-title">Open external links in</span>
+                              <span class="settings-modal-row-title">{t("Open external links in")}</span>
                               <Text tone="muted" variant="caption">
-                                Choose where links from conversations open.
+                                {t("Choose where links from conversations open.")}
                               </Text>
                             </div>
-                            <NativeSelect class="settings-modal-select" size="sm" aria-label="Open external links in">
-                              <option value="browser">Default browser</option>
+                            <NativeSelect
+                              class="settings-modal-select"
+                              size="sm"
+                              aria-label={t("Open external links in")}
+                            >
+                              <option value="browser">{t("Default browser")}</option>
                               <option value="openbot">COSGRAL</option>
                             </NativeSelect>
                           </div>
@@ -248,45 +255,45 @@ export function SettingsModal(props: SettingsModalProps) {
 
                       <section class="settings-modal-group" aria-labelledby="settings-notifications">
                         <Heading id="settings-notifications" as="h3" size="sm" tone="secondary">
-                          Notifications
+                          {t("Notifications")}
                         </Heading>
                         <Card class="settings-modal-card">
                           <Switch
                             defaultChecked
-                            label="Desktop notifications"
-                            description="Show a notification when an agent needs attention."
+                            label={t("Desktop notifications")}
+                            description={t("Show a notification when an agent needs attention.")}
                           />
                           <Switch
-                            label="Play a sound when a task finishes"
-                            description="Use a short sound for completed tasks."
+                            label={t("Play a sound when a task finishes")}
+                            description={t("Use a short sound for completed tasks.")}
                           />
                         </Card>
                       </section>
 
                       <section class="settings-modal-group" aria-labelledby="settings-updates">
                         <Heading id="settings-updates" as="h3" size="sm" tone="secondary">
-                          Updates
+                          {t("Updates")}
                         </Heading>
                         <Card class="settings-modal-card">
                           <Switch
                             defaultChecked
-                            label="Automatically download updates"
-                            description="Download new versions when they become available."
+                            label={t("Automatically download updates")}
+                            description={t("Download new versions when they become available.")}
                           />
                           <div class="settings-modal-row">
                             <div class="settings-modal-row-copy">
-                              <span class="settings-modal-row-title">COSGRAL Workspace version</span>
+                              <span class="settings-modal-row-title">{t("COSGRAL Workspace version")}</span>
                               <div class="settings-modal-version">
                                 <Text tone="muted" variant="caption">
-                                  Installed version
+                                  {t("Installed version")}
                                 </Text>
                                 <Badge tone={updateChecked() ? "success" : "accent"}>
-                                  {updateChecked() ? "Up to date" : "0.1.11"}
+                                  {updateChecked() ? t("Up to date") : "0.1.11"}
                                 </Badge>
                               </div>
                             </div>
                             <Button type="button" size="sm" onClick={() => setUpdateChecked(true)}>
-                              {updateChecked() ? "Checked" : "Check for updates"}
+                              {updateChecked() ? t("Checked") : t("Check for updates")}
                             </Button>
                           </div>
                         </Card>
