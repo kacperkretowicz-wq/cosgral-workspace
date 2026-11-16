@@ -51,7 +51,7 @@ class MemoryDrafts implements KeptDraftStore {
     return [];
   }
   get(): KeptDraft | null {
-    return null;
+    return this.list()[0] ?? null;
   }
   save(): void {}
   delete(): boolean {

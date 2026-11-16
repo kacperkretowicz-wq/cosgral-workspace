@@ -164,6 +164,7 @@ import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } 
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
+import { registerMessageActionsIpc } from "./message-actions-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
 import { registerPlansIpc } from "./plans-ipc";
 import { registerProviderIpc } from "./provider-ipc";
@@ -871,6 +872,8 @@ function registerIpcHandlers(
   registerThreadsIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
   registerPlansIpc(() => agentService);
+  // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
+  registerMessageActionsIpc(() => agentService);
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({

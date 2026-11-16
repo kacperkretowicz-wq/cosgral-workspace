@@ -43,6 +43,10 @@ interface StoredMessage {
   createdAt: string;
   /** COSGRAL W6-BE1: for a message of an agent, the thread of the sender it was sent from. Missing = before threads. */
   threadId?: string;
+  /** COSGRAL W6-BE3 (retry): this message asks again for the answer `regenerationOf`; the old answer stays. */
+  regenerationOf?: string;
+  /** COSGRAL W6-BE3 (edit): the person edited this message and sent it again. */
+  edited?: boolean;
 }
 
 interface StoredDelivery {
@@ -86,6 +90,10 @@ interface EnqueueInput {
   idempotencyKey?: string;
   /** COSGRAL W6-BE1: the thread an agent sender works in; its outgoing row belongs to that thread. */
   senderThreadId?: string | null;
+  /** COSGRAL W6-BE3: the message asks again for this answer (retry). */
+  regenerationOf?: string;
+  /** COSGRAL W6-BE3: the message is an edited message of the person, sent again. */
+  edited?: boolean;
 }
 
 export interface DeliveryContext {
@@ -304,6 +312,8 @@ export class MailboxStore {
     };
     const threads = await Promise.all(recipients.map((recipientBotId) => this.#threadOf?.(recipientBotId) ?? null));
     if (input.sender.kind === "bot" && input.senderThreadId) message.threadId = input.senderThreadId;
+    if (input.sender.kind === "user" && input.regenerationOf) message.regenerationOf = input.regenerationOf;
+    if (input.sender.kind === "user" && input.edited) message.edited = true;
     const deliveries = recipients.map<StoredDelivery>((recipientBotId, index) => ({
       id: randomUUID(),
       messageId,
@@ -443,6 +453,55 @@ export class MailboxStore {
     await this.#drainFileDeletionOutbox();
   }
 
+  /**
+   * COSGRAL W6-BE3 (delete, edit): removes finished messages of the person (or of another agent) from one thread of an
+   * agent, with their files. Refuses a delivery that is not in that thread or that is still waiting or running. A message
+   * that another agent still has in its queue stays; other threads and other agents' queues are not touched.
+   */
+  async removeDeliveries(botId: string, threadId: string, deliveryIds: string[]): Promise<void> {
+    const wanted = new Set(deliveryIds);
+    const doomed = this.#state.deliveries.filter((delivery) => wanted.has(delivery.id));
+    for (const id of wanted) {
+      const delivery = doomed.find((candidate) => candidate.id === id);
+      if (!delivery || delivery.recipientBotId !== botId || !inThread(delivery.threadId, threadId)) {
+        throw new Error("That message is not in this thread.");
+      }
+      if (delivery.status === "queued" || delivery.status === "starting" || delivery.status === "running") {
+        throw new Error("This message is still waiting or running. Change it from the queue.");
+      }
+    }
+    if (doomed.length === 0) return;
+    const previous = structuredClone(this.#state);
+    const removedMessageIds = new Set<string>();
+    const doomedMessageIds = new Set(doomed.map((delivery) => delivery.messageId));
+    this.#state.deliveries = this.#state.deliveries.filter((delivery) => !wanted.has(delivery.id));
+    const remainingMessageIds = new Set(this.#state.deliveries.map((delivery) => delivery.messageId));
+    this.#state.messages = this.#state.messages.filter((message) => {
+      const orphaned = doomedMessageIds.has(message.id) && !remainingMessageIds.has(message.id);
+      if (orphaned) removedMessageIds.add(message.id);
+      return !orphaned;
+    });
+    this.#state.reactions = this.#state.reactions.filter(
+      (reaction) =>
+        !(reaction.botId === botId && wanted.has(reaction.messageId)) && !removedMessageIds.has(reaction.messageId),
+    );
+    this.#state.idempotency = Object.fromEntries(
+      Object.entries(this.#state.idempotency).filter(([, messageId]) => !removedMessageIds.has(messageId)),
+    );
+    try {
+      await this.#persist(
+        "mailbox.messages-removed",
+        `mailbox:messages-removed:${randomUUID()}`,
+        [...removedMessageIds].map((messageId) => join(this.#transfersRoot, messageId)),
+        true,
+      );
+    } catch (error) {
+      this.#state = previous;
+      throw error;
+    }
+    await this.#drainFileDeletionOutbox();
+  }
+
   conversationMessages(botId: string, threadId?: string | null): ConversationMessage[] {
     const messages: ConversationMessage[] = [];
     const deliveriesByMessage = new Map<string, StoredDelivery[]>();
@@ -526,6 +585,8 @@ export class MailboxStore {
           createdAt: message.createdAt,
           status: delivery.status === "failed" ? "failed" : "completed",
           itemType: message.sender.kind === "bot" ? "agent-exchange" : undefined,
+          ...(message.regenerationOf ? { regeneration: { ofMessageId: message.regenerationOf } } : {}),
+          ...(message.edited ? { edited: true } : {}),
         });
       }
     }
@@ -1313,6 +1374,8 @@ function isStoredMessage(value: unknown): value is StoredMessage {
     value.attachments.every(isStoredAttachment) &&
     (isString(value.replyToMessageId) || value.replyToMessageId === null) &&
     (value.threadId === undefined || isString(value.threadId)) &&
+    (value.regenerationOf === undefined || isString(value.regenerationOf)) &&
+    (value.edited === undefined || value.edited === true) &&
     isString(value.createdAt)
   );
 }

@@ -36,14 +36,21 @@ import type {
   ConversationWithReadState,
   CreateThreadInput,
   DeleteDraftInput,
+  DeleteMessageInput,
   DeleteThreadInput,
   DraftAttachment,
   DraftPreviewResolution,
+  EditMessageInput,
   ImageGenerationInfo,
   KeptDraft,
+  ListPinsInput,
   ListPlansInput,
+  MessageActionResult,
+  MessageActionTarget,
+  MessagePin,
   PendingAgentPrompt,
   PendingAgentRequest,
+  PinMessageInput,
   PromptResolution,
   QueuedMessageReceipt,
   QueueSnapshot,
@@ -55,6 +62,7 @@ import type {
   RespondToPlanInput,
   RespondToPromptInput,
   RespondToVaultRequestInput,
+  RetryMessageInput,
   SendMessageInput,
   SetMessageReactionInput,
   SteerQueuedMessageInput,
@@ -66,12 +74,16 @@ import type {
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import {
+  editNeedsConfirmation,
   isAcpModel,
   isClaudeModel,
   isEndpointModel,
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
+  messageActionProblem,
+  retrySourceIndex,
+  threadBusyProblem,
   unavailableContextState,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
@@ -117,6 +129,7 @@ import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
 import { isMemoryToolName, MEMORY_DYNAMIC_TOOLS, MemoryService } from "./memory-service";
 import { MemoryStore } from "./memory-store";
+import { MessagePinStore } from "./message-pin-store";
 import { SqlitePlanStore } from "./plan-store";
 import {
   type AccountRateLimitResult,
@@ -369,6 +382,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #drafts: DraftStore;
   /** COSGRAL W6-BE3: the plan cards of the threads. */
   readonly #plans: SqlitePlanStore;
+  /** COSGRAL W6-BE3: the messages the person pinned. */
+  readonly #pins: MessagePinStore;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
   readonly #skillTools: SkillTools;
@@ -478,6 +493,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#mcp = mcp;
     this.#drafts = new DraftStore(store.database);
     this.#plans = new SqlitePlanStore(store.database);
+    this.#pins = new MessagePinStore(store.database);
     this.#cards = new ActionCards({
       emit: (event) => this.#emit(event),
       order: () => this.#pendingOrder(),
@@ -1214,6 +1230,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     // COSGRAL W6-BE3: so do its plans.
     this.#plans.pruneBots(this.#store.list().map((candidate) => candidate.id));
+    this.#pins.pruneBots(this.#store.list().map((candidate) => candidate.id));
   }
 
   async initialize(): Promise<void> {
@@ -2515,6 +2532,21 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     for (const message of snapshot.messages) {
       message.reaction = reactions.get(message.id) ?? null;
     }
+    // COSGRAL W6-BE3: the pins of the thread, and the answers that belong to a retry (the turn of a regeneration request).
+    const pinned = snapshot.threadId ? this.#pins.pinnedIds(snapshot.threadId) : new Set<string>();
+    const regenerations = new Map<string, { ofMessageId: string }>();
+    for (const message of snapshot.messages) {
+      if (message.author === "user" && message.regeneration && message.turnId) {
+        regenerations.set(message.turnId, message.regeneration);
+      }
+    }
+    for (const message of snapshot.messages) {
+      message.pinned = pinned.has(message.id) ? true : undefined;
+      if (message.author === "assistant" && message.turnId) {
+        const regeneration = regenerations.get(message.turnId);
+        if (regeneration) message.regeneration = regeneration;
+      }
+    }
     sortConversationMessages(snapshot.messages);
   }
 
@@ -3537,7 +3569,191 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W6-BE3: its context numbers and counters go with it, and so do its plans and pins.
     this.forgetContext(input.botId, input.threadId);
     this.#cards.forgetThreadPlans(input.botId, input.threadId);
+    this.#pins.deleteThread(input.threadId);
     return this.#afterThreadChange(input.botId, list);
+  }
+
+  // --- COSGRAL W6-BE3: actions on a message (spec-w6.md 1E, W29-W35; Q12-Q14) ---
+
+  /** Pins or unpins a message of a thread (default: the shown thread). Works at any time, also while the agent answers. */
+  async pinMessage(input: PinMessageInput): Promise<MessagePin[]> {
+    const bot = this.#contextBot(input.botId);
+    const threadId = input.threadId ?? bot.threadId;
+    if (!threadId || !this.#threads.lookup(bot.id, threadId)) throw new Error("Unknown thread.");
+    const message = this.#messagesOfThread(bot, threadId).find((candidate) => candidate.id === input.messageId);
+    if (!message) throw new Error("That message is not in this thread.");
+    const problem = messageActionProblem("pin", message);
+    if (problem) throw new Error(problem);
+    const pins = this.#pins.set(bot.id, threadId, message.id, input.pinned, new Date().toISOString());
+    this.#emit({ type: "message-pins-changed", botId: bot.id, threadId, pins: structuredClone(pins) });
+    if (threadId === bot.threadId) this.#refreshShownConversation(bot.id);
+    return pins;
+  }
+
+  async listMessagePins(input: ListPinsInput): Promise<MessagePin[]> {
+    const bot = this.#contextBot(input.botId);
+    const threadId = input.threadId ?? bot.threadId;
+    return threadId ? this.#pins.list(threadId) : [];
+  }
+
+  /** Retry (Q12): the agent is asked the same question again; the new answer is ADDED, marked as a regeneration. */
+  async retryMessage(input: RetryMessageInput): Promise<MessageActionResult> {
+    const { bot, snapshot, message } = this.#historyTarget(input, "retry");
+    const sourceIndex = retrySourceIndex(snapshot.messages, message.id);
+    const source = snapshot.messages[sourceIndex];
+    if (!source) throw new Error("There is no message of yours before this answer to ask again.");
+    const index = snapshot.messages.findIndex((candidate) => candidate.id === message.id);
+    const ofMessageId =
+      message.author === "user"
+        ? (snapshot.messages.slice(index + 1).find((candidate) => candidate.author === "assistant")?.id ?? message.id)
+        : message.id;
+    const receipt = await this.#sendAgain(bot, source, { regenerationOf: ofMessageId });
+    this.#scheduleDrain(bot.id);
+    return { removedMessageIds: [], receipt };
+  }
+
+  /**
+   * Edit and send again (Q13): the person's own message gets new text and goes to the agent again. What the conversation
+   * said after it is removed from the thread and from what the model sees; `confirm: true` is needed when there is any.
+   */
+  async editMessage(input: EditMessageInput): Promise<MessageActionResult> {
+    const { bot, threadId, snapshot, message } = this.#historyTarget(input, "edit");
+    const index = snapshot.messages.findIndex((candidate) => candidate.id === message.id);
+    const doomed = snapshot.messages.slice(index).filter(isRemovableRow);
+    if (editNeedsConfirmation(doomed.length - 1) && input.confirm !== true) {
+      const later = doomed.length - 1;
+      throw new Error(`This removes ${later} later message${later === 1 ? "" : "s"}. Confirm to continue.`);
+    }
+    // The new message is queued first (it copies the files of the old one); nothing starts before the history is cut.
+    const receipt = await this.#sendAgain(bot, message, { text: input.text.trim(), edited: true });
+    await this.#removeMessages(bot, threadId, snapshot, doomed);
+    this.#scheduleDrain(bot.id);
+    return { removedMessageIds: doomed.map((candidate) => candidate.id), receipt };
+  }
+
+  /** Delete one message (the person's or the agent's) after confirmation. Never a whole thread. */
+  async deleteMessage(input: DeleteMessageInput): Promise<MessageActionResult> {
+    if (input.confirm !== true) throw new Error("Deleting a message needs confirmation.");
+    const { bot, threadId, snapshot, message } = this.#historyTarget(input, "delete");
+    await this.#removeMessages(bot, threadId, snapshot, [message]);
+    return { removedMessageIds: [message.id], receipt: null };
+  }
+
+  /** The shown thread, its busy check, and the message an action is about. Retry, edit and delete change history. */
+  #historyTarget(input: MessageActionTarget, action: "retry" | "edit" | "delete") {
+    const bot = this.#contextBot(input.botId);
+    const threadId = bot.threadId;
+    if (!threadId) throw new Error("This agent has no conversation yet.");
+    if (input.threadId && input.threadId !== threadId) {
+      throw new Error("Select that thread first: history changes only in the thread that is shown.");
+    }
+    const busy = threadBusyProblem({
+      turnRunning: this.#runningThread(bot.id) === threadId || this.#compactingBots.has(bot.id),
+      busyMessages: this.#mailbox
+        .listQueue(bot.id, threadId)
+        .deliveries.filter((delivery) => ["queued", "starting", "running"].includes(delivery.status)).length,
+    });
+    if (busy) throw new Error(busy);
+    const snapshot = this.#activeThreadSnapshot(bot.id);
+    this.#syncMailboxMessages(snapshot);
+    const message = snapshot.messages.find((candidate) => candidate.id === input.messageId);
+    if (!message) throw new Error("That message is not in this thread.");
+    const problem = messageActionProblem(action, message);
+    if (problem) throw new Error(problem);
+    return { bot, threadId, snapshot, message };
+  }
+
+  /** The messages of a thread as the window would show them (the shown thread live, another one as it is stored). */
+  #messagesOfThread(bot: BotSummary, threadId: string): ConversationMessage[] {
+    if (threadId === bot.threadId) {
+      const shown = this.#activeThreadSnapshot(bot.id);
+      this.#syncMailboxMessages(shown);
+      return shown.messages;
+    }
+    const stored = this.#store.database.readConversation(bot.id, threadId);
+    this.#syncMailboxMessages(stored);
+    return stored.messages;
+  }
+
+  /** Queues the text of `source` as a new message of the person (its files go with it), without starting anything. */
+  async #sendAgain(
+    bot: BotSummary,
+    source: ConversationMessage,
+    options: { text?: string; regenerationOf?: string; edited?: boolean },
+  ): Promise<QueuedMessageReceipt> {
+    await this.ensureProvider(providerForBot(bot));
+    const sourcePaths: string[] = [];
+    for (const attachment of source.attachments ?? []) {
+      const resolved = await this.#mailbox.resolveAttachment(attachment.id);
+      if (resolved) sourcePaths.push(resolved.path);
+    }
+    const receipt = await this.#mailbox.enqueue({
+      sender: { kind: "user" },
+      recipientBotIds: [bot.id],
+      text: options.text ?? source.text,
+      sourcePaths,
+      ...(options.regenerationOf ? { regenerationOf: options.regenerationOf } : {}),
+      ...(options.edited ? { edited: true } : {}),
+    });
+    const snapshot = this.#activeThreadSnapshot(bot.id);
+    this.#syncMailboxMessages(snapshot);
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    this.#emitConversation(snapshot);
+    this.#emitQueue(bot.id);
+    return receipt;
+  }
+
+  /**
+   * Takes messages out of a thread for good: the conversation, the mailbox (with files), the stored rows and the pins.
+   * What the model sees is cut too: the CLI thread that remembers them is retired, and the next turn starts a new one
+   * that is handed only what is left of the history.
+   */
+  async #removeMessages(
+    bot: BotSummary,
+    threadId: string,
+    snapshot: ConversationSnapshot,
+    removed: ConversationMessage[],
+  ): Promise<void> {
+    const ids = removed.map((message) => message.id);
+    const deliveryIds = removed.filter((message) => message.delivery).map((message) => message.id);
+    if (deliveryIds.length > 0) await this.#mailbox.removeDeliveries(bot.id, threadId, deliveryIds);
+    const gone = new Set(ids);
+    for (let index = snapshot.messages.length - 1; index >= 0; index -= 1) {
+      if (gone.has(snapshot.messages[index]?.id ?? "")) snapshot.messages.splice(index, 1);
+    }
+    const persisted = this.#store.database.persistConversation(
+      snapshot,
+      "messages.removed",
+      { messageIds: ids },
+      undefined,
+      ids,
+    );
+    snapshot.revision = persisted.revision;
+    const hadPins = ids.some((id) => this.#pins.pinnedIds(threadId).has(id));
+    this.#pins.removeMessages(threadId, ids);
+    if (hadPins) {
+      this.#emit({ type: "message-pins-changed", botId: bot.id, threadId, pins: this.#pins.list(threadId) });
+    }
+    // The CLI thread still remembers what was removed: retire it. The next turn gets a new one and the handoff of the rest.
+    for (const session of this.#store.database.listProviderSessions(threadId)) {
+      this.#loadedThreads.delete(session.externalSessionId);
+      this.#contextBudgets.delete(session.externalSessionId);
+      this.#clearCompactionTimer(session.externalSessionId);
+    }
+    this.#store.database.deactivateProviderSessions(threadId);
+    this.forgetContext(bot.id, threadId);
+    const last = snapshot.messages.filter((message) => message.author !== "system").at(-1);
+    await this.#store.updatePreview(bot.id, last?.text ?? "");
+    this.#emit({ type: "bots-changed", bots: this.#store.list() });
+    this.#emitConversation(snapshot);
+    this.#emitQueue(bot.id);
+  }
+
+  /** Tells the window the shown conversation again (a mark changed, such as a pin). */
+  #refreshShownConversation(botId: string): void {
+    const shown = this.#activeThreadSnapshot(botId);
+    this.#syncMailboxMessages(shown);
+    this.#emitConversation(shown);
   }
 
   /** Every change of the threads: tell the window the list, the agent (its active thread), the queue and the conversation. */
@@ -4398,6 +4614,11 @@ function isDynamicToolCall(value: unknown): value is DynamicToolCallParams {
     isString(value.tool) &&
     "arguments" in value
   );
+}
+
+/** COSGRAL W6-BE3: a row an edit may remove. The record of mail already sent to another agent stays: it cannot be unsent. */
+function isRemovableRow(message: ConversationMessage): boolean {
+  return !message.id.startsWith("outbox-");
 }
 
 function renderHandoffMessage(message: ConversationSnapshot["messages"][number]): string {
