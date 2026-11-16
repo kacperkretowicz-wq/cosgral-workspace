@@ -135,10 +135,11 @@ export function PageRail(props: PageRailProps) {
   let tools: HTMLDivElement | undefined;
   const visible = () => {
     const ids = pinIds();
+    // Pinned pages that do not fit the window height go to "More pages", so a short window never hides a page.
     return ids
-      ? [...(!ids.includes("agents") ? ["agents" as const] : []), ...ids].flatMap((id) =>
-          PAGE_RAIL_ITEMS.filter((page) => page.id === id),
-        )
+      ? [...(!ids.includes("agents") ? ["agents" as const] : []), ...ids]
+          .flatMap((id) => PAGE_RAIL_ITEMS.filter((page) => page.id === id))
+          .slice(0, visibleCount())
       : PAGE_RAIL_ITEMS.slice(0, visibleCount());
   };
   const hidden = () => PAGE_RAIL_ITEMS.filter((item) => !visible().some((page) => page.id === item.id));
