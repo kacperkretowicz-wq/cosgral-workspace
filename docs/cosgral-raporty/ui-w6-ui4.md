@@ -25,4 +25,23 @@ No Electron, sandbox e2e, full check, full test suite, real OAuth/account login,
 
 ## B — Client spaces
 
-Implementation and component tests prepared; final result follows after A.
+A commit: `7873bcbc0`.
+
+The rail now has a separate Client space control, independent from the server/team selector. It shows the running space, not the selected next space; compact rail keeps the full name in its accessible label and title.
+
+- Opens an accessible dialog with list/create/rename/archive/restore/delete/switch/describe.
+- Main cannot be renamed, archived or deleted. Running spaces cannot be archived/deleted. Archived spaces can be restored; switching to them is hidden until restored.
+- Names use the contract's validation, including reserved Main and case-insensitive duplicates; field errors explain refused names.
+- Switching explicitly warns that the app restarts and running turns stop. Only confirmation sends `confirm: true`. Deletion separately warns of permanent data loss and also needs confirmation. API refusal keeps the confirmation open with the reason.
+- Details show the per-space data description, saved data presence and size when known. Create/rename/archive/restore do not switch. Errors remain visible.
+- Shared files: Sidebar gains one import and one component call; styles add only scoped sizing/wrapping rules. Existing text/encoding preserved.
+
+### Verification (B)
+
+New Spaces unit tests: 7/7. Covers Main protection, cancel/confirm deletion, restart confirmation, CRUD/archive/restore, reserved/duplicate names, description, refusal recovery, and running-vs-selected rail name through a simulated restart. ACP tests: 4/4. Typechecks and check:ui passed; Biome on changed files passed.
+
+The same Storybook file has two additional client-space scenes (dark/light), avoiding a full Storybook suite. Final Storybook run: 15/15 passed, including both space scenes, with axe configured as an error.
+
+### Integration acceptance still required
+
+In the sandbox app: add a preset, start login, click the generated link, paste a real code directly into the app, check retry/cancel/success. For spaces: create two clients, rename/archive/restore one, switch with confirmation and verify actual restart/name, inspect isolated content, delete the inactive client only after confirmation. These real actions were not run here.

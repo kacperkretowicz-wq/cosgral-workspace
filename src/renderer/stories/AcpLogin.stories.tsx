@@ -1,7 +1,10 @@
-import type { AcpLoginState } from "@openbot/contracts/ipc";
-import { onSettled } from "solid-js";
+import type { AcpLoginState, SpaceList } from "@openbot/contracts/ipc";
+import { createSignal, onSettled, Show } from "solid-js";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { AcpLoginCard, AcpPresetCard } from "../src/components/AcpLogin";
+import { SpacesManager } from "../src/components/Spaces";
+import { Heading } from "../src/components/ui";
+import { createMockSpaces } from "./mock-spaces";
 
 const state: AcpLoginState = {
   agentId: "gemini",
@@ -68,3 +71,21 @@ export const SuccessLight: Story = { ...Success, parameters: { theme: "light" } 
 export const CancelledLight: Story = { ...Cancelled, parameters: { theme: "light" } };
 export const ErrorLight: Story = { ...LoginError, parameters: { theme: "light" } };
 export const MissingCommandLight: Story = { ...MissingCommand, parameters: { theme: "light" } };
+
+function SpacesScene() {
+  const [list, setList] = createSignal<SpaceList>();
+  const api = createMockSpaces(() => {}, [{ id: "client-demo1", name: "Acme client" }]);
+  onSettled(() => {
+    void api.list().then(setList);
+  });
+  return (
+    <section>
+      <Heading as="h2" size="md">
+        Client spaces
+      </Heading>
+      <Show when={list()}>{(value) => <SpacesManager api={api} list={value()} onChange={setList} />}</Show>
+    </section>
+  );
+}
+export const ClientSpaces: Story = { render: () => <SpacesScene /> };
+export const ClientSpacesLight: Story = { ...ClientSpaces, parameters: { theme: "light" } };

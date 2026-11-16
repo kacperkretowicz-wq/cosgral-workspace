@@ -39,6 +39,7 @@ import {
   MoveToDialog,
   type SidebarFolderActions,
 } from "./SidebarFolders";
+import { SpacesRail } from "./Spaces";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover, Switch, Text } from "./ui";
@@ -628,6 +629,7 @@ export function Sidebar(props: SidebarProps) {
         </div>
       </div>
 
+      <SpacesRail compact={props.compact} />
       <div class="sidebar-search-wrap">
         <label class="search-field" aria-hidden={props.compact ? "true" : undefined}>
           <span class="sr-only">Search chats</span>

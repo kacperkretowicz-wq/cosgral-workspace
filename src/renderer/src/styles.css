@@ -194,3 +194,19 @@
   font-synthesis: none;
   text-rendering: geometricPrecision;
 }
+.spaces-dialog {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.spaces-actions {
+  flex-wrap: wrap;
+}
+.spaces-rail {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
