@@ -40,7 +40,8 @@ const PHONE_MESSAGE = "Hello from the sandbox phone";
 const GETTER_SMOKE = `(async () => {
   const api = window.openbot;
   const wanted = /^(get[A-Za-z]*|list[A-Za-z]*|status)$/;
-  const skip = new Set(["getMacPermissions"]);
+  // context.getState needs an agent id (a call with none is refused on purpose: no state without a thread).
+  const skip = new Set(["getMacPermissions", "context.getState"]);
   const out = [];
   const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
   const call = async (name, fn) => {
@@ -58,7 +59,7 @@ const GETTER_SMOKE = `(async () => {
     }
     if (typeof value !== "object" || value === null) continue;
     for (const [method, fn] of Object.entries(value)) {
-      if (typeof fn !== "function" || !wanted.test(method) || skip.has(method) || fn.length !== 0) continue;
+      if (typeof fn !== "function" || !wanted.test(method) || skip.has(method) || skip.has(space + "." + method) || fn.length !== 0) continue;
       await call(space + "." + method, () => fn());
     }
   }
