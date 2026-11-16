@@ -3465,6 +3465,27 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
     await waitFor(() => expect(screen.queryByText(/^model zapasowy:/)).toBeNull());
   });
+  it("shows and dismisses an account network error only for the open agent", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief", level: 1 });
+    const event = {
+      type: "account-error" as const,
+      botId: "chief",
+      provider: "codex" as const,
+      accountId: "demo",
+      accountLabel: "Work",
+      reason: "network-error" as const,
+      message: "Network error. No limit or switch.",
+    };
+    emitAgentEvent?.({ ...event, botId: "scout", accountLabel: "Other agent" });
+    emitAgentEvent?.(event);
+    const card = await screen.findByRole("status", { name: "Network error for Work" });
+    expect(within(card).queryByRole("button", { name: "Continue" })).toBeNull();
+    expect(card).not.toHaveTextContent(/limit/i);
+    expect(screen.queryByRole("status", { name: "Network error for Other agent" })).toBeNull();
+    await fireEvent.click(within(card).getByRole("button", { name: "Dismiss" }));
+    await waitFor(() => expect(screen.queryByRole("status", { name: "Network error for Work" })).toBeNull());
+  });
   // COSGRAL W5-K1: the limit and switch events of the engine become cards in the open conversation of that agent.
   it("shows account limit and switch cards in the conversation of that agent only, and dismisses them", async () => {
     render(() => <App />);

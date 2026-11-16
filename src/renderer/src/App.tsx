@@ -606,6 +606,7 @@ export function App() {
           .then(setModelOptions)
           .catch(() => undefined);
         return;
+      case "account-error":
       case "account-limit-reached":
       case "account-switched":
         setAccountNotices((items) => addAccountNotice(items, event, crypto.randomUUID()));

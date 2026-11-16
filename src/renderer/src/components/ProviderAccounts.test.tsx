@@ -1,4 +1,4 @@
-import type { ProviderAccount } from "@openbot/contracts/ipc";
+import type { PoolSettingsInput, ProviderAccount } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ProviderAccountCard, ProviderAccounts, safeLoginUrl } from "./ProviderAccounts";
@@ -167,4 +167,42 @@ it("preserves a code draft and focus across snapshots, then clears it on complet
     accounts: [{ ...account, loggedIn: true, login: { ...account.login, phase: "success" } }],
   });
   await waitFor(() => expect(screen.queryByLabelText("Kod logowania")).toBeNull());
+});
+
+function returnSetting(initial?: boolean) {
+  let pool = { maxAccountsPerProvider: 3, switchBeforeFirstAction: true as const, returnAfterReset: initial };
+  const set = vi.fn(async (input: PoolSettingsInput) => {
+    pool = { ...pool, ...input };
+    return pool;
+  });
+  vi.stubGlobal("openbot", {
+    subscriptions: { listAccounts: async () => ({ accounts: [], pool, assignments: [] }), setPoolSettings: set },
+    agent: { onEvent: () => () => {} },
+  });
+  render(() => <ProviderAccounts />);
+  return { set, pool: () => pool };
+}
+it("defaults missing returnAfterReset to on and saves false with the current pool size", async () => {
+  const { set } = returnSetting();
+  const control = await screen.findByRole("switch", { name: "Return to the first account after the limit resets" });
+  expect(control).toHaveAttribute("aria-checked", "true");
+  await fireEvent.input(screen.getByLabelText("Maks. kont w puli"), { target: { value: "7" } });
+  await fireEvent.click(control);
+  await waitFor(() => expect(set).toHaveBeenCalledWith({ maxAccountsPerProvider: 3, returnAfterReset: false }));
+  await waitFor(() => expect(control).toHaveAttribute("aria-checked", "false"));
+});
+it("can enable returnAfterReset while keeping the current pool size", async () => {
+  const { set } = returnSetting(false);
+  const control = await screen.findByRole("switch", { name: "Return to the first account after the limit resets" });
+  expect(control).toHaveAttribute("aria-checked", "false");
+  await fireEvent.click(control);
+  await waitFor(() => expect(set).toHaveBeenCalledWith({ maxAccountsPerProvider: 3, returnAfterReset: true }));
+});
+it("saving only a new pool size preserves the return setting", async () => {
+  const { set, pool } = returnSetting(false);
+  await screen.findByRole("switch", { name: "Return to the first account after the limit resets" });
+  await fireEvent.input(screen.getByLabelText("Maks. kont w puli"), { target: { value: "4" } });
+  await fireEvent.click(screen.getByRole("button", { name: "Zapisz limit" }));
+  await waitFor(() => expect(set).toHaveBeenCalledWith({ maxAccountsPerProvider: 4 }));
+  expect(pool().returnAfterReset).toBe(false);
 });

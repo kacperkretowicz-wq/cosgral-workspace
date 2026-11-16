@@ -1,4 +1,5 @@
 import type {
+  AccountError,
   AccountLimitOutcome,
   AccountLimitReached,
   AccountSwitched,
@@ -59,6 +60,7 @@ export interface AccountSwitchedView {
 
 /** A card in the open conversation of one agent; dismissed by the person. */
 export type AccountNotice = { id: string; botId: string } & (
+  | { kind: "error"; view: AccountError }
   | { kind: "limit"; view: AccountLimitReachedView }
   | { kind: "switched"; view: AccountSwitchedView; transition?: AccountSwitched }
 );
@@ -101,7 +103,10 @@ export function switchedView(event: AccountSwitched): AccountSwitchedView {
 /** Adds a notice of a K1 event; the newest first, a few per agent. */
 export function addAccountNotice(
   notices: readonly AccountNotice[],
-  event: ({ type: "account-limit-reached" } & AccountLimitReached) | ({ type: "account-switched" } & AccountSwitched),
+  event:
+    | ({ type: "account-limit-reached" } & AccountLimitReached)
+    | ({ type: "account-switched" } & AccountSwitched)
+    | ({ type: "account-error" } & AccountError),
   id: string,
 ): AccountNotice[] {
   const previousSwitch = notices.find((notice) => notice.botId === event.botId && notice.kind === "switched");
@@ -113,22 +118,24 @@ export function addAccountNotice(
     returned.provider === event.provider &&
     returned.toAccountId === event.fromAccountId;
   const next: AccountNotice =
-    event.type === "account-limit-reached"
-      ? { id, botId: event.botId, kind: "limit", view: limitReachedView(event) }
-      : {
-          id,
-          botId: event.botId,
-          kind: "switched",
-          transition: event,
-          view: {
-            ...switchedView(event),
-            ...(mergeReturn && returned
-              ? {
-                  reason: `Returned from ${returned.fromLabel} to ${returned.toLabel} after its limit reset. ${event.fromLabel} reached its usage limit again, so switched to ${event.toLabel}.`,
-                }
-              : {}),
-          },
-        };
+    event.type === "account-error"
+      ? { id, botId: event.botId, kind: "error", view: event }
+      : event.type === "account-limit-reached"
+        ? { id, botId: event.botId, kind: "limit", view: limitReachedView(event) }
+        : {
+            id,
+            botId: event.botId,
+            kind: "switched",
+            transition: event,
+            view: {
+              ...switchedView(event),
+              ...(mergeReturn && returned
+                ? {
+                    reason: `Returned from ${returned.fromLabel} to ${returned.toLabel} after its limit reset. ${event.fromLabel} reached its usage limit again, so switched to ${event.toLabel}.`,
+                  }
+                : {}),
+            },
+          };
   const same = notices
     .filter((notice) => notice.botId === event.botId && !(mergeReturn && notice.id === previousSwitch?.id))
     .slice(0, MAX_NOTICES_PER_AGENT - 1);
