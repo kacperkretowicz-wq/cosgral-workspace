@@ -1,3 +1,4 @@
+import { AcpAgentLogin, AcpPresets } from "./AcpLogin";
 import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
 import { providerError } from "./provider-error";
 
@@ -255,6 +256,7 @@ export function AcpAgentsSection(props: {
                   <Text as="p" tone="muted">
                     <code>{[agent.command, ...agent.args].join(" ")}</code>
                   </Text>
+                  <AcpAgentLogin id={agent.id} name={agent.name} />
                 </div>
                 <Show
                   when={removing() === agent.id}
@@ -538,6 +540,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
         refreshing={refreshing()}
         onRefresh={() => void refreshUsage()}
       />
+      <AcpPresets />
       <AcpAgentsSection
         agents={acpAgents()}
         onSave={async (input) => {
