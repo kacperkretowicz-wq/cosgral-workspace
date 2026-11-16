@@ -1367,7 +1367,14 @@ if (!hasSingleInstanceLock) {
       const store = new BotStore(app.getPath("userData"), runningSpace.home);
       await store.initialize();
       mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
-      budgetMeter = new BudgetMeter({ database: store.database, emit: (event) => forwardAgentEvent("local", event) });
+      budgetMeter = new BudgetMeter({
+        database: store.database,
+        emit: (event) => {
+          forwardAgentEvent("local", event);
+          // W8-BE2: a limit that changed may let a held message start.
+          if (event.type === "budgets-changed") agentService?.budgetsChanged();
+        },
+      });
       await mailboxStore.initialize();
       configureApplicationProtocol();
       browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
@@ -1429,6 +1436,8 @@ if (!hasSingleInstanceLock) {
         }),
       );
       // COSGRAL W8-BE1: the access level of each agent: its working folder only until the person raises it with a card.
+      // COSGRAL W8-BE2: the token counter and the budget gate (the same meter the budgets window uses).
+      if (budgetMeter) service.useBudgets(budgetMeter);
       service.useAccess(new AccessStore({ filePath: join(app.getPath("userData"), "agent-access.json") }));
       // COSGRAL W3: remote desktop. The host has its own Windows driver, separate from Computer Use, and asks its owner
       // on a confirm card; the pictures of a host this computer looks at go to the main window only.

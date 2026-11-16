@@ -358,6 +358,8 @@ export interface QueueSnapshot {
   deliveries: QueueDelivery[];
   /** COSGRAL W3: set by the program; absent in snapshots from older servers (treat as available). */
   steer?: QueueSteerSupport;
+  /** COSGRAL W8-BE2: a budget keeps the queue from starting a new turn; one plain sentence for the person (null/absent: not held). */
+  heldReason?: string | null;
 }
 
 export interface ConversationMessage {
