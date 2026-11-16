@@ -2091,7 +2091,7 @@ async function cliSecondRun(d: Driver, root: string, cli: CliStandIn): Promise<v
       await d.ask("Assistant", "hello after the auto-update", "Stub: received", 40_000);
       // Setup for C07: turn auto-update off through the page, and publish a newer version.
       await openCliCard(d);
-      await cliCard(page).getByRole("switch", { name: "Aktualizuj automatycznie" }).click();
+      await cliCard(page).locator(".ui-switch").first().click();
       await waitUntil(page, "auto-update off", async () => (await codexCli(d)).autoUpdate === false);
       cli.latest = "1.4.0";
       return "after the restart 1.2.0 became 1.3.0 by itself (1 request, no card, old folder gone); then auto-update was switched off on the page for C07";
@@ -2131,7 +2131,7 @@ async function cliThirdRun(d: Driver, cli: CliStandIn): Promise<void> {
       assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
       await d.answer("Assistant", "Stub: slow done", 40_000);
       // Setup for C08: auto-update on again, pin the current version, publish a newer one.
-      await cliCard(page).getByRole("switch", { name: "Aktualizuj automatycznie" }).click();
+      await cliCard(page).locator(".ui-switch").first().click();
       await waitUntil(page, "auto-update on", async () => (await codexCli(d)).autoUpdate === true);
       await cliCard(page).getByRole("textbox", { name: "Przypięta wersja" }).fill("1.4.0");
       await cliCard(page).getByRole("button", { name: "Przypnij", exact: true }).click();
