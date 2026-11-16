@@ -1059,3 +1059,99 @@
   flex-shrink: 1;
   width: 100%;
 }
+.provider-accounts,
+.account-provider {
+  display: grid;
+  gap: var(--openbot-space-4);
+}
+.provider-account-card {
+  padding: var(--openbot-space-4);
+}
+.provider-account-card > .ui-button {
+  align-self: flex-start;
+}
+.account-heading {
+  justify-content: flex-start;
+  gap: var(--openbot-space-2);
+  flex-wrap: wrap;
+}
+.account-usage-story,
+.account-usage-meter,
+.account-usage-windows,
+.account-limit-card,
+.account-switched-card {
+  display: grid;
+  gap: var(--openbot-space-3);
+}
+.account-usage-meter,
+.account-limit-card,
+.account-switched-card {
+  padding: var(--openbot-space-4);
+  outline: none;
+}
+.account-usage-meter:focus-visible,
+.account-limit-card:focus-visible,
+.account-switched-card:focus-visible,
+.account-usage-window:focus-visible {
+  box-shadow: 0 0 0 2px var(--openbot-accent);
+}
+.account-usage-meter-head,
+.account-usage-window-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--openbot-space-3);
+}
+.account-usage-window {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.account-usage-track {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  background: var(--openbot-bg-secondary);
+  border-radius: var(--openbot-radius-sm, 4px);
+}
+.account-usage-track-unknown {
+  opacity: 0.55;
+}
+.account-usage-fill {
+  height: 100%;
+  background: var(--openbot-text-muted);
+}
+meter.account-usage-track {
+  appearance: none;
+  border: 0;
+}
+meter.account-usage-track::-webkit-meter-bar {
+  background: var(--openbot-bg-secondary);
+  border: 0;
+  border-radius: var(--openbot-radius-sm, 4px);
+}
+meter.account-usage-track::-webkit-meter-optimum-value {
+  background: var(--openbot-accent);
+}
+.account-usage-window[data-state="exhausted"] meter.account-usage-track::-webkit-meter-optimum-value {
+  background: var(--openbot-danger);
+}
+.account-usage-window[data-state="unknown"] meter.account-usage-track::-webkit-meter-optimum-value {
+  background: var(--openbot-text-muted);
+}
+.account-limit-card {
+  border-color: color-mix(in srgb, var(--openbot-danger) 40%, transparent);
+  background: var(--openbot-danger-soft);
+}
+.account-switched-card {
+  border-color: color-mix(in srgb, var(--openbot-warning) 40%, transparent);
+  background: var(--openbot-warning-soft);
+}
+.account-limit-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2);
+}
