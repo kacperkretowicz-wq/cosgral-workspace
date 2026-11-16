@@ -41,12 +41,16 @@ interface StoredMessage {
   attachments: StoredAttachment[];
   replyToMessageId: string | null;
   createdAt: string;
+  /** COSGRAL W6-BE1: for a message of an agent, the thread of the sender it was sent from. Missing = before threads. */
+  threadId?: string;
 }
 
 interface StoredDelivery {
   id: string;
   messageId: string;
   recipientBotId: string;
+  /** COSGRAL W6-BE1: the thread of the recipient this message belongs to. Missing = before threads (shown in every thread). */
+  threadId?: string;
   queueOrder: number;
   status: QueueDeliveryStatus;
   turnId: string | null;
@@ -80,6 +84,8 @@ interface EnqueueInput {
   draftIds?: string[];
   sourcePaths?: string[];
   idempotencyKey?: string;
+  /** COSGRAL W6-BE1: the thread an agent sender works in; its outgoing row belongs to that thread. */
+  senderThreadId?: string | null;
 }
 
 export interface DeliveryContext {
@@ -109,12 +115,19 @@ export class MailboxStore {
   readonly #transfersRoot: string;
   readonly #database: OpenBotDatabase;
   #state: StoredState = structuredClone(EMPTY_STATE);
+  /** COSGRAL W6-BE1: which thread of an agent is active now (the thread a new message for it belongs to). */
+  #threadOf: ((botId: string) => Promise<string | null>) | null = null;
 
   constructor(userDataPath: string, sharedRoot: string, database = new OpenBotDatabase(userDataPath)) {
     this.#statePath = join(userDataPath, "mailbox.json");
     this.#draftsRoot = join(userDataPath, "attachment-drafts");
     this.#transfersRoot = join(sharedRoot, "Transfers");
     this.#database = database;
+  }
+
+  /** COSGRAL W6-BE1: the program tells which thread of an agent is active; new messages are stamped with it. */
+  useThreadResolver(resolve: (botId: string) => Promise<string | null>): void {
+    this.#threadOf = resolve;
   }
 
   async initialize(): Promise<void> {
@@ -289,10 +302,13 @@ export class MailboxStore {
       replyToMessageId: input.replyToMessageId ?? null,
       createdAt,
     };
-    const deliveries = recipients.map<StoredDelivery>((recipientBotId) => ({
+    const threads = await Promise.all(recipients.map((recipientBotId) => this.#threadOf?.(recipientBotId) ?? null));
+    if (input.sender.kind === "bot" && input.senderThreadId) message.threadId = input.senderThreadId;
+    const deliveries = recipients.map<StoredDelivery>((recipientBotId, index) => ({
       id: randomUUID(),
       messageId,
       recipientBotId,
+      ...(threads[index] ? { threadId: threads[index] } : {}),
       queueOrder: this.#nextQueueOrder(recipientBotId),
       status: "queued",
       turnId: null,
@@ -325,18 +341,109 @@ export class MailboxStore {
     return this.#receipt(messageId);
   }
 
-  listQueue(botId: string): QueueSnapshot {
+  /** `threadId`: only the queue of that thread (what the window shows); left out: the whole queue of the agent. */
+  listQueue(botId: string, threadId?: string | null): QueueSnapshot {
     const positions = this.#queuedPositions();
     return {
       botId,
       paused: this.#state.pausedBotIds.includes(botId),
       deliveries: this.#state.deliveries
-        .filter((delivery) => delivery.recipientBotId === botId)
+        .filter((delivery) => delivery.recipientBotId === botId && inThread(delivery.threadId, threadId))
         .map((delivery) => this.#publicDelivery(delivery, positions)),
     };
   }
 
-  conversationMessages(botId: string): ConversationMessage[] {
+  /** COSGRAL W6-BE1: per thread of an agent, the waiting and the running messages. */
+  threadQueueCounts(botId: string): Map<string, { queued: number; running: number }> {
+    const counts = new Map<string, { queued: number; running: number }>();
+    for (const delivery of this.#state.deliveries) {
+      if (delivery.recipientBotId !== botId || !delivery.threadId) continue;
+      const entry = counts.get(delivery.threadId) ?? { queued: 0, running: 0 };
+      if (delivery.status === "queued") entry.queued += 1;
+      if (delivery.status === "starting" || delivery.status === "running") entry.running += 1;
+      counts.set(delivery.threadId, entry);
+    }
+    return counts;
+  }
+
+  /** COSGRAL W6-BE1: the text of the first message a person sent in a thread (for its automatic title). */
+  firstUserText(botId: string, threadId: string): string | null {
+    for (const message of this.#state.messages) {
+      if (message.sender.kind !== "user" || !message.text.trim()) continue;
+      const delivery = this.#state.deliveries.find(
+        (item) => item.messageId === message.id && item.recipientBotId === botId && item.threadId === threadId,
+      );
+      if (delivery) return message.text.trim();
+    }
+    return null;
+  }
+
+  /** COSGRAL W6-BE1: agents with a waiting or past message that no thread owns yet (from before threads). */
+  unstampedRecipients(): string[] {
+    return [
+      ...new Set(
+        this.#state.deliveries.filter((delivery) => !delivery.threadId).map((delivery) => delivery.recipientBotId),
+      ),
+    ];
+  }
+
+  /**
+   * COSGRAL W6-BE1: every message from before threads belongs to the one thread the agent had. Run once when the
+   * program starts; it changes nothing the second time. Returns how many deliveries were stamped.
+   */
+  async stampLegacyThreads(threadOf: (botId: string) => string | null): Promise<number> {
+    let stamped = 0;
+    for (const delivery of this.#state.deliveries) {
+      if (delivery.threadId) continue;
+      const threadId = threadOf(delivery.recipientBotId);
+      if (!threadId) continue;
+      delivery.threadId = threadId;
+      stamped += 1;
+    }
+    for (const message of this.#state.messages) {
+      if (message.sender.kind !== "bot" || message.threadId) continue;
+      const threadId = threadOf(message.sender.botId);
+      if (!threadId) continue;
+      message.threadId = threadId;
+      stamped += 1;
+    }
+    if (stamped > 0) await this.#persist("mailbox.threads-stamped");
+    return stamped;
+  }
+
+  /** COSGRAL W6-BE1: a deleted thread takes its queue and messages with it; other threads are not touched. */
+  async deleteThreadData(botId: string, threadId: string): Promise<void> {
+    const previous = structuredClone(this.#state);
+    const removedMessageIds = new Set<string>();
+    const doomed = (delivery: StoredDelivery) => delivery.recipientBotId === botId && delivery.threadId === threadId;
+    const doomedMessageIds = new Set(this.#state.deliveries.filter(doomed).map((delivery) => delivery.messageId));
+    this.#state.deliveries = this.#state.deliveries.filter((delivery) => !doomed(delivery));
+    const remainingMessageIds = new Set(this.#state.deliveries.map((delivery) => delivery.messageId));
+    // A message another agent still has in its queue stays (its outgoing row is hidden with the thread).
+    this.#state.messages = this.#state.messages.filter((message) => {
+      const orphaned = doomedMessageIds.has(message.id) && !remainingMessageIds.has(message.id);
+      if (orphaned) removedMessageIds.add(message.id);
+      return !orphaned;
+    });
+    this.#state.reactions = this.#state.reactions.filter((reaction) => !removedMessageIds.has(reaction.messageId));
+    this.#state.idempotency = Object.fromEntries(
+      Object.entries(this.#state.idempotency).filter(([, messageId]) => !removedMessageIds.has(messageId)),
+    );
+    try {
+      await this.#persist(
+        "mailbox.thread-data-deleted",
+        `mailbox:thread-delete:${randomUUID()}`,
+        [...removedMessageIds].map((messageId) => join(this.#transfersRoot, messageId)),
+        true,
+      );
+    } catch (error) {
+      this.#state = previous;
+      throw error;
+    }
+    await this.#drainFileDeletionOutbox();
+  }
+
+  conversationMessages(botId: string, threadId?: string | null): ConversationMessage[] {
     const messages: ConversationMessage[] = [];
     const deliveriesByMessage = new Map<string, StoredDelivery[]>();
     const positions = this.#queuedPositions();
@@ -347,7 +454,7 @@ export class MailboxStore {
     }
     for (const message of this.#state.messages) {
       const deliveries = deliveriesByMessage.get(message.id) ?? [];
-      if (message.sender.kind === "bot" && message.sender.botId === botId) {
+      if (message.sender.kind === "bot" && message.sender.botId === botId && inThread(message.threadId, threadId)) {
         messages.push({
           id: `outbox-${message.id}`,
           turnId: this.#sourceTurnId(message.id),
@@ -380,7 +487,7 @@ export class MailboxStore {
       }
 
       for (const storedDelivery of deliveries) {
-        if (storedDelivery.recipientBotId !== botId) continue;
+        if (storedDelivery.recipientBotId !== botId || !inThread(storedDelivery.threadId, threadId)) continue;
         const delivery = this.#publicDelivery(storedDelivery, positions);
         messages.push({
           id: delivery.id,
@@ -482,7 +589,11 @@ export class MailboxStore {
     return [...result];
   }
 
-  nextQueued(botId: string): DeliveryContext | null {
+  /**
+   * The message to start next. COSGRAL W6-BE1: `threadId` = the thread that is active (only its queue starts); one turn
+   * per agent runs at a time, so nothing starts while a message of any thread of the agent runs.
+   */
+  nextQueued(botId: string, threadId?: string | null): DeliveryContext | null {
     if (this.#state.pausedBotIds.includes(botId)) return null;
     if (
       this.#state.deliveries.some(
@@ -493,7 +604,10 @@ export class MailboxStore {
       return null;
     }
     const delivery = this.#state.deliveries
-      .filter((candidate) => candidate.recipientBotId === botId && candidate.status === "queued")
+      .filter(
+        (candidate) =>
+          candidate.recipientBotId === botId && candidate.status === "queued" && inThread(candidate.threadId, threadId),
+      )
       .sort(compareQueueOrder)[0];
     return delivery ? this.#context(delivery) : null;
   }
@@ -893,8 +1007,10 @@ export class MailboxStore {
       .filter((delivery) => delivery.status === "queued")
       .sort(compareQueueOrder);
     for (const delivery of queued) {
-      const position = (counts.get(delivery.recipientBotId) ?? 0) + 1;
-      counts.set(delivery.recipientBotId, position);
+      // COSGRAL W6-BE1: a place in the queue of its own thread.
+      const queueKey = `${delivery.recipientBotId}\u0000${delivery.threadId ?? ""}`;
+      const position = (counts.get(queueKey) ?? 0) + 1;
+      counts.set(queueKey, position);
       positions.set(delivery.id, position);
     }
     return positions;
@@ -1130,6 +1246,11 @@ function normalizeStoredState(value: StoredState): StoredState {
   };
 }
 
+/** A message with no thread (from before threads) is shown in every thread; with no filter everything is shown. */
+function inThread(owner: string | undefined, wanted: string | null | undefined): boolean {
+  return !wanted || owner === undefined || owner === wanted;
+}
+
 function compareQueueOrder(left: StoredDelivery, right: StoredDelivery): number {
   return (
     left.queueOrder - right.queueOrder ||
@@ -1191,6 +1312,7 @@ function isStoredMessage(value: unknown): value is StoredMessage {
     Array.isArray(value.attachments) &&
     value.attachments.every(isStoredAttachment) &&
     (isString(value.replyToMessageId) || value.replyToMessageId === null) &&
+    (value.threadId === undefined || isString(value.threadId)) &&
     isString(value.createdAt)
   );
 }
@@ -1201,6 +1323,7 @@ function isStoredDelivery(value: unknown): value is StoredDelivery {
     isString(value.id) &&
     isString(value.messageId) &&
     isString(value.recipientBotId) &&
+    (value.threadId === undefined || isString(value.threadId)) &&
     (value.queueOrder === undefined || (isNumber(value.queueOrder) && Number.isFinite(value.queueOrder))) &&
     (value.status === "queued" ||
       value.status === "starting" ||

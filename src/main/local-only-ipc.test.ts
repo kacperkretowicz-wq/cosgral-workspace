@@ -40,6 +40,8 @@ beforeAll(async () => {
   const { registerEndpointsIpc } = await import("./endpoints-ipc");
   const { registerSubscriptionsIpc } = await import("./subscriptions-ipc");
   const { registerProviderIpc } = await import("./provider-ipc");
+  const { registerThreadsIpc } = await import("./threads-ipc");
+  registerThreadsIpc(() => null);
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
   registerContextIpc(() => null);
@@ -72,12 +74,14 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("context:").length).toBe(4);
     expect(channelsOf("subscriptions:").length).toBeGreaterThanOrEqual(19);
     expect(channelsOf("providers:").length).toBeGreaterThanOrEqual(8);
+    // COSGRAL W6-BE1: the threads of an agent.
+    expect(channelsOf("threads:").length).toBe(8);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
     "refuses every such call for the server '%s'",
     async (serverId) => {
-      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:", "context:");
+      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:", "context:", "threads:");
       const outcomes: string[] = [];
       for (const name of names) {
         const { threw, value } = await call(name, serverId, { provider: "codex", key: "test-key-0000-abcd", id: "x" });
@@ -102,5 +106,10 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(endpoints.threw).toMatch(/still starting/);
     const context = await call("context:get-settings", "local", null);
     expect(context.threw).toMatch(/still starting/);
+    const threads = await call("threads:list", "local", { botId: "chief" });
+    expect(threads.threw).toMatch(/still starting/);
+    // A call that is for this computer but wrong is refused by the contract parser, before any work.
+    expect((await call("threads:delete", "local", { botId: "chief", threadId: "t1" })).threw).toMatch(/confirmation/);
+    expect((await call("threads:select", "local", { botId: "chief" })).threw).toMatch(/thread/i);
   });
 });

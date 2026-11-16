@@ -184,6 +184,17 @@ export class BotStore {
     return { ...bot };
   }
 
+  /**
+   * COSGRAL W6-BE1: the thread the window shows for this agent. The agent keeps all its threads; this only says which one
+   * is active (new messages, the queue that runs and the CLI session follow it). Not activity: `updatedAt` stays.
+   */
+  async setActiveThread(id: string, threadId: string): Promise<void> {
+    const bot = this.#requireBot(id);
+    if (bot.threadId === threadId) return;
+    bot.threadId = threadId;
+    this.#persist("thread.selected");
+  }
+
   /** COSGRAL W4-K3: hide the agent from the sidebar or show it again. Not activity: `updatedAt` stays as it is. */
   async setHidden(id: string, hidden: boolean): Promise<BotSummary> {
     const bot = this.#requireBot(id);
@@ -290,10 +301,12 @@ export class BotStore {
     return bot.threadId;
   }
 
-  activeProviderSession(id: string): ProviderSession | null {
+  /** `threadId`: a thread of the agent other than the active one (COSGRAL W6-BE1); left out: the active thread. */
+  activeProviderSession(id: string, threadId: string | null = null): ProviderSession | null {
     const bot = this.#requireBot(id);
-    if (!bot.threadId) return null;
-    return this.#database.activeProviderSession(bot.threadId, providerForStoredModel(this.#effectiveModel(bot)));
+    const thread = threadId ?? bot.threadId;
+    if (!thread) return null;
+    return this.#database.activeProviderSession(thread, providerForStoredModel(this.#effectiveModel(bot)));
   }
 
   bindProviderSession(id: string, externalSessionId: string): ProviderSession {
