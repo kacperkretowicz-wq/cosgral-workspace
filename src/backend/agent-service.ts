@@ -61,6 +61,7 @@ import {
   MCP_NAMESPACE_PREFIX,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { type AccountLane, type AccountPoolPort, AccountRouter, sqlSessionAccounts } from "./account-router";
 import { AcpAgentClient, classifyAcpError } from "./acp-client";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
@@ -285,7 +286,12 @@ const FALLBACK_MODELS: AgentModelOption[] = [
   },
 ];
 
-export type AgentClientFactory = (provider: AgentProvider, cli: CodexCliInfo | ClaudeCliInfo) => AgentClient;
+/** `env` (COSGRAL W5-K1): the environment of an account's CLI process; absent for the provider's normal client. */
+export type AgentClientFactory = (
+  provider: AgentProvider,
+  cli: CodexCliInfo | ClaudeCliInfo,
+  env?: NodeJS.ProcessEnv,
+) => AgentClient;
 
 /** COSGRAL W2: until the host gives an encrypting box, the Vault saves nothing. */
 const NO_SECRET_BOX: SecretBox = {
@@ -373,6 +379,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #cli = new Map<AgentProvider, CodexCliInfo | ClaudeCliInfo>();
   readonly #accounts = new Map<AgentProvider, AccountReadResult["account"]>();
   readonly #providerStarts = new Map<AgentProvider, Promise<void>>();
+  /** COSGRAL W5-K1: which provider account answers a turn (null until the accounts are attached: the old path). */
+  #accountRouter: AccountRouter<AgentClient> | null = null;
+  /** The CLI process a provider thread was loaded in; only for threads of account lanes (a thread lives in one account). */
+  readonly #threadClients = new Map<string, AgentClient>();
   #preferredProvider: AgentProvider;
   #initialized = false;
   #stopping = false;
@@ -691,6 +701,20 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W3: attach the provider registry (ACP agents, fallback models, usage). */
   useProviders(providers: ProviderRegistry): void {
     this.#providers = providers;
+  }
+
+  /**
+   * COSGRAL W5-K1: attach the provider accounts. From then on the account pool chooses which CLI answers a turn (the
+   * agent's own account first, then the pool in its order), and a usage limit moves a turn to the next account.
+   * With no account besides the system one nothing changes: the provider's normal client answers.
+   */
+  useAccounts(accounts: AccountPoolPort): void {
+    this.#accountRouter = new AccountRouter<AgentClient>({
+      pool: accounts,
+      openClient: (provider, env) => this.#openAccountClient(provider, env),
+      sessions: sqlSessionAccounts(() => this.#store.database.connection),
+      emit: (event) => this.#emit(event),
+    });
   }
 
   /** COSGRAL W3-KK3: attach the "always allow" rules; without them every approval opens a card. */
@@ -1060,6 +1084,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#clients.clear();
     await Promise.all(clients.map((client) => client.stop().catch(() => undefined)));
     for (const client of clients) this.#channelRunner.clientExited(client);
+    await this.#accountRouter?.stopAll();
+    this.#threadClients.clear();
     await Promise.allSettled([...this.#drainTasks.values()]);
     await Promise.allSettled(
       [...this.#imageGenerationOperations.values()]
@@ -1487,6 +1513,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   #handleExit(client: AgentClient, error: Error): void {
     this.#channelRunner.clientExited(client);
+    // COSGRAL W5-K1: the CLI process of an account ended: the next turn on that account opens a new one and resumes.
+    this.#accountRouter?.clientExited(client);
+    for (const [threadId, owner] of this.#threadClients) {
+      if (owner !== client) continue;
+      this.#threadClients.delete(threadId);
+      this.#loadedThreads.delete(threadId);
+    }
     if (this.#clients.get(client.provider) !== client || this.#stopping) return;
     this.#clients.delete(client.provider);
     void client.stop().catch(() => undefined);
@@ -1548,17 +1581,32 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }, delayMs);
   }
 
-  async #ensureThread(bot: BotSummary, client: AgentClient): Promise<string> {
+  async #ensureThread(bot: BotSummary, client: AgentClient, lane: TurnLane | null = null): Promise<string> {
     const publicThreadId = await this.#store.ensureThreadId(bot.id);
     const currentBot = this.#store.list().find((candidate) => candidate.id === bot.id) ?? bot;
-    const session = this.#store.activeProviderSession(bot.id);
+    let session = this.#store.activeProviderSession(bot.id);
+    // COSGRAL W5-K1: a provider thread lives in the state folder of the account that made it. When another account
+    // answers now, the conversation goes on in a new thread of that account, with the usual hand-off of the history.
+    const router = this.#accountRouter;
+    const accountProvider = accountProviderOf(providerForBot(currentBot));
+    if (session && router && accountProvider) {
+      const wanted = lane?.accountId ?? `system-${accountProvider}`;
+      if (router.sessionAccount(session.externalSessionId, accountProvider) !== wanted) {
+        this.#store.database.deactivateProviderSessions(publicThreadId);
+        session = null;
+      }
+    }
     if (session) {
       this.#threadToBot.set(session.externalSessionId, bot.id);
       // COSGRAL W2: a changed MCP tool set (server added, removed, reconnected or switched) needs a resume.
       const mcpChanged = this.#mcpToolSignatures.get(session.externalSessionId) !== this.#mcpSignature(bot.id);
-      if (!this.#loadedThreads.has(session.externalSessionId) || mcpChanged) {
+      // COSGRAL W5-K1: the account's CLI process was replaced since this thread was loaded: resume in the new one.
+      const loadedIn = this.#threadClients.get(session.externalSessionId);
+      const processChanged = lane !== null && loadedIn !== undefined && loadedIn !== client;
+      if (!this.#loadedThreads.has(session.externalSessionId) || mcpChanged || processChanged) {
         await this.#resumeThread(currentBot, client, session.externalSessionId);
       }
+      if (lane) this.#threadClients.set(session.externalSessionId, client);
       return session.externalSessionId;
     }
 
@@ -1583,6 +1631,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#threadToBot.set(externalThreadId, bot.id);
     this.#loadedThreads.add(externalThreadId);
     this.#mcpToolSignatures.set(externalThreadId, this.#mcpSignature(bot.id));
+    if (lane) {
+      // A thread of the system account needs no record: that is what a session without one means.
+      router?.bindSession(externalThreadId, lane.accountId);
+      this.#threadClients.set(externalThreadId, client);
+    }
     this.#ensureSnapshot(bot.id, publicThreadId);
     const handoff = this.#buildProviderHandoff(bot.id, publicThreadId);
     if (handoff) this.#pendingHandoffs.set(externalThreadId, handoff);
@@ -1891,8 +1944,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       this.#emitQueue(delivery.recipientBotId);
       const bot = this.#selectTurnModel(await this.#store.getOrCreate(delivery.recipientBotId), delivery.id);
       await this.ensureProvider(providerForBot(bot));
-      const client = this.#requireReadyClient(providerForBot(bot));
-      const threadId = await this.#ensureThread(bot, client);
+      // COSGRAL W5-K1: the account that answers this turn; null = the provider's normal client, as before accounts.
+      const lane = await this.#accountLane(bot);
+      const client = lane?.client ?? this.#requireReadyClient(providerForBot(bot));
+      const threadId = await this.#ensureThread(bot, client, lane);
       const snapshot = this.#ensureSnapshot(bot.id, threadId);
       if (snapshot.activeTurnId) {
         await this.#mailbox.markTerminal(delivery.id, "failed", "The recipient already has an active turn.");
@@ -1998,6 +2053,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         decodeTurnResponse,
       );
       await this.#mailbox.markRunning(delivery.id, response.turn.id);
+      if (lane) this.#accountRouter?.begin(bot.id, lane.provider, response.turn.id, lane.accountId);
       snapshot.activeTurnId = response.turn.id;
       this.#syncDeliveryMessage(snapshot, delivery.id);
       this.#emitQueue(bot.id);
@@ -2241,6 +2297,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         if (!turnId || !item) return;
         const itemId = getString(item, "id");
         if (itemId) this.#itemTurns.set(itemId, turnId);
+        // COSGRAL W5-K1: a turn that ran a command, changed a file or called a tool is no longer free to repeat.
+        if (isString(item.type)) this.#accountRouter?.noteItem(turnId, item.type);
         if (item.type === "contextCompaction") {
           if (notification.method === "item/completed") {
             this.#markContextCompacted(threadId);
@@ -2358,9 +2416,18 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           message.itemType !== "commentary" &&
           message.text.trim(),
       );
-    const movedToFallback = status === "failed" && (await this.#retryOnFallback(botId, turnId, deliveries));
-    if (movedToFallback) for (const moved of deliveries) this.#syncDeliveryMessage(snapshot, moved.delivery.id);
-    if (deliveries.length > 0 && !movedToFallback) {
+    // COSGRAL W5-K1: the layers are the other accounts of the pool first, then the fallback models.
+    const accountMove = status === "failed" ? await this.#handleAccountLimit(botId, turnId, deliveries) : "none";
+    this.#accountRouter?.end(turnId);
+    const movedToAccount = accountMove === "switched";
+    const movedToFallback =
+      status === "failed" &&
+      !movedToAccount &&
+      accountMove === "none" &&
+      (await this.#retryOnFallback(botId, turnId, deliveries));
+    if (movedToAccount || movedToFallback)
+      for (const moved of deliveries) this.#syncDeliveryMessage(snapshot, moved.delivery.id);
+    if (deliveries.length > 0 && !movedToAccount && !movedToFallback) {
       const terminal = status === "failed" ? "failed" : status === "interrupted" ? "interrupted" : "completed";
       for (const delivery of deliveries) {
         await this.#mailbox.markTerminal(delivery.delivery.id, terminal);
@@ -2386,6 +2453,92 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     });
     if (shouldCompact) await this.#requestContextCompaction(botId, threadId);
     else this.#scheduleDrain(botId);
+  }
+
+  /** COSGRAL W5-K1: the account lane of a turn; null when there is no pool to use (the old path) or no accounts for the provider. */
+  async #accountLane(bot: BotSummary): Promise<TurnLane | null> {
+    const router = this.#accountRouter;
+    const provider = accountProviderOf(providerForBot(bot));
+    if (!router || !provider) return null;
+    const lane = await router.acquire(bot.id, provider);
+    return lane.tracked ? { ...lane, provider } : null;
+  }
+
+  /** COSGRAL W5-K1: the CLI of one account, started with that account's state folder as its environment. */
+  async #openAccountClient(provider: AccountProvider, env: NodeJS.ProcessEnv): Promise<AgentClient> {
+    const cli = provider === "codex" ? await resolveCodexCli() : await resolveClaudeCli();
+    const client = this.#clientFactory
+      ? this.#clientFactory(provider, cli, env)
+      : provider === "codex"
+        ? new CodexAppServerClient(cli.executable, this.#requestTimeoutMs, env)
+        : new ClaudeAgentClient(cli, undefined, env);
+    this.#bindClient(client);
+    try {
+      client.start();
+      await client.request(
+        "initialize",
+        {
+          clientInfo: { name: "cosgral-workspace", title: "COSGRAL Workspace", version: "0.2.0" },
+          capabilities: { experimentalApi: true, mcpServerOpenaiFormElicitation: true },
+        },
+        decodeRecordResponse,
+      );
+      client.notify("initialized");
+      const account = await client.request("account/read", { refreshToken: false }, decodeAccountReadResult);
+      if (!account.account) throw new Error("This account is not signed in.");
+      return client;
+    } catch (error) {
+      await client.stop().catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /**
+   * COSGRAL W5-K1: a turn failed on a usage limit. "switched": it had changed nothing, the message goes back to the queue
+   * and the next account of the pool answers. "asked": it had changed something, nothing is repeated on its own: a card
+   * asks first. "none": no other account is free (or the turn is not on an account), the fallback models decide.
+   */
+  async #handleAccountLimit(
+    botId: string,
+    turnId: string,
+    deliveries: DeliveryContext[],
+  ): Promise<"switched" | "asked" | "none"> {
+    const router = this.#accountRouter;
+    const failure = this.#turnFailures.get(turnId);
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    const provider = bot ? accountProviderOf(providerForBot(bot)) : null;
+    const delivery = deliveries.length === 1 ? deliveries[0]?.delivery : undefined;
+    if (!router || !provider || !delivery || failure?.kind !== "usage-limit") return "none";
+    const decision = await router.onLimit({ botId, provider, turnId, resetsAtSeconds: failure.resetsAt });
+    if (decision.action === "switch") {
+      this.#turnFailures.delete(turnId);
+      await this.#mailbox.restoreQueued(delivery.id, ["running"]);
+      this.#emitQueue(botId);
+      this.#scheduleDrain(botId);
+      return "switched";
+    }
+    if (decision.action === "ask") {
+      this.#turnFailures.delete(turnId);
+      void this.#askToContinueOnAccount(botId, delivery.id, decision.from.label, decision.to.label);
+      return "asked";
+    }
+    return "none";
+  }
+
+  /** The turn had changed something before the limit: the person decides whether the other account repeats the request. */
+  async #askToContinueOnAccount(botId: string, deliveryId: string, fromLabel: string, toLabel: string): Promise<void> {
+    try {
+      const answer = await this.confirmForPerson(botId, {
+        title: `Limit reached on ${fromLabel}. Continue on ${toLabel}?`,
+        preview: `${fromLabel} reached its usage limit after this turn had already changed something (a command, a file or a tool call). Continuing starts your request again on ${toLabel}, so some of those actions may be repeated. Cancel to stop here.`,
+      });
+      if (answer !== "send") return;
+      await this.#mailbox.restoreQueued(deliveryId, ["failed"]);
+      this.#emitQueue(botId);
+      this.#scheduleDrain(botId);
+    } catch (error) {
+      this.#emitError("account_limit_card_failed", error, botId);
+    }
   }
 
   async #associateStartedTurn(botId: string, turnId: string, snapshot: ConversationSnapshot): Promise<void> {
@@ -3279,6 +3432,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #clientForBot(bot: BotSummary): AgentClient | null {
+    // COSGRAL W5-K1: a thread lives in the account that made it: requests about it go to that account's CLI process.
+    const router = this.#accountRouter;
+    const account = accountProviderOf(providerForBot(bot));
+    if (router && account) {
+      const session = this.#store.activeProviderSession(bot.id);
+      const own = session ? router.clientForSession(session.externalSessionId, account) : null;
+      if (own) return own;
+    }
     return this.#clients.get(providerForBot(bot)) ?? null;
   }
 
@@ -3722,6 +3883,16 @@ function providerForModel(model: BotSummary["model"]): AgentProvider {
 
 function providerForBot(bot: BotSummary): AgentProvider {
   return providerForModel(bot.activeModel ?? bot.model);
+}
+
+/** COSGRAL W5-K1: providers that have accounts (Codex and Claude); ACP agents are configured programs. */
+type AccountProvider = "codex" | "claude";
+
+/** The account lane of a turn (see AccountRouter): the account that answers, its CLI process and the provider. */
+type TurnLane = AccountLane<AgentClient> & { provider: AccountProvider };
+
+function accountProviderOf(provider: AgentProvider): AccountProvider | null {
+  return provider === "codex" || provider === "claude" ? provider : null;
 }
 
 /** COSGRAL W3: ACP agents are configured programs, not one CLI. */

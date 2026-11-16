@@ -256,6 +256,15 @@ export class AccountRouter<TClient extends RoutedClient> {
   }
 
   /**
+   * The open CLI process of the account that owns this provider session (a thread lives in that account's state
+   * folder, so every request about it must go to that process). null for the system account (the provider's normal
+   * client) and when no process of that account is open.
+   */
+  clientForSession(sessionId: string, provider: ProviderAccountProvider): TClient | null {
+    return this.#clients.get(this.sessionAccount(sessionId, provider))?.client ?? null;
+  }
+
+  /**
    * A turn failed on a usage limit. Marks the account limited and says what happens next. "switch": nothing had been
    * changed, the caller puts the message back in the queue (the next turn starts from the first usable account).
    * "ask": the turn had changed something: the caller asks the person. "exhausted": no other account is free.
