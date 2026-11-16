@@ -114,7 +114,9 @@ async function standIn(): Promise<StandIn> {
   return Object.assign(state, { base, server });
 }
 
-async function setup(options: { confirm?: boolean; system?: string | null } = {}) {
+async function setup(
+  options: { confirm?: boolean; system?: string | null; remove?: (path: string) => Promise<void> } = {},
+) {
   const server = await standIn();
   const root = await mkdtemp(join(tmpdir(), "cosgral-managed-cli-"));
   cleanup.push(() => rm(root, { recursive: true, force: true }));
@@ -144,11 +146,57 @@ async function setup(options: { confirm?: boolean; system?: string | null } = {}
       findSystem: async () => (options.system ? { executable: options.system, version: "9.9.9" } : null),
       emit: (state) => events.push(state),
       onExecutableChanged: (id) => changed.push(id),
+      ...(options.remove ? { remove: options.remove } : {}),
     });
   const manager = make();
   await manager.init();
   return { server, root, manager, make, confirms, events, changed, probes };
 }
+
+describe("a CLI that is still running while its version changes (W5-G2, Windows)", () => {
+  // Windows cannot delete the file of a running program. The stand-in refuses to remove a folder the way it does.
+  const locked = new Set<string>();
+  const remove = async (path: string) => {
+    if ([...locked].some((name) => path.endsWith(name)))
+      throw Object.assign(new Error(`EPERM: operation not permitted, unlink '${path}'`), { code: "EPERM" });
+    await rm(path, { recursive: true, force: true });
+  };
+
+  it("switches back to a version whose old folder could not be deleted: the same verified file stays in place", async () => {
+    locked.clear();
+    const { manager, server, root, confirms } = await setup({ remove });
+    await manager.install("codex"); // 0.1.0, the first yes
+    await manager.pin("codex", "0.2.0");
+    locked.add("0.1.0");
+    await manager.update("codex"); // 0.2.0 now; the folder of 0.1.0 stays (it is "running")
+    expect(manager.state("codex")).toMatchObject({ managedVersion: "0.2.0", error: null });
+    expect(existsSync(join(root, "cli", "codex", "0.1.0", "codex.exe"))).toBe(true);
+
+    await manager.pin("codex", null);
+    server.latest.codex = "0.1.0";
+    const back = await manager.update("codex");
+    expect(back).toMatchObject({ managedVersion: "0.1.0", phase: "idle", error: null });
+    expect(await readFile(join(root, "cli", "codex", "0.1.0", "codex.exe"))).toEqual(server.files.get("0.1.0"));
+    expect(existsSync(join(root, "cli", "codex", ".0.1.0.download"))).toBe(false);
+    expect(confirms).toHaveLength(1);
+  });
+
+  it("says plainly that a different file cannot replace one that is running, and keeps the working version", async () => {
+    locked.clear();
+    const { manager, server, root } = await setup({ remove });
+    await manager.install("codex");
+    // A damaged leftover of 0.2.0 that is "running" and differs from the release.
+    await mkdir(join(root, "cli", "codex", "0.2.0"), { recursive: true });
+    await writeFile(join(root, "cli", "codex", "0.2.0", "codex.exe"), "something else");
+    locked.add("0.2.0");
+    server.latest.codex = "0.2.0";
+    const after = await manager.update("codex");
+    expect(after.phase).toBe("error");
+    expect(after.error).toMatch(/still running, so it cannot be replaced/);
+    expect(after.managedVersion).toBe("0.1.0");
+    expect(server.fileRequests).toBeGreaterThanOrEqual(2);
+  });
+});
 
 describe("official CLI sources (W5-BE1)", () => {
   it("allows only HTTPS to the official hosts", () => {

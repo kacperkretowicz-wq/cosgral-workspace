@@ -1,0 +1,101 @@
+// @vitest-environment node
+// COSGRAL W5-G2 (P11, criterion C13): every call that handles accounts, CLIs, API keys, own endpoints and the provider
+// lists is for this computer only. The REAL handlers are registered here with the window's trust check switched on, and
+// each channel is called as another server (a remote server or a phone peer would be): none may do its work or leak.
+import { beforeAll, describe, expect, it } from "vitest";
+import { ipcRegistry } from "./trusted-ipc";
+
+const handlers = new Map<
+  string,
+  (event: { senderFrame?: { url?: string | null } | null }, ...args: unknown[]) => unknown
+>();
+
+const channelsOf = (...prefixes: string[]) =>
+  [...handlers.keys()].filter((name) => prefixes.some((p) => name.startsWith(p)));
+
+async function call(
+  channel: string,
+  serverId: string,
+  payload: unknown,
+): Promise<{ threw: string | null; value: unknown }> {
+  const handler = handlers.get(channel);
+  if (!handler) throw new Error(`no handler for ${channel}`);
+  try {
+    return {
+      threw: null,
+      value: await handler({ senderFrame: { url: "openbot-app://app/index.html" } }, { serverId, payload }),
+    };
+  } catch (error) {
+    return { threw: error instanceof Error ? error.message : String(error), value: undefined };
+  }
+}
+
+beforeAll(async () => {
+  // The window's own address passes the trust check; every handler lands here instead of in Electron.
+  ipcRegistry.register = (channel, listener) => {
+    handlers.set(channel, listener);
+  };
+  const { registerApiKeysIpc } = await import("./api-keys-ipc");
+  const { registerEndpointsIpc } = await import("./endpoints-ipc");
+  const { registerSubscriptionsIpc } = await import("./subscriptions-ipc");
+  const { registerProviderIpc } = await import("./provider-ipc");
+  registerApiKeysIpc(() => null);
+  registerEndpointsIpc(() => null);
+  registerSubscriptionsIpc(() => null);
+  // A registry that must never be used by a call for another server: every method fails loudly when it is called.
+  const { ProviderRegistry } = await import("../backend/provider-registry");
+  const registry = Object.create(ProviderRegistry.prototype);
+  for (const method of [
+    "listAcpAgents",
+    "saveAcpAgent",
+    "removeAcpAgent",
+    "listUsage",
+    "getFallbackModels",
+    "setFallbackModels",
+    "getFallbackInfo",
+    "resetFallbackModels",
+  ])
+    Object.defineProperty(registry, method, {
+      value: () => {
+        throw new Error(`The registry was used by a remote call (${method}).`);
+      },
+    });
+  registerProviderIpc(registry);
+});
+
+describe("this-computer-only IPC (P11 / C13)", () => {
+  it("registers the channels of keys, endpoints, accounts, CLIs and provider lists", () => {
+    expect(channelsOf("api-keys:").length).toBe(4);
+    expect(channelsOf("endpoints:").length).toBe(5);
+    expect(channelsOf("subscriptions:").length).toBeGreaterThanOrEqual(19);
+    expect(channelsOf("providers:").length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each(["remote-server-1", "phone-peer", "local2", ""])(
+    "refuses every such call for the server '%s'",
+    async (serverId) => {
+      const names = channelsOf("api-keys:", "endpoints:", "subscriptions:", "providers:");
+      const outcomes: string[] = [];
+      for (const name of names) {
+        const { threw, value } = await call(name, serverId, { provider: "codex", key: "test-key-0000-abcd", id: "x" });
+        // A refusal is an error that names this computer, or (for plain lists) an empty answer: never data.
+        const refused = threw !== null || (Array.isArray(value) && value.length === 0);
+        if (!refused) outcomes.push(`${name} answered ${JSON.stringify(value).slice(0, 60)}`);
+        if (threw !== null && !/this computer|server|request|serverId/i.test(threw))
+          outcomes.push(`${name}: odd error '${threw}'`);
+        if (threw !== null && /remote call/.test(threw)) outcomes.push(`${name} touched the registry`);
+        if (threw !== null && /test-key-0000/.test(threw)) outcomes.push(`${name} echoed the key`);
+      }
+      expect(outcomes).toEqual([]);
+    },
+  );
+
+  it("the same channels do answer for this computer (the guard is the server, not a broken handler)", async () => {
+    const { threw } = await call("api-keys:list", "local", null);
+    expect(threw).toMatch(/still starting/);
+    const sub = await call("subscriptions:list-accounts", "local", null);
+    expect(sub.threw).toMatch(/still starting/);
+    const endpoints = await call("endpoints:list", "local", null);
+    expect(endpoints.threw).toMatch(/still starting/);
+  });
+});

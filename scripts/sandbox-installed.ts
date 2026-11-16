@@ -277,6 +277,166 @@ async function main(): Promise<void> {
       },
     );
 
+    // The first download of a CLI asks on a card; the page (or this script) answers it with the same call as Confirm.
+    const answerDownloadCard = async (prefix: string): Promise<string> => {
+      let requestId = "";
+      let title = "";
+      await waitUntil(
+        `the card '${prefix}'`,
+        async () => {
+          const pending = list(await ev("window.openbot.agent.listPendingRequests()"));
+          const item = pending.find(
+            (entry) => entry.kind === "draft-preview" && String(asRecord(entry.card).title).startsWith(prefix),
+          );
+          requestId = String(asRecord(item?.card).requestId ?? "");
+          title = String(asRecord(item?.card).title ?? "");
+          return requestId !== "";
+        },
+        30_000,
+      );
+      await ev(
+        `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(requestId)}, decision: "send" })`,
+      );
+      return title;
+    };
+    const cliState = async (id: string): Promise<DynamicRecord> =>
+      asRecord(list(await ev("window.openbot.subscriptions.listCli()")).find((item) => item.id === id));
+
+    await row(
+      "I08",
+      "G09: pin an older real Codex release, then unpin and update to the newest one (real downloads, no card after the first yes)",
+      async () => {
+        const newest = String((await cliState("codex")).managedVersion);
+        const older = process.env.COSGRAL_OLDER_CODEX ?? "0.168.0";
+        assert(older !== newest, `an older release than ${newest}`);
+        const started = Date.now();
+        await ev(`window.openbot.subscriptions.pinCli({ id: "codex", version: ${JSON.stringify(older)} })`);
+        await ev(`window.openbot.subscriptions.updateCli({ id: "codex" })`);
+        await waitUntil(
+          "the pinned version is installed",
+          async () => {
+            const state = await cliState("codex");
+            return state.managedVersion === older && state.phase === "idle";
+          },
+          300_000,
+        );
+        const pinned = await cliState("codex");
+        assert(
+          pinned.pinnedVersion === older && pinned.error === null,
+          `pinned: ${JSON.stringify({ v: pinned.managedVersion, e: pinned.error })}`,
+        );
+        assert(
+          list(await ev("window.openbot.agent.listPendingRequests()")).every((entry) => entry.kind !== "draft-preview"),
+          "no card for an update",
+        );
+        await ev(`window.openbot.subscriptions.pinCli({ id: "codex", version: null })`);
+        const answer = await ev(
+          `window.openbot.subscriptions.updateCli({ id: "codex" }).then((s) => ({ v: s.managedVersion, phase: s.phase, error: s.error, latest: s.latestVersion }), (e) => ({ failed: String(e.message).slice(0, 200) }))`,
+        );
+        await waitUntil(
+          "the newest version is installed again",
+          async () => {
+            const state = await cliState("codex");
+            return state.managedVersion === newest && state.phase === "idle";
+          },
+          120_000,
+        ).catch(async (error) => {
+          const state = await cliState("codex");
+          throw new Error(
+            `${String(error.message)}; updateCli answered ${JSON.stringify(answer)}; state now ${JSON.stringify({ v: state.managedVersion, phase: state.phase, error: state.error, latest: state.latestVersion, pinned: state.pinnedVersion })}`,
+          );
+        });
+        const after = await cliState("codex");
+        assert(
+          after.pinnedVersion === null && isString(after.version),
+          `after: ${JSON.stringify({ v: after.version })}`,
+        );
+        return `pinned ${older} > installed ${older} (reports version ${String(pinned.version)}); unpinned > ${newest} again, runs (${String(after.version)}); no card for either change; ${Math.round((Date.now() - started) / 1000)} s for two real downloads`;
+      },
+    );
+
+    await row(
+      "I09",
+      "the Claude CLI from its official source: card, download, SHA-256, runs (managed copy wins over the system one)",
+      async () => {
+        const first = await cliState("claude");
+        const started = Date.now();
+        void ev(`window.openbot.subscriptions.installCli({ id: "claude" })`).catch(() => undefined);
+        const title = await answerDownloadCard("Download Claude");
+        await waitUntil(
+          "Claude is installed",
+          async () => {
+            const state = await cliState("claude");
+            return isString(state.managedVersion) && state.phase === "idle";
+          },
+          300_000,
+        );
+        const state = await cliState("claude");
+        assert(state.source === "managed", `the downloaded copy is the one used: ${String(state.source)}`);
+        assert(String(state.executable).startsWith(root), "the file is inside the sandbox profile");
+        assert(
+          isString(state.version) && state.error === null,
+          `runs: ${JSON.stringify({ v: state.version, e: state.error })}`,
+        );
+        return `'${title}' (before: source ${String(first.source)}) > yes > ${String(state.managedVersion)} in ${Math.round((Date.now() - started) / 1000)} s, source managed, reports version ${String(state.version)}`;
+      },
+    );
+
+    // What the person sees at the sign-in screen with the REAL CLIs: the program starts the official sign-in (the CLI opens the
+    // browser on this computer; nobody signs in here) and shows its phase, the page and a code. Nothing is typed, nothing is stored.
+    await row(
+      "I10",
+      "G03/G04: the sign-in of a Codex and a Claude account starts from the page with the real CLIs and stops there (cancelled, account removed)",
+      async () => {
+        const seen: string[] = [];
+        for (const [provider, label] of [
+          ["codex", "G2 test Codex"],
+          ["claude", "G2 test Claude"],
+        ] as const) {
+          const created = asRecord(
+            await ev(
+              `window.openbot.subscriptions.addAccount({ provider: ${JSON.stringify(provider)}, label: ${JSON.stringify(label)} })`,
+            ),
+          );
+          const id = String(created.id);
+          assert(id.startsWith("acc-"), `account added: ${id}`);
+          await ev(`window.openbot.subscriptions.loginAccount({ id: ${JSON.stringify(id)} })`);
+          let login: DynamicRecord = {};
+          await waitUntil(
+            `${provider}: the sign-in shows its first state`,
+            async () => {
+              const found = list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).find(
+                (item) => item.id === id,
+              );
+              login = asRecord(found?.login);
+              return ["waiting-for-browser", "code-required", "error"].includes(String(login.phase));
+            },
+            60_000,
+          );
+          // The CLI prints the page and the code a moment later: give it up to 15 s.
+          await waitUntil(
+            `${provider}: the CLI printed the sign-in page`,
+            async () => {
+              const found = list(asRecord(await ev("window.openbot.subscriptions.listAccounts()")).accounts).find(
+                (item) => item.id === id,
+              );
+              login = asRecord(found?.login);
+              return isString(login.url) || isString(login.userCode) || login.phase === "error";
+            },
+            15_000,
+          ).catch(() => undefined);
+          const url = isString(login.url) ? new URL(login.url) : null;
+          seen.push(
+            `${provider}: phase '${String(login.phase)}', message '${String(login.message ?? "").slice(0, 70)}', page ${url ? `${url.origin}${url.pathname}` : "none"}, device code ${isString(login.userCode) ? "shown" : "none"}`,
+          );
+          assert(login.phase !== "error", `the sign-in starts: ${String(login.message)}`);
+          await ev(`window.openbot.subscriptions.cancelLogin({ id: ${JSON.stringify(id)} })`);
+          await ev(`window.openbot.subscriptions.removeAccount({ id: ${JSON.stringify(id)} })`);
+        }
+        return seen.join("; ");
+      },
+    );
+
     await row(
       "I07",
       "isolation note: what the real CLIs see of this computer, whatever the sandbox profile says",

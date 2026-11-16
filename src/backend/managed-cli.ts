@@ -7,7 +7,8 @@
 // folder). Only downloaded CLIs are removed, never a custom or system one. Order of use: custom path > downloaded >
 // system PATH (cli.ts asks `resolve()`).
 
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
@@ -50,6 +51,17 @@ export interface ManagedCliDeps {
   /** The executable to use changed (install, remove, custom path): restart what needs it. */
   onExecutableChanged?: (id: ManagedCliId) => void;
   now?: () => Date;
+  /** Removes a version folder (tests make it fail like Windows does for a running CLI). */
+  remove?: (path: string) => Promise<void>;
+}
+
+const defaultRemove = (path: string): Promise<void> => rm(path, { recursive: true, force: true });
+
+/** SHA-256 of a file, streamed (a CLI is hundreds of MB). */
+async function sha256OfFile(path: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  return hash.digest("hex");
 }
 
 const LABELS: Record<ManagedCliId, string> = { codex: "Codex CLI", claude: "Claude Code" };
@@ -124,7 +136,7 @@ export class ManagedCliManager {
     const entries = await readdir(folder).catch((): string[] => []);
     for (const entry of entries) {
       if (entry === keep) continue;
-      await rm(join(folder, entry), { recursive: true, force: true }).catch(() => undefined);
+      await (this.#deps.remove ?? defaultRemove)(join(folder, entry)).catch(() => undefined);
     }
   }
 
@@ -325,13 +337,29 @@ export class ManagedCliManager {
         await this.#deps.probe(join(staging, release.fileName)).catch((error: unknown) => {
           throw new Error(`The downloaded CLI does not start: ${message(error)}`);
         });
-        await rm(join(this.#deps.root, id, release.version), { recursive: true, force: true });
-        await rename(staging, join(this.#deps.root, id, release.version));
+        const folder = join(this.#deps.root, id, release.version);
+        let removeError: unknown = null;
+        try {
+          await (this.#deps.remove ?? defaultRemove)(folder);
+        } catch (error) {
+          removeError = error;
+        }
+        if (removeError === null) {
+          await rename(staging, folder);
+        } else if (existsSync(destination) && (await sha256OfFile(destination)) === release.sha256) {
+          // Windows cannot delete a CLI that is still running. An earlier update left this folder behind and the very
+          // same, verified file is already in it (COSGRAL W5-G2: switching back to a version after a pin failed here).
+          await rm(staging, { recursive: true, force: true });
+        } else {
+          throw new Error(
+            `${LABELS[id]} ${release.version} is still running, so it cannot be replaced. Stop the agents that use it (or restart the program) and try again.`,
+          );
+        }
         const previous = stored.managedVersion;
         stored.managedVersion = release.version;
         await this.#save();
         if (previous && previous !== release.version)
-          await rm(join(this.#deps.root, id, previous), { recursive: true, force: true }).catch(() => undefined);
+          await (this.#deps.remove ?? defaultRemove)(join(this.#deps.root, id, previous)).catch(() => undefined);
         if (!existsSync(destination)) throw new Error("The installed CLI is missing.");
         this.#set(id, { phase: "idle", progress: null, error: null });
         this.#deps.onExecutableChanged?.(id);
@@ -340,7 +368,10 @@ export class ManagedCliManager {
         await rm(staging, { recursive: true, force: true }).catch(() => undefined);
         const text = message(error);
         // One more try for a broken connection; never for a failed check (size or SHA-256).
-        if (attempt === 1 && !/SHA-256|unexpected size|larger than expected|not allowed|does not start/i.test(text))
+        if (
+          attempt === 1 &&
+          !/SHA-256|unexpected size|larger than expected|not allowed|does not start|still running/i.test(text)
+        )
           continue;
         this.#set(id, { phase: "error", progress: null, error: text });
         return this.state(id);

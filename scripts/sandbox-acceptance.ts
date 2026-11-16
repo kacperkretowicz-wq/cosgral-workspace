@@ -3304,6 +3304,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           (Array.isArray(record.unavailable) ? record.unavailable.length : 0);
         const info = async (id: string) =>
           asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
+        await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`);
         const inherited = await info(botRes);
         assert(
           inherited.own === null &&
@@ -3316,24 +3317,135 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botRes)}, fallbackModels: ["gpt-5.6-sol", "claude-opus-5"] })`,
         );
         const own = await info(botRes);
+        // BE7: the layers add up (own first, then the provider's, then the general list), each model once: the own
+        // two come first and the rest of the general list follows.
+        const ownChain = list(own.chain).map((entry) => String(entry.source));
         assert(
-          Array.isArray(own.own) && own.own.length === 2 && Array.isArray(own.effective) && own.effective.length === 2,
-          "an own list wins",
+          Array.isArray(own.own) &&
+            own.own.length === 2 &&
+            ownChain[0] === "own" &&
+            ownChain[1] === "own" &&
+            sizes(own) === 8,
+          `an own list goes first: ${JSON.stringify({ own: own.own, chain: ownChain, size: sizes(own) })}`,
         );
         const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`));
         assert(reset.own === null && sizes(reset) === 8, "after the reset the general list applies again");
         await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
-        return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
+        return "Res: own null (inherited) > effective 8; own list of 2 > the two come first (source own), the other 6 of the general list follow; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
+      },
+    );
+
+    await row(
+      "P11b",
+      "a paired phone cannot reach accounts, CLIs, API keys, endpoints or fallback lists (the phone API has no such route)",
+      async () => {
+        await d.openAgent("Assistant");
+        const started = asRecord(await d.ev("window.openbot.mobile.startPairing({ exposure: 'loopback', port: 0 })"));
+        const fingerprint = String(started.fingerprint ?? "");
+        const base = (Array.isArray(started.urls) ? started.urls.map(String) : [])[0] ?? "";
+        assert(
+          /^https:\/\/127\.0\.0\.1:\d+$/.test(base) && /^[0-9a-f]{64}$/.test(fingerprint),
+          "TLS address and fingerprint",
+        );
+        const paired = pinned(`${base}/v1/pair`, fingerprint, {
+          method: "POST",
+          body: { ticket: started.ticket, deviceName: "Acceptance phone", platform: "web" },
+        });
+        let cardId = "";
+        for (let attempt = 0; attempt < 40 && !cardId; attempt += 1) {
+          await page.waitForTimeout(250);
+          for (const item of list(await d.ev("window.openbot.agent.listPendingRequests()"))) {
+            const card = asRecord(item.card);
+            if (item.kind === "draft-preview" && String(card.title).startsWith("Pair a phone"))
+              cardId = String(card.requestId);
+          }
+        }
+        assert(cardId, "pairing consent card");
+        await d.ev(
+          `window.openbot.agent.respondToDraftPreview({ requestId: ${JSON.stringify(cardId)}, decision: "send" })`,
+        );
+        const token = String(asRecord((await paired).json).token ?? "");
+        assert(token.length > 10, "the phone has a token");
+        // The control: a route the phone does have.
+        assert.equal((await pinned(`${base}/v1/agents`, fingerprint, { token })).status, 200, "the phone lists agents");
+        const refused: string[] = [];
+        const probes: Array<[string, string]> = [
+          ["GET", "/v1/accounts"],
+          ["GET", "/v1/subscriptions"],
+          ["GET", "/v1/subscriptions/accounts"],
+          ["POST", "/v1/subscriptions/accounts"],
+          ["GET", "/v1/subscriptions/cli"],
+          ["GET", "/v1/api-keys"],
+          ["POST", "/v1/api-keys"],
+          ["GET", "/v1/endpoints"],
+          ["POST", "/v1/endpoints"],
+          ["GET", "/v1/providers"],
+          ["GET", "/v1/providers/fallback-models"],
+          ["GET", "/v1/providers/fallback-info"],
+          ["POST", "/v1/providers/fallback-models"],
+        ];
+        for (const [method, path] of probes) {
+          const answer = await pinned(`${base}${path}`, fingerprint, {
+            method,
+            token,
+            ...(method === "POST" ? { body: { provider: "codex", key: "test-key-phone-0000-abcd" } } : {}),
+          });
+          if (![403, 404, 405].includes(answer.status)) refused.push(`${method} ${path} answered ${answer.status}`);
+          if (/test-key-phone|"accounts"|"maskedKey"/.test(answer.text))
+            refused.push(`${method} ${path} leaked something`);
+        }
+        assert.deepEqual(refused, [], "no such route answers");
+        // And without the token nothing answers either.
+        assert.equal((await pinned(`${base}/v1/api-keys`, fingerprint)).status === 200, false, "no token, no answer");
+        const phoneKeyStillUnknown = await anyFileContains(root, "test-key-phone-0000-abcd");
+        assert(phoneKeyStillUnknown === null, "the key sent by the phone was not stored");
+        return `${probes.length} probes (accounts, CLIs, API keys, endpoints, fallback lists, read and write) answered 403/404/405 with a valid phone token; /v1/agents answered 200; nothing was stored. NOT covered: a remote team server (unit test: local-only-ipc.test.ts)`;
+      },
+    );
+
+    await row(
+      "P10b",
+      "the CLI process of an account that is not used for 5 minutes is stopped; the next turn starts a new one",
+      async () => {
+        const work = await accountId("Work");
+        await setLimits({});
+        await d.ask("Assistant", "ACC p10a", `Stub: account ${work} answered p10a`, 60_000);
+        const alive = (pid: number) => {
+          try {
+            process.kill(pid, 0);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+        const pidOf = async (account: string) => {
+          const lines = (await startsLog()).filter((line) => line.startsWith(`${account} `));
+          return Number((lines.at(-1) ?? "").split(" ")[1]);
+        };
+        const workPid = await pidOf(work);
+        const systemPid = await pidOf("system");
+        assert(workPid > 0 && alive(workPid), "the account's process runs after its turn");
+        const before = (await startsLog()).filter((line) => line.startsWith(`${work} `)).length;
+        // The idle limit is 5 minutes and the sweep runs every minute: look after 6.5 minutes of silence.
+        await page.waitForTimeout(390_000);
+        assert(!alive(workPid), "the idle process of the account was stopped");
+        assert(alive(systemPid), "the provider's own process stays");
+        await d.ask("Assistant", "ACC p10b", `Stub: account ${work} answered p10b`, 60_000);
+        const after = (await startsLog()).filter((line) => line.startsWith(`${work} `)).length;
+        assert(after === before + 1, `a new process for the next turn (${before} > ${after})`);
+        return `after 6.5 minutes without a turn the process of the account (pid ${workPid}) was gone, the system process stayed; the next turn started a new one (starts of that account ${before} > ${after})`;
       },
     );
 
     await row(
       "F03",
-      "fallback models per provider: one list for Codex, one for Claude, ACP agents and own endpoints; an agent follows its provider's list before the general one",
+      "fallback models per provider (BE7): one list for Codex, one for Claude; an agent follows its own list, then its provider's, then the general one, each model once",
       async () => {
         const botRes = await d.botId("Res");
         const info = async (id: string) =>
           asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
+        const chainOf = (record: DynamicRecord) =>
+          list(record.chain).map((entry) => `${String(entry.source)}:${String(entry.model)}`);
         await d.ev(`window.openbot.providers.setFallbackModels({ botId: "*", fallbackModels: ["claude-opus-5"] })`);
         await d.ev(
           `window.openbot.providers.setFallbackModels({ botId: "provider:codex", fallbackModels: ["gpt-5.6-sol"] })`,
@@ -3341,38 +3453,40 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         const codexAgent = await info(botRes);
         assert(
           codexAgent.own === null &&
-            codexAgent.source === "provider" &&
-            JSON.stringify(codexAgent.effective) === JSON.stringify(["gpt-5.6-sol"]),
-          `a Codex agent follows the Codex list: ${JSON.stringify({ source: codexAgent.source, effective: codexAgent.effective })}`,
+            codexAgent.providerScope === "provider:codex" &&
+            JSON.stringify(chainOf(codexAgent)) === JSON.stringify(["provider:gpt-5.6-sol", "general:claude-opus-5"]),
+          `a Codex agent: its provider's list, then the general one: ${JSON.stringify(chainOf(codexAgent))}`,
         );
-        const scope = await info("provider:claude");
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botRes)}, fallbackModels: ["gpt-5.6-terra"] })`,
+        );
         assert(
-          scope.own === null && scope.source === "general",
-          "the Claude list is empty, so it follows the general one",
+          JSON.stringify(chainOf(await info(botRes))) ===
+            JSON.stringify(["own:gpt-5.6-terra", "provider:gpt-5.6-sol", "general:claude-opus-5"]),
+          "an own list goes first and the other layers still follow",
         );
         await d.ev(
           `window.openbot.providers.setFallbackModels({ botId: "provider:claude", fallbackModels: ["gpt-5.6-terra"] })`,
         );
         assert(
           JSON.stringify((await info("provider:claude")).own) === JSON.stringify(["gpt-5.6-terra"]),
-          "the Claude list is saved",
+          "the Claude list is saved apart from the Codex list",
         );
         await d.openPage("Providers");
-        const choices = await page
-          .getByRole("region", { name: "Fallback models" })
-          .getByLabel("Agent")
-          .locator("option")
-          .allInnerTexts();
-        for (const name of ["General list", "Codex", "Claude", "ACP agents", "Own endpoints"])
-          assert(
-            choices.some((choice) => choice.startsWith(name)),
-            `the page offers '${name}': ${choices.slice(0, 6).join(" | ")}`,
-          );
-        const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels("provider:codex")`));
-        assert(reset.own === null, "the Codex list can be reset");
-        await d.ev(`window.openbot.providers.resetFallbackModels("provider:claude")`);
-        await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
-        return "general ['claude-opus-5'], Codex ['gpt-5.6-sol']: Res (Codex model, no own list) > source 'provider', effective ['gpt-5.6-sol']; the Claude list saved separately; the page offers General, Codex, Claude, ACP agents, Own endpoints; all lists reset";
+        const lists = page.getByRole("region", { name: "Fallback models" });
+        for (const name of ["Codex", "Claude", "All providers"])
+          await lists.getByRole("region", { name: `${name} fallback list` }).waitFor({ timeout: 15_000 });
+        const refused = String(
+          await d.ev(
+            `window.openbot.providers.setFallbackModels({ botId: "provider:gemini", fallbackModels: [] }).then(() => "saved", (e) => String(e.message))`,
+          ),
+        );
+        assert(/Unknown provider/.test(refused), `an unknown provider is refused: ${refused.slice(0, 80)}`);
+        await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`);
+        assert((await info(botRes)).own === null, "the own list of the agent can be reset");
+        for (const scope of ["provider:codex", "provider:claude", "*"])
+          await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(scope)})`);
+        return "general [claude-opus-5], Codex [gpt-5.6-sol]: Res (Codex model) chain provider:sol > general:opus; an own list goes first (own:terra > provider:sol > general:opus); the Claude list is separate; the page shows Codex, Claude and All providers lists; an unknown provider is refused; all lists reset";
       },
     );
 
