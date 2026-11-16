@@ -111,6 +111,13 @@ interface ClaudeQuery extends AsyncIterable<ClaudeStreamMessage> {
 
 type QueryFactory = (params: Parameters<typeof query>[0]) => ClaudeQuery;
 
+/** COSGRAL W8-BE1: the program's answer to "may this tool run?" (the access level of the agent decides). */
+export type ClaudeToolGate = (
+  threadId: string,
+  tool: string,
+  input: unknown,
+) => Promise<{ behavior: "allow" } | { behavior: "deny"; message: string }>;
+
 export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
   readonly provider: AgentProvider = "claude";
   readonly #cli: ClaudeCliInfo;
@@ -120,6 +127,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
   readonly #threads = new Map<string, ThreadRuntime>();
   readonly #pendingServerRequests = new Map<RequestId, PendingServerRequest>();
   #running = false;
+  #toolGate: ClaudeToolGate | null = null;
 
   constructor(cli: ClaudeCliInfo, createQuery: QueryFactory = query, env: NodeJS.ProcessEnv = process.env) {
     super();
@@ -130,6 +138,14 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
 
   get running(): boolean {
     return this.#running;
+  }
+
+  /**
+   * COSGRAL W8-BE1: from now on every tool Claude Code would run is first put to the program, in the normal permission mode
+   * (not "bypass", which never asks). Without a gate Claude keeps the wide access it always had.
+   */
+  useToolGate(gate: ClaudeToolGate): void {
+    this.#toolGate = gate;
   }
 
   start(): void {
@@ -230,6 +246,9 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     const input = new AsyncMessageQueue();
     const canUseTool: CanUseTool = async (toolName, toolInput, options) => {
       if (toolName !== "AskUserQuestion") {
+        const verdict = this.#toolGate ? await this.#toolGate(threadId, toolName, toolInput) : null;
+        if (verdict?.behavior === "deny")
+          return { behavior: "deny", message: verdict.message } satisfies PermissionResult;
         return { behavior: "allow", updatedInput: toolInput } satisfies PermissionResult;
       }
       return this.#requestUserInput(threadId, toolInput, options.toolUseID ?? randomUUID());
@@ -249,8 +268,8 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
           append: config.developerInstructions,
         },
         settingSources: ["user", "project", "local"],
-        permissionMode: "bypassPermissions",
-        allowDangerouslySkipPermissions: true,
+        permissionMode: this.#toolGate ? "default" : "bypassPermissions",
+        allowDangerouslySkipPermissions: !this.#toolGate,
         includePartialMessages: true,
         persistSession: config.persistSession,
         additionalDirectories: config.additionalDirectories,

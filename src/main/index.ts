@@ -35,6 +35,7 @@ import {
   systemPreferences,
 } from "electron";
 import electronUpdater from "electron-updater";
+import { AccessStore } from "../backend/access-store";
 import { AgentService } from "../backend/agent-service";
 import { setApiKeySource } from "../backend/api-key-env";
 import { ApiKeyStore } from "../backend/api-key-store";
@@ -61,6 +62,7 @@ import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
+import { registerAccessIpc } from "./access-ipc";
 import { registerAcpLoginIpc } from "./acp-login-ipc";
 import { registerAcpPresetsIpc } from "./acp-presets-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
@@ -885,6 +887,8 @@ function registerIpcHandlers(
   registerContextIpc(() => agentService);
   registerMobileIpc(() => mobileConnect);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
+  // COSGRAL W8-BE1: the access levels of the agents (this computer only).
+  registerAccessIpc(() => agentService);
   // COSGRAL W6-BE1: the threads of an agent (this computer only).
   registerThreadsIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
@@ -1418,6 +1422,8 @@ if (!hasSingleInstanceLock) {
           onChange: (rules) => service.relay({ type: "approval-rules-changed", rules }),
         }),
       );
+      // COSGRAL W8-BE1: the access level of each agent: its working folder only until the person raises it with a card.
+      service.useAccess(new AccessStore({ filePath: join(app.getPath("userData"), "agent-access.json") }));
       // COSGRAL W3: remote desktop. The host has its own Windows driver, separate from Computer Use, and asks its owner
       // on a confirm card; the pictures of a host this computer looks at go to the main window only.
       remoteDesktop = createRemoteDesktop({

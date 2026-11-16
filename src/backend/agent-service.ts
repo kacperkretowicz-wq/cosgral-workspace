@@ -94,6 +94,9 @@ import {
   unavailableContextState,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
+import type { CliAccess } from "./access-policy";
+import { AccessService } from "./access-service";
+import type { AccessStore } from "./access-store";
 import {
   type AccountLane,
   type AccountPoolPort,
@@ -378,6 +381,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #providers: ProviderRegistry | null = null;
   /** COSGRAL W3-KK3: the "always allow" rules of approval cards (attached by the program). */
   #approvalRules: ApprovalRulesStore | null = null;
+  /** COSGRAL W8-BE1: the access levels of the agents (attached by the program; without it nothing is narrowed). */
+  #access: AccessService | null = null;
   /** COSGRAL W3: models already tried per message (delivery), so a fallback never loops. */
   readonly #triedModels = new Map<string, Set<string>>();
   /** COSGRAL W3: the usage-limit / unavailability error of a turn, read when the turn fails. */
@@ -656,6 +661,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         ...(this.#routines ? [ROUTINES_DYNAMIC_TOOLS] : []),
       ],
       filterTools: (botId, tools) => this.agentSettings.filterDynamicTools(botId, tools),
+      // COSGRAL W8-BE1: a member's turn in a channel has the access level of the member.
+      access: (bot) => this.#cliAccess(bot),
       instructions: (botId) =>
         [skillInstructions(this.#skills.installedFor(botId)), this.agentSettings.instructions(botId)].join("\n"),
       commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
@@ -682,9 +689,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#subagents = new SubagentRunner({
       emit: (event) => this.#emit(event),
       store: this.#subagentStore,
-      client: async (botId) => {
+      client: async (botId, parentThreadId) => {
         const bot = this.#store.list().find((b) => b.id === botId);
         if (!bot) throw new Error("This agent no longer exists.");
+        // COSGRAL W8-BE1 (L3): the subagent works in the same CLI, so on the same account of the pool, as its parent.
+        const parentClient = this.#threadClients.get(parentThreadId);
+        if (parentClient?.running) return parentClient;
         await this.ensureProvider(providerForBot(bot));
         return this.#requireReadyClient(providerForBot(bot));
       },
@@ -696,11 +706,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       tools: (botId) => this.#dynamicTools(botId, true),
       instructions: (bot) => this.#buildDeveloperInstructions(bot, true),
       // The access of the agent's own thread (its `thread/start`): a subagent gets exactly this, never more.
-      access: (bot) => ({
-        approvalPolicy: "on-request",
-        sandbox: "danger-full-access",
-        runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
-      }),
+      access: (bot) => this.#cliAccess(bot),
       commonRequest: (client, request) => this.#handleServerRequest(client, request, true),
       register: (threadId, botId) => {
         this.#threadToBot.set(threadId, botId);
@@ -952,6 +958,36 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   get approvalRules(): ApprovalRulesStore | null {
     return this.#approvalRules;
+  }
+
+  /** COSGRAL W8-BE1: attach the access levels. From then on every CLI starts with the sandbox of its agent's level. */
+  useAccess(store: AccessStore): void {
+    this.#access = new AccessService({
+      store,
+      folders: (botId) => {
+        const bot = this.#store.list().find((candidate) => candidate.id === botId);
+        return bot ? { workspace: bot.workspacePath, shared: this.#store.sharedRoot } : null;
+      },
+      botName: (botId) => this.#store.list().find((candidate) => candidate.id === botId)?.name ?? null,
+      confirm: (botId, input) => this.confirmForPerson(botId, input),
+      emit: (event) => this.#emit(event),
+    });
+  }
+
+  get access(): AccessService | null {
+    return this.#access;
+  }
+
+  /** What the CLI of this agent is told about its level. Without the levels attached, the old wide access. */
+  #cliAccess(bot: BotSummary): CliAccess {
+    return (
+      this.#access?.cliAccess(bot.id) ?? {
+        approvalPolicy: "on-request",
+        sandbox: "danger-full-access",
+        sandboxPolicy: { type: "dangerFullAccess" },
+        runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
+      }
+    );
   }
 
   /** COSGRAL W3: an event of a helper (provider registry) goes out like the service's own. */
@@ -1242,6 +1278,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         reasoningEffort: "high",
       });
     }
+    // COSGRAL W8-BE1 (Q9): every new agent, also from a template, a copy or an import, starts at the least access.
+    this.#access?.agentCreated(bot.id);
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     return bot;
   }
@@ -1326,6 +1364,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#providers?.deleteAgent(botId);
     // COSGRAL W3-KK3: and its "always allow" rules.
     this.#approvalRules?.removeForBot(botId);
+    this.#access?.forgetBot(botId);
     this.agentSettings.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
@@ -1756,6 +1795,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
+  /** COSGRAL W8-BE1: the level of the agent refuses this request for good (no rule opens it, no card is shown). */
+  #refusedByAccess(pending: PendingApproval): boolean {
+    if (this.#access?.inspectApproval(pending.approval).verdict !== "deny") return false;
+    this.#answerProviderApproval(pending, false);
+    return true;
+  }
+
   /**
    * COSGRAL W3-KK3: allows the approval at once when an "always allow" rule of this agent covers it. Only the provider's
    * own requests come here (command, file change, permissions); Computer Use, the Vault, payments, Mobile Connect,
@@ -1908,6 +1954,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #bindClient(client: AgentClient): void {
+    // COSGRAL W8-BE1: Claude Code asks the program before a file tool or the shell runs; the level of the agent decides.
+    if (client instanceof ClaudeAgentClient) {
+      client.useToolGate(async (threadId, tool, input) => {
+        const botId = this.#threadToBot.get(threadId);
+        if (!botId || !this.#access) return { behavior: "allow" };
+        return this.#access.inspectClaudeTool(botId, this.#publicThreadId(botId, threadId), tool, input);
+      });
+    }
     client.on("notification", (notification) => this.#handleNotification(notification));
     client.on("request", (request) => void this.#handleServerRequest(client, request));
     client.on("diagnostic", (message) => {
@@ -2018,15 +2072,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       return session.externalSessionId;
     }
 
+    const access = this.#cliAccess(currentBot);
     const response = await client.request(
       "thread/start",
       {
         model: currentBot.activeModel ?? currentBot.model,
         effort: currentBot.reasoningEffort,
         cwd: currentBot.workspacePath,
-        runtimeWorkspaceRoots: [currentBot.workspacePath, this.#store.sharedRoot],
-        approvalPolicy: "on-request",
-        sandbox: "danger-full-access",
+        runtimeWorkspaceRoots: access.runtimeWorkspaceRoots,
+        approvalPolicy: access.approvalPolicy,
+        sandbox: access.sandbox,
         developerInstructions: this.#buildDeveloperInstructions(currentBot),
         ephemeral: false,
         serviceName: "openbot",
@@ -2051,14 +2106,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   async #resumeThread(bot: BotSummary, client: AgentClient, externalThreadId: string): Promise<void> {
+    const access = this.#cliAccess(bot);
     const params = {
       threadId: externalThreadId,
       model: bot.activeModel ?? bot.model,
       effort: bot.reasoningEffort,
       cwd: bot.workspacePath,
-      runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
-      approvalPolicy: "on-request",
-      sandbox: "danger-full-access",
+      runtimeWorkspaceRoots: access.runtimeWorkspaceRoots,
+      approvalPolicy: access.approvalPolicy,
+      sandbox: access.sandbox,
       developerInstructions: this.#buildDeveloperInstructions(bot),
       dynamicTools: this.#dynamicTools(bot.id),
     };
@@ -2120,6 +2176,23 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           );
           if (switchedOff) {
             client.respond(request.id, { success: false, contentItems: [{ type: "inputText", text: switchedOff }] });
+            return;
+          }
+          // COSGRAL W8-BE1: a tool that names a folder the agent's level does not allow.
+          const toolBotId = this.#threadToBot.get(request.params.threadId);
+          const toolAccess = toolBotId
+            ? await this.#access?.inspectTool(
+                toolBotId,
+                this.#publicThreadId(toolBotId, request.params.threadId),
+                `${request.params.namespace ?? ""}_${request.params.tool}`,
+                request.params.arguments,
+              )
+            : undefined;
+          if (toolAccess && !toolAccess.allowed) {
+            client.respond(request.id, {
+              success: false,
+              contentItems: [{ type: "inputText", text: toolAccess.message }],
+            });
             return;
           }
           if (request.params.namespace === OPENBOT_BROWSER_NAMESPACE) {
@@ -2456,6 +2529,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       }
       this.#emitConversation(snapshot);
 
+      const access = this.#cliAccess(bot);
       const response = await this.#requestWithArchivedThreadRecovery(
         bot,
         client,
@@ -2467,9 +2541,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           clientUserMessageId: delivery.id,
           input,
           cwd: bot.workspacePath,
-          runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
-          approvalPolicy: "on-request",
-          sandboxPolicy: { type: "dangerFullAccess" },
+          runtimeWorkspaceRoots: access.runtimeWorkspaceRoots,
+          approvalPolicy: access.approvalPolicy,
+          sandboxPolicy: access.sandboxPolicy,
         },
         decodeTurnResponse,
       );
@@ -3419,7 +3493,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       approval,
       ...this.#pendingOrder(),
     };
-    if (this.#allowedByRule(pending)) return;
+    if (this.#refusedByAccess(pending) || this.#allowedByRule(pending)) return;
     this.#pendingApprovals.set(request.id, pending);
     this.#emit({ type: "approval", approval });
   }
@@ -3453,7 +3527,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       approval,
       ...this.#pendingOrder(),
     };
-    if (this.#allowedByRule(pending)) return;
+    if (this.#refusedByAccess(pending) || this.#allowedByRule(pending)) return;
     this.#pendingApprovals.set(request.id, pending);
     this.#emit({ type: "approval", approval });
   }
