@@ -28,7 +28,7 @@ afterEach(async () => {
 describe("W5-T3 mask and check options", () => {
   it("a masked key cannot be rebuilt from the answer (short or long)", () => {
     expect(maskApiKey(SHORT)).toBe("••••");
-    expect(maskApiKey(SHORT)).not.toContain(SHORT[0]!);
+    expect(maskApiKey(SHORT)).not.toContain(SHORT.charAt(0));
     const masked = maskApiKey(KEY);
     expect(masked).toBe("••••abcd");
     expect(masked).not.toContain(KEY.slice(0, -4));
@@ -57,7 +57,7 @@ describe("W5-T3 mask and check options", () => {
     expect(signal).toBeTruthy();
     expect(signal?.aborted).toBe(false);
     // AbortSignal.timeout(15000) exposes the deadline via the underlying timer; we only assert a live signal was set.
-    expect(typeof signal?.addEventListener).toBe("function");
+    expect(signal).toBeInstanceOf(AbortSignal);
   });
 });
 
@@ -81,10 +81,7 @@ describe("W5-T3 account folder paths", () => {
     // ProviderAccounts reads <root>/accounts.json; root is the accounts folder.
     const { mkdir } = await import("node:fs/promises");
     await mkdir(root, { recursive: true });
-    await writeFile(
-      join(root, "accounts.json"),
-      await readFile(join(dir, "accounts.json.tmp"), "utf8"),
-    );
+    await writeFile(join(root, "accounts.json"), await readFile(join(dir, "accounts.json.tmp"), "utf8"));
     const accounts = new ProviderAccounts({
       root,
       resolveExecutable: async () => "missing",
@@ -109,9 +106,9 @@ describe("W5-T3 C13 local-only guard (same rule as api-keys / subscriptions IPC)
   }
 
   it("rejects a remote serverId for API keys and subscriptions wording", () => {
-    expect(() => requireLocal({ serverId: "srv-1", payload: null }, "API keys are kept on this computer only.")).toThrow(
-      /this computer only/i,
-    );
+    expect(() =>
+      requireLocal({ serverId: "srv-1", payload: null }, "API keys are kept on this computer only."),
+    ).toThrow(/this computer only/i);
     expect(() =>
       requireLocal({ serverId: "phone-peer", payload: null }, "Accounts are managed on this computer only."),
     ).toThrow(/this computer only/i);
