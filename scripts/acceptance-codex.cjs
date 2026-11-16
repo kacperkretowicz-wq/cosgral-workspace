@@ -133,6 +133,10 @@ async function direct(threadId, turnId, rawText) {
   }
   if (text.startsWith("ACC")) {
     const limit = accountLimit();
+    if (limit?.network) {
+      // W5-G3 (F02): a dropped connection, not a limit: the account must not be counted as exhausted.
+      return complete(threadId, turnId, null, "failed", "Network error: connection reset by peer (ECONNRESET).");
+    }
     if (limit) {
       if (limit.action) {
         const item = { id: randomUUID(), type: "commandExecution", command: "touch result.txt" };

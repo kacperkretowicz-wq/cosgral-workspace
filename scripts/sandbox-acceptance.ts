@@ -2433,7 +2433,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
   const d = new Driver(page, evidence, app);
 
   // --- helpers ---
-  const setLimits = async (limits: Record<string, { resetsInSeconds: number; action?: boolean }>) =>
+  const setLimits = async (limits: Record<string, { resetsInSeconds?: number; action?: boolean; network?: boolean }>) =>
     writeFile(limitsFile, JSON.stringify(limits));
   const accountList = async () => list(asRecord(await d.ev("window.openbot.subscriptions.listAccounts()")).accounts);
   const account = async (label: string) => {
@@ -2485,7 +2485,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
   try {
     const installEventLog = () =>
       d.ev(
-        "window.__w5 = []; window.openbot.agent.onEvent((event) => { if (['account-limit-reached','account-switched','model-fallback','error','turn-completed'].includes(event.type)) window.__w5.push(event); }); true",
+        "window.__w5 = []; window.openbot.agent.onEvent((event) => { if (['account-limit-reached','account-switched','account-error','model-fallback','error','turn-completed'].includes(event.type)) window.__w5.push(event); }); true",
       );
     await row(
       "W0",
@@ -3434,6 +3434,54 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         const after = (await startsLog()).filter((line) => line.startsWith(`${work} `)).length;
         assert(after === before + 1, `a new process for the next turn (${before} > ${after})`);
         return `after 6.5 minutes without a turn the process of the account (pid ${workPid}) was gone, the system process stayed; the next turn started a new one (starts of that account ${before} > ${after})`;
+      },
+    );
+
+    await row(
+      "F02n",
+      "a network error is not a limit (BE8): the page and the events say 'network error', no account is marked, nothing is switched; after the connection is back the same account answers",
+      async () => {
+        const accounts = await accountList();
+        const ids = accounts.map((item) => String(item.id));
+        await waitLimitsFree();
+        await setLimits({});
+        const markedBefore = accounts.filter((item) => item.limitedUntil !== null).length;
+        const from = await eventCount();
+        const failing: Record<string, { network: true }> = {};
+        for (const id of ids) failing[id] = { network: true };
+        await setLimits(failing);
+        await d.openAgent("Assistant");
+        await d.send("Assistant", "ACC n1");
+        await waitUntil(
+          page,
+          "the network-error event",
+          async () => (await eventsSince(from)).some((event) => event.type === "account-error"),
+          60_000,
+        );
+        await waitTurns(from, 1);
+        await page.waitForTimeout(2_500);
+        const events = await eventsSince(from);
+        const failed = events.find((event) => event.type === "account-error");
+        assert(
+          failed?.reason === "network-error" && /Network error/.test(String(failed.message)),
+          `account-error: ${JSON.stringify(failed)}`,
+        );
+        assert(!/ECONNRESET|reset by peer/.test(String(failed?.message)), "the event text is fixed, not the raw error");
+        assert(
+          !events.some((event) => event.type === "account-switched" || event.type === "account-limit-reached"),
+          `no switch, no limit card: ${JSON.stringify(events.map((event) => event.type))}`,
+        );
+        const markedAfter = (await accountList()).filter((item) => item.limitedUntil !== null).length;
+        assert(markedAfter === markedBefore, `no account was marked as limited (${markedBefore} > ${markedAfter})`);
+        assert(!/Thinking/.test(await d.rowLabel("Assistant")), "the row is not stuck on Thinking");
+        await setLimits({});
+        const again = await eventCount();
+        await d.send("Assistant", "ACC n2");
+        await d.answer("Assistant", "answered n2", 60_000);
+        const later = await eventsSince(again);
+        assert(!later.some((event) => event.type === "account-switched"), "the next turn is not a switch either");
+        await d.dump("w5-f02n-network");
+        return `all ${ids.length} accounts fail with a dropped connection > one account-error 'network-error' ('${String(failed?.message).slice(0, 70)}'), 0 account-switched, 0 account-limit-reached, limited accounts ${markedBefore} > ${markedAfter}, the row settles; connection back (limits cleared) > the next turn answers with no switch. NOT covered: the account-error card (UI8 is adding it)`;
       },
     );
 
