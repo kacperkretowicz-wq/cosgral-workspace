@@ -55,6 +55,7 @@ import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
+import { SpaceStore } from "../backend/space-store";
 import { TeamChatStore } from "../backend/team-chat-store";
 import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
@@ -197,6 +198,7 @@ import {
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
 import { registerSubagentsIpc } from "./subagents-ipc";
+import { registerSpacesIpc } from "./spaces-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";
@@ -211,6 +213,12 @@ if (!app.isPackaged) {
   const profile = readDevelopmentProfile(process.env.OPENBOT_DEV_PROFILE);
   app.setPath("userData", join(app.getPath("appData"), developmentUserDataName(profile)));
 }
+// COSGRAL W8-KK1: client spaces. The program runs on ONE space: its own data folder (database, Vault, browser profile,
+// MCP, accounts) and its own home for the agents' folder. The main space is the data the program already has. A switch
+// is saved and the program restarts on it, so nothing of another space is open while one runs.
+const spaceStore = new SpaceStore({ baseUserData: app.getPath("userData"), baseHome: homedir() });
+const runningSpace = spaceStore.runningPaths();
+app.setPath("userData", runningSpace.userData);
 app.enableSandbox();
 // COSGRAL: a synthetic camera for sandbox tests of agent eyes; development builds only.
 if (!app.isPackaged && process.env.COSGRAL_FAKE_CAMERA === "1") {
@@ -888,6 +896,11 @@ function registerIpcHandlers(
   // COSGRAL W6-BE3: retry, edit, delete and pin on a message (this computer only).
   registerMessageActionsIpc(() => agentService);
   registerWindowsIpc(() => conversationWindows);
+  registerSpacesIpc({
+    store: () => spaceStore,
+    emit: (event) => forwardAgentEvent("local", event),
+    restart: restartOnChosenSpace,
+  });
   registerAppDataIpc({ paths: dataWipePaths, stopAndRestart: stopAndRestartForWipe });
   // COSGRAL W3: agent settings, templates, the agent creator, app settings and onboarding.
   registerAgentSettingsIpc({
@@ -1342,7 +1355,7 @@ if (!hasSingleInstanceLock) {
       centralAuthManager.on("changed", forwardCentralAuth);
       const accountInitialization = centralAuthManager.initialize();
       if (centralAuthManager instanceof LocalOwnerAccount) await accountInitialization;
-      const store = new BotStore(app.getPath("userData"), homedir());
+      const store = new BotStore(app.getPath("userData"), runningSpace.home);
       await store.initialize();
       mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
       await mailboxStore.initialize();
@@ -1894,7 +1907,7 @@ app.on("before-quit", (event) => {
 
 /** COSGRAL W4-BE5: the folders of "Delete my data" (checked again by the guard in data-wipe.ts). */
 function dataWipePaths(): { userData: string; home: string; appData: string } {
-  return { userData: app.getPath("userData"), home: homedir(), appData: app.getPath("appData") };
+  return { userData: app.getPath("userData"), home: runningSpace.home, appData: app.getPath("appData") };
 }
 
 function startDataWipe(): { error: string | null; failures: string[] } | null {
@@ -1910,6 +1923,13 @@ function startDataWipe(): { error: string | null; failures: string[] } | null {
 async function stopAndRestartForWipe(): Promise<void> {
   await prepareForShutdown();
   if (process.env.COSGRAL_WIPE_NO_RELAUNCH !== "1") app.relaunch();
+  app.quit();
+}
+
+/** COSGRAL W8-KK1: a space was chosen: stop agents and servers, then restart on it (the sandbox test sets COSGRAL_SPACE_NO_RELAUNCH). */
+async function restartOnChosenSpace(): Promise<void> {
+  await prepareForShutdown();
+  if (process.env.COSGRAL_SPACE_NO_RELAUNCH !== "1") app.relaunch();
   app.quit();
 }
 

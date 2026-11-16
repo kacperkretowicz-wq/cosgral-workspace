@@ -29,6 +29,7 @@ export * from "./ipc-routines";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
 export * from "./ipc-subagents";
+export * from "./ipc-spaces";
 export * from "./ipc-subscriptions";
 export * from "./ipc-tables";
 export * from "./ipc-team-host";

@@ -168,6 +168,7 @@ import type {
   UpdateSkillInstallInput,
 } from "./ipc-skills";
 import type { SubagentsDesktopApi } from "./ipc-subagents";
+import type { SpacesDesktopApi } from "./ipc-spaces";
 import type { SubscriptionsDesktopApi } from "./ipc-subscriptions";
 import type {
   CreateTableInput,
@@ -679,6 +680,8 @@ export interface OpenBotDesktopApi {
   context?: ContextDesktopApi;
   /** COSGRAL W6-KK3: separate conversation windows (open, list, close). Optional until every mock implements it. */
   windows?: WindowsDesktopApi;
+  /** COSGRAL W8-KK1: client spaces (separate data folders; a switch restarts the program). Optional until every mock implements it. */
+  spaces?: SpacesDesktopApi;
 }
 
 /**
