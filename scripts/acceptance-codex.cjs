@@ -144,7 +144,7 @@ async function direct(threadId, turnId, rawText) {
         resetsAt: Math.floor(Date.now() / 1000) + (limit.resetsInSeconds ?? 3600),
       });
     }
-    return complete(threadId, turnId, `Stub: account ${accountId} answered`);
+    return complete(threadId, turnId, `Stub: account ${accountId} answered ${text.slice(3).trim()}`);
   }
   if (text.startsWith("SLOW")) {
     const ms = Number(text.split(/\s+/)[1]) || 5000;

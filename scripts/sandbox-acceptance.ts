@@ -2493,7 +2493,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
             async () => (await accountList()).some((item) => item.label === label),
             20_000,
           );
-          await codex.getByRole("group", { name: label }).getByRole("button", { name: "Zaloguj" }).click();
+          await codex.getByRole("group", { name: label, exact: true }).getByRole("button", { name: "Zaloguj" }).click();
           await waitUntil(page, `${label} signed in`, async () => (await account(label)).loggedIn === true, 30_000);
         }
         const work = await account("Work");
@@ -2607,12 +2607,12 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         // (a) Home switched off: when Work is at its limit the system account answers, never Home.
         await setPool("Home", { enabled: false });
         await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
-        await d.ask("Assistant", "ACC a", "Stub: account system answered", 60_000);
+        await d.ask("Assistant", "ACC a", "Stub: account system answered a", 60_000);
         await waitLimitsFree();
         // (b) Home on again: it comes first.
         await setPool("Home", { enabled: true });
         await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
-        await d.ask("Assistant", "ACC b", `Stub: account ${ids.home} answered`, 60_000);
+        await d.ask("Assistant", "ACC b", `Stub: account ${ids.home} answered b`, 60_000);
         await waitLimitsFree();
         await setLimits({});
         return `order ${order.join(" > ")}; Home off: Work's limit > the system account answered (Home skipped); Home on: Home answered first`;
@@ -2628,7 +2628,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
         await d.openAgent("Assistant");
         await d.send("Assistant", "ACC c");
-        await d.answer("Assistant", `Stub: account ${ids.home} answered`, 60_000);
+        await d.answer("Assistant", `Stub: account ${ids.home} answered c`, 60_000);
         const events = await eventsSince(from);
         const limit = events.find((event) => event.type === "account-limit-reached");
         const switched = events.find((event) => event.type === "account-switched");
@@ -2693,7 +2693,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         );
         await d.dump("w5-p07-asks");
         await decision.getByRole("button", { name: "Confirm", exact: true }).click();
-        await d.answer("Assistant", `Stub: account ${ids.home} answered`, 60_000);
+        await d.answer("Assistant", `Stub: account ${ids.home} answered d`, 60_000);
         assert(
           (await eventsSince(from)).some((event) => event.type === "account-switched"),
           "after Confirm the switch is told",
@@ -2740,7 +2740,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await setLimits({});
         await waitLimitsFree(60_000);
         const again = await eventCount();
-        await d.ask("Assistant", "ACC f", `Stub: account ${ids.work} answered`, 60_000);
+        await d.ask("Assistant", "ACC f", `Stub: account ${ids.work} answered f`, 60_000);
         const returned = (await eventsSince(again)).find((event) => event.type === "account-switched");
         assert(
           returned?.reason === "returned" && returned.toAccountId === ids.work,
@@ -2933,8 +2933,23 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         });
         await d.openAgent("Assistant");
         await d.send("Assistant", "ACC g");
-        await d.answer("Assistant", "ENDPOINT_SAYS_HI", 90_000);
+        await waitUntil(
+          page,
+          "the fallback model answered",
+          async () => {
+            const seen = await eventsSince(from);
+            return (
+              seen.some((event) => event.type === "model-fallback") &&
+              seen.some((event) => event.type === "turn-completed" && event.status === "completed")
+            );
+          },
+          90_000,
+        );
         const events = await eventsSince(from);
+        assert(
+          /ENDPOINT_SAYS_HI/.test(await d.answer("Assistant", "ENDPOINT_SAYS_HI", 20_000)),
+          "the newest answer is the endpoint's",
+        );
         const kinds = events.flatMap((event) =>
           event.type === "account-limit-reached"
             ? [`limit:${String(event.outcome)}`]
@@ -2950,7 +2965,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         );
         await setLimits({});
         await waitLimitsFree(60_000);
-        await d.ask("Assistant", "ACC h", `Stub: account ${ids.work} answered`, 60_000);
+        // The provider block of the model registry ends with the same reset: give it a moment.
+        await page.waitForTimeout(3_000);
+        await d.ask("Assistant", "ACC h", `Stub: account ${ids.work} answered h`, 60_000);
         const bot = asRecord(
           list(await d.ev("window.openbot.agent.listBots()")).find((item) => item.name === "Assistant"),
         );
@@ -3023,7 +3040,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await waitUntil(
           page,
           "Local LLM removed",
-          async () => !/Local LLM/.test(await list_.innerText().catch(() => "")),
+          async () => !/Local LLM/.test(await endpointCard().innerText()),
           10_000,
         );
         const ids = list(await d.ev("window.openbot.agent.listModels()")).map((item) => String(item.id));
@@ -3221,12 +3238,19 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       "fallback models: the general list applies to an agent without its own ('inherited'); an own list wins; reset goes back",
       async () => {
         const botRes = await d.botId("Res");
+        // A model of an ACP agent that does not exist stays in the list but is not tried: it counts as unavailable.
+        const sizes = (record: DynamicRecord) =>
+          (Array.isArray(record.effective) ? record.effective.length : 0) +
+          (Array.isArray(record.unavailable) ? record.unavailable.length : 0);
         const info = async (id: string) =>
           asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
         const inherited = await info(botRes);
         assert(
-          inherited.own === null && Array.isArray(inherited.effective) && inherited.effective.length === 8,
-          `inherited: ${JSON.stringify({ own: inherited.own, effective: Array.isArray(inherited.effective) ? inherited.effective.length : -1 })}`,
+          inherited.own === null &&
+            Array.isArray(inherited.general) &&
+            inherited.general.length === 8 &&
+            sizes(inherited) === 8,
+          `inherited: ${JSON.stringify({ own: inherited.own, general: inherited.general, effective: inherited.effective, unavailable: inherited.unavailable })}`,
         );
         await d.ev(
           `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botRes)}, fallbackModels: ["gpt-5.6-sol", "claude-opus-5"] })`,
@@ -3237,12 +3261,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           "an own list wins",
         );
         const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`));
-        assert(
-          reset.own === null && Array.isArray(reset.effective) && reset.effective.length === 8,
-          "after the reset the general list applies again",
-        );
+        assert(reset.own === null && sizes(reset) === 8, "after the reset the general list applies again");
         await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
-        return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective 8 again; the general list cleared afterwards";
+        return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
       },
     );
 
