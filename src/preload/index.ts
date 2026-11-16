@@ -20,6 +20,7 @@ import {
   type ConversationReadState,
   type ConversationWithReadState,
   type DraftAttachment,
+  type FallbackModelsInfo,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
   isAcpAgentConfig,
@@ -31,6 +32,7 @@ import {
   isChannelMemory,
   isChannelMessage,
   isChannelTask,
+  isFallbackModelsInfo,
   isKeptDraft,
   isLocalSkill,
   isMcpServer,
@@ -464,6 +466,11 @@ function decodeProviderUsage(value: unknown): ProviderUsage[] {
   return value.filter(isProviderUsage);
 }
 
+function decodeFallbackInfo(value: unknown): FallbackModelsInfo {
+  if (!isFallbackModelsInfo(value)) throw new Error("Invalid fallback models info.");
+  return value;
+}
+
 function decodeModelIds(value: unknown): AgentModelId[] {
   if (!Array.isArray(value)) throw new Error("Invalid fallback models response.");
   return value.filter(isAgentModel);
@@ -726,6 +733,8 @@ const openbotApi: OpenBotDesktopApi = {
     listUsage: () => invokeAgent(IPC_CHANNELS.providersListUsage, null, decodeProviderUsage),
     getFallbackModels: (botId) => invokeAgent(IPC_CHANNELS.providersGetFallbackModels, botId, decodeModelIds),
     setFallbackModels: (input) => invokeAgent(IPC_CHANNELS.providersSetFallbackModels, input, decodeModelIds),
+    getFallbackInfo: (botId) => invokeAgent(IPC_CHANNELS.providersGetFallbackInfo, botId, decodeFallbackInfo),
+    resetFallbackModels: (botId) => invokeAgent(IPC_CHANNELS.providersResetFallbackModels, botId, decodeFallbackInfo),
   },
   mcp: {
     list: () => invokeAgent(IPC_CHANNELS.mcpList, null, decodeMcpServers),

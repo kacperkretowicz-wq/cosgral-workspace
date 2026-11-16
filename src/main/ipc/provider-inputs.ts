@@ -2,9 +2,9 @@
 
 import {
   type AcpAgentIdInput,
-  type AgentModelId,
   type FallbackModelsInput,
-  isAgentModel,
+  fallbackModelsProblem,
+  normalizeFallbackModels,
   PROVIDER_LIMITS,
   type SaveAcpAgentInput,
 } from "@openbot/contracts/ipc";
@@ -32,12 +32,9 @@ export function parseFallbackBotId(value: unknown): string {
 
 export function parseFallbackModels(value: unknown): FallbackModelsInput {
   if (!isObject(value)) throw new Error("Fallback models are required.");
-  if (!Array.isArray(value.fallbackModels)) throw new Error("fallbackModels must be a list of models.");
-  const fallbackModels: AgentModelId[] = [];
-  for (const model of value.fallbackModels) {
-    if (!isAgentModel(model)) throw new Error("fallbackModels has an unknown model.");
-    fallbackModels.push(model);
-  }
+  const problem = fallbackModelsProblem(value.fallbackModels);
+  if (problem || !Array.isArray(value.fallbackModels)) throw new Error(problem ?? "fallbackModels must be a list.");
+  const fallbackModels = normalizeFallbackModels(value.fallbackModels);
   return { botId: requireString(value.botId, "botId"), fallbackModels };
 }
 

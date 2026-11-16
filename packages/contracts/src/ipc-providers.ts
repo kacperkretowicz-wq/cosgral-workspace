@@ -24,7 +24,8 @@ export const PROVIDER_LIMITS = {
   arg: 2_000,
   args: 64,
   acpAgents: 16,
-  fallbackModels: 4,
+  /** W5-BE4: 4 -> 8. Lists saved with up to 4 models stay valid. */
+  fallbackModels: 8,
   /** Minutes a provider counts as unavailable after an availability error without a reset time. */
   unavailableCooldownMinutes: 5,
   /** Minutes a usage limit lasts when the provider gives no reset time. */
@@ -72,6 +73,60 @@ export interface FallbackModelsInput {
   botId: string;
   /** Tried in this order after the agent's own model; at most PROVIDER_LIMITS.fallbackModels. */
   fallbackModels: AgentModelId[];
+}
+
+/**
+ * W5-BE4: the id that stands for the general fallback list (agents without an own list use it). `getFallbackModels`
+ * and `setFallbackModels` take it as `botId`; no agent can have this id.
+ */
+export const GENERAL_FALLBACK_SCOPE = "*";
+
+/** W5-BE4: what an agent tries after its own model, and where that list comes from. */
+export interface FallbackModelsInfo {
+  botId: string;
+  /** The agent's own saved list; null = it follows the general list. */
+  own: AgentModelId[] | null;
+  general: AgentModelId[];
+  /** What is really tried, in order: `own`, else `general`, without models that cannot run now. */
+  effective: AgentModelId[];
+  /** Models of the list that cannot run now (an ACP agent that was removed); shown, never tried. */
+  unavailable: AgentModelId[];
+}
+
+/** A readable reason a list is not allowed (more than 8, a repeat, an unknown model), or null. */
+export function fallbackModelsProblem(models: unknown): string | null {
+  if (!Array.isArray(models)) return "The fallback models must be a list.";
+  if (models.length > PROVIDER_LIMITS.fallbackModels)
+    return `At most ${PROVIDER_LIMITS.fallbackModels} fallback models.`;
+  if (!models.every(isAgentModel)) return "Unknown model in the fallback list.";
+  if (new Set(models).size !== models.length) return "A fallback model is listed twice.";
+  return null;
+}
+
+/** A stored list read back: order kept, unknown models and repeats dropped, cut at the limit. */
+export function normalizeFallbackModels(value: unknown): AgentModelId[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const models: AgentModelId[] = [];
+  for (const item of value) {
+    if (!isAgentModel(item) || seen.has(item)) continue;
+    seen.add(item);
+    models.push(item);
+    if (models.length === PROVIDER_LIMITS.fallbackModels) break;
+  }
+  return models;
+}
+
+export function isFallbackModelsInfo(value: unknown): value is FallbackModelsInfo {
+  const isList = (list: unknown): list is AgentModelId[] => Array.isArray(list) && list.every(isAgentModel);
+  return (
+    isDynamicRecord(value) &&
+    isString(value.botId) &&
+    (value.own === null || isList(value.own)) &&
+    isList(value.general) &&
+    isList(value.effective) &&
+    isList(value.unavailable)
+  );
 }
 
 export function acpModelId(acpId: string): `acp:${string}` {

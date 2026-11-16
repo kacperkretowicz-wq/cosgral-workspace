@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent } from "@openbot/contracts/ipc";
+import { GENERAL_FALLBACK_SCOPE } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { ProviderRegistry } from "./provider-registry";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
@@ -13,6 +14,17 @@ afterEach(async () => {
   closeTestDatabases();
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
+
+const EIGHT = [
+  "gpt-5.6-luna",
+  "gpt-5.6-terra",
+  "gpt-5.6-sol",
+  "claude-opus-5",
+  "claude-sonnet-5",
+  "acp:a",
+  "acp:b",
+  "acp:c",
+] as const;
 
 const T0 = Date.parse("2026-11-13T06:00:00.000Z");
 
@@ -29,7 +41,7 @@ async function setup(root?: string) {
     now: () => clock.now,
     timers: false,
   });
-  return { root: directory, registry, clock, events };
+  return { root: directory, registry, clock, events, database };
 }
 
 describe("ProviderRegistry", () => {
@@ -55,7 +67,7 @@ describe("ProviderRegistry", () => {
     expect(reopened.listAcpAgents()).toEqual([]);
   });
 
-  it("keeps each agent's ordered fallback models, without duplicates, at most four", async () => {
+  it("keeps each agent's ordered fallback models, without duplicates, at most eight", async () => {
     const { root, registry } = await setup();
     expect(registry.getFallbackModels("chief")).toEqual([]);
     expect(registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:gemini", "claude-sonnet-5"] })).toEqual([
@@ -68,9 +80,9 @@ describe("ProviderRegistry", () => {
     expect(() =>
       registry.setFallbackModels({
         botId: "chief",
-        fallbackModels: ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "claude-opus-5", "claude-sonnet-5"],
+        fallbackModels: [...EIGHT, "acp:i"],
       }),
-    ).toThrow(/4/);
+    ).toThrow(/8/);
     closeTestDatabases();
     const reopened = (await setup(root)).registry;
     expect(reopened.getFallbackModels("chief")).toEqual(["acp:gemini", "claude-sonnet-5"]);
@@ -112,6 +124,7 @@ describe("ProviderRegistry", () => {
 
   it("chooses the first usable model not tried yet for this message; a user error never counts", async () => {
     const { registry } = await setup();
+    registry.saveAcpAgent({ id: "gemini", name: "Gemini", command: "gemini" });
     registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:gemini", "claude-sonnet-5"] });
     const tried = new Set<string>();
     expect(registry.chooseModel("chief", "gpt-5.6-luna", tried)).toBe("gpt-5.6-luna");
@@ -205,5 +218,140 @@ describe("provider state from the engine", () => {
     const count = events.length;
     registry.setProviderStatuses(structuredClone(statuses));
     expect(events.length).toBe(count);
+  });
+});
+
+describe("ProviderRegistry fallback lists (W5-BE4)", () => {
+  it("takes 0 and 8 models, refuses 9, a repeat and an unknown model, and keeps the old list on a refusal", async () => {
+    const { registry } = await setup();
+    expect(registry.setFallbackModels({ botId: "chief", fallbackModels: [] })).toEqual([]);
+    expect(registry.setFallbackModels({ botId: "chief", fallbackModels: [...EIGHT] })).toEqual([...EIGHT]);
+    expect(registry.getFallbackModels("chief")).toEqual([...EIGHT]);
+    expect(() => registry.setFallbackModels({ botId: "chief", fallbackModels: [...EIGHT, "acp:i"] })).toThrow(
+      /at most 8/i,
+    );
+    expect(() => registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:a", "acp:a"] })).toThrow(/twice/i);
+    expect(() =>
+      registry.setFallbackModels({ botId: "chief", fallbackModels: JSON.parse('["acp:a","nope"]') }),
+    ).toThrow(/unknown/i);
+    expect(registry.getFallbackModels("chief")).toEqual([...EIGHT]);
+  });
+
+  it("changes the order when the same models are saved in another order", async () => {
+    const { registry } = await setup();
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:a", "claude-opus-5", "acp:b"] });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:b", "acp:a", "claude-opus-5"] });
+    expect(registry.getFallbackModels("chief")).toEqual(["acp:b", "acp:a", "claude-opus-5"]);
+  });
+
+  it("keeps a list saved before (up to 4 models) exactly as it was", async () => {
+    const { registry } = await setup();
+    registry.saveAcpAgent({ id: "gemini", name: "Gemini", command: "gemini" });
+    registry.saveAcpAgent({ id: "backup", name: "Backup", command: "backup" });
+    const old = ["acp:gemini", "claude-sonnet-5", "gpt-5.6-terra", "acp:backup"] as const;
+    registry.setFallbackModels({ botId: "old-agent", fallbackModels: [...old] });
+    expect(registry.getFallbackModels("old-agent")).toEqual([...old]);
+    expect(registry.getFallbackInfo("old-agent")).toMatchObject({
+      own: [...old],
+      effective: [...old],
+      unavailable: [],
+    });
+  });
+
+  it("reads a damaged stored list safely: unknown models and repeats dropped, at most 8", async () => {
+    const { registry, database } = await setup();
+    const put = (id: string, json: string) =>
+      database.connection
+        .prepare("INSERT INTO projection_agent_fallback_models (agent_id, models_json, updated_at) VALUES (?, ?, ?)")
+        .run(id, json, "2026-11-13T06:00:00.000Z");
+    put("messy", JSON.stringify(["acp:a", "no-such", "acp:a", 7, "claude-opus-5"]));
+    put("long", JSON.stringify([...EIGHT, "acp:d", "acp:e"]));
+    put("broken", "{}");
+    expect(registry.getFallbackModels("messy")).toEqual(["acp:a", "claude-opus-5"]);
+    expect(registry.getFallbackModels("long")).toEqual([...EIGHT]);
+    expect(registry.getFallbackModels("broken")).toEqual([]);
+  });
+
+  it("an agent without its own list follows the general list; its own list, even an empty one, wins", async () => {
+    const { registry } = await setup();
+    registry.saveAcpAgent({ id: "a", name: "A", command: "a" });
+    registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["acp:a", "claude-opus-5"] });
+    expect(registry.getFallbackInfo("chief")).toEqual({
+      botId: "chief",
+      own: null,
+      general: ["acp:a", "claude-opus-5"],
+      effective: ["acp:a", "claude-opus-5"],
+      unavailable: [],
+    });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("acp:a");
+
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["claude-sonnet-5"] });
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      own: ["claude-sonnet-5"],
+      effective: ["claude-sonnet-5"],
+    });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("claude-sonnet-5");
+
+    registry.setFallbackModels({ botId: "chief", fallbackModels: [] });
+    expect(registry.getFallbackInfo("chief")).toMatchObject({ own: [], effective: [] });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBeNull();
+
+    expect(registry.resetFallbackModels("chief")).toMatchObject({ own: null, effective: ["acp:a", "claude-opus-5"] });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("acp:a");
+  });
+
+  it("deleting an agent never touches the general list, and the general list can be emptied", async () => {
+    const { registry } = await setup();
+    registry.setFallbackModels({ botId: GENERAL_FALLBACK_SCOPE, fallbackModels: ["claude-opus-5"] });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["claude-sonnet-5"] });
+    registry.deleteAgent("chief");
+    expect(registry.getFallbackModels(GENERAL_FALLBACK_SCOPE)).toEqual(["claude-opus-5"]);
+    expect(registry.resetFallbackModels(GENERAL_FALLBACK_SCOPE).general).toEqual([]);
+  });
+
+  it("skips a model whose ACP agent was removed, shows it as unavailable, and keeps it in the list", async () => {
+    const { registry } = await setup();
+    registry.saveAcpAgent({ id: "gone", name: "Gone", command: "gone" });
+    registry.saveAcpAgent({ id: "kept", name: "Kept", command: "kept" });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["acp:gone", "acp:kept", "claude-opus-5"] });
+    registry.removeAcpAgent({ id: "gone" });
+    expect(registry.getFallbackModels("chief")).toEqual(["acp:gone", "acp:kept", "claude-opus-5"]);
+    expect(registry.getFallbackInfo("chief")).toMatchObject({
+      own: ["acp:gone", "acp:kept", "claude-opus-5"],
+      effective: ["acp:kept", "claude-opus-5"],
+      unavailable: ["acp:gone"],
+    });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("acp:kept");
+    // The same ACP agent added again works again.
+    registry.saveAcpAgent({ id: "gone", name: "Gone", command: "gone" });
+    expect(registry.getFallbackInfo("chief").unavailable).toEqual([]);
+  });
+
+  it("walks all 8 models in order, one try each, and stops: no loop", async () => {
+    const { registry } = await setup();
+    for (const id of ["a", "b", "c"]) registry.saveAcpAgent({ id, name: id, command: id });
+    registry.setFallbackModels({ botId: "chief", fallbackModels: [...EIGHT] });
+    const tried = new Set<string>();
+    const order: string[] = [];
+    for (let step = 0; step < 12; step += 1) {
+      const next = registry.chooseModel("chief", "gpt-5.6-luna", tried);
+      if (!next) break;
+      order.push(next);
+      tried.add(next);
+    }
+    expect(order).toEqual(["gpt-5.6-luna", ...EIGHT.filter((model) => model !== "gpt-5.6-luna")]);
+  });
+
+  it("a limit of the provider blocks its other models too, so a fallback on the same provider is not a way around it", async () => {
+    const { registry } = await setup();
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["gpt-5.6-terra", "claude-sonnet-5"] });
+    registry.reportFailure("gpt-5.6-luna", { kind: "usage-limit", resetsAt: null, message: "limit" });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("claude-sonnet-5");
+  });
+
+  it("chooses by models only: the call has no account input, so a fallback never moves an agent to another account", async () => {
+    const { registry } = await setup();
+    registry.setFallbackModels({ botId: "chief", fallbackModels: ["gpt-5.6-terra"] });
+    expect(registry.chooseModel("chief", "gpt-5.6-luna", new Set(["gpt-5.6-luna"]))).toBe("gpt-5.6-terra");
   });
 });

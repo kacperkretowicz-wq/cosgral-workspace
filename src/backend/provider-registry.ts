@@ -11,12 +11,16 @@ import {
   type AgentModelId,
   type AgentProviderId,
   type AgentProviderStatus,
+  acpModelId,
+  type FallbackModelsInfo,
   type FallbackModelsInput,
+  fallbackModelsProblem,
+  GENERAL_FALLBACK_SCOPE,
   isAcpAgentConfig,
   isAcpAgentId,
   isAcpModel,
-  isAgentModel,
   isClaudeModel,
+  normalizeFallbackModels,
   PROVIDER_LIMITS,
   type ProviderUsage,
   type SaveAcpAgentInput,
@@ -131,28 +135,57 @@ export class ProviderRegistry {
     this.#emit({ type: "acp-agents-changed", agents: this.listAcpAgents() });
   }
 
+  /** The agent's own saved list (for "*": the general list); empty when none is saved. Never more than 8, no repeats. */
   getFallbackModels(botId: string): AgentModelId[] {
-    const row = this.#database.connection
-      .prepare("SELECT models_json FROM projection_agent_fallback_models WHERE agent_id = ?")
-      .get(botId);
-    if (!isDynamicRecord(row)) return [];
-    const parsed = JSON.parse(text(row, "models_json"));
-    return Array.isArray(parsed) ? parsed.filter(isAgentModel) : [];
+    return this.#ownFallbackModels(botId) ?? [];
   }
 
   setFallbackModels(input: FallbackModelsInput): AgentModelId[] {
-    const models = input.fallbackModels;
-    if (models.length > PROVIDER_LIMITS.fallbackModels)
-      throw new Error(`At most ${PROVIDER_LIMITS.fallbackModels} fallback models.`);
-    if (!models.every(isAgentModel)) throw new Error("Unknown model in the fallback list.");
-    if (new Set(models).size !== models.length) throw new Error("A fallback model is listed twice.");
+    const problem = fallbackModelsProblem(input.fallbackModels);
+    if (problem) throw new Error(problem);
+    const models = [...input.fallbackModels];
     this.#database.connection
       .prepare(
         `INSERT INTO projection_agent_fallback_models (agent_id, models_json, updated_at) VALUES (?, ?, ?)
          ON CONFLICT(agent_id) DO UPDATE SET models_json = excluded.models_json, updated_at = excluded.updated_at`,
       )
       .run(input.botId, JSON.stringify(models), new Date(this.#now()).toISOString());
-    return [...models];
+    return models;
+  }
+
+  /** W5-BE4: the agent forgets its own list and follows the general list again (for "*": the general list is emptied). */
+  resetFallbackModels(botId: string): FallbackModelsInfo {
+    this.#database.connection.prepare("DELETE FROM projection_agent_fallback_models WHERE agent_id = ?").run(botId);
+    return this.getFallbackInfo(botId);
+  }
+
+  /** W5-BE4: where the list of an agent comes from and what is really tried after its own model. */
+  getFallbackInfo(botId: string): FallbackModelsInfo {
+    const own = this.#ownFallbackModels(botId);
+    const general = this.#ownFallbackModels(GENERAL_FALLBACK_SCOPE) ?? [];
+    const list = own ?? general;
+    // An ACP model whose agent was removed stays in the list (adding the agent again revives it) but is never tried.
+    const present = new Set(this.listAcpAgents().map((agent) => acpModelId(agent.id)));
+    const missing = { has: (model: AgentModelId) => isAcpModel(model) && !present.has(model) };
+    return {
+      botId,
+      own,
+      general,
+      effective: list.filter((model) => !missing.has(model)),
+      unavailable: list.filter((model) => missing.has(model)),
+    };
+  }
+
+  #ownFallbackModels(botId: string): AgentModelId[] | null {
+    const row = this.#database.connection
+      .prepare("SELECT models_json FROM projection_agent_fallback_models WHERE agent_id = ?")
+      .get(botId);
+    if (!isDynamicRecord(row)) return null;
+    try {
+      return normalizeFallbackModels(JSON.parse(text(row, "models_json")));
+    } catch {
+      return [];
+    }
   }
 
   /** A deleted agent's fallback list goes with it. */
@@ -190,7 +223,7 @@ export class ProviderRegistry {
 
   /** The first usable model of [own model, …fallbacks] not tried for this message yet; null when none is left. */
   chooseModel(botId: string, model: AgentModelId, tried: ReadonlySet<string>): AgentModelId | null {
-    for (const candidate of [model, ...this.getFallbackModels(botId)]) {
+    for (const candidate of [model, ...this.getFallbackInfo(botId).effective]) {
       if (!tried.has(candidate) && this.isUsable(candidate)) return candidate;
     }
     return null;

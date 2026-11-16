@@ -49,7 +49,7 @@ describe("providers IPC contract", () => {
     expect(isProviderUsage(usage)).toBe(true);
     expect(isProviderUsage({ ...usage, provider: "grok" })).toBe(false);
     expect(isProviderUsage({ ...usage, state: "busy" })).toBe(false);
-    expect(PROVIDER_LIMITS.fallbackModels).toBe(4);
+    expect(PROVIDER_LIMITS.fallbackModels).toBe(8);
   });
 
   it("accepts the three new events and has IPC channels", () => {

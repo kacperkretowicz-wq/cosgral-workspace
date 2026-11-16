@@ -23,6 +23,13 @@ export function registerProviderIpc(registry: ProviderRegistry): void {
   handleTrusted(IPC_CHANNELS.providersSetFallbackModels, (input: unknown) =>
     registry.setFallbackModels(localInput(input, parseFallbackModels)),
   );
+  // COSGRAL W5-BE4: where an agent's list comes from, and back to the general list.
+  handleTrusted(IPC_CHANNELS.providersGetFallbackInfo, (input: unknown) =>
+    registry.getFallbackInfo(localInput(input, parseFallbackBotId)),
+  );
+  handleTrusted(IPC_CHANNELS.providersResetFallbackModels, (input: unknown) =>
+    registry.resetFallbackModels(localInput(input, parseFallbackBotId)),
+  );
 }
 
 function isLocal(input: unknown): boolean {
