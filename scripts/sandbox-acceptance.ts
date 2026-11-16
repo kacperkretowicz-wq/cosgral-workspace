@@ -3474,6 +3474,16 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         const markedAfter = (await accountList()).filter((item) => item.limitedUntil !== null).length;
         assert(markedAfter === markedBefore, `no account was marked as limited (${markedBefore} > ${markedAfter})`);
         assert(!/Thinking/.test(await d.rowLabel("Assistant")), "the row is not stuck on Thinking");
+        // UI8: a calm card on the page (no Continue, no talk of a limit) that can be dismissed.
+        const card = page.getByRole("status", { name: /^Network error for / });
+        await card.first().waitFor({ timeout: 15_000 });
+        const cardText = await card.first().innerText();
+        assert(
+          /Connection problem/.test(cardText) && !/limit|Continue/i.test(cardText),
+          `the network card is calm: '${cardText.replace(/s+/g, " ").slice(0, 120)}'`,
+        );
+        await card.first().getByRole("button", { name: "Dismiss" }).click();
+        await card.first().waitFor({ state: "detached", timeout: 10_000 });
         await setLimits({});
         const again = await eventCount();
         await d.send("Assistant", "ACC n2");
@@ -3482,6 +3492,26 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         assert(!later.some((event) => event.type === "account-switched"), "the next turn is not a switch either");
         await d.dump("w5-f02n-network");
         return `all ${ids.length} accounts fail with a dropped connection > one account-error 'network-error' ('${String(failed?.message).slice(0, 70)}'), 0 account-switched, 0 account-limit-reached, limited accounts ${markedBefore} > ${markedAfter}, the row settles; connection back (limits cleared) > the next turn answers with no switch. NOT covered: the account-error card (UI8 is adding it)`;
+      },
+    );
+
+    await row(
+      "F03r",
+      "UI8: the page has the switch 'Return to the first account after the limit resets' (on by default); it is saved and comes back",
+      async () => {
+        await d.openPage("Providers");
+        const label = page.getByText("Return to the first account after the limit resets", { exact: true });
+        await label.waitFor({ timeout: 15_000 });
+        const returns = async () =>
+          asRecord(asRecord(await d.ev("window.openbot.subscriptions.listAccounts()")).pool).returnAfterReset;
+        assert((await returns()) !== false, "on by default");
+        await label.click();
+        await waitUntil(page, "the setting is saved off", async () => (await returns()) === false, 10_000);
+        const limit = asRecord(await d.ev("window.openbot.subscriptions.getPoolSettings()")).maxAccountsPerProvider;
+        await label.click();
+        await waitUntil(page, "the setting is saved on", async () => (await returns()) !== false, 10_000);
+        await d.dump("w5-f03r-switch");
+        return `default on > the label click saves 'off' (the limit ${String(limit)} stays) > on again`;
       },
     );
 
