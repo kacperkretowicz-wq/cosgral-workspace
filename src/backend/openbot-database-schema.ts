@@ -201,6 +201,20 @@ const SCHEMA_SQL = `
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT
   );
+  -- COSGRAL W6-BE1: what a person set on a thread of an agent (title, archive) and where a branch came from. A thread
+  -- without a row here is an ordinary thread with an automatic title (every thread from before W6).
+  CREATE TABLE IF NOT EXISTS projection_thread_meta (
+    thread_id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    archived_at TEXT,
+    parent_thread_id TEXT,
+    parent_title TEXT,
+    branched_from_message_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS thread_meta_agent ON projection_thread_meta(agent_id, created_at);
   -- COSGRAL W1: user folders in the sidebar and where each agent or channel sits.
   CREATE TABLE IF NOT EXISTS projection_sidebar_folders (
     folder_id TEXT PRIMARY KEY,

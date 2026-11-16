@@ -293,6 +293,17 @@ export class OpenBotDatabase {
   }
 
   hardDeleteAgent(commandId: string, botId: string, threadId: string | null, remainingAgents: BotSummary[]): void {
+    // COSGRAL W6-BE1: every other thread of the agent goes with it.
+    const otherThreadIds = [
+      ...databaseRows(
+        this.connection
+          .prepare(
+            `SELECT thread_id FROM projection_threads WHERE agent_id = ?
+             UNION SELECT thread_id FROM projection_thread_meta WHERE agent_id = ?`,
+          )
+          .all(botId, botId),
+      ).map((row) => requiredStringColumn(row, "thread_id")),
+    ].filter((id) => id !== threadId);
     this.dispatch(
       commandId,
       [
@@ -324,6 +335,16 @@ export class OpenBotDatabase {
         if (threadId) {
           db.prepare("DELETE FROM projection_threads WHERE thread_id = ?").run(threadId);
         }
+        for (const other of otherThreadIds) {
+          db.prepare(
+            `DELETE FROM orchestration_command_receipts WHERE command_id IN (
+               SELECT DISTINCT command_id FROM orchestration_events WHERE aggregate_id = ?
+             )`,
+          ).run(other);
+          db.prepare("DELETE FROM orchestration_events WHERE aggregate_id = ?").run(other);
+          db.prepare("DELETE FROM projection_threads WHERE thread_id = ?").run(other);
+        }
+        db.prepare("DELETE FROM projection_thread_meta WHERE agent_id = ?").run(botId);
         return null;
       },
     );
@@ -415,7 +436,8 @@ export class OpenBotDatabase {
         const sequence = sequences[0] ?? snapshot.revision;
         const agent = this.listAgents().find((candidate) => candidate.id === snapshot.botId);
         if (!agent) throw new Error(`Unknown agent for conversation: ${snapshot.botId}`);
-        this.#ensureThreadProjection(db, agent, sequence);
+        // COSGRAL W6-BE1: the thread of this snapshot, not the thread that is active now (a turn may finish in the background).
+        this.#ensureThreadProjection(db, { ...agent, threadId: snapshot.threadId }, sequence);
         db.prepare(
           `UPDATE projection_threads
            SET active_turn_id = ?, updated_at = ?, last_event_sequence = ? WHERE thread_id = ?`,

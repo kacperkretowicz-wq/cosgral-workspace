@@ -323,6 +323,8 @@ export interface QueueDelivery {
   id: string;
   messageId: string;
   recipientBotId: string;
+  /** COSGRAL W6-BE1: the thread of the agent this message belongs to; missing for a message from before threads. */
+  threadId?: string;
   sender: { kind: "user" } | { kind: "bot"; botId: string };
   text: string;
   attachments: AttachmentSummary[];
