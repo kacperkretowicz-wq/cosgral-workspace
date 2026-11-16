@@ -95,6 +95,7 @@ import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockSidebar } from "./mock-sidebar";
+import { createMockThreads } from "./mock-threads";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
 
@@ -1272,6 +1273,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         return () => remoteMacListeners.delete(listener);
       },
     },
+    // COSGRAL W6-BE1: several threads per agent (demo; `simulate` is only for stories that build the mock themselves).
+    threads: createMockThreads((event) => emitAgentEvent(event)),
     // COSGRAL W5-BE3: provider API keys (demo; the answers carry only a mask and a state).
     apiKeys: createMockApiKeysApi(),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).

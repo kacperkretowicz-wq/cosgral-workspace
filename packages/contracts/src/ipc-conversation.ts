@@ -60,6 +60,7 @@ import {
   type ManagedCliState,
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
+import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {
   isVaultItemSummary,
   isVaultRequest,
@@ -648,6 +649,10 @@ export type AgentEvent =
   | ({ type: "account-limit-reached" } & AccountLimitReached)
   /** COSGRAL W5-BE8: a turn on an account failed on the network, not on a limit; nothing switched (see AccountError). */
   | ({ type: "account-error" } & AccountError)
+  /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
+  | ({ type: "threads-changed" } & ThreadsChanged)
+  /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
+  | ({ type: "thread-activity" } & ThreadActivity)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -791,6 +796,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isAccountLimitReached(value);
     case "account-error":
       return isAccountError(value);
+    case "threads-changed":
+      return isThreadsChanged(value);
+    case "thread-activity":
+      return isThreadActivity(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":
