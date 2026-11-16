@@ -234,7 +234,9 @@ describe.sequential("AgentService with several threads per agent", {
     expect(leaked).toEqual([]);
     // What the window is told instead: the thread's state, the unread answer.
     expect(
-      events.slice(from).some((event) => event.type === "thread-activity" && event.threadId === a && event.unread === 1),
+      events
+        .slice(from)
+        .some((event) => event.type === "thread-activity" && event.threadId === a && event.unread === 1),
     ).toBe(true);
   });
 
