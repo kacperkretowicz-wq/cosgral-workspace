@@ -19,6 +19,7 @@ export * from "./ipc-desktop-apis";
 export * from "./ipc-dock";
 export * from "./ipc-endpoints";
 export * from "./ipc-eyes";
+export * from "./ipc-integrations";
 export * from "./ipc-isolation";
 export * from "./ipc-library";
 export * from "./ipc-marketplace";
