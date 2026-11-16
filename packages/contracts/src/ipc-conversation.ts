@@ -47,7 +47,11 @@ import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-ro
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
 import {
+  type AccountLimitReached,
+  type AccountSwitched,
   type AccountsSnapshot,
+  isAccountLimitReached,
+  isAccountSwitched,
   isAccountsSnapshot,
   isManagedCliState,
   type ManagedCliState,
@@ -633,6 +637,10 @@ export type AgentEvent =
   /** COSGRAL W5-BE1: a managed CLI changed (check, download progress, install, remove, settings). */
   | { type: "managed-cli-changed"; state: ManagedCliState }
   | ({ type: "accounts-changed" } & AccountsSnapshot)
+  /** COSGRAL W5-K1: a turn runs on another account than the agent's previous turn (limit moved it, or it is back). */
+  | ({ type: "account-switched" } & AccountSwitched)
+  /** COSGRAL W5-K1: an account hit its usage limit during a turn (see AccountLimitOutcome). */
+  | ({ type: "account-limit-reached" } & AccountLimitReached)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -768,6 +776,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isManagedCliState(value.state);
     case "accounts-changed":
       return isAccountsSnapshot(value);
+    case "account-switched":
+      return isAccountSwitched(value);
+    case "account-limit-reached":
+      return isAccountLimitReached(value);
     case "agent-mcp-changed":
       return isString(value.botId) && Array.isArray(value.settings) && value.settings.every(isAgentMcpServerSetting);
     case "agent-memory-changed":
