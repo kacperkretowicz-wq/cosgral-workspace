@@ -90,6 +90,11 @@ describe("phone access contract (W9-BE1)", () => {
     expect(buildPhonePushPayload({ agentName: "a".repeat(500), itemId: "x" }).agentName).toHaveLength(64);
     expect(isPhonePushPayload({ ...payload, question: "What is the password?" })).toBe(true); // extra keys are never sent
     expect(isPhonePushPayload({ ...payload, v: 2 })).toBe(false);
+    const test = buildPhonePushPayload({ agentName: "Test", itemId: "test", test: true });
+    expect(test).toMatchObject({ test: true });
+    expect(isPhonePushPayload(test)).toBe(true);
+    expect(isPhonePushPayload({ ...payload, test: false })).toBe(false);
+    expect(phonePushText(test)).toBe("This is a test notification from your computer");
   });
 
   it("a push subscription needs an https endpoint and base64url keys", () => {

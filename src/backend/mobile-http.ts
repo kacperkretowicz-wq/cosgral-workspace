@@ -17,6 +17,10 @@ import {
   type MobileSendMessageResponse,
   type MobileTemplateSummary,
   type MobileThread,
+  type PhonePushKeyResponse,
+  type PhoneSessionState,
+  type PhoneUnlockResponse,
+  type PhoneWrongPinResponse,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
 
@@ -43,7 +47,12 @@ export type MobileWire =
   | MobileAnswerResponse
   | { templates: MobileTemplateSummary[] }
   | MobileCreateAgentResponse
-  | { agent: MobileAgentDetail };
+  | { agent: MobileAgentDetail }
+  // COSGRAL W9-BE1: the lock, the PIN and push of the phone.
+  | PhoneSessionState
+  | PhoneUnlockResponse
+  | PhoneWrongPinResponse
+  | PhonePushKeyResponse;
 
 export async function readJson(
   request: IncomingMessage,

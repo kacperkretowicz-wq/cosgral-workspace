@@ -38,6 +38,7 @@ import type { MobilePhoneApi } from "./mobile-phone-api";
 import { phoneAnswerPolicy } from "./mobile-policy";
 import { buildPairingQr } from "./mobile-qr";
 import type { MobileStore, MobileStoredCertificate } from "./mobile-store";
+import type { PhoneAccess } from "./phone-access";
 
 type InterfaceMap = Record<
   string,
@@ -57,6 +58,8 @@ export interface MobileConnectOptions {
   interfaces?: () => InterfaceMap;
   /** COSGRAL W3 (rows 43–44): chat, answers, events and agents for paired phones. */
   phone?: MobilePhoneApi;
+  /** COSGRAL W9-BE1: the PIN lock and push of the phones (the gate every phone call passes). */
+  access?: Pick<PhoneAccess, "gate" | "handle" | "forget">;
 }
 
 interface OpenPairing {
@@ -202,6 +205,7 @@ export class MobileConnect {
     }
     this.#clearPairing();
     this.#newCertificate();
+    this.#options.access?.forget();
     if (this.#server) {
       const exposure = this.#exposure;
       const port = this.#port ?? this.#options.store.settings().port;
@@ -232,6 +236,7 @@ export class MobileConnect {
     if (!this.#options.store.removeDevice(input.deviceId)) throw new Error("This device is no longer paired.");
     // COSGRAL W3: its open event streams end at once too.
     this.#options.phone?.disconnect(input.deviceId);
+    this.#options.access?.forget();
     this.#changed();
     return this.getState();
   }
@@ -344,16 +349,20 @@ export class MobileConnect {
       }
       if (PHONE_PATHS.has(path) && request.method === "GET") {
         const device = this.#authenticate(request, address);
+        this.#options.access?.gate(device, path);
         if (path === MOBILE_API_PATHS.me) sendJson(response, 200, { protocol: MOBILE_PROTOCOL_VERSION, device });
         else if (path === MOBILE_API_PATHS.agents) sendJson(response, 200, { agents: this.#options.agents() });
         else sendJson(response, 200, { items: this.#options.needsYou() });
         return;
       }
       const phone = this.#options.phone;
-      if (phone && path.startsWith("/v1/")) {
+      const access = this.#options.access;
+      if ((phone || access) && path.startsWith("/v1/")) {
         const device = this.#authenticate(request, address);
         const query = new URLSearchParams((request.url ?? "").split("?")[1] ?? "");
-        if (await phone.handle({ request, response, path, query, device })) return;
+        access?.gate(device, path);
+        if (access && (await access.handle({ request, response, path, query, device }))) return;
+        if (phone && (await phone.handle({ request, response, path, query, device }))) return;
       } else if (PHONE_PATHS.has(path)) {
         throw new HttpError(405, "Use GET.");
       }

@@ -65,11 +65,13 @@ export interface PhonePushPayload {
   agentName: string;
   /** The card to open when the notification is tapped. */
   itemId: string;
+  /** A test notification from the computer: it says so and opens nothing. */
+  test?: true;
 }
 
 /** The only sentence a notification shows. */
-export function phonePushText(payload: Pick<PhonePushPayload, "agentName">): string {
-  return `${payload.agentName} is waiting for you`;
+export function phonePushText(payload: Pick<PhonePushPayload, "agentName" | "test">): string {
+  return payload.test ? "This is a test notification from your computer" : `${payload.agentName} is waiting for you`;
 }
 
 /** Shown next to the push switch (Q11): honest about the one thing that does leave the local network. */
@@ -100,11 +102,9 @@ export interface PhoneSessionState {
   push: PhoneSessionPush;
 }
 
-/** What a locked phone gets from any other `/v1/…` path: 423 with this body. */
-export interface PhoneLockedResponse {
-  error: string;
-  code: "pin-required";
-}
+/** What a locked phone gets from any other `/v1/…` path: status 423 and `{ error }` (the web app reads the status). */
+export const PHONE_LOCKED_STATUS = 423;
+export const PHONE_LOCKED_MESSAGE = "Enter the PIN to continue.";
 
 export interface PhoneUnlockResponse {
   ok: true;
@@ -333,12 +333,13 @@ export function parsePhonePushTestInput(input: unknown): PhonePushTestInput {
 }
 
 /** A notification payload is only what a phone may show: the agent's name and the card to open. */
-export function buildPhonePushPayload(input: { agentName: string; itemId: string }): PhonePushPayload {
+export function buildPhonePushPayload(input: { agentName: string; itemId: string; test?: true }): PhonePushPayload {
   return {
     v: 1,
     kind: "needs-you",
     agentName: input.agentName.replace(/\s+/g, " ").trim().slice(0, PHONE_ACCESS_LIMITS.agentName) || "An agent",
     itemId: input.itemId.slice(0, PHONE_ACCESS_LIMITS.itemId),
+    ...(input.test ? { test: true as const } : {}),
   };
 }
 
@@ -354,7 +355,8 @@ export function isPhonePushPayload(value: unknown): value is PhonePushPayload {
     value.agentName.length <= PHONE_ACCESS_LIMITS.agentName &&
     isString(value.itemId) &&
     value.itemId.length > 0 &&
-    value.itemId.length <= PHONE_ACCESS_LIMITS.itemId
+    value.itemId.length <= PHONE_ACCESS_LIMITS.itemId &&
+    (value.test === undefined || value.test === true)
   );
 }
 

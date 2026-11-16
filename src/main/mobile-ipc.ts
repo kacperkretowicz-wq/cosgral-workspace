@@ -14,6 +14,8 @@ import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-c
 import { MobilePhoneApi, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
 import type { OpenBotDatabase } from "../backend/openbot-database";
+import { PhoneAccess } from "../backend/phone-access";
+import { PhoneAccessStore } from "../backend/phone-access-store";
 import type { SecretBox } from "../backend/vault-store";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import { parseMobileDeviceId, parseStartMobilePairing } from "./ipc/mobile-inputs";
@@ -31,6 +33,8 @@ export interface MobileRuntimeOptions {
   phone?: MobilePhoneHost;
   /** COSGRAL W3-BE7: keeps the TLS key encrypted (safeStorage); without it only plain loopback works. */
   secretBox?: SecretBox;
+  /** COSGRAL W9-BE1: gets the PIN lock and push of the phones (for the window's IPC and the shutdown). */
+  onPhoneAccess?: (access: PhoneAccess) => void;
 }
 
 /** What the phone API uses of the agent service. */
@@ -90,15 +94,41 @@ export function mobilePhoneHost(
 }
 
 export function createMobileConnect(options: MobileRuntimeOptions): MobileConnect {
+  const phone = options.phone ? new MobilePhoneApi({ host: options.phone }) : null;
+  // COSGRAL W9-BE1: the PIN lock and Web Push of the phones; `mobile` is looked up when needed (it is made just below).
+  const live: { mobile: MobileConnect | null } = { mobile: null };
+  const current = (): MobileConnect => {
+    if (!live.mobile) throw new Error("Mobile Connect is not ready yet.");
+    return live.mobile;
+  };
+  const access = new PhoneAccess({
+    store: new PhoneAccessStore(join(options.userDataPath, "phone-access.json"), options.secretBox),
+    mobile: () => current().getState(),
+    needsYou: () => mobileNeedsYou(options.pending()),
+    agentName: (botId) => options.bots().find((bot) => bot.id === botId)?.name ?? null,
+    subscribe: options.phone
+      ? (listener) => options.phone?.subscribe(listener) ?? (() => undefined)
+      : () => () => undefined,
+    removeDevice: (deviceId) => current().revokeDevice({ deviceId }),
+    disconnectDevice: (deviceId) => phone?.disconnect(deviceId),
+    emit: options.emit,
+  });
   const mobile = new MobileConnect({
     store: new MobileStore(join(options.userDataPath, "mobile.json"), options.secretBox),
     agents: () => mobileAgents(options.bots()),
     needsYou: () => mobileNeedsYou(options.pending()),
     confirm: options.confirm,
     canAsk: options.canAsk,
-    emit: options.emit,
-    ...(options.phone ? { phone: new MobilePhoneApi({ host: options.phone }) } : {}),
+    emit: (event) => {
+      options.emit(event);
+      if (event.type === "mobile-changed") access.refresh();
+    },
+    ...(phone ? { phone } : {}),
+    access,
   });
+  live.mobile = mobile;
+  access.start();
+  options.onPhoneAccess?.(access);
   mobile.resume().catch((error: unknown) => console.error("Mobile Connect could not start:", error));
   return mobile;
 }

@@ -56,6 +56,7 @@ import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
 import type { MobileConnect } from "../backend/mobile-connect";
+import type { PhoneAccess } from "../backend/phone-access";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
@@ -181,6 +182,7 @@ import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerMessageActionsIpc } from "./message-actions-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
+import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
@@ -312,6 +314,7 @@ let endpointStore: EndpointStore | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
+let phoneAccess: PhoneAccess | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -901,6 +904,8 @@ function registerIpcHandlers(
   registerEndpointsIpc(() => endpointStore);
   registerContextIpc(() => agentService);
   registerMobileIpc(() => mobileConnect);
+  // COSGRAL W9-BE1: the phone away from home (this computer only).
+  registerPhoneIpc(() => phoneAccess);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1565,6 +1570,9 @@ if (!hasSingleInstanceLock) {
         emit: (event) => forwardAgentEvent("local", event),
         phone: mobilePhoneHost(service, store.database),
         secretBox: electronSecretBox(),
+        onPhoneAccess: (access) => {
+          phoneAccess = access;
+        },
       });
       // COSGRAL W3: the agent dock and the Dynamic Island (own windows, settings in dock.json).
       dockWindows = createDockWindows({
@@ -2032,6 +2040,7 @@ async function prepareForShutdown(): Promise<void> {
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
   await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   managedCli?.close();
+  phoneAccess?.close();
   await (mobileConnect?.close() ?? Promise.resolve()).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   // COSGRAL W3: open workflow runs end as failed while the database is still open.
