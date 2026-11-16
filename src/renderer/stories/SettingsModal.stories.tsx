@@ -5,7 +5,13 @@ import { SettingsModal } from "../src/components/SettingsModal";
 import { Button, Heading, Text } from "../src/components/ui";
 import { createMockOpenBot } from "./mock-openbot";
 
-function SettingsModalStory(props: { initialOpen: boolean }) {
+function SettingsModalStory(props: { initialOpen: boolean; theme?: "dark" | "light" }) {
+  const previousTheme = document.documentElement.getAttribute("data-theme");
+  document.documentElement.setAttribute("data-theme", props.theme ?? "dark");
+  onCleanup(() => {
+    if (previousTheme) document.documentElement.setAttribute("data-theme", previousTheme);
+    else document.documentElement.removeAttribute("data-theme");
+  });
   const previousApi = window.openbot;
   const mock = createMockOpenBot();
   window.openbot = mock.api;
@@ -93,3 +99,5 @@ export const Interactive: Story = {
     await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
+
+export const OpenLight: Story = { render: () => <SettingsModalStory initialOpen theme="light" /> };

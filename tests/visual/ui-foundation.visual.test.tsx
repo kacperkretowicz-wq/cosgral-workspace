@@ -113,6 +113,14 @@ test("representative application screens are visually stable", async () => {
 
     await expect.element(page.getByRole("heading", { name: "Chief" })).toBeVisible();
     expect(document.querySelector(".search-field > svg")?.getBoundingClientRect().width).toBe(16);
+    expect(document.querySelector(".app-frame")?.getBoundingClientRect().height).toBeLessThanOrEqual(
+      window.innerHeight,
+    );
+    const threadDescription = [...document.querySelectorAll(".bot-row-avatar .sr-only")].find((node) =>
+      node.textContent?.includes("running"),
+    );
+    expect(threadDescription?.getBoundingClientRect().width).toBe(1);
+    expect(threadDescription?.getBoundingClientRect().height).toBe(1);
     await expect(page.getByTestId("application-screen")).toMatchScreenshot("application");
 
     await page.getByRole("button", { name: "Add remote server" }).click();
