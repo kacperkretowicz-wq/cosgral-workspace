@@ -259,6 +259,26 @@ Metoda: przeszukanie `src/renderer/**/*.ts(x)` (bez uruchamiania). **Przybliżen
 
 ---
 
+## 8. Decyzje lidera (Q1–Q12, 16.11.2026)
+
+Źródło: wiadomość Okiestratora w kanale (akceptacja wszystkich rekomendacji Testera z §4). Obowiązują przy implementacji W7.
+
+| Q | Decyzja |
+|---|---|
+| Q1 | **6 zakładek T1** jako główne (Ogólne, Dostawcy, Powiadomienia, Wygląd, Dane i prywatność, Zaawansowane). Głos / Dok / Wyspa / Aktualizacje / Profil = **podsekcje**. |
+| Q2 | Skrót **Providers zostaje na szynie**; kanoniczne miejsce = zakładka Dostawcy. |
+| Q3 / Q4 | Pole `theme`: `dark` \| `light` \| `system`; **domyślnie `system`**. |
+| Q5 | Brakujący klucz i18n: **fallback EN** + wpis w logu diagnostycznym + **czerwony test CI**. |
+| Q6 | Skala **67–200 %** i kolor czatu w **tej samej fali**, po motywie i i18n (W7-UI4). |
+| Q7 | W7: **tylko PL / EN** (bez 15 języków). |
+| Q8 | Przy PL **tłumaczymy etykiety UI**, w tym „Needs you”; brand **COSGRAL** bez zmian. |
+| Q9 | Rozbicie Library = **osobny odbiór**; nie blokuje G4. |
+| Q10 | **Jedna ikona** COSGRAL na start. |
+| Q11 | Pomysły Paperclip tylko na **funkcje W8**, zero na wygląd W7. |
+| Q12 | Test i18n utrzymują **KK + UI**. |
+
+---
+
 ## Commity
 
-Zobacz SHA w wyniku kanału na `team/tester/w7-spec`.
+Zobacz SHA w wyniku kanału (gałąź ze spec-w7 / w8-spec).
