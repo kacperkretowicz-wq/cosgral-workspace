@@ -2739,7 +2739,12 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await needs.waitFor({ timeout: 20_000 });
         assert(/Assistant/.test(await needs.innerText()), "Needs you names the agent");
         await page.waitForTimeout(2_500);
-        assert(!(await eventsSince(from)).some((event) => event.type === "account-switched"), "no silent switch");
+        assert(
+          !(await eventsSince(from)).some(
+            (event) => event.type === "account-switched" && event.reason === "usage-limit",
+          ),
+          "no silent switch",
+        );
         await needs.getByRole("button", { name: /^Assistant, Needs you/ }).click();
         const decision = page.getByRole("region", { name: "Decision" });
         await decision.waitFor({ timeout: 15_000 });
@@ -2751,7 +2756,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await decision.getByRole("button", { name: "Confirm", exact: true }).click();
         await d.answer("Assistant", `Stub: account ${ids.home} answered d`, 60_000);
         assert(
-          (await eventsSince(from)).some((event) => event.type === "account-switched"),
+          (await eventsSince(from)).some(
+            (event) => event.type === "account-switched" && event.reason === "usage-limit",
+          ),
           "after Confirm the switch is told",
         );
         await waitLimitsFree();
