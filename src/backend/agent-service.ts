@@ -713,6 +713,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W3: attach the provider registry (ACP agents, fallback models, usage). */
   useProviders(providers: ProviderRegistry): void {
     this.#providers = providers;
+    // W5-BE5: a fallback model of a removed own endpoint is never tried.
+    providers.useEndpointLookup((id) => this.#endpoints?.get(id) != null);
+  }
+
+  /** W5-BE5: whether the agent's account pool has a free account of this provider (accounts before fallback models). */
+  #accountFree(botId: string): (provider: string) => boolean {
+    return (provider) =>
+      (provider === "codex" || provider === "claude") && this.#accountRouter?.route(botId, provider).kind === "use";
   }
 
   /**
@@ -752,7 +760,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const tried = this.#triedModels.get(deliveryId) ?? new Set<string>();
     if (this.#triedModels.size > 500) this.#triedModels.clear();
     this.#triedModels.set(deliveryId, tried);
-    const choice = providers.chooseModel(current.id, current.model, tried) ?? previous;
+    const choice = providers.chooseModel(current.id, current.model, tried, this.#accountFree(current.id)) ?? previous;
     tried.add(choice);
     if (choice === previous) return current;
     this.#store.setActiveModel(current.id, choice);
@@ -778,7 +786,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const model = bot.activeModel ?? bot.model;
     if (!providers.reportFailure(model, failure)) return false;
     const tried = this.#triedModels.get(delivery.id) ?? new Set([model]);
-    if (!providers.chooseModel(botId, bot.model, tried)) return false;
+    if (!providers.chooseModel(botId, bot.model, tried, this.#accountFree(botId))) return false;
     await this.#mailbox.restoreQueued(delivery.id, ["running"]);
     this.#emitQueue(botId);
     this.#scheduleDrain(botId);
