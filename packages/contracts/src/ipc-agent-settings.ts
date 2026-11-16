@@ -178,6 +178,12 @@ export interface NotificationPreferences {
   onlyWhenUnfocused: boolean;
 }
 
+export const APP_THEMES = ["dark", "light", "system"] as const;
+export type AppTheme = (typeof APP_THEMES)[number];
+export function normalizeAppTheme(value: unknown): AppTheme {
+  return value === "dark" || value === "light" ? value : "system";
+}
+
 export const APP_LANGUAGES = ["en", "pl"] as const;
 export type AppLanguage = (typeof APP_LANGUAGES)[number];
 
@@ -225,6 +231,7 @@ export interface AppNavigationSettings {
 }
 
 export interface AppSettings {
+  theme: AppTheme;
   language: AppLanguage;
   /** False until the person chose a language (onboarding or settings); agents then get no language note. */
   languageChosen: boolean;
@@ -234,6 +241,7 @@ export interface AppSettings {
 }
 
 export interface UpdateAppSettingsInput {
+  theme?: AppTheme;
   language?: AppLanguage;
   notifications?: {
     matrix?: Partial<Record<NotificationEvent, Partial<Record<NotificationChannel, boolean>>>>;
@@ -360,6 +368,7 @@ function isNotificationPreferences(value: unknown): value is NotificationPrefere
 export function isAppSettings(value: unknown): value is AppSettings {
   return (
     isDynamicRecord(value) &&
+    isOneOf(APP_THEMES, value.theme) &&
     isOneOf(APP_LANGUAGES, value.language) &&
     isBoolean(value.languageChosen) &&
     isNotificationPreferences(value.notifications) &&

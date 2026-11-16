@@ -69,7 +69,12 @@ const styles = readFileSync(stylesPath, "utf8");
 const paletteEnd = styles.indexOf("\n}\n", styles.indexOf(":root"));
 const featureStyles = filesUnder(resolve(rendererRoot, "styles"))
   .filter((path) => path.endsWith(".css"))
-  .map((path) => readFileSync(path, "utf8"))
+  .map((path) => {
+    const source = readFileSync(path, "utf8");
+    // The light palette is a token definition boundary, like :root in styles.css.
+    // Keep checking ordinary declarations in it; only palette definitions are exempt.
+    return path.endsWith("theme-light.css") ? source.replace(/--openbot-[\w-]+\s*:[^;{}]+;/gu, "") : source;
+  })
   .join("\n");
 const legacyStyles = `${styles.slice(paletteEnd + 3)}\n${featureStyles}`;
 const declarationValues = cssDeclarationValues(legacyStyles);

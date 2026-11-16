@@ -22,6 +22,7 @@ import {
   type AppLanguage,
   type AppPageId,
   type AppSettings,
+  type AppTheme,
   type BotSummary,
   defaultNotificationPreferences,
   isClaudeModel,
@@ -29,6 +30,7 @@ import {
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   type NotificationPreferences,
+  normalizeAppTheme,
   SETTINGS_TABS,
   type SettingsTabId,
   type UpdateAgentSettingsInput,
@@ -112,6 +114,7 @@ export interface AgentSettingsDeps {
 
 /** What is kept in projection_app_settings under the key 'app'. */
 interface StoredAppSetting {
+  theme: AppTheme;
   language: AppLanguage | null;
   notifications: NotificationPreferences;
   pinnedPageIds: AppPageId[];
@@ -267,6 +270,7 @@ export class AgentSettingsService {
     const availability = this.#deps.availability();
     const extra = this.#deps.tabFeatures?.() ?? {};
     return {
+      theme: stored.theme,
       language: stored.language ?? "en",
       languageChosen: stored.language !== null,
       notifications: stored.notifications,
@@ -281,6 +285,7 @@ export class AgentSettingsService {
 
   async updateAppSettings(input: UpdateAppSettingsInput): Promise<AppSettings> {
     const stored = this.#readAppSetting();
+    if (input.theme !== undefined) stored.theme = normalizeAppTheme(input.theme);
     if (input.language !== undefined) {
       if (!isOneOf(APP_LANGUAGES, input.language)) throw new Error("language must be en or pl.");
       stored.language = input.language;
@@ -328,6 +333,7 @@ export class AgentSettingsService {
 
   #loadAppSetting(): StoredAppSetting {
     const defaults: StoredAppSetting = {
+      theme: "system",
       language: null,
       notifications: defaultNotificationPreferences(),
       pinnedPageIds: [...APP_PAGE_IDS],
@@ -358,6 +364,7 @@ export class AgentSettingsService {
     // Stored ids are checked again: an unknown or repeated id (older or edited data) is dropped, not trusted.
     const pinnedPageIds = keepPinnedPages(Array.isArray(parsed.pinnedPageIds) ? parsed.pinnedPageIds : []);
     return {
+      theme: normalizeAppTheme(parsed.theme),
       language: isOneOf(APP_LANGUAGES, parsed.language) ? parsed.language : null,
       notifications,
       pinnedPageIds,

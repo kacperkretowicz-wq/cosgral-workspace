@@ -16,6 +16,7 @@ import {
   isReasoningEffort,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
+  normalizeAppTheme,
   type SaveAgentTemplateInput,
   type UpdateAgentSettingsInput,
   type UpdateAppSettingsInput,
@@ -107,8 +108,9 @@ export function parseAgentTemplateId(value: unknown): AgentTemplateIdInput {
 }
 
 export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
-  const input = record(value, "app settings", ["language", "notifications", "navigation"]);
+  const input = record(value, "app settings", ["theme", "language", "notifications", "navigation"]);
   const result: UpdateAppSettingsInput = {};
+  if (input.theme !== undefined) result.theme = normalizeAppTheme(input.theme);
   if (input.language !== undefined) {
     if (!isOneOf(APP_LANGUAGES, input.language)) throw new Error("language must be en or pl.");
     result.language = input.language;

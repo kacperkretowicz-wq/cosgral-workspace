@@ -6,6 +6,10 @@ import { IslandApp } from "./dock/IslandApp";
 import "./styles.css";
 import "./dock/dock.css";
 
+import { startTheme } from "./theme";
+
+startTheme();
+
 const root = document.getElementById("root");
 
 if (!root) {

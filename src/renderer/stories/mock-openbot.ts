@@ -68,6 +68,7 @@ import {
   isPinnedPageIdList,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
+  normalizeAppTheme,
   SETTINGS_TABS,
 } from "@openbot/contracts/ipc";
 import { isBoolean, isOneOf, isString } from "@openbot/contracts/runtime-values";
@@ -193,6 +194,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let setupState = clone<AppSetupState>(options.setupState ?? { completed: true, preferredProvider: "codex" });
   let appSettingsState: AppSettings = {
     language: "en",
+    theme: "system",
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
@@ -700,6 +702,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         }
         appSettingsState = {
           ...appSettingsState,
+          ...(input.theme !== undefined ? { theme: normalizeAppTheme(input.theme) } : {}),
           ...(input.language ? { language: input.language, languageChosen: true } : {}),
           notifications,
           navigation: input.navigation
