@@ -44,6 +44,7 @@ const NEW_ACCOUNT_ID = /^acc-[a-z0-9]{8,32}$/;
 export const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
 const STATUS_TIMEOUT_MS = 30_000;
 const OUTPUT_LIMIT = 64 * 1024;
+const EXIT_GRACE_MS = 750;
 const IDLE: AccountLogin = { phase: "idle", message: null, url: null, userCode: null };
 
 /** A running sign-in process (the default runs the CLI; tests use a fake CLI). */
@@ -630,9 +631,17 @@ export const nodeCliRunner: AccountCliRunner = {
         clearTimeout(timer);
         fail(error);
       });
-      child.once("close", (code) => {
+      let settled = false;
+      const settle = (code: number | null) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         done({ code: code ?? 1, output });
+      };
+      child.once("close", settle);
+      // A helper process that keeps the output open must not hold the answer back after the CLI itself has exited.
+      child.once("exit", (code) => {
+        setTimeout(() => settle(code), EXIT_GRACE_MS).unref();
       });
     }),
   start: (executable, args, env) => {
@@ -646,6 +655,10 @@ export const nodeCliRunner: AccountCliRunner = {
     };
     child.once("error", () => finish(null));
     child.once("close", (code) => finish(code));
+    // The CLI itself has exited: do not wait for a helper that keeps its output open (it would stall the sign-in).
+    child.once("exit", (code) => {
+      setTimeout(() => finish(code), EXIT_GRACE_MS).unref();
+    });
     return {
       onOutput: (listener) => {
         child.stdout?.on("data", (chunk: Buffer) => listener(chunk.toString("utf8")));

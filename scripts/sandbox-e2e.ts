@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
-import { mkdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import { Agent, request } from "node:https";
 import { dirname, join, resolve, sep } from "node:path";
@@ -800,6 +800,61 @@ async function main(): Promise<void> {
         assert(existsSync(fixture.codex), "The CLI the program runs (not downloaded) is untouched");
       },
     );
+    await step("accounts: add, sign in and out on the fake CLI, limit, remove; the system account stays", async () => {
+      // W5-BE2: the Codex stand-in plays `codex login` / `login status` / `logout` with its own marker in CODEX_HOME.
+      const call = async (code: string) => asRecord(await page.evaluate(`window.openbot.subscriptions.${code}`));
+      const refused = async (code: string) =>
+        page
+          .evaluate(`window.openbot.subscriptions.${code}.then(() => "ok", (error) => String(error.message ?? error))`)
+          .then(String);
+      const accountsOf = (snapshot: DynamicRecord) =>
+        Array.isArray(snapshot.accounts) ? snapshot.accounts.map(asRecord) : [];
+      const first = await call("listAccounts()");
+      const system = accountsOf(first).find((item) => item.id === "system-codex");
+      assert.equal(system?.isDefault, true, "The system account is the default");
+      assert.equal(asRecord(first.pool).maxAccountsPerProvider, 3);
+      assert.match(await refused("logoutAccount({ id: 'system-codex' })"), /stays/);
+      assert.match(await refused("removeAccount({ id: 'system-codex' })"), /cannot be removed/);
+
+      const added = await call("addAccount({ provider: 'codex', label: 'Sandbox work' })");
+      const id = String(added.id);
+      assert.equal(added.loggedIn, false, "A new account starts signed out");
+      const roaming = join(root, "home", "AppData", "Roaming");
+      const folders = (await readdir(roaming)).map((name) => join(roaming, name, "accounts", id)).filter(existsSync);
+      assert.equal(folders.length, 1, "The account has its own folder in the sandbox data folder");
+
+      await call(`loginAccount({ id: ${JSON.stringify(id)} })`);
+      let account: DynamicRecord = {};
+      for (let attempt = 0; attempt < 160; attempt += 1) {
+        await page.waitForTimeout(250);
+        account = accountsOf(await call("listAccounts()")).find((item) => item.id === id) ?? {};
+        const phase = asRecord(account.login).phase;
+        if (phase === "success" || phase === "error") break;
+      }
+      console.log(
+        `     signed in: ${JSON.stringify({ loggedIn: account.loggedIn, plan: account.plan, login: account.login })}`,
+      );
+      assert.equal(asRecord(account.login).phase, "success", "The fake sign-in finishes");
+      assert.equal(account.loggedIn, true);
+      assert.equal(account.plan, "ChatGPT");
+      assert(
+        String(asRecord(account.login).url ?? "").startsWith("https://example.invalid/"),
+        "The sign-in page is shown",
+      );
+
+      const out = await call(`logoutAccount({ id: ${JSON.stringify(id)} })`);
+      assert.equal(out.loggedIn, false, "Signed out");
+      const second = await call("addAccount({ provider: 'codex', label: 'Second' })");
+      assert.match(await refused("addAccount({ provider: 'codex', label: 'Third' })"), /limit is 3/);
+      await call(`removeAccount({ id: ${JSON.stringify(id)} })`);
+      const last = await call(`removeAccount({ id: ${JSON.stringify(String(second.id))} })`);
+      assert(!existsSync(folders[0] ?? ""), "The account folder is removed");
+      assert.deepEqual(
+        accountsOf(last).map((item) => item.id),
+        ["system-codex", "system-claude"],
+        "Only the system accounts stay",
+      );
+    });
     await step("ipc: every read-only call of window.openbot answers", async () => {
       const answers = await page.evaluate(GETTER_SMOKE);
       const results = (Array.isArray(answers) ? answers : []).map((item) => {

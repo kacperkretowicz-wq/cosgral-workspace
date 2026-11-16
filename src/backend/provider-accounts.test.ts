@@ -36,6 +36,7 @@ if (verb === "status") {
 if (verb === "logout") { if (marker) fs.rmSync(marker, { force: true }); process.exit(0); }
 const mode = process.env.FAKE_MODE || "ok";
 if (mode === "fail") { console.error("login failed"); process.exit(3); }
+if (mode === "helper") require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 20000)"], { stdio: "inherit" }).unref();
 if (mode === "hang") { console.log("Open https://example.invalid/sign-in"); setInterval(() => {}, 1000); }
 else if (mode === "code") {
   console.log("Browser didn't open? Use the url below to sign in:\nhttps://example.invalid/oauth?x=1\nPaste code here if prompted > ");
@@ -220,6 +221,19 @@ describe("provider accounts engine (W5-BE2)", () => {
     expect(everything).not.toContain("person@example.com");
   });
 
+  it("finishes when the CLI exits even if a helper process keeps its output open", async () => {
+    const { accounts, env } = await setup();
+    env.FAKE_MODE = "helper";
+    const codex = await accounts.add("codex", "Work");
+    await accounts.login(codex.id);
+    const done = await until(
+      () => accounts.account(codex.id),
+      (item) => item.login.phase !== "waiting-for-browser",
+      8000,
+    );
+    expect(done).toMatchObject({ loggedIn: true, login: { phase: "success" } });
+  });
+
   it("ends a failed or too long sign-in as error and stops only its own process", async () => {
     const { accounts, env, starts } = await setup({ loginTimeoutMs: 1500 });
     const claude = await accounts.add("claude", "Home");
@@ -293,6 +307,21 @@ describe("provider accounts engine (W5-BE2)", () => {
       expect(await readFile(join(outside, "keep.txt"), "utf8")).toBe("keep me");
     },
   );
+
+  it("the runner answers when the CLI exits, even if a helper keeps the output open", async () => {
+    const script = `require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 15000)"], { stdio: ["ignore", "inherit", "inherit"], detached: true }).unref(); console.log("Logged in using ChatGPT");`;
+    const started = Date.now();
+    const result = await nodeCliRunner.run(process.execPath, ["-e", script], { ...process.env }, 12_000);
+    expect(result.code).toBe(0);
+    expect(result.output).toContain("Logged in using ChatGPT");
+    expect(Date.now() - started).toBeLessThan(6000);
+    const exits: (number | null)[] = [];
+    const login = nodeCliRunner.start(process.execPath, ["-e", script], { ...process.env });
+    login.onExit((code) => exits.push(code));
+    const waited = Date.now();
+    while (exits.length === 0 && Date.now() - waited < 6000) await new Promise((r) => setTimeout(r, 25));
+    expect(exits).toEqual([0]);
+  }, 20_000);
 
   it("opens a terminal for sign-in only after a yes (workaround R2)", async () => {
     const opened: NodeJS.ProcessEnv[] = [];
