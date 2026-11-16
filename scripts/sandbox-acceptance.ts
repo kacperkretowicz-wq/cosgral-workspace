@@ -198,16 +198,65 @@ class Driver {
   readonly evidence: string;
   /** The Electron handle: answers the native file pickers and records shell calls in the main process. */
   readonly app: ElectronApplication | undefined;
+  readonly devtools: Promise<import("playwright").CDPSession>;
 
   constructor(page: Page, evidence: string, app?: ElectronApplication) {
     this.page = page;
     this.evidence = evidence;
     this.app = app;
     dumpOnFailure = (name) => this.dump(name);
+    // Made while the page still answers: a stuck page cannot start a new DevTools session.
+    this.devtools = page
+      .context()
+      .newCDPSession(page)
+      .then(async (session) => {
+        await session.send("Debugger.enable");
+        return session;
+      });
+    this.devtools.catch(() => undefined);
   }
 
   async ev(expression: string): Promise<unknown> {
-    return this.page.evaluate(expression);
+    // A window that stops answering (a busy loop in the page) must not hang the whole run: after 45 s the row fails
+    // and the place where the page stands is written to the evidence (Debugger.pause through the DevTools protocol).
+    let timer: NodeJS.Timeout | undefined;
+    const stuck = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("The window does not answer (the page is stuck)")), 90_000);
+    });
+    if (process.env.COSGRAL_TRACE) console.log(`     ev> ${expression.slice(0, 110)}`);
+    try {
+      return await Promise.race([this.page.evaluate(expression), stuck]);
+    } catch (error) {
+      if (error instanceof Error && /does not answer/.test(error.message))
+        await this.pageStack().catch(() => undefined);
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Where the (stuck) page stands: the call stack at a pause, written to the evidence folder. */
+  async pageStack(): Promise<void> {
+    const cdp = await this.devtools;
+    const paused = new Promise<string>((done) => {
+      cdp.once("Debugger.paused", (event) => {
+        done(
+          event.callFrames
+            .slice(0, 25)
+            .map(
+              (frame) =>
+                `${frame.functionName || "(anonymous)"} ${frame.url.split("/").pop()}:${frame.location.lineNumber + 1}`,
+            )
+            .join("\n"),
+        );
+      });
+    });
+    await cdp.send("Debugger.pause");
+    const stack = await Promise.race([
+      paused,
+      new Promise<string>((done) => setTimeout(() => done("(no pause in 8 s)"), 8_000)),
+    ]);
+    await writeFile(join(this.evidence, `stuck-page-${Date.now()}.txt`), stack);
   }
 
   async botId(name: string): Promise<string> {
@@ -2279,6 +2328,1036 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
   process.exit(failed.length ? 1 : 0);
 }
 
+// -- W5-T4: accounts and the pool, API keys, own endpoints, fallback models ------------------------------------------
+//
+// Run as COSGRAL_MODE=w5 COSGRAL_SANDBOX_ROOT=<folder> node scripts/sandbox-acceptance.ts (a fresh sandbox of its own).
+// Stand-ins: the Codex stand-in (scripts/acceptance-codex.cjs) signs accounts in and out by itself and fails a turn like a
+// usage limit when the limits file names its account; a model server on 127.0.0.1 answers /v1/models and Chat
+// Completions (SSE); another one stands in for the key check of the provider (the main process is told to send the
+// fixed provider URL to it). No real account, no real service, no file of an account folder is ever read.
+
+interface ModelServerRequest {
+  method: string;
+  path: string;
+  authorization: string | undefined;
+  body: string;
+}
+
+interface ModelServer {
+  /** http://127.0.0.1:<port>/v1 */
+  base: string;
+  origin: string;
+  requests: ModelServerRequest[];
+  /** Answer 401 unless the request carries exactly this bearer key (null = no key needed). */
+  needsKey: string | null;
+  /** Answer 401 to a key that starts with "bad-". */
+  rejectBad: boolean;
+  close: () => Promise<void>;
+}
+
+async function startModelServer(port = 0): Promise<ModelServer> {
+  const { createServer } = await import("node:http");
+  const state: Pick<ModelServer, "requests" | "needsKey" | "rejectBad"> = {
+    requests: [],
+    needsKey: null,
+    rejectBad: false,
+  };
+  const server = createServer((incoming, response) => {
+    const chunks: Buffer[] = [];
+    incoming.on("data", (chunk: Buffer) => chunks.push(chunk));
+    incoming.on("end", () => {
+      const seen: ModelServerRequest = {
+        method: incoming.method ?? "",
+        path: new URL(incoming.url ?? "/", "http://127.0.0.1").pathname,
+        authorization: incoming.headers.authorization,
+        body: Buffer.concat(chunks).toString("utf8"),
+      };
+      state.requests.push(seen);
+      const refused =
+        (state.needsKey !== null && seen.authorization !== `Bearer ${state.needsKey}`) ||
+        (state.rejectBad && (seen.authorization ?? "").includes("bad-"));
+      if (refused) {
+        response.writeHead(401, { "content-type": "application/json" });
+        response.end(JSON.stringify({ error: { message: "invalid api key" } }));
+        return;
+      }
+      if (seen.method === "GET" && seen.path === "/v1/models") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ object: "list", data: [{ id: "llama3:8b" }, { id: "qwen2.5-coder:7b" }] }));
+        return;
+      }
+      if (seen.method === "POST" && seen.path === "/v1/chat/completions") {
+        response.writeHead(200, { "content-type": "text/event-stream" });
+        for (const piece of ["ENDPOINT_SAYS_", "HI"])
+          response.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`);
+        response.write("data: [DONE]\n\n");
+        response.end();
+        return;
+      }
+      response.writeHead(404).end();
+    });
+  });
+  await new Promise<void>((done, fail) => {
+    server.once("error", fail);
+    server.listen(port, "127.0.0.1", done);
+  });
+  const origin = `http://127.0.0.1:${portOfServer(server)}`;
+  return Object.assign(state, {
+    base: `${origin}/v1`,
+    origin,
+    close: () =>
+      new Promise<void>((done) => {
+        server.closeAllConnections();
+        server.close(() => done());
+      }),
+  });
+}
+
+/** A fake secret that looks like a key. Test data only. */
+const fakeKey = (tag: string) => `sk-test-${tag}-${Math.random().toString(36).slice(2, 10)}abcd`;
+
+async function w5Main(root: string, evidence: string): Promise<void> {
+  resultsFile = join(evidence, "acceptance-w5.json");
+  const { readdir, readFile } = await import("node:fs/promises");
+  const fixture = await installFixture(root);
+  const limitsFile = join(root, "fixture", "limits.json");
+  const startsFile = join(root, "fixture", "starts.log");
+  await writeFile(limitsFile, "{}");
+  await writeFile(startsFile, "");
+  process.env.COSGRAL_ACCEPT_LIMITS = limitsFile;
+  process.env.COSGRAL_ACCEPT_STARTS = startsFile;
+  const models = await startModelServer();
+  const keyServer = await startModelServer();
+  keyServer.rejectBad = true;
+  const { app, page } = await launch(root, fixture);
+  const d = new Driver(page, evidence, app);
+
+  // --- helpers ---
+  const setLimits = async (limits: Record<string, { resetsInSeconds: number; action?: boolean }>) =>
+    writeFile(limitsFile, JSON.stringify(limits));
+  const accountList = async () => list(asRecord(await d.ev("window.openbot.subscriptions.listAccounts()")).accounts);
+  const account = async (label: string) => {
+    const found = (await accountList()).find((item) => item.label === label);
+    assert(found, `account ${label} exists`);
+    return found;
+  };
+  const accountId = async (label: string) => String((await account(label)).id);
+  const startsLog = async () => (await readFile(startsFile, "utf8")).split("\n").filter(Boolean);
+  const eventsSince = async (from: number) => list(await d.ev(`window.__w5.slice(${from})`));
+  const eventCount = async () => Number(await d.ev("window.__w5.length"));
+  const turnsDone = async (from: number) =>
+    (await eventsSince(from)).filter((event) => event.type === "turn-completed");
+  const waitTurns = async (from: number, count: number, timeoutMs = 60_000) =>
+    waitUntil(page, `${count} completed turn(s)`, async () => (await turnsDone(from)).length >= count, timeoutMs);
+  const waitLimitsFree = async (timeoutMs = 40_000) =>
+    waitUntil(
+      page,
+      "every account is free again",
+      async () => (await accountList()).every((item) => item.limitedUntil === null),
+      timeoutMs,
+    );
+  const assignAgent = async (agent: string, label: string | null) => {
+    const botId = await d.botId(agent);
+    const id = label === null ? null : await accountId(label);
+    await d.ev(
+      `window.openbot.subscriptions.assignAccountToAgent({ botId: ${JSON.stringify(botId)}, accountId: ${JSON.stringify(id)} })`,
+    );
+  };
+  const setPool = async (label: string, fields: { poolOrder?: number; enabled?: boolean; isDefault?: boolean }) => {
+    const id = await accountId(label);
+    const current = await account(label);
+    await d.ev(
+      `window.openbot.subscriptions.setAccountPool(${JSON.stringify({ id, inPool: current.inPool, ...fields })})`,
+    );
+  };
+  const signIn = async (label: string) => {
+    const id = await accountId(label);
+    await d.ev(`window.openbot.subscriptions.loginAccount({ id: ${JSON.stringify(id)} })`);
+    await waitUntil(page, `${label} signed in`, async () => (await account(label)).loggedIn === true, 30_000);
+  };
+  const requestCount = (server: ModelServer) => server.requests.length;
+  const noSecret = async (secret: string, where: string) => {
+    const hit = await anyFileContains(root, secret);
+    assert(hit === null, `${where}: the secret is not in any file of the profile (${hit ? "found" : "clean"})`);
+    assert(!(await page.content()).includes(secret), `${where}: not in the page`);
+  };
+
+  try {
+    const installEventLog = () =>
+      d.ev(
+        "window.__w5 = []; window.openbot.agent.onEvent((event) => { if (['account-limit-reached','account-switched','model-fallback','error','turn-completed'].includes(event.type)) window.__w5.push(event); }); true",
+      );
+    await row(
+      "W0",
+      "W5 setup: first run, an agent to talk to, a second agent, an event log in the window",
+      async () => {
+        const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
+        await where.waitFor({ timeout: 90_000 });
+        await where.getByRole("button", { name: /Use this computer/ }).click();
+        const setup = page.getByRole("dialog", { name: "Set up this computer" });
+        await setup.waitFor({ timeout: 30_000 });
+        await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
+        await setup.getByRole("button", { name: "Continue with Codex" }).click();
+        await page
+          .getByRole("button", { name: /^Assistant, / })
+          .first()
+          .waitFor({ timeout: 60_000 });
+        await d.openAgent("Assistant");
+        await page
+          .getByRole("button", { name: "Onboarding model: Luna" })
+          .click({ timeout: 10_000 })
+          .catch(() => undefined);
+        await page
+          .getByRole("option", { name: /^Luna/ })
+          .click({ timeout: 5_000 })
+          .catch(() => undefined);
+        await page
+          .getByText("Work & projects", { exact: true })
+          .click({ timeout: 8_000 })
+          .catch(() => undefined);
+        await d.answer("Assistant", "Stub: received", 45_000);
+        await d.ev(
+          `window.openbot.agent.createBot().then((b) => window.openbot.agent.updateBot({ botId: b.id, name: "Res", role: "Research and sources" })).then((b) => b.name)`,
+        );
+        await installEventLog();
+        return "Assistant (answers on the stand-in CLI) and Res exist; window event log on";
+      },
+    );
+
+    // A re-run of single rows on a kept profile (COSGRAL_ONLY=P04 ... --keep) skips the setup but still needs the log.
+    if (only.length > 0 && !only.includes("W0")) await installEventLog();
+
+    // ---------------------------------------------------------------- accounts and the pool
+    await row(
+      "P01",
+      "accounts: two accounts of one provider side by side, each with its own state folder, added and signed in on the page",
+      async () => {
+        await d.openPage("Providers");
+        const codex = page.locator('section[aria-label="Konta codex"]');
+        for (const label of ["Work", "Home"]) {
+          const field = page.getByRole("textbox", { name: "Etykieta konta Codex" });
+          await field.fill(label);
+          await field
+            .locator("xpath=ancestor::*[contains(@class,'provider-account-card')][1]")
+            .getByRole("button", { name: "Dodaj konto" })
+            .click();
+          await waitUntil(
+            page,
+            `${label} listed`,
+            async () => (await accountList()).some((item) => item.label === label),
+            20_000,
+          );
+          await codex.getByRole("group", { name: label, exact: true }).getByRole("button", { name: "Zaloguj" }).click();
+          await waitUntil(page, `${label} signed in`, async () => (await account(label)).loggedIn === true, 30_000);
+        }
+        const work = await account("Work");
+        const home = await account("Home");
+        assert(work.id !== home.id && work.stateDir !== home.stateDir, "different state folders");
+        assert(work.loggedIn === true && home.loggedIn === true, "both signed in");
+        const base = join(root, "home", "AppData", "Roaming");
+        let folders: string[] = [];
+        for (const appFolder of await readdir(base).catch(() => [])) {
+          const names = await readdir(join(base, appFolder, "accounts")).catch(() => null);
+          if (names) folders = names;
+        }
+        assert(
+          folders.includes(String(work.stateDir)) && folders.includes(String(home.stateDir)),
+          `two account folders exist: ${folders.join(",")}`,
+        );
+        await d.dump("w5-p01-two-accounts");
+        return "Work and Home added on the page, signed in through the CLI (marker kept by the stand-in only), two separate folders named by their ids; the page lists both next to the system account. (Files inside the folders are not read.)";
+      },
+    );
+
+    await row("P02", "accounts: exactly one default account per provider", async () => {
+      const defaults = async () =>
+        (await accountList()).filter((item) => item.provider === "codex" && item.isDefault === true);
+      assert((await defaults()).length === 1, "one default at the start");
+      await setPool("Work", { isDefault: true });
+      let now = await defaults();
+      assert(
+        now.length === 1 && now[0]?.label === "Work",
+        `Work is the only default: ${now.map((item) => item.label).join(",")}`,
+      );
+      const system = (await accountList()).find((item) => item.system === true && item.provider === "codex");
+      assert(system, "the system account exists");
+      await d.ev(
+        `window.openbot.subscriptions.setAccountPool(${JSON.stringify({ id: system.id, inPool: true, isDefault: true })})`,
+      );
+      now = await defaults();
+      assert(now.length === 1 && now[0]?.system === true, "the system account is the only default again");
+      await d.openPage("Providers");
+      const badges = (await page.locator('section[aria-label="Konta codex"]').innerText()).match(/Domyślne/g) ?? [];
+      assert(badges.length === 1, `the page shows one Domyślne (${badges.length})`);
+      return "default moved Work > system, one default each time, the page shows one 'Domyślne'";
+    });
+
+    await row(
+      "P05",
+      "pool: the limit per provider is 3 by default and changeable; one account over it is refused with a message",
+      async () => {
+        const settings = asRecord(await d.ev("window.openbot.subscriptions.getPoolSettings()"));
+        assert(settings.maxAccountsPerProvider === 3, `default limit ${String(settings.maxAccountsPerProvider)}`);
+        await d.openPage("Providers");
+        assert(
+          /Osiągnięto maksymalną liczbę kont/.test(await page.locator('section[aria-label="Konta codex"]').innerText()),
+          "the page says the pool is full",
+        );
+        const refused = String(
+          await d.ev(
+            `window.openbot.subscriptions.addAccount({ provider: "codex", label: "Over" }).then(() => "added", (e) => String(e.message))`,
+          ),
+        );
+        assert(/limit/i.test(refused) && refused !== "added", `refused with a message: ${refused.slice(0, 100)}`);
+        await d.ev("window.openbot.subscriptions.setPoolSettings({ maxAccountsPerProvider: 4 })");
+        await d.ev(`window.openbot.subscriptions.addAccount({ provider: "codex", label: "Extra" })`);
+        await signIn("Extra");
+        await setPool("Extra", { enabled: false });
+        assert(
+          (await accountList()).filter((item) => item.provider === "codex").length === 4,
+          "four after raising the limit",
+        );
+        await d.dump("w5-p05-limit");
+        return `default 3; the page says 'Osiągnięto maksymalną liczbę kont'; a fourth account refused ("${refused.slice(0, 70)}"); with 4 it is added (kept as 'Extra' for the key steps)`;
+      },
+    );
+
+    await row(
+      "P03",
+      "agent with an assigned account: its CLI starts in that account's folder (environment, not arguments); default means the system account",
+      async () => {
+        await assignAgent("Assistant", "Work");
+        const work = await account("Work");
+        const answer = await d.ask("Assistant", "WHO", `Stub: home ${String(work.id)}`, 45_000);
+        assert(/argvHasHome=false/.test(answer), `the folder is not in the arguments: ${answer}`);
+        const other = await d.ask("Res", "WHO", "Stub: home system", 45_000);
+        assert(/argvHasHome=false/.test(other), "the system account has no folder at all");
+        const active = list(asRecord(await d.ev("window.openbot.subscriptions.listAccounts()")).active);
+        assert(
+          active.some((item) => item.label === "Work") && active.some((item) => item.accountId === "system-codex"),
+          `the program knows which account each agent answers with: ${JSON.stringify(active.map((item) => item.label))}`,
+        );
+        await d.openAgent("Assistant");
+        return `Assistant > '${answer.slice(0, 50)}'; Res (default) > 'home system'; the snapshot names the active account of both agents`;
+      },
+    );
+
+    await row(
+      "P04",
+      "pool: switched-off accounts are never chosen; the order of the pool decides which account takes over",
+      async () => {
+        // Order: Home first, then the system account, then Work (the agent's own account is always tried first).
+        await setPool("Home", { poolOrder: 1 });
+        await setPool("Work", { poolOrder: 3 });
+        const ids = {
+          work: await accountId("Work"),
+          home: await accountId("Home"),
+        };
+        const order = (await accountList())
+          .filter((item) => item.provider === "codex")
+          .sort((a, b) => Number(a.poolOrder) - Number(b.poolOrder))
+          .map((item) => String(item.label));
+        assert(order[0] === "Home", `Home is first in the pool: ${order.join(" > ")}`);
+        // (a) Home switched off: when Work is at its limit the system account answers, never Home.
+        await setPool("Home", { enabled: false });
+        await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
+        await d.ask("Assistant", "ACC a", "Stub: account system answered a", 60_000);
+        await waitLimitsFree();
+        // (b) Home on again: it comes first.
+        await setPool("Home", { enabled: true });
+        await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
+        await d.ask("Assistant", "ACC b", `Stub: account ${ids.home} answered b`, 60_000);
+        await waitLimitsFree();
+        await setLimits({});
+        return `order ${order.join(" > ")}; Home off: Work's limit > the system account answered (Home skipped); Home on: Home answered first`;
+      },
+    );
+
+    await row(
+      "P06",
+      "limit before the first action: the turn goes to the next account from the start; the page says so; nothing hangs",
+      async () => {
+        const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        await waitLimitsFree();
+        const from = await eventCount();
+        await setLimits({ [ids.work]: { resetsInSeconds: 7 } });
+        await d.openAgent("Assistant");
+        await d.send("Assistant", "ACC c");
+        await d.answer("Assistant", `Stub: account ${ids.home} answered c`, 60_000);
+        const events = await eventsSince(from);
+        const limit = events.find((event) => event.type === "account-limit-reached");
+        const switched = events.find((event) => event.type === "account-switched" && event.reason === "usage-limit");
+        assert(
+          limit?.outcome === "switched" && limit.afterAction === false && limit.accountId === ids.work,
+          `limit event: ${JSON.stringify(limit)}`,
+        );
+        assert(
+          switched?.toAccountId === ids.home && switched.reason === "usage-limit",
+          `switch event: ${JSON.stringify(switched)}`,
+        );
+        assert(!JSON.stringify(events).includes("@"), "no e-mail in the events");
+        const region = page.getByRole("region", { name: "Account notices" });
+        await region.waitFor({ timeout: 15_000 });
+        assert(
+          /Limit reached/.test(await region.innerText()) && /Switched to account Home/.test(await region.innerText()),
+          "the page shows the limit card and the switch card",
+        );
+        const answers = list(
+          await d.ev(
+            `window.openbot.agent.listBots().then(async (bots) => (await window.openbot.agent.readConversation(bots.find((b) => b.name === "Assistant").id)).messages.filter((m) => m.author === "assistant" && /account .* answered/.test(m.text)))`,
+          ),
+        );
+        assert(
+          answers.filter((message) => String(message.text).includes(ids.home)).length >= 1,
+          "one answer from the next account",
+        );
+        await page.waitForTimeout(1_000);
+        assert(!/Thinking/.test(await d.rowLabel("Assistant")), "the row is not stuck on Thinking");
+        await d.dump("w5-p06-switched");
+        await waitLimitsFree();
+        await setLimits({});
+        return `Work limited (no action yet) > account-limit-reached 'switched' + account-switched 'usage-limit' > Home answered; cards 'Limit reached' and 'Switched to account Home' on the page; the row settles`;
+      },
+    );
+
+    await row(
+      "P07",
+      "limit after the first action: nothing is repeated on its own; a card in Needs you asks; Confirm continues on the next account",
+      async () => {
+        const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        await waitLimitsFree();
+        const from = await eventCount();
+        await setLimits({ [ids.work]: { resetsInSeconds: 7, action: true } });
+        await d.openAgent("Res");
+        await d.send("Assistant", "ACC d");
+        await waitUntil(page, "the limit event after an action", async () =>
+          (await eventsSince(from)).some((event) => event.type === "account-limit-reached"),
+        );
+        const limit = asRecord((await eventsSince(from)).find((event) => event.type === "account-limit-reached"));
+        assert(limit.outcome === "asks" && limit.afterAction === true, `limit event: ${JSON.stringify(limit)}`);
+        const needs = page.getByRole("region", { name: "Needs you" });
+        await needs.waitFor({ timeout: 20_000 });
+        assert(/Assistant/.test(await needs.innerText()), "Needs you names the agent");
+        await page.waitForTimeout(2_500);
+        assert(
+          !(await eventsSince(from)).some(
+            (event) => event.type === "account-switched" && event.reason === "usage-limit",
+          ),
+          "no silent switch",
+        );
+        await needs.getByRole("button", { name: /^Assistant, Needs you/ }).click();
+        const decision = page.getByRole("region", { name: "Decision" });
+        await decision.waitFor({ timeout: 15_000 });
+        assert(
+          /Limit reached on .*Continue on/.test(await decision.innerText()),
+          `the card asks: ${(await decision.innerText()).slice(0, 120)}`,
+        );
+        await d.dump("w5-p07-asks");
+        await decision.getByRole("button", { name: "Confirm", exact: true }).click();
+        await d.answer("Assistant", `Stub: account ${ids.home} answered d`, 60_000);
+        assert(
+          (await eventsSince(from)).some(
+            (event) => event.type === "account-switched" && event.reason === "usage-limit",
+          ),
+          "after Confirm the switch is told",
+        );
+        await waitLimitsFree();
+        await setLimits({});
+        return "Work fails after a command item > outcome 'asks' (afterAction), no switch for 2.5 s; Needs you lists Assistant; the card 'Limit reached on … Continue on …?' > Confirm > Home answered; account-switched after the answer";
+      },
+    );
+
+    await row(
+      "P08",
+      "every account at its limit: a limit state with a reset time and no hanging; after the reset the agent returns to its own account",
+      async () => {
+        const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        const from = await eventCount();
+        await setLimits({
+          [ids.work]: { resetsInSeconds: 12 },
+          [ids.home]: { resetsInSeconds: 12 },
+          system: { resetsInSeconds: 12 },
+        });
+        await d.openAgent("Assistant");
+        await d.send("Assistant", "ACC e");
+        await waitTurns(from, 3, 90_000);
+        const events = await eventsSince(from);
+        const outcomes = events
+          .filter((event) => event.type === "account-limit-reached")
+          .map((event) => String(event.outcome));
+        assert(outcomes.at(-1) === "exhausted" && outcomes.length >= 3, `outcomes: ${outcomes.join(",")}`);
+        const last = asRecord(events.filter((event) => event.type === "account-limit-reached").at(-1));
+        assert(
+          isString(last.resetsAt) && Date.parse(last.resetsAt) > Date.now(),
+          `a reset time in the future: ${String(last.resetsAt)}`,
+        );
+        const region = page.getByRole("region", { name: "Account notices" });
+        await region.waitFor({ timeout: 15_000 });
+        assert(
+          /Every account in the pool is exhausted/.test(await region.innerText()),
+          "the page says the pool is exhausted",
+        );
+        assert(/Resets at|Assumed reset at/.test(await region.innerText()), "the page shows the reset time");
+        assert(!/Thinking/.test(await d.rowLabel("Assistant")), "no hanging Thinking");
+        await d.dump("w5-p08-exhausted");
+        await setLimits({});
+        await waitLimitsFree(60_000);
+        const again = await eventCount();
+        await d.ask("Assistant", "ACC f", `Stub: account ${ids.work} answered f`, 60_000);
+        const returned = (await eventsSince(again)).find((event) => event.type === "account-switched");
+        assert(
+          returned?.reason === "returned" && returned.toAccountId === ids.work,
+          `returned: ${JSON.stringify(returned)}`,
+        );
+        return `3 accounts limited > outcomes ${outcomes.join(",")} (reset ${String(last.resetsAt).slice(11, 19)}Z); card 'Every account in the pool is exhausted' with the time; no Thinking; after the reset the limits cleared by themselves and Assistant answered on Work again (account-switched 'returned')`;
+      },
+    );
+
+    await row(
+      "P10",
+      "pool: one CLI process per account in use; accounts that were never used start nothing",
+      async () => {
+        const lines = await startsLog();
+        const perAccount = new Map<string, number>();
+        for (const line of lines) {
+          const id = line.split(" ")[0] ?? "";
+          perAccount.set(id, (perAccount.get(id) ?? 0) + 1);
+        }
+        const extra = await accountId("Extra");
+        assert(!perAccount.has(extra), "the never-used account started no process");
+        const counts = [...perAccount].map(([id, count]) => `${id.slice(0, 12)}x${count}`).join(" ");
+        assert(
+          perAccount.size >= 3,
+          `Work, Home and the system account each started one: ${[...perAccount.keys()].join(",")}`,
+        );
+        return `${perAccount.size} accounts started processes (${counts}; one per account, a second only after a 5-minute idle stop); 'Extra' (signed in, never used) started none. NOT covered here: the idle process stopping after 5 minutes (unit test only)`;
+      },
+    );
+
+    await row("P11", "no way to share or export an account; the pool warning is on the page", async () => {
+      const names = await d.ev("Object.keys(window.openbot.subscriptions)");
+      const have = Array.isArray(names) ? names.map(String) : [];
+      assert(
+        !have.some((name) => /export|share|import|copy|send|invite/i.test(name)),
+        `no such call: ${have.join(",")}`,
+      );
+      await d.openPage("Providers");
+      assert(
+        /Use only your own accounts/.test(await page.locator('section[aria-label="Konta"]').innerText()),
+        "the warning is on the page",
+      );
+      const snapshot = JSON.stringify(await d.ev("window.openbot.subscriptions.listAccounts()"));
+      assert(
+        !snapshot.includes("@") && !/token|secret|password/i.test(snapshot),
+        "the account list carries no e-mail, token or secret",
+      );
+      return `${have.length} subscriptions calls, none for export or sharing; the pool warning 'Use only your own accounts…' is shown; the account list has no e-mail or token. NOT covered: a remote server or the phone (unit test of the reviewer only)`;
+    });
+
+    // ---------------------------------------------------------------- own endpoints
+    const endpointCard = () => page.getByRole("region", { name: "Own model endpoints" });
+    const openEndpoints = async () => {
+      await d.openPage("Providers");
+      await endpointCard().waitFor({ timeout: 20_000 });
+    };
+    const fillEndpoint = async (name: string, address: string, key?: string) => {
+      const form = endpointCard().getByRole("form", { name: "Endpoint" });
+      await form.getByLabel(/^Name/).fill(name);
+      await form.getByLabel(/^Address/).fill(address);
+      if (key !== undefined) await form.getByLabel(/^Key/).fill(key);
+      return form;
+    };
+    let endpointId = "";
+    const endpointKey = fakeKey("endpoint");
+
+    await row(
+      "E01",
+      "endpoint: save without contacting; models only after 'Check connection'; a host outside this computer is warned about; other schemes are refused",
+      async () => {
+        await openEndpoints();
+        await endpointCard().getByRole("button", { name: "Add an endpoint" }).click();
+        let form = await fillEndpoint("Local LLM", models.base);
+        assert(!/another computer|not on this computer/.test(await form.innerText()), "no warning for this computer");
+        await form.getByRole("button", { name: "Save" }).click();
+        const list_ = endpointCard().getByRole("list", { name: "Endpoints" });
+        await list_.getByText("Not checked").waitFor({ timeout: 15_000 });
+        assert(requestCount(models) === 0, `saving contacted nothing (${requestCount(models)} requests)`);
+        await list_.getByRole("button", { name: "Check connection to Local LLM" }).click();
+        await list_.getByText("Reachable").waitFor({ timeout: 20_000 });
+        assert(/llama3:8b, qwen2\.5-coder:7b/.test(await list_.innerText()), "the models are listed");
+        assert(
+          requestCount(models) === 1 &&
+            models.requests[0]?.path === "/v1/models" &&
+            models.requests[0].authorization === undefined,
+          `one keyless request: ${JSON.stringify(models.requests.map((r) => r.path))}`,
+        );
+        endpointId = String(asRecord(list(await d.ev("window.openbot.endpoints.list()"))[0]).id);
+        // Another computer: the warning shows while typing, the address can be saved, nothing is contacted.
+        await endpointCard().getByRole("button", { name: "Add an endpoint" }).click();
+        form = await fillEndpoint("Desk PC", "http://192.168.1.77:9/v1");
+        await form.getByText(/another computer.*not encrypted/).waitFor({ timeout: 10_000 });
+        await d.dump("w5-e01-warning");
+        await form.getByLabel(/^Address/).fill("ftp://192.168.1.77/v1");
+        await form.getByText("Only http:// and https:// addresses are accepted.").waitFor({ timeout: 10_000 });
+        await form.getByLabel(/^Address/).fill("http://example.com/v1");
+        await form
+          .getByText(/Plain http:\/\/ is allowed only on this computer or a local network/)
+          .waitFor({ timeout: 10_000 });
+        await form.getByLabel(/^Address/).fill("http://192.168.1.77:9/v1");
+        await form.getByRole("button", { name: "Save" }).click();
+        await list_
+          .getByText(/another computer/)
+          .first()
+          .waitFor({ timeout: 10_000 });
+        await list_.getByRole("button", { name: "Remove Desk PC" }).click();
+        await endpointCard().getByRole("button", { name: "Yes, remove" }).click();
+        await waitUntil(page, "Desk PC removed", async () => !/Desk PC/.test(await list_.innerText()), 10_000);
+        return "save > 0 requests; Check connection > 1 GET /v1/models without a key, 'Reachable', 2 models; 192.168.1.77 > 'another computer … not encrypted'; ftp:// and plain http to a public host refused with a message; the LAN endpoint removed";
+      },
+    );
+
+    await row(
+      "E02",
+      "endpoint key: a missing, a wrong and the right key; only a mask on the page; the key is nowhere in the profile",
+      async () => {
+        models.needsKey = endpointKey;
+        await openEndpoints();
+        const list_ = endpointCard().getByRole("list", { name: "Endpoints" });
+        await list_.getByRole("button", { name: "Check connection to Local LLM" }).click();
+        await list_.getByText("Key refused").waitFor({ timeout: 20_000 });
+        assert(/asks for a key/.test(await list_.innerText()), "says a key is needed");
+        for (const [key, expected] of [
+          ["wrong-key-0000", /did not accept the key/],
+          [endpointKey, /\d+ models found/],
+        ] as const) {
+          await list_.getByRole("button", { name: "Edit Local LLM" }).click();
+          const form = endpointCard().getByRole("form", { name: "Endpoint" });
+          const field = form.getByLabel(/^Key/);
+          assert((await field.getAttribute("type")) === "password", "the key field is a password field");
+          await field.fill(key);
+          await form.getByRole("button", { name: "Save" }).click();
+          await list_.getByRole("button", { name: "Check connection to Local LLM" }).click();
+          await waitUntil(page, "the check ended", async () => expected.test(await list_.innerText()), 20_000);
+        }
+        assert((await list_.innerText()).includes(`Key ••••${endpointKey.slice(-4)}`), "only the mask is shown");
+        assert(
+          models.requests.at(-1)?.authorization === `Bearer ${endpointKey}`,
+          "the right key reached the endpoint's own address",
+        );
+        await noSecret(endpointKey, "endpoint key");
+        await noSecret("wrong-key-0000", "wrong endpoint key");
+        await d.dump("w5-e02-key");
+        return "no key > 'Key refused' (asks for a key); wrong key > 'did not accept'; right key > 'Reachable' and only 'Key ••••abcd'; the key and the wrong key have 0 hits in any file of the profile and in the page";
+      },
+    );
+
+    await row("E03", "an agent on an endpoint model talks through it (chat only)", async () => {
+      const ids = list(await d.ev("window.openbot.agent.listModels()")).map((model) => String(model.id));
+      const model = `endpoint:${endpointId}/llama3:8b`;
+      assert(ids.includes(model), "the endpoint's model is offered to agents");
+      const named = list(await d.ev("window.openbot.agent.listModels()")).find((item) => item.id === model);
+      assert(/chat only/.test(String(named?.name)), `the model says chat only: ${String(named?.name)}`);
+      await d.ev(
+        `window.openbot.agent.listBots().then((bots) => window.openbot.agent.updateBot({ botId: bots.find((b) => b.name === "Assistant").id, model: ${JSON.stringify(model)} }))`,
+      );
+      const before = models.requests.length;
+      const answer = await d.ask("Assistant", "hello endpoint", "ENDPOINT_SAYS_HI", 60_000);
+      const call = models.requests.slice(before).find((request) => request.path === "/v1/chat/completions");
+      assert(call?.authorization === `Bearer ${endpointKey}`, "the chat call carries the endpoint's key");
+      const body = asRecord(JSON.parse(call?.body ?? "{}"));
+      const messages = list(body.messages);
+      assert(
+        body.model === "llama3:8b" && body.stream === true,
+        `body: ${JSON.stringify({ model: body.model, stream: body.stream })}`,
+      );
+      assert(/cannot use tools/.test(String(messages[0]?.content)), "the agent is told it has no tools");
+      await d.dump("w5-e03-chat");
+      return `answer '${answer.slice(0, 40)}' through POST /v1/chat/completions (stream, Bearer key, model llama3:8b); the model is listed as '… (Local LLM, chat only)'; the agent is told it has no tools`;
+    });
+
+    await row(
+      "P09",
+      "layers: every account first, then the fallback model (an endpoint model here); the agent returns to its own model after the reset",
+      async () => {
+        const ids = { work: await accountId("Work"), home: await accountId("Home") };
+        await d.ev(
+          `window.openbot.agent.listBots().then((bots) => window.openbot.agent.updateBot({ botId: bots.find((b) => b.name === "Assistant").id, model: "gpt-5.6-luna" }))`,
+        );
+        const botId = await d.botId("Assistant");
+        const fallback = `endpoint:${endpointId}/qwen2.5-coder:7b`;
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botId)}, fallbackModels: [${JSON.stringify(fallback)}] })`,
+        );
+        const from = await eventCount();
+        await setLimits({
+          [ids.work]: { resetsInSeconds: 12 },
+          [ids.home]: { resetsInSeconds: 12 },
+          system: { resetsInSeconds: 12 },
+        });
+        await d.openAgent("Assistant");
+        await d.send("Assistant", "ACC g");
+        await waitUntil(
+          page,
+          "the fallback model answered",
+          async () => {
+            const seen = await eventsSince(from);
+            return (
+              seen.some((event) => event.type === "model-fallback") &&
+              seen.some((event) => event.type === "turn-completed" && event.status === "completed")
+            );
+          },
+          90_000,
+        );
+        const events = await eventsSince(from);
+        assert(
+          /ENDPOINT_SAYS_HI/.test(await d.answer("Assistant", "ENDPOINT_SAYS_HI", 20_000)),
+          "the newest answer is the endpoint's",
+        );
+        const kinds = events.flatMap((event) =>
+          event.type === "account-limit-reached"
+            ? [`limit:${String(event.outcome)}`]
+            : event.type === "model-fallback"
+              ? ["model"]
+              : [],
+        );
+        assert(
+          kinds.at(-1) === "model" &&
+            kinds.slice(0, -1).every((kind) => kind.startsWith("limit:")) &&
+            kinds.length >= 4,
+          `order: ${kinds.join(" > ")}`,
+        );
+        await setLimits({});
+        await waitLimitsFree(60_000);
+        // The provider block of the model registry ends with the same reset: give it a moment.
+        await page.waitForTimeout(3_000);
+        await d.ask("Assistant", "ACC h", `Stub: account ${ids.work} answered h`, 60_000);
+        const bot = asRecord(
+          list(await d.ev("window.openbot.agent.listBots()")).find((item) => item.name === "Assistant"),
+        );
+        assert(
+          bot.activeModel === undefined || bot.activeModel === null,
+          `back on its own model: ${String(bot.activeModel)}`,
+        );
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botId)}, fallbackModels: [] })`,
+        );
+        return `events: ${kinds.join(" > ")}; the answer came from the endpoint; after the reset the agent was back on Work and on gpt-5.6-luna (no activeModel)`;
+      },
+    );
+
+    await row(
+      "E04",
+      "detect local: only 127.0.0.1:11434 and :1234 are looked at; silence is an empty list, not an error",
+      async () => {
+        await openEndpoints();
+        await endpointCard().getByRole("button", { name: "Detect local servers" }).click();
+        await endpointCard()
+          .getByText(/Nothing found on this computer|Found:/)
+          .waitFor({ timeout: 20_000 });
+        const first = await endpointCard().innerText();
+        let ollama: ModelServer | null = null;
+        try {
+          ollama = await startModelServer(11434);
+        } catch {
+          ollama = null;
+        }
+        if (!ollama) {
+          assert(/Found:|Nothing found/.test(first), "an answer is shown");
+          return "port 11434 is taken on this computer, so only the silent case was run: see the evidence page";
+        }
+        try {
+          assert(/Nothing found on this computer/.test(first), `nothing listens: ${first.slice(0, 80)}`);
+          await endpointCard().getByRole("button", { name: "Detect local servers" }).click();
+          await endpointCard().getByText("Found: Ollama.").waitFor({ timeout: 20_000 });
+          assert(
+            ollama.requests.length >= 1 &&
+              ollama.requests.every((request) => request.path === "/v1/models" && request.authorization === undefined),
+            "only a keyless model-list request",
+          );
+          const found = asRecord(
+            list(await d.ev("window.openbot.endpoints.list()")).find((item) => item.kind === "ollama"),
+          );
+          assert(
+            list([found]).length === 1 && Array.isArray(found.models) && found.models.length === 2,
+            "Ollama is listed with its models",
+          );
+          return "nothing listening > 'Nothing found on this computer…' (no error); a stand-in on 11434 > 'Found: Ollama.' with 2 models after one keyless GET; port 1234 stayed silent";
+        } finally {
+          await ollama.close();
+        }
+      },
+    );
+
+    await row(
+      "E06",
+      "removing an endpoint: its models and key go; an agent that used it gets a clear error",
+      async () => {
+        const model = `endpoint:${endpointId}/llama3:8b`;
+        await d.ev(
+          `window.openbot.agent.listBots().then((bots) => window.openbot.agent.updateBot({ botId: bots.find((b) => b.name === "Assistant").id, model: ${JSON.stringify(model)} }))`,
+        );
+        await openEndpoints();
+        const list_ = endpointCard().getByRole("list", { name: "Endpoints" });
+        await list_.getByRole("button", { name: "Remove Local LLM" }).click();
+        await endpointCard().getByRole("button", { name: "Yes, remove" }).click();
+        await waitUntil(
+          page,
+          "Local LLM removed",
+          async () => !/Local LLM/.test(await endpointCard().innerText()),
+          10_000,
+        );
+        const ids = list(await d.ev("window.openbot.agent.listModels()")).map((item) => String(item.id));
+        assert(!ids.some((id) => id.startsWith(`endpoint:${endpointId}/`)), "its models are gone from the choice");
+        await noSecret(endpointKey, "removed endpoint key");
+        const from = await eventCount();
+        await d.openAgent("Assistant");
+        await d.send("Assistant", "anyone there?");
+        await waitUntil(page, "the removed-endpoint error", async () =>
+          (await eventsSince(from)).some(
+            (event) => event.type === "error" && /endpoint of this model was removed/.test(String(event.message)),
+          ),
+        );
+        await page.waitForTimeout(1_000);
+        assert(!/Thinking/.test(await d.rowLabel("Assistant")), "no hanging Thinking");
+        await d.ev(
+          `window.openbot.agent.listBots().then((bots) => window.openbot.agent.updateBot({ botId: bots.find((b) => b.name === "Assistant").id, model: "gpt-5.6-luna" }))`,
+        );
+        await d.dump("w5-e06-removed");
+        return "Remove > Yes: the models left the choice, 0 hits for its key in the profile; a message to the agent gave 'The endpoint of this model was removed…' and the row did not hang; the agent was put back on gpt-5.6-luna";
+      },
+    );
+
+    // ---------------------------------------------------------------- API keys
+    const apiKeyCard = () => page.getByRole("region", { name: "API keys" }).getByRole("group", { name: "OpenAI key" });
+    const openKeys = async () => {
+      await d.openPage("Providers");
+      await apiKeyCard().waitFor({ timeout: 20_000 });
+    };
+    const openaiKey = fakeKey("openai");
+    const badKey = `bad-${fakeKey("rejected")}`;
+    // The main process sends the provider's fixed key-check address to the key stand-in (and notes what it was asked).
+    await app.evaluate((_electron, origin) => {
+      const original = globalThis.fetch;
+      const seen: string[] = [];
+      Object.assign(globalThis, {
+        acceptSeenUrls: seen,
+        fetch: (input: string | URL | Request, init?: RequestInit) => {
+          const url = input instanceof Request ? input.url : String(input);
+          if (/^https:\/\/(api\.openai\.com|api\.anthropic\.com)\//.test(url)) {
+            seen.push(url);
+            return original(`${origin}${new URL(url).pathname}`, init);
+          }
+          return original(input, init);
+        },
+      });
+    }, keyServer.origin);
+    const seenKeyUrls = async (): Promise<string[]> => {
+      const urls = await app.evaluate(() => Object.fromEntries(Object.entries(globalThis)).acceptSeenUrls);
+      return Array.isArray(urls) ? urls.map(String) : [];
+    };
+
+    await row(
+      "K01",
+      "API key: typed into a password field, stored, shown only as a mask; the field empties; nothing echoes the key",
+      async () => {
+        await openKeys();
+        const field = apiKeyCard().getByLabel("OpenAI API key");
+        assert((await field.getAttribute("type")) === "password", "password field");
+        await field.fill(openaiKey);
+        await apiKeyCard().getByRole("button", { name: "Save key" }).click();
+        await apiKeyCard()
+          .getByText(`Saved key: ••••${openaiKey.slice(-4)}`)
+          .waitFor({ timeout: 15_000 });
+        assert((await field.inputValue()) === "", "the field is empty after saving");
+        const entries = JSON.stringify(await d.ev("window.openbot.apiKeys.list()"));
+        assert(!entries.includes(openaiKey), "the list answer has no key");
+        assert(
+          (await page.locator("body").ariaSnapshot()).includes(openaiKey) === false,
+          "the accessibility tree has no key",
+        );
+        await d.dump("w5-k01-saved");
+        return `saved > 'Saved key: ••••${openaiKey.slice(-4)}', empty field, no key in the list answer or the page`;
+      },
+    );
+
+    await row(
+      "K02",
+      "API key: encrypted at rest: 0 hits for the key (plain or base64) in any file of the profile, in logs or in the evidence",
+      async () => {
+        await noSecret(openaiKey, "api key");
+        const base64 = Buffer.from(openaiKey).toString("base64");
+        assert((await anyFileContains(root, base64)) === null, "no base64 form either");
+        assert((await anyFileContains(evidence, openaiKey)) === null, "none in the evidence folder (dumps)");
+        return "0 hits in every file of the sandbox profile (database and logs included), in the page, and in the evidence dumps; base64 form: 0 hits";
+      },
+    );
+
+    await row(
+      "K03",
+      "API key: reaches the provider's process only as an environment variable, never in its arguments or in the program's own environment",
+      async () => {
+        await setPool("Extra", { enabled: true });
+        await assignAgent("Res", "Extra");
+        const answer = await d.ask("Res", "ENVKEY", "Stub: key set=", 60_000);
+        assert(
+          answer.includes(`set=yes tail=${openaiKey.slice(-4)} argvHasKey=false`),
+          `the process saw the key only in its environment: ${answer}`,
+        );
+        const mainEnv = await app.evaluate(() => process.env.OPENAI_API_KEY ?? "");
+        assert(mainEnv === "", "the program's own environment does not hold the key");
+        return `a CLI process started after the save: '${answer.slice(0, 70)}'; process.env of the program: no OPENAI_API_KEY`;
+      },
+    );
+
+    await row(
+      "K04",
+      "API key: 'Check connection' only on a click, against the provider's own address; a refused key says so; Remove deletes it and the next process starts without it",
+      async () => {
+        assert(
+          keyServer.requests.length === 0 && (await seenKeyUrls()).length === 0,
+          "nothing was checked before the click",
+        );
+        await openKeys();
+        await apiKeyCard().getByRole("button", { name: "Check connection" }).click();
+        await apiKeyCard()
+          .getByText(/OpenAI accepted this key/)
+          .waitFor({ timeout: 20_000 });
+        assert(
+          requestCount(keyServer) === 1 && keyServer.requests[0]?.authorization === `Bearer ${openaiKey}`,
+          "one request with the key",
+        );
+        const urls = await seenKeyUrls();
+        assert(
+          urls.length === 1 && urls[0] === "https://api.openai.com/v1/models",
+          `the fixed provider address only: ${urls.join(",")}`,
+        );
+        // A refused key.
+        await apiKeyCard().getByLabel("OpenAI API key").fill(badKey);
+        await apiKeyCard().getByRole("button", { name: "Save key" }).click();
+        await apiKeyCard()
+          .getByText(/Saved key: ••••/)
+          .waitFor({ timeout: 15_000 });
+        await apiKeyCard().getByRole("button", { name: "Check connection" }).click();
+        await apiKeyCard()
+          .getByText(/OpenAI rejected this key/)
+          .waitFor({ timeout: 20_000 });
+        assert(!(await page.content()).includes(badKey), "the refused key is not shown");
+        await d.dump("w5-k04-rejected");
+        // Remove: the secret is gone and a new process has no variable.
+        await apiKeyCard().getByRole("button", { name: "Remove key" }).click();
+        await apiKeyCard().getByText("No key saved").waitFor({ timeout: 15_000 });
+        await noSecret(openaiKey, "removed key");
+        await noSecret(badKey, "removed refused key");
+        await d.ev(`window.openbot.subscriptions.removeAccount({ id: ${JSON.stringify(await accountId("Extra"))} })`);
+        await d.ev(`window.openbot.subscriptions.addAccount({ provider: "codex", label: "Fresh" })`);
+        await signIn("Fresh");
+        await assignAgent("Res", "Fresh");
+        const answer = await d.ask("Res", "ENVKEY", "Stub: key set=no", 60_000);
+        return `before the click 0 requests; Check connection > 1 request to the provider's fixed address, 'accepted'; a key starting 'bad-' > 'rejected'; Remove key > 'No key saved', 0 hits for both keys; a new process: '${answer.slice(0, 40)}'`;
+      },
+    );
+
+    // ---------------------------------------------------------------- fallback models
+    const eight = [
+      "gpt-5.6-terra",
+      "gpt-5.6-sol",
+      "claude-fable-5",
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "acp:one",
+      "acp:two",
+      "acp:three",
+    ];
+    await row(
+      "F01",
+      "fallback models: eight are accepted, the ninth and a repeat are refused with a message, the saved list does not change",
+      async () => {
+        const set = async (models: string[]) =>
+          String(
+            await d.ev(
+              `window.openbot.providers.setFallbackModels({ botId: "*", fallbackModels: ${JSON.stringify(models)} }).then(() => "saved", (e) => String(e.message))`,
+            ),
+          );
+        assert((await set(eight)) === "saved", "eight accepted");
+        const nine = await set([...eight, "acp:four"]);
+        assert(/At most 8/.test(nine), `the ninth: ${nine}`);
+        const repeat = await set(["gpt-5.6-terra", "gpt-5.6-terra"]);
+        assert(/twice/.test(repeat), `a repeat: ${repeat}`);
+        const kept = list(
+          await d.ev(
+            `window.openbot.providers.getFallbackModels("*").then((models) => models.map((model) => ({ model })))`,
+          ),
+        );
+        assert(
+          kept.length === 8 && kept[0]?.model === "gpt-5.6-terra" && kept[7]?.model === "acp:three",
+          "the saved list is unchanged by the refusals",
+        );
+        return `8 saved in order; ninth > '${nine.slice(0, 40)}'; a repeat > '${repeat.slice(0, 40)}'; the list is still the same 8. NOT covered here: the list screen itself (checked by its own component tests, not driven in this window run)`;
+      },
+    );
+
+    await row(
+      "F02",
+      "fallback models: the general list applies to an agent without its own ('inherited'); an own list wins; reset goes back",
+      async () => {
+        const botRes = await d.botId("Res");
+        // A model of an ACP agent that does not exist stays in the list but is not tried: it counts as unavailable.
+        const sizes = (record: DynamicRecord) =>
+          (Array.isArray(record.effective) ? record.effective.length : 0) +
+          (Array.isArray(record.unavailable) ? record.unavailable.length : 0);
+        const info = async (id: string) =>
+          asRecord(await d.ev(`window.openbot.providers.getFallbackInfo(${JSON.stringify(id)})`));
+        const inherited = await info(botRes);
+        assert(
+          inherited.own === null &&
+            Array.isArray(inherited.general) &&
+            inherited.general.length === 8 &&
+            sizes(inherited) === 8,
+          `inherited: ${JSON.stringify({ own: inherited.own, general: inherited.general, effective: inherited.effective, unavailable: inherited.unavailable })}`,
+        );
+        await d.ev(
+          `window.openbot.providers.setFallbackModels({ botId: ${JSON.stringify(botRes)}, fallbackModels: ["gpt-5.6-sol", "claude-opus-5"] })`,
+        );
+        const own = await info(botRes);
+        assert(
+          Array.isArray(own.own) && own.own.length === 2 && Array.isArray(own.effective) && own.effective.length === 2,
+          "an own list wins",
+        );
+        const reset = asRecord(await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(botRes)})`));
+        assert(reset.own === null && sizes(reset) === 8, "after the reset the general list applies again");
+        await d.ev(`window.openbot.providers.resetFallbackModels("*")`);
+        return "Res: own null (inherited) > effective 8; own list of 2 > effective 2; reset > own null, effective + unavailable = 8 again (the three acp: entries have no agent, so they show as unavailable); the general list cleared afterwards";
+      },
+    );
+
+    await row(
+      "B02",
+      "secrets: no test key of this run is in any file of the profile, in the page or in the evidence",
+      async () => {
+        for (const secret of [openaiKey, badKey, endpointKey, "wrong-key-0000"]) {
+          assert(
+            (await anyFileContains(root, secret)) === null,
+            "a test secret is in a file of the sandbox (it must not be)",
+          );
+          assert((await anyFileContains(evidence, secret)) === null, "a test secret is in the evidence");
+        }
+        return `4 test secrets (provider key, refused key, endpoint key, wrong endpoint key): 0 hits in the whole sandbox root (database, logs, evidence)`;
+      },
+    );
+  } finally {
+    await app.close().catch(() => undefined);
+    await models.close();
+    await keyServer.close();
+  }
+  await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
+  const failed = results.filter((result) => !result.ok);
+  console.log(
+    `\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`,
+  );
+  for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 300)}`);
+  process.exit(failed.length ? 1 : 0);
+}
+
 async function main(): Promise<void> {
   const root = sandboxRoot();
   const evidence = join(root, "evidence");
@@ -2294,6 +3373,10 @@ async function main(): Promise<void> {
   }
   if (process.env.COSGRAL_MODE === "cli-onboarding") {
     await onboardingCliMain(root, evidence);
+    return;
+  }
+  if (process.env.COSGRAL_MODE === "w5") {
+    await w5Main(root, evidence);
     return;
   }
   const fixture = await installFixture(root);

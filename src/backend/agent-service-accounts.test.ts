@@ -360,6 +360,11 @@ describe.sequential("AgentService with provider accounts", {
     await waitFor(() => pendingCards(s).length === 1);
     const card = pendingCards(s)[0];
     expect(card?.title).toBe("Limit reached on This computer. Continue on Work?");
+    // The window drops the open cards of an agent when its turn ends: the card has to come after turn-completed.
+    const order = events.flatMap((event) =>
+      event.type === "turn-completed" ? ["turn-completed"] : event.type === "draft-preview" ? ["card"] : [],
+    );
+    expect(order.indexOf("card")).toBeGreaterThan(order.indexOf("turn-completed"));
     expect(limitEvents(events)).toMatchObject([{ outcome: "asks", afterAction: true, nextAccountId: WORK }]);
     // Nothing moved on its own.
     expect(clis.get(WORK)).toBeUndefined();

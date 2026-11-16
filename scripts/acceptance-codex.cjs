@@ -14,11 +14,48 @@
 //   INSTRHAS <text>    reports whether the thread's instructions contain the text
 //   INSTR              reports the instructions the thread was started with (first 4000 characters)
 //   MODEL              reports the model and effort of the last turn/start
+//   WHO                (W5-T4) reports which account folder this CLI process runs in (CODEX_HOME, by name only) and whether
+//                      the folder is in its arguments
+//   ENVKEY             (W5-T4) reports whether OPENAI_API_KEY is in this process's environment (and its last 4 characters),
+//                      and whether the key is in its arguments
+//   ACC <text>         (W5-T4) answers "Stub: account <id> answered"; when the limits file (COSGRAL_ACCEPT_LIMITS, a JSON
+//                      of { "<account id>": { "resetsInSeconds": n, "action": true|false } }) lists this account, the turn
+//                      fails like a usage limit (with a command item first when "action" is true)
+// Sign-in (W5-T4): "login", "login status" and "logout" behave like the real CLI towards the program: the sign-in state of
+// an account is a marker file in its CODEX_HOME that only this stand-in writes and reads; the system account is always in.
 //   (channel turns, i.e. a JSON channel context: the lead delegates to the other members and combines their results;
 //    a task whose title starts with HOLD never finishes, so it can be paused, resumed and stopped)
 // Anything else gets "Stub: received". Messages that are JSON are channel turns: this stand-in does not run those
 // (the acceptance run uses src/backend/testing/channel-codex.cjs for channels).
 const { randomUUID } = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const accountHome = process.env.CODEX_HOME || null;
+const accountId = accountHome ? path.basename(accountHome) : "system";
+const signedInMarker = accountHome ? path.join(accountHome, "fake-signed-in") : null;
+const cliArgs = process.argv.slice(2);
+if (cliArgs[0] === "login" && cliArgs[1] === "status") {
+  const on = !signedInMarker || fs.existsSync(signedInMarker);
+  console.error(on ? "Logged in using ChatGPT" : "Not logged in");
+  process.exit(on ? 0 : 1);
+}
+if (cliArgs[0] === "logout") {
+  if (signedInMarker) fs.rmSync(signedInMarker, { force: true });
+  process.exit(0);
+}
+if (cliArgs[0] === "login") {
+  console.log(
+    "If your browser did not open, navigate to this URL to authenticate:\nhttps://auth.example.invalid/oauth/authorize?c=1 code WXYZ-1234",
+  );
+  setTimeout(() => {
+    if (accountHome) {
+      fs.mkdirSync(accountHome, { recursive: true });
+      fs.writeFileSync(signedInMarker, "1");
+    }
+    process.exit(0);
+  }, 400);
+}
 
 if (process.argv.includes("--version")) {
   console.log("codex-cli 0.144.1");
@@ -39,7 +76,7 @@ const ask = (method, params) =>
     waiting.set(id, { resolve, reject });
     out({ id, method, params });
   });
-const complete = (threadId, turnId, text, status = "completed", error = null) => {
+const complete = (threadId, turnId, text, status = "completed", error = null, extra = {}) => {
   if (turns.get(turnId)?.ended) return;
   turns.set(turnId, { ended: true });
   if (text) {
@@ -49,7 +86,7 @@ const complete = (threadId, turnId, text, status = "completed", error = null) =>
     });
   }
   // Like Codex: the reason comes as an "error" notification of the turn, then the turn completes as failed.
-  if (error) out({ method: "error", params: { threadId, turnId, message: error } });
+  if (error) out({ method: "error", params: { threadId, turnId, message: error, ...extra } });
   out({
     method: "turn/completed",
     params: { threadId, turn: { id: turnId, status, ...(error ? { error: { message: error } } : {}) } },
@@ -57,7 +94,19 @@ const complete = (threadId, turnId, text, status = "completed", error = null) =>
 };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function direct(threadId, turnId, text) {
+function accountLimit() {
+  try {
+    const file = process.env.COSGRAL_ACCEPT_LIMITS;
+    return file ? (JSON.parse(fs.readFileSync(file, "utf8"))[accountId] ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function direct(threadId, turnId, rawText) {
+  // After an account switch the message comes with the hand-off of the earlier conversation in front of it.
+  const handoff = /--- current message ---\n([\s\S]*)$/.exec(rawText);
+  const text = handoff ? handoff[1] : rawText;
   const tool = async (namespace, name, args) => {
     const response = await ask("item/tool/call", {
       threadId,
@@ -69,6 +118,34 @@ async function direct(threadId, turnId, text) {
     });
     return { success: response.success, text: response.contentItems?.[0]?.text ?? "" };
   };
+  if (text.startsWith("WHO")) {
+    const inArgs = accountHome ? process.argv.join(" ").includes(accountHome) : false;
+    return complete(threadId, turnId, `Stub: home ${accountId} argvHasHome=${inArgs}`);
+  }
+  if (text.startsWith("ENVKEY")) {
+    const key = process.env.OPENAI_API_KEY ?? "";
+    const inArgs = key ? process.argv.join(" ").includes(key) : false;
+    return complete(
+      threadId,
+      turnId,
+      `Stub: key set=${key ? "yes" : "no"} tail=${key ? key.slice(-4) : "-"} argvHasKey=${inArgs}`,
+    );
+  }
+  if (text.startsWith("ACC")) {
+    const limit = accountLimit();
+    if (limit) {
+      if (limit.action) {
+        const item = { id: randomUUID(), type: "commandExecution", command: "touch result.txt" };
+        out({ method: "item/started", params: { threadId, turnId, item } });
+        out({ method: "item/completed", params: { threadId, turnId, item } });
+      }
+      return complete(threadId, turnId, null, "failed", "You've hit your usage limit. Try again later.", {
+        errorKind: "usage-limit",
+        resetsAt: Math.floor(Date.now() / 1000) + (limit.resetsInSeconds ?? 3600),
+      });
+    }
+    return complete(threadId, turnId, `Stub: account ${accountId} answered ${text.slice(3).trim()}`);
+  }
   if (text.startsWith("SLOW")) {
     const ms = Number(text.split(/\s+/)[1]) || 5000;
     const until = Date.now() + ms;
@@ -269,6 +346,12 @@ process.stdin.on("data", (chunk) => {
     switch (method) {
       case "initialize":
         reply({});
+        if (process.env.COSGRAL_ACCEPT_STARTS)
+          fs.appendFileSync(
+            process.env.COSGRAL_ACCEPT_STARTS,
+            `${accountId} ${process.pid}
+`,
+          );
         break;
       case "account/read":
         reply({ account: { type: "chatgpt", email: "fixture@cosgral.local" }, requiresOpenaiAuth: false });
