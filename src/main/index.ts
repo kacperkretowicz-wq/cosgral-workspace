@@ -49,6 +49,7 @@ import { ChannelStore } from "../backend/channel-store";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
 import { EndpointStore } from "../backend/endpoint-store";
 import { EyesService } from "../backend/eyes-service";
+import { IsolationStore } from "../backend/isolation-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
@@ -170,6 +171,7 @@ import {
 } from "./ipc/skill-inputs";
 import { isObject, requireString } from "./ipc/validation";
 import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
+import { registerIsolationIpc } from "./isolation-ipc";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
@@ -893,6 +895,8 @@ function registerIpcHandlers(
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
+  // COSGRAL W8-BE2: isolation of the processes of agents (this computer only).
+  registerIsolationIpc(() => agentService);
   // COSGRAL W6-BE1: the threads of an agent (this computer only).
   registerThreadsIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
@@ -1367,7 +1371,14 @@ if (!hasSingleInstanceLock) {
       const store = new BotStore(app.getPath("userData"), runningSpace.home);
       await store.initialize();
       mailboxStore = new MailboxStore(app.getPath("userData"), store.sharedRoot, store.database);
-      budgetMeter = new BudgetMeter({ database: store.database, emit: (event) => forwardAgentEvent("local", event) });
+      budgetMeter = new BudgetMeter({
+        database: store.database,
+        emit: (event) => {
+          forwardAgentEvent("local", event);
+          // W8-BE2: a limit that changed may let a held message start.
+          if (event.type === "budgets-changed") agentService?.budgetsChanged();
+        },
+      });
       await mailboxStore.initialize();
       configureApplicationProtocol();
       browserHost = new BrowserHost(mainWindow, store.downloadsRoot, join(app.getPath("userData"), BROWSER_STATE_FILE));
@@ -1429,6 +1440,14 @@ if (!hasSingleInstanceLock) {
         }),
       );
       // COSGRAL W8-BE1: the access level of each agent: its working folder only until the person raises it with a card.
+      // COSGRAL W8-BE2: the token counter and the budget gate (the same meter the budgets window uses).
+      if (budgetMeter) service.useBudgets(budgetMeter);
+      // COSGRAL W8-BE2: isolation of the processes of agents; the helper is built in the program's own folder, in the background.
+      service.useIsolation(
+        new IsolationStore({ filePath: join(app.getPath("userData"), "agent-isolation.json") }),
+        join(app.getPath("userData"), "isolation"),
+      );
+      void service.isolation?.initialize();
       service.useAccess(new AccessStore({ filePath: join(app.getPath("userData"), "agent-access.json") }));
       // COSGRAL W3: remote desktop. The host has its own Windows driver, separate from Computer Use, and asks its owner
       // on a confirm card; the pictures of a host this computer looks at go to the main window only.

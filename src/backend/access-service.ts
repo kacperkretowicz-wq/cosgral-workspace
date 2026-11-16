@@ -45,6 +45,11 @@ export interface AccessServiceOptions {
   confirm: (botId: string, input: { title: string; preview: string }) => Promise<DraftPreviewResolution>;
   emit: (event: AgentEvent) => void;
   now?: () => Date;
+  /**
+   * COSGRAL W8-BE2 (Q2): why the file and shell tools of this agent are refused at this level because its isolation is on but
+   * impossible on this computer; null when there is no objection. Left out: never an objection.
+   */
+  isolationRefusal?: (botId: string, level: AccessLevel) => string | null;
 }
 
 export type ToolAccess = { allowed: true } | { allowed: false; message: string };
@@ -143,7 +148,14 @@ export class AccessService {
   inspectApproval(approval: AgentApproval): AccessDecision {
     const policy = this.#policy(approval.botId);
     if (!policy) return { verdict: "allow" };
-    const decision = decideApproval(policy, approval);
+    const writes =
+      approval.kind === "command" ||
+      approval.kind === "file-change" ||
+      (approval.kind === "permissions" && (approval.permissions?.fileSystem.write.length ?? 0) > 0);
+    const noIsolation = writes ? this.#options.isolationRefusal?.(approval.botId, policy.level) : null;
+    const decision: AccessDecision = noIsolation
+      ? { verdict: "deny", reason: "isolation-unavailable", message: noIsolation }
+      : decideApproval(policy, approval);
     if (decision.verdict === "deny") {
       const kind =
         approval.kind === "file-change" ? "file-change" : approval.kind === "command" ? "command" : "permissions";
@@ -202,6 +214,7 @@ export class AccessService {
     if (!policy) return { behavior: "allow" };
     const request = claudeToolRequest(tool, input, policy.workspace);
     if (!request) return { behavior: "allow" };
+    const noIsolation = request.kind === "read" ? null : this.#options.isolationRefusal?.(botId, policy.level);
     const pseudo: AgentApproval = {
       requestId: "claude-tool",
       botId,
@@ -215,8 +228,11 @@ export class AccessService {
       permissions: null,
     };
     // A read is judged as a read (the contract lets a read at working-folder go, the sandbox of the CLI reads widely).
-    const decision =
-      request.kind === "read" ? decideToolPaths(policy, "read", [request.path]) : decideApproval(policy, pseudo);
+    const decision: AccessDecision = noIsolation
+      ? { verdict: "deny", reason: "isolation-unavailable", message: noIsolation }
+      : request.kind === "read"
+        ? decideToolPaths(policy, "read", [request.path])
+        : decideApproval(policy, pseudo);
     if (decision.verdict === "allow") return { behavior: "allow" };
     const named = request.kind === "command" ? request.command : request.path;
     if (decision.verdict === "deny") {

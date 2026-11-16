@@ -235,6 +235,12 @@ export const IPC_CHANNELS = {
   accessList: "access:list",
   accessSetFolders: "access:set-folders",
   accessSetLevel: "access:set-level",
+  // COSGRAL W8-BE2: isolation of the processes of an agent.
+  isolationAvailability: "isolation:availability",
+  isolationList: "isolation:list",
+  isolationGet: "isolation:get",
+  isolationSetEnabled: "isolation:set-enabled",
+  isolationRecheck: "isolation:recheck",
   messageActionsRetry: "message-actions:retry",
   messageActionsEdit: "message-actions:edit",
   messageActionsDelete: "message-actions:delete",

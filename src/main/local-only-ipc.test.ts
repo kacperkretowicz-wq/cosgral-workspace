@@ -53,6 +53,8 @@ beforeAll(async () => {
   registerAcpPresetsIpc(() => null);
   const { registerAccessIpc } = await import("./access-ipc");
   registerAccessIpc(() => null);
+  const { registerIsolationIpc } = await import("./isolation-ipc");
+  registerIsolationIpc(() => null);
   const { registerSubagentsIpc } = await import("./subagents-ipc");
   registerSubagentsIpc(() => null);
   const { registerMessageActionsIpc } = await import("./message-actions-ipc");
@@ -109,6 +111,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("spaces:").length).toBe(8);
     // COSGRAL W8-BE1: the access levels of the agents.
     expect(channelsOf("access:").length).toBe(4);
+    // COSGRAL W8-BE2: the isolation of processes.
+    expect(channelsOf("isolation:").length).toBe(5);
     // COSGRAL W8-KK2: the budgets.
     expect(channelsOf("budgets:").length).toBe(4);
   });
@@ -131,6 +135,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "windows:",
         "spaces:",
         "access:",
+        "isolation:",
         "budgets:",
       );
       const outcomes: string[] = [];
@@ -188,6 +193,12 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /not be after/,
     );
     expect((await call("budgets:list", "local", null)).threw).toMatch(/still starting/);
+    // W8-BE2: a switch that is not on/off, or no agent, is refused by the contract parser, before the program is asked.
+    expect((await call("isolation:set-enabled", "local", { botId: "chief", enabled: "no" })).threw).toMatch(
+      /on or off/,
+    );
+    expect((await call("isolation:get", "local", { botId: "" })).threw).toMatch(/Choose an agent/);
+    expect((await call("isolation:list", "local", null)).threw).toMatch(/still starting/);
     const threads = await call("threads:list", "local", { botId: "chief" });
     expect(threads.threw).toMatch(/still starting/);
     // A call that is for this computer but wrong is refused by the contract parser, before any work.

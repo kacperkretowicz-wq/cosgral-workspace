@@ -22,6 +22,8 @@ let events: AgentEvent[];
 let cards: Cards[];
 let service: AccessService;
 let known: Set<string>;
+/** W8-BE2: what the isolation says about refusing disk tools (null: nothing against it). */
+let isolationRefusal: string | null;
 
 function makeService(file = join(dir, "access.json")): AccessService {
   return new AccessService({
@@ -33,6 +35,7 @@ function makeService(file = join(dir, "access.json")): AccessService {
         cards.push({ ...input, answer: resolve });
       }),
     emit: (event) => events.push(event),
+    isolationRefusal: () => isolationRefusal,
   });
 }
 
@@ -41,6 +44,7 @@ beforeEach(async () => {
   events = [];
   cards = [];
   known = new Set(["chief"]);
+  isolationRefusal = null;
   service = makeService();
 });
 afterEach(async () => {
@@ -300,5 +304,54 @@ describe("the tools of Claude Code", () => {
     service.setFolders({ botId: "chief", excludedFolders: ["D:\\secret"] });
     const result = await service.inspectClaudeTool("chief", "t", "Read", { file_path: "D:\\secret\\keys.txt" });
     expect(result).toMatchObject({ behavior: "deny" });
+  });
+});
+
+describe("Q2: isolation on but impossible (W8-BE2)", () => {
+  const reason = "This computer cannot isolate processes. Disk tools of this agent are refused below Full access.";
+
+  it("refuses a command or a file change of the CLI with its own reason, even inside the folders", () => {
+    isolationRefusal = reason;
+    const inside = service.inspectApproval(approval({ grantRoot: `${WORK}\\src` }));
+    expect(inside).toMatchObject({ verdict: "deny", reason: "isolation-unavailable", message: reason });
+    expect(events.at(-1)).toMatchObject({
+      type: "access-denied",
+      reason: "isolation-unavailable",
+      kind: "file-change",
+    });
+    const command = service.inspectApproval(approval({ kind: "command", command: "npm test", cwd: WORK }));
+    expect(command).toMatchObject({ verdict: "deny", reason: "isolation-unavailable" });
+  });
+
+  it("leaves a request that asks only to see a screen or camera (their own consents) to its own card", () => {
+    isolationRefusal = reason;
+    expect(service.inspectApproval(approval({ kind: "screen", command: null, cwd: null }))).toEqual({
+      verdict: "allow",
+    });
+  });
+
+  it("refuses the file tools and the shell of Claude, but not reads and not tools that touch no folder", async () => {
+    isolationRefusal = reason;
+    expect(await service.inspectClaudeTool("chief", "t", "Bash", { command: "dir" })).toMatchObject({
+      behavior: "deny",
+      message: reason,
+    });
+    expect(await service.inspectClaudeTool("chief", "t", "Write", { file_path: `${WORK}\\a.txt` })).toMatchObject({
+      behavior: "deny",
+    });
+    expect(await service.inspectClaudeTool("chief", "t", "Read", { file_path: `${WORK}\\a.txt` })).toEqual({
+      behavior: "allow",
+    });
+    expect(await service.inspectClaudeTool("chief", "t", "WebFetch", { url: "https://x.y" })).toEqual({
+      behavior: "allow",
+    });
+    expect(
+      events.filter((event) => event.type === "access-denied" && event.reason === "isolation-unavailable"),
+    ).toHaveLength(2);
+  });
+
+  it("nothing changes while the isolation has no objection", async () => {
+    expect(service.inspectApproval(approval({ grantRoot: `${WORK}\\src` }))).toEqual({ verdict: "allow" });
+    expect(await service.inspectClaudeTool("chief", "t", "Bash", { command: "dir" })).toEqual({ behavior: "allow" });
   });
 });

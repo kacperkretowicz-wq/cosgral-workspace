@@ -116,6 +116,8 @@ import { AppServerError, CodexAppServerClient } from "./app-server-client";
 import type { ApprovalRulesStore } from "./approval-rules";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
+import type { BudgetMeter } from "./budget-meter";
+import { PersistentUsageTracker } from "./budget-thread-totals";
 import { ChannelAgentRunner } from "./channel-agent-runner";
 import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
 import { ClaudeAgentClient } from "./claude-client";
@@ -135,6 +137,7 @@ import { DraftStore } from "./draft-store";
 import { EndpointAgentClient } from "./endpoint-client";
 import type { EndpointStore } from "./endpoint-store";
 import { EYES_DYNAMIC_TOOLS, EYES_NAMESPACE, type EyesCallContext } from "./eyes-service";
+import { type IsolationCheck, IsolationService, type IsolationStore, probeIsolation } from "./isolation-service";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
 import { Marketplace } from "./marketplace";
 import type { McpDynamicNamespace } from "./mcp-manager";
@@ -383,6 +386,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #approvalRules: ApprovalRulesStore | null = null;
   /** COSGRAL W8-BE1: the access levels of the agents (attached by the program; without it nothing is narrowed). */
   #access: AccessService | null = null;
+  /** COSGRAL W8-BE2: isolation of the processes of agents (attached by the program). */
+  #isolation: IsolationService | null = null;
+  /** COSGRAL W8-BE2: the token counter and the budget gate (attached by the program; without it nothing is counted or held). */
+  #budgets: BudgetMeter | null = null;
+  #budgetTotals: PersistentUsageTracker | null = null;
+  /** Tokens a CLI thread used in the turn that is running, counted into the budget when the turn ends. */
+  readonly #budgetPending = new Map<string, number>();
+  /** Agents whose next message waits because a budget is used up, with the sentence for the person. */
+  readonly #budgetHolds = new Map<string, string>();
+  #budgetTimer: NodeJS.Timeout | null = null;
   /** COSGRAL W3: models already tried per message (delivery), so a fallback never loops. */
   readonly #triedModels = new Map<string, Set<string>>();
   /** COSGRAL W3: the usage-limit / unavailability error of a turn, read when the turn fails. */
@@ -960,6 +973,38 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     return this.#approvalRules;
   }
 
+  /** COSGRAL W8-BE2: attach the isolation of processes. `folder` is where the helper is built. Call `isolation.initialize()` after. */
+  useIsolation(store: IsolationStore, folder: string, check?: () => Promise<IsolationCheck>): void {
+    this.#isolation = new IsolationService({
+      store,
+      check: check ?? ((): Promise<IsolationCheck> => probeIsolation({ folder })),
+      botIds: () => this.#store.list().map((bot) => bot.id),
+      botName: (botId) => this.#store.list().find((candidate) => candidate.id === botId)?.name ?? null,
+      // Claude starts a program of its own per conversation of an agent; Codex runs one for every agent.
+      ownProcesses: (botId) => {
+        const bot = this.#store.list().find((candidate) => candidate.id === botId);
+        return bot ? providerForBot(bot) === "claude" : false;
+      },
+      confirm: (botId, input) => this.confirmForPerson(botId, input),
+      emit: (event) => this.#emit(event),
+    });
+  }
+
+  get isolation(): IsolationService | null {
+    return this.#isolation;
+  }
+
+  /** COSGRAL W8-BE2: attach the budgets. Turns are counted when they end; a new turn starts only while the budget allows. */
+  useBudgets(meter: BudgetMeter): void {
+    this.#budgets = meter;
+    this.#budgetTotals = new PersistentUsageTracker(this.#store.database);
+  }
+
+  /** The limits or the clock changed (a budget was set or cleared, a new period began): held messages try again. */
+  budgetsChanged(): void {
+    for (const botId of [...this.#budgetHolds.keys()]) this.#scheduleDrain(botId);
+  }
+
   /** COSGRAL W8-BE1: attach the access levels. From then on every CLI starts with the sandbox of its agent's level. */
   useAccess(store: AccessStore): void {
     this.#access = new AccessService({
@@ -971,6 +1016,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       botName: (botId) => this.#store.list().find((candidate) => candidate.id === botId)?.name ?? null,
       confirm: (botId, input) => this.confirmForPerson(botId, input),
       emit: (event) => this.#emit(event),
+      // W8-BE2 (Q2): isolation on but impossible refuses the disk tools below Full access.
+      isolationRefusal: (botId, level) => this.#isolation?.refusal(botId, level) ?? null,
     });
   }
 
@@ -1365,6 +1412,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // COSGRAL W3-KK3: and its "always allow" rules.
     this.#approvalRules?.removeForBot(botId);
     this.#access?.forgetBot(botId);
+    this.#isolation?.forgetBot(botId);
     this.agentSettings.deleteAgent(botId);
     await this.#mailbox.deleteBotData(botId);
     await this.#store.deleteBot(botId);
@@ -1476,6 +1524,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#initialized = false;
     if (this.#restartTimer) clearTimeout(this.#restartTimer);
     this.#restartTimer = null;
+    if (this.#budgetTimer) clearInterval(this.#budgetTimer);
+    this.#budgetTimer = null;
     this.#clearCompactionRuntime();
     for (const pending of this.#pendingDeltas.values()) {
       if (pending.timer) clearTimeout(pending.timer);
@@ -1585,7 +1635,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
     // COSGRAL W6-BE1: the queue the window shows is the queue of the thread that is active.
     const snapshot = this.#mailbox.listQueue(botId, bot?.threadId);
-    return bot ? withSteerSupport(snapshot, providerForBot(bot)) : snapshot;
+    const held = this.#budgetHolds.get(botId);
+    const shown = held ? { ...snapshot, heldReason: held } : snapshot;
+    return bot ? withSteerSupport(shown, providerForBot(bot)) : shown;
   }
 
   async cancelQueuedMessage(botId: string, deliveryId: string): Promise<void> {
@@ -1956,6 +2008,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #bindClient(client: AgentClient): void {
     // COSGRAL W8-BE1: Claude Code asks the program before a file tool or the shell runs; the level of the agent decides.
     if (client instanceof ClaudeAgentClient) {
+      // W8-BE2: the process of a conversation runs in a Job Object when the agent's isolation is on and possible.
+      client.useProcessWrap((cwd) => {
+        const bot = this.#store.list().find((candidate) => candidate.workspacePath === cwd);
+        return bot ? (this.#isolation?.wrapFor(bot.id) ?? null) : null;
+      });
       client.useToolGate(async (threadId, tool, input) => {
         const botId = this.#threadToBot.get(threadId);
         if (!botId || !this.#access) return { behavior: "allow" };
@@ -2416,6 +2473,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       const activeThreadId = this.#store.list().find((candidate) => candidate.id === botId)?.threadId;
       const context = this.#mailbox.nextQueued(botId, activeThreadId);
       if (!context) return;
+      // COSGRAL W8-BE2: a budget that is used up keeps the NEW turn in the queue (a running turn is never cut).
+      if (this.#holdForBudget(botId)) return;
       const bot = this.#store.list().find((candidate) => candidate.id === botId);
       const session = bot ? this.#store.activeProviderSession(botId) : null;
       if (session && this.#reserveContextCompaction(botId, session.externalSessionId)) {
@@ -2425,15 +2484,46 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       await this.#startDelivery(context);
     } finally {
       this.#drainingBots.delete(botId);
-      if (this.#mailbox.nextQueued(botId, this.#store.list().find((candidate) => candidate.id === botId)?.threadId)) {
+      if (
+        !this.#budgetHolds.has(botId) &&
+        this.#mailbox.nextQueued(botId, this.#store.list().find((candidate) => candidate.id === botId)?.threadId)
+      ) {
         this.#scheduleDrain(botId);
       }
     }
   }
 
+  /** True when the budget says "not now"; the person sees the reason on the queue, and it is asked again when things change. */
+  #holdForBudget(botId: string): boolean {
+    const gate = this.#budgets?.gate(botId);
+    if (!gate || gate.allowed) {
+      if (this.#budgetHolds.delete(botId)) {
+        this.#emitQueue(botId);
+        if (this.#budgetHolds.size === 0 && this.#budgetTimer) {
+          clearInterval(this.#budgetTimer);
+          this.#budgetTimer = null;
+        }
+      }
+      return false;
+    }
+    const reason = gate.reason ?? "A budget is used up. New messages wait until it is raised or a new period begins.";
+    if (this.#budgetHolds.get(botId) !== reason) {
+      this.#budgetHolds.set(botId, reason);
+      this.#emitQueue(botId);
+    }
+    // A new day or month lifts the hold with no event, so the held agents are asked again every minute.
+    if (!this.#budgetTimer) {
+      this.#budgetTimer = setInterval(() => this.budgetsChanged(), 60_000);
+      this.#budgetTimer.unref();
+    }
+    return true;
+  }
+
   async #startDelivery(context: DeliveryContext): Promise<void> {
     const { delivery, managedAttachments } = context;
     try {
+      // COSGRAL W8-BE2: no turn starts before the first check of what this computer can isolate.
+      await this.#isolation?.ready();
       await this.#mailbox.markStarting(delivery.id);
       this.#emitQueue(delivery.recipientBotId);
       const bot = this.#selectTurnModel(await this.#store.getOrCreate(delivery.recipientBotId), delivery.id);
@@ -2897,6 +2987,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       case "thread/tokenUsage/updated": {
         if (!threadId || !botId) return;
         this.#updateContextBudget(botId, threadId, params);
+        this.#noteBudgetTokens(threadId, params);
         return;
       }
       case "thread/archived": {
@@ -3111,6 +3202,23 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     } catch (error) {
       this.#emitError("delivery_turn_association_failed", error, botId);
     }
+  }
+
+  /** COSGRAL W8-BE2 (Q6): what the thread used since its last report waits for the end of the turn (counted once). */
+  #noteBudgetTokens(threadId: string, params: unknown): void {
+    if (!this.#budgetTotals) return;
+    const total = finiteNumberOrNull(getRecord(getRecord(params, "tokenUsage"), "total")?.totalTokens);
+    if (total === null) return;
+    const used = this.#budgetTotals.observe(threadId, total);
+    if (used > 0) this.#budgetPending.set(threadId, (this.#budgetPending.get(threadId) ?? 0) + used);
+  }
+
+  /** The turn of this thread ended (done, failed or stopped): its tokens go to the budget. Codex gives no price: null, never a guess. */
+  #recordBudgetTurn(threadId: string): void {
+    const tokens = this.#budgetPending.get(threadId);
+    this.#budgetPending.delete(threadId);
+    const botId = this.#threadToBot.get(threadId);
+    if (tokens && botId) this.#budgets?.record({ botId, tokens, costUsd: null });
   }
 
   #updateContextBudget(botId: string, threadId: string, params: unknown): void {
@@ -3547,6 +3655,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #clearPendingRequestsForTurn(threadId: string, turnId: string): void {
+    this.#recordBudgetTurn(threadId);
     // COSGRAL W6-BE4: the turn of an agent ended or was stopped: its subagents stop with it.
     this.#subagents.stopForTurn(threadId, turnId);
     this.computerUse.endTurn(threadId, turnId);
