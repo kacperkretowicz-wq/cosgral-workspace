@@ -181,6 +181,53 @@ describe("provider accounts engine (W5-BE2)", () => {
     await accounts.add("claude", "Three");
   });
 
+  // COSGRAL W5-K1: the pool marks an account limited until a time, and says which account an agent answers with.
+  it("remembers a usage limit until its time and clears it again", async () => {
+    const { accounts } = await setup();
+    const codex = await accounts.add("codex", "Work");
+    const until = new Date(Date.now() + 3_600_000);
+    expect((await accounts.limitUntil(codex.id, until)).limitedUntil).toBe(until.toISOString());
+    expect(accounts.account(codex.id).limitedUntil).toBe(until.toISOString());
+    expect((await accounts.limitUntil(codex.id, null)).limitedUntil).toBeNull();
+    await expect(accounts.limitUntil("acc-missing", until)).rejects.toThrow();
+  });
+
+  it("tells which account each agent answers with, once per change, and forgets a removed account", async () => {
+    const { accounts, events } = await setup();
+    const codex = await accounts.add("codex", "Work");
+    accounts.setActive("chief", codex.id);
+    expect(accounts.snapshot().active).toEqual([{ botId: "chief", accountId: codex.id, label: "Work" }]);
+    const told = events.length;
+    accounts.setActive("chief", codex.id);
+    expect(events).toHaveLength(told);
+    expect(events.at(-1)?.active).toEqual([{ botId: "chief", accountId: codex.id, label: "Work" }]);
+    accounts.setActive("chief", null);
+    expect(accounts.snapshot().active ?? []).toEqual([]);
+    expect(() => accounts.setActive("chief", "acc-missing")).toThrow();
+    accounts.setActive("chief", codex.id);
+    await accounts.remove(codex.id);
+    expect(accounts.snapshot().active ?? []).toEqual([]);
+  });
+
+  it("does not let an account into a full pool, also after the limit was lowered", async () => {
+    const { accounts } = await setup();
+    await accounts.setPoolSettings(4);
+    const one = await accounts.add("claude", "One");
+    await accounts.add("claude", "Two");
+    const three = await accounts.add("claude", "Three");
+    await accounts.setPool({ id: three.id, inPool: false });
+    await accounts.setPoolSettings(3);
+    const inPool = () =>
+      accounts.snapshot().accounts.filter((item) => item.provider === "claude" && item.inPool).length;
+    expect(inPool()).toBe(3);
+    await expect(accounts.setPool({ id: three.id, inPool: true })).rejects.toThrow(/limit is 3/);
+    // A member may change its order or be switched off without counting again.
+    await expect(accounts.setPool({ id: one.id, inPool: true, enabled: false })).resolves.toBeDefined();
+    await accounts.setPool({ id: one.id, inPool: false });
+    await expect(accounts.setPool({ id: three.id, inPool: true })).resolves.toBeDefined();
+    expect(inPool()).toBe(3);
+  });
+
   it("signs in through the CLI's browser flow, shows the page, signs out, and the state survives a restart", async () => {
     const { accounts, root, make, starts } = await setup();
     const codex = await accounts.add("codex", "Work");

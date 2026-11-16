@@ -43,6 +43,7 @@ import { createEffect, createMemo, createSignal, createStore, flush, onSettled, 
 import { markSidebarConversationRead } from "./agent-read-actions";
 import { AccountLogin } from "./components/AccountLogin";
 import type { OnboardingChoice } from "./components/AppSettingsW3";
+import { type AccountNotice, addAccountNotice } from "./components/account-usage-view";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
@@ -208,6 +209,8 @@ const LAST_POSITION = 1_000_000;
 export function App() {
   const [agentCopyNotice, setAgentCopyNotice] = createSignal("");
   const [fallbackNotices, setFallbackNotices] = createSignal<string[]>([]);
+  // COSGRAL W5-K1: account limit and switch cards, shown in the open conversation of that agent until dismissed.
+  const [accountNotices, setAccountNotices] = createSignal<AccountNotice[]>([]);
   const [botList, setBotList] = createSignal<BotProfile[]>([]);
   const [modelOptions, setModelOptions] = createSignal<AgentModelOption[]>([]);
   const [activeBotId, setActiveBotId] = createSignal("");
@@ -596,6 +599,10 @@ export function App() {
         );
         return;
       }
+      case "account-limit-reached":
+      case "account-switched":
+        setAccountNotices((items) => addAccountNotice(items, event, crypto.randomUUID()));
+        return;
       case "bots-changed":
         applyStoredBots(event.bots);
         return;
@@ -1630,6 +1637,7 @@ export function App() {
     setSettingsRequest(null);
     setBotList([]);
     setFallbackNotices([]);
+    setAccountNotices([]);
     setAgentCopyNotice("");
     setActiveBotId("");
     setActiveDirectMemberId(null);
@@ -2072,6 +2080,8 @@ export function App() {
                   onStop={stopActiveTurn}
                   eyes={eyesState()}
                   onStopEyes={stopEyes}
+                  accountNotices={accountNotices().filter((notice) => notice.botId === activeBot()?.id)}
+                  onDismissAccountNotice={(id) => setAccountNotices((items) => items.filter((item) => item.id !== id))}
                 />
               </Show>
               <Show when={permissionsOpen()}>

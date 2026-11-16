@@ -77,3 +77,24 @@ it("restores the saved choice when assignment fails", async () => {
   await screen.findByRole("alert");
   await waitFor(() => expect(screen.getByLabelText("Konto")).toHaveValue(""));
 });
+
+it("says which account the agent answers with now", async () => {
+  vi.stubGlobal("openbot", {
+    subscriptions: {
+      listAccounts: async () => ({
+        accounts: [],
+        pool: { maxAccountsPerProvider: 3, switchBeforeFirstAction: true },
+        assignments: [],
+        active: [
+          { botId: "chief", accountId: "acc-demo0001", label: "Praca" },
+          { botId: "other", accountId: "acc-demo0002", label: "Drugie" },
+        ],
+      }),
+      assignAccountToAgent: vi.fn(),
+    },
+    agent: { onEvent: () => () => {} },
+  });
+  render(() => <AgentAccountPicker botId="chief" provider="codex" />);
+  expect(await screen.findByText("Teraz odpowiada kontem: Praca")).toBeInTheDocument();
+  expect(screen.queryByText(/Drugie/)).toBeNull();
+});

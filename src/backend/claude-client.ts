@@ -113,14 +113,17 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
   readonly provider: AgentProvider = "claude";
   readonly #cli: ClaudeCliInfo;
   readonly #createQuery: QueryFactory;
+  /** COSGRAL W5-K1: the environment of the CLI (an account's state folder); the program's own by default. */
+  readonly #env: NodeJS.ProcessEnv;
   readonly #threads = new Map<string, ThreadRuntime>();
   readonly #pendingServerRequests = new Map<RequestId, PendingServerRequest>();
   #running = false;
 
-  constructor(cli: ClaudeCliInfo, createQuery: QueryFactory = query) {
+  constructor(cli: ClaudeCliInfo, createQuery: QueryFactory = query, env: NodeJS.ProcessEnv = process.env) {
     super();
     this.#cli = cli;
     this.#createQuery = createQuery;
+    this.#env = env;
   }
 
   get running(): boolean {
@@ -251,7 +254,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         additionalDirectories: config.additionalDirectories,
         canUseTool,
         mcpServers,
-        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "openbot/0.1.0" },
+        env: { ...this.#env, CLAUDE_AGENT_SDK_CLIENT_APP: "openbot/0.1.0" },
       },
     });
     const runtime: ThreadRuntime = {

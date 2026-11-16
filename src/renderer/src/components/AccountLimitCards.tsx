@@ -3,16 +3,13 @@ import type { AccountLimitReachedView, AccountSwitchedView } from "./account-usa
 import { formatResetTime } from "./ProvidersPage";
 import { Button, Card, Heading, Text } from "./ui";
 
-/** Conversation card when a pool account hits a limit (guessed shape until W5-K1). */
+/** Conversation card when the account of a turn hit its usage limit (W5-K1 `account-limit-reached`). */
 export function AccountLimitReachedCard(props: {
   view: AccountLimitReachedView;
   nowMs: number;
-  onReturnAfterReset?: () => void;
   onDismiss?: () => void;
 }) {
   const reset = () => formatResetTime(props.view.resetsAt, props.nowMs);
-  const showReturn = () =>
-    props.view.canReturnAfterReset && !!props.view.returnAccountLabel && !!props.onReturnAfterReset;
 
   return (
     <Card
@@ -29,25 +26,35 @@ export function AccountLimitReachedCard(props: {
         {props.view.reason}
       </Text>
       <Text as="p" tone="secondary">
-        Exhausted account: {props.view.exhaustedAccountLabel}
+        Account: {props.view.exhaustedAccountLabel}
       </Text>
-      <Show
-        when={props.view.switchedToAccountLabel}
-        fallback={
-          <Text as="p" tone="warning" role="status">
-            Every account in the pool is exhausted. Wait for a reset before continuing.
-          </Text>
-        }
-      >
+      <Show when={props.view.outcome === "switched" && props.view.nextAccountLabel}>
         {(label) => (
-          <Text as="p" role="status">
-            Switched to account {label()} for this turn.
+          <>
+            <Text as="p" role="status">
+              Switched to account {label()} for this turn.
+            </Text>
+            <Text as="p" tone="muted">
+              The agent goes back to its first account by itself once the limit has passed.
+            </Text>
+          </>
+        )}
+      </Show>
+      <Show when={props.view.outcome === "asks" && props.view.nextAccountLabel}>
+        {(label) => (
+          <Text as="p" tone="warning" role="status">
+            A card in Needs you asks whether to continue on {label()}.
           </Text>
         )}
       </Show>
+      <Show when={props.view.outcome === "exhausted"}>
+        <Text as="p" tone="warning" role="status">
+          Every account in the pool is exhausted. Wait for a reset before continuing.
+        </Text>
+      </Show>
       <Show when={reset()}>
         <Text as="p" tone="secondary">
-          Resets at {reset()}
+          {props.view.resetsAtAssumed ? "Assumed reset at" : "Resets at"} {reset()}
         </Text>
       </Show>
       <Show when={!reset()}>
@@ -55,18 +62,13 @@ export function AccountLimitReachedCard(props: {
           No reset time was given
         </Text>
       </Show>
-      <div class="account-limit-card-actions">
-        <Show when={showReturn()}>
-          <Button type="button" variant="secondary" onClick={() => props.onReturnAfterReset?.()}>
-            Return to {props.view.returnAccountLabel} after reset
-          </Button>
-        </Show>
-        <Show when={props.onDismiss}>
+      <Show when={props.onDismiss}>
+        <div class="account-limit-card-actions">
           <Button type="button" variant="ghost" onClick={() => props.onDismiss?.()}>
             Dismiss
           </Button>
-        </Show>
-      </div>
+        </div>
+      </Show>
     </Card>
   );
 }
