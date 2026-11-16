@@ -3292,7 +3292,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           kept.length === 8 && kept[0]?.model === "gpt-5.6-terra" && kept[7]?.model === "acp:three",
           "the saved list is unchanged by the refusals",
         );
-        return `8 saved in order; ninth > '${nine.slice(0, 40)}'; a repeat > '${repeat.slice(0, 40)}'; the list is still the same 8. NOT covered here: the list screen (UI4 is not in this tree)`;
+        return `8 saved in order; ninth > '${nine.slice(0, 40)}'; a repeat > '${repeat.slice(0, 40)}'; the list is still the same 8. NOT covered here: the list screen itself (checked by its own component tests, not driven in this window run)`;
       },
     );
 

@@ -128,3 +128,4 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 - W5-UI4: general and agent fallback lists (8), inheritance/reset and unavailable badges, shared fallback mock; endpoint state/preset/masked-key Storybook interactions with axe.
 
 - W5-UI5: agent settings reuse the eight-model fallback editor with inherited/unavailable/reset; preserve inheritance on profile saves; fix two mojibake ellipses in ProvidersPage.
+| 16.11.2026 | `scripts/sandbox-acceptance.ts` (tryb `COSGRAL_MODE=w5`), `scripts/acceptance-codex.cjs`, `src/backend/agent-service.ts` (+ test), `docs/cosgral-raporty/kk-w5-t4.md` | W5-T4: odbiór w prawdziwym oknie: konta z puli i przełączanie (P01–P11), klucze API, punkty końcowe, modele zapasowe. `sandbox:e2e` 30 ok, 0 FAIL, 0 findings; nowe kroki 24/24. Usterka blokująca w K1: karta „kontynuować na innym koncie?” znikała z okna (wysyłana przed `turn-completed`); naprawiona. E05 i F04 bez pokrycia. |
