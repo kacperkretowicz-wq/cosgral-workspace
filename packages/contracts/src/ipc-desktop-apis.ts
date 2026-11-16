@@ -165,6 +165,7 @@ import type {
   UninstallSkillInput,
   UpdateSkillInstallInput,
 } from "./ipc-skills";
+import type { SubagentsDesktopApi } from "./ipc-subagents";
 import type { SubscriptionsDesktopApi } from "./ipc-subscriptions";
 import type {
   CreateTableInput,
@@ -660,6 +661,8 @@ export interface OpenBotDesktopApi {
   threads?: ThreadsDesktopApi;
   /** COSGRAL W6-BE3: the plan card (this computer only). Optional until every mock implements it. */
   plans?: PlansDesktopApi;
+  /** COSGRAL W6-BE4: the subagents of a thread, and Stop (this computer only). Optional until every mock implements it. */
+  subagents?: SubagentsDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */

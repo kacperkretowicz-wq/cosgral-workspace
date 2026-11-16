@@ -100,6 +100,7 @@ import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockPlans } from "./mock-plans";
 import { createMockSidebar } from "./mock-sidebar";
+import { createMockSubagents } from "./mock-subagents";
 import { createMockThreads } from "./mock-threads";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
@@ -1349,6 +1350,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     context: createMockContext((event) => emitAgentEvent(event)),
     // COSGRAL W6-BE3: the plan card and the actions on a message (demo; `propose`, `seed`, `setBusy` are for stories).
     plans: createMockPlans((event) => emitAgentEvent(event)),
+    // COSGRAL W6-BE4: the subagents of a thread (demo; `spawn`, `complete`, ... are for stories).
+    subagents: createMockSubagents((event) => emitAgentEvent(event)),
     messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),

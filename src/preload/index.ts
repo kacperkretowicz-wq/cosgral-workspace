@@ -90,6 +90,7 @@ import { createMessageActionsApi } from "./message-actions-api";
 import { createMobileApi } from "./mobile-api";
 import { createPlansApi } from "./plans-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
+import { createSubagentsApi } from "./subagents-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createThreadsApi } from "./threads-api";
 import { createVoiceApi } from "./voice-api";
@@ -803,6 +804,7 @@ const openbotApi: OpenBotDesktopApi = {
   subscriptions: createSubscriptionsApi(invokeAgent),
   threads: createThreadsApi(invokeAgent),
   plans: createPlansApi(invokeAgent),
+  subagents: createSubagentsApi(invokeAgent),
   messageActions: createMessageActionsApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),

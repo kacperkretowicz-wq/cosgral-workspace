@@ -206,6 +206,9 @@ export const IPC_CHANNELS = {
   // COSGRAL W6-BE3: the plan card and the actions on a message.
   plansRespond: "plans:respond",
   plansList: "plans:list",
+  // COSGRAL W6-BE4: subagents.
+  subagentsList: "subagents:list",
+  subagentsStop: "subagents:stop",
   messageActionsRetry: "message-actions:retry",
   messageActionsEdit: "message-actions:edit",
   messageActionsDelete: "message-actions:delete",

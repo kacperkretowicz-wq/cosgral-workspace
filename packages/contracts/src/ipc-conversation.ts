@@ -50,6 +50,7 @@ import {
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
+import { isSubagentChanged, type SubagentChanged } from "./ipc-subagents";
 import {
   type AccountError,
   type AccountLimitReached,
@@ -678,6 +679,8 @@ export type AgentEvent =
   | ({ type: "plan-changed" } & PlanChanged)
   /** COSGRAL W6-BE3: the pins of one thread changed. */
   | ({ type: "message-pins-changed" } & MessagePinsChanged)
+  /** COSGRAL W6-BE4: a subagent started, wrote, waited, ended or was stopped (replace the subagent with this id). */
+  | ({ type: "subagent-changed" } & SubagentChanged)
   | { type: "error"; botId?: string; code: string; message: string };
 
 export function isAgentEvent(value: unknown): value is AgentEvent {
@@ -833,6 +836,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isThreadActivity(value);
     case "plan-changed":
       return isPlanChanged(value);
+    case "subagent-changed":
+      return isSubagentChanged(value);
     case "message-pins-changed":
       return isMessagePinsChanged(value);
     case "agent-mcp-changed":
