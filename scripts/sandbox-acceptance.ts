@@ -1636,6 +1636,9 @@ async function secondRun(d: Driver, root: string, cli: CliStandIn): Promise<void
 // packaged and the address is loopback). The program's own code does everything else: the card, the download, the check,
 // the install, the pages. Nothing here reads a login or leaves the machine.
 
+/** File requests at the end of the first start: the auto-update of the next start runs before its step begins. */
+let requestsAtRestart = 0;
+
 interface CliStandIn {
   /** The version the "latest release" answers with. */
   latest: string;
@@ -1990,23 +1993,17 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       assert(/Własna ścieżka/.test(await cliCard(page).innerText()), "the page names the source");
       await field.fill(join(root, "does-not-exist", "codex.exe"));
       await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
-      await waitUntil(
-        page,
-        "an answer to the bad path",
-        async () => {
-          const state = await codexCli(d);
-          return state.phase === "idle" || state.phase === "error";
-        },
-        30_000,
-      );
+      // The answer to a bad path shows at the top of the section (not on the card).
+      const section = page.getByRole("region", { name: "Narzędzia CLI" });
+      await section.getByRole("alert").first().waitFor({ timeout: 30_000 });
+      const alertText = (await section.getByRole("alert").first().innerText()).replace(/\s+/g, " ");
       const bad = await codexCli(d);
-      const shown = (await cliCard(page).innerText()).slice(0, 400);
-      assert(
-        noProfilePath(String(bad.error ?? "")) && noProfilePath(shown.replace(/Własna ścieżka do CLI/g, "")),
-        "no profile path in the answer",
-      );
+      assert(/No file at that path/.test(alertText), `the answer names the problem: ${alertText.slice(0, 160)}`);
+      assert(noProfilePath(alertText), "no profile path in the answer");
+      assert(bad.phase === "idle" || bad.phase === "error", `no hang: phase ${String(bad.phase)}`);
+      const rawPrefix = /Error invoking remote method/.test(alertText);
       await d.dump("cli-c09-bad-path");
-      const detailBad = `bad path: source ${String(bad.source)}, phase ${String(bad.phase)}, error ${bad.error ? "shown" : "none"}`;
+      const detailBad = `bad path > error on the page "${alertText.slice(0, 90)}"${rawPrefix ? " (raw IPC prefix visible)" : ""}; source stays ${String(bad.source)}`;
       await field.fill("");
       await cliCard(page).getByRole("button", { name: "Wyczyść ścieżkę", exact: true }).click();
       await waitUntil(page, "custom path cleared", async () => (await codexCli(d)).customPath === null);
@@ -2077,6 +2074,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
 
   // The next launches need a newer version available and auto-update left on.
   cli.latest = "1.3.0";
+  requestsAtRestart = cli.fileRequests;
 }
 
 /** C06 and the setup of C07, in the second start (auto-update runs at start). */
@@ -2086,7 +2084,7 @@ async function cliSecondRun(d: Driver, root: string, cli: CliStandIn): Promise<v
     "C06",
     "CLI: auto-update at start downloads, checks and switches without a card; the old folder goes",
     async () => {
-      const before = cli.fileRequests;
+      const before = requestsAtRestart;
       await waitUntil(
         page,
         "auto-update to 1.3.0",
