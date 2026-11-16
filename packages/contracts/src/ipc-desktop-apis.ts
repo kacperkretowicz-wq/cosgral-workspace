@@ -86,6 +86,7 @@ import type {
 } from "./ipc-dock";
 import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
+import type { IntegrationsDesktopApi } from "./ipc-integrations";
 import type { IsolationDesktopApi } from "./ipc-isolation";
 import type {
   LibraryFileIdInput,
@@ -694,6 +695,8 @@ export interface OpenBotDesktopApi {
   budgets?: BudgetsDesktopApi;
   /** COSGRAL W8-KK3: browser profiles per agent (own cookies and storage, domain lists, clear). Optional until every mock implements it. */
   browserProfiles?: BrowserProfilesDesktopApi;
+  /** COSGRAL W10-KK1: account sign-ins for apps (GitHub, Google, Notion, Meta) as MCP servers. Optional until every mock implements it. */
+  integrations?: IntegrationsDesktopApi;
 }
 
 /**

@@ -38,6 +38,7 @@ import {
 } from "./ipc-dock";
 import { type EndpointModelId, isEndpointModel, isModelEndpointList, type ModelEndpoint } from "./ipc-endpoints";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { type IntegrationsChanged, isIntegrationsChanged } from "./ipc-integrations";
 import { type IsolationChanged, isIsolationChanged } from "./ipc-isolation";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
@@ -685,6 +686,8 @@ export type AgentEvent =
   | ({ type: "budgets-changed" } & BudgetsChanged)
   /** COSGRAL W8-KK3: a browser profile was made, its domain lists changed or its sessions were cleared (the whole list). */
   | ({ type: "browser-profiles-changed" } & BrowserProfilesChanged)
+  /** COSGRAL W10-KK1: a sign-in of an app started, ended, failed or was removed (the whole list). */
+  | ({ type: "integrations-changed" } & IntegrationsChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -858,6 +861,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isBudgetsChanged(value);
     case "browser-profiles-changed":
       return isBrowserProfilesChanged(value);
+    case "integrations-changed":
+      return isIntegrationsChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

@@ -186,6 +186,14 @@ export const IPC_CHANNELS = {
   endpointsDetectLocal: "endpoints:detect-local",
   // COSGRAL W6-BE2: context of a conversation.
   // COSGRAL W6-KK3: separate conversation windows.
+  // COSGRAL W10-KK1: account integrations (OAuth).
+  integrationsList: "integrations:list",
+  integrationsDescribe: "integrations:describe",
+  integrationsStatus: "integrations:status",
+  integrationsConfigure: "integrations:configure",
+  integrationsConnect: "integrations:connect",
+  integrationsCancel: "integrations:cancel",
+  integrationsDisconnect: "integrations:disconnect",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",
