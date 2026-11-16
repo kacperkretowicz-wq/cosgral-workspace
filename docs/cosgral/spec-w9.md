@@ -184,6 +184,27 @@ Zespół **nie** loguje się na konta właściciela i **nie** wkleja sekretów d
 
 ---
 
+## 7. Decyzje lidera (Q1–Q12, 16.11.2026)
+
+Lider zaakceptował **wszystkie** rekomendacje T1 ze §3. Zapis wiążący dla W9:
+
+| Q | Decyzja |
+|---|---|
+| Q1 | Exposure w kontrakcie zostaje `loopback` \| `lan`. Tailscale = ten sam transport + URL MagicDNS/IP + **instrukcja UI**; bez trzeciego transportu, dopóki nie trzeba osobnego hooka cert. |
+| Q2 | Domyślnie **self-signed** COSGRAL + odcisk; opcja **certyfikatu HTTPS sieci** (Tailscale), gdy właściciel ma zaufany cert (przeglądarka bez ostrzeżenia). |
+| Q3 | W9 = **Tailscale first**; własny przekaźnik = plan B, osobne zadanie **po** G6. |
+| Q4 | Klucze **VAPID**: prywatny tylko lokalnie (`safeStorage` / magazyn PC); publiczny może iść do PWA; prywatny nigdy do repo ani telefonu. |
+| Q5 | Web Push w W9 tylko o **Needs you**; inne zdarzenia później. |
+| Q6 | **PIN opcjonalny**; rekomendowany przy pierwszym parowaniu poza domem (karta „ustaw PIN?”). |
+| Q7 | Blokada PIN: **5 min** bezczynności + od razu po powrocie z tła (`visibilitychange`). |
+| Q8 | Kanały w PWA = **MVP**: lista, czytanie, send, replyTo; bez reassign zadań w W9. |
+| Q9 | **G6** = decyzja poza domem u obu wspólników. Push Android/iPhone = kryterium BE2; raportować osobno, gdy iPhone fail → decyzja właściciela 16 (natywna app). |
+| Q10 | W9-UI1 (dok/wyspa/dyktowanie) **poza** bramką G6; nie blokuje G6. |
+| Q11 | Push przez system telefonu (FCM/APNs via przeglądarka) **dozwolony** jako transport OS; rozmowa/API zostają na PC/Tailscale. Oznaczyć w UI: „powiadomienia idą przez system telefonu”. |
+| Q12 | Telefony testowe trzymają **właściciele / wspólnicy**; Tester: skrypt + raport, bez przechowywania urządzeń. |
+
+---
+
 ## Commity
 
-Zobacz SHA w wyniku kanału na `team/tester/w9-spec`.
+Zobacz SHA w wyniku kanału na `team/tester/w9-spec` (decyzje §7: `team/tester/w6-t2`).

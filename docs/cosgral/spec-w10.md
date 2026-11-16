@@ -171,6 +171,27 @@ Zespół nie wkleja client secret OAuth do repo; `openbot.request_api_key` / Vau
 
 ---
 
+## 7. Decyzje lidera (Q1–Q12, 16.11.2026)
+
+Lider zaakceptował **wszystkie** rekomendacje T1 ze §3. Zapis wiążący dla W10:
+
+| Q | Decyzja |
+|---|---|
+| Q1 | **K2** (komunikator) i katalog **200+** dopiero po decyzji właścicieli z `DECYZJE-WLASCICIELA.md` wiersz 8. **K1 + BE1 + BE2** mogą iść wcześniej na wybranych integracjach. |
+| Q2 | Kolejność: **K1 → BE1 → BE2 → K2** (K2 opcjonalnie). |
+| Q3 | OAuth: **systemowa przeglądarka** użytkownika + callback **loopback** (jak typowe CLI). |
+| Q4 | Google / Notion / GitHub / Meta = **osobne wpisy MCP** (łatwiejsza allowlista W8); wspólny UX „połącz konto” w UI. |
+| Q5 | Workflow webhook ≠ routine webhook: **osobne URL-e i sekrety**; wspólny rate-limit OK. |
+| Q6 | GitHub trigger: **GitHub App** (węższy scope); PAT tylko lab. |
+| Q7 | Wersje przepływu = **snapshot** całego grafu JSON per wersja. |
+| Q8 | Eksport: plik **`.cosgral-agent`** (zip + manifest, wersja schematu); **bez** ścieżek z nazwą profilu. |
+| Q9 | Eksport agenta **bez** pamięci kanału — tylko pamięć agenta + skille. |
+| Q10 | Komunikator: **Telegram Bot** pierwszy, **chyba że** właściciel zażąda WhatsApp. |
+| Q11 | Slack / Discord **nie** w rdzeniu W10; backlog po K2. |
+| Q12 | Koszty API OAuth / Meta: **właściciel**; zespół tylko checklistę i raport bez kont. |
+
+---
+
 ## Commity
 
-Zobacz SHA w wyniku kanału na `team/tester/w9-spec`.
+Zobacz SHA w wyniku kanału na `team/tester/w9-spec` (decyzje §7: `team/tester/w6-t2`).
