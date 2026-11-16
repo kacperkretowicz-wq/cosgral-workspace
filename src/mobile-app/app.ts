@@ -6,7 +6,14 @@
 // Source of src/backend/mobile-app-assets.ts: run `bun run build:mobile-app` after editing. The build puts the small
 // runtime checks from @openbot/contracts/runtime-values into this script (see scripts/build-mobile-app.ts).
 
-import { isDynamicRecord, isFunction, isNumber, isString } from "@openbot/contracts/runtime-values";
+import {
+  type DynamicRecord,
+  isBoolean,
+  isDynamicRecord,
+  isFunction,
+  isNumber,
+  isString,
+} from "@openbot/contracts/runtime-values";
 
 // -- texts -----------------------------------------------------------------------------------------------------------
 
@@ -97,6 +104,36 @@ const en = {
   forgetHelp:
     "Removes the saved key from this browser. To block this phone completely, also remove it on the computer (Settings → Mobile Connect).",
   onlyOnComputer: "Permissions, Computer Use, the Vault, settings and removing agents stay on the computer.",
+  lockTitle: "Locked",
+  lockIntro: "Enter your PIN to open COSGRAL.",
+  pinLabel: "PIN",
+  unlock: "Unlock",
+  unlocking: "Checking…",
+  wrongPin: "Wrong PIN. {n} tries left.",
+  removedPhone: "Too many wrong PINs. This phone was removed. Pair it again from the computer.",
+  pinBad: "The PIN is 4 to 8 digits.",
+  pinTitle: "PIN lock",
+  pinHelp:
+    "Locks the app after 5 minutes without use and when you leave it. Five wrong PINs remove this phone: pair it again from the computer.",
+  pinSet: "Set PIN",
+  pinNew: "New PIN",
+  pinCurrent: "Current PIN",
+  pinChange: "Change PIN",
+  pinRemove: "Remove PIN",
+  pinIsOn: "The PIN lock is on.",
+  pinSaved: "PIN saved.",
+  pinRemoved: "PIN removed.",
+  pushTitle: "Notifications",
+  pushNotice:
+    "Notifications go through your phone's system (Google or Apple), encrypted for this phone. They only say that an agent is waiting.",
+  pushOn: "Turn on notifications",
+  pushOff: "Turn off notifications",
+  pushIsOn: "Notifications are on.",
+  pushNeedsComputer: "Turn on notifications on the computer first (Settings → Mobile Connect).",
+  pushUnsupported:
+    "This browser cannot show notifications. On an iPhone, add this page to the home screen and open it from there.",
+  pushDenied: "Notifications are blocked for this page in the phone's settings.",
+  pushFailed: "Could not change notifications. {error}",
 };
 
 const pl: Record<keyof typeof en, string> = {
@@ -186,6 +223,36 @@ const pl: Record<keyof typeof en, string> = {
   forgetHelp:
     "Usuwa zapisany klucz z tej przeglądarki. Aby całkiem zablokować ten telefon, usuń go też na komputerze (Ustawienia → Mobile Connect).",
   onlyOnComputer: "Uprawnienia, Computer Use, Vault, ustawienia i usuwanie agentów zostają na komputerze.",
+  lockTitle: "Zablokowane",
+  lockIntro: "Podaj PIN, aby otworzyć COSGRAL.",
+  pinLabel: "PIN",
+  unlock: "Odblokuj",
+  unlocking: "Sprawdzanie…",
+  wrongPin: "Zły PIN. Zostało prób: {n}.",
+  removedPhone: "Za dużo błędnych PIN-ów. Ten telefon został usunięty. Sparuj go ponownie z komputera.",
+  pinBad: "PIN ma od 4 do 8 cyfr.",
+  pinTitle: "Blokada PIN-em",
+  pinHelp:
+    "Blokuje aplikację po 5 minutach bez użycia i gdy z niej wyjdziesz. Pięć błędnych PIN-ów usuwa ten telefon: sparuj go ponownie z komputera.",
+  pinSet: "Ustaw PIN",
+  pinNew: "Nowy PIN",
+  pinCurrent: "Obecny PIN",
+  pinChange: "Zmień PIN",
+  pinRemove: "Usuń PIN",
+  pinIsOn: "Blokada PIN-em jest włączona.",
+  pinSaved: "PIN zapisany.",
+  pinRemoved: "PIN usunięty.",
+  pushTitle: "Powiadomienia",
+  pushNotice:
+    "Powiadomienia idą przez system telefonu (Google lub Apple), zaszyfrowane dla tego telefonu. Mówią tylko, że agent czeka.",
+  pushOn: "Włącz powiadomienia",
+  pushOff: "Wyłącz powiadomienia",
+  pushIsOn: "Powiadomienia są włączone.",
+  pushNeedsComputer: "Najpierw włącz powiadomienia na komputerze (Ustawienia → Mobile Connect).",
+  pushUnsupported:
+    "Ta przeglądarka nie pokaże powiadomień. Na iPhonie dodaj tę stronę do ekranu głównego i otwórz ją stamtąd.",
+  pushDenied: "Powiadomienia dla tej strony są zablokowane w ustawieniach telefonu.",
+  pushFailed: "Nie udało się zmienić powiadomień. {error}",
 };
 
 type Key = keyof typeof en;
@@ -247,6 +314,15 @@ interface Session {
   token: string;
   deviceName: string;
   fingerprint: string | null;
+}
+
+/** GET /v1/session (see PhoneSessionState in the contract). */
+interface Access {
+  pinSet: boolean;
+  locked: boolean;
+  attemptsLeft: number | null;
+  idleLockSeconds: number;
+  push: { available: boolean; subscribed: boolean };
 }
 
 interface PairingCode {
@@ -366,6 +442,27 @@ function isThreadsAnswer(value: unknown): value is { threads: Thread[] } {
 
 function isNeedsAnswer(value: unknown): value is { items: Need[] } {
   return isDynamicRecord(value) && isListOf(value.items, isNeed);
+}
+
+function isAccess(value: unknown): value is Access {
+  return (
+    isDynamicRecord(value) &&
+    isBoolean(value.pinSet) &&
+    isBoolean(value.locked) &&
+    (value.attemptsLeft === null || isNumber(value.attemptsLeft)) &&
+    isNumber(value.idleLockSeconds) &&
+    isDynamicRecord(value.push) &&
+    isBoolean(value.push.available) &&
+    isBoolean(value.push.subscribed)
+  );
+}
+
+function isPushKeyAnswer(value: unknown): value is { publicKey: string } {
+  return isDynamicRecord(value) && isString(value.publicKey) && /^[A-Za-z0-9_-]{20,200}$/.test(value.publicKey);
+}
+
+function isAnyAnswer(value: unknown): value is DynamicRecord {
+  return isDynamicRecord(value);
 }
 
 function isPairAnswer(value: unknown): value is { token: string } {
@@ -494,6 +591,7 @@ function toast(message: string): void {
 const SESSION_KEY = "cosgral.phone.v1";
 const THEME_KEY = "cosgral.theme";
 const TICKET = /^[A-Za-z0-9_-]{22,64}$/;
+const PIN_FORMAT = /^[0-9]{4,8}$/;
 
 function loadSession(): Session | null {
   try {
@@ -521,6 +619,10 @@ interface AppState {
   unread: Set<string>;
   live: boolean;
   agentsLoaded: boolean;
+  /** The PIN lock and push of this phone, as the computer last said (null: an older computer without them). */
+  access: Access | null;
+  /** The lock screen is up: no data of the computer is kept or shown. */
+  locked: boolean;
 }
 
 const state: AppState = {
@@ -533,6 +635,8 @@ const state: AppState = {
   unread: new Set(),
   live: false,
   agentsLoaded: false,
+  access: null,
+  locked: false,
 };
 
 interface Screen {
@@ -552,16 +656,29 @@ let current: Screen | null = null;
 
 class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly code: string | null;
+  readonly attemptsLeft: number | null;
+  constructor(status: number, message: string, code: string | null = null, attemptsLeft: number | null = null) {
     super(message);
     this.status = status;
+    this.code = code;
+    this.attemptsLeft = attemptsLeft;
   }
 }
 
 interface ApiInit {
   method?: string;
-  body?: Answer | SendBody | PairBody;
+  body?: Answer | SendBody | PairBody | PinBody | PushBody;
   auth?: boolean;
+}
+
+interface PinBody {
+  pin?: string;
+  currentPin?: string;
+}
+
+interface PushBody {
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
 }
 
 interface SendBody {
@@ -598,10 +715,17 @@ async function api<T>(path: string, guard: Guard<T>, init: ApiInit = {}): Promis
     // No JSON body.
   }
   if (!response.ok) {
-    if (response.status === 401 && session) unpair(t("unpaired"));
+    const code = isDynamicRecord(json) && isString(json.code) ? json.code : null;
+    const left = isDynamicRecord(json) && isNumber(json.attemptsLeft) ? json.attemptsLeft : null;
+    // The computer says the PIN is needed (locked after a while, or this page was not told): show the lock screen.
+    if (response.status === 423 && session) showLock();
+    // A wrong PIN is also a 401; only an unknown token (no code) means this phone was removed.
+    else if (response.status === 401 && session && code === null) unpair(t("unpaired"));
     throw new ApiError(
       response.status,
       isDynamicRecord(json) && isString(json.error) ? json.error : `HTTP ${response.status}`,
+      code,
+      left,
     );
   }
   if (!guard(json)) throw new ApiError(502, t("badAnswer"));
@@ -715,6 +839,10 @@ async function followStream(run: number, controller: AbortController): Promise<v
       });
       if (response.status === 401) {
         unpair(t("unpaired"));
+        return;
+      }
+      if (response.status === 423) {
+        showLock();
         return;
       }
       if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
@@ -915,17 +1043,151 @@ function unpair(notice: string | null): void {
   state.agents = [];
   state.threads = new Map();
   state.unread.clear();
+  state.access = null;
+  state.locked = false;
+  clearTimeout(idleTimer);
   stopStream();
   setNeeds([]);
   history.replaceState(null, "", location.pathname);
   render();
 }
 
+/** A page that was just opened asks for the PIN even when the computer has not locked yet (the page was closed or killed). */
+let freshPage = true;
+
 async function startSession(): Promise<void> {
+  // Whether this phone has a PIN and is locked. An older computer without it answers 404: no lock then.
+  const access = await api("/v1/session", isAccess).catch(() => null);
+  state.access = access;
+  state.locked = access?.locked === true;
+  if (freshPage && access?.pinSet && !state.locked) {
+    freshPage = false;
+    lockNow();
+    return;
+  }
+  freshPage = false;
+  if (state.locked) {
+    render();
+    return;
+  }
+  noteActivity();
+  void syncPush();
   await loadAgents().catch(() => undefined);
   startStream();
   render();
   await loadNeeds().catch(() => undefined);
+}
+
+// -- the PIN lock ------------------------------------------------------------------------------------------------------
+// With a PIN, the app shows nothing of the computer until it is given: it locks after the idle time, when the page goes to
+// the background, and when the computer says so (423). The computer enforces it too: a locked phone gets no data from it.
+
+let idleTimer: ReturnType<typeof setTimeout> | undefined;
+let lastPing = 0;
+
+/** The person touched the app: the idle time starts again, and now and then the computer is told so it does not lock first. */
+function noteActivity(): void {
+  const access = state.access;
+  if (!state.session || state.locked || !access?.pinSet) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(lockNow, Math.max(10, access.idleLockSeconds) * 1000);
+  const now = Date.now();
+  if (now - lastPing > 60_000) {
+    lastPing = now;
+    void api("/v1/me", isAnyAnswer).catch(() => undefined);
+  }
+}
+
+/** Locks this page at once and tells the computer. */
+function lockNow(): void {
+  const session = state.session;
+  if (!session || state.locked || !state.access?.pinSet) return;
+  void fetch("/v1/lock", {
+    method: "POST",
+    headers: { authorization: `Bearer ${session.token}` },
+    keepalive: true,
+  }).catch(() => undefined);
+  showLock();
+}
+
+/** The lock screen: what was loaded is thrown away first. */
+function showLock(): void {
+  clearTimeout(idleTimer);
+  clearTimeout(refreshTimer);
+  state.locked = true;
+  state.access = state.access ? { ...state.access, pinSet: true, locked: true } : null;
+  state.agents = [];
+  state.threads = new Map();
+  state.unread.clear();
+  state.agentsLoaded = false;
+  stopStream();
+  setNeeds([]);
+  render();
+}
+
+function lockScreen(): Screen {
+  const errorBox = h("p", { class: "error", "data-error": true, hidden: true });
+  const field = h("input", {
+    class: "field pin",
+    id: "pin",
+    name: "pin",
+    type: "password",
+    inputmode: "numeric",
+    pattern: "[0-9]*",
+    maxlength: 8,
+    autocomplete: "off",
+    "aria-label": t("pinLabel"),
+  });
+  const button = h("button", { class: "btn primary", type: "button", "data-action": "unlock" }, t("unlock"));
+  const fail = (message: string) => {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  };
+  const submit = () => {
+    errorBox.hidden = true;
+    if (!PIN_FORMAT.test(field.value)) return fail(t("pinBad"));
+    button.disabled = true;
+    button.textContent = t("unlocking");
+    api("/v1/pin/unlock", isAnyAnswer, { method: "POST", body: { pin: field.value } })
+      .then(() => {
+        field.value = "";
+        state.locked = false;
+        return startSession();
+      })
+      .catch((error: unknown) => {
+        field.value = "";
+        button.disabled = false;
+        button.textContent = t("unlock");
+        if (error instanceof ApiError && error.code === "removed") return unpair(t("removedPhone"));
+        if (error instanceof ApiError && error.code === "wrong-pin") {
+          if (state.access) state.access = { ...state.access, attemptsLeft: error.attemptsLeft };
+          return fail(t("wrongPin", { n: error.attemptsLeft ?? 0 }));
+        }
+        fail(errorText(error));
+      });
+  };
+  field.addEventListener("keydown", (event) => {
+    if (event instanceof KeyboardEvent && event.key === "Enter") submit();
+  });
+  button.addEventListener("click", submit);
+  const left = state.access?.attemptsLeft;
+  return {
+    element: h(
+      "section",
+      { class: "screen", "data-screen": "lock" },
+      h(
+        "div",
+        { class: "body pair" },
+        mark(),
+        h("h1", {}, t("lockTitle")),
+        h("p", { class: "hint" }, t("lockIntro")),
+        left !== null && left !== undefined && left < 5 ? h("p", { class: "hint" }, t("wrongPin", { n: left })) : null,
+        h("div", {}, h("label", { class: "field-label", for: "pin" }, t("pinLabel")), field),
+        errorBox,
+        button,
+      ),
+    ),
+  };
 }
 
 // -- shell -----------------------------------------------------------------------------------------------------------
@@ -1016,6 +1278,8 @@ function render(): void {
   let screen: Screen;
   if (!state.session || state.code) {
     screen = pairScreen();
+  } else if (state.locked) {
+    screen = lockScreen();
   } else {
     const route = parseRoute();
     screen =
@@ -1635,6 +1899,7 @@ function phoneScreen(): Screen {
   };
   paintThemes();
   body.append(h("div", {}, h("span", { class: "field-label" }, t("theme")), segments));
+  body.append(pinSection(), pushSection());
   const forget = h("button", { class: "btn danger", type: "button", "data-action": "forget" }, t("forget"));
   let armed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1657,6 +1922,177 @@ function phoneScreen(): Screen {
     tab: "phone",
     dispose: () => clearTimeout(timer),
   };
+}
+
+// -- PIN and notifications of this phone (settings) --------------------------------------------------------------------
+
+function pinField(name: string, label: Key): HTMLInputElement {
+  return h("input", {
+    class: "field pin",
+    name,
+    type: "password",
+    inputmode: "numeric",
+    pattern: "[0-9]*",
+    maxlength: 8,
+    autocomplete: "off",
+    "aria-label": t(label),
+  });
+}
+
+function pinSection(): HTMLElement {
+  const box = h("div", { class: "section", "data-section": "pin" });
+  if (!state.access) return box;
+  const message = h("p", { class: "hint", "data-status": true });
+  const say = (text: string, failed = false) => {
+    message.textContent = text;
+    message.className = failed ? "error" : "hint";
+  };
+  const done = (access: Access, text: string) => {
+    state.access = access;
+    if (access.pinSet) noteActivity();
+    else clearTimeout(idleTimer);
+    say(text);
+    draw(text);
+  };
+  const failed = (error: unknown) => {
+    if (error instanceof ApiError && error.code === "removed") return unpair(t("removedPhone"));
+    if (error instanceof ApiError && error.code === "wrong-pin")
+      return say(t("wrongPin", { n: error.attemptsLeft ?? 0 }), true);
+    say(errorText(error), true);
+  };
+  const draw = (status: string | null = null) => {
+    const set = state.access?.pinSet === true;
+    const current = pinField("current-pin", "pinCurrent");
+    const fresh = pinField("new-pin", "pinNew");
+    const save = h(
+      "button",
+      { class: "btn primary", type: "button", "data-action": "pin-save" },
+      set ? t("pinChange") : t("pinSet"),
+    );
+    save.addEventListener("click", () => {
+      if (!PIN_FORMAT.test(fresh.value) || (set && !PIN_FORMAT.test(current.value))) return say(t("pinBad"), true);
+      api("/v1/pin", isAccess, {
+        method: "PUT",
+        body: set ? { pin: fresh.value, currentPin: current.value } : { pin: fresh.value },
+      })
+        .then((access) => done(access, t("pinSaved")))
+        .catch(failed);
+    });
+    const parts: HTMLElement[] = [
+      h("span", { class: "field-label" }, t("pinTitle")),
+      h("p", { class: "hint" }, set ? t("pinIsOn") : t("pinHelp")),
+      ...(set ? [h("div", {}, h("label", { class: "field-label" }, t("pinCurrent")), current)] : []),
+      h("div", {}, h("label", { class: "field-label" }, t("pinNew")), fresh),
+      save,
+    ];
+    if (set) {
+      const remove = h("button", { class: "btn", type: "button", "data-action": "pin-remove" }, t("pinRemove"));
+      remove.addEventListener("click", () => {
+        if (!PIN_FORMAT.test(current.value)) return say(t("pinBad"), true);
+        api("/v1/pin", isAccess, { method: "DELETE", body: { pin: current.value } })
+          .then((access) => done(access, t("pinRemoved")))
+          .catch(failed);
+      });
+      parts.push(remove);
+    }
+    parts.push(message);
+    say(status ?? "");
+    box.replaceChildren(...parts);
+  };
+  draw();
+  return box;
+}
+
+const PUSH_SUPPORTED = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+/** The public key as the Push API wants it (bytes). */
+function keyBytes(key: string): Uint8Array<ArrayBuffer> {
+  const text = atob(key.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = new Uint8Array(text.length);
+  for (let index = 0; index < text.length; index += 1) bytes[index] = text.charCodeAt(index);
+  return bytes;
+}
+
+async function sendSubscription(subscription: PushSubscription): Promise<void> {
+  const json = subscription.toJSON();
+  const keys = json.keys;
+  if (!json.endpoint || !keys?.p256dh || !keys.auth) throw new Error(t("badAnswer"));
+  state.access = await api("/v1/push/subscription", isAccess, {
+    method: "PUT",
+    body: { subscription: { endpoint: json.endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } } },
+  });
+}
+
+/** Called from a tap (the permission prompt needs one): asks the phone's permission, subscribes, tells the computer. */
+async function enablePush(): Promise<void> {
+  if ((await Notification.requestPermission()) !== "granted") throw new Error(t("pushDenied"));
+  const registration = await navigator.serviceWorker.ready;
+  const key = await api("/v1/push/key", isPushKeyAnswer);
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: keyBytes(key.publicKey),
+  });
+  await sendSubscription(subscription);
+}
+
+async function disablePush(): Promise<void> {
+  const registration = await navigator.serviceWorker.ready;
+  await (await registration.pushManager.getSubscription())?.unsubscribe();
+  state.access = await api("/v1/push/subscription", isAccess, { method: "DELETE" });
+}
+
+/** At start: a subscription the browser already has is told to the computer again (it may have been renewed). Never makes a new one. */
+async function syncPush(): Promise<void> {
+  if (!PUSH_SUPPORTED || !state.access?.push.available) return;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) await sendSubscription(subscription);
+  } catch {
+    // Not worth a message: the settings page shows the real state.
+  }
+}
+
+function pushSection(): HTMLElement {
+  const box = h("div", { class: "section", "data-section": "push" });
+  const access = state.access;
+  if (!access) return box;
+  const message = h("p", { class: "hint", "data-status": true });
+  const draw = () => {
+    const now = state.access;
+    const parts: HTMLElement[] = [
+      h("span", { class: "field-label" }, t("pushTitle")),
+      h("p", { class: "hint" }, t("pushNotice")),
+    ];
+    if (!now?.push.available) parts.push(h("p", { class: "hint", "data-push": "computer" }, t("pushNeedsComputer")));
+    else if (!PUSH_SUPPORTED) parts.push(h("p", { class: "hint", "data-push": "unsupported" }, t("pushUnsupported")));
+    else {
+      const on = now.push.subscribed;
+      const button = h(
+        "button",
+        { class: on ? "btn" : "btn primary", type: "button", "data-action": on ? "push-off" : "push-on" },
+        on ? t("pushOff") : t("pushOn"),
+      );
+      button.addEventListener("click", () => {
+        button.disabled = true;
+        (on ? disablePush() : enablePush())
+          .then(() => {
+            message.textContent = "";
+            draw();
+          })
+          .catch((error: unknown) => {
+            button.disabled = false;
+            message.className = "error";
+            message.textContent = t("pushFailed", { error: errorText(error) });
+          });
+      });
+      if (on) parts.push(h("p", { class: "hint", "data-push": "on" }, t("pushIsOn")));
+      parts.push(button);
+    }
+    box.replaceChildren(...parts, message);
+  };
+  draw();
+  return box;
 }
 
 // -- start -----------------------------------------------------------------------------------------------------------
@@ -1683,14 +2119,19 @@ window.addEventListener(
   listen,
 );
 const resume = () => {
-  if (document.visibilityState === "hidden") return;
+  // Leaving the app locks it (Q7): what comes back is the lock screen, not the last chat.
+  if (document.visibilityState === "hidden") return lockNow();
   wake?.();
-  if (state.session) {
+  if (state.session && !state.locked) {
     void loadAgents().catch(() => undefined);
     void loadNeeds().catch(() => undefined);
   }
 };
 document.addEventListener("visibilitychange", resume, listen);
+window.addEventListener("pagehide", lockNow, listen);
+for (const name of ["pointerdown", "keydown", "touchstart", "scroll"]) {
+  document.addEventListener(name, noteActivity, { signal: lifecycle.signal, passive: true });
+}
 window.addEventListener("online", resume, listen);
 
 takePairingLink();
