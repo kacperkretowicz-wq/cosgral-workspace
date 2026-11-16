@@ -197,8 +197,8 @@ import {
 } from "./remote-server-manager";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
-import { registerSubagentsIpc } from "./subagents-ipc";
 import { registerSpacesIpc } from "./spaces-ipc";
+import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";

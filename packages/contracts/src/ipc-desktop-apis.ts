@@ -167,8 +167,8 @@ import type {
   UninstallSkillInput,
   UpdateSkillInstallInput,
 } from "./ipc-skills";
-import type { SubagentsDesktopApi } from "./ipc-subagents";
 import type { SpacesDesktopApi } from "./ipc-spaces";
+import type { SubagentsDesktopApi } from "./ipc-subagents";
 import type { SubscriptionsDesktopApi } from "./ipc-subscriptions";
 import type {
   CreateTableInput,

@@ -51,8 +51,8 @@ import {
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
-import { isSubagentChanged, type SubagentChanged } from "./ipc-subagents";
 import { isSpacesChanged, type SpacesChanged } from "./ipc-spaces";
+import { isSubagentChanged, type SubagentChanged } from "./ipc-subagents";
 import {
   type AccountError,
   type AccountLimitReached,
