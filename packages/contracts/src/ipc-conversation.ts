@@ -12,6 +12,7 @@ import {
   isKeptDraft,
   type KeptDraft,
 } from "./ipc-action-cards";
+import { type AgentPreferencesChanged, isAgentPreferencesChanged } from "./ipc-agent-cards";
 import { type AgentTemplate, type AppSettings, isAgentTemplate, isAppSettings } from "./ipc-agent-settings";
 import { type ApprovalRule, type ApprovalRuleScope, isApprovalRuleList } from "./ipc-approval-rules";
 import {
@@ -698,6 +699,8 @@ export type AgentEvent =
   | ({ type: "phone-access-changed" } & PhoneAccessChanged)
   /** COSGRAL W11 (U4): a side question started, grew, ended, failed or was cancelled (its whole state). */
   | ({ type: "side-question-changed" } & SideQuestionChanged)
+  /** COSGRAL W11 (BE-B): the small per-agent choices of one agent changed (the whole preferences). */
+  | ({ type: "agent-preferences-changed" } & AgentPreferencesChanged)
   /** COSGRAL W11 (U6): the strip of thread tabs of one agent changed. */
   | ({ type: "thread-tabs-changed" } & ThreadTabsChanged)
   /** COSGRAL W10-KK2: the messenger bridge changed (connected, failed, allow list, a chat wrote that is not allowed) (the whole list). */
@@ -885,6 +888,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isPhoneAccessChanged(value);
     case "side-question-changed":
       return isSideQuestionChanged(value);
+    case "agent-preferences-changed":
+      return isAgentPreferencesChanged(value);
     case "thread-tabs-changed":
       return isThreadTabsChanged(value);
     case "messengers-changed":

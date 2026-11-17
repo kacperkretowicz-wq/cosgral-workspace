@@ -96,6 +96,7 @@ import { createMockAccess } from "./mock-access";
 import { createMockAccounts } from "./mock-accounts";
 import { createMockAcpLogin } from "./mock-acp-login";
 import { createMockAcpPresets } from "./mock-acp-presets";
+import { createMockAgentCards } from "./mock-agent-cards";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockBudgets } from "./mock-budgets";
@@ -1391,6 +1392,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     search: createMockSearch(),
     composer: createMockComposer((event) => emitAgentEvent(event)),
     threadTabs: createMockThreadTabs((event) => emitAgentEvent(event)),
+    agentCards: createMockAgentCards((event) => emitAgentEvent(event)),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).

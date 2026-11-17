@@ -209,6 +209,11 @@ export const IPC_CHANNELS = {
   threadTabsOpen: "thread-tabs:open",
   threadTabsClose: "thread-tabs:close",
   threadTabsReorder: "thread-tabs:reorder",
+  // COSGRAL W11 (BE-B): the small per-agent choices and the overview of the agent cards.
+  agentCardsOverview: "agent-cards:overview",
+  agentCardsGetPreferences: "agent-cards:get-preferences",
+  agentCardsUpdatePreferences: "agent-cards:update-preferences",
+  agentCardsResetSession: "agent-cards:reset-session",
   // COSGRAL W10-KK2: messenger bridge (Telegram).
   messengersList: "messengers:list",
   messengersStatus: "messengers:status",
