@@ -15,6 +15,9 @@ export function createProviderCatalogApi(invoke: Invoke): ProviderCatalogDesktop
     list: () => invoke(IPC_CHANNELS.providerCatalogList, undefined, decodeItems),
     setKey: (input) => invoke(IPC_CHANNELS.providerCatalogSetKey, input, decodeItem),
     clearKey: (input) => invoke(IPC_CHANNELS.providerCatalogClearKey, input, decodeItem),
+    addKey: (input) => invoke(IPC_CHANNELS.providerCatalogAddKey, input, decodeItem),
+    removeKey: (input) => invoke(IPC_CHANNELS.providerCatalogRemoveKey, input, decodeItem),
+    setKeyEnabled: (input) => invoke(IPC_CHANNELS.providerCatalogSetKeyEnabled, input, decodeItem),
   };
 }
 

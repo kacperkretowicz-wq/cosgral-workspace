@@ -1361,6 +1361,11 @@ function configureApplicationMenu(service: AgentService, updater: UpdateService)
   );
 }
 
+/** The slot of one key of a catalog provider in the encrypted key table: the first key keeps the name it had before the pool. */
+function catalogKeySlot(providerId: string, slotId: string): string {
+  return slotId === "default" ? `catalog:${providerId}` : `catalog:${providerId}:${slotId}`;
+}
+
 function forwardAgentEvent(serverId: string, event: AgentEvent): void {
   dockWindows?.forward(serverId, event);
   conversationWindowHost?.forward(serverId, event);
@@ -1839,6 +1844,16 @@ if (!hasSingleInstanceLock) {
           if (event.type === "threads-changed") threadTabsService?.learn(event);
           if (event.type === "bots-changed") agentCardsService?.prune(event.bots.map((bot) => bot.id));
           if (event.type === "acp-agents-changed") providerCatalogService?.agentsChanged();
+          if (event.type === "provider-usage-changed") {
+            // COSGRAL W12 (BE-I): an ACP agent that is limited marks the key it started with, so the next start takes another key.
+            for (const usage of event.usage) {
+              if (usage.provider !== "acp" || usage.state !== "limited" || !usage.model?.startsWith("acp:")) continue;
+              providerCatalogService?.noteAgentLimited(
+                usage.model.slice(4),
+                usage.resetsAt ? new Date(usage.resetsAt * 1000) : null,
+              );
+            }
+          }
         });
         // COSGRAL W12 (BE-D): the agent cards; the counts come from the services that already own the data.
         agentCardsService = new AgentCardsService({
@@ -1939,20 +1954,28 @@ if (!hasSingleInstanceLock) {
         }
         // COSGRAL W12 (BE-E): the catalog of the 18 providers; keys of Codex and Claude stay in their own slots, the rest in "catalog:<id>".
         providerCatalogService = new ProviderCatalogService({
+          poolFile: join(app.getPath("userData"), "provider-key-pool.json"),
+          // Codex and Claude keep one key where they always did (the pool of their accounts is in Providers); the others keep
+          // each key of the pool in a slot of the same encrypted table ("catalog:<id>" is the first key, "catalog:<id>:<key>" the rest).
           keys: {
-            mask: (id) =>
+            mask: (id, slotId) =>
               isApiKeyProvider(id)
-                ? (apiKeyStore?.list().find((entry) => entry.provider === id)?.maskedKey ?? null)
-                : (apiKeyStore?.slotMask(`catalog:${id}`) ?? null),
-            save: (id, key) => {
-              if (isApiKeyProvider(id)) apiKeyStore?.set(id, key);
-              else apiKeyStore?.setSlot(`catalog:${id}`, key);
+                ? slotId === "default"
+                  ? (apiKeyStore?.list().find((entry) => entry.provider === id)?.maskedKey ?? null)
+                  : null
+                : (apiKeyStore?.slotMask(catalogKeySlot(id, slotId)) ?? null),
+            save: (id, slotId, key) => {
+              if (isApiKeyProvider(id)) {
+                if (slotId === "default") apiKeyStore?.set(id, key);
+              } else apiKeyStore?.setSlot(catalogKeySlot(id, slotId), key);
             },
-            remove: (id) => {
-              if (isApiKeyProvider(id)) apiKeyStore?.remove(id);
-              else apiKeyStore?.removeSlot(`catalog:${id}`);
+            remove: (id, slotId) => {
+              if (isApiKeyProvider(id)) {
+                if (slotId === "default") apiKeyStore?.remove(id);
+              } else apiKeyStore?.removeSlot(catalogKeySlot(id, slotId));
             },
-            plain: (id) => (isApiKeyProvider(id) ? null : (apiKeyStore?.slotKey(`catalog:${id}`) ?? null)),
+            plain: (id, slotId) =>
+              isApiKeyProvider(id) ? null : (apiKeyStore?.slotKey(catalogKeySlot(id, slotId)) ?? null),
           },
           detect: (command) => findCommandInPath(command),
           addedAgents: () => providerRegistry?.listAcpAgents().map((agent) => agent.id) ?? [],

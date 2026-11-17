@@ -175,7 +175,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("agent-cards:").length).toBe(7);
     expect(channelsOf("server-settings:").length).toBe(5);
     // COSGRAL W12 (BE-E): the provider catalog.
-    expect(channelsOf("provider-catalog:").length).toBe(3);
+    expect(channelsOf("provider-catalog:").length).toBe(6);
     // COSGRAL W12 (BE-H): the library page, the usage report and the schedule.
     expect(channelsOf("library-view:").length).toBe(3);
     expect(channelsOf("usage-report:").length).toBe(1);
