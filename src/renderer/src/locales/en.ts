@@ -221,4 +221,12 @@ export const en = {
   "Copy ready. Memory, history, queue, routines, channels and Vault are not copied.":
     "Copy ready. Memory, history, queue, routines, channels and Vault are not copied.",
   "Note:": "Note:",
+  "Could not change the thread tabs.": "Could not change the thread tabs.",
+  Threads: "Threads",
+  "Close tab": "Close tab",
+  "Tab actions": "Tab actions",
+  "Close other tabs": "Close other tabs",
+  "Close tabs to the right": "Close tabs to the right",
+  "New thread": "New thread",
+  "All threads": "All threads",
 } as const;

@@ -28,6 +28,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "PageRail",
     "ContextSettingsSection",
     "InitialSetup",
+    "ThreadTabs",
     "NewAgentPage",
   ];
   for (const file of files) {

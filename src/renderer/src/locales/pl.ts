@@ -221,4 +221,12 @@ export const pl = {
   "Copy ready. Memory, history, queue, routines, channels and Vault are not copied.":
     "Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.",
   "Note:": "Uwaga:",
+  "Could not change the thread tabs.": "Nie udało się zmienić kart wątków.",
+  Threads: "Wątki",
+  "Close tab": "Zamknij kartę",
+  "Tab actions": "Akcje karty",
+  "Close other tabs": "Zamknij pozostałe karty",
+  "Close tabs to the right": "Zamknij karty po prawej",
+  "New thread": "Nowy wątek",
+  "All threads": "Wszystkie wątki",
 } as const;

@@ -24,3 +24,8 @@
 ## Commit 4 — napisy do t() (odbiór Testera: pasek boczny FAIL)
 - InitialSetup (tytuły, opisy, przyciski, uprawnienia macOS, błędy), Sidebar „Duplicate”, App „Copy ready…” w słowniku PL/EN (52 klucze). Test zgodności kluczy skanuje InitialSetup i NewAgentPage.
 - Kontrola: i18n 9/9, InitialSetup.onboarding 5/5, App.test 92/92 (--testTimeout=30000), typecheck:renderer OK, Biome OK.
+
+## Commit 5 — zakładki wątków (zrzuty 102–104)
+- `ThreadTabs`: karty otwartych wątków (kontrakt U6), menu karty (zamknij / pozostałe / po prawej), lista zamkniętych pod szewronem, „+”. Zamknięcie aktywnej karty pokazuje sąsiednią; wątek zostaje w liście. Bez kontraktu threadTabs nic się nie rysuje (bez atrapy).
+- Luka: przeciąganie kart (reorder) — kontrakt jest, UI jeszcze nie.
+- Kontrola: ThreadTabs 5/5, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
