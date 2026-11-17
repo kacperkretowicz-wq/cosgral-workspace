@@ -480,4 +480,16 @@ describe("plugin catalog engine", () => {
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(mcp.servers).toHaveLength(1);
   });
+
+  it("an installed plugin names its MCP server ids, so the window can sign in to them", async () => {
+    const { service, mcp, catalogDir } = await setup(PLUGINS);
+    await service.setCatalogFolder(catalogDir);
+    expect(service.get("duo").summary.serverIds).toEqual([]);
+    const summary = await service.install({ slug: "duo" });
+    expect(summary.serverIds).toEqual(mcp.servers.map((server) => server.id));
+    expect(summary.serverIds).toHaveLength(2);
+    expect(isPluginSummary(summary)).toBe(true);
+    await service.uninstall("duo");
+    expect(service.get("duo").summary.serverIds).toEqual([]);
+  });
 });

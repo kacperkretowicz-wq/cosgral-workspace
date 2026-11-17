@@ -159,4 +159,25 @@ describe("mock plugin catalog (W11-KK e)", () => {
     expect(isPluginCatalogChanged(events.at(-1))).toBe(true);
     expect((await api.setCatalogFolder({ directory: null })).source).toBe("demo");
   });
+
+  it("an installed plugin names its MCP servers (for the sign-in button), an available one has none", async () => {
+    const { api } = setup();
+    expect((await api.get({ slug: "demo-docs" })).summary.serverIds).toEqual([]);
+    const installed = await api.install({ slug: "demo-docs" });
+    expect(installed.serverIds).toEqual(["srv-demo-docs"]);
+    expect(isPluginSummary(installed)).toBe(true);
+    expect(isPluginSummary({ ...installed, serverIds: [1] })).toBe(false);
+    await api.uninstall({ slug: "demo-docs" });
+    expect((await api.get({ slug: "demo-docs" })).summary.serverIds).toEqual([]);
+  });
+
+  it("choosing the catalog folder opens the dialog for the person: a chosen folder loads, a closed dialog answers null", async () => {
+    const { api, events } = setup();
+    api.simulate.closeNextFolderDialog();
+    expect(await api.chooseCatalogFolder()).toBeNull();
+    const info = await api.chooseCatalogFolder();
+    expect(info).toMatchObject({ source: "folder" });
+    expect(info && isPluginCatalogInfo(info)).toBe(true);
+    expect(isPluginCatalogChanged(events.at(-1))).toBe(true);
+  });
 });

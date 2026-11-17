@@ -29,7 +29,7 @@ import {
 } from "@openbot/contracts/ipc";
 
 interface DemoEntry {
-  summary: Omit<PluginSummary, "state" | "installedVersion" | "error" | "agentCount">;
+  summary: Omit<PluginSummary, "state" | "installedVersion" | "error" | "agentCount" | "serverIds">;
   description: string;
   apps: PluginApp[];
 }
@@ -120,6 +120,8 @@ export interface MockPluginCatalog extends Required<PluginCatalogDesktopApi> {
     signedIn: (slug: string) => void;
     /** The plugin's server stopped answering. */
     serverFailed: (slug: string) => void;
+    /** The person closes the folder dialog of the next `chooseCatalogFolder`. */
+    closeNextFolderDialog: () => void;
     /** The catalog holds a newer version of this plugin. */
     newVersion: (slug: string, version: string) => void;
   };
@@ -135,6 +137,7 @@ export function createMockPluginCatalog(emit: (event: AgentEvent) => void): Mock
   const installed = new Map<string, Installed>();
   const customs = new Map<string, AddCustomPluginInput>();
   let folder: string | null = null;
+  let nextFolderDialog: "chosen" | "closed" = "chosen";
   let info: PluginCatalogInfo = {
     source: "demo",
     catalogVersion: "demo-1",
@@ -162,6 +165,7 @@ export function createMockPluginCatalog(emit: (event: AgentEvent) => void): Mock
         installedVersion: "custom",
         error: have.error,
         agentCount: 1,
+        serverIds: [`srv-${slug}`],
         unavailableHere: false,
       };
     }
@@ -179,6 +183,7 @@ export function createMockPluginCatalog(emit: (event: AgentEvent) => void): Mock
       installedVersion: have?.version ?? null,
       error: have?.error ?? null,
       agentCount: have ? 1 : 0,
+      serverIds: have ? [`srv-${slug}`] : [],
     };
   };
   const installedSummaries = () => [...installed.keys()].map(summaryOf);
@@ -290,6 +295,13 @@ export function createMockPluginCatalog(emit: (event: AgentEvent) => void): Mock
       changed();
       return summaryOf(slug);
     },
+    chooseCatalogFolder: async () => {
+      if (nextFolderDialog === "closed") {
+        nextFolderDialog = "chosen";
+        return null;
+      }
+      return api.setCatalogFolder({ directory: "C:\\catalog-demo" });
+    },
     setCatalogFolder: async (input) => {
       const request = parseSetPluginCatalogFolderInput(input);
       folder = request.directory;
@@ -318,6 +330,10 @@ export function createMockPluginCatalog(emit: (event: AgentEvent) => void): Mock
   return {
     ...api,
     simulate: {
+      /** The person closes the folder dialog of the next `chooseCatalogFolder`. */
+      closeNextFolderDialog: () => {
+        nextFolderDialog = "closed";
+      },
       signedIn: (slug) => {
         const current = installed.get(slug);
         if (current?.state !== "needs-sign-in") return;

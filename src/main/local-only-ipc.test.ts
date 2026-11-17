@@ -89,7 +89,10 @@ beforeAll(async () => {
   registerServerSettingsIpc(() => null);
   registerProviderCatalogIpc(() => null);
   registerMessengersIpc(() => null);
-  registerPluginCatalogIpc(() => null);
+  registerPluginCatalogIpc(
+    () => null,
+    async () => null,
+  );
   registerMcpOAuthIpc(() => null);
   registerInstanceTransferIpc(() => null);
   registerUpdatePreferencesIpc(() => null);
@@ -171,7 +174,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
     expect(channelsOf("vault-connectors:").length).toBe(8);
     // COSGRAL W11-KK (e): the Marketplace Apps tab.
-    expect(channelsOf("plugin-catalog:").length).toBe(8);
+    expect(channelsOf("plugin-catalog:").length).toBe(9);
     // COSGRAL W12-KK (1): the sign-in (OAuth) to MCP servers.
     expect(channelsOf("mcp-oauth:").length).toBe(5);
     // COSGRAL W12-KK (g2): Transfer/Import and the update preferences.
@@ -335,6 +338,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /lowercase/,
     );
     expect((await call("plugin-catalog:info", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("plugin-catalog:choose-folder", "local", null)).threw).toMatch(/still starting/);
     // W12-KK (1): a bad sign-in request is refused by the parser before the program is asked.
     expect((await call("mcp-oauth:sign-in", "local", { serverId: "" })).threw).toMatch(/Choose a server/);
     expect((await call("mcp-oauth:list", "local", null)).threw).toMatch(/still starting/);

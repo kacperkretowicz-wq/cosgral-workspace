@@ -14,7 +14,11 @@ import type { PluginCatalogService } from "../backend/plugin-catalog/plugin-cata
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import { handleTrusted } from "./trusted-ipc";
 
-export function registerPluginCatalogIpc(service: () => PluginCatalogService | null): void {
+/** `chooseFolder` opens the system folder dialog and answers the chosen folder, or null when it was closed. */
+export function registerPluginCatalogIpc(
+  service: () => PluginCatalogService | null,
+  chooseFolder: () => Promise<string | null>,
+): void {
   const local = (input: unknown) => {
     const request = parseAgentRequest(input);
     if (request.serverId !== "local") throw new Error("Plugins are managed on this computer only.");
@@ -52,6 +56,12 @@ export function registerPluginCatalogIpc(service: () => PluginCatalogService | n
   handleTrusted(IPC_CHANNELS.pluginCatalogAddCustom, (input: unknown) => {
     const request = parseAddCustomPluginInput(local(input));
     return current().addCustom(request);
+  });
+  handleTrusted(IPC_CHANNELS.pluginCatalogChooseFolder, async (input: unknown) => {
+    local(input);
+    const catalog = current();
+    const directory = await chooseFolder();
+    return directory === null ? null : catalog.setCatalogFolder(directory);
   });
   handleTrusted(IPC_CHANNELS.pluginCatalogSetFolder, (input: unknown) => {
     const request = parseSetPluginCatalogFolderInput(local(input));
