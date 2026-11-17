@@ -147,6 +147,38 @@ describe("BotStore", () => {
     await expect(readFile(join(userData, "legacy-backup-v1", "bots.json"), "utf8")).resolves.toBe(source);
   });
 
+  it("W12: an agent file with a colour that is not on the 17-colour wheel loads with the nearest colour instead of being refused", async () => {
+    const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
+    temporaryRoots.push(root);
+    const userData = join(root, "user-data");
+    await mkdir(userData, { recursive: true });
+    const agent = (id: string, hue: number | null) => ({
+      id,
+      name: id,
+      role: "Role",
+      description: "",
+      notifications: true,
+      model: "gpt-5.6-luna",
+      reasoningEffort: "medium",
+      threadId: null,
+      workspacePath: join(root, "home", "COSGRAL Workspace", "Bots", id),
+      preview: "No messages yet",
+      updatedAt: null,
+      avatarSeed: id,
+      avatarHue: hue,
+    });
+    const file = {
+      version: 2,
+      examplesInitialized: true,
+      bots: [agent("old", 215), agent("off", 17), agent("auto", null), agent("wrap", 359)],
+    };
+    await writeFile(join(userData, "bots.json"), JSON.stringify(file));
+    const store = createBotStore(userData, join(root, "home"));
+    await store.initialize();
+    const hues = Object.fromEntries(store.list().map((bot) => [bot.id, bot.avatarHue]));
+    expect(hues).toEqual({ old: 215, off: 18, auto: null, wrap: 0 });
+  });
+
   it("creates unique new agents at the top of the persistent list", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-store-"));
     temporaryRoots.push(root);

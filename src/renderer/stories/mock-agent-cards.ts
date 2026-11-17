@@ -4,14 +4,21 @@
 
 import {
   AGENT_CARD_IDS,
+  AGENT_TEMPLATE_LIMITS,
+  type AgentCardDetails,
   type AgentCardId,
   type AgentCardsDesktopApi,
   type AgentCardsOverview,
   type AgentEvent,
   type AgentPreferences,
+  type AgentPublishDetails,
   applyAgentPreferenceChanges,
   defaultAgentPreferences,
+  defaultNotificationPreferences,
+  parseAgentCardDetailsInput,
   parseAgentCardsBotInput,
+  parsePublishAgentTemplateInput,
+  parseUnpublishAgentTemplateInput,
   parseUpdateAgentPreferencesInput,
 } from "@openbot/contracts/ipc";
 
@@ -38,6 +45,8 @@ export interface MockAgentCards extends Required<AgentCardsDesktopApi> {
 
 export function createMockAgentCards(emit: (event: AgentEvent) => void): MockAgentCards {
   const preferences = new Map<string, AgentPreferences>();
+  /** botId -> the template saved from that agent. */
+  const published = new Map<string, { id: string; name: string; summary: string; createdAt: string }>();
   const read = (botId: string): AgentPreferences => preferences.get(botId) ?? defaultAgentPreferences(botId);
   const overview = (botId: string): AgentCardsOverview => {
     const prefs = read(botId);
@@ -50,7 +59,7 @@ export function createMockAgentCards(emit: (event: AgentEvent) => void): MockAge
       tables: "2 tables",
       routines: "1 routine",
       usage: "No limit",
-      publish: "Not available in this build",
+      publish: published.has(botId) ? "Saved as a template" : "Not saved as a template",
       permissions: "Ask first",
       advanced: prefs.busyMessage,
       folders: "2 folders",
@@ -61,7 +70,7 @@ export function createMockAgentCards(emit: (event: AgentEvent) => void): MockAge
       botId,
       cards: AGENT_CARD_IDS.map((id) => ({
         id,
-        available: id !== "publish",
+        available: true,
         count: DEMO_COUNTS[id],
         summary: summaries[id],
       })),
@@ -80,8 +89,93 @@ export function createMockAgentCards(emit: (event: AgentEvent) => void): MockAge
       return publish(applyAgentPreferenceChanges(read(changes.botId), changes));
     },
     resetSession: async (raw) => overview(parseAgentCardsBotInput(raw).botId),
+    details: async (raw) => details(parseAgentCardDetailsInput(raw), read, published),
+    publishTemplate: async (raw) => {
+      const input = parsePublishAgentTemplateInput(raw);
+      published.set(input.botId, {
+        id: `template-${input.botId}`,
+        name: input.name ?? input.botId,
+        summary: input.summary ?? "",
+        createdAt: "2026-11-17T12:00:00.000Z",
+      });
+      return publishState(input.botId, published);
+    },
+    unpublishTemplate: async (raw) => {
+      const { botId } = parseUnpublishAgentTemplateInput(raw);
+      published.delete(botId);
+      return publishState(botId, published);
+    },
     simulate: {
       setSteerSupported: (botId, supported) => void publish({ ...read(botId), steerSupported: supported }),
     },
   };
+}
+
+type Published = Map<string, { id: string; name: string; summary: string; createdAt: string }>;
+
+function publishState(botId: string, published: Published): AgentPublishDetails {
+  const template = published.get(botId) ?? null;
+  return { card: "publish", template, savedTemplates: published.size, maxTemplates: AGENT_TEMPLATE_LIMITS.saved };
+}
+
+/** Demo detail of each card (the same shapes as the program). */
+function details(
+  input: { botId: string; card: AgentCardDetails["card"] },
+  read: (botId: string) => AgentPreferences,
+  published: Published,
+): AgentCardDetails {
+  switch (input.card) {
+    case "files":
+      return {
+        card: "files",
+        items: [
+          { id: "f-1", name: "launch-plan.md", size: 4_096, origin: "agent", createdAt: "2026-11-17T09:00:00.000Z" },
+          { id: "f-2", name: "sources.csv", size: 18_220, origin: "agent", createdAt: "2026-11-16T15:30:00.000Z" },
+        ],
+        total: 2,
+        truncated: false,
+      };
+    case "folders":
+      return {
+        card: "folders",
+        workspace: "C:/Demo/Agents/chief",
+        level: "ask-first",
+        additional: ["C:/Demo/Projects"],
+        excluded: ["C:/Demo/Private"],
+      };
+    case "usage":
+      return {
+        card: "usage",
+        status: {
+          scope: { kind: "agent", botId: input.botId },
+          budget: null,
+          usage: {
+            periodStart: "2026-11-01T00:00:00.000Z",
+            periodEnd: "2026-12-01T00:00:00.000Z",
+            tokens: 182_400,
+            turns: 41,
+            costUsd: 0,
+            pricedTurns: 0,
+            costComplete: false,
+          },
+          state: "ok",
+          tokenPercent: null,
+          costPercent: null,
+          blocked: false,
+          reason: null,
+          enforceable: true,
+        },
+      };
+    case "publish":
+      return publishState(input.botId, published);
+    case "advanced":
+      return { card: "advanced", preferences: read(input.botId), hasSession: true, messages: 24 };
+    case "notifications":
+      return {
+        card: "notifications",
+        level: read(input.botId).notificationLevel,
+        muted: false,
+        matrix: defaultNotificationPreferences().matrix,
+      };
+  }
 }

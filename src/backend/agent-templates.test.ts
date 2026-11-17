@@ -212,4 +212,17 @@ describe("AgentTemplates", () => {
     expect(saved.memories).toEqual([]);
     await expect(templates.saveFromAgent({ botId: "missing" })).rejects.toThrow(/no longer exists/);
   });
+
+  it("W12: a template saved with a colour off the 17-colour wheel is kept with the nearest colour and makes agents with it", async () => {
+    const { templates, database } = await open();
+    const { bot } = await templates.createAgent({ templateId: "builtin:writer", avatarHue: 215 });
+    const saved = await templates.saveFromAgent({ botId: bot.id, name: "Old colour" });
+    database.connection.exec(
+      "UPDATE projection_agent_templates SET data_json = json_set(data_json, '$.avatarHue', 17)",
+    );
+    const again = templates.list().find((template) => template.id === saved.id);
+    expect(again?.avatarHue).toBe(18);
+    const made = await templates.createAgent({ templateId: saved.id });
+    expect(made.bot.avatarHue).toBe(18);
+  });
 });

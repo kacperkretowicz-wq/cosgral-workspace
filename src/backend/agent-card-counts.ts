@@ -31,9 +31,7 @@ export function agentCardCounts(
   sources: AgentCardSources,
 ): (botId: string) => Partial<Record<AgentCardId, AgentCardCount>> {
   return (botId) => {
-    const out: Partial<Record<AgentCardId, AgentCardCount>> = {
-      publish: { available: false, summary: "Not available in this build" },
-    };
+    const out: Partial<Record<AgentCardId, AgentCardCount>> = {};
     const set = (id: AgentCardId, work: () => AgentCardCount): void => {
       const card = attempt(work);
       if (card) out[id] = card;

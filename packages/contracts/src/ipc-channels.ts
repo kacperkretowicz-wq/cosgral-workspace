@@ -216,6 +216,9 @@ export const IPC_CHANNELS = {
   agentCardsGetPreferences: "agent-cards:get-preferences",
   agentCardsUpdatePreferences: "agent-cards:update-preferences",
   agentCardsResetSession: "agent-cards:reset-session",
+  agentCardsDetails: "agent-cards:details",
+  agentCardsPublishTemplate: "agent-cards:publish-template",
+  agentCardsUnpublishTemplate: "agent-cards:unpublish-template",
   // COSGRAL W12 (BE-D): the settings of the server (14 sections).
   serverSettingsSections: "server-settings:sections",
   serverSettingsGet: "server-settings:get",

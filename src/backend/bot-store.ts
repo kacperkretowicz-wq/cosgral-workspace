@@ -9,9 +9,9 @@ import {
   type AvatarImageInput,
   type BotSummary,
   isAgentModel,
-  isAvatarHue,
   isAvatarSeed,
   isReasoningEffort,
+  normalizeAvatarHue,
   type UpdateBotInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isOneOf, isString } from "@openbot/contracts/runtime-values";
@@ -437,7 +437,9 @@ function isStoredBotBase(value: unknown): value is StoredBotBase {
 function isStoredBot(value: unknown): value is PersistedStoredBot {
   if (!isRecord(value) || !isStoredBotBase(value)) return false;
   const record = value;
-  return isAvatarSeed(record.avatarSeed) && (record.avatarHue === null || isAvatarHue(record.avatarHue));
+  return (
+    isAvatarSeed(record.avatarSeed) && (record.avatarHue === null || normalizeAvatarHue(record.avatarHue) !== null)
+  );
 }
 
 function isLegacyStoredBot(value: unknown): value is LegacyStoredBot {
@@ -473,6 +475,8 @@ function migrateLegacyBot(bot: LegacyStoredBot): StoredBot {
 function normalizeStoredBot(bot: PersistedStoredBot): StoredBot {
   return {
     ...bot,
+    // COSGRAL W12: a colour that is not on the wheel (an older or a newer wheel) snaps to the nearest one; nothing is refused for it.
+    avatarHue: bot.avatarHue === null ? null : normalizeAvatarHue(bot.avatarHue),
     avatarUrl: isString(bot.avatarUrl) && parseAgentAvatarUrl(bot.avatarUrl, bot.id) ? bot.avatarUrl : null,
   };
 }

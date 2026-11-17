@@ -13,7 +13,6 @@ import {
   type AgentModelId,
   type AgentTemplate,
   type AgentToolSwitches,
-  BOT_AVATAR_HUES,
   type BotAvatarHue,
   type BotSummary,
   type CreateAgentInput,
@@ -22,11 +21,12 @@ import {
   isAgentTemplate,
   isAvatarHue,
   isAvatarSeed,
+  normalizeAvatarHue,
   type SaveAgentTemplateInput,
   SKILL_LIMITS,
   type UpdateBotInput,
 } from "@openbot/contracts/ipc";
-import { isDynamicRecord, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { OpenBotDatabase } from "./openbot-database";
 
 const SCHEMA = `
@@ -201,8 +201,7 @@ export class AgentTemplates {
       throw new Error("Invalid avatar colour (hue).");
     }
     const templateHue = template?.avatarHue ?? null;
-    const hue: BotAvatarHue | null =
-      input.avatarHue !== undefined ? input.avatarHue : isOneOf(BOT_AVATAR_HUES, templateHue) ? templateHue : null;
+    const hue: BotAvatarHue | null = input.avatarHue !== undefined ? input.avatarHue : normalizeAvatarHue(templateHue);
 
     const created = await this.#deps.createBot();
     const warnings: string[] = [];
@@ -265,7 +264,8 @@ export class AgentTemplates {
       reasoningEffort: source.reasoningEffort,
       notifications: source.notifications,
     };
-    if (isOneOf(BOT_AVATAR_HUES, source.avatarHue)) profile.avatarHue = source.avatarHue;
+    const sourceHue = normalizeAvatarHue(source.avatarHue);
+    if (sourceHue !== null) profile.avatarHue = sourceHue;
     try {
       await this.#deps.updateBot(profile);
     } catch (error) {
@@ -374,7 +374,12 @@ export class AgentTemplates {
         if (!isDynamicRecord(row) || !isString(row.data_json)) return [];
         try {
           const parsed = JSON.parse(row.data_json);
-          return isAgentTemplate(parsed) ? [parsed] : [];
+          // COSGRAL W12: a saved template keeps working when its colour is not on the wheel (it snaps to the nearest).
+          const tolerant =
+            isDynamicRecord(parsed) && parsed.avatarHue !== null && parsed.avatarHue !== undefined
+              ? { ...parsed, avatarHue: normalizeAvatarHue(parsed.avatarHue) }
+              : parsed;
+          return isAgentTemplate(tolerant) ? [tolerant] : [];
         } catch {
           return [];
         }
