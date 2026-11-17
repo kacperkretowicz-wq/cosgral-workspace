@@ -123,7 +123,7 @@ it("keeps Continue active when the provider already has a CLI the managed-CLI ca
   });
   const onSave = renderSetup();
   await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
-  await screen.findByRole("button", { name: "Pobierz i przejdź dalej" });
+  await screen.findByRole("button", { name: "Download and continue" });
   const proceed = screen.getByRole("button", { name: "Continue with Codex" });
   expect(proceed).toBeEnabled();
   await fireEvent.click(proceed);
@@ -137,7 +137,7 @@ it("blocks Continue only when the provider really has no CLI, and offers the dow
   });
   const onSave = renderSetup(undefined, NO_CLI_STATUS);
   await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
-  await screen.findByRole("button", { name: "Pobierz i przejdź dalej" });
+  await screen.findByRole("button", { name: "Download and continue" });
   expect(screen.getByRole("button", { name: "Continue with Codex" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: /Zaloguj|Log in|Sign in/ })).not.toBeInTheDocument();
   expect(onSave).not.toHaveBeenCalled();
@@ -153,7 +153,7 @@ it("downloads a missing CLI and continues without a terminal", async () => {
   });
   const onSave = renderSetup(undefined, NO_CLI_STATUS);
   await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
-  const download = await screen.findByRole("button", { name: "Pobierz i przejdź dalej" });
+  const download = await screen.findByRole("button", { name: "Download and continue" });
   expect(screen.getByRole("button", { name: "Continue with Codex" })).toBeDisabled();
   await fireEvent.click(download);
   await vi.waitFor(() => expect(onSave).toHaveBeenCalledWith("codex", undefined));

@@ -4,6 +4,7 @@ export { safeCliError } from "./provider-error";
 
 import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 // W5-BE2: the API also has account methods, so the CLI actions are named here (not "everything but listCli").
 export type CliAction = Extract<
@@ -19,20 +20,41 @@ export type CliInput = {
 export function cliPathError(path: string) {
   if (!path.trim()) return "";
   return path.length > 1024 || /[\r\n\0]/.test(path) || !/^(?:[A-Za-z]:[\\/]|\/|\\\\)/.test(path.trim())
-    ? "Podaj pełną ścieżkę do pliku CLI (maks. 1024 znaki)."
+    ? t("Enter the full path to the CLI file (max 1024 characters).")
     : "";
 }
-const sources = { custom: "Własna ścieżka", managed: "Pobrane", system: "Systemowe", none: "Brak" };
-const phases = {
-  idle: "Gotowe",
-  checking: "Sprawdzanie wersji",
-  "awaiting-approval": "Czeka na zgodę w Needs you",
-  downloading: "Pobieranie",
-  verifying: "Sprawdzanie SHA-256",
-  installing: "Instalowanie",
-  removing: "Usuwanie",
-  error: "Nie udało się",
-};
+function sourceLabel(source: ManagedCliState["source"]): string {
+  switch (source) {
+    case "custom":
+      return t("Custom path");
+    case "managed":
+      return t("Downloaded");
+    case "system":
+      return t("System");
+    default:
+      return t("None");
+  }
+}
+function phaseLabel(phase: ManagedCliState["phase"]): string {
+  switch (phase) {
+    case "idle":
+      return t("Ready");
+    case "checking":
+      return t("Checking version");
+    case "awaiting-approval":
+      return t("Waiting for approval in Needs you");
+    case "downloading":
+      return t("Downloading");
+    case "verifying":
+      return t("Verifying SHA-256");
+    case "installing":
+      return t("Installing");
+    case "removing":
+      return t("Removing");
+    default:
+      return t("Failed");
+  }
+}
 export function ManagedCliCard(props: {
   state: ManagedCliState;
   pending?: boolean;
@@ -66,20 +88,23 @@ export function ManagedCliCard(props: {
         <Heading as="h3" size="md">
           {props.state.id === "codex" ? "Codex" : "Claude"}
         </Heading>
-        <Badge>{sources[props.state.source]}</Badge>
+        <Badge>{sourceLabel(props.state.source)}</Badge>
       </div>
       <Text as="p">
-        W użyciu: {props.state.version ?? "—"} · Pobrana: {props.state.managedVersion ?? "—"} · Najnowsza:{" "}
-        {props.state.latestVersion ?? "jeszcze nie sprawdzono"}
+        {t("In use: {version} · Downloaded: {managed} · Latest: {latest}", {
+          version: props.state.version ?? "—",
+          managed: props.state.managedVersion ?? "—",
+          latest: props.state.latestVersion ?? t("not checked yet"),
+        })}
       </Text>
       <Text as="p" role="status" aria-live="polite">
-        {phases[props.state.phase]}
+        {phaseLabel(props.state.phase)}
       </Text>
       <Show when={props.state.progress}>
         {(progress) => (
           <div
             role="progressbar"
-            aria-label="Postęp pobierania"
+            aria-label={t("Download progress")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent()}
@@ -88,7 +113,10 @@ export function ManagedCliCard(props: {
               <div class="managed-cli-fill" style={{ width: `${percent() ?? 0}%` }} />
             </div>
             <Text as="p" tone="muted">
-              {progress().receivedBytes} / {progress().totalBytes || "?"} bajtów
+              {t("{received} / {total} bytes", {
+                received: String(progress().receivedBytes),
+                total: String(progress().totalBytes || "?"),
+              })}
             </Text>
           </div>
         )}
@@ -100,35 +128,35 @@ export function ManagedCliCard(props: {
       </Show>
       <div class="managed-cli-actions">
         <Button disabled={busy()} onClick={() => send("installCli")}>
-          {props.installLabel ?? "Pobierz"}
+          {props.installLabel ?? t("Download")}
         </Button>
         <Button disabled={busy()} onClick={() => send("checkCli")}>
-          Sprawdź
+          {t("Check")}
         </Button>
         <Show when={props.state.managedVersion}>
           <Button disabled={busy()} onClick={() => send("updateCli")}>
-            Zaktualizuj
+            {t("Update")}
           </Button>
           <Button disabled={busy()} onClick={() => send("removeCli")}>
-            Usuń
+            {t("Remove")}
           </Button>
         </Show>
         <Show when={props.state.error}>
           <Button disabled={busy()} onClick={() => send(props.state.managedVersion ? "updateCli" : "installCli")}>
-            Ponów
+            {t("Retry")}
           </Button>
         </Show>
       </div>
       <Switch
-        label="Aktualizuj automatycznie"
+        label={t("Update automatically")}
         checked={props.state.autoUpdate}
         disabled={busy()}
         onChange={(autoUpdate) => send("setCliSettings", { autoUpdate })}
       />
       <Text as="p" tone="muted">
-        Przypięcie wersji wstrzymuje automatyczne aktualizacje.
+        {t("Pinning a version pauses automatic updates.")}
       </Text>
-      <Field label="Przypięta wersja">
+      <Field label={t("Pinned version")}>
         <Input value={version()} onInput={(e) => setVersion(e.currentTarget.value)} />
       </Field>
       <div class="managed-cli-actions">
@@ -136,13 +164,13 @@ export function ManagedCliCard(props: {
           disabled={busy() || !/^[0-9A-Za-z.+-]{1,64}$/.test(version())}
           onClick={() => send("pinCli", { version: version() })}
         >
-          Przypnij
+          {t("Pin")}
         </Button>
         <Button disabled={busy() || !props.state.pinnedVersion} onClick={() => send("pinCli", { version: null })}>
-          Odepnij
+          {t("Unpin")}
         </Button>
       </div>
-      <Field label="Własna ścieżka do CLI" error={cliPathError(path())}>
+      <Field label={t("Custom path to the CLI")} error={cliPathError(path())}>
         <Input value={path()} onInput={(e) => setPath(e.currentTarget.value)} />
       </Field>
       <div class="managed-cli-actions">
@@ -150,13 +178,13 @@ export function ManagedCliCard(props: {
           disabled={busy() || !path().trim() || !!cliPathError(path())}
           onClick={() => send("setCliSettings", { customPath: path().trim() })}
         >
-          Zapisz ścieżkę
+          {t("Save path")}
         </Button>
         <Button
           disabled={busy() || !props.state.customPath}
           onClick={() => send("setCliSettings", { customPath: null })}
         >
-          Wyczyść ścieżkę
+          {t("Clear path")}
         </Button>
       </div>
     </Card>
@@ -236,26 +264,28 @@ export function ManagedCliSection(props: {
     }
   }
   return (
-    <section class="providers-section" aria-label="Narzędzia CLI">
+    <section class="providers-section" aria-label={t("CLI tools")}>
       <Heading as="h2" size="md">
-        {props.provider ? "Połącz dostawcę" : "Narzędzia CLI"}
+        {props.provider ? t("Connect a provider") : t("CLI tools")}
       </Heading>
       <Text as="p" tone="muted">
-        Własna ścieżka → pobrane → systemowe. Pierwsze pobranie wymaga zgody. Konta połączysz na stronie Dostawcy.
+        {t(
+          "Custom path → downloaded → system. The first download needs your approval. Connect accounts on the Providers page.",
+        )}
       </Text>
       <Show when={error()}>
         <Text as="p" role="alert" tone="danger">
           {error()}
         </Text>
-        <Button onClick={() => void load()}>Ponów wczytanie</Button>
+        <Button onClick={() => void load()}>{t("Retry loading")}</Button>
       </Show>
       <Show
         when={states().length}
         fallback={
           <Text as="p" tone="muted">
             {window.openbot.subscriptions
-              ? "Wczytywanie narzędzi CLI…"
-              : "Zarządzanie CLI jest niedostępne w tej wersji."}
+              ? t("Loading CLI tools…")
+              : t("CLI management is not available in this version.")}
           </Text>
         }
       >
@@ -265,7 +295,7 @@ export function ManagedCliSection(props: {
               <ManagedCliCard
                 state={state}
                 pending={pending().includes(state.id)}
-                installLabel={props.provider ? "Pobierz i przejdź dalej" : undefined}
+                installLabel={props.provider ? t("Download and continue") : undefined}
                 onAction={(method, input) => void action(method, input)}
               />
             )}
