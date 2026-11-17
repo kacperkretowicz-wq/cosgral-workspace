@@ -12,6 +12,8 @@ import {
   type CreateAgentInput,
   type DuplicateAgentInput,
   isAgentModel,
+  isAvatarHue,
+  isAvatarSeed,
   isPinnedPageIdList,
   isReasoningEffort,
   NOTIFICATION_CHANNELS,
@@ -70,6 +72,8 @@ export function parseCreateAgent(value: unknown): CreateAgentInput {
     "tools",
     "skills",
     "memories",
+    "avatarSeed",
+    "avatarHue",
   ]);
   const result: CreateAgentInput = {};
   if (input.templateId !== undefined) result.templateId = requireString(input.templateId, "templateId");
@@ -89,6 +93,14 @@ export function parseCreateAgent(value: unknown): CreateAgentInput {
       AGENT_TEMPLATE_LIMITS.memories,
       AGENT_TEMPLATE_LIMITS.memoryText,
     );
+  }
+  if (input.avatarSeed !== undefined) {
+    if (!isAvatarSeed(input.avatarSeed)) throw new Error("Invalid avatar seed.");
+    result.avatarSeed = input.avatarSeed;
+  }
+  if (input.avatarHue !== undefined) {
+    if (input.avatarHue !== null && !isAvatarHue(input.avatarHue)) throw new Error("Invalid avatar colour (hue).");
+    result.avatarHue = input.avatarHue;
   }
   return result;
 }

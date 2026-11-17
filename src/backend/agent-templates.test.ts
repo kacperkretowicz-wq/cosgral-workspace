@@ -49,6 +49,7 @@ async function open(root?: string) {
   const memories = new Map<string, string[]>();
   const skills = new Map<string, string[]>();
   const events: AgentEvent[] = [];
+  const updates: UpdateBotInput[] = [];
   let counter = 0;
   const library = new Set(["weekly-report"]);
   let failModel = false;
@@ -60,6 +61,7 @@ async function open(root?: string) {
       return bot;
     },
     updateBot: async (input: UpdateBotInput) => {
+      updates.push(input);
       if (input.model && failModel) throw new Error("Claude is not installed.");
       const bot = { ...(bots.get(input.botId) ?? newBot(input.botId)), ...input };
       bots.set(input.botId, bot);
@@ -87,6 +89,7 @@ async function open(root?: string) {
     memories,
     skills,
     events,
+    updates,
     failModels: () => {
       failModel = true;
     },
@@ -117,6 +120,25 @@ describe("AgentTemplates", () => {
     expect(memories.get(bot.id)).toEqual(template.memories);
     expect(skills.get(bot.id) ?? []).toEqual([]);
     expect(warnings).toEqual([]);
+  });
+
+  it("takes the avatar of the creator in the same single write as the profile (W11 U1)", async () => {
+    const { templates, updates } = await open();
+    const { bot } = await templates.createAgent({ name: "Scout", avatarSeed: "scout:avatar:3:7", avatarHue: 150 });
+    expect(bot).toMatchObject({ name: "Scout", avatarSeed: "scout:avatar:3:7", avatarHue: 150 });
+    // One write of the profile (the model is a second write only when it differs): no state with a name and no colour.
+    expect(updates.filter((update) => update.name !== undefined)).toHaveLength(1);
+    expect(updates[0]).toMatchObject({ name: "Scout", avatarSeed: "scout:avatar:3:7", avatarHue: 150 });
+    // A colour of the creator wins over the template's; null = the automatic colour.
+    const auto = await templates.createAgent({ templateId: "builtin:writer", avatarHue: null });
+    expect(auto.bot.avatarHue).toBeNull();
+  });
+
+  it("refuses a bad avatar before an agent exists (W11 U1)", async () => {
+    const { templates, bots } = await open();
+    await expect(templates.createAgent({ avatarSeed: "bad seed!" })).rejects.toThrow(/avatar seed/);
+    await expect(templates.createAgent(JSON.parse('{"avatarHue":7}'))).rejects.toThrow(/colour|color|hue/i);
+    expect(bots.size).toBe(0);
   });
 
   it("lets the creator's fields win over the template and reports what it could not do", async () => {

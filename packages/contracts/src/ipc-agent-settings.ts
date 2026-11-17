@@ -7,6 +7,7 @@ import type {
   AgentModelOption,
   AgentProviderId,
   AgentReasoningEffort,
+  BotAvatarHue,
   BotSummary,
 } from "./ipc-conversation";
 import type { AgentMcpServerSetting } from "./ipc-mcp";
@@ -123,6 +124,10 @@ export interface CreateAgentInput {
   tools?: AgentToolSwitches;
   skills?: string[];
   memories?: string[];
+  /** COSGRAL W11 (U1): the avatar the creator shows, written together with the profile (no state with a name and no colour). */
+  avatarSeed?: string;
+  /** null = the automatic colour; left out = the template's colour. */
+  avatarHue?: BotAvatarHue | null;
 }
 
 export interface CreateAgentResult {
