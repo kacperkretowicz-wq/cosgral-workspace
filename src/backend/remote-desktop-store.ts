@@ -32,6 +32,8 @@ export interface RemoteDesktopSettings {
   port: number;
   approvalBotId: string | null;
   peers: RemoteDesktopPeer[];
+  /** A consent card for every session, also for an allowed viewer (default off). */
+  askEverySession: boolean;
 }
 
 export interface RemoteDesktopStoreOptions {
@@ -83,6 +85,10 @@ export class RemoteDesktopStore {
 
   setNetwork(exposure: RemoteDesktopExposure, port: number): void {
     this.#save({ ...this.#settings, exposure, port });
+  }
+
+  setAskEverySession(enabled: boolean): void {
+    this.#save({ ...this.#settings, askEverySession: enabled });
   }
 
   setApprovalBotId(botId: string | null): void {
@@ -148,7 +154,15 @@ function byLastSeen(left: RemoteDesktopPeer, right: RemoteDesktopPeer): number {
 }
 
 export function defaultRemoteDesktopSettings(): RemoteDesktopSettings {
-  return { tokenCipher: null, tokenCreatedAt: null, exposure: "loopback", port: 0, approvalBotId: null, peers: [] };
+  return {
+    tokenCipher: null,
+    tokenCreatedAt: null,
+    exposure: "loopback",
+    port: 0,
+    approvalBotId: null,
+    peers: [],
+    askEverySession: false,
+  };
 }
 
 function readSettings(filePath: string): RemoteDesktopSettings {
@@ -172,6 +186,7 @@ function readSettings(filePath: string): RemoteDesktopSettings {
     port: isNumber(raw.port) && Number.isInteger(raw.port) && raw.port >= 0 && raw.port <= 65_535 ? raw.port : 0,
     approvalBotId: isString(raw.approvalBotId) ? raw.approvalBotId : null,
     peers: peers.slice(0, REMOTE_DESKTOP_LIMITS.maxPeers).map((peer) => ({ ...peer })),
+    askEverySession: raw.askEverySession === true,
   };
 }
 

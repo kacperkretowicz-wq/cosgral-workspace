@@ -211,6 +211,7 @@ import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerMcpOAuthIpc } from "./mcp-oauth-ipc";
 import { registerMessageActionsIpc } from "./message-actions-ipc";
 import { registerMessengersIpc } from "./messengers-ipc";
+import { registerMobileConnectOverviewIpc } from "./mobile-connect-overview-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
@@ -968,6 +969,10 @@ function registerIpcHandlers(
   registerMobileIpc(() => mobileConnect);
   // COSGRAL W9-BE1: the phone away from home (this computer only).
   registerPhoneIpc(() => phoneAccess);
+  registerMobileConnectOverviewIpc(
+    () => mobileConnect,
+    () => phoneAccess,
+  );
   registerComposerIpc({
     search: () => searchService,
     composer: () => composerService,
@@ -1011,7 +1016,11 @@ function registerIpcHandlers(
   );
   registerMcpOAuthIpc(() => mcpOAuthService);
   registerInstanceTransferIpc(() => instanceTransferService);
-  registerUpdatePreferencesIpc(() => updatePreferencesService);
+  registerUpdatePreferencesIpc(
+    () => updatePreferencesService,
+    () => updateService,
+    () => service.listActivity().every((activity) => activity.kind !== "working"),
+  );
   registerVaultConnectorsIpc(
     () => vaultConnectorHub,
     () => vaultSecretsService,

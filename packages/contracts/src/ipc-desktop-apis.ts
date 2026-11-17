@@ -123,6 +123,7 @@ import type {
 import type { MessageActionsDesktopApi } from "./ipc-message-actions";
 import type { MessengersDesktopApi } from "./ipc-messengers";
 import type { MobileDesktopApi } from "./ipc-mobile";
+import type { MobileConnectDesktopApi } from "./ipc-mobile-connect";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
 import type { PluginCatalogDesktopApi } from "./ipc-plugin-catalog";
@@ -144,6 +145,7 @@ import type {
   RemoteDesktopInput,
   RemoteDesktopPeerInput,
   RemoteDesktopTokenResult,
+  SetRemoteDesktopAskEverySessionInput,
   SetRemoteDesktopPeerPolicyInput,
   SetRemoteDesktopSessionModeInput,
   StopRemoteDesktopInput,
@@ -732,6 +734,8 @@ export interface OpenBotDesktopApi {
   pluginCatalog?: PluginCatalogDesktopApi;
   /** COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http: the system browser, a one-time loopback answer, encrypted tokens. Optional until every mock implements it. */
   mcpOAuth?: McpOAuthDesktopApi;
+  /** COSGRAL W12-KK: the Mobile Connect page in one query (phones, route, what is not offered). Optional until every mock implements it. */
+  mobileConnect?: MobileConnectDesktopApi;
   /** COSGRAL W12-KK (g2): Transfer and Import of agents with one .zip (the paths never reach the window) and the preferences of program updates. Optional until every mock implements it. */
   instanceTransfer?: InstanceTransferDesktopApi;
   updatePreferences?: UpdatePreferencesDesktopApi;
@@ -759,6 +763,8 @@ export interface RemoteDesktopHostDesktopApi {
   /** A new token; viewers that are connected stay, new ones need the new token. Returned once. */
   regenerateToken: () => Promise<RemoteDesktopTokenResult>;
   setPeerPolicy: (input: SetRemoteDesktopPeerPolicyInput) => Promise<RemoteDesktopHostState>;
+  /** The "Ask on this computer" switch: a card for every session, also for viewers that were allowed before. */
+  setAskEverySession: (input: SetRemoteDesktopAskEverySessionInput) => Promise<RemoteDesktopHostState>;
   /** Forgets a viewer (its session ends). The next connection asks again. */
   removePeer: (input: RemoteDesktopPeerInput) => Promise<RemoteDesktopHostState>;
   /** "control" to "view" takes the mouse and keyboard away at once; "view" to "control" is refused (the viewer asks anew). */

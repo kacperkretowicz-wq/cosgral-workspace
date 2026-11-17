@@ -43,7 +43,17 @@ describe("RemoteDesktopStore", () => {
       port: 0,
       approvalBotId: null,
       peers: [],
+      askEverySession: false,
     });
+  });
+
+  it("keeps the 'ask on this computer' switch across restarts, and a file that holds anything else gives off", () => {
+    const store = open();
+    store.setAskEverySession(true);
+    expect(store.settings().askEverySession).toBe(true);
+    expect(open().settings().askEverySession).toBe(true);
+    store.setAskEverySession(false);
+    expect(open().settings().askEverySession).toBe(false);
   });
 
   it("makes a token, keeps it only encrypted, and a new token replaces the old one", () => {

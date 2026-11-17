@@ -13,9 +13,11 @@ import {
   isInstanceTransferSummary,
   isTransferPreview,
   isUpdatePreferences,
+  isUpdatesOverview,
   type TransferPreview,
   type UpdatePreferences,
   type UpdatePreferencesDesktopApi,
+  type UpdatesOverview,
 } from "@openbot/contracts/ipc";
 
 type Invoke = <TResult>(channel: string, payload: unknown, decoder: (value: unknown) => TResult) => Promise<TResult>;
@@ -33,6 +35,9 @@ export function createInstanceTransferApi(invoke: Invoke): InstanceTransferDeskt
 
 export function createUpdatePreferencesApi(invoke: Invoke): UpdatePreferencesDesktopApi {
   return {
+    getOverview: () => invoke(IPC_CHANNELS.updatePreferencesGetOverview, null, decodeUpdatesOverview),
+    restartWhenIdle: () => invoke(IPC_CHANNELS.updatePreferencesRestartWhenIdle, null, decodeUpdatesOverview),
+    cancelRestartWhenIdle: () => invoke(IPC_CHANNELS.updatePreferencesCancelRestart, null, decodeUpdatesOverview),
     get: () => invoke(IPC_CHANNELS.updatePreferencesGet, null, decodePreferences),
     set: (input) => invoke(IPC_CHANNELS.updatePreferencesSet, input, decodePreferences),
   };
@@ -63,6 +68,11 @@ function decodeApply(value: unknown): ApplyTransferResult {
 
 function decodeSources(value: unknown): ImportSourceInfo[] {
   if (!Array.isArray(value) || !value.every(isImportSourceInfo)) throw new Error("Invalid import sources.");
+  return value;
+}
+
+function decodeUpdatesOverview(value: unknown): UpdatesOverview {
+  if (!isUpdatesOverview(value)) throw new Error("Invalid updates overview.");
   return value;
 }
 

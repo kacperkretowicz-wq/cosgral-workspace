@@ -160,6 +160,7 @@ export class RemoteDesktopHost {
       peers: settings.peers,
       sessions: this.#session ? [{ ...this.#session.info }] : [],
       consentPending: this.#consentPending,
+      askEverySession: settings.askEverySession,
       lockedUntil: lockedUntil > this.#now().getTime() ? new Date(lockedUntil).toISOString() : null,
     };
   }
@@ -206,6 +207,13 @@ export class RemoteDesktopHost {
     const token = this.#options.store.createToken();
     this.#changed();
     return { state: this.getState(), token };
+  }
+
+  /** The "Ask on this computer" switch (see `askEverySession` in the state). Takes effect for the next session. */
+  setAskEverySession(enabled: boolean): RemoteDesktopHostState {
+    this.#options.store.setAskEverySession(enabled);
+    this.#changed();
+    return this.getState();
   }
 
   setPeerPolicy(peerId: string, policy: RemoteDesktopPeerPolicy): RemoteDesktopHostState {
@@ -353,7 +361,7 @@ export class RemoteDesktopHost {
     if (known?.policy === "block") return this.#drop(connection, "blocked");
     if (this.#session || this.#consentPending > 0) return this.#drop(connection, "busy");
     const peer = store.touchPeer(auth.clientId, auth.label);
-    if (peer.policy !== "allow") {
+    if (peer.policy !== "allow" || store.settings().askEverySession) {
       this.#consentPending += 1;
       this.#send(connection, { type: "waiting" });
       this.#changed();

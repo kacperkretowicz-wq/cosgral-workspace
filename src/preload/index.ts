@@ -100,6 +100,7 @@ import { createMcpOAuthApi } from "./mcp-oauth-api";
 import { createMessageActionsApi } from "./message-actions-api";
 import { createMessengersApi } from "./messengers-api";
 import { createMobileApi } from "./mobile-api";
+import { createMobileConnectApi } from "./mobile-connect-api";
 import { createPhoneApi } from "./phone-api";
 import { createPlansApi } from "./plans-api";
 import { createPluginCatalogApi } from "./plugin-catalog-api";
@@ -848,6 +849,7 @@ const openbotApi: OpenBotDesktopApi = {
   vaultSecrets: createVaultSecretsApi(invokeAgent),
   pluginCatalog: createPluginCatalogApi(invokeAgent),
   mcpOAuth: createMcpOAuthApi(invokeAgent),
+  mobileConnect: createMobileConnectApi(invokeAgent),
   instanceTransfer: createInstanceTransferApi(invokeAgent),
   updatePreferences: createUpdatePreferencesApi(invokeAgent),
   browser: {

@@ -109,6 +109,7 @@ export const IPC_CHANNELS = {
   remoteDesktopDisable: "remote-desktop:disable",
   remoteDesktopRegenerateToken: "remote-desktop:regenerate-token",
   remoteDesktopSetPeerPolicy: "remote-desktop:set-peer-policy",
+  remoteDesktopSetAskEverySession: "remote-desktop:set-ask-every-session",
   remoteDesktopRemovePeer: "remote-desktop:remove-peer",
   remoteDesktopSetSessionMode: "remote-desktop:set-session-mode",
   remoteDesktopStop: "remote-desktop:stop",
@@ -275,7 +276,12 @@ export const IPC_CHANNELS = {
   instanceTransferDiscard: "instance-transfer:discard",
   instanceTransferImportSources: "instance-transfer:import-sources",
   updatePreferencesGet: "update-preferences:get",
+  updatePreferencesGetOverview: "update-preferences:get-overview",
+  updatePreferencesRestartWhenIdle: "update-preferences:restart-when-idle",
+  updatePreferencesCancelRestart: "update-preferences:cancel-restart",
   updatePreferencesSet: "update-preferences:set",
+  // COSGRAL W12-KK: the Mobile Connect page in one query.
+  mobileConnectGetOverview: "mobile-connect:get-overview",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

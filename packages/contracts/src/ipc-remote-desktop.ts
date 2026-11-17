@@ -107,6 +107,11 @@ export interface RemoteDesktopHostState {
   consentPending: number;
   /** Set while connections are refused after too many wrong tokens. */
   lockedUntil: string | null;
+  /**
+   * Ask on this computer for EVERY session, also for a viewer the owner allowed before (the screen's "Ask on this computer" switch).
+   * Off: a viewer with policy "allow" connects without a card; a new viewer and one with policy "ask" always need the card.
+   */
+  askEverySession: boolean;
 }
 
 export const REMOTE_DESKTOP_CLIENT_PHASES = ["idle", "connecting", "waiting-for-owner", "connected", "failed"] as const;
@@ -143,6 +148,48 @@ export interface RemoteDesktopTokenResult {
 export interface SetRemoteDesktopPeerPolicyInput {
   peerId: string;
   policy: RemoteDesktopPeerPolicy;
+}
+
+export interface SetRemoteDesktopAskEverySessionInput {
+  enabled: boolean;
+}
+
+/**
+ * "Unattended" access (control with nobody at this computer to answer) is not offered: every new session needs a person at this
+ * computer to answer the card. The settings page shows it as "Unattended: not available" with this reason.
+ */
+export const REMOTE_DESKTOP_UNATTENDED = {
+  available: false,
+  reason:
+    "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.",
+} as const;
+
+export type RemoteDesktopBadge = "ready" | "off" | "unavailable";
+
+/** What the page's header card shows, from the host state: the badge, the sessions and the "unattended" line. */
+export interface RemoteDesktopSummary {
+  badge: RemoteDesktopBadge;
+  /** The reason when the badge is "unavailable". */
+  unavailableReason: string | null;
+  activeSessions: number;
+  maxSessions: number;
+  unattended: typeof REMOTE_DESKTOP_UNATTENDED;
+  /** Seconds the owner has to answer a card before the viewer is refused. */
+  answerSeconds: number;
+  /** Cards that wait for the owner now. */
+  pendingCards: number;
+}
+
+export function remoteDesktopSummary(state: RemoteDesktopHostState): RemoteDesktopSummary {
+  return {
+    badge: !state.available ? "unavailable" : state.enabled ? "ready" : "off",
+    unavailableReason: state.available ? null : state.unavailableReason,
+    activeSessions: state.sessions.length,
+    maxSessions: REMOTE_DESKTOP_LIMITS.maxSessions,
+    unattended: REMOTE_DESKTOP_UNATTENDED,
+    answerSeconds: REMOTE_DESKTOP_LIMITS.consentTimeoutMs / 1_000,
+    pendingCards: state.consentPending,
+  };
 }
 
 export interface RemoteDesktopPeerInput {
@@ -204,6 +251,7 @@ export function emptyRemoteDesktopHostState(): RemoteDesktopHostState {
     sessions: [],
     consentPending: 0,
     lockedUntil: null,
+    askEverySession: false,
   };
 }
 
@@ -298,7 +346,8 @@ export function isRemoteDesktopHostState(value: unknown): value is RemoteDesktop
     Array.isArray(value.sessions) &&
     value.sessions.every(isHostSession) &&
     isNumber(value.consentPending) &&
-    (value.lockedUntil === null || isString(value.lockedUntil))
+    (value.lockedUntil === null || isString(value.lockedUntil)) &&
+    isBoolean(value.askEverySession)
   );
 }
 

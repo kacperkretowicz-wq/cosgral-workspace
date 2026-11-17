@@ -8,6 +8,8 @@ import {
   isSlackAppToken,
   isSlackBotToken,
   MESSENGER_FAILURE_SENTENCES,
+  MESSENGER_KINDS,
+  messengerDescriptor,
   messengerSecretFields,
   parseAllowChatInput,
   parseConnectMessengerInput,
@@ -119,5 +121,38 @@ describe("mock Slack (W12-KK 2)", () => {
     expect(refused).toMatchObject({ phase: "failed", reason: MESSENGER_FAILURE_SENTENCES.slack.tokenRefused });
     expect(isMessengerStatus(refused)).toBe(true);
     expect(refused.reason).toContain("Slack");
+  });
+});
+
+describe("the descriptor the settings window draws from (W12-KK)", () => {
+  it("every messenger has its secret fields, the private-only rule, an id hint and ordered steps, as fixed text", () => {
+    for (const kind of MESSENGER_KINDS) {
+      const descriptor = messengerDescriptor(kind);
+      expect(descriptor).toMatchObject({ kind, privateOnly: true });
+      expect(descriptor.label.length).toBeGreaterThan(0);
+      expect(descriptor.secrets.length).toBeGreaterThan(0);
+      expect(descriptor.conversationIdHint.length).toBeGreaterThan(20);
+      expect(descriptor.setupSteps.length).toBeGreaterThanOrEqual(3);
+      // Fixed text: nothing of a token's shape is in it.
+      expect(JSON.stringify(descriptor)).not.toMatch(
+        /xoxb-[A-Za-z0-9]{10}|xapp-[A-Za-z0-9]{10}|\d{8,}:[A-Za-z0-9_-]{20}/,
+      );
+    }
+    expect(messengerDescriptor("slack").secrets.map((field) => field.id)).toEqual(["token", "appToken"]);
+    expect(messengerDescriptor("slack").conversationIdHint).toMatch(/Channels are not allowed/);
+    expect(messengerDescriptor("telegram").secrets).toHaveLength(1);
+  });
+
+  it("the list, the status and every event hold no secret after connecting; the list has one entry per messenger in a fixed order", async () => {
+    const { api, events } = setup();
+    await api.connect({ kind: "telegram", token: `123456789:${"A".repeat(35)}` });
+    await api.connect({ kind: "slack", token: BOT, appToken: APP });
+    const list = await api.list();
+    expect(list.messengers.map((entry) => entry.kind)).toEqual([...MESSENGER_KINDS]);
+    expect(list.messengers.every((entry) => entry.tokenSaved && entry.phase === "connected")).toBe(true);
+    const everything = JSON.stringify([list, events]);
+    expect(everything).not.toContain(BOT);
+    expect(everything).not.toContain(APP);
+    expect(everything).not.toContain("A".repeat(35));
   });
 });

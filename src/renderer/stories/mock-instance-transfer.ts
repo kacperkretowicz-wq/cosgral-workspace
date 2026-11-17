@@ -6,11 +6,13 @@
 import {
   type AgentEvent,
   type ApplyTransferResult,
+  buildUpdatesOverview,
   DEFAULT_UPDATE_PREFERENCES,
   type ExportInstanceResult,
   type ImportSourceInfo,
   type InstanceTransferDesktopApi,
   type InstanceTransferSummary,
+  importSourceCards,
   mergeUpdatePreferences,
   parseApplyTransferInput,
   parseDiscardTransferInput,
@@ -20,12 +22,15 @@ import {
   type TransferPreview,
   type UpdatePreferences,
   type UpdatePreferencesDesktopApi,
+  type UpdateStatus,
+  type UpdatesOverview,
 } from "@openbot/contracts/ipc";
 
 export interface MockInstanceTransfer {
   transfer: Required<InstanceTransferDesktopApi>;
   updates: Required<UpdatePreferencesDesktopApi>;
   simulate: {
+    updateStatus: (change: Partial<UpdateStatus>) => void;
     /** The next `choose` answers with this file (default: a demo file with two agents). */
     nextFile: (preview: Omit<TransferPreview, "token"> | null) => void;
     /** The person closes the save dialog of the next export. */
@@ -98,6 +103,15 @@ export function createMockInstanceTransfer(emit: (event: AgentEvent) => void): M
   let nextFile: Omit<TransferPreview, "token"> | null = structuredClone(DEMO_FILE);
   let cancelExport = false;
   let counter = 0;
+  let restartPending = false;
+  let updateStatus: UpdateStatus = {
+    phase: "up-to-date",
+    currentVersion: "0.0.0-demo",
+    availableVersion: null,
+    progress: null,
+    checkedAt: "2026-11-17T08:00:00.000Z",
+    message: null,
+  };
   let preferences: UpdatePreferences = { ...DEFAULT_UPDATE_PREFERENCES };
   const staged = new Map<string, Omit<TransferPreview, "token">>();
 
@@ -166,14 +180,24 @@ export function createMockInstanceTransfer(emit: (event: AgentEvent) => void): M
     discard: async (input) => {
       staged.delete(parseDiscardTransferInput(input).token);
     },
-    importSources: async (): Promise<ImportSourceInfo[]> => [
-      { id: "agent-zip", available: true, note: null },
-      { id: "hermes", available: false, note: "Reading a Hermes folder is not supported in this version." },
-      { id: "other-computer", available: true, note: "Use Transfer to move agents and settings together." },
-    ],
+    importSources: async (): Promise<ImportSourceInfo[]> => importSourceCards(),
   };
 
+  const overview = (): UpdatesOverview =>
+    buildUpdatesOverview({ preferences, status: { ...updateStatus }, restartPending });
   const updates: Required<UpdatePreferencesDesktopApi> = {
+    getOverview: async () => overview(),
+    restartWhenIdle: async () => {
+      if (updateStatus.phase !== "ready") throw new Error("No update has been downloaded yet.");
+      restartPending = true;
+      emit({ type: "update-preferences-changed", preferences: { ...preferences } });
+      return overview();
+    },
+    cancelRestartWhenIdle: async () => {
+      restartPending = false;
+      emit({ type: "update-preferences-changed", preferences: { ...preferences } });
+      return overview();
+    },
     get: async () => ({ ...preferences }),
     set: async (input) => {
       preferences = mergeUpdatePreferences(preferences, parseSetUpdatePreferencesInput(input));
@@ -186,6 +210,12 @@ export function createMockInstanceTransfer(emit: (event: AgentEvent) => void): M
     transfer,
     updates,
     simulate: {
+      /** The update status the page shows (phase, versions); a change clears a pending restart when the update is no longer ready. */
+      updateStatus: (change) => {
+        updateStatus = { ...updateStatus, ...change };
+        if (updateStatus.phase !== "ready") restartPending = false;
+        emit({ type: "update-preferences-changed", preferences: { ...preferences } });
+      },
       nextFile: (preview) => {
         nextFile = preview === null ? null : structuredClone(preview);
       },

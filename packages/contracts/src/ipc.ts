@@ -33,6 +33,7 @@ export * from "./ipc-memory";
 export * from "./ipc-message-actions";
 export * from "./ipc-messengers";
 export * from "./ipc-mobile";
+export * from "./ipc-mobile-connect";
 export * from "./ipc-phone-access";
 export * from "./ipc-plan";
 export * from "./ipc-plugin-catalog";

@@ -12,6 +12,7 @@
 // numbered copy name, a routine from a file is created PAUSED (the person turns it on), and a skill is saved as a new library skill.
 // The same staging reads the agent export of another program (a .zip with a manifest of agents), so "Import" and "Transfer" are one engine.
 
+import type { UpdateStatus } from "./ipc-app-auth";
 import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export const INSTANCE_TRANSFER_LIMITS = {
@@ -117,10 +118,59 @@ export type ImportSourceId = (typeof IMPORT_SOURCE_IDS)[number];
 
 export interface ImportSourceInfo {
   id: ImportSourceId;
+  /** The card's title. */
+  label: string;
+  /** The card's line under the title. */
+  description: string;
   available: boolean;
   /** Why it is not available, or for `other-computer`: where to go instead ("Use Transfer"). */
   note: string | null;
 }
+
+/** The cards of the Import page, in order. One list for the program and the preview, so both say the same. */
+export function importSourceCards(): ImportSourceInfo[] {
+  return [
+    {
+      id: "agent-zip",
+      label: "An agent export (.zip)",
+      description: "Choose the .zip an agent export made. You see every item before anything changes.",
+      available: true,
+      note: null,
+    },
+    {
+      id: "hermes",
+      label: "Hermes Agent",
+      description: "Read the Hermes folder on this computer, or an export from Hermes.",
+      available: false,
+      note: "Reading a Hermes folder is not supported in this version.",
+    },
+    {
+      id: "other-computer",
+      label: "Another COSGRAL computer",
+      description: "Use Transfer to move agents and settings together.",
+      available: true,
+      note: "Use Transfer to move agents and settings together.",
+    },
+  ];
+}
+
+/** The three steps the Transfer page shows above its two buttons. */
+export const TRANSFER_STEPS = [
+  "Export from the old server",
+  "Copy the .zip file",
+  "Import into the new server",
+] as const;
+
+/** What a transfer never moves (the Transfer page says it under its buttons). */
+export const TRANSFER_NOT_MOVED = [
+  "API keys",
+  "Sign-ins and connector tokens",
+  "The Vault",
+  "Values of MCP variables and headers",
+  "Chat history",
+  "Files of the Library",
+  "Preferences of the program",
+] as const;
 
 export interface InstanceTransferDesktopApi {
   summary: () => Promise<InstanceTransferSummary>;
@@ -164,7 +214,97 @@ export const DEFAULT_UPDATE_PREFERENCES: UpdatePreferences = {
 
 export type SetUpdatePreferencesInput = Partial<UpdatePreferences>;
 
+/** The two tracks of the "Update track" selector. "preview" also receives pre-releases. */
+export const UPDATE_TRACKS = [
+  { id: "stable", label: "Stable", description: "Stable receives tested releases.", includePrereleases: false },
+  {
+    id: "preview",
+    label: "Preview",
+    description: "Preview also receives pre-releases, a little earlier and less tested.",
+    includePrereleases: true,
+  },
+] as const;
+export type UpdateTrackId = (typeof UPDATE_TRACKS)[number]["id"];
+
+export function updateTrackOf(preferences: UpdatePreferences): UpdateTrackId {
+  return preferences.includePrereleases ? "preview" : "stable";
+}
+
+/** The preferences change that picks a track (pass it to `set`). */
+export function updateTrackChange(track: UpdateTrackId): SetUpdatePreferencesInput {
+  return { includePrereleases: UPDATE_TRACKS.find((entry) => entry.id === track)?.includePrereleases ?? false };
+}
+
+/** Something the other program offers on this page that this version does NOT, with its reason. */
+export interface UpdatesUnavailableFeature {
+  id: "member-updates" | "release-notes";
+  label: string;
+  reason: string;
+}
+
+export const UPDATES_UNAVAILABLE_FEATURES: readonly UpdatesUnavailableFeature[] = [
+  {
+    id: "member-updates",
+    label: "Allow updates from server members",
+    reason: "This program has no server members: only you update it.",
+  },
+  {
+    id: "release-notes",
+    label: "What's new",
+    reason: "This version has no release-notes page. The list of changes is in the repository.",
+  },
+];
+
+/** The "Restart when idle" button: restart into a downloaded update once no agent is working. */
+export interface RestartWhenIdle {
+  /** A downloaded update is ready, so the button works. */
+  available: boolean;
+  /** Why it does not (a plain sentence), or null. */
+  reason: string | null;
+  /** The program waits for the agents to finish and then restarts. */
+  pending: boolean;
+}
+
+/** Everything the Updates page draws, in one answer. A change comes as `update-preferences-changed` or an update status event. */
+export interface UpdatesOverview {
+  preferences: UpdatePreferences;
+  track: UpdateTrackId;
+  /** The version, the phase (idle, checking, available, downloading, ready, ...) and the message of the button's state. */
+  status: UpdateStatus;
+  /** False in a build that cannot update (a development copy, another system): then the status says why. */
+  canUpdate: boolean;
+  restartWhenIdle: RestartWhenIdle;
+  unavailable: UpdatesUnavailableFeature[];
+}
+
+export function buildUpdatesOverview(input: {
+  preferences: UpdatePreferences;
+  status: UpdateStatus;
+  restartPending: boolean;
+}): UpdatesOverview {
+  const { preferences, status, restartPending } = input;
+  const ready = status.phase === "ready";
+  return {
+    preferences: { ...preferences },
+    track: updateTrackOf(preferences),
+    status: { ...status },
+    canUpdate: status.phase !== "unsupported",
+    restartWhenIdle: {
+      available: ready || restartPending,
+      reason: ready || restartPending ? null : "No update has been downloaded yet.",
+      pending: restartPending,
+    },
+    unavailable: UPDATES_UNAVAILABLE_FEATURES.map((feature) => ({ ...feature })),
+  };
+}
+
 export interface UpdatePreferencesDesktopApi {
+  /** The whole Updates page: preferences, track, update status, the "Restart when idle" button and what is not offered. */
+  getOverview: () => Promise<UpdatesOverview>;
+  /** Restarts into the downloaded update as soon as no agent is working (new routine runs wait until then). Needs a downloaded update. */
+  restartWhenIdle: () => Promise<UpdatesOverview>;
+  /** Stops waiting for the agents. */
+  cancelRestartWhenIdle: () => Promise<UpdatesOverview>;
   get: () => Promise<UpdatePreferences>;
   set: (input: SetUpdatePreferencesInput) => Promise<UpdatePreferences>;
 }
@@ -264,8 +404,30 @@ export function isImportSourceInfo(value: unknown): value is ImportSourceInfo {
   return (
     isDynamicRecord(value) &&
     isOneOf(IMPORT_SOURCE_IDS, value.id) &&
+    isString(value.label) &&
+    isString(value.description) &&
     isBoolean(value.available) &&
     (value.note === null || isString(value.note))
+  );
+}
+
+export function isUpdatesOverview(value: unknown): value is UpdatesOverview {
+  return (
+    isDynamicRecord(value) &&
+    isUpdatePreferences(value.preferences) &&
+    isOneOf(["stable", "preview"], value.track) &&
+    isDynamicRecord(value.status) &&
+    isString(value.status.phase) &&
+    isString(value.status.currentVersion) &&
+    isBoolean(value.canUpdate) &&
+    isDynamicRecord(value.restartWhenIdle) &&
+    isBoolean(value.restartWhenIdle.available) &&
+    isBoolean(value.restartWhenIdle.pending) &&
+    (value.restartWhenIdle.reason === null || isString(value.restartWhenIdle.reason)) &&
+    Array.isArray(value.unavailable) &&
+    value.unavailable.every(
+      (item) => isDynamicRecord(item) && isString(item.id) && isString(item.label) && isString(item.reason),
+    )
   );
 }
 

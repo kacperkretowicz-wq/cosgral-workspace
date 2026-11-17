@@ -55,6 +55,7 @@ beforeAll(async () => {
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
   const { registerMcpOAuthIpc } = await import("./mcp-oauth-ipc");
+  const { registerMobileConnectOverviewIpc } = await import("./mobile-connect-overview-ipc");
   const { registerInstanceTransferIpc } = await import("./instance-transfer-ipc");
   const { registerUpdatePreferencesIpc } = await import("./update-preferences-ipc");
   registerThreadsIpc(() => null);
@@ -94,6 +95,10 @@ beforeAll(async () => {
     async () => null,
   );
   registerMcpOAuthIpc(() => null);
+  registerMobileConnectOverviewIpc(
+    () => null,
+    () => null,
+  );
   registerInstanceTransferIpc(() => null);
   registerUpdatePreferencesIpc(() => null);
   registerVaultConnectorsIpc(
@@ -177,9 +182,11 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("plugin-catalog:").length).toBe(9);
     // COSGRAL W12-KK (1): the sign-in (OAuth) to MCP servers.
     expect(channelsOf("mcp-oauth:").length).toBe(5);
+    // COSGRAL W12-KK: the Mobile Connect page in one query.
+    expect(channelsOf("mobile-connect:").length).toBe(1);
     // COSGRAL W12-KK (g2): Transfer/Import and the update preferences.
     expect(channelsOf("instance-transfer:").length).toBe(6);
-    expect(channelsOf("update-preferences:").length).toBe(2);
+    expect(channelsOf("update-preferences:").length).toBe(5);
     expect(
       ["vault:reveal", "vault:copy", "vault:import-csv", "vault:codes", "vault:reset"].every((name) =>
         handlers.has(name),
@@ -220,6 +227,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "vault-connectors:",
         "plugin-catalog:",
         "mcp-oauth:",
+        "mobile-connect:",
         "instance-transfer:",
         "update-preferences:",
         "vault:reveal",
@@ -342,6 +350,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     // W12-KK (1): a bad sign-in request is refused by the parser before the program is asked.
     expect((await call("mcp-oauth:sign-in", "local", { serverId: "" })).threw).toMatch(/Choose a server/);
     expect((await call("mcp-oauth:list", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("mobile-connect:get-overview", "local", null)).threw).toMatch(/not ready/);
     // W12-KK (g2): a bad transfer or update request is refused by the parser before the program is asked.
     expect((await call("instance-transfer:export", "local", { agentIds: [], includeSettings: false })).threw).toMatch(
       /at least one/,
@@ -352,6 +361,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("instance-transfer:summary", "local", null)).threw).toMatch(/still starting/);
     expect((await call("update-preferences:set", "local", { checkEveryHours: 0 })).threw).toMatch(/hours/);
     expect((await call("update-preferences:get", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("update-preferences:get-overview", "local", null)).threw).toMatch(/still starting/);
     expect((await call("vault:reveal", "local", { itemId: "x", field: "notes" })).threw).toMatch(/field is one of/);
     expect((await call("vault:import-csv", "local", { csv: "  " })).threw).toMatch(/empty/);
     expect((await call("vault:reset", "local", null)).threw).toMatch(/still starting/);
