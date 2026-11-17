@@ -7,6 +7,7 @@ import type {
   RespondToBrowserTakeoverInput,
   RespondToDraftPreviewInput,
 } from "./ipc-action-cards";
+import type { AgentCardsDesktopApi } from "./ipc-agent-cards";
 import type {
   AgentSettings,
   AgentTemplate,
@@ -712,6 +713,8 @@ export interface OpenBotDesktopApi {
   composer?: ComposerDesktopApi;
   /** COSGRAL W11 (U6): the tabs of the threads of an agent. Optional until every mock implements it. */
   threadTabs?: ThreadTabsDesktopApi;
+  /** COSGRAL W11 (BE-B): overview of the agent cards and the small per-agent choices. */
+  agentCards?: AgentCardsDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */

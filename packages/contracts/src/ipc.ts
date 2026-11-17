@@ -2,6 +2,7 @@ export * from "./ipc-access";
 export * from "./ipc-acp-login";
 export * from "./ipc-acp-presets";
 export * from "./ipc-action-cards";
+export * from "./ipc-agent-cards";
 export * from "./ipc-agent-settings";
 export * from "./ipc-api-keys";
 export * from "./ipc-app-auth";

@@ -79,6 +79,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { createAccessApi } from "./access-api";
 import { createAcpLoginApi } from "./acp-login-api";
 import { createAcpPresetsApi } from "./acp-presets-api";
+import { createAgentCardsApi } from "./agent-cards-api";
 import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
 import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
@@ -834,6 +835,7 @@ const openbotApi: OpenBotDesktopApi = {
   phone: createPhoneApi(invokeAgent),
   search: createSearchApi(invokeAgent),
   composer: createComposerApi(invokeAgent),
+  agentCards: createAgentCardsApi(invokeAgent),
   threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),
   vaultConnectors: createVaultConnectorsApi(invokeAgent),
