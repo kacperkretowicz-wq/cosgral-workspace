@@ -125,7 +125,7 @@ async function main(): Promise<void> {
   if (options.dryRun) {
     const state = await readState(page);
     console.log(
-      `Dry run: "${state.heading}" at ${state.url}; ${clickable(await listCandidates(page)).length} things may be clicked.`,
+      `Dry run: "${state.heading}" at ${state.url}; ${clickable(await listCandidates(page), options.target).length} things may be clicked.`,
     );
     await clearMarks(page);
     await browser.close();
@@ -231,11 +231,11 @@ async function main(): Promise<void> {
     clicked.set(here.signature, done);
     const all = await listCandidates(page);
     for (const candidate of all) {
-      const verdict = clickVerdict(candidate);
+      const verdict = clickVerdict(candidate, options.target);
       if (!verdict.allowed && candidate.name)
         skipped.set(`${candidate.role ?? candidate.tag}: ${candidate.name.slice(0, 60)}`, verdict.reason);
     }
-    const next = clickable(all).find(
+    const next = clickable(all, options.target).find(
       (candidate) => !done.has(keyOf(candidate)) && !(candidate.inNav && navTried.has(keyOf(candidate))),
     );
     if (!next) {

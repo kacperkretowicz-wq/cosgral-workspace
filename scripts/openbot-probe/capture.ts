@@ -74,9 +74,9 @@ export async function clearMarks(page: Page): Promise<void> {
 }
 
 /** The candidates the probe may click, in the order it tries them. */
-export function clickable(candidates: readonly Candidate[]): Candidate[] {
+export function clickable(candidates: readonly Candidate[], target: "openbot" | "cosgral" = "openbot"): Candidate[] {
   return candidates
-    .filter((candidate) => clickVerdict(candidate).allowed)
+    .filter((candidate) => clickVerdict(candidate, target).allowed)
     .sort((a, b) => clickPriority(a) - clickPriority(b) || a.rect.y - b.rect.y || a.rect.x - b.rect.x);
 }
 

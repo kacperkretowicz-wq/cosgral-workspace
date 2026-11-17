@@ -182,13 +182,17 @@ export function startsAWord(text: string, word: string): boolean {
 }
 
 /** Whether the probe may click this. An address that leaves the program is never clicked (it would open the system browser). */
-export function clickVerdict(candidate: ClickCandidate): Verdict {
+/** What only OUR OWN app lets the probe press: the first-run button of the stand-in CLI (no real account is involved). */
+const OWN_APP_ALLOWED: readonly string[] = ["continue with codex"];
+
+export function clickVerdict(candidate: ClickCandidate, target: "openbot" | "cosgral" = "openbot"): Verdict {
   const name = normalize(candidate.name);
   if (candidate.disabled) return { allowed: false, reason: "disabled" };
   if (!name) return { allowed: false, reason: "no name" };
   if (candidate.href && /^(https?:|mailto:|tel:|file:)/i.test(candidate.href))
     return { allowed: false, reason: "leaves the program" };
-  const denied = DENIED_WORDS.find((word) => startsAWord(name, word));
+  const ownApp = target === "cosgral" && OWN_APP_ALLOWED.some((word) => name === word);
+  const denied = ownApp ? undefined : DENIED_WORDS.find((word) => startsAWord(name, word));
   if (denied) return { allowed: false, reason: `denied word "${denied}"` };
   if (candidate.role === "switch" || candidate.role === "checkbox")
     return { allowed: false, reason: "a setting, not a screen" };
