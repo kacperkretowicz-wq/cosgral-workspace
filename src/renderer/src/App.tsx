@@ -28,6 +28,7 @@ import type {
   InviteSummary,
   QueueSnapshot,
   RemoteMacSession,
+  SearchHit,
   ServerSummary,
   SidebarLayout,
   StopAgentEyesInput,
@@ -1171,6 +1172,20 @@ export function App() {
     for (const result of snapshots) {
       if (result.status === "fulfilled") scheduleConversation(result.value);
     }
+  }
+
+  /** Channels, files and routines found by the search: open the page that holds them. */
+  function selectGlobalSearchHit(hit: SearchHit): void {
+    setNewAgentOpen(false);
+    if (hit.kind === "channels") {
+      setCreateChannel(false);
+      setActivePage("agents");
+      setActiveDirectMemberId(null);
+      setAgentPickerOpen(false);
+      setChannelsOpen(true);
+    } else if (hit.kind === "files") setActivePage("library");
+    else if (hit.kind === "routines") setActivePage("schedule");
+    else if (hit.botId) selectBot(hit.botId);
   }
 
   function selectGlobalSearchMessage(botId: string, messageId: string): void {
@@ -2333,6 +2348,7 @@ export function App() {
                   onOpenChange={setGlobalSearchVisibility}
                   onSelectBot={selectBot}
                   onSelectMessage={selectGlobalSearchMessage}
+                  onSelectHit={selectGlobalSearchHit}
                 />
               </Show>
             </div>

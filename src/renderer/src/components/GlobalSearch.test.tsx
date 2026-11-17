@@ -1,0 +1,57 @@
+import type { SearchHit } from "@openbot/contracts/ipc";
+import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { GlobalSearch } from "./GlobalSearch";
+
+const channelHit: SearchHit = {
+  kind: "channels",
+  id: "ch-1",
+  title: "Launch room",
+  snippet: "Plan the launch",
+  channelId: "ch-1",
+};
+const fileHit: SearchHit = { kind: "files", id: "f-1", title: "launch-plan.pdf", snippet: "" };
+const query = vi.fn(async () => ({ q: "launch", hits: [channelHit, fileHit], truncated: false }));
+
+beforeEach(() => {
+  query.mockClear();
+  Object.assign(window, { openbot: { search: { query } } });
+});
+afterEach(cleanup);
+
+function mount(onSelectHit = vi.fn()) {
+  render(() => (
+    <GlobalSearch
+      open={true}
+      bots={[]}
+      messagesByBot={{}}
+      onOpenChange={vi.fn()}
+      onSelectBot={vi.fn()}
+      onSelectMessage={vi.fn()}
+      onSelectHit={onSelectHit}
+    />
+  ));
+  return onSelectHit;
+}
+
+it("offers a tab for each kind and asks the search API only for channels, files and routines", async () => {
+  mount();
+  for (const name of ["All", "Agents", "Channels", "Messages", "Files", "Routines"]) {
+    expect(screen.getByRole("tab", { name })).toBeInTheDocument();
+  }
+  await fireEvent.input(screen.getByRole("combobox", { name: "Search COSGRAL" }), { target: { value: "launch" } });
+  await waitFor(() =>
+    expect(query).toHaveBeenCalledWith({ q: "launch", kinds: ["channels", "files", "routines"], limit: 10 }),
+  );
+});
+
+it("filters hits by tab and opens a channel hit", async () => {
+  const onSelectHit = mount();
+  await fireEvent.input(screen.getByRole("combobox", { name: "Search COSGRAL" }), { target: { value: "launch" } });
+  await waitFor(() => expect(query).toHaveBeenCalled());
+  await fireEvent.click(screen.getByRole("tab", { name: "Channels" }));
+  const option = await screen.findByRole("option", { name: /Launch room/ });
+  expect(screen.queryByRole("option", { name: /launch-plan/ })).not.toBeInTheDocument();
+  await fireEvent.click(option);
+  expect(onSelectHit).toHaveBeenCalledWith(channelHit);
+});

@@ -1479,7 +1479,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await screen.findByRole("heading", { name: "Sales Outbound" });
 
     await fireEvent.keyDown(window, { key: "k", metaKey: true });
-    await fireEvent.click(screen.getByRole("tab", { name: "Bots" }));
+    await fireEvent.click(screen.getByRole("tab", { name: "Agents" }));
     const botSearch = screen.getByRole("combobox", { name: "Search COSGRAL" });
     await fireEvent.input(botSearch, { target: { value: "chief" } });
     await fireEvent.click(await screen.findByRole("option", { name: /Chief/ }));

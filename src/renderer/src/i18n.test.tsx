@@ -29,6 +29,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "ContextSettingsSection",
     "InitialSetup",
     "ThreadTabs",
+    "GlobalSearch",
     "NewAgentPage",
   ];
   for (const file of files) {

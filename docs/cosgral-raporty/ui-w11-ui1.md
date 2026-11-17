@@ -29,3 +29,9 @@
 - `ThreadTabs`: karty otwartych wątków (kontrakt U6), menu karty (zamknij / pozostałe / po prawej), lista zamkniętych pod szewronem, „+”. Zamknięcie aktywnej karty pokazuje sąsiednią; wątek zostaje w liście. Bez kontraktu threadTabs nic się nie rysuje (bez atrapy).
 - Luka: przeciąganie kart (reorder) — kontrakt jest, UI jeszcze nie.
 - Kontrola: ThreadTabs 5/5, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 6 — wyszukiwarka z zakładkami (zrzuty 090, 099)
+- Sześć zakładek; `search.query({q, kinds:[channels,files,routines], limit:10})` z 150 ms debounce i ochroną przed spóźnioną odpowiedzią; bez kontraktu zakładki Kanały/Pliki/Rutyny są puste (bez atrapy).
+- Otwarcie: kanał → widok kanałów, plik → Biblioteka, rutyna → Harmonogram (hit nie niesie jeszcze celu głębszego niż strona).
+- Zmiana nazwy zakładki Bots→Agents dotyka `stories/App.stories.tsx` (nie uruchamiane — wymaga GO na Storybook).
+- Kontrola: GlobalSearch 2/2, App.test 92/92, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
