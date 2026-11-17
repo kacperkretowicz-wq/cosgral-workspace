@@ -53,3 +53,19 @@ It does not type into forms (so screens that exist only after creating something
 (other than `--prefer-language` on a language picker), does not scroll long pages, and does not drive windows other than the main
 one. A screen is "new" when its accessibility tree differs after ignoring numbers and the state of a choice, so two screens that
 differ only in colours or data are one.
+
+## Our own app as the target, and the comparison (BE-A)
+
+`--target cosgral` looks at our own app instead of the installed program: no stand-in sign-in (our app needs no account), the main
+window is chosen (dock and island windows are skipped), and `index.json` records the target. Start our app in the sandbox with a
+debug port (`scripts/live-dev.ts` or a sandbox start) and run the same command with a different `--out`.
+
+```text
+node scripts/openbot-probe/probe.ts --target cosgral --cdp http://127.0.0.1:<port> --out <folder outside the repo>/cosgral --create-agent
+node scripts/openbot-probe/compare.ts --reference <results of the reference> --ours <results of ours> --out <folder outside the repo> [--map map.json]
+```
+
+`compare.ts` pairs screens by name (a map file renames reference names to ours when the two languages differ), and writes one short
+report per screen: texts on one side only, looks (sizes, radii, colours, spacings) one side uses and the other does not (colours
+within 5 per channel, lengths within 2 px), and the token values of the reference that none of our tokens has. It refuses an output
+folder inside the repo. Starting either program is a heavy step: only after the leader's GO file.
