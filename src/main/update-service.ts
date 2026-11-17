@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { UpdateStatus } from "@openbot/contracts/ipc";
+import { DEFAULT_UPDATE_PREFERENCES, type UpdatePreferences, type UpdateStatus } from "@openbot/contracts/ipc";
 import type { AppUpdater, ProgressInfo, UpdateInfo } from "electron-updater";
 
 type UpdateAdapter = {
@@ -37,15 +37,19 @@ export function supportsInstalledUpdates(platform: NodeJS.Platform): boolean {
 
 export class UpdateService extends EventEmitter<UpdateServiceEvents> {
   readonly #updater: UpdateAdapter;
+  readonly #explicitInterval: boolean;
   readonly #options: Required<Omit<UpdateServiceOptions, "beforeInstall">> &
     Pick<UpdateServiceOptions, "beforeInstall">;
   #status: UpdateStatus;
   #checkTimer: ReturnType<typeof setTimeout> | null = null;
   #started = false;
+  /** COSGRAL W12-KK (g2): what the person chose (checks, download, install on quit, pre-releases, how often). */
+  #preferences: UpdatePreferences = { ...DEFAULT_UPDATE_PREFERENCES };
 
   constructor(updater: UpdateAdapter, options: UpdateServiceOptions) {
     super();
     this.#updater = updater;
+    this.#explicitInterval = options.checkIntervalMs !== undefined;
     this.#options = {
       ...options,
       initialCheckDelayMs: options.initialCheckDelayMs ?? 12_000,
@@ -65,8 +69,8 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
     if (this.#started) return;
     this.#started = true;
     this.#updater.autoDownload = false;
-    this.#updater.autoInstallOnAppQuit = true;
-    this.#updater.allowPrerelease = false;
+    this.#updater.autoInstallOnAppQuit = this.#preferences.installOnQuit;
+    this.#updater.allowPrerelease = this.#preferences.includePrereleases;
 
     this.#updater.on("checking-for-update", () => {
       this.#setStatus({ phase: "checking", progress: null, message: null });
@@ -79,6 +83,8 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
         checkedAt: new Date().toISOString(),
         message: null,
       });
+      // COSGRAL W12-KK (g2): the person asked to download by itself.
+      if (this.#preferences.automaticDownload) void this.downloadUpdate();
     });
     this.#updater.on("update-not-available", () => {
       this.#setStatus({
@@ -102,7 +108,7 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
     });
     this.#updater.on("error", () => this.#setError());
 
-    if (scheduleChecks && this.#options.enabled) {
+    if (scheduleChecks && this.#options.enabled && this.#preferences.automaticChecks) {
       this.#scheduleCheck(this.#options.initialCheckDelayMs);
     }
   }
@@ -142,7 +148,7 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
     } catch {
       this.#setError();
     } finally {
-      this.#scheduleCheck(this.#options.checkIntervalMs);
+      if (this.#preferences.automaticChecks) this.#scheduleCheck(this.#intervalMs());
     }
     return this.getStatus();
   }
@@ -163,6 +169,29 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
     this.#setStatus({ phase: "installing", message: null });
     await this.#options.beforeInstall();
     this.#updater.quitAndInstall(false, true);
+  }
+
+  /**
+   * COSGRAL W12-KK (g2): the person's preferences. With the automatic checks off the program makes no update request by itself (only
+   * "Check now" does); a change of the interval restarts the timer from now.
+   */
+  applyPreferences(preferences: UpdatePreferences): void {
+    this.#preferences = { ...preferences };
+    if (this.#started) {
+      this.#updater.autoInstallOnAppQuit = preferences.installOnQuit;
+      this.#updater.allowPrerelease = preferences.includePrereleases;
+    }
+    if (!this.#started || !this.#options.enabled) return;
+    if (preferences.automaticChecks) this.#scheduleCheck(this.#intervalMs());
+    else this.stop();
+  }
+
+  getPreferences(): UpdatePreferences {
+    return { ...this.#preferences };
+  }
+
+  #intervalMs(): number {
+    return this.#explicitInterval ? this.#options.checkIntervalMs : this.#preferences.checkEveryHours * 3_600_000;
   }
 
   stop(): void {
