@@ -17,9 +17,9 @@
   --openbot-text-muted: rgba(20, 20, 28, 0.66);
   --openbot-text-readable: rgba(20, 20, 28, 0.66);
   --openbot-text-dim: #595961;
-  --openbot-accent: #4d44d6;
-  --openbot-accent-text: #4038c4;
-  --openbot-accent-soft: rgba(77, 68, 214, 0.12);
+  --openbot-accent: #0069d9;
+  --openbot-accent-text: #0057b3;
+  --openbot-accent-soft: rgba(0, 105, 217, 0.12);
   --openbot-warning: #6e4a0d;
   --openbot-warning-soft: rgba(154, 107, 18, 0.14);
   --openbot-text-on-danger: var(--openbot-contrast-white);
@@ -38,7 +38,7 @@
   --openbot-data-table-text: #14141c;
   --openbot-shadow-popover-ambient: rgba(20, 20, 30, 0.12);
   --openbot-text-placeholder: #595961;
-  --openbot-border-focus: #4d44d6;
+  --openbot-border-focus: #0069d9;
   --openbot-focus-ring: 0 0 0 3px var(--openbot-border-focus);
   --openbot-text-on-success: #ffffff;
   --openbot-bg-host-canvas: #f6f6f8;
@@ -46,8 +46,8 @@
   --openbot-bg-host-inset: #ffffff;
   --openbot-bg-remote-canvas: #ececf0;
   --openbot-bg-surface-clear: rgba(255, 255, 255, 0);
-  --openbot-accent-hover: #4038c4;
-  --openbot-accent-strong: rgba(77, 68, 214, 0.25);
+  --openbot-accent-hover: #0057b3;
+  --openbot-accent-strong: rgba(0, 105, 217, 0.25);
   --openbot-success-soft: rgba(26, 110, 57, 0.1);
   --openbot-success-wash: rgba(26, 110, 57, 0.04);
   --openbot-unread-text: #ffffff;

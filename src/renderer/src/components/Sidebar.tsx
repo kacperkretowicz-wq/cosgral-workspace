@@ -35,7 +35,6 @@ import {
   FolderDeleteDialog,
   FolderMoveIcon,
   FolderNameDialog,
-  FolderPlusIcon,
   FolderRow,
   MoveToDialog,
   type SidebarFolderActions,
@@ -43,7 +42,7 @@ import {
 import { SpacesRail } from "./Spaces";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
-import { AlertDialog, Badge, Button, Check, ContextMenu, Input, Popover, Switch, Text } from "./ui";
+import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Switch, Text } from "./ui";
 
 export interface NeedsYouSidebarItem {
   threadId?: string;
@@ -604,48 +603,57 @@ export function Sidebar(props: SidebarProps) {
           >
             <SidebarToggleIcon />
           </Button>
-          <Show when={props.layout && props.folderActions}>
-            <Button
-              type="button"
-              class="sidebar-icon-button sidebar-folder-button no-drag"
-              onClick={() => setFolderDialog({ kind: "create", parentId: null })}
-              aria-label="New folder"
-              title="New folder"
-              aria-hidden={props.compact ? "true" : undefined}
-              tabindex={props.compact ? -1 : 0}
-            >
-              <FolderPlusIcon />
-            </Button>
-          </Show>
-          <Button
-            type="button"
-            class="sidebar-icon-button sidebar-new-button no-drag"
-            onClick={props.onCreateBot}
-            aria-label="New agent"
-            aria-hidden={props.compact ? "true" : undefined}
-            tabindex={props.compact ? -1 : 0}
-          >
-            <PlusIcon />
-          </Button>
         </div>
       </div>
 
       <SpacesRail compact={props.compact} />
       <div class="sidebar-search-wrap">
-        <label class="search-field" aria-hidden={props.compact ? "true" : undefined}>
-          <span class="sr-only">{t("Search chats")}</span>
-          <SearchIcon />
-          <Input
-            ref={(element) => (searchInput = element)}
-            type="search"
-            value={query()}
-            onInput={(event) => setQuery(event.currentTarget.value)}
-            placeholder={t("Search")}
-            aria-label={t("Search chats")}
-            tabindex={props.compact ? -1 : 0}
-            maxlength={INPUT_LIMITS.agentName}
-          />
-        </label>
+        <div class="sidebar-search-row">
+          <label class="search-field" aria-hidden={props.compact ? "true" : undefined}>
+            <span class="sr-only">{t("Search chats")}</span>
+            <SearchIcon />
+            <Input
+              ref={(element) => (searchInput = element)}
+              type="search"
+              value={query()}
+              onInput={(event) => setQuery(event.currentTarget.value)}
+              placeholder={t("Search")}
+              aria-label={t("Search chats")}
+              tabindex={props.compact ? -1 : 0}
+              maxlength={INPUT_LIMITS.agentName}
+            />
+          </label>
+          <Show when={!props.compact}>
+            <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
+              <DropdownMenu.Trigger
+                as={Button}
+                type="button"
+                class="sidebar-icon-button sidebar-new-button no-drag"
+                aria-label={t("Create new")}
+                title={t("Create new")}
+              >
+                <PlusIcon />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content class="bot-context-menu sidebar-new-menu" aria-label={t("Create new")}>
+                  <DropdownMenu.Item onSelect={() => props.onCreateBot()}>
+                    <span>{t("New agent")}</span>
+                  </DropdownMenu.Item>
+                  <Show when={props.onSelectChannels}>
+                    <DropdownMenu.Item onSelect={() => props.onSelectChannels?.(true)}>
+                      <span>{t("New channel")}</span>
+                    </DropdownMenu.Item>
+                  </Show>
+                  <Show when={props.layout && props.folderActions}>
+                    <DropdownMenu.Item onSelect={() => setFolderDialog({ kind: "create", parentId: null })}>
+                      <span>{t("New folder")}</span>
+                    </DropdownMenu.Item>
+                  </Show>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </Show>
+        </div>
         <Button
           type="button"
           class="sidebar-compact-search"
