@@ -65,6 +65,7 @@ import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/Panel
 import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { RoutinePanel } from "./components/RoutinePanel";
+import { ScheduleOverview } from "./components/ScheduleOverview";
 import { ServerRail } from "./components/ServerRail";
 import { ServerSettingsPage } from "./components/ServerSettingsPage";
 import { Sidebar } from "./components/Sidebar";
@@ -2153,6 +2154,9 @@ export function App() {
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">
                   <h1>Schedule</h1>
+                  <Show when={window.openbot?.schedule}>
+                    <ScheduleOverview />
+                  </Show>
                   <RoutinePanel bots={botList()} />
                 </main>
               </Show>

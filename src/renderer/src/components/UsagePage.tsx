@@ -1,6 +1,7 @@
 import type { AcpAgentConfig, ProviderUsage } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
 import { ProviderUsageList } from "./ProvidersPage";
+import { UsageReportView } from "./UsageReportView";
 import { Heading, Text } from "./ui";
 
 /**
@@ -71,6 +72,9 @@ export function UsagePage() {
         <Text as="p" tone="danger" role="alert">
           {error()}
         </Text>
+      </Show>
+      <Show when={window.openbot?.usageReport}>
+        <UsageReportView />
       </Show>
       <Show when={window.openbot.providers && loaded()}>
         <ProviderUsageList

@@ -2023,3 +2023,250 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   margin: 0;
   font-size: var(--cosgral-text-md);
 }
+
+/* UI-L: usage report and schedule overview. */
+.usage-report,
+.schedule-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.usage-periods,
+.schedule-windows {
+  display: flex;
+  gap: 4px;
+}
+
+.usage-periods button,
+.schedule-windows button {
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-muted);
+}
+
+.usage-periods button[aria-current="page"],
+.schedule-windows button[aria-current="page"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.usage-note,
+.schedule-note {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-error,
+.schedule-error {
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.usage-totals > div {
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 12px 14px;
+}
+
+.usage-totals dt {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.usage-totals dd {
+  margin: 4px 0 0;
+  font-size: var(--cosgral-text-2xl);
+  font-weight: 600;
+}
+
+.usage-chart {
+  margin: 0;
+}
+
+.usage-chart svg {
+  display: block;
+  width: 100%;
+  height: 120px;
+}
+
+.usage-chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  color: var(--cosgral-text-dim);
+  font-size: var(--cosgral-text-sm);
+}
+
+.usage-bar {
+  fill: var(--cosgral-accent);
+  opacity: 0.85;
+}
+
+.usage-bar:hover {
+  opacity: 1;
+}
+
+.usage-rings {
+  display: flex;
+  gap: 24px;
+}
+
+.usage-ring {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.usage-ring svg {
+  width: 64px;
+  height: 64px;
+}
+
+.usage-ring-track,
+.usage-ring-fill {
+  fill: none;
+  stroke-width: 6;
+}
+
+.usage-ring-track {
+  stroke: var(--cosgral-bg-control-hover);
+}
+
+.usage-ring-fill {
+  stroke: var(--cosgral-accent);
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--cosgral-duration-slow) var(--cosgral-ease);
+}
+
+.usage-ring[data-level="high"] .usage-ring-fill {
+  stroke: var(--cosgral-warning);
+}
+
+.usage-ring figcaption {
+  display: flex;
+  flex-direction: column;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.usage-ring strong {
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-xl);
+}
+
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-table caption {
+  padding-bottom: 6px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  text-align: left;
+}
+
+.usage-table th,
+.usage-table td {
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 8px 6px;
+  text-align: left;
+  font-weight: 400;
+}
+
+.usage-table thead th {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.usage-share {
+  display: inline-block;
+  width: 80px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-control-hover);
+  vertical-align: middle;
+}
+
+.usage-share-fill {
+  display: block;
+  height: 100%;
+  background: var(--cosgral-accent);
+}
+
+.usage-unavailable {
+  border-top: 1px solid var(--cosgral-border);
+  padding-top: 8px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-unavailable h3,
+.schedule-day h3,
+.schedule-feed h3 {
+  margin: 0 0 6px;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-unavailable ul,
+.schedule-day ul,
+.schedule-feed ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 6px 2px;
+  font-size: var(--cosgral-text-md);
+}
+
+.schedule-entry time {
+  min-width: 52px;
+  color: var(--cosgral-text-muted);
+}
+
+.schedule-entry small {
+  color: var(--cosgral-text-muted);
+}
+
+.schedule-status {
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-control-hover);
+  padding: 1px 8px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.schedule-status[data-status="failed"] {
+  color: var(--cosgral-danger);
+}
+
+.schedule-status[data-status="done"] {
+  color: var(--cosgral-success);
+}
+
+.schedule-status[data-status="planned"] {
+  color: var(--cosgral-accent-text);
+}
+
+.schedule-aside p {
+  margin: 4px 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
