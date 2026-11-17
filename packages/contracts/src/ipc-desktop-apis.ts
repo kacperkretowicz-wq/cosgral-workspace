@@ -154,6 +154,7 @@ import type {
   UpdateRoutineInput,
 } from "./ipc-routines";
 import type { SearchDesktopApi } from "./ipc-search";
+import type { ServerSettingsDesktopApi } from "./ipc-server-settings";
 import type {
   CreateSidebarFolderInput,
   DeleteSidebarFolderInput,
@@ -715,6 +716,8 @@ export interface OpenBotDesktopApi {
   threadTabs?: ThreadTabsDesktopApi;
   /** COSGRAL W11 (BE-B): overview of the agent cards and the small per-agent choices. */
   agentCards?: AgentCardsDesktopApi;
+  /** COSGRAL W12 (BE-D): the 14 sections of the server settings. */
+  serverSettings?: ServerSettingsDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */

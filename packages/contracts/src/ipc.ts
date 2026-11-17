@@ -37,6 +37,7 @@ export * from "./ipc-providers";
 export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";
 export * from "./ipc-search";
+export * from "./ipc-server-settings";
 export * from "./ipc-sidebar";
 export * from "./ipc-skills";
 export * from "./ipc-spaces";

@@ -102,6 +102,7 @@ import { createPhoneApi } from "./phone-api";
 import { createPlansApi } from "./plans-api";
 import { createPluginCatalogApi } from "./plugin-catalog-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
+import { createServerSettingsApi } from "./server-settings-api";
 import { createSpacesApi } from "./spaces-api";
 import { createSubagentsApi } from "./subagents-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
@@ -836,6 +837,7 @@ const openbotApi: OpenBotDesktopApi = {
   search: createSearchApi(invokeAgent),
   composer: createComposerApi(invokeAgent),
   agentCards: createAgentCardsApi(invokeAgent),
+  serverSettings: createServerSettingsApi(invokeAgent),
   threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),
   vaultConnectors: createVaultConnectorsApi(invokeAgent),

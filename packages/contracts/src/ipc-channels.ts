@@ -214,6 +214,12 @@ export const IPC_CHANNELS = {
   agentCardsGetPreferences: "agent-cards:get-preferences",
   agentCardsUpdatePreferences: "agent-cards:update-preferences",
   agentCardsResetSession: "agent-cards:reset-session",
+  // COSGRAL W12 (BE-D): the settings of the server (14 sections).
+  serverSettingsSections: "server-settings:sections",
+  serverSettingsGet: "server-settings:get",
+  serverSettingsUpdate: "server-settings:update",
+  serverSettingsMeasureStorage: "server-settings:measure-storage",
+  serverSettingsClearLogs: "server-settings:clear-logs",
   // COSGRAL W10-KK2: messenger bridge (Telegram).
   messengersList: "messengers:list",
   messengersStatus: "messengers:status",

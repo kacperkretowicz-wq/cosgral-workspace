@@ -59,6 +59,7 @@ import {
   type RemoteDesktopHostState,
 } from "./ipc-remote-desktop";
 import { isRoutine, isRoutineRun, type Routine, type RoutineRun } from "./ipc-routines";
+import { isServerSettingsChanged, type ServerSettingsChanged } from "./ipc-server-settings";
 import { isSidebarLayout, type SidebarLayout } from "./ipc-sidebar";
 import { isLocalSkill, isSkillInstall, type LocalSkill, type SkillInstall } from "./ipc-skills";
 import { isSpacesChanged, type SpacesChanged } from "./ipc-spaces";
@@ -701,6 +702,8 @@ export type AgentEvent =
   | ({ type: "side-question-changed" } & SideQuestionChanged)
   /** COSGRAL W11 (BE-B): the small per-agent choices of one agent changed (the whole preferences). */
   | ({ type: "agent-preferences-changed" } & AgentPreferencesChanged)
+  /** COSGRAL W12 (BE-D): the settings of the server changed (the whole settings). */
+  | ({ type: "server-settings-changed" } & ServerSettingsChanged)
   /** COSGRAL W11 (U6): the strip of thread tabs of one agent changed. */
   | ({ type: "thread-tabs-changed" } & ThreadTabsChanged)
   /** COSGRAL W10-KK2: the messenger bridge changed (connected, failed, allow list, a chat wrote that is not allowed) (the whole list). */
@@ -890,6 +893,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isSideQuestionChanged(value);
     case "agent-preferences-changed":
       return isAgentPreferencesChanged(value);
+    case "server-settings-changed":
+      return isServerSettingsChanged(value);
     case "thread-tabs-changed":
       return isThreadTabsChanged(value);
     case "messengers-changed":

@@ -111,6 +111,7 @@ import { createMockMessengers } from "./mock-messengers";
 import { createMockPhone } from "./mock-phone";
 import { createMockPlans } from "./mock-plans";
 import { createMockPluginCatalog } from "./mock-plugin-catalog";
+import { createMockServerSettings } from "./mock-server-settings";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
 import { createMockSubagents } from "./mock-subagents";
@@ -1393,6 +1394,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     composer: createMockComposer((event) => emitAgentEvent(event)),
     threadTabs: createMockThreadTabs((event) => emitAgentEvent(event)),
     agentCards: createMockAgentCards((event) => emitAgentEvent(event)),
+    serverSettings: createMockServerSettings((event) => emitAgentEvent(event)),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).
