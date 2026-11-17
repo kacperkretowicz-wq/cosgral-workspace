@@ -7,6 +7,7 @@ import {
   parseDeleteMessageInput,
   parseEditMessageInput,
   parseListPinsInput,
+  parseRetryMessageInput as parseMessageMenuInput,
   parsePinMessageInput,
   parseRetryMessageInput,
 } from "@openbot/contracts/ipc";
@@ -32,5 +33,7 @@ export function registerMessageActionsIpc(service: () => AgentService | null): v
   handle(IPC_CHANNELS.messageActionsEdit, parseEditMessageInput, (agents, input) => agents.editMessage(input));
   handle(IPC_CHANNELS.messageActionsDelete, parseDeleteMessageInput, (agents, input) => agents.deleteMessage(input));
   handle(IPC_CHANNELS.messageActionsPin, parsePinMessageInput, (agents, input) => agents.pinMessage(input));
+  // COSGRAL W12 (BE-J): the menu of one message (the same target as the actions).
+  handle(IPC_CHANNELS.messageMenuGet, parseMessageMenuInput, (agents, input) => agents.messageMenu(input));
   handle(IPC_CHANNELS.messageActionsListPins, parseListPinsInput, (agents, input) => agents.listMessagePins(input));
 }

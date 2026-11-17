@@ -285,6 +285,11 @@ export class ThreadStore {
     }
   }
 
+  /** One more thread may be made for this agent (a branch makes one). */
+  hasRoom(botId: string): boolean {
+    return this.#metaRows(botId).length < this.#max();
+  }
+
   #assertRoom(botId: string): void {
     if (this.#metaRows(botId).length >= this.#max()) throw new Error(`An agent has at most ${this.#max()} threads.`);
   }

@@ -81,6 +81,7 @@ import type {
   UpdateQueuedMessageInput,
 } from "@openbot/contracts/ipc";
 import {
+  buildMessageMenu,
   editNeedsConfirmation,
   isAcpModel,
   isClaudeModel,
@@ -88,6 +89,7 @@ import {
   isImageGenerationAspectRatio,
   isReasoningEffort,
   MCP_NAMESPACE_PREFIX,
+  type MessageMenu,
   messageActionProblem,
   retrySourceIndex,
   threadBusyProblem,
@@ -4094,6 +4096,35 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#removeMessages(bot, threadId, snapshot, doomed);
     this.#scheduleDrain(bot.id);
     return { removedMessageIds: doomed.map((candidate) => candidate.id), receipt };
+  }
+
+  /** COSGRAL W12: the menu of one message (which actions it offers now, and why not): the rules of the actions, read together. */
+  async messageMenu(input: MessageActionTarget): Promise<MessageMenu> {
+    const bot = this.#contextBot(input.botId);
+    const threadId = input.threadId ?? bot.threadId;
+    if (!threadId || !this.#threads.lookup(bot.id, threadId)) throw new Error("Unknown thread.");
+    const messages = this.#messagesOfThread(bot, threadId);
+    const index = messages.findIndex((candidate) => candidate.id === input.messageId);
+    const message = messages[index];
+    if (!message) throw new Error("That message is not in this thread.");
+    const pins = this.#pins.list(threadId);
+    return buildMessageMenu(
+      { botId: bot.id, threadId, messageId: message.id },
+      {
+        message,
+        pinned: pins.some((pin) => pin.messageId === message.id),
+        pinCount: pins.length,
+        threadShown: threadId === bot.threadId,
+        historyProblem: threadBusyProblem({
+          turnRunning: this.#runningThread(bot.id) === threadId || this.#compactingBots.has(bot.id),
+          busyMessages: this.#mailbox
+            .listQueue(bot.id, threadId)
+            .deliveries.filter((delivery) => ["queued", "starting", "running"].includes(delivery.status)).length,
+        }),
+        laterMessages: messages.slice(index + 1).filter(isRemovableRow).length,
+        branchRoom: this.#threads.hasRoom(bot.id),
+      },
+    );
   }
 
   /** Delete one message (the person's or the agent's) after confirmation. Never a whole thread. */

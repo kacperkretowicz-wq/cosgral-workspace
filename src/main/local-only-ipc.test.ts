@@ -146,6 +146,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("plans:").length).toBe(2);
     // COSGRAL W6-BE3: the actions on a message.
     expect(channelsOf("message-actions:").length).toBe(5);
+    // COSGRAL W12 (BE-J): the menu of one message.
+    expect(channelsOf("message-menu:").length).toBe(1);
     // COSGRAL W6-BE4: the subagents (list and Stop; the window cannot start one, Q11).
     expect(channelsOf("subagents:").length).toBe(2);
     // COSGRAL W6-BE5: signing in to ACP agents.
@@ -212,6 +214,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "threads:",
         "plans:",
         "message-actions:",
+        "message-menu:",
         "subagents:",
         "acp-login:",
         "acp-presets:",
