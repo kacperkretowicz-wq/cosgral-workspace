@@ -112,6 +112,7 @@ import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
 import { createMockSubagents } from "./mock-subagents";
 import { createMockThreads } from "./mock-threads";
+import { createMockVaultConnectors } from "./mock-vault-connectors";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
 import { createMockWindows } from "./mock-windows";
@@ -560,6 +561,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       resolution: decline ? "declined" : "provided",
     });
   });
+  const mockVaultConnectors = createMockVaultConnectors((event) => emitAgentEvent(event));
   const api: OpenBotDesktopApi = {
     ...w2ui2,
     memory: w2.memory,
@@ -1385,6 +1387,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     phone: createMockPhone((event) => emitAgentEvent(event)),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
+    // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).
+    vaultConnectors: mockVaultConnectors.connectors,
+    vaultSecrets: mockVaultConnectors.secrets,
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

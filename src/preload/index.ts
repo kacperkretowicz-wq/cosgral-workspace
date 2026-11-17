@@ -103,6 +103,7 @@ import { createSpacesApi } from "./spaces-api";
 import { createSubagentsApi } from "./subagents-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createThreadsApi } from "./threads-api";
+import { createVaultConnectorsApi, createVaultSecretsApi } from "./vault-connectors-api";
 import { createVoiceApi } from "./voice-api";
 import { createWindowsApi } from "./windows-api";
 
@@ -830,6 +831,8 @@ const openbotApi: OpenBotDesktopApi = {
   integrations: createIntegrationsApi(invokeAgent),
   phone: createPhoneApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),
+  vaultConnectors: createVaultConnectorsApi(invokeAgent),
+  vaultSecrets: createVaultSecretsApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

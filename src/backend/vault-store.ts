@@ -191,6 +191,14 @@ export class VaultStore extends EventEmitter<{ changed: [items: VaultItemSummary
     return secrets.kind === "apiKey" ? secrets.value : null;
   }
 
+  /** COSGRAL W11-KK (d): removes every item (the person confirmed in the Vault screen). Returns how many were removed. */
+  reset(): number {
+    const removed = this.#rows().length;
+    this.#database.connection.prepare("DELETE FROM projection_vault_items").run();
+    this.#emitChanged();
+    return removed;
+  }
+
   #emitChanged(): void {
     this.emit("changed", this.list());
   }
