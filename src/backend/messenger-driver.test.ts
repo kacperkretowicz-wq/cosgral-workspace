@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
-import { type AgentReply, type MessengerAgentPort, MessengerBridge } from "./messenger-bridge";
+import { type MessengerAgentPort, MessengerBridge } from "./messenger-bridge";
 import { type InboundMessage, type MessengerDriver, MessengerFailure } from "./messenger-driver";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import type { SecretBox } from "./vault-store";
@@ -60,8 +60,8 @@ class FakeAgent implements MessengerAgentPort {
     this.received.push(text);
     return "m1";
   }
-  async reply(): Promise<AgentReply> {
-    return { state: "done", text: "answer" };
+  async reply() {
+    return { state: "done" as const, text: "answer" };
   }
 }
 
