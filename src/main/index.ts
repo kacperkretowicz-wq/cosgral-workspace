@@ -55,6 +55,7 @@ import { IsolationStore } from "../backend/isolation-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
+import { createAgentPort, MessengerBridge } from "../backend/messenger-bridge";
 import type { MobileConnect } from "../backend/mobile-connect";
 import type { PhoneAccess } from "../backend/phone-access";
 import { ProviderRegistry } from "../backend/provider-registry";
@@ -181,6 +182,7 @@ import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerMessageActionsIpc } from "./message-actions-ipc";
+import { registerMessengersIpc } from "./messengers-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
@@ -284,6 +286,7 @@ let channelEngineService: ChannelEngine | null = null;
 let mcpManager: McpManager | null = null;
 // COSGRAL W10-KK1: the account sign-ins of the apps (OAuth in the system browser, tokens encrypted, an MCP entry per service).
 let integrationManager: IntegrationManager | null = null;
+let messengerBridge: MessengerBridge | null = null;
 let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
@@ -924,6 +927,7 @@ function registerIpcHandlers(
   registerWindowsIpc(() => conversationWindows);
   registerBudgetsIpc(() => budgetMeter);
   registerIntegrationsIpc(() => integrationManager);
+  registerMessengersIpc(() => messengerBridge);
   registerBrowserProfilesIpc({
     store: () => browserProfiles,
     clearPartition: async (partition) => {
@@ -1468,6 +1472,15 @@ if (!hasSingleInstanceLock) {
       );
       // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
       agentService.useSecretBox(electronSecretBox());
+      // COSGRAL W10-KK2: the Telegram bridge (long polling; the token is encrypted in this space's database).
+      messengerBridge = new MessengerBridge({
+        database: store.database,
+        box: electronSecretBox(),
+        agent: createAgentPort(agentService),
+        spaceId: runningSpace.id,
+        emit: (event) => forwardAgentEvent("local", event),
+      });
+      messengerBridge.resume();
       // COSGRAL W5-BE3: provider API keys (encrypted); a provider process gets its key only as its own environment.
       apiKeyStore = new ApiKeyStore(store.database, electronSecretBox());
       setApiKeySource(apiKeyStore);
@@ -2048,6 +2061,7 @@ async function prepareForShutdown(): Promise<void> {
   await Promise.all([channelEngineService?.stop(), agentService?.stop()]);
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
   if (integrationTimer) clearInterval(integrationTimer);
+  await (messengerBridge?.stop() ?? Promise.resolve());
   await (mcpManager?.stop() ?? Promise.resolve());
   // COSGRAL W2: no routine runs and no webhook receiver after exit.
   routineManager?.stop();

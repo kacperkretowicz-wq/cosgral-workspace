@@ -117,6 +117,7 @@ import type {
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
 import type { MessageActionsDesktopApi } from "./ipc-message-actions";
+import type { MessengersDesktopApi } from "./ipc-messengers";
 import type { MobileDesktopApi } from "./ipc-mobile";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
@@ -700,6 +701,8 @@ export interface OpenBotDesktopApi {
   integrations?: IntegrationsDesktopApi;
   /** COSGRAL W9-BE1: the phone away from home (Tailscale guide, push switch, PIN state of the paired phones). Optional until every mock implements it. */
   phone?: PhoneDesktopApi;
+  /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
+  messengers?: MessengersDesktopApi;
 }
 
 /**

@@ -199,6 +199,13 @@ export const IPC_CHANNELS = {
   phoneGetTailscaleGuide: "phone:get-tailscale-guide",
   phoneSetPushEnabled: "phone:set-push-enabled",
   phoneSendTestPush: "phone:send-test-push",
+  // COSGRAL W10-KK2: messenger bridge (Telegram).
+  messengersList: "messengers:list",
+  messengersStatus: "messengers:status",
+  messengersConnect: "messengers:connect",
+  messengersDisconnect: "messengers:disconnect",
+  messengersAllowChat: "messengers:allow-chat",
+  messengersRemoveChat: "messengers:remove-chat",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",
