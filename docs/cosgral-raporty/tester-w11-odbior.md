@@ -1,50 +1,50 @@
 # Tester W11 — odbiór UI (T-A / T-B)
 
-**Data:** 17.11.2026  
-**Gałąź Testera:** `team/tester/w11-odbior`  
-**Gałąź UI (odczyt, bez zmian):** `team/ui/w11-ui1` @ `05e61cb7f`  
-**Integracja bazowa po merge:** `codex/cosgral-desktop` @ `d92b91cca`  
+**Data:** 17.11.2026 (wznowienie T-B)  
+**Gałąź Testera:** `team/tester/w11-odbior` (po merge `codex/cosgral-desktop`)  
+**Gałąź UI (odczyt, bez zmian):** `team/ui/w11-ui1` @ `2ccaeac4e`  
+**Integracja:** `codex/cosgral-desktop` @ `51f626f5c`  
 **Kryteria:** `docs/cosgral/odbior-071.md`  
-**Narzędzie:** `scripts/ui-fidelity/` (nakładka na `scripts/openbot-probe/compare.ts`, BE `c360eed15`)  
+**Narzędzie:** `scripts/ui-fidelity/` (nakładka na `scripts/openbot-probe/compare.ts`)  
 **Odniesienie (poza repo):** `Shared\cosgral-docs\openbot-0.71-ui\main-shell\`
 
 ## Metoda
 
-1. Lekki odbiór **statyczny**: kod + CSS + testy/stories UI vs kryteria P0 i vs `aria.yml` / układ z ekstraktora (ścieżki, nie treść w repo).
-2. Brama liczbowa: `compare.ts` + `ui-fidelity` → `Shared\cosgral-docs\porownanie-ui\GATE.md` gdy istnieją dwa przebiegi probe.
-3. **Electron / sandbox:e2e:** nie uruchamiane (brak `GO-*.txt` w `Shared\cosgral-sandbox`).
+1. Lekki odbiór **statyczny**: kod + CSS + testy UI vs kryteria P0 i vs ścieżki ekstraktora.
+2. Brama liczbowa: `scripts/ui-fidelity/run.ts` → `Shared\cosgral-docs\porownanie-ui\GATE.md` gdy dwa przebiegi probe.
+3. **Electron / sandbox:e2e:** nie uruchamiane (brak GO dla Testera; GO Backendu do 13:30 już usunięty).
 
-## Wynik per ekran (statyczny)
+## Wynik per ekran (statyczny) — UI @ `2ccaeac4e`
 
 | Ekran | ID | Verdict | Różnice | Adresat |
 |---|---|---|---|---|
-| Tokeny `--cosgral-*` | (baza) | **PASS** (kod) | Alias `--openbot-*` → `--cosgral-*` w `styles.css`; ciemny/jasny w W11-UI1. Bez pomiaru px w oknie. | — |
-| Pasek boczny + szyna | S-SIDEBAR | **FAIL** | (1) Hardcodowane PL: `Duplikuj` w `Sidebar.tsx` (~984) i powiązane testy — przy domyślnym EN = mieszanka języków (S-SIDEBAR-L3). (2) `Kopia gotowa…` hardcod PL w `App.tsx`. (3) Szyna: `--page-rail-width: 52px` + przyciski 36px w `cosgral.css` (zgodne z commit message UI); w `app-shell.css` nadal bazowe **54px** — nadpisanie tylko pod `.app-frame-with-page-rail` (ok, ale łatwo o regresję). Menu „+” / `sidebar-new-menu` obok wyszukiwarki: jest. Hover na `.page-rail-button`: jest. Foldery / Needs you: wcześniejsze testy. | **UI Designer** |
-| Nowy agent | S-NEW-AGENT | **niejasne** | Formularz w kodzie: kolor, twarz, nazwa, opis, model+effort, ≤3 sugestie, Create (disabled bez nazwy) — pokrywa S-NEW-AGENT-L1/F2 w testach jednostkowych. Układ CSS: kolumna ~420px, tokeny. Brak przebiegu `--target cosgral` → nie ma liczb ±2/±5 vs `main-shell\03-new-agent`. Folder `01-new-agent` w ekstraktorze ma napisy harmonogramu (błąd mapowania B1) — do pary używać `03-new-agent`. | UI Designer (px w oknie); Tester (probe) |
-| Chrome czatu | S-CHAT | **niejasne** | Nie w zakresie oddania W11-UI1 @ `05e61cb7f` (kolejka UI-B). | UI Designer |
-| Zadania / ustawienia / Marketplace | P1 | **niejasne** | Brak nowych ekranów na tej gałęzi UI. | UI Designer / Backend / KK |
+| Tokeny `--cosgral-*` | (baza) | **PASS** | `cosgral-tokens.css` + aliasy; zgodne z `tokeny-071.md` (KAPI). Bez px w oknie. | — |
+| Pasek boczny + szyna | S-SIDEBAR | **PASS** (kod) | Poprzedni FAIL i18n **naprawiony** (`173425bf8`): `t("Duplicate")`, `t("Copy ready…")`, InitialSetup przez `t()`. Szyna 52/36 w `cosgral.css`. Bazowe `app-shell.css` nadal 54px (nadpisanie pod `.app-frame-with-page-rail`). Menu „+” jest. **Uwaga:** `Sidebar.folders.test.tsx` nadal szuka etykiety PL „Duplikuj” — ryzyko przy jsdom EN. | UI (test folderów) |
+| Nowy agent | S-NEW-AGENT | **niejasne** | Formularz + testy jednostkowe OK. Brak pary probe COSGRAL↔`03-new-agent` (±2/±5). | Tester po probe |
+| Chrome czatu (część) | S-CHAT | **niejasne** | **Jest:** zakładki wątków (`ThreadTabs` + `threadTabs`), wyszukiwarka z zakładkami (`GlobalSearch` + `search`). **Brak w oddaniu:** pasek modelu, menu załączników, slash/@ (`composer`), „1 step”, akcje/reakcje, rama panelu, drag kart. | UI Designer |
+| Zadania / ustawienia / Marketplace | P1 | **niejasne** | Nieoddane na tej gałęzi. | UI / Backend / KK |
 
-**Podsumowanie statyczne:** 1 PASS (tokeny), 1 FAIL (sidebar i18n), 1 niejasne (nowy agent bez probe), reszta P0/P1 nieoddana.
+**Podsumowanie:** 2 PASS (tokeny, sidebar i18n) · 0 FAIL · 3 niejasne (Nowy agent px, chrome niepełny, P1).
 
 ## Narzędzie ui-fidelity
 
 | Plik | Rola |
 |---|---|
-| `scripts/ui-fidelity/gate.ts` | PASS/FAIL/niejasne; tolerancje z `compare.ts` |
-| `scripts/ui-fidelity/run.ts` | woła `compare.ts`, pisze `GATE.md` poza repo |
-| `scripts/ui-fidelity/gate.test.ts` | testy jednostkowe na atrapach |
+| `scripts/ui-fidelity/gate.ts` | PASS/FAIL/niejasne; ±2 px / ±5 koloru z `compare.ts` |
+| `scripts/ui-fidelity/run.ts` | porównanie drzew + `GATE.md` / `INDEX.md` poza repo |
+| `scripts/ui-fidelity/gate.test.ts` | atrapy |
 | `scripts/ui-fidelity/README.md` | użycie |
 
-`compare.ts` wzięty z BE-A (`c360eed15`) na tę gałąź (lider jeszcze nie scalił do integracji w momencie pracy). Pełny przebieg na dwóch drzewach probe: **nie** — brak extractu COSGRAL i GO.
+Smoke własne (atrapy): `Shared\cosgral-docs\porownanie-ui\smoke-identical\` → 1 PASS.  
+Folder `_smoke` (64 ekrany, 0 różnic): wygląda na porównanie extractu z samym sobą (Backend), **bez** `GATE.md` i bez przebiegu COSGRAL — nie używam jako dowodu parytetu.
 
 ## Parytet 0.68 §0.71
 
-Sekcja dodana w `docs/cosgral/parytet-0.68.md`. **Procent 80,7% nie zmieniany** (brak dowodu w prawdziwym oknie w tym zadaniu).
+Tabela luk zaktualizowana poniżej w `parytet-0.68.md`. **Procent 80,7% bez zmiany** (brak Electrona w tym zadaniu).
 
 ## Czego nie sprawdziłem
 
-- Electron, `sandbox:e2e`, tryb W5, motyw jasny w oknie.
-- `probe.ts --target cosgral` na działającej aplikacji.
+- Electron, e2e, W5, motyw jasny w oknie.
+- Prawdziwego `probe --target cosgral` + gate na żywej app.
+- Storybook / pełnego `check`.
 - Pixel-diff vs PNG właściciela.
-- Storybook / pełny `check`.
-- Gałęzi UI nowszej niż `05e61cb7f` (jeśli UI dopisał chrome czatu po tym SHA).

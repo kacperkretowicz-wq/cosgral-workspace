@@ -207,13 +207,13 @@
 
 | # | Luka | Stan odbioru | Dowód |
 |---|---|---|---|
-| 1 | Pasek boczny, nowy agent, chrome czatu | kod: tokeny+sidebar+Nowy agent; **FAIL** i18n hardcod PL; chrome nieoddany; okno: nie | `tester-w11-odbior.md` (statyczny) |
+| 1 | Pasek boczny, nowy agent, chrome czatu | UI @ `2ccaeac4e`: i18n sidebar **PASS**; chrome częściowo (threadTabs+search); px/okno: nie | `tester-w11-odbior.md` |
 | 2 | 12 kart ustawień agenta + 14 sekcji serwera | brak ekranów | — |
-| 3 | 18 dostawców, pula kont, CLI | backend w toku | — |
-| 4 | Marketplace Apps | silnik KK (kanał); UI brak; okno: nie | — |
-| 5 | Vault konektory | silnik KK (kanał); UI brak; okno: nie | — |
+| 3 | 18 dostawców, pula kont, CLI | backend BE-C | — |
+| 4 | Marketplace Apps | silnik KK; UI brak | — |
+| 5 | Vault konektory | silnik KK; UI brak | — |
 | 6 | Odbiór wątków w prawdziwym oknie | po GO | — |
-| 7 | Komunikatory poza Telegramem | plan KK; bez Slack/Discord | — |
+| 7 | Komunikatory poza Telegramem | lider: Slack→Discord; KK-C | — |
 | 8 | Zdalny pulpit | backend/KK | — |
 | 9 | Głos | brak | — |
 | 10 | Biblioteka (siatka) + Użycie | brak UI | — |

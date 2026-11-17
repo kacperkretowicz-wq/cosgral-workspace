@@ -197,19 +197,19 @@ Status obu wierszy pozostaje **częściowo**, bez zmiany wyniku procentowego. Do
 ## 0.71 — top 10 luk (T-A / T-B, 17.11.2026)
 
 Źródło priorytetów: `Shared\cosgral-docs\openbot-0.71-kolejka-ui.md`, `docs/cosgral/odbior-071.md`.  
-**Procent parytetu 0.68 (80,7%) bez zmian** — w tym zadaniu brak dowodu w prawdziwym oknie (brak `GO-*.txt`).
+**Procent parytetu 0.68 (80,7%) bez zmian** — brak dowodu w prawdziwym oknie dla Testera.
 
 | # | Luka 0.71 | Stan (kod / dokument) | Stan w oknie | Adresat |
 |---|---|---|---|---|
-| 1 | Pasek boczny + nowy agent + chrome czatu | Tokeny + sidebar + Nowy agent na `team/ui/w11-ui1` @ `05e61cb7f`; chrome czatu jeszcze nie; **FAIL** i18n (`Duplikuj` / `Kopia gotowa` hardcod PL) | nie sprawdzone | UI Designer |
+| 1 | Pasek boczny + nowy agent + chrome czatu | UI @ `2ccaeac4e`: tokeny+sidebar+Nowy agent; i18n sidebar **PASS**; chrome częściowo (threadTabs + search); brak paska modelu/slash/@/1 step | nie | UI Designer |
 | 2 | 12 kart ustawień agenta + 14 sekcji serwera | brak ekranów W11 | nie | UI / Backend |
-| 3 | 18 dostawców, pula, CLI | backend w toku (BE-A/B) | nie | Backend |
-| 4 | Marketplace Apps | silnik KK `team/kk/w11-marketplace` (kanał); UI brak | nie | KK / UI |
-| 5 | Vault konektory | silnik KK `team/kk/w11-vault-connectors` (kanał); UI brak | nie | KK / UI |
-| 6 | Odbiór wątków / chrome w Electronie | kryteria gotowe; e2e po GO | nie | Tester po GO |
-| 7 | Komunikatory poza Telegramem | plan KK (koszt); bez kodu Slack/Discord | nie | KK (po decyzji lidera) |
+| 3 | 18 dostawców, pula, CLI | backend BE-C w toku | nie | Backend |
+| 4 | Marketplace Apps | silnik KK scalony; UI brak | nie | UI |
+| 5 | Vault konektory | silnik KK scalony; UI brak | nie | UI |
+| 6 | Odbiór wątków / chrome w Electronie | kryteria + ui-fidelity; e2e po GO | nie | Tester po GO |
+| 7 | Komunikatory poza Telegramem | lider: sterownik→Slack→Discord; KK-C | nie | KK |
 | 8 | Zdalny pulpit | kontrakty wcześniejsze; komplet 0.71 otwarty | nie | Backend / KK |
 | 9 | Głos | brak | nie | Backend / UI |
 | 10 | Biblioteka (siatka) + Użycie | brak UI 0.71 | nie | UI / Backend |
 
-Raport odbioru statycznego: `docs/cosgral-raporty/tester-w11-odbior.md`. Brama: `scripts/ui-fidelity/` → `Shared\cosgral-docs\porownanie-ui\GATE.md` (gdy są dwa przebiegi probe).
+Raport: `docs/cosgral-raporty/tester-w11-odbior.md`. Brama: `scripts/ui-fidelity/` → `Shared\cosgral-docs\porownanie-ui\GATE.md`.
