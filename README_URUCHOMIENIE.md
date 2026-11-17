@@ -36,7 +36,7 @@ set "COSGRAL_CLAUDE_PATH=C:\sciezka\do\claude.exe"
 
 | Co | Gdzie |
 |---|---|
-| Baza (agenci, rozmowy, kanały, Vault, tabele, rutyny), ustawienia, Mobile Connect, certyfikat telefonu | `%APPDATA%\COSGRAL Workspace Dev\` (z folderu) lub `%APPDATA%\COSGRAL Workspace\` (z instalatora) |
+| Baza (agenci, rozmowy, kanały, Vault, tabele, rutyny, most Telegrama `projection_messengers`), ustawienia, Mobile Connect, certyfikat telefonu, klucze Web Push VAPID | `%APPDATA%\COSGRAL Workspace Dev\` (z folderu) lub `%APPDATA%\COSGRAL Workspace\` (z instalatora) |
 | Przestrzenie robocze agentów, pliki wspólne, pobrane pliki | `%USERPROFILE%\COSGRAL Workspace\Bots`, `\Shared`, `\Downloads` |
 
 Dane zwykłego OpenBota (`%APPDATA%\OpenBot`) nie są używane ani zmieniane. Wersja z folderu i wersja z instalatora mają **osobne bazy**, ale wspólny folder `%USERPROFILE%\COSGRAL Workspace`.
@@ -110,9 +110,12 @@ Logowanie zostaje tam, gdzie jest; skrypt go nie czyta, nie kopiuje i nie wypisu
 
 ## 7. Czego jeszcze nie ma w oknie programu
 
-- Motyw jasny i polskie napisy w oknie (W7).
-- Braki W5 (dostawcy, konta, klucze, modele zapasowe): „Czego W5 jeszcze nie robi” na końcu tego pliku.
-- Pełna lista: `docs/cosgral/PLAN-W4.md`.
+- **Niewdrożone ekrany pulpitu z W9 i W10:**
+  - Ekran konfiguracji telefonu (PIN, Web Push, przewodnik Tailscale) w głównym oknie na pulpicie (W9-BE1 dostarczył kontrakt IPC `window.openbot.phone`, silnik na komputerze, klienta PWA `/app` na telefonie z ekranem blokady PIN, obsługą service workera i powiadomień push; widok w oknie programu czeka na UI Designera).
+  - Ekran konfiguracji komunikatorów (most Telegrama) w głównym oknie (W10-KK2 dostarczył kontrakt `window.openbot.messengers`, klienta Bot API z long pollingiem, silnik mostu i testy na atrapie; formularz dodawania tokenu i zarządzania czatami w oknie czeka na UI Designera).
+- **Stylistyka i motywy:** W7-UI2 etap 1 scalił podstawowe tłumaczenia PL/EN (`src/renderer/src/locales/`). Pełny system zmiennych i motywów wg OpenBot 0.71 został skodyfikowany w `docs/cosgral/tokeny-071.md` i czeka na podpięcie w stylach przez UI Designera.
+- **Braki W5 (dostawcy, konta, klucze, modele zapasowe):** szczegółowo w sekcji „Czego W5 jeszcze nie robi” na końcu tego pliku.
+- **Pełna lista i plany:** `docs/cosgral/PLAN-W4.md` oraz `docs/cosgral/parytet-0.68.md`.
 
 ## 8. Gdy coś nie działa
 
@@ -120,6 +123,44 @@ Logowanie zostaje tam, gdzie jest; skrypt go nie czyta, nie kopiuje i nie wypisu
 - **„Complete agent CLI setup to start” w polu wiadomości:** program nie widzi Codex ani Claude albo nie jesteś zalogowany (punkt 4). Karta nad rozmową podaje powód; po poprawce wybierz **Try again** (bez restartu programu).
 - **„couldn’t start” zaraz po zamknięciu lub awarii:** program sam czeka kilka sekund na zwolnienie bazy; gdy dalej nie może, poczekaj chwilę i uruchom go ponownie. Dane nie są zmieniane.
 - **Chcesz zacząć od zera:** zamknij program i skasuj foldery z punktu 3 (albo użyj `--reset` w piaskownicy).
+
+## Telefon poza domem: Tailscale, PIN, Web Push (W9)
+
+Funkcjonalność zdalnego dostępu z telefonu poza domem bez wystawiania komputera na publiczny internet, z opcjonalną blokadą PIN i powiadomieniami Web Push.
+
+### 1. Zasięg i Tailscale
+- **Brak zewnętrznych serwerów:** Połączenie poza siecią domową działa przez prywatną sieć Tailscale (adresy `100.64.0.0/10` lub domeny `*.ts.net`).
+- **Automatyczny zasięg:** Program raportuje zasięg `tailscale`, gdy adres Tailscale pojawi się na liście interfejsów sieciowych Mobile Connect.
+- **Lokalne szyfrowanie TLS:** Połączenie zabezpieczone lokalnym certyfikatem samopodpisanym. Telefon weryfikuje i przypina odcisk certyfikatu (fingerprint) podawany przez komputer.
+- **Instrukcja konfiguracji:** Krok po kroku w pliku `docs/cosgral/telefon-tailscale.md`.
+
+### 2. Blokada PIN-em (w aplikacji PWA telefonu)
+- **Ochrona dostępu:** Kod 4–8 cyfr konfigurowany w aplikacji `/app` w zakładce Telefon.
+- **Weryfikacja po stronie komputera:** Komputer przechowuje wyłącznie skrót kryptograficzny (scrypt z losową solą). Zablokowany telefon otrzymuje odpowiedź HTTP `423 Locked`.
+- **Zasady blokady:** Blokada następuje po 5 minutach bezczynności, po przejściu aplikacji telefonu w tło lub po restarcie programu na komputerze.
+- **Ochrona przed zgadywaniem:** 5 kolejnych błędnych prób trwale usuwa sparowany telefon (wymaga ponownego sparowania od zera).
+
+### 3. Powiadomienia Web Push
+- **Cel:** Powiadamianie telefonu o pojawieniu się nowej karty w sekcji „Needs you” (karty wymagające decyzji lub zgody użytkownika).
+- **Bezpieczeństwo kluczy:** Klucze VAPID generowane lokalnie; klucz prywatny przechowywany wyłącznie w postaci zaszyfrowanej w sejfie systemu (DPAPI/safeStorage).
+- **Prywatność:** Treść powiadomienia to wyłącznie minimalistyczny komunikat: „*agent X czeka na Ciebie*”. Żadne prompty, dane ani odpowiedzi nie przechodzą przez usługi pośredniczące Apple/Google.
+- **Obsługa:** Stuknięcie powiadomienia otwiera kartę decyzji w aplikacji PWA telefonu (po odblokowaniu PIN-em).
+- **Stan w oknie:** Silnik, klient PWA i obsługa powiadomień działają; pełny widok konfiguracji telefonu w głównym oknie programu czeka na wdrożenie przez UI Designera.
+
+## Most komunikatorów: Telegram (W10)
+
+Dwukierunkowy most umożliwiający rozmowę z agentami COSGRAL z poziomu aplikacji Telegram.
+
+### 1. Architektura i mechanizm działania
+- **Long polling:** Program sam regularnie pyta Telegram Bot API (`getUpdates`) o nowe wiadomości. Nie wymaga publicznego IP, tuneli ani zewnętrznych webhooków (`deleteWebhook` wywoływane przy starcie).
+- **Szyfrowanie tokenu bota:** Token bota uzyskany z `@BotFather` jest wpisywany raz i szyfrowany bezpiecznie sejfem Windows (DPAPI/`SecretBox`) w tabeli `projection_messengers` bieżącej przestrzeni. Nigdy nie jest logowany i nie wraca do interfejsu.
+- **Biała lista czatów (Zero-Trust):** Wszystkie wiadomości z nieznanych czatów są ignorowane w milczeniu. Właściciel programu w ustawieniach dodaje do 20 dozwolonych prywatnych czatów i każdemu przypisuje dedykowanego agenta.
+
+### 2. Izolacja i zachowanie agenta
+- **Brak dodatkowych uprawnień:** Agent nie otrzymuje żadnego narzędzia do wysyłania wiadomości w świat; nie może zainicjować wiadomości do obcego czatu.
+- **Przepływ wiadomości:** Wiadomość tekstowa z dozwolonego czatu prywatnego trafia do przypisanego agenta z prefiksem `[Telegram]`, a odpowiedź asystenta wraca automatycznie do tego samego czatu (dzielona na fragmenty do 4000 znaków).
+- **Limity bezpieczeństwa:** Maksymalnie 10 wiadomości na minutę na czat, kolejka do 5 oczekujących odpowiedzi, limit czasu 15 minut na odpowiedź agenta, teksty dłuższe niż 4000 znaków odrzucane ze stałym komunikatem.
+- **Stan w oknie:** Kontrakt IPC `window.openbot.messengers`, klient Bot API, silnik mostu i testy jednostkowe (`messenger-bridge.test.ts`, `telegram-client.test.ts`) są gotowe. Formularz w oknie głównym czeka na wdrożenie przez UI Designera. Szczegóły: `docs/cosgral-raporty/kk-w10-kk2.md`.
 
 ## W4-UI1: kanały (oczekuje na odbiór okna)
 
