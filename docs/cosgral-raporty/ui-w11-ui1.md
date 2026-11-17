@@ -40,3 +40,8 @@
 - Lista poleceń programu i skilli nad polem wiadomości; podpięta pod `window.openbot.composer.listSlashCommands`; bez kontraktu brak listy (bez atrapy).
 - „@” zostaje na lokalnych agentach i plikach; `searchMentions` (kanały, pliki spoza szkicu) jeszcze niepodpięte.
 - Kontrola: ComposerEditor 13/13, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 8 — menu załączników: skill i pytanie boczne (zrzuty 046, 107, 110)
+- Menu „+”: Attach files, Use a skill (SkillQuickPick), Side question (SideQuestionPanel nad polem). Pytanie boczne pokazuje stan „failed: not connected…” z backendu (do czasu wykonawcy Backendu) zamiast ciszy.
+- Bez kontraktu composer: komunikaty „niedostępne w tej wersji” (bez atrapy).
+- Kontrola: SideQuestionPanel+SkillQuickPick 5/5, App.test 92/92, i18n 9/9, typecheck OK, Biome OK, check:ui OK.

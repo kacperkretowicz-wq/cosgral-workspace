@@ -30,6 +30,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "InitialSetup",
     "ThreadTabs",
     "GlobalSearch",
+    "SideQuestionPanel",
+    "SkillQuickPick",
     "NewAgentPage",
   ];
   for (const file of files) {
