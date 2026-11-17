@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assignmentReasonText,
   buildTaskDetail,
   buildTasksViewPage,
   isTaskDetail,
@@ -365,5 +366,13 @@ describe("one task with its result, steps and log (W12 BE-J)", () => {
     const detail = buildTaskDetail(root.id, view);
     expect(isTaskDetail({ ...detail, log: [{ ...detail.log[0], kind: "other" }] })).toBe(false);
     expect(isTaskDetail({ ...detail, openAsChat: { channelId: "c1" } })).toBe(false);
+  });
+});
+
+describe("assignment reasons in plain words (W12 BE-J)", () => {
+  it("says what the store's event names mean and leaves other text as it is", () => {
+    expect(assignmentReasonText("channel-task.created")).toBe("Task created.");
+    expect(assignmentReasonText("channel-task.reassigned")).toBe("Given to another agent.");
+    expect(assignmentReasonText("Started by a person")).toBe("Started by a person");
   });
 });

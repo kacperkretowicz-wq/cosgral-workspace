@@ -270,6 +270,19 @@ export function taskActionStates(task: ChannelTask): TaskActionState[] {
   ];
 }
 
+const ASSIGNMENT_REASON_TEXT: Readonly<Record<string, string>> = {
+  "channel-task.created": "Task created.",
+  "channel-task.reassigned": "Given to another agent.",
+  "channel-task.continued": "Continued by the agent.",
+  "channel-task.budget-reset": "Resumed by a person.",
+  "channel-task.child-assigned": "Handed to a helper.",
+};
+
+/** An assignment is saved with the name of the event that made it; the log says it in plain words. Unknown text stays as it is. */
+export function assignmentReasonText(reason: string): string {
+  return ASSIGNMENT_REASON_TEXT[reason] ?? reason;
+}
+
 function oneLine(text: string, max: number): string {
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`;
@@ -370,7 +383,7 @@ export function buildTaskDetail(taskId: string, source: TasksViewSource): TaskDe
         kind: "assigned",
         botId: assignment.ownerBotId,
         botName: named(assignment.ownerBotId),
-        text: cut(assignment.reason, TASKS_VIEW_LIMITS.logText),
+        text: cut(assignmentReasonText(assignment.reason), TASKS_VIEW_LIMITS.logText),
         messageId: null,
         version: null,
         superseded: false,
