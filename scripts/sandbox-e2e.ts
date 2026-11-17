@@ -662,8 +662,9 @@ async function main(): Promise<void> {
     });
     await step("navigation: overflow pages remain reachable in a short viewport", async () => {
       // Prefer the main shell (not #island/#dock). setViewportSize alone does not shrink Electron.
+      // After the restart block, the live app is `second` (first was closed).
       const previous = asRecord(
-        await first.app.evaluate(({ BrowserWindow }) => {
+        await second.app.evaluate(({ BrowserWindow }) => {
           const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
           const win =
             wins.find((item) => {
@@ -676,7 +677,7 @@ async function main(): Promise<void> {
         }),
       );
       try {
-        await first.app.evaluate(
+        await second.app.evaluate(
           ({ BrowserWindow }, size) => {
             const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
             const win =
@@ -725,7 +726,7 @@ async function main(): Promise<void> {
         const restoreHeight = Number(previous.height);
         if (Number.isFinite(restoreWidth) && Number.isFinite(restoreHeight) && restoreWidth > 0 && restoreHeight > 0) {
           try {
-            await first.app.evaluate(
+            await second.app.evaluate(
               ({ BrowserWindow }, size) => {
                 const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
                 const win =

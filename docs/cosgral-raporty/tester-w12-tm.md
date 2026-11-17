@@ -6,7 +6,7 @@ Gałąź: `team/tester/w12-tm` (baza `79567cdf9`). GO: `GO-tester-tk.txt`.
 
 | FAIL | Plik:linia | Przyczyna | Rola |
 |---|---|---|---|
-| overflow | `sandbox-e2e.ts` ~663 | `fail-11`: pełna wysokość, **wszystkie** przyciski szyny, **brak** „More pages”. Komunikat `evaluate: browser has been closed` najpewniej z `finally` po nieudanym kliknięciu (maskował prawdziwy brak More). `setContentSize` + pierwsze okno (mogło być island) nie dawały wiarygodnego 400 px. UI-L już poprawił `PageRail.measure` (`.page-rail-button` + logo 42 px). | **Tester** (skrypt: main window + `setBounds` + dump `navigation-overflow-short` + bezpieczny finally). Jeśli po tym `hasMore=false` przy `innerHeight≈400` → **UI**. |
+| overflow | `sandbox-e2e.ts` ~663 | T-L `fail-11`: pełna wysokość / brak More (viewport nie kurczy Electron). T-M po `setBounds`: błąd `evaluate: browser closed` w **2 ms** — krok wołał `first.app` **po** `first.app.close()` (restart); żywe jest `second.app`. Dump `fail-11` = pełne okno Agents, nie short. UI-L measure w integracji. | **Tester** (`second.app` + setBounds + dump short). Jeśli po tym `hasMore=false` przy ~400 px → **UI**. |
 | usageReport.get | `sandbox-e2e.ts` ~943 | Błąd: `The period is 7, 30, 90, 365 days.` — getter ma `length` 0, więc smoke go woła bez `{period}`. To walidacja kontraktu, nie crash. | **Tester** (`needsInput` += `period is 7`). Nie Backend. |
 
 ## 2. Naprawy skryptu
