@@ -1,0 +1,64 @@
+/*
+ * COSGRAL shell: a dark frame with the rail on it and two floating rounded panels (sidebar, main).
+ * Own layout; token values only. Imported after cosgral.css so it wins over the older flat shell.
+ */
+.app-frame {
+  --shell-gap: 8px;
+
+  padding: 0 var(--shell-gap) var(--shell-gap) 0;
+  background: var(--cosgral-bg-frame);
+}
+
+/* The rail and the server rail sit directly on the frame, without their own panel colour or divider. */
+.page-rail,
+.server-rail {
+  background: transparent;
+}
+
+.page-rail::before,
+.server-rail::before {
+  display: none;
+}
+
+.page-rail-tools {
+  border-top: 0;
+}
+
+/* Floating panels. */
+.app-frame > .sidebar,
+.app-frame-with-page-rail .conversation-panel,
+.app-frame-with-page-rail .direct-conversation,
+.app-frame-with-page-rail .coming-soon,
+.app-frame-with-page-rail .w2-library {
+  margin-top: var(--shell-gap);
+  overflow: hidden;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-canvas);
+  box-shadow: var(--cosgral-shadow-panel);
+}
+
+.app-frame > .sidebar {
+  background: var(--cosgral-bg-sidebar);
+  margin-right: 0;
+}
+
+/* The 0-width resize column leaves a gap between the two panels. */
+.app-frame-with-page-rail .conversation-panel,
+.app-frame-with-page-rail .direct-conversation,
+.app-frame-with-page-rail .coming-soon {
+  margin-left: var(--shell-gap);
+}
+
+.sidebar-topbar {
+  border-bottom: 0;
+}
+
+/* Panels slide in softly when the page changes. */
+@media (prefers-reduced-motion: no-preference) {
+  .app-frame-with-page-rail .conversation-panel,
+  .app-frame-with-page-rail .direct-conversation,
+  .app-frame-with-page-rail .coming-soon {
+    animation: cosgral-enter var(--cosgral-duration-slow) var(--cosgral-ease) both;
+  }
+}

@@ -63,6 +63,7 @@
   --cosgral-shadow-popover:
     0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.45);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 32px rgba(0, 0, 0, 0.48);
+  --cosgral-shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.24);
   --cosgral-focus-ring: 0 0 0 2px rgba(0, 124, 247, 0.4);
 }
 
