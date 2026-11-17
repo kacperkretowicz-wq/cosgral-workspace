@@ -50,6 +50,7 @@ beforeAll(async () => {
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
+  const { registerMcpOAuthIpc } = await import("./mcp-oauth-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -72,6 +73,7 @@ beforeAll(async () => {
   registerPhoneIpc(() => null);
   registerMessengersIpc(() => null);
   registerPluginCatalogIpc(() => null);
+  registerMcpOAuthIpc(() => null);
   registerVaultConnectorsIpc(
     () => null,
     () => null,
@@ -142,6 +144,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("vault-connectors:").length).toBe(8);
     // COSGRAL W11-KK (e): the Marketplace Apps tab.
     expect(channelsOf("plugin-catalog:").length).toBe(8);
+    // COSGRAL W12-KK (1): the sign-in (OAuth) to MCP servers.
+    expect(channelsOf("mcp-oauth:").length).toBe(5);
     expect(
       ["vault:reveal", "vault:copy", "vault:import-csv", "vault:codes", "vault:reset"].every((name) =>
         handlers.has(name),
@@ -175,6 +179,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "messengers:",
         "vault-connectors:",
         "plugin-catalog:",
+        "mcp-oauth:",
         "vault:reveal",
         "vault:copy",
         "vault:import-csv",
@@ -284,6 +289,9 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /lowercase/,
     );
     expect((await call("plugin-catalog:info", "local", null)).threw).toMatch(/still starting/);
+    // W12-KK (1): a bad sign-in request is refused by the parser before the program is asked.
+    expect((await call("mcp-oauth:sign-in", "local", { serverId: "" })).threw).toMatch(/Choose a server/);
+    expect((await call("mcp-oauth:list", "local", null)).threw).toMatch(/still starting/);
     expect((await call("vault:reveal", "local", { itemId: "x", field: "notes" })).threw).toMatch(/field is one of/);
     expect((await call("vault:import-csv", "local", { csv: "  " })).threw).toMatch(/empty/);
     expect((await call("vault:reset", "local", null)).threw).toMatch(/still starting/);

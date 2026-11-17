@@ -5,7 +5,7 @@
 // Secrets: environment values and headers come from McpStore only when connecting. Every message that
 // leaves this class (status, error text, tool result) has the secret values masked.
 
-import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
+import { type OAuthClientProvider, UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { getDefaultEnvironment, StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport, StreamableHTTPError } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -50,6 +50,8 @@ export interface McpManagerOptions {
   fetch?: typeof fetch;
   /** COSGRAL W10-KK1: may an agent see and call this tool of this server? (the allowlist of a space); default: every tool. */
   toolFilter?: (serverName: string, toolName: string) => boolean;
+  /** COSGRAL W12-KK (1): the OAuth provider of an http server that was signed in to (saved tokens only; it never opens a browser). */
+  authProvider?: (serverId: string) => OAuthClientProvider | undefined;
 }
 
 interface Connection {
@@ -71,6 +73,7 @@ export class McpManager {
   readonly #callTimeoutMs: number;
   readonly #fetch: typeof fetch | undefined;
   readonly #toolFilter: (serverName: string, toolName: string) => boolean;
+  readonly #authProvider: (serverId: string) => OAuthClientProvider | undefined;
   readonly #connections = new Map<string, Connection>();
   #stopped = false;
 
@@ -81,6 +84,7 @@ export class McpManager {
     this.#callTimeoutMs = options.callTimeoutMs ?? MCP_LIMITS.callTimeoutSeconds * 1_000;
     this.#fetch = options.fetch;
     this.#toolFilter = options.toolFilter ?? (() => true);
+    this.#authProvider = options.authProvider ?? (() => undefined);
   }
 
   /** Every saved server with its live state; a server not connected yet is "checking". */
@@ -218,7 +222,7 @@ export class McpManager {
       connection.secrets = Object.values(secrets).filter((value) => value.length >= 4);
       client = new Client({ name: "cosgral-workspace", version: "0.2.0" });
       await withTimeout(
-        client.connect(transportFor(record, secrets, this.#fetch)),
+        client.connect(transportFor(record, secrets, this.#fetch, this.#authProvider(record.id))),
         this.#connectTimeoutMs,
         "connecting",
       );
@@ -270,7 +274,12 @@ export class McpManager {
   }
 }
 
-function transportFor(record: McpServerRecord, secrets: Record<string, string>, fetcher?: typeof fetch): Transport {
+function transportFor(
+  record: McpServerRecord,
+  secrets: Record<string, string>,
+  fetcher?: typeof fetch,
+  authProvider?: OAuthClientProvider,
+): Transport {
   if (record.transport === "stdio") {
     return new StdioClientTransport({
       command: record.command ?? "",
@@ -283,6 +292,7 @@ function transportFor(record: McpServerRecord, secrets: Record<string, string>, 
   }
   return new StreamableHTTPClientTransport(new URL(record.url ?? ""), {
     requestInit: { headers: secrets },
+    ...(authProvider ? { authProvider } : {}),
     ...(fetcher ? { fetch: fetcher } : {}),
   });
 }
