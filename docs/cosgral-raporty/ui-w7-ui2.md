@@ -73,3 +73,8 @@ Rutyna UI: co godzinę o :10, Europe/Warsaw. Strażnik lidera i raport zbiorczy 
 - Bez Electrona, Storybooka, build, pełnego check i push. Materiały 0.71 pozostają poza repo.
 - Kontrole tej próby: git diff --check EXIT=0. Biome check --write sześciu zmienionych plików oraz typecheck:renderer (node tsc --noEmit -p tsconfig.web.json) nie zwróciły wyniku przez kilka minut i zostały przerwane; bez oceny pass/fail kodu. typecheck:storybook oraz check:ui nie uruchomiono. Zmiany zachowano jako WIP, nie jako gotowe do scalenia.
 - Poza repo dopisano aktualizację kolejności S1 do istniejącej specyfikacji. Nie kopiowano materiałów OpenBota.
+
+## Etap 2 — dowód (17.11)
+- Przyczyna czerwonego testu: Solid odkłada zapis sygnału; test czytał język przed flush. Poprawka: `await waitFor(language())`.
+- Sprawdzono kolejno: i18n.test.tsx 9/9, ContextControls.test.tsx 9/9, Sidebar.folders.test.tsx 25/25, typecheck:renderer EXIT=0, Biome (6 plików) po `--write`.
+- Scalono codex/cosgral-desktop @ 46f428dfe bez konfliktów. Storybook/test:visual/Electron nie uruchamiano.

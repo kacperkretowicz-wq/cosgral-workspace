@@ -19,7 +19,15 @@ it("has complete, nonempty PL and EN catalogs", () => {
   for (const value of [...Object.values(pl), ...Object.values(en)]) expect(value.trim()).not.toBe("");
 });
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
-  const files = ["SettingsModal", "AppearanceSettings", "LanguageSettings", "AppSettingsW3", "Sidebar", "PageRail", "ContextSettingsSection"];
+  const files = [
+    "SettingsModal",
+    "AppearanceSettings",
+    "LanguageSettings",
+    "AppSettingsW3",
+    "Sidebar",
+    "PageRail",
+    "ContextSettingsSection",
+  ];
   for (const file of files) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
     for (const match of source.matchAll(/\bt\("([^"\n]+)"(?:\s*,|\s*\))/g)) {

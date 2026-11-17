@@ -1,7 +1,7 @@
-import { t } from "../i18n";
 import type { ContextDesktopApi, ContextSettings } from "@openbot/contracts/ipc";
 import { applyContextSettings, CONTEXT_SETTINGS_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import type { ContextEvents } from "./ContextIndicator";
 import { providerError } from "./provider-error";
 import { Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
@@ -73,7 +73,9 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
         {t("Conversation context")}
       </Heading>
       <Text as="p" tone="secondary">
-        {t("Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.", { percent: CONTEXT_SETTINGS_LIMITS.warnPercent })}
+        {t("Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.", {
+          percent: CONTEXT_SETTINGS_LIMITS.warnPercent,
+        })}
       </Text>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
@@ -101,7 +103,11 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
             />
             <Field
               label={t("Compaction threshold (%)")}
-              description={t("Whole number from {min} to {max}; default {default}.", {min: CONTEXT_SETTINGS_LIMITS.minThresholdPercent, max: CONTEXT_SETTINGS_LIMITS.maxThresholdPercent, default: CONTEXT_SETTINGS_LIMITS.defaultThresholdPercent})}
+              description={t("Whole number from {min} to {max}; default {default}.", {
+                min: CONTEXT_SETTINGS_LIMITS.minThresholdPercent,
+                max: CONTEXT_SETTINGS_LIMITS.maxThresholdPercent,
+                default: CONTEXT_SETTINGS_LIMITS.defaultThresholdPercent,
+              })}
             >
               <Input
                 type="number"

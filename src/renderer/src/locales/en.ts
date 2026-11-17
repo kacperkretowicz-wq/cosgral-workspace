@@ -122,11 +122,13 @@ export const en = {
   "Automatically compact context": "Automatically compact context",
   "Compaction threshold (%)": "Compaction threshold (%)",
   "Save context settings": "Save context settings",
-  "Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.": "Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.",
+  "Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.":
+    "Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.",
   "Whole number from {min} to {max}; default {default}.": "Whole number from {min} to {max}; default {default}.",
   "Delete {name}?": "Delete {name}?",
-  "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.": "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.",
-  "Cancel": "Cancel",
+  "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.":
+    "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.",
+  Cancel: "Cancel",
   "Deleting…": "Deleting…",
-  "Delete": "Delete",
+  Delete: "Delete",
 } as const;

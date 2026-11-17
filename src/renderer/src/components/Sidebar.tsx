@@ -1213,7 +1213,9 @@ export function Sidebar(props: SidebarProps) {
                   />
                   <AlertDialog.Title>{t("Delete {name}?", { name: bot().name })}</AlertDialog.Title>
                   <AlertDialog.Description>
-                    {t("This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.")}
+                    {t(
+                      "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.",
+                    )}
                   </AlertDialog.Description>
                   <Show when={deleteError()}>{(message) => <p class="bot-delete-error">{message()}</p>}</Show>
                   <div class="bot-delete-actions">
