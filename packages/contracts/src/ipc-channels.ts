@@ -109,6 +109,7 @@ export const IPC_CHANNELS = {
   remoteDesktopDisable: "remote-desktop:disable",
   remoteDesktopRegenerateToken: "remote-desktop:regenerate-token",
   remoteDesktopSetPeerPolicy: "remote-desktop:set-peer-policy",
+  remoteDesktopSetAskEverySession: "remote-desktop:set-ask-every-session",
   remoteDesktopRemovePeer: "remote-desktop:remove-peer",
   remoteDesktopSetSessionMode: "remote-desktop:set-session-mode",
   remoteDesktopStop: "remote-desktop:stop",

@@ -9,11 +9,12 @@ import {
   REMOTE_DESKTOP_PEER_POLICIES,
   type RemoteDesktopInput,
   type RemoteDesktopPeerInput,
+  type SetRemoteDesktopAskEverySessionInput,
   type SetRemoteDesktopPeerPolicyInput,
   type SetRemoteDesktopSessionModeInput,
   type StopRemoteDesktopInput,
 } from "@openbot/contracts/ipc";
-import { type DynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isBoolean, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { isObject, requireString } from "./validation";
 
 const ADDRESS_LIMIT = 200;
@@ -55,6 +56,12 @@ export function parseSetRemoteDesktopPeerPolicy(value: unknown): SetRemoteDeskto
     throw new Error(`policy must be one of: ${REMOTE_DESKTOP_PEER_POLICIES.join(", ")}.`);
   }
   return { peerId: requireString(input.peerId, "peerId"), policy: input.policy };
+}
+
+export function parseSetRemoteDesktopAskEverySession(value: unknown): SetRemoteDesktopAskEverySessionInput {
+  const input = fields(value, ["enabled"], "ask setting");
+  if (!isBoolean(input.enabled)) throw new Error("enabled must be true or false.");
+  return { enabled: input.enabled };
 }
 
 export function parseRemoteDesktopPeer(value: unknown): RemoteDesktopPeerInput {

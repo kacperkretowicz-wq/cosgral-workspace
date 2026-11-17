@@ -114,6 +114,7 @@ import { createMockMobileConnect } from "./mock-mobile-connect";
 import { createMockPlans } from "./mock-plans";
 import { createMockPluginCatalog } from "./mock-plugin-catalog";
 import { createMockProviderCatalog } from "./mock-provider-catalog";
+import { createMockRemoteDesktop } from "./mock-remote-desktop";
 import { createMockServerSettings } from "./mock-server-settings";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
@@ -1397,6 +1398,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     phone: mockMobileConnect.phone,
     // COSGRAL W12-KK: the Mobile Connect page in one query (joined with the demo phone above).
     mobileConnect: { getOverview: mockMobileConnect.getOverview },
+    // COSGRAL W12-KK: remote desktop host and client (demo; no socket, no screen).
+    remoteDesktop: createMockRemoteDesktop((event) => emitAgentEvent(event)),
     // COSGRAL W11 (U3-U6): search, message box (side question, slash, @), thread tabs (demo data).
     search: createMockSearch(),
     composer: createMockComposer((event) => emitAgentEvent(event)),

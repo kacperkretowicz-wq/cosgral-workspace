@@ -145,6 +145,7 @@ import type {
   RemoteDesktopInput,
   RemoteDesktopPeerInput,
   RemoteDesktopTokenResult,
+  SetRemoteDesktopAskEverySessionInput,
   SetRemoteDesktopPeerPolicyInput,
   SetRemoteDesktopSessionModeInput,
   StopRemoteDesktopInput,
@@ -762,6 +763,8 @@ export interface RemoteDesktopHostDesktopApi {
   /** A new token; viewers that are connected stay, new ones need the new token. Returned once. */
   regenerateToken: () => Promise<RemoteDesktopTokenResult>;
   setPeerPolicy: (input: SetRemoteDesktopPeerPolicyInput) => Promise<RemoteDesktopHostState>;
+  /** The "Ask on this computer" switch: a card for every session, also for viewers that were allowed before. */
+  setAskEverySession: (input: SetRemoteDesktopAskEverySessionInput) => Promise<RemoteDesktopHostState>;
   /** Forgets a viewer (its session ends). The next connection asks again. */
   removePeer: (input: RemoteDesktopPeerInput) => Promise<RemoteDesktopHostState>;
   /** "control" to "view" takes the mouse and keyboard away at once; "view" to "control" is refused (the viewer asks anew). */

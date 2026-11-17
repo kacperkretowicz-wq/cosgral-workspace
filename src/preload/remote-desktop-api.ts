@@ -24,6 +24,7 @@ export function createRemoteDesktopApi(invoke: Invoke): RemoteDesktopDesktopApi 
       disable: () => invoke(IPC_CHANNELS.remoteDesktopDisable, null, decodeHost),
       regenerateToken: () => invoke(IPC_CHANNELS.remoteDesktopRegenerateToken, null, decodeToken),
       setPeerPolicy: (input) => invoke(IPC_CHANNELS.remoteDesktopSetPeerPolicy, input, decodeHost),
+      setAskEverySession: (input) => invoke(IPC_CHANNELS.remoteDesktopSetAskEverySession, input, decodeHost),
       removePeer: (input) => invoke(IPC_CHANNELS.remoteDesktopRemovePeer, input, decodeHost),
       setSessionMode: (input) => invoke(IPC_CHANNELS.remoteDesktopSetSessionMode, input, decodeHost),
       stop: (input) => invoke(IPC_CHANNELS.remoteDesktopStop, input ?? null, decodeHost),

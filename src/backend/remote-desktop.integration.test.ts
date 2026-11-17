@@ -252,6 +252,26 @@ describe("remote desktop host and client", () => {
     expect(consents).toHaveLength(0);
   });
 
+  it("with 'ask on this computer' on, even an allowed viewer waits for the card every time; off again, it does not", async () => {
+    const { token, url } = await startHost();
+    expect(host.getState().askEverySession).toBe(false);
+    const client = makeClient();
+    await client.connect({ address: url, token, mode: "view" });
+    host.setPeerPolicy("client-aaaa-0001", "allow");
+    client.disconnect();
+    await until(() => host.getState().sessions.length === 0, "session closed");
+    expect(host.setAskEverySession(true).askEverySession).toBe(true);
+    consents.length = 0;
+    expect(await client.connect({ address: url, token, mode: "view" })).toMatchObject({ phase: "connected" });
+    expect(consents).toHaveLength(1);
+    client.disconnect();
+    await until(() => host.getState().sessions.length === 0, "session closed again");
+    host.setAskEverySession(false);
+    consents.length = 0;
+    expect(await client.connect({ address: url, token, mode: "view" })).toMatchObject({ phase: "connected" });
+    expect(consents).toHaveLength(0);
+  });
+
   it("allows one viewer at a time", async () => {
     const { token, url } = await startHost();
     const first = makeClient("client-aaaa-0001", "First");

@@ -21,6 +21,7 @@ import {
   parseEnableRemoteDesktop,
   parseRemoteDesktopInput,
   parseRemoteDesktopPeer,
+  parseSetRemoteDesktopAskEverySession,
   parseSetRemoteDesktopPeerPolicy,
   parseSetRemoteDesktopSessionMode,
   parseStopRemoteDesktop,
@@ -101,6 +102,9 @@ export function registerRemoteDesktopIpc(runtime: () => RemoteDesktopRuntime | n
     const { peerId, policy } = parseSetRemoteDesktopPeerPolicy(payload(input));
     return current().host.setPeerPolicy(peerId, policy);
   });
+  handleTrusted(IPC_CHANNELS.remoteDesktopSetAskEverySession, (input: unknown) =>
+    current().host.setAskEverySession(parseSetRemoteDesktopAskEverySession(payload(input)).enabled),
+  );
   handleTrusted(IPC_CHANNELS.remoteDesktopRemovePeer, (input: unknown) =>
     current().host.removePeer(parseRemoteDesktopPeer(payload(input)).peerId),
   );
