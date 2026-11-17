@@ -265,4 +265,7 @@ export const en = {
   "Importing…": "Importing…",
   "Attach files": "Attach files",
   "Channels and files": "Channels and files",
+  "{count} step": "{count} step",
+  "{count} steps": "{count} steps",
+  Thinking: "Thinking",
 } as const;

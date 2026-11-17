@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
 import type { BotMessage, BotProfile } from "../../data";
+import { t } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { ChevronIcon, ThinkingIcon } from "./ConversationIcons";
 
@@ -29,6 +30,7 @@ export function AgentActivityIndicator(props: { bot: BotProfile | undefined; sta
 
 export function ThinkingDisclosure(props: { message: BotMessage }) {
   const stepCount = () => props.message.items?.length ?? 0;
+  const finished = () => !props.message.streaming && stepCount() > 0;
   return (
     <article class="thinking-entry">
       <details class="thinking-disclosure">
@@ -36,16 +38,17 @@ export function ThinkingDisclosure(props: { message: BotMessage }) {
           <span class="thinking-mark" aria-hidden="true">
             <ThinkingIcon />
           </span>
-          <span>Thinking</span>
+          <span>
+            {finished()
+              ? t(stepCount() === 1 ? "{count} step" : "{count} steps", { count: stepCount() })
+              : t("Thinking")}
+          </span>
           <Show when={props.message.streaming}>
             <span class="thinking-live-dots" aria-hidden="true">
               <i />
               <i />
               <i />
             </span>
-          </Show>
-          <Show when={!props.message.streaming && stepCount() > 1}>
-            <small>{stepCount()} steps</small>
           </Show>
           <span class="thinking-chevron" aria-hidden="true">
             <ChevronIcon />

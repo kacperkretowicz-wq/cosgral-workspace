@@ -264,4 +264,7 @@ export const pl = {
   "Importing…": "Importowanie…",
   "Attach files": "Dołącz pliki",
   "Channels and files": "Kanały i pliki",
+  "{count} step": "{count} krok",
+  "{count} steps": "{count} kroków",
+  Thinking: "Myślenie",
 } as const;

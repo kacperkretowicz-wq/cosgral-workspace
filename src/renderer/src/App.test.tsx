@@ -2467,12 +2467,12 @@ describe("COSGRAL Workspace connected desktop shell", () => {
       },
     });
 
-    const thinkingLabel = await screen.findByText("Thinking");
+    const thinkingLabel = await screen.findByText("2 steps");
     const details = thinkingLabel.closest("details");
     expect(screen.getByText("I’ll open x.com in the COSGRAL Workspace browser.")).not.toBeVisible();
     expect(screen.getByText("Checking that the page loaded.")).not.toBeVisible();
     expect(screen.getByText("Opened x.com.")).toBeVisible();
-    expect(screen.getAllByText("Thinking")).toHaveLength(1);
+    expect(screen.getAllByText("2 steps")).toHaveLength(1);
 
     await fireEvent.click(thinkingLabel);
     expect(details).toHaveAttribute("open");
@@ -2506,7 +2506,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
         ],
       },
     });
-    await waitFor(() => expect(screen.getByText("Thinking").closest("details")).toBe(details));
+    await waitFor(() => expect(screen.getByText("2 steps").closest("details")).toBe(details));
     expect(screen.getByText("I’ll open x.com in the COSGRAL Workspace browser.")).toBeVisible();
   });
 

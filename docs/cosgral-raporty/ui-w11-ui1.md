@@ -53,3 +53,4 @@
 ## W12-UI2 (gałąź team/ui/w12-ui2, od integracji 9b571a8ab)
 - Commit 1: „@” z `searchMentions` (kanały i pliki). Kontrola: ComposerEditor 14/14, typecheck OK, Biome OK, check:ui OK.
 - Zostało z P0: „1 step”, akcje/reakcje (117), rama panelu bocznego, przeciąganie kart wątków.
+- Commit 2: „1 step” (zwinięty nagłówek kroków po zakończeniu). Kontrola: AgentActivity 4/4, App.test (thinking disclosure) OK, typecheck OK, Biome OK, check:ui OK.

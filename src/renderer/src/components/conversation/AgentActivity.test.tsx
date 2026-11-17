@@ -1,7 +1,7 @@
 import { render, screen } from "@solidjs/testing-library";
 import { describe, expect, it } from "vitest";
-import type { BotProfile } from "../../data";
-import { AgentActivityIndicator } from "./AgentActivity";
+import type { BotMessage, BotProfile } from "../../data";
+import { AgentActivityIndicator, ThinkingDisclosure } from "./AgentActivity";
 
 const bot: BotProfile = {
   id: "chief",
@@ -37,5 +37,25 @@ describe("AgentActivityIndicator", () => {
     const view = render(() => <AgentActivityIndicator bot={bot} state={null} />);
 
     expect(view.container.querySelector(".agent-activity-entry")).toBeNull();
+  });
+});
+
+describe("ThinkingDisclosure", () => {
+  const message = (streaming: boolean, items: string[]): BotMessage => ({
+    id: "m1",
+    author: "bot",
+    kind: "thinking",
+    body: "",
+    time: "",
+    items,
+    streaming,
+  });
+
+  it("says Thinking while it streams and N steps once it is done", () => {
+    const live = render(() => <ThinkingDisclosure message={message(true, ["a"])} />);
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
+    live.unmount();
+    render(() => <ThinkingDisclosure message={message(false, ["a"])} />);
+    expect(screen.getByText("1 step")).toBeInTheDocument();
   });
 });
