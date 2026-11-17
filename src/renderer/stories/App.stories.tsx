@@ -155,9 +155,9 @@ export const AgentMenuActions: Story = {
     try {
       await c.findByRole("heading", { name: "Chief" });
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
-      await userEvent.click(await body.findByRole("menuitem", { name: "Ukryj" }));
+      await userEvent.click(await body.findByRole("menuitem", { name: "Hide" }));
       await waitFor(() => expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument());
-      await userEvent.click(c.getByRole("switch", { name: "Pokaż ukryte" }));
+      await userEvent.click(c.getByRole("switch", { name: "Show hidden" }));
       await c.findByText("Ukryty");
       await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });

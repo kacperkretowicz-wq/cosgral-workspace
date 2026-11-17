@@ -1,5 +1,6 @@
 import { type AppTheme, normalizeAppTheme } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
+import { t } from "../i18n";
 import { Field, NativeSelect, Text } from "./ui";
 export function AppearanceSettings() {
   const [theme, setTheme] = createSignal<AppTheme>("system");
@@ -28,17 +29,20 @@ export function AppearanceSettings() {
     }
   }
   return (
-    <section class="settings-modal-group" aria-label="Appearance">
-      <Field label="Theme" description="System follows your computer’s appearance. Changes are saved automatically.">
+    <section class="settings-modal-group" aria-label={t("Appearance")}>
+      <Field
+        label={t("Theme")}
+        description={t("System follows your computer’s appearance. Changes are saved automatically.")}
+      >
         <NativeSelect value={theme()} disabled={!ready() || busy()} onChange={(e) => void save(e.currentTarget.value)}>
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+          <option value="system">{t("System")}</option>
+          <option value="light">{t("Light")}</option>
+          <option value="dark">{t("Dark")}</option>
         </NativeSelect>
       </Field>
       {error() && (
         <Text role="alert" tone="danger">
-          {error()}
+          {t(error())}
         </Text>
       )}
     </section>

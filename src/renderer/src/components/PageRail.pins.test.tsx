@@ -29,12 +29,12 @@ it("pins from More and unpins from the page context menu", async () => {
   ));
   await fireEvent.pointerDown(screen.getByRole("button", { name: "More pages" }), { button: 0, pointerType: "mouse" });
   const menu = await screen.findByRole("menu", { name: "More pages" });
-  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Przypnij Phone" }));
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Pin Phone" }));
   expect(toggle).toHaveBeenCalledWith("phone");
   await fireEvent.keyDown(menu, { key: "Escape" });
   await fireEvent.contextMenu(screen.getByRole("button", { name: "Library" }));
-  const pageMenu = await screen.findByRole("menu", { name: "Menu strony Library" });
-  await fireEvent.pointerUp(within(pageMenu).getByRole("menuitem", { name: "Odepnij Library" }));
+  const pageMenu = await screen.findByRole("menu", { name: "Page menu Library" });
+  await fireEvent.pointerUp(within(pageMenu).getByRole("menuitem", { name: "Unpin Library" }));
   expect(toggle).toHaveBeenCalledWith("library");
 });
 it("writes the whole latest list and hydrates it after remount", async () => {
@@ -50,7 +50,7 @@ it("writes the whole latest list and hydrates it after remount", async () => {
   const view = render(() => <PageRail active="agents" onSelect={vi.fn()} onOpenSettings={vi.fn()} />);
   await waitFor(() => expect(screen.queryByRole("button", { name: "Phone" })).toBeNull());
   await fireEvent.pointerDown(screen.getByRole("button", { name: "More pages" }), { button: 0, pointerType: "mouse" });
-  await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Przypnij Phone" }));
+  await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Pin Phone" }));
   await waitFor(() => expect(update).toHaveBeenCalledWith({ navigation: { pinnedPageIds: ["library", "phone"] } }));
   view.unmount();
   render(() => <PageRail active="agents" onSelect={vi.fn()} onOpenSettings={vi.fn()} />);

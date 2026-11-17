@@ -404,12 +404,12 @@ it("hides stored hidden agents, then exposes them with a Show action", async () 
   const change = vi.fn().mockResolvedValue(undefined);
   renderSidebar({ bots: STORY_BOTS.map((bot, index) => ({ ...bot, hidden: index === 0 })), onSetBotHidden: change });
   expect(screen.queryByRole("button", { name: /^Chief,/ })).toBeNull();
-  await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+  await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
   const row = await screen.findByRole("button", { name: /^Chief,/ });
   expect(row).toHaveClass("bot-row-hidden");
   openMenu(row);
   const menu = await latestMenu("Agent actions");
-  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Pokaż" }));
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Show" }));
   await waitFor(() => expect(change).toHaveBeenCalledWith("chief", false));
 });
 it("offers hide and duplicate without inventing thread/window actions", async () => {
@@ -418,7 +418,7 @@ it("offers hide and duplicate without inventing thread/window actions", async ()
   renderSidebar({ onSetBotHidden: change, onDuplicateBot: duplicate });
   openMenu(screen.getByRole("button", { name: /^Research,/ }));
   let menu = await latestMenu("Agent actions");
-  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Ukryj" }));
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Hide" }));
   await waitFor(() => expect(change).toHaveBeenCalledWith("research", true));
   closeOpenMenus();
   await waitFor(() => expect(screen.getByRole("button", { name: /^Research,/ })).toHaveAttribute("data-closed"));
@@ -436,6 +436,6 @@ it("refreshes folder counts when hidden agents become visible", async () => {
     onSetBotHidden: async () => {},
   });
   expect(screen.getByRole("button", { name: "Work, folder, 1 agent" })).toBeInTheDocument();
-  await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+  await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
   await screen.findByRole("button", { name: "Work, folder, 2 agents" });
 });

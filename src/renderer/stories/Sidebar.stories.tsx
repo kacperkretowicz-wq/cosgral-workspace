@@ -247,7 +247,7 @@ export const HiddenAgents: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument();
-    await fireEvent.click(c.getByRole("switch", { name: "Pokaż ukryte" }));
+    await fireEvent.click(c.getByRole("switch", { name: "Show hidden" }));
     await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
   },
 };

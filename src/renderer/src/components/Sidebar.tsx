@@ -18,6 +18,7 @@ import { emptySidebarLayout } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
+import { t } from "../i18n";
 import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import {
   agentMoveTargets,
@@ -132,7 +133,7 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
         </svg>
       </Show>
       <Show when={props.state.kind === "needs-you"}>
-        <span class="bot-row-needs-you-dot" title="Needs you" />
+        <span class="bot-row-needs-you-dot" title={t("Needs you")} />
       </Show>
       <Show when={props.state.kind === "unread"}>
         <span>{unreadCount()}</span>
@@ -632,15 +633,15 @@ export function Sidebar(props: SidebarProps) {
       <SpacesRail compact={props.compact} />
       <div class="sidebar-search-wrap">
         <label class="search-field" aria-hidden={props.compact ? "true" : undefined}>
-          <span class="sr-only">Search chats</span>
+          <span class="sr-only">{t("Search chats")}</span>
           <SearchIcon />
           <Input
             ref={(element) => (searchInput = element)}
             type="search"
             value={query()}
             onInput={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search"
-            aria-label="Search chats"
+            placeholder={t("Search")}
+            aria-label={t("Search chats")}
             tabindex={props.compact ? -1 : 0}
             maxlength={INPUT_LIMITS.agentName}
           />
@@ -648,7 +649,7 @@ export function Sidebar(props: SidebarProps) {
         <Button
           type="button"
           class="sidebar-compact-search"
-          aria-label="Expand sidebar and search chats"
+          aria-label={t("Expand sidebar and search chats")}
           aria-hidden={props.compact ? undefined : "true"}
           tabindex={props.compact ? 0 : -1}
           onClick={expandToSearch}
@@ -661,12 +662,17 @@ export function Sidebar(props: SidebarProps) {
         <Text as="p" role="status" class="sidebar-copy-notice">
           {props.copyNotice}
           <Button size="sm" onClick={props.onDismissCopyNotice}>
-            Zamknij
+            {t("Close")}
           </Button>
         </Text>
       </Show>
       <Show when={!props.compact && props.onSetBotHidden}>
-        <Switch class="sidebar-hidden-switch" label="Pokaż ukryte" checked={showHidden()} onChange={setShowHidden} />
+        <Switch
+          class="sidebar-hidden-switch"
+          label={t("Show hidden")}
+          checked={showHidden()}
+          onChange={setShowHidden}
+        />
       </Show>
       <Show when={rowActionError()}>
         <p role="alert" class="sidebar-row-action-error">
@@ -675,7 +681,7 @@ export function Sidebar(props: SidebarProps) {
       </Show>
       <nav
         ref={(element) => (botList = element)}
-        aria-label="Chat list"
+        aria-label={t("Chat list")}
         class={[
           "bot-list",
           {
@@ -688,14 +694,14 @@ export function Sidebar(props: SidebarProps) {
         <Show when={props.onSelectChannels && !props.compact}>
           <section class="sidebar-chat-group">
             <header>
-              <h2>Channels</h2>
+              <h2>{t("Channels")}</h2>
             </header>
             <div class="sidebar-channel-actions">
               <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.()}>
-                <SearchIcon /> Browse channels
+                <SearchIcon /> {t("Browse channels")}
               </Button>
               <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.(true)}>
-                <PlusIcon /> New channel
+                <PlusIcon /> {t("New channel")}
               </Button>
             </div>
           </section>
@@ -711,7 +717,7 @@ export function Sidebar(props: SidebarProps) {
           <Show when={filteredPeople().length > 0}>
             <section class="sidebar-chat-group" aria-labelledby="sidebar-people-heading">
               <header>
-                <h2 id="sidebar-people-heading">People</h2>
+                <h2 id="sidebar-people-heading">{t("People")}</h2>
               </header>
               <For each={filteredPeople()}>
                 {(member) => {
@@ -758,7 +764,7 @@ export function Sidebar(props: SidebarProps) {
           <Show when={(props.needsYouItems?.length ?? 0) > 0 && !props.compact}>
             <section class="sidebar-chat-group sidebar-needs-you" aria-labelledby="sidebar-needs-you-heading">
               <header>
-                <h2 id="sidebar-needs-you-heading">Needs you</h2>
+                <h2 id="sidebar-needs-you-heading">{t("Needs you")}</h2>
                 <span>{props.needsYouItems?.length ?? 0}</span>
               </header>
               <For each={props.needsYouItems ?? []}>
@@ -766,7 +772,7 @@ export function Sidebar(props: SidebarProps) {
                   <Button
                     type="button"
                     class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
-                    aria-label={`${item.botName}, Needs you. ${item.summary}${item.threadTitle ? `, Thread ${item.threadTitle}` : ""}`}
+                    aria-label={`${item.botName}, ${t("Needs you")}. ${item.summary}${item.threadTitle ? `, Thread ${item.threadTitle}` : ""}`}
                     onClick={() =>
                       props.onSelectNeedsYou
                         ? item.threadId
@@ -808,7 +814,7 @@ export function Sidebar(props: SidebarProps) {
             >
               <Show when={filteredPeople().length > 0}>
                 <header>
-                  <h2 id="sidebar-agents-heading">Agents</h2>
+                  <h2 id="sidebar-agents-heading">{t("Agents")}</h2>
                 </header>
               </Show>
               <Show when={folderError()}>
@@ -884,7 +890,7 @@ export function Sidebar(props: SidebarProps) {
                         </span>
                         <span class="bot-row-copy">
                           <Show when={bot.hidden}>
-                            <Badge size="sm">Ukryty</Badge>
+                            <Badge size="sm">{t("Hidden")}</Badge>
                           </Show>
                           <FallbackModelBadge bot={bot} models={props.modelOptions} />
                           <span class="bot-row-heading">
@@ -930,7 +936,7 @@ export function Sidebar(props: SidebarProps) {
                         </div>
                       </Show>
                       <ContextMenu.Portal>
-                        <ContextMenu.Content class="bot-context-menu" aria-label="Agent actions">
+                        <ContextMenu.Content class="bot-context-menu" aria-label={t("Agent actions")}>
                           <ContextMenu.Item
                             onSelect={() => {
                               setDeleteError(null);
@@ -938,7 +944,7 @@ export function Sidebar(props: SidebarProps) {
                             }}
                           >
                             <EditIcon />
-                            <span>Edit agent</span>
+                            <span>{t("Edit agent")}</span>
                           </ContextMenu.Item>
                           <Show when={props.onMarkBotRead}>
                             <ContextMenu.Item disabled={readBusy()} onSelect={() => void markRead(bot.id)}>
@@ -949,7 +955,7 @@ export function Sidebar(props: SidebarProps) {
                           <Show when={props.layout && props.folderActions}>
                             <ContextMenu.Item onSelect={() => setFolderDialog({ kind: "move-agent", botId: bot.id })}>
                               <FolderMoveIcon />
-                              <span>Move to…</span>
+                              <span>{t("Move to…")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.onSetBotHidden}>
@@ -959,7 +965,7 @@ export function Sidebar(props: SidebarProps) {
                                 afterAgentMenu(() => props.onSetBotHidden?.(bot.id, !bot.hidden) ?? Promise.resolve())
                               }
                             >
-                              {bot.hidden ? "Pokaż" : "Ukryj"}
+                              {bot.hidden ? t("Show") : t("Hide")}
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.onDuplicateBot}>
@@ -979,7 +985,7 @@ export function Sidebar(props: SidebarProps) {
                             }}
                           >
                             <DeleteIcon />
-                            <span>Delete agent</span>
+                            <span>{t("Delete agent")}</span>
                           </ContextMenu.Item>
                         </ContextMenu.Content>
                       </ContextMenu.Portal>
@@ -1009,7 +1015,7 @@ export function Sidebar(props: SidebarProps) {
             as={Button}
             type="button"
             class="sidebar-footer"
-            aria-label="Open account menu"
+            aria-label={t("Open account menu")}
             aria-expanded={accountMenuOpen() ? "true" : "false"}
           >
             {accountAvatar("profile-dot")}
@@ -1027,18 +1033,18 @@ export function Sidebar(props: SidebarProps) {
               <Badge class="sidebar-update-pill" tone="accent" shape="pill">
                 Update
               </Badge>
-              <span class="sr-only">COSGRAL Workspace update available</span>
+              <span class="sr-only">{t("COSGRAL Workspace update available")}</span>
             </Show>
           </Popover.Trigger>
           <Popover.Portal>
             <Popover.Content class="account-popover" aria-hidden={accountMenuOpen() ? undefined : "true"}>
-              <Popover.Title class="sr-only">Account</Popover.Title>
+              <Popover.Title class="sr-only">{t("Account")}</Popover.Title>
               <div class="account-profile-card">
                 <Input
                   ref={(element) => (accountAvatarInput = element)}
                   class="sr-only"
                   type="file"
-                  aria-label="Account profile photo"
+                  aria-label={t("Account profile photo")}
                   accept="image/png,image/jpeg,image/webp"
                   onChange={(event) => void uploadAccountAvatar(event.currentTarget.files?.[0])}
                 />
@@ -1099,16 +1105,16 @@ export function Sidebar(props: SidebarProps) {
                 }}
               >
                 <PermissionsIcon />
-                <span>Providers &amp; permissions</span>
+                <span>{t("Providers & permissions")}</span>
               </Button>
               <div class="account-menu-separator" />
               <Button type="button" class="account-menu-row" onClick={() => openExternal("feedback")}>
                 <FeedbackIcon />
-                <span>Send feedback</span>
+                <span>{t("Send feedback")}</span>
               </Button>
               <Button type="button" class="account-menu-row" onClick={() => openExternal("message")}>
                 <MessageIcon />
-                <span>Message</span>
+                <span>{t("Message")}</span>
               </Button>
               <Show when={!props.localProfile}>
                 <div class="account-menu-separator" />
