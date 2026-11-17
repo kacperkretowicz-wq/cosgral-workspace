@@ -53,3 +53,23 @@ Rutyna UI: co godzinę o :10, Europe/Warsaw. Strażnik lidera i raport zbiorczy 
 - check:ui: EXIT=0, Legacy composite debt 0/0.
 - Biome 15 plików: EXIT=0. git diff --check bez błędów.
 - Bez push; gałąź team/ui/w7-ui2 od 417dcb000. W7-UI2 nie oznaczono jako pełne/gotowe do odbioru G4.
+
+## Kontrola godzinowa — etap 2, przygotowany do weryfikacji
+- Scalono integrację b59e6492e do własnej gałęzi bez konfliktów (zmiana integracji: sandbox-e2e). Czysty stan przed rozpoczęciem tego etapu.
+- Dodano do kodu lokalizację karty ContextSettingsSection i potwierdzenia usunięcia agenta; W8 i Integrations pozostają poza migracją. Tłumaczenie nie zmienia wywołań usuwania ani zakresu zgody.
+- Funkcja t obsługuje nazwane parametry, np. imię agenta i progi procentowe. Dane są wstawiane jako tekst, bez HTML i bez specjalnej interpretacji znaków zastępowania.
+- Przygotowano dodatkowe testy zgodności nazw parametrów PL/EN i interpolacji znaków specjalnych oraz rozszerzono skan literalnych kluczy o kartę kontekstu.
+- NOWE ZMIANY NIE SĄ JESZCZE SPRAWDZONE testami, Biome ani typecheckiem. Wynik 43/43 wyżej dotyczy wyłącznie etapu 1. Etap 2 czeka na wolne okno na pojedyncze pliki testów; Backend ma aktywne zadanie B1 z kopią OpenBota. Nie uruchamiano równoległych testów ani aplikacji.
+- Przygotowano własny plan ekranów oraz szczegółową specyfikację kolejnego ekranu Wątki w Shared/cosgral-docs/openbot-0.71-plan-ui.md. Źródło funkcjonalne: raport Testera; brak dowodu kompletnego wizualnego ekstraktu. Osiem ekranów z zależnościami i szacunkami; kryteria klawiatury, błędów, zmiany agenta podczas operacji oraz PL/EN dark/light.
+- Po weryfikacji etapu 2: dalsze dynamiczne opisy powłoki i pozostałe karty, potem odbiór wizualny po odrębnym GO. Nie oznaczono całego W7 jako gotowego.
+
+## Wznowienie 17.11 — dowód etapu 2
+- Sprawdzono historię: brak nowego stopu; GO lidera z wiadomości 6843 obejmuje pojedyncze testy i kontrole statyczne.
+- Stan bazowy gałęzi team/ui/w7-ui2: 80941fd49; integracja została już scalona przed wznowieniem, bez ponownego merge.
+- i18n.test.tsx: uruchomienie lokalnym Node, maxWorkers=1, pool=threads oraz pool=forks — oba EXIT=1, timeout startu workera po 60 s, zero wykonanych testów. Nie jest to wynik testów aplikacji. Poprzednie 43/43 dotyczy tylko etapu 1.
+- ContextControls.test.tsx i Sidebar.folders.test.tsx nie ponawiano po błędzie startu runnera; nie ma nowego dowodu ich poprawności.
+- Odczytano porcje 1–3 funkcje.md i kolejkę UI Testera. Istniejąca specyfikacja Wątków pozostaje w Shared/cosgral-docs/openbot-0.71-plan-ui.md. Następny priorytet zgodnie z kolejką: sidebar, nowy agent, pasek czatu (osobne zadanie S1).
+- Cały W7-UI2 nadal nie jest ukończony: dynamiczne błędy, pozostałe ekrany i odbiór PL/EN w oknie czekają. W8 i integracje wyłącznie w inwentarzu.
+- Bez Electrona, Storybooka, build, pełnego check i push. Materiały 0.71 pozostają poza repo.
+- Kontrole tej próby: git diff --check EXIT=0. Biome check --write sześciu zmienionych plików oraz typecheck:renderer (node tsc --noEmit -p tsconfig.web.json) nie zwróciły wyniku przez kilka minut i zostały przerwane; bez oceny pass/fail kodu. typecheck:storybook oraz check:ui nie uruchomiono. Zmiany zachowano jako WIP, nie jako gotowe do scalenia.
+- Poza repo dopisano aktualizację kolejności S1 do istniejącej specyfikacji. Nie kopiowano materiałów OpenBota.
