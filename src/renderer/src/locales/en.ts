@@ -131,4 +131,7 @@ export const en = {
   Cancel: "Cancel",
   "Deleting…": "Deleting…",
   Delete: "Delete",
+  "Create new": "Create new",
+  "New agent": "New agent",
+  "New folder": "New folder",
 } as const;

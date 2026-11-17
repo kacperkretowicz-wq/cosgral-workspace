@@ -13,6 +13,7 @@ import type {
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { createNew } from "./sidebar-test-utils";
 
 let emitAgentEvent: ((event: AgentEvent) => void) | undefined;
 const agentEventListeners = new Set<(event: AgentEvent) => void>();
@@ -1014,7 +1015,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
 
-    await fireEvent.click(screen.getByRole("button", { name: "New agent" }));
+    await createNew("New agent");
     await fireEvent.click(screen.getByRole("option", { name: "Create new agent" }));
 
     expect(await screen.findByRole("heading", { name: "New agent" })).toBeInTheDocument();
@@ -1039,7 +1040,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await fireEvent.click(await screen.findByRole("button", { name: /Alice/ }));
     expect(await screen.findByRole("main", { name: "Direct conversation with Alice" })).toBeInTheDocument();
 
-    await fireEvent.click(screen.getByRole("button", { name: "New agent" }));
+    await createNew("New agent");
     await fireEvent.click(await screen.findByRole("option", { name: "Create new agent" }));
 
     expect(await screen.findByRole("heading", { name: "New agent" })).toBeInTheDocument();

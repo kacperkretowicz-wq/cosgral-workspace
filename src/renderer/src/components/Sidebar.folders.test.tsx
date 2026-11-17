@@ -9,6 +9,7 @@ import {
   STORY_USAGE,
 } from "../../stories/fixtures";
 import type { BotProfile } from "../data";
+import { createNew } from "../sidebar-test-utils";
 import { Sidebar } from "./Sidebar";
 import type { SidebarFolderActions } from "./SidebarFolders";
 
@@ -197,7 +198,7 @@ describe("Sidebar folders", () => {
   it("creates a folder at the top level from the header button", async () => {
     const actions = actionsMock();
     renderSidebar({ layout, actions });
-    await fireEvent.click(screen.getByRole("button", { name: "New folder" }));
+    await createNew("New folder");
     const dialog = await screen.findByRole("dialog", { name: "New folder" });
     await fireEvent.input(within(dialog).getByRole("textbox", { name: "Folder name" }), {
       target: { value: "Ops" },
@@ -253,7 +254,7 @@ describe("Sidebar folders", () => {
       throw new Error("Folders nest at most 5 levels.");
     });
     renderSidebar({ layout, actions });
-    await fireEvent.click(screen.getByRole("button", { name: "New folder" }));
+    await createNew("New folder");
     const dialog = await screen.findByRole("dialog", { name: "New folder" });
     await fireEvent.input(within(dialog).getByRole("textbox", { name: "Folder name" }), { target: { value: "Ops" } });
     await fireEvent.click(within(dialog).getByRole("button", { name: "Create" }));

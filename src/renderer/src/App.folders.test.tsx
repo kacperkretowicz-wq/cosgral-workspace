@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-lib
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockOpenBot, type MockOpenBotControls, type MockOpenBotOptions } from "../stories/mock-openbot";
 import { App } from "./App";
+import { createNew } from "./sidebar-test-utils";
 
 let mock: MockOpenBotControls | undefined;
 
@@ -56,7 +57,7 @@ describe("App sidebar folders", () => {
     mountApp();
     await screen.findByRole("heading", { name: "Chief" });
     expect(folderNames()).toEqual([]);
-    expect(await screen.findByRole("button", { name: "New folder" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Create new" })).toBeInTheDocument();
   });
 
   it("follows sidebar-layout-changed events from another window", async () => {
@@ -73,7 +74,7 @@ describe("App sidebar folders", () => {
 
   it("creates a folder through the backend and shows it", async () => {
     mountApp();
-    await fireEvent.click(await screen.findByRole("button", { name: "New folder" }));
+    await createNew("New folder");
     const dialog = await screen.findByRole("dialog", { name: "New folder" });
     await fireEvent.input(within(dialog).getByRole("textbox", { name: "Folder name" }), {
       target: { value: "Clients" },

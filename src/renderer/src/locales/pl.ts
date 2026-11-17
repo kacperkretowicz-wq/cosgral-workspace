@@ -130,4 +130,7 @@ export const pl = {
   Cancel: "Anuluj",
   "Deleting…": "Usuwanie…",
   Delete: "Usuń",
+  "Create new": "Utwórz",
+  "New agent": "Nowy agent",
+  "New folder": "Nowy folder",
 } as const;

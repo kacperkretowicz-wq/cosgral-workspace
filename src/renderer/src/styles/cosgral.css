@@ -1186,3 +1186,75 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .api-key-card-head {
   justify-content: space-between;
 }
+
+/* W11-UI1: shell shaped after the 0.71 reference measurements (rail 52, buttons 36, radius 8). */
+.app-frame-with-page-rail {
+  --page-rail-width: 52px;
+}
+
+.page-rail {
+  padding: 42px 8px 10px;
+}
+
+.page-rail-list,
+.page-rail-tools {
+  gap: 6px;
+}
+
+.page-rail-button {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+  border-radius: var(--cosgral-radius-md);
+  transition:
+    background-color var(--cosgral-duration-normal) var(--cosgral-ease),
+    color var(--cosgral-duration-normal) var(--cosgral-ease);
+}
+
+.page-rail-button:hover:not(:disabled) {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.page-rail-button-active[data-variant],
+.page-rail-button-active[data-variant]:hover:not(:disabled) {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.sidebar-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-search-row .search-field {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-surface);
+}
+
+.sidebar-search-row .search-field:focus-within {
+  border-color: var(--cosgral-accent);
+  box-shadow: var(--cosgral-focus-ring);
+}
+
+.sidebar-search-row .sidebar-new-button {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-secondary);
+}
+
+.sidebar-search-row .sidebar-new-button:hover,
+.sidebar-search-row .sidebar-new-button[data-expanded] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.sidebar-new-menu {
+  min-width: 168px;
+}
