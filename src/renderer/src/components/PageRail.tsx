@@ -2,6 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { usePagePins } from "../page-pins";
+import { AppLogo } from "./AppLogo";
 import { Button, ContextMenu, DropdownMenu, Ellipsis, Text } from "./ui";
 
 /** COSGRAL page rail: vertical page switcher beside the server rail. */
@@ -185,6 +186,7 @@ export function PageRail(props: PageRailProps) {
   });
   return (
     <nav ref={(element) => (rail = element)} class="page-rail panel-edge" aria-label="Pages">
+      <AppLogo variant="production" animation="blink" class="page-rail-logo" />
       <div class="page-rail-list">
         <For each={visible()}>
           {(item) => (

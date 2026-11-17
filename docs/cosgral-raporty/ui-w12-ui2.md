@@ -62,3 +62,8 @@
 ## UI-F krok 1–2 — przyczyna różnicy i ciemny motyw domyślny
 - Przyczyna: (a) domyślny motyw był „system”, a komputer ma jasny tryb Windows, więc okno startowało jasne; tokeny `--cosgral-*` działają w obu motywach, ale zrzuty były jasne; (b) ekran „Nowy agent” był wpięty tylko pod „+ → Nowy agent”, a pusty program otwierał stary picker; zrzut `02` Testera to widok czatu po utworzeniu agenta; (c) stary układ bazy (karty „Threads / Context”, płaskie pola) nadal jest — przebudowałem tylko tokeny i wybrane ekrany, nie całą powłokę (pływające panele z zaokrąglonymi rogami, szyna jak w 0.71, dock/wyspa).
 - Zmiana: domyślnie ciemny (theme-init, backend default, normalizeAppTheme), pusty program → Nowy agent. Kontrola: theme 2/2, theme-palette 2/2, AppearanceSettings 2/2, agent-settings 10/10, App.test (nowy start) OK, typecheck OK, Biome OK.
+
+## UI-F krok 3–4 (część)
+- Logo: istniejące własne animowane SVG (`AppLogo`) pokazane na szczycie szyny. Maskotki agentów: generator `blobatar` (10 kształtów × 10 odcieni + auto); wzorzec 0.71 ma ok. 12 kształtów i 17 kolorów — poszerzenie to zmiana kontraktu `BotAvatarHue` (wpis do zapotrzebowania). Ikony szyny to własne SVG (20 px, linia 1,5); ujednolicenie reszty (lucide) zostaje.
+- Ruch: `styles/motion.css` (wejście stron, menu, oddech maskotki, hover kart), `prefers-reduced-motion` wyłącza animacje. Nie ruszone jeszcze: animacja zwijania paska bocznego, przejścia zakładek wątków przy zamykaniu, stan „pisze” (już istnieją kropki).
+- Kontrola: PageRail 5/5 + pins 4/4, AppLogo 7/7, App.test, typecheck OK, Biome OK, check:ui OK.
