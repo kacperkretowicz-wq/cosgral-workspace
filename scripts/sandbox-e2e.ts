@@ -661,27 +661,59 @@ async function main(): Promise<void> {
       await dump(page, evidence, "navigation-mark-read");
     });
     await step("navigation: overflow pages remain reachable in a short viewport", async () => {
-      // Playwright setViewportSize alone does not shrink the Electron BrowserWindow, so the rail
-      // never measures a short height and "More pages" never appears. Resize the real window.
+      // Prefer the main shell (not #island/#dock). setViewportSize alone does not shrink Electron.
       const previous = asRecord(
         await first.app.evaluate(({ BrowserWindow }) => {
-          const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
+          const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
+          const win =
+            wins.find((item) => {
+              const url = item.webContents.getURL();
+              return url.includes("index.html") && !url.includes("#island") && !url.includes("#dock");
+            }) ?? wins[0];
           if (!win) return null;
-          const [width, height] = win.getContentSize();
-          return { width, height };
+          const bounds = win.getBounds();
+          return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
         }),
       );
       try {
         await first.app.evaluate(
           ({ BrowserWindow }, size) => {
-            const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
-            win?.setContentSize(size.width, size.height);
+            const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
+            const win =
+              wins.find((item) => {
+                const url = item.webContents.getURL();
+                return url.includes("index.html") && !url.includes("#island") && !url.includes("#dock");
+              }) ?? wins[0];
+            if (!win) throw new Error("no main window to resize");
+            win.setMinimumSize(800, 360);
+            win.setBounds({ x: size.x, y: size.y, width: size.width, height: size.height });
           },
-          { width: 1100, height: 400 },
+          {
+            x: Number(previous.x) || 40,
+            y: Number(previous.y) || 40,
+            width: 1100,
+            height: 400,
+          },
         );
-        await page.setViewportSize({ width: 1100, height: 400 });
-        await page.waitForTimeout(400);
-        await page.getByRole("button", { name: /^More pages/ }).click();
+        await page.waitForTimeout(600);
+        const measure = asRecord(
+          await page.evaluate(`(() => {
+            const rail = document.querySelector('[role="navigation"][aria-label="Pages"]');
+            const more = document.querySelector('[aria-label^="More pages"]');
+            const buttons = rail ? rail.querySelectorAll("button").length : 0;
+            return {
+              innerHeight,
+              railHeight: rail ? rail.clientHeight : 0,
+              pageButtons: buttons,
+              hasMore: Boolean(more),
+            };
+          })()`),
+        );
+        console.log(
+          `     overflow measure: inner=${measure.innerHeight} rail=${measure.railHeight} buttons=${measure.pageButtons} more=${measure.hasMore}`,
+        );
+        await dump(page, evidence, "navigation-overflow-short");
+        await page.getByRole("button", { name: /^More pages/ }).click({ timeout: 10_000 });
         await page
           .getByRole("menu", { name: "More pages" })
           .getByRole("menuitem", { name: "Library", exact: true })
@@ -692,19 +724,37 @@ async function main(): Promise<void> {
         const restoreWidth = Number(previous.width);
         const restoreHeight = Number(previous.height);
         if (Number.isFinite(restoreWidth) && Number.isFinite(restoreHeight) && restoreWidth > 0 && restoreHeight > 0) {
-          await first.app.evaluate(
-            ({ BrowserWindow }, size) => {
-              const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
-              win?.setContentSize(size.width, size.height);
-            },
-            { width: restoreWidth, height: restoreHeight },
-          );
-          await page.setViewportSize({ width: restoreWidth, height: restoreHeight });
+          try {
+            await first.app.evaluate(
+              ({ BrowserWindow }, size) => {
+                const wins = BrowserWindow.getAllWindows().filter((item) => !item.isDestroyed());
+                const win =
+                  wins.find((item) => {
+                    const url = item.webContents.getURL();
+                    return url.includes("index.html") && !url.includes("#island") && !url.includes("#dock");
+                  }) ?? wins[0];
+                if (!win) return;
+                win.setBounds({ x: size.x, y: size.y, width: size.width, height: size.height });
+              },
+              {
+                x: Number(previous.x) || 40,
+                y: Number(previous.y) || 40,
+                width: restoreWidth,
+                height: restoreHeight,
+              },
+            );
+          } catch {
+            // Keep the original step error; a closed window in finally must not mask it.
+          }
         }
-        await page
-          .getByRole("navigation", { name: "Pages" })
-          .getByRole("button", { name: "Agents", exact: true })
-          .click();
+        try {
+          await page
+            .getByRole("navigation", { name: "Pages" })
+            .getByRole("button", { name: "Agents", exact: true })
+            .click({ timeout: 5_000 });
+        } catch {
+          // same
+        }
       }
     });
     await step("channel UI: create, edit and reply", async () => {
@@ -940,8 +990,9 @@ async function main(): Promise<void> {
       // A call that needs an agent, a routine, a channel or a server answers with a validation message: the wiring
       // works. Only other answers (timeouts, "not a function", crashes) are failures.
       // "Choose an agent" / "Choose a server" appear when the window is on New agent / no MCP server selected (UI-F).
+      // usageReport.get(length 0) still requires { period: 7|30|90|365 } (BE-H / BE-I).
       const needsInput =
-        /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured|Choose an agent|Choose a server/i;
+        /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured|Choose an agent|Choose a server|period is 7/i;
       const failed = results.filter((result) => !result.ok && !needsInput.test(result.error ?? ""));
       const asked = results.filter((result) => !result.ok && needsInput.test(result.error ?? ""));
       console.log(
