@@ -92,6 +92,29 @@ describe("PageRail", () => {
   });
 });
 
+describe("PageRail in a short window", () => {
+  it("shows More pages at 400 px with 36 px buttons and keeps Settings", async () => {
+    vi.spyOn(Element.prototype, "clientHeight", "get").mockImplementation(function (this: Element) {
+      return this.getAttribute("aria-label") === "Pages" ? 400 : 0;
+    });
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      if (this.classList.contains("page-rail-tools")) return new DOMRect(0, 0, 36, 46);
+      return new DOMRect(0, 0, 36, this.classList.contains("page-rail-button") ? 36 : 0);
+    });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class implements ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    render(() => <PageRail active="agents" onSelect={vi.fn()} onOpenSettings={vi.fn()} />);
+    expect(await screen.findByRole("button", { name: "More pages" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeVisible();
+  });
+});
+
 describe("ComingSoon", () => {
   it("names the page and says it is coming soon", () => {
     render(() => <ComingSoon title="Workflows" />);

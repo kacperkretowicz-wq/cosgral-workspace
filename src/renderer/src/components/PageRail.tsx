@@ -137,6 +137,9 @@ function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
   }
 }
 
+const RAIL_BUTTON_HEIGHT = 36;
+const RAIL_LOGO_RESERVE = 42;
+
 export function PageRail(props: PageRailProps) {
   const pinsState = usePagePins();
   const pinIds = () => props.pinnedPageIds ?? pinsState.pins();
@@ -160,15 +163,17 @@ export function PageRail(props: PageRailProps) {
   onSettled(() => {
     function measure() {
       if (!rail || !tools) return;
-      const button = rail.querySelector<HTMLElement>(".page-rail-list > button");
-      const height = button?.getBoundingClientRect().height ?? 0;
-      if (rail.clientHeight <= 0 || height <= 0) return;
+      if (rail.clientHeight <= 0) return;
+      // Every rail button is 36 px (styles/shell.css); the measured height only wins when the layout says otherwise.
+      const button = rail.querySelector<HTMLElement>(".page-rail-list > .page-rail-button");
+      const height = button?.getBoundingClientRect().height || RAIL_BUTTON_HEIGHT;
       const style = getComputedStyle(rail);
       const list = rail.querySelector(".page-rail-list");
       const gap = list ? Number.parseFloat(getComputedStyle(list).rowGap) || 0 : 0;
+      // The logo sits in the top padding: never count less than its reserved space.
       const available =
         rail.clientHeight -
-        (Number.parseFloat(style.paddingTop) || 0) -
+        Math.max(Number.parseFloat(style.paddingTop) || 0, RAIL_LOGO_RESERVE) -
         (Number.parseFloat(style.paddingBottom) || 0) -
         tools.getBoundingClientRect().height;
       const slots = Math.max(0, Math.floor((available + gap) / (height + gap)));
