@@ -3,6 +3,7 @@
 // install, and copies agents already have keep theirs until they update.
 
 import type { CatalogEntry } from "./marketplace";
+import { MORE_CATALOG } from "./marketplace-catalog-more";
 
 function skillMd(name: string, description: string, examplePrompt: string, body: string): string {
   return `---\nname: ${name}\ndescription: ${description}\nexample-prompt: ${examplePrompt}\n---\n${body.trim()}\n`;
@@ -383,4 +384,5 @@ Use this when the person gives you notes, a transcript or a recording summary of
     skills: ["trip-planner", "expense-log"],
     memories: ["Book or pay nothing without a confirm card."],
   },
+  ...MORE_CATALOG,
 ];

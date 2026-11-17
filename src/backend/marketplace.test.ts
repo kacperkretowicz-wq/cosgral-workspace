@@ -428,4 +428,25 @@ describe("Built-in catalog seed", () => {
     }
     expect(library.list()).toHaveLength(marketplace.list({ kind: "skill" }).length);
   });
+
+  it("has the added content: 14 skills and 9 agents covering every category, each with a SKILL.md that names itself", () => {
+    const skills = MARKETPLACE_CATALOG.filter((entry) => entry.kind === "skill");
+    const agents = MARKETPLACE_CATALOG.filter((entry) => entry.kind === "agent");
+    expect(skills).toHaveLength(14);
+    expect(agents).toHaveLength(9);
+    expect(new Set(MARKETPLACE_CATALOG.map((entry) => entry.category)).size).toBe(7);
+    for (const skill of skills) {
+      expect(
+        skill.skillMd.startsWith(`---
+name: ${skill.slug}
+`),
+      ).toBe(true);
+      expect(skill.skillMd).toContain("example-prompt:");
+    }
+    for (const entry of MARKETPLACE_CATALOG) {
+      expect(entry.summary.length).toBeGreaterThan(20);
+      expect(entry.summary.length).toBeLessThan(120);
+      expect(entry.tags.length).toBeGreaterThan(1);
+    }
+  });
 });
