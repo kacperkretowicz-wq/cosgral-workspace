@@ -254,6 +254,7 @@ export const IPC_CHANNELS = {
   pluginCatalogUpdate: "plugin-catalog:update",
   pluginCatalogAddCustom: "plugin-catalog:add-custom",
   pluginCatalogSetFolder: "plugin-catalog:set-folder",
+  pluginCatalogChooseFolder: "plugin-catalog:choose-folder",
   // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers.
   mcpOauthList: "mcp-oauth:list",
   mcpOauthStatus: "mcp-oauth:status",

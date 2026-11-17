@@ -115,6 +115,8 @@ export interface PluginSummary {
   error: string | null;
   /** Names of the agents that may use it (the MCP per-agent switch), only when installed. */
   agentCount: number;
+  /** The ids of the plugin's MCP servers (empty when it is not installed). `mcpOAuth.signIn({serverId})` signs in to one of them. */
+  serverIds: string[];
   /** Windows: the plugin cannot run here (macOS only). */
   unavailableHere: boolean;
 }
@@ -197,6 +199,8 @@ export interface PluginCatalogDesktopApi {
   addCustom: (input: AddCustomPluginInput) => Promise<PluginSummary>;
   /** Loads the catalog from a folder (checked against the checksums of its index). Answers what was loaded. */
   setCatalogFolder: (input: SetPluginCatalogFolderInput) => Promise<PluginCatalogInfo>;
+  /** Opens the system folder dialog (in the main process) and loads the catalog from the chosen folder; null when the person closed the dialog. */
+  chooseCatalogFolder: () => Promise<PluginCatalogInfo | null>;
 }
 
 /** Event `plugin-catalog-changed`: the catalog info and the installed plugins (a changed install state, a load, an update). */
@@ -305,6 +309,8 @@ export function isPluginSummary(value: unknown): value is PluginSummary {
     isNullableString(value.installedVersion) &&
     isNullableString(value.error) &&
     isNumber(value.agentCount) &&
+    Array.isArray(value.serverIds) &&
+    value.serverIds.every(isString) &&
     isBoolean(value.unavailableHere) &&
     (value.state === "available" ? value.installedVersion === null : value.installedVersion !== null)
   );

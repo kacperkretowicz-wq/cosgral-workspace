@@ -383,6 +383,7 @@ export class PluginCatalogService {
       installedVersion: row?.version ?? null,
       error,
       agentCount: this.#agentCount(servers),
+      serverIds: row?.serverIds ?? [],
     };
   }
 

@@ -25,12 +25,17 @@ export function createPluginCatalogApi(invoke: Invoke): PluginCatalogDesktopApi 
     update: (input) => invoke(IPC_CHANNELS.pluginCatalogUpdate, input, decodeSummary),
     addCustom: (input) => invoke(IPC_CHANNELS.pluginCatalogAddCustom, input, decodeSummary),
     setCatalogFolder: (input) => invoke(IPC_CHANNELS.pluginCatalogSetFolder, input, decodeInfo),
+    chooseCatalogFolder: () => invoke(IPC_CHANNELS.pluginCatalogChooseFolder, null, decodeOptionalInfo),
   };
 }
 
 function decodeInfo(value: unknown): PluginCatalogInfo {
   if (!isPluginCatalogInfo(value)) throw new Error("Invalid plugin catalog info.");
   return value;
+}
+
+function decodeOptionalInfo(value: unknown): PluginCatalogInfo | null {
+  return value === null ? null : decodeInfo(value);
 }
 
 function decodeList(value: unknown): PluginList {

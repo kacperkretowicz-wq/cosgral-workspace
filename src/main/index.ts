@@ -989,7 +989,16 @@ function registerIpcHandlers(
   registerBudgetsIpc(() => budgetMeter);
   registerIntegrationsIpc(() => integrationManager);
   registerMessengersIpc(() => messengerBridge);
-  registerPluginCatalogIpc(() => pluginCatalogService);
+  registerPluginCatalogIpc(
+    () => pluginCatalogService,
+    async () => {
+      const options: OpenDialogOptions = { properties: ["openDirectory"] };
+      const result = mainWindow
+        ? await dialog.showOpenDialog(mainWindow, options)
+        : await dialog.showOpenDialog(options);
+      return result.canceled ? null : (result.filePaths[0] ?? null);
+    },
+  );
   registerMcpOAuthIpc(() => mcpOAuthService);
   registerInstanceTransferIpc(() => instanceTransferService);
   registerUpdatePreferencesIpc(() => updatePreferencesService);
