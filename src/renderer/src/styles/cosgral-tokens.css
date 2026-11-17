@@ -1,0 +1,93 @@
+/*
+ * COSGRAL design tokens. One source of truth for surfaces, text, accent,
+ * radii, type, motion. Existing --openbot-* variables (styles.css, theme-light.css)
+ * resolve to these, so every screen follows. Values are our own scale, tuned for a
+ * calm dark workspace; light theme keeps WCAG AA (see theme-palette.test.ts).
+ */
+:root {
+  /* Surfaces: frame < canvas < surface < control < raised */
+  --cosgral-bg-frame: #0d0d0d;
+  --cosgral-bg-canvas: #1a1a1a;
+  --cosgral-bg-sidebar: #1a1a1a;
+  --cosgral-bg-surface: #212121;
+  --cosgral-bg-control: #242424;
+  --cosgral-bg-control-hover: #2a2a2a;
+  --cosgral-bg-control-active: #303030;
+  --cosgral-bg-raised: #2a2a2a;
+  --cosgral-hover: rgba(255, 255, 255, 0.06);
+  --cosgral-selected: rgba(255, 255, 255, 0.07);
+
+  /* Text */
+  --cosgral-text-primary: #ffffff;
+  --cosgral-text-secondary: #dcdcdc;
+  --cosgral-text-muted: #979797;
+  --cosgral-text-dim: #6a6a6a;
+  --cosgral-text-placeholder: #7d7d7d;
+
+  /* Lines */
+  --cosgral-border: rgba(255, 255, 255, 0.043);
+  --cosgral-border-strong: rgba(255, 255, 255, 0.11);
+
+  /* Accent and status */
+  --cosgral-accent: #007cf7;
+  --cosgral-accent-hover: #1f8fff;
+  --cosgral-accent-text: #42a0ff;
+  --cosgral-accent-soft: rgba(0, 124, 247, 0.16);
+  --cosgral-accent-strong: rgba(0, 124, 247, 0.34);
+  --cosgral-danger: #fd2f3b;
+  --cosgral-warning: #ff9412;
+  --cosgral-success: #31cf76;
+
+  /* Shape: 4 / 6 / 8 / 12 / pill */
+  --cosgral-radius-xs: 4px;
+  --cosgral-radius-sm: 6px;
+  --cosgral-radius-md: 8px;
+  --cosgral-radius-lg: 12px;
+  --cosgral-radius-pill: 999px;
+
+  /* Type: 12 / 13 / 14 (body) / 16 */
+  --cosgral-font-sans:
+    "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --cosgral-text-sm: 12px;
+  --cosgral-text-md: 13px;
+  --cosgral-text-lg: 14px;
+  --cosgral-text-xl: 16px;
+
+  /* Motion */
+  --cosgral-duration-fast: 120ms;
+  --cosgral-duration-normal: 150ms;
+  --cosgral-duration-slow: 250ms;
+  --cosgral-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Depth */
+  --cosgral-shadow-popover:
+    0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.45);
+  --cosgral-shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 32px rgba(0, 0, 0, 0.48);
+  --cosgral-focus-ring: 0 0 0 2px rgba(0, 124, 247, 0.4);
+}
+
+:root[data-theme="light"],
+[data-story-theme="light"] {
+  --cosgral-bg-frame: #e6e6ea;
+  --cosgral-bg-canvas: #f6f6f8;
+  --cosgral-bg-sidebar: #ececf0;
+  --cosgral-bg-surface: #ffffff;
+  --cosgral-bg-control: #f1f1f5;
+  --cosgral-bg-control-hover: #e4e4ea;
+  --cosgral-bg-control-active: #d9d9e2;
+  --cosgral-bg-raised: #ffffff;
+  --cosgral-hover: rgba(20, 20, 30, 0.06);
+  --cosgral-selected: rgba(20, 20, 30, 0.08);
+  --cosgral-text-primary: #14141c;
+  --cosgral-text-secondary: rgba(20, 20, 28, 0.78);
+  --cosgral-text-muted: rgba(20, 20, 28, 0.66);
+  --cosgral-text-dim: #595961;
+  --cosgral-border: rgba(20, 20, 30, 0.1);
+  --cosgral-border-strong: #73737d;
+  --cosgral-accent: #0069d9;
+  --cosgral-accent-hover: #0057b3;
+  --cosgral-accent-text: #0057b3;
+  --cosgral-accent-soft: rgba(0, 105, 217, 0.12);
+  --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
+  --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);
+}

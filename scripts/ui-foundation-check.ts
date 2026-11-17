@@ -73,7 +73,9 @@ const featureStyles = filesUnder(resolve(rendererRoot, "styles"))
     const source = readFileSync(path, "utf8");
     // The light palette is a token definition boundary, like :root in styles.css.
     // Keep checking ordinary declarations in it; only palette definitions are exempt.
-    return path.endsWith("theme-light.css") ? source.replace(/--openbot-[\w-]+\s*:[^;{}]+;/gu, "") : source;
+    return path.endsWith("theme-light.css") || path.endsWith("cosgral-tokens.css")
+      ? source.replace(/--(?:openbot|cosgral)-[\w-]+\s*:[^;{}]+;/gu, "")
+      : source;
   })
   .join("\n");
 const legacyStyles = `${styles.slice(paletteEnd + 3)}\n${featureStyles}`;
