@@ -413,4 +413,9 @@ export const pl = {
   Documents: "Dokumenty",
   Other: "Inne",
   "Working folder": "Folder roboczy",
+  Coral: "Koralowy",
+  Chartreuse: "Żółtozielony",
+  Spring: "Wiosenny",
+  Purple: "Purpurowy",
+  Orchid: "Orchidea",
 } as const;
