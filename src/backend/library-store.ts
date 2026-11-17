@@ -117,6 +117,18 @@ export class LibraryStore extends EventEmitter<{ changed: [fileIds: string[]] }>
     return items;
   }
 
+  /** Every library file and chat attachment, newest first (for the library page, which filters and pages them itself). */
+  listAll(): LibraryItem[] {
+    const items: LibraryItem[] = [];
+    for (const row of this.#database.connection
+      .prepare(`${ROW_SELECT} ORDER BY a.created_at DESC, a.rowid DESC`)
+      .all()) {
+      const parsed = parseIndexRow(row);
+      if (parsed) items.push(parsed.item);
+    }
+    return items;
+  }
+
   /** One file of either view. */
   get(fileId: string): LibraryItem {
     const row = this.#row(fileId);

@@ -33,6 +33,7 @@ import {
   preferredModel,
   type SetBudgetInput,
   scopeKey,
+  type UsageRow,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import type { OpenBotDatabase } from "./openbot-database";
@@ -262,6 +263,35 @@ export class BudgetMeter {
       pricedTurns,
       costComplete: pricedTurns === turns,
     };
+  }
+
+  /** COSGRAL W12: the counter rows (one per day and agent) from `fromDay` (`YYYY-MM-DD`) on, for the usage report. */
+  dailyRows(fromDay: string): UsageRow[] {
+    return this.#db()
+      .prepare(
+        "SELECT day, agent_id, tokens, turns, cost_micro, priced_turns FROM projection_budget_usage WHERE day >= ? ORDER BY day, agent_id",
+      )
+      .all(fromDay)
+      .flatMap((row) =>
+        isDynamicRecord(row) && isString(row.day) && isString(row.agent_id)
+          ? [
+              {
+                day: row.day,
+                botId: row.agent_id,
+                tokens: numberOf(row.tokens),
+                turns: numberOf(row.turns),
+                costUsd: numberOf(row.cost_micro) / MICRO,
+                pricedTurns: numberOf(row.priced_turns),
+              },
+            ]
+          : [],
+      );
+  }
+
+  /** COSGRAL W12: the first day anything was counted; null when nothing was. */
+  firstDay(): string | null {
+    const row = this.#db().prepare("SELECT MIN(day) AS day FROM projection_budget_usage").get();
+    return isDynamicRecord(row) && isString(row.day) ? row.day : null;
   }
 
   /** Agents that used something this month still show (the longest period); older ones show only with a budget. */
