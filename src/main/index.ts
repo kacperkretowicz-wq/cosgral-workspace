@@ -62,6 +62,8 @@ import { EyesService } from "../backend/eyes-service";
 import { InstanceTransferService } from "../backend/instance-transfer/transfer-service";
 import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
+import { LibraryViewService } from "../backend/library-view";
+import { MachineLoadSampler } from "../backend/machine-load";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
 import { McpOAuthService } from "../backend/mcp-oauth/mcp-oauth-service";
@@ -75,6 +77,7 @@ import { ProviderCatalogService } from "../backend/provider-catalog";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
+import { ScheduleViewService } from "../backend/schedule-view";
 import { SearchService } from "../backend/search-service";
 import { ServerSettingsService } from "../backend/server-settings";
 import { SidebarStore } from "../backend/sidebar-store";
@@ -83,6 +86,7 @@ import { clearLogs, measureUserData } from "../backend/storage-report";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { ThreadTabsService } from "../backend/thread-tabs";
 import { UpdatePreferencesService } from "../backend/update-preferences";
+import { UsageReportService } from "../backend/usage-report";
 import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-runtime";
 import { ConnectorStore } from "../backend/vault-connectors/common";
 import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
@@ -117,6 +121,7 @@ import { createDockWindows, type DockWindows } from "./dock-windows";
 import { registerEndpointsIpc } from "./endpoints-ipc";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
+import { registerInsightsIpc } from "./insights-ipc";
 import { createTransferHost } from "./instance-transfer-host";
 import { registerInstanceTransferIpc } from "./instance-transfer-ipc";
 import { registerIntegrationsIpc } from "./integrations-ipc";
@@ -369,6 +374,9 @@ let threadTabsService: ThreadTabsService | null = null;
 let agentCardsService: AgentCardsService | null = null;
 let serverSettingsService: ServerSettingsService | null = null;
 let providerCatalogService: ProviderCatalogService | null = null;
+let libraryViewService: LibraryViewService | null = null;
+let usageReportService: UsageReportService | null = null;
+let scheduleViewService: ScheduleViewService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -985,6 +993,11 @@ function registerIpcHandlers(
   registerAgentCardsIpc(() => agentCardsService);
   registerServerSettingsIpc(() => serverSettingsService);
   registerProviderCatalogIpc(() => providerCatalogService);
+  registerInsightsIpc({
+    library: () => libraryViewService,
+    usage: () => usageReportService,
+    schedule: () => scheduleViewService,
+  });
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1902,6 +1915,28 @@ if (!hasSingleInstanceLock) {
           resetSession: (botId) => service.resetProviderSession(botId),
           emit: (event) => forwardAgentEvent("local", event),
         });
+        // COSGRAL W12 (BE-H): the library page, the usage report and the schedule: they only read what the program already holds.
+        {
+          const agentName = (botId: string) => service.listBots().find((bot) => bot.id === botId)?.name ?? null;
+          const machineLoad = new MachineLoadSampler();
+          libraryViewService = new LibraryViewService({
+            all: () => service.sharedData.library.listAll(),
+            agentName,
+            remove: (fileId) => service.sharedData.library.delete(fileId, null),
+          });
+          usageReportService = new UsageReportService({
+            rows: (fromDay) => budgetMeter?.dailyRows(fromDay) ?? [],
+            firstDay: () => budgetMeter?.firstDay() ?? null,
+            agentName,
+            providers: () => providerRegistry?.listUsage() ?? [],
+            machine: () => machineLoad.read(),
+          });
+          scheduleViewService = new ScheduleViewService({
+            routines: () => routineStore.list(),
+            runs: (routineId) => routineStore.listRuns(routineId),
+            agentName,
+          });
+        }
         // COSGRAL W12 (BE-E): the catalog of the 18 providers; keys of Codex and Claude stay in their own slots, the rest in "catalog:<id>".
         providerCatalogService = new ProviderCatalogService({
           keys: {

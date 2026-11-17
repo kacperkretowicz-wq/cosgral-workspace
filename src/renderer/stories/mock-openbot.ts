@@ -104,6 +104,7 @@ import { createMockComposer, createMockSearch, createMockThreadTabs } from "./mo
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
+import { createMockLibraryView, createMockSchedule, createMockUsageReport } from "./mock-insights";
 import { createMockInstanceTransfer } from "./mock-instance-transfer";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
@@ -1443,6 +1444,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     agentCards: createMockAgentCards((event) => emitAgentEvent(event)),
     serverSettings: createMockServerSettings((event) => emitAgentEvent(event)),
     providerCatalog: createMockProviderCatalog((event) => emitAgentEvent(event)),
+    libraryView: createMockLibraryView(),
+    usageReport: createMockUsageReport(),
+    schedule: createMockSchedule(),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).

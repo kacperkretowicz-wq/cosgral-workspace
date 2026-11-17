@@ -230,6 +230,13 @@ export const IPC_CHANNELS = {
   providerCatalogList: "provider-catalog:list",
   providerCatalogSetKey: "provider-catalog:set-key",
   providerCatalogClearKey: "provider-catalog:clear-key",
+  // COSGRAL W12 (BE-H): library view, usage report and schedule.
+  libraryViewPage: "library-view:page",
+  libraryViewDeleteMany: "library-view:delete-many",
+  libraryViewCleanup: "library-view:cleanup",
+  usageReportGet: "usage-report:get",
+  scheduleView: "schedule:view",
+  scheduleFeed: "schedule:feed",
   // COSGRAL W10-KK2: messenger bridge (Telegram).
   messengersList: "messengers:list",
   messengersStatus: "messengers:status",
