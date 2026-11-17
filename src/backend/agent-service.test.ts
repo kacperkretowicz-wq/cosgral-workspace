@@ -2017,6 +2017,33 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     }
   });
 
+  it("W12: a side question is answered in a thread of its own and leaves the chat and the queue alone", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(
+      store,
+      mailbox,
+      fakeBrowser(),
+      null,
+      30_000,
+      "codex",
+      (provider) => new FakeAgentClient(provider, "SIDE_ANSWER", true),
+    );
+    await service.initialize();
+    const before = (await service.readConversation("chief")).messages.length;
+    const answers: string[] = [];
+    await service.runSideQuestion({
+      botId: "chief",
+      threadId: null,
+      text: "Quick question?",
+      signal: new AbortController().signal,
+      onText: (answer) => answers.push(answer),
+    });
+    expect(answers.at(-1)).toBe("SIDE_ANSWER");
+    expect((await service.readConversation("chief")).messages.length).toBe(before);
+    expect(service.listQueue("chief").deliveries).toEqual([]);
+    expect(store.activeProviderSession("chief")).toBeNull();
+  });
+
   it("W12: the provider session is reset only while no turn runs, and the history stays", async () => {
     const { store, mailbox } = stores();
     service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {

@@ -15,5 +15,6 @@ export interface AgentClient {
   on(event: "notification", listener: (notification: AppServerNotification) => void): this;
   on(event: "request", listener: (request: AppServerRequest) => void): this;
   on(event: "diagnostic", listener: (message: string) => void): this;
+  off(event: "notification", listener: (notification: AppServerNotification) => void): this;
   once(event: "exit", listener: (error: Error) => void): this;
 }

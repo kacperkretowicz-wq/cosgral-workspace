@@ -1738,6 +1738,7 @@ if (!hasSingleInstanceLock) {
           channels: () => channelStore.list(),
           files: libraryFiles,
           skills: (botId) => service.skillLibrary.installedFor(botId).map((skill) => skill.name),
+          ask: (run) => service.runSideQuestion(run),
           emit: (event) => forwardAgentEvent("local", event),
         });
         threadTabsService = new ThreadTabsService({

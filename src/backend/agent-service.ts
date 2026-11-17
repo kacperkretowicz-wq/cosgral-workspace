@@ -171,6 +171,7 @@ import type { ProviderRegistry } from "./provider-registry";
 import { steerSupport, withSteerSupport } from "./queue-steer";
 import type { RoutineRunner } from "./routine-manager";
 import { ROUTINES_DYNAMIC_TOOLS, ROUTINES_NAMESPACE } from "./routine-tools";
+import { runSideQuestion, type SideQuestionJob } from "./side-question-runner";
 import { type InstalledSkillSummary, SkillLibrary } from "./skill-library";
 import { SKILLS_DYNAMIC_TOOLS, SKILLS_NAMESPACE, SkillTools, skillInstructions } from "./skill-tools";
 import { SubagentRunner } from "./subagent-runner";
@@ -1092,6 +1093,37 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   useBusyMessageMode(mode: (botId: string) => "queue" | "steer"): void {
     this.#busyMode = mode;
+  }
+
+  /** COSGRAL W12: a side question in a provider thread of its own (see side-question-runner.ts); never touches the chat or the queue. */
+  async runSideQuestion(run: {
+    botId: string;
+    threadId: string | null;
+    text: string;
+    signal: AbortSignal;
+    onText: (answer: string) => void;
+  }): Promise<void> {
+    const bot = await this.#store.getOrCreate(run.botId);
+    const client = this.#requireReadyClient(providerForBot(bot));
+    const history = this.#store.database.readConversation(bot.id, run.threadId ?? bot.threadId).messages;
+    const job: SideQuestionJob = {
+      ...run,
+      model: bot.activeModel ?? bot.model,
+      effort: bot.reasoningEffort,
+      cwd: bot.workspacePath,
+      history: history.map((message) => ({ author: message.author, text: message.text })),
+    };
+    await runSideQuestion(
+      {
+        request: (method, params) => client.request(method, params, (value) => value),
+        subscribe: (listener) => {
+          const forward = (note: AppServerNotification): void => listener(note);
+          client.on("notification", forward);
+          return () => void client.off("notification", forward);
+        },
+      },
+      job,
+    );
   }
 
   /** COSGRAL W12: whether the provider of this agent can take a message into a running turn. */
