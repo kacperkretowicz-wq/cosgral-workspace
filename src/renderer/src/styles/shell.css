@@ -62,3 +62,8 @@
     animation: cosgral-enter var(--cosgral-duration-slow) var(--cosgral-ease) both;
   }
 }
+
+/* Rail "More pages": three clear dots, same size as the other rail icons. */
+.page-rail-button svg circle {
+  fill: currentColor;
+}
