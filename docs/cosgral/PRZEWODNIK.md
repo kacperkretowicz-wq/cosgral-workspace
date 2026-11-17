@@ -3,7 +3,7 @@
 Przewodnik dla właściciela projektu i użytkownika programu (bez żargonu programistycznego i bez nazw plików źródłowych).  
 Opisuje rzeczywisty stan programu, sposób uruchomienia, codzienną pracę z agentami i zespołami oraz zaawansowane narzędzia.
 
-**Stan na 17.11.2026 (integracja 79567cdf9).** Przy każdej funkcji piszę uczciwie, na jakim jest etapie. Używam trzech słów:
+**Stan na 17.11.2026 (integracja 79567cdf9).** Przy każdej funkcji piszę uczciwie, na jakim jest etapie. Używam czterech określeń:
 - **Jest**: działa w oknie programu i było sprawdzone.
 - **Częściowo**: działa część; brakującą część nazywam.
 - **Silnik gotowy, ekran w przygotowaniu**: program już to potrafi „pod spodem” (jest sprawdzone testami), ale okna do klikania jeszcze nie ma. Dla każdej takiej funkcji podaję, co zobaczysz, gdy ekran powstanie.
