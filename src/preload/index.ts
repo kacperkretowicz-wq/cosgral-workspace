@@ -51,6 +51,8 @@ import {
   isVaultStatus,
   isWorkflow,
   isWorkflowRun,
+  isWorkflowVersionDetails,
+  isWorkflowVersionSummary,
   isWorkspaceChannel,
   type KeptDraft,
   type LocalSkill,
@@ -72,6 +74,8 @@ import {
   type UpdateStatus,
   type Workflow,
   type WorkflowRun,
+  type WorkflowVersionDetails,
+  type WorkflowVersionSummary,
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
@@ -519,6 +523,16 @@ function decodeWorkflowRun(value: unknown): WorkflowRun {
   return value;
 }
 
+function decodeWorkflowVersions(value: unknown): WorkflowVersionSummary[] {
+  if (!Array.isArray(value)) throw new Error("Invalid workflow version list response.");
+  return value.filter(isWorkflowVersionSummary);
+}
+
+function decodeWorkflowVersion(value: unknown): WorkflowVersionDetails {
+  if (!isWorkflowVersionDetails(value)) throw new Error("Invalid workflow version response.");
+  return value;
+}
+
 function decodeWorkflowRuns(value: unknown): WorkflowRun[] {
   if (!Array.isArray(value)) throw new Error("Invalid workflow run list response.");
   return value.filter(isWorkflowRun);
@@ -752,6 +766,9 @@ const openbotApi: OpenBotDesktopApi = {
     run: (input) => invokeAgent(IPC_CHANNELS.workflowsRun, input, decodeWorkflowRun),
     cancelRun: (input) => invokeAgent(IPC_CHANNELS.workflowsCancelRun, input, decodeWorkflowRun),
     listRuns: (input) => invokeAgent(IPC_CHANNELS.workflowsListRuns, input, decodeWorkflowRuns),
+    listVersions: (input) => invokeAgent(IPC_CHANNELS.workflowsListVersions, input, decodeWorkflowVersions),
+    getVersion: (input) => invokeAgent(IPC_CHANNELS.workflowsGetVersion, input, decodeWorkflowVersion),
+    restoreVersion: (input) => invokeAgent(IPC_CHANNELS.workflowsRestoreVersion, input, decodeWorkflow),
   },
   providers: {
     listAcpAgents: () => invokeAgent(IPC_CHANNELS.providersListAcpAgents, null, decodeAcpAgents),

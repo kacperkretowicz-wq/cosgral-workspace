@@ -2,10 +2,15 @@
 import {
   type AgentEvent,
   addWorkflowNode,
+  describeWorkflowDiff,
+  diffWorkflowGraphs,
   emptyWorkflowGraph,
   isAgentEvent,
   isWorkflow,
   isWorkflowRun,
+  isWorkflowVersionDetails,
+  isWorkflowVersionSummary,
+  WORKFLOW_VERSION_LIMITS,
   type WorkflowGraph,
   workflowRunProgress,
 } from "@openbot/contracts/ipc";
@@ -171,5 +176,113 @@ describe("mock workflows: a run", () => {
     await mock.api.delete({ workflowId: wf.id });
     expect(() => mock.simulate.advance(open.id)).toThrow(/already ended/);
     await expect(mock.api.listRuns({ workflowId: wf.id })).rejects.toThrow(/does not exist/);
+  });
+});
+
+describe("mock workflows: versions", () => {
+  it("a new workflow has version 1; every graph change is a new version, renaming and moving are not", async () => {
+    const { mock } = setup(false);
+    const wf = await mock.api.create({ name: "Brief", ...simple() });
+    const first = await mock.api.listVersions({ workflowId: wf.id });
+    expect(first.every(isWorkflowVersionSummary)).toBe(true);
+    expect(first.map((version) => [version.number, version.reason, version.current])).toEqual([[1, "created", true]]);
+    expect(first[0]?.summary).toBe("1 trigger, 1 agent step, 1 output");
+
+    await mock.api.update({ workflowId: wf.id, name: "Brief 2", paused: false });
+    expect(await mock.api.listVersions({ workflowId: wf.id })).toHaveLength(1);
+    await mock.api.update({
+      workflowId: wf.id,
+      nodes: wf.nodes.map((node) => ({ ...node, x: node.x + 10 })),
+      edges: wf.edges,
+    });
+    expect(await mock.api.listVersions({ workflowId: wf.id })).toHaveLength(2);
+
+    const edited = wf.nodes.map((node) =>
+      node.type === "agent" ? { ...node, prompt: "Short summary of {{input}}" } : node,
+    );
+    await mock.api.update({ workflowId: wf.id, nodes: edited, edges: wf.edges });
+    const list = await mock.api.listVersions({ workflowId: wf.id });
+    expect(list.map((version) => [version.number, version.current])).toEqual([
+      [3, true],
+      [2, false],
+      [1, false],
+    ]);
+    // Saving the same graph again is not a new version.
+    await mock.api.update({ workflowId: wf.id, nodes: edited, edges: wf.edges });
+    expect(await mock.api.listVersions({ workflowId: wf.id })).toHaveLength(3);
+  });
+
+  it("a version has its graph, and the diff says what changed", async () => {
+    const { mock } = setup(false);
+    const wf = await mock.api.create({ name: "Brief", ...simple() });
+    const edited = wf.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: "Short" } : node));
+    await mock.api.update({ workflowId: wf.id, nodes: edited, edges: wf.edges });
+    const older = await mock.api.getVersion({ workflowId: wf.id, version: 1 });
+    const newer = await mock.api.getVersion({ workflowId: wf.id, version: 2 });
+    expect(isWorkflowVersionDetails(older)).toBe(true);
+    expect(describeWorkflowDiff(diffWorkflowGraphs(older, newer))).toBe("Changed: Agent.");
+    await expect(mock.api.getVersion({ workflowId: wf.id, version: 9 })).rejects.toThrow(/no longer exists/);
+  });
+
+  it("restore puts the older graph back as a NEW version that says where it came from, and can itself be restored", async () => {
+    const { mock, events } = setup(false);
+    const wf = await mock.api.create({ name: "Brief", ...simple() });
+    const edited = wf.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: "Short" } : node));
+    await mock.api.update({ workflowId: wf.id, nodes: edited, edges: wf.edges });
+
+    const restored = await mock.api.restoreVersion({ workflowId: wf.id, version: 1 });
+    expect(restored.nodes.find((node) => node.type === "agent")).toMatchObject({ prompt: "Summarise {{input}}" });
+    expect(events.at(-1)).toMatchObject({ type: "workflows-changed" });
+    const list = await mock.api.listVersions({ workflowId: wf.id });
+    expect(list.map((version) => [version.number, version.reason, version.restoredFrom])).toEqual([
+      [3, "restored", 1],
+      [2, "edited", null],
+      [1, "created", null],
+    ]);
+    // Restoring what is already current changes nothing.
+    await mock.api.restoreVersion({ workflowId: wf.id, version: 3 });
+    expect(await mock.api.listVersions({ workflowId: wf.id })).toHaveLength(3);
+    // Undo the restore.
+    const back = await mock.api.restoreVersion({ workflowId: wf.id, version: 2 });
+    expect(back.nodes.find((node) => node.type === "agent")).toMatchObject({ prompt: "Short" });
+    expect((await mock.api.listVersions({ workflowId: wf.id })).at(0)).toMatchObject({ number: 4, restoredFrom: 2 });
+  });
+
+  it("restore is checked like a save: an agent that is gone refuses it; only 20 versions are kept; delete drops them", async () => {
+    let known = ["chief", "writer"];
+    const mock = createMockWorkflows(() => undefined, {
+      known: () => ({ botIds: known, channelIds: ["general"], routineIds: [] }),
+      seed: null,
+    });
+    const wf = await mock.api.create({ name: "Brief", ...simple() });
+    const edited = wf.nodes.map((node) =>
+      node.type === "agent" ? { ...node, botId: "chief", prompt: "Other" } : node,
+    );
+    await mock.api.update({ workflowId: wf.id, nodes: edited, edges: wf.edges });
+    known = ["chief"];
+    await expect(mock.api.restoreVersion({ workflowId: wf.id, version: 1 })).rejects.toThrow(
+      /The agent "writer" in step "Agent" does not exist/,
+    );
+    expect(await mock.api.listVersions({ workflowId: wf.id })).toHaveLength(2);
+
+    for (let index = 0; index < 25; index += 1) {
+      const nodes = wf.nodes.map((node) =>
+        node.type === "agent" ? { ...node, botId: "chief", prompt: `Round ${index}` } : node,
+      );
+      await mock.api.update({ workflowId: wf.id, nodes, edges: wf.edges });
+    }
+    const kept = await mock.api.listVersions({ workflowId: wf.id });
+    expect(kept).toHaveLength(WORKFLOW_VERSION_LIMITS.kept);
+    expect(kept[0]?.number).toBe(27);
+    expect(kept.at(-1)?.number).toBe(8);
+    await mock.api.delete({ workflowId: wf.id });
+    await expect(mock.api.listVersions({ workflowId: wf.id })).rejects.toThrow(/does not exist/);
+  });
+
+  it("the demo workflow gets its first version when its versions are listed", async () => {
+    const { mock } = setup();
+    const [wf] = await mock.api.list();
+    if (!wf) throw new Error("no demo workflow");
+    expect((await mock.api.listVersions({ workflowId: wf.id })).map((version) => version.number)).toEqual([1]);
   });
 });

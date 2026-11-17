@@ -59,6 +59,7 @@ export * from "./ipc-vault-connectors";
 export * from "./ipc-voice";
 export * from "./ipc-windows";
 export * from "./ipc-workflow-editor";
+export * from "./ipc-workflow-versions";
 export * from "./ipc-workflows";
 export * from "./ipc-workspace-channels";
 export * from "./vault-csv";
