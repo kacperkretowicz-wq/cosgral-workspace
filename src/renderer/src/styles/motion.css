@@ -87,6 +87,55 @@
     animation: cosgral-breathe 4s ease-in-out infinite;
   }
 
+  @keyframes cosgral-tab-in {
+    from {
+      max-width: 0;
+      opacity: 0;
+    }
+
+    to {
+      max-width: 200px;
+      opacity: 1;
+    }
+  }
+
+  /* A new thread tab grows in; the open tab's background and weight change smoothly. */
+  .thread-tab {
+    animation: cosgral-tab-in var(--cosgral-duration-slow) var(--cosgral-ease) both;
+  }
+
+  .thread-tab-label {
+    transition: font-weight var(--cosgral-duration-fast) var(--cosgral-ease);
+  }
+
+  /* The thread tools card drops in from its icon. */
+  .chat-tools[open] .chat-tools-body {
+    transform-origin: top right;
+    animation: cosgral-pop var(--cosgral-duration-normal) var(--cosgral-ease) both;
+  }
+
+  /* Collapsing the sidebar: the columns glide (app-shell.css), the content fades with them. */
+  .sidebar .sidebar-server-name,
+  .sidebar .sidebar-search-wrap,
+  .sidebar .bot-list,
+  .sidebar .sidebar-hidden-switch,
+  .sidebar .spaces-rail {
+    transition:
+      opacity var(--cosgral-duration-slow) var(--cosgral-ease),
+      transform var(--cosgral-duration-slow) var(--cosgral-ease);
+  }
+
+  .sidebar-compact .sidebar-server-name,
+  .sidebar-compact .sidebar-hidden-switch {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+
+  /* Rail icons press in. */
+  .page-rail-button:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
   /* Tabs, rows and cards answer the pointer. */
   .thread-tab,
   .server-settings-nav-item,
@@ -116,7 +165,18 @@
   .sidebar-new-menu,
   .thread-tabs-menu,
   .global-search-dialog,
-  .new-agent-preview {
+  .new-agent-preview,
+  .thread-tab,
+  .chat-tools[open] .chat-tools-body {
     animation: none;
+  }
+
+  .sidebar .sidebar-server-name,
+  .sidebar .sidebar-search-wrap,
+  .sidebar .bot-list,
+  .sidebar .sidebar-hidden-switch,
+  .sidebar .spaces-rail,
+  .page-rail-button {
+    transition: none;
   }
 }
