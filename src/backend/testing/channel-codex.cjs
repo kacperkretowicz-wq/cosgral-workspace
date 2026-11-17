@@ -42,9 +42,30 @@ const call = (threadId, turnId, tool, args, namespace = "cosgral_channels") =>
     pending.set(id, { resolve, reject });
     out({ id, method: "item/tool/call", params: { threadId, turnId, callId: id, namespace, tool, arguments: args } });
   });
-const complete = (threadId, turnId, text, status = "completed") => {
+/** Emit reasoning steps (itemType commentary → UI “N steps”) before the final agent message. */
+const think = (threadId, turnId, steps) => {
+  for (const text of steps) {
+    const id = randomUUID();
+    out({
+      method: "item/started",
+      params: { threadId, turnId, item: { id, type: "agentMessage", phase: "commentary", text: "" } },
+    });
+    out({
+      method: "item/completed",
+      params: { threadId, turnId, item: { id, type: "agentMessage", phase: "commentary", text } },
+    });
+  }
+};
+const complete = (threadId, turnId, text, status = "completed", withReasoning = false) => {
   if (turns.get(turnId)?.ended) return;
   turns.set(turnId, { ended: true });
+  if (withReasoning) {
+    think(threadId, turnId, [
+      "Stub step 1: read the message",
+      "Stub step 2: plan a short answer",
+      "Stub step 3: write the reply",
+    ]);
+  }
   out({
     method: "item/completed",
     params: { threadId, turnId, item: { id: randomUUID(), type: "agentMessage", text } },
@@ -338,7 +359,8 @@ async function direct(threadId, turnId, text, cwd) {
     );
     return;
   }
-  complete(threadId, turnId, "Stub: received");
+  // Default chat turn: reasoning (commentary) + final text so the UI can show “N steps”.
+  complete(threadId, turnId, "Stub: received", "completed", true);
 }
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => {
