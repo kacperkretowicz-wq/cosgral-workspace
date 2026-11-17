@@ -273,6 +273,8 @@ export const IPC_CHANNELS = {
   instanceTransferImportSources: "instance-transfer:import-sources",
   updatePreferencesGet: "update-preferences:get",
   updatePreferencesSet: "update-preferences:set",
+  // COSGRAL W12-KK: the Mobile Connect page in one query.
+  mobileConnectGetOverview: "mobile-connect:get-overview",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

@@ -110,7 +110,7 @@ import { createMockIsolation } from "./mock-isolation";
 import { createMockMcpOAuth } from "./mock-mcp-oauth";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockMessengers } from "./mock-messengers";
-import { createMockPhone } from "./mock-phone";
+import { createMockMobileConnect } from "./mock-mobile-connect";
 import { createMockPlans } from "./mock-plans";
 import { createMockPluginCatalog } from "./mock-plugin-catalog";
 import { createMockProviderCatalog } from "./mock-provider-catalog";
@@ -570,6 +570,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     });
   });
   const mockVaultConnectors = createMockVaultConnectors((event) => emitAgentEvent(event));
+  const mockMobileConnect = createMockMobileConnect((event) => emitAgentEvent(event));
   const mockInstanceTransfer = createMockInstanceTransfer((event) => emitAgentEvent(event));
   const api: OpenBotDesktopApi = {
     ...w2ui2,
@@ -1393,7 +1394,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     // COSGRAL W10-KK1: account sign-ins for apps (demo; `simulate` plays the browser coming back).
     integrations: createMockIntegrations((event) => emitAgentEvent(event)),
     // COSGRAL W9-BE1: the phone away from home (demo; `simulate` plays a phone setting a PIN or allowing notifications).
-    phone: createMockPhone((event) => emitAgentEvent(event)),
+    phone: mockMobileConnect.phone,
+    // COSGRAL W12-KK: the Mobile Connect page in one query (joined with the demo phone above).
+    mobileConnect: { getOverview: mockMobileConnect.getOverview },
     // COSGRAL W11 (U3-U6): search, message box (side question, slash, @), thread tabs (demo data).
     search: createMockSearch(),
     composer: createMockComposer((event) => emitAgentEvent(event)),

@@ -146,6 +146,60 @@ export function messengerSecretFields(
   return [{ id: "token", label: "Bot token", hint: "From BotFather in Telegram, like 123456789:AA…" }];
 }
 
+/**
+ * Everything the settings window needs to draw one messenger besides its status: the name, the secret fields (write-only), the rule that
+ * only private conversations are answered, what a conversation id looks like and where to find it, and the steps to set it up.
+ * Fixed text: it does not depend on the computer or on what is saved.
+ */
+export interface MessengerDescriptor {
+  kind: MessengerKind;
+  label: string;
+  secrets: Array<{ id: "token" | "appToken"; label: string; hint: string }>;
+  /** Only a private conversation (one person and the bot) is ever answered; nobody is allowed until the person adds them. */
+  privateOnly: true;
+  /** What the id of an allowed conversation looks like, and where the person finds it (the settings also list unknown conversations that wrote). */
+  conversationIdHint: string;
+  /** In order; each a short sentence. */
+  setupSteps: string[];
+}
+
+const DESCRIPTORS: Readonly<
+  Record<MessengerKind, Omit<MessengerDescriptor, "kind" | "label" | "secrets" | "privateOnly">>
+> = {
+  telegram: {
+    conversationIdHint:
+      "A number, like 123456789. Write to the bot once: the settings then show who wrote, and you can allow them.",
+    setupSteps: [
+      "Open BotFather in Telegram and make a bot.",
+      "Paste the bot token here.",
+      "Write a message to the bot. It appears under the conversations that wrote.",
+      "Allow that conversation and choose the agent that answers it.",
+    ],
+  },
+  slack: {
+    conversationIdHint:
+      "A direct-message id starting with D, like D01ABC23DEF. Write to the bot once: the settings then show who wrote, and you can allow them. Channels are not allowed.",
+    setupSteps: [
+      "Make a Slack app and turn on Socket Mode.",
+      "Give the bot token the scopes chat:write, im:history and im:read, and subscribe to the message.im event.",
+      "Paste the bot token (xoxb-) and the app-level token (xapp-, scope connections:write) here.",
+      "Write a direct message to the bot. It appears under the conversations that wrote.",
+      "Allow that conversation and choose the agent that answers it.",
+    ],
+  },
+};
+
+/** The fixed description of a messenger for the settings window. */
+export function messengerDescriptor(kind: MessengerKind): MessengerDescriptor {
+  return {
+    kind,
+    label: messengerLabel(kind),
+    secrets: messengerSecretFields(kind),
+    privateOnly: true,
+    ...DESCRIPTORS[kind],
+  };
+}
+
 /** The fixed sentences of the failures every driver of a messenger shares with the preview. */
 export const MESSENGER_FAILURE_SENTENCES: Readonly<Record<MessengerKind, { tokenRefused: string; network: string }>> = {
   telegram: {

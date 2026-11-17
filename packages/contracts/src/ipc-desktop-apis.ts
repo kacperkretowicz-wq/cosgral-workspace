@@ -123,6 +123,7 @@ import type {
 import type { MessageActionsDesktopApi } from "./ipc-message-actions";
 import type { MessengersDesktopApi } from "./ipc-messengers";
 import type { MobileDesktopApi } from "./ipc-mobile";
+import type { MobileConnectDesktopApi } from "./ipc-mobile-connect";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
 import type { PluginCatalogDesktopApi } from "./ipc-plugin-catalog";
@@ -732,6 +733,8 @@ export interface OpenBotDesktopApi {
   pluginCatalog?: PluginCatalogDesktopApi;
   /** COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http: the system browser, a one-time loopback answer, encrypted tokens. Optional until every mock implements it. */
   mcpOAuth?: McpOAuthDesktopApi;
+  /** COSGRAL W12-KK: the Mobile Connect page in one query (phones, route, what is not offered). Optional until every mock implements it. */
+  mobileConnect?: MobileConnectDesktopApi;
   /** COSGRAL W12-KK (g2): Transfer and Import of agents with one .zip (the paths never reach the window) and the preferences of program updates. Optional until every mock implements it. */
   instanceTransfer?: InstanceTransferDesktopApi;
   updatePreferences?: UpdatePreferencesDesktopApi;
