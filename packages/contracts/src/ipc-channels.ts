@@ -358,6 +358,8 @@ export const IPC_CHANNELS = {
   messageActionsDelete: "message-actions:delete",
   messageActionsPin: "message-actions:pin",
   messageActionsListPins: "message-actions:list-pins",
+  // COSGRAL W12 (BE-J): the menu of one message in one read.
+  messageMenuGet: "message-menu:get",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

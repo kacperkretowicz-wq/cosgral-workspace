@@ -122,6 +122,7 @@ import type {
   SetAgentMemoryLimitInput,
 } from "./ipc-memory";
 import type { MessageActionsDesktopApi } from "./ipc-message-actions";
+import type { MessageMenuDesktopApi } from "./ipc-message-menu";
 import type { MessengersDesktopApi } from "./ipc-messengers";
 import type { MobileDesktopApi } from "./ipc-mobile";
 import type { MobileConnectDesktopApi } from "./ipc-mobile-connect";
@@ -696,6 +697,8 @@ export interface OpenBotDesktopApi {
   isolation?: IsolationDesktopApi;
   /** COSGRAL W6-BE3: retry, edit, delete and pin a message (this computer only). Optional until every mock implements it. */
   messageActions?: MessageActionsDesktopApi;
+  /** COSGRAL W12 (BE-J): the menu of one message (which actions it offers now, and why not) in one read. */
+  messageMenu?: MessageMenuDesktopApi;
   /** COSGRAL W5-BE3: provider API keys (encrypted, masked answers). Optional until every mock implements it. */
   apiKeys?: ApiKeysDesktopApi;
   /** COSGRAL W5-K2: own model endpoints (OpenAI-compatible, Ollama, LM Studio). Optional until every mock implements it. */
