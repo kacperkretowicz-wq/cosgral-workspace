@@ -314,6 +314,18 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     const badToken = await call("messengers:connect", "local", { kind: "telegram", token: "secret-value-123" });
     expect(badToken.threw).toMatch(/bot token/);
     expect(badToken.threw).not.toContain("secret-value-123");
+    // W12-KK (2): Slack needs two tokens of its own shape, and never repeats what was typed.
+    const badSlack = await call("messengers:connect", "local", {
+      kind: "slack",
+      token: "secret-value-123",
+      appToken: "secret-app-456",
+    });
+    expect(badSlack.threw).toMatch(/Slack bot token/);
+    expect(badSlack.threw).not.toContain("secret-value-123");
+    expect(badSlack.threw).not.toContain("secret-app-456");
+    expect(
+      (await call("messengers:allow-chat", "local", { kind: "slack", chatId: "C0CHANNEL01", botId: "chief" })).threw,
+    ).toMatch(/direct message/);
     expect((await call("messengers:connect", "local", { kind: "signal", token: "x" })).threw).toMatch(
       /messenger is one of/,
     );

@@ -37,6 +37,7 @@ import {
   MessengerFailure,
 } from "./messenger-driver";
 import type { OpenBotDatabase } from "./openbot-database";
+import { createSlackDriver } from "./slack-driver";
 import { createTelegramDriver } from "./telegram-driver";
 import type { SecretBox } from "./vault-store";
 
@@ -142,8 +143,10 @@ export interface MessengerBridgeOptions {
   fetchImpl?: typeof fetch;
   /** Tests: a mock Telegram on 127.0.0.1. */
   apiBase?: string;
-  /** The driver of each messenger; Telegram's is the default. Tests and other messengers pass their own. */
+  /** The driver of each messenger; the program's own is the default. Tests pass their own. */
   drivers?: Partial<Record<MessengerKind, MessengerDriverFactory>>;
+  /** Tests: a mock Slack on 127.0.0.1. */
+  slackApiBase?: string;
   /** Long polling wait in seconds (Telegram holds the request that long). */
   pollSeconds?: number;
   /** The pause after a failed request; doubles up to `maxRetryMs`. */
@@ -237,8 +240,10 @@ export class MessengerBridge {
   }
 
   /** Checks the token with Telegram; only a token Telegram accepts is saved. Replaces a token saved before. */
-  async connect(kind: MessengerKind, token: string): Promise<MessengerStatus> {
-    const client = this.#client(kind, token);
+  async connect(kind: MessengerKind, token: string, appToken?: string): Promise<MessengerStatus> {
+    // A messenger with two secrets keeps them together in ONE encrypted text.
+    const secret = kind === "slack" ? JSON.stringify({ token, appToken: appToken ?? "" }) : token;
+    const client = this.#client(kind, secret);
     let username: string;
     try {
       username = await client.connect();
@@ -259,7 +264,7 @@ export class MessengerBridge {
          ON CONFLICT(kind) DO UPDATE SET token_enc = excluded.token_enc, next_offset = NULL,
            bot_username = excluded.bot_username, connected_at = excluded.connected_at`,
       )
-      .run(kind, this.#options.box.encrypt(token), username, runtime.connectedAt);
+      .run(kind, this.#options.box.encrypt(secret), username, runtime.connectedAt);
     this.#begin(kind, client);
     this.#publish();
     return this.status(kind);
@@ -575,10 +580,19 @@ export class MessengerBridge {
 
   // --- internals ---
 
-  #client(kind: MessengerKind, token: string): MessengerDriver {
+  #client(kind: MessengerKind, secret: string): MessengerDriver {
     const factory = this.#options.drivers?.[kind];
-    if (factory) return factory(token);
-    return createTelegramDriver({ token, fetchImpl: this.#options.fetchImpl, apiBase: this.#options.apiBase });
+    if (factory) return factory(secret);
+    if (kind === "slack") {
+      const tokens = parseSlackSecret(secret);
+      return createSlackDriver({
+        botToken: tokens.token,
+        appToken: tokens.appToken,
+        fetchImpl: this.#options.fetchImpl,
+        apiBase: this.#options.slackApiBase,
+      });
+    }
+    return createTelegramDriver({ token: secret, fetchImpl: this.#options.fetchImpl, apiBase: this.#options.apiBase });
   }
 
   #state(kind: MessengerKind): Runtime {
@@ -636,6 +650,19 @@ export class MessengerBridge {
     this.#options.emit({ type: "messengers-changed", ...list });
     return list;
   }
+}
+
+/** The two Slack tokens as they are kept (one encrypted text). A text that is not that gives two empty tokens, which Slack refuses. */
+function parseSlackSecret(secret: string): { token: string; appToken: string } {
+  try {
+    const value = JSON.parse(secret);
+    if (isDynamicRecord(value) && isString(value.token) && isString(value.appToken)) {
+      return { token: value.token, appToken: value.appToken };
+    }
+  } catch {
+    // Not a pair of tokens.
+  }
+  return { token: "", appToken: "" };
 }
 
 /** One answer into parts Telegram accepts: cut at a line end where there is one; the rest of a very long answer is dropped. */

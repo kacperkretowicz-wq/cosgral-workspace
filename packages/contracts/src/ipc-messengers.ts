@@ -194,7 +194,7 @@ export function isConversationIdFor(kind: MessengerKind, value: string): boolean
   return kind === "slack" ? isSlackConversationId(value) : isChatId(value);
 }
 
-function conversationIdSentence(kind: MessengerKind): string {
+function conversationIdSentence(kind: MessengerKind) {
   return kind === "slack"
     ? "A Slack conversation id looks like D01ABC23DEF (a direct message with the bot)."
     : "A chat number is digits only (a private chat).";

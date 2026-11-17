@@ -34,7 +34,7 @@ export function registerMessengersIpc(bridge: () => MessengerBridge | null): voi
   });
   handleTrusted(IPC_CHANNELS.messengersConnect, (input: unknown) => {
     const request = parseConnectMessengerInput(local(input));
-    return current().connect(request.kind, request.token);
+    return current().connect(request.kind, request.token, request.appToken);
   });
   handleTrusted(IPC_CHANNELS.messengersDisconnect, (input: unknown) => {
     const request = parseMessengerKindInput(local(input));
