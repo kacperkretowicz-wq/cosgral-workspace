@@ -1837,15 +1837,13 @@ if (!hasSingleInstanceLock) {
                 .list({ limit: 1000 })
                 .filter((file) => file.createdByBotId === botId);
               return {
-                items: mine
-                  .slice(0, limit)
-                  .map((file) => ({
-                    id: file.id,
-                    name: file.name,
-                    size: file.size,
-                    origin: file.origin,
-                    createdAt: file.createdAt,
-                  })),
+                items: mine.slice(0, limit).map((file) => ({
+                  id: file.id,
+                  name: file.name,
+                  size: file.size,
+                  origin: file.origin,
+                  createdAt: file.createdAt,
+                })),
                 total: mine.length,
               };
             },

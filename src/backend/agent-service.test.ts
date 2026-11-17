@@ -2057,15 +2057,13 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     const active = events.find((event) => event.type === "turn-started");
     const externalThreadId = store.activeProviderSession("chief")?.externalSessionId;
     if (active?.type !== "turn-started" || !externalThreadId) throw new Error("The first turn did not start.");
-    clients
-      .get("codex")
-      ?.emit(
-        "notification",
-        notification("turn/completed", {
-          threadId: externalThreadId,
-          turn: { id: active.turnId, status: "completed" },
-        }),
-      );
+    clients.get("codex")?.emit(
+      "notification",
+      notification("turn/completed", {
+        threadId: externalThreadId,
+        turn: { id: active.turnId, status: "completed" },
+      }),
+    );
     await waitFor(() => turnStarts() >= 2);
   });
 
