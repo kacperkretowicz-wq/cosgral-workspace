@@ -530,4 +530,13 @@ export const pl = {
   "Start by a message from outside": "Startują od wiadomości z zewnątrz",
   Paused: "Wstrzymane",
   "Latest runs": "Ostatnie uruchomienia",
+  "Token split": "Podział tokenów",
+  Input: "Wejście",
+  "From the cache": "Z pamięci podręcznej",
+  Output: "Wyjście",
+  Reasoning: "Rozumowanie",
+  "{percent}% of the tokens in this period come with their parts.":
+    "{percent}% tokenów z tego okresu ma podział na części.",
+  "Details kept since {day}.": "Szczegóły zapisywane od {day}.",
+  "By model": "Według modelu",
 } as const;

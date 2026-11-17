@@ -2270,3 +2270,78 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-md);
 }
+
+/* UI-M: token split bar of the usage report. */
+.usage-split {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.usage-split h3 {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-split-bar {
+  display: flex;
+  height: 10px;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.usage-split-bar li {
+  min-width: 2px;
+  border-radius: var(--cosgral-radius-xs);
+  background: var(--cosgral-accent);
+}
+
+.usage-split-bar li[data-part="cached"],
+.usage-split-legend dt[data-part="cached"]::before {
+  background: var(--cosgral-success);
+}
+
+.usage-split-bar li[data-part="output"],
+.usage-split-legend dt[data-part="output"]::before {
+  background: var(--cosgral-warning);
+}
+
+.usage-split-bar li[data-part="reasoning"],
+.usage-split-legend dt[data-part="reasoning"]::before {
+  background: var(--cosgral-text-muted);
+}
+
+.usage-split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-split-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-split-legend dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cosgral-text-muted);
+}
+
+.usage-split-legend dt::before {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-accent);
+  content: "";
+}
+
+.usage-split-legend dd {
+  margin: 0;
+}

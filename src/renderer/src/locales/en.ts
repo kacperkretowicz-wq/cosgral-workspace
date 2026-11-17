@@ -533,4 +533,13 @@ export const en = {
   "Start by a message from outside": "Start by a message from outside",
   Paused: "Paused",
   "Latest runs": "Latest runs",
+  "Token split": "Token split",
+  Input: "Input",
+  "From the cache": "From the cache",
+  Output: "Output",
+  Reasoning: "Reasoning",
+  "{percent}% of the tokens in this period come with their parts.":
+    "{percent}% of the tokens in this period come with their parts.",
+  "Details kept since {day}.": "Details kept since {day}.",
+  "By model": "By model",
 } as const;
