@@ -2017,6 +2017,58 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     }
   });
 
+  it("W12: the policy limits the turns that run at once, adds its lines to the instructions and says a quick got-it", async () => {
+    const clients = new Map<AgentProvider, FakeAgentClient>();
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "CODEX_DONE", false);
+      clients.set(provider, client);
+      return client;
+    });
+    service.useAgentPolicy({
+      maxTurns: () => 1,
+      instructions: () => "POLICY_LINE: review memory every 10 turns",
+      quickAcknowledgement: () => true,
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    const requests = () => clients.get("codex")?.requests ?? [];
+    const turnStarts = () => requests().filter((request) => request.method === "turn/start").length;
+
+    await service.sendMessage({ botId: "chief", text: "First" });
+    await waitFor(() => events.some((event) => event.type === "turn-started"));
+    expect(JSON.stringify(requests().find((request) => request.method === "thread/start")?.params)).toContain(
+      "POLICY_LINE",
+    );
+
+    await service.sendMessage({ botId: "chief", text: "Second, while you work" });
+    expect(
+      events.some(
+        (event) =>
+          event.type === "conversation" && event.snapshot.messages.some((message) => message.id.startsWith("ack:")),
+      ),
+    ).toBe(true);
+
+    await service.sendMessage({ botId: "writer", text: "Other agent" });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(turnStarts()).toBe(1);
+
+    const active = events.find((event) => event.type === "turn-started");
+    const externalThreadId = store.activeProviderSession("chief")?.externalSessionId;
+    if (active?.type !== "turn-started" || !externalThreadId) throw new Error("The first turn did not start.");
+    clients
+      .get("codex")
+      ?.emit(
+        "notification",
+        notification("turn/completed", {
+          threadId: externalThreadId,
+          turn: { id: active.turnId, status: "completed" },
+        }),
+      );
+    await waitFor(() => turnStarts() >= 2);
+  });
+
   it("W12: a side question is answered in a thread of its own and leaves the chat and the queue alone", async () => {
     const { store, mailbox } = stores();
     service = new AgentService(

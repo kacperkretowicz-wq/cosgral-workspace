@@ -35,6 +35,19 @@ function steppingClock(start = Date.parse("2026-11-13T02:00:00.000Z")): () => Da
 }
 
 describe("MemoryStore", () => {
+  it("W12: uses the server default of the limit for an agent without its own, and the agent's own limit first", async () => {
+    const { store } = await openStore();
+    expect(store.limitFor("chief")).toEqual({
+      maxMemories: MEMORY_LIMITS.defaultMaxMemoriesPerBot,
+      customLimit: false,
+    });
+    store.useDefaultLimit(() => 32);
+    expect(store.limitFor("chief")).toEqual({ maxMemories: 32, customLimit: false });
+    store.setLimit({ botId: "chief", maxMemories: 64 });
+    expect(store.limitFor("chief")).toEqual({ maxMemories: 64, customLimit: true });
+    expect(store.limitFor("writer").maxMemories).toBe(32);
+  });
+
   it("saves essential and searchable memories, newest change first, searchable by default", async () => {
     const { database } = await openStore();
     const store = new MemoryStore(database, steppingClock());

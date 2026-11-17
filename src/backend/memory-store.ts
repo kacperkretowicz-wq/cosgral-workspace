@@ -47,6 +47,8 @@ export interface EssentialMemoryPrompt {
 export class MemoryStore {
   readonly #database: OpenBotDatabase;
   readonly #now: () => Date;
+  /** COSGRAL W12: the server default of the limit (settings of the server); the built-in default when not set. */
+  #defaultLimit: (() => number) | null = null;
 
   constructor(database: OpenBotDatabase, now: () => Date = () => new Date()) {
     this.#database = database;
@@ -88,6 +90,10 @@ export class MemoryStore {
     return { total: essential + searchable, essential, searchable };
   }
 
+  useDefaultLimit(limit: () => number): void {
+    this.#defaultLimit = limit;
+  }
+
   /** The storage limit of the agent: the person's choice, or the default. */
   limitFor(botId: string): { maxMemories: number; customLimit: boolean } {
     const row = this.#database.connection
@@ -95,7 +101,7 @@ export class MemoryStore {
       .get(botId);
     return row
       ? { maxMemories: Number(memoryRow(row).max_memories), customLimit: true }
-      : { maxMemories: MEMORY_LIMITS.defaultMaxMemoriesPerBot, customLimit: false };
+      : { maxMemories: this.#defaultLimit?.() ?? MEMORY_LIMITS.defaultMaxMemoriesPerBot, customLimit: false };
   }
 
   setLimit(input: SetAgentMemoryLimitInput): AgentMemorySettings {

@@ -109,6 +109,7 @@ import { AcpLogin } from "./acp-login";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
+import { type AgentPolicyPort, turnLimitReached } from "./agent-policy";
 import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { AgentTemplates } from "./agent-templates";
 import { redactApiKeys } from "./api-key-env";
@@ -384,6 +385,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #routines: AgentRoutines | null = null;
   /** COSGRAL W12: what a message sent while a turn runs does (queue or steer), per agent; null = always queue. */
   #busyMode: ((botId: string) => "queue" | "steer") | null = null;
+  /** COSGRAL W12: the server settings and per-agent choices that reach the agents (turn limit, instructions, quick acknowledgement). */
+  #policy: AgentPolicyPort | null = null;
+  /** COSGRAL W12: agents that wait for a free place under the server limit of turns (not asked again until a turn ends). */
+  readonly #limitHeld = new Set<string>();
   /** COSGRAL W3: ACP agents, fallback models and provider usage; attached after construction. */
   #providers: ProviderRegistry | null = null;
   /** COSGRAL W3-KK3: the "always allow" rules of approval cards (attached by the program). */
@@ -1095,6 +1100,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#busyMode = mode;
   }
 
+  useAgentPolicy(policy: AgentPolicyPort): void {
+    this.#policy = policy;
+  }
+
   /** COSGRAL W12: a side question in a provider thread of its own (see side-question-runner.ts); never touches the chat or the queue. */
   async runSideQuestion(run: {
     botId: string;
@@ -1802,6 +1811,19 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     this.#emitConversation(snapshot);
     this.#emitQueue(bot.id);
+    // COSGRAL W12: a short "got it" at once, when the person chose it and a turn is running (shown in the chat; not kept in history).
+    if (snapshot.activeTurnId && this.#policy?.quickAcknowledgement(bot.id)) {
+      const note = {
+        id: `ack:${receipt.deliveries[0].id}`,
+        author: "system" as const,
+        source: "system" as const,
+        text: "Got it. I will read this when the current step is done.",
+        createdAt: new Date().toISOString(),
+        status: "completed" as const,
+      };
+      snapshot.messages.push(note);
+      this.#emitConversation(snapshot);
+    }
     // COSGRAL W12: an agent set to "steer" takes the message into the running turn; if that fails it simply stays queued.
     if (snapshot.activeTurnId && this.#busyMode?.(bot.id) === "steer") {
       void this.steerQueuedMessage({
@@ -2548,6 +2570,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       if (!context) return;
       // COSGRAL W8-BE2: a budget that is used up keeps the NEW turn in the queue (a running turn is never cut).
       if (this.#holdForBudget(botId)) return;
+      // COSGRAL W12: the server limit of turns at the same time; a finished turn asks the waiting agents again.
+      if (
+        turnLimitReached(
+          [...this.#snapshots.values()].filter((item) => item.activeTurnId).length,
+          this.#policy?.maxTurns() ?? null,
+        )
+      ) {
+        this.#limitHeld.add(botId);
+        return;
+      }
+      this.#limitHeld.delete(botId);
       const bot = this.#store.list().find((candidate) => candidate.id === botId);
       const session = bot ? this.#store.activeProviderSession(botId) : null;
       if (session && this.#reserveContextCompaction(botId, session.externalSessionId)) {
@@ -2559,6 +2592,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       this.#drainingBots.delete(botId);
       if (
         !this.#budgetHolds.has(botId) &&
+        !this.#limitHeld.has(botId) &&
         this.#mailbox.nextQueued(botId, this.#store.list().find((candidate) => candidate.id === botId)?.threadId)
       ) {
         this.#scheduleDrain(botId);
@@ -3164,6 +3198,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     afterTurn?.();
     if (shouldCompact) await this.#requestContextCompaction(botId, threadId);
     else this.#scheduleDrain(botId);
+    if (this.#limitHeld.size > 0) {
+      const waiting = [...this.#limitHeld];
+      this.#limitHeld.clear();
+      for (const other of waiting) this.#scheduleDrain(other);
+    }
   }
 
   /** COSGRAL W5-K1: the account lane of a turn; null when there is no pool to use (the old path) or no accounts for the provider. */
@@ -4711,7 +4750,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     );
     // COSGRAL W3: switched-off tools and the person's language.
     const settings = this.agentSettings.instructions(bot.id);
-    const own = settings ? `${instructions}\n${settings}` : instructions;
+    const policy = this.#policy?.instructions(bot.id);
+    const own = [instructions, settings, policy].filter(Boolean).join("\n");
     return forSubagent ? own : `${own}\n${SUBAGENT_INSTRUCTIONS}`;
   }
 }
