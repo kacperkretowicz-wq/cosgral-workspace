@@ -16,6 +16,10 @@ export interface ProbeLaunchInput {
   source?: NodeJS.ProcessEnv;
   /** Tells starts apart (a new data folder each); default = the time. */
   stamp?: string;
+  /** Arguments after the ones above (Electron needs the folder of the app last). */
+  extraArgs?: string[];
+  /** Variables set AFTER the sign-in variables were removed (the stand-in CLI of our own app). */
+  extraEnv?: Record<string, string>;
 }
 
 export interface ProbeLaunch {
@@ -40,6 +44,7 @@ export function probeLaunch(input: ProbeLaunchInput): ProbeLaunch {
       `--user-data-dir=${dataDir}`,
       "--remote-debugging-address=127.0.0.1",
       `--remote-debugging-port=${port}`,
+      ...(input.extraArgs ?? []),
     ],
     env: {
       ...cleanEnvironment(input.source),
@@ -49,6 +54,7 @@ export function probeLaunch(input: ProbeLaunchInput): ProbeLaunch {
       LOCALAPPDATA: join(home, "AppData", "Local"),
       TEMP: join(input.root, "tmp"),
       TMP: join(input.root, "tmp"),
+      ...input.extraEnv,
     },
   };
 }

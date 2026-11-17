@@ -79,3 +79,7 @@ such as `CLAUDE_CONFIG_DIR`, `CLAUDE_CODE_*`, `OPENBOT_*`, `GIT_CONFIG_*` and to
 sandbox `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`), and scan the results for the person's e-mail before they are shared.
 
 Use `scripts/openbot-probe/launch.ts` (`launchCopy({ exe, root, port })`): it removes these variables with `cleanEnvironment()` (the same one the e2e and W5 launchers use), puts `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP` into the sandbox, makes a new data folder per start and opens the debug port on 127.0.0.1 only.
+
+## Our own app (`--target cosgral`) with the stand-in CLI
+
+`node scripts/openbot-probe/launch-cosgral.ts --root <sandbox outside the repo> --port 9340` writes the stand-in Codex CLI (the one the e2e uses) next to the sandbox and starts our app with it, in the clean environment of `launch.ts`. Then run `probe.ts --target cosgral --cdp http://127.0.0.1:9340 --create-agent --out <folder outside the repo>`. The probe passes the first screen with "Continue with Codex" and sees the main window. Heavy: only after the leader's GO file; stop the app when the probe is done.

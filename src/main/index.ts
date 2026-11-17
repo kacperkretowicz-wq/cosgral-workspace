@@ -67,8 +67,10 @@ import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
 import { SearchService } from "../backend/search-service";
+import { ServerSettingsService } from "../backend/server-settings";
 import { SidebarStore } from "../backend/sidebar-store";
 import { SpaceStore } from "../backend/space-store";
+import { clearLogs, measureUserData } from "../backend/storage-report";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { ThreadTabsService } from "../backend/thread-tabs";
 import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-runtime";
@@ -223,6 +225,7 @@ import {
   decodeVoid,
   RemoteServerManager,
 } from "./remote-server-manager";
+import { registerServerSettingsIpc } from "./server-settings-ipc";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
 import { registerSpacesIpc } from "./spaces-ipc";
@@ -343,6 +346,7 @@ let searchService: SearchService | null = null;
 let composerService: ComposerService | null = null;
 let threadTabsService: ThreadTabsService | null = null;
 let agentCardsService: AgentCardsService | null = null;
+let serverSettingsService: ServerSettingsService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -944,6 +948,7 @@ function registerIpcHandlers(
         : Promise.reject(new Error("COSGRAL Workspace is still starting.")),
   });
   registerAgentCardsIpc(() => agentCardsService);
+  registerServerSettingsIpc(() => serverSettingsService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1768,7 +1773,17 @@ if (!hasSingleInstanceLock) {
           resetSession: (botId) => service.resetProviderSession(botId),
           emit: (event) => forwardAgentEvent("local", event),
         });
-        service.useBusyMessageMode((botId) => agentCardsService?.busyMode(botId, "queue") ?? "queue");
+        // COSGRAL W12 (BE-D): the server settings (14 sections); the default of the busy-message mode comes from them.
+        serverSettingsService = new ServerSettingsService({
+          file: join(app.getPath("userData"), "server-settings.json"),
+          emit: (event) => forwardAgentEvent("local", event),
+          measure: () => measureUserData(app.getPath("userData")),
+          clearLogs: () => clearLogs(app.getPath("userData")),
+        });
+        service.useBusyMessageMode(
+          (botId) =>
+            agentCardsService?.busyMode(botId, serverSettingsService?.busyMessageDefault() ?? "queue") ?? "queue",
+        );
       }
       // COSGRAL W3: workflows (this computer only): agent steps use the agents' queue, approvals the confirm card.
       workflowManager = new WorkflowManager({

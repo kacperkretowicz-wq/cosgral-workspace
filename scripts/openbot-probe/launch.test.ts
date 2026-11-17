@@ -35,6 +35,20 @@ describe("probe launch", () => {
     expect(first.args).toContain("--lang=en-US");
   });
 
+  it("puts extra arguments last and extra variables after the clean ones (our own app with a stand-in CLI)", () => {
+    const { args, env } = probeLaunch({
+      exe: "electron.exe",
+      root: "D:/sb",
+      port: 9343,
+      source,
+      extraArgs: ["D:/repo"],
+      extraEnv: { OPENBOT_CODEX_PATH: "D:/sb/fixture/codex.cmd" },
+    });
+    expect(args.at(-1)).toBe("D:/repo");
+    expect(env.OPENBOT_CODEX_PATH).toBe("D:/sb/fixture/codex.cmd");
+    expect(env.CLAUDE_CONFIG_DIR).toBeUndefined();
+  });
+
   it("refuses a port that is not a plain unprivileged number", () => {
     for (const port of [0, 80, 70_000, 9341.5]) {
       expect(() => probeLaunch({ exe: "x.exe", root: "D:\\sb", port, source })).toThrow();
