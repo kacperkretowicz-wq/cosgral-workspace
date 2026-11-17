@@ -25,6 +25,7 @@ export * from "./ipc-isolation";
 export * from "./ipc-library";
 export * from "./ipc-marketplace";
 export * from "./ipc-mcp";
+export * from "./ipc-mcp-oauth";
 export * from "./ipc-memory";
 export * from "./ipc-message-actions";
 export * from "./ipc-messengers";

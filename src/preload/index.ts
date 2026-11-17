@@ -94,6 +94,7 @@ import { createEndpointsApi } from "./endpoints-api";
 import { createIntegrationsApi } from "./integrations-api";
 import { createIsolationApi } from "./isolation-api";
 import { createMarketplaceApi } from "./marketplace-api";
+import { createMcpOAuthApi } from "./mcp-oauth-api";
 import { createMessageActionsApi } from "./message-actions-api";
 import { createMessengersApi } from "./messengers-api";
 import { createMobileApi } from "./mobile-api";
@@ -839,6 +840,7 @@ const openbotApi: OpenBotDesktopApi = {
   vaultConnectors: createVaultConnectorsApi(invokeAgent),
   vaultSecrets: createVaultSecretsApi(invokeAgent),
   pluginCatalog: createPluginCatalogApi(invokeAgent),
+  mcpOAuth: createMcpOAuthApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

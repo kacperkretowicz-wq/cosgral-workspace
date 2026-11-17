@@ -105,6 +105,7 @@ import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
+import { createMockMcpOAuth } from "./mock-mcp-oauth";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockMessengers } from "./mock-messengers";
 import { createMockPhone } from "./mock-phone";
@@ -1398,6 +1399,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     vaultSecrets: mockVaultConnectors.secrets,
     // COSGRAL W11-KK (e): the Marketplace Apps tab (demo plugins; nothing is downloaded).
     pluginCatalog: createMockPluginCatalog((event) => emitAgentEvent(event)),
+    // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers (demo; no browser opens).
+    mcpOAuth: createMockMcpOAuth((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

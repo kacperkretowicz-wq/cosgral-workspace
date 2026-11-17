@@ -106,6 +106,7 @@ import type {
   SetAgentMcpServerInput,
   UpdateMcpServerInput,
 } from "./ipc-mcp";
+import type { McpOAuthDesktopApi } from "./ipc-mcp-oauth";
 import type {
   AgentMemory,
   AgentMemorySettings,
@@ -719,6 +720,8 @@ export interface OpenBotDesktopApi {
   vaultSecrets?: VaultSecretsDesktopApi;
   /** COSGRAL W11-KK (e): the Marketplace Apps tab: plugin catalog (from a folder the owner chose), install as MCP servers, own plugins. Optional until every mock implements it. */
   pluginCatalog?: PluginCatalogDesktopApi;
+  /** COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http: the system browser, a one-time loopback answer, encrypted tokens. Optional until every mock implements it. */
+  mcpOAuth?: McpOAuthDesktopApi;
 }
 
 /**
