@@ -107,6 +107,7 @@ import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
 import { createMockInstanceTransfer } from "./mock-instance-transfer";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
+import { createMockMarketplace } from "./mock-marketplace";
 import { createMockMcpOAuth } from "./mock-mcp-oauth";
 import { createMockMessageActions } from "./mock-message-actions";
 import { createMockMessengers } from "./mock-messengers";
@@ -115,6 +116,7 @@ import { createMockPlans } from "./mock-plans";
 import { createMockPluginCatalog } from "./mock-plugin-catalog";
 import { createMockProviderCatalog } from "./mock-provider-catalog";
 import { createMockRemoteDesktop } from "./mock-remote-desktop";
+import { createMockRoutines } from "./mock-routines";
 import { createMockServerSettings } from "./mock-server-settings";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
@@ -125,6 +127,7 @@ import { createMockVoice } from "./mock-voice";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
 import { createMockWindows } from "./mock-windows";
+import { createMockWorkflows } from "./mock-workflows";
 
 type Listener<T> = (value: T) => void;
 
@@ -573,6 +576,35 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   const mockVaultConnectors = createMockVaultConnectors((event) => emitAgentEvent(event));
   const mockMobileConnect = createMockMobileConnect((event) => emitAgentEvent(event));
   const mockInstanceTransfer = createMockInstanceTransfer((event) => emitAgentEvent(event));
+  // COSGRAL W12-KK: routines, workflows and the Marketplace tabs (demo data on the agents and channels of this mock).
+  const firstBotId = bots[0]?.id ?? "chief";
+  const mockRoutines = createMockRoutines((event) => emitAgentEvent(event), {
+    botExists: (botId) => bots.some((bot) => bot.id === botId),
+    seed: { botId: firstBotId },
+  });
+  const mockWorkflows = createMockWorkflows((event) => emitAgentEvent(event), {
+    known: () => ({
+      botIds: bots.map((bot) => bot.id),
+      channelIds: mockChannels.map((channel) => channel.id),
+      routineIds: ["routine-demo", "rt-demo-pipeline"],
+    }),
+    seed: { botId: firstBotId, channelId: mockChannels[0]?.id ?? "demo-channel" },
+  });
+  const mockMarketplace = createMockMarketplace((event) => emitAgentEvent(event), {
+    bots: () => bots.map((bot) => ({ id: bot.id, name: bot.name })),
+    createAgent: (name, item) => {
+      const bot = createBotSummary({ name, role: item.title, description: item.description });
+      bots = [...bots, bot];
+      queues.set(bot.id, emptyQueue(bot.id));
+      emitAgentEvent({ type: "bots-changed", bots });
+      return bot;
+    },
+    removeAgent: (botId) => {
+      bots = bots.filter((bot) => bot.id !== botId);
+      queues.delete(botId);
+      emitAgentEvent({ type: "bots-changed", bots });
+    },
+  });
   const api: OpenBotDesktopApi = {
     ...w2ui2,
     memory: w2.memory,
@@ -1398,6 +1430,10 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     phone: mockMobileConnect.phone,
     // COSGRAL W12-KK: the Mobile Connect page in one query (joined with the demo phone above).
     mobileConnect: { getOverview: mockMobileConnect.getOverview },
+    // COSGRAL W12-KK: routines, workflows and the Marketplace tabs Agents and Skills (demo; nothing is scheduled, run or installed).
+    routines: mockRoutines.api,
+    workflows: mockWorkflows.api,
+    marketplace: mockMarketplace.api,
     // COSGRAL W12-KK: remote desktop host and client (demo; no socket, no screen).
     remoteDesktop: createMockRemoteDesktop((event) => emitAgentEvent(event)),
     // COSGRAL W11 (U3-U6): search, message box (side question, slash, @), thread tabs (demo data).
