@@ -43,11 +43,32 @@ export interface ConnectorLogin {
   hasOneTimePassword: boolean;
 }
 
+/** A login as the Vault screen lists it: no secret value. */
+export interface ConnectorLoginListing {
+  id: string;
+  title: string;
+  username: string | null;
+  hosts: string[];
+  hasOneTimePassword: boolean;
+}
+
+/** The host of a saved website ("https://login.example.test/x" and "example.test" both give a host); null when there is none. */
+export function hostOfWebsite(url: string): string | null {
+  try {
+    const parsed = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : `https://${url}`);
+    return parsed.hostname.length > 0 ? parsed.hostname.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** What the agent tools read. A manager that is not connected answers `null`; secrets go to the browser only. */
 export interface ConnectorLoginSource {
   readonly connector: VaultConnectorId;
   connected(): boolean;
   loginsFor(origin: string): Promise<ConnectorLogin[] | null>;
+  /** Every login agents may use (for the Vault screen); null when not connected. */
+  listAll(): Promise<ConnectorLoginListing[] | null>;
   secretFor(loginId: string, origin: string, kind: "password" | "otp"): Promise<string | null>;
 }
 

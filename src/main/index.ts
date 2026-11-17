@@ -950,7 +950,16 @@ function registerIpcHandlers(
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
-  registerVoiceIpc(() => voiceService);
+  registerVoiceIpc(() => voiceService, {
+    platform: process.platform,
+    microphoneStatus: () => systemPreferences.getMediaAccessStatus("microphone"),
+    openMicrophoneSettings: async () => {
+      if (process.platform === "win32") await shell.openExternal("ms-settings:privacy-microphone");
+      else if (process.platform === "darwin") {
+        await shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone");
+      }
+    },
+  });
   registerSubscriptionsIpc(() => managedCli);
   registerApiKeysIpc(() => apiKeyStore);
   registerEndpointsIpc(() => endpointStore);

@@ -48,6 +48,7 @@ export function registerVaultConnectorsIpc(
   byId(IPC_CHANNELS.vaultConnectorsCheckSetup, (hub, connector) => hub.checkSetup(connector));
   byId(IPC_CHANNELS.vaultConnectorsInstallCli, (hub, connector) => hub.installCli(connector));
   byId(IPC_CHANNELS.vaultConnectorsOpenApp, (hub, connector) => hub.openApp(connector));
+  byId(IPC_CHANNELS.vaultConnectorsListLogins, (hub, connector) => hub.listLogins(connector));
   byId(IPC_CHANNELS.vaultConnectorsCancel, (hub, connector) => hub.cancel(connector));
   byId(IPC_CHANNELS.vaultConnectorsDisconnect, (hub, connector) => hub.disconnect(connector));
   handleTrusted(IPC_CHANNELS.vaultConnectorsConnect, (input: unknown) => {

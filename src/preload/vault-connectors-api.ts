@@ -4,10 +4,12 @@ import {
   IPC_CHANNELS,
   isVaultCodes,
   isVaultConnectorList,
+  isVaultConnectorLoginList,
   isVaultConnectorStatus,
   isVaultCsvImportResult,
   type VaultCodes,
   type VaultConnectorList,
+  type VaultConnectorLoginList,
   type VaultConnectorStatus,
   type VaultConnectorsDesktopApi,
   type VaultCsvImportResult,
@@ -25,6 +27,7 @@ export function createVaultConnectorsApi(invoke: Invoke): VaultConnectorsDesktop
     installCli: (input) => invoke(IPC_CHANNELS.vaultConnectorsInstallCli, input, decodeStatus),
     openApp: (input) => invoke(IPC_CHANNELS.vaultConnectorsOpenApp, input, decodeVoid),
     connect: (input) => invoke(IPC_CHANNELS.vaultConnectorsConnect, input, decodeStatus),
+    listLogins: (input) => invoke(IPC_CHANNELS.vaultConnectorsListLogins, input, decodeLogins),
     cancel: (input) => invoke(IPC_CHANNELS.vaultConnectorsCancel, input, decodeStatus),
     disconnect: (input) => invoke(IPC_CHANNELS.vaultConnectorsDisconnect, input, decodeStatus),
   };
@@ -42,6 +45,11 @@ export function createVaultSecretsApi(invoke: Invoke): VaultSecretsDesktopApi {
 
 function decodeList(value: unknown): VaultConnectorList {
   if (!isVaultConnectorList(value)) throw new Error("Invalid connector list.");
+  return value;
+}
+
+function decodeLogins(value: unknown): VaultConnectorLoginList {
+  if (!isVaultConnectorLoginList(value)) throw new Error("Invalid connector logins.");
   return value;
 }
 

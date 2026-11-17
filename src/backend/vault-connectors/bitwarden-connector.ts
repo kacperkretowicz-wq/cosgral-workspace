@@ -17,8 +17,10 @@ import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-
 import {
   ConnectorFailure,
   type ConnectorLogin,
+  type ConnectorLoginListing,
   type ConnectorLoginSource,
   failureCode,
+  hostOfWebsite,
   type RunCli,
   websiteMatchesOrigin,
 } from "./common";
@@ -219,6 +221,35 @@ export class BitwardenConnector implements ConnectorLoginSource {
       if (!item.login.totp) return null;
       const code = (await this.#run(session, ["get", "totp", loginId])).trim();
       return code.length > 0 ? code : null;
+    });
+  }
+
+  /** Every usable login of the shared folder (the list gives the user name and the one-time-password flag). */
+  async listAll(): Promise<ConnectorLoginListing[] | null> {
+    const session = this.#session;
+    if (!session) return null;
+    return this.#reported(session, async () => {
+      const items = await this.#json(session, ["list", "items", "--folderid", session.folderId]);
+      const listing: ConnectorLoginListing[] = [];
+      for (const item of Array.isArray(items) ? items : []) {
+        if (!eligible(item, session.folderId)) continue;
+        listing.push({
+          id: item.id,
+          title: item.name,
+          username: item.login.username ? item.login.username : null,
+          hosts: [
+            ...new Set(
+              (item.login.uris ?? []).flatMap((entry) =>
+                isDynamicRecord(entry) && isString(entry.uri) && !/^http:/i.test(entry.uri)
+                  ? (hostOfWebsite(entry.uri) ?? [])
+                  : [],
+              ),
+            ),
+          ],
+          hasOneTimePassword: Boolean(item.login.totp),
+        });
+      }
+      return listing;
     });
   }
 

@@ -336,6 +336,27 @@ export function isVoiceState(value: unknown): value is VoiceState {
   );
 }
 
+export function isVoiceOverview(value: unknown): value is VoiceOverview {
+  return (
+    isDynamicRecord(value) &&
+    isVoiceState(value.state) &&
+    Array.isArray(value.voices) &&
+    value.voices.every(isVoiceInfo) &&
+    isDynamicRecord(value.microphone) &&
+    isOneOf(MICROPHONE_STATUSES, value.microphone.status) &&
+    isBoolean(value.microphone.canOpenSettings) &&
+    Array.isArray(value.unavailable) &&
+    value.unavailable.every(
+      (item) =>
+        isDynamicRecord(item) &&
+        isString(item.id) &&
+        isOneOf(VOICE_SECTIONS, item.section) &&
+        isString(item.label) &&
+        isString(item.reason),
+    )
+  );
+}
+
 export function isVoiceInfo(value: unknown): value is VoiceInfo {
   return (
     isDynamicRecord(value) &&
@@ -360,7 +381,78 @@ export function isTranscribeResult(value: unknown): value is TranscribeResult {
  * COSGRAL W3: the window API (`window.openbot.voice`). This computer only. Every change comes as `voice-changed`
  * (the whole state, also download progress). The first download asks on a confirm card in Needs you.
  */
+// --- COSGRAL W12-KK: the whole "Voice" settings page in ONE query ---
+
+/**
+ * The microphone permission of the system: granted, denied (the person said no or switched it off), not-determined (not asked yet),
+ * restricted (a policy forbids it), unknown (this system does not say; recording is simply tried).
+ */
+export const MICROPHONE_STATUSES = ["granted", "denied", "not-determined", "restricted", "unknown"] as const;
+export type MicrophoneStatus = (typeof MICROPHONE_STATUSES)[number];
+
+export interface VoiceMicrophone {
+  status: MicrophoneStatus;
+  /** True when the program can open the system page where the person changes it (`openMicrophoneSettings`). */
+  canOpenSettings: boolean;
+}
+
+/** The sections of the Voice page. */
+export const VOICE_SECTIONS = ["dictation", "spoken-replies", "live-voice"] as const;
+export type VoiceSection = (typeof VOICE_SECTIONS)[number];
+
+/** Something the other program offers that this version does NOT, shown as "not available in this version" with its reason. */
+export interface VoiceUnavailableFeature {
+  id: "dictation-parakeet" | "dictation-cloud" | "spoken-replies-neural" | "live-voice-cloud";
+  section: VoiceSection;
+  label: string;
+  reason: string;
+}
+
+/** Fixed: the list does not depend on the computer. The reasons are about audio staying on this computer and a light program. */
+export const VOICE_UNAVAILABLE_FEATURES: readonly VoiceUnavailableFeature[] = [
+  {
+    id: "dictation-parakeet",
+    section: "dictation",
+    label: "Parakeet dictation model",
+    reason:
+      "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.",
+  },
+  {
+    id: "dictation-cloud",
+    section: "dictation",
+    label: "Cloud dictation (Cohere, ElevenLabs)",
+    reason: "It would send your voice to a service. This version keeps audio on this computer.",
+  },
+  {
+    id: "spoken-replies-neural",
+    section: "spoken-replies",
+    label: "Neural reading model (Supertonic)",
+    reason:
+      "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.",
+  },
+  {
+    id: "live-voice-cloud",
+    section: "live-voice",
+    label: "Live voice conversations",
+    reason:
+      "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.",
+  },
+];
+
+/** Everything the Voice page draws, in one answer. A download or a change comes as `voice-changed` (the `state` part). */
+export interface VoiceOverview {
+  state: VoiceState;
+  /** The Windows voices (empty when reading aloud is unavailable; see `state.speech`). */
+  voices: VoiceInfo[];
+  microphone: VoiceMicrophone;
+  unavailable: VoiceUnavailableFeature[];
+}
+
 export interface VoiceDesktopApi {
+  /** The whole page: state, voices, microphone permission and what this version does not offer. */
+  getOverview: () => Promise<VoiceOverview>;
+  /** Opens the system page where the microphone permission is changed (Windows: Privacy → Microphone). Does nothing where there is none. */
+  openMicrophoneSettings: () => Promise<void>;
   getState: () => Promise<VoiceState>;
   /** Windows voices (enabled ones). */
   listVoices: () => Promise<VoiceInfo[]>;
