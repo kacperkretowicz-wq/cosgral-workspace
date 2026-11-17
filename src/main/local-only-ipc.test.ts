@@ -48,6 +48,7 @@ beforeAll(async () => {
   const { registerIntegrationsIpc } = await import("./integrations-ipc");
   const { registerPhoneIpc } = await import("./phone-ipc");
   const { registerComposerIpc } = await import("./composer-ipc");
+  const { registerAgentCardsIpc } = await import("./agent-cards-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
@@ -79,6 +80,7 @@ beforeAll(async () => {
       throw new Error("not ready");
     },
   });
+  registerAgentCardsIpc(() => null);
   registerMessengersIpc(() => null);
   registerPluginCatalogIpc(() => null);
   registerVaultConnectorsIpc(
@@ -149,6 +151,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("search:").length).toBe(1);
     expect(channelsOf("composer:").length).toBe(4);
     expect(channelsOf("thread-tabs:").length).toBe(4);
+    // COSGRAL W12 (BE-D): the agent cards.
+    expect(channelsOf("agent-cards:").length).toBe(4);
     // COSGRAL W10-KK2: the Telegram bridge.
     expect(channelsOf("messengers:").length).toBe(6);
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
@@ -188,6 +192,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "search:",
         "composer:",
         "thread-tabs:",
+        "agent-cards:",
         "messengers:",
         "vault-connectors:",
         "plugin-catalog:",

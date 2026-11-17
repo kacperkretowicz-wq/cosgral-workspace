@@ -37,6 +37,8 @@ import {
 } from "electron";
 import electronUpdater from "electron-updater";
 import { AccessStore } from "../backend/access-store";
+import { agentCardCounts } from "../backend/agent-card-counts";
+import { AgentCardsService } from "../backend/agent-cards";
 import { AgentService } from "../backend/agent-service";
 import { setApiKeySource } from "../backend/api-key-env";
 import { ApiKeyStore } from "../backend/api-key-store";
@@ -80,6 +82,7 @@ import { WorkflowStore } from "../backend/workflow-store";
 import { registerAccessIpc } from "./access-ipc";
 import { registerAcpLoginIpc } from "./acp-login-ipc";
 import { registerAcpPresetsIpc } from "./acp-presets-ipc";
+import { registerAgentCardsIpc } from "./agent-cards-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
 import { registerAgentSettingsIpc } from "./agent-settings-ipc";
@@ -339,6 +342,7 @@ let phoneAccess: PhoneAccess | null = null;
 let searchService: SearchService | null = null;
 let composerService: ComposerService | null = null;
 let threadTabsService: ThreadTabsService | null = null;
+let agentCardsService: AgentCardsService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -939,6 +943,7 @@ function registerIpcHandlers(
         ? agentService.listThreads(botId)
         : Promise.reject(new Error("COSGRAL Workspace is still starting.")),
   });
+  registerAgentCardsIpc(() => agentCardsService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1741,7 +1746,28 @@ if (!hasSingleInstanceLock) {
         });
         service.on("event", (event) => {
           if (event.type === "threads-changed") threadTabsService?.learn(event);
+          if (event.type === "bots-changed") agentCardsService?.prune(event.bots.map((bot) => bot.id));
         });
+        // COSGRAL W12 (BE-D): the agent cards; the counts come from the services that already own the data.
+        agentCardsService = new AgentCardsService({
+          file: join(app.getPath("userData"), "agent-preferences.json"),
+          agentExists: (botId) => service.listBots().some((bot) => bot.id === botId),
+          steerSupported: (botId) => service.canSteer(botId),
+          counts: agentCardCounts({
+            memories: (botId) => service.memoryStore.countAgentMemories(botId).total,
+            skills: (botId) => service.skillLibrary.installedFor(botId).length,
+            files: (botId) =>
+              service.sharedData.library.list({ limit: 500 }).filter((file) => file.createdByBotId === botId).length,
+            tables: () => service.sharedData.tables.list().length,
+            routines: (botId) => routineStore.list().filter((routine) => routine.botId === botId).length,
+            access: (botId) =>
+              service.access?.get(botId) ?? { level: "ask-first", additionalFolders: [], excludedFolders: [] },
+            backupModels: (botId) => providerRegistry?.getFallbackInfo(botId).effective.length ?? 0,
+          }),
+          resetSession: (botId) => service.resetProviderSession(botId),
+          emit: (event) => forwardAgentEvent("local", event),
+        });
+        service.useBusyMessageMode((botId) => agentCardsService?.busyMode(botId, "queue") ?? "queue");
       }
       // COSGRAL W3: workflows (this computer only): agent steps use the agents' queue, approvals the confirm card.
       workflowManager = new WorkflowManager({

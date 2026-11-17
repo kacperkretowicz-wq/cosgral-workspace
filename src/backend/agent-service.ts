@@ -381,6 +381,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #mcp: AgentMcp | null;
   /** COSGRAL W2: routines and webhooks; attached after construction by the program. */
   #routines: AgentRoutines | null = null;
+  /** COSGRAL W12: what a message sent while a turn runs does (queue or steer), per agent; null = always queue. */
+  #busyMode: ((botId: string) => "queue" | "steer") | null = null;
   /** COSGRAL W3: ACP agents, fallback models and provider usage; attached after construction. */
   #providers: ProviderRegistry | null = null;
   /** COSGRAL W3-KK3: the "always allow" rules of approval cards (attached by the program). */
@@ -1088,6 +1090,36 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#routines = routines;
   }
 
+  useBusyMessageMode(mode: (botId: string) => "queue" | "steer"): void {
+    this.#busyMode = mode;
+  }
+
+  /** COSGRAL W12: whether the provider of this agent can take a message into a running turn. */
+  canSteer(botId: string): boolean {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    return bot ? steerSupport(providerForBot(bot)).available : false;
+  }
+
+  /** COSGRAL W12: the next message starts a fresh provider context; the history stays. Refused while a turn runs. */
+  async resetProviderSession(botId: string): Promise<void> {
+    const bot = await this.#store.getOrCreate(botId);
+    const working = this.#mailbox
+      .listQueue(bot.id)
+      .deliveries.some((d) => d.status === "starting" || d.status === "running");
+    if (working || this.#snapshots.get(bot.id)?.activeTurnId)
+      throw new Error("Wait for the running turn to finish first.");
+    const threadId = await this.#store.ensureThreadId(bot.id);
+    const sessions = this.#store.database.listProviderSessions(threadId);
+    this.#store.database.deactivateProviderSessions(threadId);
+    for (const { externalSessionId } of sessions) {
+      this.#threadToBot.delete(externalSessionId);
+      this.#sessionThreads.delete(externalSessionId);
+      this.#loadedThreads.delete(externalSessionId);
+      this.#contextBudgets.delete(externalSessionId);
+      this.#clearCompactionTimer(externalSessionId);
+    }
+  }
+
   /** COSGRAL W2: how routines start and follow agent turns (the agent's normal message queue). */
   routineRunner(): RoutineRunner {
     return {
@@ -1738,6 +1770,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     this.#emitConversation(snapshot);
     this.#emitQueue(bot.id);
+    // COSGRAL W12: an agent set to "steer" takes the message into the running turn; if that fails it simply stays queued.
+    if (snapshot.activeTurnId && this.#busyMode?.(bot.id) === "steer") {
+      void this.steerQueuedMessage({
+        botId: bot.id,
+        deliveryId: receipt.deliveries[0].id,
+        expectedTurnId: snapshot.activeTurnId,
+      }).catch(() => undefined);
+    }
     this.#scheduleDrain(bot.id);
     return receipt;
   }

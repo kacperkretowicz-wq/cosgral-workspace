@@ -1992,6 +1992,45 @@ describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20
     );
   });
 
+  it("W12: an agent set to steer takes a message sent during a turn into that turn; the default only queues it", async () => {
+    for (const mode of ["queue", "steer"] as const) {
+      const clients = new Map<AgentProvider, FakeAgentClient>();
+      const { store, mailbox } = stores();
+      const current = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+        const client = new FakeAgentClient(provider, "CODEX_DONE", false);
+        clients.set(provider, client);
+        return client;
+      });
+      current.useBusyMessageMode(() => mode);
+      const events: AgentEvent[] = [];
+      current.on("event", (event) => events.push(event));
+      await current.initialize();
+      await current.sendMessage({ botId: "chief", text: "Start this turn" });
+      await waitFor(() => events.some((event) => event.type === "turn-started"));
+      await current.sendMessage({ botId: "chief", text: "While you work" });
+      const steered = () => clients.get("codex")?.requests.some((request) => request.method === "turn/steer") === true;
+      if (mode === "steer") await waitFor(steered);
+      else await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(steered()).toBe(mode === "steer");
+      expect(current.canSteer("chief")).toBe(true);
+      await current.stop();
+    }
+  });
+
+  it("W12: the provider session is reset only while no turn runs, and the history stays", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      return new FakeAgentClient(provider, "CODEX_DONE", false);
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "Start this turn" });
+    await waitFor(() => events.some((event) => event.type === "turn-started"));
+    await expect(service.resetProviderSession("chief")).rejects.toThrow("running turn");
+    expect(store.activeProviderSession("chief")).not.toBeNull();
+  });
+
   it("renders a Codex image generation item and manages its saved image", async () => {
     const clients = new Map<AgentProvider, FakeAgentClient>();
     const { store, mailbox } = stores();
