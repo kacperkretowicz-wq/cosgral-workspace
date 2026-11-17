@@ -83,3 +83,38 @@ it("explains a busy refusal while keeping pin enabled", async () => {
   expect(retry).toHaveAttribute("aria-disabled", "true");
   expect(screen.getByRole("menuitem", { name: "Pin message" })).not.toHaveAttribute("aria-disabled", "true");
 });
+
+it("shows the reason the engine gives for an action that is not offered now", async () => {
+  const api = fixture();
+  const reason = "An agent has at most 200 threads.";
+  Object.assign(window, {
+    openbot: {
+      messageMenu: {
+        get: vi.fn().mockResolvedValue({
+          botId: "chief",
+          threadId: "thread-chief",
+          messageId: "m1",
+          pinned: false,
+          actions: [{ id: "branch", enabled: false, reason, needsConfirmation: false, active: false }],
+          reactions: { quick: [], more: [], current: null },
+        }),
+      },
+    },
+  });
+  render(() => (
+    <MessageHistoryActions
+      botId="chief"
+      threadId="thread-chief"
+      message={message}
+      laterMessages={0}
+      busyMessages={0}
+      turnRunning={false}
+      api={api}
+      onBranch={() => undefined}
+    />
+  ));
+  fireEvent.pointerDown(screen.getByRole("button", { name: "More message actions" }), { button: 0 });
+  expect(await screen.findByText(reason)).toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: /Branch from here/ })).toHaveAttribute("aria-disabled", "true");
+  Object.assign(window, { openbot: {} });
+});

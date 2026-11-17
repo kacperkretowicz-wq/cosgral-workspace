@@ -2270,3 +2270,195 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-md);
 }
+
+/* UI-M: token split bar of the usage report. */
+.usage-split {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.usage-split h3 {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-split-bar {
+  display: flex;
+  height: 10px;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.usage-split-bar li {
+  min-width: 2px;
+  border-radius: var(--cosgral-radius-xs);
+  background: var(--cosgral-accent);
+}
+
+.usage-split-bar li[data-part="cached"],
+.usage-split-legend dt[data-part="cached"]::before {
+  background: var(--cosgral-success);
+}
+
+.usage-split-bar li[data-part="output"],
+.usage-split-legend dt[data-part="output"]::before {
+  background: var(--cosgral-warning);
+}
+
+.usage-split-bar li[data-part="reasoning"],
+.usage-split-legend dt[data-part="reasoning"]::before {
+  background: var(--cosgral-text-muted);
+}
+
+.usage-split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.usage-split-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-split-legend dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cosgral-text-muted);
+}
+
+.usage-split-legend dt::before {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-accent);
+  content: "";
+}
+
+.usage-split-legend dd {
+  margin: 0;
+}
+
+/* UI-M: Tasks page search, "Open as chat" and the steps of a task. */
+.tasks-search {
+  max-width: 360px;
+}
+
+.tasks-row {
+  flex-wrap: wrap;
+}
+
+.tasks-steps {
+  flex: 1 0 100%;
+  margin-top: 6px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.tasks-steps summary {
+  cursor: pointer;
+}
+
+.tasks-steps ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.tasks-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* UI-M: Vault connectors (password managers). */
+.vault-connectors {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vault-connectors h2 {
+  margin: 0;
+}
+
+.vault-connectors-note {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.vault-connectors-error {
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.vault-connector-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-connector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 14px;
+}
+
+.vault-connector-card[data-state="connected"] {
+  border-color: var(--cosgral-border-strong);
+}
+
+.vault-connector-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vault-connector-actions,
+.vault-connector-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vault-connector-logins {
+  display: flex;
+  max-height: 220px;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-connector-logins li {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 4px 0;
+}
+
+.vault-connector-logins small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}

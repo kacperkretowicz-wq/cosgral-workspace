@@ -1,4 +1,4 @@
-import type { UsagePeriod, UsageReport } from "@openbot/contracts/ipc";
+import type { UsagePeriod, UsageReport, UsageTokenSplit } from "@openbot/contracts/ipc";
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
@@ -15,6 +15,15 @@ function compact(value: number): string {
 function dollars(value: number, complete: boolean): string {
   const text = `$${value.toFixed(2)}`;
   return complete ? text : `≥ ${text}`;
+}
+
+function splitParts(split: UsageTokenSplit) {
+  return [
+    { id: "fresh", label: t("Input"), value: split.freshInput },
+    { id: "cached", label: t("From the cache"), value: split.cached },
+    { id: "output", label: t("Output"), value: split.output },
+    { id: "reasoning", label: t("Reasoning"), value: split.reasoning },
+  ];
 }
 
 const RING_RADIUS = 26;
@@ -200,6 +209,74 @@ export function UsageReportView() {
                             {row.tokenShare}%
                           </td>
                           <td>{row.pricedTurns === 0 ? "—" : dollars(row.costUsd, row.costComplete)}</td>
+                        </tr>
+                      )}
+                    </For>
+                  </tbody>
+                </table>
+              </Show>
+
+              <Show when={current().split}>
+                {(split) => (
+                  <section class="usage-split" aria-label={t("Token split")}>
+                    <h3>{t("Token split")}</h3>
+                    <ul class="usage-split-bar" aria-hidden="true">
+                      <For each={splitParts(split())}>
+                        {(part) => (
+                          <li
+                            data-part={part.id}
+                            style={{ "flex-grow": part.value }}
+                            title={`${part.label}: ${compact(part.value)}`}
+                          />
+                        )}
+                      </For>
+                    </ul>
+                    <dl class="usage-split-legend">
+                      <For each={splitParts(split())}>
+                        {(part) => (
+                          <div>
+                            <dt data-part={part.id}>{part.label}</dt>
+                            <dd>{compact(part.value)}</dd>
+                          </div>
+                        )}
+                      </For>
+                    </dl>
+                    <p class="usage-note">
+                      {t("{percent}% of the tokens in this period come with their parts.", {
+                        percent: split().coverage,
+                      })}
+                      <Show when={current().detailSince}>
+                        {(since) => <> {t("Details kept since {day}.", { day: since() })}</>}
+                      </Show>
+                    </p>
+                  </section>
+                )}
+              </Show>
+
+              <Show when={current().byModel.length > 0}>
+                <table class="usage-table">
+                  <caption>{t("By model")}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">{t("Model")}</th>
+                      <th scope="col">{t("Turns")}</th>
+                      <th scope="col">{t("Tokens")}</th>
+                      <th scope="col">{t("Share")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <For each={current().byModel}>
+                      {(row) => (
+                        <tr>
+                          <th scope="row">{row.model}</th>
+                          <td>{row.turns}</td>
+                          <td>{compact(row.tokens)}</td>
+                          <td>
+                            <span class="usage-share">
+                              <span class="usage-share-fill" style={{ width: `${row.tokenShare}%` }} />
+                            </span>{" "}
+                            {row.tokenShare}%
+                          </td>
                         </tr>
                       )}
                     </For>

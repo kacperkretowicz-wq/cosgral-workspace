@@ -6,10 +6,12 @@
 
 import {
   type AgentEvent,
+  buildMessageMenu,
   type ConversationMessage,
   editNeedsConfirmation,
   MESSAGE_ACTION_LIMITS,
   type MessageActionsDesktopApi,
+  type MessageMenu,
   type MessagePin,
   messageActionProblem,
   retrySourceIndex,
@@ -21,6 +23,8 @@ export interface MockMessageActions extends Required<MessageActionsDesktopApi> {
   messages: (botId: string, threadId: string) => ConversationMessage[];
   /** A turn runs, or messages wait in the queue: history cannot be changed. */
   setBusy: (botId: string, threadId: string, busy: { turnRunning: boolean; busyMessages: number }) => void;
+  /** COSGRAL W12 (BE-J): the menu of one message, built with the same rules as the program (`window.openbot.messageMenu.get`). */
+  menu: (target: { botId: string; threadId?: string | null; messageId: string }) => Promise<MessageMenu>;
 }
 
 export function createMockMessageActions(
@@ -83,6 +87,24 @@ export function createMockMessageActions(
     messages: (botId, threadId) => structuredClone(list(botId, threadId)),
     setBusy: (botId, threadId, state) => {
       busy.set(key(botId, threadId), state);
+    },
+    menu: async (target) => {
+      const { threadId, messages, index, found } = message(target);
+      const pinned = (pins.get(key(target.botId, threadId)) ?? []).some((pin) => pin.messageId === found.id);
+      return buildMessageMenu(
+        { botId: target.botId, threadId, messageId: found.id },
+        {
+          message: found,
+          pinned,
+          pinCount: (pins.get(key(target.botId, threadId)) ?? []).length,
+          threadShown: options.activeThread ? threadId === options.activeThread(target.botId) : true,
+          historyProblem: threadBusyProblem(
+            busy.get(key(target.botId, threadId)) ?? { turnRunning: false, busyMessages: 0 },
+          ),
+          laterMessages: messages.length - index - 1,
+          branchRoom: true,
+        },
+      );
     },
     retry: async (input) => {
       const { threadId, messages, index, found } = message(input);

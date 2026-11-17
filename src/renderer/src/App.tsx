@@ -74,6 +74,7 @@ import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
 import { TasksPage } from "./components/TasksPage";
 import { UsagePage } from "./components/UsagePage";
+import { VaultConnectorsPanel } from "./components/VaultConnectorsPanel";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
@@ -239,6 +240,7 @@ export function App() {
   });
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [channelsOpen, setChannelsOpen] = createSignal(false);
+  const [openChannelId, setOpenChannelId] = createSignal<string | null>(null);
   const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
   const [newAgentOpen, setNewAgentOpen] = createSignal(false);
@@ -2144,6 +2146,7 @@ export function App() {
                   <h1>Library</h1>
                   <SkillsSettings />
                   <VaultPanel />
+                  <VaultConnectorsPanel />
                   <TablesPanel />
                   <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
                     <LibraryFilesView />
@@ -2176,7 +2179,17 @@ export function App() {
                 <MobileConnectPage />
               </Show>
               <Show when={activePage() === "tasks"}>
-                <TasksPage bots={botList()} />
+                <TasksPage
+                  bots={botList()}
+                  onOpenChannel={(channelId) => {
+                    setNewAgentOpen(false);
+                    setActiveDirectMemberId(null);
+                    setAgentPickerOpen(false);
+                    setOpenChannelId(channelId);
+                    setChannelsOpen(true);
+                    setActivePage("agents");
+                  }}
+                />
               </Show>
               <Show when={activePage() === "usage"}>
                 <UsagePage />
@@ -2221,6 +2234,8 @@ export function App() {
                   bots={botList()}
                   createRequested={createChannel()}
                   onCreateHandled={() => setCreateChannel(false)}
+                  openChannelId={openChannelId()}
+                  onOpenHandled={() => setOpenChannelId(null)}
                 />
               </Show>
               <Show when={activePage() === "agents" && newAgentOpen()}>

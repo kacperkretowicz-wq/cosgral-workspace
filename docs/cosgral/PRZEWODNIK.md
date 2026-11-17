@@ -3,10 +3,11 @@
 Przewodnik dla właściciela projektu i użytkownika programu (bez żargonu programistycznego i bez nazw plików źródłowych).  
 Opisuje rzeczywisty stan programu, sposób uruchomienia, codzienną pracę z agentami i zespołami oraz zaawansowane narzędzia.
 
-**Stan na 17.11.2026 (integracja c2bb0bd60).** Przy każdej funkcji piszę uczciwie, na jakim jest etapie. Używam trzech słów:
+**Stan na 17.11.2026 (integracja 79567cdf9).** Przy każdej funkcji piszę uczciwie, na jakim jest etapie. Używam czterech określeń:
 - **Jest**: działa w oknie programu i było sprawdzone.
 - **Częściowo**: działa część; brakującą część nazywam.
 - **Silnik gotowy, ekran w przygotowaniu**: program już to potrafi „pod spodem” (jest sprawdzone testami), ale okna do klikania jeszcze nie ma. Dla każdej takiej funkcji podaję, co zobaczysz, gdy ekran powstanie.
+- **Ekran gotowy, jeszcze nie oglądany w oknie**: ekran jest w programie i korzysta z działającego silnika, ale nikt nie sprawdził go jeszcze na prawdziwym oknie (zrzuty testowe w toku).
 
 Pełne zestawienie z liczbami: `docs/cosgral/parytet-0.71.md`.
 
@@ -31,10 +32,10 @@ Pełne zestawienie z liczbami: `docs/cosgral/parytet-0.71.md`.
 | **Katalog Marketplace: Agenci i Umiejętności** | **Jest** (mały katalog) | Katalog własny programu: kilka gotowych agentów i umiejętności z opisem. Umiejętność instalujesz wybranemu agentowi, a gotowy agent tworzy nowego agenta. Katalog jest mały (kilkanaście pozycji), nowy układ strony (wyróżnione, kategorie) czeka na ekran. |
 | **Katalog Marketplace: Aplikacje** | **Częściowo** | Silnik instaluje wtyczki jako lokalne narzędzia (MCP). Dane katalogu 251 wtyczek leżą poza programem (licencja), więc bez ich dodania lista jest pusta. Logowanie do wtyczek przez przeglądarkę ma silnik, ale nie ma jeszcze przycisku. |
 | **Przepływy pracy** | **Jest** (podstawy) | Rysujesz plan: wyzwalacz, kroki agenta, pytanie do Ciebie („Zezwól / Odmów”) i wiadomość do kanału. Rozgałęzienia „jeśli”, wersje przepływu, obrazy i wideo: brak. |
-| **Rutyny** | **Jest** | Agent robi zadanie o stałej porze (co N minut, codziennie, wg harmonogramu cron) albo na sygnał z zewnątrz (webhook). Kalendarz rutyn: silnik gotowy, ekran w przygotowaniu. |
-| **Biblioteka plików** | **Częściowo** | Dodawanie, otwieranie i pobieranie plików działa. Silnik nowej strony (filtry, wybór wielu plików, sprzątanie starych) jest gotowy; nowy widok jest już zrobiony, ale czeka na dołączenie do programu. |
-| **Użycie** | **Częściowo** | Ekran pokazuje liczniki. Raport dzień po dniu (7, 30, 90 i 365 dni), udział agentów i pierścienie limitów dostawców mają gotowy silnik, ekran z wykresami w przygotowaniu. |
-| **Harmonogram (kalendarz rutyn)** | **Silnik gotowy, ekran w przygotowaniu** | Program umie pokazać, co się już wykonało i co zaplanowano. Kalendarza jeszcze nie ma. |
+| **Rutyny** | **Jest** | Agent robi zadanie o stałej porze (co N minut, codziennie, wg harmonogramu cron) albo na sygnał z zewnątrz (webhook). Zaplanowane i wykonane przebiegi widać na stronie „Harmonogram”. |
+| **Biblioteka plików** | **Częściowo** | Nowy widok plików jest w programie: zakładki „Wszystkie / Wgrane / Od agentów / Z czatów”, szukanie, filtry, sortowanie, zaznaczanie wielu plików i sprzątanie starych. Jeszcze nie oglądany w oknie testowym. Brak: przeglądania folderów komputera i miniatur. |
+| **Użycie** | **Ekran gotowy, jeszcze nie oglądany w oknie** | Raport za 7, 30, 90 i 365 dni: tokeny, tury, koszt zgłoszony przez dostawców, wykres dzienny, tabela agentów, podział wg modelu i rodzaju tokenów, obciążenie komputera i limity dostawców. Bez podziału na umiejętności. |
+| **Harmonogram** | **Ekran gotowy, jeszcze nie oglądany w oknie** | Najbliższe dni z zaplanowanymi i wykonanymi przebiegami rutyn, rutyny z zewnątrz i wstrzymane osobno, lista ostatnich uruchomień. Bez siatki miesięcznego kalendarza. |
 | **Wygląd: motyw i maskotki** | **Jest** | Ciemny (domyślny), jasny lub systemowy motyw; pływające zaokrąglone panele; 12 kształtów maskotek w 17 kolorach. Wygląd był oglądany na zrzutach testowych, poprawki po nich jeszcze nie. |
 | **Dostęp z telefonu (Mobile Connect)** | **Częściowo** | Parowanie telefonu kodem QR, dostęp w sieci domowej oraz poza domem przez Tailscale, blokada kodem PIN, powiadomienia Web Push. Czat na telefonie działa; kanały czekają na rozszerzenie. Stały link do parowania i połączenie przez chmurę celowo nie istnieją. |
 | **Komunikatory: Telegram i Slack** | **Silnik gotowy, ekran w przygotowaniu** | Most z botem Telegrama i ze Slackiem (tylko rozmowy prywatne), działa na Twoim komputerze bez serwera pośredniczącego. Okna do wpisania tokenów jeszcze nie ma. Discord wstrzymany, WhatsApp poza planem. |
@@ -204,7 +205,7 @@ Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa
 2. Przepływ działa po jednym naraz. Gdy zamkniesz program w trakcie, ten przebieg kończy się jako nieudany, a karty zgody znikają.
 3. Czego nie ma: kroku „jeśli” (rozgałęzienie po treści), wersji przepływu, kroków obrazu i wideo oraz rysowania odręcznego na płótnie.
 4. **Rutyna** to zadanie dla jednego agenta: co N minut, codziennie o godzinie albo według harmonogramu cron; albo po sygnale z zewnątrz (webhook, podpisany). Sekret webhooka widzisz tylko raz. Gdy program jest wyłączony, rutyny nie nadrabiają zaległości; w historii zostaje wpis „pominięto”.
-5. Kalendarz z rutynami i przebiegami: patrz niżej, „Harmonogram”.
+5. Zaplanowane i wykonane przebiegi rutyn pokazuje strona „Harmonogram” (opis niżej).
 
 ### Głos
 1. **Czytanie na głos:** głosy Windows, tempo od 0,5 do 2 razy, własny skrót klawiszowy.
@@ -232,24 +233,26 @@ Jedna strona z 14 działami: ogólne, osobowość, agenci, sejf, członkowie, zd
 ### Aktualizacje programu (*silnik gotowy, ekran w przygotowaniu*)
 Wybierasz tor **Stabilny** albo **Podgląd** (wersje przedpremierowe), czy program ma sam sprawdzać, pobierać i instalować przy zamknięciu, oraz przycisk **„Zrestartuj, gdy będę bezczynny”**: program czeka, aż żaden agent nie pracuje, i dopiero wtedy się restartuje. Aktualizacje działają tylko w zainstalowanej wersji, nie w trybie uruchamiania z folderu.
 
-### Biblioteka plików (*część gotowa, nowy widok czeka na dołączenie*)
+### Biblioteka plików
 Biblioteka zbiera pliki, które wgrałeś, które zapisali agenci i które przyszły w czatach.
-1. **Dziś w programie:** dodawanie plików z dysku, otwieranie, pobieranie i dołączanie do wiadomości.
-2. **Gotowe pod spodem, ekran w przygotowaniu:**
-   - Zakładki „Wszystkie / Wgrane / Od agentów / Z czatów” z liczbą plików, szukanie po nazwie, filtr (obraz, dokument, inne), filtr agenta i sortowanie (najnowsze, najstarsze, nazwa, rozmiar).
-   - **Zaznaczanie wielu plików** i usuwanie naraz (do 200). Załączniki z czatów są chronione: zostają przy wiadomości, a program mówi, że je pominął.
-   - **Sprzątanie starych plików:** wybierasz rodzaj (wgrane albo od agentów) i liczbę dni; najpierw widzisz, ile plików i miejsca zniknie, dopiero potem potwierdzasz.
-3. Czego nie ma: przeglądania folderów całego komputera („pliki maszyny”) i miniatur. Ile miejsca zajmują dane, pokazuje dział „Pamięć masowa” w ustawieniach serwera.
+1. **Widok plików:** zakładki „Wszystkie / Wgrane / Od agentów / Z czatów” z liczbą plików, szukanie po nazwie, filtr rodzaju (obraz, dokument, inne), filtr agenta i sortowanie (najnowsze, najstarsze, nazwa, rozmiar). Przy pliku: otwórz, pokaż w folderze.
+2. **Zaznaczanie wielu plików** i usuwanie naraz (do 200). Załączniki z czatów są chronione: zostają przy wiadomości, a program mówi, że je pominął.
+3. **Sprzątanie starych plików:** wybierasz rodzaj (wgrane albo od agentów) i liczbę dni; najpierw widzisz, ile plików i miejsca zniknie, dopiero potem potwierdzasz.
+4. Czego nie ma: przeglądania folderów całego komputera („pliki maszyny”) i miniatur; lista pokazuje jedną stronę 60 plików. Ile miejsca zajmują dane, pokazuje dział „Pamięć masowa” w ustawieniach serwera.
+5. Widok jest nowy i nie był jeszcze oglądany w oknie testowym.
 
 ### Użycie
-1. **Dziś w programie:** liczniki użycia i limity dostawców na stronie „Użycie”.
-2. **Gotowe pod spodem, ekran w przygotowaniu:** raport za 7, 30, 90 albo 365 dni z każdym dniem osobno (także dniami bez pracy): ile tokenów i tur, ile dolarów zgłosili dostawcy (program zaznacza, gdy suma jest niepełna), tabela „który agent zużył ile”. Do tego **pierścienie** z limitami dostawców i czasem resetu oraz obciążenie komputera (procesor i pamięć).
-3. **Czego raport nie umie** (mówi to wprost): podziału na model, umiejętność i na odczyty z pamięci podręcznej. Wymagałoby to rozszerzenia liczenia przy każdej wiadomości, więc to osobna decyzja.
+1. Na stronie „Użycie” wybierasz okres: 7, 30, 90 albo 365 dni.
+2. Widzisz: ile tokenów (kawałków tekstu liczonych przez dostawcę modelu) i tur, ile dolarów zgłosili dostawcy (ze znakiem „≥”, gdy suma jest niepełna), wykres słupkowy dzień po dniu, tabelę „który agent zużył ile” oraz dwa pierścienie obciążenia komputera (procesor i pamięć). Niżej zostaje lista limitów dostawców z czasem resetu.
+3. Podział na **model** i na rodzaj tokenów (wejście, z pamięci podręcznej, wyjście, rozumowanie) pokaże się tylko dla tur od dnia wdrożenia tej funkcji; ekran mówi, jaki procent okresu ma taki podział, i od kiedy liczy.
+4. Czego nie ma (ekran mówi to wprost, z powodem): podziału na umiejętności.
 
-### Harmonogram (*silnik gotowy, ekran w przygotowaniu*)
-1. Kalendarz pokaże dla wybranego okresu (do 62 dni): co **już się wykonało** (z wynikiem i przyczyną, gdy pominięto lub nie udało się) oraz co jest **zaplanowane** na przyszłość według tych samych zasad, co rutyny. Rutyny wstrzymane i uruchamiane z zewnątrz (webhook) są wyliczone osobno, bo nie mają stałych godzin.
-2. Obok będzie lista „ostatnie przebiegi” wszystkich rutyn, z możliwością przejścia do starszych.
-3. Czego nie ma: notatki przy każdym przebiegu (przebieg ma tylko wynik i przyczynę).
+### Harmonogram
+1. Strona pokazuje najbliższe 7, 14 albo 30 dni pogrupowane po dniach: godzina, rutyna i status (zaplanowane, w toku, zakończone, nie udało się, pominięte, zignorowane). Zaplanowane starty liczone są tymi samymi zasadami co rutyny.
+2. Rutyny uruchamiane z zewnątrz (webhook) i wstrzymane są wypisane osobno, bo nie mają stałych godzin.
+3. „Ostatnie uruchomienia” to lista przebiegów wszystkich rutyn, od najnowszych. Gdy lista jest ucięta, ekran o tym mówi.
+4. Czego nie ma: siatki miesięcznego kalendarza, notatki przy przebiegu i otwierania rutyny z wpisu.
+5. Ekran jest nowy i nie był jeszcze oglądany w oknie testowym.
 
 ### Wygląd
 1. **Motyw:** domyślnie ciemny; w ustawieniach (Wygląd) możesz wybrać jasny albo systemowy. Wybór jest zapamiętywany po restarcie.

@@ -8,6 +8,9 @@ export function ChannelWorkspace(props: {
   bots: { id: string; name: string }[];
   createRequested?: boolean;
   onCreateHandled?: () => void;
+  /** Opens this channel as soon as the workspace shows (from the Tasks page). */
+  openChannelId?: string | null;
+  onOpenHandled?: () => void;
 }) {
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [selected, setSelected] = createSignal("");
@@ -22,6 +25,15 @@ export function ChannelWorkspace(props: {
       if (requested) {
         setEditor("new");
         props.onCreateHandled?.();
+      }
+    },
+  );
+  createEffect(
+    () => props.openChannelId,
+    (id) => {
+      if (id) {
+        void choose(id);
+        props.onOpenHandled?.();
       }
     },
   );
