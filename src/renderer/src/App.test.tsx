@@ -1216,6 +1216,17 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.queryByRole("dialog", { name: "Choose agent model" })).not.toBeInTheDocument();
   });
 
+  it("changes the effort from the chat header and saves it for the agent", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    const effort = await screen.findByRole("combobox", { name: "Effort" });
+    expect(effort).toHaveValue("medium");
+    await fireEvent.change(effort, { target: { value: "high" } });
+    await waitFor(() =>
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({ botId: "chief", reasoningEffort: "high" }),
+    );
+  });
+
   it("edits the persisted model and thinking level in agent settings", async () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });

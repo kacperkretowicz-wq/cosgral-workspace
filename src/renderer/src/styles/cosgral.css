@@ -1448,3 +1448,19 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* W11-UI1: effort next to the model in the chat header. */
+.header-effort {
+  width: auto;
+  min-width: 0;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.header-effort:hover:not(:disabled) {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}

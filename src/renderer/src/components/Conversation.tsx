@@ -1593,6 +1593,24 @@ export function Conversation(props: ConversationProps) {
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
                 </Show>
+                <Show when={props.bot && reasoningOptions().length > 1}>
+                  <NativeSelect
+                    class="header-effort"
+                    value={settingsReasoning()}
+                    aria-label="Effort"
+                    disabled={!agentReady() || agentActivity() === "Working"}
+                    onChange={(event) => {
+                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
+                      if (!reasoningEffort) return;
+                      setSettingsReasoning(reasoningEffort);
+                      saveBotPatch({ reasoningEffort });
+                    }}
+                  >
+                    <For each={reasoningOptions()}>
+                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
+                    </For>
+                  </NativeSelect>
+                </Show>
                 <Show when={props.server?.kind === "remote"}>
                   <Button
                     type="button"

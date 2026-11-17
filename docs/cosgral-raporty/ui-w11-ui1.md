@@ -45,3 +45,7 @@
 - Menu „+”: Attach files, Use a skill (SkillQuickPick), Side question (SideQuestionPanel nad polem). Pytanie boczne pokazuje stan „failed: not connected…” z backendu (do czasu wykonawcy Backendu) zamiast ciszy.
 - Bez kontraktu composer: komunikaty „niedostępne w tej wersji” (bez atrapy).
 - Kontrola: SideQuestionPanel+SkillQuickPick 5/5, App.test 92/92, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 9 — effort w nagłówku czatu (zrzuty 050, 105)
+- Obok wyboru modelu: lista effort z poziomów wybranego modelu; zapis jak w ustawieniach agenta. Test App.test (effort z nagłówka).
+- Kontrola: App.test 93/93 (pojedynczy test + cały plik 92 przed dopisaniem), typecheck OK, Biome OK, check:ui OK.
