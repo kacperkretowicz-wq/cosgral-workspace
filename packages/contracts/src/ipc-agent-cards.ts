@@ -8,6 +8,13 @@
 //
 // This computer only. Nothing here reaches a service.
 
+import type {
+  AgentCardDetails,
+  AgentCardDetailsInput,
+  AgentPublishDetails,
+  PublishAgentTemplateInput,
+  UnpublishAgentTemplateInput,
+} from "./ipc-agent-card-details";
 import { isBoolean, isDynamicRecord, isNumber, isOneOf, isString } from "./runtime-values";
 
 export const AGENT_CARD_IDS = [
@@ -93,6 +100,12 @@ export interface AgentCardsDesktopApi {
   updatePreferences: (input: UpdateAgentPreferencesInput) => Promise<AgentPreferences>;
   /** Forgets the provider session of the agent: the next message starts a fresh context. The history stays. */
   resetSession: (input: AgentCardsBotInput) => Promise<AgentCardsOverview>;
+  /** COSGRAL W12 (BE-G): what one card shows when it is opened (Files, Folders, Usage, Publish, Advanced, Notifications). */
+  details: (input: AgentCardDetailsInput) => Promise<AgentCardDetails>;
+  /** Saves this agent as a template of the agent creator (the "Publish" card). Returns the new state of the card. */
+  publishTemplate: (input: PublishAgentTemplateInput) => Promise<AgentPublishDetails>;
+  /** Deletes the template that was saved from this agent. */
+  unpublishTemplate: (input: UnpublishAgentTemplateInput) => Promise<AgentPublishDetails>;
 }
 
 /** Event `agent-preferences-changed`: the whole preferences of one agent. */
