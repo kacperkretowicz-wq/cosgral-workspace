@@ -6,6 +6,7 @@
 import {
   type AgentEvent,
   emptyMessengerStatus,
+  MESSENGER_FAILURE_SENTENCES,
   MESSENGER_KINDS,
   MESSENGER_LIMITS,
   type MessengerKind,
@@ -37,6 +38,11 @@ export interface MockMessengers extends Required<MessengersDesktopApi> {
     /** The network is back. */
     networkUp: (kind?: MessengerKind) => void;
   };
+}
+
+/** The public name the demo bot of each messenger shows. */
+function demoBotName(kind: MessengerKind): "@cosgral_demo" | "@demo_helper_bot" {
+  return kind === "slack" ? "@cosgral_demo" : "@demo_helper_bot";
 }
 
 export function createMockMessengers(emit: (event: AgentEvent) => void, spaceId = "main"): MockMessengers {
@@ -73,7 +79,7 @@ export function createMockMessengers(emit: (event: AgentEvent) => void, spaceId 
         status.phase = "connected";
         status.tokenSaved = true;
         status.reason = null;
-        status.botUsername = "@demo_helper_bot";
+        status.botUsername = demoBotName(kind);
         status.connectedAt = now();
       });
       return structuredClone(current(kind));
@@ -146,21 +152,20 @@ export function createMockMessengers(emit: (event: AgentEvent) => void, spaceId 
       tokenRefused: (kind = "telegram") =>
         update(kind, (target) => {
           target.phase = "failed";
-          target.reason =
-            "Telegram does not accept the token (it may have been revoked). Make a new one with BotFather and connect again.";
+          target.reason = MESSENGER_FAILURE_SENTENCES[kind].tokenRefused;
           target.botUsername = null;
           target.connectedAt = null;
         }),
       networkDown: (kind = "telegram") =>
         update(kind, (target) => {
           target.phase = "failed";
-          target.reason = "Telegram cannot be reached right now. The program tries again by itself.";
+          target.reason = MESSENGER_FAILURE_SENTENCES[kind].network;
         }),
       networkUp: (kind = "telegram") =>
         update(kind, (target) => {
           target.phase = "connected";
           target.reason = null;
-          target.botUsername = target.botUsername ?? "@demo_helper_bot";
+          target.botUsername = target.botUsername ?? demoBotName(kind);
           target.connectedAt = target.connectedAt ?? now();
         }),
     },

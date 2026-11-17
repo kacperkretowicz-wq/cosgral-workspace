@@ -16,7 +16,10 @@
 
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "./runtime-values";
 
-export const MESSENGER_KINDS = ["telegram"] as const;
+// COSGRAL W12-KK (2): Slack joins Telegram (Socket Mode: the program connects OUT to Slack, nothing listens, no web address). Same rules
+// for every messenger: nobody is allowed by default, only private conversations (a Telegram private chat, a Slack direct message),
+// plain text only, tokens write-only and encrypted, an agent gets no tool and can only answer where the message came from.
+export const MESSENGER_KINDS = ["telegram", "slack"] as const;
 export type MessengerKind = (typeof MESSENGER_KINDS)[number];
 
 /**
@@ -89,8 +92,10 @@ export interface MessengerKindInput {
 }
 
 export interface ConnectMessengerInput extends MessengerKindInput {
-  /** Write-only. Checked for its shape here and with Telegram by the program. */
+  /** Write-only. Checked for its shape here and with the service by the program. Telegram: the BotFather token; Slack: the bot token (xoxb-). */
   token: string;
+  /** Write-only. Slack only: the app-level token (xapp-) that Socket Mode needs. */
+  appToken?: string;
 }
 
 export interface AllowChatInput extends MessengerKindInput {
@@ -119,7 +124,41 @@ export interface MessengersChanged extends MessengerList {}
 
 // --- rules shared by the engine and the mock ---
 
-export const MESSENGER_LABELS: ReadonlyArray<readonly [MessengerKind, string]> = [["telegram", "Telegram"]];
+export const MESSENGER_LABELS: ReadonlyArray<readonly [MessengerKind, string]> = [
+  ["telegram", "Telegram"],
+  ["slack", "Slack"],
+];
+
+/** The secrets a messenger asks for, so the window can draw the fields (the values are write-only and never come back). */
+export function messengerSecretFields(
+  kind: MessengerKind,
+): Array<{ id: "token" | "appToken"; label: string; hint: string }> {
+  if (kind === "slack") {
+    return [
+      { id: "token", label: "Bot token", hint: "Starts with xoxb-. From OAuth & Permissions of your Slack app." },
+      {
+        id: "appToken",
+        label: "App-level token",
+        hint: "Starts with xapp-. From Basic Information, with the connections:write scope.",
+      },
+    ];
+  }
+  return [{ id: "token", label: "Bot token", hint: "From BotFather in Telegram, like 123456789:AA…" }];
+}
+
+/** The fixed sentences of the failures every driver of a messenger shares with the preview. */
+export const MESSENGER_FAILURE_SENTENCES: Readonly<Record<MessengerKind, { tokenRefused: string; network: string }>> = {
+  telegram: {
+    tokenRefused:
+      "Telegram does not accept the token (it may have been revoked). Make a new one with BotFather and connect again.",
+    network: "Telegram cannot be reached right now. The program tries again by itself.",
+  },
+  slack: {
+    tokenRefused:
+      "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.",
+    network: "Slack cannot be reached right now. The program tries again by itself.",
+  },
+};
 
 export function messengerLabel(kind: MessengerKind): string {
   return MESSENGER_LABELS.find(([known]) => known === kind)?.[1] ?? kind;
@@ -133,6 +172,32 @@ export function isTelegramToken(value: string): boolean {
 /** A chat number as Telegram sends it for a private chat: digits only. */
 export function isChatId(value: string): boolean {
   return /^\d{1,20}$/.test(value);
+}
+
+/** The shape of a Slack bot token. */
+export function isSlackBotToken(value: string): boolean {
+  return /^xoxb-[A-Za-z0-9-]{20,200}$/.test(value);
+}
+
+/** The shape of a Slack app-level token (Socket Mode). */
+export function isSlackAppToken(value: string): boolean {
+  return /^xapp-[A-Za-z0-9-]{20,300}$/.test(value);
+}
+
+/** A Slack direct-message conversation id: a capital D and capital letters and digits. Channels (C…, G…) are not allowed on purpose. */
+export function isSlackConversationId(value: string): boolean {
+  return /^D[A-Z0-9]{8,14}$/.test(value);
+}
+
+/** The id of a private conversation of this messenger. */
+export function isConversationIdFor(kind: MessengerKind, value: string): boolean {
+  return kind === "slack" ? isSlackConversationId(value) : isChatId(value);
+}
+
+function conversationIdSentence(kind: MessengerKind): string {
+  return kind === "slack"
+    ? "A Slack conversation id looks like D01ABC23DEF (a direct message with the bot)."
+    : "A chat number is digits only (a private chat).";
 }
 
 /** A label made tidy: one line, no control characters, shortened. */
@@ -170,7 +235,7 @@ function isAllowedChat(value: unknown): value is AllowedChat {
   return (
     isDynamicRecord(value) &&
     isString(value.chatId) &&
-    isChatId(value.chatId) &&
+    (isChatId(value.chatId) || isSlackConversationId(value.chatId)) &&
     isString(value.label) &&
     isString(value.botId) &&
     value.botId.length > 0 &&
@@ -182,7 +247,7 @@ function isUnknownChat(value: unknown): value is UnknownChat {
   return (
     isDynamicRecord(value) &&
     isString(value.chatId) &&
-    isChatId(value.chatId) &&
+    (isChatId(value.chatId) || isSlackConversationId(value.chatId)) &&
     isString(value.label) &&
     isString(value.lastSeenAt) &&
     isNumber(value.count) &&
@@ -243,11 +308,26 @@ export function parseMessengerKindInput(input: unknown): MessengerKindInput {
   return { kind: parseKind(input.kind) };
 }
 
-/** The token is checked for its shape only. The error never repeats what was typed. */
+/** The tokens are checked for their shape only. The error never repeats what was typed. */
 export function parseConnectMessengerInput(input: unknown): ConnectMessengerInput {
   if (!isDynamicRecord(input)) throw new Error("The messenger request is malformed.");
   const kind = parseKind(input.kind);
   const token = isString(input.token) ? input.token.trim() : "";
+  if (kind === "slack") {
+    if (!isSlackBotToken(token)) {
+      throw new Error(
+        "That does not look like a Slack bot token. It starts with xoxb- (OAuth & Permissions of your Slack app).",
+      );
+    }
+    const appToken = isString(input.appToken) ? input.appToken.trim() : "";
+    if (!isSlackAppToken(appToken)) {
+      throw new Error(
+        "That does not look like a Slack app-level token. It starts with xapp- (Basic Information, scope connections:write).",
+      );
+    }
+    return { kind, token, appToken };
+  }
+  if (input.appToken !== undefined) throw new Error("This messenger takes one token only.");
   if (!isTelegramToken(token)) {
     throw new Error(
       "That does not look like a Telegram bot token. BotFather gives one like 123456789:AA… (digits, a colon, letters and digits).",
@@ -259,8 +339,8 @@ export function parseConnectMessengerInput(input: unknown): ConnectMessengerInpu
 export function parseAllowChatInput(input: unknown): AllowChatInput {
   if (!isDynamicRecord(input)) throw new Error("The messenger request is malformed.");
   const kind = parseKind(input.kind);
-  if (!isString(input.chatId) || !isChatId(input.chatId))
-    throw new Error("A chat number is digits only (a private chat).");
+  if (!isString(input.chatId) || !isConversationIdFor(kind, input.chatId))
+    throw new Error(conversationIdSentence(kind));
   if (!isString(input.botId) || input.botId.length === 0 || input.botId.length > 200)
     throw new Error("Choose the agent that answers this chat.");
   const parsed: AllowChatInput = { kind, chatId: input.chatId, botId: input.botId };
@@ -274,7 +354,8 @@ export function parseAllowChatInput(input: unknown): AllowChatInput {
 
 export function parseRemoveChatInput(input: unknown): RemoveChatInput {
   if (!isDynamicRecord(input)) throw new Error("The messenger request is malformed.");
-  if (!isString(input.chatId) || !isChatId(input.chatId))
-    throw new Error("A chat number is digits only (a private chat).");
-  return { kind: parseKind(input.kind), chatId: input.chatId };
+  const kind = parseKind(input.kind);
+  if (!isString(input.chatId) || !isConversationIdFor(kind, input.chatId))
+    throw new Error(conversationIdSentence(kind));
+  return { kind, chatId: input.chatId };
 }
