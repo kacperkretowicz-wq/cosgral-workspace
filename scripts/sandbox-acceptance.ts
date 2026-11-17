@@ -2182,13 +2182,8 @@ async function cliThirdRun(d: Driver, cli: CliStandIn): Promise<void> {
       );
       assert(cli.fileRequests === before, `no download at start with auto-update off (${cli.fileRequests - before})`);
       await cliCard(page).getByRole("button", { name: "Check", exact: true }).click();
-      await waitUntil(page, "Check shows 1.4.0", async () =>
-        /Latest: 1\.4\.0/.test(await cliCard(page).innerText()),
-      );
-      assert(
-        cli.fileRequests === before && (await codexCli(d)).managedVersion === "1.3.0",
-        "Check downloads nothing",
-      );
+      await waitUntil(page, "Check shows 1.4.0", async () => /Latest: 1\.4\.0/.test(await cliCard(page).innerText()));
+      assert(cli.fileRequests === before && (await codexCli(d)).managedVersion === "1.3.0", "Check downloads nothing");
       // A turn runs while the person updates: it must finish.
       await d.send("Assistant", "SLOW 12000");
       await page.waitForTimeout(1_500);
