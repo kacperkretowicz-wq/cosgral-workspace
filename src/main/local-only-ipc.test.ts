@@ -48,6 +48,7 @@ beforeAll(async () => {
   const { registerIntegrationsIpc } = await import("./integrations-ipc");
   const { registerPhoneIpc } = await import("./phone-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
+  const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -69,6 +70,10 @@ beforeAll(async () => {
   registerIntegrationsIpc(() => null);
   registerPhoneIpc(() => null);
   registerMessengersIpc(() => null);
+  registerVaultConnectorsIpc(
+    () => null,
+    () => null,
+  );
   registerBrowserProfilesIpc({ store: () => null, clearPartition: async () => undefined, openTabs: () => 0 });
   registerApiKeysIpc(() => null);
   registerEndpointsIpc(() => null);
@@ -131,6 +136,13 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("phone:").length).toBe(4);
     // COSGRAL W10-KK2: the Telegram bridge.
     expect(channelsOf("messengers:").length).toBe(6);
+    // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
+    expect(channelsOf("vault-connectors:").length).toBe(8);
+    expect(
+      ["vault:reveal", "vault:copy", "vault:import-csv", "vault:codes", "vault:reset"].every((name) =>
+        handlers.has(name),
+      ),
+    ).toBe(true);
   });
 
   it.each(["remote-server-1", "phone-peer", "local2", ""])(
@@ -157,6 +169,12 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "integrations:",
         "phone:",
         "messengers:",
+        "vault-connectors:",
+        "vault:reveal",
+        "vault:copy",
+        "vault:import-csv",
+        "vault:codes",
+        "vault:reset",
       );
       const outcomes: string[] = [];
       for (const name of names) {
@@ -236,6 +254,21 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("phone:set-push-enabled", "local", { enabled: "yes" })).threw).toMatch(/true or false/);
     expect((await call("phone:send-test-push", "local", {})).threw).toMatch(/not named/);
     expect((await call("phone:get-state", "local", null)).threw).toMatch(/not ready/);
+    // W11-KK (d): a bad connector or Vault request is refused by the parser first, and never repeats the token.
+    const badConnector = await call("vault-connectors:connect", "local", {
+      connector: "onepassword",
+      method: "app",
+      secret: "secret-value-123",
+    });
+    expect(badConnector.threw).toMatch(/takes no token/);
+    expect(badConnector.threw).not.toContain("secret-value-123");
+    expect((await call("vault-connectors:connect", "local", { connector: "lastpass", method: "app" })).threw).toMatch(
+      /connector is one of/,
+    );
+    expect((await call("vault-connectors:list", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("vault:reveal", "local", { itemId: "x", field: "notes" })).threw).toMatch(/field is one of/);
+    expect((await call("vault:import-csv", "local", { csv: "  " })).threw).toMatch(/empty/);
+    expect((await call("vault:reset", "local", null)).threw).toMatch(/still starting/);
     // W10-KK2: a bad messenger request is refused by the parser before the program is asked, and never repeats the token.
     const badToken = await call("messengers:connect", "local", { kind: "telegram", token: "secret-value-123" });
     expect(badToken.threw).toMatch(/bot token/);

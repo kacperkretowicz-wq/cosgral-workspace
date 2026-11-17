@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { homedir, userInfo } from "node:os";
+import { homedir, hostname, userInfo } from "node:os";
 import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { ATTACHMENT_LIMITS, INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import {
@@ -23,6 +23,7 @@ import {
 import {
   app,
   BrowserWindow,
+  clipboard,
   desktopCapturer,
   dialog,
   Menu,
@@ -64,6 +65,10 @@ import { RoutineStore } from "../backend/routine-store";
 import { SidebarStore } from "../backend/sidebar-store";
 import { SpaceStore } from "../backend/space-store";
 import { TeamChatStore } from "../backend/team-chat-store";
+import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-runtime";
+import { ConnectorStore } from "../backend/vault-connectors/common";
+import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
+import { VaultSecretsService } from "../backend/vault-connectors/vault-secrets-service";
 import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
@@ -219,6 +224,7 @@ import { registerThreadsIpc } from "./threads-ipc";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
+import { registerVaultConnectorsIpc } from "./vault-connectors-ipc";
 import { createVoice, registerVoiceIpc } from "./voice-ipc";
 import { registerWindowsIpc } from "./windows-ipc";
 import { registerWorkflowIpc } from "./workflow-ipc";
@@ -287,6 +293,9 @@ let mcpManager: McpManager | null = null;
 // COSGRAL W10-KK1: the account sign-ins of the apps (OAuth in the system browser, tokens encrypted, an MCP entry per service).
 let integrationManager: IntegrationManager | null = null;
 let messengerBridge: MessengerBridge | null = null;
+// COSGRAL W11-KK (d): connectors of password managers and the person's Vault tools.
+let vaultConnectorHub: VaultConnectorHub | null = null;
+let vaultSecretsService: VaultSecretsService | null = null;
 let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
@@ -928,6 +937,10 @@ function registerIpcHandlers(
   registerBudgetsIpc(() => budgetMeter);
   registerIntegrationsIpc(() => integrationManager);
   registerMessengersIpc(() => messengerBridge);
+  registerVaultConnectorsIpc(
+    () => vaultConnectorHub,
+    () => vaultSecretsService,
+  );
   registerBrowserProfilesIpc({
     store: () => browserProfiles,
     clearPartition: async (partition) => {
@@ -1481,6 +1494,31 @@ if (!hasSingleInstanceLock) {
         emit: (event) => forwardAgentEvent("local", event),
       });
       messengerBridge.resume();
+      // COSGRAL W11-KK (d): password-manager connectors (tokens encrypted in this database; `op` and `bw` run without a shell).
+      vaultConnectorHub = new VaultConnectorHub({
+        store: new ConnectorStore(store.database, electronSecretBox()),
+        emit: (event) => forwardAgentEvent("local", event),
+        onePassword: {
+          runCli: runManagerCli,
+          findCli: () => findManagerCli("op"),
+          installCli: null,
+          openExternal: (url) => shell.openExternal(url),
+          hostName: hostname(),
+        },
+        bitwarden: {
+          runCli: runManagerCli,
+          findCli: async () => {
+            const [path] = await findManagerCli("bw");
+            if (!path) throw new Error("not found");
+            return path;
+          },
+        },
+      });
+      vaultConnectorHub.load();
+      vaultSecretsService = new VaultSecretsService({
+        store: () => agentService?.vault ?? null,
+        clipboard: { write: (text) => clipboard.writeText(text), read: () => clipboard.readText() },
+      });
       // COSGRAL W5-BE3: provider API keys (encrypted); a provider process gets its key only as its own environment.
       apiKeyStore = new ApiKeyStore(store.database, electronSecretBox());
       setApiKeySource(apiKeyStore);
@@ -2062,6 +2100,7 @@ async function prepareForShutdown(): Promise<void> {
   // COSGRAL W2: stop stdio MCP servers so no process is left behind.
   if (integrationTimer) clearInterval(integrationTimer);
   await (messengerBridge?.stop() ?? Promise.resolve());
+  vaultConnectorHub?.dispose();
   await (mcpManager?.stop() ?? Promise.resolve());
   // COSGRAL W2: no routine runs and no webhook receiver after exit.
   routineManager?.stop();
