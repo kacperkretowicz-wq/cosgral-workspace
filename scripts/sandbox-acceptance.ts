@@ -18,6 +18,7 @@ import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
+import { cleanEnvironment } from "./sandbox-env.ts";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -144,7 +145,7 @@ async function launch(
     args: ["--lang=en-US", repo],
     cwd: repo,
     env: {
-      ...process.env,
+      ...cleanEnvironment(),
       ...sandboxEnvironment(root),
       OPENBOT_CODEX_PATH: fixture.codex,
       OPENBOT_CLAUDE_PATH: fixture.claude,
