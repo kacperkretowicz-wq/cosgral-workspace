@@ -3,6 +3,8 @@ import {
   MESSAGE_ACTION_LIMITS,
   type MessageAction,
   type MessageActionsDesktopApi,
+  type MessageMenu,
+  type MessageMenuActionId,
   messageActionProblem,
   threadBusyProblem,
 } from "@openbot/contracts/ipc";
@@ -34,6 +36,24 @@ export function MessageHistoryActions(
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
   const [pinned, setPinned] = createSignal(Boolean(untrack(() => props.message.pinned)));
+  // The engine's own reading of this message (window.openbot.messageMenu): why an action is not offered right now.
+  const [menu, setMenu] = createSignal<MessageMenu | null>(null);
+  async function readMenu() {
+    const read = window.openbot?.messageMenu;
+    if (!read) return;
+    const serial = generation;
+    try {
+      const next = await read.get({ botId: props.botId, threadId: props.threadId, messageId: props.message.id });
+      if (serial === generation) setMenu(next);
+    } catch {
+      if (serial === generation) setMenu(null);
+    }
+  }
+  const menuAction = (id: MessageMenuActionId) => menu()?.actions.find((action) => action.id === id);
+  const menuProblem = (id: MessageMenuActionId): string | null => {
+    const action = menuAction(id);
+    return action && !action.enabled ? action.reason : null;
+  };
   let generation = 0;
   createEffect(
     () => props.message.pinned,
@@ -53,6 +73,7 @@ export function MessageHistoryActions(
   function problem(action: MessageAction): string | null {
     if (!api) return "Message actions are unavailable on this computer.";
     return (
+      menuProblem(action) ??
       messageActionProblem(
         action,
         props.message.actionSubject ?? {
@@ -111,7 +132,15 @@ export function MessageHistoryActions(
             : "Pin message";
   return (
     <>
-      <DropdownMenu.Root placement="top-end" gutter={6} modal={false} onOpenChange={props.onOpenChange}>
+      <DropdownMenu.Root
+        placement="top-end"
+        gutter={6}
+        modal={false}
+        onOpenChange={(open) => {
+          if (open) void readMenu();
+          props.onOpenChange?.(open);
+        }}
+      >
         <DropdownMenu.Trigger class="message-action-button" aria-label="More message actions">
           <MoreIcon />
         </DropdownMenu.Trigger>
@@ -120,7 +149,12 @@ export function MessageHistoryActions(
             <DropdownMenu.Item onSelect={() => props.onCopy?.()}>{props.copied ? "Copied" : "Copy"}</DropdownMenu.Item>
           </Show>
           <Show when={props.onBranch}>
-            <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
+            <DropdownMenu.Item disabled={Boolean(menuProblem("branch"))} onSelect={() => props.onBranch?.()}>
+              Branch from here
+              <Show when={menuProblem("branch")}>
+                <span class="thread-work-action-note">{menuProblem("branch")}</span>
+              </Show>
+            </DropdownMenu.Item>
           </Show>
           <DropdownMenu.Item disabled={busy() || Boolean(problem("retry"))} onSelect={() => void run("retry")}>
             {label("retry")}

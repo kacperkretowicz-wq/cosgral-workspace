@@ -74,6 +74,7 @@ import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
 import { TasksPage } from "./components/TasksPage";
 import { UsagePage } from "./components/UsagePage";
+import { VaultConnectorsPanel } from "./components/VaultConnectorsPanel";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
@@ -2145,6 +2146,7 @@ export function App() {
                   <h1>Library</h1>
                   <SkillsSettings />
                   <VaultPanel />
+                  <VaultConnectorsPanel />
                   <TablesPanel />
                   <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
                     <LibraryFilesView />

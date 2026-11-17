@@ -2380,3 +2380,85 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   align-items: center;
   gap: 8px;
 }
+
+/* UI-M: Vault connectors (password managers). */
+.vault-connectors {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vault-connectors h2 {
+  margin: 0;
+}
+
+.vault-connectors-note {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.vault-connectors-error {
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.vault-connector-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-connector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 14px;
+}
+
+.vault-connector-card[data-state="connected"] {
+  border-color: var(--cosgral-border-strong);
+}
+
+.vault-connector-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vault-connector-actions,
+.vault-connector-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vault-connector-logins {
+  display: flex;
+  max-height: 220px;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-connector-logins li {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 4px 0;
+}
+
+.vault-connector-logins small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
