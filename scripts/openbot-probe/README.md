@@ -69,3 +69,11 @@ node scripts/openbot-probe/compare.ts --reference <results of the reference> --o
 report per screen: texts on one side only, looks (sizes, radii, colours, spacings) one side uses and the other does not (colours
 within 5 per channel, lengths within 2 px), and the token values of the reference that none of our tokens has. It refuses an output
 folder inside the repo. Starting either program is a heavy step: only after the leader's GO file.
+
+## Clean environment (important)
+
+A program started by the probe INHERITS the environment of the shell that starts it. A shell of an agent or a person holds variables
+such as `CLAUDE_CONFIG_DIR`, `CLAUDE_CODE_*`, `OPENBOT_*`, `GIT_CONFIG_*` and tokens; with them the copy can find the person's own accounts
+(it showed an account e-mail on its first screen). Start every copy with those variables REMOVED (in PowerShell:
+`Remove-Item Env:CLAUDE_CONFIG_DIR` and the like, or start through a launcher that passes only `PATH`, `SystemRoot`, `TEMP`, `TMP` and the
+sandbox `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`), and scan the results for the person's e-mail before they are shared.
