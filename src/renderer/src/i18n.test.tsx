@@ -35,10 +35,12 @@ it("keeps interpolation slots consistent in both catalogs", () => {
     expect(slots(value), key).toEqual(slots(english.get(key) ?? ""));
   }
 });
-it("interpolates names as plain text, including replacement characters", () => {
+it("interpolates names as plain text, including replacement characters", async () => {
   setLanguage("pl");
+  await waitFor(() => expect(language()).toBe("pl"));
   expect(t("Delete {name}?", { name: "$& {percent}" })).toBe("Usunąć agenta $& {percent}?");
   setLanguage("en");
+  await waitFor(() => expect(language()).toBe("en"));
   expect(t("Delete {name}?", { name: "Research" })).toBe("Delete Research?");
 });
 it("uses the primary system language until the person chooses", () => {
