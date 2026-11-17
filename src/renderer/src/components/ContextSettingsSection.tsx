@@ -1,6 +1,7 @@
 import type { ContextDesktopApi, ContextSettings } from "@openbot/contracts/ipc";
 import { applyContextSettings, CONTEXT_SETTINGS_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import type { ContextEvents } from "./ContextIndicator";
 import { providerError } from "./provider-error";
 import { Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
@@ -24,7 +25,7 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
         setThreshold(String(next.thresholdPercent));
       }
     } catch (e) {
-      if (serial === generation) setError(providerError(e, "Could not load context settings."));
+      if (serial === generation) setError(providerError(e, t("Could not load context settings.")));
     }
   }
 
@@ -49,7 +50,7 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
     try {
       next = applyContextSettings(value, { thresholdPercent: Number(threshold()) });
     } catch (e) {
-      setError(providerError(e, "Invalid threshold."));
+      setError(providerError(e, t("Invalid threshold.")));
       return;
     }
     setBusy(true);
@@ -61,47 +62,52 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
       setThreshold(String(saved.thresholdPercent));
       setNotice("Context settings saved.");
     } catch (e) {
-      setError(providerError(e, "Could not save context settings."));
+      setError(providerError(e, t("Could not save context settings.")));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <Card class="context-panel" role="region" aria-label="Context settings">
+    <Card class="context-panel" role="region" aria-label={t("Context settings")}>
       <Heading as="h3" size="sm">
-        Conversation context
+        {t("Conversation context")}
       </Heading>
       <Text as="p" tone="secondary">
-        Automatically compact reported context near the chosen threshold. A warning appears from{" "}
-        {CONTEXT_SETTINGS_LIMITS.warnPercent}%.
+        {t("Automatically compact reported context near the chosen threshold. A warning appears from {percent}%.", {
+          percent: CONTEXT_SETTINGS_LIMITS.warnPercent,
+        })}
       </Text>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
           {error()}
         </Text>
         <Button disabled={busy()} onClick={() => void reload()}>
-          Reload context settings
+          {t("Reload context settings")}
         </Button>
       </Show>
       <Show
         when={settings()}
         fallback={
           <Text as="p" tone="secondary">
-            {api ? "Loading context settings..." : "Context settings are unavailable in this version."}
+            {api ? t("Loading context settings...") : t("Context settings are unavailable in this version.")}
           </Text>
         }
       >
         {(value) => (
           <>
             <Switch
-              label="Automatically compact context"
+              label={t("Automatically compact context")}
               checked={value().autoCompact}
               disabled={busy()}
               onChange={(autoCompact) => setSettings((current) => (current ? { ...current, autoCompact } : current))}
             />
             <Field
-              label="Compaction threshold (%)"
-              description={`Whole number from ${CONTEXT_SETTINGS_LIMITS.minThresholdPercent} to ${CONTEXT_SETTINGS_LIMITS.maxThresholdPercent}; default ${CONTEXT_SETTINGS_LIMITS.defaultThresholdPercent}.`}
+              label={t("Compaction threshold (%)")}
+              description={t("Whole number from {min} to {max}; default {default}.", {
+                min: CONTEXT_SETTINGS_LIMITS.minThresholdPercent,
+                max: CONTEXT_SETTINGS_LIMITS.maxThresholdPercent,
+                default: CONTEXT_SETTINGS_LIMITS.defaultThresholdPercent,
+              })}
             >
               <Input
                 type="number"
@@ -114,14 +120,14 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
               />
             </Field>
             <Button disabled={busy()} onClick={() => void save()}>
-              Save context settings
+              {t("Save context settings")}
             </Button>
           </>
         )}
       </Show>
       <Show when={notice()}>
         <Text as="p" role="status">
-          {notice()}
+          {t(notice())}
         </Text>
       </Show>
     </Card>

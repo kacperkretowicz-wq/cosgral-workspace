@@ -19,14 +19,37 @@ it("has complete, nonempty PL and EN catalogs", () => {
   for (const value of [...Object.values(pl), ...Object.values(en)]) expect(value.trim()).not.toBe("");
 });
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
-  const files = ["SettingsModal", "AppearanceSettings", "LanguageSettings", "AppSettingsW3", "Sidebar", "PageRail"];
+  const files = [
+    "SettingsModal",
+    "AppearanceSettings",
+    "LanguageSettings",
+    "AppSettingsW3",
+    "Sidebar",
+    "PageRail",
+    "ContextSettingsSection",
+  ];
   for (const file of files) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
-    for (const match of source.matchAll(/\bt\("([^"\n]+)"\)/g)) {
+    for (const match of source.matchAll(/\bt\("([^"\n]+)"(?:\s*,|\s*\))/g)) {
       expect(Object.hasOwn(en, match[1]), `${file}: ${match[1]}`).toBe(true);
       expect(Object.hasOwn(pl, match[1]), `${file}: ${match[1]}`).toBe(true);
     }
   }
+});
+it("keeps interpolation slots consistent in both catalogs", () => {
+  const english = new Map<string, string>(Object.entries(en));
+  for (const [key, value] of Object.entries(pl)) {
+    const slots = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+    expect(slots(value), key).toEqual(slots(english.get(key) ?? ""));
+  }
+});
+it("interpolates names as plain text, including replacement characters", async () => {
+  setLanguage("pl");
+  await waitFor(() => expect(language()).toBe("pl"));
+  expect(t("Delete {name}?", { name: "$& {percent}" })).toBe("Usunąć agenta $& {percent}?");
+  setLanguage("en");
+  await waitFor(() => expect(language()).toBe("en"));
+  expect(t("Delete {name}?", { name: "Research" })).toBe("Delete Research?");
 });
 it("uses the primary system language until the person chooses", () => {
   expect(systemLanguage(["pl-PL", "en-US"])).toBe("pl");

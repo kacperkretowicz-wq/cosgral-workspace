@@ -1211,15 +1211,16 @@ export function Sidebar(props: SidebarProps) {
                       "margin-bottom": "15px",
                     }}
                   />
-                  <AlertDialog.Title>Delete {bot().name}?</AlertDialog.Title>
+                  <AlertDialog.Title>{t("Delete {name}?", { name: bot().name })}</AlertDialog.Title>
                   <AlertDialog.Description>
-                    This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its
-                    workspace and CLI history stay on your Mac.
+                    {t(
+                      "This removes the agent, its COSGRAL queue, and managed files used only by that conversation. Its workspace and CLI history stay on this computer.",
+                    )}
                   </AlertDialog.Description>
                   <Show when={deleteError()}>{(message) => <p class="bot-delete-error">{message()}</p>}</Show>
                   <div class="bot-delete-actions">
                     <Button type="button" disabled={deleting()} onClick={() => setDeleteTargetId(null)}>
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                     <Button
                       type="button"
@@ -1228,7 +1229,7 @@ export function Sidebar(props: SidebarProps) {
                       disabled={deleting()}
                       onClick={() => void confirmDelete()}
                     >
-                      {deleting() ? "Deleting…" : "Delete"}
+                      {deleting() ? t("Deleting…") : t("Delete")}
                     </Button>
                   </div>
                 </AlertDialog.Content>

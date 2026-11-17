@@ -12,10 +12,15 @@ export function systemLanguage(languages: readonly string[]): AppLanguage {
   return languages[0]?.toLowerCase().split("-")[0] === "pl" ? "pl" : "en";
 }
 
-export function t(key: string): string {
+export function t(key: string, values: Record<string, string | number> = {}): string {
   const locale = language();
   const translated = polish.get(key);
-  if (translated !== undefined) return locale === "pl" ? translated : key;
+  if (translated !== undefined) {
+    const message = locale === "pl" ? translated : key;
+    return message.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+      Object.hasOwn(values, name) ? String(values[name]) : placeholder,
+    );
+  }
   if (!warned.has(key)) {
     warned.add(key);
     console.warn("[i18n] Missing UI translation", key);
