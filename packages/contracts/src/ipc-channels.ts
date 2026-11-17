@@ -199,6 +199,16 @@ export const IPC_CHANNELS = {
   phoneGetTailscaleGuide: "phone:get-tailscale-guide",
   phoneSetPushEnabled: "phone:set-push-enabled",
   phoneSendTestPush: "phone:send-test-push",
+  // COSGRAL W11 (U3-U6): search, the message box (side question, slash, @), the tabs of threads.
+  searchQuery: "search:query",
+  composerAskSideQuestion: "composer:ask-side-question",
+  composerCancelSideQuestion: "composer:cancel-side-question",
+  composerListSlashCommands: "composer:list-slash-commands",
+  composerSearchMentions: "composer:search-mentions",
+  threadTabsGet: "thread-tabs:get",
+  threadTabsOpen: "thread-tabs:open",
+  threadTabsClose: "thread-tabs:close",
+  threadTabsReorder: "thread-tabs:reorder",
   // COSGRAL W10-KK2: messenger bridge (Telegram).
   messengersList: "messengers:list",
   messengersStatus: "messengers:status",

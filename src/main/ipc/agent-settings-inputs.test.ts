@@ -104,3 +104,15 @@ describe("agent settings IPC input parsing", () => {
     expect(() => parseSettingsBotId("")).toThrow(/botId/);
   });
 });
+
+describe("parseCreateAgent avatar (W11 U1)", () => {
+  it("takes an avatar seed and colour, and refuses bad ones", () => {
+    expect(parseCreateAgent({ name: "Scout", avatarSeed: "scout:avatar:3:7", avatarHue: 150 })).toMatchObject({
+      avatarSeed: "scout:avatar:3:7",
+      avatarHue: 150,
+    });
+    expect(parseCreateAgent({ avatarHue: null })).toEqual({ avatarHue: null });
+    expect(() => parseCreateAgent({ avatarSeed: "bad seed!" })).toThrow(/avatar seed/);
+    expect(() => parseCreateAgent({ avatarHue: 7 })).toThrow(/colour/);
+  });
+});

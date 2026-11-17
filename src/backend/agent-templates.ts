@@ -14,11 +14,14 @@ import {
   type AgentTemplate,
   type AgentToolSwitches,
   BOT_AVATAR_HUES,
+  type BotAvatarHue,
   type BotSummary,
   type CreateAgentInput,
   type CreateAgentResult,
   type DuplicateAgentInput,
   isAgentTemplate,
+  isAvatarHue,
+  isAvatarSeed,
   type SaveAgentTemplateInput,
   SKILL_LIMITS,
   type UpdateBotInput,
@@ -192,7 +195,14 @@ export class AgentTemplates {
     const tools = { ...(template?.tools ?? {}), ...(input.tools ?? {}) };
     const model = input.model ?? template?.model ?? null;
     const reasoningEffort = input.reasoningEffort ?? template?.reasoningEffort ?? null;
-    const hue = template?.avatarHue ?? null;
+    // COSGRAL W11 (U1): the creator's own avatar wins over the template's, and is checked before an agent exists.
+    if (input.avatarSeed !== undefined && !isAvatarSeed(input.avatarSeed)) throw new Error("Invalid avatar seed.");
+    if (input.avatarHue !== undefined && input.avatarHue !== null && !isAvatarHue(input.avatarHue)) {
+      throw new Error("Invalid avatar colour (hue).");
+    }
+    const templateHue = template?.avatarHue ?? null;
+    const hue: BotAvatarHue | null =
+      input.avatarHue !== undefined ? input.avatarHue : isOneOf(BOT_AVATAR_HUES, templateHue) ? templateHue : null;
 
     const created = await this.#deps.createBot();
     const warnings: string[] = [];
@@ -201,7 +211,8 @@ export class AgentTemplates {
     if (role !== null) profile.role = role;
     if (description !== null) profile.description = description;
     if (reasoningEffort) profile.reasoningEffort = reasoningEffort;
-    if (isOneOf(BOT_AVATAR_HUES, hue)) profile.avatarHue = hue;
+    if (hue !== null || input.avatarHue === null) profile.avatarHue = hue;
+    if (input.avatarSeed !== undefined) profile.avatarSeed = input.avatarSeed;
     if (Object.keys(profile).length > 1) await this.#deps.updateBot(profile);
     if (model && model !== created.model) {
       try {
