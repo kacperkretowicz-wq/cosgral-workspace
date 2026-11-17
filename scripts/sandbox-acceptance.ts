@@ -141,7 +141,7 @@ async function launch(
 ): Promise<{ app: ElectronApplication; page: Page }> {
   const app = await electron.launch({
     executablePath: join(repo, "node_modules", "electron", "dist", "electron.exe"),
-    args: [repo],
+    args: ["--lang=en-US", repo],
     cwd: repo,
     env: {
       ...process.env,
