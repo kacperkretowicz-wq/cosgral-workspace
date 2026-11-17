@@ -88,6 +88,7 @@ import type {
 } from "./ipc-dock";
 import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
+import type { LibraryViewDesktopApi, ScheduleDesktopApi, UsageReportDesktopApi } from "./ipc-insights";
 import type { InstanceTransferDesktopApi, UpdatePreferencesDesktopApi } from "./ipc-instance-transfer";
 import type { IntegrationsDesktopApi } from "./ipc-integrations";
 import type { IsolationDesktopApi } from "./ipc-isolation";
@@ -725,6 +726,10 @@ export interface OpenBotDesktopApi {
   serverSettings?: ServerSettingsDesktopApi;
   /** COSGRAL W12 (BE-E): the catalog of the 18 providers with the state on this computer. */
   providerCatalog?: ProviderCatalogDesktopApi;
+  /** COSGRAL W12 (BE-H): the library page, the usage report and the schedule (screens that read what the program holds). */
+  libraryView?: LibraryViewDesktopApi;
+  usageReport?: UsageReportDesktopApi;
+  schedule?: ScheduleDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */

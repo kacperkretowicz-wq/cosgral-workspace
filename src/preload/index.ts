@@ -92,6 +92,7 @@ import { createContextApi } from "./context-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
 import { createDockApi, createIslandApi } from "./dock-api";
 import { createEndpointsApi } from "./endpoints-api";
+import { createLibraryViewApi, createScheduleApi, createUsageReportApi } from "./insights-api";
 import { createInstanceTransferApi, createUpdatePreferencesApi } from "./instance-transfer-api";
 import { createIntegrationsApi } from "./integrations-api";
 import { createIsolationApi } from "./isolation-api";
@@ -843,6 +844,9 @@ const openbotApi: OpenBotDesktopApi = {
   agentCards: createAgentCardsApi(invokeAgent),
   serverSettings: createServerSettingsApi(invokeAgent),
   providerCatalog: createProviderCatalogApi(invokeAgent),
+  libraryView: createLibraryViewApi(invokeAgent),
+  usageReport: createUsageReportApi(invokeAgent),
+  schedule: createScheduleApi(invokeAgent),
   threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),
   vaultConnectors: createVaultConnectorsApi(invokeAgent),
