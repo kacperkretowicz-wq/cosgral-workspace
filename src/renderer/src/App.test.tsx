@@ -1011,19 +1011,24 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("heading", { name: "Agents" })).toBeInTheDocument();
   });
 
-  it("shows the specialty question immediately after creating a new agent", async () => {
+  it("opens the new agent page and creates the agent from its fields", async () => {
+    window.openbot.agent.updateBot = vi
+      .fn()
+      .mockResolvedValue({ ...BOTS[0], id: "bot-new", name: "Research", avatarSeed: "bot-new", avatarHue: null });
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
 
     await createNew("New agent");
-    await fireEvent.click(screen.getByRole("option", { name: "Create new agent" }));
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create agent" })).toBeDisabled();
+    await fireEvent.input(screen.getByRole("textbox", { name: "Agent name" }), { target: { value: "Research" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Create agent" }));
 
-    expect(await screen.findByRole("heading", { name: "New agent" })).toBeInTheDocument();
-    expect(screen.queryByRole("complementary", { name: "Agent settings" })).not.toBeInTheDocument();
-    expect(
-      await screen.findByRole("radiogroup", { name: "What do you want me helping with most?" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Message New agent")).toHaveAttribute("contenteditable", "true");
+    await waitFor(() => expect(window.openbot.agent.createBot).toHaveBeenCalledOnce());
+    expect(window.openbot.agent.updateBot).toHaveBeenCalledWith(
+      expect.objectContaining({ botId: "bot-new", name: "Research" }),
+    );
+    expect(await screen.findByRole("heading", { name: "Research", level: 1 })).toBeInTheDocument();
   });
 
   it("opens agent creation from a private conversation", async () => {
@@ -1041,10 +1046,9 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(await screen.findByRole("main", { name: "Direct conversation with Alice" })).toBeInTheDocument();
 
     await createNew("New agent");
-    await fireEvent.click(await screen.findByRole("option", { name: "Create new agent" }));
 
-    expect(await screen.findByRole("heading", { name: "New agent" })).toBeInTheDocument();
-    expect(window.openbot.agent.createBot).toHaveBeenCalledOnce();
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+    expect(window.openbot.agent.createBot).not.toHaveBeenCalled();
     expect(window.openbot.servers.setDirectTyping).toHaveBeenCalledWith({
       memberId: "member-alice",
       typing: false,

@@ -57,6 +57,7 @@ import { LibraryPanel } from "./components/LibraryPanel";
 import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
 import { MobileConnectPage } from "./components/MobileConnectPage";
+import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ProvidersPage } from "./components/ProvidersPage";
@@ -235,6 +236,7 @@ export function App() {
   const [channelsOpen, setChannelsOpen] = createSignal(false);
   const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
+  const [newAgentOpen, setNewAgentOpen] = createSignal(false);
   const [settingsRequest, setSettingsRequest] = createSignal<{
     botId: string;
     nonce: number;
@@ -1093,7 +1095,7 @@ export function App() {
     }
   }
 
-  function openAgentPicker() {
+  function openNewAgent() {
     const directMemberId = activeDirectMemberId();
     if (directMemberId) {
       void window.openbot.servers.setDirectTyping({ memberId: directMemberId, typing: false }).catch(() => undefined);
@@ -1101,10 +1103,49 @@ export function App() {
     setActivePage("agents");
     setActiveDirectMemberId(null);
     setDirectConversationError(null);
-    setAgentPickerOpen(true);
+    setChannelsOpen(false);
+    setAgentPickerOpen(false);
+    setNewAgentOpen(true);
+  }
+
+  async function submitNewAgent(input: NewAgentInput): Promise<void> {
+    const settingsApi = window.openbot.agentSettings;
+    let stored: BotSummary;
+    if (settingsApi) {
+      stored = (
+        await settingsApi.createAgent({
+          name: input.name,
+          description: input.description,
+          model: input.model,
+          reasoningEffort: input.reasoningEffort,
+        })
+      ).bot;
+    } else {
+      stored = await window.openbot.agent.createBot();
+    }
+    // Face and colour are not part of the creator contract (W3-BE2): one profile update after creation.
+    stored = await window.openbot.agent.updateBot({
+      botId: stored.id,
+      avatarSeed: input.avatarSeed,
+      avatarHue: input.avatarHue,
+      ...(settingsApi
+        ? {}
+        : {
+            name: input.name,
+            description: input.description,
+            model: input.model,
+            reasoningEffort: input.reasoningEffort,
+          }),
+    });
+    const newAgent = createStoredProfile(toBotProfile(stored));
+    setBotList((current) => [newAgent, ...current.filter((item) => item.id !== newAgent.id)]);
+    setLiveMessages((current) => ({ ...current, [newAgent.id]: [] }));
+    setConversationLoaded((current) => ({ ...current, [newAgent.id]: true }));
+    selectBot(newAgent.id);
   }
 
   function selectBot(botId: string) {
+    setNewAgentOpen(false);
     if (islandTarget()?.botId !== botId) setIslandTarget(null);
     setChannelsOpen(false);
     setActivePage("agents");
@@ -1150,6 +1191,7 @@ export function App() {
 
   async function selectDirectMember(memberId: string): Promise<void> {
     if (!currentTeamMember() || !directPeople().some((member) => member.id === memberId)) return;
+    setNewAgentOpen(false);
     setActivePage("agents");
     setAgentPickerOpen(false);
     setSettingsRequest(null);
@@ -2022,6 +2064,7 @@ export function App() {
                 modelOptions={modelOptions()}
                 onSelectChannels={(create) => {
                   setCreateChannel(!!create);
+                  setNewAgentOpen(false);
                   setActivePage("agents");
                   setActiveDirectMemberId(null);
                   setAgentPickerOpen(false);
@@ -2042,7 +2085,7 @@ export function App() {
                   setChannelsOpen(false);
                   void selectDirectMember(memberId);
                 }}
-                onCreateBot={openAgentPicker}
+                onCreateBot={openNewAgent}
                 onEditBot={editBot}
                 onDeleteBot={deleteBot}
                 onRefreshUsage={refreshAccountUsage}
@@ -2152,7 +2195,21 @@ export function App() {
                   onCreateHandled={() => setCreateChannel(false)}
                 />
               </Show>
-              <Show when={activePage() === "agents" && !activeDirectMember() && !channelsOpen()}>
+              <Show when={activePage() === "agents" && newAgentOpen()}>
+                <NewAgentPage
+                  modelOptions={modelOptions()}
+                  agentStatus={agentStatus()}
+                  defaultModel={modelOptions()[0]?.id ?? "gpt-5.6-luna"}
+                  loadSuggestions={
+                    window.openbot.agentSettings
+                      ? () => window.openbot.agentSettings?.listTemplates() ?? Promise.resolve([])
+                      : undefined
+                  }
+                  onCreate={submitNewAgent}
+                  onCancel={() => setNewAgentOpen(false)}
+                />
+              </Show>
+              <Show when={activePage() === "agents" && !activeDirectMember() && !channelsOpen() && !newAgentOpen()}>
                 <Conversation
                   onThreadsChanged={applyThreadList}
                   agentStatus={agentStatus()}

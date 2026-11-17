@@ -13,3 +13,10 @@
 - Wiersz wyszukiwania: pole + „+” z menu: Nowy agent, Nowy kanał (gdy jest `onSelectChannels`), Nowy folder (gdy `layout && folderActions`). Usunięto osobne przyciski w nagłówku.
 - Kontrola: Sidebar.folders 25/25, App.folders 6/6, i18n 9/9, typecheck:renderer OK, Biome OK, check:ui OK. App.test.tsx: 91/92; jedyny czerwony `hides and shows without dropping…` (menuitem „Ukryj”) jest czerwony także BEZ moich zmian (sprawdzone na Sidebar.tsx z HEAD) — do naprawy osobno (test zakłada polski język).
 - Nie zrobiono: filtr zakładek wyszukiwarki globalnej (Wszystko/Agenci/Kanały/Wiadomości/Pliki/Rutyny), zwijanie szyny, karta „mobile”. Storybook/test:visual/Electron nie uruchamiano.
+
+## Commit 3 — ekran „Nowy agent” (zrzuty 001, 041–043, 098; folder 01-new-agent)
+- `NewAgentPage`: podgląd awatara, 10 kolorów + auto, wybór twarzy (warianty bloba + „więcej twarzy”), Nazwa*, „W czym ma pomagać”, Model (ProviderModelPicker) + Effort, Utwórz agenta, Sugestie (do 3 szablonów z `agentSettings.listTemplates`).
+- Podpięte do backendu: `agentSettings.createAgent({name,description,model,reasoningEffort})`; bez tego API fallback `agent.createBot` + `updateBot`. Twarz i kolor: jedna `agent.updateBot({avatarSeed,avatarHue})` po utworzeniu.
+- Luka kontraktu (do Backendu): `CreateAgentInput` nie przyjmuje `avatarSeed`/`avatarHue` — dwa zapisy zamiast jednego; ewentualne „utwórz agenta z szablonu z kolorem” też.
+- Sidebar „+ → Nowy agent” otwiera stronę (zamiast pickera + pytania o specjalizację). Stary picker i onboarding w Conversation zostały (pierwszy start bez agentów nadal idzie starą ścieżką).
+- Kontrola: NewAgentPage 3/3, App.test 91/92 (przy --testTimeout=30000; bez tego 5 losowych timeoutów pod obciążeniem), jedyny czerwony to stary `hides and shows…`, typecheck OK, Biome OK, check:ui OK, i18n 9/9.
