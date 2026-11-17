@@ -539,4 +539,7 @@ export const pl = {
     "{percent}% tokenów z tego okresu ma podział na części.",
   "Details kept since {day}.": "Szczegóły zapisywane od {day}.",
   "By model": "Według modelu",
+  "Search tasks": "Szukaj zadań",
+  "Open as chat": "Otwórz jako czat",
+  Steps: "Kroki",
 } as const;

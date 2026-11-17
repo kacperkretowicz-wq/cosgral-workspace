@@ -542,4 +542,7 @@ export const en = {
     "{percent}% of the tokens in this period come with their parts.",
   "Details kept since {day}.": "Details kept since {day}.",
   "By model": "By model",
+  "Search tasks": "Search tasks",
+  "Open as chat": "Open as chat",
+  Steps: "Steps",
 } as const;

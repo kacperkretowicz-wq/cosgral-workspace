@@ -40,7 +40,7 @@ function task(overrides: Partial<ChannelTask>): ChannelTask {
   };
 }
 
-function setup(tasks: Record<string, ChannelTask[]>, actOnTask = vi.fn()) {
+function setup(tasks: Record<string, ChannelTask[]>, actOnTask = vi.fn(), onOpenChannel?: (id: string) => void) {
   let listener: (event: AgentEvent) => void = () => undefined;
   vi.stubGlobal("openbot", {
     channels: {
@@ -55,7 +55,7 @@ function setup(tasks: Record<string, ChannelTask[]>, actOnTask = vi.fn()) {
       },
     },
   });
-  render(() => <TasksPage bots={[{ id: "b1", name: "Writer" }]} />);
+  render(() => <TasksPage bots={[{ id: "b1", name: "Writer" }]} onOpenChannel={onOpenChannel} />);
   return { emit: (event: AgentEvent) => listener(event) };
 }
 
@@ -122,3 +122,31 @@ function firstRow(rows: HTMLElement[]): HTMLElement {
   if (!row) throw new Error("No task row");
   return row;
 }
+
+describe("Tasks page: open as chat, steps, search", () => {
+  it("opens the channel of a task", async () => {
+    const open = vi.fn();
+    setup({ c1: [task({ id: "t1", channelId: "c1" })] }, vi.fn(), open);
+    await fireEvent.click(await screen.findByRole("button", { name: "Open as chat" }));
+    expect(open).toHaveBeenCalledWith("c1");
+  });
+
+  it("lists the sub-tasks of a task as its steps", async () => {
+    setup({
+      c1: [
+        task({ id: "t1", title: "Plan the launch" }),
+        task({ id: "t2", title: "Draft the post", parentTaskId: "t1", state: "done" }),
+      ],
+    });
+    expect(await screen.findByText("Steps (1)")).toBeInTheDocument();
+    expect(screen.getAllByText("Draft the post").length).toBeGreaterThan(0);
+  });
+
+  it("filters by the search words", async () => {
+    setup({ c1: [task({ id: "t1", title: "Write the report" }), task({ id: "t3", title: "Fix the bug" })] });
+    await screen.findByText("Fix the bug");
+    await fireEvent.input(screen.getByRole("searchbox", { name: "Search tasks" }), { target: { value: "bug" } });
+    expect(screen.queryByText("Write the report")).not.toBeInTheDocument();
+    expect(screen.getByText("Fix the bug")).toBeInTheDocument();
+  });
+});

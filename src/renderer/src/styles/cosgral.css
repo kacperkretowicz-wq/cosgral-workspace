@@ -2345,3 +2345,38 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .usage-split-legend dd {
   margin: 0;
 }
+
+/* UI-M: Tasks page search, "Open as chat" and the steps of a task. */
+.tasks-search {
+  max-width: 360px;
+}
+
+.tasks-row {
+  flex-wrap: wrap;
+}
+
+.tasks-steps {
+  flex: 1 0 100%;
+  margin-top: 6px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.tasks-steps summary {
+  cursor: pointer;
+}
+
+.tasks-steps ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.tasks-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

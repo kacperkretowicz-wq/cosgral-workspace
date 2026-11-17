@@ -1,6 +1,7 @@
 import type { ChannelTask, ChannelTaskAction, ChannelTaskState, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
-import { Badge, type BadgeTone, Button, Card, Heading, Text } from "./ui";
+import { t } from "../i18n";
+import { Badge, type BadgeTone, Button, Card, Heading, Input, Text } from "./ui";
 
 /** Filters of the Tasks page. "Archived" shows archived tasks only; every other filter hides them. */
 const FILTERS = [
@@ -63,10 +64,15 @@ function formatUpdated(iso: string): string {
  * and the actions the channels contract gives a person (`channels.list`, `listTasks`, `actOnTask`,
  * `task-changed`, `channels-changed`).
  */
-export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) {
+export function TasksPage(props: {
+  bots: Array<{ id: string; name: string }>;
+  /** Opens the channel that holds the task, like a chat. */
+  onOpenChannel?: (channelId: string) => void;
+}) {
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [tasks, setTasks] = createSignal<ChannelTask[]>([]);
   const [filter, setFilter] = createSignal<TaskFilter>("all");
+  const [query, setQuery] = createSignal("");
   const [loaded, setLoaded] = createSignal(false);
   const [busy, setBusy] = createSignal<string | null>(null);
   const [error, setError] = createSignal("");
@@ -75,6 +81,7 @@ export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) 
   const visible = createMemo(() =>
     tasks()
       .filter((task) => matches(task, filter()))
+      .filter((task) => matchesQuery(task))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
   );
   const channelName = (id: string) => {
@@ -82,6 +89,14 @@ export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) 
     return channel ? `#${channel.name}` : "#channel";
   };
   const ownerName = (id: string) => props.bots.find((bot) => bot.id === id)?.name ?? "Agent";
+  const stepsOf = (task: ChannelTask) => tasks().filter((item) => item.parentTaskId === task.id);
+  function matchesQuery(task: ChannelTask): boolean {
+    const needle = query().trim().toLowerCase();
+    if (!needle) return true;
+    return [task.title, channelName(task.channelId), ownerName(task.ownerBotId)].some((text) =>
+      text.toLowerCase().includes(needle),
+    );
+  }
 
   async function load(list: WorkspaceChannel[]) {
     const api = window.openbot.channels;
@@ -170,6 +185,14 @@ export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) 
           )}
         </For>
       </fieldset>
+      <Input
+        type="search"
+        class="tasks-search"
+        aria-label={t("Search tasks")}
+        placeholder={t("Search tasks")}
+        value={query()}
+        onInput={(event) => setQuery(event.currentTarget.value)}
+      />
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
           {error()}
@@ -203,6 +226,16 @@ export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) 
                       {STATE_VIEW[task.state].label}
                     </Badge>
                     <div class="tasks-actions">
+                      <Show when={props.onOpenChannel}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => props.onOpenChannel?.(task.channelId)}
+                        >
+                          {t("Open as chat")}
+                        </Button>
+                      </Show>
                       <For each={taskActions(task)}>
                         {(action) => (
                           <Button
@@ -217,6 +250,26 @@ export function TasksPage(props: { bots: Array<{ id: string; name: string }> }) 
                         )}
                       </For>
                     </div>
+                    <Show when={stepsOf(task).length > 0}>
+                      <details class="tasks-steps">
+                        <summary>
+                          {t("Steps")} ({stepsOf(task).length})
+                        </summary>
+                        <ul>
+                          <For each={stepsOf(task)}>
+                            {(step) => (
+                              <li data-state={step.state}>
+                                <span>{step.title}</span>
+                                <Badge tone={STATE_VIEW[step.state].tone} dot>
+                                  {STATE_VIEW[step.state].label}
+                                </Badge>
+                                <small>{ownerName(step.ownerBotId)}</small>
+                              </li>
+                            )}
+                          </For>
+                        </ul>
+                      </details>
+                    </Show>
                   </li>
                 )}
               </For>
