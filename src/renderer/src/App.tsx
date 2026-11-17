@@ -65,6 +65,7 @@ import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { RoutinePanel } from "./components/RoutinePanel";
 import { ServerRail } from "./components/ServerRail";
+import { ServerSettingsPage } from "./components/ServerSettingsPage";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { SkillsSettings } from "./components/SkillsSettings";
@@ -2173,6 +2174,9 @@ export function App() {
               <Show when={activePage() === "usage"}>
                 <UsagePage />
               </Show>
+              <Show when={activePage() === "server-settings"}>
+                <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />
+              </Show>
               <Show
                 when={
                   activePage() !== "agents" &&
@@ -2184,6 +2188,7 @@ export function App() {
                   activePage() !== "phone" &&
                   activePage() !== "providers" &&
                   activePage() !== "tasks" &&
+                  activePage() !== "server-settings" &&
                   activePage() !== "usage"
                 }
               >

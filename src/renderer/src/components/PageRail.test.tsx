@@ -25,6 +25,7 @@ describe("PageRail", () => {
       "Remote desktop",
       "Providers",
       "Phone",
+      "Server settings",
       "Settings",
     ]);
     expect(PAGE_RAIL_ITEMS.map((item) => item.label)).toEqual(names.slice(0, -1));

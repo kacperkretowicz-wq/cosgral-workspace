@@ -215,7 +215,7 @@ export interface SettingsTab {
   available: boolean;
 }
 
-/** The pages of the page rail, in rail order (the renderer's PAGE_RAIL_ITEMS has the same ten ids). */
+/** The pages of the page rail, in rail order (the renderer's PAGE_RAIL_ITEMS has the same ids). */
 export const APP_PAGE_IDS = [
   "agents",
   "schedule",
@@ -227,6 +227,7 @@ export const APP_PAGE_IDS = [
   "remote-desktop",
   "providers",
   "phone",
+  "server-settings",
 ] as const;
 export type AppPageId = (typeof APP_PAGE_IDS)[number];
 

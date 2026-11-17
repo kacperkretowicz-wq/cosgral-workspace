@@ -1562,3 +1562,134 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   margin: 0;
   font-size: var(--cosgral-text-sm);
 }
+
+/* W12-UI2: server settings page (14 sections). */
+.server-settings {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--cosgral-bg-canvas);
+}
+
+.server-settings-header {
+  display: flex;
+  height: var(--left-header-height, 38px);
+  flex: 0 0 var(--left-header-height, 38px);
+  align-items: center;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 0 16px 0 36px;
+}
+
+.server-settings-header h1 {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+  font-weight: 500;
+  color: var(--cosgral-text-secondary);
+}
+
+.server-settings-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.server-settings-nav {
+  display: flex;
+  width: 220px;
+  flex: 0 0 220px;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  border-right: 1px solid var(--cosgral-border);
+  padding: 12px 8px;
+}
+
+.server-settings-nav-item {
+  display: flex;
+  justify-content: space-between;
+  border-radius: var(--cosgral-radius-md);
+  text-align: left;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-lg);
+}
+
+.server-settings-nav-item[aria-current="page"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.server-settings-nav-item small {
+  color: var(--cosgral-text-dim);
+  font-size: var(--cosgral-text-sm);
+}
+
+.server-settings-panel {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 20px 28px;
+}
+
+.server-settings-panel h2 {
+  margin: 0 0 4px;
+  font-size: var(--cosgral-text-xl);
+  font-weight: 600;
+}
+
+.server-settings-field {
+  display: flex;
+  max-width: 560px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: var(--cosgral-text-md);
+}
+
+.server-settings-field input,
+.server-settings-field select {
+  width: 240px;
+}
+
+.server-settings-note {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.server-settings-error {
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.server-settings-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.server-settings-storage {
+  display: flex;
+  max-width: 560px;
+  margin: 0;
+  flex-direction: column;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.server-settings-storage li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: var(--cosgral-text-md);
+}
+
+.server-settings-storage li + li {
+  border-top: 1px solid var(--cosgral-border);
+}
