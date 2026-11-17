@@ -1,7 +1,7 @@
 import { traits, VERSION } from "blobatar";
 import { blobatar, layout } from "blobatar/blob";
 import { describe, expect, it } from "vitest";
-import { avatarCandidateSeeds, avatarHeadColor, buildAnimatedAvatarSvg } from "./blobatar";
+import { avatarCandidateSeeds, avatarHeadColor, buildAnimatedAvatarSvg, ownAvatarBody } from "./blobatar";
 
 const avatarGeometryMarkup = (markup: string) => {
   const document = new DOMParser().parseFromString(markup, "image/svg+xml");
@@ -9,6 +9,9 @@ const avatarGeometryMarkup = (markup: string) => {
     (element) => element.outerHTML,
   );
 };
+
+/** The two own bodies replace the whole body; the two eye shapes must still match the package. */
+const withoutOwnBody = (seed: string, geometry: string[]) => (ownAvatarBody(seed) ? geometry.slice(-2) : geometry);
 
 describe("animated Blobatar adapter", () => {
   it("uses the current Blobatar generation", () => {
@@ -42,8 +45,8 @@ describe("animated Blobatar adapter", () => {
     const seed = "chief:avatar:2:4";
     const hue = 215;
 
-    expect(avatarGeometryMarkup(buildAnimatedAvatarSvg(seed, hue))).toEqual(
-      avatarGeometryMarkup(blobatar(seed, { hue })),
+    expect(withoutOwnBody(seed, avatarGeometryMarkup(buildAnimatedAvatarSvg(seed, hue)))).toEqual(
+      withoutOwnBody(seed, avatarGeometryMarkup(blobatar(seed, { hue }))),
     );
   });
 
@@ -70,7 +73,31 @@ describe("animated Blobatar adapter", () => {
       const animated = buildAnimatedAvatarSvg(seed, 215);
       expect(animated).toContain('class="mo-root"');
       expect(animated.match(/class="mo-eye"/gu)).toHaveLength(2);
-      expect(avatarGeometryMarkup(animated)).toEqual(avatarGeometryMarkup(blobatar(seed, { hue: 215 })));
+      expect(withoutOwnBody(seed, avatarGeometryMarkup(animated))).toEqual(
+        withoutOwnBody(seed, avatarGeometryMarkup(blobatar(seed, { hue: 215 }))),
+      );
     }
+  });
+});
+
+describe("own avatar shapes", () => {
+  it("offers all 12 body shapes among the 12 face candidates", () => {
+    const bodies = new Set(
+      avatarCandidateSeeds("agent", "agent:start", 0).map((seed) => ownAvatarBody(seed) ?? layout(traits(seed)).shape),
+    );
+    expect(bodies.size).toBe(12);
+    expect(bodies.has("ghost")).toBe(true);
+    expect(bodies.has("flower")).toBe(true);
+  });
+
+  it("draws the own bodies with the same eyes and colour as any avatar", () => {
+    const seed = Array.from({ length: 400 }, (_, index) => `s${index}`).find(
+      (candidate) => ownAvatarBody(candidate) === "ghost",
+    );
+    if (!seed) throw new Error("no ghost seed in range");
+    const markup = buildAnimatedAvatarSvg(seed, 150);
+    expect(markup).toContain("M17 86V47");
+    expect(markup.match(/class="mo-eye"/g)).toHaveLength(2);
+    expect(markup).toContain("--mo-head");
   });
 });

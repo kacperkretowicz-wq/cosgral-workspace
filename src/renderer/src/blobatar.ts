@@ -19,6 +19,44 @@ const BLOBATAR_BODY_VARIANTS = [
   "droplet",
 ] as const satisfies readonly Shape[];
 
+/**
+ * Two bodies drawn for COSGRAL on top of the ten Blobatar ones: 12 shapes in all. A seed picks one of the twelve
+ * through a stable hash; for the two own shapes the Blobatar body path is replaced and its eyes, colour and motion stay.
+ */
+export type OwnAvatarBody = "ghost" | "flower";
+
+export function ownAvatarBody(seed: string): OwnAvatarBody | null {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  const slot = (hash >>> 0) % 12;
+  if (slot === 10) return "ghost";
+  if (slot === 11) return "flower";
+  return null;
+}
+
+const GHOST_PATH = "M17 86V47C17 25 31 12 49 12C67 12 81 25 81 47V86L70 78L59.5 86L49 78L38.5 86L28 78Z";
+
+function flowerPath(): string {
+  const points: string[] = [];
+  for (let step = 0; step < 72; step += 1) {
+    const angle = (step / 72) * Math.PI * 2;
+    const radius = 33 + 6 * Math.cos(angle * 8);
+    const x = 49 + radius * Math.cos(angle);
+    const y = 50 + radius * Math.sin(angle);
+    points.push(`${step === 0 ? "M" : "L"}${round2(x)} ${round2(y)}`);
+  }
+  return `${points.join("")}Z`;
+}
+
+const OWN_BODY_PATHS: Record<OwnAvatarBody, string> = { ghost: GHOST_PATH, flower: flowerPath() };
+
+function bodyVariantKey(seed: string) {
+  return ownAvatarBody(seed) ?? layout(traits(seed)).shape;
+}
+
 export const AVATAR_HUE_OPTIONS: ReadonlyArray<{
   hue: BotAvatarHue;
   label: string;
@@ -57,15 +95,15 @@ export function avatarHeadColor(seed: string, hue: BotAvatarHue | null): string 
 
 export function avatarCandidateSeeds(botId: string, currentSeed: string, batch: number): string[] {
   const candidates = [currentSeed];
-  const missingBodyVariants = new Set(BLOBATAR_BODY_VARIANTS);
-  missingBodyVariants.delete(layout(traits(currentSeed)).shape);
+  const missingBodyVariants = new Set<string>([...BLOBATAR_BODY_VARIANTS, "ghost", "flower"]);
+  missingBodyVariants.delete(bodyVariantKey(currentSeed));
   let index = 1;
 
   while (missingBodyVariants.size > 0) {
     const candidate = `${botId}:avatar:${batch}:${index}`;
     index += 1;
     if (candidates.includes(candidate)) continue;
-    if (!missingBodyVariants.delete(layout(traits(candidate)).shape)) continue;
+    if (!missingBodyVariants.delete(bodyVariantKey(candidate))) continue;
     candidates.push(candidate);
   }
 
@@ -85,6 +123,12 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
 
   const [bodyGroup, eyesGroup] = Array.from(svg.children);
   if (!bodyGroup || !eyesGroup) return svgMarkup;
+  const own = ownAvatarBody(seed);
+  if (own) {
+    const ownPath = document.createElementNS(SVG_NAMESPACE, "path");
+    ownPath.setAttribute("d", OWN_BODY_PATHS[own]);
+    bodyGroup.replaceChildren(ownPath);
+  }
 
   const reader = traits(seed);
   const resolvedLayout = layout(reader);
