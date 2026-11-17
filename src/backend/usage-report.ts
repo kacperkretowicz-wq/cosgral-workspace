@@ -7,6 +7,7 @@ import {
   type MachineLoad,
   type ProviderUsage,
   parseUsageReportInput,
+  type UsageDetailRow,
   type UsageReport,
   type UsageRow,
   usageDay,
@@ -17,6 +18,9 @@ export interface UsageReportOptions {
   rows: (fromDay: string) => UsageRow[];
   /** The first day anything was counted; null when nothing was. */
   firstDay: () => string | null;
+  /** The detail rows (per day, agent and model, by kind of token) from this day on, and the first day there is any; left out = none kept. */
+  detail?: (fromDay: string) => UsageDetailRow[];
+  firstDetailDay?: () => string | null;
   agentName: (botId: string) => string | null;
   providers: () => ProviderUsage[];
   machine: () => Promise<MachineLoad>;
@@ -58,6 +62,8 @@ export class UsageReportService {
       providers,
       machine,
       firstDay: this.#options.firstDay(),
+      detail: this.#options.detail?.(fromDay) ?? [],
+      firstDetailDay: this.#options.firstDetailDay?.() ?? null,
     });
   }
 }

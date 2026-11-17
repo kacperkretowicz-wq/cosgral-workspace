@@ -158,6 +158,45 @@ export interface MachineLoad {
   memoryPercent: number | null;
 }
 
+/** One row of the detail counter: the use of one agent on one day with one model, by kind of token (only turns whose provider reported the parts). */
+export interface UsageDetailRow {
+  day: string;
+  botId: string;
+  model: string;
+  turns: number;
+  input: number;
+  /** The part of the input that came from the provider's cache. */
+  cached: number;
+  output: number;
+  reasoning: number;
+}
+
+export interface UsageModelRow {
+  model: string;
+  turns: number;
+  /** Input + output. */
+  tokens: number;
+  input: number;
+  cached: number;
+  output: number;
+  reasoning: number;
+  /** Whole percent of the tokens of all models of the period. */
+  tokenShare: number;
+}
+
+/** What the parts add up to in the period, for the "totals" block of the screen. */
+export interface UsageTokenSplit {
+  turns: number;
+  input: number;
+  cached: number;
+  /** Input that did not come from the cache. */
+  freshInput: number;
+  output: number;
+  reasoning: number;
+  /** Whole percent of the tokens of the period that come with their parts (turns before the parts were kept have none). */
+  coverage: number;
+}
+
 export interface UsageReport {
   period: UsagePeriod;
   botId: string | null;
@@ -172,6 +211,12 @@ export interface UsageReport {
   /** The limit "rings" of the providers (the same as `providers.listUsage`). */
   providers: ProviderUsage[];
   machine: MachineLoad;
+  /** By model, the biggest first; empty when no turn of the period came with its parts. */
+  byModel: UsageModelRow[];
+  /** null when no turn of the period came with its parts. */
+  split: UsageTokenSplit | null;
+  /** The first day a turn was kept with its parts; null when none was. */
+  detailSince: string | null;
   /** The first day anything was counted; null when nothing was counted yet. */
   collectingSince: string | null;
   generatedAt: string;
@@ -480,6 +525,9 @@ export function isUsageReport(value: unknown): value is UsageReport {
   );
   return (
     providers &&
+    isModelRows(value.byModel) &&
+    (value.split === null || isSplit(value.split)) &&
+    (value.detailSince === null || isString(value.detailSince)) &&
     isDynamicRecord(value.machine) &&
     (value.machine.cpuPercent === null || isPercent(value.machine.cpuPercent)) &&
     (value.machine.memoryPercent === null || isPercent(value.machine.memoryPercent)) &&
@@ -489,6 +537,37 @@ export function isUsageReport(value: unknown): value is UsageReport {
     value.unavailable.every(
       (item) => isDynamicRecord(item) && isOneOf(USAGE_UNAVAILABLE_BREAKDOWNS, item.breakdown) && isString(item.reason),
     )
+  );
+}
+
+function isModelRows(value: unknown): value is UsageModelRow[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (row) =>
+        isDynamicRecord(row) &&
+        isString(row.model) &&
+        isCount(row.turns) &&
+        isCount(row.tokens) &&
+        isCount(row.input) &&
+        isCount(row.cached) &&
+        isCount(row.output) &&
+        isCount(row.reasoning) &&
+        isPercent(row.tokenShare),
+    )
+  );
+}
+
+function isSplit(value: unknown): value is UsageTokenSplit {
+  return (
+    isDynamicRecord(value) &&
+    isCount(value.turns) &&
+    isCount(value.input) &&
+    isCount(value.cached) &&
+    isCount(value.freshInput) &&
+    isCount(value.output) &&
+    isCount(value.reasoning) &&
+    isPercent(value.coverage)
   );
 }
 
@@ -627,11 +706,15 @@ function totalsOf(rows: readonly Pick<UsageRow, "tokens" | "turns" | "costUsd" |
   };
 }
 
-const UNAVAILABLE: UsageUnavailable[] = [
-  { breakdown: "model", reason: "The counter keeps a total per agent and day, not per model." },
-  { breakdown: "skill", reason: "The counter does not tell which skill a turn used." },
-  { breakdown: "cache", reason: "The providers' cache and input/output split is not kept; only the total tokens are." },
+const NO_DETAIL: UsageUnavailable[] = [
+  {
+    breakdown: "model",
+    reason:
+      "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).",
+  },
+  { breakdown: "cache", reason: "No turn of this period was kept with its cache and input/output split yet." },
 ];
+const NO_SKILL: UsageUnavailable = { breakdown: "skill", reason: "The counter does not tell which skill a turn used." };
 
 /**
  * The report of a period from the rows of the counter (one row per day and agent). Every day of the period is listed, also the
@@ -647,6 +730,9 @@ export function aggregateUsage(input: {
   machine: MachineLoad;
   /** The first day anything was ever counted, whatever the period. */
   firstDay: string | null;
+  /** The detail rows (per day, agent and model) from the first day of the period on, and the first day of any detail. */
+  detail?: readonly UsageDetailRow[];
+  firstDetailDay?: string | null;
   now: Date;
 }): UsageReport {
   const last = usageDay(input.today);
@@ -676,6 +762,11 @@ export function aggregateUsage(input: {
       };
     })
     .sort((a, b) => b.tokens - a.tokens || a.botId.localeCompare(b.botId));
+  const detailRows = (input.detail ?? []).filter(
+    (row) => row.day >= first && row.day <= last && (input.botId === null || row.botId === input.botId),
+  );
+  const byModel = modelRows(detailRows);
+  const split = splitOf(detailRows, totals.tokens);
   return {
     period: input.period,
     botId: input.botId,
@@ -686,8 +777,52 @@ export function aggregateUsage(input: {
     byAgent,
     providers: input.providers,
     machine: input.machine,
+    byModel,
+    split,
+    detailSince: input.firstDetailDay ?? null,
     collectingSince: input.firstDay,
     generatedAt: input.now.toISOString(),
-    unavailable: UNAVAILABLE.map((item) => ({ ...item })),
+    unavailable: [...(byModel.length === 0 ? NO_DETAIL : []), NO_SKILL].map((item) => ({ ...item })),
+  };
+}
+
+function modelRows(rows: readonly UsageDetailRow[]): UsageModelRow[] {
+  const models = [...new Set(rows.map((row) => row.model))];
+  const sums = models.map((model) => {
+    const mine = rows.filter((row) => row.model === model);
+    const sum = (pick: (row: UsageDetailRow) => number) => mine.reduce((total, row) => total + pick(row), 0);
+    const input = sum((row) => row.input);
+    const output = sum((row) => row.output);
+    return {
+      model,
+      turns: sum((row) => row.turns),
+      tokens: input + output,
+      input,
+      cached: sum((row) => row.cached),
+      output,
+      reasoning: sum((row) => row.reasoning),
+    };
+  });
+  const all = sums.reduce((total, row) => total + row.tokens, 0);
+  return sums
+    .map((row) => ({ ...row, tokenShare: all === 0 ? 0 : Math.round((row.tokens / all) * 100) }))
+    .sort((a, b) => b.tokens - a.tokens || a.model.localeCompare(b.model));
+}
+
+function splitOf(rows: readonly UsageDetailRow[], periodTokens: number): UsageTokenSplit | null {
+  if (rows.length === 0) return null;
+  const sum = (pick: (row: UsageDetailRow) => number) => rows.reduce((total, row) => total + pick(row), 0);
+  const input = sum((row) => row.input);
+  const cached = sum((row) => row.cached);
+  const output = sum((row) => row.output);
+  const covered = input + output;
+  return {
+    turns: sum((row) => row.turns),
+    input,
+    cached,
+    freshInput: Math.max(0, input - cached),
+    output,
+    reasoning: sum((row) => row.reasoning),
+    coverage: periodTokens === 0 ? 100 : Math.min(100, Math.round((covered / periodTokens) * 100)),
   };
 }

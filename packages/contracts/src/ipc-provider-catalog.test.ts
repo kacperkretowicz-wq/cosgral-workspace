@@ -8,13 +8,17 @@ import {
   isProviderCatalogItems,
   maskProviderKey,
   PROVIDER_CATALOG,
+  PROVIDER_KEY_POOL_LIMITS,
+  parseAddProviderCatalogKeyInput,
   parseProviderCatalogKeyInput,
+  parseProviderCatalogKeySlotInput,
+  parseSetProviderCatalogKeyEnabledInput,
   parseSetProviderCatalogKeyInput,
 } from "./ipc-provider-catalog";
 
 const items = PROVIDER_CATALOG.map((entry) => ({
   ...entry,
-  state: { commandDetected: null, keySaved: false, keyMask: null, added: false },
+  state: { commandDetected: null, keySaved: false, keyMask: null, keys: [], added: false },
 }));
 
 describe("provider catalog contract (W12 BE-E)", () => {
@@ -86,5 +90,54 @@ describe("provider catalog contract (W12 BE-E)", () => {
     expect(isProviderCatalogChanged(event)).toBe(true);
     expect(isAgentEvent(event)).toBe(true);
     expect(isAgentEvent({ type: "provider-catalog-changed", items: [] })).toBe(false);
+  });
+
+  it("keeps a small pool of keys: add with a name, remove, switch off; Codex and Claude keep one", () => {
+    expect(
+      parseAddProviderCatalogKeyInput({ providerId: "mistral", key: "mistral-key-12345", label: " Work " }),
+    ).toEqual({
+      providerId: "mistral",
+      key: "mistral-key-12345",
+      label: "Work",
+    });
+    expect(parseAddProviderCatalogKeyInput({ providerId: "mistral", key: "mistral-key-12345" }).label).toBeUndefined();
+    const bad: unknown[] = [
+      { providerId: "codex", key: "a-valid-looking-key" },
+      { providerId: "claude", key: "a-valid-looking-key" },
+      { providerId: "kimi", key: "a-valid-looking-key" },
+      { providerId: "mistral", key: "a-valid-looking-key", label: "  " },
+      { providerId: "mistral", key: "a-valid-looking-key", label: "x".repeat(PROVIDER_KEY_POOL_LIMITS.label + 1) },
+    ];
+    for (const input of bad) expect(() => parseAddProviderCatalogKeyInput(input), JSON.stringify(input)).toThrow();
+    expect(parseProviderCatalogKeySlotInput({ providerId: "grok", keyId: "key-2" })).toEqual({
+      providerId: "grok",
+      keyId: "key-2",
+    });
+    for (const input of [
+      { providerId: "grok" },
+      { providerId: "grok", keyId: "Bad Id" },
+      { providerId: "grok", keyId: "" },
+    ]) {
+      expect(() => parseProviderCatalogKeySlotInput(input), JSON.stringify(input)).toThrow();
+    }
+    expect(
+      parseSetProviderCatalogKeyEnabledInput({ providerId: "grok", keyId: "default", enabled: false }).enabled,
+    ).toBe(false);
+    expect(() =>
+      parseSetProviderCatalogKeyEnabledInput({ providerId: "grok", keyId: "default", enabled: "no" }),
+    ).toThrow();
+  });
+
+  it("accepts a state with keys and refuses a broken or too long pool", () => {
+    const slot = { id: "default", label: "Key", mask: "••••1234", enabled: true, limitedUntil: null };
+    const withKeys = items.map((item) => ({ ...item, state: { ...item.state, keys: [slot] } }));
+    expect(isProviderCatalogItems(withKeys)).toBe(true);
+    const broken = items.map((item) => ({ ...item, state: { ...item.state, keys: [{ ...slot, enabled: "yes" }] } }));
+    expect(isProviderCatalogItems(broken)).toBe(false);
+    const tooMany = items.map((item) => ({
+      ...item,
+      state: { ...item.state, keys: Array.from({ length: PROVIDER_KEY_POOL_LIMITS.maxKeys + 1 }, () => slot) },
+    }));
+    expect(isProviderCatalogItems(tooMany)).toBe(false);
   });
 });

@@ -230,6 +230,9 @@ export const IPC_CHANNELS = {
   providerCatalogList: "provider-catalog:list",
   providerCatalogSetKey: "provider-catalog:set-key",
   providerCatalogClearKey: "provider-catalog:clear-key",
+  providerCatalogAddKey: "provider-catalog:add-key",
+  providerCatalogRemoveKey: "provider-catalog:remove-key",
+  providerCatalogSetKeyEnabled: "provider-catalog:set-key-enabled",
   // COSGRAL W12 (BE-H): library view, usage report and schedule.
   libraryViewPage: "library-view:page",
   libraryViewDeleteMany: "library-view:delete-many",

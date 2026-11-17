@@ -13,6 +13,8 @@ export class ThreadCli extends EventEmitter implements AgentClient {
   readonly pending: Array<{ threadId: string; turnId: string; text: string }> = [];
   /** Tokens the CLI reports as used when a turn of this CLI thread ends (window: `windowTokens`). */
   readonly usage = new Map<string, number>();
+  /** The parts of the running total a thread reports (input, cached input, output, reasoning), when a test wants them. */
+  readonly usageParts = new Map<string, { input: number; cached: number; output: number; reasoning: number }>();
   windowTokens = 100_000;
   /** Say nothing about tokens at all. */
   reportUsage = true;
@@ -114,7 +116,17 @@ export class ThreadCli extends EventEmitter implements AgentClient {
         threadId,
         turnId,
         tokenUsage: {
-          total: { totalTokens: used },
+          total: {
+            totalTokens: used,
+            ...(this.usageParts.has(threadId)
+              ? {
+                  inputTokens: this.usageParts.get(threadId)?.input,
+                  cachedInputTokens: this.usageParts.get(threadId)?.cached,
+                  outputTokens: this.usageParts.get(threadId)?.output,
+                  reasoningOutputTokens: this.usageParts.get(threadId)?.reasoning,
+                }
+              : {}),
+          },
           last: { totalTokens: used },
           modelContextWindow: this.windowTokens,
         },

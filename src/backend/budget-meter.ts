@@ -33,9 +33,11 @@ import {
   preferredModel,
   type SetBudgetInput,
   scopeKey,
+  type UsageDetailRow,
   type UsageRow,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import type { TokenSplit } from "./budget-thread-split";
 import type { OpenBotDatabase } from "./openbot-database";
 
 const SCHEMA = `
@@ -47,6 +49,17 @@ const SCHEMA = `
     cost_micro INTEGER NOT NULL DEFAULT 0,
     priced_turns INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (day, agent_id)
+  );
+  CREATE TABLE IF NOT EXISTS projection_budget_usage_detail (
+    day TEXT NOT NULL,
+    agent_id TEXT NOT NULL,
+    model TEXT NOT NULL,
+    turns INTEGER NOT NULL DEFAULT 0,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    cached_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    reasoning_tokens INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, agent_id, model)
   );
   CREATE TABLE IF NOT EXISTS projection_budgets (
     scope TEXT PRIMARY KEY,
@@ -63,6 +76,8 @@ export interface RecordedTurn {
   tokens: number;
   /** Dollars the provider reported for the turn; null when it reported none (never a guess). */
   costUsd: number | null;
+  /** COSGRAL W12: the model of the turn and what it used by kind of token, when the provider reported the parts (else left out). */
+  detail?: { model: string; split: TokenSplit };
 }
 
 /** What the engine asks before it starts a new paid turn. */
@@ -157,6 +172,7 @@ export class BudgetMeter {
         priced ? Math.round((turn.costUsd ?? 0) * MICRO) : 0,
         priced ? 1 : 0,
       );
+    if (turn.detail) this.#recordDetail(turn.botId, turn.detail);
     this.#publish(false);
   }
 
@@ -286,6 +302,61 @@ export class BudgetMeter {
             ]
           : [],
       );
+  }
+
+  #recordDetail(botId: string, detail: NonNullable<RecordedTurn["detail"]>): void {
+    const { split } = detail;
+    this.#db()
+      .prepare(
+        `INSERT INTO projection_budget_usage_detail
+           (day, agent_id, model, turns, input_tokens, cached_tokens, output_tokens, reasoning_tokens)
+         VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+         ON CONFLICT(day, agent_id, model) DO UPDATE SET
+           turns = turns + 1, input_tokens = input_tokens + excluded.input_tokens,
+           cached_tokens = cached_tokens + excluded.cached_tokens, output_tokens = output_tokens + excluded.output_tokens,
+           reasoning_tokens = reasoning_tokens + excluded.reasoning_tokens`,
+      )
+      .run(
+        budgetDay(this.#now()),
+        botId,
+        detail.model.slice(0, 120),
+        split.input,
+        split.cached,
+        split.output,
+        split.reasoning,
+      );
+  }
+
+  /** COSGRAL W12: the use per day, agent and model by kind of token, from `fromDay` on (only turns whose provider reported the parts). */
+  dailyDetail(fromDay: string): UsageDetailRow[] {
+    return this.#db()
+      .prepare(
+        `SELECT day, agent_id, model, turns, input_tokens, cached_tokens, output_tokens, reasoning_tokens
+         FROM projection_budget_usage_detail WHERE day >= ? ORDER BY day, agent_id, model`,
+      )
+      .all(fromDay)
+      .flatMap((row) =>
+        isDynamicRecord(row) && isString(row.day) && isString(row.agent_id) && isString(row.model)
+          ? [
+              {
+                day: row.day,
+                botId: row.agent_id,
+                model: row.model,
+                turns: numberOf(row.turns),
+                input: numberOf(row.input_tokens),
+                cached: numberOf(row.cached_tokens),
+                output: numberOf(row.output_tokens),
+                reasoning: numberOf(row.reasoning_tokens),
+              },
+            ]
+          : [],
+      );
+  }
+
+  /** COSGRAL W12: the first day a turn was recorded with its parts; null when none was. */
+  firstDetailDay(): string | null {
+    const row = this.#db().prepare("SELECT MIN(day) AS day FROM projection_budget_usage_detail").get();
+    return isDynamicRecord(row) && isString(row.day) ? row.day : null;
   }
 
   /** COSGRAL W12: the first day anything was counted; null when nothing was. */

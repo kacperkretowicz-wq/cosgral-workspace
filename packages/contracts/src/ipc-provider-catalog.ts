@@ -86,13 +86,30 @@ export interface ProviderCatalogEntry {
   pickerOrder: number;
 }
 
+/** Several keys of one provider make a small pool: each start of its agent takes the next key that is on and not limited. */
+export const PROVIDER_KEY_POOL_LIMITS = { maxKeys: 10, label: 64 } as const;
+
+export interface ProviderKeySlot {
+  /** "default" is the key of `setKey`; the others are made by `addKey`. */
+  id: string;
+  label: string;
+  /** "••••1234"; the key itself never comes out. */
+  mask: string;
+  /** false = kept but not used. */
+  enabled: boolean;
+  /** The provider said this key's limit is used up until this time (ISO); null = not limited. */
+  limitedUntil: string | null;
+}
+
 /** What `list` knows about an entry on this computer. */
 export interface ProviderCatalogState {
   /** The program of the provider as found on this computer (an absolute path); null = not found or not looked for. */
   commandDetected: string | null;
   keySaved: boolean;
-  /** "••••1234", or null when no key is saved. */
+  /** "••••1234" of the first key, or null when no key is saved. */
   keyMask: string | null;
+  /** Every key of the provider, in the order they are used. Codex and Claude have at most the "default" key (their pool is the accounts of Providers). */
+  keys: ProviderKeySlot[];
   /** The ACP agent of this provider is already in Providers. */
   added: boolean;
 }
@@ -110,13 +127,32 @@ export interface SetProviderCatalogKeyInput extends ProviderCatalogKeyInput {
   key: string;
 }
 
+export interface AddProviderCatalogKeyInput extends SetProviderCatalogKeyInput {
+  /** A name to tell the keys apart; default "Key 2", "Key 3"…. */
+  label?: string;
+}
+
+export interface ProviderCatalogKeySlotInput extends ProviderCatalogKeyInput {
+  keyId: string;
+}
+
+export interface SetProviderCatalogKeyEnabledInput extends ProviderCatalogKeySlotInput {
+  enabled: boolean;
+}
+
 /** `window.openbot.providerCatalog` (this computer only). */
 export interface ProviderCatalogDesktopApi {
   /** The 18 entries in picker order, each with its state. */
   list: () => Promise<ProviderCatalogItem[]>;
   /** Saves the key encrypted; refused for a provider that takes no key. Returns the entry with its new state. */
   setKey: (input: SetProviderCatalogKeyInput) => Promise<ProviderCatalogItem>;
+  /** Removes every key of the provider. */
   clearKey: (input: ProviderCatalogKeyInput) => Promise<ProviderCatalogItem>;
+  /** Adds one more key to the pool of the provider (up to PROVIDER_KEY_POOL_LIMITS.maxKeys); refused for Codex and Claude. */
+  addKey: (input: AddProviderCatalogKeyInput) => Promise<ProviderCatalogItem>;
+  removeKey: (input: ProviderCatalogKeySlotInput) => Promise<ProviderCatalogItem>;
+  /** Switches a key off (kept, not used) or on again. */
+  setKeyEnabled: (input: SetProviderCatalogKeyEnabledInput) => Promise<ProviderCatalogItem>;
 }
 
 /** Event `provider-catalog-changed`: the whole list again (a key was saved or removed, an agent was added or removed). */
@@ -441,6 +477,37 @@ export function parseSetProviderCatalogKeyInput(input: unknown): SetProviderCata
   return { providerId, key };
 }
 
+export function parseAddProviderCatalogKeyInput(input: unknown): AddProviderCatalogKeyInput {
+  const base = parseSetProviderCatalogKeyInput(input);
+  if (base.providerId === "codex" || base.providerId === "claude") {
+    throw new Error("Codex and Claude keep one key; their pool is the accounts of Providers.");
+  }
+  if (!isDynamicRecord(input) || input.label === undefined) return base;
+  const label = isString(input.label) ? input.label.trim() : "";
+  if (label.length === 0 || label.length > PROVIDER_KEY_POOL_LIMITS.label) {
+    throw new Error(`The name of a key has 1 to ${PROVIDER_KEY_POOL_LIMITS.label} characters.`);
+  }
+  return { ...base, label };
+}
+
+function parseSlotInput(input: unknown): ProviderCatalogKeySlotInput {
+  const { providerId } = parseProviderCatalogKeyInput(input);
+  if (!isDynamicRecord(input) || !isString(input.keyId) || !/^[a-z0-9-]{1,40}$/.test(input.keyId)) {
+    throw new Error("Choose a key.");
+  }
+  return { providerId, keyId: input.keyId };
+}
+
+export function parseProviderCatalogKeySlotInput(input: unknown): ProviderCatalogKeySlotInput {
+  return parseSlotInput(input);
+}
+
+export function parseSetProviderCatalogKeyEnabledInput(input: unknown): SetProviderCatalogKeyEnabledInput {
+  const slot = parseSlotInput(input);
+  if (!isDynamicRecord(input) || !isBoolean(input.enabled)) throw new Error("A key is on or off.");
+  return { ...slot, enabled: input.enabled };
+}
+
 /** The mask shown for a saved key: the last 4 characters of a long key, only dots for a short one. */
 export function maskProviderKey(key: string): string {
   return key.length >= 12 ? `••••${key.slice(-4)}` : "••••";
@@ -482,6 +549,9 @@ export function isProviderCatalogState(value: unknown): value is ProviderCatalog
     (value.commandDetected === null || isString(value.commandDetected)) &&
     isBoolean(value.keySaved) &&
     (value.keyMask === null || isString(value.keyMask)) &&
+    Array.isArray(value.keys) &&
+    value.keys.length <= PROVIDER_KEY_POOL_LIMITS.maxKeys &&
+    value.keys.every(isKeySlot) &&
     isBoolean(value.added)
   );
 }
@@ -503,4 +573,15 @@ export function isProviderCatalogChanged(
   value: unknown,
 ): value is ProviderCatalogChanged & { type: "provider-catalog-changed" } {
   return isDynamicRecord(value) && value.type === "provider-catalog-changed" && isProviderCatalogItems(value.items);
+}
+
+function isKeySlot(value: unknown): value is ProviderKeySlot {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.label) &&
+    isString(value.mask) &&
+    isBoolean(value.enabled) &&
+    (value.limitedUntil === null || isString(value.limitedUntil))
+  );
 }

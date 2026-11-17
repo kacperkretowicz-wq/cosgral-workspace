@@ -118,6 +118,7 @@ import type { ApprovalRulesStore } from "./approval-rules";
 import type { BotStore } from "./bot-store";
 import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host";
 import type { BudgetMeter } from "./budget-meter";
+import { addSplits, PersistentSplitTracker, splitFromTokenUsage, type TokenSplit } from "./budget-thread-split";
 import { PersistentUsageTracker } from "./budget-thread-totals";
 import { ChannelAgentRunner } from "./channel-agent-runner";
 import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
@@ -400,6 +401,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** COSGRAL W8-BE2: the token counter and the budget gate (attached by the program; without it nothing is counted or held). */
   #budgets: BudgetMeter | null = null;
   #budgetTotals: PersistentUsageTracker | null = null;
+  /** COSGRAL W12: the same by kind of token (input, cached, output, reasoning), for the usage screen; only when the provider reports the parts. */
+  #budgetSplit: PersistentSplitTracker | null = null;
+  readonly #budgetSplitPending = new Map<string, TokenSplit>();
   /** Tokens a CLI thread used in the turn that is running, counted into the budget when the turn ends. */
   readonly #budgetPending = new Map<string, number>();
   /** Agents whose next message waits because a budget is used up, with the sentence for the person. */
@@ -1007,6 +1011,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   useBudgets(meter: BudgetMeter): void {
     this.#budgets = meter;
     this.#budgetTotals = new PersistentUsageTracker(this.#store.database);
+    this.#budgetSplit = new PersistentSplitTracker(this.#store.database);
   }
 
   /** The limits or the clock changed (a budget was set or cleared, a new period began): held messages try again. */
@@ -3328,6 +3333,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (total === null) return;
     const used = this.#budgetTotals.observe(threadId, total);
     if (used > 0) this.#budgetPending.set(threadId, (this.#budgetPending.get(threadId) ?? 0) + used);
+    const parts = splitFromTokenUsage(getRecord(getRecord(params, "tokenUsage"), "total"));
+    if (parts && this.#budgetSplit) {
+      const more = this.#budgetSplit.observe(threadId, parts);
+      this.#budgetSplitPending.set(
+        threadId,
+        addSplits(this.#budgetSplitPending.get(threadId) ?? { input: 0, cached: 0, output: 0, reasoning: 0 }, more),
+      );
+    }
   }
 
   /** The turn of this thread ended (done, failed or stopped): its tokens go to the budget. Codex gives no price: null, never a guess. */
@@ -3335,7 +3348,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const tokens = this.#budgetPending.get(threadId);
     this.#budgetPending.delete(threadId);
     const botId = this.#threadToBot.get(threadId);
-    if (tokens && botId) this.#budgets?.record({ botId, tokens, costUsd: null });
+    const split = this.#budgetSplitPending.get(threadId);
+    this.#budgetSplitPending.delete(threadId);
+    const bot = botId ? this.#store.list().find((candidate) => candidate.id === botId) : undefined;
+    const detail = split && bot ? { model: bot.activeModel ?? bot.model, split } : undefined;
+    if (tokens && botId) this.#budgets?.record({ botId, tokens, costUsd: null, ...(detail ? { detail } : {}) });
   }
 
   #updateContextBudget(botId: string, threadId: string, params: unknown): void {

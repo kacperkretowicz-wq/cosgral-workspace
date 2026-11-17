@@ -18,4 +18,7 @@ export function registerProviderCatalogIpc(service: () => ProviderCatalogService
   handle(IPC_CHANNELS.providerCatalogList, (engine) => engine.list());
   handle(IPC_CHANNELS.providerCatalogSetKey, (engine, payload) => engine.setKey(payload));
   handle(IPC_CHANNELS.providerCatalogClearKey, (engine, payload) => engine.clearKey(payload));
+  handle(IPC_CHANNELS.providerCatalogAddKey, (engine, payload) => engine.addKey(payload));
+  handle(IPC_CHANNELS.providerCatalogRemoveKey, (engine, payload) => engine.removeKey(payload));
+  handle(IPC_CHANNELS.providerCatalogSetKeyEnabled, (engine, payload) => engine.setKeyEnabled(payload));
 }
