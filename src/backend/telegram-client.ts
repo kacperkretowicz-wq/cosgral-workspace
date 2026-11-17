@@ -6,18 +6,9 @@
 // sentence. Nothing here logs. A response body is only read for the fields this file knows.
 
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { MessengerFailure, type MessengerFailureKind } from "./messenger-driver";
 
-export type TelegramFailureKind =
-  /** Telegram does not know this token (401 or 404). Trying again does not help. */
-  | "token-refused"
-  /** Another program (or a webhook) already reads this bot's messages (409). */
-  | "conflict"
-  /** Too many requests (429); `retryAfterMs` says how long to wait. */
-  | "rate-limited"
-  /** The network or Telegram itself is not reachable right now (also a 5xx). */
-  | "network"
-  /** Telegram refused this one request (for instance the chat is closed or blocked the bot). */
-  | "rejected";
+export type TelegramFailureKind = MessengerFailureKind;
 
 const SENTENCES: ReadonlyArray<readonly [TelegramFailureKind, string]> = [
   [
@@ -30,15 +21,10 @@ const SENTENCES: ReadonlyArray<readonly [TelegramFailureKind, string]> = [
   ["rejected", "Telegram refused this message."],
 ];
 
-export class TelegramFailure extends Error {
-  readonly kind: TelegramFailureKind;
-  readonly retryAfterMs: number | null;
-
+export class TelegramFailure extends MessengerFailure {
   constructor(kind: TelegramFailureKind, retryAfterMs: number | null = null) {
-    super(SENTENCES.find(([known]) => known === kind)?.[1] ?? "Telegram failed.");
+    super(kind, SENTENCES.find(([known]) => known === kind)?.[1] ?? "Telegram failed.", retryAfterMs);
     this.name = "TelegramFailure";
-    this.kind = kind;
-    this.retryAfterMs = retryAfterMs;
   }
 }
 
