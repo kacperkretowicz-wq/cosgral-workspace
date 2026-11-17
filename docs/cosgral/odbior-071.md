@@ -207,18 +207,18 @@
 
 | # | Luka | Stan odbioru | Dowód |
 |---|---|---|---|
-| 1 | Pasek boczny, nowy agent, chrome czatu | oczekuje UI `team/ui/w11-ui1` | — |
+| 1 | Pasek boczny, nowy agent, chrome czatu | kod: tokeny+sidebar+Nowy agent; **FAIL** i18n hardcod PL; chrome nieoddany; okno: nie | `tester-w11-odbior.md` (statyczny) |
 | 2 | 12 kart ustawień agenta + 14 sekcji serwera | brak ekranów | — |
 | 3 | 18 dostawców, pula kont, CLI | backend w toku | — |
-| 4 | Marketplace Apps | brak | — |
-| 5 | Vault konektory | KK | — |
+| 4 | Marketplace Apps | silnik KK (kanał); UI brak; okno: nie | — |
+| 5 | Vault konektory | silnik KK (kanał); UI brak; okno: nie | — |
 | 6 | Odbiór wątków w prawdziwym oknie | po GO | — |
-| 7 | Komunikatory poza Telegramem | KK | — |
+| 7 | Komunikatory poza Telegramem | plan KK; bez Slack/Discord | — |
 | 8 | Zdalny pulpit | backend/KK | — |
 | 9 | Głos | brak | — |
 | 10 | Biblioteka (siatka) + Użycie | brak UI | — |
 
-`docs/cosgral/parytet-0.68.md`: sekcję „0.71” dopisuj **tylko** gdy PASS w Electronie (pkt 4 T-A).
+`docs/cosgral/parytet-0.68.md` §0.71: tabela luk + stan; **procent 0.68 zmieniaj tylko z dowodem w Electronie**.
 
 ---
 

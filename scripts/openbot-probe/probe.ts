@@ -24,7 +24,11 @@ import {
 } from "./capture.ts";
 import { clickVerdict, isInsideRepo } from "./policy.ts";
 
+/** What the probe looks at: the installed reference program, or our own app (no account needed, so no stand-in sign-in). */
+export type Target = "openbot" | "cosgral";
+
 interface Options {
+  target: Target;
   cdp: string;
   out: string;
   page: string;
@@ -59,15 +63,17 @@ function parseArgs(argv: string[]): Options {
     return given === undefined ? fallback : Number(given);
   };
   return {
+    target: values.get("target") === "cosgral" ? "cosgral" : "openbot",
     cdp: values.get("cdp") ?? "http://127.0.0.1:9333",
     out: resolve(out),
-    page: values.get("page") ?? "index.html",
+    page: values.get("page") ?? (values.get("target") === "cosgral" ? "" : "index.html"),
     preferLanguage: values.get("prefer-language") ?? null,
     maxScreens: number("max-screens", 60),
     maxClicks: number("max-clicks", 200),
     maxMinutes: number("max-minutes", 30),
     dryRun: flags.has("dry-run"),
-    stubLogin: flags.has("stub-login"),
+    // Our own app needs no account: the stand-in sign-in is only for the reference program.
+    stubLogin: flags.has("stub-login") && values.get("target") !== "cosgral",
     createAgent: flags.has("create-agent"),
   };
 }
@@ -111,7 +117,10 @@ async function main(): Promise<void> {
       .map((page) => page.url())
       .join("  |  ")}`,
   );
-  const page = pages().find((candidate) => candidate.url().includes(options.page));
+  // Our own app has one main window and separate dock/island windows (addresses with #dock or #island): the main one is looked at.
+  const page = pages().find(
+    (candidate) => candidate.url().includes(options.page) && !/#(dock|island)/.test(candidate.url()),
+  );
   if (!page) throw new Error(`No window whose address contains "${options.page}".`);
   if (options.dryRun) {
     const state = await readState(page);
@@ -285,7 +294,12 @@ async function main(): Promise<void> {
   const index = {
     version: 1,
     createdAt: new Date().toISOString(),
-    source: { cdp: options.cdp, browser: browser.version(), windows: pages().map((candidate) => candidate.url()) },
+    source: {
+      target: options.target,
+      cdp: options.cdp,
+      browser: browser.version(),
+      windows: pages().map((candidate) => candidate.url()),
+    },
     budgets: { maxScreens: options.maxScreens, maxClicks: options.maxClicks, maxMinutes: options.maxMinutes },
     clicks,
     seconds: Math.round((Date.now() - started) / 1000),
