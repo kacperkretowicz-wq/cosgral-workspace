@@ -6,6 +6,7 @@
 
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { z } from "zod";
 import {
   diffStyles,
   diffTexts,
@@ -39,6 +40,21 @@ interface Screen {
   tokens: Record<string, string>;
 }
 
+const TextsSchema = z
+  .array(z.unknown())
+  .transform((items) => items.flatMap((item) => (z.string().safeParse(item).success ? [String(item)] : [])));
+const MapSchema = z.record(z.string(), z.string());
+
+function parseTexts(raw: unknown): string[] {
+  const parsed = TextsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : [];
+}
+
+function parseMap(raw: unknown): Record<string, string> {
+  const parsed = MapSchema.safeParse(raw);
+  return parsed.success ? parsed.data : {};
+}
+
 async function loadScreens(root: string): Promise<Map<string, Screen>> {
   const screens = new Map<string, Screen>();
   const walk = async (folder: string): Promise<void> => {
@@ -54,7 +70,7 @@ async function loadScreens(root: string): Promise<Map<string, Screen>> {
       const stylesRaw = JSON.parse(await text(join(path, "styles.json")));
       const tokensRaw = JSON.parse(await text(join(path, "tokens.json")));
       screens.set(pairKey(entry.name), {
-        texts: Array.isArray(textsRaw) ? textsRaw.filter((t): t is string => typeof t === "string") : [],
+        texts: parseTexts(textsRaw),
         styles: parseStyleGroups(stylesRaw),
         tokens: parseTokens(tokensRaw),
       });
@@ -74,8 +90,7 @@ async function main(): Promise<void> {
 
   let map: Record<string, string> = {};
   if (mapPath) {
-    const raw = JSON.parse(await readFile(mapPath, "utf8")) as unknown;
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) map = raw as Record<string, string>;
+    map = parseMap(JSON.parse(await readFile(mapPath, "utf8")));
   }
 
   const refScreens = await loadScreens(reference);

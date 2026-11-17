@@ -103,7 +103,7 @@ describe("access contract: decisions (W8-02, W8-03, W8-05, Q3)", () => {
       const p = policy({
         level,
         additionalFolders: ["D:\\Clients"],
-        excludedFolders: ["D:\\Clients\\Secret", WORK + "\\private"],
+        excludedFolders: ["D:\\Clients\\Secret", `${WORK}\\private`],
       });
       for (const op of ["read", "write"] as const) {
         expect(accessDecision(p, op, "D:\\Clients\\secret\\key.txt")).toMatchObject({
