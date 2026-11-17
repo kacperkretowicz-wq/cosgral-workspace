@@ -20,3 +20,7 @@
 - Luka kontraktu (do Backendu): `CreateAgentInput` nie przyjmuje `avatarSeed`/`avatarHue` — dwa zapisy zamiast jednego; ewentualne „utwórz agenta z szablonu z kolorem” też.
 - Sidebar „+ → Nowy agent” otwiera stronę (zamiast pickera + pytania o specjalizację). Stary picker i onboarding w Conversation zostały (pierwszy start bez agentów nadal idzie starą ścieżką).
 - Kontrola: NewAgentPage 3/3, App.test 91/92 (przy --testTimeout=30000; bez tego 5 losowych timeoutów pod obciążeniem), jedyny czerwony to stary `hides and shows…`, typecheck OK, Biome OK, check:ui OK, i18n 9/9.
+
+## Commit 4 — napisy do t() (odbiór Testera: pasek boczny FAIL)
+- InitialSetup (tytuły, opisy, przyciski, uprawnienia macOS, błędy), Sidebar „Duplicate”, App „Copy ready…” w słowniku PL/EN (52 klucze). Test zgodności kluczy skanuje InitialSetup i NewAgentPage.
+- Kontrola: i18n 9/9, InitialSetup.onboarding 5/5, App.test 92/92 (--testTimeout=30000), typecheck:renderer OK, Biome OK.

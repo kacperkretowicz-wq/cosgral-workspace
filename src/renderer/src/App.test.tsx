@@ -3548,7 +3548,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await screen.findByRole("heading", { name: "Chief", level: 1 });
     const row = within(screen.getByRole("navigation", { name: "Chat list" })).getByRole("button", { name: /^Chief,/ });
     await fireEvent.contextMenu(row);
-    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Duplikuj" }));
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Duplicate" }));
     await screen.findByRole("heading", { name: "Chief kopia", level: 1 });
     expect(window.openbot.agent.duplicateBot).toHaveBeenCalledWith({ sourceBotId: "chief" });
     expect(screen.getByText(/Nie skopiowano jednego skilla/)).toBeInTheDocument();

@@ -27,6 +27,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "Sidebar",
     "PageRail",
     "ContextSettingsSection",
+    "InitialSetup",
+    "NewAgentPage",
   ];
   for (const file of files) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");

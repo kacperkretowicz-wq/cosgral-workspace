@@ -73,6 +73,7 @@ import { UsagePage } from "./components/UsagePage";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
+import { t } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import {
   addCard,
@@ -1420,7 +1421,7 @@ export function App() {
     setBotList((items) => (items.some((bot) => bot.id === next.id) ? items : [...items, createStoredProfile(next)]));
     selectBot(result.bot.id);
     setAgentCopyNotice(
-      `Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.${result.warnings.length ? ` Uwaga: ${result.warnings.join(" ")}` : ""}`,
+      `${t("Copy ready. Memory, history, queue, routines, channels and Vault are not copied.")}${result.warnings.length ? ` ${t("Note:")} ${result.warnings.join(" ")}` : ""}`,
     );
   }
 

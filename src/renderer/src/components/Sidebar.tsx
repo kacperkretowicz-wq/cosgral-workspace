@@ -981,7 +981,7 @@ export function Sidebar(props: SidebarProps) {
                               disabled={agentActionBusy()}
                               onSelect={() => afterAgentMenu(() => props.onDuplicateBot?.(bot.id) ?? Promise.resolve())}
                             >
-                              Duplikuj
+                              {t("Duplicate")}
                             </ContextMenu.Item>
                           </Show>
                           <ContextMenu.Separator class="bot-context-separator" />

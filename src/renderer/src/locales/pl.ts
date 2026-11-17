@@ -164,4 +164,61 @@ export const pl = {
   Indigo: "Indygo",
   Violet: "Fioletowy",
   Magenta: "Purpurowy",
+  "Set up this computer": "Skonfiguruj ten komputer",
+  "Connect to a host": "Połącz z hostem",
+  "Where will COSGRAL Workspace run?": "Gdzie ma działać COSGRAL Workspace?",
+  "Choose the default provider for local agents and review macOS permissions.":
+    "Wybierz domyślnego dostawcę dla lokalnych agentów i sprawdź uprawnienia macOS.",
+  "Default provider for local agents, language, notifications and voice.":
+    "Domyślny dostawca lokalnych agentów, język, powiadomienia i głos.",
+  "Agents, conversations, and files stay on this computer.": "Agenci, rozmowy i pliki zostają na tym komputerze.",
+  "Use an invitation from the person who runs your COSGRAL host.":
+    "Użyj zaproszenia od osoby, która prowadzi Twój host COSGRAL.",
+  "Use this computer, or connect to a COSGRAL host that runs somewhere else.":
+    "Użyj tego komputera albo połącz się z hostem COSGRAL działającym gdzie indziej.",
+  "Local computer": "Komputer lokalny",
+  "Remote host": "Zdalny host",
+  "Use this computer": "Użyj tego komputera",
+  "Run Codex or Claude locally. Keep all COSGRAL data here.":
+    "Uruchom Codex lub Claude lokalnie. Wszystkie dane COSGRAL zostają tutaj.",
+  "Use agents and conversations from an existing COSGRAL host.":
+    "Korzystaj z agentów i rozmów z istniejącego hosta COSGRAL.",
+  "Mac permissions": "Uprawnienia Maca",
+  "Optional. Computer Use needs both permissions.": "Opcjonalne. Sterowanie komputerem wymaga obu uprawnień.",
+  "Host invitation": "Zaproszenie do hosta",
+  "Sign out": "Wyloguj",
+  "COSGRAL setup": "Konfiguracja COSGRAL",
+  "Connection type": "Typ połączenia",
+  "Back to connection choice": "Wróć do wyboru połączenia",
+  "Default provider": "Domyślny dostawca",
+  "Used for new local agents. You can change it for each agent later.":
+    "Używany dla nowych lokalnych agentów. Później możesz go zmienić dla każdego agenta.",
+  "Paste an cosgral:// invitation link": "Wklej link zaproszenia cosgral://",
+  "Screen Recording": "Nagrywanie ekranu",
+  "Let Computer Use see what is on your screen.": "Pozwól sterowaniu komputerem widzieć ekran.",
+  Accessibility: "Dostępność",
+  "Let Computer Use control apps on your Mac.": "Pozwól sterowaniu komputerem obsługiwać aplikacje na Macu.",
+  Allowed: "Dozwolone",
+  "Open Settings": "Otwórz ustawienia",
+  Restricted: "Ograniczone",
+  Allow: "Zezwól",
+  "Checking…": "Sprawdzanie…",
+  "Connecting…": "Łączenie…",
+  "Saving…": "Zapisywanie…",
+  "Save changes": "Zapisz zmiany",
+  "Connect to host": "Połącz z hostem",
+  "Continue with {provider}": "Kontynuuj z {provider}",
+  "Choose a provider": "Wybierz dostawcę",
+  "COSGRAL Workspace could not read macOS permissions.": "COSGRAL Workspace nie mógł odczytać uprawnień macOS.",
+  "COSGRAL Workspace could not open this macOS permission.":
+    "COSGRAL Workspace nie mógł otworzyć tego uprawnienia macOS.",
+  "COSGRAL Workspace could not save your local setup.": "COSGRAL Workspace nie mógł zapisać lokalnej konfiguracji.",
+  "COSGRAL Workspace could not connect to this host.": "COSGRAL Workspace nie mógł połączyć się z tym hostem.",
+  "You will join as": "Dołączysz jako",
+  "Email invitations only work for the address that received them.":
+    "Zaproszenia e-mailowe działają tylko dla adresu, na który je wysłano.",
+  Duplicate: "Duplikuj",
+  "Copy ready. Memory, history, queue, routines, channels and Vault are not copied.":
+    "Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.",
+  "Note:": "Uwaga:",
 } as const;
