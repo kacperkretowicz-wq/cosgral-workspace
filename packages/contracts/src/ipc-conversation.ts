@@ -40,6 +40,7 @@ import {
 } from "./ipc-dock";
 import { type EndpointModelId, isEndpointModel, isModelEndpointList, type ModelEndpoint } from "./ipc-endpoints";
 import type { AgentEyesRequest, AgentEyesState } from "./ipc-eyes";
+import { isUpdatePreferencesChanged, type UpdatePreferencesChanged } from "./ipc-instance-transfer";
 import { type IntegrationsChanged, isIntegrationsChanged } from "./ipc-integrations";
 import { type IsolationChanged, isIsolationChanged } from "./ipc-isolation";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
@@ -715,6 +716,8 @@ export type AgentEvent =
   | ({ type: "plugin-catalog-changed" } & PluginCatalogChanged)
   /** COSGRAL W12-KK (1): the sign-in (OAuth) of an MCP server changed (waiting for the browser, signed in, failed) (every status). */
   | ({ type: "mcp-oauth-changed" } & McpOAuthChanged)
+  /** COSGRAL W12-KK (g2): the preferences of program updates changed. */
+  | ({ type: "update-preferences-changed" } & UpdatePreferencesChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -908,6 +911,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isPluginCatalogChanged(value);
     case "mcp-oauth-changed":
       return isMcpOAuthChanged(value);
+    case "update-preferences-changed":
+      return isUpdatePreferencesChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

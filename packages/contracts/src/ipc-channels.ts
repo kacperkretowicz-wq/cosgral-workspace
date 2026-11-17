@@ -256,6 +256,15 @@ export const IPC_CHANNELS = {
   mcpOauthSignIn: "mcp-oauth:sign-in",
   mcpOauthCancel: "mcp-oauth:cancel",
   mcpOauthSignOut: "mcp-oauth:sign-out",
+  // COSGRAL W12-KK (g2): moving agents between computers with one .zip, and the preferences of program updates.
+  instanceTransferSummary: "instance-transfer:summary",
+  instanceTransferExport: "instance-transfer:export",
+  instanceTransferChoose: "instance-transfer:choose",
+  instanceTransferApply: "instance-transfer:apply",
+  instanceTransferDiscard: "instance-transfer:discard",
+  instanceTransferImportSources: "instance-transfer:import-sources",
+  updatePreferencesGet: "update-preferences:get",
+  updatePreferencesSet: "update-preferences:set",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",
