@@ -1871,7 +1871,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       );
       await openCliCard(d);
       assert((await codexCli(d)).managedVersion === null, "no downloaded Codex yet");
-      await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Download", exact: true }).click();
       await waitUntil(page, "phase awaiting-approval", async () => (await codexCli(d)).phase === "awaiting-approval");
       assert(/Czeka na zgodę/.test(await cliCard(page).innerText()), "the page says it waits for the yes");
       assert(cli.fileRequests === 0, `nothing downloaded while the card waits (${cli.fileRequests} file requests)`);
@@ -1896,7 +1896,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       cli.slow = true;
       await d.ev("window.__cliEvents = []; true");
       await openCliCard(d);
-      await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Download", exact: true }).click();
       await answerCliCard(d, "Confirm");
       await openCliCard(d);
       const phases = new Set<string>();
@@ -1906,7 +1906,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
         const text = await cliCard(page).innerText();
         for (const phase of ["Pobieranie", "Sprawdzanie SHA-256", "Instalowanie"])
           if (text.includes(phase)) phases.add(phase);
-        const bar = cliCard(page).getByRole("progressbar", { name: "Postęp pobierania" });
+        const bar = cliCard(page).getByRole("progressbar", { name: "Download progress" });
         if ((await bar.count()) > 0) {
           const now = Number(await bar.getAttribute("aria-valuenow"));
           if (now > 0 && now < 100) sawProgress = true;
@@ -1963,7 +1963,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       cli.corrupt = true;
       const before = cli.fileRequests;
       await openCliCard(d);
-      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Update", exact: true }).click();
       await waitUntil(page, "the SHA-256 error", async () => /SHA-256/.test(String((await codexCli(d)).error)));
       cli.corrupt = false;
       const state = await codexCli(d);
@@ -1982,11 +1982,11 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
         `the page shows the reason without a profile path: ${shown.slice(0, 80)}`,
       );
       assert(
-        (await cliCard(page).getByRole("button", { name: "Ponów", exact: true }).count()) === 1,
+        (await cliCard(page).getByRole("button", { name: "Retry", exact: true }).count()) === 1,
         "Try again is offered",
       );
       await d.dump("cli-c03-bad-sha");
-      return "update refused with SHA-256 in the error, 1 file request, version 1.0.0 stays, no extra folder or partial file, the page offers Ponów";
+      return "update refused with SHA-256 in the error, 1 file request, version 1.0.0 stays, no extra folder or partial file, the page offers Retry";
     },
   );
 
@@ -1999,14 +1999,14 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       cli.truncate = "once";
       let before = cli.fileRequests;
       await openCliCard(d);
-      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Update", exact: true }).click();
       await waitUntil(page, "version 1.1.0", async () => (await codexCli(d)).managedVersion === "1.1.0");
       assert(cli.fileRequests - before === 2, `one interruption means one more request (${cli.fileRequests - before})`);
-      // (b) two interruptions: an error, no new version, and "Ponów" works once the network is back.
+      // (b) two interruptions: an error, no new version, and "Retry" works once the network is back.
       cli.latest = "1.2.0";
       cli.truncate = "always";
       before = cli.fileRequests;
-      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Update", exact: true }).click();
       await waitUntil(
         page,
         "an error after two interruptions",
@@ -2023,10 +2023,10 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       const shown = await cliCard(page).getByRole("alert").innerText();
       assert(noProfilePath(shown), `the error has no profile path: ${shown.slice(0, 80)}`);
       cli.truncate = "none";
-      await cliCard(page).getByRole("button", { name: "Ponów", exact: true }).click();
-      await waitUntil(page, "version 1.2.0 after Ponów", async () => (await codexCli(d)).managedVersion === "1.2.0");
+      await cliCard(page).getByRole("button", { name: "Retry", exact: true }).click();
+      await waitUntil(page, "version 1.2.0 after Retry", async () => (await codexCli(d)).managedVersion === "1.2.0");
       await d.dump("cli-c04-retried");
-      return "1 cut > retried by itself (2 requests) > 1.1.0; 2 cuts > error, 1.1.0 stays, no half file, Ponów offered; Ponów > 1.2.0";
+      return "1 cut > retried by itself (2 requests) > 1.1.0; 2 cuts > error, 1.1.0 stays, no half file, Retry offered; Retry > 1.2.0";
     },
   );
 
@@ -2035,18 +2035,18 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
     "CLI: a custom path wins; a bad path gives a clear error without a hang; the order is custom, downloaded, system",
     async () => {
       await openCliCard(d);
-      const field = cliCard(page).getByRole("textbox", { name: "Własna ścieżka do CLI" });
+      const field = cliCard(page).getByRole("textbox", { name: "Custom path to the CLI" });
       await field.fill(fixtureFile);
-      await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Save path", exact: true }).click();
       await waitUntil(page, "custom path saved", async () => (await codexCli(d)).customPath === fixtureFile);
       await waitUntil(page, "idle with a custom path", async () => (await codexCli(d)).phase === "idle");
       const custom = await codexCli(d);
       assert(custom.source === "custom", `source with a custom path: ${String(custom.source)}`);
-      assert(/Własna ścieżka/.test(await cliCard(page).innerText()), "the page names the source");
+      assert(/Custom path/.test(await cliCard(page).innerText()), "the page names the source");
       await field.fill(join(root, "does-not-exist", "codex.exe"));
-      await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Save path", exact: true }).click();
       // The answer to a bad path shows at the top of the section (not on the card).
-      const section = page.getByRole("region", { name: "Narzędzia CLI" });
+      const section = page.getByRole("region", { name: "CLI tools" });
       await section.getByRole("alert").first().waitFor({ timeout: 30_000 });
       const alertText = (await section.getByRole("alert").first().innerText()).replace(/\s+/g, " ");
       const bad = await codexCli(d);
@@ -2057,19 +2057,19 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       await d.dump("cli-c09-bad-path");
       const detailBad = `bad path > error on the page "${alertText.slice(0, 90)}"${rawPrefix ? " (raw IPC prefix visible)" : ""}; source stays ${String(bad.source)}`;
       await field.fill("");
-      await cliCard(page).getByRole("button", { name: "Wyczyść ścieżkę", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Clear path", exact: true }).click();
       await waitUntil(page, "custom path cleared", async () => (await codexCli(d)).customPath === null);
       return `good path > source custom; ${detailBad}; cleared > source ${String((await codexCli(d)).source)}`;
     },
   );
 
-  await row("C10", "CLI: Usuń removes only the downloaded copy, never the system or custom CLI", async () => {
+  await row("C10", "CLI: Remove removes only the downloaded copy, never the system or custom CLI", async () => {
     await openCliCard(d);
-    const field = cliCard(page).getByRole("textbox", { name: "Własna ścieżka do CLI" });
+    const field = cliCard(page).getByRole("textbox", { name: "Custom path to the CLI" });
     await field.fill(fixtureFile);
-    await cliCard(page).getByRole("button", { name: "Zapisz ścieżkę", exact: true }).click();
+    await cliCard(page).getByRole("button", { name: "Save path", exact: true }).click();
     await waitUntil(page, "custom path active", async () => (await codexCli(d)).source === "custom");
-    await cliCard(page).getByRole("button", { name: "Usuń", exact: true }).click();
+    await cliCard(page).getByRole("button", { name: "Remove", exact: true }).click();
     await waitUntil(page, "downloaded copy removed", async () => (await codexCli(d)).managedVersion === null);
     assert(
       (await fixtureHash()) === fixtureBefore && (await readFile(fixtureFile)).length > 0,
@@ -2081,20 +2081,20 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
     );
     assert((await codexCli(d)).source === "custom", "the custom path still works after the removal");
     assert(
-      (await cliCard(page).getByRole("button", { name: "Usuń", exact: true }).count()) === 0,
-      "no Usuń for a CLI that is not downloaded",
+      (await cliCard(page).getByRole("button", { name: "Remove", exact: true }).count()) === 0,
+      "no Remove for a CLI that is not downloaded",
     );
     await field.fill("");
-    await cliCard(page).getByRole("button", { name: "Wyczyść ścieżkę", exact: true }).click();
+    await cliCard(page).getByRole("button", { name: "Clear path", exact: true }).click();
     await waitUntil(page, "custom path cleared", async () => (await codexCli(d)).customPath === null);
-    return "with the custom path active, Usuń deleted only the downloaded folder; the custom file keeps its SHA-256; the button is gone when nothing is downloaded";
+    return "with the custom path active, Remove deleted only the downloaded folder; the custom file keeps its SHA-256; the button is gone when nothing is downloaded";
   });
 
   await row("C11", "CLI: after the first yes there is no card for a new download or an update", async () => {
     cli.latest = "1.2.0";
     const before = cli.fileRequests;
     await openCliCard(d);
-    await cliCard(page).getByRole("button", { name: "Pobierz", exact: true }).click();
+    await cliCard(page).getByRole("button", { name: "Download", exact: true }).click();
     await waitUntil(
       page,
       "1.2.0 downloaded without a card",
@@ -2106,7 +2106,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
     );
     assert(pending.length === 0, "no download card after the first yes");
     assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
-    return "second install (after Usuń) and the earlier updates (C03, C04) needed no card; each file was checked against its SHA-256";
+    return "second install (after Remove) and the earlier updates (C03, C04) needed no card; each file was checked against its SHA-256";
   });
 
   await row("C12", "CLI: the page, the usage list and the engine tell the same about the CLI", async () => {
@@ -2120,7 +2120,7 @@ async function cliFirstRun(d: Driver, root: string, cli: CliStandIn): Promise<vo
       /Codex/.test(usageText) && cliText.includes(String(state.managedVersion)),
       "both parts of the page name Codex and the downloaded version",
     );
-    assert(/Pobrane|Własna ścieżka|Systemowe/.test(cliText), "the card names a source");
+    assert(/Downloaded|Custom path|System/.test(cliText), "the card names a source");
     return `engine source ${String(state.source)}, downloaded ${String(state.managedVersion)}; usage state ${String(usage?.state)}; the card shows the same version. The onboarding screen is not part of this step (see O1)`;
   });
 
@@ -2170,7 +2170,7 @@ async function cliThirdRun(d: Driver, cli: CliStandIn): Promise<void> {
   const { page } = d;
   await row(
     "C07",
-    "CLI: with auto-update off nothing downloads by itself; Sprawdź shows the newer version; Zaktualizuj does it on demand",
+    "CLI: with auto-update off nothing downloads by itself; Check shows the newer version; Update does it on demand",
     async () => {
       const before = cli.fileRequests;
       await openCliCard(d);
@@ -2181,30 +2181,30 @@ async function cliThirdRun(d: Driver, cli: CliStandIn): Promise<void> {
         `the setting survived the restart: ${JSON.stringify({ ...state, executable: "(sandbox)" })}`,
       );
       assert(cli.fileRequests === before, `no download at start with auto-update off (${cli.fileRequests - before})`);
-      await cliCard(page).getByRole("button", { name: "Sprawdź", exact: true }).click();
-      await waitUntil(page, "Sprawdź shows 1.4.0", async () =>
-        /Najnowsza: 1\.4\.0/.test(await cliCard(page).innerText()),
+      await cliCard(page).getByRole("button", { name: "Check", exact: true }).click();
+      await waitUntil(page, "Check shows 1.4.0", async () =>
+        /Latest: 1\.4\.0/.test(await cliCard(page).innerText()),
       );
       assert(
         cli.fileRequests === before && (await codexCli(d)).managedVersion === "1.3.0",
-        "Sprawdź downloads nothing",
+        "Check downloads nothing",
       );
       // A turn runs while the person updates: it must finish.
       await d.send("Assistant", "SLOW 12000");
       await page.waitForTimeout(1_500);
-      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Update", exact: true }).click();
       await waitUntil(page, "1.4.0 on demand", async () => (await codexCli(d)).managedVersion === "1.4.0", 90_000);
       assert(cli.fileRequests - before === 1, `one download (${cli.fileRequests - before})`);
       await d.answer("Assistant", "Stub: slow done", 40_000);
       // Setup for C08: auto-update on again, pin the current version, publish a newer one.
       await cliCard(page).locator(".ui-switch").first().click();
       await waitUntil(page, "auto-update on", async () => (await codexCli(d)).autoUpdate === true);
-      await cliCard(page).getByRole("textbox", { name: "Przypięta wersja" }).fill("1.4.0");
-      await cliCard(page).getByRole("button", { name: "Przypnij", exact: true }).click();
+      await cliCard(page).getByRole("textbox", { name: "Pinned version" }).fill("1.4.0");
+      await cliCard(page).getByRole("button", { name: "Pin", exact: true }).click();
       await waitUntil(page, "pinned 1.4.0", async () => (await codexCli(d)).pinnedVersion === "1.4.0");
       cli.latest = "1.5.0";
       await d.dump("cli-c07-on-demand");
-      return "restart with auto-update off: 0 downloads in 15 s; Sprawdź > Najnowsza 1.4.0 without a download; Zaktualizuj > 1.4.0 (1 request) while a turn ran, and the turn finished; then auto-update on and 1.4.0 pinned for C08";
+      return "restart with auto-update off: 0 downloads in 15 s; Check > Latest 1.4.0 without a download; Update > 1.4.0 (1 request) while a turn ran, and the turn finished; then auto-update on and 1.4.0 pinned for C08";
     },
   );
 }
@@ -2214,7 +2214,7 @@ async function cliFourthRun(d: Driver, cli: CliStandIn): Promise<void> {
   const { page } = d;
   await row(
     "C08",
-    "CLI: a pinned version is not replaced with auto-update on; Odepnij goes back to the newest",
+    "CLI: a pinned version is not replaced with auto-update on; Unpin goes back to the newest",
     async () => {
       const before = cli.fileRequests;
       await openCliCard(d);
@@ -2225,11 +2225,11 @@ async function cliFourthRun(d: Driver, cli: CliStandIn): Promise<void> {
         `pinned survived the restart: ${JSON.stringify({ ...state, executable: "(sandbox)" })}`,
       );
       assert(cli.fileRequests === before, `no download at start for a pinned version (${cli.fileRequests - before})`);
-      await cliCard(page).getByRole("button", { name: "Odepnij", exact: true }).click();
+      await cliCard(page).getByRole("button", { name: "Unpin", exact: true }).click();
       await waitUntil(page, "unpinned", async () => (await codexCli(d)).pinnedVersion === null);
-      await cliCard(page).getByRole("button", { name: "Zaktualizuj", exact: true }).click();
-      await waitUntil(page, "1.5.0 after Odepnij", async () => (await codexCli(d)).managedVersion === "1.5.0", 90_000);
-      return "restart with 1.4.0 pinned and 1.5.0 available: nothing downloaded, 1.4.0 stays; Odepnij + Zaktualizuj > 1.5.0";
+      await cliCard(page).getByRole("button", { name: "Update", exact: true }).click();
+      await waitUntil(page, "1.5.0 after Unpin", async () => (await codexCli(d)).managedVersion === "1.5.0", 90_000);
+      return "restart with 1.4.0 pinned and 1.5.0 available: nothing downloaded, 1.4.0 stays; Unpin + Update > 1.5.0";
     },
   );
 
@@ -2261,7 +2261,7 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
   try {
     await row(
       "O1",
-      "onboarding without a CLI: Continue is blocked, 'Pobierz i przejdź dalej' asks in a system dialog, a No downloads nothing, a Yes unblocks",
+      "onboarding without a CLI: Continue is blocked, 'Download and continue' asks in a system dialog, a No downloads nothing, a Yes unblocks",
       async () => {
         const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
         await where.waitFor({ timeout: 90_000 });
@@ -2298,13 +2298,13 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
         };
         const codex = async () =>
           asRecord(list(await d.ev("window.openbot.subscriptions.listCli()")).find((state) => state.id === "codex"));
-        await card.getByRole("button", { name: "Pobierz i przejdź dalej" }).click();
+        await card.getByRole("button", { name: "Download and continue" }).click();
         await waitUntil(page, "the system dialog", async () => (await seenDialogs()).length === 1, 30_000);
         assert((await seenDialogs())[0] === "Download Codex CLI 1.0.0?", `dialog title: ${(await seenDialogs())[0]}`);
         await waitUntil(page, "back to idle after the No", async () => (await codex()).phase === "idle", 30_000);
         assert((await codex()).managedVersion === null && cli.fileRequests === 0, "a No downloads nothing");
         assert(await proceed.isDisabled(), "Continue stays blocked after a No");
-        await card.getByRole("button", { name: "Pobierz i przejdź dalej" }).click();
+        await card.getByRole("button", { name: "Download and continue" }).click();
         await waitUntil(
           page,
           "the CLI is downloaded after the Yes",
@@ -2312,7 +2312,7 @@ async function onboardingCliMain(root: string, evidence: string): Promise<void> 
           120_000,
         );
         assert(Number(cli.fileRequests) === 1, `one download (${cli.fileRequests})`);
-        // "Pobierz i przejdź dalej" installs and then saves the choice and goes on by itself: the setup closes.
+        // "Download and continue" installs and then saves the choice and goes on by itself: the setup closes.
         await setup.waitFor({ state: "hidden", timeout: 90_000 });
         await d.dump("cli-o1-after-yes");
         return "Continue disabled and the card says Brak; no sign-in button, 'Logowanie wkrótce' in text; system dialog 'Download Codex CLI 1.0.0?': No > 0 downloads, still blocked; Yes > 1 download and the setup closes by itself (the button installs and goes on)";

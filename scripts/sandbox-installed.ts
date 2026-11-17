@@ -196,7 +196,7 @@ async function main(): Promise<void> {
           .getByRole("dialog", { name: "Set up this computer" })
           .locator(".managed-cli-card")
           .first()
-          .getByRole("button", { name: "Pobierz i przejdź dalej" })
+          .getByRole("button", { name: "Download and continue" })
           .click();
         let requestId = "";
         let title = "";
