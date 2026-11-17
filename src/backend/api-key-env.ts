@@ -37,3 +37,20 @@ export function redactApiKeys(text: string): string {
   }
   return clean;
 }
+
+/** COSGRAL W12: the key of the provider an ACP agent came from (a preset), as the variable that provider reads. */
+let acpEnvSource: ((agentId: string) => NodeJS.ProcessEnv) | null = null;
+
+export function setAcpAgentEnvSource(next: ((agentId: string) => NodeJS.ProcessEnv) | null): void {
+  acpEnvSource = next;
+}
+
+/** The whole environment for the one ACP agent that is about to start, or undefined when it needs nothing extra (it inherits as before). */
+export function acpAgentEnv(agentId: string): NodeJS.ProcessEnv | undefined {
+  try {
+    const extra = acpEnvSource?.(agentId) ?? {};
+    return Object.keys(extra).length > 0 ? { ...process.env, ...extra } : undefined;
+  } catch {
+    return undefined;
+  }
+}

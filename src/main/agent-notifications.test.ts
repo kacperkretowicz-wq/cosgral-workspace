@@ -97,6 +97,28 @@ describe("notificationForAgentEvent", () => {
   });
 });
 
+describe("notification level of an agent (W12 BE-E)", () => {
+  const prompt: AgentEvent = {
+    type: "prompt",
+    botId: "chief",
+    threadId: "t",
+    turnId: "u",
+    requestId: 1,
+    questions: [],
+  };
+  it("none shows nothing, mentions only what asks the person, all shows everything", () => {
+    expect(notificationForAgentEvent(completed("completed"), [bot], undefined, () => "none")).toBeNull();
+    expect(notificationForAgentEvent(prompt, [bot], undefined, () => "none")).toBeNull();
+    expect(notificationForAgentEvent(completed("completed"), [bot], undefined, () => "mentions")).toBeNull();
+    expect(notificationForAgentEvent(completed("failed"), [bot], undefined, () => "mentions")).toBeNull();
+    expect(notificationForAgentEvent(prompt, [bot], undefined, () => "mentions")?.body).toBe("Needs your input.");
+    expect(notificationForAgentEvent(completed("completed"), [bot], undefined, () => "all")?.body).toBe(
+      "Finished working.",
+    );
+    expect(notificationForAgentEvent(completed("completed"), [bot])?.body).toBe("Finished working.");
+  });
+});
+
 function completed(status: string): AgentEvent {
   return {
     type: "turn-completed",

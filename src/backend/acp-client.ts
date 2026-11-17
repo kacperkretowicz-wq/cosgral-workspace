@@ -16,6 +16,7 @@ import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbo
 import { spawnAcpAgent } from "./acp-spawn";
 import { BRIDGE_ENV, type BridgeTool, bridgeFile, bridgeTools } from "./acp-tool-bridge";
 import type { AgentClient, AgentProvider } from "./agent-client";
+import { acpAgentEnv } from "./api-key-env";
 import type {
   AppServerNotification,
   AppServerRequest,
@@ -90,7 +91,7 @@ class AcpProcess {
   ) {
     this.#onUpdate = onUpdate;
     // COSGRAL W6-BE5: a .cmd shim (Gemini CLI from npm) starts through cmd.exe; Node cannot start it directly.
-    this.#child = spawnAcpAgent(config.command, config.args);
+    this.#child = spawnAcpAgent(config.command, config.args, acpAgentEnv(config.id));
     this.#child.stdout.setEncoding("utf8");
     this.#child.stdout.on("data", (chunk: string) => this.#read(chunk));
     this.#child.stderr.resume();

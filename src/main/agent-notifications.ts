@@ -1,5 +1,6 @@
 import {
   type AgentEvent,
+  type AgentNotificationLevel,
   type BotSummary,
   defaultNotificationPreferences,
   type NotificationEvent,
@@ -48,15 +49,21 @@ function classify(event: AgentEvent): { kind: NotificationEvent; botId: string }
   }
 }
 
+/** COSGRAL W12: what an agent set to "mentions" still shows: only what asks the person to do something. */
+const ASKS_THE_PERSON: ReadonlySet<NotificationEvent> = new Set(["needs-input", "needs-approval", "takeover"]);
+
 export function notificationForAgentEvent(
   event: AgentEvent,
   bots: BotSummary[],
   preferences: NotificationPreferences = defaultNotificationPreferences(),
+  levelOf: (botId: string) => AgentNotificationLevel = () => "all",
 ): AgentNotificationContent | null {
   const found = classify(event);
   if (!found) return null;
   const bot = bots.find((candidate) => candidate.id === found.botId);
   if (!bot?.notifications) return null;
+  const level = levelOf(found.botId);
+  if (level === "none" || (level === "mentions" && !ASKS_THE_PERSON.has(found.kind))) return null;
   const row = preferences.matrix[found.kind];
   if (!row.desktop) return null;
   return { title: bot.name, body: BODIES[found.kind], silent: !row.sound };

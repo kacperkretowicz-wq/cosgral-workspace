@@ -125,6 +125,7 @@ import type { MobileDesktopApi } from "./ipc-mobile";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
 import type { PluginCatalogDesktopApi } from "./ipc-plugin-catalog";
+import type { ProviderCatalogDesktopApi } from "./ipc-provider-catalog";
 import type {
   AcpAgentConfig,
   AcpAgentIdInput,
@@ -719,6 +720,8 @@ export interface OpenBotDesktopApi {
   agentCards?: AgentCardsDesktopApi;
   /** COSGRAL W12 (BE-D): the 14 sections of the server settings. */
   serverSettings?: ServerSettingsDesktopApi;
+  /** COSGRAL W12 (BE-E): the catalog of the 18 providers with the state on this computer. */
+  providerCatalog?: ProviderCatalogDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */

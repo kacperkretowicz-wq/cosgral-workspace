@@ -13,6 +13,7 @@ import {
   emptySidebarLayout,
   type ImportAttachmentsInput,
   IPC_CHANNELS,
+  isApiKeyProvider,
   type MacPermissionId,
   type MacPermissionsState,
   type SendMessageInput,
@@ -37,10 +38,12 @@ import {
 } from "electron";
 import electronUpdater from "electron-updater";
 import { AccessStore } from "../backend/access-store";
+import { findCommandInPath } from "../backend/acp-presets";
 import { agentCardCounts } from "../backend/agent-card-counts";
 import { AgentCardsService } from "../backend/agent-cards";
+import { policyInstructions } from "../backend/agent-policy";
 import { AgentService } from "../backend/agent-service";
-import { setApiKeySource } from "../backend/api-key-env";
+import { setAcpAgentEnvSource, setApiKeySource } from "../backend/api-key-env";
 import { ApiKeyStore } from "../backend/api-key-store";
 import { ApprovalRulesStore } from "../backend/approval-rules";
 import { BotStore } from "../backend/bot-store";
@@ -65,6 +68,7 @@ import { createAgentPort, MessengerBridge } from "../backend/messenger-bridge";
 import type { MobileConnect } from "../backend/mobile-connect";
 import type { PhoneAccess } from "../backend/phone-access";
 import { PluginCatalogService } from "../backend/plugin-catalog/plugin-catalog-service";
+import { ProviderCatalogService } from "../backend/provider-catalog";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
@@ -205,6 +209,7 @@ import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobil
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
 import { registerPluginCatalogIpc } from "./plugin-catalog-ipc";
+import { registerProviderCatalogIpc } from "./provider-catalog-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -352,6 +357,7 @@ let composerService: ComposerService | null = null;
 let threadTabsService: ThreadTabsService | null = null;
 let agentCardsService: AgentCardsService | null = null;
 let serverSettingsService: ServerSettingsService | null = null;
+let providerCatalogService: ProviderCatalogService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -954,6 +960,7 @@ function registerIpcHandlers(
   });
   registerAgentCardsIpc(() => agentCardsService);
   registerServerSettingsIpc(() => serverSettingsService);
+  registerProviderCatalogIpc(() => providerCatalogService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1311,7 +1318,12 @@ function forwardAgentEvent(serverId: string, event: AgentEvent): void {
   const preferences = agentService?.agentSettings.appSettings().notifications;
   if ((mainWindow.isFocused() && preferences?.onlyWhenUnfocused !== false) || !Notification.isSupported()) return;
 
-  const content = notificationForAgentEvent(event, agentService?.listBots() ?? [], preferences);
+  const content = notificationForAgentEvent(
+    event,
+    agentService?.listBots() ?? [],
+    preferences,
+    (botId) => agentCardsService?.getPreferences({ botId }).notificationLevel ?? "all",
+  );
   if (!content) return;
   const notification = new Notification(content);
   notification.on("click", () => {
@@ -1774,6 +1786,7 @@ if (!hasSingleInstanceLock) {
         service.on("event", (event) => {
           if (event.type === "threads-changed") threadTabsService?.learn(event);
           if (event.type === "bots-changed") agentCardsService?.prune(event.bots.map((bot) => bot.id));
+          if (event.type === "acp-agents-changed") providerCatalogService?.agentsChanged();
         });
         // COSGRAL W12 (BE-D): the agent cards; the counts come from the services that already own the data.
         agentCardsService = new AgentCardsService({
@@ -1794,6 +1807,28 @@ if (!hasSingleInstanceLock) {
           resetSession: (botId) => service.resetProviderSession(botId),
           emit: (event) => forwardAgentEvent("local", event),
         });
+        // COSGRAL W12 (BE-E): the catalog of the 18 providers; keys of Codex and Claude stay in their own slots, the rest in "catalog:<id>".
+        providerCatalogService = new ProviderCatalogService({
+          keys: {
+            mask: (id) =>
+              isApiKeyProvider(id)
+                ? (apiKeyStore?.list().find((entry) => entry.provider === id)?.maskedKey ?? null)
+                : (apiKeyStore?.slotMask(`catalog:${id}`) ?? null),
+            save: (id, key) => {
+              if (isApiKeyProvider(id)) apiKeyStore?.set(id, key);
+              else apiKeyStore?.setSlot(`catalog:${id}`, key);
+            },
+            remove: (id) => {
+              if (isApiKeyProvider(id)) apiKeyStore?.remove(id);
+              else apiKeyStore?.removeSlot(`catalog:${id}`);
+            },
+            plain: (id) => (isApiKeyProvider(id) ? null : (apiKeyStore?.slotKey(`catalog:${id}`) ?? null)),
+          },
+          detect: (command) => findCommandInPath(command),
+          addedAgents: () => providerRegistry?.listAcpAgents().map((agent) => agent.id) ?? [],
+          emit: (event) => forwardAgentEvent("local", event),
+        });
+        setAcpAgentEnvSource((agentId) => providerCatalogService?.agentEnv(agentId) ?? {});
         // COSGRAL W12 (BE-D): the server settings (14 sections); the default of the busy-message mode comes from them.
         serverSettingsService = new ServerSettingsService({
           file: join(app.getPath("userData"), "server-settings.json"),
@@ -1805,6 +1840,17 @@ if (!hasSingleInstanceLock) {
           (botId) =>
             agentCardsService?.busyMode(botId, serverSettingsService?.busyMessageDefault() ?? "queue") ?? "queue",
         );
+        // COSGRAL W12 (BE-E): the server settings and the per-agent choices reach the agents (limit of turns, instructions, quick ack, memory limit).
+        service.useAgentPolicy({
+          maxTurns: () => serverSettingsService?.get().general.maxThreads ?? null,
+          instructions: (botId) => {
+            const server = serverSettingsService?.get();
+            const agent = agentCardsService?.getPreferences({ botId });
+            return server && agent ? policyInstructions(server, agent) : "";
+          },
+          quickAcknowledgement: (botId) => agentCardsService?.getPreferences({ botId }).quickAcknowledgement ?? false,
+        });
+        service.memoryStore.useDefaultLimit(() => serverSettingsService?.get().general.memoriesPerAgent ?? 512);
       }
       // COSGRAL W3: workflows (this computer only): agent steps use the agents' queue, approvals the confirm card.
       workflowManager = new WorkflowManager({
