@@ -1258,3 +1258,109 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .sidebar-new-menu {
   min-width: 168px;
 }
+
+/* W11-UI1: thread tabs above the chat. */
+.thread-tabs {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 4px 12px;
+}
+
+.thread-tabs-list {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.thread-tab {
+  display: flex;
+  max-width: 200px;
+  min-width: 0;
+  align-items: center;
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-muted);
+  transition: background-color var(--cosgral-duration-normal) var(--cosgral-ease);
+}
+
+.thread-tab:hover,
+.thread-tab-active {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.thread-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  padding: 5px 4px 5px 10px;
+  color: inherit;
+  font-size: var(--cosgral-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.thread-tab[data-unread="true"] .thread-tab-label {
+  font-weight: 600;
+}
+
+.thread-tab-close,
+.thread-tabs-button {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--cosgral-radius-sm);
+  background: transparent;
+  padding: 0;
+  color: var(--cosgral-text-muted);
+  cursor: pointer;
+}
+
+.thread-tab-close:hover,
+.thread-tabs-button:hover {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.thread-tab-close svg,
+.thread-tabs-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.thread-tabs-error {
+  margin: 0;
+  padding: 2px 12px;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-sm);
+}
+
+/* W11-UI1: slash command list in the message box. */
+.slash-picker {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.slash-picker .mention-picker-option {
+  cursor: pointer;
+}
+
+.slash-picker .mention-picker-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slash-picker-active {
+  background: var(--cosgral-hover);
+}

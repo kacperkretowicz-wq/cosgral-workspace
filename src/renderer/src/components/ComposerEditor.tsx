@@ -1,14 +1,15 @@
 import { attachmentReferenceIds, serializeAttachmentReference } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type { DraftAttachment } from "@openbot/contracts/ipc";
+import type { DraftAttachment, SlashCommand } from "@openbot/contracts/ipc";
 import { Portal } from "@solidjs/web";
-import { createEffect, createMemo, createSignal, createUniqueId, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import { buildAnimatedAvatarSvg } from "../blobatar";
 import type { BotProfile } from "../data";
+import { t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { AnchoredTooltip } from "./conversation/AnchoredTooltip";
 import { AttachmentReferenceVisual, appendAttachmentReferenceVisual } from "./conversation/AttachmentReference";
-import { Listbox } from "./ui";
+import { Button, Listbox } from "./ui";
 
 interface ComposerEditorProps {
   botId: string | undefined;
@@ -26,6 +27,11 @@ interface ComposerEditorProps {
 interface MentionContext {
   query: string;
   start: number;
+  end: number;
+}
+
+interface SlashContext {
+  query: string;
   end: number;
 }
 
@@ -56,6 +62,13 @@ function pickerOptionText(option: PickerOption): string {
 export function ComposerEditor(props: ComposerEditorProps) {
   const [mention, setMention] = createSignal<MentionContext | null>(null);
   const [activeOption, setActiveOption] = createSignal(0);
+  const [slash, setSlash] = createSignal<SlashContext | null>(null);
+  const [slashCommands, setSlashCommands] = createSignal<SlashCommand[]>([]);
+  const [activeSlash, setActiveSlash] = createSignal(0);
+  const matchingSlash = createMemo(() => {
+    const query = slash()?.query.toLocaleLowerCase() ?? "";
+    return slashCommands().filter((command) => command.name.includes(query));
+  });
   const [attachmentTooltip, setAttachmentTooltip] = createSignal<{
     anchor: HTMLElement;
     content: string;
@@ -141,6 +154,28 @@ export function ComposerEditor(props: ComposerEditorProps) {
     },
   );
 
+  // "/" at the start of a message: the commands of the program and the agent's skills (composer contract, U5).
+  createEffect(
+    () => props.botId,
+    (botId) => {
+      setSlashCommands([]);
+      const api = window.openbot?.composer;
+      if (!botId || !api) return;
+      let current = true;
+      void api
+        .listSlashCommands({ botId })
+        .then((commands) => {
+          if (current) setSlashCommands(commands);
+        })
+        .catch(() => {
+          if (current) setSlashCommands([]);
+        });
+      return () => {
+        current = false;
+      };
+    },
+  );
+
   function emitValue() {
     if (!editor) return;
     let value = serializeEditor(editor);
@@ -165,6 +200,20 @@ export function ComposerEditor(props: ComposerEditorProps) {
     range.selectNodeContents(editor);
     range.setEnd(selection.anchorNode ?? editor, selection.anchorOffset);
     const beforeCaret = range.toString();
+    const slashMatch = beforeCaret.match(/^\/([a-z0-9-]{0,64})$/u);
+    if (slashMatch && slashCommands().length > 0) {
+      const bounds = editor.getBoundingClientRect();
+      setPickerPosition({
+        bottom: window.innerHeight - bounds.top + 10,
+        left: bounds.left,
+        width: Math.min(720, bounds.width + 36),
+      });
+      setSlash({ query: slashMatch[1] ?? "", end: beforeCaret.length });
+      setActiveSlash(0);
+      setMention(null);
+      return;
+    }
+    setSlash(null);
     const match = beforeCaret.match(/(?:^|\s)@([^@\n]{0,60})$/u);
     if (!match) {
       setMention(null);
@@ -179,6 +228,24 @@ export function ComposerEditor(props: ComposerEditorProps) {
     });
     setMention({ query, start: beforeCaret.length - query.length - 1, end: beforeCaret.length });
     setActiveOption(0);
+  }
+
+  function insertSlash(command: SlashCommand) {
+    const context = slash();
+    if (!editor || !context) return;
+    const range = rangeFromTextOffsets(editor, 0, context.end);
+    if (!range) return;
+    range.deleteContents();
+    const text = document.createTextNode(`/${command.name} `);
+    range.insertNode(text);
+    const selection = window.getSelection();
+    range.setStartAfter(text);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    setSlash(null);
+    emitValue();
+    editor.focus();
   }
 
   function insertOption(option: PickerOption) {
@@ -206,6 +273,27 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter" && (isComposing || event.isComposing)) return;
+
+    const commands = matchingSlash();
+    if (slash() && commands.length > 0) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        setActiveSlash((current) => (current + step + commands.length) % commands.length);
+        return;
+      }
+      if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") {
+        event.preventDefault();
+        const command = commands[activeSlash()];
+        if (command) insertSlash(command);
+        return;
+      }
+    }
+    if (event.key === "Escape" && slash()) {
+      event.preventDefault();
+      setSlash(null);
+      return;
+    }
 
     const options = matchingOptions();
     if (mention() && options.length > 0) {
@@ -295,10 +383,42 @@ export function ComposerEditor(props: ComposerEditorProps) {
         onPaste={handlePaste}
         onBlur={() => {
           isComposing = false;
-          window.setTimeout(() => setMention(null), 100);
+          window.setTimeout(() => {
+            setMention(null);
+            setSlash(null);
+          }, 100);
         }}
       />
       <Portal>
+        <Show when={slash() && matchingSlash().length > 0}>
+          <section
+            class="mention-picker slash-picker"
+            aria-label={t("Commands")}
+            style={{
+              bottom: `${pickerPosition().bottom}px`,
+              left: `${pickerPosition().left}px`,
+              width: `${pickerPosition().width}px`,
+            }}
+          >
+            <For each={matchingSlash()}>
+              {(command, index) => (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  tabindex={-1}
+                  aria-current={index() === activeSlash() ? "true" : undefined}
+                  class={["mention-picker-option", { "slash-picker-active": index() === activeSlash() }]}
+                  onPointerDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setActiveSlash(index())}
+                  onClick={() => insertSlash(command)}
+                >
+                  <strong>/{command.name}</strong>
+                  <span>{command.hint}</span>
+                </Button>
+              )}
+            </For>
+          </section>
+        </Show>
         <Show when={mention() && matchingOptions().length > 0}>
           <Listbox.Root<PickerOption>
             as="div"

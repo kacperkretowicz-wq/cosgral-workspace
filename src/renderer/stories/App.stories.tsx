@@ -92,7 +92,7 @@ export const CommandSearch: Story = {
     await expect(page.findByRole("option", { name: /launch milestones/i })).resolves.toBeInTheDocument();
 
     await userEvent.clear(input);
-    await userEvent.click(page.getByRole("tab", { name: "Bots" }));
+    await userEvent.click(page.getByRole("tab", { name: "Agents" }));
     await userEvent.type(input, "research");
     await expect(page.findByRole("option", { name: /Research/ })).resolves.toBeInTheDocument();
 

@@ -11,6 +11,7 @@ import type {
   OnboardingState,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
 import { DataWipeSection } from "./DataWipeSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -131,7 +132,7 @@ export function InitialSetup(props: InitialSetupProps) {
       const next = await window.openbot.getMacPermissions();
       if (revision === permissionRevision) flush(() => setPermissions(next));
     } catch (cause) {
-      setError(errorMessage(cause, "COSGRAL Workspace could not read macOS permissions."));
+      setError(errorMessage(cause, t("COSGRAL Workspace could not read macOS permissions.")));
     }
   }
 
@@ -158,7 +159,7 @@ export function InitialSetup(props: InitialSetupProps) {
       const next = await window.openbot.requestMacPermission(permission);
       if (revision === permissionRevision) flush(() => setPermissions(next));
     } catch (cause) {
-      setError(errorMessage(cause, "COSGRAL Workspace could not open this macOS permission."));
+      setError(errorMessage(cause, t("COSGRAL Workspace could not open this macOS permission.")));
     } finally {
       setPermissionBusy(null);
     }
@@ -177,7 +178,7 @@ export function InitialSetup(props: InitialSetupProps) {
     try {
       await props.onSave(provider, onboarding() && !props.reviewing ? onboardingChoice() : undefined);
     } catch (cause) {
-      setError(errorMessage(cause, "COSGRAL Workspace could not save your local setup."));
+      setError(errorMessage(cause, t("COSGRAL Workspace could not save your local setup.")));
       setSaving(false);
     }
   }
@@ -190,31 +191,31 @@ export function InitialSetup(props: InitialSetupProps) {
     try {
       await props.onJoinRemote({ inviteUrl: inviteUrl().trim() }, provider);
     } catch (cause) {
-      setError(errorMessage(cause, "COSGRAL Workspace could not connect to this host."));
+      setError(errorMessage(cause, t("COSGRAL Workspace could not connect to this host.")));
       setSaving(false);
     }
   }
 
   const title = () => {
-    if (props.reviewing) return props.platform === "darwin" ? "Providers & permissions" : "Settings";
-    if (route() === "local") return "Set up this computer";
-    if (route() === "remote") return "Connect to a host";
-    return "Where will COSGRAL Workspace run?";
+    if (props.reviewing) return props.platform === "darwin" ? t("Providers & permissions") : t("Settings");
+    if (route() === "local") return t("Set up this computer");
+    if (route() === "remote") return t("Connect to a host");
+    return t("Where will COSGRAL Workspace run?");
   };
 
   const description = () => {
     if (props.reviewing) {
       return props.platform === "darwin"
-        ? "Choose the default provider for local agents and review macOS permissions."
-        : "Default provider for local agents, language, notifications and voice.";
+        ? t("Choose the default provider for local agents and review macOS permissions.")
+        : t("Default provider for local agents, language, notifications and voice.");
     }
     if (route() === "local") {
-      return "Agents, conversations, and files stay on this computer.";
+      return t("Agents, conversations, and files stay on this computer.");
     }
     if (route() === "remote") {
-      return "Use an invitation from the person who runs your COSGRAL host.";
+      return t("Use an invitation from the person who runs your COSGRAL host.");
     }
-    return "Use this computer, or connect to a COSGRAL host that runs somewhere else.";
+    return t("Use this computer, or connect to a COSGRAL host that runs somewhere else.");
   };
 
   return (
@@ -227,7 +228,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 <Button
                   type="button"
                   class="initial-setup-back"
-                  aria-label="Back to connection choice"
+                  aria-label={t("Back to connection choice")}
                   onClick={() => {
                     setError("");
                     setRoute(null);
@@ -243,10 +244,10 @@ export function InitialSetup(props: InitialSetupProps) {
                 {props.accountEmail}
               </span>
               <Button type="button" class="initial-setup-signout" onClick={() => void props.onLogout()}>
-                Sign out
+                {t("Sign out")}
               </Button>
             </div>
-            <p class="initial-setup-eyebrow">COSGRAL setup</p>
+            <p class="initial-setup-eyebrow">{t("COSGRAL setup")}</p>
             <Dialog.Title as="h1" id="initial-setup-title">
               {title()}
             </Dialog.Title>
@@ -256,20 +257,20 @@ export function InitialSetup(props: InitialSetupProps) {
           </header>
 
           <Show when={!props.reviewing && route() === null}>
-            <ul class="setup-route-list" aria-label="Connection type">
+            <ul class="setup-route-list" aria-label={t("Connection type")}>
               <li>
                 <Button type="button" class="setup-route-button" onClick={() => chooseRoute("local")}>
                   <span class="setup-route-icon setup-route-icon-local" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
-                      <title>Local computer</title>
+                      <title>{t("Local computer")}</title>
                       <rect x="3" y="4" width="18" height="13" rx="2.5" />
                       <path d="M8 21h8M12 17v4" />
                     </svg>
                     <i />
                   </span>
                   <span class="setup-route-copy">
-                    <strong>Use this computer</strong>
-                    <small>Run Codex or Claude locally. Keep all COSGRAL data here.</small>
+                    <strong>{t("Use this computer")}</strong>
+                    <small>{t("Run Codex or Claude locally. Keep all COSGRAL data here.")}</small>
                   </span>
                   <RouteArrow />
                 </Button>
@@ -278,7 +279,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 <Button type="button" class="setup-route-button" onClick={() => chooseRoute("remote")}>
                   <span class="setup-route-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
-                      <title>Remote host</title>
+                      <title>{t("Remote host")}</title>
                       <rect x="3" y="3" width="18" height="7" rx="2.5" />
                       <rect x="3" y="14" width="18" height="7" rx="2.5" />
                       <path d="M7 6.5h.01M7 17.5h.01" />
@@ -286,8 +287,8 @@ export function InitialSetup(props: InitialSetupProps) {
                     <i />
                   </span>
                   <span class="setup-route-copy">
-                    <strong>Connect to a host</strong>
-                    <small>Use agents and conversations from an existing COSGRAL host.</small>
+                    <strong>{t("Connect to a host")}</strong>
+                    <small>{t("Use agents and conversations from an existing COSGRAL host.")}</small>
                   </span>
                   <RouteArrow />
                 </Button>
@@ -300,9 +301,9 @@ export function InitialSetup(props: InitialSetupProps) {
               <ProviderPicker
                 value={selectedProvider()}
                 options={providerOptions()}
-                ariaLabel="Default provider"
-                label="Default provider"
-                hint="Used for new local agents. You can change it for each agent later."
+                ariaLabel={t("Default provider")}
+                label={t("Default provider")}
+                hint={t("Used for new local agents. You can change it for each agent later.")}
                 disabled={saving()}
                 allowUnavailableSelection
                 focusFirst
@@ -333,8 +334,8 @@ export function InitialSetup(props: InitialSetupProps) {
                 <section class="mac-permissions" aria-labelledby="mac-permissions-title">
                   <div class="mac-permissions-heading">
                     <div>
-                      <h2 id="mac-permissions-title">Mac permissions</h2>
-                      <p>Optional. Computer Use needs both permissions.</p>
+                      <h2 id="mac-permissions-title">{t("Mac permissions")}</h2>
+                      <p>{t("Optional. Computer Use needs both permissions.")}</p>
                     </div>
                   </div>
                   <div class="mac-permission-list">
@@ -344,8 +345,8 @@ export function InitialSetup(props: InitialSetupProps) {
                         return (
                           <div class="mac-permission-row">
                             <span class="mac-permission-copy">
-                              <strong>{permission.title}</strong>
-                              <small>{permission.description}</small>
+                              <strong>{t(permission.title)}</strong>
+                              <small>{t(permission.description)}</small>
                             </span>
                             <Button
                               type="button"
@@ -353,7 +354,7 @@ export function InitialSetup(props: InitialSetupProps) {
                               disabled={permissionBusy() !== null || state() === "granted" || state() === "restricted"}
                               onClick={() => void requestPermission(permission.id)}
                             >
-                              {permissionBusy() === permission.id ? "Checking…" : permissionLabel(state())}
+                              {permissionBusy() === permission.id ? t("Checking…") : t(permissionLabel(state()))}
                             </Button>
                           </div>
                         );
@@ -379,21 +380,21 @@ export function InitialSetup(props: InitialSetupProps) {
               }}
             >
               <label>
-                <span>Host invitation</span>
+                <span>{t("Host invitation")}</span>
                 <Textarea
                   rows="3"
                   maxlength={INPUT_LIMITS.inviteUrl}
                   value={inviteUrl()}
                   onInput={(event) => setInviteUrl(event.currentTarget.value)}
-                  placeholder="Paste an cosgral:// invitation link"
+                  placeholder={t("Paste an cosgral:// invitation link")}
                   spellcheck={false}
                   autofocus
                   required
                 />
               </label>
               <p class="setup-remote-note">
-                You will join as <strong>{props.accountEmail}</strong>. Email invitations only work for the address that
-                received them.
+                {t("You will join as")} <strong>{props.accountEmail}</strong>.{" "}
+                {t("Email invitations only work for the address that received them.")}
               </p>
             </form>
           </Show>
@@ -408,7 +409,7 @@ export function InitialSetup(props: InitialSetupProps) {
             <div class="initial-setup-actions">
               <Show when={props.reviewing}>
                 <Button type="button" class="initial-setup-secondary" onClick={props.onClose}>
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               </Show>
               <Button
@@ -424,15 +425,15 @@ export function InitialSetup(props: InitialSetupProps) {
               >
                 {saving()
                   ? route() === "remote"
-                    ? "Connecting…"
-                    : "Saving…"
+                    ? t("Connecting…")
+                    : t("Saving…")
                   : props.reviewing
-                    ? "Save changes"
+                    ? t("Save changes")
                     : route() === "remote"
-                      ? "Connect to host"
+                      ? t("Connect to host")
                       : selectedProvider()
-                        ? `Continue with ${providerName(selectedProvider())}`
-                        : "Choose a provider"}
+                        ? t("Continue with {provider}", { provider: providerName(selectedProvider()) })
+                        : t("Choose a provider")}
               </Button>
             </div>
           </Show>

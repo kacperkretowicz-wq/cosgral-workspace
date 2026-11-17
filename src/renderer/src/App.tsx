@@ -28,6 +28,7 @@ import type {
   InviteSummary,
   QueueSnapshot,
   RemoteMacSession,
+  SearchHit,
   ServerSummary,
   SidebarLayout,
   StopAgentEyesInput,
@@ -73,6 +74,7 @@ import { UsagePage } from "./components/UsagePage";
 import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
+import { t } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import {
   addCard,
@@ -1172,6 +1174,20 @@ export function App() {
     }
   }
 
+  /** Channels, files and routines found by the search: open the page that holds them. */
+  function selectGlobalSearchHit(hit: SearchHit): void {
+    setNewAgentOpen(false);
+    if (hit.kind === "channels") {
+      setCreateChannel(false);
+      setActivePage("agents");
+      setActiveDirectMemberId(null);
+      setAgentPickerOpen(false);
+      setChannelsOpen(true);
+    } else if (hit.kind === "files") setActivePage("library");
+    else if (hit.kind === "routines") setActivePage("schedule");
+    else if (hit.botId) selectBot(hit.botId);
+  }
+
   function selectGlobalSearchMessage(botId: string, messageId: string): void {
     selectBot(botId);
     setMessageFocusRequest({ botId, messageId, nonce: Date.now() });
@@ -1420,7 +1436,7 @@ export function App() {
     setBotList((items) => (items.some((bot) => bot.id === next.id) ? items : [...items, createStoredProfile(next)]));
     selectBot(result.bot.id);
     setAgentCopyNotice(
-      `Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.${result.warnings.length ? ` Uwaga: ${result.warnings.join(" ")}` : ""}`,
+      `${t("Copy ready. Memory, history, queue, routines, channels and Vault are not copied.")}${result.warnings.length ? ` ${t("Note:")} ${result.warnings.join(" ")}` : ""}`,
     );
   }
 
@@ -2332,6 +2348,7 @@ export function App() {
                   onOpenChange={setGlobalSearchVisibility}
                   onSelectBot={selectBot}
                   onSelectMessage={selectGlobalSearchMessage}
+                  onSelectHit={selectGlobalSearchHit}
                 />
               </Show>
             </div>

@@ -20,3 +20,23 @@
 - Luka kontraktu (do Backendu): `CreateAgentInput` nie przyjmuje `avatarSeed`/`avatarHue` — dwa zapisy zamiast jednego; ewentualne „utwórz agenta z szablonu z kolorem” też.
 - Sidebar „+ → Nowy agent” otwiera stronę (zamiast pickera + pytania o specjalizację). Stary picker i onboarding w Conversation zostały (pierwszy start bez agentów nadal idzie starą ścieżką).
 - Kontrola: NewAgentPage 3/3, App.test 91/92 (przy --testTimeout=30000; bez tego 5 losowych timeoutów pod obciążeniem), jedyny czerwony to stary `hides and shows…`, typecheck OK, Biome OK, check:ui OK, i18n 9/9.
+
+## Commit 4 — napisy do t() (odbiór Testera: pasek boczny FAIL)
+- InitialSetup (tytuły, opisy, przyciski, uprawnienia macOS, błędy), Sidebar „Duplicate”, App „Copy ready…” w słowniku PL/EN (52 klucze). Test zgodności kluczy skanuje InitialSetup i NewAgentPage.
+- Kontrola: i18n 9/9, InitialSetup.onboarding 5/5, App.test 92/92 (--testTimeout=30000), typecheck:renderer OK, Biome OK.
+
+## Commit 5 — zakładki wątków (zrzuty 102–104)
+- `ThreadTabs`: karty otwartych wątków (kontrakt U6), menu karty (zamknij / pozostałe / po prawej), lista zamkniętych pod szewronem, „+”. Zamknięcie aktywnej karty pokazuje sąsiednią; wątek zostaje w liście. Bez kontraktu threadTabs nic się nie rysuje (bez atrapy).
+- Luka: przeciąganie kart (reorder) — kontrakt jest, UI jeszcze nie.
+- Kontrola: ThreadTabs 5/5, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 6 — wyszukiwarka z zakładkami (zrzuty 090, 099)
+- Sześć zakładek; `search.query({q, kinds:[channels,files,routines], limit:10})` z 150 ms debounce i ochroną przed spóźnioną odpowiedzią; bez kontraktu zakładki Kanały/Pliki/Rutyny są puste (bez atrapy).
+- Otwarcie: kanał → widok kanałów, plik → Biblioteka, rutyna → Harmonogram (hit nie niesie jeszcze celu głębszego niż strona).
+- Zmiana nazwy zakładki Bots→Agents dotyka `stories/App.stories.tsx` (nie uruchamiane — wymaga GO na Storybook).
+- Kontrola: GlobalSearch 2/2, App.test 92/92, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 7 — polecenia „/” (zrzut 111)
+- Lista poleceń programu i skilli nad polem wiadomości; podpięta pod `window.openbot.composer.listSlashCommands`; bez kontraktu brak listy (bez atrapy).
+- „@” zostaje na lokalnych agentach i plikach; `searchMentions` (kanały, pliki spoza szkicu) jeszcze niepodpięte.
+- Kontrola: ComposerEditor 13/13, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
