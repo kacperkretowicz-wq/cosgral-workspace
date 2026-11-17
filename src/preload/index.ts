@@ -85,6 +85,7 @@ import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
 import { createBrowserProfilesApi } from "./browser-profiles-api";
 import { createBudgetsApi } from "./budgets-api";
+import { createComposerApi, createSearchApi, createThreadTabsApi } from "./composer-api";
 import { createComputerUseApi } from "./computer-use-api";
 import { createContextApi } from "./context-api";
 import { createLibraryApi, createTablesApi } from "./data-api";
@@ -829,6 +830,9 @@ const openbotApi: OpenBotDesktopApi = {
   browserProfiles: createBrowserProfilesApi(invokeAgent),
   integrations: createIntegrationsApi(invokeAgent),
   phone: createPhoneApi(invokeAgent),
+  search: createSearchApi(invokeAgent),
+  composer: createComposerApi(invokeAgent),
+  threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),

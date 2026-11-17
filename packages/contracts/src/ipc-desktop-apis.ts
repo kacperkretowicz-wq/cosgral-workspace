@@ -39,6 +39,7 @@ import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
+import type { ComposerDesktopApi } from "./ipc-composer";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type { ContextDesktopApi } from "./ipc-context";
 import type {
@@ -150,6 +151,7 @@ import type {
   RoutineWithSecret,
   UpdateRoutineInput,
 } from "./ipc-routines";
+import type { SearchDesktopApi } from "./ipc-search";
 import type {
   CreateSidebarFolderInput,
   DeleteSidebarFolderInput,
@@ -217,6 +219,7 @@ import type {
   TeamSessionSummary,
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
+import type { ThreadTabsDesktopApi } from "./ipc-thread-tabs";
 import type { ThreadsDesktopApi } from "./ipc-threads";
 import type {
   DeleteVaultItemInput,
@@ -701,6 +704,12 @@ export interface OpenBotDesktopApi {
   integrations?: IntegrationsDesktopApi;
   /** COSGRAL W9-BE1: the phone away from home (Tailscale guide, push switch, PIN state of the paired phones). Optional until every mock implements it. */
   phone?: PhoneDesktopApi;
+  /** COSGRAL W11 (U3): the search box (agents, channels, messages, files, routines). Optional until every mock implements it. */
+  search?: SearchDesktopApi;
+  /** COSGRAL W11 (U4, U5): the message box: side question, slash commands, mentions. Optional until every mock implements it. */
+  composer?: ComposerDesktopApi;
+  /** COSGRAL W11 (U6): the tabs of the threads of an agent. Optional until every mock implements it. */
+  threadTabs?: ThreadTabsDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
 }

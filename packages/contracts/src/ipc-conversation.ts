@@ -26,6 +26,7 @@ import {
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import { type BrowserProfilesChanged, isBrowserProfilesChanged } from "./ipc-browser-profiles";
 import { type BudgetsChanged, isBudgetsChanged } from "./ipc-budgets";
+import { isSideQuestionChanged, type SideQuestionChanged } from "./ipc-composer";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
 import { type ContextChanged, type ContextSettingsChanged, isContextSettings, isContextState } from "./ipc-context";
 import {
@@ -73,6 +74,7 @@ import {
   type ManagedCliState,
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
+import { isThreadTabsChanged, type ThreadTabsChanged } from "./ipc-thread-tabs";
 import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {
   isVaultItemSummary,
@@ -692,6 +694,10 @@ export type AgentEvent =
   | ({ type: "integrations-changed" } & IntegrationsChanged)
   /** COSGRAL W9-BE1: the reach of the phone, the push switch or a phone's PIN or subscription changed (the whole state). */
   | ({ type: "phone-access-changed" } & PhoneAccessChanged)
+  /** COSGRAL W11 (U4): a side question started, grew, ended, failed or was cancelled (its whole state). */
+  | ({ type: "side-question-changed" } & SideQuestionChanged)
+  /** COSGRAL W11 (U6): the strip of thread tabs of one agent changed. */
+  | ({ type: "thread-tabs-changed" } & ThreadTabsChanged)
   /** COSGRAL W10-KK2: the messenger bridge changed (connected, failed, allow list, a chat wrote that is not allowed) (the whole list). */
   | ({ type: "messengers-changed" } & MessengersChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
@@ -871,6 +877,10 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isIntegrationsChanged(value);
     case "phone-access-changed":
       return isPhoneAccessChanged(value);
+    case "side-question-changed":
+      return isSideQuestionChanged(value);
+    case "thread-tabs-changed":
+      return isThreadTabsChanged(value);
     case "messengers-changed":
       return isMessengersChanged(value);
     case "threads-changed":

@@ -99,6 +99,7 @@ import { createMockAcpPresets } from "./mock-acp-presets";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockBudgets } from "./mock-budgets";
+import { createMockComposer, createMockSearch, createMockThreadTabs } from "./mock-composer";
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
@@ -1383,6 +1384,10 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     integrations: createMockIntegrations((event) => emitAgentEvent(event)),
     // COSGRAL W9-BE1: the phone away from home (demo; `simulate` plays a phone setting a PIN or allowing notifications).
     phone: createMockPhone((event) => emitAgentEvent(event)),
+    // COSGRAL W11 (U3-U6): search, message box (side question, slash, @), thread tabs (demo data).
+    search: createMockSearch(),
+    composer: createMockComposer((event) => emitAgentEvent(event)),
+    threadTabs: createMockThreadTabs((event) => emitAgentEvent(event)),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
