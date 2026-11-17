@@ -34,6 +34,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show
 import { normalizeAvatarFile } from "../avatar-image";
 import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
+import { t } from "../i18n";
 import type { PendingCard } from "../pending-cards";
 import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
@@ -94,6 +95,8 @@ import {
   RemoteMacPanel,
 } from "./RemoteMacPanel";
 import { RoutinePanel } from "./RoutinePanel";
+import { SideQuestionPanel } from "./SideQuestionPanel";
+import { SkillQuickPick } from "./SkillQuickPick";
 import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
@@ -244,6 +247,8 @@ export function Conversation(props: ConversationProps) {
   let libraryDetails: HTMLDetailsElement | undefined;
   let libraryOwner: string | undefined;
   const [attachmentBusy, setAttachmentBusy] = createSignal(false);
+  const [attachMenuView, setAttachMenuView] = createSignal<"main" | "skills">("main");
+  const [sideQuestionOpen, setSideQuestionOpen] = createSignal(false);
   const [composerError, setComposerError] = createSignal<string | null>(null);
   // COSGRAL W4-BE2: "Try again" on the agent setup card while the CLIs restart.
   const [retryingStart, setRetryingStart] = createSignal(false);
@@ -1588,6 +1593,24 @@ export function Conversation(props: ConversationProps) {
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
                 </Show>
+                <Show when={props.bot && reasoningOptions().length > 1}>
+                  <NativeSelect
+                    class="header-effort"
+                    value={settingsReasoning()}
+                    aria-label="Effort"
+                    disabled={!agentReady() || agentActivity() === "Working"}
+                    onChange={(event) => {
+                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
+                      if (!reasoningEffort) return;
+                      setSettingsReasoning(reasoningEffort);
+                      saveBotPatch({ reasoningEffort });
+                    }}
+                  >
+                    <For each={reasoningOptions()}>
+                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
+                    </For>
+                  </NativeSelect>
+                </Show>
                 <Show when={props.server?.kind === "remote"}>
                   <Button
                     type="button"
@@ -2212,6 +2235,9 @@ export function Conversation(props: ConversationProps) {
               );
             }}
           </Show>
+          <Show when={sideQuestionOpen() ? props.bot : undefined} keyed>
+            {(bot) => <SideQuestionPanel botId={bot.id} onClose={() => setSideQuestionOpen(false)} />}
+          </Show>
           <div class="composer">
             <Show when={props.bot?.id} keyed>
               {(botId) => (
@@ -2225,7 +2251,15 @@ export function Conversation(props: ConversationProps) {
                 />
               )}
             </Show>
-            <Popover.Root open={showAttachments()} placement="top-start" gutter={4} onOpenChange={setShowAttachments}>
+            <Popover.Root
+              open={showAttachments()}
+              placement="top-start"
+              gutter={4}
+              onOpenChange={(open) => {
+                setShowAttachments(open);
+                if (!open) setAttachMenuView("main");
+              }}
+            >
               <Popover.Trigger
                 as={Button}
                 type="button"
@@ -2238,10 +2272,43 @@ export function Conversation(props: ConversationProps) {
               <Popover.Portal>
                 <Popover.Content class="attachment-menu">
                   <Popover.Title class="sr-only">Attach file</Popover.Title>
-                  <Button type="button" disabled={attachmentBusy()} onClick={() => void chooseAttachments()}>
-                    <Paperclip aria-hidden="true" />
-                    {attachmentBusy() ? "Importing…" : "Attach files"}
-                  </Button>
+                  <Show
+                    when={attachMenuView() === "main"}
+                    fallback={
+                      <Show when={props.bot?.id} keyed>
+                        {(botId) => (
+                          <SkillQuickPick
+                            botId={botId}
+                            onPick={(command) => {
+                              const draft = currentDraft();
+                              updateCurrentDraft({
+                                text: `${draft.text}${draft.text && !draft.text.endsWith(" ") ? " " : ""}/${command.name} `,
+                              });
+                              setAttachMenuView("main");
+                              setShowAttachments(false);
+                            }}
+                          />
+                        )}
+                      </Show>
+                    }
+                  >
+                    <Button type="button" disabled={attachmentBusy()} onClick={() => void chooseAttachments()}>
+                      <Paperclip aria-hidden="true" />
+                      {attachmentBusy() ? t("Importing…") : t("Attach files")}
+                    </Button>
+                    <Button type="button" onClick={() => setAttachMenuView("skills")}>
+                      {t("Use a skill")}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowAttachments(false);
+                        setSideQuestionOpen(true);
+                      }}
+                    >
+                      {t("Side question")}
+                    </Button>
+                  </Show>
                 </Popover.Content>
               </Popover.Portal>
             </Popover.Root>

@@ -1364,3 +1364,103 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .slash-picker-active {
   background: var(--cosgral-hover);
 }
+
+/* W11-UI1: side question panel and skill quick pick. */
+.side-question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 12px 8px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-surface);
+  padding: 10px 12px;
+}
+
+.side-question-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--cosgral-text-md);
+}
+
+.side-question-hint {
+  min-width: 0;
+  flex: 1;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.side-question-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.side-question-form textarea {
+  flex: 1;
+}
+
+.side-question-note,
+.side-question-result p,
+.side-question-error {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.side-question-error,
+.side-question-result[data-status="failed"] p {
+  color: var(--cosgral-danger);
+}
+
+.side-question-answer {
+  max-height: 240px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.skill-quick-pick {
+  display: flex;
+  min-width: 220px;
+  max-height: 280px;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.skill-quick-pick p {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.skill-quick-pick button {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+}
+
+.skill-quick-pick-hint {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cosgral-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* W11-UI1: effort next to the model in the chat header. */
+.header-effort {
+  width: auto;
+  min-width: 0;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.header-effort:hover:not(:disabled) {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}
