@@ -220,21 +220,23 @@ export function MarketplacePage(props: { bots: Person[] }) {
           <label class="marketplace-search">
             Search <Input unstyled type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
           </label>
-          <label>
-            Kind{" "}
-            <NativeSelect
-              unstyled
-              value={kind()}
-              onChange={(e) => {
-                const v = e.currentTarget.value;
-                if (v === "" || v === "skill" || v === "agent") setKind(v);
-              }}
-            >
-              <option value="">All</option>
-              <option value="skill">Skills</option>
-              <option value="agent">Agents</option>
-            </NativeSelect>
-          </label>
+          <Show when={!hasApps}>
+            <label>
+              Kind{" "}
+              <NativeSelect
+                unstyled
+                value={kind()}
+                onChange={(e) => {
+                  const v = e.currentTarget.value;
+                  if (v === "" || v === "skill" || v === "agent") setKind(v);
+                }}
+              >
+                <option value="">All</option>
+                <option value="skill">Skills</option>
+                <option value="agent">Agents</option>
+              </NativeSelect>
+            </label>
+          </Show>
           <label>
             Category{" "}
             <NativeSelect

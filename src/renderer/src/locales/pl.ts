@@ -412,4 +412,5 @@ export const pl = {
   Design: "Projektowanie",
   Documents: "Dokumenty",
   Other: "Inne",
+  "Working folder": "Folder roboczy",
 } as const;

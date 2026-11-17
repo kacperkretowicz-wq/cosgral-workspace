@@ -414,4 +414,5 @@ export const en = {
   Design: "Design",
   Documents: "Documents",
   Other: "Other",
+  "Working folder": "Working folder",
 } as const;
