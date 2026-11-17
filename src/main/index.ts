@@ -59,6 +59,7 @@ import { McpStore, type SecretBox } from "../backend/mcp-store";
 import { createAgentPort, MessengerBridge } from "../backend/messenger-bridge";
 import type { MobileConnect } from "../backend/mobile-connect";
 import type { PhoneAccess } from "../backend/phone-access";
+import { PluginCatalogService } from "../backend/plugin-catalog/plugin-catalog-service";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
@@ -191,6 +192,7 @@ import { registerMessengersIpc } from "./messengers-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
+import { registerPluginCatalogIpc } from "./plugin-catalog-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
@@ -296,6 +298,8 @@ let messengerBridge: MessengerBridge | null = null;
 // COSGRAL W11-KK (d): connectors of password managers and the person's Vault tools.
 let vaultConnectorHub: VaultConnectorHub | null = null;
 let vaultSecretsService: VaultSecretsService | null = null;
+// COSGRAL W11-KK (e): the Marketplace Apps tab (plugin catalog from the owner's folder, installed as MCP servers).
+let pluginCatalogService: PluginCatalogService | null = null;
 let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
@@ -937,6 +941,7 @@ function registerIpcHandlers(
   registerBudgetsIpc(() => budgetMeter);
   registerIntegrationsIpc(() => integrationManager);
   registerMessengersIpc(() => messengerBridge);
+  registerPluginCatalogIpc(() => pluginCatalogService);
   registerVaultConnectorsIpc(
     () => vaultConnectorHub,
     () => vaultSecretsService,
@@ -1451,7 +1456,11 @@ if (!hasSingleInstanceLock) {
       // COSGRAL W2: MCP servers of the program; secrets encrypted with safeStorage (DPAPI on Windows).
       const mcp = new McpManager({
         store: new McpStore(store.database, electronSecretBox()),
-        emit: (event) => forwardAgentEvent("local", event),
+        emit: (event) => {
+          forwardAgentEvent("local", event);
+          // COSGRAL W11-KK (e): a plugin's state follows its MCP servers.
+          if (event.type === "mcp-servers-changed") pluginCatalogService?.publish();
+        },
         // COSGRAL W10-KK1: the tool allowlist of the space for the app integrations.
         toolFilter: (serverName, toolName) => integrationManager?.toolAllowed(serverName, toolName) ?? true,
       });
@@ -1515,6 +1524,13 @@ if (!hasSingleInstanceLock) {
         },
       });
       vaultConnectorHub.load();
+      pluginCatalogService = new PluginCatalogService({
+        database: store.database,
+        mcp,
+        emit: (event) => forwardAgentEvent("local", event),
+        botIds: () => agentService?.listBots().map((bot) => bot.id) ?? [],
+      });
+      void pluginCatalogService.load();
       vaultSecretsService = new VaultSecretsService({
         store: () => agentService?.vault ?? null,
         clipboard: { write: (text) => clipboard.writeText(text), read: () => clipboard.readText() },

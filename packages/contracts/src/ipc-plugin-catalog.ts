@@ -2,7 +2,7 @@
 // data tools and so on), install, update, own plugins. Our own contract for the behaviour of OpenBot 0.71 (parity row 41: ~250 plugins).
 //
 // WHERE THE CATALOG COMES FROM. The entries are somebody else's descriptions, so they are NOT in this repository. The program loads
-// them from a FOLDER the owner points it to (an `index.json` list plus one detail file per plugin version, each checked against the
+// them from a FOLDER the owner points it to (a `catalog.json` index plus one detail file per plugin version (`<slug>/<version>.json`), each checked against the
 // SHA-256 the index names), or from nothing (the tab says so). Own plugins (`custom`) never depend on a catalog.
 //
 // INSTALLING. A plugin app becomes an MCP server of the program (the W2 MCP engine, limits there): `link` sign-in (OAuth in the
@@ -179,7 +179,7 @@ export interface AddCustomPluginInput {
 }
 
 export interface SetPluginCatalogFolderInput {
-  /** An absolute folder with `index.json`, or null to forget the folder. */
+  /** An absolute folder with `catalog.json`, or null to forget the folder. */
   directory: string | null;
 }
 
