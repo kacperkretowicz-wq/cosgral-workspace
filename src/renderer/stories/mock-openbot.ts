@@ -606,6 +606,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       emitAgentEvent({ type: "bots-changed", bots });
     },
   });
+  const mockMessageActions = createMockMessageActions((event) => emitAgentEvent(event));
   const api: OpenBotDesktopApi = {
     ...w2ui2,
     memory: w2.memory,
@@ -1416,7 +1417,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     access: createMockAccess((event) => emitAgentEvent(event)),
     // COSGRAL W8-BE2: isolation of the processes (demo; `allowOff` plays the card of Needs you).
     isolation: createMockIsolation((event) => emitAgentEvent(event)),
-    messageActions: createMockMessageActions((event) => emitAgentEvent(event)),
+    messageActions: mockMessageActions,
+    messageMenu: { get: mockMessageActions.menu },
     // COSGRAL W6-KK3: separate conversation windows (demo; `simulate` is for stories that build the mock themselves).
     windows: createMockWindows((event) => emitAgentEvent(event)),
     // COSGRAL W8-KK1: client spaces (demo; `simulate.restarted` plays the restart after a switch).

@@ -91,4 +91,26 @@ describe("mock message actions", () => {
       /not in this thread/,
     );
   });
+
+  it("W12: the menu follows what the actions would do: busy thread, pin, and what an edit would remove", async () => {
+    const { actions } = setup();
+    const menu = await actions.menu({ botId: "b", threadId: "t", messageId: "u1" });
+    expect(menu.actions.find((action) => action.id === "edit")).toMatchObject({
+      enabled: true,
+      needsConfirmation: true,
+    });
+    expect(menu.actions.find((action) => action.id === "pin")).toMatchObject({ enabled: true, active: false });
+    await actions.pin({ botId: "b", threadId: "t", messageId: "u1", pinned: true });
+    const pinned = await actions.menu({ botId: "b", threadId: "t", messageId: "u1" });
+    expect(pinned.pinned).toBe(true);
+    expect(pinned.actions.find((action) => action.id === "pin")?.active).toBe(true);
+    actions.setBusy("b", "t", { turnRunning: true, busyMessages: 0 });
+    const busy = await actions.menu({ botId: "b", threadId: "t", messageId: "a2" });
+    expect(busy.actions.filter((action) => !action.enabled).map((action) => action.id)).toEqual([
+      "retry",
+      "edit",
+      "delete",
+    ]);
+    await expect(actions.menu({ botId: "b", threadId: "t", messageId: "nope" })).rejects.toThrow(/not in this thread/);
+  });
 });

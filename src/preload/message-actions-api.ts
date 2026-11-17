@@ -3,13 +3,26 @@
 import {
   IPC_CHANNELS,
   isMessageActionResult,
+  isMessageMenu,
   isMessagePinList,
   type MessageActionResult,
   type MessageActionsDesktopApi,
+  type MessageMenu,
+  type MessageMenuDesktopApi,
   type MessagePin,
 } from "@openbot/contracts/ipc";
 
 type Invoke = <TResult>(channel: string, payload: unknown, decoder: (value: unknown) => TResult) => Promise<TResult>;
+
+/** COSGRAL W12 (BE-J): the menu of one message in one read. */
+export function createMessageMenuApi(invoke: Invoke): MessageMenuDesktopApi {
+  return { get: (input) => invoke(IPC_CHANNELS.messageMenuGet, input, decodeMenu) };
+}
+
+function decodeMenu(value: unknown): MessageMenu {
+  if (!isMessageMenu(value)) throw new Error("Invalid message menu.");
+  return value;
+}
 
 export function createMessageActionsApi(invoke: Invoke): MessageActionsDesktopApi {
   return {

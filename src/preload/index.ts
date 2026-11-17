@@ -98,7 +98,7 @@ import { createIntegrationsApi } from "./integrations-api";
 import { createIsolationApi } from "./isolation-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMcpOAuthApi } from "./mcp-oauth-api";
-import { createMessageActionsApi } from "./message-actions-api";
+import { createMessageActionsApi, createMessageMenuApi } from "./message-actions-api";
 import { createMessengersApi } from "./messengers-api";
 import { createMobileApi } from "./mobile-api";
 import { createMobileConnectApi } from "./mobile-connect-api";
@@ -830,6 +830,7 @@ const openbotApi: OpenBotDesktopApi = {
   access: createAccessApi(invokeAgent),
   isolation: createIsolationApi(invokeAgent),
   messageActions: createMessageActionsApi(invokeAgent),
+  messageMenu: createMessageMenuApi(invokeAgent),
   apiKeys: createApiKeysApi(invokeAgent),
   endpoints: createEndpointsApi(invokeAgent),
   context: createContextApi(invokeAgent),

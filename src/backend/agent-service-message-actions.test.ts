@@ -7,7 +7,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent, BrowserControlState, BrowserTab, ConversationMessage } from "@openbot/contracts/ipc";
-import { MESSAGE_ACTION_LIMITS } from "@openbot/contracts/ipc";
+import { isMessageMenu, MESSAGE_ACTION_LIMITS } from "@openbot/contracts/ipc";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
@@ -256,6 +256,41 @@ describe.sequential("the actions on a message, on the service", {
     await waitFor(() => completed(events) === 3);
     // Nothing was changed by the refused calls.
     expect(find(await messages(service), "ANSWER_TO[Q1").id).toBe(a1.id);
+  });
+
+  it("W12: the menu of a message says what the actions would do: edit and its confirmation, pin, branch, busy thread", async () => {
+    const { service, cli, events } = await twoExchanges();
+    const list = await messages(service);
+    const q1 = find(list, "Q1");
+    const a1 = find(list, "ANSWER_TO[Q1");
+    const own = await service.messageMenu({ botId: "chief", messageId: q1.id });
+    const action = (menu: typeof own, id: string) => menu.actions.find((candidate) => candidate.id === id);
+    expect(isMessageMenu(own)).toBe(true);
+    expect(own.threadId.length).toBeGreaterThan(0);
+    expect(action(own, "edit")).toMatchObject({ enabled: true, needsConfirmation: true });
+    expect(action(own, "branch")?.enabled).toBe(true);
+    const answer = await service.messageMenu({ botId: "chief", messageId: a1.id });
+    expect(action(answer, "edit")).toMatchObject({ enabled: false, reason: "Only your own messages can be edited." });
+    expect(action(answer, "retry")?.enabled).toBe(true);
+    await service.pinMessage({ botId: "chief", messageId: a1.id, pinned: true });
+    const pinned = await service.messageMenu({ botId: "chief", messageId: a1.id });
+    expect(pinned.pinned).toBe(true);
+    expect(action(pinned, "pin")).toMatchObject({ enabled: true, active: true });
+    await service.setMessageReaction({ botId: "chief", messageId: a1.id, emoji: "🎉" });
+    expect((await service.messageMenu({ botId: "chief", messageId: a1.id })).reactions.current).toBe("🎉");
+    cli.hold = true;
+    await service.sendMessage({ botId: "chief", text: "Q3 slow" });
+    await waitFor(() => cli.pending.length === 1);
+    const busy = await service.messageMenu({ botId: "chief", messageId: a1.id });
+    expect(["retry", "edit", "delete"].map((id) => action(busy, id)?.enabled)).toEqual([false, false, false]);
+    expect(action(busy, "retry")?.reason).toMatch(/busy/);
+    expect(["copy", "react", "pin", "branch"].every((id) => action(busy, id)?.enabled)).toBe(true);
+    cli.finish();
+    await waitFor(() => completed(events) === 3);
+    await expect(service.messageMenu({ botId: "chief", messageId: "nope" })).rejects.toThrow(/not in this thread/);
+    await expect(service.messageMenu({ botId: "chief", threadId: "unknown", messageId: a1.id })).rejects.toThrow(
+      /Unknown thread/,
+    );
   });
 
   it("refuses an action on another thread than the one shown, and on a message that is not there", async () => {
