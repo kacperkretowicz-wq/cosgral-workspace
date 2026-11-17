@@ -165,4 +165,12 @@ describe("naming and grouping (B1)", () => {
       ),
     ).toHaveLength(4);
   });
+
+  it("lets the probe press the stand-in sign-in of OUR OWN app, and nothing else that signs in", () => {
+    expect(clickVerdict(candidate("Continue with Codex")).allowed).toBe(false);
+    expect(clickVerdict(candidate("Continue with Codex"), "cosgral").allowed).toBe(true);
+    expect(clickVerdict(candidate("Continue with Google"), "cosgral").allowed).toBe(false);
+    expect(clickVerdict(candidate("Sign in"), "cosgral").allowed).toBe(false);
+    expect(clickVerdict(candidate("Continue with Codex", { disabled: true }), "cosgral").allowed).toBe(false);
+  });
 });
