@@ -186,7 +186,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("mobile-connect:").length).toBe(1);
     // COSGRAL W12-KK (g2): Transfer/Import and the update preferences.
     expect(channelsOf("instance-transfer:").length).toBe(6);
-    expect(channelsOf("update-preferences:").length).toBe(2);
+    expect(channelsOf("update-preferences:").length).toBe(5);
     expect(
       ["vault:reveal", "vault:copy", "vault:import-csv", "vault:codes", "vault:reset"].every((name) =>
         handlers.has(name),
@@ -361,6 +361,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("instance-transfer:summary", "local", null)).threw).toMatch(/still starting/);
     expect((await call("update-preferences:set", "local", { checkEveryHours: 0 })).threw).toMatch(/hours/);
     expect((await call("update-preferences:get", "local", null)).threw).toMatch(/still starting/);
+    expect((await call("update-preferences:get-overview", "local", null)).threw).toMatch(/still starting/);
     expect((await call("vault:reveal", "local", { itemId: "x", field: "notes" })).threw).toMatch(/field is one of/);
     expect((await call("vault:import-csv", "local", { csv: "  " })).threw).toMatch(/empty/);
     expect((await call("vault:reset", "local", null)).threw).toMatch(/still starting/);

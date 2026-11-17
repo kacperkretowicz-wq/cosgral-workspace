@@ -43,6 +43,7 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
   #status: UpdateStatus;
   #checkTimer: ReturnType<typeof setTimeout> | null = null;
   #started = false;
+  #idleTimer: ReturnType<typeof setInterval> | null = null;
   /** COSGRAL W12-KK (g2): what the person chose (checks, download, install on quit, pre-releases, how often). */
   #preferences: UpdatePreferences = { ...DEFAULT_UPDATE_PREFERENCES };
 
@@ -186,6 +187,36 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
     else this.stop();
   }
 
+  /**
+   * COSGRAL W12-KK (g2): "Restart when idle". Needs a downloaded update. It waits until `isIdle()` says no agent is working (checked every
+   * few seconds) and then installs and restarts. Asking again or `cancelRestartWhenIdle` changes nothing else.
+   */
+  restartWhenIdle(isIdle: () => boolean, checkEveryMs = 5_000): void {
+    if (this.#status.phase !== "ready") throw new Error("No update has been downloaded yet.");
+    this.cancelRestartWhenIdle();
+    const check = () => {
+      if (this.#status.phase !== "ready") {
+        this.cancelRestartWhenIdle();
+        return;
+      }
+      if (!isIdle()) return;
+      this.cancelRestartWhenIdle();
+      void this.installUpdate();
+    };
+    this.#idleTimer = setInterval(check, checkEveryMs);
+    this.#idleTimer.unref?.();
+    this.emit("status", this.getStatus());
+  }
+
+  cancelRestartWhenIdle(): void {
+    if (this.#idleTimer) clearInterval(this.#idleTimer);
+    this.#idleTimer = null;
+  }
+
+  get restartPending(): boolean {
+    return this.#idleTimer !== null;
+  }
+
   getPreferences(): UpdatePreferences {
     return { ...this.#preferences };
   }
@@ -195,6 +226,7 @@ export class UpdateService extends EventEmitter<UpdateServiceEvents> {
   }
 
   stop(): void {
+    this.cancelRestartWhenIdle();
     if (this.#checkTimer) clearTimeout(this.#checkTimer);
     this.#checkTimer = null;
   }

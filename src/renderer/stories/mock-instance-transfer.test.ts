@@ -9,10 +9,16 @@ import {
   isTransferPreview,
   isUpdatePreferences,
   isUpdatePreferencesChanged,
+  isUpdatesOverview,
   mergeUpdatePreferences,
   parseApplyTransferInput,
   parseExportInstanceInput,
   parseSetUpdatePreferencesInput,
+  TRANSFER_NOT_MOVED,
+  TRANSFER_STEPS,
+  UPDATE_TRACKS,
+  updateTrackChange,
+  updateTrackOf,
 } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
 import { createMockInstanceTransfer } from "./mock-instance-transfer";
@@ -109,6 +115,7 @@ describe("mock transfer (W12-KK g2)", () => {
     const { mock } = setup();
     const sources = await mock.transfer.importSources();
     expect(sources.every(isImportSourceInfo)).toBe(true);
+    expect(sources.every((source) => source.label.length > 0 && source.description.length > 0)).toBe(true);
     expect(sources.map((source) => [source.id, source.available])).toEqual([
       ["agent-zip", true],
       ["hermes", false],
@@ -129,5 +136,63 @@ describe("mock update preferences (W12-KK g2)", () => {
     expect(off).toMatchObject({ automaticChecks: false, automaticDownload: false });
     expect(isUpdatePreferencesChanged(events.at(-1))).toBe(true);
     await expect(mock.updates.set({ checkEveryHours: 1000 })).rejects.toThrow(/hours/);
+  });
+});
+
+describe("the Transfer and Import pages' fixed text (W12-KK)", () => {
+  it("three steps, and a list of what is never moved that names the secrets", () => {
+    expect(TRANSFER_STEPS).toHaveLength(3);
+    expect(TRANSFER_NOT_MOVED.join(" | ")).toMatch(/API keys.*Vault.*Chat history/);
+  });
+});
+
+describe("the Updates page in one query (W12-KK)", () => {
+  it("track, version and status, the restart button, and what is not offered with a reason", async () => {
+    const { mock } = setup();
+    const overview = await mock.updates.getOverview();
+    expect(isUpdatesOverview(overview)).toBe(true);
+    expect(overview).toMatchObject({ track: "stable", canUpdate: true });
+    expect(overview.restartWhenIdle).toEqual({
+      available: false,
+      reason: "No update has been downloaded yet.",
+      pending: false,
+    });
+    expect(overview.unavailable.map((item) => item.id)).toEqual(["member-updates", "release-notes"]);
+    expect(overview.unavailable.every((item) => item.reason.length > 10)).toBe(true);
+    expect(UPDATE_TRACKS.map((track) => track.id)).toEqual(["stable", "preview"]);
+  });
+
+  it("the track is the pre-release switch seen as a choice", async () => {
+    const { mock } = setup();
+    expect(updateTrackOf(await mock.updates.get())).toBe("stable");
+    await mock.updates.set(updateTrackChange("preview"));
+    expect((await mock.updates.getOverview()).track).toBe("preview");
+    await mock.updates.set(updateTrackChange("stable"));
+    expect((await mock.updates.getOverview()).preferences.includePrereleases).toBe(false);
+  });
+
+  it("'Restart when idle' needs a downloaded update, can be cancelled, and goes away when the update is no longer ready", async () => {
+    const { mock, events } = setup();
+    await expect(mock.updates.restartWhenIdle()).rejects.toThrow(/No update has been downloaded/);
+    mock.simulate.updateStatus({ phase: "ready", availableVersion: "0.0.1-demo", progress: 100 });
+    expect((await mock.updates.getOverview()).restartWhenIdle).toMatchObject({
+      available: true,
+      pending: false,
+      reason: null,
+    });
+    expect((await mock.updates.restartWhenIdle()).restartWhenIdle).toMatchObject({ available: true, pending: true });
+    expect(isUpdatePreferencesChanged(events.at(-1))).toBe(true);
+    expect((await mock.updates.cancelRestartWhenIdle()).restartWhenIdle.pending).toBe(false);
+    await mock.updates.restartWhenIdle();
+    mock.simulate.updateStatus({ phase: "up-to-date", availableVersion: null, progress: null });
+    expect((await mock.updates.getOverview()).restartWhenIdle).toMatchObject({ available: false, pending: false });
+  });
+
+  it("a build that cannot update says so", async () => {
+    const { mock } = setup();
+    mock.simulate.updateStatus({ phase: "unsupported", message: "Updates are available in installed desktop builds." });
+    const overview = await mock.updates.getOverview();
+    expect(overview.canUpdate).toBe(false);
+    expect(overview.status.message).toMatch(/installed desktop builds/);
   });
 });

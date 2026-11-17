@@ -104,4 +104,60 @@ describe("supportsInstalledUpdates", () => {
   ] as const)("returns %s support as %s", (platform, expected) => {
     expect(supportsInstalledUpdates(platform)).toBe(expected);
   });
+
+  describe("restart when idle (W12-KK g2)", () => {
+    async function ready(updater: FakeUpdater, beforeInstall = vi.fn(async () => undefined)) {
+      updater.checkForUpdates.mockImplementation(async () => {
+        updater.emit("update-available", { version: "0.1.1" });
+        return null;
+      });
+      updater.downloadUpdate.mockImplementation(async () => {
+        updater.emit("update-downloaded", { version: "0.1.1" });
+        return [];
+      });
+      const service = createService(updater, beforeInstall);
+      service.start(false);
+      await service.checkForUpdates();
+      await service.downloadUpdate();
+      return { service, beforeInstall };
+    }
+
+    it("needs a downloaded update", () => {
+      const service = createService(new FakeUpdater());
+      service.start(false);
+      expect(() => service.restartWhenIdle(() => true)).toThrow(/No update has been downloaded/);
+      expect(service.restartPending).toBe(false);
+    });
+
+    it("waits while an agent works, then installs once, and can be cancelled", async () => {
+      const updater = new FakeUpdater();
+      const { service, beforeInstall } = await ready(updater);
+      let idle = false;
+      service.restartWhenIdle(() => idle, 5);
+      expect(service.restartPending).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      expect(beforeInstall).not.toHaveBeenCalled();
+      idle = true;
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      expect(beforeInstall).toHaveBeenCalledOnce();
+      expect(updater.quitAndInstall).toHaveBeenCalledOnce();
+      expect(service.restartPending).toBe(false);
+
+      const second = new FakeUpdater();
+      const again = await ready(second);
+      again.service.restartWhenIdle(() => false, 5);
+      again.service.cancelRestartWhenIdle();
+      expect(again.service.restartPending).toBe(false);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(again.beforeInstall).not.toHaveBeenCalled();
+    });
+
+    it("stopping the service stops the waiting", async () => {
+      const { service, beforeInstall } = await ready(new FakeUpdater());
+      service.restartWhenIdle(() => true, 5);
+      service.stop();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(beforeInstall).not.toHaveBeenCalled();
+    });
+  });
 });

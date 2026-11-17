@@ -22,6 +22,7 @@ import {
   type ImportSourceInfo,
   INSTANCE_TRANSFER_LIMITS,
   type InstanceTransferSummary,
+  importSourceCards,
   isAvatarHue,
   MEMORY_INCLUSIONS,
   type MemoryInclusion,
@@ -333,11 +334,7 @@ export class InstanceTransferService {
   }
 
   importSources(): ImportSourceInfo[] {
-    return [
-      { id: "agent-zip", available: true, note: null },
-      { id: "hermes", available: false, note: "Reading a Hermes folder is not supported in this version." },
-      { id: "other-computer", available: true, note: "Use Transfer to move agents and settings together." },
-    ];
+    return importSourceCards();
   }
 
   // --- internals ---

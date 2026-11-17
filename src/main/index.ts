@@ -1015,7 +1015,11 @@ function registerIpcHandlers(
   );
   registerMcpOAuthIpc(() => mcpOAuthService);
   registerInstanceTransferIpc(() => instanceTransferService);
-  registerUpdatePreferencesIpc(() => updatePreferencesService);
+  registerUpdatePreferencesIpc(
+    () => updatePreferencesService,
+    () => updateService,
+    () => service.listActivity().every((activity) => activity.kind !== "working"),
+  );
   registerVaultConnectorsIpc(
     () => vaultConnectorHub,
     () => vaultSecretsService,
