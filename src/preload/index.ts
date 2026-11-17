@@ -98,6 +98,7 @@ import { createMessengersApi } from "./messengers-api";
 import { createMobileApi } from "./mobile-api";
 import { createPhoneApi } from "./phone-api";
 import { createPlansApi } from "./plans-api";
+import { createPluginCatalogApi } from "./plugin-catalog-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createSpacesApi } from "./spaces-api";
 import { createSubagentsApi } from "./subagents-api";
@@ -833,6 +834,7 @@ const openbotApi: OpenBotDesktopApi = {
   messengers: createMessengersApi(invokeAgent),
   vaultConnectors: createVaultConnectorsApi(invokeAgent),
   vaultSecrets: createVaultSecretsApi(invokeAgent),
+  pluginCatalog: createPluginCatalogApi(invokeAgent),
   browser: {
     open: (input) => ipcRenderer.invoke(IPC_CHANNELS.browserOpen, input),
     activate: (tabId) => ipcRenderer.invoke(IPC_CHANNELS.browserActivate, tabId),

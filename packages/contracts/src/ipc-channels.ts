@@ -220,6 +220,15 @@ export const IPC_CHANNELS = {
   vaultImportCsv: "vault:import-csv",
   vaultCodes: "vault:codes",
   vaultReset: "vault:reset",
+  // COSGRAL W11-KK (e): the Marketplace Apps tab (plugin catalog, install, own plugins).
+  pluginCatalogInfo: "plugin-catalog:info",
+  pluginCatalogList: "plugin-catalog:list",
+  pluginCatalogGet: "plugin-catalog:get",
+  pluginCatalogInstall: "plugin-catalog:install",
+  pluginCatalogUninstall: "plugin-catalog:uninstall",
+  pluginCatalogUpdate: "plugin-catalog:update",
+  pluginCatalogAddCustom: "plugin-catalog:add-custom",
+  pluginCatalogSetFolder: "plugin-catalog:set-folder",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

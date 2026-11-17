@@ -108,6 +108,7 @@ import { createMockMessageActions } from "./mock-message-actions";
 import { createMockMessengers } from "./mock-messengers";
 import { createMockPhone } from "./mock-phone";
 import { createMockPlans } from "./mock-plans";
+import { createMockPluginCatalog } from "./mock-plugin-catalog";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
 import { createMockSubagents } from "./mock-subagents";
@@ -1390,6 +1391,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).
     vaultConnectors: mockVaultConnectors.connectors,
     vaultSecrets: mockVaultConnectors.secrets,
+    // COSGRAL W11-KK (e): the Marketplace Apps tab (demo plugins; nothing is downloaded).
+    pluginCatalog: createMockPluginCatalog((event) => emitAgentEvent(event)),
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

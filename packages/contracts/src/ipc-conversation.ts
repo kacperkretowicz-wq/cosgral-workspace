@@ -48,6 +48,7 @@ import { isMessengersChanged, type MessengersChanged } from "./ipc-messengers";
 import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } from "./ipc-mobile";
 import { isPhoneAccessChanged, type PhoneAccessChanged } from "./ipc-phone-access";
 import { isPlanChanged, type PlanChanged } from "./ipc-plan";
+import { isPluginCatalogChanged, type PluginCatalogChanged } from "./ipc-plugin-catalog";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import {
   isRemoteDesktopClientState,
@@ -697,6 +698,8 @@ export type AgentEvent =
   | ({ type: "messengers-changed" } & MessengersChanged)
   /** COSGRAL W11-KK (d): a Vault connector changed (connecting, connected, failed, login count) (the whole list). */
   | ({ type: "vault-connectors-changed" } & VaultConnectorsChanged)
+  /** COSGRAL W11-KK (e): the plugin catalog or an install state changed (the info and the installed plugins). */
+  | ({ type: "plugin-catalog-changed" } & PluginCatalogChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -878,6 +881,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isMessengersChanged(value);
     case "vault-connectors-changed":
       return isVaultConnectorsChanged(value);
+    case "plugin-catalog-changed":
+      return isPluginCatalogChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

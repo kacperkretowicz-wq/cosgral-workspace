@@ -121,6 +121,7 @@ import type { MessengersDesktopApi } from "./ipc-messengers";
 import type { MobileDesktopApi } from "./ipc-mobile";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
+import type { PluginCatalogDesktopApi } from "./ipc-plugin-catalog";
 import type {
   AcpAgentConfig,
   AcpAgentIdInput,
@@ -707,6 +708,8 @@ export interface OpenBotDesktopApi {
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */
   vaultConnectors?: VaultConnectorsDesktopApi;
   vaultSecrets?: VaultSecretsDesktopApi;
+  /** COSGRAL W11-KK (e): the Marketplace Apps tab: plugin catalog (from a folder the owner chose), install as MCP servers, own plugins. Optional until every mock implements it. */
+  pluginCatalog?: PluginCatalogDesktopApi;
 }
 
 /**
