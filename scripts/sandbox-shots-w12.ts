@@ -564,6 +564,18 @@ async function main(): Promise<void> {
       return "strona Zadania";
     });
 
+    await tryShot(app, pageRef, out, "09b-usage", async (p) => {
+      await clickRail(p, ["Usage", "Użycie"]);
+      const tabs = p.getByRole("button", { name: /7 days|7 dni|30 days|30 dni/i });
+      return (await tabs.count()) ? "Użycie: zakładki okresu + raport" : "Użycie otwarte (brak zakładek okresu)";
+    });
+
+    await tryShot(app, pageRef, out, "09c-schedule", async (p) => {
+      await clickRail(p, ["Schedule", "Harmonogram"]);
+      const next = p.getByText(/Next 7 days|Najbliższe 7|Routines|Rutyny/i);
+      return (await next.count()) ? "Harmonogram: okno + rutyny" : "Harmonogram otwarty";
+    });
+
     await tryShot(app, pageRef, out, "10-agent-cards", async (p) => {
       await ensureChatAgent(p);
       await unlockComposer(p);
