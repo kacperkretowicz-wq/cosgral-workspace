@@ -1,7 +1,7 @@
 # Tester W12 — odbiór3 (T-G, bramka jakości)
 
 **Data:** 17.11.2026  
-**Gałąź:** `team/tester/w12-odbior3` (baza integracji `codex/cosgral-desktop` @ `4b07fe914`)  
+**Gałąź:** `team/tester/w12-odbior3` @ `ad104419c` (baza integracji `codex/cosgral-desktop` @ `4b07fe914`)  
 **Metoda:** odbiór **statyczny** (kod + testy w repo). Electron / zrzuty: **czekają na `GO-tester-*.txt`** w `Shared\cosgral-sandbox` (Backend ma GO na probe).
 
 ## 1. Odbiór statyczny (pkt 1)
