@@ -4,6 +4,8 @@
 // table and writes "ok" or "FAIL" with the evidence it saw into <sandbox>/evidence/acceptance.json.
 //
 //   COSGRAL_SANDBOX_ROOT=<folder> node scripts/sandbox-acceptance.ts [--keep]
+//   COSGRAL_MODE=w5|w11|cli-onboarding  (w11 = W11 feature steps; prepared for GO, see scripts/sandbox-w11-acceptance.ts)
+// Launch always passes --lang=en-US and cleanEnvironment() so Polish Windows and CLAUDE_*/OPENBOT_*/token env do not leak.
 //
 // Screenshots and the accessibility trees go to the sandbox folder (they contain the account name), never to the
 // repository. Run `bun run build` first and run this with Node, like scripts/sandbox-e2e.ts. It never touches the
@@ -3616,6 +3618,23 @@ async function main(): Promise<void> {
   }
   if (process.env.COSGRAL_MODE === "w5") {
     await w5Main(root, evidence);
+    return;
+  }
+  if (process.env.COSGRAL_MODE === "w11") {
+    const { w11Main } = await import("./sandbox-w11-acceptance.ts");
+    await w11Main({
+      root,
+      evidence,
+      installFixture,
+      launch,
+      createDriver: (page, evidenceFolder, app) => new Driver(page, evidenceFolder, app),
+      row,
+      results,
+      consoleFindings,
+      setResultsFile: (path) => {
+        resultsFile = path;
+      },
+    });
     return;
   }
   const fixture = await installFixture(root);
