@@ -33,7 +33,29 @@
 **Stany do złapania (skrypt):** ciemny + jasny motyw; Nowy agent (formularz/awatary/sugestie); czat + atrapa + N steps; menu `+`; menu `@`; `/`; wyszukiwarka; Zadania; karty agenta; ustawienia serwera; Marketplace; Vault.  
 **Out po GO:** `Shared\cosgral-docs\zrzuty-cosgral-17-11-b\` + porównanie z `openbot-0.71-screens\…\001-A-new-agent.png` + kontrola duplikatów (hash ×2).
 
-## 3. Czego nie sprawdziłem
+## 3. Po GO — tabela porównania (do wypełnienia przy pkt 3)
+
+Wzorzec: `Shared\cosgral-docs\openbot-0.71-screens\openbot-v0.71.0-screenshots\` (poza repo).  
+Out: `Shared\cosgral-docs\zrzuty-cosgral-17-11-b\` (poza repo).
+
+| Ekran (skrypt) | Stan oczekiwany | Uwaga / vs 0.71 |
+|---|---|---|
+| 01-dark-sidebar | ciemny motyw, pasek | (po GO) |
+| 02-light-sidebar | jasny motyw | (po GO) |
+| 03-new-agent | formularz + awatary + sugestie | wzór `001-A-new-agent.png` |
+| 04-chat-nsteps | stub + „N steps” | (po GO) |
+| 05-menu-plus | menu + | (po GO) |
+| 06-menu-at | menu @ | (po GO) |
+| 07-slash | menu / | (po GO) |
+| 08-search | Ctrl+K | (po GO) |
+| 09-tasks | Zadania | (po GO) |
+| 10-agent-cards | karty agenta | (po GO) |
+| 11-server-settings | ustawienia serwera | (po GO) |
+| 12-marketplace | Marketplace | (po GO) |
+| 13-vault | Vault | (po GO) |
+| hash×2 | brak duplikatów PNG | (po GO) |
+
+## 4. Czego nie sprawdziłem
 
 - Electron / Playwright / zrzuty (brak `GO-tester-*.txt`; Backend ma probe).
 - Pełnego `bun run test` / `check` / e2e / W5.
