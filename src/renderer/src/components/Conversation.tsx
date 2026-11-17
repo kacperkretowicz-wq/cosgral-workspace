@@ -1893,7 +1893,10 @@ export function Conversation(props: ConversationProps) {
                 />
               </div>
               <Show when={onboardingModelConfirmed()}>
-                <div class="onboarding-specialty-step message-entry-animated">
+                <div
+                  class="onboarding-specialty-step message-entry-animated"
+                  data-collapsed={props.messages.length > 0 ? "true" : undefined}
+                >
                   <ChoiceCard
                     title="What do you want me helping with most?"
                     hint="This becomes my ongoing specialty. You can change it later in Settings."
