@@ -4,6 +4,7 @@
 import { join } from "node:path";
 import { type AgentEvent, type DraftPreviewResolution, IPC_CHANNELS } from "@openbot/contracts/ipc";
 import { HttpsDownloadSource } from "../backend/voice-download";
+import { buildVoiceOverview, microphoneInfo, normalizeMicrophoneStatus } from "../backend/voice-overview";
 import { VoiceService } from "../backend/voice-service";
 import { WhisperCliRunner, WindowsSpeechDriver } from "../backend/voice-windows";
 import { parseAgentRequest } from "./ipc/agent-inputs";
@@ -33,7 +34,15 @@ export function createVoice(options: VoiceRuntimeOptions): VoiceService {
   return voice;
 }
 
-export function registerVoiceIpc(voice: () => VoiceService | null): void {
+/** What the system tells and does about the microphone (the program passes Electron's `systemPreferences` and `shell`). */
+export interface VoiceSystemPort {
+  platform: NodeJS.Platform;
+  /** The system's word about the microphone permission ("granted", "denied", "not-determined", "restricted", ...). */
+  microphoneStatus: () => string;
+  openMicrophoneSettings: () => Promise<void>;
+}
+
+export function registerVoiceIpc(voice: () => VoiceService | null, system?: VoiceSystemPort): void {
   const current = (): VoiceService => {
     const value = voice();
     if (!value) throw new Error("Voice is not ready yet.");
@@ -41,6 +50,18 @@ export function registerVoiceIpc(voice: () => VoiceService | null): void {
   };
   const payload = (input: unknown) => parseAgentRequest(input).payload;
   handleTrusted(IPC_CHANNELS.voiceGetState, () => current().getState());
+  handleTrusted(IPC_CHANNELS.voiceGetOverview, () => {
+    let status = normalizeMicrophoneStatus("unknown");
+    try {
+      status = normalizeMicrophoneStatus(system?.microphoneStatus() ?? "unknown");
+    } catch {
+      // A system that cannot say gives "unknown": recording is simply tried.
+    }
+    return buildVoiceOverview(current(), microphoneInfo(status, system?.platform ?? process.platform));
+  });
+  handleTrusted(IPC_CHANNELS.voiceOpenMicrophoneSettings, async () => {
+    if (system) await system.openMicrophoneSettings();
+  });
   handleTrusted(IPC_CHANNELS.voiceListVoices, () => current().listVoices());
   handleTrusted(IPC_CHANNELS.voiceSpeak, (input: unknown) => current().speak(parseSpeak(payload(input))));
   handleTrusted(IPC_CHANNELS.voiceStop, () => current().stop());

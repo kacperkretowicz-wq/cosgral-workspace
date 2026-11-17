@@ -134,6 +134,8 @@ export const IPC_CHANNELS = {
   marketplaceUninstall: "marketplace:uninstall",
   marketplaceSuggestions: "marketplace:suggestions",
   voiceGetState: "voice:get-state",
+  voiceGetOverview: "voice:get-overview",
+  voiceOpenMicrophoneSettings: "voice:open-microphone-settings",
   voiceListVoices: "voice:list-voices",
   voiceSpeak: "voice:speak",
   voiceStop: "voice:stop",

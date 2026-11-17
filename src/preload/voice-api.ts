@@ -5,12 +5,14 @@ import {
   IPC_CHANNELS,
   isTranscribeResult,
   isVoiceInfo,
+  isVoiceOverview,
   isVoiceSettings,
   isVoiceState,
   type SpeakResult,
   type TranscribeResult,
   type VoiceDesktopApi,
   type VoiceInfo,
+  type VoiceOverview,
   type VoiceSettings,
   type VoiceState,
 } from "@openbot/contracts/ipc";
@@ -20,6 +22,8 @@ type Invoke = <TResult>(channel: string, payload: unknown, decoder: (value: unkn
 
 export function createVoiceApi(invoke: Invoke): VoiceDesktopApi {
   return {
+    getOverview: () => invoke(IPC_CHANNELS.voiceGetOverview, null, decodeOverview),
+    openMicrophoneSettings: () => invoke(IPC_CHANNELS.voiceOpenMicrophoneSettings, null, decodeVoid),
     getState: () => invoke(IPC_CHANNELS.voiceGetState, null, decodeState),
     listVoices: () => invoke(IPC_CHANNELS.voiceListVoices, null, decodeVoices),
     speak: (input) => invoke(IPC_CHANNELS.voiceSpeak, input, decodeSpeak),
@@ -31,6 +35,13 @@ export function createVoiceApi(invoke: Invoke): VoiceDesktopApi {
     transcribe: (input) => invoke(IPC_CHANNELS.voiceTranscribe, input, decodeTranscription),
     updateSettings: (input) => invoke(IPC_CHANNELS.voiceUpdateSettings, input, decodeSettings),
   };
+}
+
+function decodeVoid(): void {}
+
+function decodeOverview(value: unknown): VoiceOverview {
+  if (!isVoiceOverview(value)) throw new Error("Invalid voice overview response.");
+  return value;
 }
 
 function decodeState(value: unknown): VoiceState {
