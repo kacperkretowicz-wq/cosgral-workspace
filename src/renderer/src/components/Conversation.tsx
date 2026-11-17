@@ -40,6 +40,7 @@ import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
+import { AgentCardsSection } from "./AgentCardsSection";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
 import type { AccountNotice } from "./account-usage-view";
@@ -2645,6 +2646,7 @@ export function Conversation(props: ConversationProps) {
             <Show when={props.bot?.id} keyed>
               {(botId) => (
                 <>
+                  <AgentCardsSection botId={botId} />
                   <AgentMemorySettingsView botId={botId} />
                   <AgentSettingsW3 botId={botId} />
                   <ApprovalRulesSettings botId={botId} />

@@ -54,3 +54,4 @@
 - Commit 1: „@” z `searchMentions` (kanały i pliki). Kontrola: ComposerEditor 14/14, typecheck OK, Biome OK, check:ui OK.
 - Zostało z P0: „1 step”, akcje/reakcje (117), rama panelu bocznego, przeciąganie kart wątków.
 - Commit 2: „1 step” (zwinięty nagłówek kroków po zakończeniu). Kontrola: AgentActivity 4/4, App.test (thinking disclosure) OK, typecheck OK, Biome OK, check:ui OK.
+- Commit 3: karty agenta (`agentCards`): AgentCardsSection w panelu ustawień agenta. Stany: loading, error+Retry, brak kontraktu, karta niedostępna. Kontrola: AgentCardsSection 5/5, App.test 93/93, i18n 9/9, typecheck OK, Biome OK, check:ui OK. Luka: wiersze kart nie otwierają jeszcze osobnych podstron (pamięć/skille/rutyny mają własne sekcje niżej w panelu).

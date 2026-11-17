@@ -1464,3 +1464,101 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   background: var(--cosgral-hover);
   color: var(--cosgral-text-primary);
 }
+
+/* W12-UI2: agent cards overview and per-agent preferences. */
+.agent-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.agent-cards-list {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.agent-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: var(--cosgral-text-md);
+}
+
+.agent-card-row + .agent-card-row {
+  border-top: 1px solid var(--cosgral-border);
+}
+
+.agent-card-row strong {
+  min-width: 0;
+  flex: 0 0 38%;
+  font-weight: 500;
+}
+
+.agent-card-summary {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--cosgral-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-card-row[data-available="false"] {
+  opacity: 0.6;
+}
+
+.agent-card-count {
+  min-width: 24px;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-control-hover);
+  padding: 0 8px;
+  text-align: center;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.agent-cards-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-cards-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--cosgral-text-md);
+}
+
+.agent-cards-note,
+.agent-cards-error {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.agent-cards-error {
+  color: var(--cosgral-danger);
+}
+
+.agent-cards-reset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-cards-reset p {
+  width: 100%;
+  margin: 0;
+  font-size: var(--cosgral-text-sm);
+}
