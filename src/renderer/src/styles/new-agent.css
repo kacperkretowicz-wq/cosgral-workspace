@@ -35,14 +35,14 @@
 
 .new-agent-form {
   display: flex;
-  width: min(420px, 100%);
+  width: min(440px, 100%);
   flex-direction: column;
   gap: 14px;
 }
 
 .new-agent-preview {
-  width: 72px;
-  height: 72px;
+  width: 140px;
+  height: 140px;
   align-self: center;
 }
 
@@ -73,8 +73,15 @@
 }
 
 .new-agent-swatch {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
+}
+
+/* Two even rows of colours under the avatar. */
+.new-agent-colors {
+  max-width: 300px;
+  align-self: center;
+  gap: 6px;
 }
 
 .new-agent-face {
@@ -102,18 +109,32 @@
   color: var(--cosgral-text-secondary);
 }
 
-.new-agent-swatch-auto {
-  background: var(--cosgral-bg-control-hover);
-}
-
 .new-agent-face .bot-avatar {
   width: 100%;
   height: 100%;
 }
 
+/* The shuffle button stays out of the way until the row is hovered or focused. */
 .new-agent-more-faces {
-  font-size: var(--cosgral-text-sm);
+  width: 38px;
+  height: 38px;
+  padding: 0;
   color: var(--cosgral-text-muted);
+  opacity: 0;
+  transition: opacity var(--cosgral-duration-normal) var(--cosgral-ease);
+}
+
+.new-agent-more-faces svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.new-agent-faces:hover .new-agent-more-faces,
+.new-agent-faces:focus-within .new-agent-more-faces {
+  opacity: 1;
 }
 
 .new-agent-field {
@@ -154,28 +175,37 @@
 
 .new-agent-model-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
-  border: 1px solid var(--cosgral-border);
-  border-radius: var(--cosgral-radius-md);
-  background: var(--cosgral-bg-surface);
-  padding: 4px 8px 4px 12px;
 }
 
-.new-agent-model-label {
+.new-agent-model-row .provider-model-picker {
+  min-width: 0;
   flex: 1;
-  font-size: var(--cosgral-text-sm);
-  color: var(--cosgral-text-secondary);
+}
+
+.new-agent-model-row .provider-model-trigger-field {
+  height: 40px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-surface);
+}
+
+.new-agent-effort {
+  display: flex;
+  flex: 0 0 auto;
 }
 
 .new-agent-effort select {
-  border: 0;
-  border-radius: var(--cosgral-radius-sm);
-  background: var(--cosgral-bg-control);
-  padding: 6px 8px;
+  height: 40px;
+  min-width: 112px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-md);
+  background-color: var(--cosgral-bg-surface);
+  padding: 0 32px 0 12px;
   color: var(--cosgral-text-secondary);
   font: inherit;
-  font-size: var(--cosgral-text-sm);
+  font-size: var(--cosgral-text-md);
 }
 
 .new-agent-error {
@@ -205,14 +235,29 @@
 
 .new-agent-suggestion-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+@container (max-width: 760px) {
+  .new-agent-suggestion-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.new-agent-suggestions {
+  container-type: inline-size;
 }
 
 .new-agent-suggestion {
   display: flex;
-  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 72px;
+  align-items: flex-start;
   gap: 12px;
+  white-space: normal;
   border: 1px solid var(--cosgral-border);
   border-radius: var(--cosgral-radius-lg);
   background: transparent;
@@ -233,6 +278,11 @@
   flex: 0 0 40px;
 }
 
+.new-agent-suggestion > span {
+  min-width: 0;
+  flex: 1;
+}
+
 .new-agent-suggestion strong {
   display: block;
   font-size: var(--cosgral-text-lg);
@@ -240,7 +290,11 @@
 }
 
 .new-agent-suggestion small {
-  display: block;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-height: 1.4;
   font-size: var(--cosgral-text-sm);
   color: var(--cosgral-text-muted);
 }

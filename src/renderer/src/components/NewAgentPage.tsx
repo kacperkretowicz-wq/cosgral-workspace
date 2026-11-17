@@ -12,7 +12,7 @@ import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../bl
 import { t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { ProviderModelPicker } from "./ProviderModelPicker";
-import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { Button, Input, NativeSelect, Shuffle, Textarea } from "./ui";
 
 export interface NewAgentInput {
   name: string;
@@ -111,15 +111,6 @@ export function NewAgentPage(props: NewAgentPageProps) {
         <form class="new-agent-form" onSubmit={submit}>
           <AgentAvatar seed={seed()} hue={hue()} motion="always" class="new-agent-preview" />
           <fieldset class="new-agent-colors" aria-label={t("Agent color")}>
-            <Button
-              type="button"
-              class={["new-agent-swatch", { "new-agent-choice-selected": hue() === null }]}
-              aria-label={t("Automatic color")}
-              aria-pressed={hue() === null ? "true" : "false"}
-              onClick={() => setHue(null)}
-            >
-              <span class="new-agent-swatch-fill new-agent-swatch-auto">A</span>
-            </Button>
             <For each={AVATAR_HUE_OPTIONS}>
               {(option) => (
                 <Button
@@ -127,7 +118,7 @@ export function NewAgentPage(props: NewAgentPageProps) {
                   class={["new-agent-swatch", { "new-agent-choice-selected": hue() === option.hue }]}
                   aria-label={t(option.label)}
                   aria-pressed={hue() === option.hue ? "true" : "false"}
-                  onClick={() => setHue(option.hue)}
+                  onClick={() => setHue(hue() === option.hue ? null : option.hue)}
                 >
                   <span class="new-agent-swatch-fill" style={{ background: avatarHueSwatch(option.hue) }} />
                 </Button>
@@ -152,12 +143,14 @@ export function NewAgentPage(props: NewAgentPageProps) {
               type="button"
               variant="ghost"
               class="new-agent-more-faces"
+              aria-label={t("More faces")}
+              title={t("More faces")}
               onClick={() => {
                 setBatch((value) => value + 1);
                 setSeed(faces()[0] ?? seed());
               }}
             >
-              {t("More faces")}
+              <Shuffle aria-hidden="true" />
             </Button>
           </fieldset>
 
@@ -184,7 +177,6 @@ export function NewAgentPage(props: NewAgentPageProps) {
             />
           </label>
           <div class="new-agent-model-row">
-            <span class="new-agent-model-label">{t("Model")}</span>
             <ProviderModelPicker
               variant="field"
               ariaLabel={t("Agent model")}

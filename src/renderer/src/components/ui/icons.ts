@@ -27,6 +27,7 @@ export { default as RefreshCw } from "lucide-solid/icons/refresh-cw";
 export { default as Search } from "lucide-solid/icons/search";
 export { default as Send } from "lucide-solid/icons/send";
 export { default as Settings } from "lucide-solid/icons/settings";
+export { default as Shuffle } from "lucide-solid/icons/shuffle";
 export { default as SlidersHorizontal } from "lucide-solid/icons/sliders-horizontal";
 export { default as Trash2 } from "lucide-solid/icons/trash-2";
 export { default as Upload } from "lucide-solid/icons/upload";
