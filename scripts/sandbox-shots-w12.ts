@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
 
@@ -328,17 +329,21 @@ async function ensureChatAgent(page: Page): Promise<string> {
 async function sendStubChat(page: Page): Promise<void> {
   await dismissOverlays(page);
   // Prefer IPC send so Join dialog / form focus cannot block the turn.
-  const sent: { ok: boolean; reason?: string } = await page.evaluate(async () => {
-    const bots = await window.openbot.agent.listBots();
+  // String evaluate + Reflect.get: Window has no typed `openbot` in Node typecheck.
+  const raw = await page.evaluate(`(async () => {
+    const api = Reflect.get(window, "openbot");
+    if (!api?.agent) return { ok: false, reason: "no openbot.agent" };
+    const bots = await api.agent.listBots();
     const bot = bots.find((b) => b.name === "Shot agent") ?? bots[0];
     if (!bot) return { ok: false, reason: "no bot" };
-    const models = (await window.openbot.agent.listModels?.()) ?? [];
+    const models = (await api.agent.listModels?.()) ?? [];
     const model = models[0]?.id ?? bot.model;
-    if (model) await window.openbot.agent.updateBot({ botId: bot.id, model });
-    await window.openbot.agent.sendMessage({ botId: bot.id, text: "Hello from T-G shots — please reason" });
+    if (model) await api.agent.updateBot({ botId: bot.id, model });
+    await api.agent.sendMessage({ botId: bot.id, text: "Hello from T-G shots — please reason" });
     return { ok: true };
-  });
-  if (!sent.ok) throw new Error(`sendMessage failed: ${JSON.stringify(sent)}`);
+  })()`);
+  const sent: DynamicRecord = isDynamicRecord(raw) ? raw : {};
+  if (sent.ok !== true) throw new Error(`sendMessage failed: ${JSON.stringify(sent)}`);
   await page
     .getByText(/Stub: received|Hello from T-G shots/i)
     .first()

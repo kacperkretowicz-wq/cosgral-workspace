@@ -354,9 +354,7 @@ async function reachMainWindow(page: Page, choose: { agent: string | null }): Pr
   const local = page
     .getByRole("dialog", { name: "Set up this computer" })
     .or(page.getByRole("dialog", { name: /Skonfiguruj ten komputer|Ustawienia tego komputera/i }));
-  const pages = page
-    .getByRole("navigation", { name: "Pages" })
-    .or(page.getByRole("navigation", { name: "Strony" }));
+  const pages = page.getByRole("navigation", { name: "Pages" }).or(page.getByRole("navigation", { name: "Strony" }));
   for (let round = 0; round < 40; round += 1) {
     if (await pages.count()) return seen;
     if (await where.count()) {
@@ -373,9 +371,7 @@ async function reachMainWindow(page: Page, choose: { agent: string | null }): Pr
         const option = firstAgent.locator("option", { hasText: choose.agent }).first();
         await firstAgent.selectOption((await option.getAttribute("value")) ?? "");
       }
-      await page
-        .getByRole("button", { name: /Continue with Codex|Kontynuuj z Codex/i })
-        .click({ timeout: 30_000 });
+      await page.getByRole("button", { name: /Continue with Codex|Kontynuuj z Codex/i }).click({ timeout: 30_000 });
       await local.waitFor({ state: "detached", timeout: 15_000 });
     }
     await page.waitForTimeout(500);
@@ -413,10 +409,11 @@ async function main(): Promise<void> {
       const list = page.getByRole("region", { name: "Agents" });
       if (await list.getByRole("button", { name: /^New agent/ }).count()) return; // kept sandbox: agent exists already
       // UI-F starts on the New agent form; create via IPC then open the row (form Name field aria varies).
-      await page.evaluate(async () => {
-        const bot = await window.openbot.agent.createBot();
-        await window.openbot.agent.updateBot({ botId: bot.id, name: "New agent" });
-      });
+      await page.evaluate(`(async () => {
+        const api = Reflect.get(window, "openbot");
+        const bot = await api.agent.createBot();
+        await api.agent.updateBot({ botId: bot.id, name: "New agent" });
+      })()`);
       await page.waitForTimeout(800);
       const agentsRail = page
         .getByRole("navigation", { name: "Pages" })
@@ -429,15 +426,16 @@ async function main(): Promise<void> {
     });
     await step("chat: a message gets the answer of the Codex fixture", async () => {
       // Prefer IPC so onboarding model gate cannot block the composer.
-      await page.evaluate(async (text) => {
-        const bots = await window.openbot.agent.listBots();
+      await page.evaluate(`(async () => {
+        const api = Reflect.get(window, "openbot");
+        const bots = await api.agent.listBots();
         const bot = bots.find((b) => b.name === "New agent") ?? bots[0];
         if (!bot) throw new Error("no bot for chat step");
-        const models = (await window.openbot.agent.listModels?.()) ?? [];
+        const models = (await api.agent.listModels?.()) ?? [];
         const model = models[0]?.id ?? bot.model;
-        if (model) await window.openbot.agent.updateBot({ botId: bot.id, model });
-        await window.openbot.agent.sendMessage({ botId: bot.id, text });
-      }, MESSAGE);
+        if (model) await api.agent.updateBot({ botId: bot.id, model });
+        await api.agent.sendMessage({ botId: bot.id, text: ${JSON.stringify(MESSAGE)} });
+      })()`);
       await page.getByText("Stub: received").first().waitFor({ timeout: 45_000 });
       await dump(page, evidence, "04-answer");
       assert((await page.getByText(MESSAGE).count()) > 0, "The sent message stays visible");
@@ -663,10 +661,26 @@ async function main(): Promise<void> {
       await dump(page, evidence, "navigation-mark-read");
     });
     await step("navigation: overflow pages remain reachable in a short viewport", async () => {
-      const bounds = asRecord(await page.evaluate("({ width: innerWidth, height: innerHeight })"));
-      const previousViewport = page.viewportSize() ?? { width: Number(bounds.width), height: Number(bounds.height) };
+      // Playwright setViewportSize alone does not shrink the Electron BrowserWindow, so the rail
+      // never measures a short height and "More pages" never appears. Resize the real window.
+      const previous = asRecord(
+        await first.app.evaluate(({ BrowserWindow }) => {
+          const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
+          if (!win) return null;
+          const [width, height] = win.getContentSize();
+          return { width, height };
+        }),
+      );
       try {
+        await first.app.evaluate(
+          ({ BrowserWindow }, size) => {
+            const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
+            win?.setContentSize(size.width, size.height);
+          },
+          { width: 1100, height: 400 },
+        );
         await page.setViewportSize({ width: 1100, height: 400 });
+        await page.waitForTimeout(400);
         await page.getByRole("button", { name: /^More pages/ }).click();
         await page
           .getByRole("menu", { name: "More pages" })
@@ -675,7 +689,18 @@ async function main(): Promise<void> {
         await page.getByRole("heading", { name: "Library", exact: true }).waitFor();
         await dump(page, evidence, "navigation-overflow");
       } finally {
-        await page.setViewportSize(previousViewport);
+        const restoreWidth = Number(previous.width);
+        const restoreHeight = Number(previous.height);
+        if (Number.isFinite(restoreWidth) && Number.isFinite(restoreHeight) && restoreWidth > 0 && restoreHeight > 0) {
+          await first.app.evaluate(
+            ({ BrowserWindow }, size) => {
+              const win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed());
+              win?.setContentSize(size.width, size.height);
+            },
+            { width: restoreWidth, height: restoreHeight },
+          );
+          await page.setViewportSize({ width: restoreWidth, height: restoreHeight });
+        }
         await page
           .getByRole("navigation", { name: "Pages" })
           .getByRole("button", { name: "Agents", exact: true })
@@ -912,9 +937,11 @@ async function main(): Promise<void> {
         };
       });
       await writeFile(join(evidence, "ipc-getters.json"), JSON.stringify(results, null, 2));
-      // A call that needs an agent, a routine or a channel answers with a validation message: the wiring works. Only
-      // other answers (timeouts, "not a function", crashes) are failures.
-      const needsInput = /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured/i;
+      // A call that needs an agent, a routine, a channel or a server answers with a validation message: the wiring
+      // works. Only other answers (timeouts, "not a function", crashes) are failures.
+      // "Choose an agent" / "Choose a server" appear when the window is on New agent / no MCP server selected (UI-F).
+      const needsInput =
+        /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured|Choose an agent|Choose a server/i;
       const failed = results.filter((result) => !result.ok && !needsInput.test(result.error ?? ""));
       const asked = results.filter((result) => !result.ok && needsInput.test(result.error ?? ""));
       console.log(
@@ -952,11 +979,12 @@ async function main(): Promise<void> {
       await dump(page, evidence, "navigation-hide-show");
     });
     await step("navigation: duplicate selects a new agent and explains excluded data", async () => {
+      // e2e launches with --lang=en-US: menu/notice are English; copy name still ends with "kopia" (engine).
       const rows = page.getByRole("navigation", { name: "Chat list" });
       await rows.getByRole("button", { name: new RegExp(`^${navigationName}`) }).click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Duplikuj", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Duplicate", exact: true }).click();
       await page.getByRole("heading", { name: `${navigationName} kopia`, exact: true, level: 1 }).waitFor();
-      await page.getByText(/Kopia gotowa.*Pamięć, historia/).waitFor();
+      await page.getByText(/Copy ready\..*Memory, history/).waitFor();
       await page.waitForFunction(
         `async()=>{const bots=await window.openbot.agent.listBots();const source=bots.find(bot=>bot.id===${JSON.stringify(navigationHelperId)});const copy=bots.find(bot=>bot.name===${JSON.stringify(`${navigationName} kopia`)});return source && copy && source.id!==copy.id && source.workspacePath!==copy.workspacePath;}`,
       );
