@@ -239,6 +239,7 @@ export const IPC_CHANNELS = {
   vaultConnectorsOpenApp: "vault-connectors:open-app",
   vaultConnectorsConnect: "vault-connectors:connect",
   vaultConnectorsCancel: "vault-connectors:cancel",
+  vaultConnectorsListLogins: "vault-connectors:list-logins",
   vaultConnectorsDisconnect: "vault-connectors:disconnect",
   vaultReveal: "vault:reveal",
   vaultCopy: "vault:copy",

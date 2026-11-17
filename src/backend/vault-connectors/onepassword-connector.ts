@@ -21,9 +21,11 @@ import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import {
   ConnectorFailure,
   type ConnectorLogin,
+  type ConnectorLoginListing,
   type ConnectorLoginSource,
   type ConnectorStore,
   failureCode,
+  hostOfWebsite,
   type RunCli,
   websiteMatchesOrigin,
 } from "./common";
@@ -263,6 +265,21 @@ export class OnePasswordConnector implements ConnectorLoginSource {
     const value = (await this.#tool(executable, args, record.secret)).trim();
     if (generation !== this.#generation || value.length === 0) return null;
     return value;
+  }
+
+  /** The names and sites of every login in the shared vault. The user name and the one-time-password flag need a read of each item (and one read costs the service account part of its hourly limit), so they are left out here. */
+  async listAll(): Promise<ConnectorLoginListing[] | null> {
+    if (!this.#options.store.read("onepassword")) return null;
+    return this.#reported(async () => {
+      const index = await this.#readIndex(INDEX_REFRESH_ON_VIEW_MS);
+      return index.logins.map((login) => ({
+        id: login.id,
+        title: login.title,
+        username: null,
+        hosts: [...new Set(login.urls.flatMap((url) => hostOfWebsite(url) ?? []))],
+        hasOneTimePassword: false,
+      }));
+    });
   }
 
   // --- internals ---

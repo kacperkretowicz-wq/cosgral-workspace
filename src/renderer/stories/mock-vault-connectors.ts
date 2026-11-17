@@ -169,6 +169,24 @@ export function createMockVaultConnectors(emit: (event: AgentEvent) => void): Mo
       if (request.secret !== undefined) tokens.set(connector, request.secret);
       return connected(connector, request);
     },
+    listLogins: async (input) => {
+      const { connector } = parseVaultConnectorIdInput(input);
+      const status = current(connector);
+      const total = status.state === "connected" ? (status.loginCount ?? 0) : 0;
+      const shown = Math.min(total, VAULT_CONNECTOR_LIMITS.listedLogins);
+      return {
+        connector,
+        // Demo logins on example sites; only Bitwarden's list names the user and the one-time-password flag.
+        logins: Array.from({ length: shown }, (_, index) => ({
+          id: `${connector}-login-${index + 1}`,
+          title: `Demo login ${index + 1}`,
+          username: connector === "bitwarden" ? `user${index + 1}` : null,
+          hosts: [`site${index + 1}.example.test`],
+          hasOneTimePassword: connector === "bitwarden" && index % 2 === 0,
+        })),
+        truncated: total > shown,
+      };
+    },
     cancel: async (input) => {
       const { connector } = parseVaultConnectorIdInput(input);
       const status = current(connector);

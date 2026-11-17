@@ -172,7 +172,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     // COSGRAL W10-KK2: the Telegram bridge.
     expect(channelsOf("messengers:").length).toBe(6);
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
-    expect(channelsOf("vault-connectors:").length).toBe(8);
+    expect(channelsOf("vault-connectors:").length).toBe(9);
     // COSGRAL W11-KK (e): the Marketplace Apps tab.
     expect(channelsOf("plugin-catalog:").length).toBe(9);
     // COSGRAL W12-KK (1): the sign-in (OAuth) to MCP servers.

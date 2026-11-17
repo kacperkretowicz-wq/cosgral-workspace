@@ -10,8 +10,10 @@ import {
   type ConnectVaultConnectorInput,
   emptyVaultConnectorStatus,
   VAULT_CONNECTOR_IDS,
+  VAULT_CONNECTOR_LIMITS,
   type VaultConnectorId,
   type VaultConnectorList,
+  type VaultConnectorLoginList,
   type VaultConnectorStatus,
 } from "@openbot/contracts/ipc";
 import { BitwardenConnector, type BitwardenOptions } from "./bitwarden-connector";
@@ -60,6 +62,18 @@ export class VaultConnectorHub {
     if (connector === "onepassword") return this.#onePassword.status();
     if (connector === "bitwarden") return this.#bitwarden.status();
     return structuredClone(this.#proton);
+  }
+
+  /** The logins agents may use through this connector (titles and sites; sorted; cut at the limit). Empty when it is not connected. */
+  async listLogins(connector: VaultConnectorId): Promise<VaultConnectorLoginList> {
+    const source = connector === "onepassword" ? this.#onePassword : connector === "bitwarden" ? this.#bitwarden : null;
+    const all = source?.connected() ? await source.listAll() : null;
+    const sorted = [...(all ?? [])].sort((left, right) => left.title.localeCompare(right.title));
+    return {
+      connector,
+      logins: sorted.slice(0, VAULT_CONNECTOR_LIMITS.listedLogins),
+      truncated: sorted.length > VAULT_CONNECTOR_LIMITS.listedLogins,
+    };
   }
 
   async checkSetup(connector: VaultConnectorId): Promise<VaultConnectorStatus> {

@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent, VaultConnectorStatus } from "@openbot/contracts/ipc";
-import { isVaultConnectorList, isVaultConnectorStatus } from "@openbot/contracts/ipc";
+import { isVaultConnectorList, isVaultConnectorLoginList, isVaultConnectorStatus } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { closeTestDatabases, testDatabase } from "../testing/databases";
 import { totp } from "../totp";
@@ -605,5 +605,68 @@ describe("the person's Vault tools", () => {
     store.save({ kind: "login", url: "https://a.example.test", username: "alice", password: "pw" });
     service.reset();
     expect(store.list()).toEqual([]);
+  });
+});
+
+describe("the list of logins agents may use (W12-KK vault)", () => {
+  it("1Password: titles and sites of the shared vault, sorted, no secrets; empty when not connected", async () => {
+    const database = await openDatabase();
+    const world = opWorld();
+    const { hub } = hubFor(database, world);
+    expect(await hub.listLogins("onepassword")).toEqual({ connector: "onepassword", logins: [], truncated: false });
+    await hub.connect({ connector: "onepassword", method: "token", secret: TOKEN });
+    const list = await hub.listLogins("onepassword");
+    expect(isVaultConnectorLoginList(list)).toBe(true);
+    expect(list.logins).toEqual([
+      { id: "i1", title: "Site A", username: null, hosts: ["a.example.test"], hasOneTimePassword: false },
+      { id: "i2", title: "Site B", username: null, hosts: ["b.example.test"], hasOneTimePassword: false },
+    ]);
+    expect(JSON.stringify(list)).not.toContain("pw-alice");
+    expect(JSON.stringify(list)).not.toContain(TOKEN);
+    await hub.disconnect("onepassword");
+    expect((await hub.listLogins("onepassword")).logins).toEqual([]);
+  });
+
+  it("1Password: a long list is cut at the limit and says so", async () => {
+    const database = await openDatabase();
+    const world = opWorld();
+    world.logins = Array.from({ length: 250 }, (_, index) => ({
+      id: `i${index}`,
+      title: `Login ${String(index).padStart(3, "0")}`,
+      urls: [`https://s${index}.example.test`],
+      username: "u",
+      password: "p",
+      otp: false,
+    }));
+    const { hub } = hubFor(database, world);
+    await hub.connect({ connector: "onepassword", method: "token", secret: TOKEN });
+    const list = await hub.listLogins("onepassword");
+    expect(list.logins).toHaveLength(200);
+    expect(list.truncated).toBe(true);
+    expect(list.logins[0]?.title).toBe("Login 000");
+  });
+
+  it("Bitwarden: only usable logins, with the user name and the one-time-password flag, and only https sites", async () => {
+    const database = await openDatabase();
+    const bw = bwWorld();
+    const { hub } = hubFor(database, opWorld(), { bw: bw.run });
+    await hub.connect({ connector: "bitwarden", method: "session-key", secret: SESSION_KEY });
+    const list = await hub.listLogins("bitwarden");
+    expect(isVaultConnectorLoginList(list)).toBe(true);
+    expect(list.logins.map((login) => login.title)).toEqual(["Exact only", "Good", "Http"]);
+    expect(list.logins.find((login) => login.title === "Good")).toMatchObject({
+      username: "carol",
+      hosts: ["c.example.test"],
+      hasOneTimePassword: true,
+    });
+    expect(list.logins.find((login) => login.title === "Http")?.hosts).toEqual([]);
+    expect(JSON.stringify(list)).not.toContain("pw-carol");
+    expect(JSON.stringify(list)).not.toContain(SESSION_KEY);
+  });
+
+  it("Proton Pass has no logins to list yet", async () => {
+    const database = await openDatabase();
+    const { hub } = hubFor(database, opWorld());
+    expect(await hub.listLogins("protonpass")).toEqual({ connector: "protonpass", logins: [], truncated: false });
   });
 });

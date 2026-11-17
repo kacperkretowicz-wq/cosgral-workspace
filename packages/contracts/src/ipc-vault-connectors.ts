@@ -56,6 +56,8 @@ export const VAULT_CONNECTOR_LIMITS = {
   accountId: 200,
   /** Logins read per page (every listed login costs the manager one read). */
   loginsPerPage: 10,
+  /** Logins `listLogins` names at most (the rest is only counted). */
+  listedLogins: 200,
   /** Seconds a copied secret stays on the clipboard. */
   clipboardSeconds: 30,
   /** The CSV a person imports, in characters (an export of thousands of logins fits). */
@@ -98,6 +100,25 @@ export interface VaultConnectorStatus {
   /** A fixed sentence for `failed`; never a token, a command output or the manager's own text. */
   error: string | null;
   errorCode: VaultConnectorErrorCode | null;
+}
+
+/** A login agents may use through a connector, as the Vault screen lists it: never a secret value. */
+export interface VaultConnectorLogin {
+  id: string;
+  title: string;
+  /** The user name when the manager's list gives it without reading the item (Bitwarden); otherwise null. */
+  username: string | null;
+  /** The sites it may fill (hosts only, like "example.test"). */
+  hosts: string[];
+  /** Bitwarden knows it from the list; 1Password only when an agent uses the login, so false there. */
+  hasOneTimePassword: boolean;
+}
+
+export interface VaultConnectorLoginList {
+  connector: VaultConnectorId;
+  logins: VaultConnectorLogin[];
+  /** More logins exist than `listedLogins`. */
+  truncated: boolean;
 }
 
 export interface VaultConnectorList {
@@ -160,6 +181,8 @@ export interface VaultConnectorsDesktopApi {
   openApp: (input: VaultConnectorIdInput) => Promise<void>;
   /** Replaces an earlier connection. With several 1Password accounts and none named it answers `choose-account` and creates nothing. */
   connect: (input: ConnectVaultConnectorInput) => Promise<VaultConnectorStatus>;
+  /** The logins agents may use through this connector now (titles and sites, no secrets). Empty when it is not connected. Reads the manager again when the list is old. */
+  listLogins: (input: VaultConnectorIdInput) => Promise<VaultConnectorLoginList>;
   /** Stops a connection attempt. */
   cancel: (input: VaultConnectorIdInput) => Promise<VaultConnectorStatus>;
   /** Forgets the saved token or key. What exists in the manager (the shared vault, a service account) stays: only the person removes it there. */
@@ -207,6 +230,28 @@ export const VAULT_CONNECTOR_ERROR_SENTENCES: Readonly<Record<VaultConnectorErro
   plan: "This account's plan does not allow the command-line tool.",
   unknown: "Something went wrong with the manager. Try again.",
 };
+
+const CLI_NAMES: Readonly<Record<VaultConnectorId, string>> = {
+  onepassword: "op",
+  bitwarden: "bw",
+  protonpass: "pass-cli",
+};
+
+const DOWNLOAD_PAGES: Readonly<Record<VaultConnectorId, string>> = {
+  onepassword: "https://1password.com/downloads/command-line/",
+  bitwarden: "https://bitwarden.com/help/cli/",
+  protonpass: "https://proton.me/pass/download",
+};
+
+/** The command-line tool of a manager, for the sentence "<tool> was not found". */
+export function vaultConnectorCliName(connector: VaultConnectorId): string {
+  return CLI_NAMES[connector];
+}
+
+/** Where the person gets the manager's tool (opened by the window in the system browser; https only). */
+export function vaultConnectorDownloadPage(connector: VaultConnectorId): string {
+  return DOWNLOAD_PAGES[connector];
+}
 
 export function vaultConnectorLabel(connector: VaultConnectorId): string {
   return CONNECTOR_LABELS[connector];
@@ -317,6 +362,25 @@ export function isVaultConnectorsChanged(
   value: unknown,
 ): value is VaultConnectorsChanged & { type: "vault-connectors-changed" } {
   return isDynamicRecord(value) && value.type === "vault-connectors-changed" && isVaultConnectorList(value);
+}
+
+export function isVaultConnectorLoginList(value: unknown): value is VaultConnectorLoginList {
+  return (
+    isDynamicRecord(value) &&
+    isVaultConnectorId(value.connector) &&
+    isBoolean(value.truncated) &&
+    Array.isArray(value.logins) &&
+    value.logins.every(
+      (login) =>
+        isDynamicRecord(login) &&
+        isString(login.id) &&
+        isString(login.title) &&
+        isNullableString(login.username) &&
+        Array.isArray(login.hosts) &&
+        login.hosts.every(isString) &&
+        isBoolean(login.hasOneTimePassword),
+    )
+  );
 }
 
 export function isVaultCodes(value: unknown): value is VaultCodes {

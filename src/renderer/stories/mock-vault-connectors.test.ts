@@ -4,6 +4,7 @@ import {
   cliVersionAtLeast,
   isVaultCodes,
   isVaultConnectorList,
+  isVaultConnectorLoginList,
   isVaultConnectorStatus,
   isVaultConnectorsChanged,
   normalizeServerUrl,
@@ -12,6 +13,8 @@ import {
   parseLoginCsv,
   parseVaultItemFieldInput,
   VaultCsvError,
+  vaultConnectorCliName,
+  vaultConnectorDownloadPage,
 } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
 import { createMockVaultConnectors } from "./mock-vault-connectors";
@@ -244,5 +247,21 @@ describe("mock Vault tools of the person (W11-KK d)", () => {
     await mock.secrets.reset();
     expect((await mock.secrets.codes()).codes).toEqual([]);
     await expect(mock.secrets.reveal({ itemId: "demo-login", field: "password" })).rejects.toThrow();
+  });
+
+  it("lists the logins agents may use: none until connected, then demo logins without secrets; helpers name the tool and its page", async () => {
+    const { mock } = setup();
+    expect((await mock.connectors.listLogins({ connector: "onepassword" })).logins).toEqual([]);
+    await mock.connectors.connect({ connector: "bitwarden", method: "session-key", secret: "session-key-demo" });
+    const list = await mock.connectors.listLogins({ connector: "bitwarden" });
+    expect(isVaultConnectorLoginList(list)).toBe(true);
+    expect(list.logins).toHaveLength(3);
+    expect(list.logins[0]).toMatchObject({ username: "user1", hasOneTimePassword: true });
+    mock.simulate.loginsChanged("bitwarden", 500);
+    const long = await mock.connectors.listLogins({ connector: "bitwarden" });
+    expect(long).toMatchObject({ truncated: true });
+    expect(long.logins).toHaveLength(200);
+    expect(vaultConnectorCliName("onepassword")).toBe("op");
+    expect(vaultConnectorDownloadPage("bitwarden")).toMatch(/^https:\/\//);
   });
 });
