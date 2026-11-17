@@ -1693,3 +1693,142 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .server-settings-storage li + li {
   border-top: 1px solid var(--cosgral-border);
 }
+
+/* W12-UI2: Marketplace tabs and the Apps catalog. */
+.marketplace-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.marketplace-tabs button {
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-muted);
+}
+
+.marketplace-tabs button[aria-current="page"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.plugin-apps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plugin-filters,
+.plugin-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plugin-filters input[type="search"] {
+  min-width: 220px;
+  flex: 1;
+}
+
+.plugin-note,
+.plugin-error {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.plugin-note {
+  color: var(--cosgral-text-muted);
+}
+
+.plugin-error {
+  color: var(--cosgral-danger);
+}
+
+.plugin-grid {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-card {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 14px;
+  text-align: left;
+}
+
+.plugin-card-tagline {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.plugin-card-state {
+  margin-top: auto;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-control-hover);
+  padding: 1px 8px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.plugin-card-state[data-state="needs-sign-in"],
+.plugin-card-state[data-state="update-available"] {
+  color: var(--cosgral-warning);
+}
+
+.plugin-card-state[data-state="error"] {
+  color: var(--cosgral-danger);
+}
+
+.plugin-card-state[data-state="installed"] {
+  color: var(--cosgral-success);
+}
+
+.plugin-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-surface);
+  padding: 14px 16px;
+}
+
+.plugin-detail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plugin-detail h2,
+.plugin-detail p {
+  margin: 0;
+}
+
+.plugin-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--cosgral-text-md);
+}
+
+.plugin-field {
+  display: flex;
+  max-width: 480px;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--cosgral-text-sm);
+}
+
+.plugin-actions {
+  display: flex;
+  gap: 8px;
+}

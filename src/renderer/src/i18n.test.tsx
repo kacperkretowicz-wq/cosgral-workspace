@@ -34,6 +34,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "SkillQuickPick",
     "AgentCardsSection",
     "ServerSettingsPage",
+    "PluginAppsPanel",
     "NewAgentPage",
   ];
   for (const file of files) {

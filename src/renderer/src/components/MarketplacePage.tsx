@@ -7,6 +7,8 @@ import type {
 } from "@openbot/contracts/ipc";
 import { MARKETPLACE_CATEGORIES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
+import { PluginAppsPanel } from "./PluginAppsPanel";
 import { Button, Input, NativeSelect } from "./ui";
 
 type Person = { id: string; name: string };
@@ -92,6 +94,16 @@ export function MarketplacePage(props: { bots: Person[] }) {
   const [botId, setBotId] = createSignal("");
   const [error, setError] = createSignal("");
   const [warnings, setWarnings] = createSignal<string[]>([]);
+  // Three tabs when the plugin catalog exists (Apps first, like the reference); without it the old single list stays.
+  const hasApps = Boolean(window.openbot?.pluginCatalog);
+  const [tab, setTab] = createSignal<"apps" | "agents" | "skills" | "all">(hasApps ? "apps" : "all");
+  function selectTab(next: "apps" | "agents" | "skills") {
+    setTab(next);
+    setDetails(undefined);
+    if (next === "agents") setKind("agent");
+    else if (next === "skills") setKind("skill");
+    if (next !== "apps") void refresh();
+  }
   let serial = 0;
   async function refresh() {
     const api = window.openbot.marketplace;
@@ -166,95 +178,124 @@ export function MarketplacePage(props: { bots: Person[] }) {
   return (
     <main class="w2-library">
       <h1>Marketplace</h1>
-      <Show when={error()}>
-        <p role="alert">{error()}</p>
-      </Show>
-      <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
-      <form
-        class="marketplace-filters"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void refresh();
-        }}
-      >
-        <label class="marketplace-search">
-          Search <Input unstyled type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
-        </label>
-        <label>
-          Kind{" "}
-          <NativeSelect
-            unstyled
-            value={kind()}
-            onChange={(e) => {
-              const v = e.currentTarget.value;
-              if (v === "" || v === "skill" || v === "agent") setKind(v);
-            }}
+      <Show when={hasApps}>
+        <nav class="marketplace-tabs" aria-label={t("Marketplace sections")}>
+          <For
+            each={
+              [
+                ["apps", "Apps"],
+                ["agents", "Agents"],
+                ["skills", "Skills"],
+              ] as const
+            }
           >
-            <option value="">All</option>
-            <option value="skill">Skills</option>
-            <option value="agent">Agents</option>
-          </NativeSelect>
-        </label>
-        <label>
-          Category{" "}
-          <NativeSelect
-            unstyled
-            value={category()}
-            onChange={(e) => {
-              const found = MARKETPLACE_CATEGORIES.find((c) => c === e.currentTarget.value);
-              setCategory(found ?? "");
-            }}
-          >
-            <option value="">All</option>
-            <For each={MARKETPLACE_CATEGORIES}>{(c) => <option value={c}>{c}</option>}</For>
-          </NativeSelect>
-        </label>
-        <Button unstyled type="submit">
-          Search
-        </Button>
-      </form>
-      <Show when={details()}>
-        {(value) => (
-          <MarketplaceDetail
-            details={value()}
-            bots={props.bots}
-            selectedBot={botId()}
-            onSelectBot={(id) => {
-              setBotId(id);
-              void refresh();
-            }}
-            onInstall={() => void install()}
-            onUninstall={(id) => void uninstall(id)}
-          />
-        )}
-      </Show>
-      <h2>Suggestions</h2>
-      <ul class="marketplace-list">
-        <For each={suggestions()}>
-          {(suggestion) => (
-            <li>
-              <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
-                <strong>{suggestion.item.title}</strong>
-                <small>{suggestion.reason}</small>
+            {([id, label]) => (
+              <Button
+                type="button"
+                variant="ghost"
+                aria-current={tab() === id ? "page" : undefined}
+                onClick={() => selectTab(id)}
+              >
+                {t(label)}
               </Button>
-            </li>
+            )}
+          </For>
+        </nav>
+      </Show>
+      <Show when={tab() === "apps"}>
+        <PluginAppsPanel />
+      </Show>
+      <Show when={tab() !== "apps"}>
+        <Show when={error()}>
+          <p role="alert">{error()}</p>
+        </Show>
+        <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
+        <form
+          class="marketplace-filters"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void refresh();
+          }}
+        >
+          <label class="marketplace-search">
+            Search <Input unstyled type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
+          </label>
+          <label>
+            Kind{" "}
+            <NativeSelect
+              unstyled
+              value={kind()}
+              onChange={(e) => {
+                const v = e.currentTarget.value;
+                if (v === "" || v === "skill" || v === "agent") setKind(v);
+              }}
+            >
+              <option value="">All</option>
+              <option value="skill">Skills</option>
+              <option value="agent">Agents</option>
+            </NativeSelect>
+          </label>
+          <label>
+            Category{" "}
+            <NativeSelect
+              unstyled
+              value={category()}
+              onChange={(e) => {
+                const found = MARKETPLACE_CATEGORIES.find((c) => c === e.currentTarget.value);
+                setCategory(found ?? "");
+              }}
+            >
+              <option value="">All</option>
+              <For each={MARKETPLACE_CATEGORIES}>{(c) => <option value={c}>{c}</option>}</For>
+            </NativeSelect>
+          </label>
+          <Button unstyled type="submit">
+            Search
+          </Button>
+        </form>
+        <Show when={details()}>
+          {(value) => (
+            <MarketplaceDetail
+              details={value()}
+              bots={props.bots}
+              selectedBot={botId()}
+              onSelectBot={(id) => {
+                setBotId(id);
+                void refresh();
+              }}
+              onInstall={() => void install()}
+              onUninstall={(id) => void uninstall(id)}
+            />
           )}
-        </For>
-      </ul>
-      <h2>Catalog</h2>
-      <Show when={items().length} fallback={<p>No matching items.</p>}>
+        </Show>
+        <h2>Suggestions</h2>
         <ul class="marketplace-list">
-          <For each={items()}>
-            {(item) => (
+          <For each={suggestions()}>
+            {(suggestion) => (
               <li>
-                <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(item)}>
-                  <strong>{item.title}</strong>
-                  <small>{item.summary}</small>
+                <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
+                  <strong>{suggestion.item.title}</strong>
+                  <small>{suggestion.reason}</small>
                 </Button>
               </li>
             )}
           </For>
         </ul>
+        <h2>Catalog</h2>
+        <Show when={items().length} fallback={<p>No matching items.</p>}>
+          <ul class="marketplace-list">
+            <For each={items()}>
+              {(item) => (
+                <li>
+                  <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(item)}>
+                    <strong>{item.title}</strong>
+                    <small>{item.summary}</small>
+                  </Button>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
       </Show>
     </main>
   );
