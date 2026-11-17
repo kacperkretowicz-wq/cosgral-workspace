@@ -2,7 +2,7 @@ import { type AppTheme, normalizeAppTheme } from "@openbot/contracts/ipc";
 export const THEME_CACHE_KEY = "cosgral-theme";
 export function startTheme(): () => void {
   const media = window.matchMedia("(prefers-color-scheme: dark)");
-  let theme: AppTheme = "system";
+  let theme: AppTheme = "dark";
   let revision = 0;
   let disposed = false;
   const apply = () => {

@@ -333,7 +333,7 @@ export class AgentSettingsService {
 
   #loadAppSetting(): StoredAppSetting {
     const defaults: StoredAppSetting = {
-      theme: "system",
+      theme: "dark",
       language: null,
       notifications: defaultNotificationPreferences(),
       pinnedPageIds: [...APP_PAGE_IDS],

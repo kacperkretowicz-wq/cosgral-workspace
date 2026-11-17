@@ -3,7 +3,7 @@ import { createSignal, onSettled } from "solid-js";
 import { t } from "../i18n";
 import { Field, NativeSelect, Text } from "./ui";
 export function AppearanceSettings() {
-  const [theme, setTheme] = createSignal<AppTheme>("system");
+  const [theme, setTheme] = createSignal<AppTheme>("dark");
   const [ready, setReady] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");

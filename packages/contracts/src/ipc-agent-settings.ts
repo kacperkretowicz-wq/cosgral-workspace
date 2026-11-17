@@ -186,7 +186,8 @@ export interface NotificationPreferences {
 export const APP_THEMES = ["dark", "light", "system"] as const;
 export type AppTheme = (typeof APP_THEMES)[number];
 export function normalizeAppTheme(value: unknown): AppTheme {
-  return value === "dark" || value === "light" ? value : "system";
+  // Dark is the default look; "system" follows the OS only when the person chose it.
+  return value === "light" || value === "system" ? value : "dark";
 }
 
 export const APP_LANGUAGES = ["en", "pl"] as const;

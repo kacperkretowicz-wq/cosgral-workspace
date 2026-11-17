@@ -928,7 +928,7 @@ export function App() {
     });
     setBotList(profiles);
     setActiveBotId((current) => (profiles.some((bot) => bot.id === current) ? current : (profiles[0]?.id ?? "")));
-    if (profiles.length === 0) setAgentPickerOpen(true);
+    if (profiles.length === 0) setNewAgentOpen(true);
   }
 
   function applyConversationReads(reads: Record<string, ConversationReadState>): void {
