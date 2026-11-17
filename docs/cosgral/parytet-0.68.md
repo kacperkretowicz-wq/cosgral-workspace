@@ -193,3 +193,23 @@ Status obu wierszy pozostaje **częściowo**, bez zmiany wyniku procentowego. Do
 | Luki 0.70 (13 obszarów) | **0 zamkniętych**; **~6 częściowo** (1 Dostawcy, 3 Czat/wątki, 4 Wiadomości lekko, 5 Kanały, 6 Pasek, 8 Pamięć/Vault); **~7 otwartych** (2 Limity pierścienie, 7 Bezpieczeństwo W8, 9 Automatyzacja zewn., 10 Przeglądarka+, 11 Głos, 12 Telefon, 13 Wygląd W7) |
 
 **Czego nie sprawdziłem w T2:** Electron, `sandbox:e2e`, `COSGRAL_MODE=w5/w6`, pełnego `bun run check`, prawdziwych kont, czystego Windows, UI1-FIX w oknie (P07).
+
+## 0.71 — top 10 luk (T-A / T-B, 17.11.2026)
+
+Źródło priorytetów: `Shared\cosgral-docs\openbot-0.71-kolejka-ui.md`, `docs/cosgral/odbior-071.md`.  
+**Procent parytetu 0.68 (80,7%) bez zmian** — w tym zadaniu brak dowodu w prawdziwym oknie (brak `GO-*.txt`).
+
+| # | Luka 0.71 | Stan (kod / dokument) | Stan w oknie | Adresat |
+|---|---|---|---|---|
+| 1 | Pasek boczny + nowy agent + chrome czatu | Tokeny + sidebar + Nowy agent na `team/ui/w11-ui1` @ `05e61cb7f`; chrome czatu jeszcze nie; **FAIL** i18n (`Duplikuj` / `Kopia gotowa` hardcod PL) | nie sprawdzone | UI Designer |
+| 2 | 12 kart ustawień agenta + 14 sekcji serwera | brak ekranów W11 | nie | UI / Backend |
+| 3 | 18 dostawców, pula, CLI | backend w toku (BE-A/B) | nie | Backend |
+| 4 | Marketplace Apps | silnik KK `team/kk/w11-marketplace` (kanał); UI brak | nie | KK / UI |
+| 5 | Vault konektory | silnik KK `team/kk/w11-vault-connectors` (kanał); UI brak | nie | KK / UI |
+| 6 | Odbiór wątków / chrome w Electronie | kryteria gotowe; e2e po GO | nie | Tester po GO |
+| 7 | Komunikatory poza Telegramem | plan KK (koszt); bez kodu Slack/Discord | nie | KK (po decyzji lidera) |
+| 8 | Zdalny pulpit | kontrakty wcześniejsze; komplet 0.71 otwarty | nie | Backend / KK |
+| 9 | Głos | brak | nie | Backend / UI |
+| 10 | Biblioteka (siatka) + Użycie | brak UI 0.71 | nie | UI / Backend |
+
+Raport odbioru statycznego: `docs/cosgral-raporty/tester-w11-odbior.md`. Brama: `scripts/ui-fidelity/` → `Shared\cosgral-docs\porownanie-ui\GATE.md` (gdy są dwa przebiegi probe).
