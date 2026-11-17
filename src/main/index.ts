@@ -4,6 +4,7 @@ import { homedir, hostname, userInfo } from "node:os";
 import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { ATTACHMENT_LIMITS, INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import {
+  AGENT_TEMPLATE_LIMITS,
   type AgentEvent,
   type AppInfo,
   type AppSetupState,
@@ -1820,6 +1821,64 @@ if (!hasSingleInstanceLock) {
         // COSGRAL W12 (BE-D): the agent cards; the counts come from the services that already own the data.
         agentCardsService = new AgentCardsService({
           file: join(app.getPath("userData"), "agent-preferences.json"),
+          publishedFile: join(app.getPath("userData"), "agent-published-templates.json"),
+          details: {
+            files: (botId, limit) => {
+              const mine = service.sharedData.library
+                .list({ limit: 1000 })
+                .filter((file) => file.createdByBotId === botId);
+              return {
+                items: mine
+                  .slice(0, limit)
+                  .map((file) => ({
+                    id: file.id,
+                    name: file.name,
+                    size: file.size,
+                    origin: file.origin,
+                    createdAt: file.createdAt,
+                  })),
+                total: mine.length,
+              };
+            },
+            folders: (botId) => {
+              const access = service.access?.get(botId);
+              return {
+                workspace: service.listBots().find((bot) => bot.id === botId)?.workspacePath ?? "",
+                level: access?.level ?? "ask-first",
+                additional: access?.additionalFolders ?? [],
+                excluded: access?.excludedFolders ?? [],
+              };
+            },
+            usage: (botId) => {
+              if (!budgetMeter) throw new Error("The usage counter is not ready.");
+              return budgetMeter.status({ kind: "agent", botId });
+            },
+            advanced: async (botId) => ({
+              hasSession: service.hasProviderSession(botId),
+              messages: (await service.readConversation(botId)).messages.length,
+            }),
+            notifications: (botId) => ({
+              muted: service.listBots().find((bot) => bot.id === botId)?.notifications === false,
+              matrix: service.agentSettings.appSettings().notifications.matrix,
+            }),
+            templates: {
+              find: (id) => {
+                try {
+                  const t = service.agentTemplates.get(id);
+                  return { id: t.id, name: t.name, summary: t.summary, createdAt: t.createdAt };
+                } catch {
+                  return null;
+                }
+              },
+              count: () => service.agentTemplates.list().filter((t) => t.origin === "saved").length,
+              max: AGENT_TEMPLATE_LIMITS.saved,
+              save: async (botId, input) => {
+                const t = await service.agentTemplates.saveFromAgent({ botId, ...input });
+                return { id: t.id, name: t.name, summary: t.summary, createdAt: t.createdAt };
+              },
+              remove: (id) => service.agentTemplates.delete(id),
+            },
+          },
           agentExists: (botId) => service.listBots().some((bot) => bot.id === botId),
           steerSupported: (botId) => service.canSteer(botId),
           counts: agentCardCounts({

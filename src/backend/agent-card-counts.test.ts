@@ -32,14 +32,14 @@ describe("agentCardCounts (W12 BE-D)", () => {
     expect(counts.memory?.summary).toBe("No memories");
   });
 
-  it("marks publish as not available and never throws when a service fails", () => {
+  it("never throws when a service fails, and leaves the Publish card to the cards engine", () => {
     const failing = agentCardCounts({
       ...sources,
       files: () => {
         throw new Error("boom");
       },
     })("chief");
-    expect(failing.publish).toEqual({ available: false, summary: "Not available in this build" });
+    expect(failing.publish).toBeUndefined();
     expect(failing.files).toBeUndefined();
     expect(failing.memory?.count).toBe(12);
   });

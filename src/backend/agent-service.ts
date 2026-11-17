@@ -1135,6 +1135,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     );
   }
 
+  /** COSGRAL W12: the agent has a provider session now (a reset would change something). */
+  hasProviderSession(botId: string): boolean {
+    return this.#store.activeProviderSession(botId) !== null;
+  }
+
   /** COSGRAL W12: whether the provider of this agent can take a message into a running turn. */
   canSteer(botId: string): boolean {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);

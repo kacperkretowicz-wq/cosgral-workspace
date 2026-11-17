@@ -23,4 +23,7 @@ export function registerAgentCardsIpc(service: () => AgentCardsService | null): 
   handle(IPC_CHANNELS.agentCardsResetSession, (engine, payload) =>
     engine.resetSession(parseAgentCardsBotInput(payload)),
   );
+  handle(IPC_CHANNELS.agentCardsDetails, (engine, payload) => engine.details(payload));
+  handle(IPC_CHANNELS.agentCardsPublishTemplate, (engine, payload) => engine.publishTemplate(payload));
+  handle(IPC_CHANNELS.agentCardsUnpublishTemplate, (engine, payload) => engine.unpublishTemplate(payload));
 }

@@ -165,7 +165,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("composer:").length).toBe(4);
     expect(channelsOf("thread-tabs:").length).toBe(4);
     // COSGRAL W12 (BE-D): the agent cards.
-    expect(channelsOf("agent-cards:").length).toBe(4);
+    expect(channelsOf("agent-cards:").length).toBe(7);
     expect(channelsOf("server-settings:").length).toBe(5);
     // COSGRAL W12 (BE-E): the provider catalog.
     expect(channelsOf("provider-catalog:").length).toBe(3);
