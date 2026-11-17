@@ -489,3 +489,117 @@ describe("WorkflowManager: routine trigger", () => {
     await manager.idle();
   });
 });
+
+describe("WorkflowManager: versions", () => {
+  it("a new workflow has version 1; a changed graph is a new version, a rename or the same graph is not", async () => {
+    const { manager } = await build();
+    const workflow = save(manager, [trigger, ask, post], chain);
+    expect(manager.listVersions({ workflowId: workflow.id })).toMatchObject([
+      { number: 1, reason: "created", restoredFrom: null, current: true, steps: 3, connections: 2 },
+    ]);
+    expect(manager.listVersions({ workflowId: workflow.id })[0]?.summary).toBe("1 trigger, 1 agent step, 1 output");
+
+    manager.update({ workflowId: workflow.id, name: "Renamed", paused: true });
+    manager.update({ workflowId: workflow.id, paused: false, nodes: workflow.nodes, edges: workflow.edges });
+    expect(manager.listVersions({ workflowId: workflow.id })).toHaveLength(1);
+
+    const edited = workflow.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: "Short" } : node));
+    manager.update({ workflowId: workflow.id, nodes: edited, edges: workflow.edges });
+    const list = manager.listVersions({ workflowId: workflow.id });
+    expect(list.map((version) => [version.number, version.reason, version.current, version.name])).toEqual([
+      [2, "edited", true, "Renamed"],
+      [1, "created", false, "Reply flow"],
+    ]);
+  });
+
+  it("a version has its graph; a missing version and an unknown workflow are refused", async () => {
+    const { manager } = await build();
+    const workflow = save(manager, [trigger, ask, post], chain);
+    const first = manager.getVersion({ workflowId: workflow.id, version: 1 });
+    expect(first.nodes).toEqual(workflow.nodes);
+    expect(first.edges).toEqual(workflow.edges);
+    expect(() => manager.getVersion({ workflowId: workflow.id, version: 7 })).toThrow(/no longer exists/);
+    expect(() => manager.listVersions({ workflowId: "nope" })).toThrow(/no longer exists/);
+    expect(() => manager.restoreVersion({ workflowId: workflow.id, version: 7 })).toThrow(/no longer exists/);
+  });
+
+  it("restore puts the older graph back as a new version that names its source, and restoring what is current changes nothing", async () => {
+    const { manager, events } = await build();
+    const workflow = save(manager, [trigger, ask, post], chain);
+    const edited = workflow.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: "Short" } : node));
+    manager.update({ workflowId: workflow.id, nodes: edited, edges: workflow.edges });
+
+    const restored = manager.restoreVersion({ workflowId: workflow.id, version: 1 });
+    expect(restored.nodes.find((node) => node.id === "ask")).toMatchObject({ prompt: "Reply to: {{input}}" });
+    expect(events.at(-1)).toMatchObject({ type: "workflows-changed" });
+    expect(
+      manager
+        .listVersions({ workflowId: workflow.id })
+        .map((version) => [version.number, version.reason, version.restoredFrom]),
+    ).toEqual([
+      [3, "restored", 1],
+      [2, "edited", null],
+      [1, "created", null],
+    ]);
+    manager.restoreVersion({ workflowId: workflow.id, version: 3 });
+    expect(manager.listVersions({ workflowId: workflow.id })).toHaveLength(3);
+  });
+
+  it("restore is checked like a save: an agent that is gone refuses it and nothing changes", async () => {
+    const { manager, bots } = await build();
+    const workflow = save(manager, [trigger, ask, post], chain);
+    const other = workflow.nodes.map((node) =>
+      node.type === "agent" ? { ...node, botId: "chief", prompt: "Other" } : node,
+    );
+    manager.update({ workflowId: workflow.id, nodes: other, edges: workflow.edges });
+    bots.clear();
+    expect(() => manager.restoreVersion({ workflowId: workflow.id, version: 1 })).toThrow(
+      /The agent "chief" in step "Ask" does not exist/,
+    );
+    expect(manager.listVersions({ workflowId: workflow.id })).toHaveLength(2);
+  });
+
+  it("keeps the newest 20 versions, and a workflow that is deleted loses them", async () => {
+    const { manager, store } = await build();
+    const workflow = save(manager, [trigger, ask, post], chain);
+    for (let round = 0; round < 24; round += 1) {
+      const nodes = workflow.nodes.map((node) =>
+        node.type === "agent" ? { ...node, prompt: `Round ${round}` } : node,
+      );
+      manager.update({ workflowId: workflow.id, nodes, edges: workflow.edges });
+    }
+    const list = manager.listVersions({ workflowId: workflow.id });
+    expect(list).toHaveLength(20);
+    expect([list[0]?.number, list.at(-1)?.number]).toEqual([25, 6]);
+    manager.delete({ workflowId: workflow.id });
+    expect(store.listVersions(workflow.id)).toEqual([]);
+  });
+
+  it("a workflow saved before versions existed gets version 1 from its current graph, and its first change keeps the old state", async () => {
+    const { manager, store } = await build();
+    const workflow = store.save({
+      id: "wf-old",
+      name: "Old",
+      description: "",
+      nodes: [trigger, ask, post],
+      edges: chain,
+      paused: false,
+      createdAt: "2026-11-01T08:00:00.000Z",
+      updatedAt: "2026-11-01T08:00:00.000Z",
+      lastRun: null,
+    });
+    expect(store.listVersions(workflow.id)).toEqual([]);
+    const edited = workflow.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: "New" } : node));
+    manager.update({ workflowId: workflow.id, nodes: edited, edges: workflow.edges });
+    const list = manager.listVersions({ workflowId: workflow.id });
+    expect(list.map((version) => [version.number, version.reason, version.savedAt])).toEqual([
+      [2, "edited", expect.any(String)],
+      [1, "created", "2026-11-01T08:00:00.000Z"],
+    ]);
+    expect(
+      manager.getVersion({ workflowId: workflow.id, version: 1 }).nodes.find((node) => node.id === "ask"),
+    ).toMatchObject({
+      prompt: "Reply to: {{input}}",
+    });
+  });
+});
