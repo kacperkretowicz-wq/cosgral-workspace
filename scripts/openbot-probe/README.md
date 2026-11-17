@@ -77,3 +77,5 @@ such as `CLAUDE_CONFIG_DIR`, `CLAUDE_CODE_*`, `OPENBOT_*`, `GIT_CONFIG_*` and to
 (it showed an account e-mail on its first screen). Start every copy with those variables REMOVED (in PowerShell:
 `Remove-Item Env:CLAUDE_CONFIG_DIR` and the like, or start through a launcher that passes only `PATH`, `SystemRoot`, `TEMP`, `TMP` and the
 sandbox `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`), and scan the results for the person's e-mail before they are shared.
+
+Use `scripts/openbot-probe/launch.ts` (`launchCopy({ exe, root, port })`): it removes these variables with `cleanEnvironment()` (the same one the e2e and W5 launchers use), puts `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP` into the sandbox, makes a new data folder per start and opens the debug port on 127.0.0.1 only.
