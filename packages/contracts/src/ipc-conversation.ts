@@ -52,6 +52,7 @@ import { isMobileDevice, isMobileState, type MobileDevice, type MobileState } fr
 import { isPhoneAccessChanged, type PhoneAccessChanged } from "./ipc-phone-access";
 import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { isPluginCatalogChanged, type PluginCatalogChanged } from "./ipc-plugin-catalog";
+import { isProviderCatalogChanged, type ProviderCatalogChanged } from "./ipc-provider-catalog";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
 import {
   isRemoteDesktopClientState,
@@ -703,6 +704,8 @@ export type AgentEvent =
   | ({ type: "side-question-changed" } & SideQuestionChanged)
   /** COSGRAL W11 (BE-B): the small per-agent choices of one agent changed (the whole preferences). */
   | ({ type: "agent-preferences-changed" } & AgentPreferencesChanged)
+  /** COSGRAL W12 (BE-E): a provider key or ACP agent changed (the whole catalog list). */
+  | ({ type: "provider-catalog-changed" } & ProviderCatalogChanged)
   /** COSGRAL W12 (BE-D): the settings of the server changed (the whole settings). */
   | ({ type: "server-settings-changed" } & ServerSettingsChanged)
   /** COSGRAL W11 (U6): the strip of thread tabs of one agent changed. */
@@ -898,6 +901,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isAgentPreferencesChanged(value);
     case "server-settings-changed":
       return isServerSettingsChanged(value);
+    case "provider-catalog-changed":
+      return isProviderCatalogChanged(value);
     case "thread-tabs-changed":
       return isThreadTabsChanged(value);
     case "messengers-changed":

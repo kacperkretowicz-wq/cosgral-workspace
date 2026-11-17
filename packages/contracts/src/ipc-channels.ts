@@ -220,6 +220,10 @@ export const IPC_CHANNELS = {
   serverSettingsUpdate: "server-settings:update",
   serverSettingsMeasureStorage: "server-settings:measure-storage",
   serverSettingsClearLogs: "server-settings:clear-logs",
+  // COSGRAL W12 (BE-E): the catalog of the 18 providers.
+  providerCatalogList: "provider-catalog:list",
+  providerCatalogSetKey: "provider-catalog:set-key",
+  providerCatalogClearKey: "provider-catalog:clear-key",
   // COSGRAL W10-KK2: messenger bridge (Telegram).
   messengersList: "messengers:list",
   messengersStatus: "messengers:status",
