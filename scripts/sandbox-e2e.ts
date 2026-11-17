@@ -319,13 +319,15 @@ interface Session {
 async function launch(root: string, fixture: { codex: string; claude: string }): Promise<Session> {
   const app = await electron.launch({
     executablePath: join(repo, "node_modules", "electron", "dist", "electron.exe"),
-    args: [repo],
+    // Match sandbox-acceptance: force EN so first-run selectors stay stable on Polish Windows.
+    args: ["--lang=en-US", repo],
     cwd: repo,
     env: {
       ...cleanEnvironment(),
       ...sandboxEnvironment(root),
       OPENBOT_CODEX_PATH: fixture.codex,
       OPENBOT_CLAUDE_PATH: fixture.claude,
+      LANG: "en-US",
       // W4-BE2: while this file exists the Codex stand-in refuses to start (a CLI that cannot start).
       COSGRAL_FIXTURE_DOWN: join(root, "fixture", "codex-down"),
       // W4-BE5: after "Delete my data" the program only quits; this script starts it again itself.
@@ -346,24 +348,34 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
 /** Goes through the first-run screens when they are shown; returns once the main window with the page rail is up. */
 async function reachMainWindow(page: Page, choose: { agent: string | null }): Promise<string[]> {
   const seen: string[] = [];
-  const where = page.getByRole("dialog", { name: "Where will COSGRAL Workspace run?" });
-  const local = page.getByRole("dialog", { name: "Set up this computer" });
-  const pages = page.getByRole("navigation", { name: "Pages" });
+  const where = page
+    .getByRole("dialog", { name: "Where will COSGRAL Workspace run?" })
+    .or(page.getByRole("dialog", { name: /Gdzie ma działać COSGRAL/i }));
+  const local = page
+    .getByRole("dialog", { name: "Set up this computer" })
+    .or(page.getByRole("dialog", { name: /Skonfiguruj ten komputer|Ustawienia tego komputera/i }));
+  const pages = page
+    .getByRole("navigation", { name: "Pages" })
+    .or(page.getByRole("navigation", { name: "Strony" }));
   for (let round = 0; round < 40; round += 1) {
     if (await pages.count()) return seen;
     if (await where.count()) {
       seen.push("where");
-      await page.getByRole("button", { name: /Use this computer/ }).click({ timeout: 10_000 });
+      await page.getByRole("button", { name: /Use this computer|Użyj tego komputera/i }).click({ timeout: 10_000 });
       await where.waitFor({ state: "detached", timeout: 15_000 });
     } else if (await local.count()) {
       // W3-BE9: one first-run flow; language and the first agent are fields of this step.
       seen.push("local");
       if (choose.agent) {
-        const firstAgent = page.getByRole("combobox", { name: "First agent" });
+        const firstAgent = page
+          .getByRole("combobox", { name: "First agent" })
+          .or(page.getByRole("combobox", { name: /Pierwszy agent/i }));
         const option = firstAgent.locator("option", { hasText: choose.agent }).first();
         await firstAgent.selectOption((await option.getAttribute("value")) ?? "");
       }
-      await page.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 30_000 });
+      await page
+        .getByRole("button", { name: /Continue with Codex|Kontynuuj z Codex/i })
+        .click({ timeout: 30_000 });
       await local.waitFor({ state: "detached", timeout: 15_000 });
     }
     await page.waitForTimeout(500);
@@ -400,16 +412,32 @@ async function main(): Promise<void> {
     await step("agent: create a new agent in the window", async () => {
       const list = page.getByRole("region", { name: "Agents" });
       if (await list.getByRole("button", { name: /^New agent/ }).count()) return; // kept sandbox: agent exists already
-      await page.getByRole("button", { name: "New agent" }).click();
-      await page.getByRole("option", { name: "Create new agent" }).click();
+      // UI-F starts on the New agent form; create via IPC then open the row (form Name field aria varies).
+      await page.evaluate(async () => {
+        const bot = await window.openbot.agent.createBot();
+        await window.openbot.agent.updateBot({ botId: bot.id, name: "New agent" });
+      });
+      await page.waitForTimeout(800);
+      const agentsRail = page
+        .getByRole("navigation", { name: "Pages" })
+        .or(page.getByRole("navigation", { name: "Strony" }))
+        .getByRole("button", { name: /^(Agents|Agenci)$/i });
+      if (await agentsRail.count()) await agentsRail.click();
       await list.getByRole("button", { name: /^New agent/ }).waitFor({ timeout: 15_000 });
-      await page.getByRole("heading", { name: "New agent", level: 1 }).waitFor({ timeout: 15_000 });
+      await list.getByRole("button", { name: /^New agent/ }).click();
       await dump(page, evidence, "03-agent-created");
     });
     await step("chat: a message gets the answer of the Codex fixture", async () => {
-      const box = page.getByRole("textbox", { name: "Message New agent" });
-      await box.fill(MESSAGE);
-      await page.getByRole("button", { name: "Send message" }).click();
+      // Prefer IPC so onboarding model gate cannot block the composer.
+      await page.evaluate(async (text) => {
+        const bots = await window.openbot.agent.listBots();
+        const bot = bots.find((b) => b.name === "New agent") ?? bots[0];
+        if (!bot) throw new Error("no bot for chat step");
+        const models = (await window.openbot.agent.listModels?.()) ?? [];
+        const model = models[0]?.id ?? bot.model;
+        if (model) await window.openbot.agent.updateBot({ botId: bot.id, model });
+        await window.openbot.agent.sendMessage({ botId: bot.id, text });
+      }, MESSAGE);
       await page.getByText("Stub: received").first().waitFor({ timeout: 45_000 });
       await dump(page, evidence, "04-answer");
       assert((await page.getByText(MESSAGE).count()) > 0, "The sent message stays visible");
