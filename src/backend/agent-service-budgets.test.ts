@@ -98,6 +98,32 @@ describe.sequential("budgets on the service", {
     expect(used(meter)).toMatchObject({ tokens: 2_500, turns: 2 });
   });
 
+  it("W12: keeps what a turn used by kind of token and by model, only the growth of each part, and nothing when the CLI reports no parts", async () => {
+    const { service, cli, meter } = await open();
+    cli.usage.set("cli-thread-1", 1_000);
+    cli.usageParts.set("cli-thread-1", { input: 800, cached: 300, output: 200, reasoning: 40 });
+    await service.sendMessage({ botId: "chief", text: "First" });
+    await waitFor(() => used(meter).turns === 1);
+    cli.usage.set("cli-thread-1", 2_500);
+    cli.usageParts.set("cli-thread-1", { input: 1_900, cached: 900, output: 600, reasoning: 100 });
+    await service.sendMessage({ botId: "chief", text: "Second" });
+    await waitFor(() => used(meter).turns === 2);
+    const rows = meter.dailyDetail("2026-11-01");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ botId: "chief", turns: 2, input: 1_900, cached: 900, output: 600, reasoning: 100 });
+    expect(rows[0]?.model.length).toBeGreaterThan(0);
+    expect(used(meter).tokens).toBe(2_500);
+  });
+
+  it("W12: a CLI that reports only the total leaves the detail empty but still counts the tokens", async () => {
+    const { service, cli, meter } = await open();
+    cli.usage.set("cli-thread-1", 700);
+    await service.sendMessage({ botId: "chief", text: "Hello" });
+    await waitFor(() => used(meter).turns === 1);
+    expect(meter.dailyDetail("2026-11-01")).toEqual([]);
+    expect(used(meter).tokens).toBe(700);
+  });
+
   it("never invents dollars: Codex gives no price, so none is counted", async () => {
     const { service, cli, meter } = await open();
     cli.usage.set("cli-thread-1", 700);
