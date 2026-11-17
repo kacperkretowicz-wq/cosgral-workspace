@@ -3556,13 +3556,13 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await screen.findByRole("heading", { name: "Chief", level: 1 });
     const list = within(screen.getByRole("navigation", { name: "Chat list" }));
     await fireEvent.contextMenu(list.getByRole("button", { name: /^Sales Outbound/ }));
-    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Ukryj" }));
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Hide" }));
     await waitFor(() => expect(list.queryByRole("button", { name: /^Sales Outbound/ })).toBeNull());
-    await fireEvent.click(screen.getByRole("switch", { name: "Pokaż ukryte" }));
+    await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
     const hidden = await list.findByRole("button", { name: /^Sales Outbound/ });
     expect(hidden).toHaveClass("bot-row-hidden");
     await fireEvent.contextMenu(hidden);
-    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Pokaż" }));
+    await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Show" }));
     await waitFor(() =>
       expect(window.openbot.agent.setBotHidden).toHaveBeenLastCalledWith({ botId: "sales-outbound", hidden: false }),
     );
