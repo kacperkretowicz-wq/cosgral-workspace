@@ -677,12 +677,13 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.queryByRole("dialog", { name: "Providers & permissions" })).not.toBeInTheDocument();
   });
 
-  it("opens the create-agent picker for a new user with no agents", async () => {
+  it("starts on the New agent page for a new user with no agents", async () => {
     vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([]);
     render(() => <App />);
 
-    expect(await screen.findByRole("option", { name: "Create new agent" })).toBeInTheDocument();
-    expect(screen.getByText("No agents yet")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Agent name" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create agent" })).toBeDisabled();
   });
 
   it("keeps agents disabled when setup persistence fails", async () => {

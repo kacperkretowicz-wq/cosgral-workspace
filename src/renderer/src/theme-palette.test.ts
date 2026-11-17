@@ -60,7 +60,8 @@ it("chooses the cached or OS theme before the application module, including bloc
     ["dark", false, "dark"],
     ["system", false, "light"],
     ["invalid", true, "dark"],
-    [null, false, "light"],
+    ["system", true, "dark"],
+    [null, false, "dark"],
   ]) {
     const document = { documentElement: { dataset: {}, style: {} } };
     runInNewContext(source, {
@@ -81,5 +82,5 @@ it("chooses the cached or OS theme before the application module, including bloc
     },
     matchMedia: () => ({ matches: false }),
   });
-  expect(document.documentElement.dataset).toEqual({ theme: "light" });
+  expect(document.documentElement.dataset).toEqual({ theme: "dark" });
 });

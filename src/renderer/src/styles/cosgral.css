@@ -1832,3 +1832,41 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   display: flex;
   gap: 8px;
 }
+
+/* W12-UI2 (after the first real screenshots): quieter chat top, stacked agent preference fields. */
+.thread-panel {
+  border: 0;
+  border-bottom: 1px solid var(--cosgral-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: var(--cosgral-text-sm);
+}
+
+.thread-panel > summary {
+  color: var(--cosgral-text-muted);
+}
+
+.context-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--cosgral-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 12px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.context-panel p {
+  margin: 0;
+}
+
+.agent-cards-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}

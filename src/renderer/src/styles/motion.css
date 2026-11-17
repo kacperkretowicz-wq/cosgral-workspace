@@ -1,0 +1,122 @@
+/*
+ * COSGRAL motion. One set of durations and one curve (see cosgral-tokens.css), used for panels, menus, tabs and
+ * the mascot. Everything that moves is switched off for people who asked their system for reduced motion.
+ */
+.page-rail-logo {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  -webkit-app-region: no-drag;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes cosgral-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes cosgral-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes cosgral-fade {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes cosgral-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.035);
+    }
+  }
+
+  /* Pages and panels come in. */
+  .new-agent-page,
+  .server-settings,
+  .w2-library,
+  .coming-soon,
+  .side-question,
+  .plugin-detail {
+    animation: cosgral-enter var(--cosgral-duration-slow) var(--cosgral-ease) both;
+  }
+
+  /* Menus and pickers pop in from their anchor. */
+  .bot-context-menu,
+  .attachment-menu,
+  .sidebar-new-menu,
+  .thread-tabs-menu {
+    transform-origin: top left;
+    animation: cosgral-pop var(--cosgral-duration-normal) var(--cosgral-ease) both;
+  }
+
+  /* Centred dialogs only fade: their position already uses a transform. */
+  .global-search-dialog {
+    animation: cosgral-fade var(--cosgral-duration-normal) var(--cosgral-ease) both;
+  }
+
+  /* The mascot breathes while you choose its look. */
+  .new-agent-preview {
+    animation: cosgral-breathe 4s ease-in-out infinite;
+  }
+
+  /* Tabs, rows and cards answer the pointer. */
+  .thread-tab,
+  .server-settings-nav-item,
+  .plugin-card,
+  .new-agent-suggestion {
+    transition:
+      background-color var(--cosgral-duration-normal) var(--cosgral-ease),
+      color var(--cosgral-duration-normal) var(--cosgral-ease),
+      transform var(--cosgral-duration-normal) var(--cosgral-ease);
+  }
+
+  .plugin-card:hover,
+  .new-agent-suggestion:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-agent-page,
+  .server-settings,
+  .w2-library,
+  .coming-soon,
+  .side-question,
+  .plugin-detail,
+  .bot-context-menu,
+  .attachment-menu,
+  .sidebar-new-menu,
+  .thread-tabs-menu,
+  .global-search-dialog,
+  .new-agent-preview {
+    animation: none;
+  }
+}

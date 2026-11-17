@@ -53,6 +53,22 @@ const NOTIFY_LABELS: Record<AgentNotificationLevel, string> = {
   none: "Nothing",
 };
 
+const SUMMARY_LABELS: Record<string, string> = {
+  default: "None",
+  "app-default": "Follow the app setting",
+  queue: "Queue the message",
+  steer: "Steer the running work",
+  all: "Everything",
+  mentions: "Only when I am needed",
+  none: "Nothing",
+  "working-folder": "Working folder",
+};
+
+function summaryText(summary: string): string {
+  const key = SUMMARY_LABELS[summary];
+  return key ? t(key) : summary;
+}
+
 function pick<T extends string>(options: readonly T[], value: string, fallback: T): T {
   return options.find((option) => option === value) ?? fallback;
 }
@@ -167,7 +183,7 @@ export function AgentCardsSection(props: { botId: string }) {
                     <strong>{t(CARD_LABELS[card.id])}</strong>
                     <span class="agent-card-summary">
                       {card.available
-                        ? card.summary
+                        ? summaryText(card.summary)
                         : `${t("Unavailable in this version")}${card.summary ? `: ${card.summary}` : ""}`}
                     </span>
                     <Show when={card.available && card.count !== null}>
