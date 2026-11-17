@@ -210,7 +210,11 @@ export interface AgentModelOption {
   supportedReasoningEfforts: AgentReasoningEffort[];
 }
 
-export const BOT_AVATAR_HUES = [0, 30, 55, 100, 150, 185, 215, 245, 280, 320] as const;
+/**
+ * Avatar colour wheel: 17 hues. The first ten values (0, 30, 55, 100, 150, 185, 215, 245, 280, 320) are the original
+ * set and stay valid, so stored agents and templates keep working; the other seven only fill the gaps.
+ */
+export const BOT_AVATAR_HUES = [0, 18, 30, 45, 55, 80, 100, 125, 150, 168, 185, 215, 245, 265, 280, 300, 320] as const;
 export type BotAvatarHue = (typeof BOT_AVATAR_HUES)[number];
 
 export function isAgentModel(value: unknown): value is AgentModelId {
@@ -236,6 +240,24 @@ export function isAvatarSeed(value: unknown): value is string {
 
 export function isAvatarHue(value: unknown): value is BotAvatarHue {
   return isOneOf(BOT_AVATAR_HUES, value);
+}
+
+/** Tolerant parser: any finite number (or numeric string) snaps to the nearest hue on the wheel; anything else is null. */
+export function normalizeAvatarHue(value: unknown): BotAvatarHue | null {
+  const number = isString(value) && value.trim() !== "" ? Number(value) : value;
+  if (!isNumber(number) || !Number.isFinite(number)) return null;
+  const wrapped = ((number % 360) + 360) % 360;
+  let best: BotAvatarHue = BOT_AVATAR_HUES[0];
+  let bestDistance = 361;
+  for (const hue of BOT_AVATAR_HUES) {
+    const raw = Math.abs(hue - wrapped);
+    const distance = Math.min(raw, 360 - raw);
+    if (distance < bestDistance) {
+      best = hue;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }
 
 export interface UpdateBotInput {

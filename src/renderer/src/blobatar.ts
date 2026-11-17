@@ -24,14 +24,21 @@ export const AVATAR_HUE_OPTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { hue: 0, label: "Red" },
+  { hue: 18, label: "Coral" },
   { hue: 30, label: "Orange" },
+  { hue: 45, label: "Amber" },
   { hue: 55, label: "Yellow" },
+  { hue: 80, label: "Chartreuse" },
   { hue: 100, label: "Lime" },
+  { hue: 125, label: "Spring" },
   { hue: 150, label: "Green" },
+  { hue: 168, label: "Teal" },
   { hue: 185, label: "Cyan" },
   { hue: 215, label: "Blue" },
   { hue: 245, label: "Indigo" },
+  { hue: 265, label: "Purple" },
   { hue: 280, label: "Violet" },
+  { hue: 300, label: "Orchid" },
   { hue: 320, label: "Magenta" },
 ];
 

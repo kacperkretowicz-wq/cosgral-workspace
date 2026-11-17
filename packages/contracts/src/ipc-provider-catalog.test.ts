@@ -54,7 +54,7 @@ describe("provider catalog contract (W12 BE-E)", () => {
     expect(catalogEntry("grok").key).toEqual({ env: "XAI_API_KEY" });
     expect(catalogEntry("deepseek").key).toEqual({ env: null });
     expect(catalogEntry("kimi").key).toBeNull();
-    expect(() => catalogEntry(JSON.parse("\"nope\""))).toThrow();
+    expect(() => catalogEntry(JSON.parse('"nope"'))).toThrow();
   });
 
   it("checks a key before it is kept", () => {

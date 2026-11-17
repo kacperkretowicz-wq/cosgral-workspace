@@ -415,4 +415,9 @@ export const en = {
   Documents: "Documents",
   Other: "Other",
   "Working folder": "Working folder",
+  Coral: "Coral",
+  Chartreuse: "Chartreuse",
+  Spring: "Spring",
+  Purple: "Purple",
+  Orchid: "Orchid",
 } as const;
