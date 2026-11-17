@@ -27,11 +27,13 @@ Dokument stanowi bezpośrednią wytyczną dla UI Designera do wdrożenia w arkus
 
 | Rola tokenu | Nazwa `--cosgral-*` | Wartość ciemna | Wartość jasna (jeśli jest w TOKENS.md) |
 |---|---|---|---|
-| Powierzchnia bazowa karty / kafelka | `--cosgral-surface-bg` | `#212121` | `#f0f0f0` *(jako surface-light w TOKENS.md)* |
-| Powierzchnia uniesiona (hover / dropdown) | `--cosgral-surface-raised` | `#242424` | `#ffffff` *(motyw jasny)* |
-| Tło kontrolki bazowe (przycisk, pole input) | `--cosgral-control-bg` | `#212121` | `#f1f1f5` *(motyw jasny)* |
-| Tło kontrolki – najechanie (hover) | `--cosgral-control-bg-hover` | `#242424` | `#e4e4ea` *(motyw jasny)* |
-| Tło kontrolki – wciśnięcie / aktywne | `--cosgral-control-bg-active` | `#2a2a2a` | `#d9d9e2` *(motyw jasny)* |
+| Powierzchnia bazowa karty / kafelka | `--cosgral-bg-surface` *(alias: `--cosgral-surface-bg`)* | `#212121` | `#ffffff` *(motyw jasny; `#f0f0f0` jako surface-light w TOKENS.md)* |
+| Powierzchnia uniesiona (hover / dropdown / popover) | `--cosgral-bg-raised` *(alias: `--cosgral-surface-raised`)* | `#2a2a2a` | `#ffffff` *(motyw jasny)* |
+| Tło kontrolki bazowe (przycisk, pole input) | `--cosgral-bg-control` *(alias: `--cosgral-control-bg`)* | `#242424` | `#f1f1f5` *(motyw jasny)* |
+| Tło kontrolki – najechanie (hover) | `--cosgral-bg-control-hover` *(alias: `--cosgral-control-bg-hover`)* | `#2a2a2a` | `#e4e4ea` *(motyw jasny)* |
+| Tło kontrolki – wciśnięcie / aktywne | `--cosgral-bg-control-active` *(alias: `--cosgral-control-bg-active`)* | `#303030` | `#d9d9e2` *(motyw jasny)* |
+| Podświetlenie elementu listy (hover) | `--cosgral-hover` | `rgba(255, 255, 255, 0.06)` | `rgba(20, 20, 30, 0.06)` |
+| Zaznaczenie aktywnego elementu (selected) | `--cosgral-selected` | `rgba(255, 255, 255, 0.07)` | `rgba(20, 20, 30, 0.08)` |
 | Pasek zakładek / nawigacji (tabs bar) | `--cosgral-tabs-bar-bg` | `#212121` | `#ececf0` *(motyw jasny)* |
 | Pigułka aktywnej zakładki (tabs pill) | `--cosgral-tabs-pill-bg` | `#2a2a2a` | `#ffffff` *(motyw jasny)* |
 | Przełącznik – wysokość standardowa | `--cosgral-switch-height` | `20px` | `20px` |
@@ -125,16 +127,16 @@ Dokument stanowi bezpośrednią wytyczną dla UI Designera do wdrożenia w arkus
 
 | Rola tokenu | Nazwa `--cosgral-*` | Wartość ciemna | Wartość jasna (jeśli jest w TOKENS.md) |
 |---|---|---|---|
-| Krój bezszeryfowy podstawowy | `--cosgral-font-sans` | `"Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | `"Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` |
+| Krój bezszeryfowy podstawowy | `--cosgral-font-sans` | `"Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` | `"Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` |
 | Krój o stałej szerokości (kod, logi) | `--cosgral-font-mono` | `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` | `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` |
 | Waga czcionki zwykła (regular) | `--cosgral-font-weight-regular` | `400` | `400` |
 | Waga czcionki średnia (medium – najczęstsza) | `--cosgral-font-weight-medium` | `500` | `500` |
 | Waga czcionki półgruba (semibold) | `--cosgral-font-weight-semibold` | `600` | `600` |
 | Waga czcionki gruba (bold) | `--cosgral-font-weight-bold` | `700` | `700` |
-| Rozmiar mały (sm / stopki, mikro-etykiety) | `--cosgral-font-size-sm` | `12px` | `12px` |
-| Rozmiar pomocniczy (md / drugorzędne) | `--cosgral-font-size-md` | `13px` | `13px` |
-| Rozmiar podstawowy (lg / treść główna czatu) | `--cosgral-font-size-lg` | `14px` | `14px` |
-| Rozmiar powiększony (xl / nagłówki sekcji) | `--cosgral-font-size-xl` | `16px` | `16px` |
+| Rozmiar mały (sm / stopki, mikro-etykiety) | `--cosgral-text-sm` *(alias: `--cosgral-font-size-sm`)* | `12px` | `12px` |
+| Rozmiar pomocniczy (md / drugorzędne) | `--cosgral-text-md` *(alias: `--cosgral-font-size-md`)* | `13px` | `13px` |
+| Rozmiar podstawowy (lg / treść główna czatu) | `--cosgral-text-lg` *(alias: `--cosgral-font-size-lg`)* | `14px` | `14px` |
+| Rozmiar powiększony (xl / nagłówki sekcji) | `--cosgral-text-xl` *(alias: `--cosgral-font-size-xl`)* | `16px` | `16px` |
 | Rozmiar tytułowy podrzędny (2xl) | `--cosgral-font-size-2xl` | `18px` | `18px` |
 | Rozmiar tytułowy modalny (3xl) | `--cosgral-font-size-3xl` | `24px` | `24px` |
 | Rozmiar ekspozycyjny (display) | `--cosgral-font-size-display` | `32px` | `32px` |
@@ -176,15 +178,15 @@ Dokument stanowi bezpośrednią wytyczną dla UI Designera do wdrożenia w arkus
 
 | Rola tokenu | Nazwa `--cosgral-*` | Wartość ciemna | Wartość jasna (jeśli jest w TOKENS.md) |
 |---|---|---|---|
-| Obramowanie subtelne (podstawowe) | `--cosgral-border` | `rgba(255, 255, 255, 0.035)` | `rgba(20, 20, 20, 0.14)` *(w TOKENS.md jako border-on-light)* |
-| Obramowanie mocne (separatory, nagłówki) | `--cosgral-border-strong` | `rgba(255, 255, 255, 0.045)` | `#73737d` *(motyw jasny)* |
+| Obramowanie subtelne (podstawowe) | `--cosgral-border` | `rgba(255, 255, 255, 0.043)` *(w TOKENS: 0.035)* | `rgba(20, 20, 30, 0.1)` *(w TOKENS: rgba(20, 20, 20, 0.14) jako border-on-light)* |
+| Obramowanie mocne (separatory, nagłówki) | `--cosgral-border-strong` | `rgba(255, 255, 255, 0.11)` *(w TOKENS: 0.045)* | `#73737d` *(motyw jasny)* |
 | Obramowanie aktywne / fokus | `--cosgral-border-focus` | `#979797` | `#4d44d6` *(motyw jasny)* |
-| Pierścień skupienia (focus ring standard) | `--cosgral-focus-ring` | `0 0 0 1px #979797` | `0 0 0 3px #4d44d6` *(motyw jasny)* |
+| Pierścień skupienia (focus ring standard) | `--cosgral-focus-ring` | `0 0 0 2px rgba(0, 124, 247, 0.4)` *(oraz `0 0 0 1px #979797`)* | `0 0 0 3px #4d44d6` *(motyw jasny)* |
 | Pierścień skupienia akcentu | `--cosgral-focus-ring-accent` | `rgba(0, 124, 247, 0.16) 0px 0px 0px 2px` | `rgba(0, 124, 247, 0.16) 0px 0px 0px 2px` |
 | Cień karty podstawowej | `--cosgral-shadow-card` | `rgba(228, 228, 228, 0.04) 0px 1px 2px 0px` | `rgba(0, 0, 0, 0.05) 0px 1px 2px 0px` |
-| Cień elementu uniesionego (dropdown, tooltip) | `--cosgral-shadow-raised` | `0 12px 32px rgba(0, 0, 0, 0.1)` | `0 12px 32px rgba(0, 0, 0, 0.1)` |
+| Cień elementu wyskakującego (popover / dropdown) | `--cosgral-shadow-popover` *(alias: `--cosgral-shadow-raised`)* | `0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.45)` | `0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12)` |
 | Cień menu kontekstowego | `--cosgral-shadow-menu` | `rgba(0, 0, 0, 0.45)` | `rgba(0, 0, 0, 0.15)` |
-| Cień okna dialogowego (modal) | `--cosgral-shadow-dialog` | `rgba(0, 0, 0, 0.48)` | `rgba(0, 0, 0, 0.25)` |
+| Cień okna dialogowego (modal / dialog) | `--cosgral-shadow-dialog` | `0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 32px rgba(0, 0, 0, 0.48)` | `0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18)` |
 | Cień nakładki pełnoekranowej | `--cosgral-shadow-overlay` | `0 12px 32px rgba(0, 0, 0, 0.48)` | `0 12px 32px rgba(0, 0, 0, 0.2)` |
 | Cień dynamicznej wyspy (island) | `--cosgral-shadow-island` | `rgba(0, 0, 0, 0.6)` | `rgba(0, 0, 0, 0.3)` |
 
@@ -194,17 +196,16 @@ Dokument stanowi bezpośrednią wytyczną dla UI Designera do wdrożenia w arkus
 
 | Rola tokenu | Nazwa `--cosgral-*` | Wartość ciemna | Wartość jasna (jeśli jest w TOKENS.md) |
 |---|---|---|---|
-| Domyślny czas przejścia mikro-interakcji | `--cosgral-duration-default` | `150ms` | `150ms` |
-| Szybki czas przejścia (hover) | `--cosgral-duration-fast` | `120ms` | `120ms` |
-| Standardowy czas przełączenia widoków | `--cosgral-duration-normal` | `160ms` | `160ms` |
-| Wolny czas animacji (duże panele) | `--cosgral-duration-slow` | `200ms` | `200ms` |
+| Krzywa płynna bazowa (główny ease UI) | `--cosgral-ease` *(alias: `--cosgral-ease-smooth`)* | `cubic-bezier(0.22, 1, 0.36, 1)` | `cubic-bezier(0.22, 1, 0.36, 1)` |
+| Szybki czas przejścia (hover / mikro-interakcje) | `--cosgral-duration-fast` | `120ms` | `120ms` |
+| Standardowy czas przełączenia widoków | `--cosgral-duration-normal` *(alias: `--cosgral-duration-default`)* | `150ms` *(oraz 160ms)* | `150ms` |
+| Wolny czas animacji (duże panele / modale) | `--cosgral-duration-slow` | `250ms` *(oraz 200ms)* | `250ms` |
 | Czas otwierania okna modalnego | `--cosgral-duration-modal-open` | `250ms` | `250ms` |
 | Czas zamykania okna modalnego | `--cosgral-duration-modal-close` | `150ms` | `150ms` |
 | Początkowa skala okna modalnego | `--cosgral-scale-modal` | `0.96` | `0.96` |
 | Czas otwierania panelu bocznego | `--cosgral-duration-panel-open` | `400ms` | `400ms` |
 | Czas zamykania panelu bocznego | `--cosgral-duration-panel-close` | `350ms` | `350ms` |
 | Czas zwijania/rozwijania akordeonu | `--cosgral-duration-accordion` | `250ms` | `250ms` |
-| Krzywa płynna nadrzędna (modal, panel, akordeon) | `--cosgral-ease-smooth` | `cubic-bezier(0.22, 1, 0.36, 1)` | `cubic-bezier(0.22, 1, 0.36, 1)` |
 | Krzywa łagodnego wyjścia (ease-out) | `--cosgral-ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | `cubic-bezier(0.23, 1, 0.32, 1)` |
 | Krzywa standardowa (ease-in-out) | `--cosgral-ease-default` | `cubic-bezier(0.4, 0, 0.2, 1)` | `cubic-bezier(0.4, 0, 0.2, 1)` |
 
@@ -238,10 +239,11 @@ Dokument stanowi bezpośrednią wytyczną dla UI Designera do wdrożenia w arkus
 
 ## Wytyczne wdrożeniowe dla UI Designera
 
-1. **Struktura stylów:**
-   - Zdefiniować powyższe zmienne w pliku bazowym (np. `src/renderer/src/styles/cosgral.css` lub `tokens.css`) pod selektorem `:root` dla trybu ciemnego (domyślnego).
-   - Dla selektora `:root[data-theme="light"]` (lub `[data-story-theme="light"]`) nadpisać wartości jasne z powyższych tabel.
-2. **Zachowanie zgodności:**
-   - Nie usuwać gwałtownie starych zmiennych aliasowych dopóki istniejące komponenty z nich korzystają; zmapować stare aliasy na nowe tokeny `--cosgral-*` (np. `--openbot-bg-canvas: var(--cosgral-bg-canvas);`).
-3. **Płynność i wrażenia wizualne:**
-   - Zastosować krzywą `--cosgral-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1)` przy wszystkich animacjach wysuwania i modali, aby odtworzyć płynność OpenBota 0.71.
+1. **Struktura stylów i stan wdrożenia:**
+   - UI Designer wdrożył fundament w gałęzi `team/ui/w11-ui1` w pliku `src/renderer/src/styles/cosgral-tokens.css` (commit `083548de6`), gdzie podpiął bazowe tokeny `--cosgral-*` pod selektorem `:root` dla trybu ciemnego oraz `:root[data-theme="light"], [data-story-theme="light"]` dla trybu jasnego.
+   - Niniejsza specyfikacja stanowi pełny słownik kanoniczny rozszerzający ten fundament o pełną siatkę odstępów, promieni, interlinii, bąbli czatu oraz stanów pośrednich (hover/focus/active/disabled).
+2. **Zachowanie zgodności i aliasy:**
+   - Nie usuwać gwałtownie starych zmiennych aliasowych dopóki istniejące komponenty z nich korzystają; istniejące reguły w `styles.css` i `theme-light.css` mapują stare aliasy na nowe tokeny `--cosgral-*` (np. `--openbot-bg-canvas: var(--cosgral-bg-canvas);`).
+   - W komponentach i nowych widokach używać wyłącznie kanonicznych nazw `--cosgral-*`.
+3. **Płynność i wrażenia wizualne (motion):**
+   - Zastosować krzywą `--cosgral-ease: cubic-bezier(0.22, 1, 0.36, 1)` przy wszystkich animacjach wysuwania i modali, aby odtworzyć płynność i dynamikę OpenBota 0.71.
