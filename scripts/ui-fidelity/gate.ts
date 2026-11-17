@@ -94,8 +94,7 @@ export function gateScreen(input: ScreenGateInput): ScreenGateResult {
     return { key: input.key, verdict: "FAIL", reasons, fixOwner: "UI Designer" };
   }
 
-  const textOnly =
-    input.texts.onlyInReference.length > 0 || input.texts.onlyInOurs.length > 0;
+  const textOnly = input.texts.onlyInReference.length > 0 || input.texts.onlyInOurs.length > 0;
   if (textOnly) {
     reasons.push(
       `Text set differs (sense check needed; PL/EN ok if meaning matches). Ref-only ${input.texts.onlyInReference.length}, ours-only ${input.texts.onlyInOurs.length}.`,
@@ -103,7 +102,12 @@ export function gateScreen(input: ScreenGateInput): ScreenGateResult {
     return { key: input.key, verdict: "niejasne", reasons, fixOwner: "UI Designer" };
   }
 
-  return { key: input.key, verdict: "PASS", reasons: ["No critical style/token gaps within odbior-071 tolerances."], fixOwner: "—" };
+  return {
+    key: input.key,
+    verdict: "PASS",
+    reasons: ["No critical style/token gaps within odbior-071 tolerances."],
+    fixOwner: "—",
+  };
 }
 
 function summarizeMissing(items: MissingValue[]): string {

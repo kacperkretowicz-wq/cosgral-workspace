@@ -16,7 +16,7 @@ import {
 } from "../openbot-probe/compare.ts";
 import { isInsideRepo, type StyleGroup } from "../openbot-probe/policy.ts";
 import { parseStyleGroups, parseTokens } from "../openbot-probe/summarize.ts";
-import { gateScreen, writeGateReport, type ScreenGateResult } from "./gate.ts";
+import { gateScreen, type ScreenGateResult, writeGateReport } from "./gate.ts";
 
 function argument(name: string): string {
   const index = process.argv.indexOf(name);
