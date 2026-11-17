@@ -47,6 +47,7 @@ beforeAll(async () => {
   const { registerBrowserProfilesIpc } = await import("./browser-profiles-ipc");
   const { registerIntegrationsIpc } = await import("./integrations-ipc");
   const { registerPhoneIpc } = await import("./phone-ipc");
+  const { registerComposerIpc } = await import("./composer-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
@@ -70,6 +71,14 @@ beforeAll(async () => {
   registerBudgetsIpc(() => null);
   registerIntegrationsIpc(() => null);
   registerPhoneIpc(() => null);
+  registerComposerIpc({
+    search: () => null,
+    composer: () => null,
+    tabs: () => null,
+    threads: async () => {
+      throw new Error("not ready");
+    },
+  });
   registerMessengersIpc(() => null);
   registerPluginCatalogIpc(() => null);
   registerVaultConnectorsIpc(
@@ -136,6 +145,10 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("integrations:").length).toBe(7);
     // COSGRAL W9-BE1: the phone away from home.
     expect(channelsOf("phone:").length).toBe(4);
+    // COSGRAL W11 (U3-U6): search, the message box, the tabs of threads.
+    expect(channelsOf("search:").length).toBe(1);
+    expect(channelsOf("composer:").length).toBe(4);
+    expect(channelsOf("thread-tabs:").length).toBe(4);
     // COSGRAL W10-KK2: the Telegram bridge.
     expect(channelsOf("messengers:").length).toBe(6);
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
@@ -172,6 +185,9 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "browser-profiles:",
         "integrations:",
         "phone:",
+        "search:",
+        "composer:",
+        "thread-tabs:",
         "messengers:",
         "vault-connectors:",
         "plugin-catalog:",
@@ -259,6 +275,13 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect((await call("phone:set-push-enabled", "local", { enabled: "yes" })).threw).toMatch(/true or false/);
     expect((await call("phone:send-test-push", "local", {})).threw).toMatch(/not named/);
     expect((await call("phone:get-state", "local", null)).threw).toMatch(/not ready/);
+    // W11: a bad search or tab request is refused by the parser before the program is asked.
+    expect((await call("search:query", "local", { q: "  " })).threw).toMatch(/text/);
+    expect((await call("thread-tabs:close", "local", { botId: "chief", threadId: "t", mode: "all" })).threw).toMatch(
+      /Close/,
+    );
+    expect((await call("composer:search-mentions", "local", { botId: "chief" })).threw).toMatch(/text/);
+    expect((await call("search:query", "local", { q: "x" })).threw).toMatch(/starting/);
     // W11-KK (d): a bad connector or Vault request is refused by the parser first, and never repeats the token.
     const badConnector = await call("vault-connectors:connect", "local", {
       connector: "onepassword",

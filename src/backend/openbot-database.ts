@@ -415,6 +415,34 @@ export class OpenBotDatabase {
     };
   }
 
+  /**
+   * COSGRAL W11 (U3): messages whose text holds `needle` (case-insensitive, a plain text match, never a pattern), newest first,
+   * with the agent that owns the thread. Only what the person and the agents said (no empty tool steps); a deleted message or thread
+   * has no row, so it is not found.
+   */
+  searchMessages(
+    needle: string,
+    limit: number,
+  ): Array<{ threadId: string; botId: string; messageId: string; text: string; createdAt: string }> {
+    const escaped = needle.replace(/[\\%_]/g, (character) => `\\${character}`);
+    const rows = this.connection
+      .prepare(
+        `SELECT m.thread_id AS thread_id, t.agent_id AS agent_id, m.message_id AS message_id, m.created_at AS created_at,
+                json_extract(m.message_json, '$.text') AS text
+         FROM projection_thread_messages m JOIN projection_threads t ON t.thread_id = m.thread_id
+         WHERE json_extract(m.message_json, '$.text') LIKE ? ESCAPE '\\'
+         ORDER BY m.created_at DESC, m.ordinal DESC, m.message_id DESC LIMIT ?`,
+      )
+      .all(`%${escaped}%`, limit);
+    return databaseRows(rows).map((row) => ({
+      threadId: requiredStringColumn(row, "thread_id"),
+      botId: requiredStringColumn(row, "agent_id"),
+      messageId: requiredStringColumn(row, "message_id"),
+      text: requiredStringColumn(row, "text"),
+      createdAt: requiredStringColumn(row, "created_at"),
+    }));
+  }
+
   persistConversation(
     snapshot: ConversationSnapshot,
     eventType: string,

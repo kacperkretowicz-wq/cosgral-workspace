@@ -48,6 +48,7 @@ import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { BudgetMeter } from "../backend/budget-meter";
 import { ChannelEngine } from "../backend/channel-engine";
 import { ChannelStore } from "../backend/channel-store";
+import { ComposerService } from "../backend/composer-service";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
 import { EndpointStore } from "../backend/endpoint-store";
 import { EyesService } from "../backend/eyes-service";
@@ -63,9 +64,11 @@ import { PluginCatalogService } from "../backend/plugin-catalog/plugin-catalog-s
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
 import { RoutineStore } from "../backend/routine-store";
+import { SearchService } from "../backend/search-service";
 import { SidebarStore } from "../backend/sidebar-store";
 import { SpaceStore } from "../backend/space-store";
 import { TeamChatStore } from "../backend/team-chat-store";
+import { ThreadTabsService } from "../backend/thread-tabs";
 import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-runtime";
 import { ConnectorStore } from "../backend/vault-connectors/common";
 import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
@@ -86,6 +89,7 @@ import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
 import { registerBrowserProfilesIpc } from "./browser-profiles-ipc";
 import { registerBudgetsIpc } from "./budgets-ipc";
+import { registerComposerIpc } from "./composer-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
 import { registerContextIpc } from "./context-ipc";
 import { ConversationWindows } from "./conversation-windows";
@@ -331,6 +335,10 @@ let remoteDesktop: RemoteDesktopRuntime | null = null;
 let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
 let phoneAccess: PhoneAccess | null = null;
+// COSGRAL W11 (U3-U6): search, the message box (slash, @, side question) and the tabs of threads.
+let searchService: SearchService | null = null;
+let composerService: ComposerService | null = null;
+let threadTabsService: ThreadTabsService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -922,6 +930,15 @@ function registerIpcHandlers(
   registerMobileIpc(() => mobileConnect);
   // COSGRAL W9-BE1: the phone away from home (this computer only).
   registerPhoneIpc(() => phoneAccess);
+  registerComposerIpc({
+    search: () => searchService,
+    composer: () => composerService,
+    tabs: () => threadTabsService,
+    threads: (botId) =>
+      agentService
+        ? agentService.listThreads(botId)
+        : Promise.reject(new Error("COSGRAL Workspace is still starting.")),
+  });
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1698,6 +1715,34 @@ if (!hasSingleInstanceLock) {
       );
       channelEngineService = engine;
       channelStore.on("event", (event) => forwardAgentEvent("local", event));
+      // COSGRAL W11 (U3-U6): search, slash/@/side question and thread tabs (this computer only).
+      {
+        const agentList = () => service.listBots().map((bot) => ({ id: bot.id, name: bot.name, role: bot.role }));
+        const libraryFiles = (needle: string, limit: number) =>
+          service.sharedData.library.list({ query: needle, limit }).map((file) => ({ id: file.id, name: file.name }));
+        searchService = new SearchService({
+          agents: agentList,
+          channels: () => channelStore.list(),
+          messages: (needle, limit) => store.database.searchMessages(needle, limit),
+          files: libraryFiles,
+          routines: () => routineStore.list(),
+          agentName: (botId) => service.listBots().find((bot) => bot.id === botId)?.name ?? null,
+        });
+        composerService = new ComposerService({
+          agents: agentList,
+          channels: () => channelStore.list(),
+          files: libraryFiles,
+          skills: (botId) => service.skillLibrary.installedFor(botId).map((skill) => skill.name),
+          emit: (event) => forwardAgentEvent("local", event),
+        });
+        threadTabsService = new ThreadTabsService({
+          file: join(app.getPath("userData"), "thread-tabs.json"),
+          emit: (event) => forwardAgentEvent("local", event),
+        });
+        service.on("event", (event) => {
+          if (event.type === "threads-changed") threadTabsService?.learn(event);
+        });
+      }
       // COSGRAL W3: workflows (this computer only): agent steps use the agents' queue, approvals the confirm card.
       workflowManager = new WorkflowManager({
         store: new WorkflowStore(store.database),
@@ -2108,6 +2153,7 @@ async function prepareForShutdown(): Promise<void> {
   await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   managedCli?.close();
   phoneAccess?.close();
+  composerService?.close();
   await (mobileConnect?.close() ?? Promise.resolve()).catch(() => undefined);
   await (browserHost?.destroy() ?? Promise.resolve());
   // COSGRAL W3: open workflow runs end as failed while the database is still open.
