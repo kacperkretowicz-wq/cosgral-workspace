@@ -24,13 +24,21 @@ import {
   type MessengerKind,
   type MessengerList,
   type MessengerStatus,
+  messengerLabel,
   normalizeChatLabel,
   type RemoveChatInput,
   type UnknownChat,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import {
+  type InboundMessage,
+  type MessengerDriver,
+  type MessengerDriverFactory,
+  MessengerFailure,
+} from "./messenger-driver";
 import type { OpenBotDatabase } from "./openbot-database";
-import { TelegramClient, TelegramFailure, type TelegramUpdate } from "./telegram-client";
+import { createSlackDriver } from "./slack-driver";
+import { createTelegramDriver } from "./telegram-driver";
 import type { SecretBox } from "./vault-store";
 
 const SCHEMA = `
@@ -135,6 +143,10 @@ export interface MessengerBridgeOptions {
   fetchImpl?: typeof fetch;
   /** Tests: a mock Telegram on 127.0.0.1. */
   apiBase?: string;
+  /** The driver of each messenger; the program's own is the default. Tests pass their own. */
+  drivers?: Partial<Record<MessengerKind, MessengerDriverFactory>>;
+  /** Tests: a mock Slack on 127.0.0.1. */
+  slackApiBase?: string;
   /** Long polling wait in seconds (Telegram holds the request that long). */
   pollSeconds?: number;
   /** The pause after a failed request; doubles up to `maxRetryMs`. */
@@ -160,7 +172,7 @@ interface Pending {
 interface Session {
   kind: MessengerKind;
   controller: AbortController;
-  client: TelegramClient;
+  client: MessengerDriver;
   done: Promise<void>;
 }
 
@@ -172,6 +184,9 @@ interface Runtime {
   counts: MessengerStatus["counts"];
   unknown: UnknownChat[];
 }
+
+/** For a failure that is not a `MessengerFailure` (a driver should never throw one): the one sentence that tells nothing of the cause. */
+const NETWORK_SENTENCE = "The messenger cannot be reached right now. The program tries again by itself.";
 
 const MAX_PENDING_PER_CHAT = 5;
 const MAX_SEND_ATTEMPTS = 5;
@@ -225,15 +240,17 @@ export class MessengerBridge {
   }
 
   /** Checks the token with Telegram; only a token Telegram accepts is saved. Replaces a token saved before. */
-  async connect(kind: MessengerKind, token: string): Promise<MessengerStatus> {
-    const client = this.#client(token);
+  async connect(kind: MessengerKind, token: string, appToken?: string): Promise<MessengerStatus> {
+    // A messenger with two secrets keeps them together in ONE encrypted text.
+    const secret = kind === "slack" ? JSON.stringify({ token, appToken: appToken ?? "" }) : token;
+    const client = this.#client(kind, secret);
     let username: string;
     try {
-      username = await client.getMe();
-      await client.deleteWebhook().catch(() => undefined);
+      username = await client.connect();
     } catch (error) {
+      client.close();
       // Only the fixed sentence of the failure; nothing of what was typed or of the network error.
-      throw new Error(error instanceof TelegramFailure ? error.message : new TelegramFailure("network").message);
+      throw new Error(error instanceof MessengerFailure ? error.message : NETWORK_SENTENCE);
     }
     await this.#end(kind);
     const runtime = this.#state(kind);
@@ -247,7 +264,7 @@ export class MessengerBridge {
          ON CONFLICT(kind) DO UPDATE SET token_enc = excluded.token_enc, next_offset = NULL,
            bot_username = excluded.bot_username, connected_at = excluded.connected_at`,
       )
-      .run(kind, this.#options.box.encrypt(token), username, runtime.connectedAt);
+      .run(kind, this.#options.box.encrypt(secret), username, runtime.connectedAt);
     this.#begin(kind, client);
     this.#publish();
     return this.status(kind);
@@ -313,7 +330,7 @@ export class MessengerBridge {
       runtime.phase = "connecting";
       runtime.botUsername = row.botUsername;
       runtime.connectedAt = row.connectedAt;
-      this.#begin(kind, this.#client(token));
+      this.#begin(kind, this.#client(kind, token));
     }
     this.#publish();
   }
@@ -333,7 +350,7 @@ export class MessengerBridge {
 
   // --- listening ---
 
-  #begin(kind: MessengerKind, client: TelegramClient): void {
+  #begin(kind: MessengerKind, client: MessengerDriver): void {
     const controller = new AbortController();
     const session: Session = { kind, controller, client, done: Promise.resolve() };
     session.done = this.#loop(kind, session).catch(() => undefined);
@@ -345,6 +362,7 @@ export class MessengerBridge {
     if (!session) return;
     this.#sessions.delete(kind);
     session.controller.abort();
+    session.client.close();
     await session.done;
     this.#pending = this.#pending.filter((item) => item.kind !== kind);
   }
@@ -356,12 +374,12 @@ export class MessengerBridge {
     while (!signal.aborted) {
       try {
         const offset = this.#row(kind).nextOffset;
-        const updates = await session.client.getUpdates(offset, this.#options.pollSeconds ?? 25, signal);
+        const updates = await session.client.receive(offset, this.#options.pollSeconds ?? 25, signal);
         if (signal.aborted) return;
         if (runtime.phase !== "connected") {
           runtime.phase = "connected";
           runtime.reason = null;
-          runtime.botUsername ??= await session.client.getMe(signal).catch(() => "@bot");
+          runtime.botUsername ??= await session.client.identify(signal).catch(() => "@bot");
           runtime.connectedAt ??= this.#now().toISOString();
           this.#publish();
         }
@@ -369,13 +387,14 @@ export class MessengerBridge {
         for (const update of updates) {
           if (signal.aborted) return;
           await this.#handle(kind, session, update);
-          this.#db()
-            .prepare("UPDATE projection_messengers SET next_offset = ? WHERE kind = ?")
-            .run(update.updateId + 1, kind);
+          if (update.next !== null)
+            this.#db()
+              .prepare("UPDATE projection_messengers SET next_offset = ? WHERE kind = ?")
+              .run(update.next, kind);
         }
       } catch (error) {
         if (signal.aborted) return;
-        const failure = error instanceof TelegramFailure ? error : new TelegramFailure("network");
+        const failure = error instanceof MessengerFailure ? error : new MessengerFailure("network", NETWORK_SENTENCE);
         runtime.phase = "failed";
         runtime.reason = failure.message;
         this.#publish();
@@ -388,15 +407,15 @@ export class MessengerBridge {
     }
   }
 
-  async #handle(kind: MessengerKind, session: Session, update: TelegramUpdate): Promise<void> {
+  async #handle(kind: MessengerKind, session: Session, update: InboundMessage): Promise<void> {
     const runtime = this.#state(kind);
     const chat = update.chat;
     // Groups, channels and anything that is not a message: ignored, nobody is told.
-    if (chat === null || chat.type !== "private") {
+    if (chat === null || chat.kind !== "private") {
       runtime.counts.ignored += 1;
       return;
     }
-    const chatId = String(chat.id);
+    const chatId = chat.id;
     const allowed = this.#chats(kind).find((entry) => entry.chatId === chatId);
     if (!allowed) {
       runtime.counts.ignored += 1;
@@ -438,7 +457,7 @@ export class MessengerBridge {
       return;
     }
     try {
-      const messageId = await this.#options.agent.send(allowed.botId, `[Telegram] ${text}`);
+      const messageId = await this.#options.agent.send(allowed.botId, `[${messengerLabel(kind)}] ${text}`);
       runtime.counts.forwarded += 1;
       this.#pending.push({
         kind,
@@ -539,20 +558,21 @@ export class MessengerBridge {
     }
     try {
       for (const part of splitAnswer(item.ready))
-        await session.client.sendMessage(item.chatId, part, session.controller.signal);
+        await session.client.send(item.chatId, part, session.controller.signal);
       this.#state(item.kind).counts.replied += 1;
       drop();
     } catch (error) {
       if (session.controller.signal.aborted) return;
       item.attempts += 1;
       // A closed or blocked chat will not get better; a network failure is tried again a few times.
-      if (item.attempts >= MAX_SEND_ATTEMPTS || (error instanceof TelegramFailure && error.kind === "rejected")) drop();
+      if (item.attempts >= MAX_SEND_ATTEMPTS || (error instanceof MessengerFailure && error.kind === "rejected"))
+        drop();
     }
   }
 
   async #say(session: Session, chatId: string, text: string): Promise<void> {
     try {
-      await session.client.sendMessage(chatId, text, session.controller.signal);
+      await session.client.send(chatId, text, session.controller.signal);
     } catch {
       // A sentence to the sender that does not arrive is not worth anything more.
     }
@@ -560,8 +580,19 @@ export class MessengerBridge {
 
   // --- internals ---
 
-  #client(token: string): TelegramClient {
-    return new TelegramClient({ token, fetchImpl: this.#options.fetchImpl, apiBase: this.#options.apiBase });
+  #client(kind: MessengerKind, secret: string): MessengerDriver {
+    const factory = this.#options.drivers?.[kind];
+    if (factory) return factory(secret);
+    if (kind === "slack") {
+      const tokens = parseSlackSecret(secret);
+      return createSlackDriver({
+        botToken: tokens.token,
+        appToken: tokens.appToken,
+        fetchImpl: this.#options.fetchImpl,
+        apiBase: this.#options.slackApiBase,
+      });
+    }
+    return createTelegramDriver({ token: secret, fetchImpl: this.#options.fetchImpl, apiBase: this.#options.apiBase });
   }
 
   #state(kind: MessengerKind): Runtime {
@@ -619,6 +650,19 @@ export class MessengerBridge {
     this.#options.emit({ type: "messengers-changed", ...list });
     return list;
   }
+}
+
+/** The two Slack tokens as they are kept (one encrypted text). A text that is not that gives two empty tokens, which Slack refuses. */
+function parseSlackSecret(secret: string): { token: string; appToken: string } {
+  try {
+    const value = JSON.parse(secret);
+    if (isDynamicRecord(value) && isString(value.token) && isString(value.appToken)) {
+      return { token: value.token, appToken: value.appToken };
+    }
+  } catch {
+    // Not a pair of tokens.
+  }
+  return { token: "", appToken: "" };
 }
 
 /** One answer into parts Telegram accepts: cut at a line end where there is one; the rest of a very long answer is dropped. */
