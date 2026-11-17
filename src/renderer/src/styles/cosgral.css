@@ -1870,3 +1870,156 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   align-items: stretch;
   gap: 4px;
 }
+
+/* UI-K: the Library files view. */
+.library-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.library-origins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.library-origins button {
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-muted);
+}
+
+.library-origins button[aria-current="page"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.library-count {
+  margin-left: 4px;
+  color: var(--cosgral-text-dim);
+  font-size: var(--cosgral-text-sm);
+}
+
+.library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-filters input[type="search"] {
+  min-width: 220px;
+  flex: 1;
+}
+
+.library-days {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.library-days input {
+  width: 80px;
+}
+
+.library-note,
+.library-error {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.library-note {
+  color: var(--cosgral-text-muted);
+}
+
+.library-error {
+  color: var(--cosgral-danger);
+}
+
+.library-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-accent-soft);
+  padding: 6px 12px;
+}
+
+.library-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--cosgral-border);
+  padding: 8px 4px;
+}
+
+.library-row[data-picked="true"] {
+  background: var(--cosgral-selected);
+}
+
+.library-pick {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+}
+
+.library-pick-mark {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-xs);
+}
+
+.library-pick[aria-pressed="true"] .library-pick-mark {
+  border-color: var(--cosgral-accent);
+  background: var(--cosgral-accent);
+}
+
+.library-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.library-name strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-name small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.library-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.library-cleanup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--cosgral-border);
+  padding-top: 12px;
+}
+
+.library-cleanup h3 {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}

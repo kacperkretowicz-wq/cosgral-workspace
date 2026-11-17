@@ -54,6 +54,7 @@ import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
+import { LibraryFilesView } from "./components/LibraryFilesView";
 import { LibraryPanel } from "./components/LibraryPanel";
 import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
@@ -2143,7 +2144,9 @@ export function App() {
                   <SkillsSettings />
                   <VaultPanel />
                   <TablesPanel />
-                  <LibraryPanel />
+                  <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
+                    <LibraryFilesView />
+                  </Show>
                   <McpSettings />
                 </main>
               </Show>

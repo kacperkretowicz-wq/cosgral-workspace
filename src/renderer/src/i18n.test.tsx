@@ -36,6 +36,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "ServerSettingsPage",
     "PluginAppsPanel",
     "NewAgentPage",
+    "LibraryFilesView",
     "ManagedCliSection",
   ];
   for (const file of files) {
