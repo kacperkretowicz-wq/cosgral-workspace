@@ -31,6 +31,7 @@ export * from "./ipc-messengers";
 export * from "./ipc-mobile";
 export * from "./ipc-phone-access";
 export * from "./ipc-plan";
+export * from "./ipc-plugin-catalog";
 export * from "./ipc-providers";
 export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";

@@ -49,6 +49,7 @@ beforeAll(async () => {
   const { registerPhoneIpc } = await import("./phone-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
+  const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
   registerThreadsIpc(() => null);
   const { registerPlansIpc } = await import("./plans-ipc");
   registerPlansIpc(() => null);
@@ -70,6 +71,7 @@ beforeAll(async () => {
   registerIntegrationsIpc(() => null);
   registerPhoneIpc(() => null);
   registerMessengersIpc(() => null);
+  registerPluginCatalogIpc(() => null);
   registerVaultConnectorsIpc(
     () => null,
     () => null,
@@ -138,6 +140,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("messengers:").length).toBe(6);
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
     expect(channelsOf("vault-connectors:").length).toBe(8);
+    // COSGRAL W11-KK (e): the Marketplace Apps tab.
+    expect(channelsOf("plugin-catalog:").length).toBe(8);
     expect(
       ["vault:reveal", "vault:copy", "vault:import-csv", "vault:codes", "vault:reset"].every((name) =>
         handlers.has(name),
@@ -170,6 +174,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "phone:",
         "messengers:",
         "vault-connectors:",
+        "plugin-catalog:",
         "vault:reveal",
         "vault:copy",
         "vault:import-csv",
@@ -266,6 +271,19 @@ describe("this-computer-only IPC (P11 / C13)", () => {
       /connector is one of/,
     );
     expect((await call("vault-connectors:list", "local", null)).threw).toMatch(/still starting/);
+    // W11-KK (e): a bad plugin request is refused by the parser first, and never repeats a typed value.
+    const badPlugin = await call("plugin-catalog:install", "local", {
+      slug: "../escape",
+      secrets: { token: "secret-value-123" },
+    });
+    expect(badPlugin.threw).toMatch(/Choose a plugin/);
+    expect(badPlugin.threw).not.toContain("secret-value-123");
+    expect((await call("plugin-catalog:list", "local", { category: "games" })).threw).toMatch(/category is one of/);
+    expect((await call("plugin-catalog:set-folder", "local", { directory: "relative" })).threw).toMatch(/full path/);
+    expect((await call("plugin-catalog:add-custom", "local", { name: "Bad", transport: "http" })).threw).toMatch(
+      /lowercase/,
+    );
+    expect((await call("plugin-catalog:info", "local", null)).threw).toMatch(/still starting/);
     expect((await call("vault:reveal", "local", { itemId: "x", field: "notes" })).threw).toMatch(/field is one of/);
     expect((await call("vault:import-csv", "local", { csv: "  " })).threw).toMatch(/empty/);
     expect((await call("vault:reset", "local", null)).threw).toMatch(/still starting/);
