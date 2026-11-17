@@ -19,6 +19,7 @@ import {
   type ScheduleEntry,
   type ScheduleFeedItem,
   selectLibraryPage,
+  type UsageDetailRow,
   type UsageReportDesktopApi,
   type UsageRow,
 } from "@openbot/contracts/ipc";
@@ -105,8 +106,27 @@ function demoUsageRows(): UsageRow[] {
   return rows;
 }
 
+/** The same days as the counter, with a model and the parts of the tokens (as if they were kept from the start). */
+function demoDetailRows(rows: readonly UsageRow[]): UsageDetailRow[] {
+  return rows.map((row) => {
+    const output = Math.round(row.tokens * 0.2);
+    const input = row.tokens - output;
+    return {
+      day: row.day,
+      botId: row.botId,
+      model: row.botId === "chief" ? "gpt-6-luna" : "claude-haiku-5-5",
+      turns: row.turns,
+      input,
+      cached: Math.round(input * 0.4),
+      output,
+      reasoning: Math.round(output * 0.3),
+    };
+  });
+}
+
 export function createMockUsageReport(): Required<UsageReportDesktopApi> {
   const rows = demoUsageRows();
+  const detail = demoDetailRows(rows);
   return {
     get: async (raw) => {
       const input = parseUsageReportInput(raw);
@@ -130,6 +150,8 @@ export function createMockUsageReport(): Required<UsageReportDesktopApi> {
         ],
         machine: { cpuPercent: 23, memoryPercent: 61 },
         firstDay: rows.map((row) => row.day).sort()[0] ?? null,
+        detail,
+        firstDetailDay: detail.map((row) => row.day).sort()[0] ?? null,
       });
     },
   };

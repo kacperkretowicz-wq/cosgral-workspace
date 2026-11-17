@@ -1942,6 +1942,8 @@ if (!hasSingleInstanceLock) {
           usageReportService = new UsageReportService({
             rows: (fromDay) => budgetMeter?.dailyRows(fromDay) ?? [],
             firstDay: () => budgetMeter?.firstDay() ?? null,
+            detail: (fromDay) => budgetMeter?.dailyDetail(fromDay) ?? [],
+            firstDetailDay: () => budgetMeter?.firstDetailDay() ?? null,
             agentName,
             providers: () => providerRegistry?.listUsage() ?? [],
             machine: () => machineLoad.read(),

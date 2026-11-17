@@ -193,8 +193,75 @@ describe("usage report (W12 BE-H)", () => {
     expect(one.byAgent[0]?.costShare).toBeNull();
   });
 
+  it("splits the period by model and by kind of token when turns were kept with their parts, and says how much they cover", () => {
+    const detail = [
+      {
+        day: "2026-11-17",
+        botId: "chief",
+        model: "gpt-6-luna",
+        turns: 2,
+        input: 700,
+        cached: 300,
+        output: 200,
+        reasoning: 50,
+      },
+      {
+        day: "2026-11-15",
+        botId: "chief",
+        model: "claude-haiku-5-5",
+        turns: 1,
+        input: 1_500,
+        cached: 0,
+        output: 500,
+        reasoning: 0,
+      },
+      {
+        day: "2026-10-01",
+        botId: "chief",
+        model: "gpt-6-luna",
+        turns: 9,
+        input: 9_000,
+        cached: 0,
+        output: 999,
+        reasoning: 0,
+      },
+    ];
+    const withDetail = aggregateUsage({
+      rows,
+      period: 7,
+      botId: null,
+      today,
+      now: today,
+      names: () => null,
+      providers: [],
+      machine: { cpuPercent: null, memoryPercent: null },
+      firstDay: "2026-10-01",
+      detail,
+      firstDetailDay: "2026-10-01",
+    });
+    expect(withDetail.byModel.map((row) => [row.model, row.tokens, row.tokenShare])).toEqual([
+      ["claude-haiku-5-5", 2_000, 69],
+      ["gpt-6-luna", 900, 31],
+    ]);
+    expect(withDetail.split).toEqual({
+      turns: 3,
+      input: 2_200,
+      cached: 300,
+      freshInput: 1_900,
+      output: 700,
+      reasoning: 50,
+      coverage: 58,
+    });
+    expect(withDetail.detailSince).toBe("2026-10-01");
+    expect(withDetail.unavailable.map((item) => item.breakdown)).toEqual(["skill"]);
+    expect(isUsageReport(withDetail)).toBe(true);
+    expect(isUsageReport({ ...withDetail, split: { ...withDetail.split, coverage: 120 } })).toBe(false);
+    expect(isUsageReport({ ...withDetail, byModel: [{ model: "x" }] })).toBe(false);
+  });
+
   it("says what it does not collect instead of inventing it", () => {
-    expect(report(7).unavailable.map((item) => item.breakdown)).toEqual(["model", "skill", "cache"]);
+    expect(report(7).unavailable.map((item) => item.breakdown)).toEqual(["model", "cache", "skill"]);
+    expect(report(7)).toMatchObject({ byModel: [], split: null, detailSince: null });
     expect(report(7).collectingSince).toBe("2026-10-01");
     expect(isUsageReport({ ...report(7), days: report(7).days.slice(1) })).toBe(false);
     expect(isUsageReport({ ...report(7), machine: { cpuPercent: 120, memoryPercent: 1 } })).toBe(false);
