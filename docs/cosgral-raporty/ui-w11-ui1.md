@@ -49,3 +49,7 @@
 ## Commit 9 — effort w nagłówku czatu (zrzuty 050, 105)
 - Obok wyboru modelu: lista effort z poziomów wybranego modelu; zapis jak w ustawieniach agenta. Test App.test (effort z nagłówka).
 - Kontrola: App.test 93/93 (pojedynczy test + cały plik 92 przed dopisaniem), typecheck OK, Biome OK, check:ui OK.
+
+## W12-UI2 (gałąź team/ui/w12-ui2, od integracji 9b571a8ab)
+- Commit 1: „@” z `searchMentions` (kanały i pliki). Kontrola: ComposerEditor 14/14, typecheck OK, Biome OK, check:ui OK.
+- Zostało z P0: „1 step”, akcje/reakcje (117), rama panelu bocznego, przeciąganie kart wątków.

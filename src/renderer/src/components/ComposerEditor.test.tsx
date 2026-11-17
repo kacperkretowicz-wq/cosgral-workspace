@@ -56,6 +56,30 @@ function placeCaretAtEnd(editor: HTMLElement): void {
   selection?.addRange(range);
 }
 
+describe("ComposerEditor channel mentions", () => {
+  const searchMentions = vi.fn(async () => [
+    { kind: "channel" as const, id: "ch1", label: "launch-room", detail: "Team channel" },
+    { kind: "agent" as const, id: "a1", label: "Someone", detail: "" },
+  ]);
+  afterEach(() => {
+    Reflect.deleteProperty(window, "openbot");
+  });
+
+  it("offers channels from searchMentions after @ and inserts the name as text", async () => {
+    Object.assign(window, { openbot: { composer: { searchMentions, listSlashCommands: async () => [] } } });
+    const { editor, onValueChange } = renderComposer();
+    editor.textContent = "@launch";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    await waitFor(() => expect(searchMentions).toHaveBeenCalledWith({ botId: "chief", q: "launch" }));
+    const option = await screen.findByRole("option", { name: /launch-room/ });
+    expect(screen.queryByRole("option", { name: /Someone/ })).not.toBeInTheDocument();
+    expect(option).toBeInTheDocument();
+    await fireEvent.keyDown(editor, { key: "Enter" });
+    expect(onValueChange).toHaveBeenLastCalledWith("@launch-room ");
+  });
+});
+
 describe("ComposerEditor slash commands", () => {
   const listSlashCommands = vi.fn(async () => [
     { name: "compact", hint: "Shorten the context", kind: "program" as const },

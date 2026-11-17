@@ -1,6 +1,6 @@
 import { attachmentReferenceIds, serializeAttachmentReference } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type { DraftAttachment, SlashCommand } from "@openbot/contracts/ipc";
+import type { DraftAttachment, MentionCandidate, SlashCommand } from "@openbot/contracts/ipc";
 import { Portal } from "@solidjs/web";
 import { createEffect, createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import { buildAnimatedAvatarSvg } from "../blobatar";
@@ -49,13 +49,19 @@ export function expandComposerMentions(value: string): string {
   );
 }
 
-type PickerOption = { type: "bot"; bot: BotProfile } | { type: "attachment"; attachment: DraftAttachment };
+type PickerOption =
+  | { type: "bot"; bot: BotProfile }
+  | { type: "attachment"; attachment: DraftAttachment }
+  | { type: "remote"; candidate: MentionCandidate };
 
 function pickerOptionKey(option: PickerOption): string {
+  if (option.type === "remote") return `remote:${option.candidate.kind}:${option.candidate.id}`;
   return option.type === "bot" ? `bot:${option.bot.id}` : `attachment:${option.attachment.id}`;
 }
 
 function pickerOptionText(option: PickerOption): string {
+  if (option.type === "remote")
+    return `${option.candidate.label} ${option.candidate.kind === "channel" ? "Channel" : "File"}`;
   return option.type === "bot" ? `${option.bot.name} Agent` : `${option.attachment.name} File`;
 }
 
@@ -93,12 +99,21 @@ export function ComposerEditor(props: ComposerEditorProps) {
         !referencedIds.has(attachment.id) && (!query || attachment.name.toLocaleLowerCase().includes(query)),
     );
   });
+  // Channels and files outside the draft come from window.openbot.composer.searchMentions (U5); agents stay local.
+  const [remoteMentions, setRemoteMentions] = createSignal<MentionCandidate[]>([]);
+  const matchingRemote = createMemo(() => {
+    const referenced = new Set((props.attachments ?? []).map((attachment) => attachment.name));
+    return remoteMentions().filter(
+      (candidate) => (candidate.kind === "channel" || candidate.kind === "file") && !referenced.has(candidate.label),
+    );
+  });
   const matchingOptions = createMemo<PickerOption[]>(() => [
     ...matchingBots().map((bot) => ({ type: "bot" as const, bot })),
     ...matchingAttachments().map((attachment) => ({
       type: "attachment" as const,
       attachment,
     })),
+    ...matchingRemote().map((candidate) => ({ type: "remote" as const, candidate })),
   ]);
   const activePickerValue = createMemo(() => {
     const option = matchingOptions()[activeOption()];
@@ -172,6 +187,32 @@ export function ComposerEditor(props: ComposerEditorProps) {
         });
       return () => {
         current = false;
+      };
+    },
+  );
+
+  createEffect(
+    () => ({ context: mention(), botId: props.botId }),
+    ({ context, botId }) => {
+      const api = window.openbot?.composer;
+      if (!context || !botId || !api) {
+        setRemoteMentions([]);
+        return;
+      }
+      let current = true;
+      const timer = setTimeout(() => {
+        void api
+          .searchMentions({ botId, q: context.query.trim() })
+          .then((candidates) => {
+            if (current) setRemoteMentions(candidates);
+          })
+          .catch(() => {
+            if (current) setRemoteMentions([]);
+          });
+      }, 120);
+      return () => {
+        current = false;
+        clearTimeout(timer);
       };
     },
   );
@@ -257,7 +298,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
     const token =
       option.type === "bot"
         ? createMentionToken(option.bot)
-        : createAttachmentToken(option.attachment, attachmentTokenActions);
+        : option.type === "attachment"
+          ? createAttachmentToken(option.attachment, attachmentTokenActions)
+          : document.createTextNode(`@${option.candidate.label}`);
     const trailingSpace = document.createTextNode(" ");
     range.insertNode(trailingSpace);
     range.insertNode(token);
@@ -444,6 +487,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               const optionIndex = () =>
                 matchingOptions().findIndex((candidate) => pickerOptionKey(candidate) === item.key);
               const firstAttachmentIndex = () => matchingBots().length;
+              const firstRemoteIndex = () => matchingBots().length + matchingAttachments().length;
               return (
                 <>
                   <Show when={option.type === "bot" && item.index === 0}>
@@ -451,6 +495,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   </Show>
                   <Show when={option.type === "attachment" && item.index === firstAttachmentIndex()}>
                     <div class="mention-picker-section">Files</div>
+                  </Show>
+                  <Show when={option.type === "remote" && item.index === firstRemoteIndex()}>
+                    <div class="mention-picker-section">{t("Channels and files")}</div>
                   </Show>
                   <Listbox.Item
                     item={item}
@@ -462,13 +509,33 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     <Show
                       when={option.type === "bot" ? option.bot : undefined}
                       fallback={
-                        <AttachmentReferenceVisual name={option.type === "attachment" ? option.attachment.name : ""} />
+                        <AttachmentReferenceVisual
+                          name={
+                            option.type === "attachment"
+                              ? option.attachment.name
+                              : option.type === "remote"
+                                ? option.candidate.label
+                                : ""
+                          }
+                        />
                       }
                     >
                       {(bot) => <AgentAvatar bot={bot()} />}
                     </Show>
-                    <strong>{option.type === "bot" ? option.bot.name : option.attachment.name}</strong>
-                    <span>{option.type === "bot" ? "Agent" : "File"}</span>
+                    <strong>
+                      {option.type === "bot"
+                        ? option.bot.name
+                        : option.type === "attachment"
+                          ? option.attachment.name
+                          : option.candidate.label}
+                    </strong>
+                    <span>
+                      {option.type === "bot"
+                        ? "Agent"
+                        : option.type === "attachment"
+                          ? "File"
+                          : option.candidate.detail || (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
+                    </span>
                   </Listbox.Item>
                 </>
               );

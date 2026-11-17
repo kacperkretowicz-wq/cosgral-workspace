@@ -263,4 +263,5 @@ export const pl = {
   "No skills assigned to this agent.": "Ten agent nie ma przypisanych skilli.",
   "Importing…": "Importowanie…",
   "Attach files": "Dołącz pliki",
+  "Channels and files": "Kanały i pliki",
 } as const;
