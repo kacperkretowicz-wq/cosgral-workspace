@@ -33,21 +33,105 @@ async function requireGo(): Promise<void> {
   const gate = process.env.COSGRAL_GO_DIR
     ? resolve(process.env.COSGRAL_GO_DIR)
     : resolve(repo, "..", "cosgral-sandbox");
-  const names = await readdir(gate).catch(() => [] as string[]);
+  const empty: string[] = [];
+  const names = await readdir(gate).catch(() => empty);
   const go = names.find((name) => /^GO-tester-.*\.txt$/i.test(name));
   assert(go, `Missing GO-tester-*.txt in ${gate} — do not launch Electron without the lead's GO`);
   console.log(`GO ok: ${join(gate, go)}`);
 }
 
-function currentPage(app: ElectronApplication, page: Page): Page {
-  if (!page.isClosed()) return page;
-  const windows = app.windows();
+async function mainShellPage(app: ElectronApplication, fallback: Page): Promise<Page> {
+  const windows = app.windows().filter((w) => !w.isClosed());
   if (!windows.length) throw new Error("all windows closed");
-  return windows[windows.length - 1]!;
+  // Prefer the main shell (Pages rail). Stub turns / dock can open a second window without the rail.
+  for (const w of [...windows].reverse()) {
+    try {
+      const hasRail = await w.evaluate(
+        `Boolean(document.querySelector('[role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]'))`,
+      );
+      if (hasRail) {
+        if (w !== fallback) {
+          try {
+            await w.bringToFront();
+          } catch {
+            /* ignore */
+          }
+        }
+        return w;
+      }
+    } catch {
+      /* next */
+    }
+  }
+  for (const w of windows) {
+    try {
+      await w.waitForSelector('[role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]', {
+        timeout: 3_000,
+      });
+      return w;
+    } catch {
+      /* next */
+    }
+  }
+  if (!fallback.isClosed()) return fallback;
+  const first = windows[0];
+  if (!first) throw new Error("all windows closed");
+  return first;
+}
+
+type OverlayState = { hit: boolean; searchOpen: boolean };
+
+async function dismissOverlays(page: Page): Promise<void> {
+  for (let i = 0; i < 6; i += 1) {
+    const state: OverlayState = await page.evaluate(() => {
+      const searchOpen = Boolean(
+        document.querySelector('[role="dialog"]') &&
+          /Search COSGRAL|Szukaj|All.*Agents.*Channels/i.test(document.body?.innerText || ""),
+      );
+      let hit = searchOpen;
+      const dialogs = [...document.querySelectorAll('[role="dialog"], .join-server-dialog, dialog')];
+      for (const dialog of dialogs) {
+        const text = `${dialog.textContent || ""} ${dialog.getAttribute("aria-label") || ""}`;
+        if (/Join a COSGRAL team|Invitation link|Dołącz/i.test(text)) {
+          hit = true;
+          const cancel = [...dialog.querySelectorAll("button")].find((b) =>
+            /Cancel|Anuluj|Close|Zamknij|^×$|^x$/i.test(b.textContent || b.getAttribute("aria-label") || ""),
+          );
+          if (cancel) cancel.click();
+        }
+      }
+      return { hit, searchOpen };
+    });
+    // GlobalSearch toggles on Ctrl+K — Escape alone often leaves it open.
+    if (state.searchOpen) {
+      await page.keyboard.press("Control+k").catch(() => undefined);
+      await page.waitForTimeout(250);
+    }
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await page.waitForTimeout(200);
+    if (!state.hit && i >= 2) break;
+  }
+}
+
+/** os.userInfo() ignores USERNAME env — scrub footer before every PNG. */
+async function scrubPrivacy(page: Page): Promise<void> {
+  await page.evaluate(`(() => {
+    for (const el of document.querySelectorAll(".sidebar-footer .profile-copy strong, .account-profile-copy strong")) {
+      el.textContent = "Demo";
+    }
+    for (const el of document.querySelectorAll(".sidebar-footer .profile-dot, .account-profile-avatar, .profile-dot")) {
+      if (el && el.childElementCount === 0) el.textContent = "D";
+      for (const child of el.querySelectorAll("*")) {
+        if ((child.textContent || "").trim().length <= 3 && /[A-Z]{1,3}/.test(child.textContent || "")) child.textContent = "D";
+      }
+    }
+  })()`);
 }
 
 async function shot(page: Page, out: string, name: string, note: string): Promise<void> {
-  await page.waitForTimeout(400);
+  await dismissOverlays(page);
+  await scrubPrivacy(page);
+  await page.waitForTimeout(300);
   await page.screenshot({ path: join(out, `${name}.png`) });
   notes.push(`${name}|${note}`);
   console.log(`shot ${name}: ${note}`);
@@ -55,22 +139,26 @@ async function shot(page: Page, out: string, name: string, note: string): Promis
 
 async function tryShot(
   app: ElectronApplication,
-  pageRef: { page: Page },
+  pageRef: { page: Page; main?: Page | null },
   out: string,
   name: string,
   work: (page: Page) => Promise<string>,
 ): Promise<void> {
   try {
-    pageRef.page = currentPage(app, pageRef.page);
+    if (pageRef.main && !pageRef.main.isClosed()) pageRef.page = pageRef.main;
+    else pageRef.page = await mainShellPage(app, pageRef.page);
+    await dismissOverlays(pageRef.page);
     const note = await work(pageRef.page);
-    pageRef.page = currentPage(app, pageRef.page);
+    if (pageRef.main && !pageRef.main.isClosed()) pageRef.page = pageRef.main;
     await shot(pageRef.page, out, name, note);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     notes.push(`${name}|FAIL: ${detail.split("\n")[0]}`);
     console.log(`FAIL ${name}: ${detail.split("\n")[0]}`);
     try {
-      pageRef.page = currentPage(app, pageRef.page);
+      if (pageRef.main && !pageRef.main.isClosed()) pageRef.page = pageRef.main;
+      else pageRef.page = await mainShellPage(app, pageRef.page);
+      await dismissOverlays(pageRef.page);
       await pageRef.page.screenshot({ path: join(out, `${name}-fail.png`) });
     } catch {
       /* ignore */
@@ -78,13 +166,73 @@ async function tryShot(
   }
 }
 
+/** Confirm onboarding model so composer (+ / @ / /) is enabled. */
+async function unlockComposer(page: Page): Promise<void> {
+  await dismissOverlays(page);
+  const attach = page.getByRole("button", { name: "Attach a file" });
+  if ((await attach.count()) && (await attach.first().isEnabled())) return;
+  // aria-label like "Onboarding model: Luna" — open and re-select to confirm.
+  const picker = page.getByRole("button", { name: /Onboarding model/i });
+  if (await picker.count()) {
+    await picker.first().click({ timeout: 8_000 });
+    await page.waitForTimeout(400);
+    const option = page
+      .getByRole("option", { name: /Luna|Codex|gpt|Claude/i })
+      .or(page.getByRole("menuitem", { name: /Luna|Codex|gpt|Claude/i }));
+    if (await option.count()) await option.first().click();
+    else await page.keyboard.press("Enter");
+    await page.waitForTimeout(600);
+  }
+  if ((await attach.count()) && (await attach.first().isEnabled())) return;
+  // Force-enable path: click any visible model option row labeled Luna inside onboarding.
+  const luna = page.getByText(/^Luna$/).first();
+  if (await luna.count()) await luna.click().catch(() => undefined);
+  await page.waitForTimeout(400);
+}
+
+async function clickRail(page: Page, labels: string[]): Promise<void> {
+  await dismissOverlays(page);
+  await page.keyboard.press("Escape").catch(() => undefined);
+  await page.waitForTimeout(200);
+  const nav = page.getByRole("navigation", { name: "Pages" }).or(page.getByRole("navigation", { name: "Strony" }));
+  await nav
+    .first()
+    .waitFor({ state: "attached", timeout: 10_000 })
+    .catch(() => undefined);
+  const byRole = nav.getByRole("button", { name: new RegExp(`^(${labels.join("|")})$`, "i") });
+  if (await byRole.count()) {
+    await byRole.first().click({ timeout: 10_000 });
+    await page.waitForTimeout(600);
+    return;
+  }
+  const more = nav.getByRole("button", { name: /More pages|Więcej stron/i });
+  if (await more.count()) {
+    await more.first().click();
+    await page.waitForTimeout(300);
+    const item = page.getByRole("menuitem", { name: new RegExp(`^(${labels.join("|")})$`, "i") });
+    if (await item.count()) {
+      await item.first().click();
+      await page.waitForTimeout(600);
+      return;
+    }
+  }
+  const hit = await page.evaluate(`((labels) => {
+    const navEl = document.querySelector('[role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]');
+    if (!navEl) return "no-nav title=" + document.title + " body=" + (document.body?.innerText || "").slice(0, 80);
+    const buttons = [...navEl.querySelectorAll("button")];
+    const match = buttons.find((b) => labels.some((l) => (b.getAttribute("aria-label") || "").trim() === l));
+    if (match) { match.click(); return "ok"; }
+    return "missing:" + buttons.map((b) => b.getAttribute("aria-label")).filter(Boolean).join(",");
+  })(${JSON.stringify(labels)})`);
+  if (hit !== "ok") throw new Error(`rail button missing (${String(hit)}): ${labels.join("|")}`);
+  await page.waitForTimeout(600);
+}
+
 async function reachMain(page: Page): Promise<string[]> {
   const seen: string[] = [];
   for (let round = 0; round < 60; round += 1) {
     if (page.isClosed()) throw new Error(`page closed during first-run (saw: ${seen.join(", ")})`);
-    const pages = page
-      .getByRole("navigation", { name: "Pages" })
-      .or(page.getByRole("navigation", { name: "Strony" }));
+    const pages = page.getByRole("navigation", { name: "Pages" }).or(page.getByRole("navigation", { name: "Strony" }));
     if (await pages.count()) return seen;
     const useLocal = page.getByRole("button", { name: /Use this computer|Użyj tego komputera/i });
     const continueCodex = page.getByRole("button", {
@@ -116,77 +264,87 @@ async function setTheme(page: Page, theme: "dark" | "light"): Promise<void> {
   await page.waitForTimeout(700);
 }
 
-async function openNewAgentForm(page: Page): Promise<string> {
-  // Prefer the real New agent screen (form + avatars), not "create then open chat".
-  const viaRail = page
-    .getByRole("button", { name: /New agent|Nowy agent/i })
-    .or(page.getByRole("menuitem", { name: /New agent|Nowy agent/i }));
-  const plus = page.getByRole("button", { name: /^\+|Add|Dodaj|New/i });
-  if (await plus.count()) {
-    await plus.first().click().catch(() => undefined);
-    await page.waitForTimeout(400);
-  }
-  if (await viaRail.count()) {
-    await viaRail.first().click();
-  } else {
-    await page.evaluate(`(async () => {
-      // Empty program / UI-F: navigate if the app exposes a create flow.
-      if (window.openbot.agent?.createBot) {
-        /* leave form navigation to UI; ensure at least one bot exists for later shots */
-      }
-    })()`);
-    const create = page.getByRole("button", { name: /Create new agent|Utwórz nowego agenta|New agent|Nowy agent/i });
-    if (await create.count()) await create.first().click();
-  }
-  await page.waitForTimeout(800);
+async function openNewAgentForm(
+  page: Page,
+): Promise<"formularz Nowy agent już na starcie" | "formularz Nowy agent widoczny"> {
+  await dismissOverlays(page);
+  // Empty program (UI-F) already starts on New agent — do not click broad "+/New" (opens Join / New channel).
   const form = page.locator(".new-agent-page").or(page.getByRole("main", { name: /New agent|Nowy agent/i }));
-  if (await form.count()) return "formularz Nowy agent widoczny";
-  // Fallback: heading / avatar swatches
-  if (await page.getByRole("heading", { name: /New agent|Nowy agent/i }).count()) return "nagłówek Nowy agent";
-  throw new Error("New agent form not visible (got chat instead?)");
+  const heading = page.getByRole("heading", { name: /New agent|Nowy agent/i });
+  if ((await form.count()) || (await heading.count())) return "formularz Nowy agent już na starcie";
+  const create = page.getByRole("button", { name: /^New agent$|^Nowy agent$|Create new agent|Utwórz nowego agenta/i });
+  if (await create.count()) {
+    await create.first().click({ timeout: 8_000 });
+    await page.waitForTimeout(600);
+  }
+  await dismissOverlays(page);
+  if ((await form.count()) || (await heading.count())) return "formularz Nowy agent widoczny";
+  throw new Error("New agent form not visible");
 }
 
 async function ensureChatAgent(page: Page): Promise<string> {
+  await dismissOverlays(page);
+  // Leave the create form if Cancel is available (empty name = form still open).
+  const cancel = page.getByRole("button", { name: /^Cancel$|^Anuluj$/i });
+  if (await cancel.count())
+    await cancel
+      .first()
+      .click()
+      .catch(() => undefined);
+  await page.waitForTimeout(300);
   const viaApi = await page.evaluate(`(async () => {
     const bots = await window.openbot.agent.listBots();
-    const named = bots.find((b) => b.name === "Shot agent" || b.name === "New agent" || b.name === "Nowy agent");
-    if (named) {
-      return named.name;
+    let bot = bots.find((b) => b.name === "Shot agent") ?? bots[0];
+    if (!bot) {
+      bot = await window.openbot.agent.createBot();
+      await window.openbot.agent.updateBot({ botId: bot.id, name: "Shot agent" });
+    } else if (bot.name !== "Shot agent") {
+      await window.openbot.agent.updateBot({ botId: bot.id, name: "Shot agent" });
     }
-    const created = await window.openbot.agent.createBot();
-    await window.openbot.agent.updateBot({ botId: created.id, name: "Shot agent" });
+    const models = (await window.openbot.agent.listModels?.()) ?? [];
+    const model = models[0]?.id ?? bot.model;
+    if (model) await window.openbot.agent.updateBot({ botId: bot.id, model });
     return "Shot agent";
   })()`);
-  await page.waitForTimeout(600);
-  const row = page.getByRole("button", { name: /Shot agent|New agent|Nowy agent/i }).first();
-  if (await row.count()) await row.click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(800);
+  const agents = page
+    .getByRole("navigation", { name: "Pages" })
+    .or(page.getByRole("navigation", { name: "Strony" }))
+    .getByRole("button", { name: /^(Agents|Agenci)$/i });
+  if (await agents.count()) await agents.click();
+  await page.waitForTimeout(400);
+  await dismissOverlays(page);
+  const row = page.getByRole("button", { name: /Shot agent/i }).first();
+  if (await row.count()) await row.click({ timeout: 8_000 }).catch(() => undefined);
+  else {
+    const any = page.getByText(/Shot agent/i).first();
+    if (await any.count()) await any.click({ timeout: 8_000 }).catch(() => undefined);
+  }
+  await page.waitForTimeout(700);
+  await dismissOverlays(page);
   return String(viaApi);
 }
 
 async function sendStubChat(page: Page): Promise<void> {
-  await page.evaluate(`(async () => {
+  await dismissOverlays(page);
+  // Prefer IPC send so Join dialog / form focus cannot block the turn.
+  const sent: { ok: boolean; reason?: string } = await page.evaluate(async () => {
     const bots = await window.openbot.agent.listBots();
-    const bot = bots.find((b) => b.name === "Shot agent") ?? bots.find((b) => b.name === "New agent") ?? bots[0];
-    if (!bot) return;
+    const bot = bots.find((b) => b.name === "Shot agent") ?? bots[0];
+    if (!bot) return { ok: false, reason: "no bot" };
     const models = (await window.openbot.agent.listModels?.()) ?? [];
     const model = models[0]?.id ?? bot.model;
     if (model) await window.openbot.agent.updateBot({ botId: bot.id, model });
-  })()`);
-  await page.waitForTimeout(500);
-  const chip = page.getByRole("button", { name: /Luna|Codex|gpt|Claude/i });
-  if (await chip.count()) await chip.first().click().catch(() => undefined);
-  const box = page
-    .getByRole("textbox", { name: /Message|Wiadomość/i })
-    .or(page.getByPlaceholder(/Message|Wiadomość|Choose a model/i));
-  await box.first().waitFor({ timeout: 20_000 });
-  await box.first().click();
-  await box.first().fill("Hello from T-G shots — please reason");
-  const send = page.getByRole("button", { name: /Send message|Wyślij/i });
-  if (await send.count()) await send.click();
-  else await box.first().press("Enter");
-  await page.getByText(/Stub: received|Hello from T-G shots/i).first().waitFor({ timeout: 45_000 });
-  await page.waitForTimeout(800);
+    await window.openbot.agent.sendMessage({ botId: bot.id, text: "Hello from T-G shots — please reason" });
+    return { ok: true };
+  });
+  if (!sent.ok) throw new Error(`sendMessage failed: ${JSON.stringify(sent)}`);
+  await page
+    .getByText(/Stub: received|Hello from T-G shots/i)
+    .first()
+    .waitFor({ timeout: 45_000 });
+  await page.waitForTimeout(1000);
+  await dismissOverlays(page);
 }
 
 async function hashPngs(out: string): Promise<{ path: string; sha: string }[]> {
@@ -250,8 +408,9 @@ async function main(): Promise<void> {
       OPENBOT_CODEX_PATH: codex,
       OPENBOT_CLAUDE_PATH: join(folder, "missing-claude.exe"),
       LANG: "en-US",
-      USERNAME: "sandbox",
-      USER: "sandbox",
+      // Leader T-H: footer must not show the Windows account name on saved shots.
+      USERNAME: "Demo",
+      USER: "Demo",
       COMPUTERNAME: "COSGRAL-SANDBOX",
       COSGRAL_SPACE_NO_RELAUNCH: "1",
       COSGRAL_WIPE_NO_RELAUNCH: "1",
@@ -272,8 +431,8 @@ async function main(): Promise<void> {
   attach(page);
   app.on("window", (window) => {
     attach(window);
-    page = window;
-    findings.push("new window");
+    // Do NOT switch the working page to dock/island — keep the pinned main shell.
+    findings.push("new window (ignored for shots)");
   });
   for (let i = 0; i < 20; i += 1) {
     try {
@@ -286,30 +445,31 @@ async function main(): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, 500));
     const windows = app.windows();
-    if (windows.length) page = windows[windows.length - 1]!;
+    const first = windows[0];
+    if (first) page = first;
   }
   if (page.isClosed()) throw new Error(`no lasting window; mainOut=${mainOut.join("").slice(0, 500)}`);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(1500);
 
-  const pageRef = { page };
-  const rail = (p: Page) =>
-    p.getByRole("navigation", { name: "Pages" }).or(p.getByRole("navigation", { name: "Strony" }));
+  const pageRef: { page: Page; main?: Page | null } = { page, main: null };
 
   try {
     if (!keep) {
       console.log(`first-run: ${(await reachMain(pageRef.page)).join(" -> ") || "(none)"}`);
-      pageRef.page = currentPage(app, pageRef.page);
+      pageRef.page = await mainShellPage(app, pageRef.page);
+      pageRef.main = pageRef.page;
       await pageRef.page.setViewportSize({ width: 1440, height: 900 });
       await pageRef.page.waitForTimeout(1000);
+    } else {
+      pageRef.main = pageRef.page;
     }
 
     await tryShot(app, pageRef, out, "01-dark-sidebar", async (p) => {
       await setTheme(p, "dark");
-      const agents = rail(p).getByRole("button", { name: /^(Agents|Agenci)$/i });
-      if (await agents.count()) await agents.click();
-      await p.waitForTimeout(500);
-      return "ciemny motyw + pasek / agenci";
+      await clickRail(p, ["Agents", "Agenci"]).catch(() => undefined);
+      await p.waitForTimeout(400);
+      return "ciemny motyw + pasek / agenci (pusty → Nowy agent)";
     });
 
     await tryShot(app, pageRef, out, "02-light-sidebar", async (p) => {
@@ -321,11 +481,13 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "03-new-agent", async (p) => {
       await setTheme(p, "dark");
       const note = await openNewAgentForm(p);
-      const swatches = p.locator(".new-agent-swatch-fill, [aria-label*='color' i], [aria-label*='kolor' i]");
-      const suggestions = p.getByText(/Research|Writer|Coordinator|Sugest|template/i);
+      const heading = p.getByRole("heading", { name: /New agent|Nowy agent/i });
+      if (!(await heading.count())) throw new Error("New agent heading missing after open");
+      const swatches = p.locator(".new-agent-page img, .new-agent-page button, .new-agent-swatch-fill");
+      const suggestions = p.getByText(/Assistant|Researcher|Writer|Sugest/i);
       return [
         note,
-        (await swatches.count()) ? `awatary/swatche=${await swatches.count()}` : "brak swatchy",
+        (await swatches.count()) ? `elementy formularza=${await swatches.count()}` : "brak elementów",
         (await suggestions.count()) ? "sugestie widoczne" : "brak sugestii",
       ].join("; ");
     });
@@ -333,103 +495,104 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "04-chat-nsteps", async (p) => {
       await ensureChatAgent(p);
       await sendStubChat(p);
+      await unlockComposer(p);
       const steps = p.getByText(/\d+\s+steps?|\d+\s+krok/i);
       return (await steps.count()) ? "czat + Stub: received + N steps" : "czat + stub; N steps NIEWIDOCZNE";
     });
 
     await tryShot(app, pageRef, out, "05-menu-plus", async (p) => {
       await ensureChatAgent(p);
-      const plus = p.getByRole("button", { name: /Attach|Dodaj|Załącz|Add attachment|\+/i });
-      if (!(await plus.count())) throw new Error("menu + button missing");
-      await plus.first().click();
+      await unlockComposer(p);
+      const plus = p.getByRole("button", { name: "Attach a file" });
+      if (!(await plus.count())) throw new Error("menu + (Attach a file) missing");
+      if (!(await plus.first().isEnabled())) throw new Error("Attach a file disabled (onboarding model?)");
+      await plus.first().click({ timeout: 10_000 });
       await p.waitForTimeout(400);
-      const items = p.getByRole("menuitem").or(p.getByText(/skill|Side question|Attach|Załącz|Umiejęt/i));
+      const items = p.getByRole("button", { name: /Attach files|Use a skill|Side question|Dołącz|Umiejęt|Pytanie/i });
       return (await items.count()) ? `menu + otwarte (${await items.count()})` : "klik +, brak pozycji";
     });
 
     await tryShot(app, pageRef, out, "06-menu-at", async (p) => {
+      await unlockComposer(p);
       await p.keyboard.press("Escape").catch(() => undefined);
-      const box = p
-        .getByRole("textbox", { name: /Message|Wiadomość/i })
-        .or(p.getByPlaceholder(/Message|Wiadomość/i));
+      const box = p.getByRole("textbox", { name: /Message /i });
+      await box.first().waitFor({ timeout: 15_000 });
       await box.first().click();
       await box.first().fill("");
       await box.first().pressSequentially("@", { delay: 50 });
       await p.waitForTimeout(700);
-      const menu = p.getByRole("listbox").or(p.getByText(/channel|kanał|agent|mention/i));
+      const menu = p
+        .getByRole("listbox")
+        .or(p.getByRole("menu"))
+        .or(p.locator(".composer-mention-menu, .mention-menu"));
       return (await menu.count()) ? "menu @ widoczne" : "po @ brak menu";
     });
 
     await tryShot(app, pageRef, out, "07-slash", async (p) => {
-      await p.keyboard.press("Escape").catch(() => undefined);
-      const box = p
-        .getByRole("textbox", { name: /Message|Wiadomość/i })
-        .or(p.getByPlaceholder(/Message|Wiadomość/i));
+      await unlockComposer(p);
+      const box = p.getByRole("textbox", { name: /Message /i });
       await box.first().click();
       await box.first().fill("");
       await box.first().pressSequentially("/", { delay: 50 });
       await p.waitForTimeout(700);
-      const menu = p.getByRole("listbox").or(p.getByText(/command|polecen|slash/i));
+      const menu = p.getByRole("listbox").or(p.getByRole("menu")).or(p.locator(".composer-slash-menu, .slash-menu"));
       return (await menu.count()) ? "menu / widoczne" : "po / brak menu";
     });
 
     await tryShot(app, pageRef, out, "08-search", async (p) => {
       await p.keyboard.press("Escape").catch(() => undefined);
       await p.keyboard.press("Control+k");
-      const box = p
-        .getByRole("combobox", { name: /Search COSGRAL|Szukaj|Search/i })
-        .or(p.getByRole("searchbox"));
+      const box = p.getByRole("combobox", { name: /Search COSGRAL|Szukaj|Search/i }).or(p.getByRole("searchbox"));
       await box.first().waitFor({ timeout: 10_000 });
       await box.first().fill("agent");
       await p.waitForTimeout(600);
       return "wyszukiwarka Ctrl+K";
     });
 
+    // Close search (Ctrl+K toggle) so the next rail clicks are not blocked.
+    if (pageRef.main && !pageRef.main.isClosed()) pageRef.page = pageRef.main;
+    await dismissOverlays(pageRef.page);
+    await pageRef.page.waitForTimeout(300);
+
     await tryShot(app, pageRef, out, "09-tasks", async (p) => {
-      await p.keyboard.press("Escape").catch(() => undefined);
-      const btn = rail(p)
-        .getByRole("button", { name: /Tasks|Zadania/i })
-        .or(p.getByRole("button", { name: /Tasks|Zadania/i }));
-      if (!(await btn.count())) throw new Error("Tasks rail button missing");
-      await btn.first().click();
-      await p.waitForTimeout(700);
+      await clickRail(p, ["Tasks", "Zadania"]);
       return "strona Zadania";
     });
 
     await tryShot(app, pageRef, out, "10-agent-cards", async (p) => {
       await ensureChatAgent(p);
+      await unlockComposer(p);
       const settings = p.getByRole("button", {
-        name: /View agent settings|Agent settings|Ustawienia agenta|Open Settings|Otwórz ustawienia/i,
+        name: /View agent settings|Agent settings|Ustawienia agenta|Open Settings|Otwórz ustawienia|Preferences|Edit agent/i,
       });
       if (await settings.count()) await settings.first().click();
+      else {
+        // Gear / preferences in chat header
+        const gear = p.locator('button[aria-label*="settings" i], button[aria-label*="ustawień" i]').first();
+        if (await gear.count()) await gear.click();
+      }
       await p.waitForTimeout(900);
-      const marker = p.getByText(/Chat color|Kolor czatu|Instructions|Instrukcje|Memories|Pamięci|Skills|Umiejętności/i);
+      const marker = p.getByText(
+        /Chat color|Kolor czatu|Instructions|Instrukcje|Memories|Pamięci|Skills|Umiejętności|Cards|Karty|Avatar|Specialty/i,
+      );
       if (!(await marker.count())) throw new Error("agent cards UI not rendered");
       return "karty ustawień agenta";
     });
 
     await tryShot(app, pageRef, out, "11-server-settings", async (p) => {
-      const btn = rail(p).getByRole("button", { name: /Server settings|Ustawienia serwera/i });
-      if (!(await btn.count())) throw new Error("Server settings missing");
-      await btn.click();
-      await p.waitForTimeout(800);
+      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
       return "Ustawienia serwera";
     });
 
     await tryShot(app, pageRef, out, "12-marketplace", async (p) => {
-      await rail(p).getByRole("button", { name: /Marketplace|Katalog dodatków/i }).click();
-      await p.waitForTimeout(900);
+      await clickRail(p, ["Marketplace", "Katalog dodatków"]);
       return "Marketplace";
     });
 
     await tryShot(app, pageRef, out, "13-vault", async (p) => {
-      const btn = rail(p)
-        .getByRole("button", { name: /Vault|Sejf/i })
-        .or(p.getByRole("button", { name: /Vault|Sejf/i }));
-      if (!(await btn.count())) throw new Error("Vault rail button missing");
-      await btn.first().click();
-      await p.waitForTimeout(800);
-      return "Vault";
+      await clickRail(p, ["Library", "Biblioteka"]);
+      const vault = p.getByText(/Vault|Sejf/i);
+      return (await vault.count()) ? "Library + Vault" : "Library (Vault nagłówek niewidoczny)";
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
