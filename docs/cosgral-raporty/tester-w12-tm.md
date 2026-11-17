@@ -14,6 +14,15 @@ Gałąź: `team/tester/w12-tm` (baza `79567cdf9`). GO: `GO-tester-tk.txt`.
 1. Overflow: wybór okna bez `#island`/`#dock`, `setBounds(1100×400)`, log `inner/rail/buttons/more`, dump short, finally w try/catch.
 2. IPC: `needsInput` obejmuje komunikat period.
 
-## 3. Przebieg (po build)
+## 3. Przebieg
 
-(uzupełnione po e2e/W5/zrzutach)
+| | |
+|---|---|
+| baza | `79567cdf9` + commits `e6adda795` / `1be37f9d5` / `4ab2500` (`team/tester/w12-tm`) |
+| build | ok |
+| e2e | **30 ok / 0 FAIL** (`e2e-tm2`; overflow: `inner≈335 more=true`; usageReport w needsInput) |
+| W5 | **29/29** (`w5-tm`) |
+| zrzuty | `Shared\cosgral-docs\zrzuty-cosgral-17-11-c\` (15 PNG + `vs-071.txt`) |
+| GO | usunięty `GO-tester-tk.txt` |
+
+Uwaga overflow: `rail=0 buttons=0` przy `more=true` — selektor aria Pages nie złapał rail w short, ale przycisk More pages był i kliknięcie Library przeszło.
