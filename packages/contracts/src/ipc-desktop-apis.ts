@@ -88,6 +88,7 @@ import type {
 } from "./ipc-dock";
 import type { EndpointsDesktopApi } from "./ipc-endpoints";
 import type { AgentEyesState, StopAgentEyesInput } from "./ipc-eyes";
+import type { InstanceTransferDesktopApi, UpdatePreferencesDesktopApi } from "./ipc-instance-transfer";
 import type { IntegrationsDesktopApi } from "./ipc-integrations";
 import type { IsolationDesktopApi } from "./ipc-isolation";
 import type {
@@ -731,6 +732,9 @@ export interface OpenBotDesktopApi {
   pluginCatalog?: PluginCatalogDesktopApi;
   /** COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http: the system browser, a one-time loopback answer, encrypted tokens. Optional until every mock implements it. */
   mcpOAuth?: McpOAuthDesktopApi;
+  /** COSGRAL W12-KK (g2): Transfer and Import of agents with one .zip (the paths never reach the window) and the preferences of program updates. Optional until every mock implements it. */
+  instanceTransfer?: InstanceTransferDesktopApi;
+  updatePreferences?: UpdatePreferencesDesktopApi;
 }
 
 /**

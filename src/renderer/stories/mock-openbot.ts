@@ -104,6 +104,7 @@ import { createMockComposer, createMockSearch, createMockThreadTabs } from "./mo
 import { createMockContext } from "./mock-context";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { createMockFallbackModelsApi } from "./mock-fallback-models-api";
+import { createMockInstanceTransfer } from "./mock-instance-transfer";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
 import { createMockMcpOAuth } from "./mock-mcp-oauth";
@@ -568,6 +569,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     });
   });
   const mockVaultConnectors = createMockVaultConnectors((event) => emitAgentEvent(event));
+  const mockInstanceTransfer = createMockInstanceTransfer((event) => emitAgentEvent(event));
   const api: OpenBotDesktopApi = {
     ...w2ui2,
     memory: w2.memory,
@@ -1407,6 +1409,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     pluginCatalog: createMockPluginCatalog((event) => emitAgentEvent(event)),
     // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers (demo; no browser opens).
     mcpOAuth: createMockMcpOAuth((event) => emitAgentEvent(event)),
+    // COSGRAL W12-KK (g2): Transfer/Import of agents and the update preferences (demo; no file is touched).
+    instanceTransfer: mockInstanceTransfer.transfer,
+    updatePreferences: mockInstanceTransfer.updates,
     // COSGRAL W5-K2: own model endpoints (demo; nothing is contacted).
     endpoints: createMockEndpointsApi(),
     // COSGRAL W5-BE1: managed CLIs for Storybook and the preview (demo data; nothing is downloaded).

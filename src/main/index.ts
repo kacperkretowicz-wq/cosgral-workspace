@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { homedir, hostname, userInfo } from "node:os";
 import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { ATTACHMENT_LIMITS, INPUT_LIMITS } from "@openbot/contracts/input-limits";
@@ -12,6 +12,7 @@ import {
   emptyAgentEyesState,
   emptySidebarLayout,
   type ImportAttachmentsInput,
+  INSTANCE_TRANSFER_LIMITS,
   IPC_CHANNELS,
   isApiKeyProvider,
   type MacPermissionId,
@@ -57,6 +58,7 @@ import { ComposerService } from "../backend/composer-service";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
 import { EndpointStore } from "../backend/endpoint-store";
 import { EyesService } from "../backend/eyes-service";
+import { InstanceTransferService } from "../backend/instance-transfer/transfer-service";
 import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
 import { MailboxStore } from "../backend/mailbox-store";
@@ -79,6 +81,7 @@ import { SpaceStore } from "../backend/space-store";
 import { clearLogs, measureUserData } from "../backend/storage-report";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { ThreadTabsService } from "../backend/thread-tabs";
+import { UpdatePreferencesService } from "../backend/update-preferences";
 import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-runtime";
 import { ConnectorStore } from "../backend/vault-connectors/common";
 import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
@@ -113,6 +116,8 @@ import { createDockWindows, type DockWindows } from "./dock-windows";
 import { registerEndpointsIpc } from "./endpoints-ipc";
 import { ElectronEyesCapture, EYES_CAMERA_SCHEME } from "./eyes-capture";
 import { HostService } from "./host-service";
+import { createTransferHost } from "./instance-transfer-host";
+import { registerInstanceTransferIpc } from "./instance-transfer-ipc";
 import { registerIntegrationsIpc } from "./integrations-ipc";
 import {
   parseAgentRequest,
@@ -243,6 +248,7 @@ import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
+import { registerUpdatePreferencesIpc } from "./update-preferences-ipc";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
 import { registerVaultConnectorsIpc } from "./vault-connectors-ipc";
 import { createVoice, registerVoiceIpc } from "./voice-ipc";
@@ -320,6 +326,9 @@ let vaultSecretsService: VaultSecretsService | null = null;
 let pluginCatalogService: PluginCatalogService | null = null;
 // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http.
 let mcpOAuthService: McpOAuthService | null = null;
+// COSGRAL W12-KK (g2): Transfer/Import of agents with one .zip, and the preferences of program updates.
+let instanceTransferService: InstanceTransferService | null = null;
+let updatePreferencesService: UpdatePreferencesService | null = null;
 let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
@@ -982,6 +991,8 @@ function registerIpcHandlers(
   registerMessengersIpc(() => messengerBridge);
   registerPluginCatalogIpc(() => pluginCatalogService);
   registerMcpOAuthIpc(() => mcpOAuthService);
+  registerInstanceTransferIpc(() => instanceTransferService);
+  registerUpdatePreferencesIpc(() => updatePreferencesService);
   registerVaultConnectorsIpc(
     () => vaultConnectorHub,
     () => vaultSecretsService,
@@ -1836,6 +1847,40 @@ if (!hasSingleInstanceLock) {
           measure: () => measureUserData(app.getPath("userData")),
           clearLogs: () => clearLogs(app.getPath("userData")),
         });
+        // COSGRAL W12-KK (g2): Transfer/Import (the dialogs and the file stay here; the window never sees a path).
+        instanceTransferService = new InstanceTransferService({
+          host: createTransferHost({
+            service,
+            routines: () => routineManager,
+            settings: () => serverSettingsService,
+            appVersion: app.getVersion(),
+          }),
+          files: {
+            save: async (suggestedName, bytes) => {
+              const options = { defaultPath: suggestedName, filters: [{ name: "ZIP", extensions: ["zip"] }] };
+              const result = mainWindow
+                ? await dialog.showSaveDialog(mainWindow, options)
+                : await dialog.showSaveDialog(options);
+              if (result.canceled || !result.filePath) return null;
+              await writeFile(result.filePath, bytes);
+              return basename(result.filePath);
+            },
+            open: async () => {
+              const options: OpenDialogOptions = {
+                properties: ["openFile"],
+                filters: [{ name: "ZIP", extensions: ["zip"] }],
+              };
+              const result = mainWindow
+                ? await dialog.showOpenDialog(mainWindow, options)
+                : await dialog.showOpenDialog(options);
+              const path = result.filePaths[0];
+              if (result.canceled || !path) return null;
+              if ((await stat(path)).size > INSTANCE_TRANSFER_LIMITS.archiveBytes)
+                throw new Error("That file is too large.");
+              return readFile(path);
+            },
+          },
+        });
         service.useBusyMessageMode(
           (botId) =>
             agentCardsService?.busyMode(botId, serverSettingsService?.busyMessageDefault() ?? "queue") ?? "queue",
@@ -2011,6 +2056,13 @@ if (!hasSingleInstanceLock) {
       remoteServers.on("directMessage", forwardDirectMessage);
       remoteServers.on("directTyping", forwardDirectTyping);
       updateService.on("status", forwardUpdateStatus);
+      // COSGRAL W12-KK (g2): the person's choices (checks, download, install on quit, pre-releases, how often) are applied before the first check.
+      updatePreferencesService = new UpdatePreferencesService({
+        file: join(app.getPath("userData"), "update-preferences.json"),
+        emit: (event) => forwardAgentEvent("local", event),
+        apply: (preferences) => updateService?.applyPreferences(preferences),
+      });
+      updatePreferencesService.applyCurrent();
       updateService.start();
       const agentInitialization = new AgentInitializationGate(async () => {
         await service.initialize();
