@@ -158,11 +158,11 @@ export const AgentMenuActions: Story = {
       await userEvent.click(await body.findByRole("menuitem", { name: "Hide" }));
       await waitFor(() => expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument());
       await userEvent.click(c.getByRole("switch", { name: "Show hidden" }));
-      await c.findByText("Ukryty");
+      await c.findByText("Hidden");
       await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
-      await userEvent.click(await body.findByRole("menuitem", { name: "Pokaż" }));
-      await waitFor(() => expect(c.queryByText("Ukryty")).not.toBeInTheDocument());
+      await userEvent.click(await body.findByRole("menuitem", { name: "Show" }));
+      await waitFor(() => expect(c.queryByText("Hidden")).not.toBeInTheDocument());
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
       await userEvent.click(await body.findByRole("menuitem", { name: "Duplikuj" }));
       await c.findByRole("heading", { name: "Research kopia" });

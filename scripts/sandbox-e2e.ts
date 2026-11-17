@@ -906,19 +906,19 @@ async function main(): Promise<void> {
       const rows = page.getByRole("navigation", { name: "Chat list" });
       const row = rows.getByRole("button", { name: new RegExp(`^${navigationName}`) });
       await row.click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Ukryj", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Hide", exact: true }).click();
       await row.waitFor({ state: "detached" });
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden===true`,
       );
-      await page.getByRole("switch", { name: "Pokaż ukryte" }).click({ force: true });
+      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
       await row.waitFor();
       await row.click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Pokaż", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Show", exact: true }).click();
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden!==true`,
       );
-      await page.getByRole("switch", { name: "Pokaż ukryte" }).click({ force: true });
+      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
       await row.waitFor();
       await dump(page, evidence, "navigation-hide-show");
     });
