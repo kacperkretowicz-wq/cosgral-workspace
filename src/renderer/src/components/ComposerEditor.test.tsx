@@ -1,7 +1,7 @@
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { DraftAttachment } from "@openbot/contracts/ipc";
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BotProfile } from "../data";
@@ -55,6 +55,42 @@ function placeCaretAtEnd(editor: HTMLElement): void {
   selection?.removeAllRanges();
   selection?.addRange(range);
 }
+
+describe("ComposerEditor slash commands", () => {
+  const listSlashCommands = vi.fn(async () => [
+    { name: "compact", hint: "Shorten the context", kind: "program" as const },
+    { name: "new-thread", hint: "Start a new thread", kind: "program" as const },
+  ]);
+  afterEach(() => {
+    Reflect.deleteProperty(window, "openbot");
+  });
+
+  it("lists the commands after a leading slash, filters them and inserts the chosen one", async () => {
+    Object.assign(window, { openbot: { composer: { listSlashCommands } } });
+    const { editor, onValueChange } = renderComposer();
+    await waitFor(() => expect(listSlashCommands).toHaveBeenCalledWith({ botId: "chief" }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    editor.textContent = "/";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    expect(await screen.findByRole("button", { name: /compact/ })).toBeInTheDocument();
+    editor.textContent = "/new";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    await waitFor(() => expect(screen.queryByRole("button", { name: /compact/ })).not.toBeInTheDocument());
+    await fireEvent.keyDown(editor, { key: "Enter" });
+    expect(onValueChange).toHaveBeenLastCalledWith("/new-thread ");
+  });
+
+  it("shows no list without the composer contract or when the slash is not at the start", async () => {
+    Object.assign(window, { openbot: {} });
+    const { editor } = renderComposer();
+    editor.textContent = "/";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    expect(screen.queryByRole("button", { name: /compact/ })).not.toBeInTheDocument();
+  });
+});
 
 describe("ComposerEditor", () => {
   it("keeps repeated Shift+Enter line breaks in the draft", async () => {

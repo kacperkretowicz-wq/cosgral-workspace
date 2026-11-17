@@ -1343,3 +1343,24 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   color: var(--cosgral-danger);
   font-size: var(--cosgral-text-sm);
 }
+
+/* W11-UI1: slash command list in the message box. */
+.slash-picker {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.slash-picker .mention-picker-option {
+  cursor: pointer;
+}
+
+.slash-picker .mention-picker-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slash-picker-active {
+  background: var(--cosgral-hover);
+}

@@ -35,3 +35,8 @@
 - Otwarcie: kanał → widok kanałów, plik → Biblioteka, rutyna → Harmonogram (hit nie niesie jeszcze celu głębszego niż strona).
 - Zmiana nazwy zakładki Bots→Agents dotyka `stories/App.stories.tsx` (nie uruchamiane — wymaga GO na Storybook).
 - Kontrola: GlobalSearch 2/2, App.test 92/92, i18n 9/9, typecheck OK, Biome OK, check:ui OK.
+
+## Commit 7 — polecenia „/” (zrzut 111)
+- Lista poleceń programu i skilli nad polem wiadomości; podpięta pod `window.openbot.composer.listSlashCommands`; bez kontraktu brak listy (bez atrapy).
+- „@” zostaje na lokalnych agentach i plikach; `searchMentions` (kanały, pliki spoza szkicu) jeszcze niepodpięte.
+- Kontrola: ComposerEditor 13/13, i18n 9/9, typecheck OK, Biome OK, check:ui OK.

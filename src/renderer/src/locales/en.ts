@@ -244,4 +244,5 @@ export const en = {
   "Nothing found": "Nothing found",
   "Search COSGRAL": "Search COSGRAL",
   Results: "Results",
+  Commands: "Commands",
 } as const;
