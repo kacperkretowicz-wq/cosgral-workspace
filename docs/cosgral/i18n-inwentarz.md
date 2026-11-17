@@ -145,3 +145,79 @@ Gałąź `team/tester/w7-t2` — SHA w `channel_result`.
 - IsolationSettings, BrowserProfileSettings: active/shared-process/unavailable/off, przyczyna niedostępności, signed-out notice, domeny allow/block, potwierdzenie czyszczenia danych.
 - Integrations (kontrakt W10-KK1): Connect account, waiting-for-browser, connected, failed/needs-login, Disconnect, allowlista narzędzi. Ten etap nie tłumaczy W8 ani W10.
 - Etap PL/EN 1 obejmuje istniejące SettingsModal, AppearanceSettings, AppSettingsW3 i etykiety Sidebar/PageRail. Pełna migracja wszystkich ekranów i sześciu działających zakładek pozostaje do odbioru; sam słownik nie oznacza pełnego G4.
+
+---
+
+## 7. Nowo dodane ekrany i kontrakty W11/W12 (Stan: 17.11.2026, KAPI-B)
+
+Weryfikacja zmian po integracji fali W11 i W12 (`team/ui/w11-ui1`, `team/backend/w11-engines`, `team/backend/w11-agent-cards`, `team/kk/w11-marketplace`, `team/kk/w11-vault-connectors`, `team/kk/w12-oauth`).
+
+### A. Ekrany podpięte do katalogu i18n (`src/renderer/src/locales/en.ts` i `pl.ts`)
+
+Katalog i18n został wzbogacony o 28 nowych par kluczy obsługujących nowe komponenty UI:
+
+| Komponent / Plik | Klucze EN | Klucze PL | Uwagi / Status |
+|---|---|---|---|
+| `ThreadTabs.tsx` | `Could not change the thread tabs.`<br>`Threads`<br>`Close tab`<br>`Tab actions`<br>`Close other tabs`<br>`Close tabs to the right`<br>`New thread`<br>`All threads` | `Nie udało się zmienić kart wątków.`<br>`Wątki`<br>`Zamknij kartę`<br>`Akcje karty`<br>`Zamknij pozostałe karty`<br>`Zamknij karty po prawej`<br>`Nowy wątek`<br>`Wszystkie wątki` | W pełni oparte o `t()`. Obsługa nawigacji klawiaturą, menu kontekstowego i powiadomień błędów. |
+| `GlobalSearch.tsx` | `Search COSGRAL`<br>`Search`<br>`Filter results`<br>`Results`<br>`Nothing found`<br>`You to {name}`<br>`{name} to you`<br>`Agent`, `Channel`, `File`, `Routine`, `Result`<br>`All`, `Messages`, `Files`, `Routines` | `Szukaj w COSGRAL`<br>`Szukaj`<br>`Filtruj wyniki`<br>`Wyniki`<br>`Nic nie znaleziono`<br>`Ty do {name}`<br>`{name} do Ciebie`<br>`Agent`, `Kanał`, `Plik`, `Rutyna`, `Wynik`<br>`Wszystko`, `Wiadomości`, `Pliki`, `Rutyny` | W pełni oparte o `t()`. Zakładka `Bots` przemianowana na `Agents` (zgodnie ze stylem 0.71). |
+| `ComposerEditor.tsx` | `Commands`<br>`/{command.name}` | `Polecenia`<br>`/{command.name}` | Sekcja menu poleceń `/` (`aria-label={t("Commands")}`). Hinty poleceń pochodzą z kontraktu. |
+| `InitialSetup.tsx` | Pełny zestaw ekranu powitalnego: `Set up this computer`, `Connect to a host`, `Where will COSGRAL Workspace run?`, `Local computer`, `Remote host`, `Mac permissions`, `Continue with {provider}`, `Choose a provider`, `COSGRAL Workspace could not save your local setup.` | Pełne tłumaczenia PL w `pl.ts` | Wybór języka na ekranie początkowym natychmiastowo przełącza teksty powitalne. |
+| `NewAgentPage.tsx` | `Create new`, `New agent`, `Agent color`, `Automatic color`, `Agent face`, `Choose this face`, `More faces`, `Name`, `Agent name`, `What should this agent help with?`, `Model`, `Agent model`, `Effort` (`Low`, `Medium`, `High`, `Extra high`, `Max`), `Suggestions`, nazwy 10 kolorów (Red..Magenta) | Pełne tłumaczenia PL w `pl.ts` | Samodzielna strona kreatora agenta z natychmiastowym podglądem. |
+| `Sidebar.tsx` / Akcje | `Duplicate`<br>`Copy ready. Memory, history, queue, routines, channels and Vault are not copied.`<br>`Note:` | `Duplikuj`<br>`Kopia gotowa. Pamięć, historia, kolejka, rutyny, kanały i Vault nie są kopiowane.`<br>`Uwaga:` | Klonowanie agenta z jasnym komunikatem o zakresie kopii. |
+
+---
+
+### B. Nowe kontrakty Backend / KK (do objęcia i18n przy wdrożeniach ekranów)
+
+Nowe kontrakty zdefiniowały stałe komunikaty błędów i etykiety w języku angielskim. W momencie tworzenia dedykowanych paneli UI należy wdrożyć mapowanie tych komunikatów na klucze katalogu `t()`:
+
+#### 1. Konektory Sejfu (`packages/contracts/src/ipc-vault-connectors.ts`)
+- **Stany konektora:** `disconnected`, `connecting`, `choose-account`, `connected`, `failed`.
+- **Kody błędów (`errorCode`):**
+  - `cli-missing`: brak zainstalowanego narzędzia menedżera haseł (`op`, `bw`).
+  - `cli-signed-out`: brak aktywnej sesji logowania w aplikacji menedżera.
+  - `token-rejected`: token serwisowy lub klucz sesji został odrzucony.
+  - `locked`: sejf menedżera jest zablokowany.
+  - `folder-missing`: brak wskazanego folderu współdzielonego (`Shared with COSGRAL`).
+  - `plan`: ograniczenia planu subskrypcyjnego konta.
+  - `unknown`: ogólny błąd ze stałym, bezpiecznym komunikatem.
+- **Stałe zdania błędów walidacji:**
+  - `"The connector request is malformed."`
+  - `"Choose one of the accounts that were offered."`
+  - `"Paste the token or key first."`
+  - `"That token or key is too long."`
+  - `"This way of connecting takes no token or key."`
+  - `"Only Bitwarden takes a server address."`
+  - `"A server address starts with https:// and has no user name, query or fragment."`
+  - `"Choose a Vault item."`
+  - `"The file is empty."`
+  - `"That file is too large to import."`
+
+#### 2. Katalog Aplikacji Marketplace (`packages/contracts/src/ipc-plugin-catalog.ts`)
+- **Kategorie wtyczek:** `coding`, `productivity`, `data-analytics`, `automation`, `research`, `design`, `documents`, `other`.
+- **Stany instalacji:** `available`, `installed`, `needs-sign-in`, `update-available`, `error`.
+- **Metody autoryzacji:** `link` (OAuth przez przeglądarkę), `key` (wpisanie klucza write-only), `local` (bez autoryzacji).
+- **Źródła katalogu:** `none`, `folder` (folder właściciela), `demo`.
+
+#### 3. Przegląd 14 kart Agenta (`packages/contracts/src/ipc-agent-cards.ts`)
+- **Identyfikatory kart:** `chat-color`, `instructions`, `memory`, `skills`, `files`, `tables`, `routines`, `usage`, `publish`, `permissions`, `advanced`, `folders`, `notifications`, `backup-models`.
+- **Kolory czatu agenta:** `default`, `blue`, `green`, `amber`, `red`, `violet`, `pink`, `teal`.
+- **Tryb wiadomości podczas pracy:** `app-default`, `queue`, `steer`.
+- **Poziomy powiadomień:** `all`, `mentions`, `none`.
+- **Krótkie etykiety podsumowań kart:** format tekstowy np. `"3 folders"`, `"Queue"`, `"Off"`, `"8 models"`.
+
+#### 4. Pasek czatu i polecenia `/` (`packages/contracts/src/ipc-composer.ts`)
+- **Polecenia programu:**
+  - `/compact` – hint: `"Shorten the conversation to free context"`
+  - `/new-thread` – hint: `"Start an empty thread"`
+  - `/side` – hint: `"Ask a side question without touching the chat"`
+- **Stany pytania pobocznego (Side Question):** `running`, `done`, `failed`, `cancelled`.
+- **Rodzaje wzmianek (`@`):** `agent`, `channel`, `file`.
+
+#### 5. Most Telegrama (`packages/contracts/src/ipc-messengers.ts`)
+- **Stany połączenia:** `disconnected`, `polling`, `failed`, `needs-token`.
+- **Stałe zdania ostrzeżeń:** brak autoryzacji tokena, odrzucenie czatu spoza dozwolonej listy (ciche ignorowanie bez wysyłania odpowiedzi do obcych).
+
+#### 6. Dostęp z telefonu (`packages/contracts/src/ipc-phone-access.ts`)
+- **Ekrany PWA telefonu:** ekran blokady PIN (`"Enter PIN"`, `"Unlock"`), instrukcja konfiguracji Tailscale, stan powiadomień Web Push.
+- **Odpowiedzi bezpieczeństwa:** kod 423 (blokada po 5 min bezczynności lub po restarcie komputera), kod 403 dla operacji dozwolonych wyłącznie na komputerze (Computer Use, Vault reveal, konfiguracje MCP).
