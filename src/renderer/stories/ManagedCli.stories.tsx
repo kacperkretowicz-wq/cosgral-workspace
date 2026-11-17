@@ -36,9 +36,9 @@ type Story = StoryObj<typeof meta>;
 export const Missing: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
-    await userEvent.click(c.getByRole("button", { name: "Pobierz" }));
+    await userEvent.click(c.getByRole("button", { name: "Download" }));
     await expect(args.onAction).toHaveBeenCalledWith("installCli", { id: "codex" });
-    await expect(c.queryByRole("button", { name: "Usuń" })).not.toBeInTheDocument();
+    await expect(c.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   },
 };
 export const Downloading: Story = {
@@ -46,13 +46,13 @@ export const Downloading: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
-    await expect(c.getByRole("button", { name: "Pobierz" })).toBeDisabled();
+    await expect(c.getByRole("button", { name: "Download" })).toBeDisabled();
   },
 };
 export const Failed: Story = {
   args: { state: { ...empty, phase: "error", error: "Brak połączenia. Spróbuj ponownie." } },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole("button", { name: "Ponów" })).toBeEnabled();
+    await expect(within(canvasElement).getByRole("button", { name: "Retry" })).toBeEnabled();
   },
 };
 export const AutoUpdateOff: Story = {
