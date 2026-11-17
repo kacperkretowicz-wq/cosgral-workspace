@@ -380,6 +380,7 @@ export const pl = {
   "Update available": "Dostępna aktualizacja",
   Problem: "Problem",
   "Add custom": "Dodaj własną",
+  "Thread tools and context": "Narzędzia wątku i kontekst",
   "Add a custom app": "Dodaj własną aplikację",
   "Web address (http)": "Adres internetowy (http)",
   "Local program (stdio)": "Program lokalny (stdio)",

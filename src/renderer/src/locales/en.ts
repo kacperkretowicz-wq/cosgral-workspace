@@ -381,6 +381,7 @@ export const en = {
   "Update available": "Update available",
   Problem: "Problem",
   "Add custom": "Add custom",
+  "Thread tools and context": "Thread tools and context",
   "Add a custom app": "Add a custom app",
   "Web address (http)": "Web address (http)",
   "Local program (stdio)": "Local program (stdio)",

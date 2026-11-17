@@ -102,7 +102,20 @@ import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
 import { ThreadTabs } from "./ThreadTabs";
-import { Button, Combobox, Dialog, Input, NativeSelect, Paperclip, Popover, Switch, Tabs, Text, Textarea } from "./ui";
+import {
+  Button,
+  Combobox,
+  Dialog,
+  Input,
+  NativeSelect,
+  Paperclip,
+  Popover,
+  SlidersHorizontal,
+  Switch,
+  Tabs,
+  Text,
+  Textarea,
+} from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
 import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -1732,8 +1745,23 @@ export function Conversation(props: ConversationProps) {
         <p role="alert">{threadActionError()}</p>
       </Show>
       <Show when={props.bot}>{(bot) => <ThreadTabs botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
-      <Show when={props.bot}>{(bot) => <ThreadPanel botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
-      <Show when={props.bot}>{(bot) => <ContextIndicator botId={bot().id} threadId={bot().threadId} />}</Show>
+      <Show when={props.bot}>
+        {(bot) => (
+          <details class="chat-tools">
+            <summary
+              class="chat-tools-toggle"
+              aria-label={t("Thread tools and context")}
+              title={t("Thread tools and context")}
+            >
+              <SlidersHorizontal aria-hidden="true" />
+            </summary>
+            <div class="chat-tools-body">
+              <ThreadPanel botId={bot().id} onChanged={props.onThreadsChanged} />
+              <ContextIndicator botId={bot().id} threadId={bot().threadId} />
+            </div>
+          </details>
+        )}
+      </Show>
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>

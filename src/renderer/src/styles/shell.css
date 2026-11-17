@@ -67,3 +67,112 @@
 .page-rail-button svg circle {
   fill: currentColor;
 }
+
+/* Chat header: Threads and Context live behind one icon at the right end of the tab row. */
+.chat-tools {
+  position: relative;
+  height: 0;
+}
+
+.chat-tools-toggle {
+  position: absolute;
+  z-index: 3;
+  top: -30px;
+  right: 12px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-sm);
+  color: var(--cosgral-text-muted);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    background-color var(--cosgral-duration-normal) var(--cosgral-ease),
+    color var(--cosgral-duration-normal) var(--cosgral-ease);
+}
+
+.chat-tools-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.chat-tools-toggle:hover,
+.chat-tools[open] .chat-tools-toggle {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.chat-tools-toggle:focus-visible {
+  box-shadow: var(--cosgral-focus-ring);
+  outline: 0;
+}
+
+.chat-tools-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.chat-tools-body {
+  position: absolute;
+  z-index: 20;
+  top: 4px;
+  right: 12px;
+  display: flex;
+  width: min(440px, calc(100% - 24px));
+  max-height: min(60vh, 520px);
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 8px;
+  box-shadow: var(--cosgral-shadow-popover);
+}
+
+/* Server rail: quiet tiles in the same language as the page rail (no blue ring, small status dot). */
+.server-rail .server-rail-monogram,
+.server-rail .server-rail-local {
+  width: 32px;
+  height: 32px;
+  border-color: var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-control);
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+}
+
+.server-rail .server-rail-button-active .server-rail-local,
+.server-rail .server-rail-button-active .server-rail-monogram {
+  border-color: var(--cosgral-border-strong);
+  background: var(--cosgral-bg-control-active);
+  color: var(--cosgral-text-primary);
+}
+
+.server-rail .server-rail-state {
+  width: 8px;
+  height: 8px;
+  border-color: var(--cosgral-bg-frame);
+}
+
+.server-rail .server-rail-action .server-rail-monogram {
+  border-style: dashed;
+  background: transparent;
+  color: var(--cosgral-text-muted);
+}
+
+/* Page rail: every button keeps its full 36 px, so "More pages" can never shrink into a bare pill. */
+.page-rail .page-rail-list > .page-rail-button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+}
+
+.page-rail .page-rail-button svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
