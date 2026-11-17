@@ -5,8 +5,16 @@ import { NewAgentPage } from "./NewAgentPage";
 
 afterEach(cleanup);
 
-const status = { connected: true } as unknown as AgentStatus;
-const template = {
+const status: AgentStatus = {
+  phase: "ready",
+  cliVersion: null,
+  auth: { kind: "unknown" },
+  providers: [],
+  capabilities: { chat: "unavailable", browser: "unavailable", computerUse: "unavailable" },
+  message: "",
+  fullAccess: true,
+};
+const template: AgentTemplate = {
   id: "inbox",
   origin: "built-in",
   name: "Inbox Helper",
@@ -21,7 +29,7 @@ const template = {
   avatarHue: 215,
   suggested: true,
   createdAt: null,
-} as unknown as AgentTemplate;
+};
 
 function page(onCreate = vi.fn().mockResolvedValue(undefined), loadSuggestions?: () => Promise<AgentTemplate[]>) {
   render(() => (
