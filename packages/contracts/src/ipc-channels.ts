@@ -250,6 +250,12 @@ export const IPC_CHANNELS = {
   pluginCatalogUpdate: "plugin-catalog:update",
   pluginCatalogAddCustom: "plugin-catalog:add-custom",
   pluginCatalogSetFolder: "plugin-catalog:set-folder",
+  // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers.
+  mcpOauthList: "mcp-oauth:list",
+  mcpOauthStatus: "mcp-oauth:status",
+  mcpOauthSignIn: "mcp-oauth:sign-in",
+  mcpOauthCancel: "mcp-oauth:cancel",
+  mcpOauthSignOut: "mcp-oauth:sign-out",
   // COSGRAL W8-KK3: browser profiles per agent.
   browserProfilesList: "browser-profiles:list",
   browserProfilesCreate: "browser-profiles:create",

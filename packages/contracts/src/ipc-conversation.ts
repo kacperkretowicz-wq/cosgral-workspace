@@ -44,6 +44,7 @@ import { type IntegrationsChanged, isIntegrationsChanged } from "./ipc-integrati
 import { type IsolationChanged, isIsolationChanged } from "./ipc-isolation";
 import { isMarketplaceItem, type MarketplaceItem } from "./ipc-marketplace";
 import { type AgentMcpServerSetting, isAgentMcpServerSetting, isMcpServer, type McpServer } from "./ipc-mcp";
+import { isMcpOAuthChanged, type McpOAuthChanged } from "./ipc-mcp-oauth";
 import { type AgentMemory, isAgentMemory } from "./ipc-memory";
 import { isMessagePinsChanged, type MessagePinsChanged } from "./ipc-message-actions";
 import { isMessengersChanged, type MessengersChanged } from "./ipc-messengers";
@@ -712,6 +713,8 @@ export type AgentEvent =
   | ({ type: "vault-connectors-changed" } & VaultConnectorsChanged)
   /** COSGRAL W11-KK (e): the plugin catalog or an install state changed (the info and the installed plugins). */
   | ({ type: "plugin-catalog-changed" } & PluginCatalogChanged)
+  /** COSGRAL W12-KK (1): the sign-in (OAuth) of an MCP server changed (waiting for the browser, signed in, failed) (every status). */
+  | ({ type: "mcp-oauth-changed" } & McpOAuthChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -903,6 +906,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isVaultConnectorsChanged(value);
     case "plugin-catalog-changed":
       return isPluginCatalogChanged(value);
+    case "mcp-oauth-changed":
+      return isMcpOAuthChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

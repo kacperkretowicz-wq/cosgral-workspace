@@ -58,6 +58,8 @@ import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
+import { McpOAuthService } from "../backend/mcp-oauth/mcp-oauth-service";
+import { McpOAuthStore } from "../backend/mcp-oauth/oauth-store";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
 import { createAgentPort, MessengerBridge } from "../backend/messenger-bridge";
 import type { MobileConnect } from "../backend/mobile-connect";
@@ -196,6 +198,7 @@ import { registerIsolationIpc } from "./isolation-ipc";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
+import { registerMcpOAuthIpc } from "./mcp-oauth-ipc";
 import { registerMessageActionsIpc } from "./message-actions-ipc";
 import { registerMessengersIpc } from "./messengers-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
@@ -310,6 +313,8 @@ let vaultConnectorHub: VaultConnectorHub | null = null;
 let vaultSecretsService: VaultSecretsService | null = null;
 // COSGRAL W11-KK (e): the Marketplace Apps tab (plugin catalog from the owner's folder, installed as MCP servers).
 let pluginCatalogService: PluginCatalogService | null = null;
+// COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers over http.
+let mcpOAuthService: McpOAuthService | null = null;
 let integrationTimer: NodeJS.Timeout | null = null;
 /** COSGRAL W2: routines and the loopback webhook receiver; stopped on exit. */
 let routineManager: RoutineManager | null = null;
@@ -969,6 +974,7 @@ function registerIpcHandlers(
   registerIntegrationsIpc(() => integrationManager);
   registerMessengersIpc(() => messengerBridge);
   registerPluginCatalogIpc(() => pluginCatalogService);
+  registerMcpOAuthIpc(() => mcpOAuthService);
   registerVaultConnectorsIpc(
     () => vaultConnectorHub,
     () => vaultSecretsService,
@@ -1490,8 +1496,23 @@ if (!hasSingleInstanceLock) {
         },
         // COSGRAL W10-KK1: the tool allowlist of the space for the app integrations.
         toolFilter: (serverName, toolName) => integrationManager?.toolAllowed(serverName, toolName) ?? true,
+        // COSGRAL W12-KK (1): a server that was signed in to connects with its saved tokens.
+        authProvider: (serverId) => mcpOAuthService?.providerFor(serverId),
       });
       mcpManager = mcp;
+      mcpOAuthService = new McpOAuthService({
+        store: new McpOAuthStore(store.database, electronSecretBox()),
+        mcp,
+        emit: (event) => forwardAgentEvent("local", event),
+        // Only a secure page of the service (or one on this computer) goes to the system browser.
+        openBrowser: async (address) => {
+          const url = new URL(address);
+          if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "127.0.0.1")) {
+            throw new Error("Only a secure sign-in address can be opened.");
+          }
+          await shell.openExternal(url.toString());
+        },
+      });
       integrationManager = new IntegrationManager({
         database: store.database,
         box: electronSecretBox(),
@@ -2205,6 +2226,7 @@ async function prepareForShutdown(): Promise<void> {
   if (integrationTimer) clearInterval(integrationTimer);
   await (messengerBridge?.stop() ?? Promise.resolve());
   vaultConnectorHub?.dispose();
+  mcpOAuthService?.dispose();
   await (mcpManager?.stop() ?? Promise.resolve());
   // COSGRAL W2: no routine runs and no webhook receiver after exit.
   routineManager?.stop();
