@@ -82,6 +82,7 @@ import {
   type VaultRequest,
   type VaultRequestResolution,
 } from "./ipc-vault";
+import { isVaultConnectorsChanged, type VaultConnectorsChanged } from "./ipc-vault-connectors";
 import { isVoiceState, type VoiceState } from "./ipc-voice";
 import { type ConversationWindowsChanged, isConversationWindowsChanged } from "./ipc-windows";
 import { isWorkflow, isWorkflowRun, type Workflow, type WorkflowRun } from "./ipc-workflows";
@@ -694,6 +695,8 @@ export type AgentEvent =
   | ({ type: "phone-access-changed" } & PhoneAccessChanged)
   /** COSGRAL W10-KK2: the messenger bridge changed (connected, failed, allow list, a chat wrote that is not allowed) (the whole list). */
   | ({ type: "messengers-changed" } & MessengersChanged)
+  /** COSGRAL W11-KK (d): a Vault connector changed (connecting, connected, failed, login count) (the whole list). */
+  | ({ type: "vault-connectors-changed" } & VaultConnectorsChanged)
   /** COSGRAL W6-BE1: the threads of an agent changed (created, renamed, archived, restored, deleted, switched). */
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
@@ -873,6 +876,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isPhoneAccessChanged(value);
     case "messengers-changed":
       return isMessengersChanged(value);
+    case "vault-connectors-changed":
+      return isVaultConnectorsChanged(value);
     case "threads-changed":
       return isThreadsChanged(value);
     case "thread-activity":

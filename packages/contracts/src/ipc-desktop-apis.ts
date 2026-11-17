@@ -225,6 +225,7 @@ import type {
   VaultItemSummary,
   VaultStatus,
 } from "./ipc-vault";
+import type { VaultConnectorsDesktopApi, VaultSecretsDesktopApi } from "./ipc-vault-connectors";
 import type { VoiceDesktopApi } from "./ipc-voice";
 import type { WindowsDesktopApi } from "./ipc-windows";
 import type {
@@ -703,6 +704,9 @@ export interface OpenBotDesktopApi {
   phone?: PhoneDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
+  /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */
+  vaultConnectors?: VaultConnectorsDesktopApi;
+  vaultSecrets?: VaultSecretsDesktopApi;
 }
 
 /**
