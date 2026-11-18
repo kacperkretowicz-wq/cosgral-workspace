@@ -1229,4 +1229,5 @@ export const en = {
   "Agent's own list": "Agent's own list",
   "Could not reset the list.": "Could not reset the list.",
   "Reset to provider list": "Reset to provider list",
+  "{done} of {total} steps done": "{done} of {total} steps done",
 } as const;

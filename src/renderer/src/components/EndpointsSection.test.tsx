@@ -25,6 +25,20 @@ describe("EndpointsSection", () => {
     expect(screen.queryByRole("region", { name: "Own model endpoints" })).toBeNull();
   });
 
+  it("offers hosted services (xAI, OpenRouter) that only fill the form", async () => {
+    const api = stub();
+    const check = vi.spyOn(api, "check");
+    render(() => <EndpointsSection />);
+    const form = await openForm();
+    await fireEvent.click(within(form).getByRole("button", { name: "Use xAI (Grok)" }));
+    expect(within(form).getByLabelText(/^Address/)).toHaveValue("https://api.x.ai/v1");
+    expect(within(form).getByLabelText(/^Name/)).toHaveValue("xAI (Grok)");
+    await fireEvent.click(within(form).getByRole("button", { name: "Use OpenRouter" }));
+    expect(within(form).getByLabelText(/^Address/)).toHaveValue("https://openrouter.ai/api/v1");
+    expect(within(form).getByText(/your messages go to another computer/)).toBeInTheDocument();
+    expect(check).not.toHaveBeenCalled();
+  });
+
   it("fills the form from a preset and saves without contacting the server", async () => {
     const api = stub();
     const check = vi.spyOn(api, "check");
