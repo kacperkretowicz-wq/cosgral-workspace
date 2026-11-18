@@ -64,16 +64,16 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 11. Skan pozostałych `aria-label` i tekstów PL/EN w TSX po KAPI-S; klucze równe, `i18n.test`.
 
 ## Tester
-1. [w toku: Tester, 22:28] T-AJ GO Electron @ `2dfb55f09` — build, zrzuty 17-11-j, e2e, W5, sondy.
+1. [zrobione: PENDING-SHA] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.
 2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
 3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
-4. [zrobione: team/tester/w12-tg + T-AI GO] Sondy: `sandbox-next-probes.ts` (5/5), `sandbox-rename-probe.ts`, `sandbox-behavior-probe.ts` (tray/restore/launchAtLogin).
+4. [zrobione: team/tester/w12-tg + T-AI GO + T-AJ] Sondy: next 5/5, rename, behavior, a11y, ui-probes (sendShortcut/unreadFirst/tasks-board).
 5. [zrobione: T-AI GO + PNG 17-11-i] Tabela P0/P1: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-ti.md` + `vs-071-p0p1.txt`.
-6. [w toku: Tester, 22:28] `sandbox-a11y-probe.ts` — uruchomienie w T-AJ GO.
-7. [zrobione: T-AI GO poza sendShortcut] historyWindow OK, Clear history OK, MaxListeners 0 w e2e/W5; **sendShortcut nie w oknie** (tylko BE-Z2).
-8. [w toku: Tester, 22:28] Sonda w oknie: „skrót wysyłania” (Enter vs Ctrl+Enter) i „Unread first” w pasku bocznym.
+6. [zrobione: PENDING-SHA] `sandbox-a11y-probe.ts` — ok (focus, reduced-motion, css) w T-AJ GO.
+7. [zrobione: T-AJ GO] historyWindow OK, Clear history OK, MaxListeners 0; **sendShortcut** dataset OK (`sandbox-ui-probes`).
+8. [zrobione: PENDING-SHA] Sonda w oknie: sendShortcut + unreadFirst (IPC/dataset) + Tasks board 5 kolumn — `sandbox-ui-probes.ts`.
 9. Odbiór kanałów w kliencie telefonu (PWA) po UI/KK (tylko za GO).
-10. [w toku: Tester, 22:28] Aktualizacja tabeli zgodności P0/P1 po zrzutach 17-11-j.
+10. [zrobione: PENDING-SHA] P0/P1 po 17-11-j: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-tj.md` + `vs-071-p0p1.txt` (poza repo).
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,
