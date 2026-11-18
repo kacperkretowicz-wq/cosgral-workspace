@@ -65,6 +65,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 12. [zrobione: af0c21e79] Aria/i18n P1 paneli: McpPanel, MemoryPanel, VaultPanel, RoutinePanel, SkillsPanel (aria + etykiety przez `t()`).
 13. [zrobione: 5bb977653] Aria/i18n: `McpSettings` (błędy) + `AgentSettingsW3` (Create agent / Model / Save settings / fallback).
 14. [zrobione: 0841f2992] Aria/i18n: `FallbackOrder` + `ProviderFallbackLists` (kolejka modeli zapasowych).
+15. [zrobione: dba28510c] Aria/i18n: `SkillsSettings` + `QueueHoldNotice` + `EyesIndicator` (błędy/aria/Stop).
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
