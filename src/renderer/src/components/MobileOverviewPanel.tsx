@@ -1,8 +1,8 @@
-import {
-  type MobileConnectOverview,
-  type MobileConnectPhone,
-  type PhoneReach,
-  type PhoneTailscaleGuide,
+import type {
+  MobileConnectOverview,
+  MobileConnectPhone,
+  PhoneReach,
+  PhoneTailscaleGuide,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
@@ -216,10 +216,7 @@ export function MobileOverviewPanel() {
                               )}
                             </Show>
                           </div>
-                          <Show
-                            when={route.available}
-                            fallback={<Badge tone="neutral">{t("Not available")}</Badge>}
-                          >
+                          <Show when={route.available} fallback={<Badge tone="neutral">{t("Not available")}</Badge>}>
                             <Show when={route.selected}>
                               <Badge tone="success" dot>
                                 {t("In use")}

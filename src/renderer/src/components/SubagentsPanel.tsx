@@ -77,9 +77,7 @@ export function SubagentsPanel(props: { botId: string }) {
   return (
     <Show when={api && (items().length > 0 || error())}>
       <details class="subagents-panel" open={working() > 0}>
-        <summary>
-          {t("Subagents: {working} working of {total}", { working: working(), total: items().length })}
-        </summary>
+        <summary>{t("Subagents: {working} working of {total}", { working: working(), total: items().length })}</summary>
         <Show when={error()}>
           <p class="vault-connectors-error" role="alert">
             {error()}

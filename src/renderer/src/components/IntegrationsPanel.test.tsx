@@ -58,7 +58,10 @@ it("shows the owner's steps and the callback address, and asks for a secret only
   render(() => <IntegrationsPanel />);
   await screen.findByText("GitHub", { selector: "strong" });
   expect(card("GitHub").queryByLabelText("Client secret (GitHub)")).not.toBeInTheDocument();
-  expect(card("Google Workspace").getByLabelText("Client secret (Google Workspace)")).toHaveAttribute("type", "password");
+  expect(card("Google Workspace").getByLabelText("Client secret (Google Workspace)")).toHaveAttribute(
+    "type",
+    "password",
+  );
   expect(card("GitHub").getByText(/Register a GitHub App/)).toBeInTheDocument();
   expect(card("GitHub").getByText(/http:\/\/127\.0\.0\.1:/)).toBeInTheDocument();
 });

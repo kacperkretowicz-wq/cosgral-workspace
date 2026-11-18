@@ -70,7 +70,9 @@ it("lists what this version does not offer, each with its reason", async () => {
   await screen.findByRole("region", { name: "Not available in this version" });
   const list = region("Not available in this version");
   expect(list.getByText("Permanent link")).toBeInTheDocument();
-  expect(list.getByText(/A link that never expires would let anyone who finds it into your agents\./)).toBeInTheDocument();
+  expect(
+    list.getByText(/A link that never expires would let anyone who finds it into your agents\./),
+  ).toBeInTheDocument();
   expect(list.getAllByText("Not available").length).toBe(2);
 });
 
@@ -84,7 +86,9 @@ it("reads the page again when a phone pairs or the route changes", async () => {
   expect(getOverview.mock.calls.length).toBeGreaterThan(before);
   mock.simulate.setRoute("loopback");
   const routes = await screen.findByRole("region", { name: "How phones reach this computer" });
-  expect(await within(routes).findByText("Only a browser on this computer can open the phone page.")).toBeInTheDocument();
+  expect(
+    await within(routes).findByText("Only a browser on this computer can open the phone page."),
+  ).toBeInTheDocument();
 });
 
 it("shows an error with Retry when the page cannot be read, and nothing without the API", async () => {

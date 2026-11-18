@@ -5,7 +5,6 @@ import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import { LanguageSettings } from "./LanguageSettings";
 import { UpdatesPanel } from "./UpdatesPanel";
-import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 import {
   Bell,
   Button,
@@ -13,8 +12,8 @@ import {
   Dialog,
   Heading,
   IconButton,
-  NativeSelect,
   Mic,
+  NativeSelect,
   Palette,
   Settings,
   SlidersHorizontal,
@@ -22,6 +21,7 @@ import {
   Text,
   X,
 } from "./ui";
+import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 
 export interface SettingsModalProps {
   open: boolean;

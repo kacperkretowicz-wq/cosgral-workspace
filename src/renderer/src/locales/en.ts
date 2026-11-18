@@ -834,42 +834,50 @@ export const en = {
   "Files of the Library": "Files of the Library",
   "Preferences of the program": "Preferences of the program",
   "Files of the Library are not moved by this version.": "Files of the Library are not moved by this version.",
-  "Voice": "Voice",
-  "Blocked": "Blocked",
+  Voice: "Voice",
+  Blocked: "Blocked",
   "Not asked yet": "Not asked yet",
   "Forbidden here": "Forbidden here",
-  "Unknown": "Unknown",
+  Unknown: "Unknown",
   "The program may use the microphone for dictation.": "The program may use the microphone for dictation.",
-  "The microphone is switched off for this program. Allow it in the system settings.": "The microphone is switched off for this program. Allow it in the system settings.",
-  "The system has not asked yet. It asks the first time you dictate.": "The system has not asked yet. It asks the first time you dictate.",
+  "The microphone is switched off for this program. Allow it in the system settings.":
+    "The microphone is switched off for this program. Allow it in the system settings.",
+  "The system has not asked yet. It asks the first time you dictate.":
+    "The system has not asked yet. It asks the first time you dictate.",
   "A policy on this computer forbids the microphone.": "A policy on this computer forbids the microphone.",
   "This system does not say. Recording is simply tried.": "This system does not say. Recording is simply tried.",
-  "Dictation": "Dictation",
+  Dictation: "Dictation",
   "Spoken replies": "Spoken replies",
   "Live voice": "Live voice",
   "Could not load the voice overview.": "Could not load the voice overview.",
   "Could not open the microphone settings.": "Could not open the microphone settings.",
-  "Microphone": "Microphone",
+  Microphone: "Microphone",
   "Microphone permission": "Microphone permission",
   "Open microphone settings": "Open microphone settings",
   "Not available in this version": "Not available in this version",
   "Parakeet dictation model": "Parakeet dictation model",
-  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.": "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.",
+  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.":
+    "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.",
   "Cloud dictation (Cohere, ElevenLabs)": "Cloud dictation (Cohere, ElevenLabs)",
-  "It would send your voice to a service. This version keeps audio on this computer.": "It would send your voice to a service. This version keeps audio on this computer.",
+  "It would send your voice to a service. This version keeps audio on this computer.":
+    "It would send your voice to a service. This version keeps audio on this computer.",
   "Neural reading model (Supertonic)": "Neural reading model (Supertonic)",
-  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.": "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.",
+  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.":
+    "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.",
   "Live voice conversations": "Live voice conversations",
-  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.": "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.",
+  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.":
+    "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.",
   "Phones cannot connect: Mobile Connect is off.": "Phones cannot connect: Mobile Connect is off.",
-  "Only a browser on this computer can open the phone page.": "Only a browser on this computer can open the phone page.",
+  "Only a browser on this computer can open the phone page.":
+    "Only a browser on this computer can open the phone page.",
   "Phones on your home network can connect.": "Phones on your home network can connect.",
-  "Phones on your home network, and away from home through Tailscale.": "Phones on your home network, and away from home through Tailscale.",
-  "never": "never",
+  "Phones on your home network, and away from home through Tailscale.":
+    "Phones on your home network, and away from home through Tailscale.",
+  never: "never",
   "Paired {paired} · last seen {seen}": "Paired {paired} · last seen {seen}",
   "PIN set": "PIN set",
   "No PIN": "No PIN",
-  "Locked": "Locked",
+  Locked: "Locked",
   "Notifications on": "Notifications on",
   "Notifications off": "Notifications off",
   "Last notification: {when}": "Last notification: {when}",
@@ -880,29 +888,38 @@ export const en = {
   "Your phones": "Your phones",
   "Notifications from this computer are on.": "Notifications from this computer are on.",
   "Notifications from this computer are off.": "Notifications from this computer are off.",
-  "No phones yet. Use “Pair another phone” above to add one.": "No phones yet. Use “Pair another phone” above to add one.",
+  "No phones yet. Use “Pair another phone” above to add one.":
+    "No phones yet. Use “Pair another phone” above to add one.",
   "This computer only": "This computer only",
   "Local network": "Local network",
   "Local network and Tailscale": "Local network and Tailscale",
   "Through the cloud": "Through the cloud",
-  "Only a browser on this computer can open the phone page. Good for trying it.": "Only a browser on this computer can open the phone page. Good for trying it.",
-  "Phones on your home network. For away from home, see the Tailscale steps.": "Phones on your home network. For away from home, see the Tailscale steps.",
+  "Only a browser on this computer can open the phone page. Good for trying it.":
+    "Only a browser on this computer can open the phone page. Good for trying it.",
+  "Phones on your home network. For away from home, see the Tailscale steps.":
+    "Phones on your home network. For away from home, see the Tailscale steps.",
   "Not offered in this version.": "Not offered in this version.",
   "Permanent link": "Permanent link",
-  "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.": "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.",
-  "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).": "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).",
+  "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.":
+    "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.",
+  "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).":
+    "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).",
   "Push notifications are off on this computer.": "Push notifications are off on this computer.",
-  "The push keys of this computer are not ready (the computer cannot keep a secret key safe).": "The push keys of this computer are not ready (the computer cannot keep a secret key safe).",
+  "The push keys of this computer are not ready (the computer cannot keep a secret key safe).":
+    "The push keys of this computer are not ready (the computer cannot keep a secret key safe).",
   "No phone has allowed notifications yet.": "No phone has allowed notifications yet.",
   "Could not load the remote desktop settings.": "Could not load the remote desktop settings.",
   "Could not change the setting.": "Could not change the setting.",
   "Who may come in": "Who may come in",
   "Sharing this computer": "Sharing this computer",
-  "{active} of {max} sessions open · {pending} waiting for your answer": "{active} of {max} sessions open · {pending} waiting for your answer",
+  "{active} of {max} sessions open · {pending} waiting for your answer":
+    "{active} of {max} sessions open · {pending} waiting for your answer",
   "Ask on this computer every time": "Ask on this computer every time",
-  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.",
+  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.":
+    "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.",
   "Unattended access": "Unattended access",
-  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.",
+  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.":
+    "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.",
   "Deleted threads": "Deleted threads",
   "Deleted “{title}”": "Deleted “{title}”",
   "{seconds} s left to undo": "{seconds} s left to undo",
@@ -911,40 +928,53 @@ export const en = {
   "Could not load the integrations.": "Could not load the integrations.",
   "Could not save the app.": "Could not save the app.",
   "Connect accounts": "Connect accounts",
-  "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.": "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.",
+  "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.":
+    "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.",
   "The browser did not open? Open this address:": "The browser did not open? Open this address:",
-  "Agents can use it as the MCP server “{name}”. Switch it on per agent.": "Agents can use it as the MCP server “{name}”. Switch it on per agent.",
+  "Agents can use it as the MCP server “{name}”. Switch it on per agent.":
+    "Agents can use it as the MCP server “{name}”. Switch it on per agent.",
   "Set up the app": "Set up the app",
   "Callback address": "Callback address",
   "Client id": "Client id",
   "Client secret": "Client secret",
-  "Saved": "Saved",
+  Saved: "Saved",
   "It is kept encrypted and never shown again.": "It is kept encrypted and never shown again.",
   "Callback port (optional)": "Callback port (optional)",
   "Save the app": "Save the app",
   "Connect account": "Connect account",
   "Also forget the app's client id": "Also forget the app's client id",
-  "Register a GitHub App (not a personal token) and give it only the read permissions you need.": "Register a GitHub App (not a personal token) and give it only the read permissions you need.",
-  "Add the callback address shown below (a loopback address of this computer) to the app.": "Add the callback address shown below (a loopback address of this computer) to the app.",
+  "Register a GitHub App (not a personal token) and give it only the read permissions you need.":
+    "Register a GitHub App (not a personal token) and give it only the read permissions you need.",
+  "Add the callback address shown below (a loopback address of this computer) to the app.":
+    "Add the callback address shown below (a loopback address of this computer) to the app.",
   "Copy the app's client id here.": "Copy the app's client id here.",
-  "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.": "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.",
-  "Choose read-only scopes first; raise them here only when you must.": "Choose read-only scopes first; raise them here only when you must.",
+  "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.":
+    "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.",
+  "Choose read-only scopes first; raise them here only when you must.":
+    "Choose read-only scopes first; raise them here only when you must.",
   "Copy the client id and the client secret here.": "Copy the client id and the client secret here.",
-  "Create a public Notion integration and choose only the capabilities you need (read first).": "Create a public Notion integration and choose only the capabilities you need (read first).",
-  "Add the callback address shown below, with a fixed port, to the integration.": "Add the callback address shown below, with a fixed port, to the integration.",
-  "Create a Meta app and add the sign-in product; the app needs review for most permissions.": "Create a Meta app and add the sign-in product; the app needs review for most permissions.",
-  "Add the callback address shown below, with a fixed port, to the app.": "Add the callback address shown below, with a fixed port, to the app.",
+  "Create a public Notion integration and choose only the capabilities you need (read first).":
+    "Create a public Notion integration and choose only the capabilities you need (read first).",
+  "Add the callback address shown below, with a fixed port, to the integration.":
+    "Add the callback address shown below, with a fixed port, to the integration.",
+  "Create a Meta app and add the sign-in product; the app needs review for most permissions.":
+    "Create a Meta app and add the sign-in product; the app needs review for most permissions.",
+  "Add the callback address shown below, with a fixed port, to the app.":
+    "Add the callback address shown below, with a fixed port, to the app.",
   "Copy the app id and the app secret here.": "Copy the app id and the app secret here.",
-  "The app's client id is not set yet. Register the app with the service and enter its client id.": "The app's client id is not set yet. Register the app with the service and enter its client id.",
-  "The service no longer accepts the saved sign-in. Connect again.": "The service no longer accepts the saved sign-in. Connect again.",
+  "The app's client id is not set yet. Register the app with the service and enter its client id.":
+    "The app's client id is not set yet. Register the app with the service and enter its client id.",
+  "The service no longer accepts the saved sign-in. Connect again.":
+    "The service no longer accepts the saved sign-in. Connect again.",
   "Set the app's client id first: the sign-in needs it.": "Set the app's client id first: the sign-in needs it.",
   "Starting…": "Starting…",
-  "Working": "Working",
+  Working: "Working",
   "Waiting for you": "Waiting for you",
   "Could not load the subagents.": "Could not load the subagents.",
   "Could not stop the subagent.": "Could not stop the subagent.",
   "Subagents: {working} working of {total}": "Subagents: {working} working of {total}",
-  "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.": "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.",
+  "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.":
+    "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.",
   "It asks you something: answer the card in Needs you.": "It asks you something: answer the card in Needs you.",
   "Its answer": "Its answer",
   "Stop {title}": "Stop {title}",
@@ -957,17 +987,28 @@ export const en = {
   "Send a test notification": "Send a test notification",
   "Send a test notification to {name}": "Send a test notification to {name}",
   "Send notifications to phones": "Send notifications to phones",
-  "A phone is told only when an agent waits for you. It says nothing else.": "A phone is told only when an agent waits for you. It says nothing else.",
+  "A phone is told only when an agent waits for you. It says nothing else.":
+    "A phone is told only when an agent waits for you. It says nothing else.",
   "This phone is not paired.": "This phone is not paired.",
   "This phone has not allowed notifications yet.": "This phone has not allowed notifications yet.",
-  "Reach this computer from your phone away from home (Tailscale)": "Reach this computer from your phone away from home (Tailscale)",
-  "Install Tailscale on this computer and on your phone and sign in with the same account on both.": "Install Tailscale on this computer and on your phone and sign in with the same account on both.",
-  "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.": "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.",
-  "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.": "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.",
-  "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.": "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.",
-  "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.": "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.",
-  "Approve the pairing on this computer, then add the page to the home screen to get notifications.": "Approve the pairing on this computer, then add the page to the home screen to get notifications.",
-  "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.": "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.",
-  "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.": "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.",
-  "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.": "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.",
+  "Reach this computer from your phone away from home (Tailscale)":
+    "Reach this computer from your phone away from home (Tailscale)",
+  "Install Tailscale on this computer and on your phone and sign in with the same account on both.":
+    "Install Tailscale on this computer and on your phone and sign in with the same account on both.",
+  "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.":
+    "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.",
+  "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.":
+    "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.",
+  "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.":
+    "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.",
+  "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.":
+    "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.",
+  "Approve the pairing on this computer, then add the page to the home screen to get notifications.":
+    "Approve the pairing on this computer, then add the page to the home screen to get notifications.",
+  "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.":
+    "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.",
+  "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.":
+    "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.",
+  "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.":
+    "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.",
 } as const;

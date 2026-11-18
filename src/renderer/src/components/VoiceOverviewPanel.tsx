@@ -1,4 +1,4 @@
-import { type MicrophoneStatus, type VoiceOverview, type VoiceSection } from "@openbot/contracts/ipc";
+import type { MicrophoneStatus, VoiceOverview, VoiceSection } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Badge, type BadgeTone, Button, Card, Heading, Text } from "./ui";

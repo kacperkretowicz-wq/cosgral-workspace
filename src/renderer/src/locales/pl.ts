@@ -832,42 +832,51 @@ export const pl = {
   "Files of the Library": "Pliki Biblioteki",
   "Preferences of the program": "Preferencje programu",
   "Files of the Library are not moved by this version.": "Pliki Biblioteki nie są przenoszone w tej wersji.",
-  "Voice": "Głos",
-  "Blocked": "Zablokowany",
+  Voice: "Głos",
+  Blocked: "Zablokowany",
   "Not asked yet": "Jeszcze nie pytano",
   "Forbidden here": "Zabroniony na tym komputerze",
-  "Unknown": "Nieznany",
+  Unknown: "Nieznany",
   "The program may use the microphone for dictation.": "Program może używać mikrofonu do dyktowania.",
-  "The microphone is switched off for this program. Allow it in the system settings.": "Mikrofon jest wyłączony dla tego programu. Zezwól na niego w ustawieniach systemu.",
-  "The system has not asked yet. It asks the first time you dictate.": "System jeszcze nie pytał. Zapyta przy pierwszym dyktowaniu.",
+  "The microphone is switched off for this program. Allow it in the system settings.":
+    "Mikrofon jest wyłączony dla tego programu. Zezwól na niego w ustawieniach systemu.",
+  "The system has not asked yet. It asks the first time you dictate.":
+    "System jeszcze nie pytał. Zapyta przy pierwszym dyktowaniu.",
   "A policy on this computer forbids the microphone.": "Zasady na tym komputerze zabraniają używania mikrofonu.",
-  "This system does not say. Recording is simply tried.": "Ten system tego nie mówi. Nagrywanie jest po prostu próbowane.",
-  "Dictation": "Dyktowanie",
+  "This system does not say. Recording is simply tried.":
+    "Ten system tego nie mówi. Nagrywanie jest po prostu próbowane.",
+  Dictation: "Dyktowanie",
   "Spoken replies": "Czytanie odpowiedzi na głos",
   "Live voice": "Rozmowa głosowa na żywo",
   "Could not load the voice overview.": "Nie udało się wczytać przeglądu głosu.",
   "Could not open the microphone settings.": "Nie udało się otworzyć ustawień mikrofonu.",
-  "Microphone": "Mikrofon",
+  Microphone: "Mikrofon",
   "Microphone permission": "Uprawnienie do mikrofonu",
   "Open microphone settings": "Otwórz ustawienia mikrofonu",
   "Not available in this version": "Niedostępne w tej wersji",
   "Parakeet dictation model": "Model dyktowania Parakeet",
-  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.": "Wymaga innego silnika mowy niż ten, który ma ta wersja (whisper.cpp). Użyj zamiast tego modelu Whisper.",
+  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.":
+    "Wymaga innego silnika mowy niż ten, który ma ta wersja (whisper.cpp). Użyj zamiast tego modelu Whisper.",
   "Cloud dictation (Cohere, ElevenLabs)": "Dyktowanie w chmurze (Cohere, ElevenLabs)",
-  "It would send your voice to a service. This version keeps audio on this computer.": "Wysyłałoby Twój głos do usługi. Ta wersja trzyma dźwięk na tym komputerze.",
+  "It would send your voice to a service. This version keeps audio on this computer.":
+    "Wysyłałoby Twój głos do usługi. Ta wersja trzyma dźwięk na tym komputerze.",
   "Neural reading model (Supertonic)": "Neuronowy model czytania (Supertonic)",
-  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.": "Wymaga ciężkiego środowiska mowy, którego ta wersja nie ma. Odpowiedzi są czytane głosami zainstalowanymi w Windows.",
+  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.":
+    "Wymaga ciężkiego środowiska mowy, którego ta wersja nie ma. Odpowiedzi są czytane głosami zainstalowanymi w Windows.",
   "Live voice conversations": "Rozmowy głosowe na żywo",
-  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.": "Wysyłają Twój głos i odpowiedzi agenta do usługi w chmurze. Ta wersja trzyma dźwięk na tym komputerze.",
+  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.":
+    "Wysyłają Twój głos i odpowiedzi agenta do usługi w chmurze. Ta wersja trzyma dźwięk na tym komputerze.",
   "Phones cannot connect: Mobile Connect is off.": "Telefony nie mogą się połączyć: Mobile Connect jest wyłączony.",
-  "Only a browser on this computer can open the phone page.": "Stronę telefonu może otworzyć tylko przeglądarka na tym komputerze.",
+  "Only a browser on this computer can open the phone page.":
+    "Stronę telefonu może otworzyć tylko przeglądarka na tym komputerze.",
   "Phones on your home network can connect.": "Mogą się łączyć telefony z Twojej sieci domowej.",
-  "Phones on your home network, and away from home through Tailscale.": "Telefony z sieci domowej oraz poza domem przez Tailscale.",
-  "never": "nigdy",
+  "Phones on your home network, and away from home through Tailscale.":
+    "Telefony z sieci domowej oraz poza domem przez Tailscale.",
+  never: "nigdy",
   "Paired {paired} · last seen {seen}": "Sparowany {paired} · ostatnio widziany {seen}",
   "PIN set": "PIN ustawiony",
   "No PIN": "Bez PIN-u",
-  "Locked": "Zablokowany",
+  Locked: "Zablokowany",
   "Notifications on": "Powiadomienia włączone",
   "Notifications off": "Powiadomienia wyłączone",
   "Last notification: {when}": "Ostatnie powiadomienie: {when}",
@@ -878,29 +887,38 @@ export const pl = {
   "Your phones": "Twoje telefony",
   "Notifications from this computer are on.": "Powiadomienia z tego komputera są włączone.",
   "Notifications from this computer are off.": "Powiadomienia z tego komputera są wyłączone.",
-  "No phones yet. Use “Pair another phone” above to add one.": "Brak telefonów. Dodaj pierwszy przyciskiem „Pair another phone” wyżej.",
+  "No phones yet. Use “Pair another phone” above to add one.":
+    "Brak telefonów. Dodaj pierwszy przyciskiem „Pair another phone” wyżej.",
   "This computer only": "Tylko ten komputer",
   "Local network": "Sieć lokalna",
   "Local network and Tailscale": "Sieć lokalna i Tailscale",
   "Through the cloud": "Przez chmurę",
-  "Only a browser on this computer can open the phone page. Good for trying it.": "Stronę telefonu otworzy tylko przeglądarka na tym komputerze. Dobre na próbę.",
-  "Phones on your home network. For away from home, see the Tailscale steps.": "Telefony z Twojej sieci domowej. Poza domem zobacz kroki Tailscale.",
+  "Only a browser on this computer can open the phone page. Good for trying it.":
+    "Stronę telefonu otworzy tylko przeglądarka na tym komputerze. Dobre na próbę.",
+  "Phones on your home network. For away from home, see the Tailscale steps.":
+    "Telefony z Twojej sieci domowej. Poza domem zobacz kroki Tailscale.",
   "Not offered in this version.": "Niedostępne w tej wersji.",
   "Permanent link": "Stały link",
-  "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.": "Link, który nigdy nie wygasa, wpuściłby do Twoich agentów każdego, kto go znajdzie. Sparowany telefon zostaje sparowany, dopóki go nie usuniesz, więc nie trzeba logować się ponownie.",
-  "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).": "Prowadziłoby rozmowę przez serwer. Ta wersja łączy telefon prosto z tym komputerem (ta sama sieć albo Tailscale).",
+  "A link that never expires would let anyone who finds it into your agents. A paired phone stays paired until you remove it, so there is no need to sign in again.":
+    "Link, który nigdy nie wygasa, wpuściłby do Twoich agentów każdego, kto go znajdzie. Sparowany telefon zostaje sparowany, dopóki go nie usuniesz, więc nie trzeba logować się ponownie.",
+  "It would route the conversation through a server. This version connects the phone straight to this computer (same network or Tailscale).":
+    "Prowadziłoby rozmowę przez serwer. Ta wersja łączy telefon prosto z tym komputerem (ta sama sieć albo Tailscale).",
   "Push notifications are off on this computer.": "Powiadomienia push są wyłączone na tym komputerze.",
-  "The push keys of this computer are not ready (the computer cannot keep a secret key safe).": "Klucze push tego komputera nie są gotowe (komputer nie potrafi bezpiecznie przechować tajnego klucza).",
+  "The push keys of this computer are not ready (the computer cannot keep a secret key safe).":
+    "Klucze push tego komputera nie są gotowe (komputer nie potrafi bezpiecznie przechować tajnego klucza).",
   "No phone has allowed notifications yet.": "Żaden telefon jeszcze nie zezwolił na powiadomienia.",
   "Could not load the remote desktop settings.": "Nie udało się wczytać ustawień pulpitu zdalnego.",
   "Could not change the setting.": "Nie udało się zmienić ustawienia.",
   "Who may come in": "Kto może wejść",
   "Sharing this computer": "Udostępnianie tego komputera",
-  "{active} of {max} sessions open · {pending} waiting for your answer": "Otwarte sesje: {active} z {max} · czeka na Twoją odpowiedź: {pending}",
+  "{active} of {max} sessions open · {pending} waiting for your answer":
+    "Otwarte sesje: {active} z {max} · czeka na Twoją odpowiedź: {pending}",
   "Ask on this computer every time": "Pytaj na tym komputerze za każdym razem",
-  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Także o widza, któremu wcześniej pozwolono. Masz {seconds} s na odpowiedź; potem widz zostaje odrzucony.",
+  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.":
+    "Także o widza, któremu wcześniej pozwolono. Masz {seconds} s na odpowiedź; potem widz zostaje odrzucony.",
   "Unattended access": "Dostęp bez nadzoru",
-  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "Widz zawsze czeka na Twoją odpowiedź na tym komputerze, więc nikt nie przejmie komputera, przy którym nikt nie siedzi.",
+  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.":
+    "Widz zawsze czeka na Twoją odpowiedź na tym komputerze, więc nikt nie przejmie komputera, przy którym nikt nie siedzi.",
   "Deleted threads": "Usunięte wątki",
   "Deleted “{title}”": "Usunięto „{title}”",
   "{seconds} s left to undo": "Zostało {seconds} s na cofnięcie",
@@ -909,40 +927,55 @@ export const pl = {
   "Could not load the integrations.": "Nie udało się wczytać integracji.",
   "Could not save the app.": "Nie udało się zapisać aplikacji.",
   "Connect accounts": "Połącz konta",
-  "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.": "Pozwól agentom korzystać z GitHuba, Google Workspace, Notiona lub Mety na Twoim koncie. Program otwiera przeglądarkę i trzyma logowanie zaszyfrowane na tym komputerze; agenci go nie widzą.",
+  "Let agents use GitHub, Google Workspace, Notion or Meta with your account. The program opens your browser and keeps the sign-in encrypted on this computer; agents never see it.":
+    "Pozwól agentom korzystać z GitHuba, Google Workspace, Notiona lub Mety na Twoim koncie. Program otwiera przeglądarkę i trzyma logowanie zaszyfrowane na tym komputerze; agenci go nie widzą.",
   "The browser did not open? Open this address:": "Przeglądarka się nie otworzyła? Otwórz ten adres:",
-  "Agents can use it as the MCP server “{name}”. Switch it on per agent.": "Agenci mogą go używać jako serwera MCP „{name}”. Włącz go dla wybranego agenta.",
+  "Agents can use it as the MCP server “{name}”. Switch it on per agent.":
+    "Agenci mogą go używać jako serwera MCP „{name}”. Włącz go dla wybranego agenta.",
   "Set up the app": "Skonfiguruj aplikację",
   "Callback address": "Adres zwrotny",
   "Client id": "Identyfikator klienta",
   "Client secret": "Sekret klienta",
-  "Saved": "Zapisane",
-  "It is kept encrypted and never shown again.": "Jest przechowywany zaszyfrowany i nigdy nie jest pokazywany ponownie.",
+  Saved: "Zapisane",
+  "It is kept encrypted and never shown again.":
+    "Jest przechowywany zaszyfrowany i nigdy nie jest pokazywany ponownie.",
   "Callback port (optional)": "Port zwrotny (opcjonalnie)",
   "Save the app": "Zapisz aplikację",
   "Connect account": "Połącz konto",
   "Also forget the app's client id": "Zapomnij też identyfikator klienta aplikacji",
-  "Register a GitHub App (not a personal token) and give it only the read permissions you need.": "Zarejestruj aplikację GitHub (nie osobisty token) i nadaj jej tylko potrzebne uprawnienia do odczytu.",
-  "Add the callback address shown below (a loopback address of this computer) to the app.": "Dodaj do aplikacji adres zwrotny pokazany niżej (adres pętli zwrotnej tego komputera).",
+  "Register a GitHub App (not a personal token) and give it only the read permissions you need.":
+    "Zarejestruj aplikację GitHub (nie osobisty token) i nadaj jej tylko potrzebne uprawnienia do odczytu.",
+  "Add the callback address shown below (a loopback address of this computer) to the app.":
+    "Dodaj do aplikacji adres zwrotny pokazany niżej (adres pętli zwrotnej tego komputera).",
   "Copy the app's client id here.": "Wklej tutaj identyfikator klienta aplikacji.",
-  "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.": "Utwórz klienta OAuth typu aplikacja na komputer w projekcie Google Cloud i włącz potrzebne interfejsy API.",
-  "Choose read-only scopes first; raise them here only when you must.": "Zacznij od zakresów tylko do odczytu; podnoś je tylko, gdy musisz.",
+  "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.":
+    "Utwórz klienta OAuth typu aplikacja na komputer w projekcie Google Cloud i włącz potrzebne interfejsy API.",
+  "Choose read-only scopes first; raise them here only when you must.":
+    "Zacznij od zakresów tylko do odczytu; podnoś je tylko, gdy musisz.",
   "Copy the client id and the client secret here.": "Wklej tutaj identyfikator i sekret klienta.",
-  "Create a public Notion integration and choose only the capabilities you need (read first).": "Utwórz publiczną integrację Notion i wybierz tylko potrzebne możliwości (najpierw odczyt).",
-  "Add the callback address shown below, with a fixed port, to the integration.": "Dodaj do integracji adres zwrotny pokazany niżej, ze stałym portem.",
-  "Create a Meta app and add the sign-in product; the app needs review for most permissions.": "Utwórz aplikację Meta i dodaj produkt logowania; większość uprawnień wymaga przeglądu aplikacji.",
-  "Add the callback address shown below, with a fixed port, to the app.": "Dodaj do aplikacji adres zwrotny pokazany niżej, ze stałym portem.",
+  "Create a public Notion integration and choose only the capabilities you need (read first).":
+    "Utwórz publiczną integrację Notion i wybierz tylko potrzebne możliwości (najpierw odczyt).",
+  "Add the callback address shown below, with a fixed port, to the integration.":
+    "Dodaj do integracji adres zwrotny pokazany niżej, ze stałym portem.",
+  "Create a Meta app and add the sign-in product; the app needs review for most permissions.":
+    "Utwórz aplikację Meta i dodaj produkt logowania; większość uprawnień wymaga przeglądu aplikacji.",
+  "Add the callback address shown below, with a fixed port, to the app.":
+    "Dodaj do aplikacji adres zwrotny pokazany niżej, ze stałym portem.",
   "Copy the app id and the app secret here.": "Wklej tutaj identyfikator i sekret aplikacji.",
-  "The app's client id is not set yet. Register the app with the service and enter its client id.": "Identyfikator klienta aplikacji nie jest jeszcze ustawiony. Zarejestruj aplikację w usłudze i wpisz jej identyfikator.",
-  "The service no longer accepts the saved sign-in. Connect again.": "Usługa nie przyjmuje już zapisanego logowania. Połącz ponownie.",
-  "Set the app's client id first: the sign-in needs it.": "Najpierw ustaw identyfikator klienta aplikacji: logowanie go potrzebuje.",
+  "The app's client id is not set yet. Register the app with the service and enter its client id.":
+    "Identyfikator klienta aplikacji nie jest jeszcze ustawiony. Zarejestruj aplikację w usłudze i wpisz jej identyfikator.",
+  "The service no longer accepts the saved sign-in. Connect again.":
+    "Usługa nie przyjmuje już zapisanego logowania. Połącz ponownie.",
+  "Set the app's client id first: the sign-in needs it.":
+    "Najpierw ustaw identyfikator klienta aplikacji: logowanie go potrzebuje.",
   "Starting…": "Uruchamianie…",
-  "Working": "Pracuje",
+  Working: "Pracuje",
   "Waiting for you": "Czeka na Ciebie",
   "Could not load the subagents.": "Nie udało się wczytać podagentów.",
   "Could not stop the subagent.": "Nie udało się zatrzymać podagenta.",
   "Subagents: {working} working of {total}": "Podagenci: pracuje {working} z {total}",
-  "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.": "Podagenta uruchamia tylko agent. Możesz go zatrzymać w każdej chwili. Naraz pracują co najwyżej {max}.",
+  "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.":
+    "Podagenta uruchamia tylko agent. Możesz go zatrzymać w każdej chwili. Naraz pracują co najwyżej {max}.",
   "It asks you something: answer the card in Needs you.": "Pyta Cię o coś: odpowiedz na karcie w „Needs you”.",
   "Its answer": "Jego odpowiedź",
   "Stop {title}": "Zatrzymaj: {title}",
@@ -955,17 +988,27 @@ export const pl = {
   "Send a test notification": "Wyślij powiadomienie testowe",
   "Send a test notification to {name}": "Wyślij powiadomienie testowe do: {name}",
   "Send notifications to phones": "Wysyłaj powiadomienia na telefony",
-  "A phone is told only when an agent waits for you. It says nothing else.": "Telefon dostaje wiadomość tylko wtedy, gdy agent czeka na Ciebie. Nic poza tym.",
+  "A phone is told only when an agent waits for you. It says nothing else.":
+    "Telefon dostaje wiadomość tylko wtedy, gdy agent czeka na Ciebie. Nic poza tym.",
   "This phone is not paired.": "Ten telefon nie jest sparowany.",
   "This phone has not allowed notifications yet.": "Ten telefon jeszcze nie zezwolił na powiadomienia.",
   "Reach this computer from your phone away from home (Tailscale)": "Dostęp z telefonu poza domem (Tailscale)",
-  "Install Tailscale on this computer and on your phone and sign in with the same account on both.": "Zainstaluj Tailscale na tym komputerze i na telefonie i zaloguj się na to samo konto na obu.",
-  "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.": "Włącz „Local network” w Mobile Connect. Komputer odpowiada wtedy także pod adresem Tailscale.",
-  "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.": "Zacznij parowanie. Jeśli na liście adresów jest adres Tailscale, zeskanuj kod QR aparatem telefonu.",
-  "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.": "Jeśli telefon otwiera inny adres, otwórz ten: nazwę komputera w Tailscale (MagicDNS, kończy się na .ts.net) lub jego adres 100.x, widoczny w aplikacji Tailscale.",
-  "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.": "Przeglądarka za pierwszym razem ostrzeże o certyfikacie. Porównaj pokazany tu odcisk z tym z ostrzeżenia i dopiero potem kontynuuj.",
-  "Approve the pairing on this computer, then add the page to the home screen to get notifications.": "Zatwierdź parowanie na tym komputerze, potem dodaj stronę do ekranu głównego, żeby dostawać powiadomienia.",
-  "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.": "Tailscale tworzy prywatną sieć między Twoimi urządzeniami. Rozmowa idzie między nimi, nie przez żaden nasz serwer.",
-  "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.": "Wyjątek to powiadomienia: idą przez system telefonu, zaszyfrowane dla telefonu, i mówią tylko, że agent czeka.",
-  "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.": "Zgubiony telefon usuń z listy od razu. PIN na telefonie to dodatkowa blokada, nie zamiennik usunięcia.",
+  "Install Tailscale on this computer and on your phone and sign in with the same account on both.":
+    "Zainstaluj Tailscale na tym komputerze i na telefonie i zaloguj się na to samo konto na obu.",
+  "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.":
+    "Włącz „Local network” w Mobile Connect. Komputer odpowiada wtedy także pod adresem Tailscale.",
+  "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.":
+    "Zacznij parowanie. Jeśli na liście adresów jest adres Tailscale, zeskanuj kod QR aparatem telefonu.",
+  "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.":
+    "Jeśli telefon otwiera inny adres, otwórz ten: nazwę komputera w Tailscale (MagicDNS, kończy się na .ts.net) lub jego adres 100.x, widoczny w aplikacji Tailscale.",
+  "The browser warns about the certificate the first time. Compare the fingerprint shown here with the one in the warning, then continue.":
+    "Przeglądarka za pierwszym razem ostrzeże o certyfikacie. Porównaj pokazany tu odcisk z tym z ostrzeżenia i dopiero potem kontynuuj.",
+  "Approve the pairing on this computer, then add the page to the home screen to get notifications.":
+    "Zatwierdź parowanie na tym komputerze, potem dodaj stronę do ekranu głównego, żeby dostawać powiadomienia.",
+  "Tailscale makes a private network between your own devices. The conversation travels between them, not through a server of ours.":
+    "Tailscale tworzy prywatną sieć między Twoimi urządzeniami. Rozmowa idzie między nimi, nie przez żaden nasz serwer.",
+  "Notifications are the one exception: they go through your phone's system, encrypted for the phone, and only say that an agent is waiting.":
+    "Wyjątek to powiadomienia: idą przez system telefonu, zaszyfrowane dla telefonu, i mówią tylko, że agent czeka.",
+  "Remove a lost phone from the device list at once. A PIN on the phone is an extra lock, not a replacement for removing it.":
+    "Zgubiony telefon usuń z listy od razu. PIN na telefonie to dodatkowa blokada, nie zamiennik usunięcia.",
 } as const;
