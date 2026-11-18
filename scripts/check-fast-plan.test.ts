@@ -68,6 +68,16 @@ describe("check:fast plan (BE-U)", () => {
     }
   });
 
+  it("package.json is harmless when the caller found that only its scripts changed, and global otherwise", () => {
+    const harmless = planFastCheck(["package.json"], all, { ordinary: ["package.json"] });
+    expect(harmless.needsFullCheck).toEqual([]);
+    expect(harmless.biomeFiles).toEqual(["package.json"]);
+    expect(harmless.typecheck).toEqual([]);
+    expect(planFastCheck(["package.json"], all).needsFullCheck).toEqual(["package.json"]);
+    // The exception is for the named path only.
+    expect(planFastCheck(["bun.lock"], all, { ordinary: ["package.json"] }).needsFullCheck).toEqual(["bun.lock"]);
+  });
+
   it("only the projects a path can see are checked: the phone app and the API are separate", () => {
     expect(planFastCheck(["src/mobile-app/main.ts"], all).typecheck).toEqual(["mobile-app"]);
     expect(planFastCheck(["apps/auth-api/src/index.ts"], all).typecheck).toEqual(["api"]);

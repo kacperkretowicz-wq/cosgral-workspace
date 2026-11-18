@@ -75,14 +75,22 @@ const PROJECT_ORDER: TypecheckProject[] = ["contracts", "node", "renderer", "sto
  * `exists` tells whether a changed path is still on disk (a deleted file cannot be read by Biome or run as a test, but it can
  * still break the type check of the files that imported it).
  */
-export function planFastCheck(changedPaths: readonly string[], exists: (path: string) => boolean): FastPlan {
+export function planFastCheck(
+  changedPaths: readonly string[],
+  exists: (path: string) => boolean,
+  options: { ordinary?: readonly string[] } = {},
+): FastPlan {
   const changed = [...new Set(changedPaths.map(normalizePath).filter(Boolean))].sort();
   const notes: string[] = [];
   const live = changed.filter((path) => !isInert(path));
   const inert = changed.length - live.length;
   if (inert > 0) notes.push(`${inert} document or output file(s) need no check and were skipped.`);
 
-  const needsFullCheck = live.filter((path) => GLOBAL_FILES.some((pattern) => pattern.test(path)));
+  // `ordinary` = paths the caller checked and found harmless although they match a global pattern (package.json with only its scripts changed).
+  const ordinary = new Set((options.ordinary ?? []).map(normalizePath));
+  const needsFullCheck = live.filter(
+    (path) => !ordinary.has(path) && GLOBAL_FILES.some((pattern) => pattern.test(path)),
+  );
   const projects = new Set<TypecheckProject>();
   for (const path of live) for (const project of typecheckFor(path)) projects.add(project);
   if (needsFullCheck.length > 0) for (const project of PROJECT_ORDER) projects.add(project);

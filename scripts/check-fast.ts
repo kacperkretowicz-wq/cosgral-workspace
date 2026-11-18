@@ -11,7 +11,7 @@
 // No push, no change of the repo.
 
 import { execFileSync, spawn } from "node:child_process";
-import { createWriteStream, existsSync } from "node:fs";
+import { createWriteStream, existsSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -54,6 +54,19 @@ function changedFiles(sha: string): string[] {
   const tracked = lines(git(["diff", "--name-only", "--no-renames", sha]));
   const added = lines(git(["ls-files", "--others", "--exclude-standard"]));
   return [...tracked, ...added];
+}
+
+/** True when package.json differs from the base only in its "scripts" (a new script is not a new dependency or a new build setting). */
+function onlyScriptsChanged(sha: string): boolean {
+  const before = tryGit(["show", `${sha}:package.json`]);
+  if (before === null) return false;
+  try {
+    const { scripts: _before, ...restBefore } = JSON.parse(before);
+    const { scripts: _after, ...restAfter } = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+    return JSON.stringify(restBefore) === JSON.stringify(restAfter);
+  } catch {
+    return false;
+  }
 }
 
 interface Step {
@@ -136,7 +149,9 @@ function runStep(step: Step, logFile: string): Promise<Result> {
 async function main(): Promise<void> {
   process.env.COSGRAL_TEST_TIMEOUT_SCALE ??= "2";
   const { ref, sha } = baseCommit();
-  const plan = planFastCheck(changedFiles(sha), (path) => existsSync(join(root, path)));
+  const files = changedFiles(sha);
+  const ordinary = files.includes("package.json") && onlyScriptsChanged(sha) ? ["package.json"] : [];
+  const plan = planFastCheck(files, (path) => existsSync(join(root, path)), { ordinary });
   const steps = stepsOf(plan);
   console.log(
     `check:fast: ${plan.changed.length} changed file(s) since ${ref} (${sha.slice(0, 9)}), ${steps.length} step(s)`,
