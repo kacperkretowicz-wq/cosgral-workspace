@@ -1,6 +1,7 @@
 import { MCP_OAUTH_LIMITS, type McpOAuthState, type McpOAuthStatus } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { LoadingPlaceholder } from "./LoadingPlaceholder";
 import { Badge, type BadgeTone, Button } from "./ui";
 
 const STATE_VIEW: Record<McpOAuthState, { label: string; tone: BadgeTone }> = {
@@ -92,11 +93,11 @@ export function McpSignInPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<p role="status">{t("Loading…")}</p>}>
+        <Show when={loaded()} fallback={<LoadingPlaceholder />}>
           <Show
             when={statuses().length > 0}
             fallback={
-              <p class="vault-connectors-note">
+              <p class="vault-connectors-note cosgral-empty">
                 {t("No server here needs a sign-in. Add a server over the web first.")}
               </p>
             }

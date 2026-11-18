@@ -6,6 +6,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { LoadingPlaceholder } from "./LoadingPlaceholder";
 import { Badge, Button, Card, Heading, Switch, Text } from "./ui";
 
 const REACH_LABELS: Record<PhoneReach, string> = {
@@ -184,7 +185,7 @@ export function MobileOverviewPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<p role="status">{t("Loading…")}</p>}>
+        <Show when={loaded()} fallback={<LoadingPlaceholder />}>
           <Show when={overview()}>
             {(view) => (
               <>
