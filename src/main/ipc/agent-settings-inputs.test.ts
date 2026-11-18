@@ -72,6 +72,15 @@ describe("agent settings IPC input parsing", () => {
       behavior: { keepBackground: true },
     });
     expect(() => parseUpdateAppSettings({ behavior: { keepBackground: 1 } })).toThrow(/keepBackground is on or off/);
+    expect(parseUpdateAppSettings({ behavior: { externalLinks: "app" } })).toEqual({
+      behavior: { externalLinks: "app" },
+    });
+    expect(parseUpdateAppSettings({ workspace: { restore: false, last: null } })).toEqual({
+      workspace: { restore: false, last: null },
+    });
+    expect(() => parseUpdateAppSettings({ workspace: { last: { page: "x", botId: null, threadId: null } } })).toThrow(
+      /last is a place/,
+    );
     expect(
       parseCompleteOnboarding({
         language: "en",

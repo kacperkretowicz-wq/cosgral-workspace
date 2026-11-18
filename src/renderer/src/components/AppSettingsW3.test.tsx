@@ -23,7 +23,8 @@ function settings(): AppSettings {
       agentSteps: "show",
       unreadFirst: false,
     },
-    behavior: { launchAtLogin: false, keepBackground: false },
+    behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
+    workspace: { restore: true, last: null },
   };
 }
 

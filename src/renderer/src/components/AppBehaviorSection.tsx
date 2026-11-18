@@ -1,9 +1,9 @@
-import type { AppBehaviorSettings } from "@openbot/contracts/ipc";
+import { type AppBehaviorSettings, DEFAULT_APP_BEHAVIOR } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
 import { t } from "../i18n";
 import { Card, Heading, Switch } from "./ui";
 
-type BehaviorKey = keyof AppBehaviorSettings;
+type BehaviorKey = "launchAtLogin" | "keepBackground";
 
 /**
  * "App behavior": start with Windows and keep running in the tray (`window.openbot.appSettings`, the `behavior` part).
@@ -11,7 +11,7 @@ type BehaviorKey = keyof AppBehaviorSettings;
  * A change is shown at once and taken back when the program refuses it.
  */
 export function AppBehaviorSection() {
-  const [behavior, setBehavior] = createSignal<AppBehaviorSettings>({ launchAtLogin: false, keepBackground: false });
+  const [behavior, setBehavior] = createSignal<AppBehaviorSettings>({ ...DEFAULT_APP_BEHAVIOR });
   const [busy, setBusy] = createSignal<BehaviorKey | null>(null);
   const [error, setError] = createSignal("");
 

@@ -352,6 +352,10 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
   return patch;
 }
 
+/** Where a link from a conversation opens: browser = the default browser of the computer, app = the browser inside the program (BE-X). */
+export const APP_EXTERNAL_LINKS = ["browser", "app"] as const;
+export type AppExternalLinks = (typeof APP_EXTERNAL_LINKS)[number];
+
 /** OS-level switches of the desktop app (Windows login item today). */
 export interface AppBehaviorSettings {
   /** True = the program opens when the person signs in to Windows. */
@@ -361,17 +365,24 @@ export interface AppBehaviorSettings {
    * tray icon exists: without it there would be no way back to the window.
    */
   keepBackground: boolean;
+  externalLinks: AppExternalLinks;
 }
 
 export const DEFAULT_APP_BEHAVIOR: AppBehaviorSettings = {
   launchAtLogin: false,
   keepBackground: false,
+  externalLinks: "browser",
 };
 
-const BEHAVIOR_KEYS = ["launchAtLogin", "keepBackground"] as const;
+const BEHAVIOR_KEYS = ["launchAtLogin", "keepBackground", "externalLinks"] as const;
 
 export function isAppBehavior(value: unknown): value is AppBehaviorSettings {
-  return isDynamicRecord(value) && isBoolean(value.launchAtLogin) && isBoolean(value.keepBackground);
+  return (
+    isDynamicRecord(value) &&
+    isBoolean(value.launchAtLogin) &&
+    isBoolean(value.keepBackground) &&
+    isOneOf(APP_EXTERNAL_LINKS, value.externalLinks)
+  );
 }
 
 export function normalizeAppBehavior(value: unknown): AppBehaviorSettings {
@@ -379,6 +390,9 @@ export function normalizeAppBehavior(value: unknown): AppBehaviorSettings {
   return {
     launchAtLogin: isBoolean(stored.launchAtLogin) ? stored.launchAtLogin : DEFAULT_APP_BEHAVIOR.launchAtLogin,
     keepBackground: isBoolean(stored.keepBackground) ? stored.keepBackground : DEFAULT_APP_BEHAVIOR.keepBackground,
+    externalLinks: isOneOf(APP_EXTERNAL_LINKS, stored.externalLinks)
+      ? stored.externalLinks
+      : DEFAULT_APP_BEHAVIOR.externalLinks,
   };
 }
 
@@ -396,6 +410,87 @@ export function parseBehaviorPatch(value: unknown): Partial<AppBehaviorSettings>
     if (!isBoolean(value.keepBackground)) throw new Error("keepBackground is on or off.");
     patch.keepBackground = value.keepBackground;
   }
+  if (value.externalLinks !== undefined) {
+    if (!isOneOf(APP_EXTERNAL_LINKS, value.externalLinks)) {
+      throw new Error(`externalLinks is one of ${APP_EXTERNAL_LINKS.join(", ")}.`);
+    }
+    patch.externalLinks = value.externalLinks;
+  }
+  return patch;
+}
+
+// COSGRAL W12 (BE-X): "Restore the last workspace on launch". The window tells the engine where the person was (the page, the agent and
+// the thread) and the engine keeps it with the other settings; on the next start the window reads it back and opens the same place. The
+// engine only keeps and checks the ids: an agent that no longer exists is dropped when the settings are read, so the window is never sent to
+// a place that is gone.
+
+export interface AppWorkspaceMemory {
+  page: AppPageId | null;
+  botId: string | null;
+  threadId: string | null;
+}
+
+export interface AppWorkspaceSettings {
+  /** True = the window opens where the person left it. On by default. */
+  restore: boolean;
+  last: AppWorkspaceMemory | null;
+}
+
+export const DEFAULT_APP_WORKSPACE: AppWorkspaceSettings = { restore: true, last: null };
+
+const WORKSPACE_ID_LIMIT = 200;
+
+function isWorkspaceId(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (isString(value) && value.length > 0 && value.length <= WORKSPACE_ID_LIMIT && !/\p{Cc}/u.test(value))
+  );
+}
+
+function isWorkspaceMemory(value: unknown): value is AppWorkspaceMemory {
+  return (
+    isDynamicRecord(value) &&
+    (value.page === null || isOneOf(APP_PAGE_IDS, value.page)) &&
+    isWorkspaceId(value.botId) &&
+    isWorkspaceId(value.threadId) &&
+    // A thread belongs to an agent: a thread without its agent cannot be opened.
+    (value.threadId === null || value.botId !== null)
+  );
+}
+
+export function isAppWorkspace(value: unknown): value is AppWorkspaceSettings {
+  return isDynamicRecord(value) && isBoolean(value.restore) && (value.last === null || isWorkspaceMemory(value.last));
+}
+
+/** A saved value read back: what is not valid returns to the default (older or edited data is not trusted). */
+export function normalizeAppWorkspace(value: unknown): AppWorkspaceSettings {
+  const stored = isDynamicRecord(value) ? value : {};
+  return {
+    restore: isBoolean(stored.restore) ? stored.restore : DEFAULT_APP_WORKSPACE.restore,
+    last: isWorkspaceMemory(stored.last)
+      ? { page: stored.last.page, botId: stored.last.botId, threadId: stored.last.threadId }
+      : null,
+  };
+}
+
+/** A change from the window: `restore` and/or `last` (null forgets the place). Throws a plain sentence for the first problem. */
+export function parseWorkspacePatch(value: unknown): Partial<AppWorkspaceSettings> {
+  if (!isDynamicRecord(value)) throw new Error("workspace must be an object.");
+  for (const key of Object.keys(value)) {
+    if (key !== "restore" && key !== "last") throw new Error(`Unknown workspace setting "${key}".`);
+  }
+  const patch: Partial<AppWorkspaceSettings> = {};
+  if (value.restore !== undefined) {
+    if (!isBoolean(value.restore)) throw new Error("restore is on or off.");
+    patch.restore = value.restore;
+  }
+  if (value.last !== undefined) {
+    if (value.last !== null && !isWorkspaceMemory(value.last)) {
+      throw new Error("last is a place: a page, an agent id and a thread id of that agent, or null.");
+    }
+    patch.last =
+      value.last === null ? null : { page: value.last.page, botId: value.last.botId, threadId: value.last.threadId };
+  }
   return patch;
 }
 
@@ -409,6 +504,7 @@ export interface AppSettings {
   navigation: AppNavigationSettings;
   appearance: AppAppearanceSettings;
   behavior: AppBehaviorSettings;
+  workspace: AppWorkspaceSettings;
 }
 
 export interface UpdateAppSettingsInput {
@@ -423,6 +519,7 @@ export interface UpdateAppSettingsInput {
   /** Changes only the fields that are given; the others stay as they are. */
   appearance?: Partial<AppAppearanceSettings>;
   behavior?: Partial<AppBehaviorSettings>;
+  workspace?: Partial<AppWorkspaceSettings>;
 }
 
 /** True for a list of known page ids without duplicates. */
@@ -551,7 +648,8 @@ export function isAppSettings(value: unknown): value is AppSettings {
     isDynamicRecord(value.navigation) &&
     isPinnedPageIdList(value.navigation.pinnedPageIds) &&
     isAppAppearance(value.appearance) &&
-    isAppBehavior(value.behavior)
+    isAppBehavior(value.behavior) &&
+    isAppWorkspace(value.workspace)
   );
 }
 

@@ -8,6 +8,7 @@ import {
   APP_UI_SCALES,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_BEHAVIOR,
+  DEFAULT_APP_WORKSPACE,
   defaultNotificationPreferences,
   IPC_CHANNELS,
   isAgentEvent,
@@ -16,13 +17,16 @@ import {
   isAppAppearance,
   isAppBehavior,
   isAppSettings,
+  isAppWorkspace,
   isOnboardingState,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   normalizeAppAppearance,
   normalizeAppBehavior,
+  normalizeAppWorkspace,
   parseAppearancePatch,
   parseBehaviorPatch,
+  parseWorkspacePatch,
   SETTINGS_TABS,
 } from "./ipc";
 
@@ -108,7 +112,8 @@ describe("W3 agent settings contract", () => {
         agentSteps: "show",
         unreadFirst: false,
       },
-      behavior: { launchAtLogin: false, keepBackground: false },
+      behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
+      workspace: { restore: true, last: null },
     };
     expect(isAppSettings(settings)).toBe(true);
     expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "nope"] } })).toBe(false);
@@ -154,7 +159,8 @@ describe("W3 agent settings contract", () => {
             agentSteps: "show",
             unreadFirst: false,
           },
-          behavior: { launchAtLogin: false, keepBackground: false },
+          behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
+          workspace: { restore: true, last: null },
         },
       }),
     ).toBe(true);
@@ -163,19 +169,28 @@ describe("W3 agent settings contract", () => {
 
   it("describes launch-at-login behavior with a boolean default (KAPI-J login)", () => {
     expect(isAppBehavior(DEFAULT_APP_BEHAVIOR)).toBe(true);
-    expect(isAppBehavior({ launchAtLogin: true, keepBackground: false })).toBe(true);
-    expect(isAppBehavior({ launchAtLogin: "yes", keepBackground: false })).toBe(false);
+    expect(isAppBehavior({ launchAtLogin: true, keepBackground: false, externalLinks: "app" })).toBe(true);
+    expect(isAppBehavior({ launchAtLogin: true, keepBackground: false })).toBe(false);
+    expect(isAppBehavior({ launchAtLogin: true, keepBackground: false, externalLinks: "tab" })).toBe(false);
+    expect(isAppBehavior({ launchAtLogin: "yes", keepBackground: false, externalLinks: "app" })).toBe(false);
     // BE-W: both switches are required and booleans.
     expect(isAppBehavior({ launchAtLogin: true })).toBe(false);
     expect(isAppBehavior({ launchAtLogin: true, keepBackground: "no" })).toBe(false);
     expect(normalizeAppBehavior(undefined)).toEqual(DEFAULT_APP_BEHAVIOR);
-    expect(normalizeAppBehavior({ launchAtLogin: true })).toEqual({ launchAtLogin: true, keepBackground: false });
+    expect(normalizeAppBehavior({ launchAtLogin: true })).toEqual({
+      launchAtLogin: true,
+      keepBackground: false,
+      externalLinks: "browser",
+    });
     expect(normalizeAppBehavior({ keepBackground: true, launchAtLogin: 1 })).toEqual({
       launchAtLogin: false,
       keepBackground: true,
+      externalLinks: "browser",
     });
     expect(parseBehaviorPatch({ launchAtLogin: true })).toEqual({ launchAtLogin: true });
     expect(parseBehaviorPatch({ keepBackground: true })).toEqual({ keepBackground: true });
+    expect(parseBehaviorPatch({ externalLinks: "app" })).toEqual({ externalLinks: "app" });
+    expect(() => parseBehaviorPatch({ externalLinks: "popup" })).toThrow(/externalLinks is one of browser, app/);
     expect(() => parseBehaviorPatch({ keepBackground: "yes" })).toThrow(/keepBackground is on or off/);
     expect(() => parseBehaviorPatch({ launchAtLogin: "yes" })).toThrow(/on or off/);
     expect(() => parseBehaviorPatch({ openAtLogin: true })).toThrow(/Unknown behavior/);
@@ -213,5 +228,39 @@ describe("W3 agent settings contract", () => {
     expect(() => parseAppearancePatch({ sendShortcut: "tab" })).toThrow(/sendShortcut/);
     expect(() => parseAppearancePatch({ chatAccent: "#fff" })).toThrow(/chatAccent/);
     expect(() => parseAppearancePatch({ theme: "dark" })).toThrow(/Unknown appearance setting "theme"/);
+  });
+
+  it("describes the remembered workspace: restore on by default, a place is a page, an agent and its thread (BE-X)", () => {
+    expect(DEFAULT_APP_WORKSPACE).toEqual({ restore: true, last: null });
+    expect(isAppWorkspace(DEFAULT_APP_WORKSPACE)).toBe(true);
+    expect(isAppWorkspace({ restore: false, last: { page: "tasks", botId: "chief", threadId: "t1" } })).toBe(true);
+    expect(isAppWorkspace({ restore: true, last: { page: null, botId: null, threadId: null } })).toBe(true);
+    expect(isAppWorkspace({ restore: true, last: { page: "nowhere", botId: null, threadId: null } })).toBe(false);
+    // A thread without its agent cannot be opened.
+    expect(isAppWorkspace({ restore: true, last: { page: null, botId: null, threadId: "t1" } })).toBe(false);
+    expect(isAppWorkspace({ restore: true, last: { page: null, botId: "", threadId: null } })).toBe(false);
+    expect(isAppWorkspace({ restore: true, last: { page: null, botId: "a\nb", threadId: null } })).toBe(false);
+    expect(isAppWorkspace({ restore: true, last: { page: null, botId: "x".repeat(201), threadId: null } })).toBe(false);
+    expect(isAppWorkspace({ restore: "yes", last: null })).toBe(false);
+    expect(normalizeAppWorkspace(undefined)).toEqual(DEFAULT_APP_WORKSPACE);
+    expect(normalizeAppWorkspace({ restore: false, last: { page: "bad", botId: "chief", threadId: null } })).toEqual({
+      restore: false,
+      last: null,
+    });
+  });
+
+  it("checks a change of the remembered workspace: known keys, a whole valid place or null (BE-X)", () => {
+    expect(parseWorkspacePatch({})).toEqual({});
+    expect(parseWorkspacePatch({ restore: false })).toEqual({ restore: false });
+    expect(parseWorkspacePatch({ last: { page: "agents", botId: "chief", threadId: "t1" } })).toEqual({
+      last: { page: "agents", botId: "chief", threadId: "t1" },
+    });
+    expect(parseWorkspacePatch({ last: null })).toEqual({ last: null });
+    expect(() => parseWorkspacePatch("x")).toThrow(/object/);
+    expect(() => parseWorkspacePatch({ restore: 1 })).toThrow(/restore is on or off/);
+    expect(() => parseWorkspacePatch({ last: { page: "agents", botId: null, threadId: "t1" } })).toThrow(
+      /last is a place/,
+    );
+    expect(() => parseWorkspacePatch({ position: 1 })).toThrow(/Unknown workspace setting "position"/);
   });
 });

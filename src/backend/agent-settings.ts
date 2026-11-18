@@ -25,9 +25,11 @@ import {
   type AppPageId,
   type AppSettings,
   type AppTheme,
+  type AppWorkspaceSettings,
   type BotSummary,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_BEHAVIOR,
+  DEFAULT_APP_WORKSPACE,
   defaultNotificationPreferences,
   isClaudeModel,
   isPinnedPageIdList,
@@ -37,8 +39,10 @@ import {
   normalizeAppAppearance,
   normalizeAppBehavior,
   normalizeAppTheme,
+  normalizeAppWorkspace,
   parseAppearancePatch,
   parseBehaviorPatch,
+  parseWorkspacePatch,
   SETTINGS_TABS,
   type SettingsTabId,
   type UpdateAgentSettingsInput,
@@ -128,6 +132,7 @@ interface StoredAppSetting {
   pinnedPageIds: AppPageId[];
   appearance: AppAppearanceSettings;
   behavior: AppBehaviorSettings;
+  workspace: AppWorkspaceSettings;
 }
 
 interface NamedTool {
@@ -287,6 +292,7 @@ export class AgentSettingsService {
       navigation: { pinnedPageIds: stored.pinnedPageIds },
       appearance: stored.appearance,
       behavior: stored.behavior,
+      workspace: this.#knownWorkspace(stored.workspace),
       tabs: SETTINGS_TABS.map((id) => {
         const feature = TAB_FEATURES[id];
         const base = feature === "computer" ? availability.computer !== false : feature !== "missing";
@@ -328,6 +334,9 @@ export class AgentSettingsService {
     if (input.behavior !== undefined) {
       stored.behavior = { ...stored.behavior, ...parseBehaviorPatch(input.behavior) };
     }
+    if (input.workspace !== undefined) {
+      stored.workspace = { ...stored.workspace, ...parseWorkspacePatch(input.workspace) };
+    }
     this.#db()
       .prepare(
         `INSERT INTO projection_app_settings (setting_key, value_json, updated_at) VALUES ('app', ?, ?)
@@ -338,6 +347,13 @@ export class AgentSettingsService {
     const settings = this.appSettings();
     this.#deps.emit({ type: "app-settings-changed", settings });
     return settings;
+  }
+
+  /** The remembered place without an agent that is gone: the thread goes with its agent, the page stays. */
+  #knownWorkspace(workspace: AppWorkspaceSettings): AppWorkspaceSettings {
+    const last = workspace.last;
+    if (!last || last.botId === null || this.#deps.bot(last.botId)) return workspace;
+    return { ...workspace, last: last.page === null ? null : { page: last.page, botId: null, threadId: null } };
   }
 
   /** Read on every forwarded agent event (notifications), so it is cached until the next save. */
@@ -357,6 +373,7 @@ export class AgentSettingsService {
       pinnedPageIds: [...APP_PAGE_IDS],
       appearance: { ...DEFAULT_APP_APPEARANCE },
       behavior: { ...DEFAULT_APP_BEHAVIOR },
+      workspace: { ...DEFAULT_APP_WORKSPACE },
     };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;
@@ -390,6 +407,7 @@ export class AgentSettingsService {
       pinnedPageIds,
       appearance: normalizeAppAppearance(parsed.appearance),
       behavior: normalizeAppBehavior(parsed.behavior),
+      workspace: normalizeAppWorkspace(parsed.workspace),
     };
   }
 

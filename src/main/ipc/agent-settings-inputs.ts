@@ -21,6 +21,7 @@ import {
   normalizeAppTheme,
   parseAppearancePatch,
   parseBehaviorPatch,
+  parseWorkspacePatch,
   type SaveAgentTemplateInput,
   type UpdateAgentSettingsInput,
   type UpdateAppSettingsInput,
@@ -129,6 +130,7 @@ export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
     "navigation",
     "appearance",
     "behavior",
+    "workspace",
   ]);
   const result: UpdateAppSettingsInput = {};
   if (input.theme !== undefined) result.theme = normalizeAppTheme(input.theme);
@@ -167,6 +169,7 @@ export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
   }
   if (input.appearance !== undefined) result.appearance = parseAppearancePatch(input.appearance);
   if (input.behavior !== undefined) result.behavior = parseBehaviorPatch(input.behavior);
+  if (input.workspace !== undefined) result.workspace = parseWorkspacePatch(input.workspace);
   return result;
 }
 

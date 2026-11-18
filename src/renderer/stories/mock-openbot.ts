@@ -64,6 +64,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import {
   DEFAULT_APP_APPEARANCE,
+  DEFAULT_APP_WORKSPACE,
   defaultNotificationPreferences,
   emptyAgentEyesState,
   isPinnedPageIdList,
@@ -72,6 +73,7 @@ import {
   normalizeAppTheme,
   parseAppearancePatch,
   parseBehaviorPatch,
+  parseWorkspacePatch,
   SETTINGS_TABS,
 } from "@openbot/contracts/ipc";
 import { isBoolean, isOneOf, isString } from "@openbot/contracts/runtime-values";
@@ -233,7 +235,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
     navigation: { pinnedPageIds: [] },
     appearance: { ...DEFAULT_APP_APPEARANCE },
-    behavior: { launchAtLogin: false, keepBackground: false },
+    behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
+    workspace: { ...DEFAULT_APP_WORKSPACE },
   };
   const agentStatus = clone(options.agentStatus ?? STORY_AGENT_STATUS);
   let bots = clone(options.bots ?? STORY_BOT_SUMMARIES);
@@ -842,6 +845,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
           behavior: input.behavior
             ? { ...appSettingsState.behavior, ...parseBehaviorPatch(input.behavior) }
             : appSettingsState.behavior,
+          workspace: input.workspace
+            ? { ...appSettingsState.workspace, ...parseWorkspacePatch(input.workspace) }
+            : appSettingsState.workspace,
         };
         emitAgentEvent({ type: "app-settings-changed", settings: clone(appSettingsState) });
         return clone(appSettingsState);

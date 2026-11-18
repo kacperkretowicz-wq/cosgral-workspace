@@ -274,22 +274,78 @@ describe("AgentSettingsService", () => {
 
   it("keeps launch-at-login (KAPI): default off, change survives a restart", async () => {
     const { dir, database, service, events } = await open();
-    expect(service.appSettings().behavior).toEqual({ launchAtLogin: false, keepBackground: false });
+    expect(service.appSettings().behavior).toEqual({
+      launchAtLogin: false,
+      keepBackground: false,
+      externalLinks: "browser",
+    });
     const changed = await service.updateAppSettings({ behavior: { launchAtLogin: true } });
-    expect(changed.behavior).toEqual({ launchAtLogin: true, keepBackground: false });
+    expect(changed.behavior).toEqual({ launchAtLogin: true, keepBackground: false, externalLinks: "browser" });
     expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
     database.close();
     const reopened = await open(dir);
-    expect(reopened.service.appSettings().behavior).toEqual({ launchAtLogin: true, keepBackground: false });
+    expect(reopened.service.appSettings().behavior).toEqual({
+      launchAtLogin: true,
+      keepBackground: false,
+      externalLinks: "browser",
+    });
     // BE-W: a patch of one switch leaves the other as it was, and the change survives another restart.
     const kept = await reopened.service.updateAppSettings({ behavior: { keepBackground: true } });
-    expect(kept.behavior).toEqual({ launchAtLogin: true, keepBackground: true });
+    expect(kept.behavior).toEqual({ launchAtLogin: true, keepBackground: true, externalLinks: "browser" });
     reopened.database.close();
     const again = await open(dir);
-    expect(again.service.appSettings().behavior).toEqual({ launchAtLogin: true, keepBackground: true });
+    expect(again.service.appSettings().behavior).toEqual({
+      launchAtLogin: true,
+      keepBackground: true,
+      externalLinks: "browser",
+    });
     const bad = JSON.parse('{"behavior":{"keepBackground":"yes"}}');
     await expect(again.service.updateAppSettings(bad)).rejects.toThrow(/on or off/);
     expect(again.service.appSettings().behavior.keepBackground).toBe(true);
+  });
+
+  it("remembers the last workspace (BE-X): restore on by default, kept over a restart, an agent that is gone is dropped, null forgets", async () => {
+    const { dir, database, service, bots, events } = await open();
+    expect(service.appSettings().workspace).toEqual({ restore: true, last: null });
+
+    const saved = await service.updateAppSettings({
+      workspace: { last: { page: "agents", botId: "chief", threadId: "t1" } },
+    });
+    expect(saved.workspace).toEqual({ restore: true, last: { page: "agents", botId: "chief", threadId: "t1" } });
+    expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: saved });
+    // The switch and the place are separate: turning restore off keeps the place, a save of other settings keeps both.
+    const off = await service.updateAppSettings({ workspace: { restore: false } });
+    expect(off.workspace).toEqual({ restore: false, last: { page: "agents", botId: "chief", threadId: "t1" } });
+    await service.updateAppSettings({ language: "pl" });
+    database.close();
+    const reopened = await open(dir);
+    expect(reopened.service.appSettings().workspace).toEqual(off.workspace);
+
+    // The agent is deleted: the window must not be sent to it. The page stays, the agent and its thread go.
+    reopened.bots.clear();
+    expect(reopened.service.appSettings().workspace).toEqual({
+      restore: false,
+      last: { page: "agents", botId: null, threadId: null },
+    });
+    await reopened.service.updateAppSettings({ workspace: { last: { page: null, botId: "chief", threadId: "t2" } } });
+    expect(reopened.service.appSettings().workspace.last).toBeNull();
+    expect(bots.size).toBe(1); // the first harness is untouched
+
+    const cleared = await reopened.service.updateAppSettings({ workspace: { last: null } });
+    expect(cleared.workspace.last).toBeNull();
+  });
+
+  it("keeps where links of a conversation open (BE-X): the default browser until changed", async () => {
+    const { dir, database, service } = await open();
+    expect(service.appSettings().behavior.externalLinks).toBe("browser");
+    const changed = await service.updateAppSettings({ behavior: { externalLinks: "app" } });
+    expect(changed.behavior).toEqual({ launchAtLogin: false, keepBackground: false, externalLinks: "app" });
+    database.close();
+    const reopened = await open(dir);
+    expect(reopened.service.appSettings().behavior.externalLinks).toBe("app");
+    const bad = JSON.parse('{"behavior":{"externalLinks":"popup"}}');
+    await expect(reopened.service.updateAppSettings(bad)).rejects.toThrow(/externalLinks is one of/);
+    expect(reopened.service.appSettings().behavior.externalLinks).toBe("app");
   });
 
   it("refuses a look value outside its list, an unknown field, and changes nothing", async () => {
