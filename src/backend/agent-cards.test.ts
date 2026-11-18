@@ -46,7 +46,8 @@ describe("AgentCardsService (W12 BE-D)", () => {
     expect(overview.cards.map((card) => card.id)).toEqual([...AGENT_CARD_IDS]);
     const byId = Object.fromEntries(overview.cards.map((card) => [card.id, card]));
     expect(byId.memory).toMatchObject({ available: true, count: 12, summary: "12 memories" });
-    expect(byId.folders).toMatchObject({ count: 2, summary: "2" });
+    // Without `details` ports the openable cards stay listed but unavailable (UI must not call `details`).
+    expect(byId.folders).toMatchObject({ available: false, count: null, summary: "Not available in this build" });
     expect(byId.publish.available).toBe(false);
     expect(byId.skills).toMatchObject({ available: true, count: null });
   });

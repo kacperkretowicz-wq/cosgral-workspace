@@ -114,7 +114,14 @@ describe("AgentCardsService details (W12 BE-G)", () => {
     await expect(cards.details({ botId: "ghost", card: "files" })).rejects.toThrow("does not exist");
     const bare = await setup({ noDetails: true });
     await expect(bare.cards.details({ botId: "chief", card: "usage" })).rejects.toThrow("not available");
-    expect(publishCard(bare.cards.overview({ botId: "chief" }))?.available).toBe(false);
+    const overview = bare.cards.overview({ botId: "chief" });
+    expect(publishCard(overview)?.available).toBe(false);
+    for (const id of AGENT_DETAIL_CARD_IDS) {
+      expect(overview.cards.find((card) => card.id === id)).toMatchObject({
+        available: false,
+        summary: "Not available in this build",
+      });
+    }
   });
 
   it("publishes an agent as a template, remembers it over a restart and shows it in the list of cards", async () => {

@@ -2,18 +2,18 @@
 
 Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows` i pierwszą częścią `w12-screens`) oraz gałąź `team/kk/w12-screens` (Import i Transfer, Głos, Mobile Connect, zdalny pulpit; stan na 543bc7f88; do scalenia). Poprzednia wersja tabeli: `b1e28ab8f` + `w12-flows`, 68,8%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany UI Designera na jego gałęzi zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`).
 
-**Wynik w jednej linii: 54 z 72 funkcji = 75% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
+**Wynik w jednej linii: 55,5 z 72 funkcji = 77,1% (jest = 1, częściowo = ½). Z tego skontraktowane ~89,6%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 57,6%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **75%** (54 z 72) | 44 jest, 20 częściowo, 8 brak |
-| Skontraktowane | **87,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | 86,1% | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | 81,3% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Parytet (kod) | **77,1%** (55,5 z 72) | 46 jest, 19 częściowo, 7 brak |
+| Skontraktowane | **~89,6%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~89%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~84%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **45,1%** | 19 wierszy w pełni (tak), 27 częściowo; reszta nie sprawdzona w prawdziwym programie |
-| Ostrożny parytet | 56,9% | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Ostrożny parytet | **57,6%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 54 z 78 = 69,2%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 55,5 z 78 = 71,2%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -71,8 +71,8 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 17 | Akcje na wiadomościach (kopiuj, przypnij, ponów, wróć do punktu) | **jest** | tak | tak | tak | tak | nie | Silnik i ekran w kodzie, bez odbioru okna (W6). | ipc-message-actions, odbior-w6 |
 | 18 | Wątki: nowy, lista, archiwum, nazwa, usuń, gałąź | **jest** | tak | tak | tak | tak | nie | Bez odbioru okna W6. | ipc-threads, odbior-w6 |
 | 19 | Zakładki wątków (zamknij inne, obok czatu) | **jest** | tak | tak | tak | tak | część | Chat z wątkami na zrzucie T-H; akcje zakładek nie sprawdzone. | ipc-thread-tabs |
-| 20 | Wstrzymania wątku (limit użycia, restart agenta, serwer zajęty, limit wątków) | **częściowo** | część | część | część | część | nie | Jest wstrzymanie budżetem; reszta powodów brak. | ipc-budgets, ipc-threads |
-| 21 | Cofnij usunięcie wątku, etykieta „zaczął agent” | **brak** | nie | nie | nie | nie | nie | Brak. | - |
+| 20 | Wstrzymania wątku (limit użycia, restart agenta, serwer zajęty, limit wątków) | **jest** | tak | tak | tak | tak | nie | `heldKind` (budget / agent-restart / server-busy / thread-limit) + `QueueHoldNotice` w czacie; w oknie nie sprawdzone. | ipc-queue-holds, backend-w12-holds |
+| 21 | Cofnij usunięcie wątku, etykieta „zaczął agent” | **jest** | tak | tak | tak | tak | nie | `window.openbot.threadUndo` + `ThreadUndoBar`; w oknie nie sprawdzone. | ipc-thread-undo, backend-w12-undo |
 | 22 | Kontekst (wskaźnik, kompaktowanie) i plan (karty planu) | **jest** | tak | tak | tak | tak | nie | Bez odbioru okna. | ipc-context, ipc-plan |
 | 23 | Panel boczny czatu (przeglądarka, pliki, ustawienia agenta, głos) | **częściowo** | tak | tak | tak | część | część | Przeglądarka i ustawienia agenta w oknie; panel podagentów jest w kodzie, panel głosu w czacie nie. | kk-w3-acceptance |
 
@@ -180,12 +180,12 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|
-| Parytet kodowy | 68,8% | **75%** | dziewięć wierszy (Aktualizacje, Import/Transfer, OAuth MCP, Telegram, Slack, katalog 18 dostawców, głos z mikrofonem, zdalny pulpit z przełącznikiem „pytaj”, podagenci): częściowo → jest; Mobile Connect już był „jest”, dostał panel jednym zapytaniem |
-| Skontraktowane | 87,5% | **87,5%** | bez zmian |
-| Silnik | 86,1% | 86,1% | bez zmian |
-| Ekran w kodzie | 70,8% | 81,3% | panele KK (Aktualizacje, OAuth MCP, Komunikatory, Głos, Mobile Connect jednym zapytaniem, zdalny pulpit, podagenci), dział Import/Transfer i katalog dostawców UI |
-| W oknie sprawdzone | 45,1% | 45,1% | bez zmian: nowe ekrany nie były oglądane w oknie |
-| Ostrożny parytet | 56,9% | 56,9% | „jest” bez dowodu w oknie liczy się za ½, jak wcześniej „częściowo” |
+| Parytet kodowy | 68,8% | **77,1%** | KK: dziewięć wierszy → 75%; KAPI-C: wiersz 20 wstrzymania (częściowo→jest) i 21 Cofnij (brak→jest) po Backend w12-holds / w12-undo |
+| Skontraktowane | 87,5% | **~89,6%** | +heldKind + threadUndo |
+| Silnik | 86,1% | **~89%** | heldKind + threadUndo w backend |
+| Ekran w kodzie | 70,8% | **~84%** | +QueueHoldNotice + ThreadUndoBar (wcześniej KK panele) |
+| W oknie sprawdzone | 45,1% | 45,1% | bez zmian: heldKind/Cofnij nie oglądane w oknie |
+| Ostrożny parytet | 56,9% | **57,6%** | Cofnij weszło jako ½ (jest bez okna); wstrzymania już były ½ jako częściowo |
 
 ## Decyzje: luki bez silnika
 
@@ -202,10 +202,10 @@ Godziny to moja ocena (kontrakt + silnik + testy na atrapach), nie pomiar. „Le
 | Discord (tylko DM) | wstrzymany | ok. 9 h | lekkie (prawdziwy test: token bota) | NIE ROBIĆ teraz (najpierw ekran komunikatorów) | +0,7 pp silnik; +1,4 pp z ekranem |
 | Rutyny kanału | brak | ok. 6 h | lekkie | NIE ROBIĆ teraz (rutyny agenta wystarczają) | +0,7 pp |
 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter…) | brak, Backend robi pulę kluczy dla katalogu | ok. 8 h | ciężkie (potrzebne CLI, polecenia niezweryfikowane) | NIE ROBIĆ bez zgody właściciela na pobranie CLI | +0,7 pp |
-| Cofnięcie usunięcia wątku | brak | ok. 3 h | lekkie | ROBI BACKEND (BE-J, w kolejce) | +0,7 pp |
-| Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | częściowo | ok. 5 h | lekkie | ROBIĆ, jeśli wątki idą do odbioru okna | +0,7 pp |
+| Cofnięcie usunięcia wątku | jest (silnik+pasek; okno nie) | ok. 3 h | lekkie | ZROBIONE (Backend BE-J / w12-undo) | +1,4 pp (brak → jest) |
+| Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | jest (heldKind + QueueHoldNotice; okno nie) | ok. 5 h | lekkie | ZROBIONE (Backend BE-O / w12-holds) | +0,7 pp (częściowo → jest) |
 
-**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione). Silnik bez ekranu liczy się za ½ wiersza; ekrany do gotowych silników, które jeszcze zostały: układ Marketplace Agents/Skills i edytor Workflows z paletą i kartą triggera (UI Designer). Komunikatory, aktualizacje, OAuth MCP, Import/Transfer, głos (mikrofon), Mobile Connect, zdalny pulpit, katalog dostawców, Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran.
+**Zostaje „robić” po stronie silnika: 0 h** w tej tabeli (treści Marketplace, Condition+Prompt, wersje, wstrzymania i Cofnij — zrobione). Ekrany do gotowych silników: układ Marketplace Agents/Skills i edytor Workflows z paletą (UI Designer, częściowo już w `f87181e1a`). Komunikatory, aktualizacje, OAuth MCP, Import/Transfer, głos, Mobile Connect, zdalny pulpit, katalog dostawców, Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran.
 
 ## Czego nie sprawdziłem
 

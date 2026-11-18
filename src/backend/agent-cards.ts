@@ -15,6 +15,7 @@ import {
   AGENT_CARD_IDS,
   AGENT_CARD_LIMITS,
   AGENT_CHAT_COLORS,
+  AGENT_DETAIL_CARD_IDS,
   AGENT_DETAIL_LIMITS,
   AGENT_NOTIFICATION_LEVELS,
   type AgentBusyMessageMode,
@@ -185,9 +186,12 @@ export class AgentCardsService {
       advanced: preferences.busyMessage,
       notifications: preferences.notificationLevel,
     };
-    const templates = this.#options.details?.templates;
+    const ports = this.#options.details;
+    const templates = ports?.templates;
     const publishedId = this.#published[botId];
     const publishedTemplate = templates && publishedId ? templates.find(publishedId) : null;
+    /** Cards that open with `details`: without the ports they must show as unavailable (UI must not call `details`). */
+    const detailMissing = !ports;
     return {
       botId,
       cards: AGENT_CARD_IDS.map((id): AgentCardSummary => {
@@ -202,6 +206,9 @@ export class AgentCardsService {
                 ? `Saved as a template: ${publishedTemplate.name}`.slice(0, AGENT_CARD_LIMITS.summary)
                 : "Not saved as a template",
           };
+        }
+        if (detailMissing && AGENT_DETAIL_CARD_IDS.some((card) => card === id)) {
+          return { id, available: false, count: null, summary: "Not available in this build" };
         }
         const card = known[id];
         const count = card?.count ?? null;
