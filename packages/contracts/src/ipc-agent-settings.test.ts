@@ -7,6 +7,7 @@ import {
   APP_SEND_SHORTCUTS,
   APP_UI_SCALES,
   appearanceDomTokens,
+  applyWorkspacePatch,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_BEHAVIOR,
   DEFAULT_APP_WORKSPACE,
@@ -284,5 +285,57 @@ describe("W3 agent settings contract", () => {
       /last is a place/,
     );
     expect(() => parseWorkspacePatch({ position: 1 })).toThrow(/Unknown workspace setting "position"/);
+  });
+});
+
+describe("the remembered workspace of each server (BE-AD, item 9)", () => {
+  const home = { page: "agents", botId: "chief", threadId: "t1" } as const;
+  const far = { page: "tasks", botId: "remote-bot", threadId: null } as const;
+
+  it("keeps the old shape when no server has a place, and reads a place per server", () => {
+    expect(normalizeAppWorkspace({ restore: true, last: null, byServer: {} })).toEqual({ restore: true, last: null });
+    expect(isAppWorkspace({ restore: true, last: null, byServer: { "server-2": far } })).toBe(true);
+    expect(isAppWorkspace({ restore: true, last: null, byServer: { "server-2": { ...far, page: "nowhere" } } })).toBe(
+      false,
+    );
+    expect(isAppWorkspace({ restore: true, last: null, byServer: { "": far } })).toBe(false);
+    expect(isAppWorkspace({ restore: true, last: null, byServer: [far] })).toBe(false);
+    // What is not valid is left out, the rest stays.
+    expect(
+      normalizeAppWorkspace({
+        restore: true,
+        last: null,
+        byServer: { ok: far, bad: { page: "x", botId: null, threadId: null } },
+      }),
+    ).toEqual({ restore: true, last: null, byServer: { ok: far } });
+  });
+
+  it("checks a change for one server: a whole place or null, and not for this computer", () => {
+    expect(parseWorkspacePatch({ byServer: { "server-2": far, "server-3": null } })).toEqual({
+      byServer: { "server-2": far, "server-3": null },
+    });
+    expect(() => parseWorkspacePatch({ byServer: { "server-2": { page: "x", botId: null, threadId: null } } })).toThrow(
+      /place/,
+    );
+    expect(() => parseWorkspacePatch({ byServer: { local: far } })).toThrow(/this computer.*last/);
+    expect(() => parseWorkspacePatch({ byServer: "x" })).toThrow(/byServer/);
+    expect(() => parseWorkspacePatch({ byServer: { "": far } })).toThrow(/server id/);
+  });
+
+  it("applies a change: sets, forgets, keeps this computer's place apart and keeps at most 16 servers", () => {
+    const start = { restore: true, last: home };
+    const one = applyWorkspacePatch(start, { byServer: { a: far } });
+    expect(one).toEqual({ restore: true, last: home, byServer: { a: far } });
+    const forgot = applyWorkspacePatch(one, { byServer: { a: null } });
+    expect(forgot).toEqual(start);
+    expect(applyWorkspacePatch(one, { restore: false })).toEqual({ restore: false, last: home, byServer: { a: far } });
+    let many = applyWorkspacePatch(start, {});
+    for (let index = 0; index < 20; index += 1) many = applyWorkspacePatch(many, { byServer: { [`s${index}`]: far } });
+    const keys = Object.keys(many.byServer ?? {});
+    expect(keys).toHaveLength(16);
+    // The oldest are dropped; writing a place again makes it the newest.
+    expect(keys[0]).toBe("s4");
+    const again = applyWorkspacePatch(many, { byServer: { s4: home } });
+    expect(Object.keys(again.byServer ?? {}).at(-1)).toBe("s4");
   });
 });

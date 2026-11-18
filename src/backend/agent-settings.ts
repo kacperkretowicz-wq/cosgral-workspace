@@ -26,6 +26,7 @@ import {
   type AppSettings,
   type AppTheme,
   type AppWorkspaceSettings,
+  applyWorkspacePatch,
   type BotSummary,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_BEHAVIOR,
@@ -335,7 +336,7 @@ export class AgentSettingsService {
       stored.behavior = { ...stored.behavior, ...parseBehaviorPatch(input.behavior) };
     }
     if (input.workspace !== undefined) {
-      stored.workspace = { ...stored.workspace, ...parseWorkspacePatch(input.workspace) };
+      stored.workspace = applyWorkspacePatch(stored.workspace, parseWorkspacePatch(input.workspace));
     }
     this.#db()
       .prepare(

@@ -335,6 +335,27 @@ describe("AgentSettingsService", () => {
     expect(cleared.workspace.last).toBeNull();
   });
 
+  it("remembers the place of each server apart (BE-AD): kept over a restart, the local agent check does not touch other servers, null forgets", async () => {
+    const { dir, database, service } = await open();
+    const far = { page: "tasks", botId: "remote-bot", threadId: "remote-thread" } as const;
+    const first = await service.updateAppSettings({ workspace: { byServer: { "server-2": far } } });
+    expect(first.workspace).toEqual({ restore: true, last: null, byServer: { "server-2": far } });
+    // This computer's place and a server's place are separate.
+    const both = await service.updateAppSettings({
+      workspace: { last: { page: "agents", botId: "chief", threadId: "t1" } },
+    });
+    expect(both.workspace.byServer).toEqual({ "server-2": far });
+    database.close();
+    const reopened = await open(dir);
+    // "remote-bot" is not an agent of this computer; the engine cannot know remote agents, so the place stays.
+    expect(reopened.service.appSettings().workspace.byServer).toEqual({ "server-2": far });
+    const forgot = await reopened.service.updateAppSettings({ workspace: { byServer: { "server-2": null } } });
+    expect(forgot.workspace.byServer).toBeUndefined();
+    await expect(reopened.service.updateAppSettings({ workspace: { byServer: { local: far } } })).rejects.toThrow(
+      /this computer/,
+    );
+  });
+
   it("keeps where links of a conversation open (BE-X): the default browser until changed", async () => {
     const { dir, database, service } = await open();
     expect(service.appSettings().behavior.externalLinks).toBe("browser");

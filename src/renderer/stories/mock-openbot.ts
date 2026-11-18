@@ -63,6 +63,7 @@ import type {
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
 import {
+  applyWorkspacePatch,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_WORKSPACE,
   defaultNotificationPreferences,
@@ -883,7 +884,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
             ? { ...appSettingsState.behavior, ...parseBehaviorPatch(input.behavior) }
             : appSettingsState.behavior,
           workspace: input.workspace
-            ? { ...appSettingsState.workspace, ...parseWorkspacePatch(input.workspace) }
+            ? applyWorkspacePatch(appSettingsState.workspace, parseWorkspacePatch(input.workspace))
             : appSettingsState.workspace,
         };
         emitAgentEvent({ type: "app-settings-changed", settings: clone(appSettingsState) });

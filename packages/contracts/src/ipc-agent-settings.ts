@@ -479,12 +479,27 @@ export interface AppWorkspaceMemory {
 export interface AppWorkspaceSettings {
   /** True = the window opens where the person left it. On by default. */
   restore: boolean;
+  /** The place on this computer (the local server). */
   last: AppWorkspaceMemory | null;
+  /**
+   * BE-AD: the place on each other server, by server id (agents and threads differ per server). Absent when there is none. The engine
+   * knows only its own agents, so it does not check these places; the window does.
+   */
+  byServer?: Record<string, AppWorkspaceMemory>;
+}
+
+/** A change of the workspace settings; `byServer` sets (a place) or forgets (null) the place of single servers. */
+export interface AppWorkspacePatch {
+  restore?: boolean;
+  last?: AppWorkspaceMemory | null;
+  byServer?: Record<string, AppWorkspaceMemory | null>;
 }
 
 export const DEFAULT_APP_WORKSPACE: AppWorkspaceSettings = { restore: true, last: null };
 
 const WORKSPACE_ID_LIMIT = 200;
+/** Places kept for other servers; the oldest are dropped. */
+export const WORKSPACE_SERVER_LIMIT = 16;
 
 function isWorkspaceId(value: unknown): value is string | null {
   return (
@@ -504,28 +519,55 @@ function isWorkspaceMemory(value: unknown): value is AppWorkspaceMemory {
   );
 }
 
+function isServerId(value: string): boolean {
+  return isWorkspaceId(value) && value !== null;
+}
+
 export function isAppWorkspace(value: unknown): value is AppWorkspaceSettings {
-  return isDynamicRecord(value) && isBoolean(value.restore) && (value.last === null || isWorkspaceMemory(value.last));
+  return (
+    isDynamicRecord(value) &&
+    isBoolean(value.restore) &&
+    (value.last === null || isWorkspaceMemory(value.last)) &&
+    (value.byServer === undefined ||
+      (isDynamicRecord(value.byServer) &&
+        Object.entries(value.byServer).every(([serverId, place]) => isServerId(serverId) && isWorkspaceMemory(place))))
+  );
+}
+
+function copyMemory(place: AppWorkspaceMemory): AppWorkspaceMemory {
+  return { page: place.page, botId: place.botId, threadId: place.threadId };
 }
 
 /** A saved value read back: what is not valid returns to the default (older or edited data is not trusted). */
 export function normalizeAppWorkspace(value: unknown): AppWorkspaceSettings {
   const stored = isDynamicRecord(value) ? value : {};
-  return {
+  const result: AppWorkspaceSettings = {
     restore: isBoolean(stored.restore) ? stored.restore : DEFAULT_APP_WORKSPACE.restore,
-    last: isWorkspaceMemory(stored.last)
-      ? { page: stored.last.page, botId: stored.last.botId, threadId: stored.last.threadId }
-      : null,
+    last: isWorkspaceMemory(stored.last) ? copyMemory(stored.last) : null,
   };
+  if (isDynamicRecord(stored.byServer)) {
+    const places = Object.entries(stored.byServer)
+      .filter(([serverId, place]) => isServerId(serverId) && isWorkspaceMemory(place))
+      .slice(-WORKSPACE_SERVER_LIMIT)
+      .map(([serverId, place]): [string, AppWorkspaceMemory] => [
+        serverId,
+        copyMemory(isWorkspaceMemory(place) ? place : DEFAULT_PLACE),
+      ]);
+    if (places.length > 0) result.byServer = Object.fromEntries(places);
+  }
+  return result;
 }
 
-/** A change from the window: `restore` and/or `last` (null forgets the place). Throws a plain sentence for the first problem. */
-export function parseWorkspacePatch(value: unknown): Partial<AppWorkspaceSettings> {
+const DEFAULT_PLACE: AppWorkspaceMemory = { page: null, botId: null, threadId: null };
+
+/** A change from the window: `restore`, `last` (null forgets the place) and/or `byServer`. Throws a plain sentence for the first problem. */
+export function parseWorkspacePatch(value: unknown): AppWorkspacePatch {
   if (!isDynamicRecord(value)) throw new Error("workspace must be an object.");
   for (const key of Object.keys(value)) {
-    if (key !== "restore" && key !== "last") throw new Error(`Unknown workspace setting "${key}".`);
+    if (key !== "restore" && key !== "last" && key !== "byServer")
+      throw new Error(`Unknown workspace setting "${key}".`);
   }
-  const patch: Partial<AppWorkspaceSettings> = {};
+  const patch: AppWorkspacePatch = {};
   if (value.restore !== undefined) {
     if (!isBoolean(value.restore)) throw new Error("restore is on or off.");
     patch.restore = value.restore;
@@ -534,10 +576,39 @@ export function parseWorkspacePatch(value: unknown): Partial<AppWorkspaceSetting
     if (value.last !== null && !isWorkspaceMemory(value.last)) {
       throw new Error("last is a place: a page, an agent id and a thread id of that agent, or null.");
     }
-    patch.last =
-      value.last === null ? null : { page: value.last.page, botId: value.last.botId, threadId: value.last.threadId };
+    patch.last = value.last === null ? null : copyMemory(value.last);
+  }
+  if (value.byServer !== undefined) {
+    if (!isDynamicRecord(value.byServer)) throw new Error("byServer is an object: a server id and its place, or null.");
+    const places: Record<string, AppWorkspaceMemory | null> = {};
+    for (const [serverId, place] of Object.entries(value.byServer)) {
+      if (!isServerId(serverId)) throw new Error("A server id is 1 to 200 characters without control characters.");
+      if (serverId === "local") throw new Error('The place of this computer is "last"; byServer is for other servers.');
+      if (place !== null && !isWorkspaceMemory(place)) {
+        throw new Error("A server's place is a page, an agent id and a thread id of that agent, or null.");
+      }
+      places[serverId] = place === null ? null : copyMemory(place);
+    }
+    patch.byServer = places;
   }
   return patch;
+}
+
+/** The settings after a change (the engine and the Storybook mock use the same rules). */
+export function applyWorkspacePatch(current: AppWorkspaceSettings, patch: AppWorkspacePatch): AppWorkspaceSettings {
+  const next: AppWorkspaceSettings = {
+    restore: patch.restore ?? current.restore,
+    last: patch.last === undefined ? current.last : patch.last,
+  };
+  const places = new Map(Object.entries(current.byServer ?? {}));
+  for (const [serverId, place] of Object.entries(patch.byServer ?? {})) {
+    // A place written again is the newest; the oldest ones go when there are too many.
+    places.delete(serverId);
+    if (place !== null) places.set(serverId, place);
+  }
+  const kept = [...places].slice(-WORKSPACE_SERVER_LIMIT);
+  if (kept.length > 0) next.byServer = Object.fromEntries(kept);
+  return next;
 }
 
 export interface AppSettings {
@@ -565,7 +636,7 @@ export interface UpdateAppSettingsInput {
   /** Changes only the fields that are given; the others stay as they are. */
   appearance?: Partial<AppAppearanceSettings>;
   behavior?: Partial<AppBehaviorSettings>;
-  workspace?: Partial<AppWorkspaceSettings>;
+  workspace?: AppWorkspacePatch;
 }
 
 /** True for a list of known page ids without duplicates. */
