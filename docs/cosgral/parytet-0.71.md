@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `eb9df8800` (z kartami agenta jako siatką i szczegółami, silnikiem rutyn kanału, przyciskami presetów xAI/OpenRouter, osią kroków Zadań, parserem linku skilla i poprawkami UI-Z). Poprzednia wersja tabeli: `b01e8a060`, 77,8%. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`, przed większością zmian W12; Tester czeka na GO).
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4ddcbb5d3` (od `eb9df8800` doszły: autostart, praca w tle, miejsce linków, przywracanie miejsca, presety dostawców, Updates, Voice i motyw na ekranie „Settings”, zmiana nazwy agenta). Poprzednia wersja tabeli: `eb9df8800`, 78,5% kod / 47,2% w oknie / 59,0% ostrożnie (72 funkcje). Teraz tabela ma **77 funkcji** (doszło 5 nowych wierszy: 73–77). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”. **W oknie liczę tylko to, co potwierdził Tester** (ostatnie potwierdzone: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`; odbiór T-AF na `4ddcbb5d3` w toku). Żadna z nowych funkcji nie jest jeszcze potwierdzona w oknie.
 
-**Wynik w jednej linii: 56,5 z 72 funkcji = 78,5% (jest = 1, częściowo = ½). Z tego skontraktowane ~91,7%, ale w prawdziwym oknie sprawdzone tylko 47,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 59,0%.**
+**Wynik w jednej linii: 61 z 77 funkcji = 79,2% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 44,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 58,4%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **78,5%** (56,5 z 72) | 46 jest, 21 częściowo, 5 brak |
-| Skontraktowane | **~91,7%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~91,0%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~85,4%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **47,2%** | 19 wierszy w pełni (tak), 30 częściowo; reszta nie sprawdzona w prawdziwym programie |
-| Ostrożny parytet | **59,0%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Parytet (kod) | **79,2%** (61 z 77) | 50 jest, 22 częściowo, 5 brak |
+| Skontraktowane | **~92,9%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~92,2%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~85,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| W oknie sprawdzone | **44,2%** | 19 wierszy w pełni (tak), 30 częściowo, 28 nie (w tym 5 nowych); liczone z 77 funkcji |
+| Ostrożny parytet | **58,4%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 56,5 z 78 = 72,4%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 61 z 83 = 73,5%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -30,10 +30,10 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 11 | 6 | 4 | 1 | 73% |
+| A. Ustawienia aplikacji i powłoka | 15 | 9 | 5 | 1 | 77% |
 | B. Czat, Needs you, wątki | 12 | 10 | 2 | 0 | 92% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
-| D. Agenci | 10 | 9 | 1 | 0 | 95% |
+| D. Agenci | 11 | 10 | 1 | 0 | 95% |
 | E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 6 | 2 | 1 | 78% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
@@ -48,16 +48,20 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
-| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | część | część | część | część | część | Jest motyw ciemny/jasny/systemowy (zrzuty T-H) i język; brak rozmiaru UI, czcionek, koloru logo i czatu, skrótu wysyłania, autostartu. | ui-w7-ui1, tester-w12-zrzuty2 (poza repo: zrzuty) |
+| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | tak | tak | tak | część | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran jest tylko dla motywu** (Dark/Light/System na ekranie „Settings”, KK-AC); reszta pól nie ma jeszcze kontrolek ani działania w oknie. Motyw widać na zrzutach T-H (ustawiony skryptem), a sam wybór w oknie nie był oglądany. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
-| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. Nie oglądany w oknie; nagrywanie nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice |
+| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac |
 | 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
 | 6 | Dok agentów (przypięcie, kolejność, rozmiar, mini-czat) | **jest** | tak | tak | tak | tak | tak | Podstawy w oknie (W3-T3); ustawienia położenia i ekranów jak w 0.71 nie sprawdzone. | kk-w3-acceptance, ipc-dock |
 | 7 | Dynamic Island (stan, nazwa agenta, klik otwiera kartę) | **jest** | tak | tak | tak | tak | tak | Sprawdzone w oknie (W3-T3); haptyka i wybór ekranów poza zakresem. | kk-w3-acceptance, ipc-dock |
 | 8 | Computer Use na Windows (stan, zgoda, Stop) | **częściowo** | tak | tak | tak | część | część | Sterownik i zgody są; ekran ustawień uprawnień jak w 0.71 i sterowanie prawdziwym pulpitem w oknie nie sprawdzone. | ipc-computer-use, computer-driver-windows, kk-w3-acceptance |
 | 9 | Mobile Connect: telefony, parowanie QR/TLS, trasa (ten komputer / sieć lokalna) | **jest** | tak | tak | tak | tak | część | Parowanie na pętli zwrotnej w oknie (W3-T3), bez prawdziwego telefonu; pod kartami strony panel czyta `mobileConnect.getOverview`: trasy (w użyciu, chmura niedostępna z powodem), telefony z PIN-em, blokadą i powiadomieniami, lista niedostępnych. Panel nie oglądany w oknie. | ipc-mobile-connect, mobile-connect.test, kk-w12-vault-voice |
-| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | nie | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). Nie oglądany w oknie. | ipc-instance-transfer, kk-w12-screens |
+| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | nie | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). **Do KK-AC panel był nieosiągalny** (to samo okno bez wejścia); od KK-AC jest na ekranie „Settings”. Nie oglądany w oknie. | ipc-instance-transfer, kk-w12-screens, kk-w12-ac |
 | 11 | Onboarding (język, dostawca, pierwszy agent, Computer Use) | **częściowo** | tak | tak | tak | tak | tak | Przepływ w oknie jest, ale inny niż w 0.71 (bez wyboru hosta lokalny/zdalny, bez darmowych modeli). | kk-w3-acceptance |
+| 73 | Autostart z Windowsem („Launch at login”) | **jest** | tak | tak | tak | tak | nie | `behavior.launchAtLogin` zapisuje się i woła `app.setLoginItemSettings` (KAPI, `w12-login`); przełącznik w `AppBehaviorSection` na ekranie „Settings” i w oknie ustawień (KK-AD). W oknie: nie potwierdzone (Tester sprawdza tylko zapis ustawienia; start po restarcie Windows nie sprawdzany). | kapi-w12-login, kk-w12-ac |
+| 74 | Praca w tle: zamknięcie okna chowa program do ikony przy zegarze | **jest** | tak | tak | tak | tak | nie | `behavior.keepBackground` (BE-W): zamknięcie okna chowa program do zasobnika, menu ikony „Otwórz” / „Zakończ”, zadania trwają; zabezpieczenie: bez ikony program kończy się jak dotąd. Przełącznik w `AppBehaviorSection` (KK-AD). Ikona i powrót to prawdziwy Electron: sonda Testera w toku (T-AF). | backend-w12-w, kk-w12-ac |
+| 75 | Gdzie otwierają się linki z rozmów (przeglądarka systemowa albo przeglądarka programu) | **jest** | tak | tak | tak | tak | nie | `behavior.externalLinks` (BE-X); wybór w `AppBehaviorSection`, a `Conversation.openMessageLink` otwiera panel przeglądarki programu albo domyślną przeglądarkę (KK-AE). Test w `App.test`; w oknie nie oglądane. | backend-w12-x, kk-w12-ae |
+| 76 | Przywracanie ostatniego miejsca przy starcie (strona, agent, wątek) | **częściowo** | tak | tak | tak | część | nie | `workspace.restore` i `workspace.last` (BE-X); hook `useRestoreWorkspace` otwiera zapamiętaną **stronę i agenta** i zapisuje zmiany po 0,5 s (KK-AE). **Wątek nie jest zapamiętywany** (zapis `threadId: null`; UI-AH to dopisuje). W oknie nie oglądane (sonda restartu u Testera). | backend-w12-x, kk-w12-ae |
 
 ### B. Czat, Needs you, wątki
 
@@ -99,6 +103,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 35 | Foldery agentów w pasku bocznym | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
 | 36 | Pasek boczny, szyna stron i szyna serwerów | **częściowo** | tak | tak | tak | tak | część | Brak „Więcej”/przypinania stron, serwera zdalnego nie dało się sprawdzić. | kk-w3-acceptance, ui-w4-ui4 |
 | 37 | Uprawnienia, reguły „zawsze zezwalaj”, budżety | **jest** | tak | tak | tak | tak | część | „Zawsze zezwalaj” w oknie; budżety i poziom dostępu bez odbioru okna. | ipc-access, ipc-budgets, ipc-approval-rules |
+| 77 | Zmiana nazwy agenta (ustawienia agenta, menu „Rename”, pole na wierszu paska) | **jest** | tak | tak | tak | tak | nie | Pole „Agent name” w ustawieniach agenta, pozycja „Rename” w menu agenta i edycja na wierszu (UI-AD, UI-AF); nazwa zmienia się na pasku bocznym i w nagłówku (testy `App.test`). W oknie: nie potwierdzone (probe Rename Testera czeka na odbiór T-AF). | ui-w12-ad, ui-w12-af |
 
 ### E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka)
 
@@ -130,7 +135,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 51 | Własne endpointy (Ollama / styl LM) | **jest** | tak | tak | tak | tak | tak | W5 na atrapie. | kk-w5-g3 |
 | 52 | ACP (Antigravity, Gemini preset, własny agent) z logowaniem | **jest** | tak | tak | tak | tak | nie | Tura z prawdziwym agentem nieodebrana w oknie. | ipc-acp-presets, ipc-acp-login |
 | 53 | Katalog 18 dostawców (opisy, klucze maskowane, presety ACP oznaczone „niezweryfikowane”) | **jest** | tak | tak | tak | tak | nie | Strona Dostawcy ma sekcję „Katalog dostawców” (UI-P): 18 kart ze stanem wsparcia, pula kluczy tylko do zapisu (maska, włącz/wyłącz, limit). Nie oglądany w oknie; polecenia ACP nadal niezweryfikowane, brak sterowników natywnych. | backend-w12-providers, backend-w12-accounts, ui-w12-ui2 |
-| 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **częściowo** | tak | tak | tak | część | nie | Grok (xAI) i OpenRouter działają bez CLI jako własne punkty końcowe z kluczem API (czat bez narzędzi programu); gotowe adresy w `ENDPOINT_CLOUD_PRESETS` (BE-Q, a4fc0708c) tylko wypełniają formularz. Drugi rząd przycisków „Use xAI (Grok)” i „Use OpenRouter” w formularzu punktów końcowych jest w integracji (UI-AA, d160de596; test przycisków zielony u UI); tylko wypełniają formularz. Połączenia z tymi usługami nie sprawdzano. Cursor, DeepSeek, Kimi, Copilot: tylko opisy w katalogu, polecenia ACP niezweryfikowane. | backend-w12-providers, backend-w12-q (pytania-do-wlasciciela) |
+| 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **częściowo** | tak | tak | tak | część | nie | Grok (xAI) i OpenRouter działają bez CLI jako własne punkty końcowe z kluczem API (czat bez narzędzi programu); gotowe adresy w `ENDPOINT_CLOUD_PRESETS` (BE-Q, BE-T) tylko wypełniają formularz: 7 presetów (OpenRouter, xAI **niezweryfikowane**; DeepSeek, Mistral, Groq, Together AI, Moonshot z adresami z dokumentacji dostawców, BE-T). Drugi rząd przycisków „Use xAI (Grok)” i „Use OpenRouter” w formularzu punktów końcowych jest w integracji (UI-AA, d160de596; test przycisków zielony u UI); tylko wypełniają formularz. Połączenia z tymi usługami nie sprawdzano. Cursor, DeepSeek, Kimi, Copilot: tylko opisy w katalogu, polecenia ACP niezweryfikowane. | backend-w12-providers, backend-w12-q (pytania-do-wlasciciela) |
 | 55 | Użycie: liczniki i pierścienie limitów, wykresy 7–365 dni, podział wg modelu i rodzaju tokenów | **jest** | tak | tak | tak | tak | część | Ekran Użycie: zakładki okresów, kafle, wykres dzienny, obciążenie komputera, tabela agentów i modeli, podział tokenów z pokryciem, limity dostawców. W oknie: zrzut T-M (pusta strona bez danych). Nie ma podziału na umiejętność. | backend-w12-library, backend-w12-accounts, tester-w12-tm |
 
 ### H. Automatyzacje (rutyny, przepływy)
@@ -176,7 +181,28 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
-## Zmiany od wersji @ `b01e8a060` (77,8%)
+## Zmiany od wersji @ `eb9df8800` (78,5% kod / 47,2% w oknie / 59,0% ostrożnie, 72 funkcje)
+
+| Miara | Było (72) | Jest (77) | Dlaczego |
+|---|---|---|---|
+| Parytet kodowy | 78,5% (56,5) | **79,2%** (61) | 5 nowych wierszy (73–77) dodało 4,5 pkt; wiersz 2 bez zmiany stanu |
+| Skontraktowane | ~91,7% | **~92,9%** | nowe wiersze + wiersz 2 (kontrakt BE-U: część → tak) |
+| Silnik | ~91,0% | **~92,2%** | nowe wiersze + wiersz 2 (zapis BE-U: część → tak) |
+| Ekran w kodzie | ~85,4% | **~85,7%** | nowe wiersze mają ekran (73–75, 77) lub jego część (76) |
+| W oknie sprawdzone | 47,2% (34) | **44,2%** (34) | licznik bez zmiany: **żadna nowa funkcja nie jest potwierdzona w oknie**, a mianownik urósł z 72 do 77 |
+| Ostrożny parytet | 59,0% | **58,4%** | to samo: nowe „jest” bez dowodu w oknie liczą się za ½ |
+
+**Dlaczego „w oknie” spadło, choć nic nie zepsuto:** doszło pięć funkcji, których nikt jeszcze nie obejrzał w prawdziwym programie. Wzór z pliku liczy je jako „nie sprawdzone”. Procent wróci do góry po odbiorze T-AF (Tester).
+
+Co zmieniło wiersze:
+1. **Nowe wiersze 73–77:** autostart (73), praca w tle (74), miejsce otwierania linków (75), przywracanie miejsca (76, częściowo: bez wątku), zmiana nazwy agenta (77). Cztery „jest” (K, S, T, E = tak) i jedno „częściowo”. Wszystkie O = nie.
+2. **Wiersz 2 (wygląd i ustawienia ogólne):** kontrakt i silnik pełne (BE-U: motyw, rozmiar UI, czcionka, skrót wysyłania, akcent, kroki agenta, kolejność nieprzeczytanych); **ekran tylko dla motywu**, więc zostaje „częściowo”.
+3. **Wiersze 4 (Głos) i 10 (Aktualizacje):** stan bez zmian, ale dopisana uczciwa uwaga: ich panele **były nieosiągalne** (siedziały w oknie ustawień, którego nic w programie nie otwierało); od KK-AC są na ekranie „Settings”. W oknie nadal nie oglądane.
+4. **Wiersz 54 (sterowniki dostawców):** 7 presetów z BE-T; OpenRouter i xAI oznaczone „niezweryfikowane”. Stan „częściowo” bez zmiany (polecenia CLI innych dostawców nadal brak).
+5. **Atrapy usunięte** z okna ustawień (KK-AF): dwa przełączniki „Notifications” bez zapisu; prawdziwa macierz powiadomień jest na ekranie „Settings” (wiersz 3).
+6. Wiersz 28 i pozostałe bez zmian (nowe maskotki 44 px, 12 twarzy: tylko opis w UI-AG, nie oglądane w oknie).
+
+## Poprzednie zmiany: od wersji @ `b01e8a060` (77,8%)
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|

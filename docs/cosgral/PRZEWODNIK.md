@@ -114,7 +114,7 @@ Gdy otworzysz program po raz pierwszy, zobaczysz ekran wstępnej konfiguracji (�
    - Możesz tworzyć foldery (do 5 poziomów zagłębienia) i układać w nich agentów.
    - Opcja **Duplikuj** pozwala sklonować konfigurację agenta bez kopiowania jego historii rozmów.
    - Opcja **Ukryj** pozwala schować rzadziej używanych asystentów z widoku głównego.
-   - **Zmiana nazwy agenta:** kliknij tytuł rozmowy → ustawienia agenta → pole „Agent name” (nazwa agenta); zmiana jest od razu widoczna na liście i w nagłówku. Skrót „Zmień nazwę” (Rename) w menu agenta na pasku bocznym jest w przygotowaniu i czeka na scalenie.
+   - **Zmiana nazwy agenta:** kliknij tytuł rozmowy → ustawienia agenta → pole „Agent name” (nazwa agenta); zmiana jest od razu widoczna na liście i w nagłówku. Szybsza droga: prawy klik na agencie na pasku bocznym → „Rename” (zmiana nazwy w miejscu na wierszu, Enter zapisuje).
 
 ### Kanały i praca zespołowa
 Kanały służą do delegowania złożonych projektów na cały zespół asystentów:
@@ -298,6 +298,11 @@ W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy
 |---|---|---|---|
 | **Aktualizacje** | Zębatka na pasku stron → ekran „Settings”, przewiń do sekcji **Updates** (po „Application settings” i „Theme”) | Wersja i stan, tor Stabilny/Podgląd, „Check for updates”, automatyczne sprawdzanie, „Restart when idle” | Nic. W programie uruchomionym z folderu ekran mówi, że aktualizacje tu nie działają |
 | **Głos** | Zębatka → ekran „Settings”, przewiń do sekcji **Voice** (pod Updates) | Uprawnienie mikrofonu z przyciskiem do ustawień Windows, ustawienia czytania i dyktowania, lista „niedostępne w tej wersji” | Nic. Pobranie modelu dyktowania pyta o zgodę |
+| **Motyw** (ciemny / jasny / systemowy) | Zębatka → „Settings” → sekcja **Appearance**, lista „Theme” | Zmiana działa od razu i zapisuje się sama | Nic |
+| **Zachowanie programu** | Zębatka → „Settings” → sekcja **App behavior** | Cztery ustawienia: „Launch COSGRAL Workspace at login” (start z Windowsem), „Keep … running in the background” (zamknięcie okna chowa program do ikony przy zegarze, zadania trwają; „Otwórz” / „Zakończ” w menu ikony), „Restore the last workspace on launch” (po starcie wraca ta sama strona i agent; **wątek jeszcze nie wraca**), „Open external links in” (domyślna przeglądarka albo przeglądarka programu) | Nic. Do sprawdzenia „w prawdziwym życiu” potrzebny restart programu lub Windowsa; nie były jeszcze oglądane w oknie |
+| **Ustawienia kontekstu** („Context settings”) | Zębatka → „Settings” (pod „Appearance”) | Kiedy program sam skraca długą rozmowę | Nic |
+| **Presety dostawców z chmury** | **Dostawcy** (Providers) → sekcja „Own model endpoints” → rząd „Use …” | Przyciski wypełniają formularz adresem dostawcy (OpenRouter, xAI, DeepSeek, Mistral, Groq, Together AI, Moonshot; OpenRouter i xAI oznaczone jako niezweryfikowane); nic się nie łączy, dopóki nie zapiszesz klucza API | Własny klucz API dostawcy (klucza nigdy nie widać po zapisaniu) |
+| **Zmiana nazwy agenta** | Prawy klik na agencie → „Rename”, albo tytuł rozmowy → ustawienia agenta → „Agent name” | Nowa nazwa jest od razu na pasku bocznym i w nagłówku rozmowy | Co najmniej jeden agent |
 | **Komunikatory** (Telegram, Slack) | **Biblioteka** → sekcja „Komunikatory” (Messengers) | Karty ze stanem, pola na tokeny, lista dopuszczonych rozmów | Do prawdziwego połączenia: token bota Telegrama lub dwa tokeny Slacka |
 | **Integracje kont** (GitHub, Google, Notion, Meta) | **Biblioteka** → sekcja „Połącz konta” (Connect accounts, pod komunikatorami) | Cztery karty, kroki rejestracji aplikacji, pola na identyfikator i sekret | Do połączenia: własna aplikacja zarejestrowana w usłudze |
 | **Logowanie do serwerów MCP** | **Biblioteka** → lista serwerów MCP, pod nią „Logowanie do serwerów MCP” | Karta na serwer wymagający logowania w przeglądarce | Serwer MCP działający przez sieć (bez niego ekran mówi, że nic nie wymaga logowania) |
