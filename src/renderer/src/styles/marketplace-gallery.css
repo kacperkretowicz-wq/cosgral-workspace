@@ -228,3 +228,10 @@
     transform: none;
   }
 }
+
+/* Light theme: dark shade of the category colour on a light tint (4.5:1+). */
+:root[data-theme="light"] .mk-tile,
+[data-story-theme="light"] .mk-tile {
+  background: oklch(0.9 0.05 var(--mk-hue));
+  color: oklch(0.34 0.09 var(--mk-hue));
+}

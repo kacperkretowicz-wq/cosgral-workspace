@@ -290,7 +290,6 @@
 
 @keyframes sidebar-row-in {
   from {
-    opacity: 0;
     transform: translateY(4px);
   }
 }

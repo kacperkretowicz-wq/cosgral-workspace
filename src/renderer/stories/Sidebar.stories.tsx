@@ -1,5 +1,5 @@
 import type { CentralAuthUser } from "@openbot/contracts/ipc";
-import { expect, fireEvent, fn, within } from "storybook/test";
+import { expect, fireEvent, fn, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import type { SidebarAgentState } from "../src/components/Sidebar";
 import { Sidebar } from "../src/components/Sidebar";
@@ -83,8 +83,8 @@ export const AgentTiles: Story = {
     const preview = tile.querySelector<HTMLElement>(".bot-row-preview");
     const time = tile.querySelector<HTMLElement>(".bot-row-time");
     if (!avatar || !title || !preview || !time) throw new Error("Agent tile anatomy is incomplete.");
-    await expect(tile.getBoundingClientRect().height).toBe(54);
-    await expect(avatar.getBoundingClientRect().width).toBe(36);
+    await expect(tile.getBoundingClientRect().height).toBe(62);
+    await expect(avatar.getBoundingClientRect().width).toBe(40);
     await expect(getComputedStyle(title).fontSize).toBe("14px");
     await expect(getComputedStyle(preview).fontSize).toBe("13px");
     await expect(getComputedStyle(time).fontSize).toBe("12px");
@@ -111,7 +111,8 @@ export const AgentContextMenu: Story = {
     const menuStyle = getComputedStyle(menu);
     const itemStyle = getComputedStyle(items[0]);
 
-    await expect(menu.getBoundingClientRect().width).toBe(200);
+    // The menu scales in; measure it once the entrance has finished.
+    await waitFor(() => expect(menu.getBoundingClientRect().width).toBe(200));
     await expect(menuStyle.padding).toBe("4px");
     await expect(menuStyle.outlineStyle).toBe("none");
     await expect(items[0].getBoundingClientRect().height).toBe(26);
@@ -170,7 +171,8 @@ export const Channels: Story = {
     const create = canvas.getByRole("button", { name: "New channel" });
     await expect(browse.querySelector("svg")).not.toBeNull();
     await expect(create.querySelector("svg")).not.toBeNull();
-    await expect(getComputedStyle(browse).backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+    // UI-I: the channel actions are quiet rows (no fill at rest; the hover fill comes from --cosgral-hover).
+    await expect(getComputedStyle(browse).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     browse.focus();
     await expect(browse).toHaveFocus();
     await expect(getComputedStyle(browse).boxShadow).not.toBe("none");
