@@ -1,16 +1,27 @@
-import type { AgentEvent, ThreadList, ThreadSummary, ThreadsDesktopApi } from "@openbot/contracts/ipc";
-import { THREAD_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
+import type {
+  AgentEvent,
+  PendingThreadDelete,
+  ThreadList,
+  ThreadSummary,
+  ThreadsDesktopApi,
+  ThreadUndoDesktopApi,
+} from "@openbot/contracts/ipc";
+import { THREAD_LIMITS, THREAD_UNDO_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { providerError } from "./provider-error";
+import { ThreadUndoBar } from "./ThreadUndoBar";
 import { Badge, Button, Field, Heading, Input, Switch, Text } from "./ui";
 import "../styles/threads.css";
 export function ThreadPanel(props: {
   botId: string;
   api?: ThreadsDesktopApi;
+  undoApi?: ThreadUndoDesktopApi;
   onEvent?: (listener: (event: AgentEvent) => void) => () => void;
   onChanged?: (list: ThreadList) => void;
 }) {
   const api = untrack(() => props.api ?? window.openbot?.threads);
+  const undoApi = untrack(() => props.undoApi ?? window.openbot?.threadUndo);
+  const [pending, setPending] = createSignal<PendingThreadDelete[]>([]);
   const [list, setList] = createSignal<ThreadList>();
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
@@ -45,11 +56,22 @@ export function ThreadPanel(props: {
       setRename(null);
       setDeleting(null);
       setBusy(false);
+      setPending([]);
       void load();
+      void undoApi?.list({ botId: props.botId }).then(
+        (items) => {
+          if (items.every((item) => item.botId === props.botId)) setPending(items);
+        },
+        () => undefined,
+      );
     },
   );
   onSettled(() => {
     const off = (props.onEvent ?? window.openbot?.agent?.onEvent)?.((event) => {
+      if (event.type === "thread-deletes-changed" && event.botId === props.botId) {
+        setPending(event.pending);
+        return;
+      }
       if (event.type !== "threads-changed" && event.type !== "thread-activity") return;
       if (event.botId !== props.botId) return;
       if (event.type === "threads-changed") {
@@ -103,12 +125,41 @@ export function ThreadPanel(props: {
       if (botId === props.botId) setBusy(false);
     }
   }
+  async function undo(item: PendingThreadDelete) {
+    if (!undoApi || busy()) return;
+    const botId = props.botId;
+    setBusy(true);
+    setError("");
+    try {
+      const next = await undoApi.undo({ botId, threadId: item.threadId });
+      if (botId === props.botId) {
+        apply(next);
+        setPending((items) => items.filter((entry) => entry.threadId !== item.threadId));
+      }
+    } catch (e) {
+      if (botId === props.botId) setError(providerError(e, "Could not bring the thread back."));
+    } finally {
+      if (botId === props.botId) setBusy(false);
+    }
+  }
+  async function remove(thread: ThreadSummary) {
+    if (!undoApi) {
+      await run((service, botId) => service.delete({ botId, threadId: thread.id, confirm: true }));
+      return;
+    }
+    await run(async (_service, botId) => {
+      const result = await undoApi.delete({ botId, threadId: thread.id, confirm: true });
+      setPending((items) => [result.pending, ...items.filter((entry) => entry.threadId !== thread.id)]);
+      return result.list;
+    });
+  }
   const active = () => list()?.threads.find((t) => t.id === list()?.activeThreadId);
   const visible = () => list()?.threads.filter((t) => archived() || t.state !== "archived") ?? [];
   const select = (thread: ThreadSummary) =>
     void run((service, botId) => service.select({ botId, threadId: thread.id }));
   return (
     <Show when={api}>
+      <ThreadUndoBar pending={pending()} busy={busy()} onUndo={(item) => void undo(item)} />
       <details class="thread-panel">
         <summary>Threads: {active()?.title ?? "Loading..."}</summary>
         <div class="thread-panel-body">
@@ -252,17 +303,12 @@ export function ThreadPanel(props: {
                     <Show when={deleting() === thread.id}>
                       <fieldset aria-label={`Confirm deleting ${thread.title}`}>
                         <Text as="p">
-                          Permanently delete {thread.title}, its history, queued messages and Needs you cards? This
-                          cannot be undone.
+                          {undoApi
+                            ? `Delete ${thread.title}? You can bring it back for ${THREAD_UNDO_LIMITS.windowMinutes} minutes.`
+                            : `Permanently delete ${thread.title}, its history, queued messages and Needs you cards? This cannot be undone.`}
                         </Text>
-                        <Button
-                          variant="danger"
-                          disabled={busy()}
-                          onClick={() =>
-                            void run((service, botId) => service.delete({ botId, threadId: thread.id, confirm: true }))
-                          }
-                        >
-                          Delete permanently
+                        <Button variant="danger" disabled={busy()} onClick={() => void remove(thread)}>
+                          {undoApi ? "Delete" : "Delete permanently"}
                         </Button>
                         <Button disabled={busy()} onClick={() => setDeleting(null)}>
                           Keep thread

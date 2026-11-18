@@ -834,4 +834,8 @@ export const en = {
   "Files of the Library": "Files of the Library",
   "Preferences of the program": "Preferences of the program",
   "Files of the Library are not moved by this version.": "Files of the Library are not moved by this version.",
+  "Deleted threads": "Deleted threads",
+  "Deleted “{title}”": "Deleted “{title}”",
+  "{seconds} s left to undo": "{seconds} s left to undo",
+  Undo: "Undo",
 } as const;

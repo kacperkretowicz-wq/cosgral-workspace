@@ -832,4 +832,8 @@ export const pl = {
   "Files of the Library": "Pliki Biblioteki",
   "Preferences of the program": "Preferencje programu",
   "Files of the Library are not moved by this version.": "Pliki Biblioteki nie są przenoszone w tej wersji.",
+  "Deleted threads": "Usunięte wątki",
+  "Deleted “{title}”": "Usunięto „{title}”",
+  "{seconds} s left to undo": "Zostało {seconds} s na cofnięcie",
+  Undo: "Cofnij",
 } as const;
