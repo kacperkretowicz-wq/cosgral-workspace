@@ -6,6 +6,7 @@ import {
   APP_FONTS,
   APP_SEND_SHORTCUTS,
   APP_UI_SCALES,
+  appearanceDomTokens,
   DEFAULT_APP_APPEARANCE,
   DEFAULT_APP_BEHAVIOR,
   DEFAULT_APP_WORKSPACE,
@@ -228,6 +229,27 @@ describe("W3 agent settings contract", () => {
     expect(() => parseAppearancePatch({ sendShortcut: "tab" })).toThrow(/sendShortcut/);
     expect(() => parseAppearancePatch({ chatAccent: "#fff" })).toThrow(/chatAccent/);
     expect(() => parseAppearancePatch({ theme: "dark" })).toThrow(/Unknown appearance setting "theme"/);
+  });
+
+  it("maps a look to DOM tokens for the window (KAPI-N)", () => {
+    expect(appearanceDomTokens(undefined)).toMatchObject({
+      uiScale: "100",
+      font: "inter",
+      chatAccent: "blue",
+      sendShortcut: "enter",
+      agentSteps: "show",
+      unreadFirst: "false",
+      scaleFactor: "1",
+      accentHex: "#3b82f6",
+    });
+    expect(appearanceDomTokens({ uiScale: 125, font: "mono", chatAccent: "violet", unreadFirst: true })).toMatchObject({
+      uiScale: "125",
+      font: "mono",
+      chatAccent: "violet",
+      unreadFirst: "true",
+      scaleFactor: "1.25",
+      accentHex: "#8b5cf6",
+    });
   });
 
   it("describes the remembered workspace: restore on by default, a place is a page, an agent and its thread (BE-X)", () => {
