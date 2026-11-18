@@ -8,9 +8,9 @@ Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `b1e28ab8f`. Lista dla UI
 
 Już podpięte (nie ma ich na liście): Vault konektory (`VaultConnectorsPanel`), Biblioteka, Użycie, Harmonogram, menu wiadomości, karty agenta, ustawienia serwera, Zadania.
 
-## Stan (18.11.2026): pozycje 1–5 mają ekran (✓), zostają 6–10
+## Stan (18.11.2026): pozycje 1–7 i 10 mają ekran (✓), zostają 8–9 (UI Designer)
 
-Pozycje z ✓ są podpięte w rendererze (testy komponentów zielone, w oknie jeszcze nie oglądane). Zostają: Mobile Connect jednym zapytaniem, przegląd głosu, układ Marketplace, edytor Workflows, przełącznik zdalnego pulpitu.
+Pozycje z ✓ są podpięte w rendererze (testy komponentów na atrapach, w oknie jeszcze nie oglądane). Zostają dwa ekrany: układ Marketplace i edytor Workflows (UI Designer).
 
 ## Kolejność (największy zysk na godzinę)
 
@@ -21,11 +21,11 @@ Pozycje z ✓ są podpięte w rendererze (testy komponentów zielone, w oknie je
 | 3 ✓ | **Aktualizacje** — zrobione: `UpdatesPanel` w oknie ustawień (zastąpił atrapę) | Ustawienia aplikacji → „Aktualizacje” | `updatePreferences.getOverview`, `.get`, `.set`, `.restartWhenIdle`, `.cancelRestartWhenIdle` | `update-preferences-changed` | `UPDATE_TRACKS`, `updateTrackChange` (przełącznik toru Stable/Preview) | 3 |
 | 4 ✓ | **Import i Transfer** — zrobione: `InstanceTransferPanel` w działach Import i Transfer ustawień serwera | Ustawienia serwera → działy „Import” i „Transfer” | `instanceTransfer.summary`, `.exportAgents`, `.choose`, `.apply`, `.discard`, `.importSources` | (wynik w odpowiedzi) | `importSourceCards()`, `TRANSFER_STEPS`, `TRANSFER_NOT_MOVED` (lista „co nie jedzie”) | 4–5 |
 | 5 ✓ | **Katalog 18 dostawców + klucze** — zrobione przez UI: `ProviderCatalogPanel` na stronie Dostawcy | Ustawienia serwera → „Providers” i pasek wyboru dostawcy w Nowym agencie | `providerCatalog.list`, `.setKey`, `.clearKey`, `.addKey`, `.removeKey`, `.setKeyEnabled` | `provider-catalog-changed` | `maskProviderKey`; klucze: `keys[]` (maska, włączony, `limitedUntil`), stan „unverified” przy poleceniach ACP | 4 |
-| 6 | **Mobile Connect jednym zapytaniem** | Strona Mobile Connect (dziś na starszym API) | `mobileConnect.getOverview` (+ `mobile.startPairing({exposure})`) | `phone-access-changed`, `mobile-changed` | `MOBILE_UNAVAILABLE_FEATURES` (stały link i chmura: „niedostępne” z powodem), `exposureForRoute` | 2–3 |
-| 7 | **Głos: przegląd i mikrofon** | Ustawienia → Głos (dziś `VoiceSettings` na starszym API) | `voice.getOverview`, `voice.openMicrophoneSettings` | `voice-changed` | `VOICE_UNAVAILABLE_FEATURES`, `MICROPHONE_STATUSES` | 2–3 |
+| 6 ✓ | **Mobile Connect jednym zapytaniem** — zrobione: `MobileOverviewPanel` pod kartami strony | Strona Mobile Connect (dziś na starszym API) | `mobileConnect.getOverview` (+ `mobile.startPairing({exposure})`) | `phone-access-changed`, `mobile-changed` | `MOBILE_UNAVAILABLE_FEATURES` (stały link i chmura: „niedostępne” z powodem), `exposureForRoute` | 2–3 |
+| 7 ✓ | **Głos: przegląd i mikrofon** — zrobione: `VoiceOverviewPanel`, dział „Voice” w oknie ustawień | Ustawienia → Głos (dziś `VoiceSettings` na starszym API) | `voice.getOverview`, `voice.openMicrophoneSettings` | `voice-changed` | `VOICE_UNAVAILABLE_FEATURES`, `MICROPHONE_STATUSES` | 2–3 |
 | 8 | **Marketplace Agents/Skills: układ jak 0.71** | Marketplace (dziś stara lista) | `marketplace.*` (już używane) | `marketplace-changed` | `layoutMarketplace`, `MARKETPLACE_TABS`, `MARKETPLACE_SOURCE_FILTERS`, `marketplaceAction`, `marketplaceItemAvatar`, `marketplacePageState`, `parseMarketplaceQuery` (link GitHub = „niedostępne”) | 4–6 |
 | 9 | **Edytor Workflows jak 0.71** | Strona Workflows (dziś stary edytor z mostem) | `workflows.*` + `listVersions`, `getVersion`, `restoreVersion` | `workflows-changed`, `workflow-run-changed` | `workflowPalette`, `workflowTriggerCard`, `addWorkflowNode`, `connectWorkflowNodes`, `createWorkflowHistory`, `checkWorkflowDraft`, `workflowRunState`, `diffWorkflowGraphs`, `describeWorkflowCondition` | 6–8 |
-| 10 | Zdalny pulpit: przełącznik „Pytaj na tym komputerze” i plakietka | Strona zdalnego pulpitu | `remoteDesktop.host.setAskEverySession`, `host.getState` | `remote-desktop-host-changed` | `remoteDesktopSummary(state)` (plakietka ready/off/unavailable), `REMOTE_DESKTOP_UNATTENDED` („bez nadzoru: niedostępne” z powodem) | 1–2 |
+| 10 ✓ | Zdalny pulpit: przełącznik „Pytaj na tym komputerze” i plakietka — zrobione: `RemoteDesktopAccessPanel` na stronie zdalnego pulpitu | Strona zdalnego pulpitu | `remoteDesktop.host.setAskEverySession`, `host.getState` | `remote-desktop-host-changed` | `remoteDesktopSummary(state)` (plakietka ready/off/unavailable), `REMOTE_DESKTOP_UNATTENDED` („bez nadzoru: niedostępne” z powodem) | 1–2 |
 
 ## Stany do narysowania w każdym ekranie
 

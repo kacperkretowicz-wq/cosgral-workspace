@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows` i pierwszą częścią `w12-screens`) oraz gałąź `team/kk/w12-screens` (Import i Transfer; do scalenia). Poprzednia wersja tabeli: `b1e28ab8f` + `w12-flows`, 68,8%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany UI Designera na jego gałęzi zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`).
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows` i pierwszą częścią `w12-screens`) oraz gałąź `team/kk/w12-screens` (Import i Transfer, Głos, Mobile Connect, zdalny pulpit; stan na `d8942fe58`; do scalenia). Poprzednia wersja tabeli: `b1e28ab8f` + `w12-flows`, 68,8%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany UI Designera na jego gałęzi zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`).
 
-**Wynik w jednej linii: 52,5 z 72 funkcji = 72,9% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
+**Wynik w jednej linii: 53,5 z 72 funkcji = 74,3% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **72,9%** (52,5 z 72) | 41 jest, 23 częściowo, 8 brak |
+| Parytet (kod) | **74,3%** (53,5 z 72) | 43 jest, 21 częściowo, 8 brak |
 | Skontraktowane | **87,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | 86,1% | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | 79,2% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Ekran w kodzie | 80,6% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **45,1%** | 19 wierszy w pełni (tak), 27 częściowo; reszta nie sprawdzona w prawdziwym programie |
 | Ostrożny parytet | 56,9% | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 52,5 z 78 = 67,3%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 53,5 z 78 = 68,6%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -30,7 +30,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 11 | 5 | 5 | 1 | 68% |
+| A. Ustawienia aplikacji i powłoka | 11 | 6 | 4 | 1 | 73% |
 | B. Czat, Needs you, wątki | 12 | 8 | 3 | 1 | 79% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
 | D. Agenci | 10 | 8 | 2 | 0 | 90% |
@@ -39,7 +39,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | G. Dostawcy i użycie | 6 | 5 | 0 | 1 | 83% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 2 | 1 | 67% |
 | I. Komunikatory | 4 | 2 | 0 | 2 | 50% |
-| J. Serwer, zespół, zdalny pulpit, telefon | 7 | 0 | 6 | 1 | 43% |
+| J. Serwer, zespół, zdalny pulpit, telefon | 7 | 1 | 5 | 1 | 50% |
 
 ## Tabela funkcji
 
@@ -50,12 +50,12 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
 | 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | część | część | część | część | część | Jest motyw ciemny/jasny/systemowy (zrzuty T-H) i język; brak rozmiaru UI, czcionek, koloru logo i czatu, skrótu wysyłania, autostartu. | ui-w7-ui1, tester-w12-zrzuty2 (poza repo: zrzuty) |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
-| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **częściowo** | tak | tak | tak | część | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; ekran używa starszego API (bez przeglądu i mikrofonu); nagrywanie nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice |
+| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. Nie oglądany w oknie; nagrywanie nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice |
 | 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
 | 6 | Dok agentów (przypięcie, kolejność, rozmiar, mini-czat) | **jest** | tak | tak | tak | tak | tak | Podstawy w oknie (W3-T3); ustawienia położenia i ekranów jak w 0.71 nie sprawdzone. | kk-w3-acceptance, ipc-dock |
 | 7 | Dynamic Island (stan, nazwa agenta, klik otwiera kartę) | **jest** | tak | tak | tak | tak | tak | Sprawdzone w oknie (W3-T3); haptyka i wybór ekranów poza zakresem. | kk-w3-acceptance, ipc-dock |
 | 8 | Computer Use na Windows (stan, zgoda, Stop) | **częściowo** | tak | tak | tak | część | część | Sterownik i zgody są; ekran ustawień uprawnień jak w 0.71 i sterowanie prawdziwym pulpitem w oknie nie sprawdzone. | ipc-computer-use, computer-driver-windows, kk-w3-acceptance |
-| 9 | Mobile Connect: telefony, parowanie QR/TLS, trasa (ten komputer / sieć lokalna) | **jest** | tak | tak | tak | tak | część | Parowanie na pętli zwrotnej w oknie (W3-T3), bez prawdziwego telefonu; strona nie używa jeszcze `mobileConnect.getOverview`. | ipc-mobile-connect, mobile-connect.test, kk-w12-vault-voice |
+| 9 | Mobile Connect: telefony, parowanie QR/TLS, trasa (ten komputer / sieć lokalna) | **jest** | tak | tak | tak | tak | część | Parowanie na pętli zwrotnej w oknie (W3-T3), bez prawdziwego telefonu; pod kartami strony panel czyta `mobileConnect.getOverview`: trasy (w użyciu, chmura niedostępna z powodem), telefony z PIN-em, blokadą i powiadomieniami, lista niedostępnych. Panel nie oglądany w oknie. | ipc-mobile-connect, mobile-connect.test, kk-w12-vault-voice |
 | 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | nie | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). Nie oglądany w oknie. | ipc-instance-transfer, kk-w12-screens |
 | 11 | Onboarding (język, dostawca, pierwszy agent, Computer Use) | **częściowo** | tak | tak | tak | tak | tak | Przepływ w oknie jest, ale inny niż w 0.71 (bez wyboru hosta lokalny/zdalny, bez darmowych modeli). | kk-w3-acceptance |
 
@@ -159,7 +159,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|---|---|---|---|
 | 66 | Ustawienia serwera (14 sekcji) | **częściowo** | tak | tak | tak | tak | część | 12 sekcji z danymi, Członkowie i Strony „niedostępne”; ekran na zrzucie T-H. | ipc-server-settings, backend-w12-settings |
 | 67 | Zespół: członkowie, zaproszenia, obecność, DM, hostowanie | **częściowo** | tak | tak | tak | tak | nie | Okno dołączania jest; reszty nie dało się sprawdzić (sieć, konto). | kk-w3-acceptance, ipc-team-host |
-| 68 | Zdalny pulpit Windows (host, klient, zgoda, tryby, „pytaj przy każdej sesji”) | **częściowo** | tak | tak | tak | część | część | Silnik z testem na hoście i kliencie; obraz i sterowanie w oknie nie sprawdzane; strona nie ma jeszcze przełącznika „pytaj”; bez trybu bez nadzoru. | ipc-remote-desktop, kk-w12-vault-voice |
+| 68 | Zdalny pulpit Windows (host, klient, zgoda, tryby, „pytaj przy każdej sesji”) | **jest** | tak | tak | tak | tak | część | Silnik z testem na hoście i kliencie; strona ma panel „Who may come in”: plakietka (gotowe/wyłączone/niedostępne), sesje i karty czekające, przełącznik „Ask on this computer every time” (`setAskEverySession`), „Unattended access: niedostępne” z powodem. Panel nie oglądany w oknie; obraz i sterowanie w oknie nie sprawdzane; bez trybu bez nadzoru z założenia. | ipc-remote-desktop, kk-w12-vault-voice |
 | 69 | Telefon: czat i odpowiedzi na decyzje (PWA) | **częściowo** | tak | tak | tak | tak | część | W oknie z atrapą; brak powiadomień push i prawdziwego telefonu. | kk-w3-acceptance, mobile-app |
 | 70 | Telefon: tworzenie i edycja agentów | **częściowo** | tak | tak | tak | tak | część | Tworzenie widać na komputerze; edycja i awatar nie. | kk-w3-acceptance |
 | 71 | Telefon: kanały w PWA | **brak** | nie | nie | nie | nie | nie | Brak. | - |
@@ -180,10 +180,10 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|
-| Parytet kodowy | 68,8% | **72,9%** | sześć wierszy (Aktualizacje, Import/Transfer, OAuth MCP, Telegram, Slack, katalog 18 dostawców): częściowo → jest |
+| Parytet kodowy | 68,8% | **74,3%** | osiem wierszy (Aktualizacje, Import/Transfer, OAuth MCP, Telegram, Slack, katalog 18 dostawców, głos z mikrofonem, zdalny pulpit z przełącznikiem „pytaj”): częściowo → jest; Mobile Connect już był „jest”, dostał panel jednym zapytaniem |
 | Skontraktowane | 87,5% | **87,5%** | bez zmian |
 | Silnik | 86,1% | 86,1% | bez zmian |
-| Ekran w kodzie | 70,8% | 79,2% | panele KK (Aktualizacje, OAuth MCP, Komunikatory), dział Import/Transfer i katalog dostawców UI |
+| Ekran w kodzie | 70,8% | 80,6% | panele KK (Aktualizacje, OAuth MCP, Komunikatory, Głos, Mobile Connect jednym zapytaniem, zdalny pulpit), dział Import/Transfer i katalog dostawców UI |
 | W oknie sprawdzone | 45,1% | 45,1% | bez zmian: nowe ekrany nie były oglądane w oknie |
 | Ostrożny parytet | 56,9% | 56,9% | „jest” bez dowodu w oknie liczy się za ½, jak wcześniej „częściowo” |
 
@@ -205,7 +205,7 @@ Godziny to moja ocena (kontrakt + silnik + testy na atrapach), nie pomiar. „Le
 | Cofnięcie usunięcia wątku | brak | ok. 3 h | lekkie | ROBI BACKEND (BE-J, w kolejce) | +0,7 pp |
 | Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | częściowo | ok. 5 h | lekkie | ROBIĆ, jeśli wątki idą do odbioru okna | +0,7 pp |
 
-**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione). Silnik bez ekranu liczy się za ½ wiersza; ekrany do gotowych silników, które jeszcze zostały: układ Marketplace Agents/Skills, edytor Workflows z paletą i kartą triggera, przegląd głosu (mikrofon), Mobile Connect jednym zapytaniem i przełącznik „pytaj” zdalnego pulpitu (5 wierszy, razem ok. +3,5 pp). Komunikatory, aktualizacje, OAuth MCP, Import/Transfer, katalog dostawców, Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran.
+**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione). Silnik bez ekranu liczy się za ½ wiersza; ekrany do gotowych silników, które jeszcze zostały: układ Marketplace Agents/Skills i edytor Workflows z paletą i kartą triggera (UI Designer). Komunikatory, aktualizacje, OAuth MCP, Import/Transfer, głos (mikrofon), Mobile Connect, zdalny pulpit, katalog dostawców, Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran.
 
 ## Czego nie sprawdziłem
 

@@ -36,3 +36,15 @@ Data: 18.11.2026. Gałąź `team/kk/w12-screens`. Ekrany w własnych komponentac
 3. `App.test` po dodaniu paneli na stronie Library (cięższy test, maszyna pod obciążeniem); `SettingsModal` bez własnego testu.
 4. Wygląd: panele używają istniejących klas (`vault-connector-*`) i stylów okna ustawień; nie oglądałem ich na zrzucie.
 5. Komunikatory żyją na stronie Library obok menedżerów haseł; przeniesienie do osobnej sekcji ustawień zależy od decyzji UI Designera.
+
+## KK-Q: trzy kolejne ekrany (Głos, Mobile Connect, zdalny pulpit)
+
+| Ekran | Komponent | Gdzie | `window.openbot.*` | Testy (plik) |
+|---|---|---|---|---|
+| Głos | `VoiceOverviewPanel` | okno ustawień, nowy dział „Voice” (obok `VoiceSettings`) | `voice.getOverview`, `voice.openMicrophoneSettings`, zdarzenie `voice-changed` | `VoiceOverviewPanel.test` (6) |
+| Mobile Connect | `MobileOverviewPanel` | strona Mobile Connect, pod kartami | `mobileConnect.getOverview`, zdarzenia `mobile-changed`, `mobile-pairing-completed`, `phone-access-changed` | `MobileOverviewPanel.test` (6) |
+| Zdalny pulpit | `RemoteDesktopAccessPanel` | strona zdalnego pulpitu, nad „Share this computer” | `remoteDesktop.host.getState`, `host.setAskEverySession`, zdarzenie `remote-desktop-host-changed` | `RemoteDesktopAccessPanel.test` (5) |
+
+Każdy ma ładowanie, błąd z „Retry”, pusty stan, PL/EN i pozycje „niedostępne w tej wersji” z powodem. Zmiana przełącznika „pytaj” nie jest zgadywana: wynik bierze z odpowiedzi hosta.
+
+Stan sprawdzenia: kod i testy napisane w cichym oknie Testera (bez vitest, Biome i typecheck). Uruchomienie testów po jednym pliku, `check:ui`, Biome i `typecheck:renderer` zostaje na „koniec okna”.
