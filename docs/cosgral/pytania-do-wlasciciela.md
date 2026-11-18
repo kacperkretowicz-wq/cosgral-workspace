@@ -2,6 +2,20 @@
 
 Stan: 18.11.2026. Parytet kodowy 75% (ostrożnie 56,9%, w oknie 45,1%). Godziny to moja ocena (kontrakt + silnik + ekran + testy na atrapach), nie pomiar. Szczegóły i powody: `docs/cosgral/parytet-0.71.md` → „Decyzje” oraz `luki-silnika-071.md`.
 
+
+## Stan na 18.11.2026 (KK-AJ): co zamknięte, co czeka na właściciela
+
+**Wynik:** z pięciu pytań **dwa są zamknięte** (2 i 3, część „klucz API”), **trzy czekają na decyzję właściciela** (1, 4, 5). Do właściciela trafia tylko to, czego nie da się zamknąć bez niego.
+
+| # | Pytanie | Stan | Dowód | Co dalej |
+|---|---|---|---|---|
+| 1 | Discord | **Czeka na właściciela.** Nic w kodzie; `MESSENGER_KINDS` = telegram, slack | `ipc-messengers.ts:22` | Decyzja dopiero po obejrzeniu Telegrama i Slacka w oknie (ok. 9 h silnik + 3 h ekran) |
+| 2 | Rutyny kanału | **Zamknięte.** Silnik, ekran „Routines” w kanale, testy; webhook rutyny kanału poza zakresem (0.71 go nie opisuje) | `ChannelRoutinesPanel.tsx`, PRZEWODNIK 5a „Rutyny kanału” | Nic, chyba że właściciel poprosi o webhook |
+| 3 | Inni dostawcy | **Część „klucz API” zamknięta.** Rząd „Use …” w „Own model endpoints” (OpenRouter, xAI, DeepSeek, Mistral, Groq, Together AI, Moonshot). Tylko czat, bez narzędzi programu | `EndpointsSection.tsx` (`ENDPOINT_CLOUD_PRESETS`), PRZEWODNIK 5a „Presety dostawców” | Sterowniki CLI (Cursor, Grok CLI, Devin) czekają na zgodę właściciela na pobieranie |
+| 4 | LLM i Asset w przepływach | **Czeka na właściciela, ale bez pilności.** Doszły węzły `prompt` i `condition` (UI-AK), nie ma `llm` ani `asset`; obejście: węzeł „agent” bez narzędzi | `ipc-workflows.ts:51` | LLM (ok. 5 h) po obejrzeniu edytora w oknie |
+| 5 | Skill z linku GitHub | **Czeka na właściciela.** Jest czytanie i sprawdzanie linku, brak pobierania i instalacji | `ipc-skill-link.ts` | Tylko po wyraźnym „tak” (cudzy kod, karta zgody z pełnym `SKILL.md`) |
+
+**Nie sprawdzone przeze mnie:** żadnej z tych funkcji nie widziałem w oknie (dokument i kod). Koszty godzinowe są cudzymi szacunkami z tego pliku.
 ## Wynik w jednej linii
 
 **Pięć decyzji, razem ok. 47 godzin pracy. Moja rada: Tak dla „Rutyn kanału” i „LLM w przepływach”, Nie dla Discorda i sterowników innych dostawców, dopóki nie obejrzymy w oknie tego, co już mamy.**
