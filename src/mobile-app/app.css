@@ -503,6 +503,46 @@ p {
   align-self: center;
 }
 
+.channel-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cg-s2);
+  margin-bottom: var(--cg-s2);
+  padding: var(--cg-s3);
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-lg);
+  background: var(--cg-raised);
+}
+
+.channel-tasks h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cg-muted);
+}
+
+.channel-task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cg-s2);
+}
+
+.channel-task .row-title {
+  flex: 1 1 8rem;
+  font-weight: 600;
+}
+
+.channel-task .row-preview {
+  color: var(--cg-muted);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.msg.superseded {
+  opacity: 0.55;
+}
+
 .composer {
   display: grid;
   grid-template-columns: 1fr auto;

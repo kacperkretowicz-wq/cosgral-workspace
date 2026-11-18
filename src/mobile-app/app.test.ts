@@ -7,19 +7,116 @@ import { join } from "node:path";
 import type {
   AgentEvent,
   BotSummary,
+  ChannelMessage,
+  ChannelTask,
+  ChannelTaskActionInput,
   ConversationMessage,
   PendingAgentRequest,
   RespondToApprovalInput,
   RespondToDraftPreviewInput,
   RespondToPromptInput,
+  SendChannelMessageInput,
   SendMessageInput,
+  WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { isString } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { MOBILE_APP_FILES } from "../backend/mobile-app-assets";
 import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-connect";
-import { MobilePhoneApi, type MobilePhoneHost } from "../backend/mobile-phone-api";
+import { MobilePhoneApi, type MobilePhoneChannels, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
+
+const CHANNEL_AT = "2026-11-18T20:00:00.000Z";
+
+function workspaceChannel(id: string, fields: Partial<WorkspaceChannel> = {}): WorkspaceChannel {
+  return {
+    id,
+    name: id,
+    title: `Title ${id}`,
+    instructions: "channel instructions",
+    leadBotId: "scout",
+    memberBotIds: ["scout", "writer"],
+    isolated: false,
+    archived: false,
+    createdAt: CHANNEL_AT,
+    updatedAt: CHANNEL_AT,
+    ...fields,
+  };
+}
+
+function channelTask(id: string, channelId: string, fields: Partial<ChannelTask> = {}): ChannelTask {
+  return {
+    id,
+    channelId,
+    ownerBotId: "scout",
+    state: "running",
+    title: `Task ${id}`,
+    requestMessageId: "m1",
+    resultMessageId: null,
+    parentTaskId: null,
+    dependencyTaskIds: [],
+    resourceKey: "C:\\work\\private",
+    assignmentCount: 1,
+    archivedAt: null,
+    createdAt: CHANNEL_AT,
+    updatedAt: CHANNEL_AT,
+    ...fields,
+  };
+}
+
+function channelMessage(id: string, channelId: string, fields: Partial<ChannelMessage> = {}): ChannelMessage {
+  return {
+    id,
+    channelId,
+    taskId: null,
+    authorBotId: null,
+    kind: "human",
+    text: `Text ${id}`,
+    replyToMessageId: null,
+    resultVersion: null,
+    superseded: false,
+    createdAt: CHANNEL_AT,
+    ...fields,
+  };
+}
+
+function fakeChannels() {
+  const channels = [workspaceChannel("plan"), workspaceChannel("other")];
+  const tasks = [
+    channelTask("t1", "plan"),
+    channelTask("t2", "plan", { state: "waiting" }),
+    channelTask("t3", "other", { state: "paused" }),
+  ];
+  const messages = ["a", "b", "c"].map((id) =>
+    channelMessage(`m-${id}`, "plan", id === "c" ? { authorBotId: "scout", kind: "reply" } : {}),
+  );
+  const sent: SendChannelMessageInput[] = [];
+  const acted: ChannelTaskActionInput[] = [];
+  const host: MobilePhoneChannels = {
+    list: () => channels,
+    tasks: (channelId) => tasks.filter((item) => item.channelId === channelId),
+    messages: (channelId, page) => {
+      const own = messages.filter((item) => item.channelId === channelId);
+      const end = page.before === null ? own.length : own.findIndex((item) => item.id === page.before);
+      if (end < 0) throw new Error("This message is not in the channel.");
+      return own.slice(Math.max(0, end - page.limit), end);
+    },
+    send: (input) => {
+      sent.push(input);
+      const next = channelMessage(`sent-${sent.length}`, input.channelId, { text: input.text });
+      messages.push(next);
+      return { message: next, task: channelTask(`new-${sent.length}`, input.channelId) };
+    },
+    act: (input) => {
+      acted.push(input);
+      const found = tasks.find((item) => item.id === input.taskId);
+      if (!found) throw new Error("This task does not exist.");
+      found.state = input.action === "stop" ? "cancelled" : input.action === "resume" ? "running" : "paused";
+      return { ...found };
+    },
+  };
+  return { host, sent, acted };
+}
 
 const roots: string[] = [];
 const running: MobileConnect[] = [];
@@ -166,6 +263,7 @@ async function setup(options: { messages?: number } = {}) {
     ["writer", bot("writer", { preview: "Draft ready" })],
   ]);
   const conversation = Array.from({ length: options.messages ?? 5 }, (_, index) => message(index + 1));
+  const channels = fakeChannels();
   const state: HostState = {
     pending: [PROMPT, SECRET, APPROVAL, DRAFT],
     sent: [],
@@ -211,6 +309,7 @@ async function setup(options: { messages?: number } = {}) {
     },
     updateProfile: async () => undefined,
     setAvatarHue: async () => undefined,
+    channels: () => channels.host,
     subscribe: (listener) => {
       state.listeners.add(listener);
       return () => state.listeners.delete(listener);
@@ -232,7 +331,7 @@ async function setup(options: { messages?: number } = {}) {
   });
   running.push(mobile);
   const ticket = await mobile.startPairing({ port: 0 });
-  return { mobile, ticket, state, emit, conversation };
+  return { mobile, ticket, state, emit, conversation, channels };
 }
 
 /** Opens the app the way the QR code does and runs its script. */
@@ -434,5 +533,26 @@ describe("phone web app", () => {
     type("input[name='code']", fixture.ticket.qrPayload);
     one("button[data-action='use-code']").click();
     await until(() => !!document.querySelector("button[data-action='pair']"), "the pair button");
+  });
+
+  it("lists channels, opens one, sends a message and stops a task", async () => {
+    const fixture = await pairThroughTheApp();
+    one("button[data-action='pair']").click();
+    await until(() => !!document.querySelector("[data-agent='scout']"), "the agent list");
+    await until(() => text("nav [data-tab='channels'] .badge") === "3", "the open-tasks badge");
+    one("nav [data-tab='channels']").click();
+    await until(() => !!document.querySelector("[data-channel='plan']"), "the channel list");
+    expect(text("[data-channel='plan']")).toContain("Title plan");
+    one("[data-channel='plan']").click();
+    await until(() => all(".msg").length === 3, "channel messages");
+    expect(all(".channel-task").length).toBe(2);
+    type("textarea[name='message']", "  Start the plan.  ");
+    one("button[data-action='send']").click();
+    await until(() => fixture.channels.sent.length === 1, "the channel send");
+    expect(fixture.channels.sent[0]).toMatchObject({ channelId: "plan", text: "Start the plan." });
+    await until(() => all(".msg").length === 4, "the new channel message");
+    one("button[data-action='stop'][data-task='t1']").click();
+    await until(() => fixture.channels.acted.length === 1, "the stop action");
+    expect(fixture.channels.acted[0]).toMatchObject({ taskId: "t1", action: "stop" });
   });
 });

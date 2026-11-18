@@ -19,8 +19,16 @@ import {
 
 const en = {
   tabAgents: "Agents",
+  tabChannels: "Channels",
   tabNeeds: "Needs you",
   tabPhone: "Phone",
+  channelsEmpty: "No channels yet. Create one on the computer.",
+  channelTasks: "Tasks",
+  openTasks: "{n} open",
+  noChannelTasks: "No open tasks.",
+  stopTask: "Stop",
+  pauseTask: "Pause",
+  resumeTask: "Resume",
   live: "Live",
   offline: "Reconnecting…",
   back: "Back",
@@ -138,8 +146,16 @@ const en = {
 
 const pl: Record<keyof typeof en, string> = {
   tabAgents: "Agenci",
+  tabChannels: "Kanały",
   tabNeeds: "Czeka na Ciebie",
   tabPhone: "Telefon",
+  channelsEmpty: "Brak kanałów. Utwórz jeden na komputerze.",
+  channelTasks: "Zadania",
+  openTasks: "{n} otwartych",
+  noChannelTasks: "Brak otwartych zadań.",
+  stopTask: "Stop",
+  pauseTask: "Wstrzymaj",
+  resumeTask: "Wznów",
   live: "Na żywo",
   offline: "Łączenie…",
   back: "Wstecz",
@@ -287,6 +303,34 @@ interface Message {
   status: string;
   itemType: string | null;
   attachments: number;
+}
+
+/** GET /v1/channels (BE-AB). */
+interface ChannelRow {
+  id: string;
+  name: string;
+  title: string;
+  openTasks: number;
+  updatedAt: string;
+}
+
+interface ChannelMessageRow {
+  id: string;
+  taskId: string | null;
+  authorBotId: string | null;
+  kind: string;
+  text: string;
+  superseded: boolean;
+  createdAt: string;
+}
+
+interface ChannelTaskRow {
+  id: string;
+  ownerBotId: string;
+  state: string;
+  title: string;
+  parentTaskId: string | null;
+  updatedAt: string;
 }
 
 interface Need {
@@ -440,6 +484,63 @@ function isThreadsAnswer(value: unknown): value is { threads: Thread[] } {
   return isDynamicRecord(value) && isListOf(value.threads, isThread);
 }
 
+function isChannelRow(value: unknown): value is ChannelRow {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.name) &&
+    isString(value.title) &&
+    isNumber(value.openTasks) &&
+    isString(value.updatedAt)
+  );
+}
+
+function isChannelsAnswer(value: unknown): value is { channels: ChannelRow[] } {
+  return isDynamicRecord(value) && isListOf(value.channels, isChannelRow);
+}
+
+function isChannelMessageRow(value: unknown): value is ChannelMessageRow {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isNullableString(value.taskId) &&
+    isNullableString(value.authorBotId) &&
+    isString(value.kind) &&
+    isString(value.text) &&
+    isBoolean(value.superseded) &&
+    isString(value.createdAt)
+  );
+}
+
+function isChannelMessagePage(value: unknown): value is {
+  channelId: string;
+  messages: ChannelMessageRow[];
+  nextBefore: string | null;
+} {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.channelId) &&
+    isListOf(value.messages, isChannelMessageRow) &&
+    isNullableString(value.nextBefore)
+  );
+}
+
+function isChannelTaskRow(value: unknown): value is ChannelTaskRow {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.id) &&
+    isString(value.ownerBotId) &&
+    isString(value.state) &&
+    isString(value.title) &&
+    isNullableString(value.parentTaskId) &&
+    isString(value.updatedAt)
+  );
+}
+
+function isChannelTasksAnswer(value: unknown): value is { tasks: ChannelTaskRow[] } {
+  return isDynamicRecord(value) && isListOf(value.tasks, isChannelTaskRow);
+}
+
 function isNeedsAnswer(value: unknown): value is { items: Need[] } {
   return isDynamicRecord(value) && isListOf(value.items, isNeed);
 }
@@ -516,6 +617,7 @@ const ICONS = {
   globe: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",
   lock: "M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3",
   alert: "M12 4l9 16H3zM12 10v4M12 17h.01",
+  channels: "M4 6h16M4 12h16M4 18h10",
 } as const;
 
 function icon(name: keyof typeof ICONS): SVGSVGElement {
@@ -615,6 +717,7 @@ interface AppState {
   notice: string | null;
   agents: Agent[];
   threads: Map<string, Thread>;
+  channels: ChannelRow[];
   needs: Need[];
   unread: Set<string>;
   live: boolean;
@@ -631,6 +734,7 @@ const state: AppState = {
   notice: null,
   agents: [],
   threads: new Map(),
+  channels: [],
   needs: [],
   unread: new Set(),
   live: false,
@@ -641,11 +745,14 @@ const state: AppState = {
 
 interface Screen {
   element: HTMLElement;
-  tab?: "agents" | "needs" | "phone";
+  tab?: "agents" | "channels" | "needs" | "phone";
   /** The agent whose chat is open. */
   chatBotId?: string;
+  /** The channel whose chat is open. */
+  channelId?: string;
   onNeeds?: () => void;
   onAgents?: () => void;
+  onChannels?: () => void;
   onConversation?: (botId: string) => void;
   dispose?: () => void;
 }
@@ -742,6 +849,13 @@ async function loadAgents(): Promise<void> {
   state.threads = new Map(threads.threads.map((thread) => [thread.botId, thread]));
   state.agentsLoaded = true;
   current?.onAgents?.();
+}
+
+async function loadChannels(): Promise<void> {
+  const answer = await api("/v1/channels", isChannelsAnswer);
+  state.channels = answer.channels;
+  updateBadge();
+  current?.onChannels?.();
 }
 
 let refreshTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1073,6 +1187,7 @@ async function startSession(): Promise<void> {
   noteActivity();
   void syncPush();
   await loadAgents().catch(() => undefined);
+  void loadChannels().catch(() => undefined);
   startStream();
   render();
   await loadNeeds().catch(() => undefined);
@@ -1194,6 +1309,8 @@ function lockScreen(): Screen {
 
 type Route =
   | { name: "agents" }
+  | { name: "channels" }
+  | { name: "channel"; id: string }
   | { name: "needs" }
   | { name: "need"; id: string }
   | { name: "chat"; botId: string }
@@ -1204,6 +1321,8 @@ function parseRoute(): Route {
   try {
     if (parts[0] === "needs" && parts[1]) return { name: "need", id: decodeURIComponent(parts[1]) };
     if (parts[0] === "needs") return { name: "needs" };
+    if (parts[0] === "channels" && parts[1]) return { name: "channel", id: decodeURIComponent(parts[1]) };
+    if (parts[0] === "channels") return { name: "channels" };
     if (parts[0] === "chat" && parts[1]) return { name: "chat", botId: decodeURIComponent(parts[1]) };
     if (parts[0] === "phone") return { name: "phone" };
   } catch {
@@ -1239,9 +1358,10 @@ function bar(title: string, options: { back?: string; sub?: string; live?: boole
   );
 }
 
-function tabs(active: "agents" | "needs" | "phone"): HTMLElement {
+function tabs(active: "agents" | "channels" | "needs" | "phone"): HTMLElement {
   const items: Array<[typeof active, Key, keyof typeof ICONS]> = [
     ["agents", "tabAgents", "agents"],
+    ["channels", "tabChannels", "channels"],
     ["needs", "tabNeeds", "bell"],
     ["phone", "tabPhone", "phone"],
   ];
@@ -1260,16 +1380,30 @@ function tabs(active: "agents" | "needs" | "phone"): HTMLElement {
         icon(glyph),
         t(label),
         name === "needs" && state.needs.length ? h("span", { class: "badge" }, state.needs.length) : null,
+        name === "channels" && state.channels.some((channel) => channel.openTasks > 0)
+          ? h(
+              "span",
+              { class: "badge" },
+              state.channels.reduce((sum, channel) => sum + channel.openTasks, 0),
+            )
+          : null,
       ),
     ),
   );
 }
 
 function updateBadge(): void {
-  const button = root.querySelector('nav [data-tab="needs"]');
-  if (!button) return;
-  button.querySelector(".badge")?.remove();
-  if (state.needs.length) button.append(h("span", { class: "badge" }, state.needs.length));
+  const needs = root.querySelector('nav [data-tab="needs"]');
+  if (needs) {
+    needs.querySelector(".badge")?.remove();
+    if (state.needs.length) needs.append(h("span", { class: "badge" }, state.needs.length));
+  }
+  const channels = root.querySelector('nav [data-tab="channels"]');
+  if (channels) {
+    channels.querySelector(".badge")?.remove();
+    const open = state.channels.reduce((sum, channel) => sum + channel.openTasks, 0);
+    if (open > 0) channels.append(h("span", { class: "badge" }, open));
+  }
 }
 
 function render(): void {
@@ -1285,13 +1419,17 @@ function render(): void {
     screen =
       route.name === "chat"
         ? chatScreen(route.botId)
-        : route.name === "need"
-          ? needScreen(route.id)
-          : route.name === "needs"
-            ? needsScreen()
-            : route.name === "phone"
-              ? phoneScreen()
-              : agentsScreen();
+        : route.name === "channel"
+          ? channelScreen(route.id)
+          : route.name === "channels"
+            ? channelsScreen()
+            : route.name === "need"
+              ? needScreen(route.id)
+              : route.name === "needs"
+                ? needsScreen()
+                : route.name === "phone"
+                  ? phoneScreen()
+                  : agentsScreen();
   }
   current = screen;
   root.replaceChildren(screen.element, ...(screen.tab ? [tabs(screen.tab)] : []));
@@ -1309,6 +1447,262 @@ function avatar(agent: Agent | undefined, fallback: string): HTMLElement {
   );
   element.style.setProperty("--hue", String(agent?.avatarHue ?? 245));
   return element;
+}
+
+// -- channels (BE-AB) ------------------------------------------------------------------------------------------------
+
+function channelsScreen(): Screen {
+  const host = h("div", { class: "screen-body" });
+  const paint = () => {
+    if (!state.channels.length) {
+      host.replaceChildren(empty("channels", t("channelsEmpty")));
+      return;
+    }
+    host.replaceChildren(
+      ...state.channels.map((channel) =>
+        h(
+          "button",
+          {
+            class: "row",
+            type: "button",
+            "data-channel": channel.id,
+            onclick: () => navigate(`#/channels/${encodeURIComponent(channel.id)}`),
+          },
+          h(
+            "span",
+            { class: "avatar", "aria-hidden": "true" },
+            (channel.title || channel.name).trim().charAt(0).toUpperCase() || "#",
+          ),
+          h(
+            "span",
+            { class: "row-text" },
+            h("span", { class: "row-title" }, channel.title || `#${channel.name}`),
+            h(
+              "span",
+              { class: "row-preview" },
+              channel.openTasks > 0 ? t("openTasks", { n: channel.openTasks }) : `#${channel.name}`,
+            ),
+          ),
+          channel.openTasks > 0 ? h("span", { class: "badge" }, channel.openTasks) : null,
+        ),
+      ),
+    );
+  };
+  paint();
+  void loadChannels()
+    .then(paint)
+    .catch((error) => {
+      host.replaceChildren(h("p", { class: "hint" }, t("couldNotLoad", { error: errorText(error) })));
+    });
+  return {
+    element: h("section", { class: "screen", "data-screen": "channels" }, bar(t("tabChannels")), host),
+    tab: "channels",
+    onChannels: paint,
+  };
+}
+
+function channelScreen(channelId: string): Screen {
+  const channel = () => state.channels.find((item) => item.id === channelId);
+  const scroller = h("div", { class: "chat-scroll", role: "log", "aria-live": "polite" });
+  const tasksHost = h("div", { class: "channel-tasks", "aria-label": t("channelTasks") });
+  let messages: ChannelMessageRow[] = [];
+  let tasks: ChannelTaskRow[] = [];
+  let nextBefore: string | null = null;
+  let loaded = false;
+  let loadingEarlier = false;
+  let failure: string | null = null;
+
+  const nearBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 96;
+
+  const paintTasks = () => {
+    if (!tasks.length) {
+      tasksHost.replaceChildren(h("p", { class: "hint" }, t("noChannelTasks")));
+      return;
+    }
+    tasksHost.replaceChildren(
+      h("h2", {}, t("channelTasks")),
+      ...tasks.map((task) => {
+        const actions: Array<["stop" | "pause" | "resume", Key]> = [];
+        if (task.state === "running" || task.state === "queued" || task.state === "waiting") {
+          actions.push(["stop", "stopTask"], ["pause", "pauseTask"]);
+        } else if (task.state === "paused") {
+          actions.push(["resume", "resumeTask"], ["stop", "stopTask"]);
+        }
+        return h(
+          "div",
+          { class: "channel-task", "data-state": task.state },
+          h("span", { class: "row-title" }, task.title),
+          h("span", { class: "row-preview" }, task.state),
+          ...actions.map(([action, label]) =>
+            h(
+              "button",
+              {
+                class: "btn",
+                type: "button",
+                "data-action": action,
+                "data-task": task.id,
+                onclick: () => void actOnTask(task.id, action),
+              },
+              t(label),
+            ),
+          ),
+        );
+      }),
+    );
+  };
+
+  const paint = (anchor: "bottom" | "keep" | "top-offset" = "keep") => {
+    const stick = anchor === "bottom" || nearBottom();
+    const before = scroller.scrollHeight;
+    const parts: Node[] = [tasksHost];
+    if (nextBefore) {
+      const earlier = h("button", { class: "btn earlier", type: "button", "data-action": "earlier" }, t("loadEarlier"));
+      earlier.disabled = loadingEarlier;
+      earlier.addEventListener("click", () => void loadEarlier());
+      parts.push(earlier);
+    }
+    if (!loaded) parts.push(h("p", { class: "hint", "data-loading": true }, failure ?? t("loading")));
+    else if (!messages.length) parts.push(h("p", { class: "hint", "data-empty": true }, t("chatEmpty")));
+    for (const message of messages) {
+      parts.push(
+        h(
+          "div",
+          {
+            class: ["msg", message.superseded ? "superseded" : ""].filter(Boolean).join(" "),
+            "data-author": message.authorBotId ? "assistant" : "user",
+            "data-message": message.id,
+          },
+          message.text ? document.createTextNode(message.text) : null,
+        ),
+      );
+    }
+    scroller.replaceChildren(...parts);
+    paintTasks();
+    if (anchor === "top-offset") scroller.scrollTop += scroller.scrollHeight - before;
+    else if (stick) scroller.scrollTop = scroller.scrollHeight;
+  };
+
+  const loadNewest = async () => {
+    try {
+      const [page, taskAnswer] = await Promise.all([
+        api(`/v1/channels/${encodeURIComponent(channelId)}/messages?limit=30`, isChannelMessagePage),
+        api(`/v1/channels/${encodeURIComponent(channelId)}/tasks`, isChannelTasksAnswer),
+      ]);
+      messages = page.messages;
+      nextBefore = page.nextBefore;
+      tasks = taskAnswer.tasks.filter((task) => !task.parentTaskId);
+      loaded = true;
+      failure = null;
+      paint("bottom");
+    } catch (error) {
+      if (!loaded) {
+        failure = t("couldNotLoad", { error: errorText(error) });
+        paint();
+      }
+    }
+  };
+
+  const loadEarlier = async () => {
+    if (!nextBefore || loadingEarlier) return;
+    loadingEarlier = true;
+    paint("keep");
+    try {
+      const page = await api(
+        `/v1/channels/${encodeURIComponent(channelId)}/messages?limit=30&before=${encodeURIComponent(nextBefore)}`,
+        isChannelMessagePage,
+      );
+      const known = new Set(messages.map((message) => message.id));
+      messages = [...page.messages.filter((message) => !known.has(message.id)), ...messages];
+      nextBefore = page.nextBefore;
+    } catch (error) {
+      toast(t("couldNotLoad", { error: errorText(error) }));
+    }
+    loadingEarlier = false;
+    paint("top-offset");
+  };
+
+  const actOnTask = async (taskId: string, action: "stop" | "pause" | "resume") => {
+    try {
+      await api(
+        `/v1/channels/${encodeURIComponent(channelId)}/tasks/${encodeURIComponent(taskId)}/${action}`,
+        isAnyAnswer,
+        {
+          method: "POST",
+          body: {},
+        },
+      );
+      await loadNewest();
+    } catch (error) {
+      toast(t("couldNotLoad", { error: errorText(error) }));
+    }
+  };
+
+  const input = h("textarea", {
+    name: "message",
+    rows: 1,
+    placeholder: t("message"),
+    "aria-label": t("message"),
+    enterkeyhint: "send",
+  });
+  const sendButton = h(
+    "button",
+    { class: "send", type: "button", "data-action": "send", "aria-label": t("send") },
+    icon("send"),
+  );
+  sendButton.disabled = true;
+  let sending = false;
+  const sync = () => {
+    input.style.setProperty("height", "auto");
+    input.style.setProperty("height", `${Math.min(input.scrollHeight, 148)}px`);
+    sendButton.disabled = sending || !input.value.trim();
+  };
+  const send = async () => {
+    const text = input.value.trim();
+    if (!text || sending) return;
+    sending = true;
+    sync();
+    try {
+      await api(`/v1/channels/${encodeURIComponent(channelId)}/messages`, isAnyAnswer, {
+        method: "POST",
+        body: { text },
+      });
+      input.value = "";
+      sending = false;
+      sync();
+      await loadNewest();
+    } catch (error) {
+      sending = false;
+      sync();
+      toast(t("sendFailed", { error: errorText(error) }));
+    }
+  };
+  input.addEventListener("input", sync);
+  input.addEventListener("keydown", (event) => {
+    const hardware = window.matchMedia?.("(pointer: fine)").matches ?? false;
+    if (event.key === "Enter" && !event.shiftKey && hardware) {
+      event.preventDefault();
+      void send();
+    }
+  });
+  sendButton.addEventListener("click", () => void send());
+
+  paint();
+  void loadChannels().catch(() => undefined);
+  void loadNewest();
+  const title = () => {
+    const row = channel();
+    return row ? row.title || `#${row.name}` : "…";
+  };
+  return {
+    element: h(
+      "section",
+      { class: "screen chat", "data-screen": "channel" },
+      bar(title(), { back: "#/channels" }),
+      scroller,
+      h("div", { class: "composer" }, input, sendButton),
+    ),
+    channelId,
+  };
 }
 
 // -- agents ----------------------------------------------------------------------------------------------------------
