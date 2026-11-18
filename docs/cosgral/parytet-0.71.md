@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `b01e8a060` (z kartami agenta jako siatką i szczegółami, regułami rutyn kanału, gotowymi adresami OpenRouter/xAI, parserem linku skilla i poprawkami UI-Z). Poprzednia wersja tabeli: `e1a2fdc76` + `team/kk/w12-screens` @ `543bc7f88`, 77,1%. Liczy się to, co jest w integracji; niescalone gałęzie (UI-AA `20833c573`: przyciski presetów i oś kroków Zadań; Backend BE-R: sklep i start rutyn kanału) zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`, przed większością zmian UI z W12).
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `eb9df8800` (z kartami agenta jako siatką i szczegółami, silnikiem rutyn kanału, przyciskami presetów xAI/OpenRouter, osią kroków Zadań, parserem linku skilla i poprawkami UI-Z). Poprzednia wersja tabeli: `b01e8a060`, 77,8%. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`, przed większością zmian W12; Tester czeka na GO).
 
-**Wynik w jednej linii: 56 z 72 funkcji = 77,8% (jest = 1, częściowo = ½). Z tego skontraktowane ~91,0%, ale w prawdziwym oknie sprawdzone tylko 47,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 58,3%.**
+**Wynik w jednej linii: 56,5 z 72 funkcji = 78,5% (jest = 1, częściowo = ½). Z tego skontraktowane ~91,7%, ale w prawdziwym oknie sprawdzone tylko 47,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 59,0%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **77,8%** (56 z 72) | 46 jest, 20 częściowo, 6 brak |
-| Skontraktowane | **~91,0%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~89,6%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~84,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Parytet (kod) | **78,5%** (56,5 z 72) | 46 jest, 21 częściowo, 5 brak |
+| Skontraktowane | **~91,7%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~91,0%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~85,4%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **47,2%** | 19 wierszy w pełni (tak), 30 częściowo; reszta nie sprawdzona w prawdziwym programie |
-| Ostrożny parytet | **58,3%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Ostrożny parytet | **59,0%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 56 z 78 = 71,8%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 56,5 z 78 = 72,4%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -37,7 +37,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 6 | 2 | 1 | 78% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
-| H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 2 | 1 | 67% |
+| H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 3 | 0 | 75% |
 | I. Komunikatory | 4 | 2 | 0 | 2 | 50% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 1 | 5 | 1 | 50% |
 
@@ -81,7 +81,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 24 | Kanały: tworzenie, lider, członkowie, edycja | **jest** | tak | tak | tak | tak | tak | Odbiór W4-T2 38/38. | kk-w4-g1 |
-| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Backend dał widok zbiorczy zadań (kontrakt i silnik), ekran jeszcze go nie czyta. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
+| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Backend dał widok zbiorczy zadań (kontrakt i silnik), ekran jeszcze go nie czyta. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
 | 26 | Odpowiedź na wiadomość kanału | **jest** | tak | tak | tak | tak | tak | Krok e2e. | ipc-workspace-channels, ui-w4-ui1 |
 | 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **częściowo** | część | część | część | część | część | Jest pamięć kanału i lider; reszta jak w 0.71 brak. | ipc-memory, ipc-isolation |
 
@@ -130,7 +130,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 51 | Własne endpointy (Ollama / styl LM) | **jest** | tak | tak | tak | tak | tak | W5 na atrapie. | kk-w5-g3 |
 | 52 | ACP (Antigravity, Gemini preset, własny agent) z logowaniem | **jest** | tak | tak | tak | tak | nie | Tura z prawdziwym agentem nieodebrana w oknie. | ipc-acp-presets, ipc-acp-login |
 | 53 | Katalog 18 dostawców (opisy, klucze maskowane, presety ACP oznaczone „niezweryfikowane”) | **jest** | tak | tak | tak | tak | nie | Strona Dostawcy ma sekcję „Katalog dostawców” (UI-P): 18 kart ze stanem wsparcia, pula kluczy tylko do zapisu (maska, włącz/wyłącz, limit). Nie oglądany w oknie; polecenia ACP nadal niezweryfikowane, brak sterowników natywnych. | backend-w12-providers, backend-w12-accounts, ui-w12-ui2 |
-| 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **częściowo** | tak | tak | tak | część | nie | Grok (xAI) i OpenRouter działają bez CLI jako własne punkty końcowe z kluczem API (czat bez narzędzi programu); gotowe adresy w `ENDPOINT_CLOUD_PRESETS` (BE-Q, a4fc0708c) tylko wypełniają formularz. Przyciski presetów w UI są w gałęzi UI-AA (20833c573), jeszcze niescalone, więc dziś adres wpisuje się ręcznie. Połączenia z tymi usługami nie sprawdzano. Cursor, DeepSeek, Kimi, Copilot: tylko opisy w katalogu, polecenia ACP niezweryfikowane. | backend-w12-providers, backend-w12-q (pytania-do-wlasciciela) |
+| 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **częściowo** | tak | tak | tak | część | nie | Grok (xAI) i OpenRouter działają bez CLI jako własne punkty końcowe z kluczem API (czat bez narzędzi programu); gotowe adresy w `ENDPOINT_CLOUD_PRESETS` (BE-Q, a4fc0708c) tylko wypełniają formularz. Drugi rząd przycisków „Use xAI (Grok)” i „Use OpenRouter” w formularzu punktów końcowych jest w integracji (UI-AA, d160de596; test przycisków zielony u UI); tylko wypełniają formularz. Połączenia z tymi usługami nie sprawdzano. Cursor, DeepSeek, Kimi, Copilot: tylko opisy w katalogu, polecenia ACP niezweryfikowane. | backend-w12-providers, backend-w12-q (pytania-do-wlasciciela) |
 | 55 | Użycie: liczniki i pierścienie limitów, wykresy 7–365 dni, podział wg modelu i rodzaju tokenów | **jest** | tak | tak | tak | tak | część | Ekran Użycie: zakładki okresów, kafle, wykres dzienny, obciążenie komputera, tabela agentów i modeli, podział tokenów z pokryciem, limity dostawców. W oknie: zrzut T-M (pusta strona bez danych). Nie ma podziału na umiejętność. | backend-w12-library, backend-w12-accounts, tester-w12-tm |
 
 ### H. Automatyzacje (rutyny, przepływy)
@@ -139,7 +139,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|---|---|---|---|
 | 56 | Rutyny agenta (harmonogram, webhook, historia, uruchom teraz) | **jest** | tak | tak | tak | tak | część | W oknie: tworzenie, następny start, Run now, minutowa sama; daily/cron/webhook nie. | kk-w3-acceptance, ipc-routines |
 | 57 | Harmonogram: zaplanowane i wykonane przebiegi rutyn, feed ostatnich uruchomień | **jest** | tak | tak | tak | tak | część | Ekran Harmonogram: najbliższe dni po dniach (status, godzina), rutyny z zewnątrz i wstrzymane, feed. W oknie: zrzut T-M (pusta strona bez danych). Brak siatki miesięcznego kalendarza i notatek przy przebiegu. | backend-w12-library, tester-w12-tm |
-| 58 | Rutyny kanału | **brak** | część | nie | część | nie | nie | Tylko reguły w kontrakcie (`ipc-channel-routines.ts`, BE-Q: kto i co może, limit 16 na kanał, harmonogram jak u rutyn agenta) z testem. Sklep, start, IPC i ekran: brak w integracji (Backend BE-R w toku na osobnej gałęzi). | backend-w12-q (pytania-do-wlasciciela) |
+| 58 | Rutyny kanału | **częściowo** | tak | tak | tak | część | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Luki: bez edycji nazwy, instrukcji i harmonogramu istniejącej rutyny, bez wyboru dni tygodnia, bez webhooka, bez skoku do zadania. Nie oglądane w oknie. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
 | 59 | Przepływy: graf, wyzwalacz, agent, zgoda, wyjście, uruchomienia | **jest** | tak | tak | tak | tak | część | Wyzwalacz + agent w oknie; krok zgody nie. | kk-w3-acceptance, workflow-manager.test |
 | 60 | Edytor przepływów jak 0.71 (paleta węzłów z Prompt i Condition, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | tak | część | nie | Kontrakt, atrapa i silnik mają Prompt i Condition oraz funkcje edytora; stary edytor dostał tylko most (przyciski „Add prompt/condition”), od UI-V (92709aa62) jest nowy edytor w kartach kroków z portami i zakrzywionymi połączeniami; w oknie go nie oglądano, więc cofnij/ponów i plakietki błędów nie sprawdzone. | kk-w12-flows, kk-w12-workflows-marketplace, ui-v |
 | 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | część | nie | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L) oraz panel `WorkflowVersionsPanel` na stronie przepływów (36c3f1e06; nie oglądany w oknie). Katalog GitHub i kredyty mediów: brak. | kk-w12-flows, ui-w12 |
@@ -176,7 +176,24 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
-## Zmiany od wersji @ `e1a2fdc76` + w12-screens @ `543bc7f88` (77,1%)
+## Zmiany od wersji @ `b01e8a060` (77,8%)
+
+| Miara | Było | Jest | Dlaczego |
+|---|---|---|---|
+| Parytet kodowy | 77,8% (56) | **78,5%** (56,5) | wiersz 58 (rutyny kanału): brak → częściowo |
+| Skontraktowane | ~91,0% | **~91,7%** | wiersz 58: kontrakt z częściowego na pełny |
+| Silnik | ~89,6% | **~91,0%** | wiersz 58: sklep, harmonogram, IPC |
+| Ekran w kodzie | ~84,7% | **~85,4%** | wiersz 58: panel rutyn kanału w widoku kanału (część) |
+| W oknie sprawdzone | 47,2% | 47,2% | bez zmian: nic z nowych rzeczy nie oglądano w oknie |
+| Ostrożny parytet | 58,3% | **59,0%** | jedna funkcja więcej w ½ |
+
+Co zmieniło wiersze:
+1. **Wiersz 58 (rutyny kanału): brak → częściowo, +0,7 pp.** Backend BE-R oddał silnik i IPC (testy 9 + 11 + 3 + 6 zielone u autora, po jednym pliku). Nie jest „jest”, bo nie ma ekranu, a nic nie biegło w prawdziwym programie. Obszar H: 67% → 75%.
+2. Wiersz 54: tylko opis (przyciski presetów już scalone), bez zmiany liczb.
+3. Wiersz 25: tylko opis (oś kroków Zadań), wiersz już był „jest”.
+4. Pozycja 16 w `ekrany-do-podpiecia.md` (ekran rutyn kanału) zrobiona przez KK: panel w widoku kanału. Wiersz zostaje „częściowo” (brak edycji istniejącej rutyny, dni tygodnia, webhooka; nic nie oglądano w oknie).
+
+## Poprzednie zmiany: od wersji @ `e1a2fdc76` + w12-screens @ `543bc7f88` (77,1%)
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|
@@ -221,8 +238,8 @@ Godziny to moja ocena (kontrakt + silnik + testy na atrapach), nie pomiar. „Le
 | Workflows: LLM, Asset, adnotacje na płótnie | brak | ok. 13 h (5 + 5 + 3) | lekkie | NIE ROBIĆ teraz | 0 |
 | Workflows: Image/Video, katalog GitHub, kredyty mediów | brak | 12 h+ każde | ciężkie | NIE ROBIĆ | 0 |
 | Discord (tylko DM) | wstrzymany | ok. 9 h | lekkie (prawdziwy test: token bota) | NIE ROBIĆ teraz (najpierw ekran komunikatorów) | +0,7 pp silnik; +1,4 pp z ekranem |
-| Rutyny kanału | reguły w kontrakcie (`ipc-channel-routines.ts`, BE-Q); sklep, start i IPC w toku u Backendu (BE-R, niescalone), ekranu brak | ok. 6 h, zostaje ok. 5 h | lekkie | W TOKU (reguły zrobione; reszta bez decyzji właściciela, ekran zostaje UI) | 0 dziś; +0,7 pp po silniku i ekranie |
-| Sterowniki innych dostawców (Grok, Cursor, OpenRouter…) | Grok (xAI) i OpenRouter działają jako własne punkty końcowe z kluczem, bez CLI (`ENDPOINT_CLOUD_PRESETS`, BE-Q); przyciski w UI-AA niescalone | ok. 8 h na dostawcę (CLI) | CLI ciężkie (polecenia niezweryfikowane); presety lekkie | PRESETY ZROBIONE; CLI: NIE ROBIĆ bez zgody właściciela na pobranie | +0,7 pp (brak → częściowo, już policzone) |
+| Rutyny kanału | silnik zrobiony (BE-R): sklep, harmonogram, wiadomość do kanału, IPC `channelRoutines`, atrapa, testy; ekranu brak | ok. 6 h, zostaje ok. 2–3 h (ekran UI) | lekkie | ZROBIONE (silnik BE-R, panel KK; luki: edycja istniejącej rutyny, dni tygodnia, webhook) | +0,7 pp (brak → częściowo, już policzone) |
+| Sterowniki innych dostawców (Grok, Cursor, OpenRouter…) | Grok (xAI) i OpenRouter działają jako własne punkty końcowe z kluczem, bez CLI (`ENDPOINT_CLOUD_PRESETS`, BE-Q); przyciski presetów w formularzu scalone (UI-AA) | ok. 8 h na dostawcę (CLI) | CLI ciężkie (polecenia niezweryfikowane); presety lekkie | PRESETY I PRZYCISKI W UI ZROBIONE; CLI: NIE ROBIĆ bez zgody właściciela na pobranie | +0,7 pp (brak → częściowo, już policzone) |
 | Cofnięcie usunięcia wątku | jest (silnik+pasek; okno nie) | ok. 3 h | lekkie | ZROBIONE (Backend BE-J / w12-undo) | +1,4 pp (brak → jest) |
 | Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | jest (heldKind + QueueHoldNotice; okno nie) | ok. 5 h | lekkie | ZROBIONE (Backend BE-O / w12-holds) | +0,7 pp (częściowo → jest) |
 
