@@ -75,7 +75,10 @@ export function McpSettings(props: { botId?: string }) {
           void run(() => mcpApi().setAgentEnabled({ botId: agentBotId(), serverId, enabled }))
         }
       />
-      <McpSignInPanel />
+      {/* Signing in is a property of the server, not of one agent: show it once, in the global list. */}
+      <Show when={!props.botId}>
+        <McpSignInPanel />
+      </Show>
     </>
   );
 }
