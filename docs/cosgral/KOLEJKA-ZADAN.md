@@ -10,7 +10,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 ## UI Designer
 1. [zrobione: 6af21006e] Kolejne ekrany P0, potem P1 z `openbot-0.71-kolejka-ui.md`, których `vs-071.txt` nie oznacza jako zgodne.
 2. [zrobione: d72f80e79] Skeleton i ruch w pozostałych panelach, które jeszcze pokazują gołe „Loading…”.
-3. [zrobione: PLACEHOLDER_SHA] Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
+3. [zrobione: 805a58a84] Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
 4. [w toku: UI, 20:17] Stany puste i błędów (jeden wspólny styl) w Bibliotece, Użyciu, Harmonogramie.
 5. Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
 
