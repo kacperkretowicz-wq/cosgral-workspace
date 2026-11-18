@@ -12,8 +12,9 @@ import {
   type WorkflowIdInput,
   type WorkflowNode,
   type WorkflowRunIdInput,
+  type WorkflowVersionInput,
 } from "@openbot/contracts/ipc";
-import { isBoolean, isString } from "@openbot/contracts/runtime-values";
+import { isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { isObject, requireString } from "./validation";
 
 export function parseCreateWorkflow(value: unknown): CreateWorkflowInput {
@@ -42,6 +43,15 @@ export function parseUpdateWorkflow(value: unknown): UpdateWorkflowInput {
 export function parseWorkflowId(value: unknown): WorkflowIdInput {
   if (!isObject(value)) throw new Error("The workflow is required.");
   return { workflowId: requireString(value.workflowId, "workflowId") };
+}
+
+export function parseWorkflowVersion(value: unknown): WorkflowVersionInput {
+  if (!isObject(value)) throw new Error("The workflow version is required.");
+  const version = value.version;
+  if (!isNumber(version) || !Number.isInteger(version) || version < 1) {
+    throw new Error("version must be a whole number from 1.");
+  }
+  return { workflowId: requireString(value.workflowId, "workflowId"), version };
 }
 
 export function parseWorkflowRunId(value: unknown): WorkflowRunIdInput {

@@ -20,9 +20,15 @@ import {
   type WorkflowRunIdInput,
   type WorkflowRunStatus,
   type WorkflowStepRun,
+  type WorkflowVersionDetails,
+  type WorkflowVersionInput,
+  type WorkflowVersionReason,
+  type WorkflowVersionSummary,
+  workflowGraphSummary,
+  workflowGraphsEqual,
   workflowProblems,
 } from "@openbot/contracts/ipc";
-import type { WorkflowStore } from "./workflow-store";
+import type { StoredWorkflowVersion, WorkflowStore } from "./workflow-store";
 
 /** How agent steps reach an agent: the same queue a person's message uses. */
 export interface WorkflowRunner {
@@ -146,6 +152,7 @@ export class WorkflowManager {
       lastRun: null,
     };
     this.#options.store.save(workflow);
+    this.#recordVersion(workflow, "created", null);
     this.#emitWorkflows();
     return workflow;
   }
@@ -164,9 +171,71 @@ export class WorkflowManager {
     };
     // A workflow whose agent is gone can still be paused or renamed; the graph is checked when it changes.
     if (graphChanged) this.#checkGraph(next.nodes, next.edges);
+    // The state before the first change is kept too (a workflow made before versions existed has none yet).
+    const before = graphChanged ? this.#versionsOf(current) : [];
     this.#options.store.save(next);
+    const latest = before.at(-1);
+    if (graphChanged && latest && !workflowGraphsEqual(latest, next)) this.#recordVersion(next, "edited", null);
     this.#emitWorkflows();
     return next;
+  }
+
+  /** Newest first. A workflow made before versions existed gets its first version here. */
+  listVersions(input: WorkflowIdInput): WorkflowVersionSummary[] {
+    const list = this.#versionsOf(this.#options.store.get(input.workflowId));
+    const newest = list.at(-1)?.number ?? 0;
+    return list.map((version) => versionSummary(version, newest)).reverse();
+  }
+
+  getVersion(input: WorkflowVersionInput): WorkflowVersionDetails {
+    const list = this.#versionsOf(this.#options.store.get(input.workflowId));
+    const found = list.find((version) => version.number === input.version);
+    if (!found) throw new Error("This version no longer exists.");
+    const newest = list.at(-1)?.number ?? 0;
+    return {
+      ...versionSummary(found, newest),
+      nodes: structuredClone(found.nodes),
+      edges: structuredClone(found.edges),
+    };
+  }
+
+  /** Puts an older graph back as the current one. Checked like a save; kept as a new version that names its source. */
+  restoreVersion(input: WorkflowVersionInput): Workflow {
+    const current = this.#options.store.get(input.workflowId);
+    const found = this.#versionsOf(current).find((version) => version.number === input.version);
+    if (!found) throw new Error("This version no longer exists.");
+    if (workflowGraphsEqual(found, current)) return current;
+    this.#checkGraph(found.nodes, found.edges);
+    const next: Workflow = {
+      ...current,
+      nodes: structuredClone(found.nodes),
+      edges: structuredClone(found.edges),
+      updatedAt: this.#iso(),
+    };
+    this.#options.store.save(next);
+    this.#recordVersion(next, "restored", found.number);
+    this.#emitWorkflows();
+    return next;
+  }
+
+  #versionsOf(workflow: Workflow): StoredWorkflowVersion[] {
+    const list = this.#options.store.listVersions(workflow.id);
+    if (list.length > 0) return list;
+    this.#recordVersion(workflow, "created", null);
+    return this.#options.store.listVersions(workflow.id);
+  }
+
+  #recordVersion(workflow: Workflow, reason: WorkflowVersionReason, restoredFrom: number | null): void {
+    const number = (this.#options.store.listVersions(workflow.id).at(-1)?.number ?? 0) + 1;
+    this.#options.store.saveVersion(workflow.id, {
+      number,
+      savedAt: reason === "created" ? workflow.createdAt : this.#iso(),
+      reason,
+      restoredFrom,
+      name: workflow.name,
+      nodes: structuredClone(workflow.nodes),
+      edges: structuredClone(workflow.edges),
+    });
   }
 
   delete(input: WorkflowIdInput): void {
@@ -521,4 +590,18 @@ function render(template: string, session: Session, previous: string, tag: boole
 
 function stepOutput(session: Session, name: string): string {
   return name.startsWith("steps.") ? (session.outputs.get(name.slice("steps.".length)) ?? "") : "";
+}
+
+function versionSummary(version: StoredWorkflowVersion, newest: number): WorkflowVersionSummary {
+  return {
+    number: version.number,
+    savedAt: version.savedAt,
+    reason: version.reason,
+    restoredFrom: version.restoredFrom,
+    name: version.name,
+    steps: version.nodes.length,
+    connections: version.edges.length,
+    summary: workflowGraphSummary(version),
+    current: version.number === newest,
+  };
 }

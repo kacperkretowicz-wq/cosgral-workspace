@@ -9,6 +9,7 @@ import {
   parseUpdateWorkflow,
   parseWorkflowId,
   parseWorkflowRunId,
+  parseWorkflowVersion,
 } from "./ipc/workflow-inputs";
 import { handleTrusted } from "./trusted-ipc";
 
@@ -29,6 +30,15 @@ export function registerWorkflowIpc(manager: WorkflowManager): void {
   );
   handleTrusted(IPC_CHANNELS.workflowsListRuns, (input: unknown) =>
     manager.listRuns(localInput(input, parseWorkflowId)),
+  );
+  handleTrusted(IPC_CHANNELS.workflowsListVersions, (input: unknown) =>
+    manager.listVersions(localInput(input, parseWorkflowId)),
+  );
+  handleTrusted(IPC_CHANNELS.workflowsGetVersion, (input: unknown) =>
+    manager.getVersion(localInput(input, parseWorkflowVersion)),
+  );
+  handleTrusted(IPC_CHANNELS.workflowsRestoreVersion, (input: unknown) =>
+    manager.restoreVersion(localInput(input, parseWorkflowVersion)),
   );
 }
 

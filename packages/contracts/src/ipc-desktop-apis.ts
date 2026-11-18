@@ -242,6 +242,7 @@ import type {
 import type { VaultConnectorsDesktopApi, VaultSecretsDesktopApi } from "./ipc-vault-connectors";
 import type { VoiceDesktopApi } from "./ipc-voice";
 import type { WindowsDesktopApi } from "./ipc-windows";
+import type { WorkflowVersionDetails, WorkflowVersionInput, WorkflowVersionSummary } from "./ipc-workflow-versions";
 import type {
   CreateWorkflowInput,
   RunWorkflowInput,
@@ -435,6 +436,12 @@ export interface WorkflowsDesktopApi {
   cancelRun: (input: WorkflowRunIdInput) => Promise<WorkflowRun>;
   /** Newest first, at most the last 100. */
   listRuns: (input: WorkflowIdInput) => Promise<WorkflowRun[]>;
+  /** Newest first, at most WORKFLOW_VERSION_LIMITS.kept; a workflow made before versions existed gets its first one here. */
+  listVersions: (input: WorkflowIdInput) => Promise<WorkflowVersionSummary[]>;
+  /** One version with its graph (for a preview and for `diffWorkflowGraphs`). */
+  getVersion: (input: WorkflowVersionInput) => Promise<WorkflowVersionDetails>;
+  /** Puts that graph back as the current one (checked like a save) and keeps it as a new version. Returns the workflow. */
+  restoreVersion: (input: WorkflowVersionInput) => Promise<Workflow>;
 }
 
 /** COSGRAL W2: MCP servers of the program and the per-agent switch (see ipc-mcp.ts). */

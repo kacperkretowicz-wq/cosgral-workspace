@@ -11,6 +11,7 @@ import {
   type KnownWorkflowTargets,
   type UpdateWorkflowInput,
   WORKFLOW_LIMITS,
+  WORKFLOW_VERSION_LIMITS,
   type Workflow,
   type WorkflowEdge,
   type WorkflowNode,
@@ -18,6 +19,11 @@ import {
   type WorkflowRunStatus,
   type WorkflowStepRun,
   type WorkflowsDesktopApi,
+  type WorkflowVersionDetails,
+  type WorkflowVersionReason,
+  type WorkflowVersionSummary,
+  workflowGraphSummary,
+  workflowGraphsEqual,
   workflowNodeIssues,
   workflowProblems,
 } from "@openbot/contracts/ipc";
@@ -70,6 +76,16 @@ function trimmed(value: string, field: string, max: number): string {
   return text;
 }
 
+interface StoredVersion {
+  number: number;
+  savedAt: string;
+  reason: WorkflowVersionReason;
+  restoredFrom: number | null;
+  name: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
 interface Session {
   workflow: Workflow;
   run: WorkflowRun;
@@ -100,6 +116,48 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
     const workflow = workflows.find((item) => item.id === workflowId);
     if (!workflow) throw new Error("This workflow does not exist.");
     return workflow;
+  };
+
+  // Versions (same rules as the program, see ipc-workflow-versions.ts): oldest first, per workflow.
+  const versions = new Map<string, StoredVersion[]>();
+  const recordVersion = (
+    workflow: Workflow,
+    reason: WorkflowVersionReason,
+    restoredFrom: number | null = null,
+  ): void => {
+    const list = versions.get(workflow.id) ?? [];
+    const number = (list.at(-1)?.number ?? 0) + 1;
+    list.push({
+      number,
+      savedAt: reason === "created" ? workflow.createdAt : iso(),
+      reason,
+      restoredFrom,
+      name: workflow.name,
+      nodes: structuredClone(workflow.nodes),
+      edges: structuredClone(workflow.edges),
+    });
+    versions.set(workflow.id, list.slice(-WORKFLOW_VERSION_LIMITS.kept));
+  };
+  /** A workflow without versions (made before they existed) gets its first one from its current graph. */
+  const ensureBaseline = (workflow: Workflow): StoredVersion[] => {
+    if (!versions.has(workflow.id)) recordVersion(workflow, "created");
+    return versions.get(workflow.id) ?? [];
+  };
+  const summaryOf = (version: StoredVersion, newest: number): WorkflowVersionSummary => ({
+    number: version.number,
+    savedAt: version.savedAt,
+    reason: version.reason,
+    restoredFrom: version.restoredFrom,
+    name: version.name,
+    steps: version.nodes.length,
+    connections: version.edges.length,
+    summary: workflowGraphSummary(version),
+    current: version.number === newest,
+  });
+  const versionOf = (workflowId: string, number: number): StoredVersion => {
+    const found = ensureBaseline(find(workflowId)).find((item) => item.number === number);
+    if (!found) throw new Error("This version no longer exists.");
+    return found;
   };
 
   const checkGraph = (nodes: WorkflowNode[], edges: WorkflowEdge[]): void => {
@@ -279,6 +337,7 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
         lastRun: null,
       };
       workflows = [...workflows, workflow];
+      recordVersion(workflow, "created");
       emitWorkflows();
       return structuredClone(workflow);
     },
@@ -292,7 +351,9 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
       }
       const nodes = input.nodes === undefined ? current.nodes : structuredClone(input.nodes);
       const edges = input.edges === undefined ? current.edges : structuredClone(input.edges);
-      if (input.nodes !== undefined || input.edges !== undefined) checkGraph(nodes, edges);
+      const graphChanged = input.nodes !== undefined || input.edges !== undefined;
+      if (graphChanged) checkGraph(nodes, edges);
+      const history = graphChanged ? ensureBaseline(current) : [];
       const next: Workflow = {
         ...current,
         name,
@@ -303,6 +364,8 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
         updatedAt: iso(),
       };
       workflows = workflows.map((item) => (item.id === current.id ? next : item));
+      const latest = history.at(-1);
+      if (graphChanged && latest && !workflowGraphsEqual(latest, next)) recordVersion(next, "edited");
       emitWorkflows();
       return structuredClone(next);
     },
@@ -312,6 +375,7 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
       if (session) end(session, "cancelled", "The workflow was deleted.");
       workflows = workflows.filter((item) => item.id !== workflowId);
       runs.delete(workflowId);
+      versions.delete(workflowId);
       emitWorkflows();
     },
     run: async ({ workflowId, input }) => {
@@ -369,6 +433,32 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
     listRuns: async ({ workflowId }) => {
       find(workflowId);
       return structuredClone(runs.get(workflowId) ?? []);
+    },
+    listVersions: async ({ workflowId }) => {
+      const list = ensureBaseline(find(workflowId));
+      const newest = list.at(-1)?.number ?? 0;
+      return list.map((version) => summaryOf(version, newest)).reverse();
+    },
+    getVersion: async ({ workflowId, version }): Promise<WorkflowVersionDetails> => {
+      const found = versionOf(workflowId, version);
+      const newest = (versions.get(workflowId) ?? []).at(-1)?.number ?? 0;
+      return structuredClone({ ...summaryOf(found, newest), nodes: found.nodes, edges: found.edges });
+    },
+    restoreVersion: async ({ workflowId, version }) => {
+      const current = find(workflowId);
+      const found = versionOf(workflowId, version);
+      if (workflowGraphsEqual(found, current)) return structuredClone(current);
+      checkGraph(found.nodes, found.edges);
+      const next: Workflow = {
+        ...current,
+        nodes: structuredClone(found.nodes),
+        edges: structuredClone(found.edges),
+        updatedAt: iso(),
+      };
+      workflows = workflows.map((item) => (item.id === current.id ? next : item));
+      recordVersion(next, "restored", found.number);
+      emitWorkflows();
+      return structuredClone(next);
     },
   };
 
@@ -437,6 +527,7 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
         for (const session of [...sessions.values()]) end(session, "cancelled", "The workflow was deleted.");
         workflows = [];
         runs.clear();
+        versions.clear();
         emitWorkflows();
       },
     },
