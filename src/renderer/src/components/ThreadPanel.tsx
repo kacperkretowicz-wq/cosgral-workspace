@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { THREAD_LIMITS, THREAD_UNDO_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { SubagentsPanel } from "./SubagentsPanel";
 import { ThreadUndoBar } from "./ThreadUndoBar";
@@ -187,7 +188,7 @@ export function ThreadPanel(props: {
             New thread
           </Button>
           <Switch label="Show archived threads" checked={archived()} onChange={setArchived} />
-          <Show when={loaded()} fallback={<Text as="p">Loading threads...</Text>}>
+          <Show when={loaded()} fallback={<CosgralLoadingSkeleton label="Loading threads..." />}>
             <ul class="thread-list">
               <For each={visible()}>
                 {(thread) => (

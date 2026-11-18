@@ -10,6 +10,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
 
 const PHASE_VIEW: Record<IntegrationPhase, { label: string; tone: BadgeTone }> = {
@@ -137,7 +138,7 @@ export function IntegrationsPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<p role="status">{t("Loading…")}</p>}>
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
           <ul class="vault-connector-list">
             <For each={statuses()}>
               {(status) => {

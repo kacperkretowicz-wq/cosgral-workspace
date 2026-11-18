@@ -1,6 +1,7 @@
 import type { MicrophoneStatus, VoiceOverview, VoiceSection } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Card, Heading, Text } from "./ui";
 import { VoiceSettings } from "./VoiceSettings";
 
@@ -108,7 +109,7 @@ export function VoiceOverviewPanel() {
               </Button>
             </p>
           </Show>
-          <Show when={loaded()} fallback={<p role="status">{t("Loading…")}</p>}>
+          <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
             <Show when={overview()}>
               {(view) => (
                 <Card class="settings-modal-card">
