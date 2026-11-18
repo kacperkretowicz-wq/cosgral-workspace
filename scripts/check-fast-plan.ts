@@ -112,6 +112,12 @@ export function planFastCheck(
     );
   }
 
+  if (relatedSources.some((path) => path.startsWith("packages/contracts/src/"))) {
+    notes.push(
+      "A contracts file is imported by almost every test: `tests related` can take as long as the whole test step. For a quick look use --skip-related (the type checks still see every consumer); the full check stays before a push.",
+    );
+  }
+
   const runUiCheck = live.some((path) => path.startsWith("src/renderer/") || path === "scripts/ui-foundation-check.ts");
   if (live.length === 0) notes.push("Nothing to check: only documents changed.");
 

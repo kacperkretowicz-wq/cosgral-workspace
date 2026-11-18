@@ -4,7 +4,7 @@
 // them, the changed tests, and the tests that import a changed file (`vitest related`). The first red step ends the run (--keep-going
 // goes on). Nothing is loosened: the same assertions, the same limits (the time limits only grow, COSGRAL_TEST_TIMEOUT_SCALE defaults to 2).
 //
-//   node scripts/check-fast.ts [--base <ref>] [--dry-run] [--keep-going] [--out <folder>]
+//   node scripts/check-fast.ts [--base <ref>] [--dry-run] [--keep-going] [--skip-related] [--out <folder>]
 //
 // It is NOT the full check. A change to a config, the lock file or the build is refused (exit 2: run `node scripts/quiet-check.ts`),
 // and the full check stays before every push. Exit 0 = every step ran and passed; 1 = a red step; 2 = the full check is needed.
@@ -92,7 +92,8 @@ function stepsOf(plan: FastPlan): Step[] {
       command: `bun x vitest run --maxWorkers=1 --passWithNoTests ${chunk.map(quote).join(" ")}`,
     });
   });
-  chunkPaths(plan.relatedSources).forEach((chunk, index, all) => {
+  const related = process.argv.includes("--skip-related") ? [] : plan.relatedSources;
+  chunkPaths(related).forEach((chunk, index, all) => {
     const label = all.length > 1 ? `tests related ${index + 1}/${all.length}` : "tests related";
     steps.push({
       name: label,
