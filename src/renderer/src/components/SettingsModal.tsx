@@ -14,7 +14,6 @@ import {
   Heading,
   IconButton,
   Mic,
-  NativeSelect,
   Palette,
   RefreshCw,
   Settings,
@@ -223,35 +222,6 @@ export function SettingsModal(props: SettingsModalProps) {
                       <LanguageSettings />
                       <ContextSettingsSection />
                       <BudgetSettings />
-                      <section class="settings-modal-group" aria-labelledby="settings-workspace">
-                        <Heading id="settings-workspace" as="h3" size="sm" tone="secondary">
-                          {t("Workspace")}
-                        </Heading>
-                        <Card class="settings-modal-card">
-                          <Switch
-                            defaultChecked
-                            label={t("Restore the last workspace on launch")}
-                            description={t("Open the workspace and tasks from your previous session.")}
-                          />
-                          <div class="settings-modal-row">
-                            <div class="settings-modal-row-copy">
-                              <span class="settings-modal-row-title">{t("Open external links in")}</span>
-                              <Text tone="muted" variant="caption">
-                                {t("Choose where links from conversations open.")}
-                              </Text>
-                            </div>
-                            <NativeSelect
-                              class="settings-modal-select"
-                              size="sm"
-                              aria-label={t("Open external links in")}
-                            >
-                              <option value="browser">{t("Default browser")}</option>
-                              <option value="openbot">COSGRAL</option>
-                            </NativeSelect>
-                          </div>
-                        </Card>
-                      </section>
-
                       <section class="settings-modal-group" aria-labelledby="settings-notifications">
                         <Heading id="settings-notifications" as="h3" size="sm" tone="secondary">
                           {t("Notifications")}

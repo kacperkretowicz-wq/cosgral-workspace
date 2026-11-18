@@ -1443,6 +1443,12 @@ export function Conversation(props: ConversationProps) {
 
   async function openMessageLink(url: string) {
     try {
+      // "Open external links in" (App settings): the program's own browser panel, or the default browser (the default).
+      const links = (await window.openbot.appSettings?.get().catch(() => null))?.behavior.externalLinks;
+      if (links === "app") {
+        await openBrowserAddress(url);
+        return;
+      }
       await window.openbot.openUrl(url);
     } catch {
       setComposerError("Could not open the link.");

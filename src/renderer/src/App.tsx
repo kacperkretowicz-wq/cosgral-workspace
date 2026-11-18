@@ -101,6 +101,7 @@ import {
 } from "./pending-cards";
 import { rowStateFor, type SidebarAgentState } from "./row-activity";
 import { cardsInThread, pendingCardThreadId, threadAttentionItems } from "./thread-view";
+import { useRestoreWorkspace } from "./useRestoreWorkspace";
 
 const FALLBACK_STATUS: AgentStatus = {
   phase: "starting",
@@ -285,6 +286,16 @@ export function App() {
   const [authSuccessVisible, setAuthSuccessVisible] = createSignal(false);
   const [permissionsOpen, setPermissionsOpen] = createSignal(false);
   const [activePage, setActivePage] = createSignal<PageId>("agents");
+  // "Restore the last workspace on launch": open the remembered page and agent once the agents are loaded, then remember changes.
+  useRestoreWorkspace({
+    ready: () => botList().length > 0,
+    place: () => ({ page: activePage(), botId: activeBotId() }),
+    hasBot: (id) => botList().some((bot) => bot.id === id),
+    open: ({ page, botId }) => {
+      if (page) setActivePage(page);
+      if (botId) setActiveBotId(botId);
+    },
+  });
   const [eyesState, setEyesState] = createSignal<AgentEyesState>(emptyAgentEyesState());
   const [servers, setServers] = createSignal<ServerSummary[]>([]);
   const [joinServerOpen, setJoinServerOpen] = createSignal(false);

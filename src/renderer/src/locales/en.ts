@@ -1518,4 +1518,5 @@ export const en = {
   working: "working",
   queued: "queued",
   "{name} is {state}": "{name} is {state}",
+  "Open the page and the agent from your previous session.": "Open the page and the agent from your previous session.",
 } as const;

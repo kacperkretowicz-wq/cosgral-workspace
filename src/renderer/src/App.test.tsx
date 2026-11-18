@@ -928,6 +928,36 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(window.openbot.browser.open).not.toHaveBeenCalled();
   });
 
+  it("opens a message link in the program's own browser when the setting says so", async () => {
+    vi.mocked(window.openbot.agent.readConversation).mockResolvedValueOnce({
+      botId: "chief",
+      threadId: "thread-chief",
+      activeTurnId: null,
+      revision: 1,
+      messages: [
+        {
+          id: "linked-message",
+          author: "assistant",
+          text: "Read [Meta](https://about.fb.com/news/).",
+          createdAt: "2026-08-12T09:00:00.000Z",
+          status: "completed",
+        },
+      ],
+    });
+    Object.assign(window.openbot, {
+      appSettings: { get: vi.fn().mockResolvedValue({ behavior: { externalLinks: "app" } }) },
+    });
+    render(() => <App />);
+    const metaLink = await screen.findByRole("link", { name: "Meta" });
+    await fireEvent.click(metaLink);
+    await waitFor(() =>
+      expect(window.openbot.browser.open).toHaveBeenCalledWith(
+        expect.objectContaining({ url: "https://about.fb.com/news/" }),
+      ),
+    );
+    expect(window.openbot.openUrl).not.toHaveBeenCalled();
+  });
+
   it("refreshes stored history when Codex becomes ready after the window opens", async () => {
     vi.mocked(window.openbot.agent.getStatus).mockResolvedValue({
       phase: "starting",

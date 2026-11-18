@@ -48,3 +48,19 @@ it("takes a switch back and says so when the program refuses the change", async 
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("The setting was refused."));
   await waitFor(() => expect(screen.getByRole("switch", { name: KEEP })).not.toBeChecked());
 });
+
+it("saves where links open and whether the last workspace is restored", async () => {
+  render(() => <AppBehaviorSection />);
+  const select = await screen.findByLabelText("Open external links in");
+  await waitFor(() => expect(select).toBeEnabled());
+  expect(select).toHaveValue("browser");
+  fireEvent.change(select, { target: { value: "app" } });
+  await waitFor(async () => expect((await window.openbot.appSettings?.get())?.behavior.externalLinks).toBe("app"));
+
+  const restore = screen.getByRole("switch", { name: "Restore the last workspace on launch" });
+  await waitFor(() => expect(restore).toBeEnabled());
+  expect(restore).toBeChecked();
+  fireEvent.click(restore);
+  await waitFor(async () => expect((await window.openbot.appSettings?.get())?.workspace.restore).toBe(false));
+  expect((await window.openbot.appSettings?.get())?.behavior.externalLinks).toBe("app");
+});
