@@ -133,8 +133,8 @@ async function openPage(name: string) {
     await fireEvent.click(direct);
     return;
   }
-  await fireEvent.pointerDown(screen.getByRole("button", { name: /^More pages/ }), { button: 0, pointerType: "mouse" });
-  const menu = await screen.findByRole("menu", { name: "More pages" });
+  await fireEvent.pointerDown(screen.getByRole("button", { name: /^More/ }), { button: 0, pointerType: "mouse" });
+  const menu = await screen.findByRole("menu", { name: "More" });
   await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name }));
 }
 

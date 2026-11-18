@@ -75,25 +75,25 @@ describe("PageRail", () => {
     );
     const select = vi.fn();
     const view = render(() => <PageRail active="phone" onSelect={select} onOpenSettings={vi.fn()} />);
-    const more = await screen.findByRole("button", { name: "More pages (current: Phone)" });
+    const more = await screen.findByRole("button", { name: "More (current: Phone)" });
     expect(more).toHaveClass("page-rail-button-active");
     expect(screen.getByRole("button", { name: "Settings" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Phone" })).not.toBeInTheDocument();
     await fireEvent.pointerDown(more, { button: 0, pointerType: "mouse" });
-    const menu = await screen.findByRole("menu", { name: "More pages" });
+    const menu = await screen.findByRole("menu", { name: "More" });
     await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Phone" }), { button: 0 });
     expect(select).toHaveBeenCalledWith("phone");
     height = 900;
     for (const resized of callbacks) resized();
     await waitFor(() => expect(screen.getByRole("button", { name: "Phone" })).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: /^More pages/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^More/ })).not.toBeInTheDocument();
     view.unmount();
     expect(disconnect).toHaveBeenCalled();
   });
 });
 
 describe("PageRail in a short window", () => {
-  it("shows More pages at 400 px with 36 px buttons and keeps Settings", async () => {
+  it("shows More at 400 px with 36 px buttons and keeps Settings", async () => {
     vi.spyOn(Element.prototype, "clientHeight", "get").mockImplementation(function (this: Element) {
       return this.getAttribute("aria-label") === "Pages" ? 400 : 0;
     });
@@ -110,7 +110,7 @@ describe("PageRail in a short window", () => {
       },
     );
     render(() => <PageRail active="agents" onSelect={vi.fn()} onOpenSettings={vi.fn()} />);
-    expect(await screen.findByRole("button", { name: "More pages" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "More" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeVisible();
   });
 });
