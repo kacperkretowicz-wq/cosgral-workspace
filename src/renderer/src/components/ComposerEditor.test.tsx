@@ -145,6 +145,28 @@ describe("ComposerEditor", () => {
     expect(editor.textContent).toBe("First line\nSecond line");
   });
 
+  it("follows the send shortcut of the settings: with Ctrl+Enter, Enter breaks the line and Ctrl+Enter sends (BE-Z2)", async () => {
+    document.documentElement.dataset.sendShortcut = "mod-enter";
+    try {
+      const { editor, onSubmit, onValueChange } = renderComposer();
+      editor.textContent = "First line";
+      placeCaretAtEnd(editor);
+      await fireEvent.input(editor);
+
+      await fireEvent.keyDown(editor, { key: "Enter" });
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(onValueChange).toHaveBeenLastCalledWith("First line\n");
+
+      placeCaretAtEnd(editor);
+      await fireEvent.keyDown(editor, { key: "Enter", ctrlKey: true });
+      expect(onSubmit).toHaveBeenCalledOnce();
+      // The draft is not changed by the send.
+      expect(editor.textContent).toBe("First line\n");
+    } finally {
+      delete document.documentElement.dataset.sendShortcut;
+    }
+  });
+
   it("does not submit when Enter confirms IME composition", async () => {
     const { editor, onSubmit } = renderComposer();
 

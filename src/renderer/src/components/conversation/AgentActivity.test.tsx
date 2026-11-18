@@ -58,4 +58,17 @@ describe("ThinkingDisclosure", () => {
     render(() => <ThinkingDisclosure message={message(false, ["a"])} />);
     expect(screen.getByText("1 step")).toBeInTheDocument();
   });
+
+  it("follows the setting of the agent steps: folded by default, open when the person chose to show them (BE-Z2)", () => {
+    const folded = render(() => <ThinkingDisclosure message={message(false, ["a", "b"])} />);
+    expect(folded.container.querySelector("details")?.open).toBe(false);
+    folded.unmount();
+    document.documentElement.dataset.agentSteps = "show";
+    try {
+      const open = render(() => <ThinkingDisclosure message={message(false, ["a", "b"])} />);
+      expect(open.container.querySelector("details")?.open).toBe(true);
+    } finally {
+      delete document.documentElement.dataset.agentSteps;
+    }
+  });
 });

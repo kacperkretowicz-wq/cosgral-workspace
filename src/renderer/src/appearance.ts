@@ -63,3 +63,8 @@ export function startAppearance(): () => void {
     off();
   };
 }
+
+/** True when the person chose to show the steps of the agent open (`appearance.agentSteps` = "show"); the default is folded. */
+export function agentStepsOpen(): boolean {
+  return document.documentElement.dataset.agentSteps === "show";
+}

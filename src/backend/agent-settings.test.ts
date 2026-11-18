@@ -244,7 +244,7 @@ describe("AgentSettingsService", () => {
       font: "inter",
       sendShortcut: "enter",
       chatAccent: "blue",
-      agentSteps: "show",
+      agentSteps: "collapse",
       unreadFirst: false,
     });
 
@@ -264,7 +264,7 @@ describe("AgentSettingsService", () => {
       font: "inter",
       sendShortcut: "mod-enter",
       chatAccent: "violet",
-      agentSteps: "show",
+      agentSteps: "collapse",
       unreadFirst: true,
     });
     database.close();
