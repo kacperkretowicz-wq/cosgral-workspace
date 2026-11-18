@@ -1,10 +1,15 @@
 import type { AppSettings } from "@openbot/contracts/ipc";
 import { defaultNotificationPreferences, SETTINGS_TABS } from "@openbot/contracts/ipc";
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { language, setLanguage } from "../i18n";
 import { AppSettingsW3 } from "./AppSettingsW3";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  // Saving the language switches the whole program (a global): the next test starts in English.
+  setLanguage("en");
+});
 // The first-run (onboarding) fields are tested with the setup step: InitialSetup.onboarding.test.tsx.
 
 function settings(): AppSettings {
@@ -50,5 +55,15 @@ describe("application settings", () => {
     const input = update.mock.calls[0]?.[0];
     expect(input.language).toBe("pl");
     expect(input.notifications.matrix["channel-result"].sound).toBe(true);
+  });
+
+  it("applies the language only after it was saved, and says so when saving fails", async () => {
+    const update = vi.fn().mockRejectedValue(new Error("The settings could not be saved."));
+    vi.stubGlobal("openbot", { appSettings: { get: vi.fn().mockResolvedValue(settings()), update } });
+    render(() => <AppSettingsW3 />);
+    await fireEvent.change(await screen.findByLabelText("Language"), { target: { value: "pl" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Save application settings" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("The settings could not be saved."));
+    expect(language()).toBe("en");
   });
 });

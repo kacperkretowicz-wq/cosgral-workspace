@@ -6,10 +6,7 @@ export const pl = {
   Appearance: "Wygląd",
   "Data and privacy": "Dane i prywatność",
   Advanced: "Zaawansowane",
-  "Settings sections": "Sekcje ustawień",
   "Coming soon": "Wkrótce dostępne",
-  Soon: "Wkrótce",
-  "Close settings": "Zamknij ustawienia",
   "Control how COSGRAL Workspace behaves on this computer.": "Dostosuj działanie COSGRAL Workspace na tym komputerze.",
   "App behavior": "Działanie aplikacji",
   "Launch COSGRAL Workspace at login": "Uruchamiaj COSGRAL Workspace przy logowaniu",
@@ -104,8 +101,6 @@ export const pl = {
   "Save language": "Zapisz język",
   "Could not save language. Try again.": "Nie udało się zapisać języka. Spróbuj ponownie.",
   "Could not load language settings.": "Nie udało się wczytać ustawień języka.",
-  "Changes apply immediately and are saved on this computer.":
-    "Zmiany są widoczne od razu i zapisują się na tym komputerze.",
   "Context settings": "Ustawienia kontekstu",
   "Conversation context": "Kontekst rozmowy",
   "Could not load context settings.": "Nie udało się wczytać ustawień kontekstu.",
@@ -1565,4 +1560,14 @@ export const pl = {
   Attachment: "Załącznik",
   "{name} is controlling the browser": "{name} steruje przeglądarką",
   "{title}, controlled by {name}": "{title}, sterowane przez {name}",
+  "Channel history": "Historia kanału",
+  "Clear history": "Wyczyść historię",
+  "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.":
+    "Usuwa wszystkie wiadomości i zadania tego kanału. Kanał, jego członkowie, pamięć i rutyny zostają.",
+  "Confirm clearing the history": "Potwierdź wyczyszczenie historii",
+  "Clear the whole history of this channel? This cannot be undone.":
+    "Wyczyścić całą historię tego kanału? Tego nie da się cofnąć.",
+  "Yes, clear": "Tak, wyczyść",
+  "Could not clear the history.": "Nie udało się wyczyścić historii.",
+  "Removed {messages} messages and {tasks} tasks.": "Usunięto wiadomości: {messages}, zadania: {tasks}.",
 } as const;

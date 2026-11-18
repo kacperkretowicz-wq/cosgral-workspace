@@ -15,6 +15,7 @@ import { t } from "../i18n";
 import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
+import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import { DataWipeSection } from "./DataWipeSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -373,6 +374,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 <AppBehaviorSection />
                 <AppearanceSettings />
                 <ContextSettingsSection />
+                <BudgetSettings />
                 <UpdatesPanel />
                 <VoiceOverviewPanel />
                 <DataWipeSection />

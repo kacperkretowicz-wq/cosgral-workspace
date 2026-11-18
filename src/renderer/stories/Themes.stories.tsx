@@ -2,7 +2,8 @@ import { onCleanup } from "solid-js";
 import { expect } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { App } from "../src/App";
-import { SettingsModal } from "../src/components/SettingsModal";
+import { InitialSetup } from "../src/components/InitialSetup";
+import { STORY_AGENT_STATUS } from "./fixtures";
 import { createMockOpenBot } from "./mock-openbot";
 
 function Scene(props: { theme: "dark" | "light"; settings?: boolean; needs?: boolean }) {
@@ -55,7 +56,21 @@ function Scene(props: { theme: "dark" | "light"; settings?: boolean; needs?: boo
     if (oldTheme) document.documentElement.dataset.theme = oldTheme;
     else delete document.documentElement.dataset.theme;
   });
-  return props.settings ? <SettingsModal open onOpenChange={() => {}} /> : <App />;
+  return props.settings ? (
+    <InitialSetup
+      reviewing
+      state={{ completed: true, preferredProvider: "codex" }}
+      agentStatus={STORY_AGENT_STATUS}
+      platform="win32"
+      accountEmail="person@example.com"
+      onSave={async () => undefined}
+      onJoinRemote={async () => undefined}
+      onLogout={async () => undefined}
+      onClose={() => undefined}
+    />
+  ) : (
+    <App />
+  );
 }
 const meta = { title: "COSGRAL/Themes", parameters: { a11y: { test: "error" } } } satisfies Meta;
 export default meta;
@@ -72,7 +87,7 @@ export const SettingsDark: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { within } = await import("storybook/test");
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(await page.findByRole("button", { name: "Appearance" }));
+    void userEvent;
     await expect(page.findByLabelText("Theme")).resolves.toBeInTheDocument();
   },
 };

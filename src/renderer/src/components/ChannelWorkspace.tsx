@@ -116,6 +116,10 @@ export function ChannelWorkspace(props: {
         if (loading()) changes.push({ type: "message", item: event.message });
         applyMessage(event.message);
       }
+      if (event.type === "channel-history-cleared" && event.channelId === selected()) {
+        setMessages([]);
+        setTasks([]);
+      }
       if (event.type === "task-changed" && event.task.channelId === selected()) {
         if (loading()) changes.push({ type: "task", item: event.task });
         applyTask(event.task);
@@ -140,6 +144,17 @@ export function ChannelWorkspace(props: {
       applyMessage(result.message);
       applyTask(result.task);
     }
+  }
+  async function clearHistory() {
+    const api = window.openbot.channels;
+    if (!api?.clearHistory) throw new Error("Clearing the history is unavailable in this build.");
+    const channelId = selected();
+    const result = await api.clearHistory({ channelId });
+    if (channelId === selected()) {
+      setMessages([]);
+      setTasks([]);
+    }
+    return result;
   }
   async function action(taskId: string, ownerBotId?: string) {
     try {
@@ -195,6 +210,7 @@ export function ChannelWorkspace(props: {
                 window.openbot.channels.supportsMessageReplies === true
               }
               onSend={send}
+              onClearHistory={window.openbot.channels?.clearHistory ? clearHistory : undefined}
               onResume={(id) => void action(id)}
               onReassign={(id, botId) => void action(id, botId)}
             />
