@@ -52,6 +52,8 @@ export interface MobilePhoneChannels {
   tasks: (channelId: string) => ChannelTask[];
   /** The newest `limit` messages before `before` (or the newest ones), oldest first; throws for a bad `before`. */
   messages: (channelId: string, page: { before: string | null; limit: number }) => ChannelMessage[];
+  /** One message of a channel, or null when it is not there. */
+  message: (channelId: string, messageId: string) => ChannelMessage | null;
   /** The person's message; it starts a task like in the window. */
   send: (input: SendChannelMessageInput) => { message: ChannelMessage; task: ChannelTask };
   act: (input: ChannelTaskActionInput) => ChannelTask;
@@ -298,6 +300,9 @@ export class MobilePhoneApi {
     if (part === "tasks" && parts.length === 4) {
       return this.#only(method, "GET", () => this.#channelTasks(input, channels, channelId));
     }
+    if (part === "tasks" && parts.length === 5) {
+      return this.#only(method, "GET", () => this.#channelTask(input, channels, channelId, parts[4] ?? ""));
+    }
     if (part === "tasks" && parts.length === 6) {
       const action = parts[5] ?? "";
       if (isOneOf(["archive", "restore", "reassign"] as const, action)) {
@@ -386,6 +391,28 @@ export class MobilePhoneApi {
       .slice(-MOBILE_CHANNEL_LIMITS.tasks)
       .map(channelTask);
     sendJson(input.response, 200, { tasks });
+  }
+
+  async #channelTask(
+    input: PhoneRequest,
+    channels: MobilePhoneChannels,
+    channelId: string,
+    taskId: string,
+  ): Promise<void> {
+    this.#channel(channels, channelId);
+    const all = channels.tasks(channelId);
+    const found = all.find((task) => task.id === taskId);
+    if (!found) throw new HttpError(404, "This task does not exist.");
+    const messageOf = (id: string | null) => {
+      const message = id === null ? null : channels.message(channelId, id);
+      return message ? channelMessage(message) : null;
+    };
+    sendJson(input.response, 200, {
+      task: channelTask(found),
+      request: messageOf(found.requestMessageId),
+      result: messageOf(found.resultMessageId),
+      steps: all.filter((task) => task.parentTaskId === found.id && task.archivedAt === null).map(channelTask),
+    });
   }
 
   async #channelAct(

@@ -91,7 +91,8 @@ function fakeChannels() {
   const tasks = [
     task("t1", "plan"),
     task("t2", "plan", { state: "waiting" }),
-    task("t3", "plan", { state: "done" }),
+    task("t3", "plan", { state: "done", requestMessageId: "m-a", resultMessageId: "m-c" }),
+    task("t7", "plan", { state: "done", parentTaskId: "t3", title: "Step of t3" }),
     task("t4", "plan", { state: "done", archivedAt: AT }),
     task("t5", "other", { state: "paused" }),
   ];
@@ -109,6 +110,8 @@ function fakeChannels() {
       if (end < 0) throw new Error("This message is not in the channel.");
       return own.slice(Math.max(0, end - page.limit), end);
     },
+    message: (channelId, messageId) =>
+      messages.find((item) => item.channelId === channelId && item.id === messageId) ?? null,
     send: (input) => {
       sent.push(input);
       return {
@@ -306,7 +309,7 @@ describe("channels on the phone (BE-AB, row 71)", () => {
     const ids = Array.isArray(answer.body.tasks)
       ? answer.body.tasks.map((item) => (isDynamicRecord(item) ? item.id : null))
       : null;
-    expect(ids).toEqual(["t1", "t2", "t3"]);
+    expect(ids).toEqual(["t1", "t2", "t3", "t7"]);
     expect(answer.body.tasks).toEqual(
       expect.arrayContaining([
         { id: "t2", ownerBotId: "scout", state: "waiting", title: "Task t2", parentTaskId: null, updatedAt: AT },
@@ -390,6 +393,32 @@ async function openStream(base: string, token: string) {
   };
   return { events, until, close: () => controller.abort() };
 }
+
+describe("the task of a channel with its result and steps (BE-AD, item 10)", () => {
+  it("gives the request, the result and the steps of one task, so the phone needs no paging", async () => {
+    const { base, token } = await setup();
+    const answer = await request(base, mobileChannelPath.task("plan", "t3"), token);
+    expect(answer.status).toBe(200);
+    expect(answer.body.task).toMatchObject({ id: "t3", state: "done" });
+    expect(answer.body.request).toMatchObject({ id: "m-a", kind: "human" });
+    expect(answer.body.result).toMatchObject({ id: "m-c", superseded: true, kind: "result" });
+    expect(answer.body.steps).toEqual([
+      { id: "t7", ownerBotId: "scout", state: "done", title: "Step of t3", parentTaskId: "t3", updatedAt: AT },
+    ]);
+    expect(JSON.stringify(answer.body)).not.toContain("private");
+  });
+
+  it("has no result before there is one, and answers 404 for other channels' and unknown tasks", async () => {
+    const { base, token } = await setup();
+    const open = await request(base, mobileChannelPath.task("plan", "t1"), token);
+    expect(open.body.result).toBeNull();
+    expect(open.body.request).toBeNull();
+    expect(open.body.steps).toEqual([]);
+    expect((await request(base, mobileChannelPath.task("plan", "t5"), token)).status).toBe(404);
+    expect((await request(base, mobileChannelPath.task("plan", "nope"), token)).status).toBe(404);
+    expect((await request(base, mobileChannelPath.task("plan", "t3"), token, { method: "DELETE" })).status).toBe(405);
+  });
+});
 
 describe("the event stream with channels (BE-AD, item 8)", () => {
   it("says which channel changed, once per burst and without any text, so the phone loads it again", async () => {

@@ -12,6 +12,13 @@ export function mobilePhoneChannels(store: ChannelStore, engine: ChannelEngine):
         limit: page.limit,
         ...(page.before === null ? {} : { beforeMessageId: page.before }),
       }),
+    message: (channelId, messageId) => {
+      try {
+        return store.getMessage(channelId, messageId);
+      } catch {
+        return null;
+      }
+    },
     send: (input) => engine.sendMessage(input),
     act: (input) => engine.actOnTask(input),
   };

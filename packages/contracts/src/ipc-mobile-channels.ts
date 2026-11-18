@@ -18,6 +18,8 @@ export type MobileChannelTaskAction = (typeof MOBILE_CHANNEL_TASK_ACTIONS)[numbe
 export const mobileChannelPath = {
   messages: (channelId: string) => `/v1/channels/${encodeURIComponent(channelId)}/messages`,
   tasks: (channelId: string) => `/v1/channels/${encodeURIComponent(channelId)}/tasks`,
+  task: (channelId: string, taskId: string) =>
+    `/v1/channels/${encodeURIComponent(channelId)}/tasks/${encodeURIComponent(taskId)}`,
   taskAction: (channelId: string, taskId: string, action: MobileChannelTaskAction) =>
     `/v1/channels/${encodeURIComponent(channelId)}/tasks/${encodeURIComponent(taskId)}/${action}`,
 } as const;
@@ -69,6 +71,16 @@ export interface MobileChannelTask {
   title: string;
   parentTaskId: string | null;
   updatedAt: string;
+}
+
+/** GET mobileChannelPath.task(id, taskId): the task with its request, its result (once there is one) and its steps. */
+export interface MobileChannelTaskDetail {
+  task: MobileChannelTask;
+  /** The message that started the task, or null when it is no longer there. */
+  request: MobileChannelMessage | null;
+  result: MobileChannelMessage | null;
+  /** Tasks that help with this one (not archived). */
+  steps: MobileChannelTask[];
 }
 
 /** POST mobileChannelPath.messages(id): 202 with the ids of the message and of the task it started. */

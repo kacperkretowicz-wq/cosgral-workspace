@@ -46,3 +46,25 @@ it("reads and writes the real channel store and engine the way the phone API nee
   expect(() => host.messages(channel.id, { before: "nope", limit: 10 })).toThrow("This message is not in the channel.");
   expect(host.act({ taskId: task.id, action: "stop" }).state).toBe("cancelled");
 });
+
+it("reads one message of a channel, or nothing for an unknown one (BE-AD)", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mobile-channels-host-"));
+  roots.push(root);
+  const database = testDatabase(root);
+  await database.initialize();
+  const store = new ChannelStore(database);
+  const channel = store.create({
+    name: "team",
+    title: "Team",
+    instructions: "Short",
+    memberBotIds: ["lead"],
+    leadBotId: "lead",
+    isolated: false,
+  });
+  const engine = new ChannelEngine(store, { run: () => new Promise(() => undefined) });
+  engines.push(engine);
+  const host = mobilePhoneChannels(store, engine);
+  const { message } = host.send({ channelId: channel.id, text: "Hello" });
+  expect(host.message(channel.id, message.id)?.text).toBe("Hello");
+  expect(host.message(channel.id, "nope")).toBeNull();
+});

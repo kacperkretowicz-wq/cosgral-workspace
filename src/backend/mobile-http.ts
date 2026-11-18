@@ -11,6 +11,7 @@ import {
   type MobileChannelMessagePage,
   type MobileChannelSendResponse,
   type MobileChannelTask,
+  type MobileChannelTaskDetail,
   type MobileCreateAgentResponse,
   type MobileDevice,
   type MobileErrorResponse,
@@ -58,6 +59,7 @@ export type MobileWire =
   | MobileChannelSendResponse
   | { tasks: MobileChannelTask[] }
   | { task: MobileChannelTask }
+  | MobileChannelTaskDetail
   // COSGRAL W9-BE1: the lock, the PIN and push of the phone.
   | PhoneSessionState
   | PhoneUnlockResponse
