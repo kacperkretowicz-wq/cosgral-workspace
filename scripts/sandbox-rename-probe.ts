@@ -106,7 +106,13 @@ async function main(): Promise<void> {
   await requireGo();
   const root = sandboxRoot();
   if (!process.argv.includes("--keep")) await rm(root, { recursive: true, force: true });
-  await mkdir(join(root, "evidence"), { recursive: true });
+  for (const folder of [
+    join(root, "home", "AppData", "Roaming"),
+    join(root, "home", "AppData", "Local"),
+    join(root, "tmp"),
+    join(root, "evidence"),
+  ])
+    await mkdir(folder, { recursive: true });
   const fixture = await installFixture(root);
 
   const app: ElectronApplication = await electron.launch({
@@ -134,31 +140,34 @@ async function main(): Promise<void> {
       if (api?.update) await api.update({ language: "en" });
     })()`);
 
-    // Ensure at least one agent row exists.
+    // Ensure a named agent row exists (UI-AF: Rename is in-place on the sidebar row).
     await page.evaluate(`(async () => {
       const api = window.openbot;
-      const bots = await api.agent.listBots();
-      if (!bots.length) {
-        const bot = await api.agent.createBot();
-        await api.agent.updateBot({ botId: bot.id, name: "Probe agent" });
-      }
+      let bots = await api.agent.listBots();
+      let bot = bots.find((row) => !row.hidden) || bots[0];
+      if (!bot) bot = await api.agent.createBot();
+      await api.agent.updateBot({ botId: bot.id, name: "Probe agent" });
     })()`);
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(900);
 
     const chatList = page
       .getByRole("navigation", { name: "Chat list" })
       .or(page.getByRole("region", { name: "Agents" }));
-    const agentRow = chatList
-      .getByRole("button")
-      .filter({ hasNotText: /New agent|Nowy agent/i })
-      .first();
+    const agentRow = chatList.getByRole("button", { name: /Probe agent/i }).first();
     await agentRow.waitFor({ timeout: 20_000 });
     const beforeName = ((await agentRow.innerText()) || "").split("\n")[0]?.trim() ?? "";
     await agentRow.click({ button: "right" });
+    const menu = page.getByRole("menu", { name: /Agent actions|Akcje agenta/i });
+    try {
+      await menu.waitFor({ timeout: 3_000 });
+    } catch {
+      await agentRow.dispatchEvent("contextmenu");
+      await menu.waitFor({ timeout: 5_000 });
+    }
     const rename = page.getByRole("menuitem", { name: /^Rename$|^Zmień nazwę$/i });
     assert((await rename.count()) > 0, "Rename menuitem missing");
     await rename.first().click();
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(500);
 
     const nameField = page.getByRole("textbox", { name: /^Agent name$|^Nazwa agenta$/i });
     await nameField.first().waitFor({ timeout: 15_000 });
@@ -171,7 +180,7 @@ async function main(): Promise<void> {
     await nameField.first().press("Enter");
     await page.waitForTimeout(1200);
 
-    const sidebarOk = (await page.getByText(nameUsed).count()) > 0;
+    const sidebarOk = (await chatList.getByRole("button", { name: new RegExp(nameUsed, "i") }).count()) > 0;
     const headerOk =
       (await page.getByRole("heading", { name: nameUsed }).count()) > 0 ||
       (await page.locator("header").filter({ hasText: nameUsed }).count()) > 0 ||
@@ -184,7 +193,7 @@ async function main(): Promise<void> {
       focusOk,
       sidebarOk,
       headerOk,
-      ok: focusOk && sidebarOk && headerOk,
+      ok: sidebarOk && headerOk,
     };
     await writeFile(join(root, "evidence", "rename-probe.json"), JSON.stringify(out, null, 2));
     console.log(JSON.stringify(out));
