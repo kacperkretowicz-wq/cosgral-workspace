@@ -5262,7 +5262,13 @@
 
 .conversation-panel:has(.agent-settings-panel) .conversation-header,
 .conversation-panel:has(.agent-settings-panel) .conversation-scroll,
-.conversation-panel:has(.agent-settings-panel) .composer-wrap {
+.conversation-panel:has(.agent-settings-panel) .composer-wrap,
+.conversation-panel:has(.chat-files-panel) .conversation-header,
+.conversation-panel:has(.chat-files-panel) .conversation-scroll,
+.conversation-panel:has(.chat-files-panel) .composer-wrap,
+.conversation-panel:has(.chat-voice-panel) .conversation-header,
+.conversation-panel:has(.chat-voice-panel) .conversation-scroll,
+.conversation-panel:has(.chat-voice-panel) .composer-wrap {
   width: calc(100% - var(--settings-panel-width, 296px));
 }
 

@@ -23,6 +23,7 @@ import { Button, NativeSelect, Switch } from "./ui";
 import {
   Bell,
   Brain,
+  ChevronRight,
   Clock,
   FileText,
   Folder,
@@ -37,6 +38,16 @@ import {
   Upload,
 } from "./ui/icons";
 import "../styles/agent-cards-grid.css";
+
+/** Groups like OpenBot 0.71 agent settings (059): Brain, Knows, then the rest. */
+const CARD_GROUPS: Array<{ title: string; ids: AgentCardId[] }> = [
+  { title: "Brain", ids: ["backup-models", "chat-color"] },
+  { title: "Knows", ids: ["instructions", "memory", "skills", "files"] },
+  {
+    title: "More",
+    ids: ["tables", "routines", "usage", "publish", "permissions", "advanced", "folders", "notifications"],
+  },
+];
 
 const CARD_LABELS: Record<AgentCardId, string> = {
   "chat-color": "Chat color",
@@ -225,41 +236,59 @@ export function AgentCardsSection(props: { botId: string }) {
           }
         >
           {(cards) => (
-            <ul class="agent-cards-list">
-              <For each={cards().cards}>
-                {(card) => (
-                  <li class="agent-card-row" data-card={card.id} data-available={card.available ? "true" : "false"}>
-                    <span class="agent-card-icon" aria-hidden="true">
-                      {(() => {
-                        const Icon = CARD_ICONS[card.id];
-                        return <Icon size={20} stroke-width={1.5} />;
-                      })()}
-                    </span>
-                    <strong>{t(CARD_LABELS[card.id])}</strong>
-                    <span class="agent-card-summary">
-                      {card.available
-                        ? summaryText(card.summary)
-                        : `${t("Unavailable in this version")}${card.summary ? `: ${card.summary}` : ""}`}
-                    </span>
-                    <Show when={card.available && card.count !== null}>
-                      <span class="agent-card-count">{card.count}</span>
-                    </Show>
-                    <Show when={card.available && detailId(card.id)}>
-                      {(id) => (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          class="agent-card-open"
-                          aria-pressed={openCard() === id() ? "true" : "false"}
-                          aria-label={t("Open {title}", { title: t(CARD_LABELS[card.id]) })}
-                          onClick={() => setOpenCard(openCard() === id() ? null : id())}
-                        />
-                      )}
-                    </Show>
-                  </li>
-                )}
+            <div class="agent-cards-groups">
+              <For each={CARD_GROUPS}>
+                {(group) => {
+                  const rows = () => cards().cards.filter((card) => group.ids.includes(card.id));
+                  return (
+                    <section class="agent-cards-group" aria-label={t(group.title)}>
+                      <h4 class="agent-cards-group-title">{t(group.title)}</h4>
+                      <ul class="agent-cards-list">
+                        <For each={rows()}>
+                          {(card) => (
+                            <li
+                              class="agent-card-row"
+                              data-card={card.id}
+                              data-available={card.available ? "true" : "false"}
+                            >
+                              <span class="agent-card-icon" aria-hidden="true">
+                                {(() => {
+                                  const Icon = CARD_ICONS[card.id];
+                                  return <Icon size={20} stroke-width={1.5} />;
+                                })()}
+                              </span>
+                              <strong>{t(CARD_LABELS[card.id])}</strong>
+                              <span class="agent-card-summary">
+                                {card.available
+                                  ? summaryText(card.summary)
+                                  : `${t("Unavailable in this version")}${card.summary ? `: ${card.summary}` : ""}`}
+                              </span>
+                              <Show when={card.available && card.count !== null}>
+                                <span class="agent-card-count">{card.count}</span>
+                              </Show>
+                              <Show when={card.available && detailId(card.id)}>
+                                {(id) => (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    class="agent-card-open"
+                                    aria-pressed={openCard() === id() ? "true" : "false"}
+                                    aria-label={t("Open {title}", { title: t(CARD_LABELS[card.id]) })}
+                                    onClick={() => setOpenCard(openCard() === id() ? null : id())}
+                                  >
+                                    <ChevronRight size={16} stroke-width={1.5} aria-hidden="true" />
+                                  </Button>
+                                )}
+                              </Show>
+                            </li>
+                          )}
+                        </For>
+                      </ul>
+                    </section>
+                  );
+                }}
               </For>
-            </ul>
+            </div>
           )}
         </Show>
         <Show when={openCard()}>

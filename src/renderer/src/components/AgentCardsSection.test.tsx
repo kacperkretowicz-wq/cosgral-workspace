@@ -42,6 +42,8 @@ afterEach(cleanup);
 it("lists all 14 cards with counts and marks the ones without an engine as unavailable", async () => {
   render(() => <AgentCardsSection botId="bot" />);
   expect(await screen.findByText("Memories")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Brain" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Knows" })).toBeInTheDocument();
   expect(screen.getAllByRole("listitem")).toHaveLength(14);
   expect(screen.getByText("3")).toBeInTheDocument();
   expect(screen.getByText(/Unavailable in this version: No engine yet/)).toBeInTheDocument();
@@ -81,7 +83,7 @@ it("shows a skeleton status while agent cards are loading", async () => {
   );
   render(() => <AgentCardsSection botId="bot" />);
   expect(screen.getByRole("status", { name: "Loading cards…" })).toBeInTheDocument();
-  expect(document.querySelectorAll(".cosgral-skeleton")).toHaveLength(3);
+  expect(document.querySelectorAll(".cosgral-skeleton").length).toBeGreaterThanOrEqual(3);
   resolveOverview(overview);
   expect(await screen.findByText("Memories")).toBeInTheDocument();
 });

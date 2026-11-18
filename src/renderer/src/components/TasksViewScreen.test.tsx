@@ -16,7 +16,9 @@ it("lists the tasks with counts for active and archived", async () => {
   const active = await screen.findByRole("button", { name: /Active/ });
   expect(active).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("button", { name: /Archived/ })).toBeInTheDocument();
+  expect(screen.getByText(/Hand off the work/)).toBeInTheDocument();
   expect((await screen.findAllByRole("listitem")).length).toBeGreaterThan(0);
+  expect(await screen.findByRole("heading", { name: /Needs you/ })).toBeInTheDocument();
 });
 
 it("switches to the archived tasks", async () => {

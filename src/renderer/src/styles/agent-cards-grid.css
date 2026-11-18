@@ -1,4 +1,27 @@
-/* Agent cards as a grid of tiles: own icon tile, label, one line, count. Replaces the plain list rows. */
+/* Agent cards as a grid of tiles: own icon tile, label, one line, count. Grouped Brain / Knows / More (0.71 059). */
+.agent-cards-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.agent-cards-group-title {
+  margin: 0 0 8px;
+  color: var(--cosgral-fg-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.agent-cards .agent-card-open {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--cosgral-fg-muted);
+}
+
 .agent-cards .agent-cards-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
