@@ -903,4 +903,8 @@ export const en = {
   "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.",
   "Unattended access": "Unattended access",
   "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.",
+  "Deleted threads": "Deleted threads",
+  "Deleted “{title}”": "Deleted “{title}”",
+  "{seconds} s left to undo": "{seconds} s left to undo",
+  Undo: "Undo",
 } as const;

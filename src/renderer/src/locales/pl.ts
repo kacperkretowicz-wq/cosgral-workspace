@@ -901,4 +901,8 @@ export const pl = {
   "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Także o widza, któremu wcześniej pozwolono. Masz {seconds} s na odpowiedź; potem widz zostaje odrzucony.",
   "Unattended access": "Dostęp bez nadzoru",
   "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "Widz zawsze czeka na Twoją odpowiedź na tym komputerze, więc nikt nie przejmie komputera, przy którym nikt nie siedzi.",
+  "Deleted threads": "Usunięte wątki",
+  "Deleted “{title}”": "Usunięto „{title}”",
+  "{seconds} s left to undo": "Zostało {seconds} s na cofnięcie",
+  Undo: "Cofnij",
 } as const;
