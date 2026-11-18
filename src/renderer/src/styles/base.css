@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* KAPI-N: uiScale from appearanceDomTokens → --openbot-ui-scale (1 = 100%). */
+  font-size: calc(16px * var(--openbot-ui-scale, 1));
+}
+
 html,
 body,
 #root {
@@ -15,6 +20,7 @@ body,
 body {
   background: var(--openbot-bg-canvas);
   color: var(--openbot-white);
+  font-family: var(--openbot-font-sans, inherit);
   -webkit-font-smoothing: antialiased;
 }
 

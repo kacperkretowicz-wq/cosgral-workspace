@@ -28,10 +28,10 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 4. Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
 
 ## KAPI
-1. Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
+1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
 2. Rozmiar podglądu w przeglądarce (cel: razem < 1,8 MB, plik < 1 MB).
 3. Instalator `dist:win`: pomiar po każdym większym scaleniu (tylko za `GO-kapi-dist.txt`).
-4. Luki ROBIĆ z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
+4. [zrobione: 401bafe8f] Luki ROBIĆ (wiersz 2 wygląd: appearanceDomTokens + startAppearance) z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
 
 ## Tester
 1. Odbiór w prawdziwym Electronie po każdym scaleniu lidera: e2e (`^FAIL`), W5, zrzuty, sondy (tylko za `GO-tester-*.txt`).
