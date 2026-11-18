@@ -10,6 +10,8 @@ export function ChannelWorkspace(props: {
   onCreateHandled?: () => void;
   /** Opens this channel as soon as the workspace shows (from the Tasks page). */
   openChannelId?: string | null;
+  /** The message to scroll to after the channel is shown (the message of a task). */
+  openAnchorMessageId?: string | null;
   onOpenHandled?: () => void;
 }) {
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
@@ -32,7 +34,14 @@ export function ChannelWorkspace(props: {
     () => props.openChannelId,
     (id) => {
       if (id) {
-        void choose(id);
+        const anchor = props.openAnchorMessageId;
+        void choose(id).then(() => {
+          if (anchor)
+            setTimeout(
+              () => document.getElementById(`channel-message-${anchor}`)?.scrollIntoView?.({ block: "center" }),
+              60,
+            );
+        });
         props.onOpenHandled?.();
       }
     },

@@ -73,6 +73,7 @@ import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { SkillsSettings } from "./components/SkillsSettings";
 import { TablesPanel } from "./components/TablesPanel";
 import { TasksPage } from "./components/TasksPage";
+import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
 import { VaultConnectorsPanel } from "./components/VaultConnectorsPanel";
 import { VaultPanel } from "./components/VaultPanel";
@@ -241,6 +242,7 @@ export function App() {
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [channelsOpen, setChannelsOpen] = createSignal(false);
   const [openChannelId, setOpenChannelId] = createSignal<string | null>(null);
+  const [openAnchorId, setOpenAnchorId] = createSignal<string | null>(null);
   const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
   const [newAgentOpen, setNewAgentOpen] = createSignal(false);
@@ -2179,17 +2181,22 @@ export function App() {
                 <MobileConnectPage />
               </Show>
               <Show when={activePage() === "tasks"}>
-                <TasksPage
-                  bots={botList()}
-                  onOpenChannel={(channelId) => {
+                {(() => {
+                  const openChannel = (channelId: string, anchorMessageId?: string) => {
                     setNewAgentOpen(false);
                     setActiveDirectMemberId(null);
                     setAgentPickerOpen(false);
+                    setOpenAnchorId(anchorMessageId ?? null);
                     setOpenChannelId(channelId);
                     setChannelsOpen(true);
                     setActivePage("agents");
-                  }}
-                />
+                  };
+                  return window.openbot?.tasksView ? (
+                    <TasksViewScreen bots={botList()} onOpenChannel={openChannel} />
+                  ) : (
+                    <TasksPage bots={botList()} onOpenChannel={openChannel} />
+                  );
+                })()}
               </Show>
               <Show when={activePage() === "usage"}>
                 <UsagePage />
@@ -2235,6 +2242,7 @@ export function App() {
                   createRequested={createChannel()}
                   onCreateHandled={() => setCreateChannel(false)}
                   openChannelId={openChannelId()}
+                  openAnchorMessageId={openAnchorId()}
                   onOpenHandled={() => setOpenChannelId(null)}
                 />
               </Show>
