@@ -2,6 +2,7 @@ import {
   describeWorkflowDiff,
   diffWorkflowGraphs,
   type Workflow,
+  type WorkflowGraph,
   type WorkflowVersionSummary,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
@@ -31,7 +32,14 @@ function reasonLabel(version: WorkflowVersionSummary): string {
  * a plain sentence about what changed against the current one, and "Restore", which keeps the restored graph as a new version
  * so a restore can be undone by another restore.
  */
-export function WorkflowVersionsPanel(props: { workflowId: string; onRestored?: (workflow: Workflow) => void }) {
+export function WorkflowVersionsPanel(props: {
+  workflowId: string;
+  onRestored?: (workflow: Workflow) => void;
+  /** Called with an older version's graph to draw on the canvas; null closes the preview. */
+  onPreview?: (preview: { number: number; graph: WorkflowGraph } | null) => void;
+  /** The version shown on the canvas now, if any. */
+  previewNumber?: number;
+}) {
   const api = untrack(() => window.openbot?.workflows);
   const [versions, setVersions] = createSignal<WorkflowVersionSummary[]>([]);
   const [changes, setChanges] = createSignal<Record<number, string>>({});
@@ -81,6 +89,21 @@ export function WorkflowVersionsPanel(props: { workflowId: string; onRestored?: 
       off?.();
     };
   });
+
+  async function preview(version: WorkflowVersionSummary) {
+    if (!api || !props.onPreview) return;
+    if (props.previewNumber === version.number) {
+      props.onPreview(null);
+      return;
+    }
+    setError("");
+    try {
+      const found = await api.getVersion({ workflowId: props.workflowId, version: version.number });
+      props.onPreview({ number: version.number, graph: { nodes: found.nodes, edges: found.edges } });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("Could not load the versions."));
+    }
+  }
 
   async function restore(version: WorkflowVersionSummary) {
     if (!api || busy()) return;
@@ -132,6 +155,17 @@ export function WorkflowVersionsPanel(props: { workflowId: string; onRestored?: 
                   <p class="workflow-versions-note">
                     {t("Against the current one")}: {changes()[version.number]}
                   </p>
+                </Show>
+                <Show when={!version.current && props.onPreview}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-pressed={props.previewNumber === version.number ? "true" : "false"}
+                    onClick={() => void preview(version)}
+                  >
+                    {props.previewNumber === version.number ? t("Close preview") : t("Preview on canvas")}
+                  </Button>
                 </Show>
                 <Show when={!version.current}>
                   <Button type="button" size="sm" disabled={busy()} onClick={() => void restore(version)}>

@@ -44,6 +44,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "WorkflowVersionsPanel",
     "ThreadUndoBar",
     "MarketplaceGallery",
+    "WorkflowPreviewCanvas",
     "VaultConnectorsPanel",
     "ScheduleOverview",
     "ManagedCliSection",
