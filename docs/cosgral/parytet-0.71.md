@@ -1,8 +1,8 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4ddcbb5d3` (od `eb9df8800` doszły: autostart, praca w tle, miejsce linków, przywracanie miejsca, presety dostawców, Updates, Voice i motyw na ekranie „Settings”, zmiana nazwy agenta). Poprzednia wersja tabeli: `eb9df8800`, 78,5% kod / 47,2% w oknie / 59,0% ostrożnie (72 funkcje). Teraz tabela ma **77 funkcji** (doszło 5 nowych wierszy: 73–77). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”. **W oknie liczę tylko to, co potwierdził Tester** (ostatnie potwierdzone: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`; odbiór T-AF na `4ddcbb5d3` w toku). Żadna z nowych funkcji nie jest jeszcze potwierdzona w oknie.
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `206fdc9b0` (od `4ddcbb5d3` doszły tylko raporty i poprawki, kod funkcji bez zmian). Poprzednia wersja tabeli: `4ddcbb5d3`, 79,2% kod / 44,2% w oknie / 58,4% ostrożnie (77 funkcji). **Ta wersja przelicza tylko kolumnę „w oknie”** na podstawie odbioru Testera T-AF (e2e 0 FAIL, W5 33/33, zrzuty 17-11-h) i T-AC. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 61 z 77 funkcji = 79,2% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 44,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 58,4%.**
+**Wynik w jednej linii: 61 z 77 funkcji = 79,2% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 51,3%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 59,7%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
@@ -10,8 +10,8 @@ Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4ddcbb5d3` (od `eb9df880
 | Skontraktowane | **~92,9%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | **~92,2%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
 | Ekran w kodzie | **~85,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **44,2%** | 19 wierszy w pełni (tak), 30 częściowo, 28 nie (w tym 5 nowych); liczone z 77 funkcji |
-| Ostrożny parytet | **58,4%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| W oknie sprawdzone | **51,3%** | 21 wierszy w pełni (tak), 37 częściowo, 19 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC i T-AF |
+| Ostrożny parytet | **59,7%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
 Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 61 z 83 = 73,5%.
 
@@ -50,18 +50,18 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
 | 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | tak | tak | tak | część | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran jest tylko dla motywu** (Dark/Light/System na ekranie „Settings”, KK-AC); reszta pól nie ma jeszcze kontrolek ani działania w oknie. Motyw widać na zrzutach T-H (ustawiony skryptem), a sam wybór w oknie nie był oglądany. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
-| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac |
+| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. 17-11-h: nagłówek Voice i uprawnienie mikrofonu widoczne w oknie na ekranie „Settings” (T-AF). Nagrywanie nadal nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac, tester-w12-te |
 | 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
 | 6 | Dok agentów (przypięcie, kolejność, rozmiar, mini-czat) | **jest** | tak | tak | tak | tak | tak | Podstawy w oknie (W3-T3); ustawienia położenia i ekranów jak w 0.71 nie sprawdzone. | kk-w3-acceptance, ipc-dock |
 | 7 | Dynamic Island (stan, nazwa agenta, klik otwiera kartę) | **jest** | tak | tak | tak | tak | tak | Sprawdzone w oknie (W3-T3); haptyka i wybór ekranów poza zakresem. | kk-w3-acceptance, ipc-dock |
 | 8 | Computer Use na Windows (stan, zgoda, Stop) | **częściowo** | tak | tak | tak | część | część | Sterownik i zgody są; ekran ustawień uprawnień jak w 0.71 i sterowanie prawdziwym pulpitem w oknie nie sprawdzone. | ipc-computer-use, computer-driver-windows, kk-w3-acceptance |
 | 9 | Mobile Connect: telefony, parowanie QR/TLS, trasa (ten komputer / sieć lokalna) | **jest** | tak | tak | tak | tak | część | Parowanie na pętli zwrotnej w oknie (W3-T3), bez prawdziwego telefonu; pod kartami strony panel czyta `mobileConnect.getOverview`: trasy (w użyciu, chmura niedostępna z powodem), telefony z PIN-em, blokadą i powiadomieniami, lista niedostępnych. Panel nie oglądany w oknie. | ipc-mobile-connect, mobile-connect.test, kk-w12-vault-voice |
-| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | nie | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). **Do KK-AC panel był nieosiągalny** (to samo okno bez wejścia); od KK-AC jest na ekranie „Settings”. Nie oglądany w oknie. | ipc-instance-transfer, kk-w12-screens, kk-w12-ac |
+| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | część | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). **Do KK-AC panel był nieosiągalny** (to samo okno bez wejścia); od KK-AC jest na ekranie „Settings”. Nie oglądany w oknie. 17-11-h: nagłówek Updates i tor wersji widoczne w oknie na ekranie „Settings” (T-AF). Pobranie i instalacja aktualizacji nie sprawdzone. | ipc-instance-transfer, kk-w12-screens, kk-w12-ac, tester-w12-te |
 | 11 | Onboarding (język, dostawca, pierwszy agent, Computer Use) | **częściowo** | tak | tak | tak | tak | tak | Przepływ w oknie jest, ale inny niż w 0.71 (bez wyboru hosta lokalny/zdalny, bez darmowych modeli). | kk-w3-acceptance |
-| 73 | Autostart z Windowsem („Launch at login”) | **jest** | tak | tak | tak | tak | nie | `behavior.launchAtLogin` zapisuje się i woła `app.setLoginItemSettings` (KAPI, `w12-login`); przełącznik w `AppBehaviorSection` na ekranie „Settings” i w oknie ustawień (KK-AD). W oknie: nie potwierdzone (Tester sprawdza tylko zapis ustawienia; start po restarcie Windows nie sprawdzany). | kapi-w12-login, kk-w12-ac |
-| 74 | Praca w tle: zamknięcie okna chowa program do ikony przy zegarze | **jest** | tak | tak | tak | tak | nie | `behavior.keepBackground` (BE-W): zamknięcie okna chowa program do zasobnika, menu ikony „Otwórz” / „Zakończ”, zadania trwają; zabezpieczenie: bez ikony program kończy się jak dotąd. Przełącznik w `AppBehaviorSection` (KK-AD). Ikona i powrót to prawdziwy Electron: sonda Testera w toku (T-AF). | backend-w12-w, kk-w12-ac |
+| 73 | Autostart z Windowsem („Launch at login”) | **jest** | tak | tak | tak | tak | część | `behavior.launchAtLogin` zapisuje się i woła `app.setLoginItemSettings` (KAPI, `w12-login`); przełącznik w `AppBehaviorSection` na ekranie „Settings” i w oknie ustawień (KK-AD). W oknie: nie potwierdzone (Tester sprawdza tylko zapis ustawienia; start po restarcie Windows nie sprawdzany). T-AF w oknie: przełącznik zapisuje `launchAtLogin` (true → false), a system wrócił do stanu sprzed (autostart nie zmieniony na stałe). Start po restarcie Windows nie sprawdzony. | kapi-w12-login, kk-w12-ac, tester-w12-te |
+| 74 | Praca w tle: zamknięcie okna chowa program do ikony przy zegarze | **jest** | tak | tak | tak | tak | część | `behavior.keepBackground` (BE-W): zamknięcie okna chowa program do zasobnika, menu ikony „Otwórz” / „Zakończ”, zadania trwają; zabezpieczenie: bez ikony program kończy się jak dotąd. Przełącznik w `AppBehaviorSection` (KK-AD). Ikona i powrót to prawdziwy Electron: sonda Testera w toku (T-AF). T-AF w oknie: po zamknięciu okno jest ukryte, proces żyje, `show()` przywraca okno i pasek stron. **Nie sprawdzono** fizycznego kliku w ikonę w obszarze powiadomień (ta sama ścieżka `showMainWindow`). | backend-w12-w, kk-w12-ac, tester-w12-te |
 | 75 | Gdzie otwierają się linki z rozmów (przeglądarka systemowa albo przeglądarka programu) | **jest** | tak | tak | tak | tak | nie | `behavior.externalLinks` (BE-X); wybór w `AppBehaviorSection`, a `Conversation.openMessageLink` otwiera panel przeglądarki programu albo domyślną przeglądarkę (KK-AE). Test w `App.test`; w oknie nie oglądane. | backend-w12-x, kk-w12-ae |
-| 76 | Przywracanie ostatniego miejsca przy starcie (strona, agent, wątek) | **częściowo** | tak | tak | tak | część | nie | `workspace.restore` i `workspace.last` (BE-X); hook `useRestoreWorkspace` otwiera zapamiętaną **stronę i agenta** i zapisuje zmiany po 0,5 s (KK-AE). **Wątek nie jest zapamiętywany** (zapis `threadId: null`; UI-AH to dopisuje). W oknie nie oglądane (sonda restartu u Testera). | backend-w12-x, kk-w12-ae |
+| 76 | Przywracanie ostatniego miejsca przy starcie (strona, agent, wątek) | **częściowo** | tak | tak | tak | część | część | `workspace.restore` i `workspace.last` (BE-X); hook `useRestoreWorkspace` otwiera zapamiętaną **stronę i agenta** i zapisuje zmiany po 0,5 s (KK-AE). **Wątek nie jest zapamiętywany** (zapis `threadId: null`; UI-AH to dopisuje). W oknie nie oglądane (sonda restartu u Testera). T-AF w oknie: włączone → po restarcie wraca Library i Agent B; wyłączone → start od początku. Wątek nie wraca (niezaimplementowany). | backend-w12-x, kk-w12-ae, tester-w12-te |
 
 ### B. Czat, Needs you, wątki
 
@@ -72,11 +72,11 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 14 | Kolejka wiadomości (FIFO, edycja, Steer, wznowienie po awarii) | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
 | 15 | Wyszukiwanie w rozmowie i globalne (Ctrl+F, Ctrl+K) | **jest** | tak | tak | tak | tak | tak | W oknie, także zrzut T-H. | kk-w3-acceptance |
 | 16 | Pole wiadomości: menu +, skille, `/`, `@`, wysiłek modelu, pytanie poboczne | **częściowo** | tak | tak | tak | część | część | Menu + i wysiłek w nagłówku sprawdzone statycznie; `@` i `/` nie złapane na zrzucie. | tester-w12-odbior2, ipc-composer |
-| 17 | Akcje na wiadomościach (kopiuj, przypnij, ponów, wróć do punktu) | **jest** | tak | tak | tak | tak | nie | Silnik i ekran w kodzie, bez odbioru okna (W6). | ipc-message-actions, odbior-w6 |
+| 17 | Akcje na wiadomościach (kopiuj, przypnij, ponów, wróć do punktu) | **jest** | tak | tak | tak | tak | część | Silnik i ekran w kodzie, bez odbioru okna (W6). W oknie: menu wiadomości otwiera się z Copy, Pin, Branch, Retry, Edit, Delete (17-11-h, 09d), a kroki W5 `W12-messageMenu` przeszły (T-AC, T-AF). Pojedyncze akcje (np. Edit z potwierdzeniem) nie oglądane ręcznie. | ipc-message-actions, odbior-w6, tester-w12-te, tester-w12-tac |
 | 18 | Wątki: nowy, lista, archiwum, nazwa, usuń, gałąź | **jest** | tak | tak | tak | tak | nie | Bez odbioru okna W6. | ipc-threads, odbior-w6 |
 | 19 | Zakładki wątków (zamknij inne, obok czatu) | **jest** | tak | tak | tak | tak | część | Chat z wątkami na zrzucie T-H; akcje zakładek nie sprawdzone. | ipc-thread-tabs |
-| 20 | Wstrzymania wątku (limit użycia, restart agenta, serwer zajęty, limit wątków) | **jest** | tak | tak | tak | tak | nie | `heldKind` (budget / agent-restart / server-busy / thread-limit) + `QueueHoldNotice` w czacie; w oknie nie sprawdzone. | ipc-queue-holds, backend-w12-holds |
-| 21 | Cofnij usunięcie wątku, etykieta „zaczął agent” | **jest** | tak | tak | tak | tak | nie | `window.openbot.threadUndo` + `ThreadUndoBar`; w oknie nie sprawdzone. | ipc-thread-undo, backend-w12-undo |
+| 20 | Wstrzymania wątku (limit użycia, restart agenta, serwer zajęty, limit wątków) | **jest** | tak | tak | tak | tak | część | `heldKind` (budget / agent-restart / server-busy / thread-limit) + `QueueHoldNotice` w czacie; w oknie nie sprawdzone. W5 `W12-heldKind`: kroki A1–A2 twarde zielone w oknie (T-AC); pozostałe przypadki tylko testy jednostkowe. | ipc-queue-holds, backend-w12-holds, tester-w12-tac |
+| 21 | Cofnij usunięcie wątku, etykieta „zaczął agent” | **jest** | tak | tak | tak | tak | tak | `window.openbot.threadUndo` + `ThreadUndoBar`; w oknie nie sprawdzone. W oknie: pasek „Cofnij” z odliczaniem (zrzut 22) i kroki W5 `W12-threadUndo` A1–A7 zielone (T-AC, T-AF). | ipc-thread-undo, backend-w12-undo, tester-w12-tac, tester-w12-te |
 | 22 | Kontekst (wskaźnik, kompaktowanie) i plan (karty planu) | **jest** | tak | tak | tak | tak | nie | Bez odbioru okna. | ipc-context, ipc-plan |
 | 23 | Panel boczny czatu (przeglądarka, pliki, ustawienia agenta, głos) | **częściowo** | tak | tak | tak | część | część | Przeglądarka i ustawienia agenta w oknie; panel podagentów jest w kodzie, panel głosu w czacie nie. | kk-w3-acceptance |
 
@@ -103,7 +103,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 35 | Foldery agentów w pasku bocznym | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
 | 36 | Pasek boczny, szyna stron i szyna serwerów | **częściowo** | tak | tak | tak | tak | część | Brak „Więcej”/przypinania stron, serwera zdalnego nie dało się sprawdzić. | kk-w3-acceptance, ui-w4-ui4 |
 | 37 | Uprawnienia, reguły „zawsze zezwalaj”, budżety | **jest** | tak | tak | tak | tak | część | „Zawsze zezwalaj” w oknie; budżety i poziom dostępu bez odbioru okna. | ipc-access, ipc-budgets, ipc-approval-rules |
-| 77 | Zmiana nazwy agenta (ustawienia agenta, menu „Rename”, pole na wierszu paska) | **jest** | tak | tak | tak | tak | nie | Pole „Agent name” w ustawieniach agenta, pozycja „Rename” w menu agenta i edycja na wierszu (UI-AD, UI-AF); nazwa zmienia się na pasku bocznym i w nagłówku (testy `App.test`). W oknie: nie potwierdzone (probe Rename Testera czeka na odbiór T-AF). | ui-w12-ad, ui-w12-af |
+| 77 | Zmiana nazwy agenta (ustawienia agenta, menu „Rename”, pole na wierszu paska) | **jest** | tak | tak | tak | tak | tak | Pole „Agent name” w ustawieniach agenta, pozycja „Rename” w menu agenta i edycja na wierszu (UI-AD, UI-AF); nazwa zmienia się na pasku bocznym i w nagłówku (testy `App.test`). W oknie: nie potwierdzone (probe Rename Testera czeka na odbiór T-AF). T-AF w oknie: probe Rename (menu → pole na wierszu → pasek boczny i nagłówek) OK. | ui-w12-ad, ui-w12-af, tester-w12-te |
 
 ### E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka)
 
@@ -147,7 +147,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 58 | Rutyny kanału | **częściowo** | tak | tak | tak | część | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Luki: bez edycji nazwy, instrukcji i harmonogramu istniejącej rutyny, bez wyboru dni tygodnia, bez webhooka, bez skoku do zadania. Nie oglądane w oknie. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
 | 59 | Przepływy: graf, wyzwalacz, agent, zgoda, wyjście, uruchomienia | **jest** | tak | tak | tak | tak | część | Wyzwalacz + agent w oknie; krok zgody nie. | kk-w3-acceptance, workflow-manager.test |
 | 60 | Edytor przepływów jak 0.71 (paleta węzłów z Prompt i Condition, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | tak | część | nie | Kontrakt, atrapa i silnik mają Prompt i Condition oraz funkcje edytora; stary edytor dostał tylko most (przyciski „Add prompt/condition”), od UI-V (92709aa62) jest nowy edytor w kartach kroków z portami i zakrzywionymi połączeniami; w oknie go nie oglądano, więc cofnij/ponów i plakietki błędów nie sprawdzone. | kk-w12-flows, kk-w12-workflows-marketplace, ui-v |
-| 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | część | nie | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L) oraz panel `WorkflowVersionsPanel` na stronie przepływów (36c3f1e06; nie oglądany w oknie). Katalog GitHub i kredyty mediów: brak. | kk-w12-flows, ui-w12 |
+| 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | część | część | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L) oraz panel `WorkflowVersionsPanel` na stronie przepływów (36c3f1e06; nie oglądany w oknie). Katalog GitHub i kredyty mediów: brak. W oknie: sekcja „Versions” z listą wersji po wyborze przepływu (zrzut 15, T-AC/T-AF); przywracanie i różnice nie oglądane ręcznie. | kk-w12-flows, ui-w12, tester-w12-te |
 
 ### I. Komunikatory
 
@@ -181,7 +181,33 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
-## Zmiany od wersji @ `eb9df8800` (78,5% kod / 47,2% w oknie / 59,0% ostrożnie, 72 funkcje)
+## Zmiany od wersji @ `4ddcbb5d3` (79,2% kod / 44,2% w oknie / 58,4% ostrożnie): dowody z okna
+
+Kod się nie zmienił: **79,2%** (61 z 77), skontraktowane ~92,9%, silnik ~92,2%, ekran ~85,7%. Zmienia się tylko to, co Tester potwierdził w prawdziwym programie.
+
+| Miara | Było | Jest |
+|---|---|---|
+| W oknie sprawdzone | 44,2% (34 z 77) | **51,3%** (39.5 z 77) |
+| Ostrożny parytet | 58,4% | **59,7%** |
+
+Wiersze, w których przybył dowód z okna (kolumna „O”):
+
+| Wiersz | Funkcja | O: było → jest | Dowód |
+|---|---|---|---|
+| 10 | Aktualizacje | nie → część | nagłówek Updates i tor na ekranie „Settings” (17-11-h) |
+| 17 | Akcje na wiadomościach | nie → część | menu z 6 akcjami (09d) i kroki W5 `W12-messageMenu` |
+| 20 | Wstrzymania wątku | nie → część | W5 `W12-heldKind` A1–A2 |
+| 21 | Cofnij usunięcie wątku | nie → tak | pasek „Cofnij” (zrzut 22) i W5 `W12-threadUndo` A1–A7 |
+| 61 | Przepływy: wersje | nie → część | sekcja „Versions” (zrzut 15) |
+| 73 | Autostart | nie → część | zapis `launchAtLogin` w oknie (autostart po restarcie Windows nie sprawdzony) |
+| 74 | Praca w tle | nie → część | zamknięcie ukrywa okno, proces żyje, `show()` przywraca (kliku w ikonę przy zegarze nie sprawdzono) |
+| 76 | Przywracanie miejsca | nie → część | restart: wraca Library i Agent B; wyłączone: od początku (wątek nie wraca) |
+| 77 | Zmiana nazwy agenta | nie → tak | probe Rename: menu → pole → pasek boczny i nagłówek |
+| 4 | Głos | część → część | nagłówek Voice i mikrofon widoczne; nagrywanie nie sprawdzone |
+
+Bez dowodu z okna (nadal „nie”): wiersz 75 (miejsce linków; Tester go nie sprawdzał) oraz nowe elementy po `4ddcbb5d3` (wątek w „Restore”, menu „+” z UI-AH, czyszczenie historii kanału, okno historii).
+
+## Poprzednie zmiany: od wersji @ `eb9df8800` (78,5% kod / 47,2% w oknie / 59,0% ostrożnie, 72 funkcje)
 
 | Miara | Było (72) | Jest (77) | Dlaczego |
 |---|---|---|---|
