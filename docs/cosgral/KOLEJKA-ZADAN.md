@@ -22,10 +22,11 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
 
 ## Backend Expert
-1. `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
-2. Kolejne luki z `luki-silnika-071.md`, najbardziej widoczne dla człowieka.
-3. Diagnoza każdego `^FAIL` z e2e i kroków W5, z logiem.
-4. Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
+1. [zrobione: 41e810e1b] `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
+2. [zrobione: 971d371ea — skrót wysyłania i kroki agenta działają w oknie; reszta w pozycji 5] Kolejne luki z `luki-silnika-071.md`, najbardziej widoczne dla człowieka.
+3. [zrobione: T-AF, e2e 0 FAIL, W5 33/33; każdy kolejny ^FAIL biorę z raportu Testera] Diagnoza każdego `^FAIL` z e2e i kroków W5, z logiem.
+4. [zrobione: 53002be2b] Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
+5. `appearance.unreadFirst`: kolejność nieprzeczytanych w pasku bocznym (dziś ustawienie zapisuje się, ale nic nie robi); sortowanie siedzi w układzie paska z folderami i ręczną kolejnością.
 
 ## KAPI
 1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
