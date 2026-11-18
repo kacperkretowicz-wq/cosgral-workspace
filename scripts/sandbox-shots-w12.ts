@@ -32,6 +32,30 @@ async function visibleChecklist(checks: Array<{ id: string; find: () => Locator 
   return parts.join(" ");
 }
 
+/**
+ * KK T-AJ: Settings sections (Updates/Voice) must be *in the window*, not only in the DOM.
+ * Off-screen or zero-size → FAIL in the note (not OK). Shot height for W12 is 900.
+ */
+async function inWindowChecklist(checks: Array<{ id: string; find: () => Locator }>): Promise<string> {
+  const parts: string[] = [];
+  for (const check of checks) {
+    try {
+      const loc = check.find().first();
+      if ((await loc.count()) === 0) {
+        parts.push(`MISS:${check.id}`);
+        continue;
+      }
+      const box = await loc.boundingBox();
+      const inWindow =
+        !!box && box.width > 8 && box.height > 8 && box.y + box.height > 0 && box.y < 900 && box.x + box.width > 0;
+      parts.push(inWindow ? `OK:${check.id}` : `FAIL:${check.id}:offscreen`);
+    } catch {
+      parts.push(`MISS:${check.id}`);
+    }
+  }
+  return parts.join(" ");
+}
+
 function sandboxRoot(): string {
   const root = process.env.COSGRAL_SANDBOX_ROOT ? resolve(process.env.COSGRAL_SANDBOX_ROOT) : "";
   assert(root, "COSGRAL_SANDBOX_ROOT must point to a sandbox folder");
@@ -1035,20 +1059,29 @@ async function main(): Promise<void> {
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
       await p.waitForTimeout(400);
-      const checklist = await visibleChecklist([
+      // Prefer heading in the Updates section only — bare getByText matched Workflows/Versions (false OK).
+      const checklist = await inWindowChecklist([
         {
           id: "heading",
           find: () =>
             p
               .locator("#settings-updates")
-              .or(p.getByRole("heading", { name: /Updates|Aktualizacje/i }))
-              .or(dialog.locator(".settings-modal-title").filter({ hasText: /Updates|Aktualizacje/i }))
-              .or(p.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
+              .or(p.getByRole("heading", { name: /^Updates$|^Aktualizacje$/i }))
+              .or(dialog.locator(".settings-modal-title").filter({ hasText: /^Updates$|^Aktualizacje$/i })),
         },
         {
           id: "track",
           find: () =>
-            p.getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i),
+            p
+              .locator("#settings-updates")
+              .getByText(
+                /Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|Check for updates|Sprawdź aktualizacje/i,
+              )
+              .or(
+                dialog
+                  .locator("#settings-updates, .settings-panel")
+                  .getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja/i),
+              ),
         },
       ]);
       return `Aktualizacje KK (Settings page → Updates) + checklist [${checklist}]`;
@@ -1114,22 +1147,30 @@ async function main(): Promise<void> {
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
       await p.waitForTimeout(400);
-      const checklist = await visibleChecklist([
+      // Scope to Voice section — bare getByText hit MCP/Server settings (false OK in T-AJ).
+      const checklist = await inWindowChecklist([
         {
           id: "voice",
           find: () =>
             p
               .locator("#settings-voice, #settings-voice-microphone")
-              .or(p.getByRole("heading", { name: /Voice|Głos|Microphone|Mikrofon/i }))
-              .or(dialog.locator(".settings-modal-title").filter({ hasText: /Voice|Głos/i }))
+              .or(p.getByRole("heading", { name: /^Voice$|^Głos$|^Microphone$|^Mikrofon$/i }))
+              .or(dialog.locator(".settings-modal-title").filter({ hasText: /^Voice$|^Głos$/i }))
               .or(p.locator(".voice-overview")),
         },
         {
           id: "mic",
           find: () =>
-            p.getByText(
-              /Microphone permission|Uprawnienie do mikrofonu|Not available in this version|Niedostępne w tej wersji|unavailable|niedostępne/i,
-            ),
+            p
+              .locator("#settings-voice, #settings-voice-microphone, .voice-overview")
+              .getByText(
+                /Microphone permission|Uprawnienie do mikrofonu|Not available in this version|Niedostępne w tej wersji/i,
+              )
+              .or(
+                dialog
+                  .locator("#settings-voice, #settings-voice-microphone, .voice-overview")
+                  .getByText(/Microphone permission|Uprawnienie do mikrofonu|Not available|Niedostępne/i),
+              ),
         },
       ]);
       return `Głos KK (Settings page → Voice) + checklist [${checklist}]`;

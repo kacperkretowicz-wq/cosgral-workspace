@@ -726,7 +726,9 @@ async function main(): Promise<void> {
         const measure = asRecord(
           await page.evaluate(`(() => {
             const rail = document.querySelector('[role="navigation"][aria-label="Pages"]');
-            const more = document.querySelector('[aria-label^="More pages"]');
+            const more = document.querySelector(
+              '[aria-label="More"], [aria-label^="More ("], [aria-label^="More pages"]',
+            );
             const buttons = rail ? rail.querySelectorAll("button").length : 0;
             return {
               innerHeight,
@@ -740,9 +742,11 @@ async function main(): Promise<void> {
           `     overflow measure: inner=${measure.innerHeight} rail=${measure.railHeight} buttons=${measure.pageButtons} more=${measure.hasMore}`,
         );
         await dump(page, evidence, "navigation-overflow-short");
-        await page.getByRole("button", { name: /^More pages/ }).click({ timeout: 10_000 });
+        // Rail overflow was renamed from "More pages" to "More" (PageRail).
+        const pagesRail = page.getByRole("navigation", { name: "Pages" });
+        await pagesRail.getByRole("button", { name: /^More( |$|\()/ }).click({ timeout: 10_000 });
         await page
-          .getByRole("menu", { name: "More pages" })
+          .getByRole("menu", { name: /^More$/ })
           .getByRole("menuitem", { name: "Library", exact: true })
           .click();
         await page.getByRole("heading", { name: "Library", exact: true }).waitFor();
@@ -1082,8 +1086,8 @@ async function main(): Promise<void> {
         const direct = rail.getByRole("button", { name, exact: true });
         if (await direct.count()) await direct.click();
         else {
-          await rail.getByRole("button", { name: /^More pages/ }).click();
-          await page.getByRole("menu", { name: "More pages" }).getByRole("menuitem", { name, exact: true }).click();
+          await rail.getByRole("button", { name: /^More( |$|\()/ }).click();
+          await page.getByRole("menu", { name: /^More$/ }).getByRole("menuitem", { name, exact: true }).click();
         }
         await page.waitForTimeout(2_000);
         const label = `page-${String(index + 1).padStart(2, "0")}-${name.toLowerCase().replace(/\s+/g, "-")}`;
