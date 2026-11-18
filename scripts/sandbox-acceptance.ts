@@ -152,6 +152,9 @@ async function launch(
       ...sandboxEnvironment(root),
       OPENBOT_CODEX_PATH: fixture.codex,
       OPENBOT_CLAUDE_PATH: fixture.claude,
+      // Match e2e/shots: Chromium + app i18n stay English even on Polish Windows.
+      LANG: "en-US",
+      LC_ALL: "en-US",
     },
     timeout: 90_000,
   });
@@ -2495,12 +2498,18 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         await where.getByRole("button", { name: /Use this computer/ }).click();
         const setup = page.getByRole("dialog", { name: "Set up this computer" });
         await setup.waitFor({ timeout: 30_000 });
+        await setup
+          .getByRole("combobox", { name: "Language" })
+          .selectOption({ label: "English" })
+          .catch(() => undefined);
         await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
         await setup.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 120_000 });
         await page
           .getByRole("button", { name: /^Assistant, / })
           .first()
           .waitFor({ timeout: 60_000 });
+        // Seed language=en so Providers account labels match EN locators (not OS Polish).
+        await d.ev(`window.openbot.appSettings.update({ language: "en" })`);
         await d.openAgent("Assistant");
         await page
           .getByRole("button", { name: "Onboarding model: Luna" })
@@ -2532,13 +2541,14 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       "accounts: two accounts of one provider side by side, each with its own state folder, added and signed in on the page",
       async () => {
         await d.openPage("Providers");
-        const codex = page.locator('section[aria-label="Konta codex"]');
+        // Default W5 run is EN (--lang=en-US + language=en). PL labels are a separate pass, not mixed here.
+        const codex = page.locator('section[aria-label="Accounts for codex"]');
         for (const label of ["Work", "Home"]) {
-          const field = page.getByRole("textbox", { name: "Etykieta konta Codex" });
+          const field = page.getByRole("textbox", { name: "Account label for Codex" });
           await field.fill(label);
           await field
             .locator("xpath=ancestor::*[contains(@class,'provider-account-card')][1]")
-            .getByRole("button", { name: "Dodaj konto" })
+            .getByRole("button", { name: "Add account" })
             .click();
           await waitUntil(
             page,
@@ -2546,7 +2556,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
             async () => (await accountList()).some((item) => item.label === label),
             20_000,
           );
-          await codex.getByRole("group", { name: label, exact: true }).getByRole("button", { name: "Zaloguj" }).click();
+          await codex.getByRole("group", { name: label, exact: true }).getByRole("button", { name: "Sign in" }).click();
           await waitUntil(page, `${label} signed in`, async () => (await account(label)).loggedIn === true, 30_000);
         }
         const work = await account("Work");
@@ -2586,9 +2596,10 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       now = await defaults();
       assert(now.length === 1 && now[0]?.system === true, "the system account is the only default again");
       await d.openPage("Providers");
-      const badges = (await page.locator('section[aria-label="Konta codex"]').innerText()).match(/Domyślne/g) ?? [];
-      assert(badges.length === 1, `the page shows one Domyślne (${badges.length})`);
-      return "default moved Work > system, one default each time, the page shows one 'Domyślne'";
+      const badges =
+        (await page.locator('section[aria-label="Accounts for codex"]').innerText()).match(/\bDefault\b/g) ?? [];
+      assert(badges.length === 1, `the page shows one Default (${badges.length})`);
+      return "default moved Work > system, one default each time, the page shows one 'Default'";
     });
 
     await row(
@@ -2599,7 +2610,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         assert(settings.maxAccountsPerProvider === 3, `default limit ${String(settings.maxAccountsPerProvider)}`);
         await d.openPage("Providers");
         assert(
-          /Osiągnięto maksymalną liczbę kont/.test(await page.locator('section[aria-label="Konta codex"]').innerText()),
+          /Maximum number of accounts reached/.test(
+            await page.locator('section[aria-label="Accounts for codex"]').innerText(),
+          ),
           "the page says the pool is full",
         );
         const refused = String(
@@ -2617,7 +2630,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
           "four after raising the limit",
         );
         await d.dump("w5-p05-limit");
-        return `default 3; the page says 'Osiągnięto maksymalną liczbę kont'; a fourth account refused ("${refused.slice(0, 70)}"); with 4 it is added (kept as 'Extra' for the key steps)`;
+        return `default 3; the page says 'Maximum number of accounts reached'; a fourth account refused ("${refused.slice(0, 70)}"); with 4 it is added (kept as 'Extra' for the key steps)`;
       },
     );
 
@@ -2842,7 +2855,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
       );
       await d.openPage("Providers");
       assert(
-        /Use only your own accounts/.test(await page.locator('section[aria-label="Konta"]').innerText()),
+        /Use only your own accounts/.test(await page.locator('section[aria-label="Accounts"]').innerText()),
         "the warning is on the page",
       );
       const snapshot = JSON.stringify(await d.ev("window.openbot.subscriptions.listAccounts()"));

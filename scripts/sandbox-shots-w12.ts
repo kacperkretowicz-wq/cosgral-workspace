@@ -542,6 +542,7 @@ async function main(): Promise<void> {
       pageRef.page = await mainShellPage(app, pageRef.page);
       pageRef.main = pageRef.page;
       await pageRef.page.setViewportSize({ width: 1440, height: 900 });
+      await setLanguage(pageRef.page, "en");
       await pageRef.page.waitForTimeout(1000);
       const seeded = await seedShotsData(pageRef.page);
       console.log(`seed ipc: ${seeded.notes.join("; ")}`);
