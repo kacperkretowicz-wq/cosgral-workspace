@@ -48,6 +48,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "ThreadUndoBar",
     "MarketplaceGallery",
     "WorkflowPreviewCanvas",
+    "WorkflowsPage",
+    "MarketplacePage",
     "VaultConnectorsPanel",
     "ScheduleOverview",
     "ManagedCliSection",
