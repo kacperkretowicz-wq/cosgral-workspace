@@ -122,3 +122,62 @@ describe("mock threads (W6-BE1)", () => {
     ).toBe(0);
   });
 });
+
+describe("mock delete with undo (W12 BE-K)", () => {
+  function undoSetup() {
+    let now = new Date("2026-11-17T01:00:00.000Z");
+    const events: AgentEvent[] = [];
+    const api = createMockThreads((event) => events.push(event), {}, { clock: () => now });
+    return {
+      api,
+      events,
+      advance: (minutes: number) => {
+        now = new Date(now.getTime() + minutes * 60_000);
+      },
+    };
+  }
+
+  it("hides the thread, keeps it for ten minutes, and brings it back as the active one", async () => {
+    const { api, events } = undoSetup();
+    const first = (await api.list({ botId: "chief" })).activeThreadId ?? "";
+    await api.rename({ botId: "chief", threadId: first, title: "Plan" });
+    await api.create({ botId: "chief", title: "Other" });
+    await api.select({ botId: "chief", threadId: first });
+    const result = await api.undo.delete({ botId: "chief", threadId: first, confirm: true });
+    expect(result.list.threads.map((thread) => thread.title)).toEqual(["Other"]);
+    expect(result.pending).toMatchObject({
+      threadId: first,
+      title: "Plan",
+      wasActive: true,
+      expiresAt: "2026-11-17T01:10:00.000Z",
+    });
+    expect(events.at(-1)).toMatchObject({ type: "thread-deletes-changed", botId: "chief" });
+    expect(await api.undo.list({ botId: "chief" })).toHaveLength(1);
+    const back = await api.undo.undo({ botId: "chief", threadId: first });
+    expect(back.threads.map((thread) => thread.title).sort()).toEqual(["Other", "Plan"]);
+    expect(back.activeThreadId).toBe(first);
+    expect(await api.undo.list({ botId: "chief" })).toEqual([]);
+  });
+
+  it("refuses an undo after the time ran out, and without confirmation", async () => {
+    const { api, advance } = undoSetup();
+    const id = (await api.list({ botId: "chief" })).activeThreadId ?? "";
+    await expect(
+      api.undo.delete(JSON.parse(JSON.stringify({ botId: "chief", threadId: id, confirm: false }))),
+    ).rejects.toThrow("confirmation");
+    await api.undo.delete({ botId: "chief", threadId: id, confirm: true });
+    advance(11);
+    await expect(api.undo.undo({ botId: "chief", threadId: id })).rejects.toThrow("time to undo has passed");
+    expect(await api.undo.list({ botId: "chief" })).toEqual([]);
+    await expect(api.undo.undo({ botId: "chief", threadId: "nothing" })).rejects.toThrow("nothing to undo");
+  });
+
+  it("lets delete-now remove a thread that waits in the window for good", async () => {
+    const { api } = undoSetup();
+    const id = (await api.list({ botId: "chief" })).activeThreadId ?? "";
+    await api.undo.delete({ botId: "chief", threadId: id, confirm: true });
+    await api.delete({ botId: "chief", threadId: id, confirm: true });
+    expect(await api.undo.list({ botId: "chief" })).toEqual([]);
+    await expect(api.undo.undo({ botId: "chief", threadId: id })).rejects.toThrow("nothing to undo");
+  });
+});

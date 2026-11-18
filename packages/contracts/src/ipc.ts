@@ -55,6 +55,7 @@ export * from "./ipc-tables";
 export * from "./ipc-tasks-view";
 export * from "./ipc-team-host";
 export * from "./ipc-thread-tabs";
+export * from "./ipc-thread-undo";
 export * from "./ipc-threads";
 export * from "./ipc-vault";
 export * from "./ipc-vault-connectors";

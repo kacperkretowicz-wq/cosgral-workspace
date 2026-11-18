@@ -231,6 +231,7 @@ import type {
   UpdateTeamMemberInput,
 } from "./ipc-team-host";
 import type { ThreadTabsDesktopApi } from "./ipc-thread-tabs";
+import type { ThreadUndoDesktopApi } from "./ipc-thread-undo";
 import type { ThreadsDesktopApi } from "./ipc-threads";
 import type {
   DeleteVaultItemInput,
@@ -691,6 +692,8 @@ export interface OpenBotDesktopApi {
   subscriptions?: SubscriptionsDesktopApi;
   /** COSGRAL W6-BE1: several threads per agent (this computer only). Optional until every mock implements it. */
   threads?: ThreadsDesktopApi;
+  /** COSGRAL W12 (BE-K): delete a thread with a few minutes to bring it back. */
+  threadUndo?: ThreadUndoDesktopApi;
   /** COSGRAL W6-BE3: the plan card (this computer only). Optional until every mock implements it. */
   plans?: PlansDesktopApi;
   /** COSGRAL W6-BE4: the subagents of a thread, and Stop (this computer only). Optional until every mock implements it. */

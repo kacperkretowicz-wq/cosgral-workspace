@@ -7,16 +7,23 @@ import {
   branchThreadTitle,
   type CreateThreadInput,
   NEW_THREAD_TITLE,
+  newPendingThreadDelete,
   nextActiveThreadId,
   normalizeThreadTitle,
+  type PendingThreadDelete,
+  pendingDeleteExpired,
   THREAD_LIMITS,
   type ThreadList,
   type ThreadSummary,
   type ThreadsDesktopApi,
+  type ThreadUndoDesktopApi,
   threadTitleProblem,
+  undoDeleteProblem,
 } from "@openbot/contracts/ipc";
 
 export interface MockThreads extends Required<ThreadsDesktopApi> {
+  /** COSGRAL W12 (BE-K): delete with undo (`window.openbot.threadUndo`); `delete` above stays "for good, now". */
+  undo: Required<ThreadUndoDesktopApi>;
   /** Changes what a thread shows (state of a running turn, unread, queue, open cards) and says so like the program. */
   simulate: (
     botId: string,
@@ -28,6 +35,7 @@ export interface MockThreads extends Required<ThreadsDesktopApi> {
 export function createMockThreads(
   emit: (event: AgentEvent) => void,
   seed: Record<string, ThreadSummary[]> = {},
+  options: { clock?: () => Date } = {},
 ): MockThreads {
   const byBot = new Map<string, ThreadSummary[]>(
     Object.entries(seed).map(([botId, threads]) => [botId, structuredClone(threads)]),
@@ -111,6 +119,78 @@ export function createMockThreads(
     threads.push(fresh);
   };
 
+  // --- COSGRAL W12 (BE-K): delete with undo ---
+  const undoClock = options.clock ?? (() => new Date());
+  const pendingByBot = new Map<string, { pending: PendingThreadDelete; thread: ThreadSummary }[]>();
+  const livePending = (botId: string) => {
+    const keep = (pendingByBot.get(botId) ?? []).filter((entry) => !pendingDeleteExpired(entry.pending, undoClock()));
+    pendingByBot.set(botId, keep);
+    return keep;
+  };
+  const announcePending = (botId: string) =>
+    emit({
+      type: "thread-deletes-changed",
+      botId,
+      pending: livePending(botId)
+        .map((entry) => structuredClone(entry.pending))
+        .reverse(),
+    });
+  /** Takes the thread out of the list; when it was the active one the newest other open thread (or a new empty one) becomes active. */
+  const takeOut = (botId: string, threadId: string, clearLinks: boolean): ThreadSummary => {
+    const thread = find(botId, threadId);
+    byBot.set(
+      botId,
+      threadsOf(botId).filter((item) => item.id !== threadId),
+    );
+    // A branch keeps the name of its parent but loses the link (only when the thread is gone for good).
+    if (clearLinks)
+      for (const item of threadsOf(botId)) if (item.parentThreadId === threadId) item.parentThreadId = null;
+    if (thread.active) {
+      const rest = threadsOf(botId);
+      const next = rest.find((item) => item.id === nextActiveThreadId(rest, threadId));
+      if (next) activate(botId, next);
+      else rest.push(make(botId, { active: true }));
+    }
+    return thread;
+  };
+
+  const undo: Required<ThreadUndoDesktopApi> = {
+    delete: async ({ botId, threadId, confirm }) => {
+      if (confirm !== true) throw new Error("Deleting a thread for good needs confirmation.");
+      const thread = takeOut(botId, threadId, false);
+      const pending = newPendingThreadDelete(
+        { botId, threadId, title: thread.title, wasActive: thread.active },
+        undoClock(),
+      );
+      pendingByBot.set(botId, [...livePending(botId), { pending, thread }]);
+      const list = changed(botId);
+      announcePending(botId);
+      return { list, pending: structuredClone(pending) };
+    },
+    undo: async ({ botId, threadId }) => {
+      const entry = livePending(botId).find((item) => item.pending.threadId === threadId) ?? null;
+      const problem = undoDeleteProblem(
+        entry?.pending ?? null,
+        undoClock(),
+        threadsOf(botId).length < THREAD_LIMITS.threadsPerAgent,
+      );
+      if (problem || !entry) throw new Error(problem ?? "There is nothing to undo for this thread.");
+      pendingByBot.set(
+        botId,
+        livePending(botId).filter((item) => item !== entry),
+      );
+      threadsOf(botId).push(entry.thread);
+      if (entry.pending.wasActive) activate(botId, entry.thread);
+      const list = changed(botId);
+      announcePending(botId);
+      return list;
+    },
+    list: async ({ botId }) =>
+      livePending(botId)
+        .map((entry) => structuredClone(entry.pending))
+        .reverse(),
+  };
+
   const create = (input: CreateThreadInput) => {
     const problem = threadTitleProblem(input.title ?? "");
     if (problem) throw new Error(problem);
@@ -158,22 +238,21 @@ export function createMockThreads(
       }
       return changed(botId);
     },
+    undo,
     delete: async ({ botId, threadId, confirm }) => {
       if (confirm !== true) throw new Error("Deleting a thread for good needs confirmation.");
-      const thread = find(botId, threadId);
-      const wasActive = thread.active;
-      byBot.set(
-        botId,
-        threadsOf(botId).filter((item) => item.id !== threadId),
-      );
-      // A branch keeps the name of its parent but loses the link.
-      for (const item of threadsOf(botId)) if (item.parentThreadId === threadId) item.parentThreadId = null;
-      if (wasActive) {
-        const rest = threadsOf(botId);
-        const next = rest.find((item) => item.id === nextActiveThreadId(rest, threadId));
-        if (next) activate(botId, next);
-        else rest.push(make(botId, { active: true }));
+      // "Delete now" also works on a thread that is waiting in the undo window.
+      const waiting = livePending(botId).find((entry) => entry.pending.threadId === threadId);
+      if (waiting) {
+        pendingByBot.set(
+          botId,
+          livePending(botId).filter((entry) => entry !== waiting),
+        );
+        for (const item of threadsOf(botId)) if (item.parentThreadId === threadId) item.parentThreadId = null;
+        announcePending(botId);
+        return answer(botId);
       }
+      takeOut(botId, threadId, true);
       return changed(botId);
     },
     select: async ({ botId, threadId }) => {

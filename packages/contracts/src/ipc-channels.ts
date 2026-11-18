@@ -363,6 +363,10 @@ export const IPC_CHANNELS = {
   // COSGRAL W12 (BE-J): the Tasks view: the tasks of all channels, and one task with its result, steps and log.
   tasksViewList: "tasks-view:list",
   tasksViewDetail: "tasks-view:detail",
+  // COSGRAL W12 (BE-K): undo of deleting a thread.
+  threadUndoDelete: "thread-undo:delete",
+  threadUndoUndo: "thread-undo:undo",
+  threadUndoList: "thread-undo:list",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",
