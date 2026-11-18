@@ -2113,6 +2113,7 @@ export function App() {
                 }}
                 onCreateBot={openNewAgent}
                 onEditBot={editBot}
+                onRenameBot={(botId, name) => updateBot(botId, { name })}
                 onDeleteBot={deleteBot}
                 onRefreshUsage={refreshAccountUsage}
                 onUpdateAction={runUpdateAction}

@@ -91,6 +91,8 @@ interface SidebarProps {
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
   onEditBot: (botId: string, focus?: "name") => void;
+  /** Inline rename on the sidebar row (UI-AF); settings Rename path stays via onEditBot(..., "name") if needed. */
+  onRenameBot?: (botId: string, name: string) => Promise<void>;
   onDeleteBot: (botId: string) => Promise<void>;
   onRefreshUsage: () => Promise<AccountUsage>;
   onUpdateAction: () => Promise<void>;
@@ -293,6 +295,25 @@ export function Sidebar(props: SidebarProps) {
   const [deleteTargetId, setDeleteTargetId] = createSignal<string | null>(null);
   const [deleting, setDeleting] = createSignal(false);
   const [deleteError, setDeleteError] = createSignal<string | null>(null);
+  const [renamingBotId, setRenamingBotId] = createSignal<string | null>(null);
+  const [renameDraft, setRenameDraft] = createSignal("");
+
+  function bindRenameInput(element: HTMLInputElement) {
+    queueMicrotask(() => {
+      element.focus();
+      element.select();
+    });
+  }
+
+  async function commitInlineRename(botId: string) {
+    if (renamingBotId() !== botId) return;
+    const name = renameDraft().trim();
+    const current = props.bots.find((bot) => bot.id === botId)?.name ?? "";
+    const rename = props.onRenameBot;
+    setRenamingBotId(null);
+    if (!name || name === current || !rename) return;
+    await agentAction(() => rename(botId, name));
+  }
   const [fadeAtTop, setFadeAtTop] = createSignal(false);
   const [fadeAtBottom, setFadeAtBottom] = createSignal(false);
   const [accountMenuOpen, setAccountMenuOpen] = createSignal(false);
@@ -903,8 +924,30 @@ export function Sidebar(props: SidebarProps) {
                           <FallbackModelBadge bot={bot} models={props.modelOptions} />
                           <span class="bot-row-heading">
                             <span class="bot-row-title">
-                              <strong>{bot.name}</strong>
-                              <Show when={role()}>
+                              <Show when={renamingBotId() === bot.id} fallback={<strong>{bot.name}</strong>}>
+                                <Input
+                                  ref={bindRenameInput}
+                                  class="bot-row-rename-input"
+                                  size="sm"
+                                  aria-label={t("Agent name")}
+                                  value={renameDraft()}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onInput={(event) => setRenameDraft(event.currentTarget.value)}
+                                  onKeyDown={(event) => {
+                                    event.stopPropagation();
+                                    if (event.key === "Enter") {
+                                      event.preventDefault();
+                                      void commitInlineRename(bot.id);
+                                    } else if (event.key === "Escape") {
+                                      event.preventDefault();
+                                      setRenamingBotId(null);
+                                    }
+                                  }}
+                                  onBlur={() => void commitInlineRename(bot.id)}
+                                />
+                              </Show>
+                              <Show when={renamingBotId() !== bot.id && role()}>
                                 {(label) => (
                                   <Badge class="bot-role-badge" size="sm" title={label()}>
                                     {label()}
@@ -957,7 +1000,12 @@ export function Sidebar(props: SidebarProps) {
                           <ContextMenu.Item
                             onSelect={() => {
                               setDeleteError(null);
-                              props.onEditBot(bot.id, "name");
+                              if (props.onRenameBot) {
+                                setRenamingBotId(bot.id);
+                                setRenameDraft(bot.name);
+                              } else {
+                                props.onEditBot(bot.id, "name");
+                              }
                             }}
                           >
                             <EditIcon />

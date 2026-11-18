@@ -96,6 +96,9 @@ export function VoiceOverviewPanel() {
 
   return (
     <div class="voice-overview">
+      <Heading id="settings-voice" as="h2" size="md">
+        {t("Voice")}
+      </Heading>
       <Show when={api}>
         <section class="settings-modal-group" aria-labelledby="settings-voice-microphone">
           <Heading id="settings-voice-microphone" as="h3" size="sm" tone="secondary">
