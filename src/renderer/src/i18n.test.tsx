@@ -14,7 +14,10 @@ afterEach(() => {
 });
 
 it("has complete, nonempty PL and EN catalogs", () => {
-  expect(Object.keys(pl).sort()).toEqual(Object.keys(en).sort());
+  const english = Object.keys(en).sort();
+  const polish = Object.keys(pl).sort();
+  expect(polish).toEqual(english);
+  expect(english.length).toBeGreaterThanOrEqual(1500);
   for (const value of [...Object.values(pl), ...Object.values(en)]) expect(value.trim()).not.toBe("");
 });
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
