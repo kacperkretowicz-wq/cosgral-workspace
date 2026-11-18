@@ -9,7 +9,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { LoadingPlaceholder } from "./LoadingPlaceholder";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Switch } from "./ui";
 
 function formatBytes(bytes: number): string {
@@ -236,7 +236,7 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<LoadingPlaceholder />}>
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
           <Show when={props.mode === "import"}>
             <ul class="vault-connector-list import-cards">
               <For each={sources()}>
