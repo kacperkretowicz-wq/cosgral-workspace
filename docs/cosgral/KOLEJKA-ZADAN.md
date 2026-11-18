@@ -46,6 +46,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 4. [zrobione: 401bafe8f] Luki ROBIĆ (wiersz 2 wygląd: appearanceDomTokens + startAppearance) z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
 5. [zrobione: a023a2b88] Sztywne EN poza Conversation: ContextIndicator, nazwy kart, błędy, `aria-label`; skan `i18n.test`.
 6. [zrobione: fee1b34c4] Odświeżenie `i18n-inwentarz.md` i test kompletności (klucze PL/EN równe).
+8. [w toku: KAPI, 21:16] Pełne `t()` nagłówków i opisów Access / Isolation / Browser / Budget (luka po KAPI-P).
 7. Po `GO-kapi-dist.txt`: `dist:win` po większym scaleniu i pomiar (rozmiar, SHA-256).
 
 ## Tester
