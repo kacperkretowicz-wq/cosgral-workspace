@@ -367,6 +367,13 @@ export const IPC_CHANNELS = {
   threadUndoDelete: "thread-undo:delete",
   threadUndoUndo: "thread-undo:undo",
   threadUndoList: "thread-undo:list",
+  // COSGRAL W12 (BE-R): routines of a channel.
+  channelRoutinesList: "channel-routines:list",
+  channelRoutinesCreate: "channel-routines:create",
+  channelRoutinesUpdate: "channel-routines:update",
+  channelRoutinesDelete: "channel-routines:delete",
+  channelRoutinesRunNow: "channel-routines:run-now",
+  channelRoutinesListRuns: "channel-routines:list-runs",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

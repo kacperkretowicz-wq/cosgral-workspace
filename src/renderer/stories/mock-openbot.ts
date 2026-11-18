@@ -122,6 +122,7 @@ import { createMockServerSettings } from "./mock-server-settings";
 import { createMockSidebar } from "./mock-sidebar";
 import { createMockSpaces } from "./mock-spaces";
 import { createMockSubagents } from "./mock-subagents";
+import { createMockChannelRoutines } from "./mock-channel-routines";
 import { createMockTasksView } from "./mock-tasks-view";
 import { createMockThreads } from "./mock-threads";
 import { createMockVaultConnectors } from "./mock-vault-connectors";
@@ -1461,6 +1462,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       messages: () => mockMessages,
       agentName: (botId) => bots.find((bot) => bot.id === botId)?.name ?? null,
     }),
+    // COSGRAL W12 (BE-R): routines of a channel over the same channels as `channels` above (demo; `tick` is for stories that build the mock).
+    channelRoutines: createMockChannelRoutines({ channels: () => mockChannels, emit: (event) => emitAgentEvent(event) }),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).
