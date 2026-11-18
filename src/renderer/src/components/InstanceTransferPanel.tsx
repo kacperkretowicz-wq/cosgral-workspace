@@ -9,7 +9,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { Badge, Button } from "./ui";
+import { Badge, Button, Switch } from "./ui";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -149,15 +149,16 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
               <For each={staged().agents}>
                 {(agent) => (
                   <li>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={importKeys().has(agent.key)}
-                        onChange={() => setImportKeys(toggle(importKeys(), agent.key))}
-                      />{" "}
-                      <strong>{agent.name}</strong>
-                      <Show when={agent.title}> · {agent.title}</Show>
-                    </label>
+                    <Switch
+                      checked={importKeys().has(agent.key)}
+                      onChange={() => setImportKeys(toggle(importKeys(), agent.key))}
+                      label={
+                        <>
+                          <strong>{agent.name}</strong>
+                          <Show when={agent.title}> · {agent.title}</Show>
+                        </>
+                      }
+                    />
                     <small>
                       {t("{skills} skills, {memories} memories, {routines} routines", {
                         skills: agent.skillNames.length,
@@ -174,14 +175,11 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
               </For>
             </ul>
             <Show when={staged().hasSettings}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={importSettings()}
-                  onChange={(event) => setImportSettings(event.currentTarget.checked)}
-                />{" "}
-                {t("Also import the server settings")}
-              </label>
+              <Switch
+                checked={importSettings()}
+                onChange={setImportSettings}
+                label={t("Also import the server settings")}
+              />
             </Show>
             <For each={staged().warnings}>{(warning) => <p class="server-settings-note">{t(warning)}</p>}</For>
             <div class="vault-connector-actions">
@@ -287,15 +285,16 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
                       <For each={info().agents}>
                         {(agent) => (
                           <li>
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={picked().has(agent.id)}
-                                onChange={() => setPicked(toggle(picked(), agent.id))}
-                              />{" "}
-                              <strong>{agent.name}</strong>
-                              <Show when={agent.title}> · {agent.title}</Show>
-                            </label>
+                            <Switch
+                              checked={picked().has(agent.id)}
+                              onChange={() => setPicked(toggle(picked(), agent.id))}
+                              label={
+                                <>
+                                  <strong>{agent.name}</strong>
+                                  <Show when={agent.title}> · {agent.title}</Show>
+                                </>
+                              }
+                            />
                             <small>
                               {t("{skills} skills, {memories} memories, {routines} routines", {
                                 skills: agent.skillCount,
@@ -309,14 +308,11 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
                     </ul>
                   </Show>
                   <Show when={info().capabilities.settings}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={withSettings()}
-                        onChange={(event) => setWithSettings(event.currentTarget.checked)}
-                      />{" "}
-                      {t("Also export the server settings")}
-                    </label>
+                    <Switch
+                      checked={withSettings()}
+                      onChange={setWithSettings}
+                      label={t("Also export the server settings")}
+                    />
                   </Show>
                   <div class="vault-connector-actions">
                     <Button

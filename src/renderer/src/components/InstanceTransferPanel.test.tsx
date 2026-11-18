@@ -54,7 +54,7 @@ it("imports only the chosen agents as new ones and reports what was made (routin
   render(() => <InstanceTransferPanel mode="import" />);
   await fireEvent.click(await screen.findByRole("button", { name: "Choose a .zip file" }));
   await screen.findByRole("group", { name: "What is in the file" });
-  await fireEvent.click(screen.getByRole("checkbox", { name: /Analyst/ }));
+  await fireEvent.click(screen.getByRole("switch", { name: /Analyst/ }));
   await fireEvent.click(screen.getByRole("button", { name: "Import" }));
   const done = await screen.findByRole("status");
   expect(within(done).getByText("Imported 1 agents as new ones:")).toBeInTheDocument();
@@ -69,9 +69,9 @@ it("Cancel drops the staged file and changes nothing; Import is off when nothing
   render(() => <InstanceTransferPanel mode="import" />);
   await fireEvent.click(await screen.findByRole("button", { name: "Choose a .zip file" }));
   await screen.findByRole("group", { name: "What is in the file" });
-  await fireEvent.click(screen.getByRole("checkbox", { name: /Chief/ }));
-  await fireEvent.click(screen.getByRole("checkbox", { name: /Analyst/ }));
-  await fireEvent.click(screen.getByRole("checkbox", { name: /Also import the server settings/ }));
+  await fireEvent.click(screen.getByRole("switch", { name: /Chief/ }));
+  await fireEvent.click(screen.getByRole("switch", { name: /Analyst/ }));
+  await fireEvent.click(screen.getByRole("switch", { name: /Also import the server settings/ }));
   expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
   await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(discard).toHaveBeenCalledTimes(1));
@@ -91,7 +91,7 @@ it("Transfer shows the three steps, the agents to export, and what is never move
   expect(await screen.findByText("Export from the old server")).toBeInTheDocument();
   expect(screen.getByText("Copy the .zip file")).toBeInTheDocument();
   expect(screen.getByText("Import into the new server")).toBeInTheDocument();
-  expect(screen.getByRole("checkbox", { name: /Chief/ })).toBeChecked();
+  expect(screen.getByRole("switch", { name: /Chief/ })).toBeChecked();
   expect(screen.getByText(/2 skills, 3 memories, 1 routines/)).toBeInTheDocument();
   for (const item of ["API keys", "The Vault", "Chat history", "Files of the Library"]) {
     expect(screen.getByText(item)).toBeInTheDocument();
@@ -102,7 +102,7 @@ it("exports the chosen agents and says what was saved; a closed save dialog says
   const exportAgents = vi.spyOn(mock.transfer, "exportAgents");
   render(() => <InstanceTransferPanel mode="transfer" />);
   await screen.findByText("Export from the old server");
-  await fireEvent.click(screen.getByRole("checkbox", { name: /Scout/ }));
+  await fireEvent.click(screen.getByRole("switch", { name: /Scout/ }));
   await fireEvent.click(screen.getByRole("button", { name: "Export to a .zip file" }));
   await waitFor(() =>
     expect(exportAgents).toHaveBeenCalledWith({ agentIds: ["demo-chief", "demo-writer"], includeSettings: true }),
@@ -119,7 +119,7 @@ it("Export is off when no agent and no settings are chosen", async () => {
   render(() => <InstanceTransferPanel mode="transfer" />);
   await screen.findByText("Export from the old server");
   for (const name of [/Chief/, /Writer/, /Scout/, /Also export the server settings/]) {
-    await fireEvent.click(screen.getByRole("checkbox", { name }));
+    await fireEvent.click(screen.getByRole("switch", { name }));
   }
   expect(screen.getByRole("button", { name: "Export to a .zip file" })).toBeDisabled();
 });
