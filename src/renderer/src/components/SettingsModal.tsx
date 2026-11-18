@@ -4,8 +4,8 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import { LanguageSettings } from "./LanguageSettings";
+import { UpdatesPanel } from "./UpdatesPanel";
 import {
-  Badge,
   Bell,
   Button,
   Card,
@@ -52,7 +52,6 @@ export function SettingsModal(props: SettingsModalProps) {
   const [section, setSection] = createSignal("General");
   const [rendered, setRendered] = createSignal(untrack(() => props.open));
   const [closing, setClosing] = createSignal(false);
-  const [updateChecked, setUpdateChecked] = createSignal(false);
   const [canScrollUp, setCanScrollUp] = createSignal(false);
   const [canScrollDown, setCanScrollDown] = createSignal(false);
   let closeTimer: number | undefined;
@@ -270,34 +269,7 @@ export function SettingsModal(props: SettingsModalProps) {
                         </Card>
                       </section>
 
-                      <section class="settings-modal-group" aria-labelledby="settings-updates">
-                        <Heading id="settings-updates" as="h3" size="sm" tone="secondary">
-                          {t("Updates")}
-                        </Heading>
-                        <Card class="settings-modal-card">
-                          <Switch
-                            defaultChecked
-                            label={t("Automatically download updates")}
-                            description={t("Download new versions when they become available.")}
-                          />
-                          <div class="settings-modal-row">
-                            <div class="settings-modal-row-copy">
-                              <span class="settings-modal-row-title">{t("COSGRAL Workspace version")}</span>
-                              <div class="settings-modal-version">
-                                <Text tone="muted" variant="caption">
-                                  {t("Installed version")}
-                                </Text>
-                                <Badge tone={updateChecked() ? "success" : "accent"}>
-                                  {updateChecked() ? t("Up to date") : "0.1.11"}
-                                </Badge>
-                              </div>
-                            </div>
-                            <Button type="button" size="sm" onClick={() => setUpdateChecked(true)}>
-                              {updateChecked() ? t("Checked") : t("Check for updates")}
-                            </Button>
-                          </div>
-                        </Card>
-                      </section>
+                      <UpdatesPanel />
                     </>
                   )}
                 </div>

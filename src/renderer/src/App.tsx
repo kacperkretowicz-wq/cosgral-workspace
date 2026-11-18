@@ -58,6 +58,7 @@ import { LibraryFilesView } from "./components/LibraryFilesView";
 import { LibraryPanel } from "./components/LibraryPanel";
 import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
+import { MessengersPanel } from "./components/MessengersPanel";
 import { MobileConnectPage } from "./components/MobileConnectPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
@@ -2149,6 +2150,7 @@ export function App() {
                   <SkillsSettings />
                   <VaultPanel />
                   <VaultConnectorsPanel />
+                  <MessengersPanel />
                   <TablesPanel />
                   <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
                     <LibraryFilesView />
