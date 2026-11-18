@@ -1,7 +1,8 @@
-// T-G: screenshot states for COSGRAL (real Electron, sandbox only). Run ONLY after GO-tester-*.txt.
-//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_SHOTS_OUT=<Shared/cosgral-docs/zrzuty-cosgral-17-11-b> node scripts/sandbox-shots-w12.ts
+// T-O / T-G: screenshot states for COSGRAL (real Electron, sandbox only). Run ONLY after GO-tester-*.txt.
+//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_SHOTS_OUT=<Shared/cosgral-docs/zrzuty-cosgral-17-11-d> node scripts/sandbox-shots-w12.ts
 // Writes 1440x900 PNGs outside the repo. No commit. `bun run build` first.
-// States: dark+light; New agent (avatars+suggestions); chat+stub+N steps; menu +/@//; search; Tasks; agent cards; server settings; Marketplace; Vault.
+// States: dark+light; New agent; chat+stub; menu +/@//; search; Tasks (steps/Open as chat); Usage (By model);
+// Schedule; message menu; agent cards; server settings; Marketplace (Agents/Skills); Library files + Vault connectors.
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -9,13 +10,27 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
-import { type ElectronApplication, _electron as electron, type Page } from "playwright";
+import { type ElectronApplication, _electron as electron, type Locator, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
 import { seedShotsData, seedUsageHistory } from "./sandbox-seed.ts";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const notes: string[] = [];
 const findings: string[] = [];
+
+/** Soft text checklist for a shot note (does not throw — MISS goes into the note for the vs-071 report). */
+async function visibleChecklist(checks: Array<{ id: string; find: () => Locator }>): Promise<string> {
+  const parts: string[] = [];
+  for (const check of checks) {
+    try {
+      const n = await check.find().count();
+      parts.push(n > 0 ? `OK:${check.id}` : `MISS:${check.id}`);
+    } catch {
+      parts.push(`MISS:${check.id}`);
+    }
+  }
+  return parts.join(" ");
+}
 
 function sandboxRoot(): string {
   const root = process.env.COSGRAL_SANDBOX_ROOT ? resolve(process.env.COSGRAL_SANDBOX_ROOT) : "";
@@ -585,19 +600,91 @@ async function main(): Promise<void> {
 
     await tryShot(app, pageRef, out, "09-tasks", async (p) => {
       await clickRail(p, ["Tasks", "Zadania"]);
-      return "strona Zadania";
+      await p.waitForTimeout(700);
+      const checklist = await visibleChecklist([
+        {
+          id: "heading-or-search",
+          find: () =>
+            p
+              .getByRole("searchbox", { name: /Search tasks|Szukaj zadań/i })
+              .or(p.getByLabel(/Search tasks|Szukaj zadań/i)),
+        },
+        { id: "open-as-chat", find: () => p.getByRole("button", { name: /Open as chat|Otwórz jako czat/i }) },
+        { id: "steps", find: () => p.getByText(/Steps\s*\(|Kroki\s*\(/i) },
+        {
+          id: "state-badge",
+          find: () => p.getByText(/^(Running|Done|Paused|Archived|W toku|Gotowe|Wstrzymane|Archiwum)$/i),
+        },
+        { id: "seed-task", find: () => p.getByText(/seed|Shot|Seed/i) },
+      ]);
+      return `Zadania + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "09b-usage", async (p) => {
-      await clickRail(p, ["Usage", "Użycie"]);
-      const tabs = p.getByRole("button", { name: /7 days|7 dni|30 days|30 dni/i });
-      return (await tabs.count()) ? "Użycie: zakładki okresu + raport" : "Użycie otwarte (brak zakładek okresu)";
+      await clickRail(p, ["Usage", "Użycie", "Zużycie"]);
+      await p.waitForTimeout(700);
+      const tab7 = p.getByRole("button", { name: /7 days|7 dni/i });
+      if (await tab7.count())
+        await tab7
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(400);
+      const checklist = await visibleChecklist([
+        {
+          id: "usage-report",
+          find: () => p.getByRole("region", { name: /Usage report|Raport użycia/i }).or(p.locator(".usage-report")),
+        },
+        { id: "period-tabs", find: () => p.getByRole("button", { name: /7 days|7 dni|30 days|30 dni/i }) },
+        { id: "by-model", find: () => p.getByText(/By model|Według modelu/i) },
+        { id: "model-row", find: () => p.getByText(/luna|codex|gpt|claude/i) },
+      ]);
+      return `Użycie + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "09c-schedule", async (p) => {
       await clickRail(p, ["Schedule", "Harmonogram"]);
-      const next = p.getByText(/Next 7 days|Najbliższe 7|Routines|Rutyny/i);
-      return (await next.count()) ? "Harmonogram: okno + rutyny" : "Harmonogram otwarty";
+      await p.waitForTimeout(700);
+      const checklist = await visibleChecklist([
+        {
+          id: "overview",
+          find: () =>
+            p
+              .getByRole("region", { name: /Schedule overview|Przegląd harmonogramu/i })
+              .or(p.locator(".schedule-overview")),
+        },
+        {
+          id: "window",
+          find: () => p.getByRole("button", { name: /^(7|14|30)$/ }).or(p.getByText(/Next|Najbliższe|days|dni/i)),
+        },
+        {
+          id: "run-status",
+          find: () => p.getByText(/Running|Done|Failed|Skipped|Planned|W toku|Gotowe|Nieudane|Zaplanowane/i),
+        },
+        { id: "seed-routine", find: () => p.getByText(/seed|routine|rutyn/i) },
+      ]);
+      return `Harmonogram + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "09d-message-menu", async (p) => {
+      await ensureChatAgent(p);
+      await sendStubChat(p).catch(() => undefined);
+      await unlockComposer(p);
+      const more = p.getByRole("button", { name: /More message actions/i });
+      if (!(await more.count())) {
+        return `menu wiadomości MISS:more-btn [${await visibleChecklist([{ id: "stub-text", find: () => p.getByText(/Stub: received|Hello from T-G/i) }])}]`;
+      }
+      await more.first().click({ timeout: 8_000 });
+      await p.waitForTimeout(500);
+      const checklist = await visibleChecklist([
+        { id: "copy", find: () => p.getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i }) },
+        { id: "pin", find: () => p.getByRole("menuitem", { name: /Pin|Unpin|Przypnij|Odepnij/i }) },
+        { id: "branch", find: () => p.getByRole("menuitem", { name: /Branch from here|Rozgałęź/i }) },
+        { id: "retry", find: () => p.getByRole("menuitem", { name: /^Retry$|^Ponów$/i }) },
+        { id: "edit", find: () => p.getByRole("menuitem", { name: /^Edit$|^Edytuj$/i }) },
+        { id: "delete", find: () => p.getByRole("menuitem", { name: /^Delete$|^Usuń$/i }) },
+      ]);
+      return `menu wiadomości + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "10-agent-cards", async (p) => {
@@ -627,13 +714,51 @@ async function main(): Promise<void> {
 
     await tryShot(app, pageRef, out, "12-marketplace", async (p) => {
       await clickRail(p, ["Marketplace", "Katalog dodatków"]);
-      return "Marketplace";
+      await p.waitForTimeout(700);
+      const agentsTab = p
+        .getByRole("button", { name: /^Agents$|^Agenci$/i })
+        .or(p.getByRole("tab", { name: /^Agents$/i }));
+      const skillsTab = p
+        .getByRole("button", { name: /^Skills$|^Umiejętności$/i })
+        .or(p.getByRole("tab", { name: /^Skills$/i }));
+      if (await skillsTab.count())
+        await skillsTab
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(400);
+      const checklist = await visibleChecklist([
+        { id: "sections", find: () => p.getByText(/Marketplace sections|Sekcje Marketplace|Agents|Skills/i) },
+        {
+          id: "catalog-skill",
+          find: () => p.getByText(/Meeting notes|Daily brief|Research brief|Weekly status|Decision log/i),
+        },
+        { id: "agents-tab", find: () => agentsTab },
+        { id: "skills-tab", find: () => skillsTab },
+      ]);
+      return `Marketplace + checklist [${checklist}]`;
     });
 
-    await tryShot(app, pageRef, out, "13-vault", async (p) => {
+    await tryShot(app, pageRef, out, "13-library-vault", async (p) => {
       await clickRail(p, ["Library", "Biblioteka"]);
-      const vault = p.getByText(/Vault|Sejf/i);
-      return (await vault.count()) ? "Library + Vault" : "Library (Vault nagłówek niewidoczny)";
+      await p.waitForTimeout(800);
+      const checklist = await visibleChecklist([
+        { id: "file-library", find: () => p.getByText(/File library|Biblioteka plików|All files|Wszystkie pliki/i) },
+        { id: "seed-file", find: () => p.getByText(/seed-brief\.md|seed-leads\.csv|seed-agent-notes/i) },
+        { id: "origin-tabs", find: () => p.getByText(/Uploaded|Made by agents|From chats|Wgrane|Od agentów/i) },
+        { id: "vault", find: () => p.getByText(/^Vault$|^Sejf$/i) },
+        {
+          id: "password-managers",
+          find: () =>
+            p
+              .getByRole("region", { name: /Password managers|Menedżery haseł/i })
+              .or(p.getByText(/Password managers|Menedżery haseł/i)),
+        },
+        { id: "1password", find: () => p.getByText(/1Password/) },
+        { id: "bitwarden", find: () => p.getByText(/Bitwarden/) },
+        { id: "proton", find: () => p.getByText(/Proton Pass/) },
+      ]);
+      return `Library+Vault konektory + checklist [${checklist}]`;
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
