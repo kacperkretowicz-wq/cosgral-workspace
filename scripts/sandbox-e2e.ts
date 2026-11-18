@@ -330,6 +330,7 @@ async function launch(root: string, fixture: { codex: string; claude: string }):
       OPENBOT_CODEX_PATH: fixture.codex,
       OPENBOT_CLAUDE_PATH: fixture.claude,
       LANG: "en-US",
+      LC_ALL: "en-US",
       // W4-BE2: while this file exists the Codex stand-in refuses to start (a CLI that cannot start).
       COSGRAL_FIXTURE_DOWN: join(root, "fixture", "codex-down"),
       // W4-BE5: after "Delete my data" the program only quits; this script starts it again itself.
@@ -407,6 +408,10 @@ async function main(): Promise<void> {
       await page.screenshot({ path: join(evidence, "01-start.png") });
       const seen = await reachMainWindow(page, { agent: null });
       console.log(`     first-run screens: ${seen.join(" -> ") || "(none)"}`);
+      await page.evaluate(`(async () => {
+        const api = window.openbot.appSettings;
+        if (api?.update) await api.update({ language: "en" });
+      })()`);
       await dump(page, evidence, "02-main-empty");
     });
     await step("agent: create a new agent in the window", async () => {
@@ -1013,8 +1018,9 @@ async function main(): Promise<void> {
       // works. Only other answers (timeouts, "not a function", crashes) are failures.
       // "Choose an agent" / "Choose a server" appear when the window is on New agent / no MCP server selected (UI-F).
       // usageReport.get(length 0) still requires { period: 7|30|90|365 } (BE-H / BE-I).
+      // "Choose a routine." is the hard validation from channelRoutines.listRuns without routineId (product OK; BE-V).
       const needsInput =
-        /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured|Choose an agent|Choose a server|period is 7/i;
+        /required|Expected an object|Invalid [a-z ]*request|request is malformed|not configured|Choose an agent|Choose a server|Choose a routine|period is 7/i;
       const failed = results.filter((result) => !result.ok && !needsInput.test(result.error ?? ""));
       const asked = results.filter((result) => !result.ok && needsInput.test(result.error ?? ""));
       console.log(
