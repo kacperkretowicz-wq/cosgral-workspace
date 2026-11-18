@@ -55,6 +55,7 @@ import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { isPluginCatalogChanged, type PluginCatalogChanged } from "./ipc-plugin-catalog";
 import { isProviderCatalogChanged, type ProviderCatalogChanged } from "./ipc-provider-catalog";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
+import type { QueueHoldKind } from "./ipc-queue-holds";
 import {
   isRemoteDesktopClientState,
   isRemoteDesktopHostState,
@@ -81,7 +82,6 @@ import {
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
 import { isThreadTabsChanged, type ThreadTabsChanged } from "./ipc-thread-tabs";
-import type { QueueHoldKind } from "./ipc-queue-holds";
 import { isThreadDeletesChanged, type ThreadDeletesChanged } from "./ipc-thread-undo";
 import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {

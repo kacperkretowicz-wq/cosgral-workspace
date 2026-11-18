@@ -88,6 +88,7 @@ import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { providerError } from "./provider-error";
+import { QueueHoldNotice } from "./QueueHoldNotice";
 import {
   REMOTE_DESKTOP_PANEL_DEFAULT,
   REMOTE_DESKTOP_PANEL_MAX,
@@ -97,7 +98,6 @@ import {
 } from "./RemoteMacPanel";
 import { RoutinePanel } from "./RoutinePanel";
 import { SideQuestionPanel } from "./SideQuestionPanel";
-import { QueueHoldNotice } from "./QueueHoldNotice";
 import { SkillQuickPick } from "./SkillQuickPick";
 import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";

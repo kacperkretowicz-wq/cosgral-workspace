@@ -4761,7 +4761,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     };
     if (patch.providers) this.#providers?.setProviderStatuses(patch.providers); // COSGRAL W4-BE1: one source
     this.#emit({ type: "status", status: this.getStatus() });
-    if (patch.phase !== undefined && patch.phase !== phaseBefore) this.#emitWaitingQueues();
+    // A stopped program has nobody to tell (and its database may be closing).
+    if (patch.phase !== undefined && patch.phase !== phaseBefore && patch.phase !== "stopped")
+      this.#emitWaitingQueues();
   }
 
   /** COSGRAL W12 (BE-N): the agent CLI started or stopped restarting: queues with waiting messages say so (heldKind "agent-restart"). */

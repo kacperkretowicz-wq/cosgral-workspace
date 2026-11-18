@@ -5,7 +5,12 @@ import { QueueHoldNotice } from "./QueueHoldNotice";
 
 afterEach(cleanup);
 
-const queue = (patch: Partial<QueueSnapshot>): QueueSnapshot => ({ botId: "chief", paused: false, deliveries: [], ...patch });
+const queue = (patch: Partial<QueueSnapshot>): QueueSnapshot => ({
+  botId: "chief",
+  paused: false,
+  deliveries: [],
+  ...patch,
+});
 
 it("shows nothing when the queue is not held", () => {
   render(() => <QueueHoldNotice queue={queue({})} />);
@@ -17,7 +22,10 @@ it("shows nothing when the queue is not held", () => {
 it("offers the budget settings for a budget hold, also from an older server that sends no kind", () => {
   const open = vi.fn();
   render(() => (
-    <QueueHoldNotice queue={queue({ heldReason: "The daily budget is used up.", heldKind: "budget" })} onOpenBudget={open} />
+    <QueueHoldNotice
+      queue={queue({ heldReason: "The daily budget is used up.", heldKind: "budget" })}
+      onOpenBudget={open}
+    />
   ));
   expect(screen.getByRole("status").textContent).toContain("The daily budget is used up.");
   fireEvent.click(screen.getByRole("button", { name: "Review budget settings" }));

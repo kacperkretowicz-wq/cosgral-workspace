@@ -41,7 +41,8 @@ export interface QueueHoldFacts {
 /** The hold to show, or null. */
 export function queueHoldOf(facts: QueueHoldFacts): QueueHold | null {
   if (facts.budget) return { kind: "budget", reason: facts.budget };
-  if (facts.restarting && facts.queued > 0) return { kind: "agent-restart", reason: QUEUE_HOLD_REASONS["agent-restart"] };
+  if (facts.restarting && facts.queued > 0)
+    return { kind: "agent-restart", reason: QUEUE_HOLD_REASONS["agent-restart"] };
   if (facts.serverBusy) return { kind: "server-busy", reason: QUEUE_HOLD_REASONS["server-busy"] };
   if (facts.threadFull && facts.queued > 0) return { kind: "thread-limit", reason: QUEUE_HOLD_REASONS["thread-limit"] };
   return null;
