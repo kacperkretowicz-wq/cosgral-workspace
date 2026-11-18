@@ -1051,6 +1051,16 @@
 .bot-row-hidden strong {
   color: var(--openbot-text-muted);
 }
+.bot-row-rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  height: 1.5rem;
+  margin: 0;
+  padding-block: 0;
+  font: inherit;
+  font-weight: 600;
+}
 .fallback-model-badge {
   max-width: 100%;
   white-space: normal;
