@@ -15,8 +15,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 5. Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
 
 ## KK Fullstack
-1. Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
-2. Usunięcie martwego `SettingsModal`.
+1. [zrobione: 28f240e08 (Clear history); lista „okno historii” czeka na BE-Z] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
+2. [zrobione: 28f240e08] Usunięcie martwego `SettingsModal`.
 3. Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
 4. `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
 5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
