@@ -21,6 +21,13 @@ export function ChannelView(props: {
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
   const [memoryOpen, setMemoryOpen] = createSignal(false);
   const [routinesOpen, setRoutinesOpen] = createSignal(false);
+  const [openedTask, setOpenedTask] = createSignal("");
+  // "Open task" in a routine's history: the Tasks tab of this channel, with that task marked and in view.
+  function openTask(taskId: string) {
+    setOpenedTask(taskId);
+    setMode("tasks");
+    setTimeout(() => document.getElementById(`channel-task-${taskId}`)?.scrollIntoView?.({ block: "nearest" }), 0);
+  }
   const [text, setText] = createSignal("");
   const [reply, setReply] = createSignal<ChannelMessage>();
   const [sending, setSending] = createSignal(false);
@@ -62,7 +69,7 @@ export function ChannelView(props: {
         <details onToggle={(event) => setRoutinesOpen(event.currentTarget.open)}>
           <summary>{t("Channel routines")}</summary>
           <Show when={routinesOpen()}>
-            <ChannelRoutinesPanel channel={props.channel} />
+            <ChannelRoutinesPanel channel={props.channel} onOpenTask={openTask} />
           </Show>
         </details>
         <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
@@ -74,7 +81,11 @@ export function ChannelView(props: {
             <Show when={props.tasks.some((task) => !task.archivedAt)} fallback={<p>No tasks in this channel.</p>}>
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
-                  <article class="channel-item">
+                  <article
+                    class="channel-item"
+                    id={`channel-task-${task.id}`}
+                    aria-current={openedTask() === task.id ? "true" : undefined}
+                  >
                     <strong>{task.title}</strong>
                     <p>
                       {name(task.ownerBotId)} ·{" "}

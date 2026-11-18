@@ -5,6 +5,8 @@ import {
   type ChannelTaskState,
   channelRoutineProblem,
   type RoutineSchedule,
+  type UpdateChannelRoutineInput,
+  updateChannelRoutineProblem,
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
@@ -31,10 +33,64 @@ export function describeSchedule(schedule: RoutineSchedule): string {
   if (schedule.type === "interval") return t("Every {minutes} min", { minutes: schedule.everyMinutes });
   if (schedule.type === "daily") {
     return schedule.weekdays?.length
-      ? t("Daily at {time} on {days}", { time: schedule.time, days: schedule.weekdays.join(", ") })
+      ? t("Daily at {time} on {days}", {
+          time: schedule.time,
+          days: [...schedule.weekdays].sort().map(dayName).join(", "),
+        })
       : t("Daily at {time}", { time: schedule.time });
   }
   return t("Cron {expression}", { expression: schedule.expression });
+}
+
+// Sunday is 0 in the contract; the screen lists the week from Monday.
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+function dayName(day: number): string {
+  return t(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day] ?? "Sun");
+}
+
+// The contract and the engine write their reasons in English; the screen says them in the chosen language.
+const PROBLEMS: Record<string, string> = {
+  "Choose a channel.": "Choose a channel.",
+  "Choose a routine.": "Choose a routine.",
+  "This channel no longer exists.": "This channel no longer exists.",
+  "This channel is archived.": "This channel is archived.",
+  "This channel has no lead to take the work. Make one of its members the lead first.":
+    "This channel has no lead to take the work. Make one of its members the lead first.",
+  "Give the routine a name.": "Give the routine a name.",
+  "Say what the lead should do on each run.": "Say what the lead should do on each run.",
+  "Give the schedule.": "Give the schedule.",
+  "The interval is a whole number of minutes.": "The interval is a whole number of minutes.",
+  "The time is written HH:MM, for example 09:30.": "The time is written HH:MM, for example 09:30.",
+  "Weekdays are numbers from 0 (Sunday) to 6 (Saturday).": "Choose the days of the week from the list.",
+  "A cron schedule has five fields: minute hour day month weekday.":
+    "A cron schedule has five fields: minute hour day month weekday.",
+  "The schedule is an interval, a daily time or a cron expression.":
+    "The schedule is an interval, a daily time or a cron expression.",
+  "The time zone is a name like Europe/Warsaw.": "The time zone is a name like Europe/Warsaw.",
+  "Paused is on or off.": "Paused is on or off.",
+  "This routine no longer exists.": "This routine no longer exists.",
+  "The previous run is still going.": "The previous run is still going.",
+  "The program was off at the planned time.": "The program was off at the planned time.",
+  "The channel did not take the message.": "The channel did not take the message.",
+  "The routine could not start.": "The routine could not start.",
+};
+const COUNTED: Array<[RegExp, string]> = [
+  [/^The name has at most (\d+) characters\.$/, "The name has at most {limit} characters."],
+  [/^The instruction has at most (\d+) characters\.$/, "The instruction has at most {limit} characters."],
+  [/^A channel has at most (\d+) routines\.$/, "A channel has at most {limit} routines."],
+];
+export function problemText(message: string): string {
+  const known = PROBLEMS[message];
+  if (known) return t(known);
+  for (const [pattern, key] of COUNTED) {
+    const match = pattern.exec(message);
+    if (match) return t(key, { limit: match[1] ?? "" });
+  }
+  const interval = /^The interval is from (\d+) minute to (\d+) days\.$/.exec(message);
+  if (interval) {
+    return t("The interval is from {min} minute to {max} days.", { min: interval[1] ?? "", max: interval[2] ?? "" });
+  }
+  return message;
 }
 
 function when(iso: string, timezone?: string): string {
@@ -48,27 +104,39 @@ function when(iso: string, timezone?: string): string {
 export function ChannelRoutineForm(props: {
   channel: Pick<WorkspaceChannel, "id" | "archived" | "leadBotId">;
   existing: number;
-  onCreate: (input: {
+  /** Creates a routine (new routine form). */
+  onCreate?: (input: {
     channelId: string;
     name: string;
     prompt: string;
     schedule: RoutineSchedule;
     timezone: string;
   }) => Promise<void>;
+  /** Edit mode: the routine to change; the form starts with its values and saves with `onSave`. */
+  routine?: ChannelRoutine;
+  onSave?: (input: UpdateChannelRoutineInput) => Promise<void>;
+  onCancel?: () => void;
 }) {
-  const [name, setName] = createSignal("");
-  const [prompt, setPrompt] = createSignal("");
-  const [kind, setKind] = createSignal<FormKind>("daily");
-  const [interval, setInterval] = createSignal("60");
-  const [time, setTime] = createSignal("09:00");
-  const [cron, setCron] = createSignal("0 9 * * *");
-  const [timezone, setTimezone] = createSignal(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const start = props.routine?.schedule;
+  const editing = props.routine !== undefined;
+  const [name, setName] = createSignal(props.routine?.name ?? "");
+  const [prompt, setPrompt] = createSignal(props.routine?.prompt ?? "");
+  const [kind, setKind] = createSignal<FormKind>(start?.type ?? "daily");
+  const [interval, setInterval] = createSignal(start?.type === "interval" ? String(start.everyMinutes) : "60");
+  const [time, setTime] = createSignal(start?.type === "daily" ? start.time : "09:00");
+  const [days, setDays] = createSignal<number[]>(start?.type === "daily" ? (start.weekdays ?? []) : []);
+  const [cron, setCron] = createSignal(start?.type === "cron" ? start.expression : "0 9 * * *");
+  const [timezone, setTimezone] = createSignal(
+    props.routine?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
   const [error, setError] = createSignal("");
   const [touched, setTouched] = createSignal(false);
   const schedule = createMemo<RoutineSchedule>(() => {
     const k = kind();
     if (k === "interval") return { type: "interval", everyMinutes: Number(interval()) };
-    if (k === "daily") return { type: "daily", time: time() };
+    if (k === "daily") {
+      return days().length ? { type: "daily", time: time(), weekdays: days() } : { type: "daily", time: time() };
+    }
     return { type: "cron", expression: cron() };
   });
   const input = createMemo(() => ({
@@ -78,23 +146,48 @@ export function ChannelRoutineForm(props: {
     schedule: schedule(),
     timezone: timezone().trim(),
   }));
-  const problem = createMemo(() => channelRoutineProblem(input(), props.channel, props.existing));
+  const problem = createMemo(() => {
+    const value = input();
+    const raw = editing
+      ? updateChannelRoutineProblem({
+          routineId: props.routine?.id,
+          name: value.name,
+          prompt: value.prompt,
+          schedule: value.schedule,
+          timezone: value.timezone,
+        })
+      : channelRoutineProblem(value, props.channel, props.existing);
+    return raw ? problemText(raw) : null;
+  });
   async function create() {
     setTouched(true);
     setError("");
     if (problem()) return;
     try {
-      await props.onCreate(input());
+      if (props.routine && props.onSave) {
+        const value = input();
+        await props.onSave({
+          routineId: props.routine.id,
+          name: value.name,
+          prompt: value.prompt,
+          schedule: value.schedule,
+          timezone: value.timezone,
+        });
+        return;
+      }
+      await props.onCreate?.(input());
       setName("");
       setPrompt("");
       setTouched(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not create the routine."));
+      const fallback = editing ? t("Could not save the routine.") : t("Could not create the routine.");
+      setError(e instanceof Error ? problemText(e.message) : fallback);
     }
   }
+  const heading = () => (editing ? t("Edit routine") : t("New channel routine"));
   return (
-    <section class="w2-panel" aria-label={t("New channel routine")}>
-      <h3>{t("New channel routine")}</h3>
+    <section class="w2-panel" aria-label={heading()}>
+      <h3>{heading()}</h3>
       <label>
         {t("Routine name")}
         <Input
@@ -155,6 +248,25 @@ export function ChannelRoutineForm(props: {
             onInput={(e) => setTime(e.currentTarget.value)}
           />
         </label>
+        <fieldset class="channel-routine-days">
+          <legend>{t("Days of the week (every day when none is ticked)")}</legend>
+          <For each={WEEK_ORDER}>
+            {(day) => (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={days().includes(day)}
+                  onChange={(e) =>
+                    setDays((current) =>
+                      e.currentTarget.checked ? [...current, day].sort() : current.filter((item) => item !== day),
+                    )
+                  }
+                />
+                {dayName(day)}
+              </label>
+            )}
+          </For>
+        </fieldset>
       </Show>
       <Show when={kind() === "cron"}>
         <label>
@@ -183,8 +295,13 @@ export function ChannelRoutineForm(props: {
         <p role="alert">{error()}</p>
       </Show>
       <Button unstyled type="button" disabled={!!props.channel.archived} onClick={() => void create()}>
-        {t("Create routine")}
+        {editing ? t("Save changes") : t("Create routine")}
       </Button>
+      <Show when={editing}>
+        <Button unstyled type="button" onClick={() => props.onCancel?.()}>
+          {t("Cancel")}
+        </Button>
+      </Show>
     </section>
   );
 }
@@ -197,6 +314,7 @@ export function ChannelRoutinesPanel(props: {
   const [routines, setRoutines] = createSignal<ChannelRoutine[]>([]);
   const [runs, setRuns] = createSignal<ChannelRoutineRun[]>([]);
   const [history, setHistory] = createSignal("");
+  const [editing, setEditing] = createSignal("");
   const [error, setError] = createSignal("");
   const [loaded, setLoaded] = createSignal(false);
   let serial = 0;
@@ -233,7 +351,7 @@ export function ChannelRoutinesPanel(props: {
       await refresh();
       if (routineId && history() === routineId) await loadHistory(routineId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("The routine action failed."));
+      setError(e instanceof Error ? problemText(e.message) : t("The routine action failed."));
     }
   }
   onSettled(() => {
@@ -265,84 +383,110 @@ export function ChannelRoutinesPanel(props: {
         </Show>
         <For each={routines()}>
           {(routine) => (
-            <article class="w2-item">
-              <strong>{routine.name}</strong>
-              <p>
-                {routine.paused ? t("Paused") : t("Active")} · {describeSchedule(routine.schedule)} · {routine.timezone}
-              </p>
-              <p>
-                {routine.nextRunAt
-                  ? t("Next: {time}", { time: when(routine.nextRunAt, routine.timezone) })
-                  : t("No scheduled run")}
-                {routine.lastRunAt
-                  ? ` · ${t("Last: {time}", { time: when(routine.lastRunAt, routine.timezone) })}`
-                  : ""}
-              </p>
-              <div>
-                <Button
-                  unstyled
-                  type="button"
-                  onClick={() =>
-                    void act(async () => {
-                      await window.openbot.channelRoutines?.update({ routineId: routine.id, paused: !routine.paused });
-                    })
-                  }
-                >
-                  {routine.paused ? t("Resume") : t("Pause")}
-                </Button>{" "}
-                <Button
-                  unstyled
-                  type="button"
-                  disabled={!!props.channel.archived}
-                  onClick={() =>
-                    void act(async () => {
-                      await window.openbot.channelRoutines?.runNow({ routineId: routine.id });
-                    }, routine.id)
-                  }
-                >
-                  {t("Run now")}
-                </Button>{" "}
-                <Button
-                  unstyled
-                  type="button"
-                  onClick={() => (history() === routine.id ? setHistory("") : void loadHistory(routine.id))}
-                >
-                  {t("History")}
-                </Button>{" "}
-                <Button
-                  unstyled
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(t("Delete this routine? Its history goes with it.")))
-                      void act(async () => {
-                        await window.openbot.channelRoutines?.delete({ routineId: routine.id });
-                      });
+            <Show
+              when={editing() !== routine.id}
+              fallback={
+                <ChannelRoutineForm
+                  channel={props.channel}
+                  existing={routines().length}
+                  routine={routine}
+                  onCancel={() => setEditing("")}
+                  onSave={async (input) => {
+                    const api = window.openbot.channelRoutines;
+                    if (!api) throw new Error(t("Channel routines are unavailable in this build."));
+                    await api.update(input);
+                    setEditing("");
+                    await refresh();
                   }}
-                >
-                  {t("Delete")}
-                </Button>
-              </div>
-              <Show when={history() === routine.id}>
-                <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
-                  {(run) => (
-                    <p>
-                      {when(run.at)} · {run.cause === "manual" ? t("Run now") : t("Scheduled")} ·{" "}
-                      {run.outcome === "started"
-                        ? run.taskState
-                          ? stateLabel(run.taskState)
-                          : t("Started")
-                        : `${t("Skipped")}${run.reason ? `: ${run.reason}` : ""}`}
-                      <Show when={run.taskId && props.onOpenTask}>
-                        {" "}
-                        <Button unstyled type="button" onClick={() => props.onOpenTask?.(run.taskId ?? "")}>
-                          {t("Open task")}
-                        </Button>
-                      </Show>
-                    </p>
-                  )}
-                </For>
-              </Show>
-            </article>
+                />
+              }
+            >
+              <article class="w2-item">
+                <strong>{routine.name}</strong>
+                <p>
+                  {routine.paused ? t("Paused") : t("Active")} · {describeSchedule(routine.schedule)} ·{" "}
+                  {routine.timezone}
+                </p>
+                <p>
+                  {routine.nextRunAt
+                    ? t("Next: {time}", { time: when(routine.nextRunAt, routine.timezone) })
+                    : t("No scheduled run")}
+                  {routine.lastRunAt
+                    ? ` · ${t("Last: {time}", { time: when(routine.lastRunAt, routine.timezone) })}`
+                    : ""}
+                </p>
+                <div>
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() =>
+                      void act(async () => {
+                        await window.openbot.channelRoutines?.update({
+                          routineId: routine.id,
+                          paused: !routine.paused,
+                        });
+                      })
+                    }
+                  >
+                    {routine.paused ? t("Resume") : t("Pause")}
+                  </Button>{" "}
+                  <Button
+                    unstyled
+                    type="button"
+                    disabled={!!props.channel.archived}
+                    onClick={() =>
+                      void act(async () => {
+                        await window.openbot.channelRoutines?.runNow({ routineId: routine.id });
+                      }, routine.id)
+                    }
+                  >
+                    {t("Run now")}
+                  </Button>{" "}
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() => (history() === routine.id ? setHistory("") : void loadHistory(routine.id))}
+                  >
+                    {t("History")}
+                  </Button>{" "}
+                  <Button unstyled type="button" onClick={() => setEditing(routine.id)}>
+                    {t("Edit")}
+                  </Button>{" "}
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(t("Delete this routine? Its history goes with it.")))
+                        void act(async () => {
+                          await window.openbot.channelRoutines?.delete({ routineId: routine.id });
+                        });
+                    }}
+                  >
+                    {t("Delete")}
+                  </Button>
+                </div>
+                <Show when={history() === routine.id}>
+                  <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
+                    {(run) => (
+                      <p>
+                        {when(run.at)} · {run.cause === "manual" ? t("Run now") : t("Scheduled")} ·{" "}
+                        {run.outcome === "started"
+                          ? run.taskState
+                            ? stateLabel(run.taskState)
+                            : t("Started")
+                          : `${t("Skipped")}${run.reason ? `: ${problemText(run.reason)}` : ""}`}
+                        <Show when={run.taskId && props.onOpenTask}>
+                          {" "}
+                          <Button unstyled type="button" onClick={() => props.onOpenTask?.(run.taskId ?? "")}>
+                            {t("Open task")}
+                          </Button>
+                        </Show>
+                      </p>
+                    )}
+                  </For>
+                </Show>
+              </article>
+            </Show>
           )}
         </For>
         <ChannelRoutineForm

@@ -692,6 +692,11 @@
   border-bottom: 1px solid var(--openbot-border);
   overflow-wrap: anywhere;
 }
+.channel-item[aria-current="true"] {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: 2px;
+  border-radius: var(--openbot-radius-sm);
+}
 .channel-item small {
   color: var(--openbot-text-secondary);
 }
@@ -2784,4 +2789,22 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .workflow-version-list small {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
+}
+.channel-routine-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.channel-routine-days legend {
+  padding: 0;
+  margin-bottom: 4px;
+  color: var(--openbot-text-secondary);
+}
+.channel-routine-days label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
