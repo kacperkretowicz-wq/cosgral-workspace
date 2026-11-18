@@ -219,7 +219,11 @@ export function AgentCardsSection(props: { botId: string }) {
           when={overview()}
           fallback={
             <Show when={!error()}>
-              <p role="status">{t("Loading cards…")}</p>
+              <div class="agent-cards-skeleton" role="status" aria-label={t("Loading cards…")}>
+                <span class="cosgral-skeleton cosgral-skeleton-wide" />
+                <span class="cosgral-skeleton cosgral-skeleton-mid" />
+                <span class="cosgral-skeleton cosgral-skeleton-wide" />
+              </div>
             </Show>
           }
         >

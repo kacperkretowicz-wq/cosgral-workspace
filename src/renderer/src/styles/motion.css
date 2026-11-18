@@ -136,6 +136,25 @@
     transform: scale(0.94);
   }
 
+  /* Buttons and agent rows answer the pointer (120 ms). Scale already on .ui-button:active in primitives. */
+  .ui-button:not([data-variant="link"]),
+  .page-rail-button,
+  .bot-row.agent-row {
+    transition:
+      transform var(--cosgral-duration-fast) var(--cosgral-ease),
+      background-color var(--cosgral-duration-normal) var(--cosgral-ease),
+      color var(--cosgral-duration-normal) var(--cosgral-ease);
+  }
+
+  .bot-row.agent-row:active {
+    transform: scale(0.985);
+  }
+
+  /* Empty panels land once (transform only). */
+  .cosgral-empty-enter {
+    animation: cosgral-arrive var(--cosgral-duration-normal) var(--cosgral-ease-arrive, var(--cosgral-ease)) backwards;
+  }
+
   /* Tabs, rows and cards answer the pointer. */
   .thread-tab,
   .server-settings-nav-item,
@@ -167,8 +186,14 @@
   .global-search-dialog,
   .new-agent-preview,
   .thread-tab,
-  .chat-tools[open] .chat-tools-body {
+  .chat-tools[open] .chat-tools-body,
+  .cosgral-empty-enter {
     animation: none;
+  }
+
+  .ui-button:not([data-variant="link"]),
+  .bot-row.agent-row {
+    transition: none;
   }
 
   .sidebar .sidebar-server-name,
