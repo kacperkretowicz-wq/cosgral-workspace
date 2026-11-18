@@ -1,5 +1,5 @@
 import type { AgentEvent } from "@openbot/contracts/ipc";
-import { cleanup, fireEvent, render, screen, within } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createMockMobileConnect, type MockMobileConnect } from "../../stories/mock-mobile-connect";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
@@ -47,7 +47,7 @@ it("shows the routes: the one in use, and the cloud one as not available with it
   expect(list.getByText(/It would route the conversation through a server\./)).toBeInTheDocument();
 });
 
-it("lists each phone with its PIN, lock and notifications", async () => {
+it("lists each phone with its PIN and notifications", async () => {
   mock.simulate.pair("phone-2", "Galaxy (demo)");
   mock.phone.simulate.setPin("phone-2");
   mock.phone.simulate.allowNotifications("phone-2");
@@ -57,7 +57,7 @@ it("lists each phone with its PIN, lock and notifications", async () => {
   const galaxy = (await phones.findByText("Galaxy (demo)")).closest("li");
   if (!(galaxy instanceof HTMLElement)) throw new Error("no phone row");
   expect(within(galaxy).getByText("PIN set")).toBeInTheDocument();
-  expect(within(galaxy).getByText("Locked")).toBeInTheDocument();
+  expect(within(galaxy).queryByText("Locked")).not.toBeInTheDocument();
   expect(within(galaxy).getByText("Notifications on")).toBeInTheDocument();
   const pixel = phones.getByText("Pixel (demo)").closest("li");
   if (!(pixel instanceof HTMLElement)) throw new Error("no phone row");
@@ -126,6 +126,7 @@ it("a phone that allowed notifications gets a test notification on request, and 
   mock.phone.simulate.allowNotifications("phone-2");
   await mock.phone.setPushEnabled({ enabled: true });
   render(() => <MobileOverviewPanel />);
+  await screen.findByRole("region", { name: "Your phones" });
   await region("Your phones").findByText("Galaxy (demo)");
   expect(screen.queryByRole("button", { name: "Send a test notification to Pixel (demo)" })).not.toBeInTheDocument();
   await fireEvent.click(await screen.findByRole("button", { name: "Send a test notification to Galaxy (demo)" }));

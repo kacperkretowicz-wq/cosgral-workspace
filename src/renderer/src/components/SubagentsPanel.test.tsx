@@ -35,11 +35,16 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const card = (title: string) => {
+const seen = (title: string, text: string) =>
+  waitFor(() => expect(within(cardEl(title)).getByText(text)).toBeInTheDocument());
+
+const cardEl = (title: string): HTMLElement => {
   const row = screen.getByText(title, { selector: "strong" }).closest("li");
   if (!(row instanceof HTMLElement)) throw new Error("no card");
-  return within(row);
+  return row;
 };
+
+const card = (title: string) => within(cardEl(title));
 
 it("shows nothing while the thread has no subagent", async () => {
   render(() => <SubagentsPanel botId="bot-1" />);
@@ -61,7 +66,7 @@ it("shows what it wrote so far, then its answer when it is done (no Stop any mor
   mock.write(created.id, "Row 3 looks wrong");
   expect(await screen.findByText("Row 3 looks wrong")).toBeInTheDocument();
   mock.complete(created.id, "All rows are fine.");
-  expect(await card("Numbers").findByText("Done")).toBeInTheDocument();
+  await seen("Numbers", "Done");
   expect(card("Numbers").getByText("All rows are fine.")).toBeInTheDocument();
   expect(card("Numbers").queryByRole("button", { name: /Stop/ })).not.toBeInTheDocument();
 });
@@ -71,7 +76,7 @@ it("a subagent that asks sends you to Needs you", async () => {
   const created = mock.spawn({ botId: "bot-1", threadId: "thread-1", task: "Delete the old files", title: "Cleanup" });
   await screen.findByText("Cleanup", { selector: "strong" });
   mock.ask(created.id, ["request-1"]);
-  expect(await card("Cleanup").findByText("Waiting for you")).toBeInTheDocument();
+  await seen("Cleanup", "Waiting for you");
   expect(card("Cleanup").getByText("It asks you something: answer the card in Needs you.")).toBeInTheDocument();
 });
 
@@ -82,7 +87,7 @@ it("Stop ends one at once and says why", async () => {
   await screen.findByText("Long", { selector: "strong" });
   await fireEvent.click(card("Long").getByRole("button", { name: "Stop Long" }));
   await waitFor(() => expect(stop).toHaveBeenCalledWith({ subagentId: created.id }));
-  expect(await card("Long").findByText("Stopped")).toBeInTheDocument();
+  await seen("Long", "Stopped");
   expect(card("Long").getByText("Stopped by the user.")).toBeInTheDocument();
 });
 

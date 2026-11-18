@@ -32,15 +32,26 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const card = (title: string) => {
+const seen = (title: string, text: string) =>
+  waitFor(() => expect(within(cardEl(title)).getByText(text)).toBeInTheDocument());
+
+const cardEl = (title: string): HTMLElement => {
   const row = screen.getByText(title, { selector: "strong" }).closest("li");
   if (!(row instanceof HTMLElement)) throw new Error("no card");
-  return within(row);
+  return row;
 };
+
+const card = (title: string) => within(cardEl(title));
+
+// A button is disabled while an action runs, so wait until it can be pressed.
+async function press(title: string, name: string) {
+  await waitFor(() => expect(card(title).getByRole("button", { name })).toBeEnabled());
+  await fireEvent.click(card(title).getByRole("button", { name }));
+}
 
 async function saveClient(service: string, clientId: string) {
   await fireEvent.input(card(service).getByLabelText(`Client id (${service})`), { target: { value: clientId } });
-  await fireEvent.click(card(service).getByRole("button", { name: "Save the app" }));
+  await press(service, "Save the app");
   await waitFor(() => expect(card(service).getByText("Not connected")).toBeInTheDocument());
 }
 
@@ -75,27 +86,27 @@ it("saving the client id clears the secret field and makes Connect possible; the
   await saveClient("Google Workspace", "google-client-1");
   expect(card("Google Workspace").getByLabelText("Client secret (Google Workspace)")).toHaveValue("");
   await waitFor(() => expect(card("Google Workspace").getByRole("button", { name: "Connect account" })).toBeEnabled());
-  await fireEvent.click(card("Google Workspace").getByRole("button", { name: "Connect account" }));
-  expect(await card("Google Workspace").findByText("Waiting for the browser")).toBeInTheDocument();
+  await press("Google Workspace", "Connect account");
+  await seen("Google Workspace", "Waiting for the browser");
   expect(card("Google Workspace").getByText("https://sign-in.example/google")).toBeInTheDocument();
-  await fireEvent.click(card("Google Workspace").getByRole("button", { name: "Cancel" }));
-  expect(await card("Google Workspace").findByText("Not connected")).toBeInTheDocument();
+  await press("Google Workspace", "Cancel");
+  await seen("Google Workspace", "Not connected");
 });
 
 it("follows the browser coming back: connected with the MCP name, a refusal says why, an expired sign-in asks to sign in again", async () => {
   render(() => <IntegrationsPanel />);
   await screen.findByText("GitHub", { selector: "strong" });
   await saveClient("GitHub", "gh-client");
-  await fireEvent.click(card("GitHub").getByRole("button", { name: "Connect account" }));
-  await card("GitHub").findByText("Waiting for the browser");
+  await press("GitHub", "Connect account");
+  await seen("GitHub", "Waiting for the browser");
   mock.simulate.complete("github");
-  expect(await card("GitHub").findByText("Connected")).toBeInTheDocument();
+  await seen("GitHub", "Connected");
   expect(card("GitHub").getByText(/MCP server “github”/)).toBeInTheDocument();
   mock.simulate.expire("github");
-  expect(await card("GitHub").findByText("Sign in again", { selector: "span" })).toBeInTheDocument();
+  await seen("GitHub", "Sign in again");
   expect(card("GitHub").getByText(/no longer accepts the saved sign-in/)).toBeInTheDocument();
   mock.simulate.fail("github", "The person said no.");
-  expect(await card("GitHub").findByRole("alert")).toHaveTextContent("The person said no.");
+  await waitFor(() => expect(card("GitHub").getByRole("alert")).toHaveTextContent("The person said no."));
 });
 
 it("Disconnect removes the sign-in and can forget the client id too", async () => {
@@ -103,14 +114,14 @@ it("Disconnect removes the sign-in and can forget the client id too", async () =
   render(() => <IntegrationsPanel />);
   await screen.findByText("GitHub", { selector: "strong" });
   await saveClient("GitHub", "gh-client");
-  await fireEvent.click(card("GitHub").getByRole("button", { name: "Connect account" }));
-  await card("GitHub").findByText("Waiting for the browser");
+  await press("GitHub", "Connect account");
+  await seen("GitHub", "Waiting for the browser");
   mock.simulate.complete("github");
-  await card("GitHub").findByText("Connected");
+  await seen("GitHub", "Connected");
   await fireEvent.click(card("GitHub").getByRole("switch", { name: /forget the app's client id/ }));
-  await fireEvent.click(card("GitHub").getByRole("button", { name: "Disconnect" }));
+  await press("GitHub", "Disconnect");
   await waitFor(() => expect(disconnect).toHaveBeenCalledWith({ service: "github", forgetClient: true }));
-  expect(await card("GitHub").findByText("App not set up")).toBeInTheDocument();
+  await seen("GitHub", "App not set up");
 });
 
 it("shows an error with Retry when the list cannot be read, and nothing without the API", async () => {

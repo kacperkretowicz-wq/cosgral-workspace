@@ -77,7 +77,7 @@ it("lists what this version does not offer, by section, each with its reason", a
     expect(list.getByText(section)).toBeInTheDocument();
   }
   expect(list.getByText("Parakeet dictation model")).toBeInTheDocument();
-  expect(list.getByText(/This version keeps audio on this computer\./, { selector: "span, p" })).toBeInTheDocument();
+  expect(list.getAllByText(/This version keeps audio on this computer./, { selector: "span, p" }).length).toBe(2);
   expect(list.getAllByText("Not available").length).toBe(4);
 });
 
