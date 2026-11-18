@@ -236,16 +236,25 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
         });
       }
       if (flow && api.workflows.update) {
-        const nodes = (flow.nodes || []).map((node) =>
-          node.type === "agent" && node.id === "a1"
-            ? { ...node, prompt: "Say hi v2 from the seed workflow (versions panel)." }
-            : node,
-        );
-        flow = await api.workflows.update({
-          workflowId: flow.id,
-          nodes,
-          edges: flow.edges,
-        });
+        const bump = async (prompt) => {
+          const nodes = (flow.nodes || []).map((node) =>
+            node.type === "agent" && node.id === "a1" ? { ...node, prompt } : node,
+          );
+          flow = await api.workflows.update({
+            workflowId: flow.id,
+            nodes,
+            edges: flow.edges,
+          });
+        };
+        await bump("Say hi v2 from the seed workflow (versions panel).");
+        // Ensure ≥2 versions for the Versions panel (create = v1, update = v2).
+        if (api.workflows.listVersions) {
+          let versions = await api.workflows.listVersions({ workflowId: flow.id });
+          if (!Array.isArray(versions) || versions.length < 2) {
+            await bump("Say hi v3 from the seed workflow (versions panel).");
+            versions = await api.workflows.listVersions({ workflowId: flow.id });
+          }
+        }
       }
       let versionCount = 0;
       if (flow && api.workflows.listVersions) {
@@ -257,11 +266,14 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
       out.push("workflow:missing");
     }
 
-    // Dedicated thread for the undo bar shot (threads.list returns { threads }, not an array).
+    // Dedicated thread for the undo bar shot on Shot agent (same bot the shot deletes).
+    // threads.create returns ThreadList { activeThreadId, threads }, not a bare array.
     if (api.threads?.create) {
-      const list = await api.threads.create({ botId: lead.id, title: "Seed undo thread" });
-      const n = Array.isArray(list?.threads) ? list.threads.length : 0;
-      out.push("thread-undo-seed:" + n);
+      const created = await api.threads.create({ botId: lead.id, title: "Seed undo thread" });
+      const tid = created?.activeThreadId || null;
+      const rows = Array.isArray(created?.threads) ? created.threads : [];
+      const hit = rows.find((row) => row.title === "Seed undo thread" || row.id === tid);
+      out.push("thread-undo-seed:" + (hit?.id || tid || "empty") + ":bot=" + lead.id.slice(0, 8));
     } else {
       out.push("thread-undo-seed:missing");
     }
