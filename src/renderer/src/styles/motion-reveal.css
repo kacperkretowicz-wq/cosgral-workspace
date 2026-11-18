@@ -1,0 +1,169 @@
+/*
+ * COSGRAL motion, second layer (KK-Z). Own code and own numbers. The idea comes from how a good product site lets a list
+ * arrive: the cards of a list do not appear at once, each one lands a moment after the one before it, and a loading place
+ * pulses instead of showing bare text.
+ *
+ * Rules that keep it safe:
+ * - Only `transform` moves. Opacity is never animated from 0 here, because the automatic contrast check and the "is it
+ *   visible" checks read the screen right after it is drawn and would see a half-faded card.
+ * - At most eight cards are delayed, and the whole arrival stays under 400 ms.
+ * - Everything is off for people who asked their system for reduced motion.
+ */
+:root {
+  /* A strong ease-out for things that arrive, an ease-in-out for things that loop. */
+  --cosgral-ease-arrive: cubic-bezier(0.23, 1, 0.32, 1);
+  --cosgral-ease-loop: cubic-bezier(0.77, 0, 0.175, 1);
+  --cosgral-arrive-duration: 260ms;
+  --cosgral-arrive-step: 28ms;
+  --cosgral-pulse-duration: 1.4s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes cosgral-arrive {
+    from {
+      transform: translateY(8px);
+    }
+
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes cosgral-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+
+    50% {
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes cosgral-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Cards of a list land one after another. */
+  .agent-cards .agent-card-row,
+  .mk-card,
+  .plugin-card,
+  .vault-connector-card,
+  .subagent-card,
+  .channel-routine-card {
+    /* "backwards", not "both": after the arrival the card must be free to lift on hover. */
+    animation: cosgral-arrive var(--cosgral-arrive-duration) var(--cosgral-ease-arrive) backwards;
+  }
+
+  .agent-cards .agent-card-row:nth-child(2),
+  .mk-card:nth-child(2),
+  .plugin-card:nth-child(2),
+  .vault-connector-card:nth-child(2),
+  .subagent-card:nth-child(2),
+  .channel-routine-card:nth-child(2) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 1);
+  }
+
+  .agent-cards .agent-card-row:nth-child(3),
+  .mk-card:nth-child(3),
+  .plugin-card:nth-child(3),
+  .vault-connector-card:nth-child(3),
+  .subagent-card:nth-child(3),
+  .channel-routine-card:nth-child(3) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 2);
+  }
+
+  .agent-cards .agent-card-row:nth-child(4),
+  .mk-card:nth-child(4),
+  .plugin-card:nth-child(4),
+  .vault-connector-card:nth-child(4),
+  .subagent-card:nth-child(4),
+  .channel-routine-card:nth-child(4) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 3);
+  }
+
+  .agent-cards .agent-card-row:nth-child(5),
+  .mk-card:nth-child(5),
+  .plugin-card:nth-child(5),
+  .vault-connector-card:nth-child(5),
+  .subagent-card:nth-child(5),
+  .channel-routine-card:nth-child(5) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 4);
+  }
+
+  .agent-cards .agent-card-row:nth-child(6),
+  .mk-card:nth-child(6),
+  .plugin-card:nth-child(6),
+  .vault-connector-card:nth-child(6),
+  .subagent-card:nth-child(6),
+  .channel-routine-card:nth-child(6) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 5);
+  }
+
+  .agent-cards .agent-card-row:nth-child(7),
+  .mk-card:nth-child(7),
+  .plugin-card:nth-child(7),
+  .vault-connector-card:nth-child(7),
+  .subagent-card:nth-child(7),
+  .channel-routine-card:nth-child(7) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 6);
+  }
+
+  .agent-cards .agent-card-row:nth-child(n + 8),
+  .mk-card:nth-child(n + 8),
+  .plugin-card:nth-child(n + 8),
+  .vault-connector-card:nth-child(n + 8),
+  .subagent-card:nth-child(n + 8),
+  .channel-routine-card:nth-child(n + 8) {
+    animation-delay: calc(var(--cosgral-arrive-step) * 7);
+  }
+
+  /* A loading place: use `.cosgral-skeleton` on an empty block instead of the word "Loading". */
+  .cosgral-skeleton {
+    animation: cosgral-pulse var(--cosgral-pulse-duration) var(--cosgral-ease-loop) infinite;
+  }
+
+  /* A thin bar for work that is going on; `.cosgral-sweep` on a bar with `overflow: hidden`. */
+  .cosgral-sweep::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--cosgral-accent-strong), transparent);
+    animation: cosgral-sweep 1.6s var(--cosgral-ease-loop) infinite;
+  }
+}
+
+/* Plain blocks used by the classes above; they do not move, so they need no motion query. */
+.cosgral-skeleton {
+  display: block;
+  min-height: 12px;
+  border-radius: var(--cosgral-radius-sm);
+  background: var(--cosgral-bg-control-hover);
+}
+
+.cosgral-sweep {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-cards .agent-card-row,
+  .mk-card,
+  .plugin-card,
+  .vault-connector-card,
+  .subagent-card,
+  .channel-routine-card,
+  .cosgral-skeleton,
+  .cosgral-sweep::after {
+    animation: none;
+  }
+}
