@@ -21,15 +21,15 @@ export function MarketplaceDetail(props: {
 }) {
   const item = () => props.details.item;
   return (
-    <section class="marketplace-detail" aria-label="Item details">
+    <section class="marketplace-detail" aria-label={t("Item details")}>
       <h2>{item().title}</h2>
       <p>{item().description}</p>
       <p>
-        {item().category} · version {item().version}
+        {item().category} · {t("version {number}", { number: item().version })}
       </p>
       <Show when={props.details.skillMd}>
         <details>
-          <summary>Skill instructions and files</summary>
+          <summary>{t("Skill instructions and files")}</summary>
           <pre>{props.details.skillMd}</pre>
           <ul>
             <For each={props.details.files}>{(file) => <li>{file}</li>}</For>
@@ -39,7 +39,7 @@ export function MarketplaceDetail(props: {
       <Show when={props.details.agent}>
         {(agent) => (
           <>
-            <p>Role: {agent().role}</p>
+            <p>{t("Role: {role}", { role: agent().role })}</p>
             <p>{agent().description}</p>
             <ul>
               <For each={agent().memories}>{(memory) => <li>{memory}</li>}</For>
@@ -49,15 +49,15 @@ export function MarketplaceDetail(props: {
       </Show>
       <Show when={item().kind === "skill"}>
         <label>
-          Agent{" "}
+          {t("Agent")}{" "}
           <NativeSelect unstyled value={props.selectedBot} onChange={(e) => props.onSelectBot(e.currentTarget.value)}>
-            <option value="">Choose an agent</option>
+            <option value="">{t("Choose an agent")}</option>
             <For each={props.bots}>{(bot) => <option value={bot.id}>{bot.name}</option>}</For>
           </NativeSelect>
         </label>
       </Show>
       <Show when={item().libraryState === "local"}>
-        <p>A local skill with this name already exists; installation is disabled.</p>
+        <p>{t("A local skill with this name already exists; installation is disabled.")}</p>
       </Show>
       <Button
         unstyled
@@ -65,7 +65,7 @@ export function MarketplaceDetail(props: {
         disabled={item().libraryState === "local" || (item().kind === "skill" && !props.selectedBot)}
         onClick={props.onInstall}
       >
-        {item().libraryState === "outdated" ? "Update" : "Install"}
+        {item().libraryState === "outdated" ? t("Update") : t("Install")}
       </Button>
       <ul>
         <For each={item().installedBotIds}>
@@ -73,7 +73,7 @@ export function MarketplaceDetail(props: {
             <li>
               {props.bots.find((bot) => bot.id === id)?.name ?? id}{" "}
               <Button unstyled type="button" onClick={() => props.onUninstall(id)}>
-                {item().kind === "agent" ? "Delete agent" : "Uninstall"}
+                {item().kind === "agent" ? t("Delete agent") : t("Uninstall")}
               </Button>
             </li>
           )}
@@ -114,7 +114,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
   ) {
     const api = window.openbot.marketplace;
     if (!api) {
-      setError("Marketplace is unavailable.");
+      setError(t("Marketplace is unavailable."));
       return;
     }
     const n = ++serial;
@@ -132,7 +132,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
       const current = details();
       if (current) setDetails(await api.get({ itemId: current.item.id }));
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : "Could not load Marketplace.");
+      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load Marketplace."));
     }
   }
   async function choose(item: MarketplaceItem) {
@@ -154,19 +154,19 @@ export function MarketplacePage(props: { bots: Person[] }) {
       setWarnings(result.warnings);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Install failed.");
+      setError(e instanceof Error ? e.message : t("Install failed."));
     }
   }
   async function uninstall(id: string) {
     const item = details()?.item;
     const api = window.openbot.marketplace;
     if (!item || !api) return;
-    if (item.kind === "agent" && !window.confirm("Delete this agent and its chats and files?")) return;
+    if (item.kind === "agent" && !window.confirm(t("Delete this agent and its chats and files?"))) return;
     try {
       await api.uninstall({ itemId: item.id, botId: id });
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Uninstall failed.");
+      setError(e instanceof Error ? e.message : t("Uninstall failed."));
     }
   }
   onSettled(() => {
@@ -182,7 +182,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
   });
   return (
     <main class="w2-library">
-      <h1>Marketplace</h1>
+      <h1>{t("Marketplace")}</h1>
       <Show when={hasApps}>
         <nav class="marketplace-tabs" aria-label={t("Marketplace sections")}>
           <For
