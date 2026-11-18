@@ -8,6 +8,6 @@ bun x vite build --config scripts/web-preview/vite.config.ts      # wynik: out/w
 bun x vite preview --config scripts/web-preview/vite.config.ts --host 127.0.0.1 --port 4799
 ```
 
-- Wynik musi mieścić się w hostingu statycznym: każdy plik < 1 MB, łącznie < 1,8 MB (limit hostingu 2 MB). Config podglądu zrzuca Inter (system fonts), minifikuje CSS i dzieli chunki (`locales` / `fixtures` / `solid` / `ui-vendor` / `vendor`). Po KAPI-M: ~1,78 MB łącznie, max plik ~781 KB, 9 plików.
+- Wynik musi mieścić się w hostingu statycznym: każdy plik < 1 MB, łącznie < 1,8 MB (limit hostingu 2 MB). Config podglądu: system fonts (bez Inter), puste Proxies zamiast katalogów PL/EN (`locale-stubs.ts`), bez `motion.css` / `blobatar/motion.css`, chunki `locales` / `fixtures` / `solid` / `ui-vendor` / `vendor`. Po KAPI-O: ~1,70 MB łącznie, max plik ~793 KB, 8 plików. Desktop (Electron) nadal ma pełne słowniki i motion.
 - Podgląd jest publiczny, dlatego `vite.config.ts` podmienia w atrapie imię prawdziwej osoby i linki do cudzej strony. Przed publikacją sprawdź wynik: `Select-String out\web-preview\assets\*.js -Pattern "norbert|openbot\.run"` ma dać 0 trafień.
 - Po każdym scaleniu lider buduje podgląd od nowa i podmienia stronę pod tym samym adresem.
