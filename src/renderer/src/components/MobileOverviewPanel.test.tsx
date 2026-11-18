@@ -11,6 +11,7 @@ function install(withApi = true) {
   Object.assign(window, {
     openbot: {
       mobileConnect: withApi ? mock : undefined,
+      phone: withApi ? mock.phone : undefined,
       agent: {
         onEvent: (listener: (event: AgentEvent) => void) => {
           listeners.push(listener);
@@ -104,4 +105,32 @@ it("says there are no phones when none is paired", async () => {
   getOverview.mockResolvedValue({ ...real, phones: [] });
   render(() => <MobileOverviewPanel />);
   expect(await screen.findByText(/No phones yet\./)).toBeInTheDocument();
+});
+
+it("the notifications switch changes the push setting of this computer", async () => {
+  const setPush = vi.spyOn(mock.phone, "setPushEnabled");
+  render(() => <MobileOverviewPanel />);
+  const toggle = await screen.findByRole("switch", { name: /Send notifications to phones/ });
+  expect(toggle).not.toBeChecked();
+  await fireEvent.click(toggle);
+  await waitFor(() => expect(setPush).toHaveBeenCalledWith({ enabled: true }));
+  await waitFor(() => expect(screen.getByRole("switch", { name: /Send notifications to phones/ })).toBeChecked());
+});
+
+it("a phone that allowed notifications gets a test notification on request, and the result is said", async () => {
+  mock.simulate.pair("phone-2", "Galaxy (demo)");
+  mock.phone.simulate.allowNotifications("phone-2");
+  await mock.phone.setPushEnabled({ enabled: true });
+  render(() => <MobileOverviewPanel />);
+  await region("Your phones").findByText("Galaxy (demo)");
+  expect(screen.queryByRole("button", { name: "Send a test notification to Pixel (demo)" })).not.toBeInTheDocument();
+  await fireEvent.click(await screen.findByRole("button", { name: "Send a test notification to Galaxy (demo)" }));
+  expect(await screen.findByText("The test notification was sent.")).toBeInTheDocument();
+});
+
+it("shows the Tailscale steps for reaching the computer away from home", async () => {
+  render(() => <MobileOverviewPanel />);
+  const summary = await screen.findByText("Reach this computer from your phone away from home (Tailscale)");
+  expect(summary).toBeInTheDocument();
+  expect(screen.getByText(/Install Tailscale on this computer and on your phone/)).toBeInTheDocument();
 });
