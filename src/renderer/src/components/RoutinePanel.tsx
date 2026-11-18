@@ -1,5 +1,6 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type Bot = { id: string; name: string };
@@ -45,47 +46,47 @@ export function RoutineForm(props: {
     }
   }
   return (
-    <section class="w2-panel" aria-label="Create routine">
-      <h3>Create routine</h3>
+    <section class="w2-panel" aria-label={t("Create routine")}>
+      <h3>{t("Create routine")}</h3>
       <label>
-        Agent
+        {t("Agent")}
         <NativeSelect unstyled value={bot()} disabled={!!props.botId} onChange={(e) => setBot(e.currentTarget.value)}>
           <For each={props.bots}>{(item) => <option value={item.id}>{item.name}</option>}</For>
         </NativeSelect>
       </label>
       <label>
-        Routine name
-        <Input unstyled aria-label="Routine name" value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+        {t("Routine name")}
+        <Input unstyled aria-label={t("Routine name")} value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
       <label>
-        Instructions
+        {t("Instructions")}
         <Textarea
           unstyled
-          aria-label="Instructions"
+          aria-label={t("Instructions")}
           value={prompt()}
           onInput={(e) => setPrompt(e.currentTarget.value)}
         />
       </label>
       <label>
-        Trigger
+        {t("Trigger")}
         <NativeSelect
           unstyled
-          aria-label="Trigger"
+          aria-label={t("Trigger")}
           value={trigger()}
           onChange={(e) => {
             const value = e.currentTarget.value;
             if (value === "interval" || value === "daily" || value === "cron" || value === "webhook") setTrigger(value);
           }}
         >
-          <option value="interval">Interval</option>
-          <option value="daily">Daily</option>
-          <option value="cron">Cron</option>
-          <option value="webhook">Webhook</option>
+          <option value="interval">{t("Interval")}</option>
+          <option value="daily">{t("Daily")}</option>
+          <option value="cron">{t("Cron")}</option>
+          <option value="webhook">{t("Webhook")}</option>
         </NativeSelect>
       </label>
       <Show when={trigger() === "interval"}>
         <label>
-          Minutes
+          {t("Minutes")}
           <Input
             unstyled
             type="number"
@@ -98,10 +99,10 @@ export function RoutineForm(props: {
       </Show>
       <Show when={trigger() === "daily"}>
         <label>
-          Time
+          {t("Time")}
           <Input
             unstyled
-            aria-label="Time"
+            aria-label={t("Time")}
             type="time"
             value={time()}
             onInput={(e) => setTime(e.currentTarget.value)}
@@ -110,12 +111,12 @@ export function RoutineForm(props: {
       </Show>
       <Show when={trigger() === "cron"}>
         <label>
-          Cron expression
+          {t("Cron expression")}
           <Input unstyled value={cron()} onInput={(e) => setCron(e.currentTarget.value)} />
         </label>
       </Show>
       <label>
-        Time zone
+        {t("Time zone")}
         <Input unstyled value={timezone()} onInput={(e) => setTimezone(e.currentTarget.value)} />
       </label>
       <Show when={error()}>
@@ -187,8 +188,8 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
     };
   });
   return (
-    <section class="w2-panel" aria-label="Routines">
-      <h2>Routines</h2>
+    <section class="w2-panel" aria-label={t("Routines")}>
+      <h2>{t("Routines")}</h2>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
@@ -250,7 +251,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
               </Button>
             </div>
             <Show when={history() === routine.id}>
-              <For each={runs()} fallback={<p>No runs yet.</p>}>
+              <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
                 {(entry) => (
                   <p>
                     {entry.status} · {entry.startedAt}
