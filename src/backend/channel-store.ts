@@ -10,6 +10,7 @@ import {
   CHANNEL_LIMITS,
   type ChannelAssignment,
   type ChannelHistoryCleared,
+  type ChannelHistoryWindow,
   type ChannelMemberInput,
   type ChannelMemory,
   type ChannelMessage,
@@ -17,7 +18,9 @@ import {
   type ChannelTaskActionInput,
   type ChannelTaskState,
   type CreateWorkspaceChannelInput,
+  DEFAULT_CHANNEL_HISTORY_WINDOW,
   isChannelAssignment,
+  isChannelHistoryWindow,
   isChannelMemory,
   isChannelMessage,
   isChannelName,
@@ -68,6 +71,15 @@ const ACTIVE_STATES: readonly ChannelTaskState[] = ["running", "waiting"];
 const HELD_STATES: readonly ChannelTaskState[] = ["queued", "running", "waiting", "paused"];
 const OPEN_STATES: readonly ChannelTaskState[] = ["queued", "running", "waiting", "paused"];
 
+/** COSGRAL W12 (BE-Z): one row per channel that changed its history window; no row = the default (200). Created by the store, not by the central schema. */
+const HISTORY_WINDOW_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS projection_channel_history_windows (
+    channel_id TEXT PRIMARY KEY REFERENCES projection_channels(channel_id) ON DELETE CASCADE,
+    history_window INTEGER NOT NULL
+  );
+`;
+const WINDOW_READY = new WeakSet<object>();
+
 export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
   readonly #database: OpenBotDatabase;
   readonly #now: () => Date;
@@ -81,15 +93,34 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
   }
 
   list(): WorkspaceChannel[] {
-    return rows(this.#database.connection.prepare(`${CHANNEL_SELECT} ORDER BY created_at, channel_id`).all()).map(
-      channelFromRow,
-    );
+    const windows = this.#historyWindows();
+    return rows(this.#database.connection.prepare(`${CHANNEL_SELECT} ORDER BY created_at, channel_id`).all())
+      .map(channelFromRow)
+      .map((channel) => ({ ...channel, historyWindow: windows.get(channel.id) ?? DEFAULT_CHANNEL_HISTORY_WINDOW }));
   }
 
   get(channelId: string): WorkspaceChannel {
     const row = this.#database.connection.prepare(`${CHANNEL_SELECT} WHERE channel_id = ?`).get(channelId);
     if (!isDynamicRecord(row)) throw new Error("This channel no longer exists.");
-    return channelFromRow(row);
+    const channel = channelFromRow(row);
+    return { ...channel, historyWindow: this.#historyWindows().get(channel.id) ?? DEFAULT_CHANNEL_HISTORY_WINDOW };
+  }
+
+  /** The table of the windows is made on first use of this connection (the central schema does not know it). */
+  #historyWindows(): Map<string, ChannelHistoryWindow> {
+    const db = this.#database.connection;
+    if (!WINDOW_READY.has(db)) {
+      db.exec(HISTORY_WINDOW_SCHEMA);
+      WINDOW_READY.add(db);
+    }
+    const found = new Map<string, ChannelHistoryWindow>();
+    for (const row of rows(
+      db.prepare("SELECT channel_id, history_window FROM projection_channel_history_windows").all(),
+    )) {
+      if (isString(row.channel_id) && isChannelHistoryWindow(row.history_window))
+        found.set(row.channel_id, row.history_window);
+    }
+    return found;
   }
 
   create(input: CreateWorkspaceChannelInput): WorkspaceChannel {
@@ -118,6 +149,9 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
 
   update(input: UpdateWorkspaceChannelInput): WorkspaceChannel {
     const channel = this.get(input.channelId);
+    if (input.historyWindow !== undefined && !isChannelHistoryWindow(input.historyWindow)) {
+      throw new Error("historyWindow is 20, 50, 100 or 200.");
+    }
     const updated: WorkspaceChannel = {
       ...channel,
       title: input.title === undefined ? channel.title : channelTitle(input.title),
@@ -126,7 +160,13 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
       archived: input.archived ?? channel.archived,
       updatedAt: this.#isoNow(),
     };
-    this.#save([updated], [], "channel.updated", { channelId: channel.id });
+    this.#save(
+      [updated],
+      [],
+      "channel.updated",
+      { channelId: channel.id },
+      input.historyWindow === undefined ? {} : { historyWindow: input.historyWindow },
+    );
     return this.get(channel.id);
   }
 
@@ -765,7 +805,12 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
     tasks: ChannelTask[],
     eventType: string,
     payload: DynamicRecord,
-    extra: { messages?: ChannelMessage[]; memories?: ChannelMemory[]; forgotten?: ChannelMemory[] } = {},
+    extra: {
+      messages?: ChannelMessage[];
+      memories?: ChannelMemory[];
+      forgotten?: ChannelMemory[];
+      historyWindow?: ChannelHistoryWindow;
+    } = {},
   ): void {
     const occurredAt = this.#isoNow();
     this.#database.dispatch(
@@ -907,6 +952,12 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
           );
           // COSGRAL W2: a forgotten entry leaves no text in the event log.
           purgeChannelMemoryHistory(db, memory.id, sequence);
+        }
+        if (extra.historyWindow !== undefined && channels[0]) {
+          this.#historyWindows();
+          db.prepare(
+            "INSERT INTO projection_channel_history_windows(channel_id, history_window) VALUES (?, ?) ON CONFLICT(channel_id) DO UPDATE SET history_window = excluded.history_window",
+          ).run(channels[0].id, extra.historyWindow);
         }
         return null;
       },

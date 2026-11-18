@@ -242,3 +242,72 @@ it("caps helper fan-out in one task and cannot finish while a child is still ope
   await until(() => store.getTask(task.id).state === "paused");
   expect(helpers).toBeLessThanOrEqual(8);
 });
+
+// COSGRAL W12 (BE-Z): the history window of a channel decides how many of the last messages an agent gets with a task.
+async function windowSetup(
+  historyWindow: 20 | 50 | 100 | 200 | null,
+  run: (input: ChannelRunInput) => Promise<ChannelTurnResult>,
+) {
+  const root = await mkdtemp(join(tmpdir(), "channel-window-"));
+  roots.push(root);
+  const db = testDatabase(root);
+  await db.initialize();
+  const store = new ChannelStore(db);
+  const channel = store.create({
+    name: "team",
+    title: "Team",
+    instructions: "Short",
+    memberBotIds: ["lead"],
+    leadBotId: "lead",
+    isolated: true,
+  });
+  if (historyWindow !== null) store.update({ channelId: channel.id, historyWindow });
+  const engine = new ChannelEngine(store, { run }, { workspaceForBot: (id) => `C:\\work\\${id}` });
+  engines.push(engine);
+  // An old request waits in the queue while 120 newer messages arrive, then the engine starts.
+  const old = store.submit(channel.id, "The old request");
+  for (let index = 0; index < 120; index += 1) {
+    store.addMessage({ channelId: channel.id, authorBotId: "lead", kind: "note", text: `note ${index}` });
+  }
+  return { store, channel, engine, old };
+}
+
+it("gives the agent only the last N messages of the channel, and keeps the request of the task in front", async () => {
+  const seen: ChannelRunInput[] = [];
+  const { store, engine, old } = await windowSetup(20, async (input) => {
+    seen.push(input);
+    return turn("Done");
+  });
+  engine.start();
+  await until(() => store.getTask(old.task.id).state === "done");
+  const history = seen[0]?.history ?? [];
+  // The 20 last messages, and the old request put in front because it fell out of the window.
+  expect(history).toHaveLength(21);
+  expect(history[0]?.text).toBe("The old request");
+  expect(history[1]?.text).toBe("note 100");
+  expect(history.at(-1)?.text).toBe("note 119");
+});
+
+it("keeps today's behaviour without a window: the whole page of 200 messages", async () => {
+  const seen: ChannelRunInput[] = [];
+  const { store, engine, old } = await windowSetup(null, async (input) => {
+    seen.push(input);
+    return turn("Done");
+  });
+  engine.start();
+  await until(() => store.getTask(old.task.id).state === "done");
+  // 1 request + 120 notes fit in the page, so the request is not added a second time.
+  expect(seen[0]?.history).toHaveLength(121);
+  expect(seen[0]?.history[0]?.text).toBe("The old request");
+});
+
+it("applies the window to the history tool of the agent as well", async () => {
+  let fromTool: unknown;
+  const { store, engine, old } = await windowSetup(50, async (input) => {
+    fromTool = await input.tool("history", {});
+    return turn("Done");
+  });
+  engine.start();
+  await until(() => store.getTask(old.task.id).state === "done");
+  expect(Array.isArray(fromTool) ? fromTool.length : -1).toBe(50);
+});

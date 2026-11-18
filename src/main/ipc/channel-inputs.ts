@@ -7,6 +7,7 @@ import {
   type ChannelTaskActionInput,
   type ClearChannelHistoryInput,
   type CreateWorkspaceChannelInput,
+  isChannelHistoryWindow,
   isChannelTaskAction,
   type ListChannelMessagesInput,
   type ReassignChannelTaskInput,
@@ -87,6 +88,10 @@ export function parseUpdateChannel(value: unknown): UpdateWorkspaceChannelInput 
   if (instructions !== undefined) input.instructions = instructions;
   if (value.isolated !== undefined) input.isolated = requiredFlag(value.isolated, "isolated");
   if (value.archived !== undefined) input.archived = requiredFlag(value.archived, "archived");
+  if (value.historyWindow !== undefined) {
+    if (!isChannelHistoryWindow(value.historyWindow)) throw new Error("historyWindow is 20, 50, 100 or 200.");
+    input.historyWindow = value.historyWindow;
+  }
   return input;
 }
 

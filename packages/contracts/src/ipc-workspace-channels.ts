@@ -154,6 +154,17 @@ export function isChannelMessage(value: unknown): value is ChannelMessage {
   );
 }
 
+// COSGRAL W12 (BE-Z): how much of the channel's history an agent gets with a task ("compact"). The agent starts every task on a fresh
+// provider thread and receives the last N messages of the channel as data; a long channel means a long prompt, so the person may keep
+// only the last 20, 50 or 100 (200 is the whole page and what the program always did). The request that started the task is always kept.
+export const CHANNEL_HISTORY_WINDOWS = [20, 50, 100, 200] as const;
+export type ChannelHistoryWindow = (typeof CHANNEL_HISTORY_WINDOWS)[number];
+export const DEFAULT_CHANNEL_HISTORY_WINDOW: ChannelHistoryWindow = 200;
+
+export function isChannelHistoryWindow(value: unknown): value is ChannelHistoryWindow {
+  return isOneOf(CHANNEL_HISTORY_WINDOWS, value);
+}
+
 export interface WorkspaceChannel {
   id: string;
   /** Short name, e.g. "launch-plan" (see `CHANNEL_LIMITS.name`). */
@@ -168,6 +179,8 @@ export interface WorkspaceChannel {
   /** Tools, memory and context stay inside the channel. */
   isolated: boolean;
   archived: boolean;
+  /** How many of the last messages an agent gets with a task; the engine always fills it in, absent means 200. */
+  historyWindow?: ChannelHistoryWindow;
   createdAt: string;
   updatedAt: string;
 }
@@ -188,6 +201,7 @@ export interface UpdateWorkspaceChannelInput {
   instructions?: string;
   isolated?: boolean;
   archived?: boolean;
+  historyWindow?: ChannelHistoryWindow;
 }
 
 /** Add or remove a member, or make a member the lead. */
@@ -252,6 +266,7 @@ export function isWorkspaceChannel(value: unknown): value is WorkspaceChannel {
     value.memberBotIds.every(isString) &&
     isBoolean(value.isolated) &&
     isBoolean(value.archived) &&
+    (value.historyWindow === undefined || isChannelHistoryWindow(value.historyWindow)) &&
     isString(value.createdAt) &&
     isString(value.updatedAt)
   );

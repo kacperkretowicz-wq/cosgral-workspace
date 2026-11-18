@@ -4,6 +4,7 @@ import {
   type ChannelMessage,
   type ChannelTask,
   type ChannelTaskActionInput,
+  DEFAULT_CHANNEL_HISTORY_WINDOW,
   type ReassignChannelTaskInput,
   type SendChannelMessageInput,
   type WorkspaceChannel,
@@ -174,7 +175,10 @@ export class ChannelEngine {
     const channel = this.#store.get(task.channelId);
     lease.promise = Promise.resolve()
       .then(() => {
-        const history = this.#store.listMessages(channel.id);
+        // COSGRAL W12 (BE-Z): only the last N messages of the channel; the request of the task is put in front below when it fell out.
+        const history = this.#store.listMessages(channel.id, {
+          limit: channel.historyWindow ?? DEFAULT_CHANNEL_HISTORY_WINDOW,
+        });
         const request = this.#store.getMessage(channel.id, task.requestMessageId);
         if (!history.some((m) => m.id === request.id)) history.unshift(request);
         return abort.signal.aborted
@@ -254,7 +258,10 @@ export class ChannelEngine {
       if (!isString(v) || !v.trim()) throw new Error(`${key} is required.`);
       return v;
     };
-    if (name === "history") return this.#store.listMessages(task.channelId);
+    if (name === "history") {
+      const window = this.#store.get(task.channelId).historyWindow ?? DEFAULT_CHANNEL_HISTORY_WINDOW;
+      return this.#store.listMessages(task.channelId, { limit: window });
+    }
     if (name === "memory") return this.#store.listMemory(task.channelId);
     if (name === "remember") return this.#store.remember(task.channelId, task.ownerBotId, string("text"));
     if (name === "note")
