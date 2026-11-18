@@ -1145,4 +1145,5 @@ export const pl = {
   "Install failed.": "Instalacja nie powiodła się.",
   "Uninstall failed.": "Odinstalowanie nie powiodło się.",
   "Delete this agent and its chats and files?": "Usunąć tego agenta wraz z jego czatami i plikami?",
+  Position: "Pozycja",
 } as const;

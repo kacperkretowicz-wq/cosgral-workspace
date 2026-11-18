@@ -1,0 +1,194 @@
+/* Workflow editor: step palette, step cards with a type tile and an output port, curved connections with arrowheads. */
+.workflow-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.workflow-palette-button {
+  --step-hue: 245;
+  height: 32px;
+  gap: 8px;
+  border-radius: var(--cosgral-radius-pill);
+  padding: 0 14px;
+  font-size: var(--cosgral-text-md);
+}
+
+.workflow-palette-button::before {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: var(--cosgral-radius-pill);
+  background: oklch(0.72 0.14 var(--step-hue));
+  content: "";
+}
+
+[data-step="trigger"],
+.workflow-node[data-type="trigger"] {
+  --step-hue: 150;
+}
+
+[data-step="agent"],
+.workflow-node[data-type="agent"] {
+  --step-hue: 245;
+}
+
+[data-step="approval"],
+.workflow-node[data-type="approval"] {
+  --step-hue: 70;
+}
+
+[data-step="channel-output"],
+.workflow-node[data-type="channel-output"] {
+  --step-hue: 320;
+}
+
+[data-step="prompt"],
+.workflow-node[data-type="prompt"] {
+  --step-hue: 200;
+}
+
+[data-step="condition"],
+.workflow-node[data-type="condition"] {
+  --step-hue: 30;
+}
+
+.workflow-canvas {
+  min-height: 420px;
+  border-radius: var(--cosgral-radius-lg);
+  background-color: var(--cosgral-bg-canvas);
+  background-image: radial-gradient(var(--cosgral-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.workflow-canvas .workflow-node {
+  width: 240px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 0 12px 12px;
+}
+
+.workflow-canvas .workflow-drag {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -12px;
+  border: 0;
+  border-bottom: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg) var(--cosgral-radius-lg) 0 0;
+  background: oklch(0.5 0.1 var(--step-hue) / 0.18);
+  padding: 0 12px;
+  color: oklch(0.84 0.1 var(--step-hue));
+  font-size: var(--cosgral-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.workflow-node-move {
+  color: var(--cosgral-text-muted);
+  font-weight: 400;
+  text-transform: none;
+}
+
+.workflow-canvas .workflow-port {
+  position: absolute;
+  top: 20px;
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid oklch(0.72 0.14 var(--step-hue));
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-canvas);
+  padding: 0;
+  cursor: crosshair;
+  touch-action: none;
+  transition: background-color var(--cosgral-duration-normal) ease;
+}
+
+.workflow-canvas .workflow-port:hover {
+  background: oklch(0.72 0.14 var(--step-hue));
+}
+
+.workflow-canvas .workflow-node label {
+  display: grid;
+  gap: 4px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.workflow-canvas .workflow-node .ui-input,
+.workflow-canvas .workflow-node .ui-textarea,
+.workflow-canvas .workflow-node select {
+  width: 100%;
+}
+
+.workflow-node-position summary {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  cursor: pointer;
+}
+
+.workflow-node-position[open] {
+  display: grid;
+  gap: 8px;
+}
+
+.workflow-connections {
+  fill: none;
+  stroke: var(--cosgral-border-strong);
+  stroke-width: 1.5;
+}
+
+.workflow-connections path[data-edge="yes"],
+.workflow-connections path[data-edge="allow"] {
+  stroke: var(--cosgral-accent);
+}
+
+.workflow-connections path[data-edge="no"],
+.workflow-connections path[data-edge="deny"] {
+  stroke-dasharray: 5 4;
+}
+
+.workflow-connections .workflow-arrow {
+  fill: var(--cosgral-border-strong);
+  stroke: none;
+}
+
+.workflow-connections .workflow-connecting {
+  stroke: var(--cosgral-accent);
+  stroke-dasharray: 5 4;
+}
+
+.workflow-edge-label {
+  fill: var(--cosgral-text-secondary);
+  stroke: none;
+  font-size: var(--cosgral-text-sm);
+}
+
+.workflow-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-list .ui-button[aria-current="true"] {
+  border-color: var(--cosgral-accent-strong);
+  background: var(--cosgral-accent-soft);
+  color: var(--cosgral-accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-canvas .workflow-port {
+    transition: none;
+  }
+}

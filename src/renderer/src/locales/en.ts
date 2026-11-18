@@ -1146,4 +1146,5 @@ export const en = {
   "Install failed.": "Install failed.",
   "Uninstall failed.": "Uninstall failed.",
   "Delete this agent and its chats and files?": "Delete this agent and its chats and files?",
+  Position: "Position",
 } as const;
