@@ -323,8 +323,13 @@ async function openAppSettings(page: Page): Promise<void> {
       .or(page.getByRole("button", { name: "Ustawienia", exact: true }));
     if (await fallback.count()) await fallback.first().click({ timeout: 8_000 });
   }
+  // KK-AC: gear opens the Settings *page* (InitialSetup), not SettingsModal with .settings-modal-nav.
+  // Wait for either the page sections or a legacy modal dialog.
   await page
-    .getByRole("dialog")
+    .locator("#settings-updates, #settings-voice, #settings-voice-microphone")
+    .or(page.getByRole("heading", { name: /Updates|Aktualizacje|Voice|Głos|Appearance|Wygląd/i }))
+    .or(page.getByRole("dialog"))
+    .first()
     .waitFor({ timeout: 8_000 })
     .catch(() => undefined);
   await page.waitForTimeout(400);
@@ -773,16 +778,15 @@ async function main(): Promise<void> {
       if (!(await more.count())) {
         return `menu wiadomości MISS:more-btn [${await visibleChecklist([{ id: "stub-text", find: () => p.getByText(/Stub: received|Hello from T-G/i) }])}]`;
       }
-      // Kobalte opens on pointerdown; disabled items append a reason span → name is not exact "^Copy$".
-      await more.first().dispatchEvent("pointerdown", { button: 0 });
-      await more.first().dispatchEvent("pointerup", { button: 0 });
+      // KK-AC: one click only — pointerdown+up+click(force) can open then close the menu.
+      // Disabled actions append a reason → match /^Retry/ not exact "Retry".
       await more
         .first()
-        .click({ force: true, timeout: 4_000 })
+        .click({ timeout: 4_000 })
         .catch(() => undefined);
       await p
         .locator(".message-more-menu")
-        .or(p.getByRole("menuitem", { name: /Copy|Kopiuj|Edit message|Edytuj/i }))
+        .or(p.getByRole("menuitem", { name: /^(Copy|Kopiuj|Edit message|Edytuj|Retry|Ponów)/i }))
         .first()
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
@@ -792,15 +796,18 @@ async function main(): Promise<void> {
           id: "copy",
           find: () =>
             p
-              .getByRole("menuitem", { name: /Copy|Kopiuj|Copied|Skopiowano/i })
-              .or(p.locator(".message-more-menu").getByText(/^Copy$|^Kopiuj$/i)),
+              .getByRole("menuitem", { name: /^(Copy|Kopiuj|Copied|Skopiowano)/i })
+              .or(p.locator(".message-more-menu").getByText(/^(Copy|Kopiuj)/i)),
         },
         { id: "react", find: () => p.getByRole("button", { name: /Add reaction|Dodaj reakcję/i }) },
-        { id: "pin", find: () => p.getByRole("menuitem", { name: /Pin message|Unpin message|Przypnij|Odepnij/i }) },
-        { id: "branch", find: () => p.getByRole("menuitem", { name: /Branch from here|Rozgałęź/i }) },
-        { id: "retry", find: () => p.getByRole("menuitem", { name: /Retry|Ponów/i }) },
-        { id: "edit", find: () => p.getByRole("menuitem", { name: /Edit message|Edytuj wiadomość/i }) },
-        { id: "delete", find: () => p.getByRole("menuitem", { name: /Delete message|Usuń wiadomość/i }) },
+        {
+          id: "pin",
+          find: () => p.getByRole("menuitem", { name: /^(Pin message|Unpin message|Przypnij|Odepnij)/i }),
+        },
+        { id: "branch", find: () => p.getByRole("menuitem", { name: /^(Branch from here|Rozgałęź)/i }) },
+        { id: "retry", find: () => p.getByRole("menuitem", { name: /^(Retry|Ponów)/i }) },
+        { id: "edit", find: () => p.getByRole("menuitem", { name: /^(Edit message|Edytuj wiadomość)/i }) },
+        { id: "delete", find: () => p.getByRole("menuitem", { name: /^(Delete message|Usuń wiadomość)/i }) },
       ]);
       return `menu wiadomości + checklist [${checklist}]`;
     });
@@ -993,7 +1000,7 @@ async function main(): Promise<void> {
     });
 
     await tryShot(app, pageRef, out, "16-updates", async (p) => {
-      // KK: gear is exact "Settings"/"Ustawienia"; Updates is its own nav (not General).
+      // KK-AC: gear → Settings *page* (scroll); no .settings-modal-nav. Legacy modal kept as fallback.
       await dismissOverlays(p);
       await openAppSettings(p);
       const dialog = p.getByRole("dialog");
@@ -1003,9 +1010,17 @@ async function main(): Promise<void> {
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
-      await dialog
-        .getByRole("heading", { name: /Updates|Aktualizacje/i })
+      const updates = p
+        .locator("#settings-updates")
+        .or(p.getByRole("heading", { name: /Updates|Aktualizacje/i }))
         .or(dialog.locator("#settings-updates"))
+        .or(dialog.getByRole("heading", { name: /Updates|Aktualizacje/i }));
+      if (await updates.count())
+        await updates
+          .first()
+          .scrollIntoViewIfNeeded()
+          .catch(() => undefined);
+      await updates
         .first()
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
@@ -1014,21 +1029,19 @@ async function main(): Promise<void> {
         {
           id: "heading",
           find: () =>
-            dialog
+            p
               .locator("#settings-updates")
-              .or(dialog.getByRole("heading", { name: /Updates|Aktualizacje/i }))
+              .or(p.getByRole("heading", { name: /Updates|Aktualizacje/i }))
               .or(dialog.locator(".settings-modal-title").filter({ hasText: /Updates|Aktualizacje/i }))
-              .or(dialog.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
+              .or(p.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
         },
         {
           id: "track",
           find: () =>
-            dialog.getByText(
-              /Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i,
-            ),
+            p.getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i),
         },
       ]);
-      return `Aktualizacje KK (Settings→Updates) + checklist [${checklist}]`;
+      return `Aktualizacje KK (Settings page → Updates) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "17-messengers", async (p) => {
@@ -1067,7 +1080,7 @@ async function main(): Promise<void> {
     });
 
     await tryShot(app, pageRef, out, "19-voice", async (p) => {
-      // KK: Voice lives in app Settings modal (VoiceOverviewPanel); panel heading is Microphone.
+      // KK-AC: Voice on Settings page (#settings-voice / #settings-voice-microphone); scroll, no modal nav.
       await dismissOverlays(p);
       await openAppSettings(p);
       const dialog = p.getByRole("dialog");
@@ -1077,9 +1090,16 @@ async function main(): Promise<void> {
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
-      await dialog
-        .locator("#settings-voice-microphone")
-        .or(dialog.getByRole("heading", { name: /Microphone|Mikrofon/i }))
+      const voiceHead = p
+        .locator("#settings-voice, #settings-voice-microphone")
+        .or(p.getByRole("heading", { name: /Voice|Głos|Microphone|Mikrofon/i }))
+        .or(dialog.locator("#settings-voice-microphone"));
+      if (await voiceHead.count())
+        await voiceHead
+          .first()
+          .scrollIntoViewIfNeeded()
+          .catch(() => undefined);
+      await voiceHead
         .first()
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
@@ -1088,21 +1108,21 @@ async function main(): Promise<void> {
         {
           id: "voice",
           find: () =>
-            dialog
-              .locator("#settings-voice-microphone")
-              .or(dialog.getByRole("heading", { name: /Microphone|Mikrofon/i }))
+            p
+              .locator("#settings-voice, #settings-voice-microphone")
+              .or(p.getByRole("heading", { name: /Voice|Głos|Microphone|Mikrofon/i }))
               .or(dialog.locator(".settings-modal-title").filter({ hasText: /Voice|Głos/i }))
-              .or(dialog.locator(".voice-overview")),
+              .or(p.locator(".voice-overview")),
         },
         {
           id: "mic",
           find: () =>
-            dialog.getByText(
+            p.getByText(
               /Microphone permission|Uprawnienie do mikrofonu|Not available in this version|Niedostępne w tej wersji|unavailable|niedostępne/i,
             ),
         },
       ]);
-      return `Głos KK (Settings→Voice) + checklist [${checklist}]`;
+      return `Głos KK (Settings page → Voice) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "20-mobile-connect", async (p) => {
