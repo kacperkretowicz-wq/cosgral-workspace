@@ -45,6 +45,9 @@ export const en = {
   Accent: "Accent",
   "Colour accent for your own chat bubbles.": "Colour accent for your own chat bubbles.",
   "Send message with": "Send message with",
+  "Unread first": "Unread first",
+  "Agents with new replies rise to the top of their group in the sidebar.":
+    "Agents with new replies rise to the top of their group in the sidebar.",
   "Enter sends by default. Ctrl+Enter keeps Enter for a new line.":
     "Enter sends by default. Ctrl+Enter keeps Enter for a new line.",
   "Ctrl+Enter": "Ctrl+Enter",

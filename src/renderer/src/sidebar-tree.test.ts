@@ -186,3 +186,27 @@ describe("move targets", () => {
     expect(targets.find((target) => target.folderId === null)?.disabled).toBe(false);
   });
 });
+
+describe("buildSidebarRows with unread first (BE-AC)", () => {
+  const layout: SidebarLayout = {
+    folders: [folder("team", null)],
+    placements: [place("chief", "team", 0), place("research", "team", 1), place("sales", "team", 2)],
+  };
+  const isUnread = (bot: { id: string }) => bot.id === "sales" || bot.id === "research";
+
+  it("puts unread agents first at the top level and keeps the usual order inside each group", () => {
+    const rows = buildSidebarRows({ folders: [], placements: [] }, bots, { unreadFirst: isUnread });
+    expect(describeRows(rows)).toEqual(["0:agent:research", "0:agent:sales", "0:agent:chief"]);
+  });
+
+  it("moves unread agents up inside their own folder only; folders and manual placement stay", () => {
+    const rows = buildSidebarRows(layout, bots, { unreadFirst: isUnread });
+    expect(describeRows(rows)).toEqual(["1:folder:team", "2:agent:research", "2:agent:sales", "2:agent:chief"]);
+  });
+
+  it("changes nothing without the option or when nothing is unread", () => {
+    const plain = describeRows(buildSidebarRows(layout, bots));
+    expect(describeRows(buildSidebarRows(layout, bots, { unreadFirst: () => false }))).toEqual(plain);
+    expect(plain).toEqual(["1:folder:team", "2:agent:chief", "2:agent:research", "2:agent:sales"]);
+  });
+});

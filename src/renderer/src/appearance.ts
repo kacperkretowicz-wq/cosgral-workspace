@@ -1,6 +1,11 @@
 import { appearanceDomTokens, normalizeAppAppearance } from "@openbot/contracts/ipc";
+import { createSignal } from "solid-js";
 
 export const APPEARANCE_CACHE_KEY = "cosgral-appearance";
+
+const [unreadFirstSignal, setUnreadFirst] = createSignal(false);
+/** BE-AC: "unread agents first" (appearance.unreadFirst), reactive for the sidebar. */
+export const unreadFirst = unreadFirstSignal;
 
 /** Paint look tokens on `<html>` so CSS can follow scale, font and accent (parity row 2). */
 export function applyAppearanceDom(value: unknown): void {
@@ -12,6 +17,7 @@ export function applyAppearanceDom(value: unknown): void {
   root.dataset.sendShortcut = tokens.sendShortcut;
   root.dataset.agentSteps = tokens.agentSteps;
   root.dataset.unreadFirst = tokens.unreadFirst;
+  setUnreadFirst(tokens.unreadFirst === "true");
   root.style.setProperty("--openbot-ui-scale", tokens.scaleFactor);
   root.style.setProperty("--openbot-accent", tokens.accentHex);
   root.style.setProperty("--openbot-accent-soft", tokens.accentSoft);
@@ -62,4 +68,9 @@ export function startAppearance(): () => void {
     disposed = true;
     off();
   };
+}
+
+/** True when the person chose to show the steps of the agent open (`appearance.agentSteps` = "show"); the default is folded. */
+export function agentStepsOpen(): boolean {
+  return document.documentElement.dataset.agentSteps === "show";
 }

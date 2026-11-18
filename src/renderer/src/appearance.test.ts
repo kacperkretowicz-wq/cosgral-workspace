@@ -1,3 +1,4 @@
+import { flush } from "solid-js";
 import { afterEach, expect, it, vi } from "vitest";
 import { createMockOpenBot } from "../stories/mock-openbot";
 import { APPEARANCE_CACHE_KEY, applyAppearanceDom, startAppearance } from "./appearance";
@@ -8,6 +9,7 @@ afterEach(() => {
   document.documentElement.removeAttribute("data-ui-scale");
   document.documentElement.removeAttribute("data-font");
   document.documentElement.removeAttribute("data-chat-accent");
+  document.documentElement.removeAttribute("data-unread-first");
   document.documentElement.style.removeProperty("--openbot-ui-scale");
   document.documentElement.style.removeProperty("--openbot-accent");
   document.documentElement.style.removeProperty("--openbot-font-sans");
@@ -38,4 +40,15 @@ it("follows app-settings-changed and caches the look", async () => {
   });
   stop();
   mock.dispose();
+});
+
+it("tells the window whether unread agents go first (BE-AC), also after a change", async () => {
+  const { unreadFirst } = await import("./appearance");
+  applyAppearanceDom({ unreadFirst: true });
+  flush();
+  expect(unreadFirst()).toBe(true);
+  expect(document.documentElement.dataset.unreadFirst).toBe("true");
+  applyAppearanceDom({});
+  flush();
+  expect(unreadFirst()).toBe(false);
 });

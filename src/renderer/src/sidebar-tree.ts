@@ -33,6 +33,12 @@ function childFolders(layout: SidebarLayout, parentId: string | null): SidebarFo
   return byPosition(layout.folders.filter((folder) => folder.parentId === parentId));
 }
 
+/** BE-AC: the agents for which `isUnread` is true first; each group keeps its order. Without `isUnread` the list is as it was. */
+export function sortUnreadFirst<T>(items: readonly T[], isUnread?: (item: T) => boolean): readonly T[] {
+  if (!isUnread) return items;
+  return [...items.filter(isUnread), ...items.filter((item) => !isUnread(item))];
+}
+
 /**
  * Rows to draw, top to bottom. With `searching`, only folders that hold a shown agent remain and they are
  * drawn open. `bots` is the (already filtered) agent list in its usual order.
@@ -40,7 +46,7 @@ function childFolders(layout: SidebarLayout, parentId: string | null): SidebarFo
 export function buildSidebarRows<T extends { id: string }>(
   layout: SidebarLayout,
   bots: readonly T[],
-  options: { searching?: boolean } = {},
+  options: { searching?: boolean; unreadFirst?: (bot: T) => boolean } = {},
 ): SidebarRow<T>[] {
   const searching = options.searching === true;
   const folderIds = new Set(layout.folders.map((folder) => folder.id));
@@ -88,7 +94,8 @@ export function buildSidebarRows<T extends { id: string }>(
       rows.push({ type: "folder", folder, depth: level, expanded, agentCount });
       if (expanded) visit(folder.id, level + 1);
     }
-    for (const bot of agentsIn.get(parentId) ?? []) {
+    // BE-AC: unread agents rise to the top of their own level; both groups keep their saved or usual order.
+    for (const bot of sortUnreadFirst(agentsIn.get(parentId) ?? [], options.unreadFirst)) {
       // `botById` keeps this honest: only agents that exist are drawn.
       if (botById.has(bot.id)) rows.push({ type: "agent", bot, depth: parentId === null ? 0 : level });
     }
