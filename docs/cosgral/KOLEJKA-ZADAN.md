@@ -72,7 +72,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 6. [zrobione: 5d86c5b60] `sandbox-a11y-probe.ts` — ok (focus, reduced-motion, css) w T-AJ GO.
 7. [zrobione: T-AJ GO] historyWindow OK, Clear history OK, MaxListeners 0; **sendShortcut** dataset OK (`sandbox-ui-probes`).
 8. [zrobione: 5d86c5b60] Sonda w oknie: sendShortcut + unreadFirst (IPC/dataset) + Tasks board 5 kolumn — `sandbox-ui-probes.ts`.
-9. Odbiór kanałów w kliencie telefonu (PWA) po UI/KK (tylko za GO).
+9. [w toku: Tester, 23:55] Odbiór kanałów w kliencie telefonu (PWA) po UI/KK (tylko za GO).
 10. [zrobione: 5d86c5b60] P0/P1 po 17-11-j: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-tj.md` + `vs-071-p0p1.txt` (poza repo).
 
 ## Lider (Okiestrator)
