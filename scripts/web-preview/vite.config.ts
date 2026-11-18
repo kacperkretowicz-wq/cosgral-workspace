@@ -41,6 +41,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Dictionaries and the Storybook fixtures are large; their own chunks keep every file under 1 MB.
+          if (/src[/]renderer[/]locales[/]/.test(id)) return "locales";
+          if (/src[/]renderer[/]stories[/]/.test(id)) return "fixtures";
           if (!id.includes("node_modules")) return undefined;
           if (/node_modules[\\/](solid-js|@solidjs)[\\/]/.test(id)) return "solid";
           return "vendor";
