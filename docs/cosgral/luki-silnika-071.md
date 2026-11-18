@@ -94,3 +94,17 @@ Wiersze, które mają kontrakt, silnik i testy, a **nie mają ekranu** (w `paryt
 1. Godziny nie są pomiarem; największa niepewność: Discord (zachowanie prawdziwej bramki), link GitHub (limity i bezpieczeństwo pobierania), Condition (zasady rozgałęzień a walidacja grafu).
 2. Nie uruchamiałem programu ani testów; stan silników z czytania kodu integracji i raportów.
 3. Koszty UI to orientacja z wielkości podobnych ekranów, nie plan UI Designera.
+
+## Ustawienia kanału: „nowa rozmowa” i „kompakt” z 0.71 (Backend, BE-Y2, 18.11.2026)
+
+Opis 0.71 wymienia w ustawieniach kanału: pamięć, izolowaną pamięć, „kto używa przeglądarki”, „nowa rozmowa”, „kompakt”, kasowanie historii, rutyny. Co z tego wynika z naszego kodu:
+
+| Pozycja 0.71 | Stan u nas | Dowód w kodzie |
+|---|---|---|
+| Pamięć kanału, izolacja, rutyny | **jest** (silnik i ekrany) | `channel-store.ts`, `ipc-isolation`, `channel-routines.ts` |
+| Kasowanie historii | **jest** (BE-Y: `channels.clearHistory`), ekranu brak | `ChannelStore.clearHistory` |
+| „Nowa rozmowa” | **bezprzedmiotowe z założenia**: każde zadanie kanału startuje nową, tymczasową rozmowę dostawcy (`thread/start` z `ephemeral: true` w `ChannelAgentRunner.#run`), więc agent nigdy nie przenosi kontekstu między zadaniami | `src/backend/channel-agent-runner.ts` (`ephemeral: true`) |
+| „Kompakt” | **bez odpowiednika, ale jest sensowna wersja**: agent dostaje przy każdym zadaniu ostatnie 200 wiadomości kanału (`CHANNEL_LIMITS.historyPage`) jako dane; długi kanał = dużo kontekstu = wolniej i drożej. Wersja „kompakt” = **okno historii** per kanał (np. 20 / 50 / 100 / 200 ostatnich wiadomości) | `channel-engine.ts` (`listMessages(channel.id)` bez limitu), `channel-store.ts` (`historyPage: 200`) |
+| „Kto używa przeglądarki” | zależy od hosta przeglądarki (karty mają właściciela wątku i agenta); osobne ustawienie kanału nie istnieje | `browser-host.ts` (`ownerThreadId`, `ownerBotId`) |
+
+**Propozycja dla lidera:** nie dublować „nowej rozmowy” (nic do zrobienia). „Kompakt” zrobić jako **okno historii kanału** (pole w ustawieniach kanału, domyślnie 200 = dzisiejsze zachowanie, tylko mniej = tańsze zadania). Koszt ok. 3 h (kontrakt, magazyn bez zmiany schematu tabel albo z jedną kolumną, silnik, testy, atrapa), ekran: jedna lista wyboru. Do ustalenia z liderem: czy okno ma zawsze zawierać wiadomość-prośbę zadania (tak: już dziś jest dopinana na początek).
