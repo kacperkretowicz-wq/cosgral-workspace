@@ -41,9 +41,9 @@ it("takes a switch back and says so when the program refuses the change", async 
   render(() => <AppBehaviorSection />);
   const keep = await screen.findByRole("switch", { name: KEEP });
   await waitFor(() => expect(keep).toBeEnabled());
-  vi.spyOn(window.openbot.appSettings as NonNullable<typeof window.openbot.appSettings>, "update").mockRejectedValue(
-    new Error("The setting was refused."),
-  );
+  const settings = window.openbot.appSettings;
+  if (!settings) throw new Error("The mock program has no app settings.");
+  vi.spyOn(settings, "update").mockRejectedValue(new Error("The setting was refused."));
   fireEvent.click(keep);
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("The setting was refused."));
   await waitFor(() => expect(screen.getByRole("switch", { name: KEEP })).not.toBeChecked());
