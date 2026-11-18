@@ -205,3 +205,64 @@
   align-items: center;
   gap: 8px;
 }
+
+.subagents-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 8px 12px;
+}
+
+.subagents-panel > summary {
+  cursor: pointer;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+}
+
+.subagents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.subagent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-md);
+  padding: 8px 12px;
+}
+
+.subagent-card[data-state="waiting"] {
+  border-color: var(--cosgral-warning);
+}
+
+.subagent-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.subagent-task,
+.subagent-preview,
+.subagent-result p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.subagent-preview {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.subagent-result summary {
+  cursor: pointer;
+  color: var(--cosgral-text-secondary);
+}
