@@ -278,7 +278,10 @@ async function reachMain(page: Page): Promise<string[]> {
     // Nudge a stuck "Checking" probe every ~8s (same as clicking Sprawdź on the setup card).
     if (round > 0 && round % 16 === 0 && (await checkBtn.count()) && (await checkBtn.first().isEnabled())) {
       seen.push("check");
-      await checkBtn.first().click({ timeout: 5_000 }).catch(() => undefined);
+      await checkBtn
+        .first()
+        .click({ timeout: 5_000 })
+        .catch(() => undefined);
     }
     await page.waitForTimeout(500);
   }
@@ -298,14 +301,25 @@ async function openNewAgentForm(
   page: Page,
 ): Promise<"formularz Nowy agent już na starcie" | "formularz Nowy agent widoczny"> {
   await dismissOverlays(page);
-  // Empty program (UI-F) already starts on New agent — do not click broad "+/New" (opens Join / New channel).
+  // Empty program (UI-F) already starts on New agent — after seed, open Create new → New agent (menuitem).
   const form = page.locator(".new-agent-page").or(page.getByRole("main", { name: /New agent|Nowy agent/i }));
   const heading = page.getByRole("heading", { name: /New agent|Nowy agent/i });
   if ((await form.count()) || (await heading.count())) return "formularz Nowy agent już na starcie";
-  const create = page.getByRole("button", { name: /^New agent$|^Nowy agent$|Create new agent|Utwórz nowego agenta/i });
-  if (await create.count()) {
-    await create.first().click({ timeout: 8_000 });
+  const createNew = page.getByRole("button", { name: /^Create new$|^Utwórz now/i });
+  if (await createNew.count()) {
+    await createNew.first().click({ timeout: 8_000 });
+    await page.waitForTimeout(300);
+    const item = page.getByRole("menuitem", { name: /^New agent$|^Nowy agent$/i });
+    if (await item.count()) await item.first().click({ timeout: 8_000 });
     await page.waitForTimeout(600);
+  } else {
+    const create = page.getByRole("button", {
+      name: /^New agent$|^Nowy agent$|Create new agent|Utwórz nowego agenta/i,
+    });
+    if (await create.count()) {
+      await create.first().click({ timeout: 8_000 });
+      await page.waitForTimeout(600);
+    }
   }
   await dismissOverlays(page);
   if ((await form.count()) || (await heading.count())) return "formularz Nowy agent widoczny";
@@ -615,6 +629,14 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "09-tasks", async (p) => {
       await clickRail(p, ["Tasks", "Zadania"]);
       await p.waitForTimeout(700);
+      // Open as chat + Steps list live in the detail pane — click a seeded row first.
+      const row = p.getByRole("button", { name: /seed|Shot|Seed/i }).or(p.locator(".tasks-screen-title").first());
+      if (await row.count())
+        await row
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(500);
       const checklist = await visibleChecklist([
         {
           id: "heading-or-search",
@@ -624,7 +646,11 @@ async function main(): Promise<void> {
               .or(p.getByLabel(/Search tasks|Szukaj zadań/i)),
         },
         { id: "open-as-chat", find: () => p.getByRole("button", { name: /Open as chat|Otwórz jako czat/i }) },
-        { id: "steps", find: () => p.getByText(/Steps\s*\(|Kroki\s*\(/i) },
+        {
+          id: "steps",
+          find: () =>
+            p.getByRole("heading", { name: /^Steps$|^Kroki$/i }).or(p.getByText(/\d+\/\d+\s+steps|\d+\/\d+\s+krok/i)),
+        },
         {
           id: "state-badge",
           find: () => p.getByText(/^(Running|Done|Paused|Archived|W toku|Gotowe|Wstrzymane|Archiwum)$/i),
@@ -688,7 +714,12 @@ async function main(): Promise<void> {
       if (!(await more.count())) {
         return `menu wiadomości MISS:more-btn [${await visibleChecklist([{ id: "stub-text", find: () => p.getByText(/Stub: received|Hello from T-G/i) }])}]`;
       }
-      await more.first().click({ timeout: 8_000 });
+      // Kobalte DropdownMenu opens on pointerdown (App.test / MessageHistoryActions.test), not click alone.
+      await more.first().dispatchEvent("pointerdown", { button: 0 });
+      await more
+        .first()
+        .click({ timeout: 8_000 })
+        .catch(() => undefined);
       await p.waitForTimeout(500);
       const checklist = await visibleChecklist([
         { id: "copy", find: () => p.getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i }) },
@@ -792,45 +823,97 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "15-workflows-versions", async (p) => {
       await clickRail(p, ["Workflows", "Przepływy"]);
       await p.waitForTimeout(900);
-      const listItem = p.getByRole("button", { name: /workflow|przepływ|seed|flow/i }).or(p.locator(".workflow-list button, [data-workflow-id]").first());
+      // Versions panel mounts only when a workflow is selected (Show when={selected()}).
+      const listItem = p
+        .getByRole("button", { name: /workflow|przepływ|seed|flow|Shot/i })
+        .or(p.locator(".workflow-list button, [data-workflow-id]").first());
       if (await listItem.count())
         await listItem
           .first()
           .click()
           .catch(() => undefined);
-      await p.waitForTimeout(600);
-      const versions = p.getByText(/Versions|Wersje|Current|Bieżąca|Restore|Przywróć/i);
+      else {
+        const create = p.getByRole("button", { name: /New workflow|Nowy przepływ|Create|Utwórz/i });
+        if (await create.count())
+          await create
+            .first()
+            .click()
+            .catch(() => undefined);
+      }
+      await p.waitForTimeout(700);
+      const versions = p.getByRole("region", { name: /^Versions$|^Wersje$/i }).or(p.locator(".workflow-versions"));
       if (await versions.count())
         await versions
           .first()
-          .click()
+          .scrollIntoViewIfNeeded()
           .catch(() => undefined);
       await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         { id: "canvas-or-list", find: () => p.getByText(/Workflow|Przepływ|Trigger|Agent|Run history|Historia/i) },
-        { id: "versions", find: () => p.getByText(/Versions|Wersje|Bieżąca|Current|Restore|Przywróć/i) },
+        {
+          id: "versions",
+          find: () =>
+            p
+              .getByRole("region", { name: /^Versions$|^Wersje$/i })
+              .or(p.getByRole("heading", { name: /^Versions$|^Wersje$/i }))
+              .or(p.getByText(/Versions are not available|Wersje nie są dostępne|Restore|Przywróć/i)),
+        },
       ]);
       return `Workflows wersje + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "16-updates", async (p) => {
-      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
-      await p.waitForTimeout(500);
-      const tab = p.getByRole("button", { name: /^Updates$|^Aktualizacje$/i }).or(p.getByText(/^Updates$|^Aktualizacje$/i));
-      if (await tab.count()) await tab.first().click().catch(() => undefined);
+      // UpdatesPanel lives in SettingsModal → General (not Server settings rail).
+      await dismissOverlays(p);
+      const gear = p
+        .getByRole("navigation", { name: /Pages|Strony/i })
+        .getByRole("button", { name: /^Settings$|^Ustawienia$/i });
+      if (await gear.count()) await gear.first().click({ timeout: 8_000 });
+      else {
+        const any = p.getByRole("button", { name: /^Settings$|^Ustawienia$|Open Settings|Otwórz ustawienia/i });
+        if (await any.count()) await any.first().click({ timeout: 8_000 });
+      }
       await p.waitForTimeout(600);
+      const general = p.getByRole("button", { name: /^General$|^Ogólne$/i });
+      if (await general.count())
+        await general
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(400);
+      const updatesHead = p.getByRole("heading", { name: /^Updates$|^Aktualizacje$/i });
+      if (await updatesHead.count())
+        await updatesHead
+          .first()
+          .scrollIntoViewIfNeeded()
+          .catch(() => undefined);
+      await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
-        { id: "heading", find: () => p.getByText(/Updates|Aktualizacje|Check for updates|Sprawdź aktualizacje/i) },
-        { id: "track", find: () => p.getByText(/Stable|Preview|Stabilny/i) },
+        {
+          id: "heading",
+          find: () =>
+            p
+              .getByRole("heading", { name: /^Updates$|^Aktualizacje$/i })
+              .or(p.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
+        },
+        {
+          id: "track",
+          find: () =>
+            p.getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i),
+        },
       ]);
-      return `Aktualizacje KK + checklist [${checklist}]`;
+      return `Aktualizacje KK (Settings→General) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "17-messengers", async (p) => {
       await clickRail(p, ["Library", "Biblioteka"]);
       await p.waitForTimeout(600);
       const head = p.getByText(/^Messengers$|^Komunikatory$/i);
-      if (await head.count()) await head.first().scrollIntoViewIfNeeded().catch(() => undefined);
+      if (await head.count())
+        await head
+          .first()
+          .scrollIntoViewIfNeeded()
+          .catch(() => undefined);
       await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         { id: "messengers", find: () => p.getByText(/Messengers|Komunikatory/i) },
@@ -844,7 +927,11 @@ async function main(): Promise<void> {
       await clickRail(p, ["Server settings", "Ustawienia serwera"]);
       await p.waitForTimeout(400);
       const mcp = p.getByRole("button", { name: /^MCP$/i }).or(p.getByText(/^MCP$/i));
-      if (await mcp.count()) await mcp.first().click().catch(() => undefined);
+      if (await mcp.count())
+        await mcp
+          .first()
+          .click()
+          .catch(() => undefined);
       await p.waitForTimeout(600);
       const checklist = await visibleChecklist([
         { id: "mcp", find: () => p.getByText(/MCP|Sign in|Zaloguj|OAuth/i) },
@@ -857,21 +944,36 @@ async function main(): Promise<void> {
       await clickRail(p, ["Server settings", "Ustawienia serwera"]);
       await p.waitForTimeout(400);
       const voice = p.getByRole("button", { name: /^Voice$|^Głos$/i }).or(p.getByText(/^Voice$|^Głos$/i));
-      if (await voice.count()) await voice.first().click().catch(() => undefined);
+      if (await voice.count())
+        await voice
+          .first()
+          .click()
+          .catch(() => undefined);
       await p.waitForTimeout(600);
       const checklist = await visibleChecklist([
         { id: "voice", find: () => p.getByText(/Voice|Głos|Microphone|Mikrofon/i) },
-        { id: "mic", find: () => p.getByText(/permission|uprawnien|Settings|Ustawienia systemu|unavailable|niedostępne/i) },
+        {
+          id: "mic",
+          find: () => p.getByText(/permission|uprawnien|Settings|Ustawienia systemu|unavailable|niedostępne/i),
+        },
       ]);
       return `Głos KK + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "20-mobile-connect", async (p) => {
-      await clickRail(p, ["Mobile Connect", "Mobile", "Telefon"]);
+      await dismissOverlays(p);
+      // PageRail label is Phone / Telefon (often in More pages overflow) — not "Mobile Connect".
+      await clickRail(p, ["Phone", "Telefon", "Mobile Connect", "Mobile"]);
       await p.waitForTimeout(800);
       const checklist = await visibleChecklist([
-        { id: "mobile", find: () => p.getByText(/Mobile Connect|Telefon|PIN|Tailscale/i) },
-        { id: "push", find: () => p.getByText(/push|powiadom|notification|Enable|Włącz/i) },
+        {
+          id: "mobile",
+          find: () =>
+            p
+              .locator(".mobile-connect-page")
+              .or(p.getByText(/Mobile Connect|Telefon|PIN|Tailscale|Phones cannot connect/i)),
+        },
+        { id: "push", find: () => p.getByText(/push|powiadom|notification|Enable|Włącz|Tailscale/i) },
       ]);
       return `Mobile Connect KK + checklist [${checklist}]`;
     });
@@ -890,16 +992,24 @@ async function main(): Promise<void> {
       await ensureChatAgent(p);
       await unlockComposer(p);
       // Delete a thread via IPC so the 10-min undo bar appears without flaky menus.
+      // Backend: threadUndo.list / threads.list — api.agent.list does not exist (T-V / BE-L).
       const deleted = await p.evaluate(`(async () => {
         const api = window.openbot;
-        const bots = await api.agent.list();
+        const bots = await api.agent.listBots();
         const bot = bots.find((b) => !b.hidden) || bots[0];
         if (!bot) return "no-bot";
-        const threads = await api.agent.listThreads({ botId: bot.id });
+        const threads = api.threads?.list
+          ? await api.threads.list({ botId: bot.id })
+          : ((await api.agent.listThreads?.({ botId: bot.id })) ?? []);
         const t = threads[0];
         if (!t) return "no-thread";
-        if (api.threadUndo?.delete) await api.threadUndo.delete({ botId: bot.id, threadId: t.id });
-        else await api.agent.deleteThread({ botId: bot.id, threadId: t.id });
+        if (api.threadUndo?.delete) {
+          await api.threadUndo.delete({ botId: bot.id, threadId: t.id, confirm: true });
+        } else if (api.agent.deleteThread) {
+          await api.agent.deleteThread({ botId: bot.id, threadId: t.id });
+        } else {
+          return "no-delete-api";
+        }
         return "ok:" + (t.title || t.id);
       })()`);
       await p.waitForTimeout(800);

@@ -212,6 +212,34 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
       out.push("routines:missing");
     }
 
+    // One workflow so Versions panel can mount (needs selected workflowId).
+    if (api.workflows?.create) {
+      const listed = await api.workflows.list();
+      let flow = listed.find((w) => w.name === "Seed shot flow");
+      if (!flow) {
+        flow = await api.workflows.create({
+          name: "Seed shot flow",
+          description: "Demo workflow for screenshot versions panel.",
+          nodes: [
+            { id: "t1", type: "trigger", x: 40, y: 40, title: "Start", trigger: { kind: "manual" } },
+            {
+              id: "a1",
+              type: "agent",
+              x: 240,
+              y: 40,
+              title: "Ask",
+              botId: lead.id,
+              prompt: "Say hi from the seed workflow.",
+            },
+          ],
+          edges: [{ id: "e1", from: "t1", to: "a1", on: "next" }],
+        });
+      }
+      out.push("workflow:" + (flow?.id ?? "created").toString().slice(0, 12));
+    } else {
+      out.push("workflow:missing");
+    }
+
     return { notes: out, botIds };
   })()`);
 
