@@ -18,57 +18,61 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
   return (
     <section
       class="context-panel"
-      aria-label="Conversation context"
+      aria-label={t("Conversation context")}
       aria-busy={props.pending || props.state.compacting ? "true" : "false"}
     >
       <div class="context-panel-heading">
         <Heading as="h2" size="sm">
-          Context
+          {t("Context")}
         </Heading>
         <Show when={warning()}>
-          <Badge tone="warning">Context is getting full</Badge>
+          <Badge tone="warning">{t("Context is getting full")}</Badge>
         </Show>
       </div>
       <Show
         when={reported()}
         fallback={
           <Text as="p" tone="secondary">
-            Context unavailable. {props.state.unavailableReason ?? "This provider does not report its context size."}
+            {t("Context unavailable.")}{" "}
+            {props.state.unavailableReason ?? t("This provider does not report its context size.")}
           </Text>
         }
       >
         <Text as="p">
-          {props.state.used?.toLocaleString("en-US")} / {props.state.limit?.toLocaleString("en-US")} tokens (
-          {props.state.percent}%)
+          {t("{used} / {limit} tokens ({percent}%)", {
+            used: props.state.used?.toLocaleString() ?? "",
+            limit: props.state.limit?.toLocaleString() ?? "",
+            percent: props.state.percent ?? 0,
+          })}
         </Text>
         <progress
           class="context-meter"
           max={100}
           value={props.state.percent ?? undefined}
-          aria-label="Context used"
+          aria-label={t("Context used")}
           style={{ "accent-color": warning() ? "var(--openbot-warning)" : "var(--openbot-accent)" }}
         />
         <Show when={props.state.stale}>
           <Text as="p" tone="secondary">
-            Last reported numbers; waiting for a new report after compaction.
+            {t("Last reported numbers; waiting for a new report after compaction.")}
           </Text>
         </Show>
       </Show>
       <Show when={props.state.compacting}>
         <Text as="p" role="status">
-          Compacting context. This may wait for the current turn to finish.
+          {t("Compacting context. This may wait for the current turn to finish.")}
         </Text>
       </Show>
       <Show when={props.state.canCompact}>
         <Button size="sm" disabled={props.pending || props.state.compacting} onClick={props.onCompact}>
-          Compact
+          {t("Compact")}
         </Button>
       </Show>
       <Text as="p" tone="secondary">
-        Compactions: {props.state.compactions}
+        {t("Compactions: {count}", { count: props.state.compactions })}
         <Show when={props.state.lastCompactedAt}>
-          . Last compacted:{" "}
-          {props.state.lastCompactedAt ? new Date(props.state.lastCompactedAt).toLocaleString("en-US") : ""}
+          . {t("Last compacted:")}{" "}
+          {props.state.lastCompactedAt ? new Date(props.state.lastCompactedAt).toLocaleString() : ""}
         </Show>
       </Text>
     </section>
@@ -101,7 +105,7 @@ export function ContextIndicator(props: {
           if (serial === generation && matches(next)) setState(next);
         })
         .catch((e) => {
-          if (serial === generation) setError(providerError(e, "Could not load context."));
+          if (serial === generation) setError(providerError(e, t("Could not load context.")));
         });
     },
   );
@@ -129,7 +133,7 @@ export function ContextIndicator(props: {
       if (serial === generation && matches(next)) setState(next);
     } catch (e) {
       if (input.botId === props.botId && input.threadId === props.threadId)
-        setError(providerError(e, "Could not compact context."));
+        setError(providerError(e, t("Could not compact context.")));
     } finally {
       if (input.botId === props.botId && input.threadId === props.threadId) setPending(false);
     }

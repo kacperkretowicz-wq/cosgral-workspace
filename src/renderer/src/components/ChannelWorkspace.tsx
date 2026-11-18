@@ -65,7 +65,7 @@ export function ChannelWorkspace(props: {
   async function choose(id: string) {
     const api = window.openbot.channels;
     if (!api?.listMessages) {
-      setError("Channel history is unavailable in this build.");
+      setError(t("Channel history is unavailable in this build."));
       return;
     }
     const current = ++generation;
@@ -85,7 +85,7 @@ export function ChannelWorkspace(props: {
         else applyTask(change.item);
       }
     } catch (e) {
-      if (current === generation) setError(e instanceof Error ? e.message : "Could not load channel.");
+      if (current === generation) setError(e instanceof Error ? e.message : t("Could not load channel."));
     } finally {
       if (current === generation) {
         setLoading(false);
@@ -96,7 +96,7 @@ export function ChannelWorkspace(props: {
   onSettled(() => {
     const api = window.openbot.channels;
     if (!api) {
-      setError("Channels are unavailable in this build.");
+      setError(t("Channels are unavailable in this build."));
       return;
     }
     const revision = channelRevision;
@@ -177,7 +177,7 @@ export function ChannelWorkspace(props: {
   }
   return (
     <div class="channel-workspace">
-      <aside aria-label="Channels">
+      <aside aria-label={t("Channels")}>
         <h2>Channels</h2>
         <Button onClick={() => setEditor("new")}>New channel</Button>
         <Show when={channels().length} fallback={<p>No channels yet.</p>}>

@@ -2,6 +2,7 @@ import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import { Portal } from "@solidjs/web";
 import type { Element as SolidElement } from "solid-js";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../../i18n";
 import { Button, Input } from "../ui";
 
 const MESSAGE_TEXT_SELECTOR = ".message-copy[data-selection-message-id]";
@@ -378,7 +379,7 @@ export function SelectionActionsBar(props: {
           ref={(element) => (bar = element)}
           class="selection-actions-bar"
           role="toolbar"
-          aria-label="Actions for selected text"
+          aria-label={t("Actions for selected text")}
           style={{ width: barWidth() ? `${barWidth()}px` : undefined }}
         >
           <div
@@ -414,7 +415,7 @@ export function SelectionActionsBar(props: {
               <Button
                 type="button"
                 class="selection-actions-icon-button"
-                aria-label="Close selected text actions"
+                aria-label={t("Close selected text actions")}
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={props.onDismiss}
               >
@@ -446,7 +447,7 @@ export function SelectionActionsBar(props: {
                 >
                   <Input
                     value={prompt()}
-                    aria-label="Describe edits"
+                    aria-label={t("Describe edits")}
                     placeholder="Describe edits"
                     maxlength={maximumInstructionLength()}
                     onInput={(event) => updatePrompt(event.currentTarget.value)}
@@ -516,7 +517,7 @@ export function SelectionActionsBar(props: {
                 <Button
                   type="button"
                   class="selection-actions-send"
-                  aria-label="Send edit instruction"
+                  aria-label={t("Send edit instruction")}
                   tabindex={hasPrompt() ? undefined : -1}
                   onPointerDown={(event) => event.preventDefault()}
                   onClick={() => void submit(prompt())}

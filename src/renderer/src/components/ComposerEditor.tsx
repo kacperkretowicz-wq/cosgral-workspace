@@ -468,7 +468,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Listbox.Root<PickerOption>
             as="div"
             class="mention-picker"
-            aria-label="Insert mention"
+            aria-label={t("Insert mention")}
             options={matchingOptions()}
             optionValue={pickerOptionKey}
             optionTextValue={pickerOptionText}

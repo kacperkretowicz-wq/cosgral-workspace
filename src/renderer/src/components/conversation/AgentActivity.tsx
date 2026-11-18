@@ -38,7 +38,7 @@ export function ThinkingDisclosure(props: { message: BotMessage }) {
   return (
     <article class="thinking-entry">
       <details class="thinking-disclosure" open={agentStepsOpen()}>
-        <summary aria-label="Show thinking details">
+        <summary aria-label={t("Show thinking details")}>
           <span class="thinking-mark" aria-hidden="true">
             <ThinkingIcon />
           </span>
