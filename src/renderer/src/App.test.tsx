@@ -1338,6 +1338,31 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     );
   }, 15_000);
 
+  it("shows a renamed agent in the sidebar and conversation header after saving Agent name", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    const sidebar = screen.getByRole("navigation", { name: "Chat list" });
+    expect(within(sidebar).getByRole("button", { name: /Chief/ })).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole("button", { name: "View agent settings" }));
+    const settings = screen.getByRole("complementary", { name: "Agent settings" });
+    const name = within(settings).getByRole("textbox", { name: "Agent name" });
+    await fireEvent.input(name, { target: { value: "Coordinator" } });
+    await fireEvent.blur(name);
+
+    await waitFor(() =>
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+        botId: "chief",
+        name: "Coordinator",
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Coordinator" })).toBeInTheDocument();
+      expect(within(sidebar).getByRole("button", { name: /Coordinator/ })).toBeInTheDocument();
+      expect(within(settings).getByRole("textbox", { name: "Agent name" })).toHaveValue("Coordinator");
+    });
+  });
+
   it("removes a custom agent avatar and keeps its generated avatar settings", async () => {
     vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([
       { ...BOTS[0], avatarUrl: "openbot-avatar://agent/chief?v=image-1" },

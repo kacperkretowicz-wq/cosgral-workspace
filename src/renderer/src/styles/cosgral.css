@@ -866,6 +866,17 @@
   display: grid;
   gap: 12px;
 }
+/* Preset button rows (local + hosted): wrap when many cloud presets are listed. */
+.providers-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
 .providers-order {
   display: grid;
   gap: 6px;

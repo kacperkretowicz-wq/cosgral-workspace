@@ -90,7 +90,7 @@ interface SidebarProps {
   onSelectNeedsYou?: (botId: string, threadId?: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
-  onEditBot: (botId: string) => void;
+  onEditBot: (botId: string, focus?: "name") => void;
   onDeleteBot: (botId: string) => Promise<void>;
   onRefreshUsage: () => Promise<AccountUsage>;
   onUpdateAction: () => Promise<void>;
@@ -953,6 +953,15 @@ export function Sidebar(props: SidebarProps) {
                           >
                             <EditIcon />
                             <span>{t("Edit agent")}</span>
+                          </ContextMenu.Item>
+                          <ContextMenu.Item
+                            onSelect={() => {
+                              setDeleteError(null);
+                              props.onEditBot(bot.id, "name");
+                            }}
+                          >
+                            <EditIcon />
+                            <span>{t("Rename")}</span>
                           </ContextMenu.Item>
                           <Show when={props.onMarkBotRead}>
                             <ContextMenu.Item disabled={readBusy()} onSelect={() => void markRead(bot.id)}>

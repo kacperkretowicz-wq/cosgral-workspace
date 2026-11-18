@@ -93,6 +93,7 @@ export const pl = {
   "Browse channels": "Przeglądaj kanały",
   "New channel": "Nowy kanał",
   "Edit agent": "Edytuj agenta",
+  Rename: "Zmień nazwę",
   "Delete agent": "Usuń agenta",
   "Agent actions": "Działania agenta",
   "Move to…": "Przenieś do…",

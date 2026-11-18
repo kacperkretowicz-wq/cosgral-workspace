@@ -251,6 +251,7 @@ export function App() {
   const [settingsRequest, setSettingsRequest] = createSignal<{
     botId: string;
     nonce: number;
+    focus?: "name";
   } | null>(null);
   const [onboardingRequest, setOnboardingRequest] = createSignal<{
     botId: string;
@@ -1424,9 +1425,9 @@ export function App() {
     }
   }
 
-  function editBot(botId: string) {
+  function editBot(botId: string, focus?: "name") {
     selectBot(botId);
-    setSettingsRequest({ botId, nonce: Date.now() });
+    setSettingsRequest({ botId, nonce: Date.now(), ...(focus ? { focus } : {}) });
   }
 
   async function changeBotVisibility(botId: string, hidden: boolean): Promise<void> {

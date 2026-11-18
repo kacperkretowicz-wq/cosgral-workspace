@@ -253,7 +253,8 @@ export function ChannelRoutineForm(props: {
           <For each={WEEK_ORDER}>
             {(day) => (
               <label>
-                <input
+                <Input
+                  unstyled
                   type="checkbox"
                   checked={days().includes(day)}
                   onChange={(e) =>

@@ -94,6 +94,7 @@ export const en = {
   "Browse channels": "Browse channels",
   "New channel": "New channel",
   "Edit agent": "Edit agent",
+  Rename: "Rename",
   "Delete agent": "Delete agent",
   "Agent actions": "Agent actions",
   "Move to…": "Move to…",
