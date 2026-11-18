@@ -15,6 +15,20 @@ it("loads and automatically persists the selected theme", async () => {
   mock.dispose();
 });
 
+it("saves interface scale and send shortcut through appearance", async () => {
+  const mock = createMockOpenBot();
+  window.openbot = mock.api;
+  render(() => <AppearanceSettings />);
+  await waitFor(() => expect(screen.getByLabelText("Interface scale")).toBeEnabled());
+  fireEvent.change(screen.getByLabelText("Interface scale"), { target: { value: "125" } });
+  await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.uiScale).toBe(125));
+  fireEvent.change(screen.getByLabelText("Send message with"), { target: { value: "mod-enter" } });
+  await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.sendShortcut).toBe("mod-enter"));
+  fireEvent.change(screen.getByLabelText("Agent steps"), { target: { value: "collapse" } });
+  await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.agentSteps).toBe("collapse"));
+  mock.dispose();
+});
+
 it("shows a failed save and restores the saved choice", async () => {
   const mock = createMockOpenBot();
   window.openbot = mock.api;
@@ -24,7 +38,7 @@ it("shows a failed save and restores the saved choice", async () => {
   const select = screen.getByLabelText("Theme");
   await waitFor(() => expect(select).toBeEnabled());
   fireEvent.change(select, { target: { value: "dark" } });
-  expect(await screen.findByRole("alert")).toHaveTextContent("Could not save theme");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not save appearance");
   expect(select).toHaveValue("system");
   mock.dispose();
 });

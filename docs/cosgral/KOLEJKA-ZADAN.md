@@ -17,7 +17,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 7. [zrobione: 6f92e6b44] Marketplace Apps: układ i filtry bliżej 0.71 (T-AG: „częściowo”).
 8. [zrobione: 034a7ef5a] Pasek boczny: przypinanie i „Więcej” (T-AG: „częściowo”).
 9. Tablica Zadań: kolumny dla zadań nieudanych i anulowanych (UI-AI luka); wymaga kontraktu od Backendu (patrz Backend 6).
-10. [w toku: UI, 21:10] Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
+10. [zrobione: PLACEHOLDER] Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
 11. Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
 
 ## KK Fullstack
