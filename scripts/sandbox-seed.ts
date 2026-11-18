@@ -122,8 +122,8 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
         channelId: beta.id,
         text: "Seed task: archive me after done.",
       });
-      // Wait briefly for stub agents to progress.
-      await new Promise((r) => setTimeout(r, 2500));
+      // Wait for stub helpers so parent tasks get Steps (parentTaskId children).
+      await new Promise((r) => setTimeout(r, 5000));
       const tasksA = await api.channels.listTasks(alpha.id);
       const tasksB = await api.channels.listTasks(beta.id);
       const all = [...tasksA, ...tasksB];
@@ -212,7 +212,7 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
       out.push("routines:missing");
     }
 
-    // One workflow so Versions panel can mount (needs selected workflowId).
+    // Workflow with ≥2 versions (create = v1; graph prompt change = v2) so Versions panel has rows.
     if (api.workflows?.create) {
       const listed = await api.workflows.list();
       let flow = listed.find((w) => w.name === "Seed shot flow");
@@ -235,9 +235,35 @@ export async function seedShotsData(page: Page): Promise<SeedResult> {
           edges: [{ id: "e1", from: "t1", to: "a1", on: "next" }],
         });
       }
-      out.push("workflow:" + (flow?.id ?? "created").toString().slice(0, 12));
+      if (flow && api.workflows.update) {
+        const nodes = (flow.nodes || []).map((node) =>
+          node.type === "agent" && node.id === "a1"
+            ? { ...node, prompt: "Say hi v2 from the seed workflow (versions panel)." }
+            : node,
+        );
+        flow = await api.workflows.update({
+          workflowId: flow.id,
+          nodes,
+          edges: flow.edges,
+        });
+      }
+      let versionCount = 0;
+      if (flow && api.workflows.listVersions) {
+        const versions = await api.workflows.listVersions({ workflowId: flow.id });
+        versionCount = Array.isArray(versions) ? versions.length : 0;
+      }
+      out.push("workflow:" + (flow?.id ?? "created").toString().slice(0, 12) + ":v" + versionCount);
     } else {
       out.push("workflow:missing");
+    }
+
+    // Dedicated thread for the undo bar shot (threads.list returns { threads }, not an array).
+    if (api.threads?.create) {
+      const list = await api.threads.create({ botId: lead.id, title: "Seed undo thread" });
+      const n = Array.isArray(list?.threads) ? list.threads.length : 0;
+      out.push("thread-undo-seed:" + n);
+    } else {
+      out.push("thread-undo-seed:missing");
     }
 
     return { notes: out, botIds };
