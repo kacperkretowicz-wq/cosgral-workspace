@@ -92,6 +92,7 @@
     "release:major": "bun scripts/prepare-release.ts major",
     "check": "bun run check:ui && bun run lint && bun run typecheck && bun run test && bun run test:storybook && bun run test:visual && bun run test:api && bun run test:browser && bun run api:build && bun run build-storybook && bun run build",
     "check:ui": "bun scripts/ui-foundation-check.ts",
+    "check:fast": "node scripts/check-fast.ts",
     "package": "bun run build && electron-builder --dir --mac --arm64 --config.mac.identity=null --config.mac.notarize=false",
     "verify:package": "bun scripts/verify-macos-package.ts",
     "package:verify": "bun run package && bun run verify:package",

@@ -3,7 +3,13 @@
 // lists is for this computer only. The REAL handlers are registered here with the window's trust check switched on, and
 // each channel is called as another server (a remote server or a phone peer would be): none may do its work or leak.
 import { beforeAll, describe, expect, it } from "vitest";
+import { suiteTimeout } from "../backend/testing/timeouts";
 import { ipcRegistry } from "./trusted-ipc";
+
+// COSGRAL W12 (BE-U): the set-up loads about 35 IPC modules for the first time (each one pulls its own part of the program), which took
+// longer than the 10 s hook limit of vitest on a busy computer and made the whole file fail on the hook, not on an assertion. The assertions
+// are the same; only the time the loading may take grows (and scales with COSGRAL_TEST_TIMEOUT_SCALE like the other slow suites).
+const SETUP_TIMEOUT = suiteTimeout(60_000, 60_000);
 
 const handlers = new Map<
   string,
@@ -137,7 +143,7 @@ beforeAll(async () => {
       },
     });
   registerProviderIpc(registry);
-});
+}, SETUP_TIMEOUT);
 
 describe("this-computer-only IPC (P11 / C13)", () => {
   it("registers the channels of keys, endpoints, accounts, CLIs and provider lists", () => {
