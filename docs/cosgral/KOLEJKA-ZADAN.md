@@ -51,13 +51,13 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 7. Po `GO-kapi-dist.txt`: `dist:win` po większym scaleniu i pomiar (rozmiar, SHA-256).
 
 ## Tester
-1. Odbiór w prawdziwym Electronie po każdym scaleniu lidera: e2e (`^FAIL`), W5, zrzuty, sondy (tylko za `GO-tester-*.txt`).
+1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
 2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
 3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
-4. [zrobione: team/tester/w12-tg] Sondy do nowych funkcji: `scripts/sandbox-next-probes.ts` (restore-thread, menu-plus, clear-history, history-window, external-links).
-5. Zaktualizuj tabelę zgodności ekranów po zrzutach 17-11-i (po UI-AI/AJ/AK/AL, KK-AG/AI).
-6. Sonda dostępności (fokus, kontrast, reduced motion) na ekranach P0/P1.
-7. Sprawdź w oknie: historyWindow, Clear history, skrót wysyłania, MaxListeners (log e2e).
+4. [zrobione: team/tester/w12-tg + T-AI GO] Sondy: `sandbox-next-probes.ts` (5/5), `sandbox-rename-probe.ts`, `sandbox-behavior-probe.ts` (tray/restore/launchAtLogin).
+5. [zrobione: T-AI GO + PNG 17-11-i] Tabela P0/P1: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-ti.md` + `vs-071-p0p1.txt`.
+6. [zrobione: skrypt; uruchomienie nadal otwarte] `sandbox-a11y-probe.ts` gotowy; **nie odpalany** w T-AI GO.
+7. [zrobione: T-AI GO poza sendShortcut] historyWindow OK, Clear history OK, MaxListeners 0 w e2e/W5; **sendShortcut nie w oknie** (tylko BE-Z2).
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,
