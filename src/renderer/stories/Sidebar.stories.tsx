@@ -83,8 +83,8 @@ export const AgentTiles: Story = {
     const preview = tile.querySelector<HTMLElement>(".bot-row-preview");
     const time = tile.querySelector<HTMLElement>(".bot-row-time");
     if (!avatar || !title || !preview || !time) throw new Error("Agent tile anatomy is incomplete.");
-    await expect(tile.getBoundingClientRect().height).toBe(62);
-    await expect(avatar.getBoundingClientRect().width).toBe(40);
+    await expect(tile.getBoundingClientRect().height).toBe(68);
+    await expect(avatar.getBoundingClientRect().width).toBe(44);
     await expect(getComputedStyle(title).fontSize).toBe("14px");
     await expect(getComputedStyle(preview).fontSize).toBe("13px");
     await expect(getComputedStyle(time).fontSize).toBe("12px");
