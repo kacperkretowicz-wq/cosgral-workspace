@@ -68,6 +68,12 @@ describe("check:fast plan (BE-U)", () => {
     }
   });
 
+  it("warns that a contracts file reaches almost every test, and says how to take a quick look", () => {
+    const plan = planFastCheck(["packages/contracts/src/ipc-endpoints.ts"], all);
+    expect(plan.notes.join(" ")).toMatch(/--skip-related/);
+    expect(planFastCheck(["src/main/x.ts"], all).notes.join(" ")).not.toMatch(/--skip-related/);
+  });
+
   it("package.json is harmless when the caller found that only its scripts changed, and global otherwise", () => {
     const harmless = planFastCheck(["package.json"], all, { ordinary: ["package.json"] });
     expect(harmless.needsFullCheck).toEqual([]);
