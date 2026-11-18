@@ -29,7 +29,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 
 ## KAPI
 1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
-2. [zrobione: PLACEHOLDER_SHA] Rozmiar podglądu w przeglądarce (cel: razem < 1,8 MB, plik < 1 MB).
+2. [zrobione: acc270061] Rozmiar podglądu w przeglądarce (cel: razem < 1,8 MB, plik < 1 MB).
 3. Instalator `dist:win`: pomiar po każdym większym scaleniu (tylko za `GO-kapi-dist.txt`).
 4. [zrobione: 401bafe8f] Luki ROBIĆ (wiersz 2 wygląd: appearanceDomTokens + startAppearance) z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
 
