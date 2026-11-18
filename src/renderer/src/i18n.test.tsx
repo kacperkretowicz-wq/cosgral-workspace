@@ -51,6 +51,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "WorkflowsPage",
     "AgentCardDetail",
     "MarketplacePage",
+    "ChannelView",
+    "HostPanel",
     "VaultConnectorsPanel",
     "ScheduleOverview",
     "ManagedCliSection",
