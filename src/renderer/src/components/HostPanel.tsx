@@ -223,7 +223,9 @@ export function HostPanel(props: HostPanelProps) {
                       <section class="remote-admin-control-card">
                         <div>
                           <h3>{t("Publishing controls")}</h3>
-                          <p>{props.status.message ?? t("The address is public, but only invited people can sign in.")}</p>
+                          <p>
+                            {props.status.message ?? t("The address is public, but only invited people can sign in.")}
+                          </p>
                         </div>
                         <div class="remote-host-actions">
                           <Show
@@ -336,7 +338,9 @@ export function HostPanel(props: HostPanelProps) {
                               : t("Create invitation link")}
                         </Button>
                         <Show when={!props.status.apiOnline}>
-                          <p class="remote-inline-note">{t("Make this COSGRAL Workspace public before inviting people.")}</p>
+                          <p class="remote-inline-note">
+                            {t("Make this COSGRAL Workspace public before inviting people.")}
+                          </p>
                         </Show>
                         <Show when={invite()}>
                           {(item) => (
@@ -519,7 +523,9 @@ function HostSetup(props: {
   return (
     <div class="remote-host-setup">
       <p>
-        {t("Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.")}
+        {t(
+          "Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.",
+        )}
       </p>
       <label class="remote-field">
         <span>{t("Server name")}</span>
@@ -728,7 +734,10 @@ function InviteResult(props: { invite: InviteSummary; copied: boolean; onCopy: (
           <div>
             <strong>{t("Invitation sent")}</strong>
             <span>
-              {t("{email} can join until {when}.", { email: props.invite.email, when: formatDate(props.invite.expiresAt) })}
+              {t("{email} can join until {when}.", {
+                email: props.invite.email ?? "",
+                when: formatDate(props.invite.expiresAt),
+              })}
             </span>
           </div>
         }
