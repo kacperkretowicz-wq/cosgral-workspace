@@ -67,6 +67,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "McpSignInPanel",
     "EndpointsSection",
     "PlanPanel",
+    "LibraryPanel",
+    "Conversation",
   ];
   for (const file of files) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
