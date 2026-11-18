@@ -1,5 +1,6 @@
 import { type AgentModelId, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Button, NativeSelect, Text } from "./ui";
 export function moveItem<T>(items: readonly T[], from: number, to: number): T[] {
   const copy = [...items];
@@ -39,22 +40,29 @@ export function FallbackOrder(props: {
     if (props.saving || to < 0 || to >= props.items.length || from === to) return;
     const id = props.items[from];
     props.onChange(moveItem(props.items, from, to));
-    if (id !== undefined) setAnnounce(`${nameOf(id)} moved to position ${to + 1} of ${props.items.length}.`);
+    if (id !== undefined)
+      setAnnounce(
+        t("{name} moved to position {n} of {total}.", {
+          name: nameOf(id),
+          n: to + 1,
+          total: props.items.length,
+        }),
+      );
   }
   return (
-    <section class="providers-fallback" aria-label={`Fallback models for ${props.botName}`}>
+    <section class="providers-fallback" aria-label={t("Fallback models for {name}", { name: props.botName })}>
       <Text as="p" tone="secondary">
-        After account retries, these models are tried in order. Each is tried at most once per message.
+        {t("After account retries, these models are tried in order. Each is tried at most once per message.")}
       </Text>
       <Show
         when={props.items.length}
         fallback={
           <Text as="p" tone="muted">
-            This list is empty. Later fallback layers may still apply.
+            {t("This list is empty. Later fallback layers may still apply.")}
           </Text>
         }
       >
-        <ol class="providers-order" aria-label="Fallback order">
+        <ol class="providers-order" aria-label={t("Fallback order")}>
           <For each={props.items}>
             {(model, index) => (
               <li
@@ -62,7 +70,10 @@ export function FallbackOrder(props: {
                 data-dragging={dragFrom() === index() ? "" : undefined}
                 draggable="true"
                 tabindex="0"
-                aria-label={`${index() + 1}. ${nameOf(model)}. Press Alt and Up or Down arrow to reorder.`}
+                aria-label={t("{n}. {name}. Press Alt and Up or Down arrow to reorder.", {
+                  n: index() + 1,
+                  name: nameOf(model),
+                })}
                 onDragStart={(event) => {
                   setDragFrom(index());
                   if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
@@ -86,35 +97,35 @@ export function FallbackOrder(props: {
                 </span>
                 <span class="providers-order-name">{nameOf(model)}</span>
                 <Show when={props.unavailable?.includes(model)}>
-                  <Badge tone="warning">Unavailable</Badge>
+                  <Badge tone="warning">{t("Unavailable")}</Badge>
                 </Show>
                 <Button
                   type="button"
                   size="xs"
-                  aria-label={`Move ${nameOf(model)} up`}
+                  aria-label={t("Move {name} up", { name: nameOf(model) })}
                   disabled={props.saving || index() === 0}
                   onClick={() => move(index(), index() - 1)}
                 >
-                  Up
+                  {t("Up")}
                 </Button>
                 <Button
                   type="button"
                   size="xs"
-                  aria-label={`Move ${nameOf(model)} down`}
+                  aria-label={t("Move {name} down", { name: nameOf(model) })}
                   disabled={props.saving || index() === props.items.length - 1}
                   onClick={() => move(index(), index() + 1)}
                 >
-                  Down
+                  {t("Down")}
                 </Button>
                 <Button
                   type="button"
                   size="xs"
                   variant="danger"
                   disabled={props.saving}
-                  aria-label={`Remove ${nameOf(model)} from fallbacks`}
+                  aria-label={t("Remove {name} from fallbacks", { name: nameOf(model) })}
                   onClick={() => props.onChange(props.items.filter((_, i) => i !== index()))}
                 >
-                  Remove
+                  {t("Remove")}
                 </Button>
               </li>
             )}
@@ -125,11 +136,11 @@ export function FallbackOrder(props: {
         {announce()}
       </span>
       <Text as="p" tone="secondary">
-        At most {PROVIDER_LIMITS.fallbackModels} models. Duplicate models cannot be added.
+        {t("At most {n} models. Duplicate models cannot be added.", { n: PROVIDER_LIMITS.fallbackModels })}
       </Text>
       <div class="providers-add">
         <NativeSelect
-          aria-label="Add fallback model"
+          aria-label={t("Add fallback model")}
           value={props.confirmAdd ? (selected() ?? "") : ""}
           disabled={props.saving || full() || !addable().length}
           onChange={(event) => {
@@ -140,7 +151,7 @@ export function FallbackOrder(props: {
           }}
         >
           <option value="">
-            {full() ? `At most ${PROVIDER_LIMITS.fallbackModels} models` : "Add a fallback model..."}
+            {full() ? t("At most {n} models", { n: PROVIDER_LIMITS.fallbackModels }) : t("Add a fallback model...")}
           </option>
           <For each={addable()}>{(option) => <option value={option.id}>{option.name}</option>}</For>
         </NativeSelect>
@@ -154,11 +165,11 @@ export function FallbackOrder(props: {
               setSelected(null);
             }}
           >
-            Add fallback
+            {t("Add fallback")}
           </Button>
         </Show>
         <Button type="button" variant="primary" disabled={!props.dirty} loading={props.saving} onClick={props.onSave}>
-          Save order
+          {t("Save order")}
         </Button>
       </div>
     </section>

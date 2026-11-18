@@ -1919,4 +1919,31 @@ export const en = {
   "Save settings": "Save settings",
   Templates: "Templates",
   "Save agent as template": "Save agent as template",
+  "Fallback models for {name}": "Fallback models for {name}",
+  "After account retries, these models are tried in order. Each is tried at most once per message.":
+    "After account retries, these models are tried in order. Each is tried at most once per message.",
+  "This list is empty. Later fallback layers may still apply.":
+    "This list is empty. Later fallback layers may still apply.",
+  "Fallback order": "Fallback order",
+  "{n}. {name}. Press Alt and Up or Down arrow to reorder.": "{n}. {name}. Press Alt and Up or Down arrow to reorder.",
+  "{name} moved to position {n} of {total}.": "{name} moved to position {n} of {total}.",
+  "Remove {name} from fallbacks": "Remove {name} from fallbacks",
+  "At most {n} models. Duplicate models cannot be added.": "At most {n} models. Duplicate models cannot be added.",
+  "At most {n} models": "At most {n} models",
+  "Add fallback model": "Add fallback model",
+  "Add a fallback model...": "Add a fallback model...",
+  "Add fallback": "Add fallback",
+  "Save order": "Save order",
+  "Effective fallback chain": "Effective fallback chain",
+  "Saved fallback chain": "Saved fallback chain",
+  "After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.":
+    "After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.",
+  Provider: "Provider",
+  "No fallback models in the saved chain.": "No fallback models in the saved chain.",
+  "Could not load the list.": "Could not load the list.",
+  "Could not save the list.": "Could not save the list.",
+  "{label} fallback list": "{label} fallback list",
+  "Reload list": "Reload list",
+  "Each list allows up to {n} models from any provider. Provider lists run before All providers.":
+    "Each list allows up to {n} models from any provider. Provider lists run before All providers.",
 } as const;

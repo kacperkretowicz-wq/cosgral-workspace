@@ -1,6 +1,7 @@
 import type { AgentModelId, FallbackModelsInfo, ProvidersDesktopApi } from "@openbot/contracts/ipc";
 import { fallbackModelsProblem, PROVIDER_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
 import { providerError } from "./provider-error";
 import { Badge, Button, Heading, Text } from "./ui";
@@ -11,21 +12,25 @@ export interface FallbackGroup {
 export function FallbackChainView(props: { info: FallbackModelsInfo | null; options: FallbackModelOption[] }) {
   const label = (id: AgentModelId) => props.options.find((model) => model.id === id)?.name ?? id;
   return (
-    <section aria-label="Effective fallback chain">
+    <section aria-label={t("Effective fallback chain")}>
       <Heading as="h4" size="sm">
-        Saved fallback chain
+        {t("Saved fallback chain")}
       </Heading>
       <Text as="p" tone="secondary">
-        After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.
+        {t(
+          "After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.",
+        )}
       </Text>
       <ol>
         <For each={props.info?.chain ?? []}>
           {(entry) => (
             <li>
               {label(entry.model)}{" "}
-              <Badge>{entry.source === "own" ? "Agent" : entry.source === "provider" ? "Provider" : "All"}</Badge>{" "}
+              <Badge>
+                {entry.source === "own" ? t("Agent") : entry.source === "provider" ? t("Provider") : t("All")}
+              </Badge>{" "}
               <Show when={!entry.available}>
-                <Badge tone="warning">Unavailable</Badge>
+                <Badge tone="warning">{t("Unavailable")}</Badge>
               </Show>
             </li>
           )}
@@ -33,7 +38,7 @@ export function FallbackChainView(props: { info: FallbackModelsInfo | null; opti
       </ol>
       <Show when={props.info && !props.info.chain.length}>
         <Text as="p" tone="secondary">
-          No fallback models in the saved chain.
+          {t("No fallback models in the saved chain.")}
         </Text>
       </Show>
     </section>
@@ -63,7 +68,7 @@ function ProviderList(props: {
       setReady(true);
       return true;
     } catch (e) {
-      setError(providerError(e, "Could not load the list."));
+      setError(providerError(e, t("Could not load the list.")));
       return false;
     } finally {
       setBusy(false);
@@ -84,17 +89,17 @@ function ProviderList(props: {
     try {
       await props.api.setFallbackModels({ botId: props.group.scope, fallbackModels: items() });
       if (await load()) {
-        setNotice("Fallback order saved.");
+        setNotice(t("Fallback order saved."));
         props.onSaved?.();
       }
     } catch (e) {
-      setError(providerError(e, "Could not save the list."));
+      setError(providerError(e, t("Could not save the list.")));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section aria-label={`${props.group.label} fallback list`}>
+    <section aria-label={t("{label} fallback list", { label: props.group.label })}>
       <Heading as="h3" size="sm">
         {props.group.label}
       </Heading>
@@ -111,7 +116,7 @@ function ProviderList(props: {
             void load();
           }}
         >
-          Reload list
+          {t("Reload list")}
         </Button>
       </Show>
       <FallbackOrder
@@ -151,8 +156,9 @@ export function ProviderFallbackLists(props: {
       {(client) => (
         <div class="providers-form">
           <Text as="p" tone="secondary">
-            Each list allows up to {PROVIDER_LIMITS.fallbackModels} models from any provider. Provider lists run before
-            All providers.
+            {t("Each list allows up to {n} models from any provider. Provider lists run before All providers.", {
+              n: PROVIDER_LIMITS.fallbackModels,
+            })}
           </Text>
           <For each={props.groups}>
             {(group) => <ProviderList group={group} options={props.options} api={client()} onSaved={props.onSaved} />}

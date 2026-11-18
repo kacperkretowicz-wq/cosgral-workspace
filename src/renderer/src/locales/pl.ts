@@ -1922,4 +1922,32 @@ export const pl = {
   "Save settings": "Zapisz ustawienia",
   Templates: "Szablony",
   "Save agent as template": "Zapisz agenta jako szablon",
+  "Fallback models for {name}": "Modele zapasowe dla {name}",
+  "After account retries, these models are tried in order. Each is tried at most once per message.":
+    "Po ponowieniach konta te modele są próbowane po kolei. Każdy co najwyżej raz na wiadomość.",
+  "This list is empty. Later fallback layers may still apply.":
+    "Lista jest pusta. Późniejsze warstwy zapasowe mogą nadal działać.",
+  "Fallback order": "Kolejność zapasowa",
+  "{n}. {name}. Press Alt and Up or Down arrow to reorder.":
+    "{n}. {name}. Alt+strzałka w górę lub w dół zmienia kolejność.",
+  "{name} moved to position {n} of {total}.": "{name} przeniesiono na pozycję {n} z {total}.",
+  "Remove {name} from fallbacks": "Usuń {name} z zapasowych",
+  "At most {n} models. Duplicate models cannot be added.": "Co najwyżej {n} modeli. Duplikatów nie dodasz.",
+  "At most {n} models": "Co najwyżej {n} modeli",
+  "Add fallback model": "Dodaj model zapasowy",
+  "Add a fallback model...": "Dodaj model zapasowy…",
+  "Add fallback": "Dodaj zapasowy",
+  "Save order": "Zapisz kolejność",
+  "Effective fallback chain": "Efektywny łańcuch zapasowy",
+  "Saved fallback chain": "Zapisany łańcuch zapasowy",
+  "After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.":
+    "Po modelu głównym: Agent, potem Dostawca, potem Wszyscy. Każdy model raz. Zapisz zmiany, żeby odświeżyć łańcuch.",
+  Provider: "Dostawca",
+  "No fallback models in the saved chain.": "Brak modeli zapasowych w zapisanym łańcuchu.",
+  "Could not load the list.": "Nie udało się wczytać listy.",
+  "Could not save the list.": "Nie udało się zapisać listy.",
+  "{label} fallback list": "Lista zapasowa: {label}",
+  "Reload list": "Wczytaj listę ponownie",
+  "Each list allows up to {n} models from any provider. Provider lists run before All providers.":
+    "Każda lista: do {n} modeli z dowolnego dostawcy. Listy dostawcy przed „Wszyscy”.",
 } as const;
