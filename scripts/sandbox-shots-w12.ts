@@ -306,6 +306,30 @@ async function setLanguage(page: Page, language: "en" | "pl"): Promise<void> {
   await page.waitForTimeout(900);
 }
 
+/** App Settings gear on the Pages rail — exact name so "Server settings" is never hit (KK). */
+async function openAppSettings(page: Page): Promise<void> {
+  await dismissOverlays(page);
+  const gear = page
+    .getByRole("navigation", { name: /Pages|Strony/i })
+    .getByRole("button", { name: "Settings", exact: true })
+    .or(
+      page.getByRole("navigation", { name: /Pages|Strony/i }).getByRole("button", { name: "Ustawienia", exact: true }),
+    );
+  if (await gear.count()) {
+    await gear.first().click({ timeout: 8_000 });
+  } else {
+    const fallback = page
+      .getByRole("button", { name: "Settings", exact: true })
+      .or(page.getByRole("button", { name: "Ustawienia", exact: true }));
+    if (await fallback.count()) await fallback.first().click({ timeout: 8_000 });
+  }
+  await page
+    .getByRole("dialog")
+    .waitFor({ timeout: 8_000 })
+    .catch(() => undefined);
+  await page.waitForTimeout(400);
+}
+
 async function openNewAgentForm(
   page: Page,
 ): Promise<"formularz Nowy agent już na starcie" | "formularz Nowy agent widoczny"> {
@@ -930,46 +954,34 @@ async function main(): Promise<void> {
     });
 
     await tryShot(app, pageRef, out, "16-updates", async (p) => {
-      // KK f98c8b633: Updates is its own Settings section (not buried under General).
+      // KK: gear is exact "Settings"/"Ustawienia" (not "Server settings"); Updates is its own nav section.
       await dismissOverlays(p);
-      const gear = p
-        .getByRole("navigation", { name: /Pages|Strony/i })
-        .getByRole("button", { name: /^Settings$|^Ustawienia$/i });
-      if (await gear.count()) await gear.first().click({ timeout: 8_000 });
-      else {
-        const any = p.getByRole("button", { name: /^Settings$|^Ustawienia$|Open Settings|Otwórz ustawienia/i });
-        if (await any.count()) await any.first().click({ timeout: 8_000 });
-      }
-      await p.waitForTimeout(600);
-      const updatesNav = p
+      await openAppSettings(p);
+      const dialog = p.getByRole("dialog");
+      const updatesNav = dialog
         .locator(".settings-modal-nav")
-        .getByRole("button", { name: /^Updates$|^Aktualizacje$/i })
-        .or(p.getByRole("button", { name: /^Updates$|^Aktualizacje$/i }));
+        .getByRole("button", { name: "Updates", exact: true })
+        .or(dialog.locator(".settings-modal-nav").getByRole("button", { name: "Aktualizacje", exact: true }));
       if (await updatesNav.count())
         await updatesNav
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
       await p.waitForTimeout(500);
-      const updatesHead = p.getByRole("heading", { name: /^Updates$|^Aktualizacje$/i });
-      if (await updatesHead.count())
-        await updatesHead
-          .first()
-          .scrollIntoViewIfNeeded()
-          .catch(() => undefined);
-      await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         {
           id: "heading",
           find: () =>
-            p
+            dialog
               .getByRole("heading", { name: /^Updates$|^Aktualizacje$/i })
-              .or(p.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
+              .or(dialog.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
         },
         {
           id: "track",
           find: () =>
-            p.getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i),
+            dialog.getByText(
+              /Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i,
+            ),
         },
       ]);
       return `Aktualizacje KK (Settings→Updates) + checklist [${checklist}]`;
@@ -1011,23 +1023,37 @@ async function main(): Promise<void> {
     });
 
     await tryShot(app, pageRef, out, "19-voice", async (p) => {
-      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
-      await p.waitForTimeout(400);
-      const voice = p.getByRole("button", { name: /^Voice$|^Głos$/i }).or(p.getByText(/^Voice$|^Głos$/i));
-      if (await voice.count())
-        await voice
+      // KK: Voice lives in app Settings modal (VoiceOverviewPanel), not Server settings → MCP.
+      await dismissOverlays(p);
+      await openAppSettings(p);
+      const dialog = p.getByRole("dialog");
+      const voiceNav = dialog
+        .locator(".settings-modal-nav")
+        .getByRole("button", { name: "Voice", exact: true })
+        .or(dialog.locator(".settings-modal-nav").getByRole("button", { name: "Głos", exact: true }));
+      if (await voiceNav.count())
+        await voiceNav
           .first()
-          .click()
+          .click({ timeout: 8_000 })
           .catch(() => undefined);
       await p.waitForTimeout(600);
       const checklist = await visibleChecklist([
-        { id: "voice", find: () => p.getByText(/Voice|Głos|Microphone|Mikrofon/i) },
+        {
+          id: "voice",
+          find: () =>
+            dialog
+              .getByRole("heading", { name: /^Microphone$|^Mikrofon$/i })
+              .or(dialog.getByText(/Microphone|Mikrofon|Voice|Głos/i)),
+        },
         {
           id: "mic",
-          find: () => p.getByText(/permission|uprawnien|Settings|Ustawienia systemu|unavailable|niedostępne/i),
+          find: () =>
+            dialog.getByText(
+              /Not available in this version|Niedostępne w tej wersji|permission|uprawnien|unavailable|niedostępne/i,
+            ),
         },
       ]);
-      return `Głos KK + checklist [${checklist}]`;
+      return `Głos KK (Settings→Voice) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "20-mobile-connect", async (p) => {
