@@ -104,6 +104,9 @@ export function SubagentsPanel(props: { botId: string }) {
                 <Text as="p" tone="muted" variant="caption" class="subagent-task">
                   {item.task}
                 </Text>
+                <Show when={item.state === "starting" || item.state === "working"}>
+                  <div class="cosgral-sweep" aria-hidden="true" />
+                </Show>
                 <Show when={item.state === "waiting"}>
                   <p class="vault-connectors-note" role="status">
                     {t("It asks you something: answer the card in Needs you.")}

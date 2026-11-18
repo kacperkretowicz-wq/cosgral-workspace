@@ -56,9 +56,10 @@ Pełne zestawienie z liczbami: `docs/cosgral/parytet-0.71.md`.
 Program oferuje 3 wygodne tryby działania dostosowane do Twoich potrzeb:
 
 ### Sposób A: Codzienna praca na Twoim komputerze (Zalecany)
+0. **Raz, zanim zaczniesz:** zainstaluj Bun i w folderze programu wykonaj `bun install` (Wiersz polecenia otwierasz wpisując `cmd` w pasku adresu Eksploratora). Bez tego `start-cosgral.cmd` zatrzyma się z komunikatem po angielsku („The program is not installed yet” albo „Bun was not found”) i nic się nie uruchomi.
 1. W folderze programu kliknij dwukrotnie plik:  
    `start-cosgral.cmd`
-2. Przy pierwszym uruchomieniu skrypt automatycznie przygotuje i uruchomi aplikację (trwa to ok. 30–45 sekund).
+2. Przy pierwszym uruchomieniu skrypt sam zbuduje program (czasu **nie mierzyłem**; dalsze starty są szybsze). Po zmianach w kodzie użyj `start-cosgral.cmd --rebuild`.
 3. Otworzy się okno powitalne z wyborem dostawcy sztucznej inteligencji.
 4. Twoje dane i agenci zapisują się bezpiecznie w Twoim profilu użytkownika Windows.
 
@@ -67,12 +68,13 @@ Jeśli chcesz przetestować aplikację bez używania prawdziwego konta, bez pobi
 1. Kliknij dwukrotnie plik:  
    `start-cosgral-sandbox.cmd`
 2. Program uruchomi się z wirtualnym, odizolowanym profilem i demonstracyjną sztuczną inteligencją, która symuluje odpowiedzi.
-3. Reset piaskownicy do zera w każdej chwili: uruchomienie z parametrem `--reset`.
+3. Dane piaskownicy leżą w `%LOCALAPPDATA%COSGRAL-Sandbox`, osobno od Twojego profilu programu. Reset do zera: dwuklik **nie przekaże** parametru, więc otwórz Wiersz polecenia w folderze programu i wpisz `start-cosgral-sandbox.cmd --reset`.
 
 ### Sposób C: Tradycyjna instalacja Windows
 1. Możesz zbudować samodzielny instalator Windows (`.exe` w podfolderze `dist`).
-2. Po instalacji program pojawia się w menu Start jak zwykła aplikacja Windows.
-3. Nie ingeruje w instalacje innych programów i ma własną, w pełni odizolowaną bazę danych.
+2. Instalator nie jest podpisany cyfrowo, więc Windows pokaże ostrzeżenie SmartScreen („Windows ochronił Twój komputer”): kliknij „Więcej informacji”, potem „Uruchom mimo to”. To oczekiwane, dopóki nie kupimy certyfikatu.
+3. Po instalacji program pojawia się w menu Start jak zwykła aplikacja Windows.
+4. Nie ingeruje w instalacje innych programów i ma własną, w pełni odizolowaną bazę danych.
 
 ---
 
@@ -86,7 +88,7 @@ Gdy otworzysz program po raz pierwszy, zobaczysz ekran wstępnej konfiguracji (�
    - **Klucz API:** jeśli wolisz rozliczać się za rzeczywiste zużycie tokenów, możesz wkleić swój klucz API bezpośrednio w ustawieniach dostawców.
    - **Lokalne modele (np. Ollama, LM Studio):** możesz podać adres lokalnego serwera modeli i pracować całkowicie bez dostępu do internetu.
 2. **Wybór języka:**
-   - Wybierz język Polski lub Angielski – cały interfejs, powiadomienia i ustawienia natychmiast dostosują się do Twojego wyboru.
+   - Wybierz język Polski lub Angielski. Zmiana działa od razu, ale **nie każdy ekran jest już przetłumaczony**: część napisów (m.in. fragmenty ekranu kanału i hostowania) zostaje po angielsku, trwa ich tłumaczenie.
 3. **Uprawnienia sterowania komputerem (opcjonalne):**
    - Jeśli chcesz, aby agenci mogli pomagać Ci w klikaniu aplikacji biurowych lub przeglądarki, włącz opcję „Computer Use”. Pamiętaj: każda pojedyncza akcja będzie zawsze wymagać Twojej klikniętej zgody na ekranie.
 
@@ -112,6 +114,7 @@ Gdy otworzysz program po raz pierwszy, zobaczysz ekran wstępnej konfiguracji (�
    - Możesz tworzyć foldery (do 5 poziomów zagłębienia) i układać w nich agentów.
    - Opcja **Duplikuj** pozwala sklonować konfigurację agenta bez kopiowania jego historii rozmów.
    - Opcja **Ukryj** pozwala schować rzadziej używanych asystentów z widoku głównego.
+   - **Zmiana nazwy agenta:** kliknij tytuł rozmowy → ustawienia agenta → pole „Agent name” (nazwa agenta); zmiana jest od razu widoczna na liście i w nagłówku. Skrót „Zmień nazwę” (Rename) w menu agenta na pasku bocznym jest w przygotowaniu i czeka na scalenie.
 
 ### Kanały i praca zespołowa
 Kanały służą do delegowania złożonych projektów na cały zespół asystentów:
