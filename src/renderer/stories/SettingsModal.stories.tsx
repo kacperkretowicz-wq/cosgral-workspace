@@ -75,9 +75,12 @@ export const Interactive: Story = {
     dialog = await body.findByRole("dialog", { name: "General" });
 
     const launchSwitch = body.getByRole("switch", { name: "Launch COSGRAL Workspace at login" });
-    await expect(launchSwitch).toBeChecked();
+    // The switch reflects the saved setting (off by default), and a click is saved through appSettings.
+    await waitFor(() => expect(launchSwitch).toBeEnabled());
+    await expect(launchSwitch).not.toBeChecked();
     await userEvent.click(launchSwitch);
-    await waitFor(() => expect(launchSwitch).not.toBeChecked());
+    await waitFor(() => expect(launchSwitch).toBeChecked());
+    await waitFor(async () => expect((await window.openbot.appSettings?.get())?.behavior.launchAtLogin).toBe(true));
 
     await userEvent.click(body.getByRole("button", { name: "Close settings" }));
     // The Solid effect and the 120 ms exit animation are scheduled separately from userEvent.
