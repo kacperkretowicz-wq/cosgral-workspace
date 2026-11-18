@@ -36,3 +36,17 @@ Wniosek: z pięciu pytań **jedno (3) już coś daje w programie** (Grok i OpenR
 2. Nie sprawdzałem, czy Discord, Grok lub OpenRouter zmieniły swoje zasady dostępu od ostatniej analizy.
 3. „+ pp” liczę regułą z parytetu (wiersz „częściowo” → „jest” to +0,7 pp).
 4. Pliki z sekcji o pracy Backendu (`ipc-channel-routines`, `ipc-skill-link`, `ENDPOINT_CLOUD_PRESETS`) są napisane, ale ich testy i Biome czekają na koniec cichego okna; adresów OpenRouter i xAI nie sprawdzałem połączeniem (to publiczne adresy usług).
+
+## Co mówi kod dziś (Backend, BE-Y, stan na `4ddcbb5d3`)
+
+Odpowiedzi tylko z kodu; decyzje proponuję liderowi (nie właścicielowi), lider zdecyduje, co i kiedy trafia do właściciela.
+
+| # | Pytanie | Stan w kodzie | Propozycja dla lidera |
+|---|---|---|---|
+| 1 | Discord (rozmowy prywatne) | Nadal nic. Z kodu wynika, że to **trzeci sterownik**: istnieje interfejs `MessengerDriver` (`messenger-driver.ts`, 62 linie) z dwoma sterownikami (Telegram ok. 215 linii, Slack ok. 290), a rodzaje są w `MESSENGER_KINDS = ["telegram", "slack"]`. Szacunek ok. 9 h (silnik) zostaje, ale ryzyko jest mniejsze: wzór jest gotowy, nie trzeba ruszać `messenger-bridge`. Prawdziwy test nadal wymaga tokenu bota. | Trzymać zaparkowane do pierwszego oglądu Telegrama i Slacka w oknie (to wymaga Testera i GO). Nie pytać właściciela jeszcze raz. |
+| 2 | Rutyny kanału | **Zrobione**: silnik (BE-R), ekran (UI-AB/AC: lista, formularz, edycja, dni tygodnia, historia, „Otwórz zadanie”), testy. Luka: webhook dla rutyny kanału (0.71 go nie opisuje; rutyny agenta mają). | Zamknąć pytanie. Webhook tylko, jeśli właściciel o niego poprosi. |
+| 3 | Sterowniki innych dostawców | **Rozszerzone**: poza xAI i OpenRouter dochodzą DeepSeek, Mistral, Groq, Together AI i Moonshot (Kimi) jako gotowe ustawienia z adresami z dokumentacji dostawców (BE-T); limit punktów końcowych 16; przyciski budują się z listy. Nadal tylko czat, bez narzędzi programu. CLI dostawców (Cursor, Grok CLI, Devin) nadal czekają na zgodę na pobieranie. | Zamknąć część „klucz API”. Pytanie o CLI tylko po obejrzeniu w oknie, co już jest. |
+| 4 | LLM i Asset w przepływach | Bez zmian: nowy typ węzła łamie wyczerpujące przełączniki w edytorze; obejście: węzeł „agent” bez narzędzi. | Zostawić do czasu, aż edytor przepływów będzie oglądany w oknie. |
+| 5 | Skill z linku GitHub | Bez zmian: jest czytanie i sprawdzanie linku (`ipc-skill-link.ts`), brak pobierania i instalacji. Pobieranie cudzego kodu wymaga karty zgody z pełnym `SKILL.md`. | Nie robić bez wyraźnego „tak” właściciela (ryzyko: cudzy kod). |
+
+Nowe od ostatniej wersji tego dokumentu, bez pytania właściciela (małe, bezpieczne): „działaj w tle” z ikoną w zasobniku (BE-W), ustawienia wyglądu i skrótu wysyłania (BE-U), gdzie otwierają się linki i przywracanie ostatniego miejsca (BE-X), **czyszczenie historii kanału** (BE-Y, `docs/cosgral-raporty/backend-w12-y.md`).

@@ -430,6 +430,7 @@ export const IPC_CHANNELS = {
   channelsListMemories: "channels:list-memories",
   channelsSaveMemory: "channels:save-memory",
   channelsDeleteMemory: "channels:delete-memory",
+  channelsClearHistory: "channels:clear-history",
   channelsListMessages: "channels:list-messages",
   channelsSendMessage: "channels:send-message",
   channelsCreate: "channels:create",

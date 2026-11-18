@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CHANNEL_LIMITS, type CreateWorkspaceChannelInput } from "@openbot/contracts/ipc";
+import { isDynamicRecord } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { ChannelStore } from "./channel-store";
 import type { OpenBotDatabase } from "./openbot-database";
@@ -190,5 +191,111 @@ describe("ChannelStore", () => {
     expect(channels.getTask(open.id)).toMatchObject({ ownerBotId: "writer", state: "queued", assignmentCount: 2 });
     expect(channels.getTask(finished.id).ownerBotId).toBe("chief");
     expect(channels.pruneBots(["writer", "scout"]).channels).toEqual([]);
+  });
+});
+
+describe("ChannelStore.clearHistory (BE-Y)", () => {
+  function logged(database: OpenBotDatabase, needle: string): number {
+    const row = database.connection
+      .prepare("SELECT COUNT(*) AS n FROM orchestration_events WHERE payload_json LIKE ?")
+      .get(`%${needle}%`);
+    return Number(isDynamicRecord(row) ? row.n : 0);
+  }
+
+  it("removes the messages and tasks and keeps the channel, its members, memory and the other channels", async () => {
+    const { database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    const other = channels.create(launchPlan({ name: "other", title: "Other" }));
+    channels.remember(channel.id, "chief", "Keep this memory");
+    const first = channels.submit(channel.id, "Secret plan alpha");
+    channels.submit(other.id, "Other channel request");
+    channels.act({ taskId: first.task.id, action: "stop" });
+    const seen: string[] = [];
+    channels.on("event", (event) => seen.push(event.type));
+
+    const cleared = channels.clearHistory(channel.id);
+
+    expect(cleared).toEqual({ channelId: channel.id, removedMessages: 1, removedTasks: 1 });
+    expect(channels.listMessages(channel.id)).toEqual([]);
+    expect(channels.listTasks(channel.id)).toEqual([]);
+    expect(channels.get(channel.id)).toMatchObject({
+      name: "launch-plan",
+      leadBotId: "chief",
+      memberBotIds: ["chief", "writer"],
+    });
+    expect(channels.listMemory(channel.id).map((entry) => entry.text)).toEqual(["Keep this memory"]);
+    // The other channel is untouched.
+    expect(channels.listMessages(other.id)).toHaveLength(1);
+    expect(channels.listTasks(other.id)).toHaveLength(1);
+    expect(seen).toEqual(["channels-changed", "channel-history-cleared"]);
+    // Nothing to clear a second time, and no error.
+    expect(channels.clearHistory(channel.id)).toEqual({ channelId: channel.id, removedMessages: 0, removedTasks: 0 });
+    database.close();
+  });
+
+  it("takes the text of the removed messages and tasks out of the event log, and keeps the memory and the other channel", async () => {
+    const { database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    const other = channels.create(launchPlan({ name: "other", title: "Other" }));
+    channels.remember(channel.id, "chief", "Keep this memory");
+    const sent = channels.submit(channel.id, "Secret plan alpha");
+    channels.submit(other.id, "Other channel request");
+    channels.act({ taskId: sent.task.id, action: "stop" });
+    expect(logged(database, "Secret plan alpha")).toBeGreaterThan(0);
+
+    channels.clearHistory(channel.id);
+
+    expect(logged(database, "Secret plan alpha")).toBe(0);
+    expect(logged(database, "Keep this memory")).toBeGreaterThan(0);
+    expect(logged(database, "Other channel request")).toBeGreaterThan(0);
+    // The channel itself and the clearing are in the log, with counts and no text.
+    expect(logged(database, "channel.history-cleared")).toBe(0); // event_type is a column, not in the payload
+    const row = database.connection
+      .prepare("SELECT payload_json FROM orchestration_events WHERE event_type = 'channel.history-cleared'")
+      .get();
+    expect(isDynamicRecord(row) ? JSON.parse(String(row.payload_json)) : null).toEqual({
+      channelId: channel.id,
+      removedMessages: 1,
+      removedTasks: 1,
+    });
+    database.close();
+  });
+
+  it("is refused while a task is queued, running, waiting or paused, and changes nothing", async () => {
+    const { database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    const queued = channels.submit(channel.id, "First");
+    channels.submit(channel.id, "Second");
+    expect(() => channels.clearHistory(channel.id)).toThrow(
+      "This channel has 2 tasks in progress or paused. Stop or archive them first.",
+    );
+    channels.act({ taskId: queued.task.id, action: "stop" });
+    expect(() => channels.clearHistory(channel.id)).toThrow(
+      "This channel has 1 task in progress or paused. Stop or archive it first.",
+    );
+    expect(channels.listTasks(channel.id)).toHaveLength(2);
+    expect(channels.listMessages(channel.id)).toHaveLength(2);
+    // A paused task still counts: it can be resumed.
+    const stopped = channels.listTasks(channel.id).find((task) => task.id !== queued.task.id);
+    if (!stopped) throw new Error("the second task exists");
+    channels.act({ taskId: stopped.id, action: "pause" });
+    expect(() => channels.clearHistory(channel.id)).toThrow("in progress or paused");
+    channels.act({ taskId: stopped.id, action: "stop" });
+    expect(channels.clearHistory(channel.id)).toMatchObject({ removedTasks: 2, removedMessages: 2 });
+    database.close();
+  });
+
+  it("refuses a channel that does not exist and survives a restart", async () => {
+    const { root, database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    const sent = channels.submit(channel.id, "Gone after restart");
+    channels.act({ taskId: sent.task.id, action: "stop" });
+    expect(() => channels.clearHistory("nope")).toThrow();
+    channels.clearHistory(channel.id);
+    database.close();
+    const reopened = await openStore(root);
+    expect(reopened.channels.listMessages(channel.id)).toEqual([]);
+    expect(reopened.channels.listTasks(channel.id)).toEqual([]);
+    expect(reopened.channels.get(channel.id).name).toBe("launch-plan");
   });
 });

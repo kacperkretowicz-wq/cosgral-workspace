@@ -14,6 +14,7 @@ import {
   type AgentStatus,
   type AttachmentImportEvent,
   type BotSummary,
+  type ChannelHistoryCleared,
   type ChannelMemory,
   type ChannelMessage,
   type ChannelTask,
@@ -29,6 +30,7 @@ import {
   isAgentMemory,
   isAgentMemorySettings,
   isAgentModel,
+  isChannelHistoryCleared,
   isChannelMemory,
   isChannelMessage,
   isChannelTask,
@@ -618,6 +620,11 @@ function decodeChannelMessages(value: unknown): ChannelMessage[] {
   return value;
 }
 
+function decodeChannelHistoryCleared(value: unknown): ChannelHistoryCleared {
+  if (!isChannelHistoryCleared(value)) throw new Error("Invalid response to clearing a channel's history.");
+  return value;
+}
+
 function decodeChannelReceipt(value: unknown): { message: ChannelMessage; task: ChannelTask } {
   if (!isDynamicRecord(value) || !isChannelMessage(value.message) || !isChannelTask(value.task))
     throw new Error("Invalid channel message response.");
@@ -797,6 +804,7 @@ const openbotApi: OpenBotDesktopApi = {
     listMemories: (channelId) => invokeAgent(IPC_CHANNELS.channelsListMemories, channelId, decodeChannelMemories),
     saveMemory: (input) => invokeAgent(IPC_CHANNELS.channelsSaveMemory, input, decodeChannelMemory),
     deleteMemory: (input) => invokeAgent(IPC_CHANNELS.channelsDeleteMemory, input, decodeVoid),
+    clearHistory: (input) => invokeAgent(IPC_CHANNELS.channelsClearHistory, input, decodeChannelHistoryCleared),
     listMessages: (input) => invokeAgent(IPC_CHANNELS.channelsListMessages, input, decodeChannelMessages),
     sendMessage: (input) => invokeAgent(IPC_CHANNELS.channelsSendMessage, input, decodeChannelReceipt),
     list: () => invokeAgent(IPC_CHANNELS.channelsList, null, decodeChannels),

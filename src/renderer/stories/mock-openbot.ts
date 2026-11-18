@@ -688,6 +688,26 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       list: async () => clone(mockChannels),
       listMessages: async ({ channelId }) => clone(mockMessages.filter((item) => item.channelId === channelId)),
       listTasks: async (channelId) => clone(mockTasks.filter((item) => item.channelId === channelId)),
+      clearHistory: async ({ channelId }) => {
+        if (!mockChannels.some((item) => item.id === channelId)) throw new Error("This channel no longer exists.");
+        const busy = mockTasks.filter(
+          (item) =>
+            item.channelId === channelId &&
+            item.archivedAt === null &&
+            ["queued", "running", "waiting", "paused"].includes(item.state),
+        ).length;
+        if (busy > 0) {
+          throw new Error(
+            `This channel has ${busy} task${busy === 1 ? "" : "s"} in progress or paused. Stop or archive ${busy === 1 ? "it" : "them"} first.`,
+          );
+        }
+        const removedMessages = mockMessages.filter((item) => item.channelId === channelId).length;
+        const removedTasks = mockTasks.filter((item) => item.channelId === channelId).length;
+        mockMessages = mockMessages.filter((item) => item.channelId !== channelId);
+        mockTasks = mockTasks.filter((item) => item.channelId !== channelId);
+        emitAgentEvent({ type: "channel-history-cleared", channelId });
+        return { channelId, removedMessages, removedTasks };
+      },
       sendMessage: async (input) => {
         const { channelId, text } = input;
         const replyToMessageId =

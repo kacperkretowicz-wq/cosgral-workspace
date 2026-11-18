@@ -673,6 +673,8 @@ export type AgentEvent =
   | { type: "agent-memory-changed"; botId: string; action: "saved" | "deleted"; memory: AgentMemory }
   /** COSGRAL W2: a channel's shared memories changed (an agent or a person saved, edited or deleted one). */
   | { type: "channel-memory-changed"; channelId: string; action: "saved" | "deleted"; memory: ChannelMemory }
+  /** COSGRAL W12: the messages and tasks of a channel were cleared; the window empties that channel's history and task list. */
+  | { type: "channel-history-cleared"; channelId: string }
   /** COSGRAL W2: the MCP server list, a status or a tool list changed; replace the whole list. */
   | { type: "mcp-servers-changed"; servers: McpServer[] }
   /** COSGRAL W2: one agent's MCP switches changed; replace that agent's settings. */
@@ -983,6 +985,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
         (value.action === "saved" || value.action === "deleted") &&
         isChannelMemory(value.memory)
       );
+    case "channel-history-cleared":
+      return isString(value.channelId);
     case "error":
       return isString(value.code) && isString(value.message);
     default:

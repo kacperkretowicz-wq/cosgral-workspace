@@ -5,6 +5,7 @@ import {
   CHANNEL_LIMITS,
   type ChannelMemberInput,
   type ChannelTaskActionInput,
+  type ClearChannelHistoryInput,
   type CreateWorkspaceChannelInput,
   isChannelTaskAction,
   type ListChannelMessagesInput,
@@ -18,6 +19,11 @@ import { isObject, requireString } from "./validation";
 
 export function parseChannelId(value: unknown): string {
   return requireString(value, "channelId");
+}
+
+export function parseClearChannelHistory(value: unknown): ClearChannelHistoryInput {
+  if (!isObject(value)) throw new Error("Choose a channel.");
+  return { channelId: requireString(value.channelId, "channelId") };
 }
 
 export function parseSendChannelMessage(value: unknown): SendChannelMessageInput {

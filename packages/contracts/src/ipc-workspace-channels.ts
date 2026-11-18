@@ -256,3 +256,30 @@ export function isWorkspaceChannel(value: unknown): value is WorkspaceChannel {
     isString(value.updatedAt)
   );
 }
+
+// COSGRAL W12 (BE-Y): "Clear history" of a channel (parity row 27). Removes the messages and the tasks of the channel; the channel, its
+// members, lead, instructions, memory and routines stay. Refused while a task is queued, running, waiting or paused (stop or archive it
+// first). The text of the removed messages and tasks is also taken out of the local event log.
+
+export interface ClearChannelHistoryInput {
+  channelId: string;
+}
+
+export interface ChannelHistoryCleared {
+  channelId: string;
+  removedMessages: number;
+  removedTasks: number;
+}
+
+export function isChannelHistoryCleared(value: unknown): value is ChannelHistoryCleared {
+  return (
+    isDynamicRecord(value) &&
+    isString(value.channelId) &&
+    isNumber(value.removedMessages) &&
+    Number.isInteger(value.removedMessages) &&
+    value.removedMessages >= 0 &&
+    isNumber(value.removedTasks) &&
+    Number.isInteger(value.removedTasks) &&
+    value.removedTasks >= 0
+  );
+}

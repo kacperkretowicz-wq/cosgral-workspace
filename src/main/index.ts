@@ -158,6 +158,7 @@ import {
   parseChannelId,
   parseChannelMember,
   parseChannelTaskAction,
+  parseClearChannelHistory,
   parseCreateChannel,
   parseListChannelMessages,
   parseReassignChannelTask,
@@ -1239,6 +1240,10 @@ function registerIpcHandlers(
   });
   handleTrusted(IPC_CHANNELS.channelsSaveMemory, (input: unknown) =>
     channels.saveMemoryByPerson(localChannelInput(input, parseSaveChannelMemory)),
+  );
+  // COSGRAL W12 (BE-Y): clear the history of a channel (the store refuses while a task is queued, running, waiting or paused).
+  handleTrusted(IPC_CHANNELS.channelsClearHistory, (input: unknown) =>
+    channels.clearHistory(localChannelInput(input, parseClearChannelHistory).channelId),
   );
   handleTrusted(IPC_CHANNELS.channelsDeleteMemory, (input: unknown) => {
     channels.forgetMemory(localChannelInput(input, parseDeleteChannelMemory));

@@ -9,6 +9,7 @@ import {
   type AgentEvent,
   CHANNEL_LIMITS,
   type ChannelAssignment,
+  type ChannelHistoryCleared,
   type ChannelMemberInput,
   type ChannelMemory,
   type ChannelMessage,
@@ -27,7 +28,7 @@ import {
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
-import { purgeChannelMemoryHistory } from "./memory-history";
+import { purgeChannelMemoryHistory, purgeEventHistory } from "./memory-history";
 import type { OpenBotDatabase } from "./openbot-database";
 
 export interface ChannelStoreOptions {
@@ -63,6 +64,8 @@ export interface ChannelChanges {
 
 const FINISHED_STATES: readonly ChannelTaskState[] = ["done", "failed", "cancelled"];
 const ACTIVE_STATES: readonly ChannelTaskState[] = ["running", "waiting"];
+/** States that block clearing the history of a channel: work that has started or can be resumed. */
+const HELD_STATES: readonly ChannelTaskState[] = ["queued", "running", "waiting", "paused"];
 const OPEN_STATES: readonly ChannelTaskState[] = ["queued", "running", "waiting", "paused"];
 
 export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
@@ -193,6 +196,65 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
       channels: channels.map((channel) => this.get(channel.id)),
       tasks: tasks.map((task) => this.getTask(task.id)),
     };
+  }
+
+  /**
+   * COSGRAL W12 (BE-Y): clear the history of a channel. The messages and the tasks go (their runtime and assignments with them); the channel,
+   * its members, lead, instructions, memory and routines stay. Refused while a task is queued, running, waiting or paused (archived tasks
+   * do not count). The older events that carry the text of the removed messages and tasks leave the event log too, in the same transaction.
+   */
+  clearHistory(channelId: string): ChannelHistoryCleared {
+    this.get(channelId);
+    const busy = this.listTasks(channelId).filter(
+      (task) => task.archivedAt === null && HELD_STATES.includes(task.state),
+    );
+    if (busy.length > 0) {
+      throw new Error(
+        `This channel has ${busy.length} task${busy.length === 1 ? "" : "s"} in progress or paused. Stop or archive ${busy.length === 1 ? "it" : "them"} first.`,
+      );
+    }
+    const db = this.#database.connection;
+    const count = (table: string): number => {
+      const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE channel_id = ?`).get(channelId);
+      return isDynamicRecord(row) && isNumber(row.n) ? row.n : 0;
+    };
+    const removedMessages = count("projection_channel_messages");
+    const removedTasks = count("projection_channel_tasks");
+    const at = this.#isoNow();
+    this.#database.dispatch(
+      `channel.history-cleared:${randomUUID()}`,
+      [
+        {
+          aggregateType: "channel",
+          aggregateId: channelId,
+          eventType: "channel.history-cleared",
+          // Counts only: this event carries no text.
+          payload: { channelId, removedMessages, removedTasks },
+          occurredAt: at,
+        },
+      ],
+      (tx, sequences) => {
+        const sequence = sequences.at(-1) ?? 0;
+        tx.prepare("DELETE FROM projection_channel_tasks WHERE channel_id = ?").run(channelId);
+        tx.prepare("DELETE FROM projection_channel_messages WHERE channel_id = ?").run(channelId);
+        tx.prepare("UPDATE projection_channels SET updated_at = ?, last_event_sequence = ? WHERE channel_id = ?").run(
+          at,
+          sequence,
+          channelId,
+        );
+        // Events with messages or tasks of this channel (they hold the text); memory, member and setting events stay.
+        purgeEventHistory(
+          tx,
+          "aggregate_type IN ('channel', 'channel-task') AND (json_extract(payload_json, '$.messages') IS NOT NULL OR json_extract(payload_json, '$.tasks[0]') IS NOT NULL) AND (json_extract(payload_json, '$.channels[0].id') = ? OR json_extract(payload_json, '$.tasks[0].channelId') = ? OR json_extract(payload_json, '$.messages[0].channelId') = ?)",
+          [channelId, channelId, channelId],
+          sequence,
+        );
+        return null;
+      },
+    );
+    this.emit("event", { type: "channels-changed", channels: this.list() });
+    this.emit("event", { type: "channel-history-cleared", channelId });
+    return { channelId, removedMessages, removedTasks };
   }
 
   listTasks(channelId: string): ChannelTask[] {

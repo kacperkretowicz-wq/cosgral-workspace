@@ -255,11 +255,13 @@ import type {
   WorkflowRunIdInput,
 } from "./ipc-workflows";
 import type {
+  ChannelHistoryCleared,
   ChannelMemberInput,
   ChannelMemory,
   ChannelMessage,
   ChannelTask,
   ChannelTaskActionInput,
+  ClearChannelHistoryInput,
   CreateWorkspaceChannelInput,
   ListChannelMessagesInput,
   ReassignChannelTaskInput,
@@ -344,6 +346,8 @@ export interface ChannelsDesktopApi {
   /** A person adds an entry (no memoryId) or edits one (memoryId). At most 500 characters. */
   saveMemory?: (input: SaveChannelMemoryInput) => Promise<ChannelMemory>;
   deleteMemory?: (input: DeleteChannelMemoryInput) => Promise<void>;
+  /** COSGRAL W12: remove the messages and tasks of a channel (refused while a task is queued, running, waiting or paused). */
+  clearHistory?: (input: ClearChannelHistoryInput) => Promise<ChannelHistoryCleared>;
   create: (input: CreateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
   update: (input: UpdateWorkspaceChannelInput) => Promise<WorkspaceChannel>;
   addMember: (input: ChannelMemberInput) => Promise<WorkspaceChannel>;
