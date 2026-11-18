@@ -61,7 +61,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 9. [zrobione: e0a774760] Aria/i18n P0 rozmowy: ChatSearch, MessageRendering, SelectionActions, QueuePanel, ComposerEditor (Insert mention); wyspa PL AgentAccountPicker.
 7. Po `GO-kapi-dist.txt`: `dist:win` po większym scaleniu i pomiar (rozmiar, SHA-256).
 10. [zrobione: 8d8d139cb] Test `AgentSettingsW3` pod `setLanguage("pl")` (notka KAPI-S: szuka „Konto”).
-11. [w toku: KAPI, 22:31] Skan pozostałych `aria-label` i tekstów PL/EN w TSX po KAPI-S; klucze równe, `i18n.test`.
+11. [zrobione: 31f84fa5c] Skan pozostałych `aria-label` i tekstów PL/EN w TSX po KAPI-S; klucze równe, `i18n.test`.
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
