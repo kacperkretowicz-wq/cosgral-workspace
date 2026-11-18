@@ -8,7 +8,7 @@ Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `b1e28ab8f`. Lista dla UI
 
 Już podpięte (nie ma ich na liście): Vault konektory (`VaultConnectorsPanel`), Biblioteka, Użycie, Harmonogram, menu wiadomości, karty agenta, ustawienia serwera, Zadania.
 
-## Stan (18.11.2026): pozycje 1–7 i 10–13 mają ekran (✓), zostają 8–9 (UI Designer); 14 celowo bez ekranu
+## Stan (18.11.2026): pozycje 1–7 i 10–13 mają ekran (✓); zostają 8, 9 i 15 (UI Designer); 14 celowo bez ekranu
 
 Pozycje z ✓ są podpięte w rendererze (testy komponentów na atrapach, w oknie jeszcze nie oglądane). Zostają dwa ekrany: układ Marketplace i edytor Workflows (UI Designer).
 
@@ -30,6 +30,7 @@ Pozycje z ✓ są podpięte w rendererze (testy komponentów na atrapach, w okni
 | 12 ✓ | **Podagenci** — zrobione: `SubagentsPanel` w panelu wątków | Rozmowa → panel wątków | `subagents.list`, `.stop` | `subagent-changed` | `SUBAGENT_LIMITS`, `subagentIsActive` | 2 |
 | 13 ✓ | **Powiadomienia push telefonu i instrukcja Tailscale** — zrobione w `MobileOverviewPanel` | Strona Mobile Connect | `phone.setPushEnabled`, `.sendTestPush`, `.getTailscaleGuide` | `phone-access-changed` | `PHONE_TAILSCALE_GUIDE`, `PHONE_PUSH_REASONS` | 1–2 |
 | 14 | Pokaż/skopiuj sekret Sejfu, import CSV, kody 2FA (`vaultSecrets`) — **celowo bez ekranu** (decyzja: wartości tylko do zapisu; ekran „pokaż hasło” to ryzyko wycieku) | — | `vaultSecrets.reveal`, `.copy`, `.importCsv`, `.codes`, `.reset` | `vault-connectors-changed` | — | — |
+| 15 | **Szczegóły kart agenta i publikacja szablonu** — w rendererze jest tylko przegląd (`AgentCardsSection`: `overview`, `getPreferences`, `updatePreferences`, `resetSession`); brak użytkownika dla `agentCards.details` (pliki, foldery, użycie, publikacja, zaawansowane, powiadomienia), `publishTemplate`, `unpublishTemplate`. **Tor UI Designera (12 kart agenta, UI-Y)**; przed użyciem czytaj `available` z `overview` | Rozmowa → panel agenta → karty | `agentCards.details`, `.publishTemplate`, `.unpublishTemplate` | — | `ipc-agent-card-details` | 4–6 |
 
 ## Stany do narysowania w każdym ekranie
 
