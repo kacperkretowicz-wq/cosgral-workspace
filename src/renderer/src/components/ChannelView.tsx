@@ -1,5 +1,7 @@
 import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
+import { t } from "../i18n";
+import { ChannelRoutinesPanel } from "./ChannelRoutinesPanel";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
 import { Button, NativeSelect, Textarea, ViewTabPanel } from "./ui";
@@ -18,6 +20,7 @@ export function ChannelView(props: {
   const tabsId = createUniqueId();
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
   const [memoryOpen, setMemoryOpen] = createSignal(false);
+  const [routinesOpen, setRoutinesOpen] = createSignal(false);
   const [text, setText] = createSignal("");
   const [reply, setReply] = createSignal<ChannelMessage>();
   const [sending, setSending] = createSignal(false);
@@ -54,6 +57,12 @@ export function ChannelView(props: {
           <summary>Channel memory</summary>
           <Show when={memoryOpen()}>
             <ChannelMemorySettingsView channelId={props.channel.id} />
+          </Show>
+        </details>
+        <details onToggle={(event) => setRoutinesOpen(event.currentTarget.open)}>
+          <summary>{t("Channel routines")}</summary>
+          <Show when={routinesOpen()}>
+            <ChannelRoutinesPanel channel={props.channel} />
           </Show>
         </details>
         <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
