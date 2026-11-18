@@ -1,5 +1,6 @@
 import type { AgentEyesRequest, AgentEyesSession, StopAgentEyesInput } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button } from "./ui";
 
 /** COSGRAL agent eyes: the small "an agent is looking" UI (sidebar badge, bar above the conversation, card details). */
@@ -16,19 +17,23 @@ export function EyesIcon() {
 /** Small pulsing eye for an agent row: this agent is looking right now. */
 export function EyesBadge() {
   return (
-    <span class="eyes-badge" title="Looking">
+    <span class="eyes-badge" title={t("Looking")}>
       <EyesIcon />
-      <span class="sr-only">Looking</span>
+      <span class="sr-only">{t("Looking")}</span>
     </span>
   );
 }
 
 function framesLabel(session: AgentEyesSession): string {
-  return `${session.framesCaptured} / ${session.framesPlanned} ${session.framesPlanned === 1 ? "frame" : "frames"}`;
+  return t("{captured} / {planned} {unit}", {
+    captured: session.framesCaptured,
+    planned: session.framesPlanned,
+    unit: session.framesPlanned === 1 ? t("frame") : t("frames"),
+  });
 }
 
 export function eyesSessionSummary(session: AgentEyesSession): string {
-  return `${session.phase === "watching" ? "Live" : "Capturing"} · ${framesLabel(session)}`;
+  return `${session.phase === "watching" ? t("Live") : t("Capturing")} · ${framesLabel(session)}`;
 }
 
 function formatEndsAt(value: string): string {
@@ -48,10 +53,10 @@ export interface EyesBarProps {
  * Stop ends that agent's looking and revokes its approvals.
  */
 export function EyesBar(props: EyesBarProps) {
-  const botName = (botId: string) => props.bots.find((bot) => bot.id === botId)?.name ?? "An agent";
+  const botName = (botId: string) => props.bots.find((bot) => bot.id === botId)?.name ?? t("An agent");
   return (
     <Show when={props.sessions.length > 0}>
-      <div class="eyes-bar" role="status" aria-label="Agent eyes">
+      <div class="eyes-bar" role="status" aria-label={t("Agent eyes")}>
         <For each={props.sessions}>
           {(session) => (
             <div class="eyes-bar-row" data-source={session.source} data-phase={session.phase}>
@@ -61,24 +66,26 @@ export function EyesBar(props: EyesBarProps) {
               </span>
               <span class="eyes-bar-copy">
                 <strong>{botName(session.botId)}</strong>
-                <span>{session.source === "camera" ? "is using" : "is looking at"}</span>
+                <span>{session.source === "camera" ? t("is using") : t("is looking at")}</span>
                 <strong class="eyes-bar-target" title={session.targetLabel}>
                   {session.targetLabel}
                 </strong>
               </span>
               <span class="eyes-bar-meta">
                 {eyesSessionSummary(session)}
-                <Show when={session.endsAt}>{(endsAt) => <> · until {formatEndsAt(endsAt())}</>}</Show>
+                <Show when={session.endsAt}>
+                  {(endsAt) => <> · {t("until {time}", { time: formatEndsAt(endsAt()) })}</>}
+                </Show>
               </span>
               <Button
                 type="button"
                 class="eyes-bar-stop"
                 size="sm"
                 variant="danger"
-                aria-label={`Stop ${botName(session.botId)} looking`}
+                aria-label={t("Stop {name} looking", { name: botName(session.botId) })}
                 onClick={() => props.onStop({ botId: session.botId })}
               >
-                Stop
+                {t("Stop")}
               </Button>
             </div>
           )}
@@ -92,18 +99,21 @@ export function EyesBar(props: EyesBarProps) {
 export function EyesRequestDetails(props: { eyes: AgentEyesRequest }) {
   const mode = () =>
     props.eyes.live
-      ? `Live preview · ${props.eyes.frames} ${props.eyes.frames === 1 ? "frame" : "frames"}${
-          props.eyes.intervalSeconds === null ? "" : ` every ${props.eyes.intervalSeconds}s`
-        }`
-      : "Single capture";
+      ? t("Live preview · {n} {unit}{every}", {
+          n: props.eyes.frames,
+          unit: props.eyes.frames === 1 ? t("frame") : t("frames"),
+          every:
+            props.eyes.intervalSeconds === null ? "" : t(" every {seconds}s", { seconds: props.eyes.intervalSeconds }),
+        })
+      : t("Single capture");
   return (
-    <section class="approval-eyes" aria-label="Requested view">
+    <section class="approval-eyes" aria-label={t("Requested view")}>
       <div class="approval-detail-row">
-        <span class="approval-detail-label">{props.eyes.source === "camera" ? "Camera" : "Looks at"}</span>
+        <span class="approval-detail-label">{props.eyes.source === "camera" ? t("Camera") : t("Looks at")}</span>
         <strong>{props.eyes.targetLabel}</strong>
       </div>
       <div class="approval-detail-row">
-        <span class="approval-detail-label">Mode</span>
+        <span class="approval-detail-label">{t("Mode")}</span>
         <strong>{mode()}</strong>
       </div>
     </section>

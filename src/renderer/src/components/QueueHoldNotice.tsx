@@ -1,5 +1,6 @@
 import type { QueueSnapshot } from "@openbot/contracts/ipc";
 import { Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Text } from "./ui";
 
 /**
@@ -12,9 +13,11 @@ export function QueueHoldNotice(props: { queue: QueueSnapshot | undefined; onOpe
   return (
     <Show when={props.queue?.heldReason}>
       <div class="providers-form" role="status" data-hold-kind={kind()}>
-        <Text>Message queued: {props.queue?.heldReason}</Text>
+        <Text>
+          {t("Message queued:")} {props.queue?.heldReason}
+        </Text>
         <Show when={kind() === "budget"}>
-          <Button onClick={() => props.onOpenBudget?.()}>Review budget settings</Button>
+          <Button onClick={() => props.onOpenBudget?.()}>{t("Review budget settings")}</Button>
         </Show>
       </div>
     </Show>
