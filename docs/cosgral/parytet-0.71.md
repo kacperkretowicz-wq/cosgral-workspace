@@ -2,7 +2,7 @@
 
 Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows` i pierwszą częścią `w12-screens`) oraz gałąź `team/kk/w12-screens` (Import i Transfer, Głos, Mobile Connect, zdalny pulpit; stan na 543bc7f88; do scalenia). Poprzednia wersja tabeli: `b1e28ab8f` + `w12-flows`, 68,8%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany UI Designera na jego gałęzi zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`).
 
-**Wynik w jednej linii: 55,5 z 72 funkcji = 77,1% (jest = 1, częściowo = ½). Z tego skontraktowane ~89,6%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 57,6%.**
+**Wynik w jednej linii: 55,5 z 72 funkcji = 77,1% (jest = 1, częściowo = ½). Z tego skontraktowane ~89,6%, ale w prawdziwym oknie sprawdzone tylko 47,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 57,6%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
@@ -10,7 +10,7 @@ Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows
 | Skontraktowane | **~89,6%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | **~89%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
 | Ekran w kodzie | **~84%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **45,1%** | 19 wierszy w pełni (tak), 27 częściowo; reszta nie sprawdzona w prawdziwym programie |
+| W oknie sprawdzone | **47,2%** | 19 wierszy w pełni (tak), 30 częściowo; reszta nie sprawdzona w prawdziwym programie |
 | Ostrożny parytet | **57,6%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
 Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 55,5 z 78 = 71,2%.
@@ -105,7 +105,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 38 | MCP: lista, dodawanie (stdio/HTTP), narzędzia, dostęp per agent | **jest** | tak | tak | tak | tak | tak | W oknie (serwer stdio). | kk-w3-acceptance |
-| 39 | MCP: logowanie OAuth w przeglądarce | **jest** | tak | tak | tak | tak | nie | Sekcja „Sign in to MCP servers” pod listą serwerów MCP: stan (wylogowany, czeka na przeglądarkę, kończenie, zalogowany, błąd), Zaloguj / Anuluj / Wyloguj, stałe zdania błędów. Nie oglądana w oknie; prawdziwego logowania nie sprawdzano. | kk-w12-oauth, kk-w12-screens |
+| 39 | MCP: logowanie OAuth w przeglądarce | **jest** | tak | tak | tak | tak | część | Sekcja „Sign in to MCP servers” pod listą serwerów MCP: stan (wylogowany, czeka na przeglądarkę, kończenie, zalogowany, błąd), Zaloguj / Anuluj / Wyloguj, stałe zdania błędów. Nie oglądana w oknie; prawdziwego logowania nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w12-oauth, kk-w12-screens |
 | 40 | Vault lokalny (login, karta, kontakt, klucz, TOTP; agent bierze bez ujawnienia) | **jest** | tak | tak | tak | tak | część | Login z wypełnieniem w oknie (hasła nie ma w wyniku, czacie ani plikach); karta, kontakt, klucz, TOTP tylko silnik i testy. | kk-w4-rows, ipc-vault |
 | 41 | Vault: pokaż/skopiuj sekret osobie, import CSV | **brak** | nie | nie | nie | nie | nie | Świadomie: wartości są tylko do zapisu. | ipc-vault |
 | 42 | Vault: konektory 1Password, Bitwarden, Proton Pass | **jest** | tak | tak | tak | tak | nie | Panel konektorów (stan, wybór metody, pola tylko do zapisu, lista dozwolonych logowań bez haseł, rozłączanie) jest w integracji (UI-M). W oknie nie oglądany; prawdziwe menedżery wymagają kont właściciela. | kk-w11-vault, ui-w12-ui2 |
@@ -148,8 +148,8 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
-| 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **jest** | tak | tak | tak | tak | nie | Panel „Messengers” na stronie Library: stan, token tylko do zapisu (pole czyszczone), lista dopuszczonych i nieznanych rozmów (bez treści), dopuszczanie z agentem, kroki konfiguracji. Nie oglądany w oknie; prawdziwego bota nie sprawdzano. | kk-w10-kk2, kk-w12-screens |
-| 63 | Slack (Socket Mode, tylko DM) | **jest** | tak | tak | tak | tak | nie | Ten sam panel: dwa tokeny (bota i aplikacji), tylko wiadomości prywatne (numer D…). Nie oglądany w oknie; prawdziwego Slacka nie sprawdzano. | kk-w12-komunikatory, kk-w12-screens |
+| 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **jest** | tak | tak | tak | tak | część | Panel „Messengers” na stronie Library: stan, token tylko do zapisu (pole czyszczone), lista dopuszczonych i nieznanych rozmów (bez treści), dopuszczanie z agentem, kroki konfiguracji. Nie oglądany w oknie; prawdziwego bota nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w10-kk2, kk-w12-screens |
+| 63 | Slack (Socket Mode, tylko DM) | **jest** | tak | tak | tak | tak | część | Ten sam panel: dwa tokeny (bota i aplikacji), tylko wiadomości prywatne (numer D…). Nie oglądany w oknie; prawdziwego Slacka nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w12-komunikatory, kk-w12-screens |
 | 64 | Discord | **brak** | nie | nie | nie | nie | nie | Wstrzymany decyzją lidera. | - |
 | 65 | Łącznik GitHub (repozytoria, kod urządzenia) | **brak** | nie | nie | nie | nie | nie | Brak. | - |
 
