@@ -1,0 +1,230 @@
+/* Marketplace gallery (Agents / Skills): wide search, category chips, featured row, card grid. Own tiles, no outside art. */
+.mk-gallery {
+  display: grid;
+  gap: 20px;
+}
+
+.mk-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mk-search > svg {
+  position: absolute;
+  left: 14px;
+  color: var(--cosgral-text-muted);
+  pointer-events: none;
+}
+
+.mk-search .ui-input {
+  width: 100%;
+  height: 44px;
+  padding-left: 42px;
+  border-radius: var(--cosgral-radius-lg);
+}
+
+.mk-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.mk-categories .ui-button {
+  height: 32px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-pill);
+  padding: 0 14px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+  transition:
+    background-color var(--cosgral-duration-normal) ease,
+    border-color var(--cosgral-duration-normal) ease;
+}
+
+.mk-categories .ui-button[aria-pressed="true"] {
+  border-color: var(--cosgral-accent-strong);
+  background: var(--cosgral-accent-soft);
+  color: var(--cosgral-accent-text);
+}
+
+.mk-heading {
+  margin: 0 0 10px;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+}
+
+.mk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-grid-featured {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+
+.mk-card {
+  --mk-hue: 245;
+  position: relative;
+  display: grid;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  transition:
+    border-color var(--cosgral-duration-normal) ease,
+    transform var(--cosgral-duration-normal) ease;
+}
+
+.mk-card:hover {
+  border-color: var(--cosgral-border-strong);
+  transform: translateY(-1px);
+}
+
+.mk-card[data-selected="true"] {
+  border-color: var(--cosgral-accent-strong);
+}
+
+.mk-card[data-category="productivity"] {
+  --mk-hue: 215;
+}
+
+.mk-card[data-category="research"] {
+  --mk-hue: 168;
+}
+
+.mk-card[data-category="writing"] {
+  --mk-hue: 30;
+}
+
+.mk-card[data-category="communication"] {
+  --mk-hue: 320;
+}
+
+.mk-card[data-category="development"] {
+  --mk-hue: 265;
+}
+
+.mk-card[data-category="data"] {
+  --mk-hue: 125;
+}
+
+.mk-card[data-category="travel"] {
+  --mk-hue: 55;
+}
+
+.mk-card .mk-card-open {
+  display: flex;
+  height: auto;
+  min-height: 96px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 14px;
+  border-radius: var(--cosgral-radius-lg);
+  padding: 16px;
+  text-align: left;
+  white-space: normal;
+}
+
+.mk-card[data-large="true"] .mk-card-open {
+  min-height: 120px;
+}
+
+.mk-tile {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-lg);
+  background: oklch(0.5 0.1 var(--mk-hue) / 0.3);
+  color: oklch(0.84 0.1 var(--mk-hue));
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mk-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.mk-card-copy strong {
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+}
+
+.mk-card-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.mk-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--cosgral-radius-sm);
+  background: var(--cosgral-border);
+  padding: 2px 7px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.mk-chip-state {
+  background: var(--cosgral-accent-soft);
+  color: var(--cosgral-accent-text);
+}
+
+.mk-card-install {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  height: 30px;
+  gap: 6px;
+  padding: 0 12px;
+  opacity: 0;
+  transition: opacity var(--cosgral-duration-normal) ease;
+}
+
+.mk-card:hover .mk-card-install,
+.mk-card:focus-within .mk-card-install {
+  opacity: 1;
+}
+
+.mk-empty {
+  color: var(--cosgral-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-card,
+  .mk-card-install,
+  .mk-categories .ui-button {
+    transition: none;
+  }
+
+  .mk-card:hover {
+    transform: none;
+  }
+}
