@@ -1,0 +1,190 @@
+/* Agent cards as a grid of tiles: own icon tile, label, one line, count. Replaces the plain list rows. */
+.agent-cards .agent-cards-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.agent-cards .agent-card-row {
+  --card-hue: 245;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon title count"
+    "icon line count";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 12px;
+  transition:
+    border-color var(--cosgral-duration-normal) ease,
+    transform var(--cosgral-duration-normal) ease;
+}
+
+.agent-cards .agent-card-row + .agent-card-row {
+  border-top: 1px solid var(--cosgral-border);
+}
+
+.agent-cards .agent-card-row:hover {
+  border-color: var(--cosgral-border-strong);
+  transform: translateY(-1px);
+}
+
+.agent-card-icon {
+  display: grid;
+  grid-area: icon;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-md);
+  background: oklch(0.5 0.1 var(--card-hue) / 0.22);
+  color: oklch(0.84 0.1 var(--card-hue));
+}
+
+.agent-card-row[data-card="chat-color"] {
+  --card-hue: 320;
+}
+
+.agent-card-row[data-card="instructions"],
+.agent-card-row[data-card="skills"] {
+  --card-hue: 200;
+}
+
+.agent-card-row[data-card="memory"],
+.agent-card-row[data-card="tables"] {
+  --card-hue: 285;
+}
+
+.agent-card-row[data-card="files"],
+.agent-card-row[data-card="folders"] {
+  --card-hue: 70;
+}
+
+.agent-card-row[data-card="routines"],
+.agent-card-row[data-card="notifications"] {
+  --card-hue: 30;
+}
+
+.agent-card-row[data-card="usage"],
+.agent-card-row[data-card="publish"] {
+  --card-hue: 150;
+}
+
+.agent-card-row[data-card="permissions"],
+.agent-card-row[data-card="advanced"],
+.agent-card-row[data-card="backup-models"] {
+  --card-hue: 245;
+}
+
+.agent-cards .agent-card-row strong {
+  grid-area: title;
+  flex: none;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+}
+
+.agent-cards .agent-card-summary {
+  grid-area: line;
+  flex: none;
+}
+
+.agent-cards .agent-card-count {
+  grid-area: count;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-cards .agent-card-row {
+    transition: none;
+  }
+
+  .agent-cards .agent-card-row:hover {
+    transform: none;
+  }
+}
+
+/* Opening a card: the whole tile is the button; the detail opens under the grid. */
+.agent-cards .agent-card-row {
+  position: relative;
+}
+
+.agent-cards .agent-card-open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--cosgral-radius-lg);
+  background: transparent;
+}
+
+.agent-cards .agent-card-open[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--cosgral-accent-strong);
+}
+
+.agent-card-detail {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 14px 16px;
+}
+
+.agent-card-detail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.agent-card-detail h4 {
+  margin: 0;
+  font-size: var(--cosgral-text-xl);
+}
+
+.agent-card-detail-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.agent-card-detail-facts dt {
+  color: var(--cosgral-text-muted);
+}
+
+.agent-card-detail-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-card-detail-list {
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.agent-card-detail-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agent-card-detail-list small {
+  color: var(--cosgral-text-muted);
+}
+
+.agent-card-detail-actions {
+  display: flex;
+  gap: 8px;
+}

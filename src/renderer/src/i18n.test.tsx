@@ -49,6 +49,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "MarketplaceGallery",
     "WorkflowPreviewCanvas",
     "WorkflowsPage",
+    "AgentCardDetail",
     "MarketplacePage",
     "VaultConnectorsPanel",
     "ScheduleOverview",

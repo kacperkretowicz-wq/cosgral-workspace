@@ -3,15 +3,39 @@ import type {
   AgentCardId,
   AgentCardsOverview,
   AgentChatColor,
+  AgentDetailCardId,
   AgentEvent,
   AgentNotificationLevel,
   AgentPreferenceChanges,
   AgentPreferences,
 } from "@openbot/contracts/ipc";
-import { AGENT_BUSY_MESSAGE_MODES, AGENT_CHAT_COLORS, AGENT_NOTIFICATION_LEVELS } from "@openbot/contracts/ipc";
+import {
+  AGENT_BUSY_MESSAGE_MODES,
+  AGENT_CHAT_COLORS,
+  AGENT_DETAIL_CARD_IDS,
+  AGENT_NOTIFICATION_LEVELS,
+} from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { AgentCardDetail } from "./AgentCardDetail";
 import { Button, NativeSelect, Switch } from "./ui";
+import {
+  Bell,
+  Brain,
+  Clock,
+  FileText,
+  Folder,
+  FolderTree,
+  Gauge,
+  Layers,
+  Palette,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Table2,
+  Upload,
+} from "./ui/icons";
+import "../styles/agent-cards-grid.css";
 
 const CARD_LABELS: Record<AgentCardId, string> = {
   "chat-color": "Chat color",
@@ -28,6 +52,24 @@ const CARD_LABELS: Record<AgentCardId, string> = {
   folders: "Folders",
   notifications: "Notify",
   "backup-models": "Backup models",
+};
+
+/** One own icon per card (20px, 1.5px line), drawn from the shared icon set. */
+const CARD_ICONS: Record<AgentCardId, typeof Palette> = {
+  "chat-color": Palette,
+  instructions: FileText,
+  memory: Brain,
+  skills: Sparkles,
+  files: Folder,
+  tables: Table2,
+  routines: Clock,
+  usage: Gauge,
+  publish: Upload,
+  permissions: ShieldCheck,
+  advanced: SlidersHorizontal,
+  folders: FolderTree,
+  notifications: Bell,
+  "backup-models": Layers,
 };
 
 const COLOR_LABELS: Record<AgentChatColor, string> = {
@@ -69,6 +111,10 @@ function summaryText(summary: string): string {
   return key ? t(key) : summary;
 }
 
+function detailId(id: string): AgentDetailCardId | null {
+  return AGENT_DETAIL_CARD_IDS.find((item) => item === id) ?? null;
+}
+
 function pick<T extends string>(options: readonly T[], value: string, fallback: T): T {
   return options.find((option) => option === value) ?? fallback;
 }
@@ -85,6 +131,7 @@ export function AgentCardsSection(props: { botId: string }) {
   const [busy, setBusy] = createSignal(false);
   const [confirmReset, setConfirmReset] = createSignal(false);
   const [notice, setNotice] = createSignal("");
+  const [openCard, setOpenCard] = createSignal<AgentDetailCardId | null>(null);
   let generation = 0;
 
   async function load() {
@@ -111,6 +158,7 @@ export function AgentCardsSection(props: { botId: string }) {
       setError("");
       setNotice("");
       setConfirmReset(false);
+      setOpenCard(null);
       void load();
     },
   );
@@ -179,7 +227,13 @@ export function AgentCardsSection(props: { botId: string }) {
             <ul class="agent-cards-list">
               <For each={cards().cards}>
                 {(card) => (
-                  <li class="agent-card-row" data-available={card.available ? "true" : "false"}>
+                  <li class="agent-card-row" data-card={card.id} data-available={card.available ? "true" : "false"}>
+                    <span class="agent-card-icon" aria-hidden="true">
+                      {(() => {
+                        const Icon = CARD_ICONS[card.id];
+                        return <Icon size={20} stroke-width={1.5} />;
+                      })()}
+                    </span>
                     <strong>{t(CARD_LABELS[card.id])}</strong>
                     <span class="agent-card-summary">
                       {card.available
@@ -189,10 +243,32 @@ export function AgentCardsSection(props: { botId: string }) {
                     <Show when={card.available && card.count !== null}>
                       <span class="agent-card-count">{card.count}</span>
                     </Show>
+                    <Show when={card.available && detailId(card.id)}>
+                      {(id) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          class="agent-card-open"
+                          aria-pressed={openCard() === id() ? "true" : "false"}
+                          aria-label={t("Open {title}", { title: t(CARD_LABELS[card.id]) })}
+                          onClick={() => setOpenCard(openCard() === id() ? null : id())}
+                        />
+                      )}
+                    </Show>
                   </li>
                 )}
               </For>
             </ul>
+          )}
+        </Show>
+        <Show when={openCard()}>
+          {(card) => (
+            <AgentCardDetail
+              botId={props.botId}
+              card={card()}
+              title={t(CARD_LABELS[card()])}
+              onClose={() => setOpenCard(null)}
+            />
           )}
         </Show>
         <Show when={prefs()}>
