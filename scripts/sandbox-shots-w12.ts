@@ -1,5 +1,5 @@
-// T-O / T-G: screenshot states for COSGRAL (real Electron, sandbox only). Run ONLY after GO-tester-*.txt.
-//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_SHOTS_OUT=<Shared/cosgral-docs/zrzuty-cosgral-17-11-d> node scripts/sandbox-shots-w12.ts
+// T-U / T-O: screenshot states for COSGRAL (real Electron, sandbox only).
+//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_SHOTS_OUT=<Shared/cosgral-docs/zrzuty-cosgral-17-11-e> node scripts/sandbox-shots-w12.ts
 // Writes 1440x900 PNGs outside the repo. No commit. `bun run build` first.
 // States: dark+light; New agent; chat+stub; menu +/@//; search; Tasks (steps/Open as chat); Usage (By model);
 // Schedule; message menu; agent cards; server settings; Marketplace (Agents/Skills); Library files + Vault connectors.
@@ -47,6 +47,12 @@ function shotsOut(): string {
 }
 
 async function requireGo(): Promise<void> {
+  // T-U: after e2e+W5 the GO file is deleted (end of quiet window for others).
+  // Tester keeps taking shots; set COSGRAL_SKIP_GO=1 for that continuous queue.
+  if (process.env.COSGRAL_SKIP_GO === "1") {
+    console.log("GO skipped (COSGRAL_SKIP_GO=1 — post quiet-window shots)");
+    return;
+  }
   const gate = process.env.COSGRAL_GO_DIR
     ? resolve(process.env.COSGRAL_GO_DIR)
     : resolve(repo, "..", "cosgral-sandbox");
@@ -247,7 +253,8 @@ async function clickRail(page: Page, labels: string[]): Promise<void> {
 
 async function reachMain(page: Page): Promise<string[]> {
   const seen: string[] = [];
-  for (let round = 0; round < 60; round += 1) {
+  // Fixture CLI is Electron-as-Node: first `codex --version` can take 40–90s while status stays Checking/Brak.
+  for (let round = 0; round < 180; round += 1) {
     if (page.isClosed()) throw new Error(`page closed during first-run (saw: ${seen.join(", ")})`);
     const pages = page.getByRole("navigation", { name: "Pages" }).or(page.getByRole("navigation", { name: "Strony" }));
     if (await pages.count()) return seen;
@@ -255,6 +262,7 @@ async function reachMain(page: Page): Promise<string[]> {
     const continueCodex = page.getByRole("button", {
       name: /Continue with Codex|Finish setup|Kontynuuj z Codex|Zakończ konfigurację/i,
     });
+    const checkBtn = page.getByRole("button", { name: /^(Check|Sprawdź)$/i });
     if ((await useLocal.count()) && (await useLocal.first().isEnabled())) {
       seen.push("where");
       await useLocal.first().click({ timeout: 10_000 });
@@ -267,7 +275,12 @@ async function reachMain(page: Page): Promise<string[]> {
       await page.waitForTimeout(1200);
       continue;
     }
-    await page.waitForTimeout(400);
+    // Nudge a stuck "Checking" probe every ~8s (same as clicking Sprawdź on the setup card).
+    if (round > 0 && round % 16 === 0 && (await checkBtn.count()) && (await checkBtn.first().isEnabled())) {
+      seen.push("check");
+      await checkBtn.first().click({ timeout: 5_000 }).catch(() => undefined);
+    }
+    await page.waitForTimeout(500);
   }
   throw new Error(`main window missing (saw: ${seen.join(", ")})`);
 }
@@ -416,7 +429,8 @@ async function main(): Promise<void> {
   const mainOut: string[] = [];
   const app: ElectronApplication = await electron.launch({
     executablePath: electronExe,
-    args: [repo],
+    // Match e2e/acceptance: force EN so first-run labels stay stable on Polish Windows.
+    args: ["--lang=en-US", repo],
     cwd: repo,
     env: {
       ...cleanEnvironment(),
@@ -759,6 +773,142 @@ async function main(): Promise<void> {
         { id: "proton", find: () => p.getByText(/Proton Pass/) },
       ]);
       return `Library+Vault konektory + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "14-providers", async (p) => {
+      await clickRail(p, ["Providers", "Dostawcy"]);
+      await p.waitForTimeout(900);
+      const checklist = await visibleChecklist([
+        {
+          id: "catalog",
+          find: () => p.getByText(/Provider catalog|Katalog dostawców|Built-in|Wbudowany|Startuje z wzorca/i),
+        },
+        { id: "key-pool", find: () => p.getByText(/Add key|Dodaj klucz|API key|Klucz API|••••/i) },
+        { id: "codex-or-claude", find: () => p.getByText(/Codex|Claude/i) },
+      ]);
+      return `Dostawcy + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "15-workflows-versions", async (p) => {
+      await clickRail(p, ["Workflows", "Przepływy"]);
+      await p.waitForTimeout(900);
+      const listItem = p.getByRole("button", { name: /workflow|przepływ|seed|flow/i }).or(p.locator(".workflow-list button, [data-workflow-id]").first());
+      if (await listItem.count())
+        await listItem
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(600);
+      const versions = p.getByText(/Versions|Wersje|Current|Bieżąca|Restore|Przywróć/i);
+      if (await versions.count())
+        await versions
+          .first()
+          .click()
+          .catch(() => undefined);
+      await p.waitForTimeout(400);
+      const checklist = await visibleChecklist([
+        { id: "canvas-or-list", find: () => p.getByText(/Workflow|Przepływ|Trigger|Agent|Run history|Historia/i) },
+        { id: "versions", find: () => p.getByText(/Versions|Wersje|Bieżąca|Current|Restore|Przywróć/i) },
+      ]);
+      return `Workflows wersje + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "16-updates", async (p) => {
+      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
+      await p.waitForTimeout(500);
+      const tab = p.getByRole("button", { name: /^Updates$|^Aktualizacje$/i }).or(p.getByText(/^Updates$|^Aktualizacje$/i));
+      if (await tab.count()) await tab.first().click().catch(() => undefined);
+      await p.waitForTimeout(600);
+      const checklist = await visibleChecklist([
+        { id: "heading", find: () => p.getByText(/Updates|Aktualizacje|Check for updates|Sprawdź aktualizacje/i) },
+        { id: "track", find: () => p.getByText(/Stable|Preview|Stabilny/i) },
+      ]);
+      return `Aktualizacje KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "17-messengers", async (p) => {
+      await clickRail(p, ["Library", "Biblioteka"]);
+      await p.waitForTimeout(600);
+      const head = p.getByText(/^Messengers$|^Komunikatory$/i);
+      if (await head.count()) await head.first().scrollIntoViewIfNeeded().catch(() => undefined);
+      await p.waitForTimeout(400);
+      const checklist = await visibleChecklist([
+        { id: "messengers", find: () => p.getByText(/Messengers|Komunikatory/i) },
+        { id: "telegram", find: () => p.getByText(/Telegram/i) },
+        { id: "slack", find: () => p.getByText(/Slack/i) },
+      ]);
+      return `Komunikatory KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "18-mcp-oauth", async (p) => {
+      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
+      await p.waitForTimeout(400);
+      const mcp = p.getByRole("button", { name: /^MCP$/i }).or(p.getByText(/^MCP$/i));
+      if (await mcp.count()) await mcp.first().click().catch(() => undefined);
+      await p.waitForTimeout(600);
+      const checklist = await visibleChecklist([
+        { id: "mcp", find: () => p.getByText(/MCP|Sign in|Zaloguj|OAuth/i) },
+        { id: "servers", find: () => p.getByText(/server|serwer|Add|Dodaj/i) },
+      ]);
+      return `MCP OAuth KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "19-voice", async (p) => {
+      await clickRail(p, ["Server settings", "Ustawienia serwera"]);
+      await p.waitForTimeout(400);
+      const voice = p.getByRole("button", { name: /^Voice$|^Głos$/i }).or(p.getByText(/^Voice$|^Głos$/i));
+      if (await voice.count()) await voice.first().click().catch(() => undefined);
+      await p.waitForTimeout(600);
+      const checklist = await visibleChecklist([
+        { id: "voice", find: () => p.getByText(/Voice|Głos|Microphone|Mikrofon/i) },
+        { id: "mic", find: () => p.getByText(/permission|uprawnien|Settings|Ustawienia systemu|unavailable|niedostępne/i) },
+      ]);
+      return `Głos KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "20-mobile-connect", async (p) => {
+      await clickRail(p, ["Mobile Connect", "Mobile", "Telefon"]);
+      await p.waitForTimeout(800);
+      const checklist = await visibleChecklist([
+        { id: "mobile", find: () => p.getByText(/Mobile Connect|Telefon|PIN|Tailscale/i) },
+        { id: "push", find: () => p.getByText(/push|powiadom|notification|Enable|Włącz/i) },
+      ]);
+      return `Mobile Connect KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "21-remote-desktop", async (p) => {
+      await clickRail(p, ["Remote desktop", "Zdalny pulpit"]);
+      await p.waitForTimeout(800);
+      const checklist = await visibleChecklist([
+        { id: "remote", find: () => p.getByText(/Remote desktop|Zdalny pulpit|Share this computer|Udostępnij/i) },
+        { id: "ask", find: () => p.getByText(/Ask on this computer|Pytaj|every time|za każdym/i) },
+      ]);
+      return `Zdalny pulpit KK + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "22-thread-undo", async (p) => {
+      await ensureChatAgent(p);
+      await unlockComposer(p);
+      // Delete a thread via IPC so the 10-min undo bar appears without flaky menus.
+      const deleted = await p.evaluate(`(async () => {
+        const api = window.openbot;
+        const bots = await api.agent.list();
+        const bot = bots.find((b) => !b.hidden) || bots[0];
+        if (!bot) return "no-bot";
+        const threads = await api.agent.listThreads({ botId: bot.id });
+        const t = threads[0];
+        if (!t) return "no-thread";
+        if (api.threadUndo?.delete) await api.threadUndo.delete({ botId: bot.id, threadId: t.id });
+        else await api.agent.deleteThread({ botId: bot.id, threadId: t.id });
+        return "ok:" + (t.title || t.id);
+      })()`);
+      await p.waitForTimeout(800);
+      const bar = p.getByText(/Usunięto|Deleted|Undo|Cofnij/i);
+      const checklist = await visibleChecklist([
+        { id: "undo-bar", find: () => bar },
+        { id: "countdown", find: () => p.getByText(/\d+:\d{2}|Cofnij|Undo/i) },
+      ]);
+      return `pasek Cofnij (${String(deleted)}) + checklist [${checklist}]`;
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
