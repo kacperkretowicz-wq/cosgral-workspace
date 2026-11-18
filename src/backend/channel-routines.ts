@@ -47,7 +47,7 @@ const SCHEMA = `
 
 function parseRow<T>(row: unknown, guard: (value: unknown) => value is T): T {
   if (!isDynamicRecord(row) || !isString(row.data_json)) throw new Error("Invalid routine row.");
-  const value: unknown = JSON.parse(row.data_json);
+  const value = JSON.parse(row.data_json);
   if (!guard(value)) throw new Error("Invalid routine row.");
   return value;
 }
@@ -76,7 +76,9 @@ export class ChannelRoutineStore {
       channelId === undefined
         ? db.prepare("SELECT data_json FROM projection_channel_routines ORDER BY created_at, rowid").all()
         : db
-            .prepare("SELECT data_json FROM projection_channel_routines WHERE channel_id = ? ORDER BY created_at, rowid")
+            .prepare(
+              "SELECT data_json FROM projection_channel_routines WHERE channel_id = ? ORDER BY created_at, rowid",
+            )
             .all(channelId);
     return found.map((row) => parseRow(row, isChannelRoutine));
   }
@@ -114,12 +116,9 @@ export class ChannelRoutineStore {
   /** Adds one entry to the history of a routine and drops the oldest ones over the limit. */
   addRun(run: ChannelRoutineRun): void {
     const db = this.#db();
-    db.prepare("INSERT INTO projection_channel_routine_runs (run_id, routine_id, at, data_json) VALUES (?, ?, ?, ?)").run(
-      run.id,
-      run.routineId,
-      run.at,
-      JSON.stringify(run),
-    );
+    db.prepare(
+      "INSERT INTO projection_channel_routine_runs (run_id, routine_id, at, data_json) VALUES (?, ?, ?, ?)",
+    ).run(run.id, run.routineId, run.at, JSON.stringify(run));
     db.prepare(
       `DELETE FROM projection_channel_routine_runs WHERE routine_id = ? AND run_id NOT IN (
          SELECT run_id FROM projection_channel_routine_runs WHERE routine_id = ? ORDER BY at DESC, rowid DESC LIMIT ?)`,
@@ -129,7 +128,9 @@ export class ChannelRoutineStore {
   /** Newest first. */
   runs(routineId: string): ChannelRoutineRun[] {
     return this.#db()
-      .prepare("SELECT data_json FROM projection_channel_routine_runs WHERE routine_id = ? ORDER BY at DESC, rowid DESC")
+      .prepare(
+        "SELECT data_json FROM projection_channel_routine_runs WHERE routine_id = ? ORDER BY at DESC, rowid DESC",
+      )
       .all(routineId)
       .map((row) => parseRow(row, isChannelRoutineRun));
   }
@@ -182,7 +183,11 @@ export class ChannelRoutineService {
 
   create(raw: unknown): ChannelRoutine {
     const input = parseCreateChannelRoutineInput(raw);
-    const problem = channelRoutineProblem(input, this.#o.channel(input.channelId), this.#o.store.count(input.channelId));
+    const problem = channelRoutineProblem(
+      input,
+      this.#o.channel(input.channelId),
+      this.#o.store.count(input.channelId),
+    );
     if (problem) throw new Error(problem);
     const timezone = input.timezone ?? this.#zone();
     this.#checkWhen(input.schedule, timezone);
@@ -255,7 +260,11 @@ export class ChannelRoutineService {
       if (routine.paused || !routine.nextRunAt) continue;
       if (now.getTime() - Date.parse(routine.nextRunAt) <= MISSED_AFTER_MS) continue;
       this.#record(routine, "schedule", "skipped", "The program was off at the planned time.", null, routine.nextRunAt);
-      this.#save({ ...routine, lastRunAt: routine.nextRunAt, nextRunAt: this.#next(routine.schedule, routine.timezone) });
+      this.#save({
+        ...routine,
+        lastRunAt: routine.nextRunAt,
+        nextRunAt: this.#next(routine.schedule, routine.timezone),
+      });
       this.#announce(routine.channelId);
     }
     this.#arm();
@@ -273,7 +282,8 @@ export class ChannelRoutineService {
     try {
       const now = this.#now().getTime();
       for (const routine of this.#o.store.list()) {
-        if (!routine.paused && routine.nextRunAt && Date.parse(routine.nextRunAt) <= now) this.#fire(routine, "schedule");
+        if (!routine.paused && routine.nextRunAt && Date.parse(routine.nextRunAt) <= now)
+          this.#fire(routine, "schedule");
       }
     } finally {
       this.#running = false;
@@ -308,7 +318,11 @@ export class ChannelRoutineService {
       ...routine,
       lastRunAt: at,
       nextRunAt:
-        cause === "schedule" ? (routine.paused ? null : this.#next(routine.schedule, routine.timezone)) : routine.nextRunAt,
+        cause === "schedule"
+          ? routine.paused
+            ? null
+            : this.#next(routine.schedule, routine.timezone)
+          : routine.nextRunAt,
     });
     this.#announce(routine.channelId);
     return this.#withState(run);
@@ -375,7 +389,9 @@ export class ChannelRoutineService {
 export function createChannelRoutineService(deps: {
   database: OpenBotDatabase;
   channels: { list: () => WorkspaceChannel[]; getTask: (taskId: string) => { state: ChannelTaskState } };
-  engine: { sendMessage: (input: { channelId: string; text: string }) => { message: { id: string }; task: { id: string } } };
+  engine: {
+    sendMessage: (input: { channelId: string; text: string }) => { message: { id: string }; task: { id: string } };
+  };
   emit: (event: AgentEvent) => void;
 }): ChannelRoutineService {
   return new ChannelRoutineService({

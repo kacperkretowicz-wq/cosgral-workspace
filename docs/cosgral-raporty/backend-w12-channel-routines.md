@@ -28,3 +28,16 @@ Gałąź `team/backend/w12-r` (z integracji b01e8a060). Rutyna kanału startuje 
 3. Harmonogram „co N minut” liczy od chwili utworzenia lub ostatniego startu (jak u rutyn agenta), nie od pełnej godziny.
 4. Rutyna nie przechodzi na innego lidera sama: bieg bierze lidera kanału z chwili startu.
 5. Atrapa liczy start „codziennie/cron” jako „jutro o tej porze” (demo); program liczy prawdziwym harmonogramem.
+
+## Sprawdzone (18.11, po zniku znaku GO, po jednym pliku)
+
+| Plik testu | Wynik |
+|---|---|
+| `packages/contracts/src/ipc-channel-routines.test.ts` | 9/9 |
+| `src/backend/channel-routines.test.ts` (prawdziwa baza, fałszywy zegar) | 11/11 |
+| `src/renderer/stories/mock-channel-routines.test.ts` | 3/3 |
+| `src/main/local-only-ipc.test.ts` | 6/6 (pierwszy bieg: limit czasu `beforeAll` pod obciążeniem, drugi czysty) |
+
+Biome na 8 własnych plikach: zielony. `typecheck:contracts`, `typecheck:node`, `typecheck:renderer`: zielone.
+Poprawki z Biome: `noMisleadingReturnType` (2 funkcje kontraktu bez jawnego typu zwrotu), `JSON.parse` bez jawnego `unknown`, `() => undefined` w preload.
+Nie sprawdzone: ekran (nie ma), Electron i e2e (brak GO), start harmonogramu w prawdziwym programie.

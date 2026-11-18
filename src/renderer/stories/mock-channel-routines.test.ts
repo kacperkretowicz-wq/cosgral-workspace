@@ -17,7 +17,12 @@ const channel = (patch: Partial<WorkspaceChannel> = {}): WorkspaceChannel => ({
   ...patch,
 });
 
-const input = { channelId: "c1", name: "Review", prompt: "Summarise.", schedule: { type: "interval", everyMinutes: 30 } } as const;
+const input = {
+  channelId: "c1",
+  name: "Review",
+  prompt: "Summarise.",
+  schedule: { type: "interval", everyMinutes: 30 },
+} as const;
 
 function setup(channels = [channel()]) {
   const events: AgentEvent[] = [];

@@ -70,7 +70,13 @@ async function setup() {
 }
 
 const every30 = { type: "interval", everyMinutes: 30 } as const;
-const weekly = (patch = {}) => ({ channelId: "c1", name: "Review", prompt: "Summarise the week.", schedule: every30, ...patch });
+const weekly = (patch = {}) => ({
+  channelId: "c1",
+  name: "Review",
+  prompt: "Summarise the week.",
+  schedule: every30,
+  ...patch,
+});
 
 describe("routines of a channel: making and changing them (W12 BE-R)", () => {
   it("makes a routine, plans its first start in the person's time zone and tells the window", async () => {
@@ -87,7 +93,11 @@ describe("routines of a channel: making and changing them (W12 BE-R)", () => {
     });
     expect(service.list({ channelId: "c1" })).toHaveLength(1);
     expect(service.list({ channelId: "c2" })).toEqual([]);
-    expect(events.at(-1)).toMatchObject({ type: "channel-routines-changed", channelId: "c1", routines: [{ id: routine.id }] });
+    expect(events.at(-1)).toMatchObject({
+      type: "channel-routines-changed",
+      channelId: "c1",
+      routines: [{ id: routine.id }],
+    });
     const daily = service.create(weekly({ name: "Daily", schedule: { type: "daily", time: "11:30" } }));
     // 10:00 UTC is 11:00 in Warsaw in November: the next 11:30 is today, 10:30 UTC.
     expect(daily.nextRunAt).toBe("2026-11-18T10:30:00.000Z");
@@ -98,7 +108,9 @@ describe("routines of a channel: making and changing them (W12 BE-R)", () => {
     expect(() => service.create(weekly({ channelId: "c2" }))).toThrow("no lead");
     expect(() => service.create(weekly({ channelId: "nope" }))).toThrow("no longer exists");
     expect(() => service.create(weekly({ timezone: "Mars/Base" }))).toThrow("time zone");
-    expect(() => service.create(weekly({ schedule: { type: "interval", everyMinutes: 0 } }))).toThrow("interval is from");
+    expect(() => service.create(weekly({ schedule: { type: "interval", everyMinutes: 0 } }))).toThrow(
+      "interval is from",
+    );
     expect(() => service.create(weekly({ name: " " }))).toThrow("name");
     channels.set("c1", { archived: true, leadBotId: "chief" });
     expect(() => service.create(weekly())).toThrow("archived");
@@ -106,7 +118,8 @@ describe("routines of a channel: making and changing them (W12 BE-R)", () => {
 
   it("allows at most 16 routines in a channel", async () => {
     const { service } = await setup();
-    for (let index = 0; index < CHANNEL_ROUTINE_LIMITS.perChannel; index += 1) service.create(weekly({ name: `R${index}` }));
+    for (let index = 0; index < CHANNEL_ROUTINE_LIMITS.perChannel; index += 1)
+      service.create(weekly({ name: `R${index}` }));
     expect(() => service.create(weekly({ name: "one more" }))).toThrow("at most 16 routines");
   });
 
@@ -115,8 +128,14 @@ describe("routines of a channel: making and changing them (W12 BE-R)", () => {
     const routine = service.create(weekly());
     expect(service.update({ routineId: routine.id, paused: true })).toMatchObject({ paused: true, nextRunAt: null });
     at("2026-11-18T12:07:00.000Z");
-    expect(service.update({ routineId: routine.id, paused: false })).toMatchObject({ nextRunAt: "2026-11-18T12:37:00.000Z" });
-    const changed = service.update({ routineId: routine.id, schedule: { type: "interval", everyMinutes: 60 }, name: "Hourly" });
+    expect(service.update({ routineId: routine.id, paused: false })).toMatchObject({
+      nextRunAt: "2026-11-18T12:37:00.000Z",
+    });
+    const changed = service.update({
+      routineId: routine.id,
+      schedule: { type: "interval", everyMinutes: 60 },
+      name: "Hourly",
+    });
     expect(changed).toMatchObject({ name: "Hourly", nextRunAt: "2026-11-18T13:07:00.000Z" });
     expect(service.update({ routineId: routine.id, prompt: "New text" }).nextRunAt).toBe("2026-11-18T13:07:00.000Z");
     expect(() => service.update({ routineId: routine.id, timezone: "Mars/Base" })).toThrow("time zone");
@@ -141,7 +160,13 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     expect(after).toMatchObject({ lastRunAt: "2026-11-18T10:30:00.000Z", nextRunAt: "2026-11-18T11:00:00.000Z" });
     const first = service.listRuns({ routineId: routine.id })[0];
     expect(isChannelRoutineRun(first)).toBe(true);
-    expect(first).toMatchObject({ cause: "schedule", outcome: "started", messageId: "m1", taskId: "t1", taskState: "queued" });
+    expect(first).toMatchObject({
+      cause: "schedule",
+      outcome: "started",
+      messageId: "m1",
+      taskId: "t1",
+      taskState: "queued",
+    });
     states.set("t1", "done");
     expect(service.listRuns({ routineId: routine.id })[0]?.taskState).toBe("done");
     states.delete("t1");
@@ -171,7 +196,10 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     channels.set("c1", { archived: true, leadBotId: "chief" });
     at("2026-11-18T10:30:00.000Z");
     service.tick();
-    expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({ outcome: "skipped", reason: "This channel is archived." });
+    expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({
+      outcome: "skipped",
+      reason: "This channel is archived.",
+    });
     channels.set("c1", { archived: false, leadBotId: null });
     at("2026-11-18T11:00:00.000Z");
     service.tick();
@@ -180,7 +208,10 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     state.sendFails = true;
     at("2026-11-18T11:30:00.000Z");
     service.tick();
-    expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({ outcome: "skipped", reason: "This channel is archived." });
+    expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({
+      outcome: "skipped",
+      reason: "This channel is archived.",
+    });
     expect(service.listRuns({ routineId: routine.id })).toHaveLength(3);
   });
 
@@ -191,7 +222,10 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     const run = service.runNow({ routineId: routine.id });
     expect(run).toMatchObject({ cause: "manual", outcome: "started", taskState: "queued" });
     expect(sent).toHaveLength(1);
-    expect(service.list()[0]).toMatchObject({ nextRunAt: "2026-11-18T10:30:00.000Z", lastRunAt: "2026-11-18T10:10:00.000Z" });
+    expect(service.list()[0]).toMatchObject({
+      nextRunAt: "2026-11-18T10:30:00.000Z",
+      lastRunAt: "2026-11-18T10:10:00.000Z",
+    });
     expect(() => service.runNow({ routineId: routine.id })).toThrow("previous run is still going");
     expect(service.listRuns({ routineId: routine.id })).toHaveLength(2);
   });
@@ -221,9 +255,13 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
       reason: "The program was off at the planned time.",
       at: "2026-11-18T10:30:00.000Z",
     });
-    expect(service.list().find((routine) => routine.id === late.id)).toMatchObject({ nextRunAt: "2026-11-18T11:30:00.000Z" });
+    expect(service.list().find((routine) => routine.id === late.id)).toMatchObject({
+      nextRunAt: "2026-11-18T11:30:00.000Z",
+    });
     expect(store.runs(due.id)).toEqual([]);
-    expect(service.list().find((routine) => routine.id === due.id)).toMatchObject({ nextRunAt: "2026-11-18T11:00:00.000Z" });
+    expect(service.list().find((routine) => routine.id === due.id)).toMatchObject({
+      nextRunAt: "2026-11-18T11:00:00.000Z",
+    });
     service.dispose();
   });
 

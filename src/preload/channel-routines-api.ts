@@ -18,7 +18,7 @@ export function createChannelRoutinesApi(invoke: Invoke): ChannelRoutinesDesktop
     list: (input) => invoke(IPC_CHANNELS.channelRoutinesList, input ?? {}, decodeList),
     create: (input) => invoke(IPC_CHANNELS.channelRoutinesCreate, input, decodeRoutine),
     update: (input) => invoke(IPC_CHANNELS.channelRoutinesUpdate, input, decodeRoutine),
-    delete: (input) => invoke(IPC_CHANNELS.channelRoutinesDelete, input, decodeVoid),
+    delete: (input) => invoke(IPC_CHANNELS.channelRoutinesDelete, input, () => undefined),
     runNow: (input) => invoke(IPC_CHANNELS.channelRoutinesRunNow, input, decodeRun),
     listRuns: (input) => invoke(IPC_CHANNELS.channelRoutinesListRuns, input, decodeRuns),
   };
@@ -42,8 +42,4 @@ function decodeRun(value: unknown): ChannelRoutineRun {
 function decodeRuns(value: unknown): ChannelRoutineRun[] {
   if (!isChannelRoutineRunList(value)) throw new Error("Invalid history of a routine.");
   return value;
-}
-
-function decodeVoid(): void {
-  return undefined;
 }

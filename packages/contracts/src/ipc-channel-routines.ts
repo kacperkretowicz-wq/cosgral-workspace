@@ -133,7 +133,10 @@ function scheduleProblem(value: unknown): string | null {
     const weekdays = value.weekdays;
     if (
       weekdays !== undefined &&
-      !(Array.isArray(weekdays) && weekdays.every((day) => isNumber(day) && Number.isInteger(day) && day >= 0 && day <= 6))
+      !(
+        Array.isArray(weekdays) &&
+        weekdays.every((day) => isNumber(day) && Number.isInteger(day) && day >= 0 && day <= 6)
+      )
     ) {
       return "Weekdays are numbers from 0 (Sunday) to 6 (Saturday).";
     }
@@ -150,7 +153,8 @@ function scheduleProblem(value: unknown): string | null {
 function nameProblem(value: unknown): string | null {
   const name = isString(value) ? value.trim() : "";
   if (name.length === 0) return "Give the routine a name.";
-  if (name.length > CHANNEL_ROUTINE_LIMITS.name) return `The name has at most ${CHANNEL_ROUTINE_LIMITS.name} characters.`;
+  if (name.length > CHANNEL_ROUTINE_LIMITS.name)
+    return `The name has at most ${CHANNEL_ROUTINE_LIMITS.name} characters.`;
   return null;
 }
 
@@ -163,8 +167,11 @@ function promptProblem(value: unknown): string | null {
   return null;
 }
 
-function optionsProblem(input: { timezone?: unknown; paused?: unknown }): string | null {
-  if (input.timezone !== undefined && !(isString(input.timezone) && input.timezone.length > 0 && input.timezone.length <= 64)) {
+function optionsProblem(input: { timezone?: unknown; paused?: unknown }) {
+  if (
+    input.timezone !== undefined &&
+    !(isString(input.timezone) && input.timezone.length > 0 && input.timezone.length <= 64)
+  ) {
     return "The time zone is a name like Europe/Warsaw.";
   }
   if (input.paused !== undefined && !isBoolean(input.paused)) return "Paused is on or off.";
@@ -172,9 +179,7 @@ function optionsProblem(input: { timezone?: unknown; paused?: unknown }): string
 }
 
 /** Why a channel cannot take one more routine, in plain words, or null. `channel` null = it does not exist. */
-export function channelRoutineChannelProblem(
-  channel: Pick<WorkspaceChannel, "archived" | "leadBotId"> | null,
-): string | null {
+export function channelRoutineChannelProblem(channel: Pick<WorkspaceChannel, "archived" | "leadBotId"> | null) {
   if (!channel) return "This channel no longer exists.";
   if (channel.archived) return "This channel is archived.";
   if (!channel.leadBotId) return "This channel has no lead to take the work. Make one of its members the lead first.";
@@ -197,10 +202,7 @@ export function channelRoutineProblem(
     return `A channel has at most ${CHANNEL_ROUTINE_LIMITS.perChannel} routines.`;
   }
   return (
-    nameProblem(input.name) ??
-    promptProblem(input.prompt) ??
-    scheduleProblem(input.schedule) ??
-    optionsProblem(input)
+    nameProblem(input.name) ?? promptProblem(input.prompt) ?? scheduleProblem(input.schedule) ?? optionsProblem(input)
   );
 }
 
@@ -295,7 +297,8 @@ export function parseCreateChannelRoutineInput(input: unknown): CreateChannelRou
   if (!isDynamicRecord(input) || !isString(input.channelId) || input.channelId.length === 0) {
     throw new Error("Choose a channel.");
   }
-  const problem = nameProblem(input.name) ?? promptProblem(input.prompt) ?? scheduleProblem(input.schedule) ?? optionsProblem(input);
+  const problem =
+    nameProblem(input.name) ?? promptProblem(input.prompt) ?? scheduleProblem(input.schedule) ?? optionsProblem(input);
   if (problem) throw new Error(problem);
   if (!isRoutineSchedule(input.schedule)) throw new Error("Give the schedule.");
   return {

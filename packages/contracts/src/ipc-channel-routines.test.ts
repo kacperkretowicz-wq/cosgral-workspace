@@ -121,13 +121,17 @@ describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
     expect(updateChannelRoutineProblem({ routineId: "r-1" })).toBeNull();
     expect(updateChannelRoutineProblem({ routineId: "r-1", paused: true, name: "New" })).toBeNull();
     expect(updateChannelRoutineProblem({ routineId: "r-1", name: " " })).toBe("Give the routine a name.");
-    expect(updateChannelRoutineProblem({ routineId: "r-1", schedule: { type: "daily", time: "99:00" } })).toContain("HH:MM");
+    expect(updateChannelRoutineProblem({ routineId: "r-1", schedule: { type: "daily", time: "99:00" } })).toContain(
+      "HH:MM",
+    );
     expect(updateChannelRoutineProblem({ routineId: "r-1", paused: "yes" })).toBe("Paused is on or off.");
     expect(updateChannelRoutineProblem({ name: "x" })).toBe("Choose a routine.");
   });
 
   it("reads a request: trims the text, keeps only what is valid, and refuses what the rules refuse", () => {
-    expect(parseCreateChannelRoutineInput({ ...input, name: "  Weekly review ", timezone: "Europe/Warsaw", paused: true })).toEqual({
+    expect(
+      parseCreateChannelRoutineInput({ ...input, name: "  Weekly review ", timezone: "Europe/Warsaw", paused: true }),
+    ).toEqual({
       channelId: "c-1",
       name: "Weekly review",
       prompt: "Summarise the week.",
@@ -158,8 +162,12 @@ describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
     expect(isChannelRoutineRun({ ...run, outcome: "failed" })).toBe(false);
     expect(isChannelRoutineRun({ ...run, taskState: "sleeping" })).toBe(false);
     expect(isChannelRoutineRun({ ...run, cause: "webhook" })).toBe(false);
-    expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [routine] })).toBe(true);
-    expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [{ id: 1 }] })).toBe(false);
+    expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [routine] })).toBe(
+      true,
+    );
+    expect(
+      isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [{ id: 1 }] }),
+    ).toBe(false);
     expect(isChannelRoutinesChanged({ type: "threads-changed", channelId: "c-1", routines: [] })).toBe(false);
   });
 });
