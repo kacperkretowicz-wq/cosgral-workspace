@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
@@ -22,40 +23,47 @@ export function downloadBudgetCsv(file: BudgetCsv) {
 export function BudgetCounter(props: { status: BudgetStatus }) {
   const view = () => props.status;
   return (
-    <section aria-label="Budget usage" class="providers-form">
+    <section aria-label={t("Budget usage")} class="providers-form">
       <div class="providers-heading">
         <Heading as="h4" size="sm">
-          Usage this period
+          {t("Usage this period")}
         </Heading>
         <Badge tone={view().state === "exhausted" ? "danger" : view().state === "warning" ? "warning" : "success"}>
           {view().state}
         </Badge>
       </div>
       <Text as="p">
-        {view().usage.tokens.toLocaleString()} tokens · {view().usage.turns} turns
+        {t("{tokens} tokens · {turns} turns", {
+          tokens: view().usage.tokens.toLocaleString(),
+          turns: view().usage.turns,
+        })}
       </Text>
-      <Text as="p">
-        {view().usage.periodStart} – {view().usage.periodEnd} (UTC)
-      </Text>
+      <Text as="p">{t("{start} – {end} (UTC)", { start: view().usage.periodStart, end: view().usage.periodEnd })}</Text>
       <Text as="p">
         {view().usage.pricedTurns
-          ? `Provider estimate: $${view().usage.costUsd.toFixed(2)} USD${view().usage.costComplete ? "" : " (incomplete)"}`
-          : "Cost unavailable: the provider has not reported a price."}
+          ? t(
+              view().usage.costComplete
+                ? "Provider estimate: {amount} USD"
+                : "Provider estimate: {amount} USD (incomplete)",
+              { amount: `$${view().usage.costUsd.toFixed(2)}` },
+            )
+          : t("Cost unavailable: the provider has not reported a price.")}
       </Text>
       <Show when={view().usage.pricedTurns > 0 && !view().usage.costComplete}>
         <Text as="p" tone="warning">
-          Cost unavailable for some turns. The reported estimate is incomplete.
+          {t("Cost unavailable for some turns. The reported estimate is incomplete.")}
         </Text>
       </Show>
       <Show when={view().budget?.costLimitUsd != null && (!view().usage.costComplete || !view().usage.pricedTurns)}>
         <Text as="p" tone="warning">
-          The dollar limit cannot fully protect this budget while costs are unavailable. Set a token limit for
-          enforceable protection.
+          {t(
+            "The dollar limit cannot fully protect this budget while costs are unavailable. Set a token limit for enforceable protection.",
+          )}
         </Text>
       </Show>
       <Show when={!view().enforceable}>
         <Text as="p" role="status" tone="warning">
-          Dollar limit not enforceable: no provider price is available.
+          {t("Dollar limit not enforceable: no provider price is available.")}
         </Text>
       </Show>
       <Show when={view().reason}>
@@ -65,7 +73,7 @@ export function BudgetCounter(props: { status: BudgetStatus }) {
       </Show>
       <Show when={view().blocked}>
         <Text as="p" tone="danger">
-          New turns are blocked. A running turn is allowed to finish.
+          {t("New turns are blocked. A running turn is allowed to finish.")}
         </Text>
       </Show>
     </section>
@@ -107,19 +115,23 @@ export function BudgetPanel(props: {
       await action();
       setNotice(success);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update the budget.");
+      setError(e instanceof Error ? e.message : t("Could not update the budget."));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section class="providers-form" aria-label={props.status.scope.kind === "space" ? "Space budget" : "Agent budget"}>
+    <section
+      class="providers-form"
+      aria-label={props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
+    >
       <Heading as="h3" size="sm">
-        {props.status.scope.kind === "space" ? "Space budget" : "Agent budget"}
+        {props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
       </Heading>
       <Text as="p">
-        Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider
-        estimates, not a bill.
+        {t(
+          "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.",
+        )}
       </Text>
       <BudgetCounter status={props.status} />
       <Show when={error()}>
@@ -132,7 +144,7 @@ export function BudgetPanel(props: {
       </Show>
       <form
         class="providers-form"
-        aria-label="Budget limits"
+        aria-label={t("Budget limits")}
         onSubmit={(event) => {
           event.preventDefault();
           void run(async () => {
@@ -146,16 +158,16 @@ export function BudgetPanel(props: {
               cheapFirst: props.status.budget?.cheapFirst,
             });
             await props.onSave(input);
-          }, "Budget saved.");
+          }, t("Budget saved."));
         }}
       >
-        <Field label="Budget period (UTC)">
+        <Field label={t("Budget period (UTC)")}>
           <NativeSelect value={period()} disabled={busy()} onChange={(e) => setPeriod(e.currentTarget.value)}>
-            <option value="day">Day (UTC)</option>
-            <option value="month">Calendar month (UTC)</option>
+            <option value="day">{t("Day (UTC)")}</option>
+            <option value="month">{t("Calendar month (UTC)")}</option>
           </NativeSelect>
         </Field>
-        <Field label="Token limit" description="Leave empty for no token limit.">
+        <Field label={t("Token limit")} description={t("Leave empty for no token limit.")}>
           <Input
             type="number"
             min={1}
@@ -167,8 +179,8 @@ export function BudgetPanel(props: {
           />
         </Field>
         <Field
-          label="Dollar limit (USD, optional)"
-          description="Only prices reported by providers count. Missing prices are never estimated by the app."
+          label={t("Dollar limit (USD, optional)")}
+          description={t("Only prices reported by providers count. Missing prices are never estimated by the app.")}
         >
           <Input
             type="number"
@@ -180,7 +192,7 @@ export function BudgetPanel(props: {
             onInput={(e) => setCost(e.currentTarget.value)}
           />
         </Field>
-        <Field label="Warn at (%)" description="50–99% of a limit.">
+        <Field label={t("Warn at (%)")} description={t("50–99% of a limit.")}>
           <Input
             type="number"
             min={50}
@@ -196,38 +208,38 @@ export function BudgetPanel(props: {
           checked={hardStop()}
           onChange={setHardStop}
           disabled={busy()}
-          label="Stop new turns when exhausted"
-          description="A running turn is never interrupted."
+          label={t("Stop new turns when exhausted")}
+          description={t("A running turn is never interrupted.")}
         />
         <Button type="submit" disabled={busy()}>
-          Save budget
+          {t("Save budget")}
         </Button>
         <Show when={props.status.budget}>
-          <Button disabled={busy()} onClick={() => void run(props.onClear, "Budget removed. Usage is retained.")}>
-            Remove budget
+          <Button disabled={busy()} onClick={() => void run(props.onClear, t("Budget removed. Usage is retained."))}>
+            {t("Remove budget")}
           </Button>
         </Show>
       </form>
       <form
         class="providers-form"
-        aria-label="Export budget usage"
+        aria-label={t("Export budget usage")}
         onSubmit={(event) => {
           event.preventDefault();
-          void run(() => props.onExport(from(), to()), "CSV download requested.");
+          void run(() => props.onExport(from(), to()), t("CSV download requested."));
         }}
       >
         <Heading as="h4" size="sm">
-          Export usage CSV
+          {t("Export usage CSV")}
         </Heading>
-        <Text as="p">Exports this space’s daily usage for all agents, using UTC dates.</Text>
-        <Field label="From (UTC)">
+        <Text as="p">{t("Exports this space’s daily usage for all agents, using UTC dates.")}</Text>
+        <Field label={t("From (UTC)")}>
           <Input type="date" required value={from()} onInput={(e) => setFrom(e.currentTarget.value)} />
         </Field>
-        <Field label="To (UTC)">
+        <Field label={t("To (UTC)")}>
           <Input type="date" required value={to()} onInput={(e) => setTo(e.currentTarget.value)} />
         </Field>
         <Button type="submit" disabled={busy() || !from() || !to() || from() > to()}>
-          Export CSV
+          {t("Export CSV")}
         </Button>
       </form>
     </section>
@@ -258,7 +270,7 @@ export function BudgetSettings(
       const value = await api.list();
       if (serial === revision) setOverview(value);
     } catch {
-      setError("Could not load budget usage.");
+      setError(t("Could not load budget usage."));
     }
   }
   onSettled(() => {
@@ -296,13 +308,13 @@ export function BudgetSettings(
         <Text role="alert" tone="danger">
           {error()}
         </Text>
-        <Button onClick={() => void reload()}>Retry budget usage</Button>
+        <Button onClick={() => void reload()}>{t("Retry budget usage")}</Button>
       </Show>
       <Show
         when={status()}
         fallback={
-          <Show when={api} fallback={<Text>Budgets are unavailable on this connection.</Text>}>
-            <CosgralLoadingSkeleton label="Loading budget usage…" />
+          <Show when={api} fallback={<Text>{t("Budgets are unavailable on this connection.")}</Text>}>
+            <CosgralLoadingSkeleton label={t("Loading budget usage…")} />
           </Show>
         }
       >

@@ -19,45 +19,63 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 9. [zrobione: 309b45407] Tablica Zadań: kolumny dla zadań nieudanych i anulowanych (UI-AI luka); wymaga kontraktu od Backendu (patrz Backend 6).
 10. [zrobione: 21ae5669d] Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
 11. [zrobione: edbd5db1e] Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
+12. Przełącznik „Unread first” obok „Send message with” w ustawieniach wyglądu (silnik gotowy: Backend BE-AC), jeśli go jeszcze nie ma.
+13. Klient telefonu (PWA): ekran kanałów, wiadomości i zadań na API z `ipc-mobile-channels.ts` (Backend BE-AB); współpraca z KK.
+14. Pasek boczny: animacja przesunięcia wiersza przy „unread first” (tylko transform, z reduced-motion).
+15. Poprawki dostępności z sondy Testera (fokus, kontrast, reduced motion), gdy wynik będzie.
 
 12. [zrobione: 0e4685b6f] Appearance: przełącznik Unread first (BE-AC, silnik gotowy).
 
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
 2. [zrobione: 28f240e08] Usunięcie martwego `SettingsModal`.
-3. Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
+3. [zrobione: 8e6600948 (po T-AI; powtórz po następnym odbiorze)] Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
 4. `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
-5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
-6. Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
+5. [zrobione: b136b22a2] Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
+6. [zrobione: 78f6ebbb9] Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
 7. Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
 8. Przegląd `i18n-inwentarz.md`: co zostało po angielsku w moich panelach, tłumaczenie przez `t()`.
+9. Ekran kanałów w kliencie telefonu (PWA) razem z UI: kontrakt `ipc-mobile-channels.ts`, test na atrapie.
+10. Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
+11. Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
 
 ## Backend Expert
-1. `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
-2. Kolejne luki z `luki-silnika-071.md`, najbardziej widoczne dla człowieka.
-3. Diagnoza każdego `^FAIL` z e2e i kroków W5, z logiem.
-4. Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
-5. Kontrakt i silnik tablicy Zadań z kolumnami „nieudane” i „anulowane” (dla UI 4).
-6. Pozostałe wiersze „ROBIĆ” w `luki-silnika-071.md` oraz `parytet-0.71.md` po stronie silnika (wybierz najbardziej widoczne).
-7. Ustawienie „skrót wysyłania” i „nieprzeczytane najpierw” faktycznie używane w polu wiadomości i na liście agentów (jeśli jeszcze tylko `dataset`).
+1. [zrobione: 41e810e1b] `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
+2. [zrobione: 971d371ea — skrót wysyłania i kroki agenta działają w oknie] Kolejne luki z `luki-silnika-071.md`, najbardziej widoczne dla człowieka.
+3. [zrobione: T-AF, e2e 0 FAIL, W5 33/33; każdy kolejny ^FAIL biorę z raportu Testera] Diagnoza każdego `^FAIL` z e2e i kroków W5, z logiem.
+4. [zrobione: 53002be2b] Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
+5. [zrobione: a29b584f2] Kontrakt i silnik tablicy Zadań z kolumnami „nieudane” i „anulowane” (dla UI 4).
+6. [zrobione: e0b9d2e3c — wiersz 71, kanały w API telefonu; reszta silnika: 0 h] Pozostałe wiersze „ROBIĆ” w `luki-silnika-071.md` oraz `parytet-0.71.md` po stronie silnika (wybierz najbardziej widoczne).
+7. [zrobione: 4e750b4a7; skrót wysyłania zrobione: 971d371ea; zostaje „nieprzeczytane najpierw” = `appearance.unreadFirst`: sortowanie siedzi w układzie paska z folderami i ręczną kolejnością] Ustawienie „skrót wysyłania” i „nieprzeczytane najpierw” faktycznie używane w polu wiadomości i na liście agentów.
+8. Strumień `/v1/events` niesie też zmiany kanałów (luka BE-AB: telefon dziś pyta ponownie).
+9. Przywracanie miejsca osobno na serwer (luka BE-X: dziś jedno miejsce).
+10. Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
+11. Kolejne luki z `parytet-0.71.md`, jeśli tabela „ROBIĆ” znów się wypełni po odbiorze Testera.
 
 ## KAPI
 1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
 2. [zrobione: acc270061] Rozmiar podglądu w przeglądarce (cel: razem < 1,8 MB, plik < 1 MB).
 3. Instalator `dist:win`: pomiar po każdym większym scaleniu (tylko za `GO-kapi-dist.txt`).
 4. [zrobione: 401bafe8f] Luki ROBIĆ (wiersz 2 wygląd: appearanceDomTokens + startAppearance) z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
-5. Sztywne EN poza Conversation: ContextIndicator, nazwy kart, błędy, `aria-label`; skan `i18n.test`.
-6. Odświeżenie `i18n-inwentarz.md` i test kompletności (klucze PL/EN równe).
+5. [zrobione: a023a2b88] Sztywne EN poza Conversation: ContextIndicator, nazwy kart, błędy, `aria-label`; skan `i18n.test`.
+6. [zrobione: fee1b34c4] Odświeżenie `i18n-inwentarz.md` i test kompletności (klucze PL/EN równe).
+8. [zrobione: f7ce4d240] Pełne `t()` nagłówków i opisów Access / Isolation / Browser / Budget (luka po KAPI-P).
+9. [zrobione: e0a774760] Aria/i18n P0 rozmowy: ChatSearch, MessageRendering, SelectionActions, QueuePanel, ComposerEditor (Insert mention); wyspa PL AgentAccountPicker.
 7. Po `GO-kapi-dist.txt`: `dist:win` po większym scaleniu i pomiar (rozmiar, SHA-256).
+10. Test `AgentSettingsW3` pod `setLanguage("pl")` (notka KAPI-S: szuka „Konto”).
+11. Skan pozostałych `aria-label` i tekstów PL/EN w TSX po KAPI-S; klucze równe, `i18n.test`.
 
 ## Tester
-1. Odbiór w prawdziwym Electronie po każdym scaleniu lidera: e2e (`^FAIL`), W5, zrzuty, sondy (tylko za `GO-tester-*.txt`).
+1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
 2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
 3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
-4. [zrobione: team/tester/w12-tg] Sondy do nowych funkcji: `scripts/sandbox-next-probes.ts` (restore-thread, menu-plus, clear-history, history-window, external-links).
-5. Zaktualizuj tabelę zgodności ekranów po zrzutach 17-11-i (po UI-AI/AJ/AK/AL, KK-AG/AI).
-6. Sonda dostępności (fokus, kontrast, reduced motion) na ekranach P0/P1.
-7. Sprawdź w oknie: historyWindow, Clear history, skrót wysyłania, MaxListeners (log e2e).
+4. [zrobione: team/tester/w12-tg + T-AI GO] Sondy: `sandbox-next-probes.ts` (5/5), `sandbox-rename-probe.ts`, `sandbox-behavior-probe.ts` (tray/restore/launchAtLogin).
+5. [zrobione: T-AI GO + PNG 17-11-i] Tabela P0/P1: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-ti.md` + `vs-071-p0p1.txt`.
+6. [zrobione: skrypt; uruchomienie nadal otwarte] `sandbox-a11y-probe.ts` gotowy; **nie odpalany** w T-AI GO.
+7. [zrobione: T-AI GO poza sendShortcut] historyWindow OK, Clear history OK, MaxListeners 0 w e2e/W5; **sendShortcut nie w oknie** (tylko BE-Z2).
+8. Sonda w oknie: „skrót wysyłania” (Enter vs Ctrl+Enter) i „Unread first” w pasku bocznym.
+9. Odbiór kanałów w kliencie telefonu (PWA) po UI/KK (tylko za GO).
+10. Aktualizacja tabeli zgodności P0/P1 po kolejnych zrzutach (po 17-11-i: 4 zgodne / 3 częściowo).
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,

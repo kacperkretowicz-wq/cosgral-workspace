@@ -1,5 +1,6 @@
 import type { CentralAuthUser } from "@openbot/contracts/ipc";
 import { render, screen } from "@solidjs/testing-library";
+import { flush } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   STORY_AGENT_STATUS,
@@ -8,6 +9,7 @@ import {
   STORY_UPDATE_STATUS,
   STORY_USAGE,
 } from "../../stories/fixtures";
+import { applyAppearanceDom } from "../appearance";
 import type { SidebarAgentState } from "../row-activity";
 import { Sidebar } from "./Sidebar";
 
@@ -90,5 +92,31 @@ describe("Sidebar agent row activity", () => {
   it("shows no badge for an idle agent", () => {
     renderSidebar({});
     expect(document.querySelector(".bot-row-agent-status")).toBeNull();
+  });
+});
+
+describe("Sidebar order with unread first (BE-AC)", () => {
+  const names = () =>
+    screen.getAllByRole("button", { name: /,/ }).map((row) => row.getAttribute("aria-label") ?? row.textContent ?? "");
+  afterEach(() => {
+    applyAppearanceDom({});
+    flush();
+  });
+
+  it("keeps the usual order while the setting is off", () => {
+    applyAppearanceDom({ unreadFirst: false });
+    flush();
+    renderSidebar({ sales: { kind: "unread", count: 2 } });
+    expect(names()[0]).toMatch(/^Chief/);
+  });
+
+  it("moves the agent with unread replies to the top when the setting is on, and back when it is turned off", () => {
+    applyAppearanceDom({ unreadFirst: true });
+    flush();
+    renderSidebar({ sales: { kind: "unread", count: 2 } });
+    expect(names()[0]).toMatch(/^Sales/);
+    applyAppearanceDom({ unreadFirst: false });
+    flush();
+    expect(names()[0]).toMatch(/^Chief/);
   });
 });

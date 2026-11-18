@@ -237,7 +237,7 @@ describe("W3 agent settings contract", () => {
       font: "inter",
       chatAccent: "blue",
       sendShortcut: "enter",
-      agentSteps: "show",
+      agentSteps: "collapse",
       unreadFirst: "false",
       scaleFactor: "1",
       accentHex: "#3b82f6",

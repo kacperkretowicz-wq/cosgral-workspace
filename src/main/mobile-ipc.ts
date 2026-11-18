@@ -11,7 +11,7 @@ import {
 } from "@openbot/contracts/ipc";
 import type { AgentService } from "../backend/agent-service";
 import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-connect";
-import { MobilePhoneApi, type MobilePhoneHost } from "../backend/mobile-phone-api";
+import { MobilePhoneApi, type MobilePhoneChannels, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
 import type { OpenBotDatabase } from "../backend/openbot-database";
 import { PhoneAccess } from "../backend/phone-access";
@@ -61,8 +61,10 @@ export type MobileAgentService = Pick<
 export function mobilePhoneHost(
   service: MobileAgentService,
   database: Pick<OpenBotDatabase, "readThreadMessagesPage">,
+  channels?: () => MobilePhoneChannels | null,
 ): MobilePhoneHost {
   return {
+    ...(channels ? { channels } : {}),
     bots: () => service.listBots(),
     messages: async (botId, page) => {
       const bot = service.listBots().find((candidate) => candidate.id === botId);

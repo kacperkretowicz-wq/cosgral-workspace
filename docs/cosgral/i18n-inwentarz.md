@@ -1,20 +1,58 @@
-# Inwentarz napisów UI → katalog i18n (W7-T2)
+# Inwentarz napisów UI → katalog i18n
 
-**Stan: 16.11.2026. Autor: Tester.** Wejście dla **UI Designer (W7-UI2)**.  
-**Integracja:** `codex/cosgral-desktop` @ `7fe84704e`.  
-**Metoda:** jak `spec-w7.md` §5 — grep `src/renderer/**/*.ts(x)`, **bez** uruchamiania, **bez** AST extractora.  
-**Zakres produkcyjny:** `src/renderer/src` **bez** `*.test.*` i **bez** `stories/`.
+## Stan aktualny (18.11.2026, KAPI-P / kolejka #6)
 
-## Na górze
+**Integracja bazowa:** `codex/cosgral-desktop` @ `4f21fbfe7` (+ `team/kapi/w12-p`).  
+**Metoda:** skan plików produkcyjnych `src/renderer/src` (bez `*.test.*`, bez `stories/`, bez `locales/`); test `i18n.test` („has complete, nonempty PL and EN catalogs” + skan `t("…")` na migracjach).
 
-- **Katalogu i18n jeszcze nie ma** (brak folderu locale / `t()` w rendererze).  
-- **11 plików z PL na sztywno** (wyspy) + **reszta UI prawie cała EN** w JSX.  
-- **Kolejność migracji:** onboarding → szyna → ustawienia → Needs you → rozmowa → potem Providers/CLI/Vault/reszta.  
-- Liczby poniżej = **orientacyjne** (trafienia linii grep). Kolumna „EN~” = cudzysłowy Title Case / typowe etykiety — **zawyża** (klasy, identyfikatory, zdania). Kolumna „PL” = diakrytyki + znane PL labelki.
+| Metryka | Wartość |
+|---|---:|
+| Klucze EN / PL | **1530 / 1530** (równe, wartości niepuste — potwierdzone vitest) |
+| Pliki produkcyjne | ~172 |
+| Z importem `t()` / i18n | ~63 |
+| Bez `t()` (w tym helpery, ikony, CSS-in-ts) | ~109 |
+| Sztywne `aria-label="…"` (literal) | **~91** miejsc |
+
+### Co jest już na `t()` (skrót)
+
+Conversation (panel ustawień, kicker Decision, reakcje), ContextIndicator (KAPI-P), AgentCards (Brain/Knows/More + etykiety), Sidebar/PageRail/Needs you (część), Marketplace, Tasks, Workflows, Vault connectors, Schedule/Usage/Library (część), ChannelView/Clear history/history window, InitialSetup, New agent, ThreadTabs, GlobalSearch, …
+
+### Największe pozostałości sztywnego EN (aria / panele)
+
+Priorytet kolejnych migracji (nie KK-only):
+
+| Priorytet | Pliki | Co |
+|---|---|---|
+| P0 | `conversation/ChatSearch`, `MessageRendering`, `SelectionActions`, `QueuePanel`, `ComposerEditor` | **zrobione KAPI-S** — aria na `t()` |
+| P1 | `AccessSettings`, `IsolationSettings`, `BrowserProfileSettings`, `BudgetSettings` | nagłówki i opisy pól (błędy+aria sekcji: KAPI-P) |
+| P1 | `AccountLogin`, `ApiKeysSection`, `McpPanel`, `MemoryPanel`, `AgentSettingsW3` | całe sekcje bez `t()` |
+| P2 | `RemoteDesktopPage`, `MobileConnectPage`, `HostPanel`, `Spaces` | aria + copy |
+| P2 | `Sidebar` (reszta), `App.tsx` loading aria | drobne aria |
+| Uwaga | `AgentAccountPicker` | **zrobione KAPI-S** — cała wyspa na `t()` |
+
+### Test kompletności
+
+`bun x vitest run src/renderer/src/i18n.test.tsx` — katalogi równe + każdy literal `t("…")` w listowanych powierzchniach ma klucz EN i PL. Po KAPI-P lista obejmuje też: ContextIndicator, Access/Isolation/Browser/Budget, ChannelWorkspace, `conversation/AgentActivity`.
+
+### Podgląd web
+
+`scripts/web-preview` celowo stubuje katalogi (puste `en`/`pl`) pod limit 1,8 MB — **nie** jest miarą kompletności i18n desktopu (KAPI-O).
 
 ---
 
-## 1. Podsumowanie grep
+## Archiwum W7-T2 (16.11.2026, Tester) — stan sprzed katalogu
+
+**Integracja wtedy:** `7fe84704e`. Poniższe liczby i „brak katalogu” są **historyczne**.
+
+### Na górze (historyczne)
+
+- Katalogu i18n wtedy jeszcze nie było.  
+- 11 plików z PL na sztywno + reszta UI prawie cała EN.  
+- Kolejność migracji: onboarding → szyna → ustawienia → Needs you → rozmowa → Providers/CLI/Vault.
+
+---
+
+## 1. Podsumowanie grep (historyczne W7)
 
 | Zbiór | Orientacja |
 |---|---|
@@ -44,7 +82,7 @@
 |---|---|---|---|---|
 | 1 | `components/ProviderAccounts.tsx` | 31 | 55 | Stany logowania PL + EN |
 | 2 | `components/ManagedCliSection.tsx` | 23 | 40 | „Narzędzia CLI”, Pobierz, ścieżka |
-| 3 | `components/AgentAccountPicker.tsx` | 10 | 7 | „Konto agenta”, instrukcje PL |
+| 3 | `components/AgentAccountPicker.tsx` | 0 | 0 | KAPI-S: `t()` (było 10/7 PL) |
 | 4 | `components/Sidebar.tsx` | 3 | 148 | **„Pokaż ukryte”** + dużo EN (Needs you) |
 | 5 | `components/AppSettingsW3.tsx` | 2 | 30 | `Language` + opcja **Polski** |
 | 6 | `components/LibraryPanel.tsx` | 2 | 17 | **Pobierz**, **Pokaż w folderze** |

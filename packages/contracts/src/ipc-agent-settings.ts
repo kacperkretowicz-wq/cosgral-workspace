@@ -257,7 +257,7 @@ export type AppSendShortcut = (typeof APP_SEND_SHORTCUTS)[number];
 export const APP_CHAT_ACCENTS = ["blue", "green", "violet", "orange", "pink", "gray"] as const;
 export type AppChatAccent = (typeof APP_CHAT_ACCENTS)[number];
 
-/** show = steps of the agent (tool calls) are open in the chat; collapse = they are folded to one line. */
+/** collapse = the steps of the agent (its thinking and tool calls) are folded to one line, as the window always showed them (the default); show = they are open in the chat. */
 export const APP_AGENT_STEPS = ["show", "collapse"] as const;
 export type AppAgentSteps = (typeof APP_AGENT_STEPS)[number];
 
@@ -277,7 +277,7 @@ export const DEFAULT_APP_APPEARANCE: AppAppearanceSettings = {
   font: "inter",
   sendShortcut: "enter",
   chatAccent: "blue",
-  agentSteps: "show",
+  agentSteps: "collapse",
   unreadFirst: false,
 };
 

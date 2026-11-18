@@ -1,6 +1,7 @@
 import type { AccessDesktopApi, AgentAccess, AgentEvent } from "@openbot/contracts/ipc";
 import { ACCESS_LEVEL_INFO, ACCESS_LEVELS, accessFolderProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Field, Heading, NativeSelect, Text, Textarea } from "./ui";
 export type SettingsEvents = (listener: (event: AgentEvent) => void) => () => void;
@@ -27,7 +28,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       const next = await api.get({ botId: props.botId });
       if (serial === revision) accept(next);
     } catch {
-      if (serial === revision) setError("Could not load access settings.");
+      if (serial === revision) setError(t("Could not load access settings."));
     }
   }
   createEffect(
@@ -43,9 +44,10 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       if (event.type === "access-changed" && event.access.botId === props.botId) {
         revision++;
         accept(event.access);
-        setNotice("Access settings updated.");
+        setNotice(t("Access settings updated."));
       }
-      if (event.type === "access-denied" && event.botId === props.botId) setError(`Access denied: ${event.message}`);
+      if (event.type === "access-denied" && event.botId === props.botId)
+        setError(t("Access denied: {message}", { message: event.message }));
     });
     return () => {
       revision++;
@@ -60,7 +62,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update access settings.");
+      setError(e instanceof Error ? e.message : t("Could not update access settings."));
     } finally {
       setBusy(false);
     }
@@ -71,13 +73,14 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       .map((s) => s.trim())
       .filter(Boolean);
   return (
-    <section class="providers-form" aria-label="Agent access">
+    <section class="providers-form" aria-label={t("Agent access")}>
       <Heading as="h3" size="sm">
-        Access level
+        {t("Access level")}
       </Heading>
       <Text as="p">
-        Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level,
-        including Full.
+        {t(
+          "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.",
+        )}
       </Text>
       <Show when={error()}>
         <Text role="alert" tone="danger">
@@ -90,14 +93,14 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       <Show
         when={access()}
         fallback={
-          <Show when={api} fallback={<Text>Access settings are unavailable on this connection.</Text>}>
-            <CosgralLoadingSkeleton label="Loading access settings…" />
+          <Show when={api} fallback={<Text>{t("Access settings are unavailable on this connection.")}</Text>}>
+            <CosgralLoadingSkeleton label={t("Loading access settings…")} />
           </Show>
         }
       >
         {(current) => (
           <>
-            <Field label="Access level">
+            <Field label={t("Access level")}>
               <NativeSelect
                 disabled={busy()}
                 value={current().level}
@@ -111,8 +114,8 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
                     accept(result.access);
                     setNotice(
                       result.raiseRequested
-                        ? "Approval requested in Needs you. The current level stays unchanged until you approve."
-                        : "Access level updated.",
+                        ? t("Approval requested in Needs you. The current level stays unchanged until you approve.")
+                        : t("Access level updated."),
                     );
                   });
                 }}
@@ -123,10 +126,13 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
               </NativeSelect>
             </Field>
             <Text as="p" tone="secondary">
-              Current: {ACCESS_LEVEL_INFO[current().level].name}. {ACCESS_LEVEL_INFO[current().level].summary}
+              {t("Current: {name}. {summary}", {
+                name: ACCESS_LEVEL_INFO[current().level].name,
+                summary: ACCESS_LEVEL_INFO[current().level].summary,
+              })}
             </Text>
             <Show when={current().raisedAt}>
-              <Text as="p">Last approved increase: {current().raisedAt}</Text>
+              <Text as="p">{t("Last approved increase: {at}", { at: current().raisedAt ?? "" })}</Text>
             </Show>
             <form
               class="providers-form"
@@ -140,11 +146,11 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
                     if (problem) throw new Error(problem);
                   }
                   if (api) accept(await api.setFolders({ botId: props.botId, additionalFolders, excludedFolders }));
-                  setNotice("Folder rules saved.");
+                  setNotice(t("Folder rules saved."));
                 });
               }}
             >
-              <Field label="Additional folders" description="Absolute paths, one folder per line.">
+              <Field label={t("Additional folders")} description={t("Absolute paths, one folder per line.")}>
                 <Textarea
                   value={additional()}
                   rows={3}
@@ -153,8 +159,8 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
                 />
               </Field>
               <Field
-                label="Excluded folders"
-                description="Always refused, including at Full access. Absolute paths, one per line."
+                label={t("Excluded folders")}
+                description={t("Always refused, including at Full access. Absolute paths, one per line.")}
               >
                 <Textarea
                   value={excluded()}
@@ -164,14 +170,14 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
                 />
               </Field>
               <Button type="submit" disabled={busy()}>
-                Save folder rules
+                {t("Save folder rules")}
               </Button>
             </form>
           </>
         )}
       </Show>
       <Show when={error() && !access()}>
-        <Button onClick={() => void reload()}>Retry access settings</Button>
+        <Button onClick={() => void reload()}>{t("Retry access settings")}</Button>
       </Show>
     </section>
   );

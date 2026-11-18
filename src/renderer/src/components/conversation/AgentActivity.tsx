@@ -1,4 +1,5 @@
 import { For, Show } from "solid-js";
+import { agentStepsOpen } from "../../appearance";
 import type { BotMessage, BotProfile } from "../../data";
 import { t } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
@@ -36,8 +37,8 @@ export function ThinkingDisclosure(props: { message: BotMessage }) {
   const finished = () => !props.message.streaming && stepCount() > 0;
   return (
     <article class="thinking-entry">
-      <details class="thinking-disclosure">
-        <summary aria-label="Show thinking details">
+      <details class="thinking-disclosure" open={agentStepsOpen()}>
+        <summary aria-label={t("Show thinking details")}>
           <span class="thinking-mark" aria-hidden="true">
             <ThinkingIcon />
           </span>

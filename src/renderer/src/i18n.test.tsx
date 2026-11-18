@@ -14,7 +14,10 @@ afterEach(() => {
 });
 
 it("has complete, nonempty PL and EN catalogs", () => {
-  expect(Object.keys(pl).sort()).toEqual(Object.keys(en).sort());
+  const english = Object.keys(en).sort();
+  const polish = Object.keys(pl).sort();
+  expect(polish).toEqual(english);
+  expect(english.length).toBeGreaterThanOrEqual(1500);
   for (const value of [...Object.values(pl), ...Object.values(en)]) expect(value.trim()).not.toBe("");
 });
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
@@ -70,8 +73,15 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "PlanPanel",
     "LibraryPanel",
     "Conversation",
+    "ContextIndicator",
+    "AccessSettings",
+    "IsolationSettings",
+    "BrowserProfileSettings",
+    "BudgetSettings",
+    "ChannelWorkspace",
   ];
-  for (const file of files) {
+  const extra = ["conversation/AgentActivity"];
+  for (const file of [...files, ...extra]) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
     for (const match of source.matchAll(/\bt\("([^"\n]+)"(?:\s*,|\s*\))/g)) {
       expect(Object.hasOwn(en, match[1]), `${file}: ${match[1]}`).toBe(true);

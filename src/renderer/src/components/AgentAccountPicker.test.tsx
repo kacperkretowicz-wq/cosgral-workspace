@@ -1,9 +1,14 @@
 import type { AccountsSnapshot } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { setLanguage } from "../i18n";
 import { AgentAccountPicker } from "./AgentAccountPicker";
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => setLanguage("pl"));
+afterEach(() => {
+  setLanguage("en");
+  vi.unstubAllGlobals();
+});
 it("filters provider accounts and saves explicit/default assignment", async () => {
   const assignAccountToAgent = vi.fn();
   const snapshot: AccountsSnapshot = {

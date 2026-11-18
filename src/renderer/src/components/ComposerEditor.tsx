@@ -6,6 +6,7 @@ import { createEffect, createMemo, createSignal, createUniqueId, For, Show } fro
 import { buildAnimatedAvatarSvg } from "../blobatar";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
+import { currentSendShortcut, enterAction } from "../send-shortcut";
 import { AgentAvatar } from "./AgentAvatar";
 import { AnchoredTooltip } from "./conversation/AnchoredTooltip";
 import { AttachmentReferenceVisual, appendAttachmentReferenceVisual } from "./conversation/AttachmentReference";
@@ -362,7 +363,8 @@ export function ComposerEditor(props: ComposerEditorProps) {
       setMention(null);
       return;
     }
-    if (event.key === "Enter" && event.shiftKey) {
+    const enter = enterAction(event, currentSendShortcut());
+    if (enter === "newline") {
       event.preventDefault();
       if (!editor) return;
       insertPlainText(editor, "\n");
@@ -371,7 +373,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       editor.scrollTop = editor.scrollHeight;
       return;
     }
-    if (event.key === "Enter") {
+    if (enter === "send") {
       event.preventDefault();
       props.onSubmit();
     }
@@ -466,7 +468,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Listbox.Root<PickerOption>
             as="div"
             class="mention-picker"
-            aria-label="Insert mention"
+            aria-label={t("Insert mention")}
             options={matchingOptions()}
             optionValue={pickerOptionKey}
             optionTextValue={pickerOptionText}

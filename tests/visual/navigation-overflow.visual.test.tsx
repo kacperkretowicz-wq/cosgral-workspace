@@ -13,17 +13,17 @@ test("overflow navigation keeps pages and settings reachable by keyboard and res
       <PageRail active={active()} onSelect={setActive} onOpenSettings={() => {}} />
     </div>
   ));
-  await expect.element(page.getByRole("button", { name: "More pages (current: Phone)" })).toBeVisible();
+  await expect.element(page.getByRole("button", { name: "More (current: Phone)" })).toBeVisible();
   await expect.element(page.getByRole("button", { name: "Settings" })).toBeVisible();
-  await page.getByRole("button", { name: "More pages (current: Phone)" }).click();
-  await expect.element(page.getByRole("menu", { name: "More pages" })).toBeVisible();
+  await page.getByRole("button", { name: "More (current: Phone)" }).click();
+  await expect.element(page.getByRole("menu", { name: "More" })).toBeVisible();
   await userEvent.keyboard("{End}");
   await expect.poll(() => document.activeElement?.textContent?.trim()).toBe("Server settings");
   await userEvent.keyboard("{Home}");
   await expect.poll(() => document.activeElement?.textContent?.trim()).toBe("Workflows");
   await page.getByRole("menuitem", { name: "Library" }).click();
   expect(active()).toBe("library");
-  await expect.element(page.getByRole("button", { name: "More pages (current: Library)" })).toBeVisible();
+  await expect.element(page.getByRole("button", { name: "More (current: Library)" })).toBeVisible();
   const frame = container.firstElementChild;
   if (!(frame instanceof HTMLElement)) throw new Error("Rail frame missing");
   frame.style.height = "720px";
