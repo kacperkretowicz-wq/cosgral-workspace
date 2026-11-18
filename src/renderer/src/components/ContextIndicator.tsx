@@ -40,8 +40,8 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
       >
         <Text as="p">
           {t("{used} / {limit} tokens ({percent}%)", {
-            used: props.state.used?.toLocaleString() ?? "",
-            limit: props.state.limit?.toLocaleString() ?? "",
+            used: props.state.used?.toLocaleString("en-US") ?? "",
+            limit: props.state.limit?.toLocaleString("en-US") ?? "",
             percent: props.state.percent ?? 0,
           })}
         </Text>
