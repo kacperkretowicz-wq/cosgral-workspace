@@ -13,7 +13,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 3. [zrobione: 805a58a84] Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
 4. [zrobione: 2f27ebb57] Stany puste i błędów (jeden wspólny styl) w Bibliotece, Użyciu, Harmonogramie.
 5. [zrobione: 596a49964] Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
-6. [zrobione: PLACEHOLDER_SHA] Ustawienia agenta: podstrony Knows (instrukcje, skille) i bogatsze karty Brain, zgodnie z tabelą Testera (T-AG: „częściowo”).
+6. [zrobione: 21e626b24] Ustawienia agenta: podstrony Knows (instrukcje, skille) i bogatsze karty Brain, zgodnie z tabelą Testera (T-AG: „częściowo”).
 7. Marketplace Apps: układ i filtry bliżej 0.71 (T-AG: „częściowo”).
 8. Pasek boczny: przypinanie i „Więcej” (T-AG: „częściowo”).
 9. Tablica Zadań: kolumny dla zadań nieudanych i anulowanych (UI-AI luka); wymaga kontraktu od Backendu (patrz Backend 6).
