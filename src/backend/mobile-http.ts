@@ -7,6 +7,10 @@ import {
   type MobileAgentDetail,
   type MobileAgentSummary,
   type MobileAnswerResponse,
+  type MobileChannel,
+  type MobileChannelMessagePage,
+  type MobileChannelSendResponse,
+  type MobileChannelTask,
   type MobileCreateAgentResponse,
   type MobileDevice,
   type MobileErrorResponse,
@@ -48,6 +52,12 @@ export type MobileWire =
   | { templates: MobileTemplateSummary[] }
   | MobileCreateAgentResponse
   | { agent: MobileAgentDetail }
+  // COSGRAL W12 (BE-AB): channels on the phone.
+  | { channels: MobileChannel[] }
+  | MobileChannelMessagePage
+  | MobileChannelSendResponse
+  | { tasks: MobileChannelTask[] }
+  | { task: MobileChannelTask }
   // COSGRAL W9-BE1: the lock, the PIN and push of the phone.
   | PhoneSessionState
   | PhoneUnlockResponse

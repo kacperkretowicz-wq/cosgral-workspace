@@ -71,7 +71,9 @@ import { McpOAuthService } from "../backend/mcp-oauth/mcp-oauth-service";
 import { McpOAuthStore } from "../backend/mcp-oauth/oauth-store";
 import { McpStore, type SecretBox } from "../backend/mcp-store";
 import { createAgentPort, MessengerBridge } from "../backend/messenger-bridge";
+import { mobilePhoneChannels } from "../backend/mobile-channels-host";
 import type { MobileConnect } from "../backend/mobile-connect";
+import type { MobilePhoneChannels } from "../backend/mobile-phone-api";
 import type { PhoneAccess } from "../backend/phone-access";
 import { PluginCatalogService } from "../backend/plugin-catalog/plugin-catalog-service";
 import { ProviderCatalogService } from "../backend/provider-catalog";
@@ -329,6 +331,7 @@ let mainWindow: BrowserWindow | null = null;
 let browserHost: BrowserHost | null = null;
 let agentService: AgentService | null = null;
 let channelEngineService: ChannelEngine | null = null;
+let phoneChannels: MobilePhoneChannels | null = null;
 /** COSGRAL W2: MCP connections; stopped on exit so stdio servers do not outlive the program. */
 let mcpManager: McpManager | null = null;
 // COSGRAL W10-KK1: the account sign-ins of the apps (OAuth in the system browser, tokens encrypted, an MCP entry per service).
@@ -1779,7 +1782,7 @@ if (!hasSingleInstanceLock) {
         confirm: (request) => service.confirmForPerson(null, request),
         canAsk: () => service.listBots().length > 0,
         emit: (event) => forwardAgentEvent("local", event),
-        phone: mobilePhoneHost(service, store.database),
+        phone: mobilePhoneHost(service, store.database, () => phoneChannels),
         secretBox: electronSecretBox(),
         onPhoneAccess: (access) => {
           phoneAccess = access;
@@ -1841,6 +1844,7 @@ if (!hasSingleInstanceLock) {
         { workspaceForBot: (id) => service.listBots().find((b) => b.id === id)?.workspacePath ?? null },
       );
       channelEngineService = engine;
+      phoneChannels = mobilePhoneChannels(channelStore, engine);
       channelStore.on("event", (event) => forwardAgentEvent("local", event));
       // COSGRAL W11 (U3-U6): search, slash/@/side question and thread tabs (this computer only).
       {

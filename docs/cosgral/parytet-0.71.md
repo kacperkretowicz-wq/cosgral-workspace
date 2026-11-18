@@ -167,7 +167,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 68 | Zdalny pulpit Windows (host, klient, zgoda, tryby, „pytaj przy każdej sesji”) | **jest** | tak | tak | tak | tak | część | Silnik z testem na hoście i kliencie; strona ma panel „Who may come in”: plakietka (gotowe/wyłączone/niedostępne), sesje i karty czekające, przełącznik „Ask on this computer every time” (`setAskEverySession`), „Unattended access: niedostępne” z powodem. Panel nie oglądany w oknie; obraz i sterowanie w oknie nie sprawdzane; bez trybu bez nadzoru z założenia. | ipc-remote-desktop, kk-w12-vault-voice |
 | 69 | Telefon: czat i odpowiedzi na decyzje (PWA) | **częściowo** | tak | tak | tak | tak | część | W oknie z atrapą; przełącznik powiadomień i test są w panelu telefonów (nie oglądane w oknie); brak prawdziwego telefonu. | kk-w3-acceptance, mobile-app |
 | 70 | Telefon: tworzenie i edycja agentów | **częściowo** | tak | tak | tak | tak | część | Tworzenie widać na komputerze; edycja i awatar nie. | kk-w3-acceptance |
-| 71 | Telefon: kanały w PWA | **brak** | nie | nie | nie | nie | nie | Brak. | - |
+| 71 | Telefon: kanały w PWA | **częściowo** | tak | tak | tak | nie | nie | Od BE-AB: API telefonu ma kanały (lista, wiadomości ze stronicowaniem, wysłanie, zadania, Stop/Pauza/Wznów); ekranu w aplikacji telefonu brak, strumień zdarzeń nie niesie zmian kanałów. | ipc-mobile-channels, mobile-phone-api |
 | 72 | Skróty klawiszowe (Ctrl+K, Ctrl+F, Alt+↑, zakładki) | **częściowo** | część | część | część | część | część | Wybrane skróty działają; pełnej mapy 0.71 nie ma. | kk-w3-acceptance |
 
 ## Poza zakresem (nie liczone)

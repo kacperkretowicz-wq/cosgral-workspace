@@ -13,13 +13,21 @@ import {
   BOT_AVATAR_HUES,
   type BotAvatarHue,
   type BotSummary,
+  type ChannelMessage,
+  type ChannelTask,
+  type ChannelTaskActionInput,
   type ConversationMessage,
   type CreateAgentInput,
   type CreateAgentResult,
   formatMobileStreamEvent,
+  MOBILE_CHANNEL_LIMITS,
+  MOBILE_CHANNEL_TASK_ACTIONS,
   MOBILE_COMPUTER_ONLY,
   MOBILE_PHONE_LIMITS,
   type MobileAgentDetail,
+  type MobileChannel,
+  type MobileChannelMessage,
+  type MobileChannelTask,
   type MobileDevice,
   type MobileMessage,
   type MobileNeedsYouDetail,
@@ -29,12 +37,25 @@ import {
   type RespondToApprovalInput,
   type RespondToDraftPreviewInput,
   type RespondToPromptInput,
+  type SendChannelMessageInput,
   type SendMessageInput,
+  type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import { mobileAgents, mobileNeedsYou } from "./mobile-connect";
 import { HttpError, readJson, sendJson } from "./mobile-http";
 import { phoneAnswerPolicy } from "./mobile-policy";
+
+/** BE-AB: the channels of the computer, as far as a phone may use them (the channel store and engine in the app). */
+export interface MobilePhoneChannels {
+  list: () => WorkspaceChannel[];
+  tasks: (channelId: string) => ChannelTask[];
+  /** The newest `limit` messages before `before` (or the newest ones), oldest first; throws for a bad `before`. */
+  messages: (channelId: string, page: { before: string | null; limit: number }) => ChannelMessage[];
+  /** The person's message; it starts a task like in the window. */
+  send: (input: SendChannelMessageInput) => { message: ChannelMessage; task: ChannelTask };
+  act: (input: ChannelTaskActionInput) => ChannelTask;
+}
 
 /** What the phone API needs from the program (AgentService in the app). */
 export interface MobilePhoneHost {
@@ -58,6 +79,8 @@ export interface MobilePhoneHost {
   /** Agent settings (W3-BE2): name, role and description only. */
   updateProfile: (input: { botId: string; name?: string; role?: string; description?: string }) => Promise<void>;
   setAvatarHue: (botId: string, hue: BotAvatarHue) => Promise<void>;
+  /** BE-AB: the channels; looked up on every request because the channel engine starts after Mobile Connect. */
+  channels?: () => MobilePhoneChannels | null;
   /** Program events; returns the unsubscribe. */
   subscribe: (listener: (event: AgentEvent) => void) => () => void;
 }
@@ -182,6 +205,7 @@ export class MobilePhoneApi {
       }
       return false;
     }
+    if (area === "channels") return this.#channelRoute(input, parts, method);
     if (area === "needs-you") {
       const id = parts[2] ?? "";
       if (parts.length === 3) return this.#only(method, "GET", () => this.#detail(input, id));
@@ -250,6 +274,133 @@ export class MobilePhoneApi {
     if (reply !== undefined) message.replyToMessageId = reply;
     const receipt = await hostCall(() => this.#host.sendMessage(message));
     sendJson(input.response, 202, { messageId: receipt.messageId });
+  }
+
+  // -- channels (row 71) ------------------------------------------------------------------------------------
+
+  async #channelRoute(input: PhoneRequest, parts: string[], method: string): Promise<boolean> {
+    const channels = this.#host.channels?.() ?? null;
+    if (!channels) return false;
+    if (parts.length === 2) {
+      if (method === "GET") return this.#run(() => this.#channelList(input, channels));
+      throw new HttpError(403, "Channels are created on the computer, not on the phone.");
+    }
+    const channelId = parts[2] ?? "";
+    if (parts.length === 3) {
+      throw new HttpError(403, "Channels are changed on the computer, not on the phone.");
+    }
+    const part = parts[3];
+    if (part === "messages" && parts.length === 4) {
+      if (method === "GET") return this.#run(() => this.#channelMessages(input, channels, channelId));
+      if (method === "POST") return this.#run(() => this.#channelSend(input, channels, channelId));
+      throw new HttpError(405, "Use GET or POST.");
+    }
+    if (part === "tasks" && parts.length === 4) {
+      return this.#only(method, "GET", () => this.#channelTasks(input, channels, channelId));
+    }
+    if (part === "tasks" && parts.length === 6) {
+      const action = parts[5] ?? "";
+      if (isOneOf(["archive", "restore", "reassign"] as const, action)) {
+        throw new HttpError(403, "Archiving and reassigning tasks is done on the computer, not on the phone.");
+      }
+      if (!isOneOf(MOBILE_CHANNEL_TASK_ACTIONS, action)) return false;
+      return this.#only(method, "POST", () => this.#channelAct(input, channels, channelId, parts[4] ?? "", action));
+    }
+    return false;
+  }
+
+  #channel(channels: MobilePhoneChannels, channelId: string): WorkspaceChannel {
+    const found = channels.list().find((channel) => channel.id === channelId && !channel.archived);
+    if (!found) throw new HttpError(404, "This channel does not exist.");
+    return found;
+  }
+
+  async #channelList(input: PhoneRequest, channels: MobilePhoneChannels): Promise<void> {
+    const list: MobileChannel[] = channels
+      .list()
+      .filter((channel) => !channel.archived)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+        title: channel.title,
+        leadBotId: channel.leadBotId,
+        memberBotIds: channel.memberBotIds,
+        openTasks: channels.tasks(channel.id).filter(isOpenTask).length,
+        updatedAt: channel.updatedAt,
+      }));
+    sendJson(input.response, 200, { channels: list });
+  }
+
+  async #channelMessages(input: PhoneRequest, channels: MobilePhoneChannels, channelId: string): Promise<void> {
+    this.#channel(channels, channelId);
+    const limitText = input.query.get("limit");
+    const limit = limitText === null ? MOBILE_CHANNEL_LIMITS.messagesPage : Number(limitText);
+    if (!Number.isInteger(limit) || limit < 1 || limit > MOBILE_CHANNEL_LIMITS.messagesPageMax) {
+      throw new HttpError(400, `limit is from 1 to ${MOBILE_CHANNEL_LIMITS.messagesPageMax}.`);
+    }
+    const before = input.query.get("before");
+    let rows: ChannelMessage[];
+    try {
+      // One more than asked for tells whether older messages exist.
+      rows = channels.messages(channelId, { before, limit: limit + 1 });
+    } catch (error) {
+      if (before !== null) throw new HttpError(400, "before is not a message of this channel.");
+      throw new HttpError(409, cut(errorText(error), 300));
+    }
+    const more = rows.length > limit;
+    const page = rows.slice(-limit);
+    const body: { channelId: string; messages: MobileChannelMessage[]; nextBefore: string | null } = {
+      channelId,
+      messages: page.map(channelMessage),
+      nextBefore: more ? (page[0]?.id ?? null) : null,
+    };
+    sendJson(input.response, 200, body);
+  }
+
+  async #channelSend(input: PhoneRequest, channels: MobilePhoneChannels, channelId: string): Promise<void> {
+    this.#channel(channels, channelId);
+    this.#write(input.device.id);
+    const body = await readJson(input.request, MOBILE_PHONE_LIMITS.messageBodyBytes);
+    const text = isString(body.text) ? body.text.trim() : "";
+    if (!text) throw new HttpError(400, "text is required.");
+    if (text.length > MOBILE_PHONE_LIMITS.messageText) {
+      throw new HttpError(400, `A message from the phone has at most ${MOBILE_PHONE_LIMITS.messageText} characters.`);
+    }
+    const reply = body.replyToMessageId;
+    if (reply !== undefined && reply !== null && (!isString(reply) || reply.length > INPUT_LIMITS.identifier)) {
+      throw new HttpError(400, "replyToMessageId must be a message id or null.");
+    }
+    // No resource key from the phone: the program chooses it (the lead's working folder).
+    const message: SendChannelMessageInput = { channelId, text };
+    if (reply !== undefined) message.replyToMessageId = reply;
+    const started = await hostCall(async () => channels.send(message));
+    sendJson(input.response, 202, { messageId: started.message.id, taskId: started.task.id });
+  }
+
+  async #channelTasks(input: PhoneRequest, channels: MobilePhoneChannels, channelId: string): Promise<void> {
+    this.#channel(channels, channelId);
+    const tasks: MobileChannelTask[] = channels
+      .tasks(channelId)
+      .filter((task) => task.archivedAt === null)
+      .slice(-MOBILE_CHANNEL_LIMITS.tasks)
+      .map(channelTask);
+    sendJson(input.response, 200, { tasks });
+  }
+
+  async #channelAct(
+    input: PhoneRequest,
+    channels: MobilePhoneChannels,
+    channelId: string,
+    taskId: string,
+    action: ChannelTaskActionInput["action"],
+  ): Promise<void> {
+    this.#channel(channels, channelId);
+    if (!channels.tasks(channelId).some((task) => task.id === taskId))
+      throw new HttpError(404, "This task does not exist.");
+    this.#write(input.device.id);
+    const changed = await hostCall(async () => channels.act({ taskId, action }));
+    sendJson(input.response, 200, { task: channelTask(changed) });
   }
 
   // -- Needs you (row 43) ---------------------------------------------------------------------------------------
@@ -512,6 +663,34 @@ function phoneMessage(message: ConversationMessage): MobileMessage {
     status: message.status,
     itemType: message.itemType ?? null,
     attachments: message.attachments?.length ?? 0,
+  };
+}
+
+function isOpenTask(task: ChannelTask): boolean {
+  return task.archivedAt === null && ["queued", "running", "waiting", "paused"].includes(task.state);
+}
+
+function channelMessage(message: ChannelMessage): MobileChannelMessage {
+  return {
+    id: message.id,
+    taskId: message.taskId,
+    authorBotId: message.authorBotId,
+    kind: message.kind,
+    text: message.text.length > 50_000 ? `${message.text.slice(0, 50_000)}…` : message.text,
+    replyToMessageId: message.replyToMessageId,
+    superseded: message.superseded,
+    createdAt: message.createdAt,
+  };
+}
+
+function channelTask(task: ChannelTask): MobileChannelTask {
+  return {
+    id: task.id,
+    ownerBotId: task.ownerBotId,
+    state: task.state,
+    title: task.title,
+    parentTaskId: task.parentTaskId,
+    updatedAt: task.updatedAt,
   };
 }
 

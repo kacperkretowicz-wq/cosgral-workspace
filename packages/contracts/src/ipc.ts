@@ -37,6 +37,7 @@ export * from "./ipc-message-actions";
 export * from "./ipc-message-menu";
 export * from "./ipc-messengers";
 export * from "./ipc-mobile";
+export * from "./ipc-mobile-channels";
 export * from "./ipc-mobile-connect";
 export * from "./ipc-phone-access";
 export * from "./ipc-plan";
