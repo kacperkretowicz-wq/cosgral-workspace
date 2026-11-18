@@ -9,6 +9,7 @@ import type {
 import { THREAD_LIMITS, THREAD_UNDO_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { providerError } from "./provider-error";
+import { SubagentsPanel } from "./SubagentsPanel";
 import { ThreadUndoBar } from "./ThreadUndoBar";
 import { Badge, Button, Field, Heading, Input, Switch, Text } from "./ui";
 import "../styles/threads.css";
@@ -160,6 +161,7 @@ export function ThreadPanel(props: {
   return (
     <Show when={api}>
       <ThreadUndoBar pending={pending()} busy={busy()} onUndo={(item) => void undo(item)} />
+      <SubagentsPanel botId={props.botId} />
       <details class="thread-panel">
         <summary>Threads: {active()?.title ?? "Loading..."}</summary>
         <div class="thread-panel-body">
