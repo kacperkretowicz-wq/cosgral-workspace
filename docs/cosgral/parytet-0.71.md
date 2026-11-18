@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 17.11.2026, integracja `codex/cosgral-desktop` @ `79567cdf9` (przeliczone po scaleniu UI-L: ekrany Użycie i Harmonogram, nowy widok plików Biblioteki, oraz Backend w12-accounts; poprzednia wersja tabeli: `c2bb0bd60`, 66%). Liczy się tylko to, co jest w integracji; ekrany, które UI Designer ma jeszcze na swojej gałęzi (Zadania, Użycie z podziałem na modele), zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty Testera.
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `b1e28ab8f` oraz gałąź `team/kk/w12-flows` (Prompt i Condition w przepływach; do scalenia). Poprzednia wersja tabeli: `79567cdf9`, 67,4%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany, które UI Designer ma jeszcze u siebie, zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`, 15 zrzutów T-M, część ekranów bez danych testowych).
 
-**Wynik w jednej linii: 48,5 z 72 funkcji = 67,4% (jest = 1, częściowo = ½). Z tego skontraktowane 86,1%, ale w prawdziwym oknie sprawdzone tylko 43,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,3%.**
+**Wynik w jednej linii: 49,5 z 72 funkcji = 68,8% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **67,4%** (48,5 z 72) | 34 jest, 29 częściowo, 9 brak |
-| Skontraktowane | **86,1%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | 84,7% | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | 68,8% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **43,1%** | 19 wierszy w pełni (tak), 24 częściowo; reszta nie sprawdzona w prawdziwym programie |
-| Ostrożny parytet | 56,3% | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Parytet (kod) | **68,8%** (49,5 z 72) | 35 jest, 29 częściowo, 8 brak |
+| Skontraktowane | **87,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | 86,1% | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | 70,8% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| W oknie sprawdzone | **45,1%** | 19 wierszy w pełni (tak), 27 częściowo; reszta nie sprawdzona w prawdziwym programie |
+| Ostrożny parytet | 56,9% | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 48,5 z 78 = 62,2%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 49,5 z 78 = 63,5%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -34,10 +34,10 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | B. Czat, Needs you, wątki | 12 | 8 | 3 | 1 | 79% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
 | D. Agenci | 10 | 7 | 3 | 0 | 85% |
-| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 4 | 4 | 1 | 67% |
+| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 5 | 3 | 1 | 72% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 4 | 1 | 1 | 75% |
-| H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 1 | 2 | 58% |
+| H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 2 | 1 | 67% |
 | I. Komunikatory | 4 | 0 | 2 | 2 | 25% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 0 | 6 | 1 | 43% |
 
@@ -81,7 +81,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 24 | Kanały: tworzenie, lider, członkowie, edycja | **jest** | tak | tak | tak | tak | tak | Odbiór W4-T2 38/38. | kk-w4-g1 |
-| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum) | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w4-g1 |
+| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Backend dał widok zbiorczy zadań (kontrakt i silnik), ekran jeszcze go nie czyta. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
 | 26 | Odpowiedź na wiadomość kanału | **jest** | tak | tak | tak | tak | tak | Krok e2e. | ipc-workspace-channels, ui-w4-ui1 |
 | 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **częściowo** | część | część | część | część | część | Jest pamięć kanału i lider; reszta jak w 0.71 brak. | ipc-memory, ipc-isolation |
 
@@ -108,17 +108,17 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 39 | MCP: logowanie OAuth w przeglądarce | **częściowo** | tak | tak | tak | nie | nie | Silnik z PKCE i pętlą zwrotną, 5 kanałów; ekranu logowania w oknie nie ma. | kk-w12-oauth, mcp-oauth |
 | 40 | Vault lokalny (login, karta, kontakt, klucz, TOTP; agent bierze bez ujawnienia) | **jest** | tak | tak | tak | tak | część | Login z wypełnieniem w oknie (hasła nie ma w wyniku, czacie ani plikach); karta, kontakt, klucz, TOTP tylko silnik i testy. | kk-w4-rows, ipc-vault |
 | 41 | Vault: pokaż/skopiuj sekret osobie, import CSV | **brak** | nie | nie | nie | nie | nie | Świadomie: wartości są tylko do zapisu. | ipc-vault |
-| 42 | Vault: konektory 1Password, Bitwarden, Proton Pass | **częściowo** | tak | tak | tak | nie | nie | Silnik z listą logowań, bez ekranu. | kk-w11-vault, ipc-vault-connectors |
+| 42 | Vault: konektory 1Password, Bitwarden, Proton Pass | **jest** | tak | tak | tak | tak | nie | Panel konektorów (stan, wybór metody, pola tylko do zapisu, lista dozwolonych logowań bez haseł, rozłączanie) jest w integracji (UI-M). W oknie nie oglądany; prawdziwe menedżery wymagają kont właściciela. | kk-w11-vault, ui-w12-ui2 |
 | 43 | Vault-request w Needs you (agent prosi o login) | **jest** | tak | tak | tak | tak | część | Wypełnienie logowania w oknie; karta wyboru/dodania nie osobno. | ipc-vault, kk-w4-rows |
 | 44 | Tabele wspólne agentów | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
-| 45 | Biblioteka plików: dodaj, otwórz, pobierz, załącz; strona z filtrami, zaznaczanie wielu, sprzątanie; pliki maszyny | **częściowo** | tak | tak | tak | tak | nie | Nowy widok plików (zakładki pochodzenia, szukanie, filtry, sortowanie, zaznaczanie do 200, sprzątanie z podglądem) jest w integracji (UI-K na silniku BE-H). W oknie nie był oglądany, a dowód W4-T5 dotyczył starego panelu. Brak: przeglądania folderów komputera („pliki maszyny”) i miniatur. | backend-w12-library, ui-w12-ui2, kk-w4-rows |
+| 45 | Biblioteka plików: dodaj, otwórz, pobierz, załącz; strona z filtrami, zaznaczanie wielu, sprzątanie; pliki maszyny | **częściowo** | tak | tak | tak | tak | część | Nowy widok plików (zakładki pochodzenia, szukanie, filtry, sortowanie, zaznaczanie do 200, sprzątanie z podglądem) jest w integracji. W oknie: zrzut T-M z pustą listą (bez danych testowych); dowód dodawania/otwierania z W4-T5 dotyczył starego panelu. Brak: przeglądania folderów komputera („pliki maszyny”) i miniatur. | backend-w12-library, tester-w12-tm, kk-w4-rows |
 | 46 | Przeglądarka agenta (karty, przejęcie, profile); nauka, podgląd na żywo, PiP | **częściowo** | tak | tak | tak | tak | część | Karty i przejęcie w oknie; nauka, podgląd na żywo, PiP brak. | kk-w3-acceptance, ipc-browser |
 
 ### F. Marketplace
 
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
-| 47 | Marketplace: katalog lokalny agentów i skilli (szczegóły, instalacja, sugestie) | **jest** | tak | tak | tak | tak | tak | Instalacja skilla w oknie; 8 skilli i 5 agentów, nie 251. | kk-w3-acceptance, ipc-marketplace |
+| 47 | Marketplace: katalog lokalny agentów i skilli (szczegóły, instalacja, sugestie) | **jest** | tak | tak | tak | tak | tak | Instalacja skilla w oknie (W3-T3); katalog ma 14 skilli i 9 agentów z własnymi tekstami (nie 251). | kk-w3-acceptance, ipc-marketplace, kk-w12-flows |
 | 48 | Marketplace: układ jak 0.71 (Featured, kategorie, Verified/Public, link GitHub) | **częściowo** | tak | tak | część | część | część | Kontrakt i atrapa (`ipc-marketplace-screen`); strona ich jeszcze nie używa; zrzut T-H pokazuje starą stronę. | kk-w12-workflows-marketplace |
 | 49 | Marketplace Apps: wtyczki jako serwery MCP, własne wtyczki | **częściowo** | tak | tak | tak | tak | nie | Dane katalogu (251) są poza repo, logowanie „link” zależy od OAuth MCP (bez ekranu). | kk-w11-marketplace |
 
@@ -131,18 +131,18 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 52 | ACP (Antigravity, Gemini preset, własny agent) z logowaniem | **jest** | tak | tak | tak | tak | nie | Tura z prawdziwym agentem nieodebrana w oknie. | ipc-acp-presets, ipc-acp-login |
 | 53 | Katalog 18 dostawców (opisy, klucze maskowane, presety ACP oznaczone „niezweryfikowane”) | **częściowo** | tak | tak | tak | nie | nie | Kontrakt i silnik; ekran Dostawcy nie czyta jeszcze katalogu. | backend-w12-providers |
 | 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **brak** | część | nie | nie | nie | nie | Tylko opisy w katalogu; polecenia ACP niezweryfikowane. | backend-w12-providers |
-| 55 | Użycie: liczniki i pierścienie limitów, wykresy 7–365 dni, podział wg modelu i rodzaju tokenów | **jest** | tak | tak | tak | tak | nie | Ekran Użycie czyta raport: zakładki okresów, kafle, wykres dzienny, obciążenie komputera, tabela agentów, limity dostawców; podział na model i rodzaj tokenów dochodzi z Backendu (dane od dnia wdrożenia). Nie ma podziału na umiejętność. W oknie nie oglądane. | backend-w12-library, backend-w12-accounts, ui-w12-ui2 |
+| 55 | Użycie: liczniki i pierścienie limitów, wykresy 7–365 dni, podział wg modelu i rodzaju tokenów | **jest** | tak | tak | tak | tak | część | Ekran Użycie: zakładki okresów, kafle, wykres dzienny, obciążenie komputera, tabela agentów i modeli, podział tokenów z pokryciem, limity dostawców. W oknie: zrzut T-M (pusta strona bez danych). Nie ma podziału na umiejętność. | backend-w12-library, backend-w12-accounts, tester-w12-tm |
 
 ### H. Automatyzacje (rutyny, przepływy)
 
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 56 | Rutyny agenta (harmonogram, webhook, historia, uruchom teraz) | **jest** | tak | tak | tak | tak | część | W oknie: tworzenie, następny start, Run now, minutowa sama; daily/cron/webhook nie. | kk-w3-acceptance, ipc-routines |
-| 57 | Harmonogram: zaplanowane i wykonane przebiegi rutyn, feed ostatnich uruchomień | **jest** | tak | tak | tak | tak | nie | Ekran Harmonogram pokazuje najbliższe dni po dniach (status, godzina), rutyny z zewnątrz i wstrzymane oraz feed; siatki miesięcznego kalendarza i notatek przy przebiegu nie ma. W oknie nie oglądany. | backend-w12-library, ui-w12-ui2 |
+| 57 | Harmonogram: zaplanowane i wykonane przebiegi rutyn, feed ostatnich uruchomień | **jest** | tak | tak | tak | tak | część | Ekran Harmonogram: najbliższe dni po dniach (status, godzina), rutyny z zewnątrz i wstrzymane, feed. W oknie: zrzut T-M (pusta strona bez danych). Brak siatki miesięcznego kalendarza i notatek przy przebiegu. | backend-w12-library, tester-w12-tm |
 | 58 | Rutyny kanału | **brak** | nie | nie | nie | nie | nie | Brak. | - |
 | 59 | Przepływy: graf, wyzwalacz, agent, zgoda, wyjście, uruchomienia | **jest** | tak | tak | tak | tak | część | Wyzwalacz + agent w oknie; krok zgody nie. | kk-w3-acceptance, workflow-manager.test |
-| 60 | Edytor przepływów jak 0.71 (paleta węzłów, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | nie | nie | nie | Kontrakt + atrapa; edytor ich nie używa. | kk-w12-workflows-marketplace |
-| 61 | Przepływy: wersje, katalog GitHub, kredyty mediów | **brak** | nie | nie | nie | nie | nie | Brak. | - |
+| 60 | Edytor przepływów jak 0.71 (paleta węzłów z Prompt i Condition, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | tak | część | nie | Kontrakt, atrapa i silnik mają Prompt i Condition oraz funkcje edytora; stary edytor dostał tylko most (przyciski „Add prompt/condition”), nowego edytora nie ma. | kk-w12-flows, kk-w12-workflows-marketplace |
+| 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | nie | nie | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L); ekranu nie ma. Katalog GitHub i kredyty mediów: brak. | kk-w12-flows |
 
 ### I. Komunikatory
 
@@ -176,16 +176,16 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
-## Zmiany od wersji @ `c2bb0bd60` (66%)
+## Zmiany od wersji @ `79567cdf9` (67,4%)
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|
-| Parytet kodowy | 66% | **67,4%** | Użycie i Harmonogram: częściowo → jest (ekran + silnik + kontrakt) |
-| Skontraktowane | 86,1% | **86,1%** | bez zmian |
-| Silnik | 84,7% | 84,7% | bez zmian |
-| Ekran w kodzie | 66% | 68,8% | Biblioteka, Użycie, Harmonogram mają ekran w integracji |
-| W oknie sprawdzone | 44,4% | 43,1% | spadło: stary panel Biblioteki z dowodem W4-T5 zastąpił nowy widok bez zrzutu; Użycie i Harmonogram nie były oglądane |
-| Ostrożny parytet | 56,3% | 56,3% | bez zmian: „jest” bez dowodu w oknie liczy się za ½, jak wcześniej „częściowo” |
+| Parytet kodowy | 67,4% | **68,8%** | Vault konektory: częściowo → jest (panel UI-M); wersje przepływów: brak → częściowo |
+| Skontraktowane | 86,1% | **87,5%** | kontrakt wersji przepływów, Prompt i Condition |
+| Silnik | 84,7% | 86,1% | silnik wersji przepływów, Prompt i Condition |
+| Ekran w kodzie | 68,8% | 70,8% | panel Vault konektorów; stary edytor przepływów z mostem |
+| W oknie sprawdzone | 43,1% | 45,1% | zrzuty T-M: Biblioteka, Użycie, Harmonogram rysują się (puste), liczone jako „część” |
+| Ostrożny parytet | 56,3% | 56,9% | „jest” z dowodem w oknie za 1, bez dowodu za ½ |
 
 ## Decyzje: luki bez silnika
 
@@ -193,25 +193,25 @@ Godziny to moja ocena (kontrakt + silnik + testy na atrapach), nie pomiar. „Le
 
 | Luka | Stan | Koszt | Lekkie/ciężkie | Decyzja | Wpływ na parytet |
 |---|---|---|---|---|---|
-| Marketplace: więcej treści (dziś 8 skilli + 5 agentów) | instalacja działa | ok. 7 h (6 skilli + 4 agenty) | lekkie | ROBIĆ | 0 (poprawia wartość, nie wiersz) |
+| Marketplace: więcej treści (dziś 8 skilli + 5 agentów) | instalacja działa; dziś 14 skilli + 9 agentów | ok. 7 h (6 skilli + 4 agenty) | lekkie | ZROBIONE (73e452605) | 0 (poprawia wartość, nie wiersz) |
 | Marketplace: instalacja skilla z linku GitHub | brak | ok. 8 h | lekkie, kod z internetu | NIE ROBIĆ teraz (tylko jeśli właściciel chce, z kartą zgody) | 0 |
-| Workflows: Condition + Prompt | brak węzłów | ok. 7 h (5 + 2) | lekkie | ROBIĆ | 0 (edytor dostaje te węzły) |
-| Workflows: wersje przepływu i przywracanie | brak | ok. 5 h | lekkie | ROBIĆ | +0,7 pp (brak → częściowo) |
+| Workflows: Condition + Prompt | silnik, kontrakt i atrapa są; edytor tylko z mostem | ok. 7 h (5 + 2) | lekkie | ZROBIONE (gałąź w12-flows) | 0 (edytor dostaje te węzły) |
+| Workflows: wersje przepływu i przywracanie | silnik, kontrakt i atrapa są; ekranu brak | ok. 5 h | lekkie | ZROBIONE (2540926db) | +0,7 pp (brak → częściowo) |
 | Workflows: LLM, Asset, adnotacje na płótnie | brak | ok. 13 h (5 + 5 + 3) | lekkie | NIE ROBIĆ teraz | 0 |
 | Workflows: Image/Video, katalog GitHub, kredyty mediów | brak | 12 h+ każde | ciężkie | NIE ROBIĆ | 0 |
 | Discord (tylko DM) | wstrzymany | ok. 9 h | lekkie (prawdziwy test: token bota) | NIE ROBIĆ teraz (najpierw ekran komunikatorów) | +0,7 pp silnik; +1,4 pp z ekranem |
 | Rutyny kanału | brak | ok. 6 h | lekkie | NIE ROBIĆ teraz (rutyny agenta wystarczają) | +0,7 pp |
 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter…) | brak, Backend robi pulę kluczy dla katalogu | ok. 8 h | ciężkie (potrzebne CLI, polecenia niezweryfikowane) | NIE ROBIĆ bez zgody właściciela na pobranie CLI | +0,7 pp |
-| Cofnięcie usunięcia wątku | brak | ok. 3 h | lekkie | ROBIĆ | +0,7 pp |
+| Cofnięcie usunięcia wątku | brak | ok. 3 h | lekkie | ROBI BACKEND (BE-J, w kolejce) | +0,7 pp |
 | Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | częściowo | ok. 5 h | lekkie | ROBIĆ, jeśli wątki idą do odbioru okna | +0,7 pp |
 
-**Razem „robić”: ok. 27 h** (treści Marketplace, Condition + Prompt, wersje przepływów, cofnięcie usunięcia wątku, wstrzymania wątku). Wpływ na parytet jest mały, bo silnik bez ekranu liczy się za ½ wiersza; więcej daje podpięcie ekranów do gotowych silników (komunikatory, Vault konektory, OAuth MCP, aktualizacje, transfer/import, katalog 18 dostawców, układ Marketplace, edytor Workflows: 9 wierszy, razem ok. +6 pp; Biblioteka, Użycie i Harmonogram już mają ekran).
+**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione)  Wpływ na parytet jest mały, bo silnik bez ekranu liczy się za ½ wiersza; więcej daje podpięcie ekranów do gotowych silników (komunikatory, Vault konektory, OAuth MCP, aktualizacje, transfer/import, katalog 18 dostawców, układ Marketplace, edytor Workflows z wersjami: 8 wierszy, razem ok. +5,5 pp; Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran).
 
 ## Czego nie sprawdziłem
 
 1. Nie uruchamiałem Electrona, Storybooka, testów ani e2e w tym zadaniu: stan wierszy to czytanie kodu integracji, kontraktów, raportów i testów (nazwy), nie ponowne przebiegi.
 2. Dowody „w oknie” są z raportów z 13–17.11 (poprzednie wersje integracji); zmiany UI po nich (UI-I, UI-J) nie były oglądane w oknie.
 3. Kolumny K/S/E oceniłem z listy plików i użycia `window.openbot.*` w rendererze (grep), nie przez uruchomienie ekranu; „część” oznacza, że znalazłem tylko fragment.
-4. Biblioteka, Użycie i Harmonogram mają ekran w integracji, ale żaden nie był oglądany w oknie (zrzuty Testera w toku): kolumna O dla nich to „nie”.
-5. Po zmianach UI-I/UI-J pełny sandbox:e2e miał 27 ok / 3 FAIL (przepełnienie stron w krótkim oknie, odczyt IPC „Choose an agent”, duplikat agenta); diagnoza Testera trwa. Dowody „w oknie” dla paska bocznego, szyny i duplikatu agenta pochodzą sprzed tych zmian.
+4. Biblioteka, Użycie i Harmonogram: zrzut T-M pokazuje, że ekrany się rysują, ale bez danych testowych (puste listy); to „część”, nie „tak”. Panel Vault konektorów i Zadania z UI-M nie miały zrzutu.
+5. Po zmianach UI-I/UI-J pełny sandbox:e2e miał 27 ok / 3 FAIL, a po poprawkach Testera (T-M) 30 ok / 0 FAIL na `79567cdf9`; zmiany UI po tym SHA (UI-M, UI-N, UI-O) nie miały jeszcze nowego przebiegu.
 6. Wszystkie opisy są własnymi słowami; w repo nie ma treści ani grafik OpenBota, a pliki analizy 0.71 zostają poza repo.
