@@ -1,5 +1,6 @@
 import { type AgentMemorySettings, isMemoryInclusion, type MemoryInclusion } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type Entry = { id: string; text: string; inclusion?: MemoryInclusion };
@@ -29,8 +30,8 @@ export function MemoryPanel(props: {
     }
   }
   return (
-    <section class="w2-panel" aria-label={props.channel ? "Channel memory" : "Agent memory"}>
-      <h3>{props.channel ? "Channel memory" : "Memory"}</h3>
+    <section class="w2-panel" aria-label={props.channel ? t("Channel memory") : t("Agent memory")}>
+      <h3>{props.channel ? t("Channel memory") : t("Memory")}</h3>
       <Show when={props.settings}>
         {(s) => (
           <>
@@ -94,10 +95,10 @@ export function MemoryPanel(props: {
         )}
       </For>
       <label>
-        Memory text
+        {t("Memory text")}
         <Textarea
           unstyled
-          aria-label="Memory text"
+          aria-label={t("Memory text")}
           maxlength={props.channel ? 500 : 10000}
           value={text()}
           onInput={(e) => setText(e.currentTarget.value)}
@@ -105,18 +106,18 @@ export function MemoryPanel(props: {
       </label>
       <Show when={!props.channel}>
         <label>
-          Inclusion{" "}
+          {t("Inclusion")}{" "}
           <NativeSelect
             unstyled
-            aria-label="Inclusion"
+            aria-label={t("Inclusion")}
             value={inclusion()}
             onChange={(e) => {
               const value = e.currentTarget.value;
               if (isMemoryInclusion(value)) setInclusion(value);
             }}
           >
-            <option value="searchable">When needed</option>
-            <option value="essential">Always</option>
+            <option value="searchable">{t("When needed")}</option>
+            <option value="essential">{t("Always")}</option>
           </NativeSelect>
         </label>
       </Show>

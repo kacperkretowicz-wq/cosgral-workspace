@@ -10,6 +10,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show, untrack } from "solid-js";
 import type { BotMessage } from "../data";
+import { t } from "../i18n";
 import { MoreIcon } from "./conversation/ConversationIcons";
 import { Button, Dialog, DropdownMenu, Field, Text, Textarea } from "./ui";
 import "../styles/thread-work.css";
@@ -141,7 +142,7 @@ export function MessageHistoryActions(
           props.onOpenChange?.(open);
         }}
       >
-        <DropdownMenu.Trigger class="message-action-button" aria-label="More message actions">
+        <DropdownMenu.Trigger class="message-action-button" aria-label={t("More message actions")}>
           <MoreIcon />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="message-more-menu">

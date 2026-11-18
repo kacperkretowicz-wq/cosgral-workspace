@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { STORY_BOT_SUMMARIES, STORY_MODELS } from "../../stories/fixtures";
 import { createMockFallbackModelsApi } from "../../stories/mock-fallback-models-api";
 import { createMockOpenBot } from "../../stories/mock-openbot";
+import { setLanguage } from "../i18n";
 import { AgentSettingsW3, AgentTemplateCreator } from "./AgentSettingsW3";
 
 describe("agent creator", () => {
@@ -16,8 +17,12 @@ describe("agent creator", () => {
   });
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  setLanguage("en");
+  vi.unstubAllGlobals();
+});
 it("requires saving a model change before choosing the account, then unlocks it", async () => {
+  setLanguage("pl");
   const mock = createMockOpenBot();
   const value = { bot: STORY_BOT_SUMMARIES[0], provider: "codex", models: STORY_MODELS, tools: [] };
   vi.stubGlobal("openbot", {
@@ -38,8 +43,8 @@ it("requires saving a model change before choosing the account, then unlocks it"
   expect(alternate).toBeDefined();
   await fireEvent.change(model, { target: { value: alternate?.value } });
   await waitFor(() => expect(screen.getByLabelText("Konto")).toBeDisabled());
-  await fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
-  await screen.findByText("Settings saved.");
+  await fireEvent.click(screen.getByRole("button", { name: "Zapisz ustawienia" }));
+  await screen.findByText("Zapisano ustawienia.");
   await waitFor(() => expect(screen.getByLabelText("Konto")).toBeEnabled());
   mock.dispose();
 });

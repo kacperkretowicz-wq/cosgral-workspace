@@ -7,6 +7,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { isString } from "@openbot/contracts/runtime-values";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 export function VaultForm(props: {
@@ -98,13 +99,13 @@ export function VaultForm(props: {
     }
   }
   return (
-    <section class="w2-panel" aria-label="Vault item form">
-      <h3>{props.initial ? "Edit item" : "Add item"}</h3>
+    <section class="w2-panel" aria-label={t("Vault item form")}>
+      <h3>{props.initial ? t("Edit item") : t("Add item")}</h3>
       <label>
-        Kind
+        {t("Kind")}
         <NativeSelect
           unstyled
-          aria-label="Kind"
+          aria-label={t("Kind")}
           disabled={!!props.initial || !!props.kind}
           value={kind()}
           onChange={(e) => {
@@ -112,11 +113,11 @@ export function VaultForm(props: {
             if (isVaultItemKind(value)) setKind(value);
           }}
         >
-          <option value="login">Login</option>
-          <option value="card">Card</option>
-          <option value="contact">Contact</option>
-          <option value="apiKey">API key</option>
-          <option value="totp">Authenticator</option>
+          <option value="login">{t("Login")}</option>
+          <option value="card">{t("Card")}</option>
+          <option value="contact">{t("Contact")}</option>
+          <option value="apiKey">{t("API key")}</option>
+          <option value="totp">{t("Authenticator")}</option>
         </NativeSelect>
       </label>
       <label>
@@ -136,7 +137,7 @@ export function VaultForm(props: {
           Password
           <Input
             unstyled
-            aria-label="Password"
+            aria-label={t("Password")}
             type="password"
             autocomplete="new-password"
             value={secret()}
@@ -289,8 +290,8 @@ export function VaultPanel() {
     };
   });
   return (
-    <section class="w2-panel" aria-label="Vault">
-      <h2>Vault</h2>
+    <section class="w2-panel" aria-label={t("Vault")}>
+      <h2>{t("Vault")}</h2>
       <Show when={status()}>
         {(s) => (
           <p>

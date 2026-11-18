@@ -631,7 +631,7 @@ export function Sidebar(props: SidebarProps) {
   return (
     <aside
       id="bot-sidebar"
-      aria-label="Bot navigation"
+      aria-label={t("Bot navigation")}
       class={["sidebar panel-edge", { "sidebar-compact": props.compact }]}
     >
       <div class="window-drag sidebar-topbar">

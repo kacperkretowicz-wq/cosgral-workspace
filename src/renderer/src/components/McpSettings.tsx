@@ -1,16 +1,17 @@
 import type { AgentMcpServerSetting, McpServer } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { McpPanel } from "./McpPanel";
 import { McpSignInPanel } from "./McpSignInPanel";
 export function McpSettings(props: { botId?: string }) {
   function mcpApi() {
     const api = window.openbot.mcp;
-    if (!api) throw new Error("MCP is unavailable in this build.");
+    if (!api) throw new Error(t("MCP is unavailable in this build."));
     return api;
   }
   function agentBotId(): string {
     const botId = props.botId;
-    if (!botId) throw new Error("No agent selected.");
+    if (!botId) throw new Error(t("No agent selected."));
     return botId;
   }
   const [servers, setServers] = createSignal<McpServer[]>([]);
@@ -20,7 +21,7 @@ export function McpSettings(props: { botId?: string }) {
   async function refresh() {
     const api = window.openbot.mcp;
     if (!api) {
-      setError("MCP is unavailable in this build.");
+      setError(t("MCP is unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -44,7 +45,7 @@ export function McpSettings(props: { botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "MCP action failed.");
+      setError(e instanceof Error ? e.message : t("MCP action failed."));
     }
   }
   onSettled(() => {
