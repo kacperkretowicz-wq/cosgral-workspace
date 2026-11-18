@@ -88,6 +88,7 @@ import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { providerError } from "./provider-error";
+import { QueueHoldNotice } from "./QueueHoldNotice";
 import {
   REMOTE_DESKTOP_PANEL_DEFAULT,
   REMOTE_DESKTOP_PANEL_MAX,
@@ -2232,12 +2233,7 @@ export function Conversation(props: ConversationProps) {
               <span>Switch this agent to a Codex model in Settings to generate images.</span>
             </aside>
           </Show>
-          <Show when={props.queue?.heldReason}>
-            <div class="providers-form" role="status">
-              <Text>Message queued: {props.queue?.heldReason}</Text>
-              <Button onClick={() => props.onOpenBudget?.()}>Review budget settings</Button>
-            </div>
-          </Show>
+          <QueueHoldNotice queue={props.queue} onOpenBudget={props.onOpenBudget} />
           <Show when={queueBarVisible()}>
             <QueuePanel
               deliveries={props.queue?.deliveries ?? []}

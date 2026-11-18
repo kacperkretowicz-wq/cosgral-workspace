@@ -28,23 +28,26 @@ Pełne zestawienie z liczbami: `docs/cosgral/parytet-0.71.md`.
 | **Dostawcy modeli bez terminala** | **Jest** | Logowanie do Codex (ChatGPT) i Claude przez przeglądarkę z poziomu programu, obsługa kluczy API oraz lokalnych modeli (Ollama, LM Studio). |
 | **Pula kont i modele zapasowe** | **Jest** | Możliwość podpięcia wielu kont (np. 3 konta ChatGPT) – program sam przełączy konto po wyczerpaniu limitu. Do 8 modeli zapasowych w łańcuchu. |
 | **Sejf haseł** | **Jest** | Własny szyfrowany sejf w programie (hasła, karty, kontakty, klucze API, kody 2FA/TOTP). Agent wypełnia logowanie w przeglądarce programu, a hasła nie widzi ani w rozmowie, ani w wyniku narzędzia. Sprawdzone w oknie dla logowania; karty, kontakty i kody 2FA tylko testami. |
-| **Sejf: 1Password i Bitwarden** | **Silnik gotowy, ekran w przygotowaniu** | Program umie połączyć się z Twoim menedżerem haseł i pokazać agentom listę dozwolonych logowań (bez haseł). Okna do połączenia jeszcze nie ma. |
+| **Sejf: 1Password, Bitwarden i Proton Pass** | **Ekran jest, jeszcze nie oglądany w oknie** | Panel „konektory” na stronie Biblioteka łączy program z Twoim menedżerem haseł i pokazuje agentom listę dozwolonych logowań (bez haseł). Wymaga zainstalowanego narzędzia menedżera. |
 | **Katalog Marketplace: Agenci i Umiejętności** | **Jest** (mały katalog) | Katalog własny programu: kilka gotowych agentów i umiejętności z opisem. Umiejętność instalujesz wybranemu agentowi, a gotowy agent tworzy nowego agenta. Katalog jest mały (kilkanaście pozycji), nowy układ strony (wyróżnione, kategorie) czeka na ekran. |
 | **Katalog Marketplace: Aplikacje** | **Częściowo** | Silnik instaluje wtyczki jako lokalne narzędzia (MCP). Dane katalogu 251 wtyczek leżą poza programem (licencja), więc bez ich dodania lista jest pusta. Logowanie do wtyczek przez przeglądarkę ma silnik, ale nie ma jeszcze przycisku. |
-| **Przepływy pracy** | **Jest** (podstawy) | Rysujesz plan: wyzwalacz, kroki agenta, pytanie do Ciebie („Zezwól / Odmów”) i wiadomość do kanału. Rozgałęzienia „jeśli”, wersje przepływu, obrazy i wideo: brak. |
+| **Przepływy pracy** | **Jest** (podstawy + wersje) | Rysujesz plan: wyzwalacz, kroki agenta, pytanie do Ciebie („Zezwól / Odmów”) i wiadomość do kanału. Każdy zapis tworzy wersję; w sekcji „Wersje” widzisz listę, co się zmieniło, i przywracasz starszą (powstaje nowa wersja, więc da się cofnąć). Kroki „Prompt” i „Condition (jeśli)” zna silnik; ich edytor w przygotowaniu. Obrazy i wideo: brak. |
 | **Rutyny** | **Jest** | Agent robi zadanie o stałej porze (co N minut, codziennie, wg harmonogramu cron) albo na sygnał z zewnątrz (webhook). Zaplanowane i wykonane przebiegi widać na stronie „Harmonogram”. |
 | **Biblioteka plików** | **Częściowo** | Nowy widok plików jest w programie: zakładki „Wszystkie / Wgrane / Od agentów / Z czatów”, szukanie, filtry, sortowanie, zaznaczanie wielu plików i sprzątanie starych. Jeszcze nie oglądany w oknie testowym. Brak: przeglądania folderów komputera i miniatur. |
 | **Użycie** | **Ekran gotowy, jeszcze nie oglądany w oknie** | Raport za 7, 30, 90 i 365 dni: tokeny, tury, koszt zgłoszony przez dostawców, wykres dzienny, tabela agentów, podział wg modelu i rodzaju tokenów, obciążenie komputera i limity dostawców. Bez podziału na umiejętności. |
 | **Harmonogram** | **Ekran gotowy, jeszcze nie oglądany w oknie** | Najbliższe dni z zaplanowanymi i wykonanymi przebiegami rutyn, rutyny z zewnątrz i wstrzymane osobno, lista ostatnich uruchomień. Bez siatki miesięcznego kalendarza. |
 | **Wygląd: motyw i maskotki** | **Jest** | Ciemny (domyślny), jasny lub systemowy motyw; pływające zaokrąglone panele; 12 kształtów maskotek w 17 kolorach. Wygląd był oglądany na zrzutach testowych, poprawki po nich jeszcze nie. |
-| **Dostęp z telefonu (Mobile Connect)** | **Częściowo** | Parowanie telefonu kodem QR, dostęp w sieci domowej oraz poza domem przez Tailscale, blokada kodem PIN, powiadomienia Web Push. Czat na telefonie działa; kanały czekają na rozszerzenie. Stały link do parowania i połączenie przez chmurę celowo nie istnieją. |
-| **Komunikatory: Telegram i Slack** | **Silnik gotowy, ekran w przygotowaniu** | Most z botem Telegrama i ze Slackiem (tylko rozmowy prywatne), działa na Twoim komputerze bez serwera pośredniczącego. Okna do wpisania tokenów jeszcze nie ma. Discord wstrzymany, WhatsApp poza planem. |
+| **Dostęp z telefonu (Mobile Connect)** | **Jest** (przegląd jeszcze nie oglądany w oknie) | Parowanie telefonu kodem QR, dostęp w sieci domowej oraz poza domem przez Tailscale, blokada kodem PIN, powiadomienia Web Push. Strona pokazuje trasy (w użyciu / niedostępne z powodem) i każdy telefon z PIN-em, blokadą i powiadomieniami. Czat na telefonie działa; kanały czekają na rozszerzenie. Stały link do parowania i połączenie przez chmurę celowo nie istnieją. |
+| **Komunikatory: Telegram i Slack** | **Ekran jest, jeszcze nie oglądany w oknie** | Most z botem Telegrama i ze Slackiem (tylko rozmowy prywatne), działa na Twoim komputerze bez serwera pośredniczącego. Panel „Komunikatory” (strona Biblioteka) przyjmuje tokeny tylko do zapisu i pokazuje listę dopuszczonych rozmów. Discord wstrzymany, WhatsApp poza planem. |
 | **Computer Use (sterowanie komputerem)** | **Częściowo** | Agent potrafi klikać, pisać i robić zrzuty ekranu na Windows, zawsze po Twojej zgodzie. Ekran uprawnień i sterowanie prawdziwym pulpitem w oknie nie były jeszcze sprawdzone. |
-| **Zdalny pulpit między komputerami** | **Częściowo** | Drugi komputer może oglądać i sterować Twoim pulpitem po wpisaniu adresu i tokenu, ale za każdym razem pytamy Cię o zgodę. Jedna sesja naraz. Tryb bez nadzoru nie istnieje. Obrazu i sterowania nie sprawdzono w oknie. |
-| **Głos i mowa** | **Częściowo** | Czytanie odpowiedzi na głos (głosy Windows) i zamiana mowy na tekst modelem Whisper na Twoim komputerze, bez wysyłania dźwięku do sieci. Nie ma trybu rozmowy na żywo ani lepszych modeli. Nagrywania nie sprawdzono w oknie. |
-| **Przenoszenie agentów (Import i Transfer)** | **Silnik gotowy, ekran w przygotowaniu** | Zapis wybranych agentów do pliku .zip i wczytanie ich na innym komputerze. Okien jeszcze nie ma. |
+| **Zdalny pulpit między komputerami** | **Jest** (obraz i sterowanie nie sprawdzone w oknie) | Drugi komputer może oglądać i sterować Twoim pulpitem po wpisaniu adresu i tokenu, ale za każdym razem pytamy Cię o zgodę. Panel „Who may come in” pokazuje stan, sesje i przełącznik „Ask on this computer every time”. Jedna sesja naraz. Tryb bez nadzoru nie istnieje. |
+| **Głos i mowa** | **Jest** (nagrywanie nie sprawdzone w oknie) | Czytanie odpowiedzi na głos (głosy Windows) i zamiana mowy na tekst modelem Whisper na Twoim komputerze, bez wysyłania dźwięku do sieci. Dział „Voice” w ustawieniach pokazuje uprawnienie mikrofonu i listę tego, czego nie ma, z powodem. Nie ma trybu rozmowy na żywo ani lepszych modeli. |
+| **Przenoszenie agentów (Import i Transfer)** | **Ekran jest, jeszcze nie oglądany w oknie** | Zapis wybranych agentów do pliku .zip i wczytanie ich na innym komputerze, z podglądem przed importem. Działy „Import” i „Transfer” w ustawieniach serwera. |
 | **Ustawienia serwera (14 sekcji)** | **Częściowo** | Jedna strona z 14 działami (ogólne, osobowość, agenci, sejf, członkowie, zdalny pulpit, MCP, pamięć masowa, strony, dostawcy, import, transfer, rutyny, profile przeglądarki). Działy „Członkowie” i „Strony” mówią, że ich nie ma. |
-| **Aktualizacje programu** | **Silnik gotowy, ekran w przygotowaniu** | Tor „Stabilny / Podgląd”, pobieranie i instalacja przy zamknięciu, „Zrestartuj, gdy będę bezczynny”. Okna ustawień jeszcze nie ma. |
+| **Aktualizacje programu** | **Ekran jest, jeszcze nie oglądany w oknie** | Tor „Stabilny / Podgląd”, pobieranie i instalacja przy zamknięciu, „Zrestartuj, gdy będę bezczynny”. Dział „Updates” w oknie ustawień. |
+| **Cofnij usunięcie wątku** | **Ekran jest, jeszcze nie oglądany w oknie** | Usunięty wątek jest ukryty przez 10 minut: nad listą wątków widać wiersz „Usunięto …” z odliczaniem i przyciskiem „Cofnij”. Po 10 minutach znika na stałe. |
+| **Podagenci** | **Ekran jest, jeszcze nie oglądany w oknie** | Agent może uruchomić krótkich pomocników (do 3 naraz w wątku). W panelu wątków widzisz każdego: zadanie, stan, na bieżąco to, co napisał, i jego odpowiedź. Możesz go zatrzymać. Jego pytania trafiają jako karty do „Needs you”. |
+| **Integracje kont: GitHub, Google, Notion, Meta** | **Ekran jest, jeszcze nie oglądany w oknie** | Panel „Connect accounts” na stronie Biblioteka. Najpierw rejestrujesz aplikację w usłudze i wpisujesz jej identyfikator; potem „Connect account” otwiera przeglądarkę. Logowanie jest zaszyfrowane na tym komputerze, agenci go nie widzą. Wymaga Twojej własnej aplikacji w usłudze. |
 
 ---
 
@@ -100,6 +103,7 @@ Gdy otworzysz program po raz pierwszy, zobaczysz ekran wstępnej konfiguracji (�
    - Nad oknem rozmowy znajduje się pasek zakładek.
    - Kliknij `+`, aby zacząć zupełnie nowy wątek z tym samym agentem (bez utraty dotychczasowej rozmowy).
    - Kliknięcie prawym przyciskiem myszy na zakładce pozwala zamknąć kartę, zamknąć pozostałe lub zamknąć karty po prawej. Zamknięcie karty nie kasuje wątku – w każdej chwili możesz do niego wrócić z menu rozwijanego po prawej stronie.
+   - **Usunięcie wątku można cofnąć przez 10 minut:** nad listą wątków pojawia się wiersz „Usunięto …” z odliczaniem i przyciskiem „Cofnij”. Po odświeżeniu programu wiersz wraca, dopóki czas nie minie.
 3. **Prywatna pamięć agenta:**
    - W ustawieniach agenta możesz przejrzeć jego notatki.
    - Pamięć kluczowa („essential”) zawiera najważniejsze zasady (np. preferencje formatowania dokumentów), które agent pamięta zawsze.
@@ -153,10 +157,10 @@ Agenci często muszą zalogować się do serwisów www, aby pobrać faktury, spr
 1. **Bezpieczeństwo na pierwszym miejscu:**
    - Hasła i klucze są szyfrowane sprzętowym kluczem systemu Windows. Model AI nigdy nie ma wglądu w Twoje hasło w postaci czystego tekstu.
    - Wypełnianie logowania odbywa się bezpośrednio w zabezpieczonej przeglądarce programu.
-2. **Konektory 1Password, Bitwarden i Proton Pass** (*silnik gotowy, ekran w przygotowaniu*):
+2. **Konektory 1Password, Bitwarden i Proton Pass** (panel na stronie Biblioteka):
    - Program umie korzystać z Twojego menedżera haseł, ale nie kopiuje całego sejfu. Wskazujesz jeden specjalny folder lub magazyn (np. „Shared with COSGRAL”) i tylko logowania z niego są dla agentów widoczne.
    - Wymaga to zainstalowanego narzędzia menedżera (u 1Password to `op`, u Bitwardena `bw`). Gdy go brakuje, program powie, którego narzędzia nie znalazł, i poda stronę pobierania.
-   - Gdy ekran powstanie, zobaczysz dla każdego menedżera: stan połączenia, listę dozwolonych logowań (tytuł i strona, bez haseł) oraz przycisk rozłączenia.
+   - Dla każdego menedżera widzisz: stan połączenia, listę dozwolonych logowań (tytuł i strona, bez haseł) oraz przycisk rozłączenia.
    - Sejf nigdy nie pokazuje wartości ponownie: hasło można wpisać i zapisać, ale nie można go „podejrzeć”. To celowe.
 3. **Kody dwuskładnikowe (2FA / TOTP):**
    - Sejf generuje 6-cyfrowe kody uwierzytelniania dwuskładnikowego na żywo z bezpiecznym odliczaniem czasu.
@@ -184,8 +188,10 @@ Możesz nadzorować pracę swoich agentów ze smartfona (iPhone lub Android) bez
    - Możesz ustawić 4- lub 6-cyfrowy kod PIN na telefonie. Aplikacja wymaga podania PIN-u po 5 minutach bezczynności i od razu, gdy strona schodzi w tło, a 5 błędnych prób natychmiast odcina urządzenie.
 5. **Powiadomienia Web Push:**
    - Otrzymujesz powiadomienie na telefon tylko wtedy, gdy agent naprawdę potrzebuje Twojej decyzji (nowa karta „Needs you”).
+   - Na stronie Phone przełącznik „Send notifications to phones” włącza je na tym komputerze (domyślnie wyłączone). Przy telefonie, który zezwolił na powiadomienia, jest przycisk „Send a test notification”; ekran mówi, czy poszło, a jeśli nie, dlaczego.
+6. **Instrukcja Tailscale** jest na tej samej stronie, rozwijana: sześć kroków i trzy uwagi (np. że rozmowa idzie między Twoimi urządzeniami, nie przez cudzy serwer).
 
-### Komunikatory: Telegram i Slack (*silnik gotowy, ekran w przygotowaniu*)
+### Komunikatory: Telegram i Slack
 Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa to tylko w rozmowach prywatnych (jeden do jednego), nigdy w grupach i kanałach.
 1. **Telegram:**
    - Zakładasz bota w rozmowie z BotFather i wklejasz jego token w ustawieniach.
@@ -198,20 +204,36 @@ Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa
    - Domyślnie nie jest dopuszczony nikt. Wiadomości od nieznajomych są po cichu odrzucane.
    - Tokeny wpisujesz raz i nigdy nie są ponownie pokazywane (ani w oknie, ani agentom).
    - Błędy połączenia pokazują krótkie, stałe zdania, bez surowych komunikatów usługi.
-4. Gdy ekran powstanie, zobaczysz dla każdego komunikatora: stan („połączony”, „wymaga tokenu”, „błąd”), pola na tokeny tylko do zapisu i listę dopuszczonych rozmów. Discord jest wstrzymany, WhatsApp nie jest planowany.
+4. Na stronie Biblioteka (panel „Komunikatory”) widzisz dla każdego komunikatora: stan („połączony”, „wymaga tokenu”, „błąd”), pola na tokeny tylko do zapisu, listę dopuszczonych rozmów i listę nieznanych, które napisały (bez ich treści; „Allow” wypełnia formularz). Discord jest wstrzymany, WhatsApp nie jest planowany.
+
+### Podagenci
+1. **Podagent** to krótki pomocnik, którego uruchamia agent do jednego zadania (np. „sprawdź te liczby”). Ty go nie uruchamiasz, ale go widzisz i możesz zatrzymać.
+2. W panelu wątków (nad rozmową) jest rozwijana sekcja „Subagents: pracuje X z Y”. Każdy podagent ma: nazwę, zadanie, stan (pracuje, czeka na Ciebie, gotowy, nie udało się, zatrzymany), fragment tego, co pisze, i odpowiedź po zakończeniu.
+3. Gdy podagent czegoś potrzebuje (pytanie, zgoda), ekran mówi: „odpowiedz na karcie w Needs you”. Karta jest przy wątku agenta, który go uruchomił.
+4. W jednym wątku pracują naraz co najwyżej 3 podagenci; podagent nie uruchamia kolejnych. Przycisk „Stop” kończy go od razu.
+5. Gdy w wątku nie ma podagentów, sekcja się nie pokazuje.
+
+### Integracje kont: GitHub, Google, Notion, Meta
+1. Panel „Connect accounts” (strona Biblioteka, pod Komunikatorami) pozwala agentom używać Twojego konta w tych czterech usługach. Każda usługa to osobny serwer MCP, który włączasz agentowi tak samo jak inne.
+2. **Najpierw Ty:** w usłudze rejestrujesz własną aplikację (kroki są pod „Set up the app”) i dodajesz do niej pokazany adres zwrotny. Wpisujesz identyfikator klienta, a tam, gdzie usługa wymaga, także sekret. Sekret jest tylko do zapisu: po wysłaniu pole się czyści i nigdy nie wraca.
+3. „Connect account” otwiera przeglądarkę na stronie usługi. Program czeka 5 minut. Jeśli przeglądarka się nie otworzy, ekran pokazuje adres do otwarcia ręcznie.
+4. Stany: aplikacja nieskonfigurowana, niepołączone, czeka na przeglądarkę, połączone, logowanie nie powiodło się (z powodem), zaloguj ponownie (usługa przestała przyjmować zapisane logowanie).
+5. „Disconnect” usuwa wpis serwera MCP i zapisane logowanie. Przełącznik obok może usunąć też identyfikator klienta.
+6. Agent nigdy nie prosi o hasło ani kod w rozmowie.
 
 ### Przepływy pracy i rutyny
 1. **Przepływ** to plan na płótnie: najpierw **wyzwalacz** (Ty naciskasz „Uruchom” albo robi to rutyna), potem **kroki**: agent wykonuje polecenie, **zgoda** pokazuje Ci kartę „Zezwól / Odmów” w sekcji „Needs you”, a **wyjście** wysyła wiadomość do kanału. Tekst kroku może użyć wyniku poprzedniego kroku.
 2. Przepływ działa po jednym naraz. Gdy zamkniesz program w trakcie, ten przebieg kończy się jako nieudany, a karty zgody znikają.
-3. Czego nie ma: kroku „jeśli” (rozgałęzienie po treści), wersji przepływu, kroków obrazu i wideo oraz rysowania odręcznego na płótnie.
+3. **Wersje:** każdy zapis przepływu to nowa wersja. W sekcji „Wersje” widzisz numer, czas, powód (utworzona, zmieniona, przywrócona z wersji N) i zdanie „w porównaniu z bieżącą”. „Przywróć tę wersję” tworzy nową wersję, więc przywrócenie też można cofnąć.
+   - Czego nie ma: edytora kroków „Prompt” i „jeśli” (silnik je zna, ekran w przygotowaniu), kroków obrazu i wideo oraz rysowania odręcznego na płótnie.
 4. **Rutyna** to zadanie dla jednego agenta: co N minut, codziennie o godzinie albo według harmonogramu cron; albo po sygnale z zewnątrz (webhook, podpisany). Sekret webhooka widzisz tylko raz. Gdy program jest wyłączony, rutyny nie nadrabiają zaległości; w historii zostaje wpis „pominięto”.
 5. Zaplanowane i wykonane przebiegi rutyn pokazuje strona „Harmonogram” (opis niżej).
 
 ### Głos
 1. **Czytanie na głos:** głosy Windows, tempo od 0,5 do 2 razy, własny skrót klawiszowy.
 2. **Dyktowanie:** zamiana mowy na tekst modelem Whisper na Twoim komputerze (trzy rozmiary: najmniejszy jest najszybszy). Pobranie modelu zawsze wymaga Twojej zgody na karcie, a dźwięk nigdy nie opuszcza komputera.
-3. **Mikrofon:** ustawienia pokażą, czy system pozwala programowi nagrywać, i otworzą ustawienia prywatności Windows.
-4. Czego nie ma (program mówi to wprost, z powodem): lepszy model dyktowania „Parakeet”, dyktowanie w chmurze (wysyłałoby Twój głos), neuronowe czytanie na głos i rozmowa głosowa na żywo. Strona głosu w oknie jeszcze nie pokazuje całego przeglądu (mikrofon, lista „niedostępne”).
+3. **Mikrofon:** dział „Voice” w ustawieniach pokazuje, czy system pozwala programowi nagrywać (dozwolony, zablokowany, jeszcze nie pytano, zabroniony na tym komputerze), i przyciskiem otwiera ustawienia prywatności Windows.
+4. Czego nie ma (program mówi to wprost, z powodem): lepszy model dyktowania „Parakeet”, dyktowanie w chmurze (wysyłałoby Twój głos), neuronowe czytanie na głos i rozmowa głosowa na żywo. Ta lista jest widoczna w dziale „Voice”. Ekran nie był jeszcze oglądany w oknie.
 
 ### Zdalny pulpit
 1. Jeden komputer z Windows pokazuje swój pulpit drugiemu. W ustawieniach włączasz „gospodarza”; widzisz adres i **token** (pokazany tylko raz).
@@ -220,7 +242,7 @@ Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa
 4. Jedna sesja naraz. Przycisk „Zatrzymaj” kończy sesję od razu. Nie ma trybu bez nadzoru (zawsze ktoś musi być przy komputerze).
 5. Obrazu i sterowania nie sprawdzono jeszcze w oknie programu (testy kodu przechodzą).
 
-### Przenoszenie agentów: Import i Transfer (*silnik gotowy, ekran w przygotowaniu*)
+### Przenoszenie agentów: Import i Transfer
 1. **Transfer** to trzy kroki: (1) na starym komputerze wybierasz agentów i zapisujesz plik .zip, (2) kopiujesz plik na nowy komputer, (3) na nowym komputerze go wczytujesz.
 2. **Import** pokazuje najpierw podgląd pliku: kogo zawiera, ile skilli, wspomnień i rutyn. Nic się nie zmienia, dopóki nie potwierdzisz.
 3. Bezpieczeństwo: wczytani agenci są zawsze **nowi** (istniejący nie są nadpisywane; gdy imię jest zajęte, dostaje dopisek „(imported 2)”). Rutyny z pliku wracają **wstrzymane**, żebyś je sam włączył.
@@ -230,8 +252,8 @@ Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa
 ### Ustawienia serwera
 Jedna strona z 14 działami: ogólne, osobowość, agenci, sejf, członkowie, zdalny pulpit, MCP, pamięć masowa, strony, dostawcy, import, transfer, rutyny, profile przeglądarki. Większość działów pokazuje dane z miejsc opisanych wyżej. **Członkowie** i **Strony** mówią wprost, że w tej wersji ich nie ma (program działa na jednym komputerze, bez hostingu stron).
 
-### Aktualizacje programu (*silnik gotowy, ekran w przygotowaniu*)
-Wybierasz tor **Stabilny** albo **Podgląd** (wersje przedpremierowe), czy program ma sam sprawdzać, pobierać i instalować przy zamknięciu, oraz przycisk **„Zrestartuj, gdy będę bezczynny”**: program czeka, aż żaden agent nie pracuje, i dopiero wtedy się restartuje. Aktualizacje działają tylko w zainstalowanej wersji, nie w trybie uruchamiania z folderu.
+### Aktualizacje programu
+Wybierasz tor **Stabilny** albo **Podgląd** (wersje przedpremierowe), czy program ma sam sprawdzać, pobierać i instalować przy zamknięciu, oraz przycisk **„Zrestartuj, gdy będę bezczynny”**: program czeka, aż żaden agent nie pracuje, i dopiero wtedy się restartuje. Dział „Updates” w oknie ustawień pokazuje wersję i stan. Aktualizacje działają tylko w zainstalowanej wersji, nie w trybie uruchamiania z folderu (wtedy ekran mówi dlaczego).
 
 ### Biblioteka plików
 Biblioteka zbiera pliki, które wgrałeś, które zapisali agenci i które przyszły w czatach.

@@ -3,13 +3,13 @@ import type {
   MarketplaceItem,
   MarketplaceItemDetails,
   MarketplaceItemKind,
-  MarketplaceSuggestion,
 } from "@openbot/contracts/ipc";
 import { MARKETPLACE_CATEGORIES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
+import { MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
-import { Button, Input, NativeSelect } from "./ui";
+import { Button, NativeSelect } from "./ui";
 
 type Person = { id: string; name: string };
 export function MarketplaceDetail(props: {
@@ -87,7 +87,6 @@ export function MarketplaceDetail(props: {
 export function MarketplacePage(props: { bots: Person[] }) {
   const [items, setItems] = createSignal<MarketplaceItem[]>([]);
   const [details, setDetails] = createSignal<MarketplaceItemDetails>();
-  const [suggestions, setSuggestions] = createSignal<MarketplaceSuggestion[]>([]);
   const [query, setQuery] = createSignal("");
   const [kind, setKind] = createSignal<MarketplaceItemKind | "">("");
   const [category, setCategory] = createSignal<MarketplaceCategory | "">("");
@@ -100,12 +99,20 @@ export function MarketplacePage(props: { bots: Person[] }) {
   function selectTab(next: "apps" | "agents" | "skills") {
     setTab(next);
     setDetails(undefined);
-    if (next === "agents") setKind("agent");
-    else if (next === "skills") setKind("skill");
-    if (next !== "apps") void refresh();
+    const nextKind = next === "agents" ? "agent" : next === "skills" ? "skill" : kind();
+    setKind(nextKind);
+    if (next !== "apps") void refresh({ kind: nextKind });
   }
   let serial = 0;
-  async function refresh() {
+  let typing: ReturnType<typeof setTimeout> | undefined;
+  // Search as you type: wait a moment after the last key, then ask with the text that was typed.
+  function queueSearch(value: string) {
+    clearTimeout(typing);
+    typing = setTimeout(() => void refresh({ query: value }), 250);
+  }
+  async function refresh(
+    patch: { query?: string; category?: MarketplaceCategory | ""; kind?: MarketplaceItemKind | "" } = {},
+  ) {
     const api = window.openbot.marketplace;
     if (!api) {
       setError("Marketplace is unavailable.");
@@ -113,17 +120,15 @@ export function MarketplacePage(props: { bots: Person[] }) {
     }
     const n = ++serial;
     try {
-      const [list, suggested] = await Promise.all([
-        api.list({
-          query: query(),
-          ...(kind() ? { kind: kind() || undefined } : {}),
-          ...(category() ? { category: category() || undefined } : {}),
-        }),
-        api.suggestions(botId() ? { botId: botId() } : {}),
-      ]);
+      const chosenKind = patch.kind ?? kind();
+      const chosenCategory = patch.category ?? category();
+      const list = await api.list({
+        query: patch.query ?? query(),
+        ...(chosenKind ? { kind: chosenKind } : {}),
+        ...(chosenCategory ? { category: chosenCategory } : {}),
+      });
       if (n !== serial) return;
       setItems(list);
-      setSuggestions(suggested);
       setError("");
       const current = details();
       if (current) setDetails(await api.get({ itemId: current.item.id }));
@@ -138,8 +143,8 @@ export function MarketplacePage(props: { bots: Person[] }) {
       setError(String(e));
     }
   }
-  async function install() {
-    const item = details()?.item;
+  async function install(chosen?: MarketplaceItem) {
+    const item = chosen ?? details()?.item;
     const api = window.openbot.marketplace;
     if (!item || !api) return;
     try {
@@ -172,6 +177,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
     });
     return () => {
       serial++;
+      clearTimeout(typing);
       off();
     };
   });
@@ -210,51 +216,23 @@ export function MarketplacePage(props: { bots: Person[] }) {
           <p role="alert">{error()}</p>
         </Show>
         <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
-        <form
-          class="marketplace-filters"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void refresh();
+        <MarketplaceGallery
+          items={items()}
+          query={query()}
+          category={category()}
+          selectedId={details()?.item.id ?? ""}
+          onQuery={(value) => {
+            setQuery(value);
+            queueSearch(value);
           }}
-        >
-          <label class="marketplace-search">
-            Search <Input unstyled type="search" value={query()} onInput={(e) => setQuery(e.currentTarget.value)} />
-          </label>
-          <Show when={!hasApps}>
-            <label>
-              Kind{" "}
-              <NativeSelect
-                unstyled
-                value={kind()}
-                onChange={(e) => {
-                  const v = e.currentTarget.value;
-                  if (v === "" || v === "skill" || v === "agent") setKind(v);
-                }}
-              >
-                <option value="">All</option>
-                <option value="skill">Skills</option>
-                <option value="agent">Agents</option>
-              </NativeSelect>
-            </label>
-          </Show>
-          <label>
-            Category{" "}
-            <NativeSelect
-              unstyled
-              value={category()}
-              onChange={(e) => {
-                const found = MARKETPLACE_CATEGORIES.find((c) => c === e.currentTarget.value);
-                setCategory(found ?? "");
-              }}
-            >
-              <option value="">All</option>
-              <For each={MARKETPLACE_CATEGORIES}>{(c) => <option value={c}>{c}</option>}</For>
-            </NativeSelect>
-          </label>
-          <Button unstyled type="submit">
-            Search
-          </Button>
-        </form>
+          onCategory={(value) => {
+            setCategory(value);
+            void refresh({ category: value });
+          }}
+          onSearch={() => void refresh()}
+          onOpen={(item) => void choose(item)}
+          onInstall={(item) => void install(item)}
+        />
         <Show when={details()}>
           {(value) => (
             <MarketplaceDetail
@@ -269,34 +247,6 @@ export function MarketplacePage(props: { bots: Person[] }) {
               onUninstall={(id) => void uninstall(id)}
             />
           )}
-        </Show>
-        <h2>Suggestions</h2>
-        <ul class="marketplace-list">
-          <For each={suggestions()}>
-            {(suggestion) => (
-              <li>
-                <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(suggestion.item)}>
-                  <strong>{suggestion.item.title}</strong>
-                  <small>{suggestion.reason}</small>
-                </Button>
-              </li>
-            )}
-          </For>
-        </ul>
-        <h2>Catalog</h2>
-        <Show when={items().length} fallback={<p>No matching items.</p>}>
-          <ul class="marketplace-list">
-            <For each={items()}>
-              {(item) => (
-                <li>
-                  <Button unstyled type="button" class="marketplace-item" onClick={() => void choose(item)}>
-                    <strong>{item.title}</strong>
-                    <small>{item.summary}</small>
-                  </Button>
-                </li>
-              )}
-            </For>
-          </ul>
         </Show>
       </Show>
     </main>

@@ -14,7 +14,9 @@ import {
   workflowProblems,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { WorkflowPreviewCanvas } from "./WorkflowPreviewCanvas";
 import { WorkflowVersionsPanel } from "./WorkflowVersionsPanel";
 
 function routineId(node: Extract<WorkflowNode, { type: "trigger" }>): string {
@@ -493,6 +495,7 @@ export function WorkflowsPage() {
   const [selected, setSelected] = createSignal<string>("");
   const [name, setName] = createSignal("New workflow");
   const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
+  const [preview, setPreview] = createSignal<{ number: number; graph: WorkflowGraph } | null>(null);
   const [runs, setRuns] = createSignal<WorkflowRun[]>([]);
   const [input, setInput] = createSignal("");
   const [error, setError] = createSignal("");
@@ -530,6 +533,7 @@ export function WorkflowsPage() {
   }
   function choose(item: Workflow) {
     setSelected(item.id);
+    setPreview(null);
     setName(item.name);
     setGraph({ nodes: item.nodes, edges: item.edges });
     void window.openbot.workflows
@@ -642,9 +646,22 @@ export function WorkflowsPage() {
         >
           Run now
         </Button>
+        <Show when={preview()}>
+          {(shown) => (
+            <WorkflowPreviewCanvas
+              graph={shown().graph}
+              label={t("Preview of version {number}", { number: shown().number })}
+            />
+          )}
+        </Show>
         <WorkflowVersionsPanel
           workflowId={selected()}
-          onRestored={(workflow) => setGraph({ nodes: workflow.nodes, edges: workflow.edges })}
+          previewNumber={preview()?.number}
+          onPreview={setPreview}
+          onRestored={(workflow) => {
+            setPreview(null);
+            setGraph({ nodes: workflow.nodes, edges: workflow.edges });
+          }}
         />
         <h2>Run history</h2>
         <ul>

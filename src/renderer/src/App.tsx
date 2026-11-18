@@ -53,6 +53,7 @@ import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
+import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { JoinServerDialog } from "./components/JoinServerDialog";
 import { LibraryFilesView } from "./components/LibraryFilesView";
 import { LibraryPanel } from "./components/LibraryPanel";
@@ -2151,6 +2152,7 @@ export function App() {
                   <VaultPanel />
                   <VaultConnectorsPanel />
                   <MessengersPanel />
+                  <IntegrationsPanel />
                   <TablesPanel />
                   <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
                     <LibraryFilesView />

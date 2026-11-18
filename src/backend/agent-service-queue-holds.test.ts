@@ -5,7 +5,13 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AgentEvent, type BrowserControlState, type BrowserTab, QUEUE_HOLD_REASONS, type QueueSnapshot } from "@openbot/contracts/ipc";
+import {
+  type AgentEvent,
+  type BrowserControlState,
+  type BrowserTab,
+  QUEUE_HOLD_REASONS,
+  type QueueSnapshot,
+} from "@openbot/contracts/ipc";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";

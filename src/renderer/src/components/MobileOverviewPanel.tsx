@@ -1,7 +1,12 @@
-import { type MobileConnectOverview, type MobileConnectPhone, type PhoneReach } from "@openbot/contracts/ipc";
+import type {
+  MobileConnectOverview,
+  MobileConnectPhone,
+  PhoneReach,
+  PhoneTailscaleGuide,
+} from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { Badge, Button, Card, Heading, Text } from "./ui";
+import { Badge, Button, Card, Heading, Switch, Text } from "./ui";
 
 const REACH_LABELS: Record<PhoneReach, string> = {
   off: "Phones cannot connect: Mobile Connect is off.",
@@ -16,7 +21,13 @@ function when(value: string | null): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
-function PhoneRow(props: { phone: MobileConnectPhone }) {
+function PhoneRow(props: {
+  phone: MobileConnectPhone;
+  canTest: boolean;
+  busy: boolean;
+  testResult: string | undefined;
+  onTest: () => void;
+}) {
   const phone = () => props.phone;
   return (
     <li class="mobile-overview-phone">
@@ -55,6 +66,27 @@ function PhoneRow(props: { phone: MobileConnectPhone }) {
           {t("Last notification: {when}", { when: when(phone().lastPushAt) })}
         </Text>
       </Show>
+      <Show when={props.canTest}>
+        <div class="mobile-overview-badges">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            aria-label={t("Send a test notification to {name}", { name: phone().name })}
+            disabled={props.busy}
+            onClick={props.onTest}
+          >
+            {t("Send a test notification")}
+          </Button>
+          <Show when={props.testResult}>
+            {(result) => (
+              <Text as="span" tone="muted" variant="caption" role="status">
+                {result()}
+              </Text>
+            )}
+          </Show>
+        </div>
+      </Show>
     </li>
   );
 }
@@ -69,6 +101,10 @@ export function MobileOverviewPanel() {
   const [overview, setOverview] = createSignal<MobileConnectOverview | null>(null);
   const [loaded, setLoaded] = createSignal(false);
   const [error, setError] = createSignal("");
+  const phoneApi = untrack(() => window.openbot?.phone);
+  const [guide, setGuide] = createSignal<PhoneTailscaleGuide | null>(null);
+  const [pushBusy, setPushBusy] = createSignal(false);
+  const [testResults, setTestResults] = createSignal<Record<string, string>>({});
 
   // The newest read wins: an older read that finishes late is dropped.
   let serial = 0;
@@ -88,8 +124,44 @@ export function MobileOverviewPanel() {
     }
   }
 
+  async function setPush(enabled: boolean) {
+    if (!phoneApi || pushBusy()) return;
+    setPushBusy(true);
+    setError("");
+    try {
+      await phoneApi.setPushEnabled({ enabled });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("Could not change the notifications."));
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function testPush(deviceId: string) {
+    if (!phoneApi || pushBusy()) return;
+    setPushBusy(true);
+    setError("");
+    try {
+      const result = await phoneApi.sendTestPush({ deviceId });
+      setTestResults({
+        ...testResults(),
+        [deviceId]: result.sent ? t("The test notification was sent.") : t(result.reason ?? "It was not sent."),
+      });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("Could not send the test notification."));
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   onSettled(() => {
     void load();
+    void phoneApi
+      ?.getTailscaleGuide()
+      .then(setGuide)
+      .catch(() => undefined);
     const off = window.openbot?.agent?.onEvent((event) => {
       if (
         event.type === "mobile-changed" ||
@@ -144,10 +216,7 @@ export function MobileOverviewPanel() {
                               )}
                             </Show>
                           </div>
-                          <Show
-                            when={route.available}
-                            fallback={<Badge tone="neutral">{t("Not available")}</Badge>}
-                          >
+                          <Show when={route.available} fallback={<Badge tone="neutral">{t("Not available")}</Badge>}>
                             <Show when={route.selected}>
                               <Badge tone="success" dot>
                                 {t("In use")}
@@ -163,18 +232,44 @@ export function MobileOverviewPanel() {
                       {t("Tailscale addresses: {urls}", { urls: view().phone.tailscaleUrls.join(", ") })}
                     </Text>
                   </Show>
+                  <Show when={guide()}>
+                    {(steps) => (
+                      <details class="messenger-steps">
+                        <summary>{t(steps().title)}</summary>
+                        <ol>
+                          <For each={steps().steps}>{(step) => <li>{t(step)}</li>}</For>
+                        </ol>
+                        <For each={steps().notes}>{(note) => <p>{t(note)}</p>}</For>
+                      </details>
+                    )}
+                  </Show>
                 </Card>
 
                 <Card class="mobile-section" role="region" aria-label={t("Your phones")}>
                   <Heading as="h2" size="md">
                     {t("Your phones")}
                   </Heading>
-                  <Text as="p" tone="muted" variant="caption">
-                    {view().phone.push.enabled
-                      ? t("Notifications from this computer are on.")
-                      : t("Notifications from this computer are off.")}
-                    {view().phone.push.unavailableReason ? ` ${t(view().phone.push.unavailableReason ?? "")}` : ""}
-                  </Text>
+                  <Show
+                    when={phoneApi}
+                    fallback={
+                      <Text as="p" tone="muted" variant="caption">
+                        {view().phone.push.enabled
+                          ? t("Notifications from this computer are on.")
+                          : t("Notifications from this computer are off.")}
+                      </Text>
+                    }
+                  >
+                    <Switch
+                      checked={view().phone.push.enabled}
+                      disabled={pushBusy()}
+                      onChange={(checked) => void setPush(checked)}
+                      label={t("Send notifications to phones")}
+                      description={t(
+                        view().phone.push.unavailableReason ??
+                          "A phone is told only when an agent waits for you. It says nothing else.",
+                      )}
+                    />
+                  </Show>
                   <Show
                     when={view().phones.length > 0}
                     fallback={
@@ -184,7 +279,17 @@ export function MobileOverviewPanel() {
                     }
                   >
                     <ul class="mobile-overview-phones">
-                      <For each={view().phones}>{(phone) => <PhoneRow phone={phone} />}</For>
+                      <For each={view().phones}>
+                        {(phone) => (
+                          <PhoneRow
+                            phone={phone}
+                            canTest={Boolean(phoneApi) && phone.pushSubscribed}
+                            busy={pushBusy()}
+                            testResult={testResults()[phone.id]}
+                            onTest={() => void testPush(phone.id)}
+                          />
+                        )}
+                      </For>
                     </ul>
                   </Show>
                 </Card>

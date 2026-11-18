@@ -1,5 +1,5 @@
 import type { AgentEvent } from "@openbot/contracts/ipc";
-import { cleanup, fireEvent, render, screen, within } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createMockMobileConnect, type MockMobileConnect } from "../../stories/mock-mobile-connect";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
@@ -11,6 +11,7 @@ function install(withApi = true) {
   Object.assign(window, {
     openbot: {
       mobileConnect: withApi ? mock : undefined,
+      phone: withApi ? mock.phone : undefined,
       agent: {
         onEvent: (listener: (event: AgentEvent) => void) => {
           listeners.push(listener);
@@ -46,7 +47,7 @@ it("shows the routes: the one in use, and the cloud one as not available with it
   expect(list.getByText(/It would route the conversation through a server\./)).toBeInTheDocument();
 });
 
-it("lists each phone with its PIN, lock and notifications", async () => {
+it("lists each phone with its PIN and notifications", async () => {
   mock.simulate.pair("phone-2", "Galaxy (demo)");
   mock.phone.simulate.setPin("phone-2");
   mock.phone.simulate.allowNotifications("phone-2");
@@ -56,7 +57,7 @@ it("lists each phone with its PIN, lock and notifications", async () => {
   const galaxy = (await phones.findByText("Galaxy (demo)")).closest("li");
   if (!(galaxy instanceof HTMLElement)) throw new Error("no phone row");
   expect(within(galaxy).getByText("PIN set")).toBeInTheDocument();
-  expect(within(galaxy).getByText("Locked")).toBeInTheDocument();
+  expect(within(galaxy).queryByText("Locked")).not.toBeInTheDocument();
   expect(within(galaxy).getByText("Notifications on")).toBeInTheDocument();
   const pixel = phones.getByText("Pixel (demo)").closest("li");
   if (!(pixel instanceof HTMLElement)) throw new Error("no phone row");
@@ -69,7 +70,9 @@ it("lists what this version does not offer, each with its reason", async () => {
   await screen.findByRole("region", { name: "Not available in this version" });
   const list = region("Not available in this version");
   expect(list.getByText("Permanent link")).toBeInTheDocument();
-  expect(list.getByText(/A link that never expires would let anyone who finds it into your agents\./)).toBeInTheDocument();
+  expect(
+    list.getByText(/A link that never expires would let anyone who finds it into your agents\./),
+  ).toBeInTheDocument();
   expect(list.getAllByText("Not available").length).toBe(2);
 });
 
@@ -83,7 +86,9 @@ it("reads the page again when a phone pairs or the route changes", async () => {
   expect(getOverview.mock.calls.length).toBeGreaterThan(before);
   mock.simulate.setRoute("loopback");
   const routes = await screen.findByRole("region", { name: "How phones reach this computer" });
-  expect(await within(routes).findByText("Only a browser on this computer can open the phone page.")).toBeInTheDocument();
+  expect(
+    await within(routes).findByText("Only a browser on this computer can open the phone page."),
+  ).toBeInTheDocument();
 });
 
 it("shows an error with Retry when the page cannot be read, and nothing without the API", async () => {
@@ -104,4 +109,33 @@ it("says there are no phones when none is paired", async () => {
   getOverview.mockResolvedValue({ ...real, phones: [] });
   render(() => <MobileOverviewPanel />);
   expect(await screen.findByText(/No phones yet\./)).toBeInTheDocument();
+});
+
+it("the notifications switch changes the push setting of this computer", async () => {
+  const setPush = vi.spyOn(mock.phone, "setPushEnabled");
+  render(() => <MobileOverviewPanel />);
+  const toggle = await screen.findByRole("switch", { name: /Send notifications to phones/ });
+  expect(toggle).not.toBeChecked();
+  await fireEvent.click(toggle);
+  await waitFor(() => expect(setPush).toHaveBeenCalledWith({ enabled: true }));
+  await waitFor(() => expect(screen.getByRole("switch", { name: /Send notifications to phones/ })).toBeChecked());
+});
+
+it("a phone that allowed notifications gets a test notification on request, and the result is said", async () => {
+  mock.simulate.pair("phone-2", "Galaxy (demo)");
+  mock.phone.simulate.allowNotifications("phone-2");
+  await mock.phone.setPushEnabled({ enabled: true });
+  render(() => <MobileOverviewPanel />);
+  await screen.findByRole("region", { name: "Your phones" });
+  await region("Your phones").findByText("Galaxy (demo)");
+  expect(screen.queryByRole("button", { name: "Send a test notification to Pixel (demo)" })).not.toBeInTheDocument();
+  await fireEvent.click(await screen.findByRole("button", { name: "Send a test notification to Galaxy (demo)" }));
+  expect(await screen.findByText("The test notification was sent.")).toBeInTheDocument();
+});
+
+it("shows the Tailscale steps for reaching the computer away from home", async () => {
+  render(() => <MobileOverviewPanel />);
+  const summary = await screen.findByText("Reach this computer from your phone away from home (Tailscale)");
+  expect(summary).toBeInTheDocument();
+  expect(screen.getByText(/Install Tailscale on this computer and on your phone/)).toBeInTheDocument();
 });
