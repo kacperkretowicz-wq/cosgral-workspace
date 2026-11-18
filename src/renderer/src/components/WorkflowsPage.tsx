@@ -7,6 +7,7 @@ import type {
   WorkflowRun,
 } from "@openbot/contracts/ipc";
 import {
+  describeWorkflowCondition,
   WORKFLOW_CONDITION_OPERATOR_LABELS,
   WORKFLOW_CONDITION_OPERATORS,
   WORKFLOW_EDGE_KINDS,
@@ -15,7 +16,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
-import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
 import "../styles/workflow-editor.css";
 import { WorkflowPreviewCanvas } from "./WorkflowPreviewCanvas";
 import { WorkflowVersionsPanel } from "./WorkflowVersionsPanel";
@@ -37,8 +38,18 @@ const PATH_LABELS: Record<WorkflowEdgeKind, string> = {
   no: "No",
 };
 
-const NODE_WIDTH = 240;
+const NODE_WIDTH = 260;
 const PORT_Y = 28;
+
+function nodePreview(node: WorkflowNode): string {
+  if (node.type === "prompt") {
+    const text = node.text.trim();
+    if (!text) return t("Empty prompt — type the fixed text for the next step.");
+    return text.length > 96 ? `${text.slice(0, 93)}…` : text;
+  }
+  if (node.type === "condition") return describeWorkflowCondition(node);
+  return "";
+}
 
 const PALETTE: ReadonlyArray<{ type: WorkflowNodeType; label: string }> = [
   { type: "trigger", label: "Add trigger" },
@@ -274,6 +285,13 @@ export function WorkflowCanvas(
               >
                 <span class="sr-only">{t("Connect by drag")}</span>
               </Button>
+              <Show when={nodePreview(node)}>
+                {(preview) => (
+                  <p class="workflow-node-preview" data-workflow-preview={node.type}>
+                    {preview()}
+                  </p>
+                )}
+              </Show>
               <label>
                 {t("Title")}{" "}
                 <Input value={node.title} onInput={(e) => update({ ...node, title: e.currentTarget.value })} />
@@ -392,13 +410,7 @@ export function WorkflowCanvas(
                   </label>
                 )}
               </Show>
-              <Show
-                when={
-                  node.type === "approval" || node.type === "channel-output" || node.type === "prompt"
-                    ? node
-                    : undefined
-                }
-              >
+              <Show when={node.type === "approval" || node.type === "channel-output" ? node : undefined}>
                 {(textNode) => (
                   <label>
                     {t("Text")}{" "}
@@ -409,18 +421,45 @@ export function WorkflowCanvas(
                   </label>
                 )}
               </Show>
+              <Show when={node.type === "prompt" ? node : undefined}>
+                {(prompt) => (
+                  <div class="workflow-field-block">
+                    <label>
+                      {t("Prompt text")}{" "}
+                      <Textarea
+                        class="workflow-prompt-text"
+                        rows={4}
+                        value={prompt().text}
+                        onInput={(e) => update({ ...prompt(), text: e.currentTarget.value })}
+                        aria-describedby={`prompt-hint-${prompt().id}`}
+                      />
+                    </label>
+                    <p class="workflow-field-hint" id={`prompt-hint-${prompt().id}`}>
+                      {t("Fixed text passed to the next step. No model call.")}
+                    </p>
+                  </div>
+                )}
+              </Show>
               <Show when={node.type === "condition" ? node : undefined}>
                 {(condition) => (
                   <>
+                    <div class="workflow-field-block">
+                      <label>
+                        {t("Subject (text to test)")}{" "}
+                        <Textarea
+                          class="workflow-condition-subject"
+                          rows={2}
+                          value={condition().subject}
+                          onInput={(e) => update({ ...condition(), subject: e.currentTarget.value })}
+                          aria-describedby={`condition-hint-${condition().id}`}
+                        />
+                      </label>
+                      <p class="workflow-field-hint" id={`condition-hint-${condition().id}`}>
+                        {t("Usually {{previous}} — the output of the step before this one.")}
+                      </p>
+                    </div>
                     <label>
-                      {t("Check")}{" "}
-                      <Textarea
-                        value={condition().subject}
-                        onInput={(e) => update({ ...condition(), subject: e.currentTarget.value })}
-                      />
-                    </label>
-                    <label>
-                      {t("Test")}{" "}
+                      {t("Operator")}{" "}
                       <NativeSelect
                         value={condition().operator}
                         onChange={(e) => {
@@ -437,13 +476,21 @@ export function WorkflowCanvas(
                     </label>
                     <Show when={workflowOperatorNeedsValue(condition().operator)}>
                       <label>
-                        {t("Value")}{" "}
+                        {t("Compare with")}{" "}
                         <Input
                           value={condition().value}
                           onInput={(e) => update({ ...condition(), value: e.currentTarget.value })}
                         />
                       </label>
                     </Show>
+                    <Switch
+                      label={t("Match case")}
+                      checked={condition().caseSensitive}
+                      onChange={(caseSensitive) => update({ ...condition(), caseSensitive })}
+                    />
+                    <p class="workflow-condition-paths" role="note">
+                      {t("Connect Yes when the test passes, No when it fails.")}
+                    </p>
                   </>
                 )}
               </Show>
