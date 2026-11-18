@@ -20,7 +20,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 10. [zrobione: 21ae5669d] Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
 11. [zrobione: edbd5db1e] Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
 
-12. [w toku: UI, 22:00] Appearance: przełącznik Unread first (BE-AC, silnik gotowy).
+12. [zrobione: 0e4685b6f] Appearance: przełącznik Unread first (BE-AC, silnik gotowy).
 
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
