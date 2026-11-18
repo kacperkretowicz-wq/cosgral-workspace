@@ -63,15 +63,15 @@ export function LibraryFilesView() {
   const [preview, setPreview] = createSignal<LibraryCleanupResult | null>(null);
   let serial = 0;
 
-  async function refresh() {
+  async function refresh(patch: { origin?: OriginFilter; kind?: LibraryKind | ""; sort?: LibrarySort } = {}) {
     if (!view) return;
     const n = ++serial;
     try {
-      const chosenKind = kind();
-      const chosenOrigin = origin();
+      const chosenKind = patch.kind ?? kind();
+      const chosenOrigin = patch.origin ?? origin();
       const next = await view.page({
         query: query().trim(),
-        sort: sort(),
+        sort: patch.sort ?? sort(),
         ...(chosenOrigin !== "all" ? { origin: chosenOrigin } : {}),
         ...(chosenKind ? { kind: chosenKind } : {}),
       });
@@ -166,7 +166,7 @@ export function LibraryFilesView() {
                 aria-current={origin() === item.id ? "page" : undefined}
                 onClick={() => {
                   setOrigin(item.id);
-                  void refresh();
+                  void refresh({ origin: item.id });
                 }}
               >
                 {t(item.label)} <span class="library-count">{countOf(page()?.counts, item.id)}</span>
@@ -193,8 +193,9 @@ export function LibraryFilesView() {
             aria-label={t("Type")}
             value={kind()}
             onChange={(event) => {
-              setKind(pickKind(event.currentTarget.value));
-              void refresh();
+              const picked = pickKind(event.currentTarget.value);
+              setKind(picked);
+              void refresh({ kind: picked });
             }}
           >
             <option value="">{t("All types")}</option>
@@ -204,8 +205,9 @@ export function LibraryFilesView() {
             aria-label={t("Sort")}
             value={sort()}
             onChange={(event) => {
-              setSort(pickSort(event.currentTarget.value));
-              void refresh();
+              const picked = pickSort(event.currentTarget.value);
+              setSort(picked);
+              void refresh({ sort: picked });
             }}
           >
             <For each={LIBRARY_SORTS}>{(item) => <option value={item}>{t(SORT_LABELS[item])}</option>}</For>

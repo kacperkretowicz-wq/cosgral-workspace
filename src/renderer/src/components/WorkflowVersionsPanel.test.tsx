@@ -37,7 +37,8 @@ it("lists the versions and marks the current one", async () => {
 it("restores an older version through the contract", async () => {
   const first = (await mock.api.list())[0];
   if (!first) throw new Error("no seeded workflow");
-  await mock.api.update({ workflowId: first.id, name: first.name, nodes: first.nodes.slice(0, 1), edges: [] });
+  const edited = first.nodes.map((node) => (node.type === "agent" ? { ...node, prompt: `${node.prompt} (v2)` } : node));
+  await mock.api.update({ workflowId: first.id, name: first.name, nodes: edited, edges: first.edges });
   const restore = vi.spyOn(mock.api, "restoreVersion");
   render(() => <WorkflowVersionsPanel workflowId={first.id} />);
   const buttons = await screen.findAllByRole("button", { name: "Restore this version" });

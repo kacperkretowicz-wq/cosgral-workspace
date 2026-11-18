@@ -53,12 +53,12 @@ export function PluginAppsPanel() {
   const [custom, setCustom] = createSignal<CustomForm>({ name: "", transport: "http", target: "" });
   let serial = 0;
 
-  async function refresh() {
+  async function refresh(patch: { category?: PluginCategory | ""; filter?: Filter } = {}) {
     if (!api) return;
     const n = ++serial;
     try {
-      const chosenCategory = category();
-      const chosenFilter = filter();
+      const chosenCategory = patch.category ?? category();
+      const chosenFilter = patch.filter ?? filter();
       const next = await api.list({
         query: query(),
         ...(chosenCategory ? { category: chosenCategory } : {}),
@@ -137,8 +137,9 @@ export function PluginAppsPanel() {
             aria-label={t("Category")}
             value={category()}
             onChange={(event) => {
-              setCategory(pickCategory(event.currentTarget.value));
-              void refresh();
+              const picked = pickCategory(event.currentTarget.value);
+              setCategory(picked);
+              void refresh({ category: picked });
             }}
           >
             <option value="">{t("All categories")}</option>
@@ -150,8 +151,9 @@ export function PluginAppsPanel() {
             aria-label={t("Show")}
             value={filter()}
             onChange={(event) => {
-              setFilter(pickFilter(event.currentTarget.value));
-              void refresh();
+              const picked = pickFilter(event.currentTarget.value);
+              setFilter(picked);
+              void refresh({ filter: picked });
             }}
           >
             <For each={FILTERS}>{(item) => <option value={item.id}>{t(item.label)}</option>}</For>

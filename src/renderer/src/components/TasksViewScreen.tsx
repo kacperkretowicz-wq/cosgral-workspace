@@ -65,13 +65,13 @@ export function TasksViewScreen(props: {
   const [busy, setBusy] = createSignal(false);
   let serial = 0;
 
-  async function load() {
+  async function load(patch: { scope?: TasksViewScope; state?: ChannelTaskState | "" } = {}) {
     if (!view) return;
     const n = ++serial;
     try {
-      const chosen = state();
+      const chosen = patch.state ?? state();
       const next = await view.list({
-        scope: scope(),
+        scope: patch.scope ?? scope(),
         query: query().trim(),
         ...(chosen ? { states: [chosen] } : {}),
       });
@@ -126,10 +126,11 @@ export function TasksViewScreen(props: {
     }
   }
 
-  const choose = (next: () => void) => {
-    next();
+  const choose = (patch: { scope?: TasksViewScope; state?: ChannelTaskState | "" }) => {
+    if (patch.scope !== undefined) setScope(patch.scope);
+    if (patch.state !== undefined) setState(patch.state);
     setDetail(null);
-    void load();
+    void load(patch);
   };
 
   return (
@@ -149,7 +150,7 @@ export function TasksViewScreen(props: {
             type="button"
             variant="ghost"
             aria-current={scope() === "active" ? "page" : undefined}
-            onClick={() => choose(() => setScope("active"))}
+            onClick={() => choose({ scope: "active" })}
           >
             {t("Active")} <span class="tasks-count">{page()?.counts.active ?? 0}</span>
           </Button>
@@ -157,7 +158,7 @@ export function TasksViewScreen(props: {
             type="button"
             variant="ghost"
             aria-current={scope() === "archived" ? "page" : undefined}
-            onClick={() => choose(() => setScope("archived"))}
+            onClick={() => choose({ scope: "archived" })}
           >
             {t("Archived")} <span class="tasks-count">{page()?.counts.archived ?? 0}</span>
           </Button>
@@ -169,7 +170,7 @@ export function TasksViewScreen(props: {
             size="sm"
             variant="secondary"
             aria-pressed={state() === "" ? "true" : "false"}
-            onClick={() => choose(() => setState(""))}
+            onClick={() => choose({ state: "" })}
           >
             {t("All")}
           </Button>
@@ -181,7 +182,7 @@ export function TasksViewScreen(props: {
                   size="sm"
                   variant="secondary"
                   aria-pressed={state() === item ? "true" : "false"}
-                  onClick={() => choose(() => setState(item))}
+                  onClick={() => choose({ state: item })}
                 >
                   {t(STATE_VIEW[item].label)} <span class="tasks-count">{page()?.counts.byState[item] ?? 0}</span>
                 </Button>
