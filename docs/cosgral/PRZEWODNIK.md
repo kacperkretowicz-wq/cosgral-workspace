@@ -296,8 +296,8 @@ W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy
 
 | Ekran | Gdzie kliknąć | Co zobaczysz | Czego potrzeba |
 |---|---|---|---|
-| **Aktualizacje** | Zębatka → **Aktualizacje** (Updates) | Wersja i stan, tor Stabilny/Podgląd, „Check for updates”, automatyczne sprawdzanie, „Restart when idle” | Nic. W programie uruchomionym z folderu ekran mówi, że aktualizacje tu nie działają |
-| **Głos** | Zębatka → **Głos** (Voice) | Uprawnienie mikrofonu z przyciskiem do ustawień Windows, ustawienia czytania i dyktowania, lista „niedostępne w tej wersji” | Nic. Pobranie modelu dyktowania pyta o zgodę |
+| **Aktualizacje** | Zębatka na pasku stron → ekran „Settings”, przewiń do sekcji **Updates** (po „Application settings” i „Theme”) | Wersja i stan, tor Stabilny/Podgląd, „Check for updates”, automatyczne sprawdzanie, „Restart when idle” | Nic. W programie uruchomionym z folderu ekran mówi, że aktualizacje tu nie działają |
+| **Głos** | Zębatka → ekran „Settings”, przewiń do sekcji **Voice** (pod Updates) | Uprawnienie mikrofonu z przyciskiem do ustawień Windows, ustawienia czytania i dyktowania, lista „niedostępne w tej wersji” | Nic. Pobranie modelu dyktowania pyta o zgodę |
 | **Komunikatory** (Telegram, Slack) | **Biblioteka** → sekcja „Komunikatory” (Messengers) | Karty ze stanem, pola na tokeny, lista dopuszczonych rozmów | Do prawdziwego połączenia: token bota Telegrama lub dwa tokeny Slacka |
 | **Integracje kont** (GitHub, Google, Notion, Meta) | **Biblioteka** → sekcja „Połącz konta” (Connect accounts, pod komunikatorami) | Cztery karty, kroki rejestracji aplikacji, pola na identyfikator i sekret | Do połączenia: własna aplikacja zarejestrowana w usłudze |
 | **Logowanie do serwerów MCP** | **Biblioteka** → lista serwerów MCP, pod nią „Logowanie do serwerów MCP” | Karta na serwer wymagający logowania w przeglądarce | Serwer MCP działający przez sieć (bez niego ekran mówi, że nic nie wymaga logowania) |
