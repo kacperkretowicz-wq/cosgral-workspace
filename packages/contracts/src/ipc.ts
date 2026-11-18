@@ -52,6 +52,7 @@ export * from "./ipc-spaces";
 export * from "./ipc-subagents";
 export * from "./ipc-subscriptions";
 export * from "./ipc-tables";
+export * from "./ipc-tasks-view";
 export * from "./ipc-team-host";
 export * from "./ipc-thread-tabs";
 export * from "./ipc-threads";

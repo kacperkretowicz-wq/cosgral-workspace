@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isDynamicRecord } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
+import { seedShotsData, seedUsageHistory } from "./sandbox-seed.ts";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const notes: string[] = [];
@@ -466,6 +467,17 @@ async function main(): Promise<void> {
       pageRef.main = pageRef.page;
       await pageRef.page.setViewportSize({ width: 1440, height: 900 });
       await pageRef.page.waitForTimeout(1000);
+      const seeded = await seedShotsData(pageRef.page);
+      console.log(`seed ipc: ${seeded.notes.join("; ")}`);
+      notes.push(`seed|${seeded.notes.join(",")}`);
+      const history = seedUsageHistory(root, seeded.botIds);
+      console.log(`seed usage: ${history.join("; ")}`);
+      notes.push(`seed-usage|${history.join(",")}`);
+      // Reload Usage/Schedule projections that may already be cached in the window.
+      await pageRef.page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
+      await pageRef.page.waitForTimeout(1200);
+      pageRef.page = await mainShellPage(app, pageRef.page);
+      pageRef.main = pageRef.page;
     } else {
       pageRef.main = pageRef.page;
     }
@@ -520,27 +532,39 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "06-menu-at", async (p) => {
       await unlockComposer(p);
       await p.keyboard.press("Escape").catch(() => undefined);
-      const box = p.getByRole("textbox", { name: /Message /i });
+      // contenteditable composer (ComposerEditor): fill + pressSequentially; picker class is .mention-picker
+      const box = p
+        .locator('.composer-editor-surface[role="textbox"]')
+        .or(p.getByRole("textbox", { name: /Message /i }));
       await box.first().waitFor({ timeout: 15_000 });
       await box.first().click();
-      await box.first().fill("");
-      await box.first().pressSequentially("@", { delay: 50 });
-      await p.waitForTimeout(700);
+      await p.keyboard.press("Control+a").catch(() => undefined);
+      await p.keyboard.press("Backspace").catch(() => undefined);
+      await box.first().pressSequentially("@", { delay: 80 });
+      await p.waitForTimeout(900);
       const menu = p
-        .getByRole("listbox")
-        .or(p.getByRole("menu"))
-        .or(p.locator(".composer-mention-menu, .mention-menu"));
+        .getByRole("listbox", { name: /Insert mention/i })
+        .or(p.locator('.mention-picker[aria-label="Insert mention"]'))
+        .or(p.getByRole("listbox"));
       return (await menu.count()) ? "menu @ widoczne" : "po @ brak menu";
     });
 
     await tryShot(app, pageRef, out, "07-slash", async (p) => {
       await unlockComposer(p);
-      const box = p.getByRole("textbox", { name: /Message /i });
+      await p.keyboard.press("Escape").catch(() => undefined);
+      // Slash picker is a <section aria-label="Commands">.mention-picker.slash-picker (not role=menu).
+      const box = p
+        .locator('.composer-editor-surface[role="textbox"]')
+        .or(p.getByRole("textbox", { name: /Message /i }));
       await box.first().click();
-      await box.first().fill("");
-      await box.first().pressSequentially("/", { delay: 50 });
-      await p.waitForTimeout(700);
-      const menu = p.getByRole("listbox").or(p.getByRole("menu")).or(p.locator(".composer-slash-menu, .slash-menu"));
+      await p.keyboard.press("Control+a").catch(() => undefined);
+      await p.keyboard.press("Backspace").catch(() => undefined);
+      await box.first().pressSequentially("/", { delay: 80 });
+      await p.waitForTimeout(900);
+      const menu = p
+        .getByRole("region", { name: /^Commands$/i })
+        .or(p.locator(".mention-picker.slash-picker, .slash-picker"))
+        .or(p.getByLabel(/^Commands$/i));
       return (await menu.count()) ? "menu / widoczne" : "po / brak menu";
     });
 

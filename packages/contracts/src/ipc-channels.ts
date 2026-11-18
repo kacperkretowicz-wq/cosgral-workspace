@@ -360,6 +360,9 @@ export const IPC_CHANNELS = {
   messageActionsListPins: "message-actions:list-pins",
   // COSGRAL W12 (BE-J): the menu of one message in one read.
   messageMenuGet: "message-menu:get",
+  // COSGRAL W12 (BE-J): the Tasks view: the tasks of all channels, and one task with its result, steps and log.
+  tasksViewList: "tasks-view:list",
+  tasksViewDetail: "tasks-view:detail",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

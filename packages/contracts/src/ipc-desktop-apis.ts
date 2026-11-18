@@ -201,6 +201,7 @@ import type {
   TableWriteResult,
   UpdateTableRowInput,
 } from "./ipc-tables";
+import type { TasksViewDesktopApi } from "./ipc-tasks-view";
 import type {
   ConfigureHostInput,
   ConfigureRemoteDesktopInput,
@@ -740,6 +741,8 @@ export interface OpenBotDesktopApi {
   libraryView?: LibraryViewDesktopApi;
   usageReport?: UsageReportDesktopApi;
   schedule?: ScheduleDesktopApi;
+  /** COSGRAL W12 (BE-J): the Tasks view (all channels in one list; one task with result, steps and log). */
+  tasksView?: TasksViewDesktopApi;
   /** COSGRAL W10-KK2: messenger bridge (Telegram; token write-only, allow list of chats, nobody by default). Optional until every mock implements it. */
   messengers?: MessengersDesktopApi;
   /** COSGRAL W11-KK (d): connectors of 1Password, Bitwarden, Proton Pass (token write-only) and the person's Vault tools (reveal, copy, CSV, codes). Optional until every mock implements it. */

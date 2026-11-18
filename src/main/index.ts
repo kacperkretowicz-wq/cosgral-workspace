@@ -83,6 +83,7 @@ import { ServerSettingsService } from "../backend/server-settings";
 import { SidebarStore } from "../backend/sidebar-store";
 import { SpaceStore } from "../backend/space-store";
 import { clearLogs, measureUserData } from "../backend/storage-report";
+import { TasksViewService } from "../backend/tasks-view";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { ThreadTabsService } from "../backend/thread-tabs";
 import { UpdatePreferencesService } from "../backend/update-preferences";
@@ -251,6 +252,7 @@ import { enforceSingleInstance } from "./single-instance";
 import { registerSpacesIpc } from "./spaces-ipc";
 import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
+import { registerTasksViewIpc } from "./tasks-view-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadsIpc } from "./threads-ipc";
 import { handleTrusted } from "./trusted-ipc";
@@ -377,6 +379,7 @@ let providerCatalogService: ProviderCatalogService | null = null;
 let libraryViewService: LibraryViewService | null = null;
 let usageReportService: UsageReportService | null = null;
 let scheduleViewService: ScheduleViewService | null = null;
+let tasksViewService: TasksViewService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -998,6 +1001,7 @@ function registerIpcHandlers(
     usage: () => usageReportService,
     schedule: () => scheduleViewService,
   });
+  registerTasksViewIpc(() => tasksViewService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1948,6 +1952,7 @@ if (!hasSingleInstanceLock) {
             providers: () => providerRegistry?.listUsage() ?? [],
             machine: () => machineLoad.read(),
           });
+          tasksViewService = new TasksViewService({ channels: channelStore, agentName });
           scheduleViewService = new ScheduleViewService({
             routines: () => routineStore.list(),
             runs: (routineId) => routineStore.listRuns(routineId),
