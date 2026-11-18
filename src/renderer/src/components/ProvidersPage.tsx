@@ -28,6 +28,7 @@ import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderAccounts } from "./ProviderAccounts";
+import { ProviderCatalogPanel } from "./ProviderCatalogPanel";
 import { FallbackChainView, ProviderFallbackLists } from "./ProviderFallbackLists";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Text, Textarea } from "./ui";
 
@@ -531,6 +532,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       </Show>
       <ProviderAccounts />
       <ManagedCliSection />
+      <ProviderCatalogPanel />
       <ApiKeysSection />
       <EndpointsSection />
       <ProviderUsageList
