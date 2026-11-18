@@ -1,18 +1,26 @@
 import { type AgentPlan, type PlansDesktopApi, planProgress } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { createThreadRecords } from "../thread-records";
 import { Button, Heading, Text } from "./ui";
 import "../styles/thread-work.css";
 
-const PHASE_LABELS = {
-  proposed: "Awaiting approval",
-  approved: "Approved",
-  rejected: "Rejected",
-  expired: "Expired — not approved",
-  stopped: "Stopped",
-  completed: "Completed",
-};
-const STEP_LABELS = { pending: "Pending", "in-progress": "In progress", done: "Done", skipped: "Skipped" };
+function phaseLabel(phase: AgentPlan["phase"]): string {
+  if (phase === "proposed") return t("Awaiting approval");
+  if (phase === "approved") return t("Approved");
+  if (phase === "rejected") return t("Rejected");
+  if (phase === "expired") return t("Expired — not approved");
+  if (phase === "stopped") return t("Stopped");
+  return t("Completed");
+}
+
+function stepLabel(status: AgentPlan["steps"][number]["status"]): string {
+  if (status === "pending") return t("Pending");
+  if (status === "in-progress") return t("In progress");
+  if (status === "done") return t("Done");
+  return t("Skipped");
+}
+
 export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
   const api = untrack(() => props.api ?? window.openbot?.plans);
   const [value, setValue] = createSignal(untrack(() => props.plan));
@@ -34,28 +42,31 @@ export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
       const next = await api.respond({ requestId: id, decision });
       if (value().requestId === id) setValue(next);
     } catch (e) {
-      if (value().requestId === id) setError(e instanceof Error ? e.message : "Could not answer this plan.");
+      if (value().requestId === id) setError(e instanceof Error ? e.message : t("Could not answer this plan."));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section class="thread-work-card" aria-label={`Plan: ${value().title}`}>
+    <section class="thread-work-card" aria-label={t("Plan: {title}", { title: value().title })}>
       <header class="thread-work-heading">
         <Heading as="h3" size="sm">
           {value().title}
         </Heading>
-        <Text tone="secondary">{PHASE_LABELS[value().phase]}</Text>
+        <Text tone="secondary">{phaseLabel(value().phase)}</Text>
       </header>
       <Show when={value().summary}>
         <Text as="p">{value().summary}</Text>
       </Show>
       <Text as="p" tone="secondary">
-        {planProgress(value()).finished} of {planProgress(value()).total} steps finished
+        {t("{finished} of {total} steps finished", {
+          finished: planProgress(value()).finished,
+          total: planProgress(value()).total,
+        })}
       </Text>
       <progress
         class="thread-work-progress"
-        aria-label="Plan progress"
+        aria-label={t("Plan progress")}
         value={planProgress(value()).finished}
         max={Math.max(1, planProgress(value()).total)}
       />
@@ -65,7 +76,7 @@ export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
             <li>
               <Text as="span">{step.title}</Text>{" "}
               <Text as="span" tone="secondary">
-                {STEP_LABELS[step.status]}
+                {stepLabel(step.status)}
               </Text>
               <Show when={step.detail}>
                 <Text as="p" tone="secondary">
@@ -78,14 +89,14 @@ export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
       </ol>
       <Show when={value().phase === "proposed"}>
         <Text as="p" tone="secondary">
-          No steps are approved until you choose Approve plan.
+          {t("No steps are approved until you choose Approve plan.")}
         </Text>
         <div class="thread-work-actions">
           <Button disabled={!api || busy()} onClick={() => void respond("approve")}>
-            Approve plan
+            {t("Approve plan")}
           </Button>
           <Button disabled={!api || busy()} variant="secondary" onClick={() => void respond("reject")}>
-            Reject plan
+            {t("Reject plan")}
           </Button>
         </div>
       </Show>
@@ -110,8 +121,8 @@ export function PlanPanel(props: { botId: string; threadId?: string | null; acti
   return (
     <Show when={api && (visible().length > 0 || feed.error())}>
       <details class="thread-work-section" open>
-        <summary>Plans ({visible().length})</summary>
-        <section class="thread-work-list" aria-label="Thread plans" tabindex={0}>
+        <summary>{t("Plans ({count})", { count: visible().length })}</summary>
+        <section class="thread-work-list" aria-label={t("Thread plans")} tabindex={0}>
           <Show when={feed.error()}>
             <Text role="alert" tone="danger">
               {feed.error()}
