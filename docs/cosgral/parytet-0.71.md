@@ -1,6 +1,6 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4f21fbfe7` plus odbiór Testera T-AI i T-AJ (procenty po T-AJ bez zmian) (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `2dfb55f09` plus odbiór Testera T-AI i T-AJ (procenty po T-AJ bez zmian) (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
 **Wynik w jednej linii: 61,5 z 77 funkcji = 79,9% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 60,4%.**
 
