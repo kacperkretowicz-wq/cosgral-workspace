@@ -127,7 +127,7 @@ export function MessageHistoryActions(
         ? "Edit message"
         : action === "delete"
           ? "Delete message"
-          : pinned()
+          : (menuAction("pin")?.active ?? pinned())
             ? "Unpin message"
             : "Pin message";
   return (
