@@ -28,3 +28,11 @@ Gałąź `team/backend/w12-holds` (z integracji 85c19bc3a). Oparta na pracy KAPI
 
 ## Testy (napisane w cichym oknie, NIE uruchomione)
 `ipc-queue-holds` 6 (reguły), `agent-service-queue-holds` 1 (server-busy na dwóch agentach, `maxTurns: 1`; test KAPI). Do uruchomienia po oknie: te dwa pliki, `agent-service-budgets` (czy `heldReason` bez zmian), `agent-service-threads`, `typecheck` contracts i node, Biome na plikach.
+
+## Notka dla UI Designera: jak pokazać `heldKind` (BE-O pkt 2)
+Znaleziony błąd po moim kontrakcie: pasek nad polem wiadomości w `Conversation.tsx` pokazywał przycisk „Review budget settings” przy KAŻDYM `heldReason`, a teraz `heldReason` bywa też o restarcie, serwerze i limicie wątków. Poprawka (mała, 2 linie w `Conversation.tsx`): pasek wyciągnięty do `QueueHoldNotice.tsx` (+ test 3), który pokazuje przycisk budżetu tylko dla `heldKind === "budget"` (albo bez `heldKind`, starszy serwer) i daje `data-hold-kind` do stylowania.
+Co UI może dołożyć (własny wygląd, bez nowych kontraktów):
+1. `agent-restart`: ikona wirującego koła i bez przycisku („Czekam, aż agent wstanie”); znika sam, gdy faza CLI wraca do ready.
+2. `server-busy`: ikona zegara, zdanie z silnika; bez przycisku (zwolni się, gdy skończy się tura innego agenta).
+3. `thread-limit`: przycisk „Otwórz wątki” (`ThreadPanel`), bo osoba może zarchiwizować lub usunąć wątek (tu działa też cofnięcie usunięcia).
+4. `budget`: jak dotąd „Review budget settings”.

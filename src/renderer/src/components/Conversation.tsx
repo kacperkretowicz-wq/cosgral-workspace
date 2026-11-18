@@ -97,6 +97,7 @@ import {
 } from "./RemoteMacPanel";
 import { RoutinePanel } from "./RoutinePanel";
 import { SideQuestionPanel } from "./SideQuestionPanel";
+import { QueueHoldNotice } from "./QueueHoldNotice";
 import { SkillQuickPick } from "./SkillQuickPick";
 import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
@@ -2232,12 +2233,7 @@ export function Conversation(props: ConversationProps) {
               <span>Switch this agent to a Codex model in Settings to generate images.</span>
             </aside>
           </Show>
-          <Show when={props.queue?.heldReason}>
-            <div class="providers-form" role="status">
-              <Text>Message queued: {props.queue?.heldReason}</Text>
-              <Button onClick={() => props.onOpenBudget?.()}>Review budget settings</Button>
-            </div>
-          </Show>
+          <QueueHoldNotice queue={props.queue} onOpenBudget={props.onOpenBudget} />
           <Show when={queueBarVisible()}>
             <QueuePanel
               deliveries={props.queue?.deliveries ?? []}
