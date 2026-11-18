@@ -15,6 +15,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { WorkflowVersionsPanel } from "./WorkflowVersionsPanel";
 
 function routineId(node: Extract<WorkflowNode, { type: "trigger" }>): string {
   return node.trigger.kind === "routine" ? node.trigger.routineId : "";
@@ -641,6 +642,10 @@ export function WorkflowsPage() {
         >
           Run now
         </Button>
+        <WorkflowVersionsPanel
+          workflowId={selected()}
+          onRestored={(workflow) => setGraph({ nodes: workflow.nodes, edges: workflow.edges })}
+        />
         <h2>Run history</h2>
         <ul>
           <For each={runs()}>

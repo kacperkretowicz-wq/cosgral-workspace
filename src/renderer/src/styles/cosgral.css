@@ -2728,3 +2728,60 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   min-width: 120px;
   flex: 1;
 }
+
+/* UI-P: workflow versions. */
+.workflow-versions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workflow-versions h2 {
+  margin: 0;
+}
+
+.workflow-versions-note {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.workflow-versions-error {
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.workflow-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-version-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 10px 12px;
+}
+
+.workflow-version-list li[data-current="true"] {
+  border-color: var(--cosgral-border-strong);
+}
+
+.workflow-version-list header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workflow-version-list small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}

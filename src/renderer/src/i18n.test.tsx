@@ -41,6 +41,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "TasksPage",
     "TasksViewScreen",
     "ProviderCatalogPanel",
+    "WorkflowVersionsPanel",
     "VaultConnectorsPanel",
     "ScheduleOverview",
     "ManagedCliSection",
