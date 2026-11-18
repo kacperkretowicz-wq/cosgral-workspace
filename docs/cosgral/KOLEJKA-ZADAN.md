@@ -23,10 +23,10 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
 2. [zrobione: 28f240e08] Usunięcie martwego `SettingsModal`.
-3. Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
+3. [zrobione: 8e6600948 (po T-AI; powtórz po następnym odbiorze)] Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
 4. `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
-5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
-6. Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
+5. [zrobione: b136b22a2] Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
+6. [zrobione: 78f6ebbb9] Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
 7. Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
 8. Przegląd `i18n-inwentarz.md`: co zostało po angielsku w moich panelach, tłumaczenie przez `t()`.
 

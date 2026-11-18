@@ -30,3 +30,9 @@ Stan: 18.11.2026, gałąź `team/kk/w12-ai` z integracji `961ac2c3f` (zawiera BE
 2. Czy silnik naprawdę ucina kontekst do wybranej liczby, sprawdza BE-Z (kontrakt i silnik), ja sprawdziłem tylko zapis i wyświetlanie.
 3. Parytet: lista nie ma własnego wiersza w 77 funkcjach, więc procenty bez zmian; dopisana notatka przy „bez dowodu z okna”.
 4. Pozostałe punkty KOLEJKI KK: 3 (parytet po następnym odbiorze Testera), 4 (PRZEWODNIK: ten wiersz dodany), 5 (luki z pytań do właściciela).
+
+## 5. Dodatek (kolejka KK #6): historyjki listy „okno historii”
+
+`src/renderer/stories/ChannelHistoryWindow.stories.tsx`: Dark/Light (200 domyślnie, 50 zapisane), SavedDark/SavedLight (po zmianie widać „History window saved.”, kontrast notatki w obu motywach), RefusedDark/RefusedLight (zdanie programu w `role=alert`, bez „saved”). `typecheck:storybook` zielony, Biome czysty.
+
+**Nie uruchomione:** Storybook i test kontrastu (axe) biegną tylko przy GO; brak GO-kk w piaskownicy. Kontrast nowej listy opiera się na tych samych tokenach co `ChannelHistoryClear`, ale to założenie, nie pomiar.

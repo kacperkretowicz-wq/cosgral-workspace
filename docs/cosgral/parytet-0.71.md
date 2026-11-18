@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `206fdc9b0` (od `4ddcbb5d3` doszły tylko raporty i poprawki, kod funkcji bez zmian). Poprzednia wersja tabeli: `4ddcbb5d3`, 79,2% kod / 44,2% w oknie / 58,4% ostrożnie (77 funkcji). **Ta wersja przelicza tylko kolumnę „w oknie”** na podstawie odbioru Testera T-AF (e2e 0 FAIL, W5 33/33, zrzuty 17-11-h) i T-AC. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4f21fbfe7` plus odbiór Testera T-AI (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 61 z 77 funkcji = 79,2% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 51,3%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 59,7%.**
+**Wynik w jednej linii: 61,5 z 77 funkcji = 79,9% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 60,4%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **79,2%** (61 z 77) | 50 jest, 22 częściowo, 5 brak |
+| Parytet (kod) | **79,9%** (61,5 z 77) | 51 jest, 21 częściowo, 5 brak |
 | Skontraktowane | **~92,9%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | **~92,2%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~85,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **51,3%** | 21 wierszy w pełni (tak), 37 częściowo, 19 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC i T-AF |
-| Ostrożny parytet | **59,7%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Ekran w kodzie | **~86,4%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| W oknie sprawdzone | **52,6%** | 22 wiersze w pełni (tak), 37 częściowo, 18 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
+| Ostrożny parytet | **60,4%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 61 z 83 = 73,5%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 61,5 z 83 = 74,1%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -30,7 +30,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 15 | 9 | 5 | 1 | 77% |
+| A. Ustawienia aplikacji i powłoka | 15 | 10 | 4 | 1 | 80% |
 | B. Czat, Needs you, wątki | 12 | 10 | 2 | 0 | 92% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
 | D. Agenci | 11 | 10 | 1 | 0 | 95% |
@@ -60,8 +60,8 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 11 | Onboarding (język, dostawca, pierwszy agent, Computer Use) | **częściowo** | tak | tak | tak | tak | tak | Przepływ w oknie jest, ale inny niż w 0.71 (bez wyboru hosta lokalny/zdalny, bez darmowych modeli). | kk-w3-acceptance |
 | 73 | Autostart z Windowsem („Launch at login”) | **jest** | tak | tak | tak | tak | część | `behavior.launchAtLogin` zapisuje się i woła `app.setLoginItemSettings` (KAPI, `w12-login`); przełącznik w `AppBehaviorSection` na ekranie „Settings” i w oknie ustawień (KK-AD). W oknie: nie potwierdzone (Tester sprawdza tylko zapis ustawienia; start po restarcie Windows nie sprawdzany). T-AF w oknie: przełącznik zapisuje `launchAtLogin` (true → false), a system wrócił do stanu sprzed (autostart nie zmieniony na stałe). Start po restarcie Windows nie sprawdzony. | kapi-w12-login, kk-w12-ac, tester-w12-te |
 | 74 | Praca w tle: zamknięcie okna chowa program do ikony przy zegarze | **jest** | tak | tak | tak | tak | część | `behavior.keepBackground` (BE-W): zamknięcie okna chowa program do zasobnika, menu ikony „Otwórz” / „Zakończ”, zadania trwają; zabezpieczenie: bez ikony program kończy się jak dotąd. Przełącznik w `AppBehaviorSection` (KK-AD). Ikona i powrót to prawdziwy Electron: sonda Testera w toku (T-AF). T-AF w oknie: po zamknięciu okno jest ukryte, proces żyje, `show()` przywraca okno i pasek stron. **Nie sprawdzono** fizycznego kliku w ikonę w obszarze powiadomień (ta sama ścieżka `showMainWindow`). | backend-w12-w, kk-w12-ac, tester-w12-te |
-| 75 | Gdzie otwierają się linki z rozmów (przeglądarka systemowa albo przeglądarka programu) | **jest** | tak | tak | tak | tak | nie | `behavior.externalLinks` (BE-X); wybór w `AppBehaviorSection`, a `Conversation.openMessageLink` otwiera panel przeglądarki programu albo domyślną przeglądarkę (KK-AE). Test w `App.test`; w oknie nie oglądane. | backend-w12-x, kk-w12-ae |
-| 76 | Przywracanie ostatniego miejsca przy starcie (strona, agent, wątek) | **częściowo** | tak | tak | tak | część | część | `workspace.restore` i `workspace.last` (BE-X); hook `useRestoreWorkspace` otwiera zapamiętaną **stronę i agenta** i zapisuje zmiany po 0,5 s (KK-AE). **Wątek nie jest zapamiętywany** (zapis `threadId: null`; UI-AH to dopisuje). W oknie nie oglądane (sonda restartu u Testera). T-AF w oknie: włączone → po restarcie wraca Library i Agent B; wyłączone → start od początku. Wątek nie wraca (niezaimplementowany). | backend-w12-x, kk-w12-ae, tester-w12-te |
+| 75 | Gdzie otwierają się linki z rozmów (przeglądarka systemowa albo przeglądarka programu) | **jest** | tak | tak | tak | tak | część | `behavior.externalLinks` (BE-X); wybór w `AppBehaviorSection`, a `Conversation.openMessageLink` otwiera panel przeglądarki programu albo domyślną przeglądarkę (KK-AE). Test w `App.test`; W oknie (T-AI, sonda `external-links`): ustawienie przełącza się aplikacja↔przeglądarka i zapisuje; samo otwarcie linku nie sprawdzone (`browser.open` na martwy host kończy się oczekiwanym błędem DNS). | backend-w12-x, kk-w12-ae |
+| 76 | Przywracanie ostatniego miejsca przy starcie (strona, agent, wątek) | **jest** | tak | tak | tak | tak | tak | `workspace.restore` i `workspace.last` (BE-X); hook `useRestoreWorkspace` otwiera zapamiętaną **stronę i agenta** i zapisuje zmiany po 0,5 s (KK-AE). Wątek też jest zapamiętywany (UI-AH `e6523c20a`: `hasThread` sprawdza, czy wątek jeszcze istnieje; inaczej otwiera się sam agent). W oknie: T-AF włączone → wraca Library i Agent B, wyłączone → start od początku; T-AI sonda `restore-thread`: po restarcie wracają ostatni agent i wątek, pasek wątku widoczny. | backend-w12-x, kk-w12-ae, tester-w12-te |
 
 ### B. Czat, Needs you, wątki
 
@@ -181,6 +181,30 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
+## Zmiany od wersji @ `206fdc9b0` (79,2% kod / 51,3% w oknie / 59,7% ostrożnie): odbiór T-AI w Electronie
+
+Tester T-AI (z GO): e2e 0 FAIL, W5 33/33, `MaxListenersExceededWarning` 0. Zmieniają się dwa wiersze, reszta bez zmian.
+
+| Miara | Było | Jest |
+|---|---|---|
+| Parytet (kod) | 79,2% (61 z 77) | **79,9%** (61,5 z 77) |
+| Ekran w kodzie | ~85,7% | **~86,4%** |
+| W oknie sprawdzone | 51,3% (39,5 z 77) | **52,6%** (40,5 z 77) |
+| Ostrożny parytet | 59,7% (46,0 z 77) | **60,4%** (46,5 z 77) |
+
+| Wiersz | Zmiana | Dowód |
+|---|---|---|
+| 76 Przywracanie miejsca | częściowo → **jest**; E część → tak; O część → tak | UI-AH `e6523c20a` (wątek zapamiętany, `hasThread`); T-AI sonda `restore-thread`: po restarcie wracają ostatni agent i wątek, pasek wątku widoczny |
+| 75 Linki z rozmów | O nie → część | T-AI sonda `external-links`: ustawienie app↔przeglądarka zapisuje się; samo otwarcie linku nie sprawdzone (`browser.open` na martwy host: oczekiwany błąd DNS) |
+
+**Bez zmiany, ale z nowym dowodem:** 73 (T-AI: `launchAtLogin` true→false, wpis w rejestrze przywrócony; restart Windows nadal nie sprawdzony), 74 (T-AI: zamknięcie chowa, „open” pokazuje; klik w ikonę przy zegarze nadal nie sprawdzony), 77 (rename ok, jak wcześniej).
+
+**Dowody z okna dla elementów, które nie mają własnego wiersza w 77 funkcjach (nie zmieniają procentów):** czyszczenie historii kanału (zatrzymaj zadanie → wyczyść → 0 zostało), okno historii (`historyWindow: 20` zapisane), menu „+” (Attach/Skill/Side działają; Teach i Voice wyłączone).
+
+**Nie sprawdzone w oknie:** skrót wysyłania (Enter vs Ctrl+Enter), sonda a11y, axe i Storybook (to robi lider), klik w ikonę zasobnika, autostart po restarcie Windows.
+
+**Uwaga o źródle:** raport `tester-w12-ti.md` leżał w momencie liczenia niezacommitowany w worktree Testera; po jego commicie warto sprawdzić, czy liczby w nim się nie zmieniły.
+
 ## Zmiany od wersji @ `4ddcbb5d3` (79,2% kod / 44,2% w oknie / 58,4% ostrożnie): dowody z okna
 
 Kod się nie zmienił: **79,2%** (61 z 77), skontraktowane ~92,9%, silnik ~92,2%, ekran ~85,7%. Zmienia się tylko to, co Tester potwierdził w prawdziwym programie.
@@ -205,7 +229,7 @@ Wiersze, w których przybył dowód z okna (kolumna „O”):
 | 77 | Zmiana nazwy agenta | nie → tak | probe Rename: menu → pole → pasek boczny i nagłówek |
 | 4 | Głos | część → część | nagłówek Voice i mikrofon widoczne; nagrywanie nie sprawdzone |
 
-Bez dowodu z okna (nadal „nie”): wiersz 75 (miejsce linków; Tester go nie sprawdzał) oraz nowe elementy po `4ddcbb5d3` (wątek w „Restore”, menu „+” z UI-AH, czyszczenie historii kanału, okno historii: od KK-AI jest w kodzie i w teście, w oknie nie sprawdzone).
+(Stan z T-AF; wiersze 75 i 76 oraz nowe elementy zostały potwierdzone w T-AI, sekcja wyżej.)
 
 ## Poprzednie zmiany: od wersji @ `eb9df8800` (78,5% kod / 47,2% w oknie / 59,0% ostrożnie, 72 funkcje)
 
