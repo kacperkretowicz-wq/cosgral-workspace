@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `b1e28ab8f` oraz gałąź `team/kk/w12-flows` (Prompt i Condition w przepływach; do scalenia). Poprzednia wersja tabeli: `79567cdf9`, 67,4%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany, które UI Designer ma jeszcze u siebie, zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`, 15 zrzutów T-M, część ekranów bez danych testowych).
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `e1a2fdc76` (z `w12-flows` i pierwszą częścią `w12-screens`) oraz gałąź `team/kk/w12-screens` (Import i Transfer; do scalenia). Poprzednia wersja tabeli: `b1e28ab8f` + `w12-flows`, 68,8%. Liczy się to, co jest w integracji i w tej gałęzi; ekrany UI Designera na jego gałęzi zmienią tabelę po scaleniu. „Ekran w kodzie” nie znaczy „w oknie sprawdzone”: do tego potrzebne są zrzuty i przebiegi Testera (ostatnie: e2e 30 ok / 0 FAIL i W5 29/29 na `79567cdf9`).
 
-**Wynik w jednej linii: 49,5 z 72 funkcji = 68,8% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
+**Wynik w jednej linii: 52,5 z 72 funkcji = 72,9% (jest = 1, częściowo = ½). Z tego skontraktowane 87,5%, ale w prawdziwym oknie sprawdzone tylko 45,1%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 56,9%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **68,8%** (49,5 z 72) | 35 jest, 29 częściowo, 8 brak |
+| Parytet (kod) | **72,9%** (52,5 z 72) | 41 jest, 23 częściowo, 8 brak |
 | Skontraktowane | **87,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | 86,1% | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | 70,8% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Ekran w kodzie | 79,2% | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **45,1%** | 19 wierszy w pełni (tak), 27 częściowo; reszta nie sprawdzona w prawdziwym programie |
 | Ostrożny parytet | 56,9% | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 49,5 z 78 = 63,5%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 52,5 z 78 = 67,3%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -30,15 +30,15 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 11 | 4 | 6 | 1 | 64% |
+| A. Ustawienia aplikacji i powłoka | 11 | 5 | 5 | 1 | 68% |
 | B. Czat, Needs you, wątki | 12 | 8 | 3 | 1 | 79% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
-| D. Agenci | 10 | 7 | 3 | 0 | 85% |
-| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 5 | 3 | 1 | 72% |
+| D. Agenci | 10 | 8 | 2 | 0 | 90% |
+| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 6 | 2 | 1 | 78% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
-| G. Dostawcy i użycie | 6 | 4 | 1 | 1 | 75% |
+| G. Dostawcy i użycie | 6 | 5 | 0 | 1 | 83% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 2 | 1 | 67% |
-| I. Komunikatory | 4 | 0 | 2 | 2 | 25% |
+| I. Komunikatory | 4 | 2 | 0 | 2 | 50% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 0 | 6 | 1 | 43% |
 
 ## Tabela funkcji
@@ -56,7 +56,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 7 | Dynamic Island (stan, nazwa agenta, klik otwiera kartę) | **jest** | tak | tak | tak | tak | tak | Sprawdzone w oknie (W3-T3); haptyka i wybór ekranów poza zakresem. | kk-w3-acceptance, ipc-dock |
 | 8 | Computer Use na Windows (stan, zgoda, Stop) | **częściowo** | tak | tak | tak | część | część | Sterownik i zgody są; ekran ustawień uprawnień jak w 0.71 i sterowanie prawdziwym pulpitem w oknie nie sprawdzone. | ipc-computer-use, computer-driver-windows, kk-w3-acceptance |
 | 9 | Mobile Connect: telefony, parowanie QR/TLS, trasa (ten komputer / sieć lokalna) | **jest** | tak | tak | tak | tak | część | Parowanie na pętli zwrotnej w oknie (W3-T3), bez prawdziwego telefonu; strona nie używa jeszcze `mobileConnect.getOverview`. | ipc-mobile-connect, mobile-connect.test, kk-w12-vault-voice |
-| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **częściowo** | tak | tak | tak | nie | nie | Silnik i kontrakt gotowe, ekranu w oknie nie ma. | ipc-instance-transfer, update-service.test |
+| 10 | Aktualizacje: tor Stable/Preview, auto pobieranie/instalacja, restart gdy bezczynny | **jest** | tak | tak | tak | tak | nie | Panel „Updates” w oknie ustawień czyta `updatePreferences` i `update`: wersja i stan, tor, sprawdzanie, pobieranie, instalacja, „Restart when idle” z oczekiwaniem i anulowaniem, lista niedostępnych z powodem (zastąpił atrapę z wpisaną na sztywno wersją). Nie oglądany w oknie. | ipc-instance-transfer, kk-w12-screens |
 | 11 | Onboarding (język, dostawca, pierwszy agent, Computer Use) | **częściowo** | tak | tak | tak | tak | tak | Przepływ w oknie jest, ale inny niż w 0.71 (bez wyboru hosta lokalny/zdalny, bez darmowych modeli). | kk-w3-acceptance |
 
 ### B. Czat, Needs you, wątki
@@ -94,7 +94,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 30 | Pamięć agenta i kanału (zawsze / w razie potrzeby, szukanie) | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
 | 31 | Skille (biblioteka, wersje, naprawa, per agent) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T5). | kk-w4-rows |
 | 32 | Szablony agenta (zapis jako szablon na tym komputerze) | **jest** | tak | tak | tak | tak | nie | Silnik BE-G, bez okna. | backend-w12-cards2 |
-| 33 | Import agenta z paczki i transfer instancji (zip, podgląd, nowi agenci, rutyny wstrzymane) | **częściowo** | tak | tak | tak | nie | nie | Silnik i testy (zip-slip, limity, brak sekretów); ekranu w oknie nie ma. | kk-w12-g2, transfer-service.test |
+| 33 | Import agenta z paczki i transfer instancji (zip, podgląd, nowi agenci, rutyny wstrzymane) | **jest** | tak | tak | tak | tak | nie | Działy „Import” i „Transfer” ustawień serwera: trzy karty importu, trzy kroki transferu, eksport wybranych agentów, wybór pliku z podglądem (nic się nie zmienia do potwierdzenia, zajęte imię = kopia z numerem), wynik z ostrzeżeniami, lista „czego nie przenosimy”. Nie oglądane w oknie. | kk-w12-g2, kk-w12-screens |
 | 34 | Subagenci i pytanie poboczne | **częściowo** | tak | tak | tak | część | nie | Wykonawca pytania pobocznego podpięty; panel subagenta brak. | backend-w12-side-question |
 | 35 | Foldery agentów w pasku bocznym | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
 | 36 | Pasek boczny, szyna stron i szyna serwerów | **częściowo** | tak | tak | tak | tak | część | Brak „Więcej”/przypinania stron, serwera zdalnego nie dało się sprawdzić. | kk-w3-acceptance, ui-w4-ui4 |
@@ -105,7 +105,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 38 | MCP: lista, dodawanie (stdio/HTTP), narzędzia, dostęp per agent | **jest** | tak | tak | tak | tak | tak | W oknie (serwer stdio). | kk-w3-acceptance |
-| 39 | MCP: logowanie OAuth w przeglądarce | **częściowo** | tak | tak | tak | nie | nie | Silnik z PKCE i pętlą zwrotną, 5 kanałów; ekranu logowania w oknie nie ma. | kk-w12-oauth, mcp-oauth |
+| 39 | MCP: logowanie OAuth w przeglądarce | **jest** | tak | tak | tak | tak | nie | Sekcja „Sign in to MCP servers” pod listą serwerów MCP: stan (wylogowany, czeka na przeglądarkę, kończenie, zalogowany, błąd), Zaloguj / Anuluj / Wyloguj, stałe zdania błędów. Nie oglądana w oknie; prawdziwego logowania nie sprawdzano. | kk-w12-oauth, kk-w12-screens |
 | 40 | Vault lokalny (login, karta, kontakt, klucz, TOTP; agent bierze bez ujawnienia) | **jest** | tak | tak | tak | tak | część | Login z wypełnieniem w oknie (hasła nie ma w wyniku, czacie ani plikach); karta, kontakt, klucz, TOTP tylko silnik i testy. | kk-w4-rows, ipc-vault |
 | 41 | Vault: pokaż/skopiuj sekret osobie, import CSV | **brak** | nie | nie | nie | nie | nie | Świadomie: wartości są tylko do zapisu. | ipc-vault |
 | 42 | Vault: konektory 1Password, Bitwarden, Proton Pass | **jest** | tak | tak | tak | tak | nie | Panel konektorów (stan, wybór metody, pola tylko do zapisu, lista dozwolonych logowań bez haseł, rozłączanie) jest w integracji (UI-M). W oknie nie oglądany; prawdziwe menedżery wymagają kont właściciela. | kk-w11-vault, ui-w12-ui2 |
@@ -129,7 +129,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 50 | Codex i Claude: logowanie, CLI zarządzane, pula kont, limity, zapasowe modele | **jest** | tak | tak | tak | tak | tak | W5 29/29 w oknie, instalator. | kk-w5-g2, kk-w5-g3 |
 | 51 | Własne endpointy (Ollama / styl LM) | **jest** | tak | tak | tak | tak | tak | W5 na atrapie. | kk-w5-g3 |
 | 52 | ACP (Antigravity, Gemini preset, własny agent) z logowaniem | **jest** | tak | tak | tak | tak | nie | Tura z prawdziwym agentem nieodebrana w oknie. | ipc-acp-presets, ipc-acp-login |
-| 53 | Katalog 18 dostawców (opisy, klucze maskowane, presety ACP oznaczone „niezweryfikowane”) | **częściowo** | tak | tak | tak | nie | nie | Kontrakt i silnik; ekran Dostawcy nie czyta jeszcze katalogu. | backend-w12-providers |
+| 53 | Katalog 18 dostawców (opisy, klucze maskowane, presety ACP oznaczone „niezweryfikowane”) | **jest** | tak | tak | tak | tak | nie | Strona Dostawcy ma sekcję „Katalog dostawców” (UI-P): 18 kart ze stanem wsparcia, pula kluczy tylko do zapisu (maska, włącz/wyłącz, limit). Nie oglądany w oknie; polecenia ACP nadal niezweryfikowane, brak sterowników natywnych. | backend-w12-providers, backend-w12-accounts, ui-w12-ui2 |
 | 54 | Sterowniki innych dostawców (Grok, Cursor, OpenRouter, DeepSeek, Kimi, Copilot…) | **brak** | część | nie | nie | nie | nie | Tylko opisy w katalogu; polecenia ACP niezweryfikowane. | backend-w12-providers |
 | 55 | Użycie: liczniki i pierścienie limitów, wykresy 7–365 dni, podział wg modelu i rodzaju tokenów | **jest** | tak | tak | tak | tak | część | Ekran Użycie: zakładki okresów, kafle, wykres dzienny, obciążenie komputera, tabela agentów i modeli, podział tokenów z pokryciem, limity dostawców. W oknie: zrzut T-M (pusta strona bez danych). Nie ma podziału na umiejętność. | backend-w12-library, backend-w12-accounts, tester-w12-tm |
 
@@ -148,8 +148,8 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
-| 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **częściowo** | tak | tak | tak | nie | nie | Sterownik i most z atrapami; ekran połączeń w oknie nie istnieje. | kk-w10-kk2, kk-w12-komunikatory |
-| 63 | Slack (Socket Mode, tylko DM) | **częściowo** | tak | tak | tak | nie | nie | Jak wyżej. | kk-w12-komunikatory, slack-driver.test |
+| 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **jest** | tak | tak | tak | tak | nie | Panel „Messengers” na stronie Library: stan, token tylko do zapisu (pole czyszczone), lista dopuszczonych i nieznanych rozmów (bez treści), dopuszczanie z agentem, kroki konfiguracji. Nie oglądany w oknie; prawdziwego bota nie sprawdzano. | kk-w10-kk2, kk-w12-screens |
+| 63 | Slack (Socket Mode, tylko DM) | **jest** | tak | tak | tak | tak | nie | Ten sam panel: dwa tokeny (bota i aplikacji), tylko wiadomości prywatne (numer D…). Nie oglądany w oknie; prawdziwego Slacka nie sprawdzano. | kk-w12-komunikatory, kk-w12-screens |
 | 64 | Discord | **brak** | nie | nie | nie | nie | nie | Wstrzymany decyzją lidera. | - |
 | 65 | Łącznik GitHub (repozytoria, kod urządzenia) | **brak** | nie | nie | nie | nie | nie | Brak. | - |
 
@@ -176,16 +176,16 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
 
-## Zmiany od wersji @ `79567cdf9` (67,4%)
+## Zmiany od wersji @ `b1e28ab8f` + w12-flows (68,8%)
 
 | Miara | Było | Jest | Dlaczego |
 |---|---|---|---|
-| Parytet kodowy | 67,4% | **68,8%** | Vault konektory: częściowo → jest (panel UI-M); wersje przepływów: brak → częściowo |
-| Skontraktowane | 86,1% | **87,5%** | kontrakt wersji przepływów, Prompt i Condition |
-| Silnik | 84,7% | 86,1% | silnik wersji przepływów, Prompt i Condition |
-| Ekran w kodzie | 68,8% | 70,8% | panel Vault konektorów; stary edytor przepływów z mostem |
-| W oknie sprawdzone | 43,1% | 45,1% | zrzuty T-M: Biblioteka, Użycie, Harmonogram rysują się (puste), liczone jako „część” |
-| Ostrożny parytet | 56,3% | 56,9% | „jest” z dowodem w oknie za 1, bez dowodu za ½ |
+| Parytet kodowy | 68,8% | **72,9%** | sześć wierszy (Aktualizacje, Import/Transfer, OAuth MCP, Telegram, Slack, katalog 18 dostawców): częściowo → jest |
+| Skontraktowane | 87,5% | **87,5%** | bez zmian |
+| Silnik | 86,1% | 86,1% | bez zmian |
+| Ekran w kodzie | 70,8% | 79,2% | panele KK (Aktualizacje, OAuth MCP, Komunikatory), dział Import/Transfer i katalog dostawców UI |
+| W oknie sprawdzone | 45,1% | 45,1% | bez zmian: nowe ekrany nie były oglądane w oknie |
+| Ostrożny parytet | 56,9% | 56,9% | „jest” bez dowodu w oknie liczy się za ½, jak wcześniej „częściowo” |
 
 ## Decyzje: luki bez silnika
 
@@ -205,7 +205,7 @@ Godziny to moja ocena (kontrakt + silnik + testy na atrapach), nie pomiar. „Le
 | Cofnięcie usunięcia wątku | brak | ok. 3 h | lekkie | ROBI BACKEND (BE-J, w kolejce) | +0,7 pp |
 | Wstrzymania wątku (restart agenta, serwer zajęty, limit wątków) | częściowo | ok. 5 h | lekkie | ROBIĆ, jeśli wątki idą do odbioru okna | +0,7 pp |
 
-**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione)  Wpływ na parytet jest mały, bo silnik bez ekranu liczy się za ½ wiersza; więcej daje podpięcie ekranów do gotowych silników (komunikatory, Vault konektory, OAuth MCP, aktualizacje, transfer/import, katalog 18 dostawców, układ Marketplace, edytor Workflows z wersjami: 8 wierszy, razem ok. +5,5 pp; Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran).
+**Zostaje „robić”: ok. 5 h** (wstrzymania wątku; cofnięcie usunięcia wątku robi Backend; treści Marketplace, Condition + Prompt i wersje przepływów są już zrobione). Silnik bez ekranu liczy się za ½ wiersza; ekrany do gotowych silników, które jeszcze zostały: układ Marketplace Agents/Skills, edytor Workflows z paletą i kartą triggera, przegląd głosu (mikrofon), Mobile Connect jednym zapytaniem i przełącznik „pytaj” zdalnego pulpitu (5 wierszy, razem ok. +3,5 pp). Komunikatory, aktualizacje, OAuth MCP, Import/Transfer, katalog dostawców, Vault konektory, Biblioteka, Użycie i Harmonogram już mają ekran.
 
 ## Czego nie sprawdziłem
 
