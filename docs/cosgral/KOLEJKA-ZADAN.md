@@ -60,7 +60,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 8. [zrobione: f7ce4d240] Pełne `t()` nagłówków i opisów Access / Isolation / Browser / Budget (luka po KAPI-P).
 9. [zrobione: e0a774760] Aria/i18n P0 rozmowy: ChatSearch, MessageRendering, SelectionActions, QueuePanel, ComposerEditor (Insert mention); wyspa PL AgentAccountPicker.
 7. Po `GO-kapi-dist.txt`: `dist:win` po większym scaleniu i pomiar (rozmiar, SHA-256).
-10. Test `AgentSettingsW3` pod `setLanguage("pl")` (notka KAPI-S: szuka „Konto”).
+10. [w toku: KAPI, 22:27] Test `AgentSettingsW3` pod `setLanguage("pl")` (notka KAPI-S: szuka „Konto”).
 11. Skan pozostałych `aria-label` i tekstów PL/EN w TSX po KAPI-S; klucze równe, `i18n.test`.
 
 ## Tester
