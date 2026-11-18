@@ -1,8 +1,47 @@
 // COSGRAL W3: workflows (canvas graphs) and their run history in the local database.
 import { randomUUID } from "node:crypto";
-import { isWorkflow, isWorkflowRun, WORKFLOW_LIMITS, type Workflow, type WorkflowRun } from "@openbot/contracts/ipc";
-import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
+import {
+  isWorkflow,
+  isWorkflowEdge,
+  isWorkflowNode,
+  isWorkflowRun,
+  WORKFLOW_LIMITS,
+  WORKFLOW_VERSION_LIMITS,
+  WORKFLOW_VERSION_REASONS,
+  type Workflow,
+  type WorkflowEdge,
+  type WorkflowNode,
+  type WorkflowRun,
+  type WorkflowVersionReason,
+} from "@openbot/contracts/ipc";
+import { type DynamicRecord, isDynamicRecord, isNumber, isOneOf, isString } from "@openbot/contracts/runtime-values";
 import type { OpenBotDatabase } from "./openbot-database";
+
+/** One saved state of a workflow's graph. */
+export interface StoredWorkflowVersion {
+  number: number;
+  savedAt: string;
+  reason: WorkflowVersionReason;
+  restoredFrom: number | null;
+  name: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
+function isStoredVersion(value: unknown): value is StoredWorkflowVersion {
+  return (
+    isDynamicRecord(value) &&
+    isNumber(value.number) &&
+    isString(value.savedAt) &&
+    isOneOf(WORKFLOW_VERSION_REASONS, value.reason) &&
+    (value.restoredFrom === null || isNumber(value.restoredFrom)) &&
+    isString(value.name) &&
+    Array.isArray(value.nodes) &&
+    value.nodes.every(isWorkflowNode) &&
+    Array.isArray(value.edges) &&
+    value.edges.every(isWorkflowEdge)
+  );
+}
 
 export class WorkflowStore {
   readonly #database: OpenBotDatabase;
@@ -59,9 +98,33 @@ export class WorkflowStore {
       (db) => {
         db.prepare("DELETE FROM projection_workflows WHERE workflow_id = ?").run(workflowId);
         db.prepare("DELETE FROM projection_workflow_runs WHERE workflow_id = ?").run(workflowId);
+        db.prepare("DELETE FROM projection_workflow_versions WHERE workflow_id = ?").run(workflowId);
         return null;
       },
     );
+  }
+
+  /** Oldest first; at most WORKFLOW_VERSION_LIMITS.kept. */
+  listVersions(workflowId: string): StoredWorkflowVersion[] {
+    return rows(
+      this.#database.connection
+        .prepare("SELECT data_json FROM projection_workflow_versions WHERE workflow_id = ? ORDER BY version")
+        .all(workflowId),
+    ).map((row) => parse(row, isStoredVersion));
+  }
+
+  /** Keeps the newest WORKFLOW_VERSION_LIMITS.kept versions of the workflow. */
+  saveVersion(workflowId: string, version: StoredWorkflowVersion): StoredWorkflowVersion {
+    const db = this.#database.connection;
+    db.prepare(
+      "INSERT INTO projection_workflow_versions (workflow_id, version, saved_at, data_json) VALUES (?, ?, ?, ?)",
+    ).run(workflowId, version.number, version.savedAt, JSON.stringify(version));
+    db.prepare(
+      `DELETE FROM projection_workflow_versions WHERE workflow_id = ? AND version NOT IN (
+         SELECT version FROM projection_workflow_versions WHERE workflow_id = ? ORDER BY version DESC LIMIT ?
+       )`,
+    ).run(workflowId, workflowId, WORKFLOW_VERSION_LIMITS.kept);
+    return version;
   }
 
   /** Newest first, at most WORKFLOW_LIMITS.runsKept. */

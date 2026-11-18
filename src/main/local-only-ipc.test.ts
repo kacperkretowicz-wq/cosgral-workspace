@@ -52,6 +52,7 @@ beforeAll(async () => {
   const { registerServerSettingsIpc } = await import("./server-settings-ipc");
   const { registerProviderCatalogIpc } = await import("./provider-catalog-ipc");
   const { registerInsightsIpc } = await import("./insights-ipc");
+  const { registerTasksViewIpc } = await import("./tasks-view-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
   const { registerPluginCatalogIpc } = await import("./plugin-catalog-ipc");
@@ -91,6 +92,7 @@ beforeAll(async () => {
   registerServerSettingsIpc(() => null);
   registerProviderCatalogIpc(() => null);
   registerInsightsIpc({ library: () => null, usage: () => null, schedule: () => null });
+  registerTasksViewIpc(() => null);
   registerMessengersIpc(() => null);
   registerPluginCatalogIpc(
     () => null,
@@ -182,6 +184,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("library-view:").length).toBe(3);
     expect(channelsOf("usage-report:").length).toBe(1);
     expect(channelsOf("schedule:").length).toBe(2);
+    // COSGRAL W12 (BE-J): the Tasks view (the list of all channels, one task).
+    expect(channelsOf("tasks-view:").length).toBe(2);
     // COSGRAL W10-KK2: the Telegram bridge.
     expect(channelsOf("messengers:").length).toBe(6);
     // COSGRAL W11-KK (d): the Vault connectors and the person's Vault tools.
@@ -235,6 +239,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "library-view:",
         "usage-report:",
         "schedule:",
+        "tasks-view:",
         "messengers:",
         "vault-connectors:",
         "plugin-catalog:",

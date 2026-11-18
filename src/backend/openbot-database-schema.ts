@@ -403,6 +403,14 @@ const SCHEMA_SQL = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json))
   );
   CREATE INDEX IF NOT EXISTS workflow_runs_workflow ON projection_workflow_runs(workflow_id, started_at);
+  -- COSGRAL W12: versions of a workflow's graph (see ipc-workflow-versions.ts).
+  CREATE TABLE IF NOT EXISTS projection_workflow_versions (
+    workflow_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    saved_at TEXT NOT NULL,
+    data_json TEXT NOT NULL CHECK(json_valid(data_json)),
+    PRIMARY KEY(workflow_id, version)
+  );
   -- COSGRAL W2: routines (schedule and webhook). secret_encrypted is the encrypted webhook signing secret.
   CREATE TABLE IF NOT EXISTS projection_routines (
     routine_id TEXT PRIMARY KEY,

@@ -6,6 +6,7 @@ import {
   parseUpdateWorkflow,
   parseWorkflowId,
   parseWorkflowRunId,
+  parseWorkflowVersion,
 } from "./workflow-inputs";
 
 const nodes: WorkflowNode[] = [
@@ -48,5 +49,16 @@ describe("workflow IPC inputs", () => {
     expect(() => parseRunWorkflow({ workflowId: "wf-1", input: "x".repeat(8_001) })).toThrow(/input/);
     expect(() => parseWorkflowId({})).toThrow();
     expect(() => parseWorkflowRunId(null)).toThrow();
+  });
+});
+
+describe("workflow version IPC input", () => {
+  it("takes a workflow id and a whole version number from 1", () => {
+    expect(parseWorkflowVersion({ workflowId: "wf-1", version: 3 })).toEqual({ workflowId: "wf-1", version: 3 });
+    expect(() => parseWorkflowVersion({ workflowId: "wf-1", version: 0 })).toThrow(/whole number/);
+    expect(() => parseWorkflowVersion({ workflowId: "wf-1", version: 1.5 })).toThrow(/whole number/);
+    expect(() => parseWorkflowVersion({ workflowId: "wf-1", version: "2" })).toThrow(/whole number/);
+    expect(() => parseWorkflowVersion({ version: 1 })).toThrow();
+    expect(() => parseWorkflowVersion(null)).toThrow(/required/);
   });
 });
