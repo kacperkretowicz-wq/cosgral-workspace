@@ -1,4 +1,4 @@
-import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
+import type { ChannelHistoryWindow, ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { ChannelEditor } from "./ChannelEditor";
@@ -158,6 +158,11 @@ export function ChannelWorkspace(props: {
     }
     return result;
   }
+  async function changeHistoryWindow(historyWindow: ChannelHistoryWindow) {
+    const api = window.openbot.channels;
+    if (!api?.update) throw new Error("Saving the history window is unavailable in this build.");
+    rememberChannel(await api.update({ channelId: selected(), historyWindow }));
+  }
   async function action(taskId: string, ownerBotId?: string) {
     try {
       const api = window.openbot.channels;
@@ -199,23 +204,29 @@ export function ChannelWorkspace(props: {
         <Show when={loading()}>
           <CosgralLoadingSkeleton label={t("Loading channel…")} />
         </Show>
-        <Show when={channel()} fallback={<p>Select a channel.</p>} keyed>
-          {(item) => (
-            <ChannelView
-              channel={item}
-              bots={props.bots}
-              messages={messages()}
-              tasks={tasks()}
-              supportsReplies={
-                !!window.openbot.channels &&
-                "supportsMessageReplies" in window.openbot.channels &&
-                window.openbot.channels.supportsMessageReplies === true
-              }
-              onSend={send}
-              onClearHistory={window.openbot.channels?.clearHistory ? clearHistory : undefined}
-              onResume={(id) => void action(id)}
-              onReassign={(id, botId) => void action(id, botId)}
-            />
+        {/* Keyed by the id: saving a setting of the channel replaces its object, and the open sections and their notes must stay. */}
+        <Show when={channel()?.id} fallback={<p>Select a channel.</p>} keyed>
+          {(_id) => (
+            <Show when={channel()}>
+              {(item) => (
+                <ChannelView
+                  channel={item()}
+                  bots={props.bots}
+                  messages={messages()}
+                  tasks={tasks()}
+                  supportsReplies={
+                    !!window.openbot.channels &&
+                    "supportsMessageReplies" in window.openbot.channels &&
+                    window.openbot.channels.supportsMessageReplies === true
+                  }
+                  onSend={send}
+                  onClearHistory={window.openbot.channels?.clearHistory ? clearHistory : undefined}
+                  onChangeHistoryWindow={window.openbot.channels?.update ? changeHistoryWindow : undefined}
+                  onResume={(id) => void action(id)}
+                  onReassign={(id, botId) => void action(id, botId)}
+                />
+              )}
+            </Show>
           )}
         </Show>
       </div>

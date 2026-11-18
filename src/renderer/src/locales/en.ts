@@ -1595,6 +1595,12 @@ export const en = {
   "{title}, controlled by {name}": "{title}, controlled by {name}",
   "Channel history": "Channel history",
   "Clear history": "Clear history",
+  "History window": "History window",
+  "Last {count} messages": "Last {count} messages",
+  "Fewer messages mean a shorter context for the agent, so tasks are faster and cheaper. The request of the task is always attached. A change counts from the next task.":
+    "Fewer messages mean a shorter context for the agent, so tasks are faster and cheaper. The request of the task is always attached. A change counts from the next task.",
+  "History window saved.": "History window saved.",
+  "Could not save the history window.": "Could not save the history window.",
   "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.":
     "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.",
   "Confirm clearing the history": "Confirm clearing the history",

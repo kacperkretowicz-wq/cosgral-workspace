@@ -1596,6 +1596,12 @@ export const pl = {
   "{title}, controlled by {name}": "{title}, sterowane przez {name}",
   "Channel history": "Historia kanału",
   "Clear history": "Wyczyść historię",
+  "History window": "Okno historii",
+  "Last {count} messages": "Ostatnie {count} wiadomości",
+  "Fewer messages mean a shorter context for the agent, so tasks are faster and cheaper. The request of the task is always attached. A change counts from the next task.":
+    "Mniej wiadomości to krótszy kontekst agenta, więc zadania są szybsze i tańsze. Prośba zadania jest zawsze dołączona. Zmiana działa od następnego zadania.",
+  "History window saved.": "Okno historii zapisane.",
+  "Could not save the history window.": "Nie udało się zapisać okna historii.",
   "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.":
     "Usuwa wszystkie wiadomości i zadania tego kanału. Kanał, jego członkowie, pamięć i rutyny zostają.",
   "Confirm clearing the history": "Potwierdź wyczyszczenie historii",
