@@ -54,6 +54,7 @@ export const en = {
   Collapsed: "Collapsed",
   Gray: "Gray",
   Font: "Font",
+  Enter: "Enter",
   "Could not save theme. Try again.": "Could not save theme. Try again.",
   "Application settings": "Application settings",
   Language: "Language",

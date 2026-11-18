@@ -54,6 +54,7 @@ export const pl = {
   Collapsed: "Zwinięte",
   Gray: "Szary",
   Font: "Czcionka",
+  Enter: "Enter",
   "Could not save theme. Try again.": "Nie udało się zapisać motywu. Spróbuj ponownie.",
   "Application settings": "Ustawienia aplikacji",
   Language: "Język",
