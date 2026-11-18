@@ -51,10 +51,10 @@ it("downloads and reveals through the existing API and exposes failures", async 
   const open = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal("openbot", { library: { list: async () => [item], open }, agent: { onEvent: () => () => {} } });
   render(() => <LibraryPanel />);
-  await fireEvent.click(await screen.findByRole("button", { name: "Pobierz" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Download" }));
   await waitFor(() => expect(open).toHaveBeenCalledWith({ fileId: "f", action: "download" }));
   open.mockRejectedValueOnce(new Error("Nie można pokazać pliku."));
-  await fireEvent.click(screen.getByRole("button", { name: "Pokaż w folderze" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));
   await waitFor(() => expect(open).toHaveBeenCalledWith({ fileId: "f", action: "reveal" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Nie można pokazać pliku.");
 });

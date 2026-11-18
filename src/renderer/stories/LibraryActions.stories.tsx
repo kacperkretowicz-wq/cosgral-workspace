@@ -41,9 +41,9 @@ type Story = StoryObj<typeof meta>;
 export const DownloadAndReveal: Story = {
   play: async ({ canvasElement, args }) => {
     const c = within(canvasElement);
-    await userEvent.click(c.getByRole("button", { name: "Pobierz" }));
+    await userEvent.click(c.getByRole("button", { name: "Download" }));
     await expect(args.onOpen).toHaveBeenCalledWith("file-demo", "download");
-    await userEvent.click(c.getByRole("button", { name: "Pokaż w folderze" }));
+    await userEvent.click(c.getByRole("button", { name: "Show in folder" }));
     await expect(args.onOpen).toHaveBeenCalledWith("file-demo", "reveal");
   },
 };
