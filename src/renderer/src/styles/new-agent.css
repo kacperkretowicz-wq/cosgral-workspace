@@ -298,3 +298,106 @@
   font-size: var(--cosgral-text-sm);
   color: var(--cosgral-text-muted);
 }
+
+/* UI-R: denser layout. Colours are small solid dots in two rows, the 12 faces sit in one row, Model is one bar, Create is the light primary. */
+.new-agent-page .new-agent-form {
+  width: min(440px, 100%);
+  gap: 12px;
+}
+
+.new-agent-page .new-agent-colors {
+  max-width: 272px;
+  gap: 6px;
+}
+
+.new-agent-page .new-agent-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+}
+
+.new-agent-page .new-agent-faces {
+  position: relative;
+  flex-wrap: nowrap;
+  gap: 3px;
+}
+
+.new-agent-page .new-agent-face {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  padding: 2px;
+}
+
+.new-agent-page .new-agent-more-faces {
+  position: absolute;
+  top: 50%;
+  right: -40px;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
+}
+
+.new-agent-page .new-agent-model-row {
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-surface);
+}
+
+.new-agent-page .new-agent-model-row .provider-model-picker {
+  min-width: 0;
+  flex: 1;
+}
+
+.new-agent-page .new-agent-model-row .provider-model-trigger-field {
+  height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.new-agent-page .new-agent-effort select {
+  min-width: 96px;
+  height: 40px;
+  border: 0;
+  border-left: 1px solid var(--cosgral-border);
+  border-radius: 0;
+  background-color: transparent;
+}
+
+.new-agent-page .new-agent-actions {
+  flex-direction: row-reverse;
+  justify-content: center;
+}
+
+.new-agent-page .new-agent-actions .ui-button[type="submit"] {
+  min-width: 124px;
+  border-color: transparent;
+  background: var(--cosgral-text-primary);
+  color: var(--cosgral-bg-canvas);
+  font-weight: 500;
+}
+
+.new-agent-page .new-agent-actions .ui-button[type="submit"]:disabled {
+  opacity: 0.45;
+}
+
+.new-agent-page .new-agent-suggestion {
+  min-height: 96px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+.new-agent-page .new-agent-suggestion .bot-avatar {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+}
+
+.new-agent-page .new-agent-suggestion strong {
+  font-size: var(--cosgral-text-xl);
+}
