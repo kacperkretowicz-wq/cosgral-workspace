@@ -53,6 +53,7 @@ beforeAll(async () => {
   const { registerProviderCatalogIpc } = await import("./provider-catalog-ipc");
   const { registerInsightsIpc } = await import("./insights-ipc");
   const { registerTasksViewIpc } = await import("./tasks-view-ipc");
+  const { registerChannelRoutinesIpc } = await import("./channel-routines-ipc");
   const { registerThreadUndoIpc } = await import("./thread-undo-ipc");
   const { registerMessengersIpc } = await import("./messengers-ipc");
   const { registerVaultConnectorsIpc } = await import("./vault-connectors-ipc");
@@ -94,6 +95,7 @@ beforeAll(async () => {
   registerProviderCatalogIpc(() => null);
   registerInsightsIpc({ library: () => null, usage: () => null, schedule: () => null });
   registerTasksViewIpc(() => null);
+  registerChannelRoutinesIpc(() => null);
   registerThreadUndoIpc(() => null);
   registerMessengersIpc(() => null);
   registerPluginCatalogIpc(
@@ -188,6 +190,8 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("schedule:").length).toBe(2);
     // COSGRAL W12 (BE-J): the Tasks view (the list of all channels, one task).
     expect(channelsOf("tasks-view:").length).toBe(2);
+    // COSGRAL W12 (BE-R): routines of a channel.
+    expect(channelsOf("channel-routines:").length).toBe(6);
     // COSGRAL W12 (BE-K): delete a thread with undo.
     expect(channelsOf("thread-undo:").length).toBe(3);
     // COSGRAL W10-KK2: the Telegram bridge.
@@ -244,6 +248,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
         "usage-report:",
         "schedule:",
         "tasks-view:",
+        "channel-routines:",
         "thread-undo:",
         "messengers:",
         "vault-connectors:",
