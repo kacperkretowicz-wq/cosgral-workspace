@@ -6,22 +6,7 @@ import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import { LanguageSettings } from "./LanguageSettings";
 import { UpdatesPanel } from "./UpdatesPanel";
-import {
-  Bell,
-  Button,
-  Card,
-  Dialog,
-  Heading,
-  IconButton,
-  Mic,
-  Palette,
-  RefreshCw,
-  Settings,
-  SlidersHorizontal,
-  Switch,
-  Text,
-  X,
-} from "./ui";
+import { Bell, Button, Dialog, IconButton, Mic, Palette, RefreshCw, Settings, SlidersHorizontal, Text, X } from "./ui";
 import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 
 export interface SettingsModalProps {
@@ -222,22 +207,6 @@ export function SettingsModal(props: SettingsModalProps) {
                       <LanguageSettings />
                       <ContextSettingsSection />
                       <BudgetSettings />
-                      <section class="settings-modal-group" aria-labelledby="settings-notifications">
-                        <Heading id="settings-notifications" as="h3" size="sm" tone="secondary">
-                          {t("Notifications")}
-                        </Heading>
-                        <Card class="settings-modal-card">
-                          <Switch
-                            defaultChecked
-                            label={t("Desktop notifications")}
-                            description={t("Show a notification when an agent needs attention.")}
-                          />
-                          <Switch
-                            label={t("Play a sound when a task finishes")}
-                            description={t("Use a short sound for completed tasks.")}
-                          />
-                        </Card>
-                      </section>
                     </>
                   )}
                 </div>

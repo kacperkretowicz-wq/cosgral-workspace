@@ -43,3 +43,16 @@ it("Voice has its own section: the microphone and what this version does not off
   expect(await screen.findByText("Microphone permission")).toBeInTheDocument();
   expect(screen.getByText("Not available in this version")).toBeInTheDocument();
 });
+
+it("General offers only switches that save: the three of App behavior, no notification switches without a store", async () => {
+  render(() => <SettingsModal open onOpenChange={() => undefined} />);
+  expect(await screen.findByRole("switch", { name: "Launch COSGRAL Workspace at login" })).toBeInTheDocument();
+  const names = screen.getAllByRole("switch").map((item) => item.getAttribute("aria-label") ?? item.textContent);
+  expect(names).toHaveLength(3);
+  expect(screen.getByRole("switch", { name: "Keep COSGRAL Workspace running in the background" })).toBeInTheDocument();
+  expect(screen.getByRole("switch", { name: "Restore the last workspace on launch" })).toBeInTheDocument();
+  expect(screen.queryByText("Desktop notifications")).not.toBeInTheDocument();
+  expect(screen.queryByText("Play a sound when a task finishes")).not.toBeInTheDocument();
+  // The real matrix of notifications is on the Settings screen (AppSettingsW3); this dialog does not pretend to have one.
+  expect(screen.queryByRole("heading", { name: "Notifications" })).not.toBeInTheDocument();
+});
