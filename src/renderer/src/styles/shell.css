@@ -300,3 +300,34 @@
     animation: none;
   }
 }
+
+/* UI-V: sidebar tile details. Accent bar on the active tile, quiet preview line, readable unread state. */
+.sidebar .bot-row {
+  position: relative;
+}
+
+.sidebar .bot-row-active::before {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 var(--cosgral-radius-sm) var(--cosgral-radius-sm) 0;
+  background: var(--cosgral-accent);
+  content: "";
+}
+
+.sidebar .bot-row-preview {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.sidebar .bot-row-active .bot-row-preview {
+  color: var(--cosgral-text-secondary);
+}
+
+.sidebar .bot-row-time {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  font-variant-numeric: tabular-nums;
+}
