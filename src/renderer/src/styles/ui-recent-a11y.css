@@ -50,8 +50,8 @@
 :root[data-theme="light"] .tasks-screen-hero-lead em,
 [data-story-theme="light"] .tasks-screen-hero-lead em {
   background: none;
-  color: oklch(0.42 0.16 250);
-  -webkit-text-fill-color: oklch(0.42 0.16 250);
+  color: var(--cosgral-accent-text);
+  -webkit-text-fill-color: var(--cosgral-accent-text);
 }
 
 @media (forced-colors: active) {

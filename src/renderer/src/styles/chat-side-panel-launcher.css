@@ -23,10 +23,10 @@
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--cosgral-border);
-  border-radius: 12px;
+  border-radius: var(--cosgral-radius-lg);
   background: color-mix(in srgb, var(--cosgral-bg-raised) 92%, transparent);
   color: var(--cosgral-fg);
-  box-shadow: 0 8px 24px color-mix(in srgb, #000 28%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--cosgral-bg-frame) 72%, transparent);
   backdrop-filter: blur(8px);
   transition:
     border-color var(--cosgral-duration-normal) ease,
@@ -46,7 +46,7 @@
 
 .chat-side-panel-launcher-item span {
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--cosgral-text-md);
   font-weight: 500;
   line-height: 1.2;
   text-align: left;
@@ -65,10 +65,10 @@
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--cosgral-radius-md);
   background: transparent;
   color: var(--cosgral-fg-muted);
-  font-size: 13px;
+  font-size: var(--cosgral-text-md);
   font-weight: 500;
 }
 
@@ -107,7 +107,7 @@
 .chat-voice-panel-note {
   margin: 0 0 12px;
   color: var(--cosgral-fg-muted);
-  font-size: 13px;
+  font-size: var(--cosgral-text-md);
   line-height: 1.45;
 }
 

@@ -11,14 +11,14 @@
   margin: 0 0 6px;
   max-width: 36rem;
   color: var(--cosgral-fg);
-  font-size: 22px;
+  font-size: var(--cosgral-text-2xl);
   font-weight: 500;
   line-height: 1.35;
 }
 
 .tasks-screen-hero-lead em {
   font-style: normal;
-  background: linear-gradient(90deg, #7ec8ff, #42a0ff);
+  background: linear-gradient(90deg, var(--cosgral-accent-hover), var(--cosgral-accent-text));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -36,7 +36,7 @@
   align-items: baseline;
   margin: 0 0 8px;
   color: var(--cosgral-fg);
-  font-size: 14px;
+  font-size: var(--cosgral-text-lg);
   font-weight: 600;
 }
 

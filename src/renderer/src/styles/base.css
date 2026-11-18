@@ -4,7 +4,8 @@
 
 html {
   /* KAPI-N: uiScale from appearanceDomTokens → --openbot-ui-scale (1 = 100%). */
-  font-size: calc(16px * var(--openbot-ui-scale, 1));
+  --cosgral-root-type: calc(var(--cosgral-text-xl) * var(--openbot-ui-scale, 1));
+  font-size: var(--cosgral-root-type);
 }
 
 html,
