@@ -30,6 +30,17 @@ export const ENDPOINT_PRESETS = [
   { kind: "lmstudio", label: "LM Studio", baseUrl: "http://127.0.0.1:1234/v1" },
 ] as const satisfies ReadonlyArray<{ kind: EndpointKind; label: string; baseUrl: string }>;
 
+/**
+ * COSGRAL W12 (BE-Q): ready settings for hosted services that speak the OpenAI protocol, so Grok (xAI) and OpenRouter models can be used
+ * with an API key and without their CLI (owner question 3). Unlike ENDPOINT_PRESETS they are NOT probed when the program starts: they
+ * only fill the form, and nothing is contacted until the person saves a key (the address is then shown with the warning that the
+ * messages go to another computer). The addresses are the public ones of the services; not contacted from here.
+ */
+export const ENDPOINT_CLOUD_PRESETS = [
+  { kind: "openai-compatible", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" },
+  { kind: "openai-compatible", label: "xAI (Grok)", baseUrl: "https://api.x.ai/v1" },
+] as const satisfies ReadonlyArray<{ kind: EndpointKind; label: string; baseUrl: string }>;
+
 export interface ModelEndpoint {
   id: string;
   label: string;

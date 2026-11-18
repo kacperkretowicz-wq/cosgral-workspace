@@ -63,21 +63,25 @@ export function acpArgsFromText(text: string): string[] {
 export function validateAcpAgentDraft(draft: AcpAgentDraft, existingIds: readonly string[]): AcpAgentErrors {
   const errors: AcpAgentErrors = {};
   const id = draft.id.trim();
-  if (!id) errors.id = "Choose an id.";
+  if (!id) errors.id = t("Choose an id.");
   else if (!isAcpAgentId(id))
-    errors.id = `Start with a lowercase letter, then lowercase letters, digits and dashes (up to ${PROVIDER_LIMITS.acpId}).`;
-  else if (existingIds.includes(id)) errors.id = "An agent with this id already exists.";
+    errors.id = t(
+      "Start with a lowercase letter, then lowercase letters, digits and dashes (up to {limit}).",
+      { limit: PROVIDER_LIMITS.acpId },
+    );
+  else if (existingIds.includes(id)) errors.id = t("An agent with this id already exists.");
   const name = draft.name.trim();
-  if (!name) errors.name = "Give the agent a name.";
-  else if (name.length > PROVIDER_LIMITS.acpName) errors.name = `Use at most ${PROVIDER_LIMITS.acpName} characters.`;
+  if (!name) errors.name = t("Give the agent a name.");
+  else if (name.length > PROVIDER_LIMITS.acpName)
+    errors.name = t("Use at most {n} characters.", { n: PROVIDER_LIMITS.acpName });
   const command = draft.command.trim();
-  if (!command) errors.command = "Enter the program to run.";
+  if (!command) errors.command = t("Enter the program to run.");
   else if (command.length > PROVIDER_LIMITS.command)
-    errors.command = `Use at most ${PROVIDER_LIMITS.command} characters.`;
+    errors.command = t("Use at most {n} characters.", { n: PROVIDER_LIMITS.command });
   const args = acpArgsFromText(draft.args);
-  if (args.length > PROVIDER_LIMITS.args) errors.args = `Use at most ${PROVIDER_LIMITS.args} arguments.`;
+  if (args.length > PROVIDER_LIMITS.args) errors.args = t("Use at most {n} arguments.", { n: PROVIDER_LIMITS.args });
   else if (args.some((arg) => arg.length > PROVIDER_LIMITS.arg))
-    errors.args = `Each argument can have at most ${PROVIDER_LIMITS.arg} characters.`;
+    errors.args = t("Each argument can have at most {n} characters.", { n: PROVIDER_LIMITS.arg });
   return errors;
 }
 
@@ -86,7 +90,7 @@ export function providerLabel(usage: Pick<ProviderUsage, "provider" | "model">, 
   if (usage.provider === "claude") return "Claude";
   const id = usage.model?.startsWith("acp:") ? usage.model.slice(4) : null;
   const agent = id ? acpAgents.find((item) => item.id === id) : undefined;
-  return agent ? `${agent.name} (ACP)` : usage.model ? `${usage.model}` : "ACP agent";
+  return agent ? `${agent.name} (ACP)` : usage.model ? `${usage.model}` : t("ACP agent");
 }
 
 /** "14:30" today, otherwise with the date; empty for no time. `resetsAt` is Unix seconds. */
@@ -149,21 +153,23 @@ export function ProviderUsageList(props: {
                     </Show>
                     <Show when={item.state !== "ok" && reset()}>
                       <Text as="p" tone="secondary">
-                        {item.state === "limited" ? "Resets at" : "Back at"} {reset()}
+                        {item.state === "limited" ? t("Resets at") : t("Back at")} {reset()}
                       </Text>
                     </Show>
                     <Show when={item.state !== "ok" && !reset()}>
                       <Text as="p" tone="muted">
-                        No reset time was given.
+                        {t("No reset time was given.")}
                       </Text>
                     </Show>
                   </div>
                   <div class="providers-state">
                     <Show when={item.usedPercent !== null}>
-                      <Text tone="secondary">{Math.round(item.usedPercent ?? 0)}% used</Text>
+                      <Text tone="secondary">
+                        {t("{percent}% used", { percent: Math.round(item.usedPercent ?? 0) })}
+                      </Text>
                     </Show>
                     <Badge tone={view().tone} dot>
-                      {view().label}
+                      {t(view().label)}
                     </Badge>
                   </div>
                 </li>
@@ -212,7 +218,7 @@ export function AcpAgentsSection(props: {
       setSubmitted(false);
       setError("");
     } catch (e) {
-      setError(providerError(e, "Could not add the agent."));
+      setError(providerError(e, t("Could not add the agent.")));
     } finally {
       setSaving(false);
     }
@@ -222,19 +228,20 @@ export function AcpAgentsSection(props: {
       await props.onRemove(id);
       setError("");
     } catch (e) {
-      setError(providerError(e, "Could not remove the agent."));
+      setError(providerError(e, t("Could not remove the agent.")));
     } finally {
       setRemoving(null);
     }
   }
   return (
-    <Card class="providers-section" role="region" aria-label="ACP agents">
+    <Card class="providers-section" role="region" aria-label={t("ACP agents")}>
       <Heading as="h2" size="md">
-        ACP agents
+        {t("ACP agents")}
       </Heading>
       <Text as="p" tone="secondary">
-        Any program that speaks the Agent Client Protocol over stdio can be a provider. It appears as one model next to
-        the others.
+        {t(
+          "Any program that speaks the Agent Client Protocol over stdio can be a provider. It appears as one model next to the others.",
+        )}
       </Text>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
@@ -245,7 +252,7 @@ export function AcpAgentsSection(props: {
         when={props.agents.length}
         fallback={
           <Text as="p" tone="muted">
-            No ACP agent is added.
+            {t("No ACP agent is added.")}
           </Text>
         }
       >
@@ -267,22 +274,25 @@ export function AcpAgentsSection(props: {
                       type="button"
                       variant="danger"
                       size="sm"
-                      aria-label={`Remove ${agent.name}`}
+                      aria-label={t("Remove {name}", { name: agent.name })}
                       onClick={() => setRemoving(agent.id)}
                     >
-                      Remove
+                      {t("Remove")}
                     </Button>
                   }
                 >
-                  <fieldset class="providers-confirm" aria-label={`Confirm removing ${agent.name}`}>
+                  <fieldset class="providers-confirm" aria-label={t("Confirm removing {name}", { name: agent.name })}>
                     <Text tone="danger">
-                      Agents set to {acpModelId(agent.id)} can no longer use it. Remove {agent.name}?
+                      {t("Agents set to {model} can no longer use it. Remove {name}?", {
+                        model: acpModelId(agent.id),
+                        name: agent.name,
+                      })}
                     </Text>
                     <Button type="button" variant="danger" size="sm" onClick={() => void remove(agent.id)}>
-                      Yes, remove
+                      {t("Yes, remove")}
                     </Button>
                     <Button type="button" size="sm" onClick={() => setRemoving(null)}>
-                      Keep
+                      {t("Keep")}
                     </Button>
                   </fieldset>
                 </Show>
@@ -291,39 +301,39 @@ export function AcpAgentsSection(props: {
           </For>
         </ul>
       </Show>
-      <form class="providers-form" aria-label="Add ACP agent" onSubmit={(event) => void save(event)} novalidate>
+      <form class="providers-form" aria-label={t("Add ACP agent")} onSubmit={(event) => void save(event)} novalidate>
         <Heading as="h3" size="sm" tone="secondary">
-          Add an ACP agent
+          {t("Add an ACP agent")}
         </Heading>
         <Field
-          label="Id"
+          label={t("Id")}
           required
-          description="Becomes part of its model id, for example acp:my-agent."
+          description={t("Becomes part of its model id, for example acp:my-agent.")}
           error={shown("id")}
         >
           <Input value={draft().id} onInput={(e) => set({ id: e.currentTarget.value })} autocomplete="off" />
         </Field>
-        <Field label="Name" required error={shown("name")}>
+        <Field label={t("Name")} required error={shown("name")}>
           <Input value={draft().name} onInput={(e) => set({ name: e.currentTarget.value })} />
         </Field>
         <Field
-          label="Command"
+          label={t("Command")}
           required
-          description="The program to start, as you would type it."
+          description={t("The program to start, as you would type it.")}
           error={shown("command")}
         >
           <Input value={draft().command} onInput={(e) => set({ command: e.currentTarget.value })} autocomplete="off" />
         </Field>
-        <Field label="Arguments" description="One per line." error={shown("args")}>
+        <Field label={t("Arguments")} description={t("One per line.")} error={shown("args")}>
           <Textarea value={draft().args} rows={3} onInput={(e) => set({ args: e.currentTarget.value })} />
         </Field>
         <Show when={atLimit()}>
           <Text as="p" tone="warning">
-            You can add up to {PROVIDER_LIMITS.acpAgents} ACP agents.
+            {t("You can add up to {count} ACP agents.", { count: PROVIDER_LIMITS.acpAgents })}
           </Text>
         </Show>
-        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel="Adding...">
-          Add agent
+        <Button type="submit" variant="primary" disabled={atLimit()} loading={saving()} loadingLabel={t("Adding...")}>
+          {t("Add agent")}
         </Button>
       </form>
     </Card>
@@ -339,16 +349,19 @@ export function FallbackInUse(props: { bots: BotSummary[]; options: FallbackMode
     );
   return (
     <Show when={active().length}>
-      <ul class="providers-list" aria-label="Agents using a fallback model">
+      <ul class="providers-list" aria-label={t("Agents using a fallback model")}>
         <For each={active()}>
           {(entry) => (
             <li class="providers-row">
               <Text>
-                <Text as="strong">{entry.bot.name}</Text> is using {nameOf(entry.active)} instead of{" "}
-                {nameOf(entry.bot.model)}.
+                {t("{name} is using {active} instead of {own}.", {
+                  name: entry.bot.name,
+                  active: nameOf(entry.active),
+                  own: nameOf(entry.bot.model),
+                })}
               </Text>
               <Badge tone="warning" dot>
-                Fallback
+                {t("Fallback")}
               </Badge>
             </li>
           )}
@@ -382,7 +395,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
     group("provider:claude", "Claude"),
     ...acpAgents().map((agent) => group(`provider:acp:${agent.id}`, agent.name)),
     ...endpoints().map((endpoint) => group(`provider:endpoint:${endpoint.id}`, endpoint.label)),
-    group(GENERAL_FALLBACK_SCOPE, "All providers"),
+    group(GENERAL_FALLBACK_SCOPE, t("All providers")),
   ];
   const [loadingFallbacks, setLoadingFallbacks] = createSignal(false);
   const [info, setInfo] = createSignal<FallbackModelsInfo | null>(null);
@@ -433,7 +446,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       setSaved(list);
       setItems(list);
     } catch (e) {
-      if (serial === loadSerial) fail(e, "Could not load fallback models.");
+      if (serial === loadSerial) fail(e, t("Could not load fallback models."));
     } finally {
       if (serial === loadSerial) setLoadingFallbacks(false);
     }
@@ -446,7 +459,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       setUsage(await api.listUsage());
       setError("");
     } catch (e) {
-      fail(e, "Could not load usage.");
+      fail(e, t("Could not load usage."));
     } finally {
       setRefreshing(false);
     }
@@ -470,10 +483,10 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
       setSaved(result);
       setItems(result);
       await loadFallbacks(botId());
-      setNotice("Fallback order saved.");
+      setNotice(t("Fallback order saved."));
       setError("");
     } catch (e) {
-      fail(e, "Could not save the order.");
+      fail(e, t("Could not save the order."));
     } finally {
       setSaving(false);
     }
@@ -481,18 +494,18 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
   onSettled(() => {
     const api = window.openbot.providers;
     if (!api) {
-      setError("Providers are unavailable.");
+      setError(t("Providers are unavailable."));
       return;
     }
     void window.openbot.endpoints
       ?.list()
       .then(setEndpoints)
-      .catch((e) => fail(e, "Could not load endpoint groups."));
+      .catch((e) => fail(e, t("Could not load endpoint groups.")));
     void refreshUsage();
     void api
       .listAcpAgents()
       .then(setAcpAgents)
-      .catch((e) => fail(e, "Could not load ACP agents."));
+      .catch((e) => fail(e, t("Could not load ACP agents.")));
     void window.openbot.agent
       .listModels()
       .then(setModels)
@@ -503,7 +516,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
         setBots(list);
         if (!botId() && list[0]) chooseBot(list[0].id);
       })
-      .catch((e) => fail(e, "Could not load agents."));
+      .catch((e) => fail(e, t("Could not load agents.")));
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "provider-usage-changed") setUsage(event.usage);
@@ -520,10 +533,10 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
     <main class="w2-library providers-page">
       <header>
         <Heading as="h1" size="lg">
-          Providers
+          {t("Providers")}
         </Heading>
         <Text as="p" tone="secondary">
-          See which providers are available, add your own ACP agents, and choose what an agent falls back to.
+          {t("See which providers are available, add your own ACP agents, and choose what an agent falls back to.")}
         </Text>
       </header>
       <Show when={error()}>
@@ -548,13 +561,13 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
         agents={acpAgents()}
         onSave={async (input) => {
           const api = window.openbot.providers;
-          if (!api) throw new Error("Providers are unavailable.");
+          if (!api) throw new Error(t("Providers are unavailable."));
           await api.saveAcpAgent(input);
           setAcpAgents(await api.listAcpAgents());
         }}
         onRemove={async (id) => {
           const api = window.openbot.providers;
-          if (!api) throw new Error("Providers are unavailable.");
+          if (!api) throw new Error(t("Providers are unavailable."));
           await api.removeAcpAgent({ id });
           setAcpAgents(await api.listAcpAgents());
         }}
@@ -574,12 +587,12 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
               .then((detail) => {
                 if (botId() === id) setInfo(detail);
               })
-              .catch((e) => fail(e, "Could not refresh the chain."));
+              .catch((e) => fail(e, t("Could not refresh the chain.")));
           }}
         />
         <FallbackInUse bots={bots()} options={modelOptions()} />
         <Show when={props.fallbackNotices?.length}>
-          <ul class="providers-list" aria-label="Recent switches">
+          <ul class="providers-list" aria-label={t("Recent switches")}>
             <For each={props.fallbackNotices ?? []}>
               {(line) => (
                 <li class="providers-row">
@@ -589,8 +602,8 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
             </For>
           </ul>
         </Show>
-        <fieldset aria-label="Agent fallback settings" style="border: 0; padding: 0; margin: 0; min-width: 0">
-          <Field label="Agent">
+        <fieldset aria-label={t("Agent fallback settings")} style="border: 0; padding: 0; margin: 0; min-width: 0">
+          <Field label={t("Agent")}>
             <NativeSelect
               value={botId()}
               disabled={saving()}
@@ -623,7 +636,7 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
           </Show>
           <Show when={bot()}>
             <Text as="p" role="status">
-              {info()?.own === null ? "Using provider and all-provider lists" : "Agent's own list"}
+              {info()?.own === null ? t("Using provider and all-provider lists") : t("Agent's own list")}
             </Text>
             <Show when={window.openbot.providers?.resetFallbackModels}>
               <Button
@@ -637,13 +650,13 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
                     await loadFallbacks(botId());
                     setError("");
                   } catch (e) {
-                    fail(e, "Could not reset the list.");
+                    fail(e, t("Could not reset the list."));
                   } finally {
                     setSaving(false);
                   }
                 }}
               >
-                Reset to provider list
+                {t("Reset to provider list")}
               </Button>
             </Show>
           </Show>

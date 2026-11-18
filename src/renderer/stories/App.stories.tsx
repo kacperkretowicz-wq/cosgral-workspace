@@ -84,7 +84,7 @@ export const CommandSearch: Story = {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole("dialog", { name: "Search COSGRAL" });
     const input = page.getByRole("combobox", { name: "Search COSGRAL" });
-    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toBeVisible());
     await expect(input).toHaveFocus();
 
     await userEvent.click(page.getByRole("tab", { name: "Messages" }));
@@ -166,7 +166,7 @@ export const AgentMenuActions: Story = {
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
       await userEvent.click(await body.findByRole("menuitem", { name: "Duplicate" }));
       await c.findByRole("heading", { name: "Research kopia" });
-      await c.findByText(/Kopia gotowa/);
+      await c.findByText(/Copy ready/);
       await expect(errors).toEqual([]);
     } finally {
       view.removeEventListener("error", capture);

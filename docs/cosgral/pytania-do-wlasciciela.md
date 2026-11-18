@@ -16,8 +16,23 @@ Stan: 18.11.2026. Parytet kodowy 75% (ostrożnie 56,9%, w oknie 45,1%). Godziny 
 
 Do tego kategorycznie poza zakresem (decyzja jest, nie pytam): stały link do parowania telefonu, trasa przez chmurę, zdalny pulpit bez nadzoru, Image/Video w przepływach (12 h+ każde, ciężkie).
 
+## Co silnik zrobił już BEZ Twojej decyzji (Backend, 18.11.2026, BE-Q)
+
+Tylko rzeczy małe, bezpieczne i nic nie uruchamiające; reszta czeka na Twoje „tak”. Gałąź `team/backend/w12-q`. Kontrakty i testy napisane w cichym oknie (nie uruchomione, patrz niżej).
+
+| # | Pytanie | Zrobione bez decyzji | Zostaje po „tak” |
+|---|---|---|---|
+| 1 | Discord | Nic w kodzie: dodanie rodzaju „discord” ruszyłoby `messengers.*` i ekran Komunikatorów, więc to już jest część decyzji | ok. 9 h: deskryptor (token bota, kroki w portalu deweloperskim, uprawnienie do treści wiadomości), atrapa, silnik rozmów prywatnych; prawdziwy test potrzebuje tokenu bota |
+| 2 | Rutyny kanału | **Reguły** (`ipc-channel-routines.ts`): kto i co może: kanał istnieje, nie jest zarchiwizowany, ma lidera; limit 16 rutyn na kanał; nazwa i instrukcja; harmonogram jak u rutyn agenta (interwał, codziennie, cron); tekst wiadomości biegu „Scheduled: <nazwa>”. Test: 5 przypadków | ok. 5 h: tabela rutyn kanału, start (wiadomość do kanału jako osoba → zadanie lidera) i śledzenie zadania jako wyniku biegu, IPC, atrapa, wybór kanału w ekranie rutyn |
+| 3 | Sterowniki innych dostawców | **Grok (xAI) i OpenRouter działają już bez CLI**, jako własne punkty końcowe z kluczem API. Dodane gotowe ustawienia `ENDPOINT_CLOUD_PRESETS` (OpenRouter `https://openrouter.ai/api/v1`, xAI `https://api.x.ai/v1`), które tylko wypełniają formularz i **nie** są sprawdzane przy starcie (inaczej niż Ollama i LM Studio). Modele wychodzą jako `endpoint:<id>/<model>`, tylko czat. Test: 1 | UI: drugi rząd przycisków presetów w sekcji punktów końcowych (dziś jest tylko `ENDPOINT_PRESETS`). Nadal bez Twojej zgody nie ruszamy: pobierania ich CLI i logowania kontem |
+| 4 | LLM i Asset w przepływach | Nic bezpiecznie w silniku: nowy typ węzła łamie wyczerpujące przełączniki w edytorze (UI i KK). **Obejście dziś:** węzeł „agent” z agentem bez narzędzi robi to samo co krok „zapytaj model” | ok. 5 h na `llm` (model + prompt), po edytorze; 5 h na Asset; 3 h adnotacje |
+| 5 | Skill z linku GitHub | **Pierwsza, bezpieczna połowa** (`ipc-skill-link.ts`): czytanie linku (tylko `https://github.com/<właściciel>/<repo>[/tree/<gałąź>/<folder>]`; odrzuca inne hosty, raw i gist, http, hasła w adresie, zapytanie i `..`), lista 5 kontroli, które instalacja musi zrobić i pokazać na karcie zgody, limity jak w skillu (200 plików, 10 MB). Test: 5 | ok. 6 h: pobranie (bez wykonywania czegokolwiek), przegląd listy plików, karta zgody z pełnym SKILL.md, instalacja; tylko po Twoim „tak” |
+
+Wniosek: z pięciu pytań **jedno (3) już coś daje w programie** (Grok i OpenRouter przez klucz, po dołożeniu przycisków w ekranie), **dwa (2, 5) mają gotowe reguły**, dwa (1, 4) nie mają nic małego do zrobienia bez Twojej decyzji.
+
 ## Czego nie sprawdziłem
 
 1. Koszty to szacunek z wielkości podobnych ekranów i silników, nie pomiar.
 2. Nie sprawdzałem, czy Discord, Grok lub OpenRouter zmieniły swoje zasady dostępu od ostatniej analizy.
 3. „+ pp” liczę regułą z parytetu (wiersz „częściowo” → „jest” to +0,7 pp).
+4. Pliki z sekcji o pracy Backendu (`ipc-channel-routines`, `ipc-skill-link`, `ENDPOINT_CLOUD_PRESETS`) są napisane, ale ich testy i Biome czekają na koniec cichego okna; adresów OpenRouter i xAI nie sprawdzałem połączeniem (to publiczne adresy usług).

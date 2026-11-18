@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checkEndpointUrl,
+  ENDPOINT_CLOUD_PRESETS,
   ENDPOINT_PRESETS,
   endpointModelId,
   isAgentEvent,
@@ -122,5 +123,16 @@ describe("own model endpoints contract (W5-K2)", () => {
     }
     expect(message).not.toContain("has space");
     expect(message).toMatch(/one piece/);
+  });
+});
+
+describe("hosted presets (W12 BE-Q)", () => {
+  it("are https addresses of other computers, with the warning, and are not the presets that are probed at start", () => {
+    expect(ENDPOINT_CLOUD_PRESETS.map((preset) => preset.label)).toEqual(["OpenRouter", "xAI (Grok)"]);
+    for (const preset of ENDPOINT_CLOUD_PRESETS) {
+      expect(preset.kind).toBe("openai-compatible");
+      expect(checkEndpointUrl(preset.baseUrl)).toMatchObject({ ok: true, loopback: false });
+      expect(ENDPOINT_PRESETS.map((other) => other.baseUrl)).not.toContain(preset.baseUrl);
+    }
   });
 });
