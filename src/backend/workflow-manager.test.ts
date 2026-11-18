@@ -603,3 +603,189 @@ describe("WorkflowManager: versions", () => {
     });
   });
 });
+
+const prompt: WorkflowNode = {
+  id: "note",
+  type: "prompt",
+  title: "Note",
+  x: 100,
+  y: 0,
+  text: "Be brief about {{input}}.",
+};
+const check: WorkflowNode = {
+  id: "check",
+  type: "condition",
+  title: "Approved?",
+  x: 300,
+  y: 0,
+  subject: "{{previous}}",
+  operator: "contains",
+  value: "approved",
+  caseSensitive: false,
+};
+const yesPost: WorkflowNode = { ...post, id: "yes-post", title: "Yes post", text: "Posted: {{previous}}" };
+const noPost: WorkflowNode = { ...post, id: "no-post", title: "No post", text: "Not posted: {{previous}}" };
+const branchEdges: WorkflowEdge[] = [
+  { id: "e1", from: "start", to: "ask", on: "next" },
+  { id: "e2", from: "ask", to: "check", on: "next" },
+  { id: "e3", from: "check", to: "yes-post", on: "yes" },
+  { id: "e4", from: "check", to: "no-post", on: "no" },
+];
+
+describe("WorkflowManager: prompt and condition steps", () => {
+  it("a prompt step passes its text (templates filled in) to the next step", async () => {
+    const { manager, posts } = await build();
+    const prompted = { ...post, text: "{{previous}}" };
+    const workflow = save(
+      manager,
+      [trigger, prompt, prompted],
+      [
+        { id: "e1", from: "start", to: "note", on: "next" },
+        { id: "e2", from: "note", to: "post", on: "next" },
+      ],
+    );
+    manager.run({ workflowId: workflow.id, input: "the news" });
+    await manager.idle();
+    expect(posts).toEqual([{ channelId: "chan", text: '[Workflow "Reply flow"] Be brief about the news.' }]);
+    const done = manager.listRuns({ workflowId: workflow.id })[0];
+    expect(done?.steps.map((step) => [step.nodeId, step.status, step.output])).toEqual([
+      ["start", "done", "the news"],
+      ["note", "done", "Be brief about the news."],
+      ["post", "done", "Be brief about the news."],
+    ]);
+  });
+
+  it("a condition goes the Yes way when the text matches (case does not matter) and the No way when it does not", async () => {
+    const { manager, posts, finish } = await build();
+    const workflow = save(manager, [trigger, ask, check, yesPost, noPost], branchEdges);
+
+    manager.run({ workflowId: workflow.id, input: "x" });
+    await waitFor(() => manager.listRuns({ workflowId: workflow.id }).length === 1);
+    finish("delivery-1", "completed", "APPROVED by Ann");
+    await manager.idle();
+    expect(posts.at(-1)).toEqual({ channelId: "chan", text: '[Workflow "Reply flow"] Posted: APPROVED by Ann' });
+    const first = manager.listRuns({ workflowId: workflow.id })[0];
+    expect(first).toMatchObject({ status: "done", result: "Posted: APPROVED by Ann" });
+    // The condition's own output is the answer; the steps of the way not taken are skipped.
+    expect(first?.steps.map((step) => [step.nodeId, step.status, step.output])).toEqual([
+      ["start", "done", "x"],
+      ["ask", "done", "APPROVED by Ann"],
+      ["check", "done", "Yes"],
+      ["yes-post", "done", "Posted: APPROVED by Ann"],
+      ["no-post", "skipped", null],
+    ]);
+
+    manager.run({ workflowId: workflow.id, input: "y" });
+    await waitFor(() => manager.listRuns({ workflowId: workflow.id }).length === 2);
+    finish("delivery-2", "completed", "Rejected");
+    await manager.idle();
+    expect(posts.at(-1)).toEqual({ channelId: "chan", text: '[Workflow "Reply flow"] Not posted: Rejected' });
+    const second = manager.listRuns({ workflowId: workflow.id })[0];
+    expect(second?.steps.map((step) => [step.nodeId, step.status])).toEqual([
+      ["start", "done"],
+      ["ask", "done"],
+      ["check", "done"],
+      ["yes-post", "skipped"],
+      ["no-post", "done"],
+    ]);
+  });
+
+  it("a condition whose answer has no connection ends the run as done there", async () => {
+    const { manager, posts, finish } = await build();
+    const workflow = save(
+      manager,
+      [trigger, ask, check, yesPost],
+      [
+        { id: "e1", from: "start", to: "ask", on: "next" },
+        { id: "e2", from: "ask", to: "check", on: "next" },
+        { id: "e3", from: "check", to: "yes-post", on: "yes" },
+      ],
+    );
+    manager.run({ workflowId: workflow.id });
+    await waitFor(() => manager.listRuns({ workflowId: workflow.id }).length === 1);
+    finish("delivery-1", "completed", "Rejected");
+    await manager.idle();
+    expect(posts).toEqual([]);
+    expect(manager.listRuns({ workflowId: workflow.id })[0]).toMatchObject({ status: "done", result: "No" });
+  });
+
+  it("compares for being empty and can be case sensitive", async () => {
+    const { manager, posts } = await build();
+    const empty = { ...check, operator: "is-empty" as const, subject: "{{input}}", value: "" };
+    const workflow = save(
+      manager,
+      [trigger, empty, yesPost, noPost],
+      [
+        { id: "e1", from: "start", to: "check", on: "next" },
+        { id: "e2", from: "check", to: "yes-post", on: "yes" },
+        { id: "e3", from: "check", to: "no-post", on: "no" },
+      ],
+    );
+    manager.run({ workflowId: workflow.id, input: "  " });
+    await manager.idle();
+    expect(posts.at(-1)?.text).toContain("Posted:");
+    manager.run({ workflowId: workflow.id, input: "something" });
+    await manager.idle();
+    expect(posts.at(-1)?.text).toContain("Not posted: something");
+
+    const strict = manager.update({
+      workflowId: workflow.id,
+      nodes: [trigger, { ...check, subject: "{{input}}", value: "Hello", caseSensitive: true }, yesPost, noPost],
+      edges: [
+        { id: "e1", from: "start", to: "check", on: "next" },
+        { id: "e2", from: "check", to: "yes-post", on: "yes" },
+        { id: "e3", from: "check", to: "no-post", on: "no" },
+      ],
+    });
+    manager.run({ workflowId: strict.id, input: "hello there" });
+    await manager.idle();
+    expect(posts.at(-1)?.text).toContain("Not posted: hello there");
+  });
+
+  it("refuses to save a prompt without a text, a condition without a text or value, and a Yes connection from an agent", async () => {
+    const { manager } = await build();
+    expect(() =>
+      save(manager, [trigger, { ...prompt, text: " " }], [{ id: "e1", from: "start", to: "note", on: "next" }]),
+    ).toThrow(/Step "Note" needs a text/);
+    expect(() =>
+      save(
+        manager,
+        [trigger, { ...check, subject: " " }, yesPost],
+        [
+          { id: "e1", from: "start", to: "check", on: "next" },
+          { id: "e2", from: "check", to: "yes-post", on: "yes" },
+        ],
+      ),
+    ).toThrow(/needs a text to check/);
+    expect(() =>
+      save(
+        manager,
+        [trigger, { ...check, value: " " }, yesPost],
+        [
+          { id: "e1", from: "start", to: "check", on: "next" },
+          { id: "e2", from: "check", to: "yes-post", on: "yes" },
+        ],
+      ),
+    ).toThrow(/needs a value to compare with/);
+    expect(() =>
+      save(
+        manager,
+        [trigger, ask, yesPost],
+        [
+          { id: "e1", from: "start", to: "ask", on: "next" },
+          { id: "e2", from: "ask", to: "yes-post", on: "yes" },
+        ],
+      ),
+    ).toThrow(/use "next"/);
+    expect(() =>
+      save(
+        manager,
+        [trigger, check, yesPost],
+        [
+          { id: "e1", from: "start", to: "check", on: "next" },
+          { id: "e2", from: "check", to: "yes-post", on: "next" },
+        ],
+      ),
+    ).toThrow(/use "yes" or "no"/);
+  });
+});

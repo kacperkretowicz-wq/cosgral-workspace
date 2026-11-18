@@ -7,6 +7,7 @@ import {
   type AgentEvent,
   type CreateWorkflowInput,
   type DraftPreviewResolution,
+  evaluateWorkflowCondition,
   type QueueDeliveryStatus,
   type RunWorkflowInput,
   type UpdateWorkflowInput,
@@ -26,6 +27,7 @@ import {
   type WorkflowVersionSummary,
   workflowGraphSummary,
   workflowGraphsEqual,
+  workflowOperatorNeedsValue,
   workflowProblems,
 } from "@openbot/contracts/ipc";
 import type { StoredWorkflowVersion, WorkflowStore } from "./workflow-store";
@@ -347,7 +349,8 @@ export class WorkflowManager {
         session.run.status = node.type === "approval" ? "waiting" : "running";
         this.#save(session);
         let output: string;
-        let branch: "next" | "allow" | "deny" = "next";
+        let branch: WorkflowEdge["on"] = "next";
+        let passOn: string | null = null;
         try {
           if (node.type === "agent") output = await this.#agent(session, node, previous);
           else if (node.type === "approval") {
@@ -355,7 +358,20 @@ export class WorkflowManager {
             output = decision.output;
             branch = decision.allowed ? "allow" : "deny";
           } else if (node.type === "channel-output") output = this.#post(session, node, previous);
-          else output = previous;
+          else if (node.type === "prompt") output = render(node.text, session, previous, false);
+          else if (node.type === "condition") {
+            // The answer is the step's output ({{steps.<id>}}); the next step still sees the text that was checked.
+            const subject = cut(render(node.subject, session, previous, false), WORKFLOW_LIMITS.output);
+            const yes = evaluateWorkflowCondition(
+              subject,
+              node.operator,
+              render(node.value, session, previous, false),
+              node.caseSensitive,
+            );
+            output = yes ? "Yes" : "No";
+            branch = yes ? "yes" : "no";
+            passOn = subject;
+          } else output = previous;
         } catch (error) {
           if (session.finished) return;
           step.status = "failed";
@@ -373,7 +389,7 @@ export class WorkflowManager {
         session.run.result = output;
         session.run.status = "running";
         this.#save(session);
-        previous = output;
+        previous = passOn ?? output;
         const following: WorkflowNode | null = this.#next(session, node, branch);
         if (!following && branch === "deny") {
           this.#finish(session, "denied", null);
@@ -523,6 +539,24 @@ export class WorkflowManager {
         if (!text.trim()) throw new Error(`Step "${title}" needs ${what}.`);
         if (text.length > limit) throw new Error(`Step "${title}": the text is longer than ${limit} characters.`);
       }
+      if (node.type === "prompt") {
+        if (!node.text.trim()) throw new Error(`Step "${title}" needs a text.`);
+        if (node.text.length > WORKFLOW_LIMITS.text) {
+          throw new Error(`Step "${title}": the text is longer than ${WORKFLOW_LIMITS.text} characters.`);
+        }
+      }
+      if (node.type === "condition") {
+        if (!node.subject.trim()) throw new Error(`Step "${title}" needs a text to check.`);
+        if (node.subject.length > WORKFLOW_LIMITS.text) {
+          throw new Error(`Step "${title}": the text is longer than ${WORKFLOW_LIMITS.text} characters.`);
+        }
+        if (workflowOperatorNeedsValue(node.operator) && !node.value.trim()) {
+          throw new Error(`Step "${title}" needs a value to compare with.`);
+        }
+        if (node.value.length > WORKFLOW_LIMITS.conditionValue) {
+          throw new Error(`Step "${title}": the value is longer than ${WORKFLOW_LIMITS.conditionValue} characters.`);
+        }
+      }
       if (node.type === "channel-output") {
         if (!channels.exists(node.channelId)) {
           throw new Error(`The channel "${node.channelId}" in step "${title}" does not exist.`);
@@ -548,7 +582,7 @@ export class WorkflowManager {
 
 /** Steps in the order a run can reach them: breadth first, "allow" before "deny". */
 function stepOrder(workflow: Workflow, start: WorkflowNode): WorkflowNode[] {
-  const rank = { allow: 0, next: 1, deny: 2 } as const;
+  const rank = { allow: 0, yes: 0, next: 1, deny: 2, no: 2 } as const;
   const ordered: WorkflowNode[] = [start];
   const seen = new Set<string>([start.id]);
   for (let index = 0; index < ordered.length; index += 1) {
