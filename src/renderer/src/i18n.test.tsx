@@ -32,6 +32,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "SkillQuickPick",
     "AgentCardsSection",
     "AgentCardPage",
+    "ContextIndicator",
     "ChatSidePanelLauncher",
     "ServerSettingsPage",
     "PluginAppsPanel",

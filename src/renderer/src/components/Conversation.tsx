@@ -49,6 +49,7 @@ import { ChatRightPanelTabs, ChatSidePanelLauncher, type ChatSidePanelTarget } f
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ContextIndicator } from "./ContextIndicator";
 import { ChoiceCard } from "./ConversationPrompts";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
 import { ChatSearch } from "./conversation/ChatSearch";
@@ -2475,7 +2476,9 @@ export function Conversation(props: ConversationProps) {
                     />
                   </Show>
                   <Show when={preview().attachment.previewKind === "text"}>
-                    <pre class="media-text">{preview().loading ? "Loading…" : (preview().error ?? preview().text)}</pre>
+                    <Show when={!preview().loading} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
+                      <pre class="media-text">{preview().error ?? preview().text}</pre>
+                    </Show>
                   </Show>
                   <div class="media-caption">
                     <span>{preview().attachment.name}</span>
@@ -2584,7 +2587,12 @@ export function Conversation(props: ConversationProps) {
                               </span>
                             )}
                           </Show>
-                          <span class="browser-tab-title">{title()}</span>
+                          <span class="browser-tab-title" data-loading={tab.loading ? "true" : undefined}>
+                            <Show when={tab.loading} fallback={tab.title || tab.url}>
+                              <span class="browser-tab-loading cosgral-skeleton" aria-hidden="true" />
+                              <span class="sr-only">{t("Loading…")}</span>
+                            </Show>
+                          </span>
                           <span
                             class="browser-tab-close"
                             aria-hidden="true"

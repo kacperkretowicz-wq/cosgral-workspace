@@ -782,11 +782,21 @@
 }
 
 .browser-tab-title {
+  display: flex;
   min-width: 0;
   flex: 1;
+  align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.browser-tab-loading {
+  display: block;
+  width: 72%;
+  max-width: 8rem;
+  height: 0.7em;
+  border-radius: var(--cosgral-radius-sm);
 }
 
 .browser-tab:hover,
