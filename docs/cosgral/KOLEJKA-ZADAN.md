@@ -26,7 +26,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 3. Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
 4. `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
 5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
-6. Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
+6. [w toku: KK, 20:52] Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
 7. Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
 8. Przegląd `i18n-inwentarz.md`: co zostało po angielsku w moich panelach, tłumaczenie przez `t()`.
 
