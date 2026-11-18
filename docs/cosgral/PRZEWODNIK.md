@@ -304,6 +304,9 @@ W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy
 | **Zdalny pulpit** | **Zdalny pulpit** | Na górze „Who may come in”: plakietka, sesje, przełącznik „Ask on this computer every time”, „Unattended access: niedostępne” | Nic do oglądania; do prawdziwej sesji drugi komputer |
 | **Podagenci** | **Agenci** → wybierz agenta → nad rozmową rozwiń „Threads: …” | Sekcja „Subagents: pracuje X z Y” z zadaniami, podglądem i przyciskiem „Stop” | Pokazuje się tylko, gdy agent sam uruchomił podagenta |
 | **Cofnij usunięcie wątku** | **Agenci** → wybierz agenta → „Threads: …” → usuń wątek | Wiersz „Usunięto …” z odliczaniem 10 minut i przyciskiem „Cofnij” | Co najmniej dwa wątki (jeden zostaje) |
+| **Karty agenta** (siatka kafli) | **Agenci** → wybierz agenta → kliknij tytuł rozmowy („View agent settings”) → panel „Settings”, sekcja „Karty agenta” (Agent cards) na samej górze | Do 14 kafli z ikoną, nazwą, jednym zdaniem i licznikiem (kolor rozmowy, instrukcje, pamięć, umiejętności, pliki, tabele, rutyny, użycie, publikacja, uprawnienia, zaawansowane, foldery, powiadomienia, modele zapasowe). Niedostępne kafle są przygaszone i mówią, dlaczego | Nic |
+| **Szczegóły karty agenta** | Ten sam panel → kliknij kafel, który nie jest przygaszony | Pod siatką otwiera się panel szczegółów. Pliki: lista z rozmiarem i datą. Foldery: roboczy, dostęp, dodatkowe, wykluczone. Użycie: tokeny, tury, koszt, budżet. Publikacja: „Zapisz jako szablon” / „Usuń szablon” i licznik szablonów. Zaawansowane: sesja i liczba wiadomości. Powiadomienia: poziom i wyciszenie. „Zamknij” zamyka panel | Nic. Zapis szablonu zmienia dane, więc na próbie użyj agenta testowego |
+| **Dostawcy: agenci ACP i modele zapasowe** | **Dostawcy** (Providers) → sekcje „Agenci ACP”, „Agenci na modelu zapasowym”, „Ostatnie przełączenia”, „Ustawienia zapasowe agenta” | Dodawanie i usuwanie agenta ACP (z potwierdzeniem), kolejność modeli zapasowych, lista przełączeń. Napisy po polsku, gdy język programu to Polski | Nic do oglądania; agent ACP wymaga programu na tym komputerze |
 | **Zadania** | **Zadania** (Tasks) | Lista zadań z kanałów; kliknij wiersz, żeby zobaczyć szczegóły (kroki, „Otwórz jako czat”) | Zadania z kanałów |
 | **Zużycie** | **Zużycie** (Usage) | Okres 7/30/90/365 dni, tokeny, tury, wykres dzienny, tabela agentów, obciążenie komputera | Rozmowy z agentami (bez nich puste wykresy) |
 | **Harmonogram** | **Harmonogram** (Schedule) | Najbliższe dni z rutynami, rutyny z zewnątrz osobno, ostatnie uruchomienia | Rutyny |
@@ -314,7 +317,8 @@ W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy
 1. Sprawdź, czy okno nie jest wąskie: pozycje paska mogą być pod „More pages”.
 2. Sekcje Biblioteki są jedna pod drugą; przewiń stronę w dół.
 3. Panel pokazuje się dopiero wtedy, gdy program ma dane: podagenci i „Cofnij” znikają, gdy nic do pokazania; konektory i komunikatory potrzebują tokenów.
-4. Żaden z tych ekranów nie był jeszcze oglądany w prawdziwym oknie przez człowieka. Jeśli któryś wygląda źle, zrób zrzut i napisz, który to ekran.
+4. Karty agenta i ich szczegóły są w panelu „Settings” agenta, nie na pasku stron po lewej.
+5. Żaden z tych ekranów nie był jeszcze oglądany w prawdziwym oknie przez człowieka. Jeśli któryś wygląda źle, zrób zrzut i napisz, który to ekran.
 
 ---
 
