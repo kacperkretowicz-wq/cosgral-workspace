@@ -8,6 +8,7 @@
 import {
   type AgentEvent,
   type CreateWorkflowInput,
+  evaluateWorkflowCondition,
   type KnownWorkflowTargets,
   type UpdateWorkflowInput,
   WORKFLOW_LIMITS,
@@ -50,7 +51,7 @@ export interface MockWorkflows {
   };
 }
 
-const RANK = { allow: 0, next: 1, deny: 2 } as const;
+const RANK = { allow: 0, yes: 0, next: 1, deny: 2, no: 2 } as const;
 
 function stepOrder(nodes: WorkflowNode[], edges: WorkflowEdge[], start: WorkflowNode): WorkflowNode[] {
   const ordered: WorkflowNode[] = [start];
@@ -226,7 +227,8 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
     save(session);
   };
 
-  const finishStep = (session: Session, nodeId: string, output: string): void => {
+  /** `previous`: what the next step sees as {{previous}} when it is not the output (a condition passes on the text it checked). */
+  const finishStep = (session: Session, nodeId: string, output: string, previous = output): void => {
     const at = iso();
     session.run = {
       ...session.run,
@@ -236,7 +238,7 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
       ),
     };
     session.outputs.set(nodeId, output);
-    session.previous = output;
+    session.previous = previous;
     session.run.result = output;
   };
 
@@ -279,8 +281,14 @@ export function createMockWorkflows(emit: (event: AgentEvent) => void, options: 
     }
     if (node.type === "agent") {
       finishStep(session, node.id, `Demo reply from ${node.botId}: ${render(node.prompt, session).slice(0, 200)}`);
-    } else if (node.type === "channel-output") {
+    } else if (node.type === "channel-output" || node.type === "prompt") {
       finishStep(session, node.id, render(node.text, session));
+    } else if (node.type === "condition") {
+      const subject = render(node.subject, session).slice(0, WORKFLOW_LIMITS.output);
+      const yes = evaluateWorkflowCondition(subject, node.operator, render(node.value, session), node.caseSensitive);
+      finishStep(session, node.id, yes ? "Yes" : "No", subject);
+      moveOn(session, node.id, yes ? "yes" : "no");
+      return structuredClone(session.run);
     } else {
       finishStep(session, node.id, session.run.input);
     }

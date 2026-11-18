@@ -10,8 +10,10 @@
 
 import type { Routine, RoutineSchedule } from "./ipc-routines";
 import {
+  connectionKindsOf,
   WORKFLOW_LIMITS,
   type Workflow,
+  type WorkflowConditionOperator,
   type WorkflowEdge,
   type WorkflowEdgeKind,
   type WorkflowGraph,
@@ -19,6 +21,7 @@ import {
   type WorkflowNodeType,
   type WorkflowRun,
   type WorkflowRunStatus,
+  workflowOperatorNeedsValue,
   workflowProblems,
 } from "./ipc-workflows";
 
@@ -63,10 +66,10 @@ export const WORKFLOW_PALETTE: readonly WorkflowPaletteEntry[] = [
     id: "prompt",
     group: "inputs",
     label: "Prompt",
-    type: null,
-    hint: "A text that goes into the next step.",
-    available: false,
-    reason: "Type the text into the step itself: every step has its own instruction.",
+    type: "prompt",
+    hint: "A fixed text that goes into the next step.",
+    available: true,
+    reason: null,
   },
   {
     id: "asset",
@@ -117,10 +120,10 @@ export const WORKFLOW_PALETTE: readonly WorkflowPaletteEntry[] = [
     id: "condition",
     group: "flow",
     label: "Condition",
-    type: null,
-    hint: "Goes on one way or another by a value.",
-    available: false,
-    reason: "Use Approval for a yes or no decision; a run always moves forward on one path.",
+    type: "condition",
+    hint: "Goes the Yes way or the No way by comparing a text with a value.",
+    available: true,
+    reason: null,
   },
   {
     id: "approval",
@@ -321,6 +324,8 @@ const NODE_TITLES: Record<WorkflowNodeType, string> = {
   agent: "Agent",
   approval: "Approval",
   "channel-output": "Output",
+  prompt: "Prompt",
+  condition: "Condition",
 };
 const NODE_WIDTH = 280;
 
@@ -340,15 +345,28 @@ function uniqueTitle(nodes: readonly WorkflowNode[], base: string): string {
   }
 }
 
-/** The step a new one follows: the last one that has no way on yet (an approval counts until it has Allow). */
+/** The step a new one follows: the last one that has no way on yet (an approval counts until it has Allow, a condition until it has Yes). */
 function tailOf(graph: WorkflowGraph): WorkflowNode | null {
   for (let index = graph.nodes.length - 1; index >= 0; index -= 1) {
     const node = graph.nodes[index];
     if (!node) continue;
     const leaving = graph.edges.filter((edge) => edge.from === node.id);
-    if (node.type === "approval" ? !leaving.some((edge) => edge.on === "allow") : leaving.length === 0) return node;
+    const first = firstKindOf(node);
+    if (first === "next" ? leaving.length === 0 : !leaving.some((edge) => edge.on === first)) return node;
   }
   return null;
+}
+
+/** The connection a step needs first: "next", "allow" for an approval, "yes" for a condition. */
+function firstKindOf(node: WorkflowNode): WorkflowEdgeKind {
+  return connectionKindsOf(node)[0] ?? "next";
+}
+
+/** The kind of the next connection drawn from a step that has `existing` ones: Allow then Deny, Yes then No, else Next. */
+function nextKindFor(node: WorkflowNode, existing: readonly WorkflowEdge[]): WorkflowEdgeKind {
+  const [first, second] = connectionKindsOf(node);
+  if (second === undefined) return first ?? "next";
+  return existing.some((edge) => edge.from === node.id && edge.on === first) ? second : (first ?? "next");
 }
 
 export interface AddWorkflowNodeOptions {
@@ -361,6 +379,11 @@ export interface AddWorkflowNodeOptions {
   text?: string;
   /** Output step. */
   channelId?: string;
+  /** Condition step (defaults: {{previous}} contains an empty value, case does not matter). */
+  subject?: string;
+  operator?: WorkflowConditionOperator;
+  value?: string;
+  caseSensitive?: boolean;
   /** Trigger: a Schedule or Webhook trigger names its routine; none = manual. */
   routineId?: string;
   /** The step this one follows (a connection is drawn). Default: the last open end. `null` = do not connect. */
@@ -415,16 +438,27 @@ export function addWorkflowNode(
     case "channel-output":
       node = { id, type, title, x, y, channelId: options.channelId ?? "", text: options.text ?? "" };
       break;
+    case "prompt":
+      node = { id, type, title, x, y, text: options.text ?? "" };
+      break;
+    case "condition":
+      node = {
+        id,
+        type,
+        title,
+        x,
+        y,
+        subject: options.subject ?? "{{previous}}",
+        operator: options.operator ?? "contains",
+        value: options.value ?? "",
+        caseSensitive: options.caseSensitive ?? false,
+      };
+      break;
   }
 
   const edges = [...graph.edges];
   if (follow) {
-    const on: WorkflowEdgeKind =
-      follow.type === "approval"
-        ? edges.some((edge) => edge.from === follow.id && edge.on === "allow")
-          ? "deny"
-          : "allow"
-        : "next";
+    const on = nextKindFor(follow, edges);
     edges.push({
       id: uniqueId(new Set(edges.map((edge) => edge.id)), `${follow.id}-${id}`),
       from: follow.id,
@@ -464,13 +498,7 @@ export function connectWorkflowNodes(
   const source = graph.nodes.find((node) => node.id === from);
   if (!source || !graph.nodes.some((node) => node.id === to)) throw new Error("This step does not exist.");
   if (from === to) throw new Error("A step cannot lead to itself.");
-  const kind: WorkflowEdgeKind =
-    on ??
-    (source.type === "approval"
-      ? graph.edges.some((edge) => edge.from === from && edge.on === "allow")
-        ? "deny"
-        : "allow"
-      : "next");
+  const kind: WorkflowEdgeKind = on ?? nextKindFor(source, graph.edges);
   const kept = graph.edges.filter((edge) => !(edge.from === from && edge.on === kind));
   const edge: WorkflowEdge = {
     id: uniqueId(new Set(kept.map((item) => item.id)), `${from}-${to}`),
@@ -574,6 +602,34 @@ export function workflowNodeIssues(graph: WorkflowGraph, known: KnownWorkflowTar
         });
       } else if (text.length > limit) {
         issues.push({ nodeId: node.id, message: `Step "${title}": the text is longer than ${limit} characters.` });
+      }
+    }
+    if (node.type === "prompt") {
+      if (!node.text.trim()) {
+        issues.push({ nodeId: node.id, message: `Step "${title}" needs a text.` });
+      } else if (node.text.length > WORKFLOW_LIMITS.text) {
+        issues.push({
+          nodeId: node.id,
+          message: `Step "${title}": the text is longer than ${WORKFLOW_LIMITS.text} characters.`,
+        });
+      }
+    }
+    if (node.type === "condition") {
+      if (!node.subject.trim()) {
+        issues.push({ nodeId: node.id, message: `Step "${title}" needs a text to check.` });
+      } else if (node.subject.length > WORKFLOW_LIMITS.text) {
+        issues.push({
+          nodeId: node.id,
+          message: `Step "${title}": the text is longer than ${WORKFLOW_LIMITS.text} characters.`,
+        });
+      }
+      if (workflowOperatorNeedsValue(node.operator) && !node.value.trim()) {
+        issues.push({ nodeId: node.id, message: `Step "${title}" needs a value to compare with.` });
+      } else if (node.value.length > WORKFLOW_LIMITS.conditionValue) {
+        issues.push({
+          nodeId: node.id,
+          message: `Step "${title}": the value is longer than ${WORKFLOW_LIMITS.conditionValue} characters.`,
+        });
       }
     }
     if (node.type === "channel-output") {
@@ -680,4 +736,23 @@ export function workflowRunProgress(run: WorkflowRun): WorkflowRunProgress {
         ? { nodeId: open.nodeId, title: open.title, status: open.status }
         : null,
   };
+}
+
+/** The words for the operator picker of a condition step. */
+export const WORKFLOW_CONDITION_OPERATOR_LABELS: Record<WorkflowConditionOperator, string> = {
+  contains: "contains",
+  "not-contains": "does not contain",
+  equals: "is exactly",
+  "not-equals": "is not",
+  "starts-with": "starts with",
+  "ends-with": "ends with",
+  "is-empty": "is empty",
+  "is-not-empty": "is not empty",
+};
+
+/** The line on a condition card: `{{previous}} contains "approved"`; an empty-test has no value. */
+export function describeWorkflowCondition(node: Extract<WorkflowNode, { type: "condition" }>): string {
+  const subject = node.subject.trim() === "" ? "…" : node.subject.trim();
+  const label = WORKFLOW_CONDITION_OPERATOR_LABELS[node.operator];
+  return workflowOperatorNeedsValue(node.operator) ? `${subject} ${label} "${node.value}"` : `${subject} ${label}`;
 }

@@ -10,6 +10,10 @@
 //                   Confirm continues on the "allow" connection. Edit, Cancel or a closed card continue on the
 //                   "deny" connection, or end the run as "denied" when there is none.
 //   channel-output  posts a program message (kind "system") into a channel.
+//   prompt          a fixed text: its output is the text itself (templates filled in), so later steps can use it as {{previous}}.
+//   condition       compares a text with a value and goes the "yes" or the "no" way. It asks nobody and runs nothing: the text is the
+//                   step's "subject" (default {{previous}}), the value is what it is compared with. A run that reaches a
+//                   condition with no connection for the answer ends as "done" there.
 //
 // Texts of steps may use {{input}} (what the person typed when running, or the routine run's summary),
 // {{previous}} (output of the step before) and {{steps.<stepId>}} (output of any earlier step).
@@ -32,8 +36,10 @@ export const WORKFLOW_LIMITS = {
   title: 80,
   /** Instruction of an agent step. */
   prompt: 4_000,
-  /** Text of an approval card or a channel output. */
+  /** Text of an approval card, a channel output or a prompt step. */
   text: 2_000,
+  /** What a condition compares with. */
+  conditionValue: 500,
   /** What a person types when starting a run. */
   input: 8_000,
   /** Stored output of one step (longer outputs are cut). */
@@ -42,10 +48,10 @@ export const WORKFLOW_LIMITS = {
   runsKept: 100,
 } as const;
 
-export const WORKFLOW_NODE_TYPES = ["trigger", "agent", "approval", "channel-output"] as const;
+export const WORKFLOW_NODE_TYPES = ["trigger", "agent", "approval", "channel-output", "prompt", "condition"] as const;
 export type WorkflowNodeType = (typeof WORKFLOW_NODE_TYPES)[number];
 
-export const WORKFLOW_EDGE_KINDS = ["next", "allow", "deny"] as const;
+export const WORKFLOW_EDGE_KINDS = ["next", "allow", "deny", "yes", "no"] as const;
 export type WorkflowEdgeKind = (typeof WORKFLOW_EDGE_KINDS)[number];
 
 export const WORKFLOW_RUN_STATUSES = ["running", "waiting", "done", "failed", "denied", "cancelled"] as const;
@@ -56,6 +62,56 @@ export type WorkflowStepStatus = (typeof WORKFLOW_STEP_STATUSES)[number];
 
 export const WORKFLOW_RUN_CAUSES = ["manual", "routine"] as const;
 export type WorkflowRunCause = (typeof WORKFLOW_RUN_CAUSES)[number];
+
+export const WORKFLOW_CONDITION_OPERATORS = [
+  "contains",
+  "not-contains",
+  "equals",
+  "not-equals",
+  "starts-with",
+  "ends-with",
+  "is-empty",
+  "is-not-empty",
+] as const;
+export type WorkflowConditionOperator = (typeof WORKFLOW_CONDITION_OPERATORS)[number];
+
+/** Operators that compare with a value; "is-empty" and "is-not-empty" do not. */
+export function workflowOperatorNeedsValue(operator: WorkflowConditionOperator): boolean {
+  return operator !== "is-empty" && operator !== "is-not-empty";
+}
+
+/**
+ * The answer of a condition step. Text is compared after trimming; case does not matter unless `caseSensitive`.
+ * One function for the program and for the demo, so the page shows what a run will do.
+ */
+export function evaluateWorkflowCondition(
+  subject: string,
+  operator: WorkflowConditionOperator,
+  value: string,
+  caseSensitive: boolean,
+): boolean {
+  const fold = (text: string): string => (caseSensitive ? text.trim() : text.trim().toLowerCase());
+  const left = fold(subject);
+  const right = fold(value);
+  switch (operator) {
+    case "contains":
+      return left.includes(right);
+    case "not-contains":
+      return !left.includes(right);
+    case "equals":
+      return left === right;
+    case "not-equals":
+      return left !== right;
+    case "starts-with":
+      return left.startsWith(right);
+    case "ends-with":
+      return left.endsWith(right);
+    case "is-empty":
+      return left === "";
+    case "is-not-empty":
+      return left !== "";
+  }
+}
 
 export type WorkflowTrigger = { kind: "manual" } | { kind: "routine"; routineId: string };
 
@@ -72,13 +128,22 @@ export type WorkflowNode =
   | (WorkflowNodeBase & { type: "agent"; botId: string; prompt: string })
   /** `botId`: the agent whose row shows the approval card in Needs you. */
   | (WorkflowNodeBase & { type: "approval"; botId: string; text: string })
-  | (WorkflowNodeBase & { type: "channel-output"; channelId: string; text: string });
+  | (WorkflowNodeBase & { type: "channel-output"; channelId: string; text: string })
+  | (WorkflowNodeBase & { type: "prompt"; text: string })
+  /** `subject` and `value` are texts with templates ({{previous}}, {{input}}, {{steps.<id>}}); the connections leaving it are "yes" and "no". */
+  | (WorkflowNodeBase & {
+      type: "condition";
+      subject: string;
+      operator: WorkflowConditionOperator;
+      value: string;
+      caseSensitive: boolean;
+    });
 
 export interface WorkflowEdge {
   id: string;
   from: string;
   to: string;
-  /** "next" leaves a trigger, agent or channel-output step; "allow" / "deny" leave an approval. */
+  /** "next" leaves a trigger, agent, channel-output or prompt step; "allow" / "deny" leave an approval; "yes" / "no" leave a condition. */
   on: WorkflowEdgeKind;
 }
 
@@ -200,6 +265,15 @@ export function isWorkflowNode(value: unknown): value is WorkflowNode {
       return isString(value.botId) && isString(value.text);
     case "channel-output":
       return isString(value.channelId) && isString(value.text);
+    case "prompt":
+      return isString(value.text);
+    case "condition":
+      return (
+        isString(value.subject) &&
+        isOneOf(WORKFLOW_CONDITION_OPERATORS, value.operator) &&
+        isString(value.value) &&
+        isBoolean(value.caseSensitive)
+      );
   }
 }
 
@@ -271,6 +345,13 @@ export function isWorkflowRun(value: unknown): value is WorkflowRun {
   );
 }
 
+/** The connection kinds that may leave a step of this type. */
+export function connectionKindsOf(node: WorkflowNode): readonly WorkflowEdgeKind[] {
+  if (node.type === "approval") return ["allow", "deny"];
+  if (node.type === "condition") return ["yes", "no"];
+  return ["next"];
+}
+
 function label(node: WorkflowNode): string {
   return `"${node.title}" (${node.id})`;
 }
@@ -311,11 +392,13 @@ export function workflowProblems(graph: WorkflowGraph): string[] {
       continue;
     }
     valid.push(edge);
-    if (from.type === "approval" ? edge.on === "next" : edge.on !== "next") {
+    if (!connectionKindsOf(from).includes(edge.on)) {
       problems.push(
         from.type === "approval"
           ? `Connection ${edge.id} leaves the approval ${label(from)}: use "allow" or "deny".`
-          : `Connection ${edge.id} leaves ${label(from)}: use "next".`,
+          : from.type === "condition"
+            ? `Connection ${edge.id} leaves the condition ${label(from)}: use "yes" or "no".`
+            : `Connection ${edge.id} leaves ${label(from)}: use "next".`,
       );
     }
     if (to.type === "trigger") problems.push(`The trigger cannot have incoming connections (${edge.id}).`);
@@ -328,6 +411,11 @@ export function workflowProblems(graph: WorkflowGraph): string[] {
       const deny = leaving.filter((edge) => edge.on === "deny").length;
       if (allow === 0) problems.push(`The approval ${label(node)} needs an Allow connection.`);
       if (allow > 1 || deny > 1) problems.push(`The approval ${label(node)} has more than one way on for a decision.`);
+    } else if (node.type === "condition") {
+      const yes = leaving.filter((edge) => edge.on === "yes").length;
+      const no = leaving.filter((edge) => edge.on === "no").length;
+      if (yes + no === 0) problems.push(`The condition ${label(node)} needs a Yes or a No connection.`);
+      if (yes > 1 || no > 1) problems.push(`The condition ${label(node)} has more than one way on for an answer.`);
     } else if (leaving.length > 1) {
       problems.push(`${label(node)} has more than one way on; keep one connection.`);
     }

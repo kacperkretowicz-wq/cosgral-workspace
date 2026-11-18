@@ -6,7 +6,13 @@ import type {
   WorkflowNodeType,
   WorkflowRun,
 } from "@openbot/contracts/ipc";
-import { WORKFLOW_EDGE_KINDS, workflowProblems } from "@openbot/contracts/ipc";
+import {
+  WORKFLOW_CONDITION_OPERATOR_LABELS,
+  WORKFLOW_CONDITION_OPERATORS,
+  WORKFLOW_EDGE_KINDS,
+  workflowOperatorNeedsValue,
+  workflowProblems,
+} from "@openbot/contracts/ipc";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
@@ -83,7 +89,16 @@ export function WorkflowCanvas(
               id: `edge-${Date.now()}`,
               from: node.id,
               to: target,
-              on: node.type === "approval" ? (edgeKind() === "deny" ? "deny" : "allow") : "next",
+              on:
+                node.type === "approval"
+                  ? edgeKind() === "deny"
+                    ? "deny"
+                    : "allow"
+                  : node.type === "condition"
+                    ? edgeKind() === "no"
+                      ? "no"
+                      : "yes"
+                    : "next",
             },
           ],
         });
@@ -119,7 +134,11 @@ export function WorkflowCanvas(
           ? { ...base, type, botId: "", prompt: "" }
           : type === "approval"
             ? { ...base, type, botId: "", text: "" }
-            : { ...base, type, channelId: "", text: "" };
+            : type === "prompt"
+              ? { ...base, type, text: "" }
+              : type === "condition"
+                ? { ...base, type, subject: "{{previous}}", operator: "contains", value: "", caseSensitive: false }
+                : { ...base, type, channelId: "", text: "" };
     props.onChange({ nodes: [...props.nodes, node], edges: props.edges });
   }
   return (
@@ -136,6 +155,12 @@ export function WorkflowCanvas(
         </Button>{" "}
         <Button unstyled type="button" onClick={() => add("channel-output")}>
           Add channel output
+        </Button>{" "}
+        <Button unstyled type="button" onClick={() => add("prompt")}>
+          Add prompt
+        </Button>{" "}
+        <Button unstyled type="button" onClick={() => add("condition")}>
+          Add condition
         </Button>
       </div>
       <section ref={canvas} class="workflow-canvas" aria-label="Workflow canvas">
@@ -310,7 +335,13 @@ export function WorkflowCanvas(
                   </label>
                 )}
               </Show>
-              <Show when={node.type === "approval" || node.type === "channel-output" ? node : undefined}>
+              <Show
+                when={
+                  node.type === "approval" || node.type === "channel-output" || node.type === "prompt"
+                    ? node
+                    : undefined
+                }
+              >
                 {(textNode) => (
                   <label>
                     Text{" "}
@@ -320,6 +351,47 @@ export function WorkflowCanvas(
                       onInput={(e) => update({ ...textNode(), text: e.currentTarget.value })}
                     />
                   </label>
+                )}
+              </Show>
+              <Show when={node.type === "condition" ? node : undefined}>
+                {(condition) => (
+                  <>
+                    <label>
+                      Check{" "}
+                      <Textarea
+                        unstyled
+                        value={condition().subject}
+                        onInput={(e) => update({ ...condition(), subject: e.currentTarget.value })}
+                      />
+                    </label>
+                    <label>
+                      Test{" "}
+                      <NativeSelect
+                        unstyled
+                        value={condition().operator}
+                        onChange={(e) => {
+                          const operator = WORKFLOW_CONDITION_OPERATORS.find((item) => item === e.currentTarget.value);
+                          if (operator) update({ ...condition(), operator });
+                        }}
+                      >
+                        <For each={WORKFLOW_CONDITION_OPERATORS}>
+                          {(operator) => (
+                            <option value={operator}>{WORKFLOW_CONDITION_OPERATOR_LABELS[operator]}</option>
+                          )}
+                        </For>
+                      </NativeSelect>
+                    </label>
+                    <Show when={workflowOperatorNeedsValue(condition().operator)}>
+                      <label>
+                        Value{" "}
+                        <Input
+                          unstyled
+                          value={condition().value}
+                          onInput={(e) => update({ ...condition(), value: e.currentTarget.value })}
+                        />
+                      </label>
+                    </Show>
+                  </>
                 )}
               </Show>
               <Button

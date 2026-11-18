@@ -286,3 +286,84 @@ describe("mock workflows: versions", () => {
     expect((await mock.api.listVersions({ workflowId: wf.id })).map((version) => version.number)).toEqual([1]);
   });
 });
+
+describe("mock workflows: prompt and condition steps", () => {
+  function branchGraph(value: string, operator: "contains" | "is-empty" = "contains"): WorkflowGraph {
+    let graph = addWorkflowNode(emptyWorkflowGraph(), "trigger");
+    graph = addWorkflowNode(graph, "prompt", { text: "Review {{input}}" });
+    graph = addWorkflowNode(graph, "agent", { botId: "chief", prompt: "{{previous}}" });
+    graph = addWorkflowNode(graph, "condition", { subject: "{{previous}}", operator, value });
+    graph = addWorkflowNode(graph, "channel-output", { channelId: "general", text: "Yes: {{previous}}" });
+    return addWorkflowNode(graph, "channel-output", {
+      channelId: "general",
+      text: "No: {{previous}}",
+      after: "condition",
+    });
+  }
+
+  it("runs a prompt and a condition, goes the Yes way, skips the other and keeps the checked text as {{previous}}", async () => {
+    const { mock } = setup(false);
+    const wf = await mock.api.create({ name: "Branch", ...branchGraph("demo reply") });
+    const run = await mock.api.run({ workflowId: wf.id, input: "the draft" });
+    expect(run.steps.map((step) => step.nodeId)).toEqual([
+      "trigger",
+      "prompt",
+      "agent",
+      "condition",
+      "output",
+      "output-2",
+    ]);
+
+    expect(mock.simulate.advance(run.id).steps[1]).toMatchObject({ status: "done", output: "Review the draft" });
+    mock.simulate.advance(run.id);
+    const afterCondition = mock.simulate.advance(run.id);
+    expect(afterCondition.steps[3]).toMatchObject({ nodeId: "condition", status: "done", output: "Yes" });
+    const finished = mock.simulate.advance(run.id);
+    expect(finished.status).toBe("done");
+    expect(finished.steps.map((step) => [step.nodeId, step.status])).toEqual([
+      ["trigger", "done"],
+      ["prompt", "done"],
+      ["agent", "done"],
+      ["condition", "done"],
+      ["output", "done"],
+      ["output-2", "skipped"],
+    ]);
+    expect(finished.result).toBe("Yes: Demo reply from chief: Review the draft");
+  });
+
+  it("goes the No way when the text does not match, and ends as done when the answer has no connection", async () => {
+    const { mock } = setup(false);
+    const wf = await mock.api.create({ name: "Branch", ...branchGraph("approved") });
+    const run = await mock.api.run({ workflowId: wf.id, input: "x" });
+    for (let step = 0; step < 4; step += 1) mock.simulate.advance(run.id);
+    const done = await mock.api.listRuns({ workflowId: wf.id });
+    expect(done[0]?.status).toBe("done");
+    expect(done[0]?.steps.map((step) => [step.nodeId, step.status])).toEqual([
+      ["trigger", "done"],
+      ["prompt", "done"],
+      ["agent", "done"],
+      ["condition", "done"],
+      ["output", "skipped"],
+      ["output-2", "done"],
+    ]);
+
+    // Only a Yes connection: the No answer ends the run at the condition.
+    let graph = addWorkflowNode(emptyWorkflowGraph(), "trigger");
+    graph = addWorkflowNode(graph, "condition", { subject: "{{input}}", operator: "contains", value: "go" });
+    graph = addWorkflowNode(graph, "channel-output", { channelId: "general", text: "Went" });
+    const only = await mock.api.create({ name: "Only yes", ...graph });
+    const second = await mock.api.run({ workflowId: only.id, input: "stop" });
+    const ended = mock.simulate.advance(second.id);
+    expect(ended).toMatchObject({ status: "done", result: "No" });
+    expect(ended.steps.at(-1)?.status).toBe("skipped");
+  });
+
+  it("refuses to save what the program would refuse", async () => {
+    const { mock } = setup(false);
+    await expect(mock.api.create({ name: "Bad", ...branchGraph(" ") })).rejects.toThrow(
+      /needs a value to compare with/,
+    );
+    const emptyTest = branchGraph("", "is-empty");
+    await expect(mock.api.create({ name: "Fine", ...emptyTest })).resolves.toMatchObject({ name: "Fine" });
+  });
+});

@@ -60,6 +60,8 @@ const TYPE_LABELS: Record<WorkflowNodeType, readonly [string, string]> = {
   agent: ["agent step", "agent steps"],
   approval: ["approval", "approvals"],
   "channel-output": ["output", "outputs"],
+  prompt: ["prompt", "prompts"],
+  condition: ["condition", "conditions"],
 };
 
 /** "1 trigger, 2 agent steps, 1 approval, 1 output" (an empty graph says "empty"). */
