@@ -15,8 +15,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 5. [zrobione: 596a49964] Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
 
 ## KK Fullstack
-1. Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
-2. Usunięcie martwego `SettingsModal`.
+1. [zrobione: 28f240e08 (Clear history); lista „okno historii” czeka na BE-Z] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
+2. [zrobione: 28f240e08] Usunięcie martwego `SettingsModal`.
 3. Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
 4. `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
 5. Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
@@ -28,16 +28,16 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 4. Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
 
 ## KAPI
-1. Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
+1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
 2. Rozmiar podglądu w przeglądarce (cel: razem < 1,8 MB, plik < 1 MB).
 3. Instalator `dist:win`: pomiar po każdym większym scaleniu (tylko za `GO-kapi-dist.txt`).
-4. Luki ROBIĆ z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
+4. [zrobione: 401bafe8f] Luki ROBIĆ (wiersz 2 wygląd: appearanceDomTokens + startAppearance) z `parytet-0.71.md` poza zakresem Backend/KK/UI (wybierz jedną, uzasadnij).
 
 ## Tester
 1. Odbiór w prawdziwym Electronie po każdym scaleniu lidera: e2e (`^FAIL`), W5, zrzuty, sondy (tylko za `GO-tester-*.txt`).
-2. Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI.
-3. Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
-4. Sondy do nowych funkcji: wątek w Restore, menu „+”, Clear history, `historyWindow`, linki w programie.
+2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
+3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
+4. [zrobione: team/tester/w12-tg] Sondy do nowych funkcji: `scripts/sandbox-next-probes.ts` (restore-thread, menu-plus, clear-history, history-window, external-links).
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,

@@ -299,3 +299,54 @@ describe("ChannelStore.clearHistory (BE-Y)", () => {
     expect(reopened.channels.get(channel.id).name).toBe("launch-plan");
   });
 });
+
+describe("ChannelStore history window (BE-Z)", () => {
+  it("is 200 until changed, is kept over a restart, and a change of another field does not reset it", async () => {
+    const { root, database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    expect(channel.historyWindow).toBe(200);
+    expect(channels.list().map((item) => item.historyWindow)).toEqual([200]);
+
+    const changed = channels.update({ channelId: channel.id, historyWindow: 50 });
+    expect(changed.historyWindow).toBe(50);
+    // Another field changes: the window stays.
+    expect(channels.update({ channelId: channel.id, title: "Renamed" }).historyWindow).toBe(50);
+    expect(channels.get(channel.id).title).toBe("Renamed");
+    // A second channel keeps its own value.
+    const other = channels.create(launchPlan({ name: "other", title: "Other" }));
+    expect(other.historyWindow).toBe(200);
+    expect(channels.update({ channelId: other.id, historyWindow: 20 }).historyWindow).toBe(20);
+    expect(channels.get(channel.id).historyWindow).toBe(50);
+    database.close();
+
+    const reopened = await openStore(root);
+    expect(reopened.channels.get(channel.id).historyWindow).toBe(50);
+    expect(reopened.channels.get(other.id).historyWindow).toBe(20);
+    // Back to the whole page.
+    expect(reopened.channels.update({ channelId: channel.id, historyWindow: 200 }).historyWindow).toBe(200);
+    reopened.database.close();
+  });
+
+  it("refuses a value outside 20, 50, 100 and 200 and changes nothing (not even another field of the same call)", async () => {
+    const { database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    channels.update({ channelId: channel.id, historyWindow: 100 });
+    const bad = JSON.parse('{"channelId":"x","historyWindow":30,"title":"Should not apply"}');
+    bad.channelId = channel.id;
+    expect(() => channels.update(bad)).toThrow("historyWindow is 20, 50, 100 or 200.");
+    expect(channels.get(channel.id)).toMatchObject({ title: "Launch plan", historyWindow: 100 });
+    database.close();
+  });
+
+  it("tells the window in the channels event and emits it with the channel", async () => {
+    const { database, channels } = await openStore();
+    const channel = channels.create(launchPlan());
+    const seen: Array<number | undefined> = [];
+    channels.on("event", (event) => {
+      if (event.type === "channels-changed") seen.push(event.channels[0]?.historyWindow);
+    });
+    channels.update({ channelId: channel.id, historyWindow: 20 });
+    expect(seen).toEqual([20]);
+    database.close();
+  });
+});

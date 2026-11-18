@@ -67,6 +67,7 @@ import {
   DEFAULT_APP_WORKSPACE,
   defaultNotificationPreferences,
   emptyAgentEyesState,
+  isChannelHistoryWindow,
   isPinnedPageIdList,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
@@ -258,7 +259,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let updateStatus = clone(options.updateStatus ?? STORY_UPDATE_STATUS);
   let eyesState = clone(options.eyesState ?? emptyAgentEyesState());
   let pending = clone(options.pendingRequests ?? []);
-  const mockChannels: import("@openbot/contracts/ipc").WorkspaceChannel[] = [
+  let mockChannels: import("@openbot/contracts/ipc").WorkspaceChannel[] = [
     {
       id: "demo-channel",
       name: "project",
@@ -768,8 +769,24 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       create: async () => {
         throw new Error("Not implemented in demo");
       },
-      update: async () => {
-        throw new Error("Not implemented in demo");
+      update: async (input) => {
+        const found = mockChannels.find((item) => item.id === input.channelId);
+        if (!found) throw new Error("This channel no longer exists.");
+        if (input.historyWindow !== undefined && !isChannelHistoryWindow(input.historyWindow)) {
+          throw new Error("historyWindow is 20, 50, 100 or 200.");
+        }
+        const next = {
+          ...found,
+          ...(input.title === undefined ? {} : { title: input.title }),
+          ...(input.instructions === undefined ? {} : { instructions: input.instructions }),
+          ...(input.isolated === undefined ? {} : { isolated: input.isolated }),
+          ...(input.archived === undefined ? {} : { archived: input.archived }),
+          ...(input.historyWindow === undefined ? {} : { historyWindow: input.historyWindow }),
+          updatedAt: new Date().toISOString(),
+        };
+        mockChannels = mockChannels.map((item) => (item.id === next.id ? next : item));
+        emitAgentEvent({ type: "channels-changed", channels: clone(mockChannels) });
+        return clone(next);
       },
       addMember: async () => {
         throw new Error("Not implemented in demo");

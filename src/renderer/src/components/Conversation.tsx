@@ -1561,7 +1561,7 @@ export function Conversation(props: ConversationProps) {
   return (
     <main
       ref={(element) => (conversationPanel = element)}
-      aria-label="Conversation"
+      aria-label={t("Conversation")}
       onKeyDown={handleChatSearchShortcut}
       class={[
         "conversation-panel",
@@ -2081,13 +2081,13 @@ export function Conversation(props: ConversationProps) {
                             >
                               <div class="thread-work-message-marks">
                                 <Show when={message.pinned}>
-                                  <Text tone="secondary">Pinned</Text>
+                                  <Text tone="secondary">{t("Pinned")}</Text>
                                 </Show>
                                 <Show when={message.edited}>
-                                  <Text tone="secondary">Edited</Text>
+                                  <Text tone="secondary">{t("Edited")}</Text>
                                 </Show>
                                 <Show when={message.regeneration && message.author === "bot"}>
-                                  <Text tone="secondary">Regenerated answer</Text>
+                                  <Text tone="secondary">{t("Regenerated answer")}</Text>
                                 </Show>
                               </div>
                             </Show>
@@ -2096,7 +2096,7 @@ export function Conversation(props: ConversationProps) {
                                 <Button
                                   type="button"
                                   class="message-reaction-pill"
-                                  aria-label={`Remove reaction ${reaction()}`}
+                                  aria-label={t("Remove reaction {emoji}", { emoji: reaction() })}
                                   onClick={() => void reactToMessage(message, null)}
                                 >
                                   {reaction()}
@@ -2172,7 +2172,7 @@ export function Conversation(props: ConversationProps) {
       <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
         {(request) => (
           <section class="sticky-decision" aria-label={t("Decision")}>
-            <div class="sticky-decision-kicker">Decision · pinned</div>
+            <div class="sticky-decision-kicker">{t("Decision · pinned")}</div>
             <VaultRequestCard request={request} />
           </section>
         )}
@@ -2180,7 +2180,7 @@ export function Conversation(props: ConversationProps) {
       <Show when={activeActionCard()}>
         {(card) => (
           <section class="sticky-decision" aria-label={t("Decision")}>
-            <div class="sticky-decision-kicker">Decision · pinned</div>
+            <div class="sticky-decision-kicker">{t("Decision · pinned")}</div>
             <ActionCard card={card()} onDraft={respondActionDraft} onTakeover={respondActionTakeover} />
           </section>
         )}
@@ -2457,7 +2457,7 @@ export function Conversation(props: ConversationProps) {
                   <Button
                     type="button"
                     class="media-close"
-                    aria-label="Close media preview"
+                    aria-label={t("Close media preview")}
                     onClick={() => setMediaPreview(null)}
                   >
                     <CloseIcon />
@@ -2820,25 +2820,25 @@ export function Conversation(props: ConversationProps) {
                   setAvatarPickerOpen(open);
                 }}
               >
-                <Popover.Trigger class="agent-settings-avatar" aria-label="Edit agent avatar">
+                <Popover.Trigger class="agent-settings-avatar" aria-label={t("Edit agent avatar")}>
                   <AgentAvatar seed={avatarSeed()} hue={avatarHue()} url={avatarUrl()} motion="always" />
                 </Popover.Trigger>
                 <Popover.Content class="avatar-editor" aria-hidden={avatarPickerOpen() ? undefined : "true"}>
-                  <Popover.Title class="sr-only">Avatar editor</Popover.Title>
+                  <Popover.Title class="sr-only">{t("Avatar editor")}</Popover.Title>
                   <Input
                     ref={(element) => (avatarFileInput = element)}
                     class="sr-only"
                     type="file"
-                    aria-label="Attach files"
+                    aria-label={t("Attach files")}
                     accept="image/png,image/jpeg,image/webp"
                     onChange={(event) => void uploadAgentAvatar(event.currentTarget.files?.[0])}
                   />
                   <div class="avatar-editor-heading">
-                    <span>Image</span>
+                    <span>{t("Image")}</span>
                     <div class="avatar-editor-actions">
                       <Show when={avatarUrl()}>
                         <Button type="button" disabled={avatarUploadBusy()} onClick={() => void setCustomAvatar(null)}>
-                          Remove
+                          {t("Remove")}
                         </Button>
                       </Show>
                     </div>
@@ -2862,13 +2862,13 @@ export function Conversation(props: ConversationProps) {
                       </Show>
                     </span>
                     <span>
-                      <strong>{avatarUrl() ? "Replace image" : "Upload image"}</strong>
-                      <small>PNG, JPEG or WebP · square crop</small>
+                      <strong>{avatarUrl() ? t("Replace image") : t("Upload image")}</strong>
+                      <small>{t("PNG, JPEG or WebP · square crop")}</small>
                     </span>
                   </Button>
                   <div class="avatar-editor-divider" />
                   <div class="avatar-editor-heading">
-                    <span>Generated face</span>
+                    <span>{t("Generated face")}</span>
                     <div class="avatar-editor-actions">
                       <Show when={props.bot?.id && avatarSeed() !== props.bot?.id}>
                         <Button
@@ -2881,7 +2881,7 @@ export function Conversation(props: ConversationProps) {
                             void selectGeneratedAvatar(botId);
                           }}
                         >
-                          Reset to ID
+                          {t("Reset to ID")}
                         </Button>
                       </Show>
                       <Button
@@ -2891,11 +2891,11 @@ export function Conversation(props: ConversationProps) {
                           setAvatarBatch((batch) => batch + 1);
                         }}
                       >
-                        New set
+                        {t("New set")}
                       </Button>
                     </div>
                   </div>
-                  <fieldset class="avatar-face-grid" aria-label="Generated avatar faces">
+                  <fieldset class="avatar-face-grid" aria-label={t("Generated avatar faces")}>
                     <For each={avatarCandidates()}>
                       {(seed, index) => (
                         <Button
@@ -2907,7 +2907,9 @@ export function Conversation(props: ConversationProps) {
                             },
                           ]}
                           aria-label={
-                            !avatarUrl() && avatarSeed() === seed ? "Selected avatar" : `Avatar option ${index() + 1}`
+                            !avatarUrl() && avatarSeed() === seed
+                              ? t("Selected avatar")
+                              : t("Avatar option {n}", { n: index() + 1 })
                           }
                           aria-pressed={!avatarUrl() && avatarSeed() === seed ? "true" : "false"}
                           onClick={() => void selectGeneratedAvatar(seed)}
@@ -2919,13 +2921,13 @@ export function Conversation(props: ConversationProps) {
                   </fieldset>
                   <div class="avatar-editor-divider" />
                   <div class="avatar-editor-heading">
-                    <span>Color</span>
+                    <span>{t("Color")}</span>
                   </div>
-                  <fieldset class="avatar-color-grid" aria-label="Avatar color">
+                  <fieldset class="avatar-color-grid" aria-label={t("Avatar color")}>
                     <Button
                       type="button"
                       class={["avatar-color-choice", { "avatar-choice-selected": avatarHue() === null }]}
-                      aria-label="Automatic avatar color"
+                      aria-label={t("Automatic avatar color")}
                       aria-pressed={avatarHue() === null ? "true" : "false"}
                       onClick={() => {
                         setAvatarHue(null);
@@ -2944,7 +2946,7 @@ export function Conversation(props: ConversationProps) {
                               "avatar-choice-selected": avatarHue() === option.hue,
                             },
                           ]}
-                          aria-label={`${option.label} avatar color`}
+                          aria-label={t("{label} avatar color", { label: option.label })}
                           aria-pressed={avatarHue() === option.hue ? "true" : "false"}
                           onClick={() => {
                             setAvatarHue(option.hue);
@@ -2960,11 +2962,11 @@ export function Conversation(props: ConversationProps) {
               </Popover.Root>
             </div>
             <label class="agent-settings-field">
-              <span>Name</span>
+              <span>{t("Name")}</span>
               <Input
                 ref={(element) => (settingsNameInput = element)}
                 defaultValue={settingsName()}
-                aria-label="Agent name"
+                aria-label={t("Agent name")}
                 maxlength={INPUT_LIMITS.agentName}
                 onInput={(event) => {
                   setSettingsName(event.currentTarget.value);
@@ -2974,12 +2976,12 @@ export function Conversation(props: ConversationProps) {
               />
             </label>
             <label class="agent-settings-field">
-              <span>Title</span>
+              <span>{t("Title")}</span>
               <Input
                 ref={(element) => (settingsTitleInput = element)}
                 defaultValue={settingsTitle()}
-                aria-label="Agent title"
-                placeholder="Describe what your agent does"
+                aria-label={t("Agent title")}
+                placeholder={t("Describe what your agent does")}
                 maxlength={INPUT_LIMITS.agentTitle}
                 onInput={(event) => {
                   setSettingsTitle(event.currentTarget.value);
@@ -2989,13 +2991,13 @@ export function Conversation(props: ConversationProps) {
               />
             </label>
             <label class="agent-settings-field agent-settings-description">
-              <span>Description</span>
+              <span>{t("Description")}</span>
               <Textarea
                 ref={(element) => (settingsDescriptionInput = element)}
                 rows="4"
                 defaultValue={settingsDescription()}
-                aria-label="Agent description"
-                placeholder="What this agent is for"
+                aria-label={t("Agent description")}
+                placeholder={t("What this agent is for")}
                 maxlength={INPUT_LIMITS.agentDescription}
                 onInput={(event) => {
                   setSettingsDescription(event.currentTarget.value);
@@ -3006,14 +3008,14 @@ export function Conversation(props: ConversationProps) {
             </label>
             <section class="agent-settings-model" aria-labelledby="agent-model-heading">
               <div class="agent-settings-section-heading">
-                <strong id="agent-model-heading">Runtime</strong>
-                <span>Choose how this agent runs</span>
+                <strong id="agent-model-heading">{t("Runtime")}</strong>
+                <span>{t("Choose how this agent runs")}</span>
               </div>
               <div class="agent-settings-model-controls">
                 <div class="agent-settings-model-option">
                   <ProviderModelPicker
                     variant="field"
-                    ariaLabel="Agent model"
+                    ariaLabel={t("Agent model")}
                     value={settingsModel()}
                     agentStatus={props.agentStatus}
                     modelOptions={props.modelOptions}
@@ -3030,10 +3032,10 @@ export function Conversation(props: ConversationProps) {
                   </Show>
                 </div>
                 <label class="agent-settings-model-row agent-settings-thinking-row">
-                  <span>Reasoning</span>
+                  <span>{t("Reasoning")}</span>
                   <NativeSelect
                     value={settingsReasoning()}
-                    aria-label="Agent reasoning level"
+                    aria-label={t("Agent reasoning level")}
                     onChange={(event) => {
                       const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
                       if (!reasoningEffort) return;
@@ -3070,12 +3072,12 @@ export function Conversation(props: ConversationProps) {
             </Show>
             <div class="agent-settings-notifications">
               <div>
-                <strong>Notifications</strong>
-                <span>Get notified when this agent finishes or needs input</span>
+                <strong>{t("Notifications")}</strong>
+                <span>{t("Get notified when this agent finishes or needs input")}</span>
               </div>
               <Switch
                 size="sm"
-                aria-label="Notifications"
+                aria-label={t("Notifications")}
                 checked={settingsNotifications()}
                 onChange={(next) => {
                   setSettingsNotifications(next);
@@ -3091,6 +3093,6 @@ export function Conversation(props: ConversationProps) {
 }
 
 function reasoningLabel(effort: AgentReasoningEffort): string {
-  if (effort === "xhigh") return "Extra high";
+  if (effort === "xhigh") return t("Extra high");
   return `${effort.slice(0, 1).toUpperCase()}${effort.slice(1)}`;
 }

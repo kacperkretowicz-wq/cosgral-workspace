@@ -290,7 +290,7 @@ Biblioteka zbiera pliki, które wgrałeś, które zapisali agenci i które przys
 
 ## 5a. Jak zobaczyć każdy nowy ekran (kliknij po kolei)
 
-**Skąd zaczynasz:** po lewej jest pionowy pasek stron: Agenci, Harmonogram, Zadania, Przepływy, Zużycie, Biblioteka, Katalog dodatków, Zdalny pulpit, Dostawcy, Telefon, Ustawienia serwera. Gdy okno jest wąskie, część pozycji chowa się pod przyciskiem „More pages” (więcej stron). Na dole paska jest **zębatka „Ustawienia”**: to okno ustawień programu, z menu po lewej (General, Appearance, Voice, Updates…).
+**Skąd zaczynasz:** po lewej jest pionowy pasek stron: Agenci, Harmonogram, Zadania, Przepływy, Zużycie, Biblioteka, Katalog dodatków, Zdalny pulpit, Dostawcy, Telefon, Ustawienia serwera. Gdy okno jest wąskie, część pozycji chowa się pod przyciskiem „More pages” (więcej stron). Na dole paska jest **zębatka „Ustawienia”**: to ekran „Settings” programu: sekcje są jedna pod drugą (Application settings, App behavior, Appearance, Context settings, Budżety, Updates, Voice), więc wystarczy przewijać; bocznego menu z sekcjami nie ma.
 
 W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy w nawiasach poniżej to nazwy z polskiego interfejsu.
 
@@ -301,6 +301,8 @@ W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy
 | **Motyw** (ciemny / jasny / systemowy) | Zębatka → „Settings” → sekcja **Appearance**, lista „Theme” | Zmiana działa od razu i zapisuje się sama | Nic |
 | **Zachowanie programu** | Zębatka → „Settings” → sekcja **App behavior** | Cztery ustawienia: „Launch COSGRAL Workspace at login” (start z Windowsem), „Keep … running in the background” (zamknięcie okna chowa program do ikony przy zegarze, zadania trwają; „Otwórz” / „Zakończ” w menu ikony), „Restore the last workspace on launch” (po starcie wraca ta sama strona i agent; **wątek jeszcze nie wraca**), „Open external links in” (domyślna przeglądarka albo przeglądarka programu) | Nic. Do sprawdzenia „w prawdziwym życiu” potrzebny restart programu lub Windowsa; nie były jeszcze oglądane w oknie |
 | **Ustawienia kontekstu** („Context settings”) | Zębatka → „Settings” (pod „Appearance”) | Kiedy program sam skraca długą rozmowę | Nic |
+| **Budżety** (limity zużycia całej przestrzeni) | Zębatka → „Settings” (pod „Context settings”) | Limity i bieżące zużycie, eksport CSV; budżety pojedynczego agenta są w jego ustawieniach | Nic |
+| **Czyszczenie historii kanału** | **Agenci** → kanał → „Channel history” → „Clear history” | Pytanie „Wyczyścić całą historię?”, po „Yes, clear” znikają wiadomości i zadania; kanał, członkowie, pamięć i rutyny zostają. Odmowa, gdy zadanie trwa: „Stop or archive it first.” | Kanał; nieodwracalne |
 | **Presety dostawców z chmury** | **Dostawcy** (Providers) → sekcja „Own model endpoints” → rząd „Use …” | Przyciski wypełniają formularz adresem dostawcy (OpenRouter, xAI, DeepSeek, Mistral, Groq, Together AI, Moonshot; OpenRouter i xAI oznaczone jako niezweryfikowane); nic się nie łączy, dopóki nie zapiszesz klucza API | Własny klucz API dostawcy (klucza nigdy nie widać po zapisaniu) |
 | **Zmiana nazwy agenta** | Prawy klik na agencie → „Rename”, albo tytuł rozmowy → ustawienia agenta → „Agent name” | Nowa nazwa jest od razu na pasku bocznym i w nagłówku rozmowy | Co najmniej jeden agent |
 | **Komunikatory** (Telegram, Slack) | **Biblioteka** → sekcja „Komunikatory” (Messengers) | Karty ze stanem, pola na tokeny, lista dopuszczonych rozmów | Do prawdziwego połączenia: token bota Telegrama lub dwa tokeny Slacka |

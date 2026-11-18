@@ -352,6 +352,52 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
   return patch;
 }
 
+/**
+ * Tokens the window paints from `AppAppearanceSettings` (KAPI-N / parity row 2).
+ * The renderer sets these on `<html>`; CSS reads the data attributes and custom properties.
+ * sendShortcut / unreadFirst / agentSteps are carried so screens can read one place without a second store.
+ */
+export interface AppearanceDomTokens {
+  uiScale: string;
+  font: AppFont;
+  chatAccent: AppChatAccent;
+  sendShortcut: AppSendShortcut;
+  agentSteps: AppAgentSteps;
+  unreadFirst: "true" | "false";
+  /** Root font-size multiplier, e.g. "1.1" for 110%. */
+  scaleFactor: string;
+  /** Accent color for `--openbot-accent` (hex). */
+  accentHex: string;
+  /** Soft accent for `--openbot-accent-soft`. */
+  accentSoft: string;
+}
+
+const APPEARANCE_ACCENT_HEX: Record<AppChatAccent, { accent: string; soft: string }> = {
+  blue: { accent: "#3b82f6", soft: "rgb(59 130 246 / 18%)" },
+  green: { accent: "#22c55e", soft: "rgb(34 197 94 / 18%)" },
+  violet: { accent: "#8b5cf6", soft: "rgb(139 92 246 / 18%)" },
+  orange: { accent: "#f97316", soft: "rgb(249 115 22 / 18%)" },
+  pink: { accent: "#ec4899", soft: "rgb(236 72 153 / 18%)" },
+  gray: { accent: "#94a3b8", soft: "rgb(148 163 184 / 18%)" },
+};
+
+/** Pure map from a saved look to DOM tokens (no browser). Invalid input falls back via normalize. */
+export function appearanceDomTokens(value: unknown): AppearanceDomTokens {
+  const appearance = normalizeAppAppearance(value);
+  const colors = APPEARANCE_ACCENT_HEX[appearance.chatAccent];
+  return {
+    uiScale: String(appearance.uiScale),
+    font: appearance.font,
+    chatAccent: appearance.chatAccent,
+    sendShortcut: appearance.sendShortcut,
+    agentSteps: appearance.agentSteps,
+    unreadFirst: appearance.unreadFirst ? "true" : "false",
+    scaleFactor: String(appearance.uiScale / 100),
+    accentHex: colors.accent,
+    accentSoft: colors.soft,
+  };
+}
+
 /** Where a link from a conversation opens: browser = the default browser of the computer, app = the browser inside the program (BE-X). */
 export const APP_EXTERNAL_LINKS = ["browser", "app"] as const;
 export type AppExternalLinks = (typeof APP_EXTERNAL_LINKS)[number];

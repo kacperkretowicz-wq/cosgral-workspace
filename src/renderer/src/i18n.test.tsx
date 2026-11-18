@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { AppSettings } from "@openbot/contracts/ipc";
-import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { cleanup, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, expect, it, vi } from "vitest";
 import { createMockOpenBot } from "../stories/mock-openbot";
-import { LanguageSettings } from "./components/LanguageSettings";
 import { en, language, setLanguage, startI18n, systemLanguage, t } from "./i18n";
 import { pl } from "./locales/pl";
 
@@ -20,9 +19,7 @@ it("has complete, nonempty PL and EN catalogs", () => {
 });
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
   const files = [
-    "SettingsModal",
     "AppearanceSettings",
-    "LanguageSettings",
     "AppSettingsW3",
     "Sidebar",
     "PageRail",
@@ -128,21 +125,5 @@ it("does not let a late initial read override a newer language event", async () 
   expect(language()).toBe("pl");
   expect(document.documentElement.lang).toBe("pl");
   stop();
-  mock.dispose();
-});
-it("saves the selection and applies it only after successful persistence", async () => {
-  const mock = createMockOpenBot();
-  window.openbot = mock.api;
-  render(() => <LanguageSettings />);
-  const select = await screen.findByRole("combobox", { name: "Language" });
-  await waitFor(() => expect(select).toBeEnabled());
-  fireEvent.change(select, { target: { value: "pl" } });
-  await screen.findByRole("combobox", { name: "Język" });
-  expect((await mock.api.appSettings?.get())?.language).toBe("pl");
-  if (!mock.api.appSettings) throw new Error("missing mock");
-  mock.api.appSettings.update = vi.fn().mockRejectedValue(new Error("unavailable"));
-  fireEvent.change(select, { target: { value: "en" } });
-  await screen.findByRole("alert");
-  expect(language()).toBe("pl");
   mock.dispose();
 });
