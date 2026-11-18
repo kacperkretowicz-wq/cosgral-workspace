@@ -255,3 +255,48 @@
   max-height: 600px;
   opacity: 1;
 }
+
+/* UI-R: sidebar density. Agent tile 62px with a 40px avatar, calm hover, clear active tile, soft entrance. */
+.sidebar .bot-row {
+  height: 62px;
+  min-height: 62px;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.sidebar .bot-row + .bot-row {
+  margin-top: 2px;
+}
+
+.sidebar .bot-row-avatar {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+
+.sidebar .bot-row-title strong,
+.sidebar .person-row .bot-row-heading strong {
+  font-weight: 600;
+}
+
+.sidebar .bot-row-active {
+  background: var(--cosgral-bg-active, var(--openbot-active));
+  box-shadow: inset 0 0 0 1px var(--openbot-border);
+}
+
+.sidebar .bot-row {
+  animation: sidebar-row-in var(--openbot-duration-normal) ease both;
+}
+
+@keyframes sidebar-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar .bot-row {
+    animation: none;
+  }
+}
