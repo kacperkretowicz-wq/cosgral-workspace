@@ -1,7 +1,7 @@
 import {
   checkEndpointUrl,
-  ENDPOINT_LIMITS,
   ENDPOINT_CLOUD_PRESETS,
+  ENDPOINT_LIMITS,
   ENDPOINT_PRESETS,
   type EndpointKind,
   type EndpointsDesktopApi,

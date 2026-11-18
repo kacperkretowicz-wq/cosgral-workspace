@@ -8,6 +8,7 @@ import type {
 import { CHANNEL_TASK_STATES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import "../styles/tasks-detail.css";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
 const STATE_VIEW: Record<ChannelTaskState, { label: string; tone: BadgeTone }> = {
@@ -332,10 +333,23 @@ export function TasksViewScreen(props: {
                 <Show when={task().steps.length > 0}>
                   <section>
                     <h3>{t("Steps")}</h3>
+                    <p class="tasks-screen-note">
+                      {t("{done} of {total} steps done", {
+                        done: task().steps.filter((step) => step.state === "done").length,
+                        total: task().steps.length,
+                      })}
+                    </p>
+                    <div class="tasks-progress" aria-hidden="true">
+                      <span
+                        style={{
+                          width: `${Math.round((task().steps.filter((step) => step.state === "done").length / task().steps.length) * 100)}%`,
+                        }}
+                      />
+                    </div>
                     <ul class="tasks-detail-steps">
                       <For each={task().steps}>
                         {(step) => (
-                          <li>
+                          <li data-state={step.state}>
                             <span>{step.title}</span>
                             <Badge tone={STATE_VIEW[step.state].tone} dot>
                               {t(STATE_VIEW[step.state].label)}

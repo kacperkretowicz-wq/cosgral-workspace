@@ -1,0 +1,83 @@
+/* Task details: a progress bar for the steps and a timeline marker on each step. */
+.tasks-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-border);
+}
+
+.tasks-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cosgral-success);
+  transition: width var(--cosgral-duration-slow) ease;
+}
+
+.tasks-detail-steps {
+  position: relative;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.tasks-detail-steps li {
+  position: relative;
+  align-items: center;
+  padding-left: 24px;
+}
+
+.tasks-detail-steps li::before {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%);
+  border: 2px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-raised);
+  content: "";
+}
+
+.tasks-detail-steps li::after {
+  position: absolute;
+  top: calc(50% + 8px);
+  bottom: calc(-50% - 2px);
+  left: 7px;
+  width: 2px;
+  background: var(--cosgral-border);
+  content: "";
+}
+
+.tasks-detail-steps li:last-child::after {
+  display: none;
+}
+
+.tasks-detail-steps li[data-state="done"]::before {
+  border-color: var(--cosgral-success);
+  background: var(--cosgral-success);
+}
+
+.tasks-detail-steps li[data-state="running"]::before {
+  border-color: var(--cosgral-accent);
+}
+
+.tasks-detail-steps li[data-state="failed"]::before {
+  border-color: var(--cosgral-danger);
+}
+
+.tasks-detail-steps li[data-state="waiting"]::before,
+.tasks-detail-steps li[data-state="paused"]::before {
+  border-color: var(--cosgral-warning);
+}
+
+.tasks-detail-steps li > small {
+  margin-left: auto;
+  color: var(--cosgral-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tasks-progress > span {
+    transition: none;
+  }
+}

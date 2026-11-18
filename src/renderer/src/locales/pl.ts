@@ -1229,4 +1229,5 @@ export const pl = {
   "Agent's own list": "Własna lista agenta",
   "Could not reset the list.": "Nie udało się zresetować listy.",
   "Reset to provider list": "Przywróć listę dostawcy",
+  "{done} of {total} steps done": "Zrobione kroki: {done} z {total}",
 } as const;
