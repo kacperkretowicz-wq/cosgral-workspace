@@ -17,16 +17,21 @@ import {
   type ConversationMessage,
   type CreateThreadInput,
   type DeleteThreadInput,
+  type DeleteThreadUndoResult,
   NEW_THREAD_TITLE,
+  newPendingThreadDelete,
   nextActiveThreadId,
   normalizeThreadTitle,
+  type PendingThreadDelete,
   type RenameThreadInput,
   THREAD_LIMITS,
+  THREAD_UNDO_WINDOW_MS,
   type ThreadInput,
   type ThreadList,
   type ThreadSummary,
   threadStateOf,
   threadTitleProblem,
+  undoDeleteProblem,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { ConversationReadStore } from "./conversation-read-store";
@@ -150,7 +155,7 @@ export class ThreadStore {
   /** The row of a thread of this agent; a thread from before W6 (no row yet) gets one when it is asked about. */
   #knownMeta(bot: BotSummary, threadId: string): Meta | null {
     const existing = this.#meta(threadId);
-    if (existing) return existing.agentId === bot.id ? existing : null;
+    if (existing) return existing.agentId === bot.id && !this.#isPending(threadId) ? existing : null;
     const stored = this.#db
       .prepare("SELECT created_at FROM projection_threads WHERE thread_id = ? AND agent_id = ?")
       .get(threadId, bot.id);
@@ -215,13 +220,130 @@ export class ThreadStore {
       throw new Error("Deleting a thread for good needs confirmation.");
     }
     const bot = await this.#prepare(input.botId);
-    const meta = this.#require(bot.id, input.threadId);
+    // "Delete now" also works on a thread that waits in the undo window.
+    const meta = this.#requireAny(bot.id, input.threadId);
     if (this.#running(bot.id, meta.id)) throw new Error("A turn is running in this thread. Stop it first.");
     // The agent must not point at a thread that is about to disappear.
     if (bot.threadId === meta.id) await this.#moveActiveOn(bot.id, meta.id);
     await this.#deps.mailbox.deleteThreadData(bot.id, meta.id);
     this.#deleteRows(bot.id, meta.id);
     return this.list(bot.id);
+  }
+
+  // --- COSGRAL W12 (BE-K): delete with undo ---
+
+  /**
+   * Hides the thread for the undo window and removes nothing: history, queue, cards and the rest stay as they are, so `unhide` brings back
+   * the same thread. Same refusals as `delete`. The thread is removed for good by `delete` (the service calls it when the window ends).
+   */
+  async hide(input: DeleteThreadInput, windowMs: number = THREAD_UNDO_WINDOW_MS): Promise<DeleteThreadUndoResult> {
+    if (!isDynamicRecord(input) || input.confirm !== true) {
+      throw new Error("Deleting a thread for good needs confirmation.");
+    }
+    const bot = await this.#prepare(input.botId);
+    const meta = this.#require(bot.id, input.threadId);
+    if (this.#running(bot.id, meta.id)) throw new Error("A turn is running in this thread. Stop it first.");
+    const title = this.#displayTitle(bot.id, meta);
+    const wasActive = bot.threadId === meta.id;
+    if (wasActive) await this.#moveActiveOn(bot.id, meta.id);
+    const pending = newPendingThreadDelete(
+      { botId: bot.id, threadId: meta.id, title, wasActive },
+      this.#nowDate(),
+      windowMs,
+    );
+    this.#pendingTable()
+      .prepare(
+        `INSERT OR REPLACE INTO projection_thread_pending_delete (thread_id, agent_id, title, was_active, deleted_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        pending.threadId,
+        pending.botId,
+        pending.title,
+        pending.wasActive ? 1 : 0,
+        pending.deletedAt,
+        pending.expiresAt,
+      );
+    return { list: await this.list(bot.id), pending };
+  }
+
+  /** Brings a hidden thread back. It is shown again when it was the shown one. Refused when the time is out or the agent has no room. */
+  async unhide(input: ThreadInput): Promise<ThreadList> {
+    const bot = await this.#prepare(input.botId);
+    const pending = this.#pendingOf(input.threadId, bot.id);
+    const problem = undoDeleteProblem(pending, this.#nowDate(), this.hasRoom(bot.id));
+    if (problem || !pending) throw new Error(problem ?? "There is nothing to undo for this thread.");
+    this.#pendingTable()
+      .prepare("DELETE FROM projection_thread_pending_delete WHERE thread_id = ?")
+      .run(pending.threadId);
+    if (pending.wasActive) await this.#deps.bots.setActiveThread(bot.id, pending.threadId);
+    return this.list(bot.id);
+  }
+
+  /** The hidden threads that can still be brought back (of one agent, or of all), newest first. */
+  listPending(botId?: string): PendingThreadDelete[] {
+    const now = this.#nowDate().toISOString();
+    return this.#pendingRows(botId)
+      .filter((row) => row.expiresAt > now)
+      .sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+  }
+
+  /** The hidden threads whose time is out (of agents that still exist): the service removes them for good. */
+  expiredPending(): PendingThreadDelete[] {
+    const now = this.#nowDate().toISOString();
+    const known = new Set(this.#deps.bots.list().map((bot) => bot.id));
+    return this.#pendingRows().filter((row) => row.expiresAt <= now && known.has(row.botId));
+  }
+
+  #nowDate(): Date {
+    return this.#deps.now?.() ?? new Date();
+  }
+
+  #pendingReady = false;
+
+  /** The connection, with the table of hidden threads made (once). */
+  #pendingTable() {
+    if (!this.#pendingReady) {
+      this.#db.exec(`
+        CREATE TABLE IF NOT EXISTS projection_thread_pending_delete (
+          thread_id TEXT PRIMARY KEY,
+          agent_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          was_active INTEGER NOT NULL DEFAULT 0,
+          deleted_at TEXT NOT NULL,
+          expires_at TEXT NOT NULL
+        );
+      `);
+      this.#pendingReady = true;
+    }
+    return this.#db;
+  }
+
+  #pendingRows(botId?: string): PendingThreadDelete[] {
+    const statement = this.#pendingTable().prepare(
+      botId === undefined
+        ? "SELECT * FROM projection_thread_pending_delete"
+        : "SELECT * FROM projection_thread_pending_delete WHERE agent_id = ?",
+    );
+    return (botId === undefined ? statement.all() : statement.all(botId)).filter(isDynamicRecord).map(toPending);
+  }
+
+  #pendingOf(threadId: string, botId: string): PendingThreadDelete | null {
+    return this.#pendingRows(botId).find((row) => row.threadId === threadId) ?? null;
+  }
+
+  #isPending(threadId: string): boolean {
+    return isDynamicRecord(
+      this.#pendingTable()
+        .prepare("SELECT 1 AS found FROM projection_thread_pending_delete WHERE thread_id = ?")
+        .get(threadId),
+    );
+  }
+
+  /** The threads of the agent that are not hidden in the undo window. */
+  #visibleRows(botId: string): Meta[] {
+    const hidden = new Set(this.#pendingRows(botId).map((row) => row.threadId));
+    return this.#metaRows(botId).filter((meta) => !hidden.has(meta.id));
   }
 
   /** A new thread with the history of `threadId` up to and including `fromMessageId`; the original is not touched. */
@@ -287,14 +409,21 @@ export class ThreadStore {
 
   /** One more thread may be made for this agent (a branch makes one). */
   hasRoom(botId: string): boolean {
-    return this.#metaRows(botId).length < this.#max();
+    return this.#visibleRows(botId).length < this.#max();
   }
 
   #assertRoom(botId: string): void {
-    if (this.#metaRows(botId).length >= this.#max()) throw new Error(`An agent has at most ${this.#max()} threads.`);
+    if (this.#visibleRows(botId).length >= this.#max()) throw new Error(`An agent has at most ${this.#max()} threads.`);
   }
 
   #require(botId: string, threadId: string): Meta {
+    const meta = this.#requireAny(botId, threadId);
+    // A thread in the undo window (W12 BE-K) is hidden: nothing but undo and "delete now" can reach it.
+    if (this.#isPending(threadId)) throw new Error("Unknown thread.");
+    return meta;
+  }
+
+  #requireAny(botId: string, threadId: string): Meta {
     const meta = this.#meta(threadId);
     if (!meta || meta.agentId !== botId) throw new Error("Unknown thread.");
     return meta;
@@ -362,6 +491,7 @@ export class ThreadStore {
         ).run(threadId, threadId, threadId);
         db.prepare("DELETE FROM projection_threads WHERE thread_id = ? AND agent_id = ?").run(threadId, botId);
         db.prepare("DELETE FROM projection_thread_meta WHERE thread_id = ?").run(threadId);
+        db.prepare("DELETE FROM projection_thread_pending_delete WHERE thread_id = ?").run(threadId);
         // A branch keeps the name of its parent, not the link.
         db.prepare("UPDATE projection_thread_meta SET parent_thread_id = NULL WHERE parent_thread_id = ?").run(
           threadId,
@@ -385,7 +515,7 @@ export class ThreadStore {
 
   #summaries(bot: BotSummary): ThreadSummary[] {
     const context = this.#context(bot);
-    return this.#metaRows(bot.id)
+    return this.#visibleRows(bot.id)
       .map((meta) => this.#summary(bot, meta, context))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt));
   }
@@ -491,6 +621,17 @@ export class ThreadStore {
         threadId,
       );
   }
+}
+
+function toPending(row: DynamicRecord): PendingThreadDelete {
+  return {
+    botId: text(row, "agent_id"),
+    threadId: text(row, "thread_id"),
+    title: text(row, "title"),
+    wasActive: row.was_active === 1,
+    deletedAt: text(row, "deleted_at"),
+    expiresAt: text(row, "expires_at"),
+  };
 }
 
 function toMeta(row: DynamicRecord): Meta {

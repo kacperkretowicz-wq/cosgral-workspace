@@ -81,6 +81,7 @@ import {
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
 import { isThreadTabsChanged, type ThreadTabsChanged } from "./ipc-thread-tabs";
+import { isThreadDeletesChanged, type ThreadDeletesChanged } from "./ipc-thread-undo";
 import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {
   isVaultItemSummary,
@@ -747,6 +748,8 @@ export type AgentEvent =
   | ({ type: "threads-changed" } & ThreadsChanged)
   /** COSGRAL W6-BE1: a light update of one thread (turn started or ended, new message, card opened or closed). */
   | ({ type: "thread-activity" } & ThreadActivity)
+  /** COSGRAL W12 (BE-K): the deleted threads of an agent that can still be brought back changed. */
+  | ({ type: "thread-deletes-changed" } & ThreadDeletesChanged)
   /** COSGRAL W6-BE3: a plan was proposed, decided, advanced, stopped or finished (replace the plan with this requestId). */
   | ({ type: "plan-changed" } & PlanChanged)
   /** COSGRAL W6-BE3: the pins of one thread changed. */
@@ -944,6 +947,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isThreadsChanged(value);
     case "thread-activity":
       return isThreadActivity(value);
+    case "thread-deletes-changed":
+      return isThreadDeletesChanged(value);
     case "plan-changed":
       return isPlanChanged(value);
     case "subagent-changed":

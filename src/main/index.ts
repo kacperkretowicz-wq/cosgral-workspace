@@ -254,6 +254,7 @@ import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { registerTasksViewIpc } from "./tasks-view-ipc";
 import { TeamStore } from "./team-store";
+import { registerThreadUndoIpc } from "./thread-undo-ipc";
 import { registerThreadsIpc } from "./threads-ipc";
 import { handleTrusted } from "./trusted-ipc";
 import { isTrustedRendererUrl } from "./trusted-renderer";
@@ -1009,6 +1010,7 @@ function registerIpcHandlers(
   registerIsolationIpc(() => agentService);
   // COSGRAL W6-BE1: the threads of an agent (this computer only).
   registerThreadsIpc(() => agentService);
+  registerThreadUndoIpc(() => agentService);
   // COSGRAL W6-BE3: the plan card (this computer only).
   registerPlansIpc(() => agentService);
   // COSGRAL W6-BE4: the subagents of a thread (this computer only).
