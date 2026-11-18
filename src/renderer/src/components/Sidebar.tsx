@@ -16,6 +16,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { emptySidebarLayout } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
+import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
@@ -26,6 +27,7 @@ import {
   folderMoveTargets,
   type SidebarFolderRow,
   type SidebarRow,
+  sortUnreadFirst,
 } from "../sidebar-tree";
 import { threadRowLabel } from "../thread-view";
 import { AgentAvatar } from "./AgentAvatar";
@@ -346,10 +348,17 @@ export function Sidebar(props: SidebarProps) {
   let previousRows = new Map<string, SidebarRow<BotProfile>>();
   const listRows = createMemo<SidebarRow<BotProfile>[]>(() => {
     const layout = props.layout;
+    // BE-AC: appearance.unreadFirst puts agents with unread replies on top of their own level.
+    const unreadFirst = unreadFirstSetting()
+      ? (bot: BotProfile) => props.agentStates[bot.id]?.kind === "unread"
+      : undefined;
     const rows: SidebarRow<BotProfile>[] =
       !layout || props.compact
-        ? filteredBots().map((bot) => ({ type: "agent", bot, depth: 0 }))
-        : buildSidebarRows(layout, filteredBots(), { searching: query().trim().length > 0 });
+        ? sortUnreadFirst(filteredBots(), unreadFirst).map((bot) => ({ type: "agent", bot, depth: 0 }))
+        : buildSidebarRows(layout, filteredBots(), {
+            searching: query().trim().length > 0,
+            ...(unreadFirst ? { unreadFirst } : {}),
+          });
     const stable = rows.map((row) => {
       const key = row.type === "agent" ? `agent:${row.bot.id}` : `folder:${row.folder.id}`;
       const old = previousRows.get(key);
