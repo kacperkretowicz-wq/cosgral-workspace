@@ -71,3 +71,10 @@ it("lets the person change the theme on the Settings screen", async () => {
   await waitFor(() => expect(theme).not.toBeDisabled());
   expect(screen.getByRole("option", { name: "Light" })).toBeInTheDocument();
 });
+
+it("shows App behavior (launch at login, keep running in the background) on the Settings screen", async () => {
+  renderSettings();
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(await screen.findByRole("switch", { name: "Launch COSGRAL Workspace at login" })).toBeInTheDocument();
+  expect(screen.getByRole("switch", { name: "Keep COSGRAL Workspace running in the background" })).toBeInTheDocument();
+});

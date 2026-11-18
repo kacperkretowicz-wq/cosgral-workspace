@@ -12,8 +12,10 @@ import type {
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
+import { ContextSettingsSection } from "./ContextSettingsSection";
 import { DataWipeSection } from "./DataWipeSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
@@ -368,7 +370,9 @@ export function InitialSetup(props: InitialSetupProps) {
               <Show when={props.reviewing}>
                 <AppSettingsW3 />
                 {/* KK-AC: the dialog of app settings was never opened from the program, so Updates and the microphone were out of reach. */}
+                <AppBehaviorSection />
                 <AppearanceSettings />
+                <ContextSettingsSection />
                 <UpdatesPanel />
                 <VoiceOverviewPanel />
                 <DataWipeSection />

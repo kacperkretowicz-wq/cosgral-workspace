@@ -41,3 +41,12 @@ Stan: 18.11.2026, gałąź `team/kk/w12-ac` z integracji `1e5f2bd70` (scalone `t
 1. **Okno `SettingsModal` jest martwe.** Poza tym, co przeniosłem (Updates, Voice, Appearance), zostają w nim sekcje, do których nikt nie dojdzie: **„Launch at login”** (KAPI, `behavior.launchAtLogin`), Notifications i Advanced. Decyzja: (a) przenieść „Launch at login” na ekran „Settings” (osobny komponent, ok. 1 h), czy (b) otworzyć `SettingsModal` z zębatki i przenieść ekran dostawców do niego (większa zmiana, rusza W5). Rekomenduję (a).
 2. Skrypt Testera szuka `.settings-modal-nav` i `getByRole("dialog")`. Na ekranie „Settings” nie ma bocznej nawigacji: sekcje są jedna pod drugą, a nagłówki mają `id="settings-updates"`, `id="settings-voice"`, `id="settings-voice-microphone"`. Lokatory trzeba zmienić (Tester, T-AD).
 3. Nie oglądałem tego w oknie ani w Storybooku.
+
+## Dopisek (druga godzina): „App behavior” na ekranie Settings
+
+Martwe okno `SettingsModal` miało też dwa przełączniki, które Backend i KAPI zrobili naprawdę: **„Launch at login”** (`behavior.launchAtLogin`, KAPI) i **„Keep running in the background”** (`behavior.keepBackground`, BE-W, po scaleniu `team/backend/w12-w`). Bez poprawki żaden z nich nie był dostępny dla człowieka.
+
+1. Nowy komponent `AppBehaviorSection.tsx`: oba przełączniki, zapis przez `appSettings.update({ behavior: … })`, blokada podwójnego kliknięcia, cofnięcie przełącznika i komunikat, gdy program odmówi (test).
+2. Używają go **oba miejsca**: `SettingsModal` (zastąpił wbudowaną grupę; „Keep running” nie był tam podpięty do zapisu) i ekran „Settings” (`InitialSetup`, tryb `reviewing`). Do tego ekranu dołożyłem też `ContextSettingsSection` (ustawienia kontekstu), które też były tylko w martwym oknie.
+3. Testy: `AppBehaviorSection` 2/2 (zapis każdego przełącznika osobno; cofnięcie po odmowie), `InitialSetup.settings` 4/4, `SettingsModal` 2/2, `InitialSetup.onboarding` 5/5, `AppearanceSettings` 2/2, `i18n` 9/9, `App.eyes` 8/8, `App.test` 95/95, `typecheck:renderer` EXIT 0, `check:ui` zielone, Biome czysty.
+4. Luki, które zostają tylko w martwym oknie: grupa „Workspace” („Restore the last workspace”, „Open external links in”) i „Notifications” (dwa przełączniki) to **atrapy bez zapisu** (potrzebna decyzja, jak mają działać); globalne `BudgetSettings` (budżety per agent są dostępne w ustawieniach agenta). Prawdziwa macierz powiadomień jest już na ekranie „Settings” (`AppSettingsW3`).

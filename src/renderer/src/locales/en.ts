@@ -1478,4 +1478,5 @@ export const en = {
   "Reject plan": "Reject plan",
   "Plans ({count})": "Plans ({count})",
   "Thread plans": "Thread plans",
+  "Could not save the setting.": "Could not save the setting.",
 } as const;
