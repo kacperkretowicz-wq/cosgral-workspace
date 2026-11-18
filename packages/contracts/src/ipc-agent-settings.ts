@@ -356,22 +356,29 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
 export interface AppBehaviorSettings {
   /** True = the program opens when the person signs in to Windows. */
   launchAtLogin: boolean;
+  /**
+   * True = closing the window hides the program to the tray instead of ending it, so active tasks go on (BE-W). It only takes effect while the
+   * tray icon exists: without it there would be no way back to the window.
+   */
+  keepBackground: boolean;
 }
 
 export const DEFAULT_APP_BEHAVIOR: AppBehaviorSettings = {
   launchAtLogin: false,
+  keepBackground: false,
 };
 
-const BEHAVIOR_KEYS = ["launchAtLogin"] as const;
+const BEHAVIOR_KEYS = ["launchAtLogin", "keepBackground"] as const;
 
 export function isAppBehavior(value: unknown): value is AppBehaviorSettings {
-  return isDynamicRecord(value) && isBoolean(value.launchAtLogin);
+  return isDynamicRecord(value) && isBoolean(value.launchAtLogin) && isBoolean(value.keepBackground);
 }
 
 export function normalizeAppBehavior(value: unknown): AppBehaviorSettings {
   const stored = isDynamicRecord(value) ? value : {};
   return {
     launchAtLogin: isBoolean(stored.launchAtLogin) ? stored.launchAtLogin : DEFAULT_APP_BEHAVIOR.launchAtLogin,
+    keepBackground: isBoolean(stored.keepBackground) ? stored.keepBackground : DEFAULT_APP_BEHAVIOR.keepBackground,
   };
 }
 
@@ -384,6 +391,10 @@ export function parseBehaviorPatch(value: unknown): Partial<AppBehaviorSettings>
   if (value.launchAtLogin !== undefined) {
     if (!isBoolean(value.launchAtLogin)) throw new Error("launchAtLogin is on or off.");
     patch.launchAtLogin = value.launchAtLogin;
+  }
+  if (value.keepBackground !== undefined) {
+    if (!isBoolean(value.keepBackground)) throw new Error("keepBackground is on or off.");
+    patch.keepBackground = value.keepBackground;
   }
   return patch;
 }

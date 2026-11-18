@@ -94,7 +94,7 @@ it("uses a newer settings event instead of a late load response", async () => {
         agentSteps: "show",
         unreadFirst: false,
       },
-      behavior: { launchAtLogin: false },
+      behavior: { launchAtLogin: false, keepBackground: false },
     },
   });
   finish({ navigation: { pinnedPageIds: ["library"] } });

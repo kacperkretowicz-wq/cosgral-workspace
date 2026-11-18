@@ -4,6 +4,7 @@
 import { type AgentProviderId, IPC_CHANNELS } from "@openbot/contracts/ipc";
 import { app } from "electron";
 import type { AgentService } from "../backend/agent-service";
+import { applyKeepBackground } from "./background-mode";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import {
   parseAgentTemplateId,
@@ -79,11 +80,13 @@ export function registerAgentSettingsIpc(options: AgentSettingsIpcOptions): Onbo
   handleTrusted(IPC_CHANNELS.appSettingsGet, () => {
     const current = settings().appSettings();
     applyLaunchAtLogin(current.behavior.launchAtLogin);
+    applyKeepBackground(current.behavior.keepBackground, current.language);
     return current;
   });
   handleTrusted(IPC_CHANNELS.appSettingsUpdate, async (input: unknown) => {
     const next = await settings().updateAppSettings(parseUpdateAppSettings(parseAgentRequest(input).payload));
     applyLaunchAtLogin(next.behavior.launchAtLogin);
+    applyKeepBackground(next.behavior.keepBackground, next.language);
     return next;
   });
   handleTrusted(IPC_CHANNELS.onboardingGetState, () => onboarding.state());

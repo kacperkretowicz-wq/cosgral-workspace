@@ -274,13 +274,22 @@ describe("AgentSettingsService", () => {
 
   it("keeps launch-at-login (KAPI): default off, change survives a restart", async () => {
     const { dir, database, service, events } = await open();
-    expect(service.appSettings().behavior).toEqual({ launchAtLogin: false });
+    expect(service.appSettings().behavior).toEqual({ launchAtLogin: false, keepBackground: false });
     const changed = await service.updateAppSettings({ behavior: { launchAtLogin: true } });
-    expect(changed.behavior).toEqual({ launchAtLogin: true });
+    expect(changed.behavior).toEqual({ launchAtLogin: true, keepBackground: false });
     expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
     database.close();
     const reopened = await open(dir);
-    expect(reopened.service.appSettings().behavior).toEqual({ launchAtLogin: true });
+    expect(reopened.service.appSettings().behavior).toEqual({ launchAtLogin: true, keepBackground: false });
+    // BE-W: a patch of one switch leaves the other as it was, and the change survives another restart.
+    const kept = await reopened.service.updateAppSettings({ behavior: { keepBackground: true } });
+    expect(kept.behavior).toEqual({ launchAtLogin: true, keepBackground: true });
+    reopened.database.close();
+    const again = await open(dir);
+    expect(again.service.appSettings().behavior).toEqual({ launchAtLogin: true, keepBackground: true });
+    const bad = JSON.parse('{"behavior":{"keepBackground":"yes"}}');
+    await expect(again.service.updateAppSettings(bad)).rejects.toThrow(/on or off/);
+    expect(again.service.appSettings().behavior.keepBackground).toBe(true);
   });
 
   it("refuses a look value outside its list, an unknown field, and changes nothing", async () => {

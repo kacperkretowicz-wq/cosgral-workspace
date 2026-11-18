@@ -108,7 +108,7 @@ describe("W3 agent settings contract", () => {
         agentSteps: "show",
         unreadFirst: false,
       },
-      behavior: { launchAtLogin: false },
+      behavior: { launchAtLogin: false, keepBackground: false },
     };
     expect(isAppSettings(settings)).toBe(true);
     expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "nope"] } })).toBe(false);
@@ -154,7 +154,7 @@ describe("W3 agent settings contract", () => {
             agentSteps: "show",
             unreadFirst: false,
           },
-          behavior: { launchAtLogin: false },
+          behavior: { launchAtLogin: false, keepBackground: false },
         },
       }),
     ).toBe(true);
@@ -163,11 +163,20 @@ describe("W3 agent settings contract", () => {
 
   it("describes launch-at-login behavior with a boolean default (KAPI-J login)", () => {
     expect(isAppBehavior(DEFAULT_APP_BEHAVIOR)).toBe(true);
-    expect(isAppBehavior({ launchAtLogin: true })).toBe(true);
-    expect(isAppBehavior({ launchAtLogin: "yes" })).toBe(false);
+    expect(isAppBehavior({ launchAtLogin: true, keepBackground: false })).toBe(true);
+    expect(isAppBehavior({ launchAtLogin: "yes", keepBackground: false })).toBe(false);
+    // BE-W: both switches are required and booleans.
+    expect(isAppBehavior({ launchAtLogin: true })).toBe(false);
+    expect(isAppBehavior({ launchAtLogin: true, keepBackground: "no" })).toBe(false);
     expect(normalizeAppBehavior(undefined)).toEqual(DEFAULT_APP_BEHAVIOR);
-    expect(normalizeAppBehavior({ launchAtLogin: true })).toEqual({ launchAtLogin: true });
+    expect(normalizeAppBehavior({ launchAtLogin: true })).toEqual({ launchAtLogin: true, keepBackground: false });
+    expect(normalizeAppBehavior({ keepBackground: true, launchAtLogin: 1 })).toEqual({
+      launchAtLogin: false,
+      keepBackground: true,
+    });
     expect(parseBehaviorPatch({ launchAtLogin: true })).toEqual({ launchAtLogin: true });
+    expect(parseBehaviorPatch({ keepBackground: true })).toEqual({ keepBackground: true });
+    expect(() => parseBehaviorPatch({ keepBackground: "yes" })).toThrow(/keepBackground is on or off/);
     expect(() => parseBehaviorPatch({ launchAtLogin: "yes" })).toThrow(/on or off/);
     expect(() => parseBehaviorPatch({ openAtLogin: true })).toThrow(/Unknown behavior/);
   });

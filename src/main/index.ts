@@ -108,6 +108,8 @@ import { registerApiKeysIpc } from "./api-keys-ipc";
 import { registerAppDataIpc } from "./app-data-ipc";
 import { readAppVariant, resolveAppIconPath } from "./app-icon";
 import { registerApprovalRulesIpc } from "./approval-rules-ipc";
+import { disposeBackgroundMode, installBackgroundMode, shouldHideMainWindowOnClose } from "./background-mode";
+import { createElectronBackgroundMode } from "./background-mode-electron";
 import { registerBrowserProfilesIpc } from "./browser-profiles-ipc";
 import { registerBudgetsIpc } from "./budgets-ipc";
 import { registerChannelRoutinesIpc } from "./channel-routines-ipc";
@@ -385,6 +387,16 @@ let scheduleViewService: ScheduleViewService | null = null;
 let tasksViewService: TasksViewService | null = null;
 let channelRoutinesService: ChannelRoutineService | null = null;
 let isQuitting = false;
+// COSGRAL W12 (BE-W): "keep running in the background": the tray icon that brings the hidden window back (the setting is applied from the app settings IPC).
+installBackgroundMode(
+  createElectronBackgroundMode(appIconPath, () => {
+    void openMainWindowFromDock().then((window) => {
+      if (window.isMinimized()) window.restore();
+      window.show();
+      window.focus();
+    });
+  }),
+);
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
 let pendingAddressUpdateUrl: string | null = null;
@@ -1302,7 +1314,7 @@ function createWindow(): BrowserWindow {
 
   window.once("ready-to-show", () => window.show());
   window.on("close", (event) => {
-    if (process.platform === "darwin" && !isQuitting) {
+    if ((process.platform === "darwin" || shouldHideMainWindowOnClose(isQuitting)) && !isQuitting) {
       event.preventDefault();
       window.hide();
     }
@@ -2430,6 +2442,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", (event) => {
   isQuitting = true;
+  disposeBackgroundMode();
   if (shutdownStarted) return;
   event.preventDefault();
   void prepareForShutdown().finally(() => app.quit());
