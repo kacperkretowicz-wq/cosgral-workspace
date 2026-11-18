@@ -10,16 +10,35 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
+
+function modeLabel(mode: string): string {
+  return mode === "control" ? t("Control") : t("View");
+}
+function phaseLabel(phase: string): string {
+  switch (phase) {
+    case "connecting":
+      return t("connecting");
+    case "waiting-for-owner":
+      return t("waiting for the owner");
+    case "connected":
+      return t("connected");
+    case "failed":
+      return t("failed");
+    default:
+      return t("idle");
+  }
+}
 
 export function RemoteDesktopSafetyBanner(props: { count: number; onStop: () => void }) {
   return (
     <Show when={props.count > 0}>
-      <aside class="remote-desktop-safety" aria-label="Remote desktop sharing">
-        <span>Remote viewer connected</span>{" "}
+      <aside class="remote-desktop-safety" aria-label={t("Remote desktop sharing")}>
+        <span>{t("Remote viewer connected")}</span>{" "}
         <Button unstyled type="button" class="remote-desktop-stop" onClick={props.onStop}>
-          Stop all remote sessions
+          {t("Stop all remote sessions")}
         </Button>
       </aside>
     </Show>
@@ -51,7 +70,7 @@ export function RemoteDesktopSafety() {
               setCount(state.sessions.length);
               setError("");
             })
-            .catch((e) => setError(e instanceof Error ? e.message : "Stop failed."))
+            .catch((e) => setError(e instanceof Error ? e.message : t("Stop failed.")))
         }
       />
       <Show when={error()}>
@@ -64,9 +83,9 @@ export function RemoteDesktopSafety() {
 export function RemoteDesktopToken(props: { token: string; onClose: () => void }) {
   const [message, setMessage] = createSignal("");
   return (
-    <section aria-label="Sharing token">
-      <h3>Save this token</h3>
-      <p>This token is shown only once. Anyone with it can request access; share it privately.</p>
+    <section aria-label={t("Sharing token")}>
+      <h3>{t("Save this token")}</h3>
+      <p>{t("This token is shown only once. Anyone with it can request access; share it privately.")}</p>
       <code>{props.token}</code>{" "}
       <Button
         unstyled
@@ -74,17 +93,17 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
         onClick={() =>
           void navigator.clipboard
             .writeText(props.token)
-            .then(() => setMessage("Copied."))
-            .catch(() => setMessage("Could not copy; select the token manually."))
+            .then(() => setMessage(t("Copied.")))
+            .catch(() => setMessage(t("Could not copy; select the token manually.")))
         }
       >
-        Copy token
+        {t("Copy token")}
       </Button>
       <Show when={message()}>
         <p role="status">{message()}</p>
       </Show>
       <Button unstyled type="button" onClick={props.onClose}>
-        I saved the token
+        {t("I saved the token")}
       </Button>
     </section>
   );
@@ -110,7 +129,7 @@ export function RemoteDesktopPage() {
       setHost(await action());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Host action failed.");
+      setError(e instanceof Error ? e.message : t("Host action failed."));
     }
   }
   async function tokenAction(action: () => Promise<{ state: ReturnType<typeof host>; token: string }>) {
@@ -120,7 +139,7 @@ export function RemoteDesktopPage() {
       setToken(result.token);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start sharing.");
+      setError(e instanceof Error ? e.message : t("Could not start sharing."));
     }
   }
   async function clientAction(action: () => Promise<ReturnType<typeof client>>) {
@@ -128,7 +147,7 @@ export function RemoteDesktopPage() {
       setClient(await action());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Connection failed.");
+      setError(e instanceof Error ? e.message : t("Connection failed."));
     }
   }
   function draw(frame: RemoteDesktopFrame) {
@@ -147,7 +166,7 @@ export function RemoteDesktopPage() {
   }
   function send(input: RemoteDesktopInput) {
     if (client().phase !== "connected" || client().mode !== "control" || !api) return;
-    void api.client.sendInput(input).catch((e) => setError(e instanceof Error ? e.message : "Input failed."));
+    void api.client.sendInput(input).catch((e) => setError(e instanceof Error ? e.message : t("Input failed.")));
   }
   function point(e: MouseEvent | WheelEvent) {
     const rect = e.currentTarget instanceof HTMLCanvasElement ? e.currentTarget.getBoundingClientRect() : null;
@@ -159,7 +178,7 @@ export function RemoteDesktopPage() {
   }
   onSettled(() => {
     if (!api) {
-      setError("Remote desktop is unavailable.");
+      setError(t("Remote desktop is unavailable."));
       return;
     }
     void api.host
@@ -190,35 +209,36 @@ export function RemoteDesktopPage() {
   });
   return (
     <main class="w2-library remote-desktop-page">
-      <h1>Remote desktop</h1>
+      <h1>{t("Remote desktop")}</h1>
       <p role="note">
-        Traffic is not encrypted outside a secure tunnel such as a VPN. Do not expose this service directly to the
-        internet.
+        {t(
+          "Traffic is not encrypted outside a secure tunnel such as a VPN. Do not expose this service directly to the internet.",
+        )}
       </p>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
       <RemoteDesktopAccessPanel />
       <section>
-        <h2>Share this computer</h2>
+        <h2>{t("Share this computer")}</h2>
         <Show when={!host().available}>
-          <p>{host().unavailableReason ?? "Sharing is unavailable."}</p>
+          <p>{host().unavailableReason ?? t("Sharing is unavailable.")}</p>
         </Show>
         <div class="remote-desktop-fields">
           <label>
-            Exposure{" "}
+            {t("Exposure")}{" "}
             <NativeSelect
               unstyled
               value={exposure()}
               disabled={host().enabled}
               onChange={(e) => setExposure(e.currentTarget.value === "lan" ? "lan" : "loopback")}
             >
-              <option value="loopback">This computer / tunnel</option>
-              <option value="lan">Local network</option>
+              <option value="loopback">{t("This computer / tunnel")}</option>
+              <option value="lan">{t("Local network")}</option>
             </NativeSelect>
           </label>
           <label>
-            Port{" "}
+            {t("Port")}{" "}
             <Input
               unstyled
               type="number"
@@ -243,7 +263,7 @@ export function RemoteDesktopPage() {
                     if (api) void hostAction(() => api.host.disable());
                   }}
                 >
-                  Disable sharing
+                  {t("Disable sharing")}
                 </Button>{" "}
                 <Button
                   unstyled
@@ -252,7 +272,7 @@ export function RemoteDesktopPage() {
                     if (api) void tokenAction(() => api.host.regenerateToken());
                   }}
                 >
-                  Generate new token
+                  {t("Generate new token")}
                 </Button>
               </>
             }
@@ -265,13 +285,13 @@ export function RemoteDesktopPage() {
                 if (api) void tokenAction(() => api.host.enable({ exposure: exposure(), port: port() }));
               }}
             >
-              Enable sharing
+              {t("Enable sharing")}
             </Button>
           </Show>
         </div>
         <Show when={token()}>{(value) => <RemoteDesktopToken token={value()} onClose={() => setToken("")} />}</Show>
         <For each={host().listening?.urls ?? []}>{(url) => <p>{url}</p>}</For>
-        <p>Requests awaiting approval: {host().consentPending}</p>
+        <p>{t("Requests awaiting approval: {count}", { count: host().consentPending })}</p>
         <Button
           unstyled
           type="button"
@@ -281,15 +301,16 @@ export function RemoteDesktopPage() {
             if (api) void hostAction(() => api.host.stop());
           }}
         >
-          Stop all remote sessions
+          {t("Stop all remote sessions")}
         </Button>
-        <h3>Connected viewers</h3>
-        <Show when={host().sessions.length} fallback={<p>No viewers connected.</p>}>
+        <h3>{t("Connected viewers")}</h3>
+        <Show when={host().sessions.length} fallback={<p>{t("No viewers connected.")}</p>}>
           <ul>
             <For each={host().sessions}>
               {(session) => (
                 <li>
-                  {session.label} · {session.mode} <Show when={session.paused}> · paused: {session.paused}</Show>{" "}
+                  {session.label} · {modeLabel(session.mode)}{" "}
+                  <Show when={session.paused}> · {t("paused: {reason}", { reason: session.paused ?? "" })}</Show>{" "}
                   <Show when={session.mode === "control"}>
                     <Button
                       unstyled
@@ -299,7 +320,7 @@ export function RemoteDesktopPage() {
                           void hostAction(() => api.host.setSessionMode({ sessionId: session.id, mode: "view" }));
                       }}
                     >
-                      View only
+                      {t("View only")}
                     </Button>
                   </Show>
                 </li>
@@ -307,14 +328,14 @@ export function RemoteDesktopPage() {
             </For>
           </ul>
         </Show>
-        <h3>Known viewers</h3>
+        <h3>{t("Known viewers")}</h3>
         <ul>
           <For each={host().peers}>
             {(peer) => (
               <li>
                 {peer.label}{" "}
                 <label>
-                  Policy{" "}
+                  {t("Policy")}{" "}
                   <NativeSelect
                     unstyled
                     value={peer.policy}
@@ -324,9 +345,9 @@ export function RemoteDesktopPage() {
                         void hostAction(() => api.host.setPeerPolicy({ peerId: peer.id, policy }));
                     }}
                   >
-                    <option value="ask">Ask</option>
-                    <option value="allow">Allow</option>
-                    <option value="block">Block</option>
+                    <option value="ask">{t("Ask")}</option>
+                    <option value="allow">{t("Allow")}</option>
+                    <option value="block">{t("Block")}</option>
                   </NativeSelect>
                 </label>{" "}
                 <Button
@@ -336,7 +357,7 @@ export function RemoteDesktopPage() {
                     if (api) void hostAction(() => api.host.removePeer({ peerId: peer.id }));
                   }}
                 >
-                  Remove viewer
+                  {t("Remove viewer")}
                 </Button>
               </li>
             )}
@@ -344,13 +365,13 @@ export function RemoteDesktopPage() {
         </ul>
       </section>
       <section>
-        <h2>Connect to another computer</h2>
+        <h2>{t("Connect to another computer")}</h2>
         <div class="remote-desktop-fields">
           <label>
-            Address <Input unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
+            {t("Address")} <Input unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
           </label>
           <label>
-            Token{" "}
+            {t("Token")}{" "}
             <Input
               unstyled
               type="password"
@@ -360,14 +381,14 @@ export function RemoteDesktopPage() {
             />
           </label>
           <label>
-            Mode{" "}
+            {t("Mode")}{" "}
             <NativeSelect
               unstyled
               value={mode()}
               onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}
             >
-              <option value="view">View</option>
-              <option value="control">Control</option>
+              <option value="view">{t("View")}</option>
+              <option value="control">{t("Control")}</option>
             </NativeSelect>
           </label>
         </div>
@@ -383,7 +404,7 @@ export function RemoteDesktopPage() {
               void clientAction(() => api.client.connect(input));
             }}
           >
-            Connect
+            {t("Connect")}
           </Button>
           <Button
             unstyled
@@ -393,24 +414,24 @@ export function RemoteDesktopPage() {
               if (api) void clientAction(() => api.client.disconnect());
             }}
           >
-            Disconnect
+            {t("Disconnect")}
           </Button>
         </div>
         <p role="status">
-          Status: {client().phase}
-          {client().mode ? ` · ${client().mode}` : ""}
+          {t("Status: {phase}", { phase: phaseLabel(client().phase) })}
+          {client().mode ? ` · ${modeLabel(client().mode ?? "view")}` : ""}
         </p>
         <Show when={client().error}>
           <p role="alert">{client().error}</p>
         </Show>
-        <p>In control mode, focus the screen to send keys. Press F10 to leave the remote screen.</p>
+        <p>{t("In control mode, focus the screen to send keys. Press F10 to leave the remote screen.")}</p>
         <canvas
           ref={canvas}
           class="remote-desktop-canvas"
           width="640"
           height="360"
           tabindex="0"
-          aria-label="Remote screen. Focus to send keyboard input when control is granted."
+          aria-label={t("Remote screen. Focus to send keyboard input when control is granted.")}
           onContextMenu={(e) => {
             if (client().mode !== "control") return;
             e.preventDefault();

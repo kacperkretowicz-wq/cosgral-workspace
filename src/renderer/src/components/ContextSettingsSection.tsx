@@ -61,7 +61,7 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
       const saved = await api.updateSettings(next);
       setSettings(saved);
       setThreshold(String(saved.thresholdPercent));
-      setNotice("Context settings saved.");
+      setNotice(t("Context settings saved."));
     } catch (e) {
       setError(providerError(e, t("Could not save context settings.")));
     } finally {
