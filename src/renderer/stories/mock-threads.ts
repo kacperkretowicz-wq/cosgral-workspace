@@ -168,13 +168,17 @@ export function createMockThreads(
       return { list, pending: structuredClone(pending) };
     },
     undo: async ({ botId, threadId }) => {
-      const entry = livePending(botId).find((item) => item.pending.threadId === threadId) ?? null;
+      // An entry whose time ran out is still known here, so the answer says so (like the program), then it is dropped.
+      const entry = (pendingByBot.get(botId) ?? []).find((item) => item.pending.threadId === threadId) ?? null;
       const problem = undoDeleteProblem(
         entry?.pending ?? null,
         undoClock(),
         threadsOf(botId).length < THREAD_LIMITS.threadsPerAgent,
       );
-      if (problem || !entry) throw new Error(problem ?? "There is nothing to undo for this thread.");
+      if (problem || !entry) {
+        announcePending(botId);
+        throw new Error(problem ?? "There is nothing to undo for this thread.");
+      }
       pendingByBot.set(
         botId,
         livePending(botId).filter((item) => item !== entry),

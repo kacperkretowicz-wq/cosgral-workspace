@@ -258,6 +258,34 @@ describe.sequential("AgentService with several threads per agent", {
     await expect(s.deleteThread({ botId: "chief", threadId: b, confirm: true })).rejects.toThrow(/turn is running/);
   });
 
+  it("deletes a thread with undo: it is hidden with its queue untouched, comes back whole, or goes for good with delete now (W12 BE-K)", async () => {
+    const { service: s, mailbox, events } = await fixture();
+    await s.setQueuePaused("chief", true);
+    await s.sendMessage({ botId: "chief", text: "Queued 1" });
+    await s.sendMessage({ botId: "chief", text: "Queued 2" });
+    const a = (await s.listThreads("chief")).activeThreadId ?? "";
+    const b = (await s.createThread({ botId: "chief" })).activeThreadId ?? "";
+
+    const result = await s.threadUndo.delete({ botId: "chief", threadId: a, confirm: true });
+    expect(result.list.threads.map((thread) => thread.id)).toEqual([b]);
+    expect(result.pending).toMatchObject({ threadId: a, wasActive: false });
+    expect(mailbox.listQueue("chief").deliveries).toHaveLength(2);
+    expect(s.threadUndo.list({ botId: "chief" }).map((item) => item.threadId)).toEqual([a]);
+    expect(events.some((event) => event.type === "thread-deletes-changed" && event.pending.length === 1)).toBe(true);
+    await expect(s.selectThread({ botId: "chief", threadId: a })).rejects.toThrow("Unknown thread.");
+
+    const back = await s.threadUndo.undo({ botId: "chief", threadId: a });
+    expect(find(back, a)).toMatchObject({ queued: 2 });
+    expect(s.threadUndo.list({ botId: "chief" })).toEqual([]);
+
+    await s.threadUndo.delete({ botId: "chief", threadId: a, confirm: true });
+    const gone = await s.deleteThread({ botId: "chief", threadId: a, confirm: true });
+    expect(gone.threads.map((thread) => thread.id)).toEqual([b]);
+    expect(mailbox.listQueue("chief").deliveries).toEqual([]);
+    expect(s.threadUndo.list({ botId: "chief" })).toEqual([]);
+    await expect(s.threadUndo.undo({ botId: "chief", threadId: a })).rejects.toThrow("nothing to undo");
+  });
+
   it("keeps two agents apart: each runs its own turn in its own thread", async () => {
     const { service: s, cli, events } = await fixture();
     cli.hold = true;

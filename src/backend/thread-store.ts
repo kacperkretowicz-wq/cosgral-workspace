@@ -271,7 +271,7 @@ export class ThreadStore {
   async unhide(input: ThreadInput): Promise<ThreadList> {
     const bot = await this.#prepare(input.botId);
     const pending = this.#pendingOf(input.threadId, bot.id);
-    const problem = undoDeleteProblem(pending, this.#nowDate(), this.hasRoom(bot.id));
+    const problem = undoDeleteProblem(pending, this.#nowDate(), this.hasRoom(bot.id), this.#max());
     if (problem || !pending) throw new Error(problem ?? "There is nothing to undo for this thread.");
     this.#pendingTable()
       .prepare("DELETE FROM projection_thread_pending_delete WHERE thread_id = ?")
