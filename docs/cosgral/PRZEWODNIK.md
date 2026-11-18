@@ -290,7 +290,7 @@ Biblioteka zbiera pliki, które wgrałeś, które zapisali agenci i które przys
 
 ## 5a. Jak zobaczyć każdy nowy ekran (kliknij po kolei)
 
-**Skąd zaczynasz:** po lewej jest pionowy pasek stron: Agenci, Harmonogram, Zadania, Przepływy, Zużycie, Biblioteka, Katalog dodatków, Zdalny pulpit, Dostawcy, Telefon, Ustawienia serwera. Gdy okno jest wąskie, część pozycji chowa się pod przyciskiem „More pages” (więcej stron). Na dole paska jest **zębatka „Ustawienia”**: to okno ustawień programu, z menu po lewej (General, Appearance, Voice, Updates…).
+**Skąd zaczynasz:** po lewej jest pionowy pasek stron: Agenci, Harmonogram, Zadania, Przepływy, Zużycie, Biblioteka, Katalog dodatków, Zdalny pulpit, Dostawcy, Telefon, Ustawienia serwera. Gdy okno jest wąskie, część pozycji chowa się pod przyciskiem „More pages” (więcej stron). Na dole paska jest **zębatka „Ustawienia”**: to ekran „Settings” programu: sekcje są jedna pod drugą (Application settings, App behavior, Appearance, Context settings, Budżety, Updates, Voice), więc wystarczy przewijać; bocznego menu z sekcjami nie ma.
 
 W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy w nawiasach poniżej to nazwy z polskiego interfejsu.
 
