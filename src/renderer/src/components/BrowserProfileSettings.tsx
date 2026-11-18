@@ -1,6 +1,7 @@
 ﻿import type { BrowserProfilesDesktopApi } from "@openbot/contracts/ipc";
 import { parseDomainList } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Field, Heading, Text, Textarea } from "./ui";
@@ -29,7 +30,7 @@ export function BrowserProfileSettings(props: {
         }
       })
       .catch(() => {
-        if (live) setError("Could not load browser profile. Reopen settings to retry.");
+        if (live) setError(t("Could not load browser profile. Reopen settings to retry."));
       });
     const off = (props.onEvent ?? window.openbot?.agent?.onEvent)?.((event) => {
       if (event.type === "browser-profiles-changed")
@@ -68,13 +69,13 @@ export function BrowserProfileSettings(props: {
         setNotice("Domain rules saved.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update browser profile.");
+      setError(e instanceof Error ? e.message : t("Could not update browser profile."));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section class="providers-form" aria-label="Agent browser profile">
+    <section class="providers-form" aria-label={t("Agent browser profile")}>
       <Heading as="h3" size="sm">
         Browser profile
       </Heading>
@@ -127,7 +128,7 @@ export function BrowserProfileSettings(props: {
           </Button>
         </Show>
         <Show when={confirm()}>
-          <section aria-label="Confirm clearing browser data" class="providers-form">
+          <section aria-label={t("Confirm clearing browser data")} class="providers-form">
             <Heading as="h4" size="sm">
               Clear this agent’s browser data?
             </Heading>

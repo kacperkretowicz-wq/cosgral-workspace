@@ -67,8 +67,15 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "PlanPanel",
     "LibraryPanel",
     "Conversation",
+    "ContextIndicator",
+    "AccessSettings",
+    "IsolationSettings",
+    "BrowserProfileSettings",
+    "BudgetSettings",
+    "ChannelWorkspace",
   ];
-  for (const file of files) {
+  const extra = ["conversation/AgentActivity"];
+  for (const file of [...files, ...extra]) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
     for (const match of source.matchAll(/\bt\("([^"\n]+)"(?:\s*,|\s*\))/g)) {
       expect(Object.hasOwn(en, match[1]), `${file}: ${match[1]}`).toBe(true);

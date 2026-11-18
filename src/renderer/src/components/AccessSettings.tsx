@@ -1,6 +1,7 @@
 import type { AccessDesktopApi, AgentAccess, AgentEvent } from "@openbot/contracts/ipc";
 import { ACCESS_LEVEL_INFO, ACCESS_LEVELS, accessFolderProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Field, Heading, NativeSelect, Text, Textarea } from "./ui";
 export type SettingsEvents = (listener: (event: AgentEvent) => void) => () => void;
@@ -27,7 +28,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       const next = await api.get({ botId: props.botId });
       if (serial === revision) accept(next);
     } catch {
-      if (serial === revision) setError("Could not load access settings.");
+      if (serial === revision) setError(t("Could not load access settings."));
     }
   }
   createEffect(
@@ -43,9 +44,10 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       if (event.type === "access-changed" && event.access.botId === props.botId) {
         revision++;
         accept(event.access);
-        setNotice("Access settings updated.");
+        setNotice(t("Access settings updated."));
       }
-      if (event.type === "access-denied" && event.botId === props.botId) setError(`Access denied: ${event.message}`);
+      if (event.type === "access-denied" && event.botId === props.botId)
+        setError(t("Access denied: {message}", { message: event.message }));
     });
     return () => {
       revision++;
@@ -60,7 +62,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update access settings.");
+      setError(e instanceof Error ? e.message : t("Could not update access settings."));
     } finally {
       setBusy(false);
     }
@@ -71,7 +73,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       .map((s) => s.trim())
       .filter(Boolean);
   return (
-    <section class="providers-form" aria-label="Agent access">
+    <section class="providers-form" aria-label={t("Agent access")}>
       <Heading as="h3" size="sm">
         Access level
       </Heading>

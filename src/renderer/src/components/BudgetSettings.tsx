@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
@@ -22,7 +23,7 @@ export function downloadBudgetCsv(file: BudgetCsv) {
 export function BudgetCounter(props: { status: BudgetStatus }) {
   const view = () => props.status;
   return (
-    <section aria-label="Budget usage" class="providers-form">
+    <section aria-label={t("Budget usage")} class="providers-form">
       <div class="providers-heading">
         <Heading as="h4" size="sm">
           Usage this period
@@ -113,9 +114,12 @@ export function BudgetPanel(props: {
     }
   }
   return (
-    <section class="providers-form" aria-label={props.status.scope.kind === "space" ? "Space budget" : "Agent budget"}>
+    <section
+      class="providers-form"
+      aria-label={props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
+    >
       <Heading as="h3" size="sm">
-        {props.status.scope.kind === "space" ? "Space budget" : "Agent budget"}
+        {props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
       </Heading>
       <Text as="p">
         Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider
@@ -132,7 +136,7 @@ export function BudgetPanel(props: {
       </Show>
       <form
         class="providers-form"
-        aria-label="Budget limits"
+        aria-label={t("Budget limits")}
         onSubmit={(event) => {
           event.preventDefault();
           void run(async () => {
@@ -210,7 +214,7 @@ export function BudgetPanel(props: {
       </form>
       <form
         class="providers-form"
-        aria-label="Export budget usage"
+        aria-label={t("Export budget usage")}
         onSubmit={(event) => {
           event.preventDefault();
           void run(() => props.onExport(from(), to()), "CSV download requested.");
@@ -258,7 +262,7 @@ export function BudgetSettings(
       const value = await api.list();
       if (serial === revision) setOverview(value);
     } catch {
-      setError("Could not load budget usage.");
+      setError(t("Could not load budget usage."));
     }
   }
   onSettled(() => {
