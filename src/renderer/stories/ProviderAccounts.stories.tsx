@@ -48,7 +48,7 @@ function Scene(props: {
                   : props.variant === "code"
                     ? "code-required"
                     : "waiting-for-browser",
-              message: props.variant === "error" ? "Nie udało się zalogować. Spróbuj ponownie." : null,
+              message: props.variant === "error" ? "Sign-in failed. Try again." : null,
               url: "https://example.invalid/login",
               userCode: null,
             },
@@ -79,7 +79,9 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {
   args: { variant: "empty" },
   play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findAllByText(/Nie ma kont/)).toHaveLength(2);
+    await expect(
+      await within(canvasElement).findAllByText(/No accounts yet\. Add the first account for this provider\./),
+    ).toHaveLength(2);
   },
 };
 export const SystemOnly: Story = {
@@ -87,28 +89,28 @@ export const SystemOnly: Story = {
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await c.findByText("Codex (this computer)");
-    await expect(c.queryByRole("button", { name: "Usuń" })).not.toBeInTheDocument();
+    await expect(c.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   },
 };
 export const PoolLimit: Story = {
   args: { variant: "limit" },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await c.findAllByText(/Osiągnięto maksymalną liczbę/);
-    for (const b of c.getAllByRole("button", { name: "Dodaj konto" })) await expect(b).toBeDisabled();
+    await c.findAllByText(/Maximum number of accounts reached/);
+    for (const b of c.getAllByRole("button", { name: "Add account" })) await expect(b).toBeDisabled();
   },
 };
 export const LoginError: Story = {
   args: { variant: "error" },
   play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByRole("button", { name: "Ponów logowanie" })).toBeEnabled();
+    await expect(await within(canvasElement).findByRole("button", { name: "Retry sign-in" })).toBeEnabled();
   },
 };
 export const CodeRequired: Story = {
   args: { variant: "code" },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    await expect(await c.findByLabelText("Kod logowania")).toHaveAttribute("type", "password");
+    await expect(await c.findByLabelText("Sign-in code")).toHaveAttribute("type", "password");
   },
 };
 export const WaitingForBrowser: Story = { args: { variant: "waiting" } };
@@ -117,16 +119,14 @@ export const AddAndLogin: Story = {
   args: { variant: "live" },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
-    const label = await c.findByLabelText("Etykieta konta Codex");
+    const label = await c.findByLabelText("Account label for Codex");
     await userEvent.type(label, "Praca");
-    const provider = within(c.getByRole("region", { name: "Konta codex" }));
-    await userEvent.click(provider.getByRole("button", { name: "Dodaj konto" }));
+    const provider = within(c.getByRole("region", { name: "Accounts for codex" }));
+    await userEvent.click(provider.getByRole("button", { name: "Add account" }));
     const card = within(await c.findByRole("group", { name: "Praca" }));
-    await userEvent.click(card.getByRole("button", { name: "Zaloguj" }));
-    await card.findByText(/Zalogowane/, {}, { timeout: 4000 });
-    const up = card.getByRole("button", { name: "Przesuń Praca w górę" });
-    up.focus();
-    await userEvent.keyboard("{Enter}");
-    await card.findByText("Kolejność puli: 1");
+    await userEvent.click(card.getByRole("button", { name: "Sign in" }));
+    await expect(await card.findAllByText("Signed in", {}, { timeout: 4000 })).not.toHaveLength(0);
+    await userEvent.click(card.getByRole("button", { name: "Move Praca up" }));
+    await card.findByText("Pool order: 1");
   },
 };
