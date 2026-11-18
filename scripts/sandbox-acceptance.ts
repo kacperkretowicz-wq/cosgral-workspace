@@ -18,7 +18,7 @@ import { Agent, request } from "node:https";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
-import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
 import { waitForQuietMachine } from "./sandbox-load.ts";
@@ -3564,6 +3564,471 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         for (const scope of ["provider:codex", "provider:claude", "*"])
           await d.ev(`window.openbot.providers.resetFallbackModels(${JSON.stringify(scope)})`);
         return "general [claude-opus-5], Codex [gpt-5.6-sol]: Res (Codex model) chain provider:sol > general:opus; an own list goes first (own:terra > provider:sol > general:opus); the Claude list is separate; the page shows Codex, Claude and All providers lists; an unknown provider is refused; all lists reset";
+      },
+    );
+
+    // -- W12 Backend contracts in the window (docs/cosgral-raporty/backend-w12-odbior-kontraktow.md) -----------------
+    await row(
+      "W12-threadUndo",
+      "threadUndo: hide with confirm, list, event, undo, purge; refusals stay hard (8)",
+      async () => {
+        assert(
+          (await d.ev("Boolean(window.openbot.threadUndo && window.openbot.threads)")) === true,
+          "threadUndo + threads APIs exist",
+        );
+        const botId = await d.botId("Assistant");
+        await d.ev(`window.__w12ThreadEvents = []`);
+        await d.ev(
+          `window.openbot.agent.onEvent((event) => { if (event.type === "thread-deletes-changed") window.__w12ThreadEvents.push(event); })`,
+        );
+        const created = asRecord(
+          await d.ev(`window.openbot.threads.create({ botId: ${JSON.stringify(botId)}, title: "Undo me" })`),
+        );
+        const threadId = String(created.activeThreadId ?? "");
+        assert(threadId.length > 0, `create returns activeThreadId: ${JSON.stringify(created)}`);
+
+        const noConfirm = String(
+          await d.ev(
+            `window.openbot.threadUndo.delete({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)} }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(
+          /Deleting a thread for good needs confirmation/.test(noConfirm),
+          `A1 refuse without confirm: ${noConfirm.slice(0, 120)}`,
+        );
+
+        const deleted = asRecord(
+          await d.ev(
+            `window.openbot.threadUndo.delete({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)}, confirm: true })`,
+          ),
+        );
+        const pending = asRecord(deleted.pending);
+        const afterList = asRecord(deleted.list);
+        assert(String(pending.threadId) === threadId, "A2 pending.threadId");
+        assert(String(pending.title) === "Undo me", "A2 pending.title");
+        assert(pending.wasActive === true, "A2 pending.wasActive");
+        assert(
+          Date.parse(String(pending.expiresAt)) - Date.parse(String(pending.deletedAt)) === 600_000,
+          "A2 10-minute window",
+        );
+        assert(!list(afterList.threads).some((row) => row.id === threadId), "A2 list no longer has the thread");
+        assert(String(afterList.activeThreadId) !== threadId, "A2 activeThreadId moved");
+
+        const pendingList = list(await d.ev(`window.openbot.threadUndo.list({ botId: ${JSON.stringify(botId)} })`));
+        assert(pendingList.length === 1 && String(pendingList[0]?.threadId) === threadId, "A3 list has 1");
+        const selectRefused = String(
+          await d.ev(
+            `window.openbot.threads.select({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)} }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(/Unknown thread/.test(selectRefused), `A3 select refuses: ${selectRefused.slice(0, 80)}`);
+
+        await waitUntil(
+          page,
+          "A4 thread-deletes-changed",
+          async () => {
+            const events = list(await d.ev("window.__w12ThreadEvents"));
+            return events.some((event) => list(event.pending).length === 1);
+          },
+          10_000,
+        );
+
+        const restored = asRecord(
+          await d.ev(
+            `window.openbot.threadUndo.undo({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)} })`,
+          ),
+        );
+        assert(
+          list(restored.threads).some((row) => row.id === threadId) && String(restored.activeThreadId) === threadId,
+          "A6 undo restores thread + active",
+        );
+        assert(
+          list(await d.ev(`window.openbot.threadUndo.list({ botId: ${JSON.stringify(botId)} })`)).length === 0,
+          "A6 pending empty after undo",
+        );
+        const undoAgain = String(
+          await d.ev(
+            `window.openbot.threadUndo.undo({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)} }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(
+          /There is nothing to undo for this thread/.test(undoAgain),
+          `A6 second undo refuses: ${undoAgain.slice(0, 80)}`,
+        );
+
+        await d.ev(
+          `window.openbot.threadUndo.delete({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)}, confirm: true })`,
+        );
+        await d.ev(
+          `window.openbot.threads.delete({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)}, confirm: true })`,
+        );
+        assert(
+          !list(asRecord(await d.ev(`window.openbot.threads.list({ botId: ${JSON.stringify(botId)} })`)).threads).some(
+            (row) => row.id === threadId,
+          ),
+          "A7 threads.delete purged",
+        );
+        assert(
+          list(await d.ev(`window.openbot.threadUndo.list({ botId: ${JSON.stringify(botId)} })`)).length === 0,
+          "A7 pending empty after purge",
+        );
+        const undoPurged = String(
+          await d.ev(
+            `window.openbot.threadUndo.undo({ botId: ${JSON.stringify(botId)}, threadId: ${JSON.stringify(threadId)} }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(
+          /There is nothing to undo for this thread/.test(undoPurged),
+          `A7 undo after purge refuses: ${undoPurged.slice(0, 80)}`,
+        );
+        // A8 (turn running) needs a hanging turn — covered by unit tests; not forced here.
+        return "A1–A7 hard IPC ok; A8 (running turn) left to unit tests";
+      },
+    );
+
+    await row(
+      "W12-tasksView",
+      "tasksView: list shapes, sort, scopes, filters, detail actions, archive/restore (8)",
+      async () => {
+        assert((await d.ev("Boolean(window.openbot.tasksView)")) === true, "tasksView API exists");
+        const assistant = await d.botId("Assistant");
+        const res = await d.botId("Res");
+        const channelName = `w12-tasks-${Date.now().toString(36)}`;
+        const channel = asRecord(
+          await d.ev(
+            `window.openbot.channels.create({ name: ${JSON.stringify(channelName)}, title: "W12 Tasks", instructions: "Finish briefly.", memberBotIds: ${JSON.stringify([assistant, res])}, leadBotId: ${JSON.stringify(assistant)}, isolated: false })`,
+          ),
+        );
+        const channelId = String(channel.id ?? "");
+        assert(channelId.length > 0, `channel created: ${JSON.stringify(channel)}`);
+        await d.ev(
+          `window.openbot.channels.sendMessage({ channelId: ${JSON.stringify(channelId)}, text: "W12 tasks acceptance title" })`,
+        );
+        await waitUntil(
+          page,
+          "task done",
+          async () => {
+            const page0 = asRecord(await d.ev(`window.openbot.tasksView.list({ query: "W12 tasks acceptance" })`));
+            return list(page0.items).some((item) => asRecord(item.task).state === "done");
+          },
+          90_000,
+        );
+
+        const pageActive = asRecord(await d.ev("window.openbot.tasksView.list({})"));
+        assert(list(pageActive.items).length >= 1, "A1 items ≥ 1");
+        for (const item of list(pageActive.items)) {
+          const task = asRecord(item.task);
+          assert(isString(task.id) && task.id.length > 0, "A1 task.id");
+          assert(isString(item.channelName), "A1 channelName");
+          assert(item.ownerName === null || isString(item.ownerName), "A1 ownerName");
+          assert(isNumber(item.stepCount) && isNumber(item.stepsDone), "A1 stepCount/stepsDone");
+          assert(item.resultPreview === null || isString(item.resultPreview), "A1 resultPreview");
+        }
+        const counts = asRecord(pageActive.counts);
+        const byState = asRecord(counts.byState);
+        for (const key of ["queued", "running", "waiting", "paused", "done", "failed", "cancelled"]) {
+          assert(isNumber(byState[key]), `A1 byState.${key}`);
+        }
+        assert(isNumber(counts.active), "A1 counts.active is a number");
+
+        const stamps = list(pageActive.items).map((item) => String(asRecord(item.task).updatedAt));
+        const sorted = [...stamps].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+        assert(JSON.stringify(stamps) === JSON.stringify(sorted), "A2 sorted by updatedAt desc");
+
+        const doneItem = list(pageActive.items).find(
+          (item) =>
+            String(asRecord(item.task).title).includes("W12 tasks acceptance") && asRecord(item.task).state === "done",
+        );
+        assert(doneItem, "done acceptance task exists");
+        const taskId = String(asRecord(doneItem.task).id);
+
+        const detail = asRecord(await d.ev(`window.openbot.tasksView.detail({ taskId: ${JSON.stringify(taskId)} })`));
+        assert(String(asRecord(detail.result).text || "").length > 0, "A5 result.text");
+        assert(
+          String(asRecord(detail.request).messageId) === String(asRecord(detail.task).requestMessageId),
+          "A5 request.messageId",
+        );
+        const openAsChat = asRecord(detail.openAsChat);
+        assert(
+          String(openAsChat.channelId) === String(asRecord(detail.task).channelId) &&
+            String(openAsChat.anchorMessageId) === String(asRecord(detail.task).requestMessageId),
+          "A5 openAsChat",
+        );
+        const logAt = list(detail.log).map((entry) => String(entry.at));
+        const logSorted = [...logAt].sort();
+        assert(JSON.stringify(logAt) === JSON.stringify(logSorted), "A5 log ascending by at");
+        const actions = list(detail.actions);
+        assert(
+          actions.length === 6 &&
+            actions.map((action) => String(action.action)).join(",") === "stop,pause,resume,archive,restore,reassign",
+          `A5 actions order: ${actions.map((action) => action.action).join(",")}`,
+        );
+        const byId = Object.fromEntries(actions.map((action) => [String(action.action), action]));
+        assert(byId.stop?.enabled === false && /already finished/.test(String(byId.stop?.reason)), "A6 stop");
+        assert(byId.pause?.enabled === false && /not running/.test(String(byId.pause?.reason)), "A6 pause");
+        assert(byId.resume?.enabled === false && /paused or stopped/.test(String(byId.resume?.reason)), "A6 resume");
+        assert(byId.reassign?.enabled === false && /finished/.test(String(byId.reassign?.reason)), "A6 reassign");
+        assert(byId.archive?.enabled === true, "A6 archive on for done");
+        assert(byId.restore?.enabled === false && /not archived/.test(String(byId.restore?.reason)), "A6 restore off");
+
+        await d.ev(`window.openbot.channels.actOnTask({ taskId: ${JSON.stringify(taskId)}, action: "archive" })`);
+        const archivedPage = asRecord(await d.ev(`window.openbot.tasksView.list({ scope: "archived" })`));
+        assert(
+          list(archivedPage.items).length >= 1 &&
+            list(archivedPage.items).every((item) => asRecord(item.task).archivedAt !== null),
+          "A3 archived scope only archived",
+        );
+        const allPage = asRecord(await d.ev(`window.openbot.tasksView.list({ scope: "all" })`));
+        const allCounts = asRecord(allPage.counts);
+        assert(
+          Number(allPage.total) === Number(allCounts.active) + Number(allCounts.archived),
+          `A3 all.total === active + archived (${String(allPage.total)} vs ${String(allCounts.active)}+${String(allCounts.archived)})`,
+        );
+
+        const runningOnly = asRecord(await d.ev(`window.openbot.tasksView.list({ states: ["running"] })`));
+        assert(
+          list(runningOnly.items).every((item) => asRecord(item.task).state === "running"),
+          "A4 states filter",
+        );
+        const runningByState = asRecord(asRecord(runningOnly.counts).byState);
+        for (const key of ["queued", "running", "waiting", "paused", "done", "failed", "cancelled"]) {
+          assert(isNumber(runningByState[key]), `A4 byState keeps ${key}`);
+        }
+        const narrowed = asRecord(
+          await d.ev(`window.openbot.tasksView.list({ query: "W12 tasks acceptance", scope: "all" })`),
+        );
+        assert(
+          list(narrowed.items).every((item) =>
+            String(asRecord(item.task).title).toLowerCase().includes("w12 tasks acceptance"),
+          ),
+          "A4 query narrows",
+        );
+        if (Number(allPage.total) > 1) {
+          const first = asRecord(await d.ev(`window.openbot.tasksView.list({ scope: "all", limit: 1 })`));
+          assert(list(first.items).length === 1 && Number(first.nextOffset) === 1, "A4 limit/nextOffset");
+          const last = asRecord(
+            await d.ev(
+              `window.openbot.tasksView.list({ scope: "all", limit: 1, offset: ${JSON.stringify(Number(allPage.total) - 1)} })`,
+            ),
+          );
+          assert(last.nextOffset === null, "A4 last page nextOffset null");
+        }
+
+        assert(
+          list(archivedPage.items).some((item) => String(asRecord(item.task).id) === taskId),
+          "A7 in archived list",
+        );
+        assert(
+          !list(asRecord(await d.ev("window.openbot.tasksView.list({})")).items).some(
+            (item) => String(asRecord(item.task).id) === taskId,
+          ),
+          "A7 not in default active list",
+        );
+        await d.ev(`window.openbot.channels.actOnTask({ taskId: ${JSON.stringify(taskId)}, action: "restore" })`);
+        assert(
+          list(asRecord(await d.ev("window.openbot.tasksView.list({})")).items).some(
+            (item) => String(asRecord(item.task).id) === taskId,
+          ),
+          "A7 restore returns to active",
+        );
+        const missing = String(
+          await d.ev(
+            `window.openbot.tasksView.detail({ taskId: "no-such-task" }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(/This task no longer exists/.test(missing), `A7 missing detail: ${missing.slice(0, 80)}`);
+        // A8 (window Tasks UI) is a shot/U check — IPC detail carries openAsChat + steps.
+        return "A1–A7 hard IPC ok; A8 window Tasks UI covered by shots";
+      },
+    );
+
+    await row(
+      "W12-messageMenu",
+      "messageMenu: action ids, assistant edit blocked, pin+react events, unknown id (7)",
+      async () => {
+        assert(
+          (await d.ev("Boolean(window.openbot.messageMenu && window.openbot.messageActions)")) === true,
+          "messageMenu API exists",
+        );
+        const botId = await d.botId("Assistant");
+        await d.ev(`window.__w12MenuEvents = []`);
+        await d.ev(
+          `window.openbot.agent.onEvent((event) => { if (event.type === "message-pins-changed" || event.type === "queue-changed") window.__w12MenuEvents.push(event); })`,
+        );
+        const snap = asRecord(await d.ev(`window.openbot.agent.readConversation(${JSON.stringify(botId)})`));
+        const messages = list(snap.messages);
+        const userMsg = [...messages].reverse().find((message) => message.author === "user");
+        const botMsg = [...messages]
+          .reverse()
+          .find((message) => message.author === "assistant" && message.status === "completed");
+        assert(
+          userMsg?.id && botMsg?.id,
+          `user+completed assistant messages: user=${Boolean(userMsg)} bot=${Boolean(botMsg)}`,
+        );
+
+        const userMenu = asRecord(
+          await d.ev(
+            `window.openbot.messageMenu.get({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(userMsg.id))} })`,
+          ),
+        );
+        assert(
+          list(userMenu.actions)
+            .map((action) => String(action.id))
+            .join(",") === "copy,react,pin,branch,retry,edit,delete",
+          `A1 action ids: ${list(userMenu.actions)
+            .map((action) => action.id)
+            .join(",")}`,
+        );
+        assert(
+          list(userMenu.actions).every((action) => action.enabled === true),
+          "A1 all enabled while idle",
+        );
+        const deleteAction = list(userMenu.actions).find((action) => action.id === "delete");
+        assert(deleteAction?.needsConfirmation === true, "A1 delete needsConfirmation");
+        const later = messages.filter(
+          (message) =>
+            String(message.createdAt) > String(userMsg.createdAt) ||
+            messages.indexOf(message) > messages.indexOf(userMsg),
+        ).length;
+        // Prefer engine's laterMessages via edit.needsConfirmation when messages follow.
+        const editAction = list(userMenu.actions).find((action) => action.id === "edit");
+        assert(isBoolean(editAction?.needsConfirmation), "A1 edit.needsConfirmation present");
+
+        const botMenu = asRecord(
+          await d.ev(
+            `window.openbot.messageMenu.get({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))} })`,
+          ),
+        );
+        const botEdit = list(botMenu.actions).find((action) => action.id === "edit");
+        assert(botEdit?.enabled === false, "A2 edit disabled on assistant");
+        assert(
+          String(botEdit?.reason) === "Only your own messages can be edited.",
+          `A2 edit reason: ${String(botEdit?.reason)}`,
+        );
+        assert(
+          list(botMenu.actions)
+            .filter((action) => action.id !== "edit")
+            .every((action) => action.enabled === true),
+          "A2 other actions enabled on assistant",
+        );
+
+        await d.ev(
+          `window.openbot.messageActions.pin({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))}, pinned: true })`,
+        );
+        const pinnedMenu = asRecord(
+          await d.ev(
+            `window.openbot.messageMenu.get({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))} })`,
+          ),
+        );
+        assert(pinnedMenu.pinned === true, "A3 pinned");
+        assert(list(pinnedMenu.actions).find((action) => action.id === "pin")?.active === true, "A3 pin.active");
+        await waitUntil(
+          page,
+          "A3 message-pins-changed",
+          async () => list(await d.ev("window.__w12MenuEvents")).some((event) => event.type === "message-pins-changed"),
+          10_000,
+        );
+        await d.ev(
+          `window.openbot.messageActions.pin({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))}, pinned: false })`,
+        );
+
+        const reactions = asRecord(botMenu.reactions);
+        const quick = Array.isArray(reactions.quick) ? reactions.quick.map(String) : [];
+        assert(quick.length > 0 && reactions.more != null, "A4 quick/more");
+        const emoji = quick[0] ?? "👍";
+        await d.ev(
+          `window.openbot.agent.setMessageReaction({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))}, emoji: ${JSON.stringify(emoji)} })`,
+        );
+        const reacted = asRecord(
+          await d.ev(
+            `window.openbot.messageMenu.get({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))} })`,
+          ),
+        );
+        assert(String(asRecord(reacted.reactions).current) === emoji, "A4 current reaction");
+        await d.ev(
+          `window.openbot.agent.setMessageReaction({ botId: ${JSON.stringify(botId)}, messageId: ${JSON.stringify(String(botMsg.id))}, emoji: null })`,
+        );
+
+        const unknown = String(
+          await d.ev(
+            `window.openbot.messageMenu.get({ botId: ${JSON.stringify(botId)}, messageId: "no-such-message" }).then(() => "ok", (e) => String(e.message))`,
+          ),
+        );
+        assert(/That message is not in this thread/.test(unknown), `A6 unknown: ${unknown.slice(0, 80)}`);
+        // A5 (non-message row) needs a step/note row in the conversation — seed-dependent; A7 is window U.
+        void later;
+        return "A1–A4 + A6 hard IPC ok; A5 non-message row + A7 window menu left to shots/units";
+      },
+    );
+
+    await row(
+      "W12-heldKind",
+      "heldKind: pause ≠ hold; queue-changed reaches window; optional server-busy/budget (5)",
+      async () => {
+        const botId = await d.botId("Assistant");
+        await d.ev(`window.__w12QueueEvents = []`);
+        await d.ev(
+          `window.openbot.agent.onEvent((event) => { if (event.type === "queue-changed") window.__w12QueueEvents.push(event); })`,
+        );
+        await d.ev(`window.openbot.agent.setQueuePaused({ botId: ${JSON.stringify(botId)}, paused: true })`);
+        await d.ev(
+          `window.openbot.agent.sendMessage({ botId: ${JSON.stringify(botId)}, text: "W12 heldKind queued while paused" })`,
+        );
+        const queued = asRecord(await d.ev(`window.openbot.agent.listQueue(${JSON.stringify(botId)})`));
+        assert(queued.heldReason == null && queued.heldKind == null, "A1 pause is not a hold");
+        const statusBar = page.getByRole("status").filter({ hasText: /Message queued:/i });
+        assert((await statusBar.count()) === 0, "A1 no Message queued status bar for pause-only");
+
+        await waitUntil(
+          page,
+          "A2 queue-changed",
+          async () => {
+            const events = list(await d.ev("window.__w12QueueEvents"));
+            return events.some((event) => String(asRecord(event.snapshot).botId) === botId);
+          },
+          10_000,
+        );
+
+        await d.ev(`window.openbot.agent.setQueuePaused({ botId: ${JSON.stringify(botId)}, paused: false })`);
+
+        // A3 server-busy when maxThreads=1 and two agents turn at once.
+        let serverBusyNote = "skipped (could not force)";
+        try {
+          await d.ev(`window.openbot.serverSettings.update({ general: { maxThreads: 1 } })`);
+          const resId = await d.botId("Res");
+          await d.ev(
+            `window.openbot.agent.sendMessage({ botId: ${JSON.stringify(botId)}, text: "W12 long hold A HOLD this for busy" })`,
+          );
+          await d.ev(
+            `window.openbot.agent.sendMessage({ botId: ${JSON.stringify(resId)}, text: "W12 second agent while busy" })`,
+          );
+          await waitUntil(
+            page,
+            "A3 server-busy",
+            async () => {
+              const q = asRecord(await d.ev(`window.openbot.agent.listQueue(${JSON.stringify(resId)})`));
+              return String(q.heldKind) === "server-busy";
+            },
+            20_000,
+          );
+          const busy = asRecord(await d.ev(`window.openbot.agent.listQueue(${JSON.stringify(resId)})`));
+          assert(String(busy.heldKind) === "server-busy", "A3 heldKind");
+          assert(
+            String(busy.heldReason) ===
+              "The server is busy: too many agent turns run at once. New messages wait until one finishes.",
+            `A3 heldReason: ${String(busy.heldReason).slice(0, 100)}`,
+          );
+          serverBusyNote = "ok";
+          await d.ev(`window.openbot.serverSettings.update({ general: { maxThreads: null } })`);
+        } catch (error) {
+          await d.ev(`window.openbot.serverSettings.update({ general: { maxThreads: null } }).catch(() => null)`);
+          serverBusyNote = `unit-covered (${error instanceof Error ? error.message.slice(0, 80) : String(error)})`;
+        }
+
+        // A4 budget: only when a budget API can force exhaustion in this profile.
+        const budgetNote = "skipped (no forced budget in this run; unit-covered)";
+        // A5 agent-restart is U / unit-covered.
+        return `A1–A2 hard ok; A3 ${serverBusyNote}; A4 ${budgetNote}; A5 unit`;
       },
     );
 

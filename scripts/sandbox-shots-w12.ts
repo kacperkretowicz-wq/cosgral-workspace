@@ -756,7 +756,7 @@ async function main(): Promise<void> {
       await ensureChatAgent(p);
       await sendStubChat(p).catch(() => undefined);
       await unlockComposer(p);
-      // Actions stay opacity:0 until the message row is hovered (conversation.css).
+      // Prefer a completed assistant row so MessageHistoryActions (not the 2-item fallback) is mounted.
       const entry = p
         .locator(".message-entry")
         .filter({ hasText: /Stub: received|Hello from T-G shots/i })
@@ -764,7 +764,7 @@ async function main(): Promise<void> {
       if (await entry.count()) {
         await entry.scrollIntoViewIfNeeded().catch(() => undefined);
         await entry.hover({ timeout: 8_000 }).catch(() => undefined);
-        await p.waitForTimeout(300);
+        await p.waitForTimeout(400);
       }
       const more = (await entry.count())
         ? entry.getByRole("button", { name: /More message actions/i })
@@ -772,23 +772,34 @@ async function main(): Promise<void> {
       if (!(await more.count())) {
         return `menu wiadomości MISS:more-btn [${await visibleChecklist([{ id: "stub-text", find: () => p.getByText(/Stub: received|Hello from T-G/i) }])}]`;
       }
-      // Kobalte: pointerdown opens (MessageHistoryActions.test); labels are "Edit message" / "Delete message".
+      // Kobalte opens on pointerdown; disabled items append a reason span → name is not exact "^Copy$".
       await more.first().dispatchEvent("pointerdown", { button: 0 });
       await more.first().dispatchEvent("pointerup", { button: 0 });
+      await more
+        .first()
+        .click({ force: true, timeout: 4_000 })
+        .catch(() => undefined);
       await p
-        .getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i })
+        .locator(".message-more-menu")
+        .or(p.getByRole("menuitem", { name: /Copy|Kopiuj|Edit message|Edytuj/i }))
         .first()
         .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
       await p.waitForTimeout(300);
       const checklist = await visibleChecklist([
-        { id: "copy", find: () => p.getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i }) },
+        {
+          id: "copy",
+          find: () =>
+            p
+              .getByRole("menuitem", { name: /Copy|Kopiuj|Copied|Skopiowano/i })
+              .or(p.locator(".message-more-menu").getByText(/^Copy$|^Kopiuj$/i)),
+        },
         { id: "react", find: () => p.getByRole("button", { name: /Add reaction|Dodaj reakcję/i }) },
         { id: "pin", find: () => p.getByRole("menuitem", { name: /Pin message|Unpin message|Przypnij|Odepnij/i }) },
         { id: "branch", find: () => p.getByRole("menuitem", { name: /Branch from here|Rozgałęź/i }) },
-        { id: "retry", find: () => p.getByRole("menuitem", { name: /^Retry$|^Ponów$/i }) },
-        { id: "edit", find: () => p.getByRole("menuitem", { name: /^Edit message$|^Edytuj wiadomość$/i }) },
-        { id: "delete", find: () => p.getByRole("menuitem", { name: /^Delete message$|^Usuń wiadomość$/i }) },
+        { id: "retry", find: () => p.getByRole("menuitem", { name: /Retry|Ponów/i }) },
+        { id: "edit", find: () => p.getByRole("menuitem", { name: /Edit message|Edytuj wiadomość/i }) },
+        { id: "delete", find: () => p.getByRole("menuitem", { name: /Delete message|Usuń wiadomość/i }) },
       ]);
       return `menu wiadomości + checklist [${checklist}]`;
     });
@@ -913,23 +924,45 @@ async function main(): Promise<void> {
       await dismissOverlays(p);
       await clickRail(p, ["Workflows", "Przepływy"]);
       await p.waitForTimeout(900);
-      // Do NOT match "New workflow" (clears selected). Seed name is exact.
-      const listItem = p.getByRole("button", { name: /^Seed shot flow$/i });
+      // Versions panel mounts only when a workflow is selected (<Show when={selected()}>).
+      // Do NOT match "New workflow" (clears selected). Prefer exact seed name, then any Seed *.
+      const listItem = p.locator(".workflow-list").getByRole("button", { name: /^Seed shot flow$/i });
       if (await listItem.count()) {
         await listItem
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
       } else {
-        const fallback = p.getByRole("button", { name: /^Seed /i });
+        const fallback = p.locator(".workflow-list").getByRole("button", { name: /^Seed /i });
         if (await fallback.count())
           await fallback
             .first()
             .click({ timeout: 8_000 })
             .catch(() => undefined);
+        else {
+          const any = p
+            .locator(".workflow-list")
+            .getByRole("button")
+            .filter({ hasNotText: /New workflow|Nowy przepływ/i });
+          if (await any.count())
+            await any
+              .first()
+              .click({ timeout: 8_000 })
+              .catch(() => undefined);
+        }
       }
-      await p.waitForTimeout(800);
-      const versions = p.getByRole("region", { name: /^Versions$|^Wersje$/i }).or(p.locator(".workflow-versions"));
+      await p.waitForTimeout(600);
+      // If still no selection, force a second click after list settles.
+      const versions = p.locator(".workflow-versions").or(p.getByRole("region", { name: /^Versions$|^Wersje$/i }));
+      if (!(await versions.count())) {
+        const again = p.locator(".workflow-list").getByRole("button", { name: /Seed shot flow|Seed /i });
+        if (await again.count())
+          await again
+            .first()
+            .click({ timeout: 8_000 })
+            .catch(() => undefined);
+        await p.waitForTimeout(700);
+      }
       if (await versions.count())
         await versions
           .first()
@@ -945,35 +978,45 @@ async function main(): Promise<void> {
           id: "versions",
           find: () =>
             p
-              .getByRole("region", { name: /^Versions$|^Wersje$/i })
+              .locator(".workflow-versions")
+              .or(p.getByRole("region", { name: /^Versions$|^Wersje$/i }))
               .or(p.getByRole("heading", { name: /^Versions$|^Wersje$/i }))
-              .or(p.getByText(/Version \d+|Wersja \d+|Restore|Przywróć|No versions yet|Brak wersji/i)),
+              .or(
+                p.getByText(
+                  /Version \d+|Wersja \d+|Restore|Przywróć|No versions yet|Brak wersji|Versions are not available|Wersje nie są dostępne/i,
+                ),
+              ),
         },
       ]);
       return `Workflows wersje + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "16-updates", async (p) => {
-      // KK: gear is exact "Settings"/"Ustawienia" (not "Server settings"); Updates is its own nav section.
+      // KK: gear is exact "Settings"/"Ustawienia"; Updates is its own nav (not General).
       await dismissOverlays(p);
       await openAppSettings(p);
       const dialog = p.getByRole("dialog");
-      const updatesNav = dialog
-        .locator(".settings-modal-nav")
-        .getByRole("button", { name: "Updates", exact: true })
-        .or(dialog.locator(".settings-modal-nav").getByRole("button", { name: "Aktualizacje", exact: true }));
+      const updatesNav = dialog.locator(".settings-modal-nav").getByRole("button", { name: /Updates|Aktualizacje/i });
       if (await updatesNav.count())
         await updatesNav
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
-      await p.waitForTimeout(500);
+      await dialog
+        .getByRole("heading", { name: /Updates|Aktualizacje/i })
+        .or(dialog.locator("#settings-updates"))
+        .first()
+        .waitFor({ timeout: 8_000 })
+        .catch(() => undefined);
+      await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         {
           id: "heading",
           find: () =>
             dialog
-              .getByRole("heading", { name: /^Updates$|^Aktualizacje$/i })
+              .locator("#settings-updates")
+              .or(dialog.getByRole("heading", { name: /Updates|Aktualizacje/i }))
+              .or(dialog.locator(".settings-modal-title").filter({ hasText: /Updates|Aktualizacje/i }))
               .or(dialog.getByText(/Check for updates|Sprawdź aktualizacje|Update settings are not available/i)),
         },
         {
@@ -1023,33 +1066,38 @@ async function main(): Promise<void> {
     });
 
     await tryShot(app, pageRef, out, "19-voice", async (p) => {
-      // KK: Voice lives in app Settings modal (VoiceOverviewPanel), not Server settings → MCP.
+      // KK: Voice lives in app Settings modal (VoiceOverviewPanel); panel heading is Microphone.
       await dismissOverlays(p);
       await openAppSettings(p);
       const dialog = p.getByRole("dialog");
-      const voiceNav = dialog
-        .locator(".settings-modal-nav")
-        .getByRole("button", { name: "Voice", exact: true })
-        .or(dialog.locator(".settings-modal-nav").getByRole("button", { name: "Głos", exact: true }));
+      const voiceNav = dialog.locator(".settings-modal-nav").getByRole("button", { name: /Voice|Głos/i });
       if (await voiceNav.count())
         await voiceNav
           .first()
           .click({ timeout: 8_000 })
           .catch(() => undefined);
-      await p.waitForTimeout(600);
+      await dialog
+        .locator("#settings-voice-microphone")
+        .or(dialog.getByRole("heading", { name: /Microphone|Mikrofon/i }))
+        .first()
+        .waitFor({ timeout: 8_000 })
+        .catch(() => undefined);
+      await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         {
           id: "voice",
           find: () =>
             dialog
-              .getByRole("heading", { name: /^Microphone$|^Mikrofon$/i })
-              .or(dialog.getByText(/Microphone|Mikrofon|Voice|Głos/i)),
+              .locator("#settings-voice-microphone")
+              .or(dialog.getByRole("heading", { name: /Microphone|Mikrofon/i }))
+              .or(dialog.locator(".settings-modal-title").filter({ hasText: /Voice|Głos/i }))
+              .or(dialog.locator(".voice-overview")),
         },
         {
           id: "mic",
           find: () =>
             dialog.getByText(
-              /Not available in this version|Niedostępne w tej wersji|permission|uprawnien|unavailable|niedostępne/i,
+              /Microphone permission|Uprawnienie do mikrofonu|Not available in this version|Niedostępne w tej wersji|unavailable|niedostępne/i,
             ),
         },
       ]);
@@ -1087,7 +1135,7 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "22-thread-undo", async (p) => {
       await ensureChatAgent(p);
       await unlockComposer(p);
-      // Delete via IPC so the 10-min undo bar appears. threads.list returns ThreadList { threads: [...] }, not an array.
+      // Seed creates "Seed undo thread" on Shot agent. Prefer activeThreadId from create (ThreadList shape).
       const deleted = await p.evaluate(`(async () => {
         const api = window.openbot;
         const bots = await api.agent.listBots();
@@ -1095,13 +1143,15 @@ async function main(): Promise<void> {
         if (!bot) return "no-bot";
         let list = api.threads?.list ? await api.threads.list({ botId: bot.id }) : null;
         let rows = Array.isArray(list?.threads) ? list.threads : Array.isArray(list) ? list : [];
-        let t = rows.find((row) => row.title === "Seed undo thread") || rows.find((row) => row.state !== "archived") || rows[0];
+        let t = rows.find((row) => row.title === "Seed undo thread");
         if (!t && api.threads?.create) {
-          list = await api.threads.create({ botId: bot.id, title: "Seed undo thread" });
-          rows = Array.isArray(list?.threads) ? list.threads : [];
-          t = rows.find((row) => row.title === "Seed undo thread") || rows[0];
+          const created = await api.threads.create({ botId: bot.id, title: "Seed undo thread" });
+          const tid = created?.activeThreadId;
+          rows = Array.isArray(created?.threads) ? created.threads : [];
+          t = rows.find((row) => row.id === tid || row.title === "Seed undo thread") || (tid ? { id: tid, title: "Seed undo thread" } : null);
         }
-        if (!t) return "no-thread";
+        if (!t && rows.length) t = rows.find((row) => row.state !== "archived") || rows[0];
+        if (!t?.id) return "no-thread";
         if (api.threadUndo?.delete) {
           await api.threadUndo.delete({ botId: bot.id, threadId: t.id, confirm: true });
         } else if (api.threads?.delete) {
@@ -1112,7 +1162,9 @@ async function main(): Promise<void> {
         return "ok:" + (t.title || t.id);
       })()`);
       await p.waitForTimeout(800);
-      const bar = p.getByText(/Usunięto|Deleted|Undo|Cofnij/i);
+      const bar = p
+        .getByRole("region", { name: /Deleted threads|Usunięte wątki/i })
+        .or(p.getByText(/Deleted "|Usunięto „|Usunięto "|Undo|Cofnij/i));
       const checklist = await visibleChecklist([
         { id: "undo-bar", find: () => bar },
         { id: "countdown", find: () => p.getByText(/\d+:\d{2}|Cofnij|Undo/i) },
