@@ -516,6 +516,22 @@ export class MobilePhoneApi {
       this.#conversationTimers.set(botId, timer);
       return;
     }
+    // BE-AD: channels. Only "which one changed" goes out; one event per channel and burst.
+    if (event.type === "channels-changed") {
+      this.#publish("channels", { type: "channels" });
+      return;
+    }
+    const channelId = channelEventId(event);
+    if (channelId) {
+      const key = `channel:${channelId}`;
+      if (this.#conversationTimers.has(key)) return;
+      const timer = setTimeout(() => {
+        this.#conversationTimers.delete(key);
+        this.#publish(key, { type: "channel", channelId });
+      }, this.#options.conversationDelayMs ?? 500);
+      this.#conversationTimers.set(key, timer);
+      return;
+    }
     if (event.type === "bots-changed") this.#publish("agents", { type: "agents", agents: mobileAgents(event.bots) });
   }
 
@@ -831,6 +847,12 @@ function agentDetail(bot: BotSummary): MobileAgentDetail {
 function lastEventId(header: string | string[] | undefined): number | null {
   const value = Array.isArray(header) ? header[0] : header;
   return value !== undefined && /^\d{1,16}$/.test(value.trim()) ? Number(value.trim()) : null;
+}
+
+function channelEventId(event: AgentEvent): string | null {
+  if (event.type === "task-changed") return event.task.channelId;
+  if (event.type === "channel-message" || event.type === "channel-message-changed") return event.message.channelId;
+  return null;
 }
 
 function eventBotId(event: AgentEvent): string | null {

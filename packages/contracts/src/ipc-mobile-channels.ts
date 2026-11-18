@@ -2,7 +2,8 @@
 // this adds the channels of the computer: the list, the tasks of one channel, one page of its messages, a message from
 // the person (which starts a task, as in the window) and Stop/Pause/Resume of a task. What stays on the computer:
 // creating, changing and archiving channels, members and the lead, memory, routines, reassigning and archiving tasks,
-// and clearing the history. The stream (/v1/events) does not carry channel changes yet; the phone asks again.
+// and clearing the history. The stream (/v1/events) says which channel changed ({type:"channel", channelId}) and that the
+// list changed ({type:"channels"}), never with text; the phone then loads the messages, tasks or list again.
 
 import type { ChannelTaskState } from "./ipc-workspace-channels";
 

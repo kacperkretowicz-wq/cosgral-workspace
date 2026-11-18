@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  type AgentEvent,
   type BotSummary,
   type ChannelMessage,
   type ChannelTask,
@@ -11,7 +12,10 @@ import {
   MOBILE_CHANNEL_LIMITS,
   MOBILE_CHANNEL_PATHS,
   MOBILE_PHONE_LIMITS,
+  MOBILE_PHONE_PATHS,
+  type MobileStreamEvent,
   mobileChannelPath,
+  parseMobileStreamEvents,
   type SendChannelMessageInput,
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
@@ -145,6 +149,10 @@ async function setup(withChannels = true) {
   const root = await mkdtemp(join(tmpdir(), "mobile-channels-"));
   roots.push(root);
   const fake = fakeChannels();
+  const listeners = new Set<(event: AgentEvent) => void>();
+  const emit = (event: AgentEvent) => {
+    for (const listener of listeners) listener(event);
+  };
   const host: MobilePhoneHost = {
     bots: () => [bot("scout"), bot("writer")],
     messages: async () => ({ messages: [], hasMore: false }),
@@ -157,7 +165,10 @@ async function setup(withChannels = true) {
     createAgent: async () => ({ bot: bot("new"), warnings: [] }),
     updateProfile: async () => undefined,
     setAvatarHue: async () => undefined,
-    subscribe: () => () => undefined,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     ...(withChannels ? { channels: () => fake.host } : {}),
   };
   const phone = new MobilePhoneApi({ host, needsYouDelayMs: 5, conversationDelayMs: 5 });
@@ -178,7 +189,7 @@ async function setup(withChannels = true) {
     body: { ticket: ticket.ticket, deviceName: "Phone" },
   });
   const token = isString(paired.body.token) ? paired.body.token : "";
-  return { base, token, ...fake };
+  return { base, token, emit, ...fake };
 }
 
 async function request(
@@ -346,5 +357,71 @@ describe("channels on the phone (BE-AB, row 71)", () => {
   it("answers 404 for channels when the program has no channel engine yet", async () => {
     const { base, token } = await setup(false);
     expect((await request(base, MOBILE_CHANNEL_PATHS.channels, token)).status).toBe(404);
+  });
+});
+
+async function openStream(base: string, token: string) {
+  const controller = new AbortController();
+  const response = await fetch(`${base}${MOBILE_PHONE_PATHS.events}`, {
+    headers: { authorization: `Bearer ${token}` },
+    signal: controller.signal,
+  });
+  const events: MobileStreamEvent[] = [];
+  let buffer = "";
+  void (async () => {
+    if (!response.body) return;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        const parsed = parseMobileStreamEvents(buffer + decoder.decode(chunk.value, { stream: true }));
+        buffer = parsed.rest;
+        events.push(...parsed.events);
+      }
+    } catch {
+      // Aborted by the test.
+    }
+  })();
+  const until = async (done: () => boolean) => {
+    const end = Date.now() + 3_000;
+    while (!done() && Date.now() < end) await new Promise((resolve) => setTimeout(resolve, 10));
+  };
+  return { events, until, close: () => controller.abort() };
+}
+
+describe("the event stream with channels (BE-AD, item 8)", () => {
+  it("says which channel changed, once per burst and without any text, so the phone loads it again", async () => {
+    const { base, token, emit } = await setup();
+    const stream = await openStream(base, token);
+    await stream.until(() => stream.events.length > 0);
+    const from = stream.events.length;
+    const secret = message("m-secret", "plan", { text: "private text of the channel" });
+    emit({ type: "channel-message", message: secret });
+    emit({ type: "channel-message-changed", message: secret });
+    emit({ type: "task-changed", task: task("t1", "plan") });
+    emit({ type: "task-changed", task: task("t9", "other") });
+    await stream.until(() => stream.events.slice(from).filter((event) => event.type === "channel").length >= 2);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const channelEvents = stream.events.slice(from).filter((event) => event.type === "channel");
+    expect(channelEvents).toEqual([
+      { type: "channel", channelId: "plan" },
+      { type: "channel", channelId: "other" },
+    ]);
+    expect(JSON.stringify(stream.events)).not.toContain("private text");
+    stream.close();
+  });
+
+  it("says that the list of channels changed, without sending the channels", async () => {
+    const { base, token, emit } = await setup();
+    const stream = await openStream(base, token);
+    await stream.until(() => stream.events.length > 0);
+    const from = stream.events.length;
+    emit({ type: "channels-changed", channels: [channel("plan")] });
+    await stream.until(() => stream.events.slice(from).some((event) => event.type === "channels"));
+    expect(stream.events.slice(from)).toContainEqual({ type: "channels" });
+    expect(JSON.stringify(stream.events)).not.toContain("SECRET");
+    stream.close();
   });
 });

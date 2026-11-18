@@ -477,7 +477,11 @@ export interface MobileAnswerResponse {
 export type MobileStreamEvent =
   | { type: "needs-you"; items: MobileNeedsYouItem[] }
   | { type: "conversation"; botId: string }
-  | { type: "agents"; agents: MobileAgentSummary[] };
+  | { type: "agents"; agents: MobileAgentSummary[] }
+  // COSGRAL W12 (BE-AD): channels. No text and no data of the channels: the phone loads the list, the tasks or the
+  // newest messages again (see ipc-mobile-channels.ts).
+  | { type: "channels" }
+  | { type: "channel"; channelId: string };
 
 export interface MobileAgentDetail extends MobileAgentSummary {
   /** The agent's description: how it works and what it does. */
@@ -519,7 +523,7 @@ export interface MobileErrorResponse {
   error: string;
 }
 
-const STREAM_TYPES = ["needs-you", "conversation", "agents"] as const;
+const STREAM_TYPES = ["needs-you", "conversation", "agents", "channels", "channel"] as const;
 
 /** One stream event; with `id` the phone can resume after it (Last-Event-ID). */
 export function formatMobileStreamEvent(event: MobileStreamEvent, id?: number): string {
@@ -620,5 +624,7 @@ export function isMobileStreamEvent(value: unknown): value is MobileStreamEvent 
   if (!isDynamicRecord(value) || !isOneOf(STREAM_TYPES, value.type)) return false;
   if (value.type === "needs-you") return Array.isArray(value.items) && value.items.every(isMobileNeedsYouItem);
   if (value.type === "conversation") return isString(value.botId);
+  if (value.type === "channels") return true;
+  if (value.type === "channel") return isString(value.channelId);
   return Array.isArray(value.agents) && value.agents.every(isMobileAgentSummary);
 }
