@@ -40,6 +40,7 @@ import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
+import type { ChannelRoutinesDesktopApi } from "./ipc-channel-routines";
 import type { ComposerDesktopApi } from "./ipc-composer";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
 import type { ContextDesktopApi } from "./ipc-context";
@@ -232,7 +233,6 @@ import type {
 } from "./ipc-team-host";
 import type { ThreadTabsDesktopApi } from "./ipc-thread-tabs";
 import type { ThreadUndoDesktopApi } from "./ipc-thread-undo";
-import type { ChannelRoutinesDesktopApi } from "./ipc-channel-routines";
 import type { ThreadsDesktopApi } from "./ipc-threads";
 import type {
   DeleteVaultItemInput,

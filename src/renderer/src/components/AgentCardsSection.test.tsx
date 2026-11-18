@@ -71,6 +71,21 @@ it("shows an error with Retry when the cards cannot be read", async () => {
   expect(await screen.findByText("Memories")).toBeInTheDocument();
 });
 
+it("shows a skeleton status while agent cards are loading", async () => {
+  let resolveOverview: (value: AgentCardsOverview) => void = () => undefined;
+  api.overview.mockImplementationOnce(
+    () =>
+      new Promise<AgentCardsOverview>((resolve) => {
+        resolveOverview = resolve;
+      }),
+  );
+  render(() => <AgentCardsSection botId="bot" />);
+  expect(screen.getByRole("status", { name: "Loading cards…" })).toBeInTheDocument();
+  expect(document.querySelectorAll(".cosgral-skeleton")).toHaveLength(3);
+  resolveOverview(overview);
+  expect(await screen.findByText("Memories")).toBeInTheDocument();
+});
+
 it("says so without the contract", () => {
   Object.assign(window, { openbot: {} });
   render(() => <AgentCardsSection botId="bot" />);

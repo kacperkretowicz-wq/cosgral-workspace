@@ -1,3 +1,4 @@
+import { ENDPOINT_CLOUD_PRESETS } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockEndpointsApi } from "../../stories/mock-endpoints-api";
@@ -25,16 +26,23 @@ describe("EndpointsSection", () => {
     expect(screen.queryByRole("region", { name: "Own model endpoints" })).toBeNull();
   });
 
-  it("offers hosted services (xAI, OpenRouter) that only fill the form", async () => {
+  it("builds hosted-service buttons from ENDPOINT_CLOUD_PRESETS and only fills the form", async () => {
     const api = stub();
     const check = vi.spyOn(api, "check");
     render(() => <EndpointsSection />);
     const form = await openForm();
-    await fireEvent.click(within(form).getByRole("button", { name: "Use xAI (Grok)" }));
-    expect(within(form).getByLabelText(/^Address/)).toHaveValue("https://api.x.ai/v1");
-    expect(within(form).getByLabelText(/^Name/)).toHaveValue("xAI (Grok)");
-    await fireEvent.click(within(form).getByRole("button", { name: "Use OpenRouter" }));
-    expect(within(form).getByLabelText(/^Address/)).toHaveValue("https://openrouter.ai/api/v1");
+    const hosted = within(form).getByRole("group", { name: "Hosted services" });
+    for (const preset of ENDPOINT_CLOUD_PRESETS) {
+      expect(within(hosted).getByRole("button", { name: `Use ${preset.label}` })).toBeInTheDocument();
+    }
+    const first = ENDPOINT_CLOUD_PRESETS[0];
+    const last = ENDPOINT_CLOUD_PRESETS[ENDPOINT_CLOUD_PRESETS.length - 1];
+    await fireEvent.click(within(hosted).getByRole("button", { name: `Use ${first.label}` }));
+    expect(within(form).getByLabelText(/^Address/)).toHaveValue(first.baseUrl);
+    expect(within(form).getByLabelText(/^Name/)).toHaveValue(first.label);
+    await fireEvent.click(within(hosted).getByRole("button", { name: `Use ${last.label}` }));
+    expect(within(form).getByLabelText(/^Address/)).toHaveValue(last.baseUrl);
+    expect(within(form).getByLabelText(/^Name/)).toHaveValue(last.label);
     expect(within(form).getByText(/your messages go to another computer/)).toBeInTheDocument();
     expect(check).not.toHaveBeenCalled();
   });

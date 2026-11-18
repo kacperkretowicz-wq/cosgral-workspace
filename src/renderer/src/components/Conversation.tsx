@@ -137,7 +137,7 @@ interface ConversationProps {
   agentPickerOpen: boolean;
   globalOverlayOpen: boolean;
   creatingAgent: boolean;
-  settingsRequest: { botId: string; nonce: number } | null;
+  settingsRequest: { botId: string; nonce: number; focus?: "name" } | null;
   onboardingRequest: { botId: string; nonce: number } | null;
   messageFocusRequest: { botId: string; messageId: string; nonce: number } | null;
   queue: QueueSnapshot | undefined;
@@ -1034,6 +1034,12 @@ export function Conversation(props: ConversationProps) {
       if (!request || botId !== request.botId || request.nonce === lastHandledSettingsRequestNonce) return;
       lastHandledSettingsRequestNonce = request.nonce;
       setActiveRightPanel("settings", botId);
+      if (request.focus === "name") {
+        requestAnimationFrame(() => {
+          settingsNameInput?.focus();
+          settingsNameInput?.select();
+        });
+      }
     },
   );
 
