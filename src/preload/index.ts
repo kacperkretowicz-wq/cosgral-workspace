@@ -86,6 +86,7 @@ import { createAccessApi } from "./access-api";
 import { createAcpLoginApi } from "./acp-login-api";
 import { createAcpPresetsApi } from "./acp-presets-api";
 import { createAgentCardsApi } from "./agent-cards-api";
+import { createAgentEventHub } from "./agent-event-hub";
 import { createAgentSettingsApi, createAppSettingsApi, createOnboardingApi } from "./agent-settings-api";
 import { createApiKeysApi } from "./api-keys-api";
 import { createAppDataApi } from "./app-data-api";
@@ -127,6 +128,12 @@ import { createWindowsApi } from "./windows-api";
 
 const attachmentImportListeners = new Set<(event: AttachmentImportEvent) => void>();
 let selectedServerId = "local";
+// COSGRAL W12 (BE-Z): one ipc listener for every `agent.onEvent` subscriber (see agent-event-hub.ts).
+const agentEvents = createAgentEventHub<ScopedAgentEvent["event"]>(
+  ipcRenderer,
+  IPC_CHANNELS.agentEvent,
+  () => selectedServerId,
+);
 
 function invokeAgent<TResult>(
   channel: string,
@@ -734,13 +741,7 @@ const openbotApi: OpenBotDesktopApi = {
     respondToBrowserTakeover: (input) => invokeAgent(IPC_CHANNELS.agentRespondToBrowserTakeover, input, decodeVoid),
     listDrafts: () => invokeAgent(IPC_CHANNELS.agentListDrafts, null, decodeDrafts),
     deleteDraft: (input) => invokeAgent(IPC_CHANNELS.agentDeleteDraft, input, decodeVoid),
-    onEvent: (listener) => {
-      const handler = (_event: Electron.IpcRendererEvent, payload: ScopedAgentEvent) => {
-        if (payload.serverId === selectedServerId) listener(payload.event);
-      };
-      ipcRenderer.on(IPC_CHANNELS.agentEvent, handler);
-      return () => ipcRenderer.removeListener(IPC_CHANNELS.agentEvent, handler);
-    },
+    onEvent: (listener) => agentEvents.subscribe(listener),
   },
   sidebar: {
     getLayout: () => invokeAgent(IPC_CHANNELS.sidebarGetLayout, null, decodeSidebarLayout),
