@@ -5,6 +5,7 @@ import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
 import { LanguageSettings } from "./LanguageSettings";
 import { UpdatesPanel } from "./UpdatesPanel";
+import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 import {
   Bell,
   Button,
@@ -13,6 +14,7 @@ import {
   Heading,
   IconButton,
   NativeSelect,
+  Mic,
   Palette,
   Settings,
   SlidersHorizontal,
@@ -29,9 +31,15 @@ export interface SettingsModalProps {
 const navItems: ReadonlyArray<{ label: string; icon: typeof Settings; current: boolean }> = [
   { label: "General", icon: Settings, current: true },
   { label: "Appearance", icon: Palette, current: false },
+  { label: "Voice", icon: Mic, current: false },
   { label: "Notifications", icon: Bell, current: false },
   { label: "Advanced", icon: SlidersHorizontal, current: false },
 ];
+
+/** The sections of the dialog that already have a page (the others say "Soon"). */
+function isOpenSection(label: string): boolean {
+  return label === "Appearance" || label === "Voice";
+}
 
 function durationToMilliseconds(value: string, fallback: number): number {
   const duration = value.trim();
@@ -158,12 +166,12 @@ export function SettingsModal(props: SettingsModalProps) {
                       class="settings-modal-nav-item"
                       aria-current={section() === item.label ? "page" : undefined}
                       onClick={() => setSection(item.label)}
-                      disabled={!item.current && item.label !== "Appearance"}
-                      title={item.current || item.label === "Appearance" ? undefined : t("Coming soon")}
+                      disabled={!item.current && !isOpenSection(item.label)}
+                      title={item.current || isOpenSection(item.label) ? undefined : t("Coming soon")}
                     >
                       <NavIcon aria-hidden="true" />
                       <span>{t(item.label)}</span>
-                      {!item.current && item.label !== "Appearance" && (
+                      {!item.current && !isOpenSection(item.label) && (
                         <span class="settings-modal-nav-status" aria-hidden="true">
                           {t("Soon")}
                         </span>
@@ -201,6 +209,8 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div ref={registerScrollElement} class="settings-modal-content" onScroll={updateScrollFades}>
                   {section() === "Appearance" ? (
                     <AppearanceSettings />
+                  ) : section() === "Voice" ? (
+                    <VoiceOverviewPanel />
                   ) : (
                     <>
                       <section class="settings-modal-group" aria-labelledby="settings-app-behavior">

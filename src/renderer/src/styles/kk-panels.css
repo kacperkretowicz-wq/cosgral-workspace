@@ -1,0 +1,159 @@
+/* KK-N: Updates, MCP sign-in, Messengers, Import/Transfer and the Voice overview. They reuse the .vault-connector-* look (cards, lists,
+   actions) and the settings-modal rows; this file only adds what those do not have. Tokens only; nothing here moves. */
+
+.updates-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.updates-panel-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--cosgral-danger);
+  font-size: var(--cosgral-text-md);
+}
+
+.updates-panel-unavailable {
+  color: var(--cosgral-text-muted);
+}
+
+.updates-panel-unavailable .settings-modal-row-title {
+  color: var(--cosgral-text-muted);
+}
+
+.voice-overview {
+  display: grid;
+  gap: 16px;
+}
+
+.voice-unavailable-section {
+  min-height: 40px;
+  color: var(--cosgral-text-muted);
+}
+
+.messengers .vault-connector-list,
+.mcp-signin .vault-connector-list,
+.import-cards {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+
+.messenger-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.messenger-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.messenger-field > span {
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+}
+
+.messenger-field > small,
+.messenger-form > small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.messenger-subtitle {
+  margin: 8px 0 0;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+}
+
+.messenger-steps {
+  border-top: 1px solid var(--cosgral-border);
+  padding-top: 8px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.messenger-steps summary {
+  cursor: pointer;
+  color: var(--cosgral-text-secondary);
+}
+
+.messenger-steps ol {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.vault-connector-logins li > .ui-button {
+  align-self: flex-start;
+}
+
+.transfer-steps {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding-left: 20px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+}
+
+.transfer-agents {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-agents li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-md);
+  padding: 8px 12px;
+}
+
+.transfer-agents small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.transfer-import,
+.transfer-preview,
+.transfer-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transfer-preview {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  padding: 12px;
+}
+
+.transfer-result p,
+.transfer-result ul {
+  margin: 0;
+}
+
+.transfer-not-moved {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
