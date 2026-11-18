@@ -6,7 +6,7 @@ Gałąź: `team/kapi/w12-p` (baza `2dfb55f09`). Bez push, bez Electrona/dist:win
 
 | Co | Stan |
 |---|---|
-| Nowe klucze | **+38** PL/EN |
+| Nowe klucze | **+38** PL/EN (**~1703**/~1703) |
 | McpPanel | pełne `t()` (lista + formularz) |
 | SkillsPanel | pełne `t()` |
 | MemoryPanel | aria + Memory text / Inclusion |
