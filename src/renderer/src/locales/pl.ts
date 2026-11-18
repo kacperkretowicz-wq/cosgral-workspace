@@ -615,6 +615,11 @@ export const pl = {
   "Token or key": "Token lub klucz",
   "Server address (optional)": "Adres serwera (opcjonalnie)",
   Connect: "Połącz",
+  "Connect {name}": "Połącz {name}",
+  "Connect the tools and services that your agents work with.":
+    "Połącz narzędzia i usługi, z którymi pracują Twoi agenci.",
+  "See all": "Zobacz wszystkie",
+  "Clear filters": "Wyczyść filtry",
   Pause: "Wstrzymaj",
   Resume: "Wznów",
   Archive: "Archiwizuj",

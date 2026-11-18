@@ -4,6 +4,8 @@ import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Input, NativeSelect } from "./ui";
+import { Plus, Search } from "./ui/icons";
+import "../styles/plugin-apps.css";
 
 interface CustomForm {
   name: string;
@@ -28,17 +30,77 @@ const STATE_LABELS = {
   error: "Problem",
 } as const;
 
-function pickCategory(value: string): PluginCategory | "" {
-  return PLUGIN_CATEGORIES.find((category) => category === value) ?? "";
+/** How many apps to show per category before “See all”. */
+const SECTION_PREVIEW = 6;
+
+function monogram(name: string): string {
+  const words = name.split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}` : name.slice(0, 2);
+  return letters.toUpperCase();
 }
 
-function pickFilter(value: string): Filter {
-  return FILTERS.find((filter) => filter.id === value)?.id ?? "";
+function groupByCategory(plugins: PluginSummary[]): Array<{ category: PluginCategory; items: PluginSummary[] }> {
+  const buckets = new Map<PluginCategory, PluginSummary[]>();
+  for (const plugin of plugins) {
+    const list = buckets.get(plugin.category) ?? [];
+    list.push(plugin);
+    buckets.set(plugin.category, list);
+  }
+  return PLUGIN_CATEGORIES.filter((category) => buckets.has(category)).map((category) => ({
+    category,
+    items: buckets.get(category) ?? [],
+  }));
+}
+
+function PluginRow(props: {
+  plugin: PluginSummary;
+  busy: boolean;
+  onOpen: (plugin: PluginSummary) => void;
+  onConnect: (plugin: PluginSummary) => void;
+}) {
+  const canConnect = () => props.plugin.state === "available" && !props.plugin.unavailableHere;
+  return (
+    <li class="plugin-row" data-slug={props.plugin.slug} data-state={props.plugin.state}>
+      <Button
+        type="button"
+        variant="ghost"
+        class="plugin-row-open"
+        aria-label={props.plugin.name}
+        onClick={() => props.onOpen(props.plugin)}
+      >
+        <span class="plugin-row-icon" aria-hidden="true">
+          {monogram(props.plugin.name)}
+        </span>
+        <span class="plugin-row-copy">
+          <strong>{props.plugin.name}</strong>
+          <small>{props.plugin.tagline}</small>
+        </span>
+      </Button>
+      <Show
+        when={canConnect()}
+        fallback={
+          <span class="plugin-row-state" data-state={props.plugin.state}>
+            {t(STATE_LABELS[props.plugin.state])}
+          </span>
+        }
+      >
+        <Button
+          type="button"
+          class="plugin-row-connect"
+          disabled={props.busy}
+          aria-label={t("Connect {name}", { name: props.plugin.name })}
+          onClick={() => props.onConnect(props.plugin)}
+        >
+          <Plus size={14} stroke-width={1.5} aria-hidden="true" /> {t("Connect")}
+        </Button>
+      </Show>
+    </li>
+  );
 }
 
 /**
- * The "Apps" tab of the Marketplace (window.openbot.pluginCatalog): the catalog of plugins (MCP servers), a detail
- * view with the sign-in steps and the write-only value fields, install / update / uninstall and own plugins.
+ * The "Apps" tab of the Marketplace (window.openbot.pluginCatalog): category sections, search, Connect, and custom apps.
+ * Layout follows OpenBot 0.71 screens 035–036 (own COSGRAL markup).
  */
 export function PluginAppsPanel() {
   const api = untrack(() => window.openbot?.pluginCatalog);
@@ -53,15 +115,17 @@ export function PluginAppsPanel() {
   const [customOpen, setCustomOpen] = createSignal(false);
   const [custom, setCustom] = createSignal<CustomForm>({ name: "", transport: "http", target: "" });
   let serial = 0;
+  let typing: ReturnType<typeof setTimeout> | undefined;
 
-  async function refresh(patch: { category?: PluginCategory | ""; filter?: Filter } = {}) {
+  async function refresh(patch: { category?: PluginCategory | ""; filter?: Filter; query?: string } = {}) {
     if (!api) return;
     const n = ++serial;
     try {
       const chosenCategory = patch.category ?? category();
       const chosenFilter = patch.filter ?? filter();
+      const chosenQuery = patch.query ?? query();
       const next = await api.list({
-        query: query(),
+        query: chosenQuery,
         ...(chosenCategory ? { category: chosenCategory } : {}),
         ...(chosenFilter ? { filter: chosenFilter } : {}),
       });
@@ -75,6 +139,11 @@ export function PluginAppsPanel() {
     }
   }
 
+  function queueSearch(value: string) {
+    clearTimeout(typing);
+    typing = setTimeout(() => void refresh({ query: value }), 250);
+  }
+
   onSettled(() => {
     void refresh();
     const listen = window.openbot?.agent?.onEvent;
@@ -84,6 +153,7 @@ export function PluginAppsPanel() {
     });
     return () => {
       serial++;
+      clearTimeout(typing);
       off();
     };
   });
@@ -117,53 +187,66 @@ export function PluginAppsPanel() {
   const keyFields = (value: PluginDetails) =>
     value.apps.flatMap((app) => app.auth.filter((auth) => auth.kind === "key").flatMap((auth) => auth.fields));
 
+  const browsingHome = () => query().trim() === "" && category() === "" && filter() === "";
+  const featured = () => (list()?.plugins ?? []).filter((plugin) => plugin.featured);
+  const sections = () =>
+    groupByCategory((list()?.plugins ?? []).filter((plugin) => !browsingHome() || !plugin.featured));
+
   return (
     <section class="plugin-apps" aria-label={t("Apps")}>
       <Show when={api} fallback={<p class="plugin-note">{t("Apps are not available in this version.")}</p>}>
+        <header class="plugin-apps-hero">
+          <h2>{t("Apps")}</h2>
+          <p>{t("Connect the tools and services that your agents work with.")}</p>
+        </header>
+
         <form
-          class="plugin-filters"
+          class="plugin-toolbar"
           onSubmit={(event) => {
             event.preventDefault();
             void refresh();
           }}
         >
-          <Input
-            type="search"
-            aria-label={t("Search apps")}
-            placeholder={t("Search apps")}
-            value={query()}
-            onInput={(event) => setQuery(event.currentTarget.value)}
-          />
-          <NativeSelect
-            aria-label={t("Category")}
-            value={category()}
-            onChange={(event) => {
-              const picked = pickCategory(event.currentTarget.value);
-              setCategory(picked);
-              void refresh({ category: picked });
-            }}
-          >
-            <option value="">{t("All categories")}</option>
-            <For each={PLUGIN_CATEGORIES}>
-              {(item) => <option value={item}>{t(PLUGIN_CATEGORY_LABELS[item])}</option>}
-            </For>
-          </NativeSelect>
-          <NativeSelect
-            aria-label={t("Show")}
-            value={filter()}
-            onChange={(event) => {
-              const picked = pickFilter(event.currentTarget.value);
-              setFilter(picked);
-              void refresh({ filter: picked });
-            }}
-          >
-            <For each={FILTERS}>{(item) => <option value={item.id}>{t(item.label)}</option>}</For>
-          </NativeSelect>
-          <Button type="submit">{t("Search")}</Button>
-          <Button type="button" variant="ghost" onClick={() => setCustomOpen(!customOpen())}>
-            {t("Add custom")}
+          <div class="plugin-search">
+            <Search size={18} stroke-width={1.5} aria-hidden="true" />
+            <Input
+              type="search"
+              aria-label={t("Search apps")}
+              placeholder={t("Search")}
+              value={query()}
+              onInput={(event) => {
+                const value = event.currentTarget.value;
+                setQuery(value);
+                queueSearch(value);
+              }}
+            />
+          </div>
+          <Button type="submit" class="sr-only">
+            {t("Search")}
+          </Button>
+          <Button type="button" variant="primary" onClick={() => setCustomOpen(!customOpen())}>
+            <Plus size={14} stroke-width={1.5} aria-hidden="true" /> {t("Add custom")}
           </Button>
         </form>
+
+        <fieldset class="plugin-filter-chips">
+          <legend class="sr-only">{t("Show")}</legend>
+          <For each={FILTERS}>
+            {(item) => (
+              <Button
+                type="button"
+                variant="ghost"
+                aria-pressed={filter() === item.id ? "true" : "false"}
+                onClick={() => {
+                  setFilter(item.id);
+                  void refresh({ filter: item.id });
+                }}
+              >
+                {t(item.label)}
+              </Button>
+            )}
+          </For>
+        </fieldset>
 
         <Show when={customOpen()}>
           <form
@@ -345,21 +428,118 @@ export function PluginAppsPanel() {
               <Show when={value().plugins.length === 0 && value().info.source !== "none"}>
                 <p class="plugin-note cosgral-empty-enter">{t("No matching apps.")}</p>
               </Show>
-              <ul class="plugin-grid">
-                <For each={value().plugins}>
-                  {(plugin) => (
-                    <li>
-                      <Button type="button" variant="ghost" class="plugin-card" onClick={() => void open(plugin)}>
-                        <strong>{plugin.name}</strong>
-                        <span class="plugin-card-tagline">{plugin.tagline}</span>
-                        <span class="plugin-card-state" data-state={plugin.state}>
-                          {t(STATE_LABELS[plugin.state])}
-                        </span>
-                      </Button>
-                    </li>
+
+              <Show when={browsingHome() && featured().length > 0}>
+                <section class="plugin-section" aria-label={t("Featured")}>
+                  <div class="plugin-section-head">
+                    <h3>
+                      {t("Featured")}
+                      <span class="plugin-section-count">{featured().length}</span>
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setFilter("featured");
+                        void refresh({ filter: "featured" });
+                      }}
+                    >
+                      {t("See all")}
+                    </Button>
+                  </div>
+                  <ul class="plugin-rows">
+                    <For each={featured().slice(0, SECTION_PREVIEW)}>
+                      {(plugin) => (
+                        <PluginRow
+                          plugin={plugin}
+                          busy={busy()}
+                          onOpen={(item) => void open(item)}
+                          onConnect={(item) => void open(item)}
+                        />
+                      )}
+                    </For>
+                  </ul>
+                </section>
+              </Show>
+
+              <Show when={browsingHome()}>
+                <For each={sections()}>
+                  {(section) => (
+                    <section class="plugin-section" aria-label={t(PLUGIN_CATEGORY_LABELS[section.category])}>
+                      <div class="plugin-section-head">
+                        <h3>
+                          {t(PLUGIN_CATEGORY_LABELS[section.category])}
+                          <span class="plugin-section-count">{section.items.length}</span>
+                        </h3>
+                        <Show when={section.items.length > SECTION_PREVIEW}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                              setCategory(section.category);
+                              void refresh({ category: section.category });
+                            }}
+                          >
+                            {t("See all")}
+                          </Button>
+                        </Show>
+                      </div>
+                      <ul class="plugin-rows">
+                        <For each={section.items.slice(0, SECTION_PREVIEW)}>
+                          {(plugin) => (
+                            <PluginRow
+                              plugin={plugin}
+                              busy={busy()}
+                              onOpen={(item) => void open(item)}
+                              onConnect={(item) => void open(item)}
+                            />
+                          )}
+                        </For>
+                      </ul>
+                    </section>
                   )}
                 </For>
-              </ul>
+              </Show>
+
+              <Show when={!browsingHome()}>
+                <section class="plugin-section" aria-label={t("Results")}>
+                  <div class="plugin-section-head">
+                    <h3>
+                      {(() => {
+                        const selected = category();
+                        return selected ? t(PLUGIN_CATEGORY_LABELS[selected]) : t("Results");
+                      })()}
+                      <span class="plugin-section-count">{value().total}</span>
+                    </h3>
+                    <Show when={category() || filter()}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setCategory("");
+                          setFilter("");
+                          void refresh({ category: "", filter: "" });
+                        }}
+                      >
+                        {t("Clear filters")}
+                      </Button>
+                    </Show>
+                  </div>
+                  <ul class="plugin-rows">
+                    <For each={value().plugins}>
+                      {(plugin) => (
+                        <PluginRow
+                          plugin={plugin}
+                          busy={busy()}
+                          onOpen={(item) => void open(item)}
+                          onConnect={(item) => void open(item)}
+                        />
+                      )}
+                    </For>
+                  </ul>
+                </section>
+              </Show>
+
               <Show when={value().total > value().plugins.length}>
                 <p class="plugin-note">
                   {t("Showing")} {value().plugins.length} {t("of")} {value().total}.{" "}

@@ -618,6 +618,11 @@ export const en = {
   "Token or key": "Token or key",
   "Server address (optional)": "Server address (optional)",
   Connect: "Connect",
+  "Connect {name}": "Connect {name}",
+  "Connect the tools and services that your agents work with.":
+    "Connect the tools and services that your agents work with.",
+  "See all": "See all",
+  "Clear filters": "Clear filters",
   Pause: "Pause",
   Resume: "Resume",
   Archive: "Archive",

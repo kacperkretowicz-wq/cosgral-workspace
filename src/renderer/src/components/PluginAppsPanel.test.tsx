@@ -25,17 +25,24 @@ afterEach(cleanup);
 
 it("lists the catalog and filters by words", async () => {
   render(() => <PluginAppsPanel />);
-  expect(await screen.findByRole("button", { name: /Demo Data/ })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Demo Data" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Apps" })).toBeInTheDocument();
   await fireEvent.input(screen.getByRole("searchbox", { name: "Search apps" }), { target: { value: "design" } });
   await fireEvent.click(screen.getByRole("button", { name: "Search" }));
-  await waitFor(() => expect(screen.queryByRole("button", { name: /Demo Data/ })).not.toBeInTheDocument());
-  expect(screen.getByRole("button", { name: /Demo Design/ })).toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Demo Data" })).not.toBeInTheDocument());
+  expect(screen.getByRole("button", { name: "Demo Design" })).toBeInTheDocument();
+});
+
+it("groups apps by category on the home view", async () => {
+  render(() => <PluginAppsPanel />);
+  expect(await screen.findByRole("region", { name: "Data & analytics" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Design" })).toBeInTheDocument();
 });
 
 it("opens details, asks for key values in password fields and installs", async () => {
   const install = vi.spyOn(api, "install");
   render(() => <PluginAppsPanel />);
-  await fireEvent.click(await screen.findByRole("button", { name: /Demo Data/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Demo Data" }));
   const detail = await screen.findByRole("region", { name: "App details" });
   expect(detail).toBeInTheDocument();
   const fields = detail.querySelectorAll("input[type='password']");
@@ -52,7 +59,7 @@ it("opens details, asks for key values in password fields and installs", async (
 
 it("shows an app that only runs on macOS as not installable here", async () => {
   render(() => <PluginAppsPanel />);
-  await fireEvent.click(await screen.findByRole("button", { name: /Demo Mail/ }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Demo Mail" }));
   expect(await screen.findByText("This app cannot run on this computer.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Install" })).toBeDisabled();
 });
@@ -62,7 +69,7 @@ it("shows an error with Retry when the catalog cannot be read", async () => {
   render(() => <PluginAppsPanel />);
   expect(await screen.findByRole("alert")).toHaveTextContent("catalog locked");
   await fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-  expect(await screen.findByRole("button", { name: /Demo Data/ })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Demo Data" })).toBeInTheDocument();
 });
 
 it("says so without the contract", () => {
