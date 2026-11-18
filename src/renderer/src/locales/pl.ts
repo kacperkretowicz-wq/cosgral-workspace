@@ -1479,4 +1479,5 @@ export const pl = {
   "Reject plan": "Odrzuć plan",
   "Plans ({count})": "Plany ({count})",
   "Thread plans": "Plany wątku",
+  "Could not save the setting.": "Nie udało się zapisać ustawienia.",
 } as const;

@@ -1,5 +1,6 @@
-import { createEffect, createSignal, onCleanup, onSettled, untrack } from "solid-js";
+import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
 import { t } from "../i18n";
+import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BudgetSettings } from "./BudgetSettings";
 import { ContextSettingsSection } from "./ContextSettingsSection";
@@ -64,8 +65,6 @@ export function SettingsModal(props: SettingsModalProps) {
   const [closing, setClosing] = createSignal(false);
   const [canScrollUp, setCanScrollUp] = createSignal(false);
   const [canScrollDown, setCanScrollDown] = createSignal(false);
-  const [launchAtLogin, setLaunchAtLogin] = createSignal(false);
-  const [launchBusy, setLaunchBusy] = createSignal(false);
   let closeTimer: number | undefined;
   let restoreTarget: HTMLElement | null = null;
   let restoreFrame: number | undefined;
@@ -132,29 +131,6 @@ export function SettingsModal(props: SettingsModalProps) {
     scrollResizeObserver?.disconnect();
     if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
   });
-
-  onSettled(() => {
-    void window.openbot.appSettings
-      ?.get()
-      .then((settings) => setLaunchAtLogin(settings.behavior.launchAtLogin))
-      .catch(() => {
-        /* Keep the default off until the person can try again. */
-      });
-  });
-
-  async function saveLaunchAtLogin(enabled: boolean): Promise<void> {
-    if (launchBusy()) return;
-    setLaunchBusy(true);
-    setLaunchAtLogin(enabled);
-    try {
-      const next = await window.openbot.appSettings?.update({ behavior: { launchAtLogin: enabled } });
-      if (next) setLaunchAtLogin(next.behavior.launchAtLogin);
-    } catch {
-      setLaunchAtLogin(!enabled);
-    } finally {
-      setLaunchBusy(false);
-    }
-  }
 
   function requestOpenChange(open: boolean): void {
     if (!open && closing()) return;
@@ -242,24 +218,7 @@ export function SettingsModal(props: SettingsModalProps) {
                     <VoiceOverviewPanel />
                   ) : (
                     <>
-                      <section class="settings-modal-group" aria-labelledby="settings-app-behavior">
-                        <Heading id="settings-app-behavior" as="h3" size="sm" tone="secondary">
-                          {t("App behavior")}
-                        </Heading>
-                        <Card class="settings-modal-card">
-                          <Switch
-                            checked={launchAtLogin()}
-                            disabled={launchBusy()}
-                            onChange={(checked) => void saveLaunchAtLogin(checked)}
-                            label={t("Launch COSGRAL Workspace at login")}
-                            description={t("Open the app when you sign in to this computer.")}
-                          />
-                          <Switch
-                            label={t("Keep COSGRAL Workspace running in the background")}
-                            description={t("Keep active tasks running after you close the window.")}
-                          />
-                        </Card>
-                      </section>
+                      <AppBehaviorSection />
 
                       <LanguageSettings />
                       <ContextSettingsSection />
