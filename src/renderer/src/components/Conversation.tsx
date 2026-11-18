@@ -1583,7 +1583,7 @@ export function Conversation(props: ConversationProps) {
         onSend={sendSelectionInstruction}
       />
       <Show when={dropActive()}>
-        <div class="attachment-drop-overlay">Drop files to attach</div>
+        <div class="attachment-drop-overlay">{t("Drop files to attach")}</div>
       </Show>
       <header class="window-drag conversation-header">
         <Show
@@ -1596,7 +1596,7 @@ export function Conversation(props: ConversationProps) {
                     <Button
                       type="button"
                       class="conversation-title no-drag"
-                      aria-label="View agent settings"
+                      aria-label={t("View agent settings")}
                       onClick={() => {
                         setActiveRightPanel("settings");
                       }}
@@ -1617,8 +1617,8 @@ export function Conversation(props: ConversationProps) {
                     disabled={!agentReady() || agentActivity() === "Working"}
                     disabledReason={
                       agentActivity() === "Working"
-                        ? "Wait for the current work to finish before changing models."
-                        : "Models are available after an agent CLI connects."
+                        ? t("Wait for the current work to finish before changing models.")
+                        : t("Models are available after an agent CLI connects.")
                     }
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
@@ -1627,7 +1627,7 @@ export function Conversation(props: ConversationProps) {
                   <NativeSelect
                     class="header-effort"
                     value={settingsReasoning()}
-                    aria-label="Effort"
+                    aria-label={t("Effort")}
                     disabled={!agentReady() || agentActivity() === "Working"}
                     onChange={(event) => {
                       const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
@@ -1645,7 +1645,7 @@ export function Conversation(props: ConversationProps) {
                   <Button
                     type="button"
                     class="header-panel-toggle remote-desktop-button"
-                    aria-label={remoteDesktopOpen() ? "Hide remote desktop" : "Open remote desktop"}
+                    aria-label={remoteDesktopOpen() ? t("Hide remote desktop") : t("Open remote desktop")}
                     aria-expanded={remoteDesktopOpen() ? "true" : "false"}
                     onClick={() => setActiveRightPanel(remoteDesktopOpen() ? "none" : "desktop")}
                   >
@@ -1665,10 +1665,12 @@ export function Conversation(props: ConversationProps) {
                   ]}
                   aria-label={
                     activeBrowserControl()
-                      ? `${browserControlBot()?.name ?? "Agent"} is controlling the browser`
+                      ? t("{name} is controlling the browser", {
+                          name: browserControlBot()?.name ?? t("Agent"),
+                        })
                       : screenOpen()
-                        ? "Hide computer"
-                        : "Open computer"
+                        ? t("Hide computer")
+                        : t("Open computer")
                   }
                   aria-expanded={screenOpen() ? "true" : "false"}
                   onClick={() => {
@@ -1699,9 +1701,9 @@ export function Conversation(props: ConversationProps) {
               }
               optionValue={(option) => (option.kind === "create" ? "create" : option.bot.id)}
               optionTextValue={(option) =>
-                option.kind === "create" ? "Create new agent" : `${option.bot.name} ${option.bot.role}`
+                option.kind === "create" ? t("Create new agent") : `${option.bot.name} ${option.bot.role}`
               }
-              optionLabel={(option) => (option.kind === "create" ? "Create new agent" : option.bot.name)}
+              optionLabel={(option) => (option.kind === "create" ? t("Create new agent") : option.bot.name)}
               optionDisabled={(option) => option.kind === "create" && props.creatingAgent}
               onChange={(option) => {
                 if (!option) return;
@@ -1728,8 +1730,8 @@ export function Conversation(props: ConversationProps) {
                     <Combobox.ItemLabel>
                       {option.kind === "create"
                         ? props.creatingAgent
-                          ? "Creating agent…"
-                          : "Create new agent"
+                          ? t("Creating agent…")
+                          : t("Create new agent")
                         : option.bot.name}
                     </Combobox.ItemLabel>
                   </Combobox.Item>
@@ -1737,12 +1739,12 @@ export function Conversation(props: ConversationProps) {
               }}
             >
               <Combobox.Control class="agent-recipient-field">
-                <Combobox.Label>To:</Combobox.Label>
+                <Combobox.Label>{t("To:")}</Combobox.Label>
                 <Combobox.Input
                   as={Input}
                   ref={(element) => (pickerInput = element)}
-                  aria-label="To:"
-                  placeholder="Search or create agents"
+                  aria-label={t("To:")}
+                  placeholder={t("Search or create agents")}
                   maxlength={INPUT_LIMITS.agentName}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") props.onCloseAgentPicker();
@@ -1781,7 +1783,7 @@ export function Conversation(props: ConversationProps) {
       <EyesBar sessions={props.eyes?.sessions ?? []} bots={props.bots} onStop={(input) => props.onStopEyes?.(input)} />
 
       <Show when={(props.accountNotices?.length ?? 0) > 0}>
-        <section class="account-notices" aria-label="Account notices">
+        <section class="account-notices" aria-label={t("Account notices")}>
           <For each={props.accountNotices}>
             {(notice) =>
               notice.kind === "limit" ? (
@@ -2152,14 +2154,14 @@ export function Conversation(props: ConversationProps) {
       />
       <Show when={props.actionCard?.kind === "plan" ? props.actionCard.plan : undefined}>
         {(plan) => (
-          <section class="sticky-decision" aria-label="Decision">
+          <section class="sticky-decision" aria-label={t("Decision")}>
             <PlanCard plan={plan()} />
           </section>
         )}
       </Show>
       <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
         {(request) => (
-          <section class="sticky-decision" aria-label="Decision">
+          <section class="sticky-decision" aria-label={t("Decision")}>
             <div class="sticky-decision-kicker">Decision · pinned</div>
             <VaultRequestCard request={request} />
           </section>
@@ -2167,7 +2169,7 @@ export function Conversation(props: ConversationProps) {
       </Show>
       <Show when={activeActionCard()}>
         {(card) => (
-          <section class="sticky-decision" aria-label="Decision">
+          <section class="sticky-decision" aria-label={t("Decision")}>
             <div class="sticky-decision-kicker">Decision · pinned</div>
             <ActionCard card={card()} onDraft={respondActionDraft} onTakeover={respondActionTakeover} />
           </section>
@@ -2183,7 +2185,7 @@ export function Conversation(props: ConversationProps) {
               setLibraryOpen(event.currentTarget.open);
             }}
           >
-            <summary>Choose from library</summary>
+            <summary>{t("Choose from library")}</summary>
             <Show when={libraryOpen()}>
               <LibraryPanel
                 onAttach={(draft) => {
@@ -2224,12 +2226,12 @@ export function Conversation(props: ConversationProps) {
             {(message) => (
               <div class="composer-reply-preview">
                 <div>
-                  <span>Replying to {message().author === "you" ? "your message" : "Agent"}</span>
-                  <p>{message().body || "Attachment"}</p>
+                  <span>{message().author === "you" ? t("Replying to your message") : t("Replying to Agent")}</span>
+                  <p>{message().body || t("Attachment")}</p>
                 </div>
                 <Button
                   type="button"
-                  aria-label="Cancel reply"
+                  aria-label={t("Cancel reply")}
                   onClick={() => updateCurrentDraft({ replyToMessageId: null })}
                 >
                   <CloseIcon />
@@ -2244,8 +2246,8 @@ export function Conversation(props: ConversationProps) {
           </Show>
           <Show when={agentReady() && imageGenerationUnavailable()}>
             <aside class="image-generation-capability-note" role="note">
-              <strong>Image generation is currently available with Codex.</strong>
-              <span>Switch this agent to a Codex model in Settings to generate images.</span>
+              <strong>{t("Image generation is currently available with Codex.")}</strong>
+              <span>{t("Switch this agent to a Codex model in Settings to generate images.")}</span>
             </aside>
           </Show>
           <QueueHoldNotice queue={props.queue} onOpenBudget={props.onOpenBudget} />
@@ -2268,8 +2270,8 @@ export function Conversation(props: ConversationProps) {
               return (
                 <div class="composer-queue-edit-preview">
                   <div>
-                    <span>Editing queued message</span>
-                    <p>{delivery()?.text || "Attachment"}</p>
+                    <span>{t("Editing queued message")}</span>
+                    <p>{delivery()?.text || t("Attachment")}</p>
                   </div>
                   <Button type="button" aria-label={t("Cancel queued message edit")} onClick={cancelQueuedMessageEdit}>
                     <CloseIcon />
@@ -2307,14 +2309,14 @@ export function Conversation(props: ConversationProps) {
                 as={Button}
                 type="button"
                 class="composer-button"
-                aria-label="Attach a file"
+                aria-label={t("Attach a file")}
                 disabled={props.agentPickerOpen || attachmentBusy() || !agentReady() || onboardingModelRequired()}
               >
                 <PlusIcon />
               </Popover.Trigger>
               <Popover.Portal>
                 <Popover.Content class="attachment-menu">
-                  <Popover.Title class="sr-only">Attach file</Popover.Title>
+                  <Popover.Title class="sr-only">{t("Attach file")}</Popover.Title>
                   <Show
                     when={attachMenuView() === "main"}
                     fallback={
@@ -2396,7 +2398,7 @@ export function Conversation(props: ConversationProps) {
                 <Button
                   type="button"
                   class="voice-button"
-                  aria-label={editingDeliveryId() ? "Save queued message" : "Send message"}
+                  aria-label={editingDeliveryId() ? t("Save queued message") : t("Send message")}
                   disabled={submitting() || selectionSending() || !agentReady() || onboardingModelRequired()}
                   onClick={() => void submitMessage()}
                 >
@@ -2407,7 +2409,7 @@ export function Conversation(props: ConversationProps) {
               <Button
                 type="button"
                 class="voice-button voice-button-active"
-                aria-label="Stop agent"
+                aria-label={t("Stop agent")}
                 onClick={props.onStop}
               >
                 <StopIcon />
@@ -2473,14 +2475,14 @@ export function Conversation(props: ConversationProps) {
           as="aside"
           id="browser-side-panel"
           class={["browser-panel", { "browser-panel-controlled": Boolean(activeBrowserControl()) }]}
-          aria-label="Browser"
+          aria-label={t("Browser")}
           value={activeBrowserTab()?.id ?? "__empty"}
           onChange={props.onActivateBrowserTab}
           activationMode="automatic"
         >
           <PanelResizer
             class="right-panel-resizer"
-            label="Resize right panel"
+            label={t("Resize right panel")}
             controls="browser-side-panel"
             direction="right"
             value={browserPanelWidth()}
@@ -2500,12 +2502,12 @@ export function Conversation(props: ConversationProps) {
           />
           <header class="browser-panel-header">
             <div class="browser-tabs">
-              <Tabs.List class="browser-tab-strip" aria-label="Browser tabs">
+              <Tabs.List class="browser-tab-strip" aria-label={t("Browser tabs")}>
                 <For each={browserTabs()}>
                   {(tab) => {
                     const control = () => browserControlForTab(tab);
                     const controller = () => browserControllerForTab(tab);
-                    const title = () => (tab.loading ? "Loading…" : tab.title || tab.url);
+                    const title = () => (tab.loading ? t("Loading…") : tab.title || tab.url);
                     return (
                       <div
                         role="presentation"
@@ -2515,9 +2517,14 @@ export function Conversation(props: ConversationProps) {
                           as={Button}
                           value={tab.id}
                           aria-label={
-                            control() ? `${title()}, controlled by ${controller()?.name ?? "agent"}` : title()
+                            control()
+                              ? t("{title}, controlled by {name}", {
+                                  title: title(),
+                                  name: controller()?.name ?? t("Agent"),
+                                })
+                              : title()
                           }
-                          aria-description="Press Delete or Control/Command W to close"
+                          aria-description={t("Press Delete or Control/Command W to close")}
                           class="browser-tab"
                           onPointerDown={(event) => {
                             if (event.button !== 1) return;
@@ -2550,7 +2557,7 @@ export function Conversation(props: ConversationProps) {
                           <span
                             class="browser-tab-close"
                             aria-hidden="true"
-                            title={`Close ${tab.title || "browser tab"}`}
+                            title={t("Close {title}", { title: tab.title || t("Browser tab") })}
                             onPointerDown={(event) => {
                               event.preventDefault();
                               event.stopPropagation();
@@ -2573,7 +2580,7 @@ export function Conversation(props: ConversationProps) {
               <Button
                 type="button"
                 class="browser-new-tab"
-                aria-label="New browser tab"
+                aria-label={t("New browser tab")}
                 onClick={() => {
                   setBrowserAddress("https://www.google.com");
                   void openBrowserAddress("https://www.google.com");
@@ -2585,15 +2592,15 @@ export function Conversation(props: ConversationProps) {
           </header>
           <Tabs.Content forceMount value={activeBrowserTab()?.id ?? "__empty"} class="browser-tab-panel">
             <div class="browser-toolbar">
-              <Button type="button" aria-label="Go back" class="browser-toolbar-button" disabled>
+              <Button type="button" aria-label={t("Go back")} class="browser-toolbar-button" disabled>
                 <BrowserBackIcon />
               </Button>
-              <Button type="button" aria-label="Go forward" class="browser-toolbar-button" disabled>
+              <Button type="button" aria-label={t("Go forward")} class="browser-toolbar-button" disabled>
                 <BrowserForwardIcon />
               </Button>
               <Button
                 type="button"
-                aria-label="Reload page"
+                aria-label={t("Reload page")}
                 class="browser-toolbar-button"
                 onClick={() => void openBrowserAddress()}
               >
@@ -2608,20 +2615,20 @@ export function Conversation(props: ConversationProps) {
               >
                 <Input
                   value={browserAddress()}
-                  aria-label="Browser address"
+                  aria-label={t("Browser address")}
                   maxlength={INPUT_LIMITS.browserUrl}
                   onInput={(event) => setBrowserAddress(event.currentTarget.value)}
                 />
               </form>
-              <Button type="button" class="browser-toolbar-button" aria-label="Browser menu">
+              <Button type="button" class="browser-toolbar-button" aria-label={t("Browser menu")}>
                 <span class="browser-menu-dots">•••</span>
               </Button>
             </div>
             <div class="browser-surface" ref={(element) => (browserSurface = element)}>
               <Show when={browserTabs().length === 0}>
                 <div class="browser-empty-state">
-                  <strong>Open a page</strong>
-                  <span>The agent can browse here while it works.</span>
+                  <strong>{t("Open a page")}</strong>
+                  <span>{t("The agent can browse here while it works.")}</span>
                 </div>
               </Show>
             </div>
@@ -2911,8 +2918,8 @@ export function Conversation(props: ConversationProps) {
                     disabled={!agentReady() || agentActivity() === "Working"}
                     disabledReason={
                       agentActivity() === "Working"
-                        ? "Wait for the current work to finish before changing models."
-                        : "Models are available after an agent CLI connects."
+                        ? t("Wait for the current work to finish before changing models.")
+                        : t("Models are available after an agent CLI connects.")
                     }
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
