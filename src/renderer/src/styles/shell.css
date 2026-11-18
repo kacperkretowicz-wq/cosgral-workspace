@@ -239,3 +239,19 @@
   height: 16px;
   color: var(--cosgral-text-muted);
 }
+
+/* Once the chat has started, the one-time "specialty" question folds to its title line; hover or focus opens it. */
+.onboarding-specialty-step[data-collapsed="true"] {
+  max-height: 44px;
+  overflow: hidden;
+  opacity: 0.6;
+  transition:
+    max-height var(--cosgral-duration-slow) var(--cosgral-ease),
+    opacity var(--cosgral-duration-normal) var(--cosgral-ease);
+}
+
+.onboarding-specialty-step[data-collapsed="true"]:hover,
+.onboarding-specialty-step[data-collapsed="true"]:focus-within {
+  max-height: 600px;
+  opacity: 1;
+}
