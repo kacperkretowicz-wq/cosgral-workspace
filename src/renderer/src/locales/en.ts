@@ -508,6 +508,10 @@ export const en = {
   "Loading files…": "Loading files…",
   "{count} files": "{count} files",
   "No files found.": "No files found.",
+  "Add files or clear filters to see items here.": "Add files or clear filters to see items here.",
+  "Token and turn totals appear here after agents run.": "Token and turn totals appear here after agents run.",
+  "Scheduled and finished routine runs for this period show up here.":
+    "Scheduled and finished routine runs for this period show up here.",
   Select: "Select",
   You: "You",
   "Show in folder": "Show in folder",

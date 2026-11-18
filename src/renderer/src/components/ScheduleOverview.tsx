@@ -2,6 +2,7 @@ import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/con
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { CosgralPanelState } from "./CosgralPanelState";
 import { Button } from "./ui";
 
 const DAY = 86_400_000;
@@ -98,7 +99,9 @@ export function ScheduleOverview() {
     <section class="schedule-overview" aria-label={t("Schedule overview")}>
       <Show
         when={api}
-        fallback={<p class="schedule-note">{t("The schedule overview is not available in this version.")}</p>}
+        fallback={
+          <CosgralPanelState kind="unavailable" title={t("The schedule overview is not available in this version.")} />
+        }
       >
         <nav class="schedule-windows" aria-label={t("Window")}>
           <For each={WINDOWS}>
@@ -115,12 +118,14 @@ export function ScheduleOverview() {
           </For>
         </nav>
         <Show when={error()}>
-          <p class="schedule-error" role="alert">
-            {error()}
-            <Button type="button" variant="ghost" onClick={() => void load(days())}>
-              {t("Retry")}
-            </Button>
-          </p>
+          {(message) => (
+            <CosgralPanelState
+              kind="error"
+              title={message()}
+              actionLabel={t("Retry")}
+              onAction={() => void load(days())}
+            />
+          )}
         </Show>
         <Show
           when={view()}
@@ -133,7 +138,11 @@ export function ScheduleOverview() {
           {(current) => (
             <>
               <Show when={current().entries.length === 0}>
-                <p class="schedule-note">{t("Nothing is planned or has run in this window.")}</p>
+                <CosgralPanelState
+                  kind="empty"
+                  title={t("Nothing is planned or has run in this window.")}
+                  detail={t("Scheduled and finished routine runs for this period show up here.")}
+                />
               </Show>
               <For each={groups()}>
                 {([day, entries]) => (

@@ -505,6 +505,10 @@ export const pl = {
   "Loading files…": "Wczytywanie plików…",
   "{count} files": "Plików: {count}",
   "No files found.": "Nie znaleziono plików.",
+  "Add files or clear filters to see items here.": "Dodaj pliki albo wyczyść filtry, żeby zobaczyć listę.",
+  "Token and turn totals appear here after agents run.": "Sumy tokenów i tur pojawią się tu po pracy agentów.",
+  "Scheduled and finished routine runs for this period show up here.":
+    "Tu widać zaplanowane i zakończone uruchomienia rutyn w tym okresie.",
   Select: "Zaznacz",
   You: "Ty",
   "Show in folder": "Pokaż w folderze",
