@@ -67,7 +67,8 @@ export function parseGithubSkillLink(input: unknown): SkillLinkResult {
   if (parts.length < 2) return refuse("The address must name an owner and a repository.");
   const owner = parts[0] ?? "";
   const repo = (parts[1] ?? "").replace(/\.git$/i, "");
-  if (!NAME.test(owner) || !NAME.test(repo)) return refuse("The owner or the repository has characters GitHub does not use.");
+  if (!NAME.test(owner) || !NAME.test(repo))
+    return refuse("The owner or the repository has characters GitHub does not use.");
   const rest = parts.slice(2);
   if (rest.length === 0) {
     return { ok: true, link: { owner, repo, ref: null, path: "", address: `https://github.com/${owner}/${repo}` } };
@@ -76,7 +77,8 @@ export function parseGithubSkillLink(input: unknown): SkillLinkResult {
   const ref = rest[1];
   if (!ref) return refuse("The address names no branch after /tree/.");
   const folder = rest.slice(2);
-  if (!SEGMENT.test(ref) || ref === "." || ref === "..") return refuse("The branch, tag or commit has characters GitHub does not use.");
+  if (!SEGMENT.test(ref) || ref === "." || ref === "..")
+    return refuse("The branch, tag or commit has characters GitHub does not use.");
   for (const segment of folder) {
     if (segment === "." || segment === "..") return refuse("The folder must not contain . or .. parts.");
     if (!SEGMENT.test(segment)) return refuse("The folder name has characters that skills do not use.");

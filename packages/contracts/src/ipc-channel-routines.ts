@@ -45,9 +45,16 @@ function scheduleProblem(value: unknown): string | null {
     return null;
   }
   if (value.type === "daily") {
-    if (!isString(value.time) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time)) return "The time is written HH:MM, for example 09:30.";
+    if (!isString(value.time) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time))
+      return "The time is written HH:MM, for example 09:30.";
     const weekdays = value.weekdays;
-    if (weekdays !== undefined && !(Array.isArray(weekdays) && weekdays.every((day) => isNumber(day) && Number.isInteger(day) && day >= 0 && day <= 6))) {
+    if (
+      weekdays !== undefined &&
+      !(
+        Array.isArray(weekdays) &&
+        weekdays.every((day) => isNumber(day) && Number.isInteger(day) && day >= 0 && day <= 6)
+      )
+    ) {
       return "Weekdays are numbers from 0 (Sunday) to 6 (Saturday).";
     }
     return null;
@@ -78,7 +85,8 @@ export function channelRoutineProblem(
   }
   const name = isString(input.name) ? input.name.trim() : "";
   if (name.length === 0) return "Give the routine a name.";
-  if (name.length > CHANNEL_ROUTINE_LIMITS.name) return `The name has at most ${CHANNEL_ROUTINE_LIMITS.name} characters.`;
+  if (name.length > CHANNEL_ROUTINE_LIMITS.name)
+    return `The name has at most ${CHANNEL_ROUTINE_LIMITS.name} characters.`;
   const prompt = isString(input.prompt) ? input.prompt.trim() : "";
   if (prompt.length === 0) return "Say what the lead should do on each run.";
   if (prompt.length > CHANNEL_ROUTINE_LIMITS.prompt) {
@@ -86,7 +94,10 @@ export function channelRoutineProblem(
   }
   const schedule = scheduleProblem(input.schedule);
   if (schedule) return schedule;
-  if (input.timezone !== undefined && !(isString(input.timezone) && input.timezone.length > 0 && input.timezone.length <= 64)) {
+  if (
+    input.timezone !== undefined &&
+    !(isString(input.timezone) && input.timezone.length > 0 && input.timezone.length <= 64)
+  ) {
     return "The time zone is a name like Europe/Warsaw.";
   }
   if (input.paused !== undefined && !isBoolean(input.paused)) return "Paused is on or off.";
