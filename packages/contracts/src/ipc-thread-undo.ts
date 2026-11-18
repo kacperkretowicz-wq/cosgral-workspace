@@ -89,10 +89,12 @@ export function undoDeleteProblem(
   pending: Pick<PendingThreadDelete, "expiresAt"> | null,
   now: Date,
   hasRoom: boolean,
+  /** Threads one agent may have (default THREAD_LIMITS.threadsPerAgent). */
+  limit: number = THREAD_LIMITS.threadsPerAgent,
 ): string | null {
   if (!pending) return "There is nothing to undo for this thread.";
   if (pendingDeleteExpired(pending, now)) return "The time to undo has passed.";
-  if (!hasRoom) return `An agent has at most ${THREAD_LIMITS.threadsPerAgent} threads.`;
+  if (!hasRoom) return `An agent has at most ${limit} threads.`;
   return null;
 }
 
