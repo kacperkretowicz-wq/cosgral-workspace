@@ -13,6 +13,19 @@
 | Bez `t()` (w tym helpery, ikony, CSS-in-ts) | ~109 |
 | Sztywne `aria-label="…"` (literal) | **~91** miejsc |
 
+### Przegląd paneli KK (KK-AK, 18.11.2026, kolejka KK #8)
+
+Metoda: dla każdego mojego panelu policzyłem import `../i18n` i wywołania `t(…)` (uwaga: samo `grep 't('` łapie też `set(`, `Content(` itd., więc liczyłem tylko `t(` poprzedzone znakiem innym niż litera, `_` i `.`), potem szukałem literałów w JSX, `aria-label`, `placeholder`, `title`, `alt`, komunikatach błędów.
+
+| Panel | Przed | Po |
+|---|---|---|
+| Mobile Connect (`MobileConnectPage`) | **0 × `t()`**, cały ekran po angielsku (też ostrzeżenia TLS z kontraktu) | pełne `t()`, 47 kluczy PL/EN, test po polsku |
+| Zdalny pulpit (`RemoteDesktopPage`) | **0 × `t()`**, cały ekran po angielsku | pełne `t()`, 46 kluczy PL/EN, test strony po polsku |
+| Ustawienia kontekstu (`ContextSettingsSection`) | komunikat „Context settings saved.” bez `t()` | `t()` |
+| Updates, Voice, Messengers, Integracje, Vault (konektory), Podagenci, Dostęp do zdalnego pulpitu, Logowanie MCP, App behavior, Application settings, Budżety, Endpointy | już na `t()`, bez literałów | bez zmian |
+
+**Zostaje po angielsku (nie z mojego kodu):** teksty z silnika (`unavailableReason`, `client().error`, powody wstrzymania „locked”/„uac”, etykiety sesji widzów, nazwy poziomów dostępu z kontraktu) oraz `McpSettings` (dwa komunikaty błędów; `McpPanel` przetłumaczył KAPI-V na swojej gałęzi). Zrzutów PL moich paneli nie robiłem, sprawdzone testami jednego pliku.
+
 ### Co jest już na `t()` (skrót)
 
 Conversation (panel ustawień, kicker Decision, reakcje), ContextIndicator (KAPI-P), AgentCards (Brain/Knows/More + etykiety), Sidebar/PageRail/Needs you (część), Marketplace, Tasks, Workflows, Vault connectors, Schedule/Usage/Library (część), ChannelView/Clear history/history window, InitialSetup, New agent, ThreadTabs, GlobalSearch, …

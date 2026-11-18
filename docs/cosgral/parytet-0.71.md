@@ -1,6 +1,6 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `4f21fbfe7` plus odbiór Testera T-AI (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
+Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `2dfb55f09` plus odbiór Testera T-AI i T-AJ (procenty po T-AJ bez zmian) (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
 **Wynik w jednej linii: 61,5 z 77 funkcji = 79,9% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 60,4%.**
 
@@ -48,7 +48,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
-| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | tak | tak | tak | część | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran jest tylko dla motywu** (Dark/Light/System na ekranie „Settings”, KK-AC); reszta pól nie ma jeszcze kontrolek ani działania w oknie. Motyw widać na zrzutach T-H (ustawiony skryptem), a sam wybór w oknie nie był oglądany. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
+| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | tak | tak | tak | część | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran ma 6 z 7 kontrolek** (na tipie `2dfb55f09`, sekcja „Appearance” ekranu „Settings”): Theme, Interface scale, Font, Accent, „Send message with” i „Agent steps”. **Brakuje przełącznika „Unread first”** (UI-AT jest na `team/ui/w12-ai`, nie w integracji; silnik i pasek są, BE-AC). Skrót wysyłania i kroki agenta działają w polu i w rozmowie (BE-Z2, testy jednego pliku). W oknie (T-AJ, sondy `ui-probes`): skrót wysyłania zapisuje się i zmienia zachowanie pola (`enter` / `mod-enter`), „unread first” zapisuje się (przez IPC i dataset, nie kliknięciem przełącznika). Samo kliknięcie kontrolek na ekranie w oknie nie było oglądane. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
 | 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. 17-11-h: nagłówek Voice i uprawnienie mikrofonu widoczne w oknie na ekranie „Settings” (T-AF). Nagrywanie nadal nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac, tester-w12-te |
 | 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
@@ -85,7 +85,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 24 | Kanały: tworzenie, lider, członkowie, edycja | **jest** | tak | tak | tak | tak | tak | Odbiór W4-T2 38/38. | kk-w4-g1 |
-| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Backend dał widok zbiorczy zadań (kontrakt i silnik), ekran jeszcze go nie czyta. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
+| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Ekran Zadań czyta teraz `tasksView.board` (BE-AA, UI-AS): pięć kolumn Needs you / Working / Paused / Failed / Stopped z licznikami; w oknie T-AJ sonda `tasks-board` potwierdziła pięć kolumn z nagłówkami i licznikiem. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
 | 26 | Odpowiedź na wiadomość kanału | **jest** | tak | tak | tak | tak | tak | Krok e2e. | ipc-workspace-channels, ui-w4-ui1 |
 | 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **częściowo** | część | część | część | część | część | Jest pamięć kanału i lider; reszta jak w 0.71 brak. | ipc-memory, ipc-isolation |
 
@@ -180,6 +180,21 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | WhatsApp (QR, grupy, dozwoleni nadawcy) | Decyzja lidera: nie (nieoficjalne API, ryzyko). |
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
+
+## Zmiany od wersji @ `8e6600948` (79,9% kod / 52,6% w oknie / 60,4% ostrożnie): odbiór T-AJ
+
+Tester T-AJ (Electron @ `2dfb55f09`, raport `tester-w12-tj.md` na `team/tester/w12-tj`): e2e 0 FAIL, W5 33/33, sondy `ui-probes`, `next-probes`, `behavior`, a11y ok. **Procenty się nie zmieniają: 79,9% kod, 52,6% w oknie, 60,4% ostrożnie.** Żaden wiersz nie przechodzi z „część” na „tak” ani z „nie” na „część”, bo nowe dowody dotyczą wierszy już policzonych albo elementów bez własnego wiersza.
+
+| Wiersz | Zmiana opisu | Dlaczego liczby bez zmian |
+|---|---|---|
+| 2 Wygląd | Tekst „ekran jest tylko dla motywu” był nieaktualny: ekran ma 6 z 7 kontrolek. Dowód z okna: skrót wysyłania i „unread first” zapisują się (sondy IPC i dataset) | Wiersz zostaje „częściowo” (brak przełącznika „Unread first” w tipie, UI-AT na gałęzi UI) i E, O = część |
+| 25 Zadania w kanale | Ekran czyta `tasksView.board`; w oknie sonda potwierdziła 5 kolumn z licznikami | Wiersz już był „jest”, O = tak |
+| 71 Telefon: kanały w PWA | **Nie ruszałem.** Tester ma własną zmianę tego wiersza na swojej gałęzi (unit 7+1, ekran PWA UI-13 `1682b267a` jeszcze nie w tipie) | Zostaje „częściowo”, E = nie, dopóki UI-13 nie wejdzie do integracji |
+| 73, 74, 76, 77 | Bez zmian: T-AJ powtórzył `launchAtLogin`, zasobnik, przywracanie i zmianę nazwy | już policzone w T-AI |
+
+**Co przesunie liczby przy następnym odbiorze:** scalenie UI-AT (wiersz 2: E część → tak, O zależy od kliknięcia przełącznika w oknie) oraz UI-13 i BE-AD (wiersz 71 i przywracanie miejsca per serwer).
+
+**Nie sprawdzone w oknie:** klik w kontrolki sekcji „Appearance”, autostart po restarcie Windows, klik w ikonę zasobnika, Teach i Voice w menu „+” (wyłączone, bez kontraktu silnika), axe i Storybook.
 
 ## Zmiany od wersji @ `206fdc9b0` (79,2% kod / 51,3% w oknie / 59,7% ostrożnie): odbiór T-AI w Electronie
 

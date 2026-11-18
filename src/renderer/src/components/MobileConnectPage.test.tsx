@@ -1,7 +1,8 @@
 import type { MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setLanguage } from "../i18n";
 import { formatMobileCountdown, MobileConnectView, type MobileConnectViewProps } from "./MobileConnectPage";
 
 const FINGERPRINT = "AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89";
@@ -55,6 +56,8 @@ function props(overrides: Partial<MobileConnectViewProps> = {}): MobileConnectVi
     ...overrides,
   };
 }
+
+afterEach(() => setLanguage("en"));
 
 describe("MobileConnectView", () => {
   it("counts down in minutes and seconds and never goes negative", () => {
@@ -152,5 +155,28 @@ describe("MobileConnectView", () => {
     render(() => <MobileConnectView {...props({ error: "Port in use.", notice: "Pixel is paired." })} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Port in use.");
     expect(screen.getByText("Pixel is paired.")).toBeInTheDocument();
+  });
+
+  it("speaks Polish: the heading, the transport warning, the pairing card and the rotation question", async () => {
+    setLanguage("pl");
+    const ticketState = state({
+      pairing: { consentPending: false, attemptsLeft: 3, expiresAt: "2026-11-18T10:00:00.000Z" },
+    });
+    render(() => (
+      <MobileConnectView
+        {...props({ state: ticketState, ticket: ticket(ticketState), now: 10_000, exposure: "lan" })}
+      />
+    ));
+    expect(screen.getByRole("heading", { name: "Telefon" })).toBeInTheDocument();
+    expect(screen.getByText("Szyfrowane (TLS)")).toBeInTheDocument();
+    expect(screen.getByText(/Ruch między telefonem a tym komputerem jest szyfrowany/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Telefony w Twojej sieci lokalnej mogą się połączyć.", { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Kod ważny jeszcze 2:05")).toBeInTheDocument();
+    expect(screen.getByText("Czekam na telefon. Pozostało błędnych prób: 3.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wymień certyfikat…" })).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Wymień certyfikat…" }));
+    expect(screen.getByRole("button", { name: "Wymień i usuń wszystkie telefony" })).toBeInTheDocument();
   });
 });

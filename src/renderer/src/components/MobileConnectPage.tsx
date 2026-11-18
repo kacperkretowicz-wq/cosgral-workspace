@@ -1,6 +1,7 @@
 import type { MobileExposure, MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
 import { Badge, Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
 
@@ -11,7 +12,7 @@ export function formatMobileCountdown(ms: number): string {
 }
 
 function formatWhen(value: string | null): string {
-  if (!value) return "never";
+  if (!value) return t("never");
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
@@ -46,10 +47,12 @@ export function MobileConnectView(props: MobileConnectViewProps) {
     <>
       <header>
         <Heading as="h1" size="lg">
-          Phone
+          {t("Phone")}
         </Heading>
         <Text as="p" tone="secondary">
-          Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.
+          {t(
+            "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.",
+          )}
         </Text>
       </header>
 
@@ -57,12 +60,12 @@ export function MobileConnectView(props: MobileConnectViewProps) {
         class="mobile-warning"
         data-transport={props.state.transport}
         role="note"
-        aria-label="Phone connection security"
+        aria-label={t("Phone connection security")}
       >
         <Badge tone={props.state.transport === "tls" ? "success" : "warning"} dot>
-          {props.state.transport === "tls" ? "Encrypted (TLS)" : "Not encrypted"}
+          {props.state.transport === "tls" ? t("Encrypted (TLS)") : t("Not encrypted")}
         </Badge>
-        <Text as="p">{transportWarning()}</Text>
+        <Text as="p">{t(transportWarning())}</Text>
       </aside>
 
       <Show when={props.state.unavailableReason}>
@@ -85,14 +88,16 @@ export function MobileConnectView(props: MobileConnectViewProps) {
 
       <Card class="mobile-section">
         <Heading as="h2" size="md">
-          Connection
+          {t("Connection")}
         </Heading>
         <Field
-          label="Who can reach this computer"
+          label={t("Who can reach this computer")}
           description={
             props.exposure === "lan"
-              ? "Phones on your local network can connect. This needs encryption (TLS); without it the program refuses."
-              : "Only this computer. A phone reaches it through a tunnel you trust (VPN or USB forwarding)."
+              ? t(
+                  "Phones on your local network can connect. This needs encryption (TLS); without it the program refuses.",
+                )
+              : t("Only this computer. A phone reaches it through a tunnel you trust (VPN or USB forwarding).")
           }
         >
           <NativeSelect
@@ -100,22 +105,22 @@ export function MobileConnectView(props: MobileConnectViewProps) {
             disabled={props.busy}
             onChange={(event) => props.onExposure(event.currentTarget.value === "lan" ? "lan" : "loopback")}
           >
-            <option value="loopback">This computer only (tunnel)</option>
-            <option value="lan">Local network (LAN)</option>
+            <option value="loopback">{t("This computer only (tunnel)")}</option>
+            <option value="lan">{t("Local network (LAN)")}</option>
           </NativeSelect>
         </Field>
         <Text as="p" tone="secondary" role="status">
           {props.state.enabled
-            ? `Listening on ${props.state.urls.join(", ") || "this computer"}.`
-            : "The phone server is off."}
+            ? t("Listening on {addresses}.", { addresses: props.state.urls.join(", ") || t("this computer") })
+            : t("The phone server is off.")}
         </Text>
         <div class="mobile-actions">
           <Button type="button" variant="primary" disabled={props.busy} onClick={props.onStartPairing}>
-            {props.state.enabled ? "Pair another phone" : "Turn on and pair a phone"}
+            {props.state.enabled ? t("Pair another phone") : t("Turn on and pair a phone")}
           </Button>
           <Show when={props.state.enabled}>
             <Button type="button" disabled={props.busy} onClick={props.onDisable}>
-              Turn off
+              {t("Turn off")}
             </Button>
           </Show>
         </div>
@@ -123,36 +128,40 @@ export function MobileConnectView(props: MobileConnectViewProps) {
 
       <Show when={props.ticket}>
         {(ticket) => (
-          <Card class="mobile-section" role="region" aria-label="Pair a phone">
+          <Card class="mobile-section" role="region" aria-label={t("Pair a phone")}>
             <Heading as="h2" size="md">
-              Pair a phone
+              {t("Pair a phone")}
             </Heading>
             <Text as="p" tone="secondary">
-              Scan this code with the phone camera, or open the link on the phone.
+              {t("Scan this code with the phone camera, or open the link on the phone.")}
             </Text>
-            <img class="mobile-qr" src={ticket().qrDataUrl} alt="Pairing QR code" width="220" height="220" />
+            <img class="mobile-qr" src={ticket().qrDataUrl} alt={t("Pairing QR code")} width="220" height="220" />
             <Text as="p" role="timer" aria-live="off">
-              {remaining() > 0 ? `Code valid for ${formatMobileCountdown(remaining())}` : "This code has expired."}
+              {remaining() > 0
+                ? t("Code valid for {time}", { time: formatMobileCountdown(remaining()) })
+                : t("This code has expired.")}
             </Text>
             <Show when={props.state.pairing?.consentPending}>
               <Text as="p" tone="warning" role="status">
-                A phone is asking to pair. Approve or decline on the confirm card in Needs you.
+                {t("A phone is asking to pair. Approve or decline on the confirm card in Needs you.")}
               </Text>
             </Show>
             <Show when={props.state.pairing && !props.state.pairing.consentPending}>
               <Text as="p" tone="muted">
-                Waiting for a phone. Wrong tries left: {props.state.pairing?.attemptsLeft}.
+                {t("Waiting for a phone. Wrong tries left: {count}.", {
+                  count: props.state.pairing?.attemptsLeft ?? 0,
+                })}
               </Text>
             </Show>
-            <Field label="Pairing link" description="Valid for one phone and a few minutes. Do not share it.">
+            <Field label={t("Pairing link")} description={t("Valid for one phone and a few minutes. Do not share it.")}>
               <code class="mobile-code" data-testid="pairing-link">
                 {ticket().qrPayload}
               </code>
             </Field>
             <Button type="button" size="sm" onClick={() => props.onCopy(ticket().qrPayload)}>
-              Copy link
+              {t("Copy link")}
             </Button>
-            <Field label="Phone app address">
+            <Field label={t("Phone app address")}>
               <code class="mobile-code" data-testid="app-url">
                 {ticket().appUrl}
               </code>
@@ -160,8 +169,10 @@ export function MobileConnectView(props: MobileConnectViewProps) {
             <Show when={props.state.fingerprint}>
               {(fingerprint) => (
                 <Field
-                  label="Certificate fingerprint (SHA-256)"
-                  description="A web browser cannot check this by itself: when it warns about the certificate, compare the fingerprint it shows with this one."
+                  label={t("Certificate fingerprint (SHA-256)")}
+                  description={t(
+                    "A web browser cannot check this by itself: when it warns about the certificate, compare the fingerprint it shows with this one.",
+                  )}
                 >
                   <code class="mobile-code" data-testid="fingerprint">
                     {fingerprint()}
@@ -170,7 +181,7 @@ export function MobileConnectView(props: MobileConnectViewProps) {
               )}
             </Show>
             <Button type="button" disabled={props.busy} onClick={props.onCancelPairing}>
-              Cancel pairing
+              {t("Cancel pairing")}
             </Button>
           </Card>
         )}
@@ -178,13 +189,13 @@ export function MobileConnectView(props: MobileConnectViewProps) {
 
       <Card class="mobile-section">
         <Heading as="h2" size="md">
-          Paired phones
+          {t("Paired phones")}
         </Heading>
         <Show
           when={props.state.devices.length}
           fallback={
             <Text as="p" tone="muted">
-              No phone is paired.
+              {t("No phone is paired.")}
             </Text>
           }
         >
@@ -198,7 +209,10 @@ export function MobileConnectView(props: MobileConnectViewProps) {
                       <Badge size="sm">{device.platform}</Badge>
                     </Show>
                     <Text as="p" tone="muted">
-                      Paired {formatWhen(device.pairedAt)} · last seen {formatWhen(device.lastSeenAt)}
+                      {t("Paired {paired} · last seen {seen}", {
+                        paired: formatWhen(device.pairedAt),
+                        seen: formatWhen(device.lastSeenAt),
+                      })}
                       {device.lastAddress ? ` · ${device.lastAddress}` : ""}
                     </Text>
                   </div>
@@ -207,10 +221,10 @@ export function MobileConnectView(props: MobileConnectViewProps) {
                     variant="danger"
                     size="sm"
                     disabled={props.busy}
-                    aria-label={`Remove ${device.name}`}
+                    aria-label={t("Remove {name}", { name: device.name })}
                     onClick={() => props.onRevoke(device.id)}
                   >
-                    Remove
+                    {t("Remove")}
                   </Button>
                 </li>
               )}
@@ -222,24 +236,28 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       <Show when={props.state.transport === "tls"}>
         <Card class="mobile-section">
           <Heading as="h2" size="md">
-            Certificate
+            {t("Certificate")}
           </Heading>
           <Text as="p" tone="secondary">
-            A new certificate has a new fingerprint. Every phone pinned the old one, so rotating removes all paired
-            phones and each must pair again.
+            {t(
+              "A new certificate has a new fingerprint. Every phone pinned the old one, so rotating removes all paired phones and each must pair again.",
+            )}
           </Text>
           <Show
             when={confirmRotate()}
             fallback={
               <Button type="button" disabled={props.busy} onClick={() => setConfirmRotate(true)}>
-                Rotate certificate…
+                {t("Rotate certificate…")}
               </Button>
             }
           >
-            <fieldset class="mobile-confirm" aria-label="Confirm certificate rotation">
+            <fieldset class="mobile-confirm" aria-label={t("Confirm certificate rotation")}>
               <Text as="p" tone="danger">
-                This removes {props.state.devices.length} paired {props.state.devices.length === 1 ? "phone" : "phones"}{" "}
-                at once. They stop working until paired again.
+                {props.state.devices.length === 1
+                  ? t("This removes {count} paired phone at once. They stop working until paired again.", { count: 1 })
+                  : t("This removes {count} paired phones at once. They stop working until paired again.", {
+                      count: props.state.devices.length,
+                    })}
               </Text>
               <div class="mobile-actions">
                 <Button
@@ -251,10 +269,10 @@ export function MobileConnectView(props: MobileConnectViewProps) {
                     props.onRotate();
                   }}
                 >
-                  Rotate and remove all phones
+                  {t("Rotate and remove all phones")}
                 </Button>
                 <Button type="button" onClick={() => setConfirmRotate(false)}>
-                  Keep the current certificate
+                  {t("Keep the current certificate")}
                 </Button>
               </div>
             </fieldset>
@@ -299,14 +317,14 @@ export function MobileConnectPage() {
       await action();
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("Something went wrong."));
     } finally {
       setBusy(false);
     }
   }
   onSettled(() => {
     if (!api) {
-      setError("Mobile Connect is unavailable.");
+      setError(t("Mobile Connect is unavailable."));
       return;
     }
     void api
@@ -321,7 +339,7 @@ export function MobileConnectPage() {
       if (event.type === "mobile-changed") apply(event.state);
       if (event.type === "mobile-pairing-completed") {
         setTicket(null);
-        setNotice(`${event.device.name} is paired.`);
+        setNotice(t("{name} is paired.", { name: event.device.name }));
       }
     });
     return () => {
@@ -373,14 +391,14 @@ export function MobileConnectPage() {
             if (!api) return;
             setTicket(null);
             apply(await api.rotateCertificate());
-            setNotice("The certificate was replaced. Every phone must pair again.");
+            setNotice(t("The certificate was replaced. Every phone must pair again."));
           })
         }
         onCopy={(text) =>
           void navigator.clipboard
             .writeText(text)
-            .then(() => setNotice("Copied."))
-            .catch(() => setError("Could not copy; select the text manually."))
+            .then(() => setNotice(t("Copied.")))
+            .catch(() => setError(t("Could not copy; select the text manually.")))
         }
       />
       <MobileOverviewPanel />
