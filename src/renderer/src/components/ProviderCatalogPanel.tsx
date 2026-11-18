@@ -3,12 +3,18 @@ import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
 
-const SUPPORT_VIEW: Record<ProviderSupportLevel, { label: string; tone: BadgeTone }> = {
-  "built-in": { label: "Built in", tone: "success" },
-  "acp-preset": { label: "Starts from a preset", tone: "accent" },
-  "needs-runtime": { label: "Not available yet", tone: "neutral" },
-  custom: { label: "Your own command", tone: "neutral" },
-};
+function supportView(level: ProviderSupportLevel): { label: string; tone: BadgeTone } {
+  switch (level) {
+    case "built-in":
+      return { label: t("Built in"), tone: "success" };
+    case "acp-preset":
+      return { label: t("Starts from a preset"), tone: "accent" };
+    case "needs-runtime":
+      return { label: t("Not available yet"), tone: "neutral" };
+    default:
+      return { label: t("Your own command"), tone: "neutral" };
+  }
+}
 
 function signInLabel(kind: ProviderCatalogItem["signIn"]): string {
   switch (kind) {
@@ -127,8 +133,8 @@ export function ProviderCatalogPanel() {
                 <li class="provider-catalog-card" data-support={item.support}>
                   <header>
                     <strong>{item.name}</strong>
-                    <Badge tone={SUPPORT_VIEW[item.support].tone} dot>
-                      {t(SUPPORT_VIEW[item.support].label)}
+                    <Badge tone={supportView(item.support).tone} dot>
+                      {supportView(item.support).label}
                     </Badge>
                   </header>
                   <p class="provider-catalog-note">{item.description}</p>

@@ -24,6 +24,7 @@ import {
   PROVIDER_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -113,14 +114,14 @@ export function ProviderUsageList(props: {
   onRefresh?: () => void;
 }) {
   return (
-    <Card class="providers-section" role="region" aria-label="Provider usage">
+    <Card class="providers-section" role="region" aria-label={t("Provider usage")}>
       <div class="providers-heading">
         <Heading as="h2" size="md">
-          Usage and limits
+          {t("Usage and limits")}
         </Heading>
         <Show when={props.onRefresh}>
           <Button type="button" size="sm" loading={props.refreshing} onClick={() => props.onRefresh?.()}>
-            Refresh
+            {t("Refresh")}
           </Button>
         </Show>
       </div>
@@ -128,7 +129,7 @@ export function ProviderUsageList(props: {
         when={props.usage.length}
         fallback={
           <Text as="p" tone="muted">
-            No usage information yet.
+            {t("No usage information yet.")}
           </Text>
         }
       >
@@ -558,9 +559,9 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
           setAcpAgents(await api.listAcpAgents());
         }}
       />
-      <Card class="providers-section" role="region" aria-label="Fallback models">
+      <Card class="providers-section" role="region" aria-label={t("Fallback models")}>
         <Heading as="h2" size="md">
-          Fallback models
+          {t("Fallback models")}
         </Heading>
         <ProviderFallbackLists
           groups={groups()}

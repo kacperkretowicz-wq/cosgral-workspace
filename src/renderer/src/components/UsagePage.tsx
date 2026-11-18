@@ -1,5 +1,6 @@
 import type { AcpAgentConfig, ProviderUsage } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { ProviderUsageList } from "./ProvidersPage";
 import { UsageReportView } from "./UsageReportView";
 import { Heading, Text } from "./ui";
@@ -26,7 +27,7 @@ export function UsagePage() {
       setNow(Date.now());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load usage.");
+      setError(e instanceof Error ? e.message : t("Could not load usage."));
     } finally {
       setRefreshing(false);
       setLoaded(true);
@@ -36,7 +37,7 @@ export function UsagePage() {
   onSettled(() => {
     const api = window.openbot.providers;
     if (!api) {
-      setError("Usage is not available in this build.");
+      setError(t("Usage is not available in this build."));
       return;
     }
     void refresh();
@@ -62,10 +63,10 @@ export function UsagePage() {
     <main class="w2-library usage-page">
       <header>
         <Heading as="h1" size="lg">
-          Usage
+          {t("Usage")}
         </Heading>
         <Text as="p" tone="secondary">
-          How much of each provider's limit is used, and when a limit resets.
+          {t("How much of each provider's limit is used, and when a limit resets.")}
         </Text>
       </header>
       <Show when={error()}>

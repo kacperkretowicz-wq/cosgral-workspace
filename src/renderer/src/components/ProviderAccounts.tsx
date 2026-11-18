@@ -6,9 +6,10 @@ import {
   type SetAccountPoolInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { accountError, useAccounts } from "./account-state";
-
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
+
 export type AccountAction =
   | "loginAccount"
   | "logoutAccount"
@@ -18,6 +19,7 @@ export type AccountAction =
   | "removeAccount"
   | "submitLoginCode"
   | "openUrl";
+
 export function safeLoginUrl(url: string | null) {
   try {
     const parsed = new URL(url ?? "");
@@ -26,13 +28,22 @@ export function safeLoginUrl(url: string | null) {
     return null;
   }
 }
-const phases = {
-  idle: "",
-  "waiting-for-browser": "Czekam na przeglądarkę",
-  "code-required": "Wpisz kod z przeglądarki",
-  success: "Zalogowano",
-  error: "Błąd logowania",
-};
+
+function phaseLabel(phase: ProviderAccount["login"]["phase"]): string {
+  switch (phase) {
+    case "waiting-for-browser":
+      return t("Waiting for the browser");
+    case "code-required":
+      return t("Enter the code from the browser");
+    case "success":
+      return t("Signed in");
+    case "error":
+      return t("Sign-in failed");
+    default:
+      return "";
+  }
+}
+
 export function ProviderAccountCard(props: {
   account: ProviderAccount;
   busy: boolean;
@@ -60,23 +71,23 @@ export function ProviderAccountCard(props: {
           {props.account.label}
         </Heading>
         <Show when={props.account.system}>
-          <Badge>Systemowe</Badge>
+          <Badge>{t("System")}</Badge>
         </Show>
         <Show when={props.account.isDefault}>
-          <Badge>Domyślne</Badge>
+          <Badge>{t("Default")}</Badge>
         </Show>
       </div>
       <Text as="p">
-        {props.account.account ?? "Konto nieznane"} · {props.account.plan ?? "Plan nieznany"} ·{" "}
-        {props.account.loggedIn ? "Zalogowane" : "Wylogowane"}
+        {props.account.account ?? t("Unknown account")} · {props.account.plan ?? t("Unknown plan")} ·{" "}
+        {props.account.loggedIn ? t("Signed in") : t("Signed out")}
       </Text>
       <Show when={props.account.limitedUntil && new Date(props.account.limitedUntil).getTime() > Date.now()}>
         <Text as="p" tone="warning">
-          Ograniczone do godz. {new Date(props.account.limitedUntil ?? "").toLocaleString()}
+          {t("Limited until {time}", { time: new Date(props.account.limitedUntil ?? "").toLocaleString() })}
         </Text>
       </Show>
       <Text as="p" role="status" aria-live="polite">
-        {phases[props.account.login.phase]}
+        {phaseLabel(props.account.login.phase)}
       </Text>
       <Show when={props.account.login.message}>
         <Text
@@ -90,15 +101,17 @@ export function ProviderAccountCard(props: {
       <Show when={working() && safeLoginUrl(props.account.login.url)}>
         {(url) => (
           <Button disabled={props.busy} onClick={() => props.onAction("openUrl", url())}>
-            Otwórz stronę logowania
+            {t("Open sign-in page")}
           </Button>
         )}
       </Show>
       <Show when={working() && props.account.login.userCode}>
-        <Text as="p">Kod urządzenia: {props.account.login.userCode}</Text>
+        <Text as="p">
+          {t("Device code:")} {props.account.login.userCode}
+        </Text>
       </Show>
       <Show when={props.account.login.phase === "code-required" && !props.account.system}>
-        <Field label="Kod logowania">
+        <Field label={t("Sign-in code")}>
           <Input
             type="password"
             autocomplete="off"
@@ -115,19 +128,19 @@ export function ProviderAccountCard(props: {
             props.onAction("submitLoginCode", props.account.id, value);
           }}
         >
-          Przekaż kod
+          {t("Submit code")}
         </Button>
       </Show>
       <div class="managed-cli-actions">
         <Button disabled={props.busy} onClick={() => props.onAction("refreshAccount", props.account.id)}>
-          Odśwież
+          {t("Refresh")}
         </Button>
         <Show when={!props.account.system}>
           <Show
             when={working()}
             fallback={
               <Button disabled={props.busy} onClick={() => props.onAction("loginAccount", props.account.id)}>
-                {props.account.login.phase === "error" ? "Ponów logowanie" : "Zaloguj"}
+                {props.account.login.phase === "error" ? t("Retry sign-in") : t("Sign in")}
               </Button>
             }
           >
@@ -138,76 +151,78 @@ export function ProviderAccountCard(props: {
                 props.onAction("cancelLogin", props.account.id);
               }}
             >
-              Anuluj logowanie
+              {t("Cancel sign-in")}
             </Button>
           </Show>
           <Show when={props.account.loggedIn}>
             <Button disabled={props.busy} onClick={() => props.onAction("logoutAccount", props.account.id)}>
-              Wyloguj
+              {t("Sign out")}
             </Button>
           </Show>
           <Button disabled={props.busy} variant="danger" onClick={() => setConfirm("remove")}>
-            Usuń
+            {t("Remove")}
           </Button>
           <Show when={props.account.login.phase === "error"}>
             <Button disabled={props.busy} onClick={() => props.onAction("openLoginTerminal", props.account.id)}>
-              Otwórz terminal z poleceniem…
+              {t("Open terminal with the command…")}
             </Button>
             <Text as="p" tone="muted">
-              Obejście problemu logowania. Najpierw karta zgody; po zakończeniu wybierz Odśwież.
+              {t("Workaround for a stuck sign-in. Needs you first; then choose Refresh.")}
             </Text>
           </Show>
         </Show>
       </div>
       <Switch
-        label="W puli"
+        label={t("In the pool")}
         checked={props.account.inPool}
         disabled={props.busy || (!props.account.inPool && props.poolFull)}
         onChange={(value) => (value ? setConfirm("pool") : pool({ inPool: false }))}
       />
       <Switch
-        label="Włączone"
+        label={t("Enabled")}
         checked={props.account.enabled}
         disabled={props.busy}
         onChange={(enabled) => pool({ enabled })}
       />
       <Show when={!props.account.inPool && props.poolFull}>
         <Text as="p" tone="warning">
-          Limit puli osiągnięty. Wyłącz inne konto lub zwiększ limit.
+          {t("Pool limit reached. Turn off another account or raise the limit.")}
         </Text>
       </Show>
       <Show when={props.account.inPool}>
         <Text as="p" tone="muted">
-          Kolejność puli: {props.account.poolOrder}
+          {t("Pool order: {order}", { order: String(props.account.poolOrder) })}
         </Text>
       </Show>
       <div class="managed-cli-actions">
         <Button disabled={props.busy || props.account.isDefault} onClick={() => pool({ isDefault: true })}>
-          Ustaw jako domyślne
+          {t("Set as default")}
         </Button>
         <Show when={props.account.inPool}>
           <Button
-            aria-label={`Przesuń ${props.account.label} w górę`}
+            aria-label={t("Move {name} up", { name: props.account.label })}
             disabled={props.busy || props.position === 0}
             onClick={() => pool({ poolOrder: props.account.poolOrder - 1 })}
           >
-            ↑ W górę
+            ↑ {t("Up")}
           </Button>
           <Button
-            aria-label={`Przesuń ${props.account.label} w dół`}
+            aria-label={t("Move {name} down", { name: props.account.label })}
             disabled={props.busy || props.position === props.count - 1}
             onClick={() => pool({ poolOrder: props.account.poolOrder + 1 })}
           >
-            ↓ W dół
+            ↓ {t("Down")}
           </Button>
         </Show>
       </div>
       <Show when={confirm()}>
-        <Card class="managed-cli-card provider-account-card" aria-label="Potwierdzenie zmiany konta">
+        <Card class="managed-cli-card provider-account-card" aria-label={t("Confirm account change")}>
           <Text as="p">
             {confirm() === "pool"
-              ? ACCOUNT_POOL_WARNING
-              : `Usunąć konto „${props.account.label}” i jego dane logowania? Przypisani agenci wrócą do konta domyślnego.`}
+              ? t(ACCOUNT_POOL_WARNING)
+              : t('Remove account "{name}" and its sign-in data? Agents on it go back to the default account.', {
+                  name: props.account.label,
+                })}
           </Text>
           <div class="managed-cli-actions">
             <Button
@@ -218,10 +233,10 @@ export function ProviderAccountCard(props: {
                 setConfirm(null);
               }}
             >
-              {confirm() === "pool" ? "Włącz do puli" : "Usuń konto i dane"}
+              {confirm() === "pool" ? t("Add to pool") : t("Remove account and data")}
             </Button>
             <Button disabled={props.busy} onClick={() => setConfirm(null)}>
-              Anuluj
+              {t("Cancel")}
             </Button>
           </div>
         </Card>
@@ -229,6 +244,7 @@ export function ProviderAccountCard(props: {
     </Card>
   );
 }
+
 function AddAccount(props: {
   provider: ProviderAccountProvider;
   busy: boolean;
@@ -239,12 +255,12 @@ function AddAccount(props: {
   return (
     <Card class="managed-cli-card provider-account-card">
       <Heading as="h4" size="sm">
-        Dodaj konto
+        {t("Add account")}
       </Heading>
       <Text as="p" tone="muted">
-        {ACCOUNT_POOL_WARNING}
+        {t(ACCOUNT_POOL_WARNING)}
       </Text>
-      <Field label={`Etykieta konta ${props.provider === "codex" ? "Codex" : "Claude"}`}>
+      <Field label={t("Account label for {provider}", { provider: props.provider === "codex" ? "Codex" : "Claude" })}>
         <Input value={label()} maxlength={ACCOUNT_LIMITS.label} onInput={(e) => setLabel(e.currentTarget.value)} />
       </Field>
       <Button
@@ -255,16 +271,17 @@ function AddAccount(props: {
           })
         }
       >
-        Dodaj konto
+        {t("Add account")}
       </Button>
       <Show when={props.full}>
         <Text as="p" tone="warning">
-          Osiągnięto maksymalną liczbę kont. Zwiększ limit lub usuń własne konto.
+          {t("Maximum number of accounts reached. Raise the limit or remove an account.")}
         </Text>
       </Show>
     </Card>
   );
 }
+
 export function ProviderAccounts() {
   const state = useAccounts();
   const [maximum, setMaximum] = createSignal("");
@@ -286,30 +303,36 @@ export function ProviderAccounts() {
     });
   }
   return (
-    <section class="providers-section provider-accounts" aria-label="Konta">
+    <section class="providers-section provider-accounts" aria-label={t("Accounts")}>
       <Heading as="h2" size="md">
-        Konta i pula
+        {t("Accounts and pool")}
       </Heading>
       <Text as="p" tone="muted">
-        Konta jednego dostawcy mają osobne logowanie. Strzałki zmieniają kolejność puli; Tab wybiera przycisk, Enter
-        zatwierdza.
+        {t(
+          "Accounts of one provider have their own sign-in. Arrows change pool order; Tab picks a button, Enter confirms.",
+        )}
       </Text>
       <Show when={state.error()}>
         <Text as="p" tone="danger" role="alert">
           {state.error()}
         </Text>
-        <Button onClick={() => void state.load()}>Ponów wczytanie</Button>
+        <Button onClick={() => void state.load()}>{t("Reload")}</Button>
       </Show>
       <Show
         when={state.snapshot()}
-        fallback={<Text as="p">{api() ? "Wczytywanie kont…" : "Konta niedostępne w tej wersji."}</Text>}
+        fallback={
+          <Text as="p">{api() ? t("Loading accounts…") : t("Accounts are not available in this version.")}</Text>
+        }
       >
         {(snapshot) => (
           <>
             <Card class="managed-cli-card provider-account-card">
               <Field
-                label="Maks. kont w puli"
-                description={`Obecny limit: ${snapshot().pool.maxAccountsPerProvider}. Od 1 do 10, domyślnie 3. Limit obejmuje także dodawanie kont.`}
+                label={t("Max accounts in the pool")}
+                description={t(
+                  "Current limit: {limit}. From 1 to 10, default 3. The limit also covers adding accounts.",
+                  { limit: String(snapshot().pool.maxAccountsPerProvider) },
+                )}
               >
                 <Input
                   type="number"
@@ -334,11 +357,11 @@ export function ProviderAccounts() {
                   })
                 }
               >
-                Zapisz limit
+                {t("Save limit")}
               </Button>
             </Card>
             <Switch
-              label="Return to the first account after the limit resets"
+              label={t("Return to the first account after the limit resets")}
               checked={snapshot().pool.returnAfterReset !== false}
               disabled={state.busy() || !api()}
               onChange={(returnAfterReset) =>
@@ -357,7 +380,7 @@ export function ProviderAccounts() {
                     .accounts.filter((a) => a.provider === provider)
                     .sort((a, b) => a.poolOrder - b.poolOrder);
                 return (
-                  <section class="account-provider" aria-label={`Konta ${provider}`}>
+                  <section class="account-provider" aria-label={t("Accounts for {provider}", { provider })}>
                     <Heading as="h3" size="md">
                       {provider === "codex" ? "Codex" : "Claude"}
                     </Heading>
@@ -365,7 +388,7 @@ export function ProviderAccounts() {
                       when={accounts().length}
                       fallback={
                         <Text as="p" tone="muted">
-                          Nie ma kont. Dodaj pierwsze konto tego dostawcy.
+                          {t("No accounts yet. Add the first account for this provider.")}
                         </Text>
                       }
                     >

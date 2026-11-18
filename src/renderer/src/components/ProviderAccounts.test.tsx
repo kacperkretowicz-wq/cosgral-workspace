@@ -33,8 +33,8 @@ describe("provider account", () => {
         onPool={vi.fn()}
       />
     ));
-    expect(screen.queryByRole("button", { name: "Usuń" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Wyloguj" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
   it("asks before enabling the pool each time", async () => {
     const pool = vi.fn();
@@ -49,9 +49,9 @@ describe("provider account", () => {
         onPool={pool}
       />
     ));
-    await fireEvent.click(screen.getByRole("switch", { name: "W puli" }));
+    await fireEvent.click(screen.getByRole("switch", { name: "In the pool" }));
     expect(pool).not.toHaveBeenCalled();
-    await fireEvent.click(screen.getByRole("button", { name: "Włącz do puli" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Add to pool" }));
     await waitFor(() => expect(pool).toHaveBeenCalledWith({ id: account.id, inPool: true }));
   });
 });
@@ -75,11 +75,11 @@ it("asks before deleting and offers a terminal only after login failure", async 
       onPool={vi.fn()}
     />
   ));
-  await fireEvent.click(screen.getByRole("button", { name: "Usuń" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Remove" }));
   expect(action).not.toHaveBeenCalled();
-  await fireEvent.click(screen.getByRole("button", { name: "Usuń konto i dane" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Remove account and data" }));
   expect(action).toHaveBeenCalledWith("removeAccount", account.id);
-  await fireEvent.click(screen.getByRole("button", { name: "Otwórz terminal z poleceniem…" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Open terminal with the command…" }));
   expect(action).toHaveBeenCalledWith("openLoginTerminal", account.id);
 });
 it("clears a submitted code immediately and supports cancellation", async () => {
@@ -95,10 +95,10 @@ it("clears a submitted code immediately and supports cancellation", async () => 
       onPool={vi.fn()}
     />
   ));
-  await fireEvent.input(screen.getByLabelText("Kod logowania"), { target: { value: "demo-code" } });
-  await fireEvent.click(screen.getByRole("button", { name: "Przekaż kod" }));
+  await fireEvent.input(screen.getByLabelText("Sign-in code"), { target: { value: "demo-code" } });
+  await fireEvent.click(screen.getByRole("button", { name: "Submit code" }));
   expect(action).toHaveBeenCalledWith("submitLoginCode", account.id, "demo-code");
-  await waitFor(() => expect(screen.getByLabelText("Kod logowania")).toHaveValue(""));
+  await waitFor(() => expect(screen.getByLabelText("Sign-in code")).toHaveValue(""));
 });
 it("changes order through keyboard-focusable buttons and respects pool capacity", async () => {
   const pool = vi.fn();
@@ -113,9 +113,9 @@ it("changes order through keyboard-focusable buttons and respects pool capacity"
       onPool={pool}
     />
   ));
-  await fireEvent.click(screen.getByRole("button", { name: "Przesuń Praca w górę" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Move Praca up" }));
   expect(pool).toHaveBeenCalledWith({ id: account.id, inPool: true, poolOrder: 1 });
-  expect(screen.getByRole("button", { name: "Przesuń Praca w dół" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Move Praca down" })).toBeDisabled();
 });
 it("loads account snapshots and shows full capacity", async () => {
   vi.stubGlobal("openbot", {
@@ -130,7 +130,7 @@ it("loads account snapshots and shows full capacity", async () => {
   });
   render(() => <ProviderAccounts />);
   await screen.findByRole("heading", { name: "Praca" });
-  expect(screen.getByText(/Osiągnięto maksymalną liczbę/)).toBeInTheDocument();
+  expect(screen.getByText(/Maximum number of accounts reached/)).toBeInTheDocument();
 });
 
 it("preserves a code draft and focus across snapshots, then clears it on completion", async () => {
@@ -150,7 +150,7 @@ it("preserves a code draft and focus across snapshots, then clears it on complet
     },
   });
   render(() => <ProviderAccounts />);
-  const input = await screen.findByLabelText("Kod logowania");
+  const input = await screen.findByLabelText("Sign-in code");
   input.focus();
   await fireEvent.input(input, { target: { value: "demo-draft" } });
   emit({
@@ -158,7 +158,7 @@ it("preserves a code draft and focus across snapshots, then clears it on complet
     ...snapshot,
     accounts: snapshot.accounts.map((a) => ({ ...a, checkedAt: "2026-11-16T00:00:00Z" })),
   });
-  await waitFor(() => expect(screen.getByLabelText("Kod logowania")).toBe(input));
+  await waitFor(() => expect(screen.getByLabelText("Sign-in code")).toBe(input));
   expect(input).toHaveValue("demo-draft");
   expect(input).toHaveFocus();
   emit({
@@ -166,7 +166,7 @@ it("preserves a code draft and focus across snapshots, then clears it on complet
     ...snapshot,
     accounts: [{ ...account, loggedIn: true, login: { ...account.login, phase: "success" } }],
   });
-  await waitFor(() => expect(screen.queryByLabelText("Kod logowania")).toBeNull());
+  await waitFor(() => expect(screen.queryByLabelText("Sign-in code")).toBeNull());
 });
 
 function returnSetting(initial?: boolean) {
@@ -186,7 +186,7 @@ it("defaults missing returnAfterReset to on and saves false with the current poo
   const { set } = returnSetting();
   const control = await screen.findByRole("switch", { name: "Return to the first account after the limit resets" });
   expect(control).toHaveAttribute("aria-checked", "true");
-  await fireEvent.input(screen.getByLabelText("Maks. kont w puli"), { target: { value: "7" } });
+  await fireEvent.input(screen.getByLabelText("Max accounts in the pool"), { target: { value: "7" } });
   await fireEvent.click(control);
   await waitFor(() => expect(set).toHaveBeenCalledWith({ maxAccountsPerProvider: 3, returnAfterReset: false }));
   await waitFor(() => expect(control).toHaveAttribute("aria-checked", "false"));
@@ -201,8 +201,8 @@ it("can enable returnAfterReset while keeping the current pool size", async () =
 it("saving only a new pool size preserves the return setting", async () => {
   const { set, pool } = returnSetting(false);
   await screen.findByRole("switch", { name: "Return to the first account after the limit resets" });
-  await fireEvent.input(screen.getByLabelText("Maks. kont w puli"), { target: { value: "4" } });
-  await fireEvent.click(screen.getByRole("button", { name: "Zapisz limit" }));
+  await fireEvent.input(screen.getByLabelText("Max accounts in the pool"), { target: { value: "4" } });
+  await fireEvent.click(screen.getByRole("button", { name: "Save limit" }));
   await waitFor(() => expect(set).toHaveBeenCalledWith({ maxAccountsPerProvider: 4 }));
   expect(pool().returnAfterReset).toBe(false);
 });
