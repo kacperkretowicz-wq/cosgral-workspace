@@ -16,6 +16,7 @@ import { MailboxStore } from "./mailbox-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 const CAN: IsolationAvailability = {
   checkedAt: "2026-11-16T12:00:00.000Z",
@@ -102,7 +103,7 @@ function answerOf(cli: ThreadCli, id: string): DynamicRecord | undefined {
 }
 
 describe.sequential("isolation on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("says what is in force: a Codex agent shares one program, so it is not called isolated (W8-09)", async () => {
     const { service } = await open();
@@ -190,7 +191,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

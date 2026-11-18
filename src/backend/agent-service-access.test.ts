@@ -16,6 +16,7 @@ import { SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -118,7 +119,7 @@ function recordOf(params: unknown, key: string): DynamicRecord | undefined {
 }
 
 describe.sequential("access levels on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("starts an agent in its working folder only: the CLI gets a narrow sandbox (W8-01)", async () => {
     const { service, cli, bot } = await open();
@@ -306,7 +307,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

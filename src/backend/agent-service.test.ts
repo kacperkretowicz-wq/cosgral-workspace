@@ -29,6 +29,7 @@ import { channelFixture, channelTaskFixture } from "./testing/channel-fixtures";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { FakeComputerDriver, fakeWindow } from "./testing/fake-computer-driver";
+import { suiteTimeout } from "./testing/timeouts";
 import { WorkflowManager } from "./workflow-manager";
 import { WorkflowStore } from "./workflow-store";
 
@@ -72,7 +73,7 @@ afterEach(async () => {
 });
 
 // COSGRAL: on Windows every fake CLI call starts cmd.exe and Node (0.3–1 s each), so tests near the 5 s default flake.
-describe.sequential("AgentService", { timeout: process.platform === "win32" ? 20_000 : 5_000 }, () => {
+describe.sequential("AgentService", { timeout: suiteTimeout(20_000, 5_000) }, () => {
   it("runs a channel turn on a separate thread without writing the agent's direct conversation", async () => {
     const { store, mailbox } = stores();
     service = new AgentService(
@@ -3243,7 +3244,7 @@ async function protocolMessages(): Promise<DynamicRecord[]> {
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
   // COSGRAL: Windows starts each fake CLI process much slower than macOS.
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 3_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 3_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

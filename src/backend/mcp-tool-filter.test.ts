@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { McpManager } from "./mcp-manager";
 import { McpStore, type SecretBox } from "./mcp-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
+import { suiteTimeout } from "./testing/timeouts";
 
 const ECHO_SERVER = join(__dirname, "testing", "mcp-echo-server.mjs");
 const roots: string[] = [];
@@ -43,7 +44,7 @@ async function start(filter?: (server: string, tool: string) => boolean) {
   return manager;
 }
 
-describe("MCP tool allowlist (W10-KK1)", { timeout: 30_000 }, () => {
+describe("MCP tool allowlist (W10-KK1)", { timeout: suiteTimeout(30_000, 30_000) }, () => {
   it("without a filter every tool is shown and callable, as before", async () => {
     const manager = await start();
     expect(manager.toolsFor("chief")[0]?.tools.map((tool) => tool.name)).toEqual(["echo", "env_check"]);

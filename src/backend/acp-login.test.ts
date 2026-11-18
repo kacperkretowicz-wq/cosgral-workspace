@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import type { AcpAgentConfig, AcpLoginState, AgentEvent } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { AcpLogin, readAcpLoginOutput } from "./acp-login";
+import { suiteTimeout } from "./testing/timeouts";
 
 const STUB = fileURLToPath(new URL("./testing/acp-login-stub.mjs", import.meta.url));
 
@@ -67,7 +68,7 @@ describe("readAcpLoginOutput", () => {
   });
 });
 
-describe("AcpLogin", { timeout: process.platform === "win32" ? 30_000 : 10_000 }, () => {
+describe("AcpLogin", { timeout: suiteTimeout(30_000, 10_000) }, () => {
   it("lists every configured agent as idle, signed-in state not known, before anything runs", () => {
     const { login } = setup([agent("gemini", "link-code"), agent("antigravity", "terminal")]);
     expect(login.list().map((state) => [state.agentId, state.phase, state.signedIn, state.methods.length])).toEqual([

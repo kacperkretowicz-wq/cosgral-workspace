@@ -14,6 +14,7 @@ import { SqlitePlanStore } from "./plan-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { notification, ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -71,7 +72,7 @@ function planEvents(events: AgentEvent[]): AgentPlan[] {
 }
 
 describe.sequential("the plan card on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("shows a plan in Needs you, waits, and answers the agent after Approve; then steps move to done", async () => {
     const { service, cli, events } = await fixture();
@@ -297,7 +298,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

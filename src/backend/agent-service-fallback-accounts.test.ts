@@ -33,6 +33,7 @@ import type { AppServerNotification, RequestId, ResponseDecoder, RpcError } from
 import { ProviderRegistry } from "./provider-registry";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
+import { suiteTimeout } from "./testing/timeouts";
 import type { SecretBox } from "./vault-store";
 
 const SYSTEM = "system-codex";
@@ -328,7 +329,7 @@ async function fixture(options: Options = {}) {
 }
 
 describe.sequential("accounts first, then the fallback models (K1 + BE4 + K2)", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("(a) a limit before any action moves the turn to the next account, not to another model", async () => {
     const f = await fixture({ scripts: { [SYSTEM]: [{ limit: true }] } });
@@ -569,7 +570,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

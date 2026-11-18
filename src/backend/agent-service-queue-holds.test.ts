@@ -19,6 +19,7 @@ import { MailboxStore } from "./mailbox-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -74,7 +75,7 @@ function queueFor(events: AgentEvent[], botId: string): QueueSnapshot | undefine
 }
 
 describe.sequential("queue holds on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("W12 BE-N: a second agent waits with server-busy while one turn already runs", async () => {
     const { service, cli, events } = await open();
@@ -104,7 +105,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 12_000 : 5_000);
+  const deadline = Date.now() + suiteTimeout(12_000, 5_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
