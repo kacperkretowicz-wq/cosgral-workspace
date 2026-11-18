@@ -195,7 +195,7 @@ describe("this-computer-only IPC (P11 / C13)", () => {
     expect(channelsOf("usage-report:").length).toBe(1);
     expect(channelsOf("schedule:").length).toBe(2);
     // COSGRAL W12 (BE-J): the Tasks view (the list of all channels, one task).
-    expect(channelsOf("tasks-view:").length).toBe(2);
+    expect(channelsOf("tasks-view:").length).toBe(3);
     // COSGRAL W12 (BE-R): routines of a channel.
     expect(channelsOf("channel-routines:").length).toBe(6);
     // COSGRAL W12 (BE-K): delete a thread with undo.

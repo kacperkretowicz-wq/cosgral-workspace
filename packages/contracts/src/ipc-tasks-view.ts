@@ -61,6 +61,8 @@ export interface ParsedTasksViewQuery {
   query?: string;
   limit: number;
   offset: number;
+  /** Only tasks that are not steps of another task (the board; a step is counted in its parent). Default false. */
+  topLevelOnly?: boolean;
 }
 
 export interface TasksViewItem {
@@ -175,6 +177,8 @@ export interface TaskDetail {
 /** `window.openbot.tasksView` (this computer only). */
 export interface TasksViewDesktopApi {
   list: (query?: TasksViewQuery) => Promise<TasksViewPage>;
+  /** COSGRAL W12 (BE-AA): the board: five fixed columns with the real totals and the newest tasks of each. */
+  board: (query?: TasksBoardQuery) => Promise<TasksBoard>;
   detail: (input: TaskDetailInput) => Promise<TaskDetail>;
 }
 
@@ -307,6 +311,7 @@ export function buildTasksViewPage(query: ParsedTasksViewQuery, source: TasksVie
     if (query.channelId !== undefined && channel.id !== query.channelId) continue;
     const all = source.tasks(channel.id);
     for (const task of all) {
+      if (query.topLevelOnly === true && task.parentTaskId !== null) continue;
       if (query.ownerBotId !== undefined && task.ownerBotId !== query.ownerBotId) continue;
       const owner = source.agentName(task.ownerBotId);
       if (query.query !== undefined) {
@@ -340,6 +345,125 @@ export function buildTasksViewPage(query: ParsedTasksViewQuery, source: TasksVie
   });
   const end = query.offset + items.length;
   return { items, total: matched.length, offset: query.offset, nextOffset: end < matched.length ? end : null, counts };
+}
+
+// -- the board (COSGRAL W12 BE-AA) ---------------------------------------------------------------------------------------------------
+// The Tasks screen shows the work as columns. Before, the window grouped one page of the list (50 tasks) by itself: the columns counted only
+// that page and had no place for failed and stopped tasks. Now the program answers with the columns: the states of each are fixed here, each
+// column has its real total and its own newest tasks, and a step of another task is not a card of its own (it is counted in its parent).
+
+export const TASKS_BOARD_COLUMNS = [
+  /** The answer is ready or the agent asks the person: the person's turn. */
+  { id: "needs-you", states: ["waiting", "done"] },
+  { id: "working", states: ["running", "queued"] },
+  { id: "paused", states: ["paused"] },
+  { id: "failed", states: ["failed"] },
+  { id: "cancelled", states: ["cancelled"] },
+] as const satisfies ReadonlyArray<{ id: string; states: readonly ChannelTaskState[] }>;
+export type TasksBoardColumnId = (typeof TASKS_BOARD_COLUMNS)[number]["id"];
+
+export const TASKS_BOARD_LIMITS = { defaultPerColumn: 20, maxPerColumn: 50 } as const;
+
+export interface TasksBoardQuery {
+  /** Default "active" (not archived). */
+  scope?: TasksViewScope;
+  channelId?: string;
+  ownerBotId?: string;
+  query?: string;
+  /** Tasks shown in each column, the newest change first. Default 20, at most 50. */
+  perColumn?: number;
+}
+
+export interface ParsedTasksBoardQuery {
+  scope: TasksViewScope;
+  channelId?: string;
+  ownerBotId?: string;
+  query?: string;
+  perColumn: number;
+}
+
+export interface TasksBoardColumn {
+  id: TasksBoardColumnId;
+  states: ChannelTaskState[];
+  /** All tasks of this column that match, not only the ones in `items`. */
+  total: number;
+  items: TasksViewItem[];
+  /** True when `total` is more than `items`: the rest is in the list (`list` with the states of the column). */
+  hasMore: boolean;
+}
+
+export interface TasksBoard {
+  columns: TasksBoardColumn[];
+  /** Of the whole view (top-level tasks, after the channel, agent and text filters). */
+  counts: TasksViewCounts;
+}
+
+export function parseTasksBoardQuery(input: unknown): ParsedTasksBoardQuery {
+  const raw = input === undefined ? {} : input;
+  if (!isDynamicRecord(raw)) throw new Error("The task query is a set of fields.");
+  for (const key of ["states", "limit", "offset"]) {
+    if (raw[key] !== undefined) throw new Error("The board has fixed columns: it takes no states, limit or offset.");
+  }
+  const { perColumn, ...rest } = raw;
+  const base = parseTasksViewQuery(rest);
+  return {
+    scope: base.scope,
+    ...(base.channelId ? { channelId: base.channelId } : {}),
+    ...(base.ownerBotId ? { ownerBotId: base.ownerBotId } : {}),
+    ...(base.query ? { query: base.query } : {}),
+    perColumn:
+      perColumn === undefined
+        ? TASKS_BOARD_LIMITS.defaultPerColumn
+        : whole(perColumn, 1, TASKS_BOARD_LIMITS.maxPerColumn, "The column size"),
+  };
+}
+
+export function buildTasksBoard(query: ParsedTasksBoardQuery, source: TasksViewSource): TasksBoard {
+  let counts: TasksViewCounts | null = null;
+  const columns = TASKS_BOARD_COLUMNS.map((column): TasksBoardColumn => {
+    const page = buildTasksViewPage(
+      {
+        scope: query.scope,
+        states: [...column.states],
+        ...(query.channelId ? { channelId: query.channelId } : {}),
+        ...(query.ownerBotId ? { ownerBotId: query.ownerBotId } : {}),
+        ...(query.query ? { query: query.query } : {}),
+        limit: query.perColumn,
+        offset: 0,
+        topLevelOnly: true,
+      },
+      source,
+    );
+    counts ??= page.counts;
+    return {
+      id: column.id,
+      states: [...column.states],
+      total: page.total,
+      items: page.items,
+      hasMore: page.nextOffset !== null,
+    };
+  });
+  return { columns, counts: counts ?? emptyCounts() };
+}
+
+export function isTasksBoard(value: unknown): value is TasksBoard {
+  if (!isDynamicRecord(value) || !Array.isArray(value.columns) || !isCounts(value.counts)) return false;
+  const columns = value.columns;
+  if (columns.length !== TASKS_BOARD_COLUMNS.length) return false;
+  return TASKS_BOARD_COLUMNS.every((expected, index) => {
+    const column = columns[index];
+    if (!isDynamicRecord(column) || column.id !== expected.id) return false;
+    const states = column.states;
+    return (
+      Array.isArray(states) &&
+      states.length === expected.states.length &&
+      expected.states.every((state, at) => states[at] === state) &&
+      isNumber(column.total) &&
+      Array.isArray(column.items) &&
+      column.items.every(isItem) &&
+      isBoolean(column.hasMore)
+    );
+  });
 }
 
 export function buildTaskDetail(taskId: string, source: TasksViewSource): TaskDetail {

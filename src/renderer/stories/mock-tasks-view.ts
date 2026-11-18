@@ -4,11 +4,13 @@
 
 import {
   buildTaskDetail,
+  buildTasksBoard,
   buildTasksViewPage,
   type ChannelAssignment,
   type ChannelMessage,
   type ChannelTask,
   parseTaskDetailInput,
+  parseTasksBoardQuery,
   parseTasksViewQuery,
   type TasksViewDesktopApi,
   type TasksViewSource,
@@ -158,6 +160,7 @@ export function createMockTasksView(options: MockTasksViewOptions = sample()): R
   };
   return {
     list: async (query) => structuredClone(buildTasksViewPage(parseTasksViewQuery(query), source())),
+    board: async (query) => structuredClone(buildTasksBoard(parseTasksBoardQuery(query), source())),
     detail: async (input) => structuredClone(buildTaskDetail(parseTaskDetailInput(input).taskId, source())),
   };
 }

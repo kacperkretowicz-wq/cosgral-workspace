@@ -17,4 +17,5 @@ export function registerTasksViewIpc(service: () => TasksViewService | null): vo
     });
   handle(IPC_CHANNELS.tasksViewList, (engine, payload) => engine.list(payload));
   handle(IPC_CHANNELS.tasksViewDetail, (engine, payload) => engine.detail(payload));
+  handle(IPC_CHANNELS.tasksViewBoard, (engine, payload) => engine.board(payload));
 }

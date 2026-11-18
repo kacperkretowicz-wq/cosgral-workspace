@@ -2,7 +2,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CHANNEL_LIMITS, isTaskDetail, isTasksViewPage } from "@openbot/contracts/ipc";
+import { CHANNEL_LIMITS, isTaskDetail, isTasksBoard, isTasksViewPage } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { ChannelStore } from "./channel-store";
 import { TasksViewService } from "./tasks-view";
@@ -62,6 +62,47 @@ describe("tasks view over the channel store (W12 BE-J)", () => {
     expect(active.counts).toMatchObject({ active: 1, archived: 1 });
     expect(view.list({ scope: "archived" }).items[0]).toMatchObject({ channelName: "beta", ownerName: "Bob" });
     expect(view.list({ scope: "all", query: "bob" }).total).toBe(1);
+  });
+
+  it("answers the board over the real store: a task in each column, the stopped and failed ones too, steps only in their parent (BE-AA)", async () => {
+    const { store, view, make } = await setup();
+    const channel = make("alpha");
+    const submit = (text: string) => store.submit(channel.id, text);
+    const answered = submit("Answered");
+    store.recordResult(answered.task.id, "a", "The answer.");
+    const running = submit("Running");
+    store.markRunning(running.task.id);
+    const stopped = submit("Stopped");
+    store.act({ taskId: stopped.task.id, action: "stop" });
+    const failed = submit("Failed");
+    store.markRunning(failed.task.id);
+    store.recordResult(failed.task.id, "a", "It broke.", "failed");
+    const queued = submit("Queued");
+    const step = store.createTask({
+      channelId: channel.id,
+      requestMessageId: queued.message.id,
+      title: "A step",
+      parentTaskId: queued.task.id,
+    });
+
+    const board = view.board();
+
+    expect(isTasksBoard(board)).toBe(true);
+    const totals = Object.fromEntries(board.columns.map((column) => [column.id, column.total]));
+    expect(totals).toEqual({ "needs-you": 1, working: 2, paused: 0, failed: 1, cancelled: 1 });
+    expect(board.columns.find((column) => column.id === "failed")?.items[0]?.task.id).toBe(failed.task.id);
+    expect(board.columns.find((column) => column.id === "cancelled")?.items[0]?.task.id).toBe(stopped.task.id);
+    // The step is not a card; its parent counts it.
+    const parent = board.columns
+      .find((column) => column.id === "working")
+      ?.items.find((item) => item.task.id === queued.task.id);
+    expect(parent).toMatchObject({ stepCount: 1, stepsDone: 0 });
+    expect(board.columns.flatMap((column) => column.items).some((item) => item.task.id === step.id)).toBe(false);
+    expect(board.counts.byState.done).toBe(1);
+
+    // A bad request is refused before anything is read, like the list.
+    expect(() => view.board({ perColumn: 0 })).toThrow("The column size is a whole number from 1 to 50.");
+    expect(() => view.board({ states: ["done"] })).toThrow("The board has fixed columns");
   });
 
   it("shows one task with its request, its latest and replaced results, its steps and a log in time order", async () => {

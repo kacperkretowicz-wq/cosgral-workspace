@@ -4,14 +4,17 @@
 
 import {
   buildTaskDetail,
+  buildTasksBoard,
   buildTasksViewPage,
   CHANNEL_LIMITS,
   type ChannelAssignment,
   type ChannelMessage,
   type ChannelTask,
   parseTaskDetailInput,
+  parseTasksBoardQuery,
   parseTasksViewQuery,
   type TaskDetail,
+  type TasksBoard,
   type TasksViewPage,
   type TasksViewSource,
   type WorkspaceChannel,
@@ -42,6 +45,10 @@ export class TasksViewService {
 
   list(raw?: unknown): TasksViewPage {
     return buildTasksViewPage(parseTasksViewQuery(raw), this.#source());
+  }
+
+  board(raw?: unknown): TasksBoard {
+    return buildTasksBoard(parseTasksBoardQuery(raw), this.#source());
   }
 
   detail(raw: unknown): TaskDetail {
