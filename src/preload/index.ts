@@ -115,6 +115,7 @@ import { createServerSettingsApi } from "./server-settings-api";
 import { createSpacesApi } from "./spaces-api";
 import { createSubagentsApi } from "./subagents-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
+import { createChannelRoutinesApi } from "./channel-routines-api";
 import { createTasksViewApi } from "./tasks-view-api";
 import { createThreadUndoApi } from "./thread-undo-api";
 import { createThreadsApi } from "./threads-api";
@@ -868,6 +869,7 @@ const openbotApi: OpenBotDesktopApi = {
   libraryView: createLibraryViewApi(invokeAgent),
   usageReport: createUsageReportApi(invokeAgent),
   tasksView: createTasksViewApi(invokeAgent),
+  channelRoutines: createChannelRoutinesApi(invokeAgent),
   schedule: createScheduleApi(invokeAgent),
   threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),

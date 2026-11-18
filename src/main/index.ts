@@ -83,6 +83,7 @@ import { ServerSettingsService } from "../backend/server-settings";
 import { SidebarStore } from "../backend/sidebar-store";
 import { SpaceStore } from "../backend/space-store";
 import { clearLogs, measureUserData } from "../backend/storage-report";
+import { ChannelRoutineService, createChannelRoutineService } from "../backend/channel-routines";
 import { TasksViewService } from "../backend/tasks-view";
 import { TeamChatStore } from "../backend/team-chat-store";
 import { ThreadTabsService } from "../backend/thread-tabs";
@@ -252,6 +253,7 @@ import { enforceSingleInstance } from "./single-instance";
 import { registerSpacesIpc } from "./spaces-ipc";
 import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
+import { registerChannelRoutinesIpc } from "./channel-routines-ipc";
 import { registerTasksViewIpc } from "./tasks-view-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadUndoIpc } from "./thread-undo-ipc";
@@ -381,6 +383,7 @@ let libraryViewService: LibraryViewService | null = null;
 let usageReportService: UsageReportService | null = null;
 let scheduleViewService: ScheduleViewService | null = null;
 let tasksViewService: TasksViewService | null = null;
+let channelRoutinesService: ChannelRoutineService | null = null;
 let isQuitting = false;
 let shutdownStarted = false;
 let pendingInviteUrl: string | null = null;
@@ -1003,6 +1006,7 @@ function registerIpcHandlers(
     schedule: () => scheduleViewService,
   });
   registerTasksViewIpc(() => tasksViewService);
+  registerChannelRoutinesIpc(() => channelRoutinesService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1955,6 +1959,14 @@ if (!hasSingleInstanceLock) {
             machine: () => machineLoad.read(),
           });
           tasksViewService = new TasksViewService({ channels: channelStore, agentName });
+          // COSGRAL W12 (BE-R): routines of a channel: at the planned time the prompt goes to the channel as a message of the person.
+          channelRoutinesService = createChannelRoutineService({
+            database: store.database,
+            channels: channelStore,
+            engine,
+            emit: (event) => forwardAgentEvent("local", event),
+          });
+          channelRoutinesService.start();
           scheduleViewService = new ScheduleViewService({
             routines: () => routineStore.list(),
             runs: (routineId) => routineStore.listRuns(routineId),

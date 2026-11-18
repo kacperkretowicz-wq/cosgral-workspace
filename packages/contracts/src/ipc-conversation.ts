@@ -55,6 +55,7 @@ import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { isPluginCatalogChanged, type PluginCatalogChanged } from "./ipc-plugin-catalog";
 import { isProviderCatalogChanged, type ProviderCatalogChanged } from "./ipc-provider-catalog";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
+import { type ChannelRoutinesChanged, isChannelRoutinesChanged } from "./ipc-channel-routines";
 import type { QueueHoldKind } from "./ipc-queue-holds";
 import {
   isRemoteDesktopClientState,
@@ -753,6 +754,8 @@ export type AgentEvent =
   | ({ type: "thread-activity" } & ThreadActivity)
   /** COSGRAL W12 (BE-K): the deleted threads of an agent that can still be brought back changed. */
   | ({ type: "thread-deletes-changed" } & ThreadDeletesChanged)
+  /** COSGRAL W12 (BE-R): the routines of a channel changed. */
+  | ({ type: "channel-routines-changed" } & ChannelRoutinesChanged)
   /** COSGRAL W6-BE3: a plan was proposed, decided, advanced, stopped or finished (replace the plan with this requestId). */
   | ({ type: "plan-changed" } & PlanChanged)
   /** COSGRAL W6-BE3: the pins of one thread changed. */
@@ -952,6 +955,8 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isThreadActivity(value);
     case "thread-deletes-changed":
       return isThreadDeletesChanged(value);
+    case "channel-routines-changed":
+      return isChannelRoutinesChanged(value);
     case "plan-changed":
       return isPlanChanged(value);
     case "subagent-changed":

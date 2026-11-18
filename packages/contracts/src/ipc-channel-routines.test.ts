@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { CHANNEL_ROUTINE_LIMITS, channelRoutineMessage, channelRoutineProblem } from "./ipc-channel-routines";
+import {
+  CHANNEL_ROUTINE_LIMITS,
+  channelRoutineChannelProblem,
+  channelRoutineMessage,
+  channelRoutineProblem,
+  isChannelRoutine,
+  isChannelRoutineRun,
+  isChannelRoutinesChanged,
+  parseChannelRoutineIdInput,
+  parseCreateChannelRoutineInput,
+  parseListChannelRoutinesInput,
+  parseUpdateChannelRoutineInput,
+  updateChannelRoutineProblem,
+} from "./ipc-channel-routines";
 
 const open = { archived: false, leadBotId: "chief" };
 const input = {
@@ -68,5 +81,85 @@ describe("rules of a routine of a channel (W12 BE-Q)", () => {
     expect(channelRoutineMessage(" Weekly review ", " Summarise the week. ")).toBe(
       "Scheduled: Weekly review\n\nSummarise the week.",
     );
+  });
+});
+
+const routine = {
+  id: "r-1",
+  channelId: "c-1",
+  name: "Weekly review",
+  prompt: "Summarise the week.",
+  schedule: { type: "interval", everyMinutes: 30 },
+  timezone: "Europe/Warsaw",
+  paused: false,
+  nextRunAt: "2026-11-18T10:30:00.000Z",
+  lastRunAt: null,
+  createdAt: "2026-11-18T10:00:00.000Z",
+  updatedAt: "2026-11-18T10:00:00.000Z",
+};
+const run = {
+  id: "run-1",
+  routineId: "r-1",
+  at: "2026-11-18T10:30:00.000Z",
+  cause: "schedule",
+  outcome: "started",
+  reason: null,
+  messageId: "m-1",
+  taskId: "t-1",
+  taskState: "running",
+};
+
+describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
+  it("tells the problem of a channel on its own", () => {
+    expect(channelRoutineChannelProblem(open)).toBeNull();
+    expect(channelRoutineChannelProblem(null)).toBe("This channel no longer exists.");
+    expect(channelRoutineChannelProblem({ archived: true, leadBotId: "chief" })).toBe("This channel is archived.");
+    expect(channelRoutineChannelProblem({ archived: false, leadBotId: null })).toContain("no lead");
+  });
+
+  it("checks a change field by field and only the fields that are given", () => {
+    expect(updateChannelRoutineProblem({ routineId: "r-1" })).toBeNull();
+    expect(updateChannelRoutineProblem({ routineId: "r-1", paused: true, name: "New" })).toBeNull();
+    expect(updateChannelRoutineProblem({ routineId: "r-1", name: " " })).toBe("Give the routine a name.");
+    expect(updateChannelRoutineProblem({ routineId: "r-1", schedule: { type: "daily", time: "99:00" } })).toContain("HH:MM");
+    expect(updateChannelRoutineProblem({ routineId: "r-1", paused: "yes" })).toBe("Paused is on or off.");
+    expect(updateChannelRoutineProblem({ name: "x" })).toBe("Choose a routine.");
+  });
+
+  it("reads a request: trims the text, keeps only what is valid, and refuses what the rules refuse", () => {
+    expect(parseCreateChannelRoutineInput({ ...input, name: "  Weekly review ", timezone: "Europe/Warsaw", paused: true })).toEqual({
+      channelId: "c-1",
+      name: "Weekly review",
+      prompt: "Summarise the week.",
+      schedule: { type: "daily", time: "09:30", weekdays: [1] },
+      timezone: "Europe/Warsaw",
+      paused: true,
+    });
+    expect(() => parseCreateChannelRoutineInput({ ...input, channelId: "" })).toThrow("Choose a channel.");
+    expect(() => parseCreateChannelRoutineInput({ ...input, prompt: "" })).toThrow("what the lead should do");
+    expect(parseUpdateChannelRoutineInput({ routineId: "r-1", name: " A ", paused: false })).toEqual({
+      routineId: "r-1",
+      name: "A",
+      paused: false,
+    });
+    expect(() => parseUpdateChannelRoutineInput({ routineId: "r-1", name: "" })).toThrow("name");
+    expect(parseChannelRoutineIdInput({ routineId: "r-1" })).toEqual({ routineId: "r-1" });
+    expect(() => parseChannelRoutineIdInput({})).toThrow("Choose a routine.");
+    expect(parseListChannelRoutinesInput(undefined)).toEqual({});
+    expect(parseListChannelRoutinesInput({ channelId: "c-1" })).toEqual({ channelId: "c-1" });
+    expect(() => parseListChannelRoutinesInput({ channelId: 5 })).toThrow("Choose a channel.");
+  });
+
+  it("checks what the program answers and what it announces", () => {
+    expect(isChannelRoutine(routine)).toBe(true);
+    expect(isChannelRoutine({ ...routine, nextRunAt: 5 })).toBe(false);
+    expect(isChannelRoutine({ ...routine, schedule: { type: "weekly" } })).toBe(false);
+    expect(isChannelRoutineRun(run)).toBe(true);
+    expect(isChannelRoutineRun({ ...run, outcome: "failed" })).toBe(false);
+    expect(isChannelRoutineRun({ ...run, taskState: "sleeping" })).toBe(false);
+    expect(isChannelRoutineRun({ ...run, cause: "webhook" })).toBe(false);
+    expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [routine] })).toBe(true);
+    expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [{ id: 1 }] })).toBe(false);
+    expect(isChannelRoutinesChanged({ type: "threads-changed", channelId: "c-1", routines: [] })).toBe(false);
   });
 });
