@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, untrack } from "solid-js";
+import { createEffect, createSignal, onCleanup, onSettled, untrack } from "solid-js";
 import { t } from "../i18n";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BudgetSettings } from "./BudgetSettings";
@@ -64,6 +64,8 @@ export function SettingsModal(props: SettingsModalProps) {
   const [closing, setClosing] = createSignal(false);
   const [canScrollUp, setCanScrollUp] = createSignal(false);
   const [canScrollDown, setCanScrollDown] = createSignal(false);
+  const [launchAtLogin, setLaunchAtLogin] = createSignal(false);
+  const [launchBusy, setLaunchBusy] = createSignal(false);
   let closeTimer: number | undefined;
   let restoreTarget: HTMLElement | null = null;
   let restoreFrame: number | undefined;
@@ -130,6 +132,29 @@ export function SettingsModal(props: SettingsModalProps) {
     scrollResizeObserver?.disconnect();
     if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
   });
+
+  onSettled(() => {
+    void window.openbot.appSettings
+      ?.get()
+      .then((settings) => setLaunchAtLogin(settings.behavior.launchAtLogin))
+      .catch(() => {
+        /* Keep the default off until the person can try again. */
+      });
+  });
+
+  async function saveLaunchAtLogin(enabled: boolean): Promise<void> {
+    if (launchBusy()) return;
+    setLaunchBusy(true);
+    setLaunchAtLogin(enabled);
+    try {
+      const next = await window.openbot.appSettings?.update({ behavior: { launchAtLogin: enabled } });
+      if (next) setLaunchAtLogin(next.behavior.launchAtLogin);
+    } catch {
+      setLaunchAtLogin(!enabled);
+    } finally {
+      setLaunchBusy(false);
+    }
+  }
 
   function requestOpenChange(open: boolean): void {
     if (!open && closing()) return;
@@ -223,7 +248,9 @@ export function SettingsModal(props: SettingsModalProps) {
                         </Heading>
                         <Card class="settings-modal-card">
                           <Switch
-                            defaultChecked
+                            checked={launchAtLogin()}
+                            disabled={launchBusy()}
+                            onChange={(checked) => void saveLaunchAtLogin(checked)}
                             label={t("Launch COSGRAL Workspace at login")}
                             description={t("Open the app when you sign in to this computer.")}
                           />

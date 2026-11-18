@@ -62,8 +62,12 @@ describe("agent settings IPC input parsing", () => {
     expect(parseUpdateAppSettings({ appearance: { uiScale: 110, font: "system", unreadFirst: true } })).toEqual({
       appearance: { uiScale: 110, font: "system", unreadFirst: true },
     });
+    expect(parseUpdateAppSettings({ behavior: { launchAtLogin: true } })).toEqual({
+      behavior: { launchAtLogin: true },
+    });
     expect(() => parseUpdateAppSettings({ appearance: { uiScale: 111 } })).toThrow(/uiScale is one of/);
     expect(() => parseUpdateAppSettings({ appearance: { accent: "red" } })).toThrow(/Unknown appearance setting/);
+    expect(() => parseUpdateAppSettings({ behavior: { launchAtLogin: "yes" } })).toThrow(/on or off/);
     expect(
       parseCompleteOnboarding({
         language: "en",

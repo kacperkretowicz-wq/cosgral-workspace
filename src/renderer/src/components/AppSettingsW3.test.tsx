@@ -23,6 +23,7 @@ function settings(): AppSettings {
       agentSteps: "show",
       unreadFirst: false,
     },
+    behavior: { launchAtLogin: false },
   };
 }
 

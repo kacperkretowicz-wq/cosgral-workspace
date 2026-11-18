@@ -272,6 +272,17 @@ describe("AgentSettingsService", () => {
     expect(reopened.service.appSettings().appearance).toEqual(second.appearance);
   });
 
+  it("keeps launch-at-login (KAPI): default off, change survives a restart", async () => {
+    const { dir, database, service, events } = await open();
+    expect(service.appSettings().behavior).toEqual({ launchAtLogin: false });
+    const changed = await service.updateAppSettings({ behavior: { launchAtLogin: true } });
+    expect(changed.behavior).toEqual({ launchAtLogin: true });
+    expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
+    database.close();
+    const reopened = await open(dir);
+    expect(reopened.service.appSettings().behavior).toEqual({ launchAtLogin: true });
+  });
+
   it("refuses a look value outside its list, an unknown field, and changes nothing", async () => {
     const { service, events } = await open();
     await service.updateAppSettings({ appearance: { font: "mono" } });

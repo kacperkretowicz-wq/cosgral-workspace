@@ -20,6 +20,7 @@ import {
   NOTIFICATION_EVENTS,
   normalizeAppTheme,
   parseAppearancePatch,
+  parseBehaviorPatch,
   type SaveAgentTemplateInput,
   type UpdateAgentSettingsInput,
   type UpdateAppSettingsInput,
@@ -121,7 +122,14 @@ export function parseAgentTemplateId(value: unknown): AgentTemplateIdInput {
 }
 
 export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
-  const input = record(value, "app settings", ["theme", "language", "notifications", "navigation", "appearance"]);
+  const input = record(value, "app settings", [
+    "theme",
+    "language",
+    "notifications",
+    "navigation",
+    "appearance",
+    "behavior",
+  ]);
   const result: UpdateAppSettingsInput = {};
   if (input.theme !== undefined) result.theme = normalizeAppTheme(input.theme);
   if (input.language !== undefined) {
@@ -158,6 +166,7 @@ export function parseUpdateAppSettings(value: unknown): UpdateAppSettingsInput {
     result.navigation = { pinnedPageIds: [...navigation.pinnedPageIds] };
   }
   if (input.appearance !== undefined) result.appearance = parseAppearancePatch(input.appearance);
+  if (input.behavior !== undefined) result.behavior = parseBehaviorPatch(input.behavior);
   return result;
 }
 

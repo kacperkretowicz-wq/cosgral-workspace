@@ -39,6 +39,7 @@ async function setup(options: { failAgent?: boolean } = {}) {
       agentSteps: "show",
       unreadFirst: false,
     },
+    behavior: { launchAtLogin: false },
   };
   const steps: string[] = [];
   const created: CreateAgentInput[] = [];

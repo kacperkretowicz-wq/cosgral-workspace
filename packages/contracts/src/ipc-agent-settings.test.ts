@@ -7,18 +7,22 @@ import {
   APP_SEND_SHORTCUTS,
   APP_UI_SCALES,
   DEFAULT_APP_APPEARANCE,
+  DEFAULT_APP_BEHAVIOR,
   defaultNotificationPreferences,
   IPC_CHANNELS,
   isAgentEvent,
   isAgentSettings,
   isAgentTemplate,
   isAppAppearance,
+  isAppBehavior,
   isAppSettings,
   isOnboardingState,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   normalizeAppAppearance,
+  normalizeAppBehavior,
   parseAppearancePatch,
+  parseBehaviorPatch,
   SETTINGS_TABS,
 } from "./ipc";
 
@@ -104,6 +108,7 @@ describe("W3 agent settings contract", () => {
         agentSteps: "show",
         unreadFirst: false,
       },
+      behavior: { launchAtLogin: false },
     };
     expect(isAppSettings(settings)).toBe(true);
     expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "nope"] } })).toBe(false);
@@ -149,10 +154,22 @@ describe("W3 agent settings contract", () => {
             agentSteps: "show",
             unreadFirst: false,
           },
+          behavior: { launchAtLogin: false },
         },
       }),
     ).toBe(true);
     expect(isAgentEvent({ type: "agent-templates-changed" })).toBe(false);
+  });
+
+  it("describes launch-at-login behavior with a boolean default (KAPI-J login)", () => {
+    expect(isAppBehavior(DEFAULT_APP_BEHAVIOR)).toBe(true);
+    expect(isAppBehavior({ launchAtLogin: true })).toBe(true);
+    expect(isAppBehavior({ launchAtLogin: "yes" })).toBe(false);
+    expect(normalizeAppBehavior(undefined)).toEqual(DEFAULT_APP_BEHAVIOR);
+    expect(normalizeAppBehavior({ launchAtLogin: true })).toEqual({ launchAtLogin: true });
+    expect(parseBehaviorPatch({ launchAtLogin: true })).toEqual({ launchAtLogin: true });
+    expect(() => parseBehaviorPatch({ launchAtLogin: "yes" })).toThrow(/on or off/);
+    expect(() => parseBehaviorPatch({ openAtLogin: true })).toThrow(/Unknown behavior/);
   });
 
   it("describes the look of the program in short lists, with today's values as defaults (BE-U)", () => {

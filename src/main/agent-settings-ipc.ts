@@ -2,6 +2,7 @@
 // templates are on this computer only (like skills and the Vault); app settings and onboarding are always local.
 
 import { type AgentProviderId, IPC_CHANNELS } from "@openbot/contracts/ipc";
+import { app } from "electron";
 import type { AgentService } from "../backend/agent-service";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import {
@@ -16,6 +17,15 @@ import {
 } from "./ipc/agent-settings-inputs";
 import { Onboarding } from "./onboarding";
 import { handleTrusted } from "./trusted-ipc";
+
+/** Windows / macOS: register or clear the OS login item for this program. */
+function applyLaunchAtLogin(enabled: boolean): void {
+  try {
+    app.setLoginItemSettings({ openAtLogin: enabled, path: process.execPath });
+  } catch {
+    /* Sandbox or locked OS settings: the store still keeps the person's choice. */
+  }
+}
 
 export interface AgentSettingsIpcOptions {
   service: () => Pick<AgentService, "agentSettings" | "agentTemplates" | "computerUse" | "listBots">;
@@ -66,10 +76,16 @@ export function registerAgentSettingsIpc(options: AgentSettingsIpcOptions): Onbo
   handleTrusted(IPC_CHANNELS.agentTemplatesDelete, (input: unknown) => {
     templates().delete(local(input, parseAgentTemplateId).templateId);
   });
-  handleTrusted(IPC_CHANNELS.appSettingsGet, () => settings().appSettings());
-  handleTrusted(IPC_CHANNELS.appSettingsUpdate, (input: unknown) =>
-    settings().updateAppSettings(parseUpdateAppSettings(parseAgentRequest(input).payload)),
-  );
+  handleTrusted(IPC_CHANNELS.appSettingsGet, () => {
+    const current = settings().appSettings();
+    applyLaunchAtLogin(current.behavior.launchAtLogin);
+    return current;
+  });
+  handleTrusted(IPC_CHANNELS.appSettingsUpdate, async (input: unknown) => {
+    const next = await settings().updateAppSettings(parseUpdateAppSettings(parseAgentRequest(input).payload));
+    applyLaunchAtLogin(next.behavior.launchAtLogin);
+    return next;
+  });
   handleTrusted(IPC_CHANNELS.onboardingGetState, () => onboarding.state());
   handleTrusted(IPC_CHANNELS.onboardingComplete, (input: unknown) =>
     onboarding.complete(parseCompleteOnboarding(parseAgentRequest(input).payload)),

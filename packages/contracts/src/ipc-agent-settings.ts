@@ -352,6 +352,42 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
   return patch;
 }
 
+/** OS-level switches of the desktop app (Windows login item today). */
+export interface AppBehaviorSettings {
+  /** True = the program opens when the person signs in to Windows. */
+  launchAtLogin: boolean;
+}
+
+export const DEFAULT_APP_BEHAVIOR: AppBehaviorSettings = {
+  launchAtLogin: false,
+};
+
+const BEHAVIOR_KEYS = ["launchAtLogin"] as const;
+
+export function isAppBehavior(value: unknown): value is AppBehaviorSettings {
+  return isDynamicRecord(value) && isBoolean(value.launchAtLogin);
+}
+
+export function normalizeAppBehavior(value: unknown): AppBehaviorSettings {
+  const stored = isDynamicRecord(value) ? value : {};
+  return {
+    launchAtLogin: isBoolean(stored.launchAtLogin) ? stored.launchAtLogin : DEFAULT_APP_BEHAVIOR.launchAtLogin,
+  };
+}
+
+export function parseBehaviorPatch(value: unknown): Partial<AppBehaviorSettings> {
+  if (!isDynamicRecord(value)) throw new Error("behavior must be an object.");
+  for (const key of Object.keys(value)) {
+    if (!isOneOf(BEHAVIOR_KEYS, key)) throw new Error(`Unknown behavior setting "${key}".`);
+  }
+  const patch: Partial<AppBehaviorSettings> = {};
+  if (value.launchAtLogin !== undefined) {
+    if (!isBoolean(value.launchAtLogin)) throw new Error("launchAtLogin is on or off.");
+    patch.launchAtLogin = value.launchAtLogin;
+  }
+  return patch;
+}
+
 export interface AppSettings {
   theme: AppTheme;
   language: AppLanguage;
@@ -361,6 +397,7 @@ export interface AppSettings {
   tabs: SettingsTab[];
   navigation: AppNavigationSettings;
   appearance: AppAppearanceSettings;
+  behavior: AppBehaviorSettings;
 }
 
 export interface UpdateAppSettingsInput {
@@ -374,6 +411,7 @@ export interface UpdateAppSettingsInput {
   navigation?: { pinnedPageIds: AppPageId[] };
   /** Changes only the fields that are given; the others stay as they are. */
   appearance?: Partial<AppAppearanceSettings>;
+  behavior?: Partial<AppBehaviorSettings>;
 }
 
 /** True for a list of known page ids without duplicates. */
@@ -501,7 +539,8 @@ export function isAppSettings(value: unknown): value is AppSettings {
     value.tabs.every((tab) => isDynamicRecord(tab) && isOneOf(SETTINGS_TABS, tab.id) && isBoolean(tab.available)) &&
     isDynamicRecord(value.navigation) &&
     isPinnedPageIdList(value.navigation.pinnedPageIds) &&
-    isAppAppearance(value.appearance)
+    isAppAppearance(value.appearance) &&
+    isAppBehavior(value.behavior)
   );
 }
 

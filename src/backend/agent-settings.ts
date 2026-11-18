@@ -20,12 +20,14 @@ import {
   APP_LANGUAGES,
   APP_PAGE_IDS,
   type AppAppearanceSettings,
+  type AppBehaviorSettings,
   type AppLanguage,
   type AppPageId,
   type AppSettings,
   type AppTheme,
   type BotSummary,
   DEFAULT_APP_APPEARANCE,
+  DEFAULT_APP_BEHAVIOR,
   defaultNotificationPreferences,
   isClaudeModel,
   isPinnedPageIdList,
@@ -33,8 +35,10 @@ import {
   NOTIFICATION_EVENTS,
   type NotificationPreferences,
   normalizeAppAppearance,
+  normalizeAppBehavior,
   normalizeAppTheme,
   parseAppearancePatch,
+  parseBehaviorPatch,
   SETTINGS_TABS,
   type SettingsTabId,
   type UpdateAgentSettingsInput,
@@ -123,6 +127,7 @@ interface StoredAppSetting {
   notifications: NotificationPreferences;
   pinnedPageIds: AppPageId[];
   appearance: AppAppearanceSettings;
+  behavior: AppBehaviorSettings;
 }
 
 interface NamedTool {
@@ -281,6 +286,7 @@ export class AgentSettingsService {
       notifications: stored.notifications,
       navigation: { pinnedPageIds: stored.pinnedPageIds },
       appearance: stored.appearance,
+      behavior: stored.behavior,
       tabs: SETTINGS_TABS.map((id) => {
         const feature = TAB_FEATURES[id];
         const base = feature === "computer" ? availability.computer !== false : feature !== "missing";
@@ -319,6 +325,9 @@ export class AgentSettingsService {
     if (input.appearance !== undefined) {
       stored.appearance = { ...stored.appearance, ...parseAppearancePatch(input.appearance) };
     }
+    if (input.behavior !== undefined) {
+      stored.behavior = { ...stored.behavior, ...parseBehaviorPatch(input.behavior) };
+    }
     this.#db()
       .prepare(
         `INSERT INTO projection_app_settings (setting_key, value_json, updated_at) VALUES ('app', ?, ?)
@@ -347,6 +356,7 @@ export class AgentSettingsService {
       notifications: defaultNotificationPreferences(),
       pinnedPageIds: [...APP_PAGE_IDS],
       appearance: { ...DEFAULT_APP_APPEARANCE },
+      behavior: { ...DEFAULT_APP_BEHAVIOR },
     };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;
@@ -379,6 +389,7 @@ export class AgentSettingsService {
       notifications,
       pinnedPageIds,
       appearance: normalizeAppAppearance(parsed.appearance),
+      behavior: normalizeAppBehavior(parsed.behavior),
     };
   }
 
