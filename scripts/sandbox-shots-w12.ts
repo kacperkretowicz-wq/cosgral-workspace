@@ -607,8 +607,18 @@ async function main(): Promise<void> {
       if (!(await plus.first().isEnabled())) throw new Error("Attach a file disabled (onboarding model?)");
       await plus.first().click({ timeout: 10_000 });
       await p.waitForTimeout(400);
-      const items = p.getByRole("button", { name: /Attach files|Use a skill|Side question|Dołącz|Umiejęt|Pytanie/i });
-      return (await items.count()) ? `menu + otwarte (${await items.count()})` : "klik +, brak pozycji";
+      // UI-AH: Attach / Use a skill / Teach (off) / Side question / Voice (off) — menuitem or button.
+      const checklist = await visibleChecklist([
+        { id: "attach", find: () => p.getByRole("menuitem", { name: /Attach files|Załącz pliki/i }) },
+        { id: "skill", find: () => p.getByRole("menuitem", { name: /Use a skill|Użyj skilla/i }) },
+        { id: "teach", find: () => p.getByRole("menuitem", { name: /Teach a task|Naucz zadania/i }) },
+        { id: "side", find: () => p.getByRole("menuitem", { name: /Side question|Pytanie boczne/i }) },
+        { id: "voice", find: () => p.getByRole("menuitem", { name: /^Voice$|^Głos$/i }) },
+      ]);
+      const items = p
+        .getByRole("menuitem")
+        .or(p.getByRole("button", { name: /Attach files|Use a skill|Side question/i }));
+      return `menu + otwarte (${await items.count()}) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "06-menu-at", async (p) => {

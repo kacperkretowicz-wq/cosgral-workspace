@@ -35,9 +35,9 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 
 ## Tester
 1. Odbiór w prawdziwym Electronie po każdym scaleniu lidera: e2e (`^FAIL`), W5, zrzuty, sondy (tylko za `GO-tester-*.txt`).
-2. Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI.
-3. Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
-4. Sondy do nowych funkcji: wątek w Restore, menu „+”, Clear history, `historyWindow`, linki w programie.
+2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
+3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
+4. [zrobione: team/tester/w12-tg] Sondy do nowych funkcji: `scripts/sandbox-next-probes.ts` (restore-thread, menu-plus, clear-history, history-window, external-links).
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,
