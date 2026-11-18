@@ -1,6 +1,7 @@
 import type { MobileExposure, MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { MobileOverviewPanel } from "./MobileOverviewPanel";
 import { Badge, Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
 
 /** "4:59" from milliseconds; never negative. */
@@ -382,6 +383,7 @@ export function MobileConnectPage() {
             .catch(() => setError("Could not copy; select the text manually."))
         }
       />
+      <MobileOverviewPanel />
     </main>
   );
 }

@@ -45,6 +45,7 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "VaultConnectorsPanel",
     "ScheduleOverview",
     "ManagedCliSection",
+    "MobileOverviewPanel",
     "VoiceOverviewPanel",
     "InstanceTransferPanel",
     "MessengersPanel",
