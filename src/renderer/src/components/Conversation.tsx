@@ -85,7 +85,6 @@ import { EyesBar } from "./EyesIndicator";
 import { FallbackModelBadge } from "./FallbackModelBadge";
 import { LibraryPanel } from "./LibraryPanel";
 import { McpSettings } from "./McpSettings";
-import { AgentMemorySettingsView } from "./MemorySettings";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
@@ -101,7 +100,6 @@ import {
 import { RoutinePanel } from "./RoutinePanel";
 import { SideQuestionPanel } from "./SideQuestionPanel";
 import { SkillQuickPick } from "./SkillQuickPick";
-import { SkillsSettings } from "./SkillsSettings";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
 import { ThreadTabs } from "./ThreadTabs";
@@ -3061,10 +3059,8 @@ export function Conversation(props: ConversationProps) {
               {(botId) => (
                 <>
                   <AgentCardsSection botId={botId} />
-                  <AgentMemorySettingsView botId={botId} />
                   <AgentSettingsW3 botId={botId} />
                   <ApprovalRulesSettings botId={botId} />
-                  <SkillsSettings botId={botId} />
                   <McpSettings botId={botId} />
                   <RoutinePanel botId={botId} bots={props.bots} />
                 </>

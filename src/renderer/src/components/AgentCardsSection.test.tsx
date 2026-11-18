@@ -49,8 +49,18 @@ it("lists all 14 cards with counts and marks the ones without an engine as unava
   expect(screen.getByText(/Unavailable in this version: No engine yet/)).toBeInTheDocument();
 });
 
-it("saves a changed preference through agentCards.updatePreferences", async () => {
+it("opens Knows and Brain cards as full pages with Back", async () => {
   render(() => <AgentCardsSection botId="bot" />);
+  await fireEvent.click(await screen.findByRole("button", { name: "Open Instructions" }));
+  expect(await screen.findByRole("region", { name: "Instructions" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Back to agent settings" })).toBeInTheDocument();
+  await fireEvent.click(screen.getByRole("button", { name: "Back to agent settings" }));
+  expect(await screen.findByRole("region", { name: "Knows" })).toBeInTheDocument();
+});
+
+it("saves chat colour from the Brain page through agentCards.updatePreferences", async () => {
+  render(() => <AgentCardsSection botId="bot" />);
+  await fireEvent.click(await screen.findByRole("button", { name: "Open Chat color" }));
   const color = await screen.findByRole("combobox", { name: "Chat color" });
   await fireEvent.change(color, { target: { value: "blue" } });
   await waitFor(() => expect(api.updatePreferences).toHaveBeenCalledWith({ botId: "bot", chatColor: "blue" }));
