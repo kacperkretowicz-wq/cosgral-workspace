@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { fallbackModelsProblem, isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { AccessSettings } from "./AccessSettings";
 import { AgentAccountPicker } from "./AgentAccountPicker";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
@@ -33,26 +34,26 @@ export function AgentTemplateCreator(props: {
         ...(template() ? { templateId: template() } : {}),
       });
       setWarnings(result.warnings);
-      setMessage("Agent created.");
+      setMessage(t("Agent created."));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not create agent.");
+      setMessage(error instanceof Error ? error.message : t("Could not create agent."));
     }
   }
   return (
-    <section aria-label="Create agent">
-      <h3>Create agent</h3>
+    <section aria-label={t("Create agent")}>
+      <h3>{t("Create agent")}</h3>
       <label>
-        Template{" "}
+        {t("Template")}{" "}
         <NativeSelect unstyled value={template()} onChange={(e) => setTemplate(e.currentTarget.value)}>
-          <option value="">Start from scratch</option>
+          <option value="">{t("Start from scratch")}</option>
           <For each={props.templates}>{(item) => <option value={item.id}>{item.name}</option>}</For>
         </NativeSelect>
       </label>
       <label>
-        Agent name <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+        {t("Agent name")} <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
       <Button unstyled type="button" disabled={!name().trim() && !template()} onClick={() => void create()}>
-        Create agent
+        {t("Create agent")}
       </Button>
       <Show when={message()}>
         <p role="status">{message()}</p>
@@ -77,7 +78,7 @@ export function AgentSettingsW3(props: { botId: string }) {
   async function refresh() {
     const api = window.openbot.agentSettings;
     if (!api) {
-      setError("Agent settings are unavailable.");
+      setError(t("Agent settings are unavailable."));
       return;
     }
     try {
@@ -96,7 +97,7 @@ export function AgentSettingsW3(props: { botId: string }) {
       setSavedFallbacks(visible);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load settings.");
+      setError(e instanceof Error ? e.message : t("Could not load settings."));
     }
   }
   onSettled(() => {
@@ -130,7 +131,7 @@ export function AgentSettingsW3(props: { botId: string }) {
         const problem = fallbackModelsProblem(fallbacks());
         if (problem) throw new Error(problem);
         const providers = window.openbot.providers;
-        if (!providers) return Promise.reject(new Error("Fallback model service is unavailable."));
+        if (!providers) return Promise.reject(new Error(t("Fallback model service is unavailable.")));
         const saved = await providers.setFallbackModels({ botId: props.botId, fallbackModels: fallbacks() });
         setSavedFallbacks(saved);
         setFallbackInfo((await providers.getFallbackInfo?.(props.botId)) ?? null);
@@ -140,18 +141,18 @@ export function AgentSettingsW3(props: { botId: string }) {
     setSaving(false);
     setFailedStage(result.failed);
     if (result.failed === null) {
-      setNotice("Settings saved.");
+      setNotice(t("Settings saved."));
       setError("");
     } else
       setError(
         result.failed === "profile"
-          ? `Profile save failed; fallback models were not saved. ${result.message}`
-          : `Profile saved, but fallback models were not saved. ${result.message}`,
+          ? `${t("Profile save failed; fallback models were not saved.")} ${result.message}`
+          : `${t("Profile saved, but fallback models were not saved.")} ${result.message}`,
       );
   }
   return (
-    <section aria-label="Advanced agent settings">
-      <h3>Agent profile and tools</h3>
+    <section aria-label={t("Advanced agent settings")}>
+      <h3>{t("Agent profile and tools")}</h3>
       <Show when={props.botId} keyed>
         {(id) => (
           <>
@@ -168,7 +169,7 @@ export function AgentSettingsW3(props: { botId: string }) {
       <Show when={failedStage()}>
         {(stage) => (
           <Button unstyled type="button" disabled={saving()} onClick={() => void save(stage())}>
-            {stage() === "fallback" ? "Retry fallback models" : "Retry profile and fallback models"}
+            {stage() === "fallback" ? t("Retry fallback models") : t("Retry profile and fallback models")}
           </Button>
         )}
       </Show>
@@ -178,14 +179,16 @@ export function AgentSettingsW3(props: { botId: string }) {
       <Show when={settings()}>
         {(value) => (
           <>
-            <p>Provider: {value().provider}</p>
+            <p>
+              {t("Provider:")} {value().provider}
+            </p>
             <AgentAccountPicker
               botId={props.botId}
               provider={value().provider}
               disabled={saving() || savedModel() !== value().bot.model}
             />
             <label>
-              Name{" "}
+              {t("Name")}{" "}
               <Input
                 unstyled
                 value={value().bot.name}
@@ -193,7 +196,7 @@ export function AgentSettingsW3(props: { botId: string }) {
               />
             </label>
             <label>
-              Role{" "}
+              {t("Role")}{" "}
               <Input
                 unstyled
                 value={value().bot.role}
@@ -201,7 +204,7 @@ export function AgentSettingsW3(props: { botId: string }) {
               />
             </label>
             <label>
-              Description{" "}
+              {t("Description")}{" "}
               <Textarea
                 unstyled
                 value={value().bot.description}
@@ -211,7 +214,7 @@ export function AgentSettingsW3(props: { botId: string }) {
               />
             </label>
             <label>
-              Model{" "}
+              {t("Model")}{" "}
               <NativeSelect
                 unstyled
                 value={value().bot.model}
@@ -224,7 +227,7 @@ export function AgentSettingsW3(props: { botId: string }) {
               </NativeSelect>
             </label>
             <fieldset>
-              <legend>Tools</legend>
+              <legend>{t("Tools")}</legend>
               <For each={value().tools}>
                 {(tool) => (
                   <label>
@@ -246,7 +249,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                       }
                     />{" "}
                     {tool.group}
-                    {!tool.available ? " (unavailable)" : ""}
+                    {!tool.available ? t(" (unavailable)") : ""}
                   </label>
                 )}
               </For>
@@ -273,7 +276,7 @@ export function AgentSettingsW3(props: { botId: string }) {
             <FallbackChainView info={fallbackInfo()} options={value().models} />
             <Show when={fallbackInfo()}>
               <p role="status">
-                {fallbackInfo()?.own === null ? "Using provider and all-provider lists" : "Agent's own list"}
+                {fallbackInfo()?.own === null ? t("Using provider and all-provider lists") : t("Agent's own list")}
               </p>
               <Show when={window.openbot.providers?.resetFallbackModels}>
                 <Button
@@ -291,23 +294,23 @@ export function AgentSettingsW3(props: { botId: string }) {
                       setSavedFallbacks(list);
                       setError("");
                     } catch (e) {
-                      setError(e instanceof Error ? e.message : "Could not reset the list.");
+                      setError(e instanceof Error ? e.message : t("Could not reset the list."));
                     } finally {
                       setSaving(false);
                     }
                   }}
                 >
-                  Reset to provider list
+                  {t("Reset to provider list")}
                 </Button>
               </Show>
             </Show>
             <Button unstyled type="button" disabled={saving()} onClick={() => void save()}>
-              Save settings
+              {t("Save settings")}
             </Button>
           </>
         )}
       </Show>
-      <h3>Templates</h3>
+      <h3>{t("Templates")}</h3>
       <Button
         unstyled
         type="button"
@@ -318,7 +321,7 @@ export function AgentSettingsW3(props: { botId: string }) {
             .catch((e) => setError(String(e)))
         }
       >
-        Save agent as template
+        {t("Save agent as template")}
       </Button>
       <ul>
         <For each={templates()}>
@@ -336,7 +339,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                       .catch((e) => setError(String(e)))
                   }
                 >
-                  Delete
+                  {t("Delete")}
                 </Button>
               </Show>
             </li>

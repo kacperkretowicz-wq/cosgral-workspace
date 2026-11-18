@@ -43,8 +43,8 @@ it("requires saving a model change before choosing the account, then unlocks it"
   expect(alternate).toBeDefined();
   await fireEvent.change(model, { target: { value: alternate?.value } });
   await waitFor(() => expect(screen.getByLabelText("Konto")).toBeDisabled());
-  await fireEvent.click(screen.getByRole("button", { name: "Save settings" }));
-  await screen.findByText("Settings saved.");
+  await fireEvent.click(screen.getByRole("button", { name: "Zapisz ustawienia" }));
+  await screen.findByText("Zapisano ustawienia.");
   await waitFor(() => expect(screen.getByLabelText("Konto")).toBeEnabled());
   mock.dispose();
 });
