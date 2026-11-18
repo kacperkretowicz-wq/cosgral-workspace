@@ -87,7 +87,7 @@ export const InTheApp: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole("heading", { name: "Chief" });
     await expect(canvas.getByRole("navigation", { name: "Pages" })).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: /^More/ }));
+    await userEvent.click(canvas.getByRole("button", { name: /^More( \(|$)/ }));
     await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole("menuitem", { name: "Schedule" }));
     await expect(canvas.findByRole("heading", { name: "Schedule" })).resolves.toBeInTheDocument();
     await expect(canvas.getByRole("navigation", { name: "Chat list" })).toBeInTheDocument();
