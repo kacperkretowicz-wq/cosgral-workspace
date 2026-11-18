@@ -53,7 +53,7 @@ Pomysł: osobny punkt wejścia (np. `src/headless/main.ts`) uruchamiany zwykłym
 
 ## 3. Oracle: co jest po Twojej stronie
 
-1. Konto Oracle Cloud i maszyna „Always Free” (z mojej wiedzy: do 4 rdzeni Ampere `arm64` i 24 GB pamięci; **sprawdź w konsoli, to się zmienia**).
+1. Konto Oracle Cloud i maszyna „Always Free” (wg oficjalnej dokumentacji Oracle, strona „Always Free Resources” z 12.06.2026: **2 rdzenie Ampere `arm64` i 12 GB pamięci**, nie więcej; szczegóły i ryzyko odebrania bezczynnej maszyny: `serwer-linux-oracle.md`).
 2. Reguły sieci: otwarty tylko SSH. API programu zostaje na `127.0.0.1` i idzie tunelem.
 3. Klucze SSH. Nie wklejaj ich w czat ani do repo; powiem, gdzie je wpiąć.
 4. Zgoda na pobranie programów dostawców (Claude, Codex) na serwer i **logowanie do nich robisz Ty** (konta są Twoje).
