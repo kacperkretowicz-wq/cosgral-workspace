@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { usePagePins } from "../page-pins";
 import { AppLogo } from "./AppLogo";
 import { Button, ContextMenu, DropdownMenu, Ellipsis, Text } from "./ui";
+import { Pin } from "./ui/icons";
 
 /** COSGRAL page rail: vertical page switcher beside the server rail. */
 export type PageId =
@@ -231,10 +232,10 @@ export function PageRail(props: PageRailProps) {
               class={["page-rail-button", { "page-rail-button-active": !!hiddenActive() }]}
               aria-label={
                 hiddenActive()
-                  ? `${t("More pages")} (${t("Current").toLowerCase()}: ${t(hiddenActive()?.label ?? "")})`
-                  : t("More pages")
+                  ? `${t("More")} (${t("Current").toLowerCase()}: ${t(hiddenActive()?.label ?? "")})`
+                  : t("More")
               }
-              title={t("More pages")}
+              title={t("More")}
             >
               <span class="page-rail-mark" />
               <Ellipsis aria-hidden="true" />
@@ -242,13 +243,14 @@ export function PageRail(props: PageRailProps) {
             <DropdownMenu.Portal>
               <DropdownMenu.Content
                 class="bot-context-menu page-rail-overflow-menu"
-                aria-label={t("More pages")}
+                aria-label={t("More")}
                 aria-labelledby={undefined}
               >
                 <For each={hidden()}>
                   {(item) => (
-                    <>
+                    <div class="page-rail-more-row" data-pinned={pinned(item.id) ? "true" : undefined}>
                       <DropdownMenu.Item
+                        class="page-rail-more-open"
                         aria-current={props.active === item.id ? "page" : undefined}
                         onSelect={() => props.onSelect(item.id)}
                       >
@@ -256,11 +258,23 @@ export function PageRail(props: PageRailProps) {
                         <span>{t(item.label)}</span>
                       </DropdownMenu.Item>
                       <Show when={canPin()}>
-                        <DropdownMenu.Item disabled={pinsState.busy()} onSelect={() => toggle(item.id)}>
-                          {t("Pin")} {t(item.label)}
+                        <DropdownMenu.Item
+                          class="page-rail-more-pin"
+                          disabled={pinsState.busy()}
+                          aria-label={
+                            pinned(item.id) ? `${t("Unpin")} ${t(item.label)}` : `${t("Pin")} ${t(item.label)}`
+                          }
+                          onSelect={() => toggle(item.id)}
+                        >
+                          <Pin
+                            size={14}
+                            stroke-width={1.5}
+                            aria-hidden="true"
+                            class={pinned(item.id) ? "page-rail-pin-on" : "page-rail-pin-off"}
+                          />
                         </DropdownMenu.Item>
                       </Show>
-                    </>
+                    </div>
                   )}
                 </For>
               </DropdownMenu.Content>

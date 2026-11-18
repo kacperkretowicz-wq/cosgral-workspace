@@ -132,6 +132,41 @@
   }
 }
 
+.agent-card-page {
+  display: grid;
+  gap: 14px;
+}
+
+.agent-card-page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-card-page-header h4 {
+  margin: 0;
+  font-size: var(--cosgral-text-xl);
+  font-weight: 600;
+}
+
+.agent-card-page-back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.agent-card-page-body {
+  display: grid;
+  gap: 12px;
+}
+
+.agent-card-page-path code {
+  overflow-wrap: anywhere;
+  font-size: var(--cosgral-text-sm);
+}
+
 /* Opening a card: the whole tile is the button; the detail opens under the grid. */
 .agent-cards .agent-card-row {
   position: relative;

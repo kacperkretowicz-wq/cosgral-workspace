@@ -13,12 +13,12 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 3. [zrobione: 805a58a84] Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
 4. [zrobione: 2f27ebb57] Stany puste i błędów (jeden wspólny styl) w Bibliotece, Użyciu, Harmonogramie.
 5. [zrobione: 596a49964] Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
-6. Ustawienia agenta: podstrony Knows (instrukcje, skille) i bogatsze karty Brain, zgodnie z tabelą Testera (T-AG: „częściowo”).
-7. Marketplace Apps: układ i filtry bliżej 0.71 (T-AG: „częściowo”).
-8. Pasek boczny: przypinanie i „Więcej” (T-AG: „częściowo”).
-9. Tablica Zadań: kolumny dla zadań nieudanych i anulowanych (UI-AI luka); wymaga kontraktu od Backendu (patrz Backend 6).
-10. Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
-11. Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
+6. [zrobione: 21e626b24] Ustawienia agenta: podstrony Knows (instrukcje, skille) i bogatsze karty Brain, zgodnie z tabelą Testera (T-AG: „częściowo”).
+7. [zrobione: 6f92e6b44] Marketplace Apps: układ i filtry bliżej 0.71 (T-AG: „częściowo”).
+8. [zrobione: 034a7ef5a] Pasek boczny: przypinanie i „Więcej” (T-AG: „częściowo”).
+9. [zrobione: 309b45407] Tablica Zadań: kolumny dla zadań nieudanych i anulowanych (UI-AI luka); wymaga kontraktu od Backendu (patrz Backend 6).
+10. [zrobione: 21ae5669d] Kontrolki wyglądu w ustawieniach: skala interfejsu, czcionka, akcent, skrót wysyłania (silnik gotowy: KAPI-N, BE-U).
+11. [zrobione: edbd5db1e] Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
 
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).

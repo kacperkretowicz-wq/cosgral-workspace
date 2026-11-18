@@ -32,6 +32,7 @@ export { default as Monitor } from "lucide-solid/icons/monitor";
 export { default as Palette } from "lucide-solid/icons/palette";
 export { default as Paperclip } from "lucide-solid/icons/paperclip";
 export { default as Pencil } from "lucide-solid/icons/pencil";
+export { default as Pin } from "lucide-solid/icons/pin";
 export { default as Plus } from "lucide-solid/icons/plus";
 export { default as RefreshCw } from "lucide-solid/icons/refresh-cw";
 export { default as Search } from "lucide-solid/icons/search";

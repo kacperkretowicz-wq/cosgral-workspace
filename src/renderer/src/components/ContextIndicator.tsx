@@ -1,6 +1,8 @@
 import type { AgentEvent, ContextDesktopApi, ContextState } from "@openbot/contracts/ipc";
 import { CONTEXT_SETTINGS_LIMITS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { Badge, Button, Heading, Text } from "./ui";
 import "../styles/context.css";
@@ -142,13 +144,18 @@ export function ContextIndicator(props: {
       <Show
         when={state()}
         fallback={
-          <Text as="p" tone="secondary">
-            {!api
-              ? "Context information is unavailable in this version."
-              : error()
-                ? "Context information is unavailable."
-                : "Loading context information..."}
-          </Text>
+          <Show
+            when={api && !error()}
+            fallback={
+              <Text as="p" tone="secondary">
+                {!api
+                  ? t("Context information is unavailable in this version.")
+                  : t("Context information is unavailable.")}
+              </Text>
+            }
+          >
+            <CosgralLoadingSkeleton label={t("Loading context…")} />
+          </Show>
         }
       >
         {(value) => <ContextMeter state={value()} pending={pending()} onCompact={() => void compact()} />}

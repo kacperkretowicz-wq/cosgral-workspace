@@ -20,6 +20,7 @@ it("has complete, nonempty PL and EN catalogs", () => {
 it("has a catalog entry for every literal translation used by migrated surfaces", () => {
   const files = [
     "AppearanceSettings",
+    "PageRail",
     "AppSettingsW3",
     "Sidebar",
     "PageRail",
@@ -30,6 +31,8 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "SideQuestionPanel",
     "SkillQuickPick",
     "AgentCardsSection",
+    "AgentCardPage",
+    "ContextIndicator",
     "ChatSidePanelLauncher",
     "ServerSettingsPage",
     "PluginAppsPanel",

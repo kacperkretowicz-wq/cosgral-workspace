@@ -87,7 +87,7 @@ export const InTheApp: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole("heading", { name: "Chief" });
     await expect(canvas.getByRole("navigation", { name: "Pages" })).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole("button", { name: /^More pages/ }));
+    await userEvent.click(canvas.getByRole("button", { name: /^More/ }));
     await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole("menuitem", { name: "Schedule" }));
     await expect(canvas.findByRole("heading", { name: "Schedule" })).resolves.toBeInTheDocument();
     await expect(canvas.getByRole("navigation", { name: "Chat list" })).toBeInTheDocument();
@@ -99,10 +99,10 @@ export const InTheApp: Story = {
 export const Overflow: Story = {
   render: () => <RailShell theme="dark" initial="phone" height="300px" />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const more = await canvas.findByRole("button", { name: "More pages (current: Phone)" });
+    const more = await canvas.findByRole("button", { name: "More (current: Phone)" });
     await expect(canvas.getByRole("button", { name: "Settings" })).toBeVisible();
     await userEvent.click(more);
-    const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "More pages" });
+    const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "More" });
     await expect(within(menu).getByRole("menuitem", { name: "Phone" })).toHaveAttribute("aria-current", "page");
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Library" }));
     await expect(canvas.getByRole("heading", { name: "Library" })).toBeVisible();

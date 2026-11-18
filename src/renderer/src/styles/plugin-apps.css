@@ -1,0 +1,324 @@
+/* Marketplace Apps tab — layout closer to OpenBot 0.71 (035–036): hero, search bar, category sections. */
+
+.marketplace-shell {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.marketplace-shell[data-single="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.marketplace-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid var(--cosgral-border);
+  padding: 20px 12px 20px 16px;
+}
+
+.marketplace-nav h1 {
+  margin: 0 0 8px;
+  font-size: var(--cosgral-text-xl);
+  font-weight: 650;
+}
+
+.marketplace-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.marketplace-nav-list button {
+  justify-content: flex-start;
+  width: 100%;
+  border-radius: var(--cosgral-radius-md);
+  padding: 8px 12px;
+  color: var(--cosgral-text-secondary);
+  font-weight: 500;
+  text-align: left;
+}
+
+.marketplace-nav-list button[aria-current="page"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.marketplace-main {
+  min-width: 0;
+  padding: 20px 24px 32px;
+  overflow: auto;
+}
+
+.plugin-apps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plugin-apps-hero h2 {
+  margin: 0;
+  font-size: var(--cosgral-text-2xl);
+  font-weight: 650;
+}
+
+.plugin-apps-hero p {
+  margin: 6px 0 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.plugin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugin-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: min(100%, 280px);
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 0 12px;
+}
+
+.plugin-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 10px 0;
+}
+
+.plugin-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.plugin-filter-chips button {
+  border-radius: var(--cosgral-radius-md);
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+}
+
+.plugin-filter-chips button[aria-pressed="true"] {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.plugin-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: 12px;
+}
+
+.plugin-note,
+.plugin-error {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+}
+
+.plugin-note {
+  color: var(--cosgral-text-muted);
+}
+
+.plugin-error {
+  color: var(--cosgral-danger);
+}
+
+.plugin-section {
+  display: grid;
+  gap: 10px;
+}
+
+.plugin-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plugin-section-head h3 {
+  margin: 0;
+  font-size: var(--cosgral-text-lg);
+  font-weight: 600;
+}
+
+.plugin-section-count {
+  margin-left: 8px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  font-weight: 500;
+}
+
+.plugin-rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 900px) {
+  .marketplace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--cosgral-border);
+    padding-bottom: 12px;
+  }
+
+  .marketplace-nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .plugin-rows {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plugin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--cosgral-radius-md);
+  padding: 6px 4px;
+}
+
+.plugin-row:hover {
+  background: var(--cosgral-bg-control-hover);
+}
+
+.plugin-row-open {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 4px;
+  text-align: left;
+}
+
+.plugin-row-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-control);
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+  font-weight: 650;
+}
+
+.plugin-row-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plugin-row-copy strong {
+  overflow: hidden;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-md);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-row-copy small {
+  overflow: hidden;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-row-connect {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.plugin-row-state {
+  border-radius: var(--cosgral-radius-md);
+  padding: 4px 10px;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+}
+
+.plugin-row-state[data-state="needs-sign-in"],
+.plugin-row-state[data-state="update-available"] {
+  color: var(--cosgral-warning);
+}
+
+.plugin-row-state[data-state="error"] {
+  color: var(--cosgral-danger);
+}
+
+.plugin-row-state[data-state="installed"] {
+  color: var(--cosgral-success);
+}
+
+.plugin-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-surface);
+  padding: 14px 16px;
+}
+
+.plugin-detail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plugin-detail h2,
+.plugin-detail p {
+  margin: 0;
+}
+
+.plugin-field {
+  display: grid;
+  gap: 4px;
+}
+
+.plugin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plugin-steps {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-row {
+    transition: none;
+  }
+}

@@ -2,6 +2,9 @@ import type {
   ChannelTaskState,
   TaskDetail,
   TaskDetailAction,
+  TasksBoard,
+  TasksBoardColumnId,
+  TasksViewCounts,
   TasksViewPage,
   TasksViewScope,
 } from "@openbot/contracts/ipc";
@@ -20,6 +23,14 @@ const STATE_VIEW: Record<ChannelTaskState, { label: string; tone: BadgeTone }> =
   done: { label: "Done", tone: "success" },
   failed: { label: "Failed", tone: "danger" },
   cancelled: { label: "Stopped", tone: "neutral" },
+};
+
+const BOARD_COLUMN_TITLE: Record<TasksBoardColumnId, string> = {
+  "needs-you": "Needs you",
+  working: "Working",
+  paused: "Paused",
+  failed: "Failed",
+  cancelled: "Stopped",
 };
 
 function actionLabel(action: TaskDetailAction): string {
@@ -47,9 +58,9 @@ function formatTime(iso: string): string {
 }
 
 /**
- * The Tasks page on window.openbot.tasksView: one list of the tasks of all channels with scope tabs and state chips (each with
- * its count), search, the steps of a task, and a detail panel with the request, the result, the steps, the log and the
- * actions the engine allows now (with the reason when it does not). "Open as chat" shows the channel at the task's message.
+ * The Tasks page on window.openbot.tasksView: board columns (needs you, working, paused, failed, stopped) from
+ * tasksView.board when Active has no chip and no search; otherwise one list. Scope tabs, state chips, search, detail
+ * panel with request/result/steps/log and engine actions. "Open as chat" shows the channel at the task's message.
  */
 export function TasksViewScreen(props: {
   bots: Array<{ id: string; name: string }>;
@@ -58,6 +69,7 @@ export function TasksViewScreen(props: {
   const view = untrack(() => window.openbot?.tasksView);
   const channels = untrack(() => window.openbot?.channels);
   const [page, setPage] = createSignal<TasksViewPage | null>(null);
+  const [board, setBoard] = createSignal<TasksBoard | null>(null);
   const [scope, setScope] = createSignal<TasksViewScope>("active");
   const [state, setState] = createSignal<ChannelTaskState | "">("");
   const [query, setQuery] = createSignal("");
@@ -67,18 +79,31 @@ export function TasksViewScreen(props: {
   const [busy, setBusy] = createSignal(false);
   let serial = 0;
 
+  const showBoard = (nextScope: TasksViewScope, nextState: ChannelTaskState | "", nextQuery: string) =>
+    nextScope === "active" && !nextState && !nextQuery.trim();
+
   async function load(patch: { scope?: TasksViewScope; state?: ChannelTaskState | "" } = {}) {
     if (!view) return;
     const n = ++serial;
+    const nextScope = patch.scope ?? scope();
+    const nextState = patch.state ?? state();
+    const nextQuery = query().trim();
     try {
-      const chosen = patch.state ?? state();
-      const next = await view.list({
-        scope: patch.scope ?? scope(),
-        query: query().trim(),
-        ...(chosen ? { states: [chosen] } : {}),
-      });
-      if (n !== serial) return;
-      setPage(next);
+      if (showBoard(nextScope, nextState, nextQuery)) {
+        const next = await view.board({ scope: nextScope, ...(nextQuery ? { query: nextQuery } : {}) });
+        if (n !== serial) return;
+        setBoard(next);
+        setPage(null);
+      } else {
+        const next = await view.list({
+          scope: nextScope,
+          query: nextQuery,
+          ...(nextState ? { states: [nextState] } : {}),
+        });
+        if (n !== serial) return;
+        setPage(next);
+        setBoard(null);
+      }
       setError("");
       const open = detail();
       if (open) setDetail(await view.detail({ taskId: open.task.id }));
@@ -135,26 +160,20 @@ export function TasksViewScreen(props: {
     void load(patch);
   };
 
-  const boardGroups = () => {
-    const items = page()?.items ?? [];
-    return [
-      {
-        id: "needs-you",
-        title: "Needs you",
-        items: items.filter((item) => item.task.state === "waiting" || item.task.state === "done"),
-      },
-      {
-        id: "working",
-        title: "Working",
-        items: items.filter((item) => item.task.state === "running" || item.task.state === "queued"),
-      },
-      {
-        id: "waiting",
-        title: "Waiting",
-        items: items.filter((item) => item.task.state === "paused"),
-      },
-    ] as const;
+  const counts = (): TasksViewCounts | undefined => board()?.counts ?? page()?.counts;
+
+  const boardColumns = () => {
+    const columns = board()?.columns ?? [];
+    return columns.map((column) => ({
+      id: column.id,
+      title: BOARD_COLUMN_TITLE[column.id],
+      items: column.items,
+      total: column.total,
+      hasMore: column.hasMore,
+    }));
   };
+
+  const ready = () => board() !== null || page() !== null;
 
   return (
     <main class="w2-library tasks-screen" aria-label={t("Tasks")}>
@@ -176,7 +195,7 @@ export function TasksViewScreen(props: {
             aria-current={scope() === "active" ? "page" : undefined}
             onClick={() => choose({ scope: "active" })}
           >
-            {t("Active")} <span class="tasks-count">{page()?.counts.active ?? 0}</span>
+            {t("Active")} <span class="tasks-count">{counts()?.active ?? 0}</span>
           </Button>
           <Button
             type="button"
@@ -184,7 +203,7 @@ export function TasksViewScreen(props: {
             aria-current={scope() === "archived" ? "page" : undefined}
             onClick={() => choose({ scope: "archived" })}
           >
-            {t("Archived")} <span class="tasks-count">{page()?.counts.archived ?? 0}</span>
+            {t("Archived")} <span class="tasks-count">{counts()?.archived ?? 0}</span>
           </Button>
         </nav>
         <fieldset class="tasks-chips">
@@ -200,7 +219,7 @@ export function TasksViewScreen(props: {
           </Button>
           <For each={CHANNEL_TASK_STATES}>
             {(item) => (
-              <Show when={(page()?.counts.byState[item] ?? 0) > 0 || state() === item}>
+              <Show when={(counts()?.byState[item] ?? 0) > 0 || state() === item}>
                 <Button
                   type="button"
                   size="sm"
@@ -208,7 +227,7 @@ export function TasksViewScreen(props: {
                   aria-pressed={state() === item ? "true" : "false"}
                   onClick={() => choose({ state: item })}
                 >
-                  {t(STATE_VIEW[item].label)} <span class="tasks-count">{page()?.counts.byState[item] ?? 0}</span>
+                  {t(STATE_VIEW[item].label)} <span class="tasks-count">{counts()?.byState[item] ?? 0}</span>
                 </Button>
               </Show>
             )}
@@ -237,52 +256,55 @@ export function TasksViewScreen(props: {
         </Show>
 
         <div class="tasks-split">
-          <Show when={page()} fallback={<CosgralLoadingSkeleton label={t("Loading tasks…")} />}>
-            {(current) => (
-              <div class="tasks-board">
-                <Show when={scope() === "active" && !state() && !query().trim()}>
-                  <div class="tasks-board-columns">
-                    <For each={boardGroups()}>
-                      {(group) => (
-                        <section class="tasks-board-column" aria-label={t(group.title)}>
-                          <h2 class="tasks-board-heading">
-                            {t(group.title)} <span class="tasks-count">{group.items.length}</span>
-                          </h2>
-                          <ul class="tasks-screen-list">
-                            <Show when={group.items.length === 0}>
-                              <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
-                            </Show>
-                            <For each={group.items}>
-                              {(item) => (
-                                <li
-                                  data-state={item.task.state}
-                                  data-open={detail()?.task.id === item.task.id ? "true" : "false"}
+          <Show when={ready()} fallback={<CosgralLoadingSkeleton label={t("Loading tasks…")} />}>
+            <div class="tasks-board">
+              <Show when={board()}>
+                <div class="tasks-board-columns">
+                  <For each={boardColumns()}>
+                    {(group) => (
+                      <section class="tasks-board-column" aria-label={t(group.title)}>
+                        <h2 class="tasks-board-heading">
+                          {t(group.title)} <span class="tasks-count">{group.total}</span>
+                        </h2>
+                        <ul class="tasks-screen-list">
+                          <Show when={group.items.length === 0}>
+                            <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
+                          </Show>
+                          <For each={group.items}>
+                            {(item) => (
+                              <li
+                                data-state={item.task.state}
+                                data-open={detail()?.task.id === item.task.id ? "true" : "false"}
+                              >
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  class="tasks-screen-row"
+                                  onClick={() => void open(item.task.id)}
                                 >
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    class="tasks-screen-row"
-                                    onClick={() => void open(item.task.id)}
-                                  >
-                                    <span class="tasks-screen-title">{item.task.title}</span>
-                                    <span class="tasks-screen-meta">
-                                      #{item.channelName} · {item.ownerName ?? t("Removed agent")} ·{" "}
-                                      {formatTime(item.task.updatedAt)}
-                                    </span>
-                                    <Badge tone={STATE_VIEW[item.task.state].tone} dot>
-                                      {t(STATE_VIEW[item.task.state].label)}
-                                    </Badge>
-                                  </Button>
-                                </li>
-                              )}
-                            </For>
-                          </ul>
-                        </section>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-                <Show when={scope() !== "active" || state() || query().trim()}>
+                                  <span class="tasks-screen-title">{item.task.title}</span>
+                                  <span class="tasks-screen-meta">
+                                    #{item.channelName} · {item.ownerName ?? t("Removed agent")} ·{" "}
+                                    {formatTime(item.task.updatedAt)}
+                                  </span>
+                                  <Badge tone={STATE_VIEW[item.task.state].tone} dot>
+                                    {t(STATE_VIEW[item.task.state].label)}
+                                  </Badge>
+                                </Button>
+                              </li>
+                            )}
+                          </For>
+                          <Show when={group.hasMore}>
+                            <li class="tasks-screen-note">{t("More in the full list.")}</li>
+                          </Show>
+                        </ul>
+                      </section>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <Show when={page()}>
+                {(current) => (
                   <ul class="tasks-screen-list" aria-label={t("Tasks")}>
                     <Show when={current().items.length === 0}>
                       <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
@@ -319,9 +341,9 @@ export function TasksViewScreen(props: {
                       )}
                     </For>
                   </ul>
-                </Show>
-              </div>
-            )}
+                )}
+              </Show>
+            </div>
           </Show>
 
           <Show when={detail()}>

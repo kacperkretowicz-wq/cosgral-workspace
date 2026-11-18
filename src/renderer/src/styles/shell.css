@@ -163,12 +163,50 @@
   color: var(--cosgral-text-muted);
 }
 
-/* Page rail: every button keeps its full 36 px, so "More pages" can never shrink into a bare pill. */
+/* Page rail: every button keeps its full 36 px, so "More" can never shrink into a bare pill. */
 .page-rail .page-rail-list > .page-rail-button {
+  position: relative;
   width: 36px;
   height: 36px;
   min-height: 36px;
   flex: 0 0 36px;
+}
+
+.page-rail .page-rail-button[data-pinned="true"]::after {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cosgral-accent);
+  content: "";
+}
+
+.page-rail-overflow-menu .page-rail-more-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.page-rail-overflow-menu .page-rail-more-open {
+  min-width: 0;
+}
+
+.page-rail-overflow-menu .page-rail-more-pin {
+  justify-content: center;
+  width: 32px;
+  padding-inline: 0;
+}
+
+.page-rail-overflow-menu .page-rail-pin-on {
+  color: var(--cosgral-accent);
+}
+
+.page-rail-overflow-menu .page-rail-pin-off {
+  color: var(--cosgral-text-muted);
+  opacity: 0.7;
 }
 
 .page-rail .page-rail-button svg {
