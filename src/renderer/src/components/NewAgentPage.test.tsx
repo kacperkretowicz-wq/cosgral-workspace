@@ -59,6 +59,11 @@ it("needs a name, then creates with the chosen colour, effort and description", 
   );
 });
 
+it("shows all 12 mascot faces to pick from", () => {
+  page();
+  expect(screen.getAllByRole("button", { name: "Choose this face" })).toHaveLength(12);
+});
+
 it("keeps the typed fields and shows an error when creating fails", async () => {
   const onCreate = vi.fn().mockRejectedValue(new Error("boom"));
   page(onCreate);

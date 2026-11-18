@@ -316,25 +316,29 @@
   padding: 2px;
 }
 
+/* UI-AG: show all 12 mascot faces (nowrap hid them). Two rows of six + shuffle. */
 .new-agent-page .new-agent-faces {
   position: relative;
-  flex-wrap: nowrap;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(6, 40px);
+  justify-content: center;
+  gap: 6px;
+  max-width: 280px;
+  align-self: center;
 }
 
 .new-agent-page .new-agent-face {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 40px;
+  height: 40px;
   padding: 2px;
 }
 
 .new-agent-page .new-agent-more-faces {
   position: absolute;
   top: 50%;
-  right: -40px;
-  width: 32px;
-  height: 32px;
+  right: -44px;
+  width: 36px;
+  height: 36px;
   transform: translateY(-50%);
 }
 
