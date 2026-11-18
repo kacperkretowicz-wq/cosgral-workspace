@@ -1,6 +1,6 @@
 # UI-AE: jakość UI / ruch (openbot.run → własne)
 
-Stan: kod na `team/ui/w12-ae` (nad UI-AD `fe22919`). GO leży — testy po zniku. Nieoglądane w oknie.
+Stan: kod na `team/ui/w12-ae` @ `6e6199ad5` (nad UI-AD `fe22919`). GO leży — testy po zniku. Nieoglądane w oknie.
 
 ## Dokument
 `docs/cosgral/jakosc-ui-ruch.md` — 8 propozycji + wybór pierwszych 3.
@@ -13,9 +13,10 @@ Stan: kod na `team/ui/w12-ae` (nad UI-AD `fe22919`). GO leży — testy po zniku
 ## Współpraca z KK
 KK wcześniej wrzucił szkic `motion-reveal` na swojej gałęzi. Tutaj ten sam plik (jedna wersja), żeby nie było drugiego toru jak przy rutynach. Lider scala jedną kopię.
 
-## Po GO
-- `AgentCardsSection.test` (+ skeleton), `check:ui`, Biome na CSS.
-- Storybook/visual tylko lider.
+## Historyjki / testy (kod; uruchomienie po GO)
+- `MotionQuality.stories.tsx` — Dark/Light (arrive + skeleton + press, kontrast ≥ 4,5).
+- `AgentCardsSection.test.tsx` — skeleton podczas ładowania.
+- Po GO: ten test + Biome; pełny Storybook/visual tylko lider.
 
 ## Luki
 - Sweep / empty / motyw / panel / ilustracja — w dokumencie, nie w tej turze.
