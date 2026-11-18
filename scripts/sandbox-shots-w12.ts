@@ -297,6 +297,15 @@ async function setTheme(page: Page, theme: "dark" | "light"): Promise<void> {
   await page.waitForTimeout(700);
 }
 
+async function setLanguage(page: Page, language: "en" | "pl"): Promise<void> {
+  await page.evaluate(`(async () => {
+    const api = window.openbot.appSettings;
+    if (!api?.update) throw new Error("no appSettings.update");
+    await api.update({ language: ${JSON.stringify(language)} });
+  })()`);
+  await page.waitForTimeout(900);
+}
+
 async function openNewAgentForm(
   page: Page,
 ): Promise<"formularz Nowy agent już na starcie" | "formularz Nowy agent widoczny"> {
@@ -627,23 +636,35 @@ async function main(): Promise<void> {
     await pageRef.page.waitForTimeout(300);
 
     await tryShot(app, pageRef, out, "09-tasks", async (p) => {
+      await dismissOverlays(p);
       await clickRail(p, ["Tasks", "Zadania"]);
-      await p.waitForTimeout(700);
-      // Open as chat + Steps list live in the detail pane — click a seeded row first.
-      const row = p.getByRole("button", { name: /seed|Shot|Seed/i }).or(p.locator(".tasks-screen-title").first());
-      if (await row.count())
-        await row
-          .first()
-          .click()
-          .catch(() => undefined);
-      await p.waitForTimeout(500);
+      await p.waitForTimeout(900);
+      // Detail pane (Open as chat + Steps) opens only after a row click (TasksViewScreen).
+      const screen = p.locator("main.tasks-screen").or(p.getByRole("main", { name: /^Tasks$|^Zadania$/i }));
+      const row = screen
+        .locator("button.tasks-screen-row")
+        .filter({ hasText: /Seed task/i })
+        .first();
+      if (await row.count()) {
+        await row.scrollIntoViewIfNeeded().catch(() => undefined);
+        await row.click({ timeout: 8_000 }).catch(() => undefined);
+      } else {
+        // Fallback: any tasks row (seed titles may be shortened).
+        const any = screen.locator("button.tasks-screen-row").first();
+        if (await any.count()) await any.click({ timeout: 8_000 }).catch(() => undefined);
+      }
+      await p
+        .getByRole("region", { name: /Task details|Szczegóły zadania/i })
+        .waitFor({ timeout: 8_000 })
+        .catch(() => undefined);
+      await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
         {
           id: "heading-or-search",
           find: () =>
-            p
+            screen
               .getByRole("searchbox", { name: /Search tasks|Szukaj zadań/i })
-              .or(p.getByLabel(/Search tasks|Szukaj zadań/i)),
+              .or(screen.getByLabel(/Search tasks|Szukaj zadań/i)),
         },
         { id: "open-as-chat", find: () => p.getByRole("button", { name: /Open as chat|Otwórz jako czat/i }) },
         {
@@ -653,9 +674,10 @@ async function main(): Promise<void> {
         },
         {
           id: "state-badge",
-          find: () => p.getByText(/^(Running|Done|Paused|Archived|W toku|Gotowe|Wstrzymane|Archiwum)$/i),
+          find: () =>
+            screen.getByText(/^(Running|Done|Paused|Archived|Queued|W toku|Gotowe|Wstrzymane|Archiwum|W kolejce)$/i),
         },
-        { id: "seed-task", find: () => p.getByText(/seed|Shot|Seed/i) },
+        { id: "seed-task", find: () => screen.locator(".tasks-screen-title").filter({ hasText: /Seed/i }) },
       ]);
       return `Zadania + checklist [${checklist}]`;
     });
@@ -710,24 +732,39 @@ async function main(): Promise<void> {
       await ensureChatAgent(p);
       await sendStubChat(p).catch(() => undefined);
       await unlockComposer(p);
-      const more = p.getByRole("button", { name: /More message actions/i });
+      // Actions stay opacity:0 until the message row is hovered (conversation.css).
+      const entry = p
+        .locator(".message-entry")
+        .filter({ hasText: /Stub: received|Hello from T-G shots/i })
+        .last();
+      if (await entry.count()) {
+        await entry.scrollIntoViewIfNeeded().catch(() => undefined);
+        await entry.hover({ timeout: 8_000 }).catch(() => undefined);
+        await p.waitForTimeout(300);
+      }
+      const more = (await entry.count())
+        ? entry.getByRole("button", { name: /More message actions/i })
+        : p.getByRole("button", { name: /More message actions/i });
       if (!(await more.count())) {
         return `menu wiadomości MISS:more-btn [${await visibleChecklist([{ id: "stub-text", find: () => p.getByText(/Stub: received|Hello from T-G/i) }])}]`;
       }
-      // Kobalte DropdownMenu opens on pointerdown (App.test / MessageHistoryActions.test), not click alone.
+      // Kobalte: pointerdown opens (MessageHistoryActions.test); labels are "Edit message" / "Delete message".
       await more.first().dispatchEvent("pointerdown", { button: 0 });
-      await more
+      await more.first().dispatchEvent("pointerup", { button: 0 });
+      await p
+        .getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i })
         .first()
-        .click({ timeout: 8_000 })
+        .waitFor({ timeout: 8_000 })
         .catch(() => undefined);
-      await p.waitForTimeout(500);
+      await p.waitForTimeout(300);
       const checklist = await visibleChecklist([
         { id: "copy", find: () => p.getByRole("menuitem", { name: /^Copy$|^Kopiuj$/i }) },
-        { id: "pin", find: () => p.getByRole("menuitem", { name: /Pin|Unpin|Przypnij|Odepnij/i }) },
+        { id: "react", find: () => p.getByRole("button", { name: /Add reaction|Dodaj reakcję/i }) },
+        { id: "pin", find: () => p.getByRole("menuitem", { name: /Pin message|Unpin message|Przypnij|Odepnij/i }) },
         { id: "branch", find: () => p.getByRole("menuitem", { name: /Branch from here|Rozgałęź/i }) },
         { id: "retry", find: () => p.getByRole("menuitem", { name: /^Retry$|^Ponów$/i }) },
-        { id: "edit", find: () => p.getByRole("menuitem", { name: /^Edit$|^Edytuj$/i }) },
-        { id: "delete", find: () => p.getByRole("menuitem", { name: /^Delete$|^Usuń$/i }) },
+        { id: "edit", find: () => p.getByRole("menuitem", { name: /^Edit message$|^Edytuj wiadomość$/i }) },
+        { id: "delete", find: () => p.getByRole("menuitem", { name: /^Delete message$|^Usuń wiadomość$/i }) },
       ]);
       return `menu wiadomości + checklist [${checklist}]`;
     });
@@ -820,27 +857,54 @@ async function main(): Promise<void> {
       return `Dostawcy + checklist [${checklist}]`;
     });
 
+    // PL comparison (KAPI-D): same screens with language=pl — full Polish copy should show.
+    await tryShot(app, pageRef, out, "14b-providers-pl", async (p) => {
+      await setLanguage(p, "pl");
+      await dismissOverlays(p);
+      await clickRail(p, ["Providers", "Dostawcy"]);
+      await p.waitForTimeout(900);
+      const checklist = await visibleChecklist([
+        { id: "pl-heading", find: () => p.getByText(/Dostawcy|Katalog dostawców|Wbudowany/i) },
+        { id: "pl-pool", find: () => p.getByText(/Dodaj klucz|Klucz API|W puli|Usuń/i) },
+        { id: "codex-or-claude", find: () => p.getByText(/Codex|Claude/i) },
+      ]);
+      return `Dostawcy PL + checklist [${checklist}]`;
+    });
+
+    await tryShot(app, pageRef, out, "14c-usage-pl", async (p) => {
+      await setLanguage(p, "pl");
+      await dismissOverlays(p);
+      await clickRail(p, ["Usage", "Użycie", "Zużycie"]);
+      await p.waitForTimeout(900);
+      const checklist = await visibleChecklist([
+        { id: "pl-usage", find: () => p.getByText(/Użycie|Raport użycia|Według modelu/i) },
+        { id: "pl-period", find: () => p.getByRole("button", { name: /7 dni|30 dni/i }) },
+        { id: "model-row", find: () => p.getByText(/luna|codex|gpt|claude/i) },
+      ]);
+      await setLanguage(p, "en");
+      return `Użycie PL + checklist [${checklist}]`;
+    });
+
     await tryShot(app, pageRef, out, "15-workflows-versions", async (p) => {
+      await dismissOverlays(p);
       await clickRail(p, ["Workflows", "Przepływy"]);
       await p.waitForTimeout(900);
-      // Versions panel mounts only when a workflow is selected (Show when={selected()}).
-      const listItem = p
-        .getByRole("button", { name: /workflow|przepływ|seed|flow|Shot/i })
-        .or(p.locator(".workflow-list button, [data-workflow-id]").first());
-      if (await listItem.count())
+      // Do NOT match "New workflow" (clears selected). Seed name is exact.
+      const listItem = p.getByRole("button", { name: /^Seed shot flow$/i });
+      if (await listItem.count()) {
         await listItem
           .first()
-          .click()
+          .click({ timeout: 8_000 })
           .catch(() => undefined);
-      else {
-        const create = p.getByRole("button", { name: /New workflow|Nowy przepływ|Create|Utwórz/i });
-        if (await create.count())
-          await create
+      } else {
+        const fallback = p.getByRole("button", { name: /^Seed /i });
+        if (await fallback.count())
+          await fallback
             .first()
-            .click()
+            .click({ timeout: 8_000 })
             .catch(() => undefined);
       }
-      await p.waitForTimeout(700);
+      await p.waitForTimeout(800);
       const versions = p.getByRole("region", { name: /^Versions$|^Wersje$/i }).or(p.locator(".workflow-versions"));
       if (await versions.count())
         await versions
@@ -849,21 +913,24 @@ async function main(): Promise<void> {
           .catch(() => undefined);
       await p.waitForTimeout(400);
       const checklist = await visibleChecklist([
-        { id: "canvas-or-list", find: () => p.getByText(/Workflow|Przepływ|Trigger|Agent|Run history|Historia/i) },
+        {
+          id: "canvas-or-list",
+          find: () => p.getByText(/Workflow|Przepływ|Trigger|Agent|Run history|Historia|Seed shot flow/i),
+        },
         {
           id: "versions",
           find: () =>
             p
               .getByRole("region", { name: /^Versions$|^Wersje$/i })
               .or(p.getByRole("heading", { name: /^Versions$|^Wersje$/i }))
-              .or(p.getByText(/Versions are not available|Wersje nie są dostępne|Restore|Przywróć/i)),
+              .or(p.getByText(/Version \d+|Wersja \d+|Restore|Przywróć|No versions yet|Brak wersji/i)),
         },
       ]);
       return `Workflows wersje + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "16-updates", async (p) => {
-      // UpdatesPanel lives in SettingsModal → General (not Server settings rail).
+      // KK f98c8b633: Updates is its own Settings section (not buried under General).
       await dismissOverlays(p);
       const gear = p
         .getByRole("navigation", { name: /Pages|Strony/i })
@@ -874,13 +941,16 @@ async function main(): Promise<void> {
         if (await any.count()) await any.first().click({ timeout: 8_000 });
       }
       await p.waitForTimeout(600);
-      const general = p.getByRole("button", { name: /^General$|^Ogólne$/i });
-      if (await general.count())
-        await general
+      const updatesNav = p
+        .locator(".settings-modal-nav")
+        .getByRole("button", { name: /^Updates$|^Aktualizacje$/i })
+        .or(p.getByRole("button", { name: /^Updates$|^Aktualizacje$/i }));
+      if (await updatesNav.count())
+        await updatesNav
           .first()
-          .click()
+          .click({ timeout: 8_000 })
           .catch(() => undefined);
-      await p.waitForTimeout(400);
+      await p.waitForTimeout(500);
       const updatesHead = p.getByRole("heading", { name: /^Updates$|^Aktualizacje$/i });
       if (await updatesHead.count())
         await updatesHead
@@ -902,7 +972,7 @@ async function main(): Promise<void> {
             p.getByText(/Stable|Preview|Stabilny|Installed version|Zainstalowana wersja|COSGRAL Workspace version/i),
         },
       ]);
-      return `Aktualizacje KK (Settings→General) + checklist [${checklist}]`;
+      return `Aktualizacje KK (Settings→Updates) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "17-messengers", async (p) => {
@@ -991,22 +1061,25 @@ async function main(): Promise<void> {
     await tryShot(app, pageRef, out, "22-thread-undo", async (p) => {
       await ensureChatAgent(p);
       await unlockComposer(p);
-      // Delete a thread via IPC so the 10-min undo bar appears without flaky menus.
-      // Backend: threadUndo.list / threads.list — api.agent.list does not exist (T-V / BE-L).
+      // Delete via IPC so the 10-min undo bar appears. threads.list returns ThreadList { threads: [...] }, not an array.
       const deleted = await p.evaluate(`(async () => {
         const api = window.openbot;
         const bots = await api.agent.listBots();
-        const bot = bots.find((b) => !b.hidden) || bots[0];
+        const bot = bots.find((b) => b.name === "Shot agent") || bots.find((b) => !b.hidden) || bots[0];
         if (!bot) return "no-bot";
-        const threads = api.threads?.list
-          ? await api.threads.list({ botId: bot.id })
-          : ((await api.agent.listThreads?.({ botId: bot.id })) ?? []);
-        const t = threads[0];
+        let list = api.threads?.list ? await api.threads.list({ botId: bot.id }) : null;
+        let rows = Array.isArray(list?.threads) ? list.threads : Array.isArray(list) ? list : [];
+        let t = rows.find((row) => row.title === "Seed undo thread") || rows.find((row) => row.state !== "archived") || rows[0];
+        if (!t && api.threads?.create) {
+          list = await api.threads.create({ botId: bot.id, title: "Seed undo thread" });
+          rows = Array.isArray(list?.threads) ? list.threads : [];
+          t = rows.find((row) => row.title === "Seed undo thread") || rows[0];
+        }
         if (!t) return "no-thread";
         if (api.threadUndo?.delete) {
           await api.threadUndo.delete({ botId: bot.id, threadId: t.id, confirm: true });
-        } else if (api.agent.deleteThread) {
-          await api.agent.deleteThread({ botId: bot.id, threadId: t.id });
+        } else if (api.threads?.delete) {
+          await api.threads.delete({ botId: bot.id, threadId: t.id, confirm: true });
         } else {
           return "no-delete-api";
         }
