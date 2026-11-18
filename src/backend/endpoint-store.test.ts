@@ -5,7 +5,7 @@ import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ModelEndpoint } from "@openbot/contracts/ipc";
+import { ENDPOINT_LIMITS, type ModelEndpoint } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber } from "@openbot/contracts/runtime-values";
 import { afterEach, describe, expect, it } from "vitest";
 import { redactApiKeys, setApiKeySource } from "./api-key-env";
@@ -205,11 +205,11 @@ describe("EndpointStore: the address", () => {
 
   it("limits the number of endpoints", async () => {
     const { store } = await open();
-    for (let index = 0; index < 8; index += 1)
+    for (let index = 0; index < ENDPOINT_LIMITS.endpoints; index += 1)
       store.save({ label: `E${index}`, kind: "openai-compatible", baseUrl: `http://127.0.0.1:${9000 + index}/v1` });
     expect(() =>
-      store.save({ label: "Ninth", kind: "openai-compatible", baseUrl: "http://127.0.0.1:9100/v1" }),
-    ).toThrow(/up to 8/);
+      store.save({ label: "Over the limit", kind: "openai-compatible", baseUrl: "http://127.0.0.1:9100/v1" }),
+    ).toThrow(new RegExp(`up to ${ENDPOINT_LIMITS.endpoints}`));
   });
 });
 

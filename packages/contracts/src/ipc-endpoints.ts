@@ -17,7 +17,7 @@ export const ENDPOINT_LIMITS = {
   id: 40,
   label: 60,
   baseUrl: 300,
-  endpoints: 8,
+  endpoints: 16,
   /** Models kept per endpoint; a server with more lists only the first ones. */
   models: 200,
   model: 200,
@@ -30,16 +30,78 @@ export const ENDPOINT_PRESETS = [
   { kind: "lmstudio", label: "LM Studio", baseUrl: "http://127.0.0.1:1234/v1" },
 ] as const satisfies ReadonlyArray<{ kind: EndpointKind; label: string; baseUrl: string }>;
 
+/** documented: the address was read in the provider's own documentation (see `docs`); unverified: not confirmed (same words as the provider catalog). */
+export const ENDPOINT_PRESET_VERIFICATIONS = ["documented", "unverified"] as const;
+export type EndpointPresetVerification = (typeof ENDPOINT_PRESET_VERIFICATIONS)[number];
+
+export interface EndpointCloudPreset {
+  kind: EndpointKind;
+  label: string;
+  baseUrl: string;
+  verification: EndpointPresetVerification;
+  /** The page of the provider that states the address; null while unverified. */
+  docs: string | null;
+}
+
 /**
- * COSGRAL W12 (BE-Q): ready settings for hosted services that speak the OpenAI protocol, so Grok (xAI) and OpenRouter models can be used
- * with an API key and without their CLI (owner question 3). Unlike ENDPOINT_PRESETS they are NOT probed when the program starts: they
- * only fill the form, and nothing is contacted until the person saves a key (the address is then shown with the warning that the
- * messages go to another computer). The addresses are the public ones of the services; not contacted from here.
+ * COSGRAL W12 (BE-Q, BE-T): ready settings for hosted services that speak the OpenAI protocol, so their models can be used with an API
+ * key and without their CLI (owner question 3). Unlike ENDPOINT_PRESETS they are NOT probed when the program starts: they only fill the
+ * form, and nothing is contacted until the person saves a key (the address is then shown with the warning that the messages go to
+ * another computer). The order is the order of the buttons. The address is the base the program adds "/models" and "/chat/completions"
+ * to, so a provider that documents it without "/v1" (DeepSeek) stays without it. Addresses were read in the documentation on 18.11.2026,
+ * not contacted from here; a model list is fetched later, when the person saves a key.
  */
 export const ENDPOINT_CLOUD_PRESETS = [
-  { kind: "openai-compatible", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" },
-  { kind: "openai-compatible", label: "xAI (Grok)", baseUrl: "https://api.x.ai/v1" },
-] as const satisfies ReadonlyArray<{ kind: EndpointKind; label: string; baseUrl: string }>;
+  {
+    kind: "openai-compatible",
+    label: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    verification: "unverified",
+    docs: null,
+  },
+  {
+    kind: "openai-compatible",
+    label: "xAI (Grok)",
+    baseUrl: "https://api.x.ai/v1",
+    verification: "unverified",
+    docs: null,
+  },
+  {
+    kind: "openai-compatible",
+    label: "DeepSeek",
+    baseUrl: "https://api.deepseek.com",
+    verification: "documented",
+    docs: "https://api-docs.deepseek.com/",
+  },
+  {
+    kind: "openai-compatible",
+    label: "Mistral",
+    baseUrl: "https://api.mistral.ai/v1",
+    verification: "documented",
+    docs: "https://docs.mistral.ai/api/",
+  },
+  {
+    kind: "openai-compatible",
+    label: "Groq",
+    baseUrl: "https://api.groq.com/openai/v1",
+    verification: "documented",
+    docs: "https://console.groq.com/docs/openai",
+  },
+  {
+    kind: "openai-compatible",
+    label: "Together AI",
+    baseUrl: "https://api.together.ai/v1",
+    verification: "documented",
+    docs: "https://docs.together.ai/docs/openai-api-compatibility",
+  },
+  {
+    kind: "openai-compatible",
+    label: "Moonshot (Kimi)",
+    baseUrl: "https://api.moonshot.ai/v1",
+    verification: "documented",
+    docs: "https://platform.kimi.ai/docs/guide/start-using-kimi-api",
+  },
+] as const satisfies ReadonlyArray<EndpointCloudPreset>;
 
 export interface ModelEndpoint {
   id: string;
