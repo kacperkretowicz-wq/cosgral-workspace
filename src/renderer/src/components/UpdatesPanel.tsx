@@ -40,10 +40,15 @@ export function UpdatesPanel() {
   const [error, setError] = createSignal("");
   const [busy, setBusy] = createSignal(false);
 
+  // The newest read wins: an older read that finishes late is dropped.
+  let serial = 0;
   async function load() {
     if (!preferencesApi) return;
+    const mine = ++serial;
     try {
-      setOverview(await preferencesApi.getOverview());
+      const next = await preferencesApi.getOverview();
+      if (mine !== serial) return;
+      setOverview(next);
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not load the update settings."));

@@ -13,6 +13,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, Match, onSettled, Show, Switch as SolidSwitch, untrack } from "solid-js";
 import { t } from "../i18n";
+import { InstanceTransferPanel } from "./InstanceTransferPanel";
 import type { PageId } from "./PageRail";
 import { Button, Input, NativeSelect, Switch } from "./ui";
 
@@ -213,6 +214,20 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
                         {t("Not available on this computer")}
                         {source.kind === "unavailable" ? `: ${source.reason}` : ""}
                       </p>
+                    )}
+                  </Match>
+                  <Match
+                    when={section().id === "import" || section().id === "transfer" ? section().id : undefined}
+                    keyed
+                  >
+                    {(id) => (
+                      <InstanceTransferPanel
+                        mode={id === "import" ? "import" : "transfer"}
+                        onOpenTransfer={() => {
+                          setActive("transfer");
+                          setNotice("");
+                        }}
+                      />
                     )}
                   </Match>
                   <Match when={section().source.kind === "api"}>
