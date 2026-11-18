@@ -116,6 +116,7 @@ import { createSpacesApi } from "./spaces-api";
 import { createSubagentsApi } from "./subagents-api";
 import { createSubscriptionsApi } from "./subscriptions-api";
 import { createTasksViewApi } from "./tasks-view-api";
+import { createThreadUndoApi } from "./thread-undo-api";
 import { createThreadsApi } from "./threads-api";
 import { createVaultConnectorsApi, createVaultSecretsApi } from "./vault-connectors-api";
 import { createVoiceApi } from "./voice-api";
@@ -841,6 +842,7 @@ const openbotApi: OpenBotDesktopApi = {
   appData: createAppDataApi(invokeAgent),
   subscriptions: createSubscriptionsApi(invokeAgent),
   threads: createThreadsApi(invokeAgent),
+  threadUndo: createThreadUndoApi(invokeAgent),
   plans: createPlansApi(invokeAgent),
   subagents: createSubagentsApi(invokeAgent),
   acpLogin: createAcpLoginApi(invokeAgent),

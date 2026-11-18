@@ -182,6 +182,7 @@ import { SubagentRunner } from "./subagent-runner";
 import { SqliteSubagentStore } from "./subagent-store";
 import { SUBAGENT_DYNAMIC_TOOLS, SUBAGENT_INSTRUCTIONS, SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { ThreadStore } from "./thread-store";
+import { ThreadUndoService } from "./thread-undo";
 import { type SecretBox, VaultStore } from "./vault-store";
 import { VAULT_DYNAMIC_TOOLS, VAULT_INSTRUCTIONS, VAULT_NAMESPACE, VaultRequests, VaultTools } from "./vault-tools";
 import type { WorkflowRunner } from "./workflow-manager";
@@ -377,6 +378,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #context: ContextTracker;
   /** COSGRAL W6-BE1: the threads of every agent (one is active; a running turn may belong to another). */
   readonly #threads: ThreadStore;
+  readonly #threadUndo: ThreadUndoService;
   readonly #requestTimeoutMs: number;
   readonly #clientFactory: AgentClientFactory | null;
   readonly #eyes: AgentEyes | null;
@@ -532,6 +534,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       },
     });
     mailbox.useThreadResolver((botId) => this.#threads.activeThreadId(botId));
+    // COSGRAL W12 (BE-K): delete a thread with a few minutes to bring it back (the end of the window is the ordinary delete).
+    this.#threadUndo = new ThreadUndoService({
+      threads: this.#threads,
+      purge: (botId, threadId) => this.deleteThread({ botId, threadId, confirm: true }),
+      changed: (botId, list) => this.#afterThreadChange(botId, list),
+      emit: (event) => this.#emit(event),
+    });
     this.#computerUsePrerequisites = computerUsePrerequisites;
     this.#requestTimeoutMs = requestTimeoutMs;
     this.#clientFactory = clientFactory;
@@ -986,6 +995,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   get approvalRules(): ApprovalRulesStore | null {
     return this.#approvalRules;
+  }
+
+  /** COSGRAL W12 (BE-K): delete a thread with undo (`window.openbot.threadUndo`). */
+  get threadUndo(): ThreadUndoService {
+    return this.#threadUndo;
   }
 
   /** COSGRAL W8-BE2: attach the isolation of processes. `folder` is where the helper is built. Call `isolation.initialize()` after. */
@@ -1539,6 +1553,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#subagents.recover();
     this.#recoverPersistedTurns();
     this.#initialized = true;
+    await this.#threadUndo.start();
     await this.#connect("starting", ["codex", "claude"]);
   }
 
@@ -1608,6 +1623,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   async stop(): Promise<void> {
     this.#stopping = true;
     this.#initialized = false;
+    this.#threadUndo.dispose();
     if (this.#restartTimer) clearTimeout(this.#restartTimer);
     this.#restartTimer = null;
     if (this.#budgetTimer) clearInterval(this.#budgetTimer);
