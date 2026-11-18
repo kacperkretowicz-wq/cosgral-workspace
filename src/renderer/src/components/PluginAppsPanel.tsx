@@ -2,6 +2,7 @@ import type { AgentEvent, PluginCategory, PluginDetails, PluginList, PluginSumma
 import { PLUGIN_CATEGORIES, PLUGIN_CATEGORY_LABELS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Input, NativeSelect } from "./ui";
 
 interface CustomForm {
@@ -330,7 +331,7 @@ export function PluginAppsPanel() {
           when={list()}
           fallback={
             <Show when={!error()}>
-              <p role="status">{t("Loading apps…")}</p>
+              <CosgralLoadingSkeleton label={t("Loading apps…")} />
             </Show>
           }
         >
@@ -342,7 +343,7 @@ export function PluginAppsPanel() {
                 </p>
               </Show>
               <Show when={value().plugins.length === 0 && value().info.source !== "none"}>
-                <p class="plugin-note">{t("No matching apps.")}</p>
+                <p class="plugin-note cosgral-empty-enter">{t("No matching apps.")}</p>
               </Show>
               <ul class="plugin-grid">
                 <For each={value().plugins}>

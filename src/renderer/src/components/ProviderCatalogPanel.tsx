@@ -1,6 +1,7 @@
 import type { ProviderCatalogItem, ProviderSupportLevel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
 
 function supportView(level: ProviderSupportLevel): { label: string; tone: BadgeTone } {
@@ -126,7 +127,10 @@ export function ProviderCatalogPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<p role="status">{t("Loading providers…")}</p>}>
+        <Show
+          when={loaded()}
+          fallback={<CosgralLoadingSkeleton label={t("Loading providers…")} />}
+        >
           <ul class="provider-catalog-grid">
             <For each={items()}>
               {(item) => (

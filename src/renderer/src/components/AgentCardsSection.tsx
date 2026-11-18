@@ -18,6 +18,7 @@ import {
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { AgentCardDetail } from "./AgentCardDetail";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, NativeSelect, Switch } from "./ui";
 import {
   Bell,
@@ -219,11 +220,7 @@ export function AgentCardsSection(props: { botId: string }) {
           when={overview()}
           fallback={
             <Show when={!error()}>
-              <div class="agent-cards-skeleton" role="status" aria-label={t("Loading cards…")}>
-                <span class="cosgral-skeleton cosgral-skeleton-wide" />
-                <span class="cosgral-skeleton cosgral-skeleton-mid" />
-                <span class="cosgral-skeleton cosgral-skeleton-wide" />
-              </div>
+              <CosgralLoadingSkeleton label={t("Loading cards…")} />
             </Show>
           }
         >
