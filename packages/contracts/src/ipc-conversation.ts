@@ -27,6 +27,7 @@ import {
 import type { BrowserControlState, BrowserTab } from "./ipc-browser";
 import { type BrowserProfilesChanged, isBrowserProfilesChanged } from "./ipc-browser-profiles";
 import { type BudgetsChanged, isBudgetsChanged } from "./ipc-budgets";
+import { type ChannelRoutinesChanged, isChannelRoutinesChanged } from "./ipc-channel-routines";
 import { isSideQuestionChanged, type SideQuestionChanged } from "./ipc-composer";
 import { type ComputerUseState, isComputerUseState } from "./ipc-computer-use";
 import { type ContextChanged, type ContextSettingsChanged, isContextSettings, isContextState } from "./ipc-context";
@@ -55,7 +56,6 @@ import { isPlanChanged, type PlanChanged } from "./ipc-plan";
 import { isPluginCatalogChanged, type PluginCatalogChanged } from "./ipc-plugin-catalog";
 import { isProviderCatalogChanged, type ProviderCatalogChanged } from "./ipc-provider-catalog";
 import { type AcpAgentConfig, isAcpAgentConfig, isProviderUsage, type ProviderUsage } from "./ipc-providers";
-import { type ChannelRoutinesChanged, isChannelRoutinesChanged } from "./ipc-channel-routines";
 import type { QueueHoldKind } from "./ipc-queue-holds";
 import {
   isRemoteDesktopClientState,
