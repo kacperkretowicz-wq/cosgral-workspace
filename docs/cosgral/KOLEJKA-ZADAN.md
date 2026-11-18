@@ -53,8 +53,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
 3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
 4. [zrobione: team/tester/w12-tg] Sondy do nowych funkcji: `scripts/sandbox-next-probes.ts` (restore-thread, menu-plus, clear-history, history-window, external-links).
-5. Zaktualizuj tabelę zgodności ekranów po zrzutach 17-11-i (po UI-AI/AJ/AK/AL, KK-AG/AI).
-6. Sonda dostępności (fokus, kontrast, reduced motion) na ekranach P0/P1.
+5. [zrobione: team/tester/w12-ti — bez PNG 17-11-i; z raportów UI-AI…AM] Zaktualizuj tabelę zgodności ekranów po zrzutach 17-11-i (po UI-AI/AJ/AK/AL, KK-AG/AI).
+6. [zrobione: skrypt sandbox-a11y-probe.ts; uruchomienie po GO] Sonda dostępności (fokus, kontrast, reduced motion) na ekranach P0/P1.
 7. Sprawdź w oknie: historyWindow, Clear history, skrót wysyłania, MaxListeners (log e2e).
 
 ## Lider (Okiestrator)
