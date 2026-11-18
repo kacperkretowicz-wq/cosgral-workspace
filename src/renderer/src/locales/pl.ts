@@ -1697,8 +1697,6 @@ export const pl = {
   "Last compacted:": "Ostatnie kompaktowanie:",
   "Could not load context.": "Nie udało się wczytać kontekstu.",
   "Could not compact context.": "Nie udało się skompaktować kontekstu.",
-  "Context information is unavailable in this version.": "Informacje o kontekście nie są dostępne w tej wersji.",
-  "Context information is unavailable.": "Informacje o kontekście są niedostępne.",
   "Loading context information...": "Wczytywanie informacji o kontekście...",
   "{used} / {limit} tokens ({percent}%)": "{used} / {limit} tokenów ({percent}%)",
   "Show thinking details": "Pokaż szczegóły myślenia",

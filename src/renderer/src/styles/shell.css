@@ -178,7 +178,7 @@
   right: 5px;
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: var(--cosgral-radius-pill);
   background: var(--cosgral-accent);
   content: "";
 }

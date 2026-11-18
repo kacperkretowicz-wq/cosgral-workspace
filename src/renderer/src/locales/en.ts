@@ -1695,8 +1695,6 @@ export const en = {
   "Last compacted:": "Last compacted:",
   "Could not load context.": "Could not load context.",
   "Could not compact context.": "Could not compact context.",
-  "Context information is unavailable in this version.": "Context information is unavailable in this version.",
-  "Context information is unavailable.": "Context information is unavailable.",
   "Loading context information...": "Loading context information...",
   "{used} / {limit} tokens ({percent}%)": "{used} / {limit} tokens ({percent}%)",
   "Show thinking details": "Show thinking details",
