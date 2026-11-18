@@ -9,8 +9,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 
 ## UI Designer
 1. [zrobione: 6af21006e] Kolejne ekrany P0, potem P1 z `openbot-0.71-kolejka-ui.md`, których `vs-071.txt` nie oznacza jako zgodne.
-2. [w toku: UI, 20:06] Skeleton i ruch w pozostałych panelach, które jeszcze pokazują gołe „Loading…”.
-3. Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
+2. [zrobione: PLACEHOLDER_SHA] Skeleton i ruch w pozostałych panelach, które jeszcze pokazują gołe „Loading…”.
+3. [w toku: UI, 20:12] Edytor przepływów: pola Prompt i Condition, czytelność węzłów.
 4. Stany puste i błędów (jeden wspólny styl) w Bibliotece, Użyciu, Harmonogramie.
 5. Dostępność: fokus, kontrast, `prefers-reduced-motion` na nowych ekranach.
 

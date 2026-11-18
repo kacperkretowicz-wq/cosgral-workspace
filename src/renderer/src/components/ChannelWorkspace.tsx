@@ -1,7 +1,9 @@
 import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { ChannelEditor } from "./ChannelEditor";
 import { ChannelView } from "./ChannelView";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
 
 export function ChannelWorkspace(props: {
@@ -180,7 +182,7 @@ export function ChannelWorkspace(props: {
           <p role="alert">{error()}</p>
         </Show>
         <Show when={loading()}>
-          <p>Loading channel…</p>
+          <CosgralLoadingSkeleton label={t("Loading channel…")} />
         </Show>
         <Show when={channel()} fallback={<p>Select a channel.</p>} keyed>
           {(item) => (

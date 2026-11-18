@@ -2,6 +2,7 @@ import type { UsagePeriod, UsageReport, UsageTokenSplit } from "@openbot/contrac
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
 
 const BAR_AREA = { width: 600, height: 120 } as const;
@@ -125,7 +126,14 @@ export function UsageReportView() {
             </Button>
           </p>
         </Show>
-        <Show when={report()} fallback={<Show when={!error()}>{<p role="status">{t("Loading usage…")}</p>}</Show>}>
+        <Show
+          when={report()}
+          fallback={
+            <Show when={!error()}>
+              <CosgralLoadingSkeleton label={t("Loading usage…")} />
+            </Show>
+          }
+        >
           {(current) => (
             <>
               <dl class="usage-totals">

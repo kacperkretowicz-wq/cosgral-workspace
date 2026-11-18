@@ -1,6 +1,7 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button } from "./ui";
 
@@ -210,7 +211,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
         when={details()}
         fallback={
           <Show when={!error()}>
-            <p role="status">{t("Loading…")}</p>
+            <CosgralLoadingSkeleton label={t("Loading…")} />
           </Show>
         }
       >

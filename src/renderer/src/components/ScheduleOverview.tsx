@@ -1,6 +1,7 @@
 import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
 
 const DAY = 86_400_000;
@@ -121,7 +122,14 @@ export function ScheduleOverview() {
             </Button>
           </p>
         </Show>
-        <Show when={view()} fallback={<Show when={!error()}>{<p role="status">{t("Loading schedule…")}</p>}</Show>}>
+        <Show
+          when={view()}
+          fallback={
+            <Show when={!error()}>
+              <CosgralLoadingSkeleton label={t("Loading schedule…")} />
+            </Show>
+          }
+        >
           {(current) => (
             <>
               <Show when={current().entries.length === 0}>

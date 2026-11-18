@@ -9,6 +9,7 @@ import { CHANNEL_TASK_STATES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import "../styles/tasks-detail.css";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
 const STATE_VIEW: Record<ChannelTaskState, { label: string; tone: BadgeTone }> = {
@@ -236,7 +237,7 @@ export function TasksViewScreen(props: {
         </Show>
 
         <div class="tasks-split">
-          <Show when={page()} fallback={<p role="status">{t("Loading tasks…")}</p>}>
+          <Show when={page()} fallback={<CosgralLoadingSkeleton label={t("Loading tasks…")} />}>
             {(current) => (
               <div class="tasks-board">
                 <Show when={scope() === "active" && !state() && !query().trim()}>

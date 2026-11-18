@@ -2,6 +2,7 @@
 import { parseDomainList } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
 import type { SettingsEvents } from "./AccessSettings";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Field, Heading, Text, Textarea } from "./ui";
 export function BrowserProfileSettings(props: {
   botId: string;
@@ -92,7 +93,9 @@ export function BrowserProfileSettings(props: {
       <Show
         when={ready()}
         fallback={
-          <Text>{api ? "Loading browser profile…" : "Browser profiles are unavailable on this connection."}</Text>
+          <Show when={api} fallback={<Text>Browser profiles are unavailable on this connection.</Text>}>
+            <CosgralLoadingSkeleton label="Loading browser profile…" />
+          </Show>
         }
       >
         <form

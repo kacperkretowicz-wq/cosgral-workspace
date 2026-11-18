@@ -1,6 +1,8 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { DirectConversationSnapshot, DirectMessage, TeamPresenceMember } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onCleanup, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { ScrollToLatestButton, scrollToLatestMessage } from "./conversation/MessageNavigation";
 import {
   scrollToUnreadBoundary,
@@ -202,7 +204,14 @@ export function DirectConversation(props: DirectConversationProps) {
         <Show when={showScrollToLatest()}>
           <ScrollToLatestButton onClick={jumpToLatestMessage} />
         </Show>
-        <Show when={!props.loading} fallback={<div class="direct-conversation-state">Loading messages…</div>}>
+        <Show
+          when={!props.loading}
+          fallback={
+            <div class="direct-conversation-state">
+              <CosgralLoadingSkeleton label={t("Loading messages…")} />
+            </div>
+          }
+        >
           <Show
             when={!props.loadError}
             fallback={

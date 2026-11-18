@@ -1,6 +1,7 @@
 import type { SlashCommand } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
 
 interface SkillQuickPickProps {
@@ -27,7 +28,7 @@ export function SkillQuickPick(props: SkillQuickPickProps) {
     <section class="skill-quick-pick" aria-label={t("Use a skill")}>
       <Show when={api} fallback={<p>{t("Skills are not available in this version.")}</p>}>
         <Show when={!failed()} fallback={<p role="alert">{t("Could not load skills.")}</p>}>
-          <Show when={skills()} fallback={<p role="status">{t("Loading skills…")}</p>}>
+          <Show when={skills()} fallback={<CosgralLoadingSkeleton label={t("Loading skills…")} />}>
             {(list) => (
               <Show when={list().length > 0} fallback={<p>{t("No skills assigned to this agent.")}</p>}>
                 <For each={list()}>

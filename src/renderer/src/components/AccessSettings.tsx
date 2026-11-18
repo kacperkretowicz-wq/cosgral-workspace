@@ -1,6 +1,7 @@
 import type { AccessDesktopApi, AgentAccess, AgentEvent } from "@openbot/contracts/ipc";
 import { ACCESS_LEVEL_INFO, ACCESS_LEVELS, accessFolderProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Field, Heading, NativeSelect, Text, Textarea } from "./ui";
 export type SettingsEvents = (listener: (event: AgentEvent) => void) => () => void;
 export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; onEvent?: SettingsEvents }) {
@@ -89,7 +90,9 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       <Show
         when={access()}
         fallback={
-          <Text>{api ? "Loading access settings…" : "Access settings are unavailable on this connection."}</Text>
+          <Show when={api} fallback={<Text>Access settings are unavailable on this connection.</Text>}>
+            <CosgralLoadingSkeleton label="Loading access settings…" />
+          </Show>
         }
       >
         {(current) => (

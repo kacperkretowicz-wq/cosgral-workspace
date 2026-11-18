@@ -5,6 +5,7 @@ export { safeCliError } from "./provider-error";
 import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 // W5-BE2: the API also has account methods, so the CLI actions are named here (not "everything but listCli").
 export type CliAction = Extract<
@@ -282,11 +283,16 @@ export function ManagedCliSection(props: {
       <Show
         when={states().length}
         fallback={
-          <Text as="p" tone="muted">
-            {window.openbot.subscriptions
-              ? t("Loading CLI tools…")
-              : t("CLI management is not available in this version.")}
-          </Text>
+          <Show
+            when={window.openbot.subscriptions}
+            fallback={
+              <Text as="p" tone="muted">
+                {t("CLI management is not available in this version.")}
+              </Text>
+            }
+          >
+            <CosgralLoadingSkeleton label={t("Loading CLI tools…")} />
+          </Show>
         }
       >
         <div class="managed-cli-grid">

@@ -1,6 +1,7 @@
 import type { AgentIsolation, IsolationDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
 import type { SettingsEvents } from "./AccessSettings";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Heading, Switch, Text } from "./ui";
 export function IsolationSettings(props: { botId: string; api?: IsolationDesktopApi; onEvent?: SettingsEvents }) {
   const api = untrack(() => props.api ?? window.openbot?.isolation);
@@ -66,7 +67,11 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
       </Show>
       <Show
         when={state()}
-        fallback={<Text>{api ? "Loading isolation…" : "Isolation is unavailable on this connection."}</Text>}
+        fallback={
+          <Show when={api} fallback={<Text>Isolation is unavailable on this connection.</Text>}>
+            <CosgralLoadingSkeleton label="Loading isolation…" />
+          </Show>
+        }
       >
         {(current) => (
           <>

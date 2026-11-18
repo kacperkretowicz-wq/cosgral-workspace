@@ -337,6 +337,8 @@ export const en = {
   "Saved.": "Saved.",
   "Server settings are not available in this version.": "Server settings are not available in this version.",
   "Loading…": "Loading…",
+  "Loading channel…": "Loading channel…",
+  "Loading messages…": "Loading messages…",
   "Not available on this computer": "Not available on this computer",
   "This section has its own screen.": "This section has its own screen.",
   Open: "Open",

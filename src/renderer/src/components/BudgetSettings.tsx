@@ -9,6 +9,7 @@ import type {
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
 import type { SettingsEvents } from "./AccessSettings";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
 export function downloadBudgetCsv(file: BudgetCsv) {
   const url = URL.createObjectURL(new Blob([file.csv], { type: "text/csv;charset=utf-8" }));
@@ -299,7 +300,11 @@ export function BudgetSettings(
       </Show>
       <Show
         when={status()}
-        fallback={<Text>{api ? "Loading budget usage…" : "Budgets are unavailable on this connection."}</Text>}
+        fallback={
+          <Show when={api} fallback={<Text>Budgets are unavailable on this connection.</Text>}>
+            <CosgralLoadingSkeleton label="Loading budget usage…" />
+          </Show>
+        }
       >
         {(value) => (
           <BudgetPanel

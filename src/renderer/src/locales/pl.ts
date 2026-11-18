@@ -336,6 +336,8 @@ export const pl = {
   "Saved.": "Zapisano.",
   "Server settings are not available in this version.": "Ustawienia serwera nie są dostępne w tej wersji.",
   "Loading…": "Wczytywanie…",
+  "Loading channel…": "Wczytywanie kanału…",
+  "Loading messages…": "Wczytywanie wiadomości…",
   "Not available on this computer": "Niedostępne na tym komputerze",
   "This section has its own screen.": "Ta sekcja ma własny ekran.",
   Open: "Otwórz",

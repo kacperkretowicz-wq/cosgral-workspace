@@ -34,6 +34,13 @@ it("lists what is not collected instead of inventing it", async () => {
   expect(screen.getByText("Not collected yet")).toBeInTheDocument();
 });
 
+it("shows a skeleton while the report loads", () => {
+  vi.spyOn(usage, "get").mockReturnValue(new Promise(() => {}));
+  render(() => <UsageReportView />);
+  expect(screen.getByRole("status", { name: "Loading usage…" })).toBeInTheDocument();
+  expect(screen.queryByText("Loading usage…")).not.toBeInTheDocument();
+});
+
 it("shows an error with Retry", async () => {
   vi.spyOn(usage, "get").mockRejectedValueOnce(new Error("counter locked"));
   render(() => <UsageReportView />);
