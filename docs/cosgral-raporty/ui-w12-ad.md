@@ -1,11 +1,11 @@
 # UI-AD: check:ui + presety dostawców + zmiana nazwy agenta
 
-Stan: kod i commit na `team/ui/w12-ad`; testy po zniku GO (ciche okno).
+Stan: `team/ui/w12-ad` @ `fe22919fe`; testy po zniku GO (18.11 ~16:30).
 
 ## 1. check:ui (czerwone po UI-AC)
 - Przyczyna: natywne `<input type="checkbox">` w wyborze dni tygodnia w `ChannelRoutinesPanel.tsx`.
 - Poprawka: `Input` z `components/ui` (`unstyled`, `type="checkbox"`).
-- `check:ui` uruchomię po zniku GO.
+- `bun run check:ui` → **zielone** (Legacy composite debt: 0/0).
 
 ## 2. Przyciski presetów (EndpointsSection)
 - Już budowane z `ENDPOINT_CLOUD_PRESETS` (`For`); nie ma twardych dwóch przycisków.
