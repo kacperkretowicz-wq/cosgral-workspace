@@ -15,7 +15,7 @@ function item(patch: Partial<MarketplaceItem> & Pick<MarketplaceItem, "id" | "ti
     version: 1,
     skillName: patch.kind === "skill" ? patch.id : null,
     skills: [],
-    libraryState: patch.kind === "skill" ? "available" : null,
+    libraryState: patch.kind === "skill" ? "absent" : null,
     installedBotIds: [],
     ...patch,
   };
