@@ -286,14 +286,29 @@ export function App() {
   const [authSuccessVisible, setAuthSuccessVisible] = createSignal(false);
   const [permissionsOpen, setPermissionsOpen] = createSignal(false);
   const [activePage, setActivePage] = createSignal<PageId>("agents");
-  // "Restore the last workspace on launch": open the remembered page and agent once the agents are loaded, then remember changes.
+  // "Restore the last workspace on launch": open the remembered page, agent and thread once the agents are loaded, then remember changes.
   useRestoreWorkspace({
     ready: () => botList().length > 0,
-    place: () => ({ page: activePage(), botId: activeBotId() }),
+    place: () => ({
+      page: activePage(),
+      botId: activeBotId(),
+      threadId: threadLists()[activeBotId()]?.activeThreadId ?? null,
+    }),
     hasBot: (id) => botList().some((bot) => bot.id === id),
-    open: ({ page, botId }) => {
+    hasThread: (botId, threadId) => {
+      const list = threadLists()[botId];
+      // Threads may still be loading on first paint — try select; drop only when the list is known and lacks the id.
+      if (!list) return true;
+      return list.threads.some((thread) => thread.id === threadId);
+    },
+    open: ({ page, botId, threadId }) => {
       if (page) setActivePage(page);
       if (botId) setActiveBotId(botId);
+      if (botId && threadId && window.openbot.threads)
+        void window.openbot.threads
+          .select({ botId, threadId })
+          .then((list) => applyThreadList(list))
+          .catch(() => undefined);
     },
   });
   const [eyesState, setEyesState] = createSignal<AgentEyesState>(emptyAgentEyesState());

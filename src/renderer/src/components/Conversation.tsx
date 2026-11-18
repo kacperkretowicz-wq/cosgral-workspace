@@ -104,8 +104,10 @@ import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
 import { ThreadTabs } from "./ThreadTabs";
 import {
+  AudioLines,
   Button,
   Combobox,
+  Crosshair,
   Dialog,
   Input,
   NativeSelect,
@@ -2344,12 +2346,30 @@ export function Conversation(props: ConversationProps) {
                     </Button>
                     <Button
                       type="button"
+                      disabled
+                      title={t("Teach a task needs browser teach — not in this build yet.")}
+                      aria-label={t("Teach a task")}
+                    >
+                      <Crosshair aria-hidden="true" />
+                      {t("Teach a task")}
+                    </Button>
+                    <Button
+                      type="button"
                       onClick={() => {
                         setShowAttachments(false);
                         setSideQuestionOpen(true);
                       }}
                     >
                       {t("Side question")}
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled
+                      title={t("Voice side panel needs engine support — not in this build yet.")}
+                      aria-label={t("Voice")}
+                    >
+                      <AudioLines aria-hidden="true" />
+                      {t("Voice")}
                     </Button>
                   </Show>
                 </Popover.Content>
