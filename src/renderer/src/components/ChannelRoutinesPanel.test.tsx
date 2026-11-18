@@ -220,6 +220,7 @@ describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)",
   it("keeps the routine when the question about deleting is answered No, and deletes it on Yes", async () => {
     await mock.create(base);
     const ask = vi.spyOn(window, "confirm").mockReturnValue(false);
+    ask.mockClear();
     render(() => <ChannelRoutinesPanel channel={panelChannel} />);
     await fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
     expect(ask).toHaveBeenCalledTimes(1);
