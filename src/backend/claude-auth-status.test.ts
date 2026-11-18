@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readClaudeAuthStatus } from "./claude-client";
 import { CodexCliError } from "./cli";
 import { writeFakeCli } from "./testing/fake-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 // W4-BE3: a slow `claude auth status` on a busy computer must not turn into a false "Sign in required".
 let root: string;
@@ -19,7 +20,7 @@ afterEach(async () => {
 
 const cli = (folder: string, script: string) => writeFakeCli(join(root, folder), "claude", script);
 
-describe("Claude sign-in check", { timeout: 30_000 }, () => {
+describe("Claude sign-in check", { timeout: suiteTimeout(30_000, 30_000) }, () => {
   it("reads a signed-in account", async () => {
     const claude = await cli(
       "signed in",

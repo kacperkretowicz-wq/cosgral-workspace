@@ -285,6 +285,39 @@ Biblioteka zbiera pliki, które wgrałeś, które zapisali agenci i które przys
 
 ---
 
+## 5a. Jak zobaczyć każdy nowy ekran (kliknij po kolei)
+
+**Skąd zaczynasz:** po lewej jest pionowy pasek stron: Agenci, Harmonogram, Zadania, Przepływy, Zużycie, Biblioteka, Katalog dodatków, Zdalny pulpit, Dostawcy, Telefon, Ustawienia serwera. Gdy okno jest wąskie, część pozycji chowa się pod przyciskiem „More pages” (więcej stron). Na dole paska jest **zębatka „Ustawienia”**: to okno ustawień programu, z menu po lewej (General, Appearance, Voice, Updates…).
+
+W wersji angielskiej napisy są po angielsku (Agents, Schedule, Tasks…). Nazwy w nawiasach poniżej to nazwy z polskiego interfejsu.
+
+| Ekran | Gdzie kliknąć | Co zobaczysz | Czego potrzeba |
+|---|---|---|---|
+| **Aktualizacje** | Zębatka → **Aktualizacje** (Updates) | Wersja i stan, tor Stabilny/Podgląd, „Check for updates”, automatyczne sprawdzanie, „Restart when idle” | Nic. W programie uruchomionym z folderu ekran mówi, że aktualizacje tu nie działają |
+| **Głos** | Zębatka → **Głos** (Voice) | Uprawnienie mikrofonu z przyciskiem do ustawień Windows, ustawienia czytania i dyktowania, lista „niedostępne w tej wersji” | Nic. Pobranie modelu dyktowania pyta o zgodę |
+| **Komunikatory** (Telegram, Slack) | **Biblioteka** → sekcja „Komunikatory” (Messengers) | Karty ze stanem, pola na tokeny, lista dopuszczonych rozmów | Do prawdziwego połączenia: token bota Telegrama lub dwa tokeny Slacka |
+| **Integracje kont** (GitHub, Google, Notion, Meta) | **Biblioteka** → sekcja „Połącz konta” (Connect accounts, pod komunikatorami) | Cztery karty, kroki rejestracji aplikacji, pola na identyfikator i sekret | Do połączenia: własna aplikacja zarejestrowana w usłudze |
+| **Logowanie do serwerów MCP** | **Biblioteka** → lista serwerów MCP, pod nią „Logowanie do serwerów MCP” | Karta na serwer wymagający logowania w przeglądarce | Serwer MCP działający przez sieć (bez niego ekran mówi, że nic nie wymaga logowania) |
+| **Konektory Sejfu** (1Password, Bitwarden, Proton Pass) | **Biblioteka** → sekcja „Menedżery haseł” (Password managers), pod Sejfem | Stan połączenia i lista dozwolonych logowań (bez haseł) | Zainstalowane narzędzie menedżera (`op`, `bw`) |
+| **Import i Transfer** | **Ustawienia serwera** → menu sekcji → **Import** albo **Przeniesienie** (Transfer) | Trzy kroki, wybór agentów do zapisu w .zip, podgląd przed wczytaniem | Do importu: plik .zip z innego komputera |
+| **Telefon (Mobile Connect)** | **Telefon** (Phone) | Pod kartami: „How phones reach this computer”, „Your phones” z PIN-em i powiadomieniami, przełącznik powiadomień, instrukcja Tailscale | Do listy telefonów: sparowany telefon |
+| **Zdalny pulpit** | **Zdalny pulpit** | Na górze „Who may come in”: plakietka, sesje, przełącznik „Ask on this computer every time”, „Unattended access: niedostępne” | Nic do oglądania; do prawdziwej sesji drugi komputer |
+| **Podagenci** | **Agenci** → wybierz agenta → nad rozmową rozwiń „Threads: …” | Sekcja „Subagents: pracuje X z Y” z zadaniami, podglądem i przyciskiem „Stop” | Pokazuje się tylko, gdy agent sam uruchomił podagenta |
+| **Cofnij usunięcie wątku** | **Agenci** → wybierz agenta → „Threads: …” → usuń wątek | Wiersz „Usunięto …” z odliczaniem 10 minut i przyciskiem „Cofnij” | Co najmniej dwa wątki (jeden zostaje) |
+| **Zadania** | **Zadania** (Tasks) | Lista zadań z kanałów; kliknij wiersz, żeby zobaczyć szczegóły (kroki, „Otwórz jako czat”) | Zadania z kanałów |
+| **Zużycie** | **Zużycie** (Usage) | Okres 7/30/90/365 dni, tokeny, tury, wykres dzienny, tabela agentów, obciążenie komputera | Rozmowy z agentami (bez nich puste wykresy) |
+| **Harmonogram** | **Harmonogram** (Schedule) | Najbliższe dni z rutynami, rutyny z zewnątrz osobno, ostatnie uruchomienia | Rutyny |
+| **Wersje przepływu** | **Przepływy** (Workflows) → wybierz przepływ → sekcja „Versions” | Lista wersji, „w porównaniu z bieżącą”, „Przywróć tę wersję” | Zapisany przepływ |
+| **Katalog dodatków** (Marketplace) | **Katalog dodatków** → zakładki Agents / Skills | Szukanie, kategorie, „Polecane”, karty z przyciskiem instalacji | Nic; instalacja zawsze prosi o Twoją zgodę |
+
+**Gdy ekranu nie widać:**
+1. Sprawdź, czy okno nie jest wąskie: pozycje paska mogą być pod „More pages”.
+2. Sekcje Biblioteki są jedna pod drugą; przewiń stronę w dół.
+3. Panel pokazuje się dopiero wtedy, gdy program ma dane: podagenci i „Cofnij” znikają, gdy nic do pokazania; konektory i komunikatory potrzebują tokenów.
+4. Żaden z tych ekranów nie był jeszcze oglądany w prawdziwym oknie przez człowieka. Jeśli któryś wygląda źle, zrób zrzut i napisz, który to ekran.
+
+---
+
 ## 6. Gdzie znajdują się Twoje dane i jak zrobić kopię zapasową
 
 Wszystkie dane są uporządkowane i czytelne:

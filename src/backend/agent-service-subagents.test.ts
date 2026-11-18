@@ -15,6 +15,7 @@ import { SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -74,7 +75,7 @@ function responseText(cli: ThreadCli, index: number): string {
 }
 
 describe.sequential("subagents on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("runs a subagent in a session of its own and returns its answer to the parent as a tool result (W23)", async () => {
     const { service, cli, events } = await open();
@@ -253,7 +254,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

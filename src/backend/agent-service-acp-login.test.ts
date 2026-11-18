@@ -15,6 +15,7 @@ import { ProviderRegistry } from "./provider-registry";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 const STUB = fileURLToPath(new URL("./testing/acp-login-stub.mjs", import.meta.url));
 
@@ -64,7 +65,7 @@ function loginStates(events: AgentEvent[]): AcpLoginState[] {
   return events.flatMap((event) => (event.type === "acp-login-changed" ? [event.state] : []));
 }
 
-describe.sequential("ACP sign-in on the service", { timeout: process.platform === "win32" ? 30_000 : 10_000 }, () => {
+describe.sequential("ACP sign-in on the service", { timeout: suiteTimeout(30_000, 10_000) }, () => {
   it("lists the agents of Providers, signs in with a link and a code, and tells the window each step", async () => {
     const { service, registry, events } = await open();
     expect(service.listAcpLogins()).toEqual([]);
@@ -120,7 +121,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 12_000 : 5_000);
+  const deadline = Date.now() + suiteTimeout(12_000, 5_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

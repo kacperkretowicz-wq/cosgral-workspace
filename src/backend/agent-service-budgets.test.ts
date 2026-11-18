@@ -15,6 +15,7 @@ import { MailboxStore } from "./mailbox-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -84,7 +85,7 @@ function queue(events: AgentEvent[]): QueueSnapshot | undefined {
 }
 
 describe.sequential("budgets on the service", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("counts the tokens of a turn once: the growth of the thread's total, not the total again (Q6)", async () => {
     const { service, cli, meter } = await open();
@@ -260,7 +261,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

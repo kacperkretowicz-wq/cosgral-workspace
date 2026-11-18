@@ -21,6 +21,7 @@ import { MailboxStore } from "./mailbox-store";
 import type { RequestId, ResponseDecoder, RpcError } from "./protocol";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
+import { suiteTimeout } from "./testing/timeouts";
 import type { SecretBox } from "./vault-store";
 
 // Test data only: no real key.
@@ -146,7 +147,7 @@ async function fixture() {
 }
 
 describe.sequential("an agent on an own model endpoint", {
-  timeout: process.platform === "win32" ? 20_000 : 8_000,
+  timeout: suiteTimeout(20_000, 8_000),
 }, () => {
   it("offers the models of an endpoint as agent models once the list was fetched, and not before", async () => {
     const { base } = await startServer("hi");
@@ -237,7 +238,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

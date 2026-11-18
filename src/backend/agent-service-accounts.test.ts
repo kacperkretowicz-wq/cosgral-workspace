@@ -28,6 +28,7 @@ import { ProviderRegistry } from "./provider-registry";
 import { SUBAGENT_NAMESPACE } from "./subagent-tools";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 const SYSTEM = "system-codex";
 const WORK = "acc-aaaaaaaa";
@@ -310,7 +311,7 @@ async function fixture(
 }
 
 describe.sequential("AgentService with provider accounts", {
-  timeout: process.platform === "win32" ? 20_000 : 8_000,
+  timeout: suiteTimeout(20_000, 8_000),
 }, () => {
   it("changes nothing when no account pool is attached", async () => {
     const { service: s, clis, events } = await fixture({}, { attach: false });
@@ -716,7 +717,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined | Promise<boolean | undefined>): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

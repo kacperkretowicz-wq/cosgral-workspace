@@ -20,6 +20,7 @@ import { MailboxStore } from "./mailbox-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { firstLine, stringParam, ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -69,7 +70,7 @@ async function fixture(cli = new ThreadCli()): Promise<Fixture> {
 }
 
 describe.sequential("AgentService with several threads per agent", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("keeps the history of each thread apart, and gives each thread its own CLI thread", async () => {
     const { service: s, cli, events } = await fixture();
@@ -454,7 +455,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

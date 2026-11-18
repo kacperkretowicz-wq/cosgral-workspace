@@ -2,6 +2,10 @@ import { fileURLToPath } from "node:url";
 import solidPlugin from "@solidjs/vite-plugin";
 import { configDefaults, defineConfig } from "vitest/config";
 
+// COSGRAL W12 (BE-P): the limits below are vitest's own defaults; COSGRAL_TEST_TIMEOUT_SCALE=3 multiplies them (and the limits of the
+// slow suites, see src/backend/testing/timeouts.ts) for a full run on a busy computer. Without the variable nothing changes.
+const timeoutScale = Math.max(1, Number(process.env.COSGRAL_TEST_TIMEOUT_SCALE) || 1);
+
 export default defineConfig({
   plugins: [solidPlugin()],
   resolve: {
@@ -13,6 +17,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     fileParallelism: false,
+    testTimeout: 5_000 * timeoutScale,
+    hookTimeout: 10_000 * timeoutScale,
+    teardownTimeout: 10_000 * timeoutScale,
     setupFiles: ["./src/renderer/src/setupTests.ts"],
     exclude: [...configDefaults.exclude, "apps/**", "tests/visual/**"],
   },

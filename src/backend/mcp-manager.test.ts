@@ -12,6 +12,7 @@ import { McpStore, type SecretBox } from "./mcp-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 // @ts-expect-error The fixture is a plain .mjs module without types.
 import { echoFetch } from "./testing/mcp-echo-server.mjs";
+import { suiteTimeout } from "./testing/timeouts";
 
 const ECHO_SERVER = join(__dirname, "testing", "mcp-echo-server.mjs");
 const roots: string[] = [];
@@ -72,7 +73,7 @@ async function listen(handler: Parameters<typeof createServer>[1]): Promise<stri
   return `http://127.0.0.1:${address.port}/rpc`;
 }
 
-describe("McpManager", { timeout: 30_000 }, () => {
+describe("McpManager", { timeout: suiteTimeout(30_000, 30_000) }, () => {
   it("connects a stdio server, lists its tools and gives them to agents under mcp_<name>", async () => {
     const { manager, events } = await setup();
     const added = await addEcho(manager);

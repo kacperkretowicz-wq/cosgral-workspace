@@ -13,6 +13,7 @@ import { MailboxStore } from "./mailbox-store";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
 import { writeFakeCli } from "./testing/fake-cli";
 import { stringParam, ThreadCli } from "./testing/thread-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 let root: string;
 const services: AgentService[] = [];
@@ -54,7 +55,7 @@ async function fixture(cli = new ThreadCli()) {
 }
 
 describe.sequential("the context of a conversation, per thread", {
-  timeout: process.platform === "win32" ? 30_000 : 10_000,
+  timeout: suiteTimeout(30_000, 10_000),
 }, () => {
   it("answers for the thread it is asked about, not only for the one on screen", async () => {
     const { service: s, cli, events } = await fixture();
@@ -217,7 +218,7 @@ function fakeBrowser() {
 }
 
 async function waitFor(check: () => boolean | undefined): Promise<void> {
-  const deadline = Date.now() + (process.platform === "win32" ? 10_000 : 4_000);
+  const deadline = Date.now() + suiteTimeout(10_000, 4_000);
   while (Date.now() < deadline) {
     if (check()) return;
     await new Promise((resolve) => setTimeout(resolve, 10));

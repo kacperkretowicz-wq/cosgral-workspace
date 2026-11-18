@@ -15,6 +15,7 @@ import {
   Mic,
   NativeSelect,
   Palette,
+  RefreshCw,
   Settings,
   SlidersHorizontal,
   Switch,
@@ -32,13 +33,14 @@ const navItems: ReadonlyArray<{ label: string; icon: typeof Settings; current: b
   { label: "General", icon: Settings, current: true },
   { label: "Appearance", icon: Palette, current: false },
   { label: "Voice", icon: Mic, current: false },
+  { label: "Updates", icon: RefreshCw, current: false },
   { label: "Notifications", icon: Bell, current: false },
   { label: "Advanced", icon: SlidersHorizontal, current: false },
 ];
 
 /** The sections of the dialog that already have a page (the others say "Soon"). */
 function isOpenSection(label: string): boolean {
-  return label === "Appearance" || label === "Voice";
+  return label === "Appearance" || label === "Voice" || label === "Updates";
 }
 
 function durationToMilliseconds(value: string, fallback: number): number {
@@ -209,6 +211,8 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div ref={registerScrollElement} class="settings-modal-content" onScroll={updateScrollFades}>
                   {section() === "Appearance" ? (
                     <AppearanceSettings />
+                  ) : section() === "Updates" ? (
+                    <UpdatesPanel />
                   ) : section() === "Voice" ? (
                     <VoiceOverviewPanel />
                   ) : (
@@ -278,8 +282,6 @@ export function SettingsModal(props: SettingsModalProps) {
                           />
                         </Card>
                       </section>
-
-                      <UpdatesPanel />
                     </>
                   )}
                 </div>

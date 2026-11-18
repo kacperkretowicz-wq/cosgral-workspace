@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CLI_VERSION_TIMEOUT_MS, CliTimeoutError, readCliVersion } from "./cli";
 import { writeFakeCli } from "./testing/fake-cli";
+import { suiteTimeout } from "./testing/timeouts";
 
 // W4-BE2: a slow first start of the CLI must not be reported as a broken CLI.
 let root: string;
@@ -16,7 +17,7 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-describe("CLI version check", { timeout: 30_000 }, () => {
+describe("CLI version check", { timeout: suiteTimeout(30_000, 30_000) }, () => {
   it("allows a slow first start (the old limit was 5 s)", () => {
     expect(CLI_VERSION_TIMEOUT_MS).toBeGreaterThanOrEqual(20_000);
   });
