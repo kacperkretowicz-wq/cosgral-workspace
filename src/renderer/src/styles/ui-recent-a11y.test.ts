@@ -11,6 +11,11 @@ describe("ui-recent-a11y.css", () => {
     expect(css).toContain(".agent-cards .agent-card-row:focus-visible");
     expect(css).toContain(".workflow-prompt-text:focus-visible");
     expect(css).toContain(".cosgral-panel-state .ui-button:focus-visible");
+    expect(css).toContain(".tasks-scopes .ui-button:focus-visible");
+    expect(css).toContain(".appearance-settings .ui-switch-input:focus-visible");
+    expect(css).toContain(".page-rail-button:focus-visible");
+    expect(css).toContain(".sidebar .bot-row:focus-visible");
+    expect(css).toContain(".mk-gallery .mk-card:focus-visible");
   });
 
   it("respects reduced motion, high contrast, and forced colors", () => {
@@ -18,5 +23,7 @@ describe("ui-recent-a11y.css", () => {
     expect(css).toContain("@media (prefers-contrast: more)");
     expect(css).toContain("@media (forced-colors: active)");
     expect(css).toContain("animation: none");
+    expect(css).toContain(".tasks-screen-note");
+    expect(css).toContain(".sidebar .bot-row-preview");
   });
 });
