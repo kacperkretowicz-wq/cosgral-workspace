@@ -4,6 +4,7 @@ import { MESSAGE_REACTIONS, MORE_MESSAGE_REACTIONS } from "@openbot/contracts/ip
 import { createMemo, For, Show } from "solid-js";
 import { avatarHeadColor } from "../../blobatar";
 import type { BotMessage, BotProfile } from "../../data";
+import { t } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { type HistoryActionContext, MessageHistoryActions } from "../MessageHistoryActions";
 import { Button, DropdownMenu } from "../ui";
@@ -284,12 +285,12 @@ export function MessageActions(props: {
           gutter={6}
           modal={false}
         >
-          <DropdownMenu.Trigger class="message-action-button" aria-label="Add reaction">
+          <DropdownMenu.Trigger class="message-action-button" aria-label={t("Add reaction")}>
             <ReactionIcon />
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
             class="reaction-picker"
-            aria-label="Choose a reaction"
+            aria-label={t("Choose a reaction")}
             aria-hidden={props.pickerOpen ? undefined : "true"}
           >
             <div class="reaction-picker-row">
@@ -308,7 +309,7 @@ export function MessageActions(props: {
               </DropdownMenu.RadioGroup>
               <DropdownMenu.Item
                 class="reaction-more-button"
-                aria-label="More emoji"
+                aria-label={t("More emoji")}
                 closeOnSelect={false}
                 onSelect={props.onExpandEmoji}
               >
@@ -348,7 +349,7 @@ export function MessageActions(props: {
           when={props.history}
           fallback={
             <DropdownMenu.Root onOpenChange={props.onToggleMore} placement="top-end" gutter={6} modal={false}>
-              <DropdownMenu.Trigger class="message-action-button" aria-label="More message actions">
+              <DropdownMenu.Trigger class="message-action-button" aria-label={t("More message actions")}>
                 <MoreIcon />
               </DropdownMenu.Trigger>
               <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>

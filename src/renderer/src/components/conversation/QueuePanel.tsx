@@ -1,5 +1,6 @@
 import type { QueueDelivery } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
+import { t } from "../../i18n";
 import { Button } from "../ui";
 import { AnchoredTooltip } from "./AnchoredTooltip";
 import { fileBadge } from "./AttachmentCards";
@@ -155,7 +156,7 @@ export function QueuePanel(props: QueuePanelProps) {
             "agent-queue-panel-dragging": Boolean(draggedId()),
           },
         ]}
-        aria-label="Message queue"
+        aria-label={t("Message queue")}
         onDragOver={(event) => {
           if (!draggedId()) return;
           event.preventDefault();

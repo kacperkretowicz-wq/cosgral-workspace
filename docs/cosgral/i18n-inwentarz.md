@@ -23,12 +23,12 @@ Priorytet kolejnych migracji (nie KK-only):
 
 | Priorytet | Pliki | Co |
 |---|---|---|
-| P0 | `conversation/ChatSearch`, `MessageRendering`, `SelectionActions`, `QueuePanel`, `ComposerEditor` | aria rozmowy poza już migrowanym Conversation |
+| P0 | `conversation/ChatSearch`, `MessageRendering`, `SelectionActions`, `QueuePanel`, `ComposerEditor` | **zrobione KAPI-S** — aria na `t()` |
 | P1 | `AccessSettings`, `IsolationSettings`, `BrowserProfileSettings`, `BudgetSettings` | nagłówki i opisy pól (błędy+aria sekcji: KAPI-P) |
 | P1 | `AccountLogin`, `ApiKeysSection`, `McpPanel`, `MemoryPanel`, `AgentSettingsW3` | całe sekcje bez `t()` |
 | P2 | `RemoteDesktopPage`, `MobileConnectPage`, `HostPanel`, `Spaces` | aria + copy |
 | P2 | `Sidebar` (reszta), `App.tsx` loading aria | drobne aria |
-| Uwaga | `AgentAccountPicker` | aria nadal **PL na sztywno** („Konto agenta”) — wyspa |
+| Uwaga | `AgentAccountPicker` | **zrobione KAPI-S** — cała wyspa na `t()` |
 
 ### Test kompletności
 
@@ -82,7 +82,7 @@ Priorytet kolejnych migracji (nie KK-only):
 |---|---|---|---|---|
 | 1 | `components/ProviderAccounts.tsx` | 31 | 55 | Stany logowania PL + EN |
 | 2 | `components/ManagedCliSection.tsx` | 23 | 40 | „Narzędzia CLI”, Pobierz, ścieżka |
-| 3 | `components/AgentAccountPicker.tsx` | 10 | 7 | „Konto agenta”, instrukcje PL |
+| 3 | `components/AgentAccountPicker.tsx` | 0 | 0 | KAPI-S: `t()` (było 10/7 PL) |
 | 4 | `components/Sidebar.tsx` | 3 | 148 | **„Pokaż ukryte”** + dużo EN (Needs you) |
 | 5 | `components/AppSettingsW3.tsx` | 2 | 30 | `Language` + opcja **Polski** |
 | 6 | `components/LibraryPanel.tsx` | 2 | 17 | **Pobierz**, **Pokaż w folderze** |

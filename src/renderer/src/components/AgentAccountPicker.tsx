@@ -1,27 +1,29 @@
 ﻿import { For, Show } from "solid-js";
+import { t } from "../i18n";
 import { useAccounts } from "./account-state";
 import { Button, Field, NativeSelect, Text } from "./ui";
+
 export function AgentAccountPicker(props: { botId: string; provider: string; disabled?: boolean }) {
   const state = useAccounts();
   const accounts = () => state.snapshot()?.accounts.filter((a) => a.provider === props.provider) ?? [];
   const assigned = () => state.snapshot()?.assignments.find((a) => a.botId === props.botId)?.accountId ?? "";
   const answeringWith = () => state.snapshot()?.active?.find((item) => item.botId === props.botId)?.label ?? "";
   return (
-    <section aria-label="Konto agenta">
+    <section aria-label={t("Agent account")}>
       <Show
         when={props.provider === "codex" || props.provider === "claude"}
         fallback={
           <Text as="p" tone="muted">
-            Konta COSGRAL są dostępne dla Codex i Claude.
+            {t("COSGRAL accounts are available for Codex and Claude.")}
           </Text>
         }
       >
         <Field
-          label="Konto"
+          label={t("Account")}
           description={
             props.disabled
-              ? "Najpierw zapisz zmianę modelu. Konto wybierzesz dla zapisanego dostawcy."
-              : "Wybór konta zapisuje się od razu. Domyślne korzysta z ustawień dostawcy."
+              ? t("Save the model change first. You pick an account for the saved provider.")
+              : t("The account choice saves immediately. Default uses the provider settings.")
           }
         >
           <NativeSelect
@@ -35,19 +37,19 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
               });
             }}
           >
-            <option value="">Domyślne</option>
+            <option value="">{t("Default")}</option>
             <Show when={assigned() && !accounts().some((a) => a.id === assigned())}>
               <option value={assigned()} disabled>
-                Przypisane konto innego dostawcy lub usunięte — wybierz ponownie
+                {t("Assigned account from another provider or removed — pick again")}
               </option>
             </Show>
             <For each={accounts()}>
               {(account) => (
                 <option value={account.id}>
                   {account.label}
-                  {account.system ? " (systemowe)" : ""}
-                  {!account.loggedIn ? " — wylogowane" : ""}
-                  {!account.enabled ? " — wyłączone" : ""}
+                  {account.system ? t(" (system)") : ""}
+                  {!account.loggedIn ? t(" — signed out") : ""}
+                  {!account.enabled ? t(" — disabled") : ""}
                 </option>
               )}
             </For>
@@ -56,20 +58,20 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
         <Show when={answeringWith()}>
           {(label) => (
             <Text as="p" tone="secondary" role="status">
-              Teraz odpowiada kontem: {label()}
+              {t("Answering with account: {label}", { label: label() })}
             </Text>
           )}
         </Show>
         <Show when={!window.openbot.subscriptions}>
           <Text as="p" tone="muted">
-            Wybór kont niedostępny w tej wersji.
+            {t("Account picking is unavailable in this version.")}
           </Text>
         </Show>
         <Show when={state.error()}>
           <Text as="p" role="alert" tone="danger">
             {state.error()}
           </Text>
-          <Button onClick={() => void state.load()}>Ponów wczytanie kont</Button>
+          <Button onClick={() => void state.load()}>{t("Reload accounts")}</Button>
         </Show>
       </Show>
     </section>
