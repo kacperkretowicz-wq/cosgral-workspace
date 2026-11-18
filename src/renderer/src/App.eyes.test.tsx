@@ -180,7 +180,7 @@ describe("App page rail", () => {
     await waitFor(() => expect(view.container.querySelector(".initial-setup-screen")).not.toBeNull());
     // The dialog hides the rest of the app from assistive tech, so look past `aria-hidden`.
     expect(
-      within(screen.getByRole("navigation", { name: "Pages", hidden: true })).getByRole("button", {
+      within(view.container.querySelector<HTMLElement>("nav.page-rail") ?? document.body).getByRole("button", {
         name: "Agents",
         hidden: true,
       }),
