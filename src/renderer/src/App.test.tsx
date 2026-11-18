@@ -3084,6 +3084,29 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("complementary", { name: "Agent settings" })).toBeInTheDocument();
   });
 
+  it("renames an agent in place on the sidebar row from the context menu", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    const sidebar = screen.getByRole("navigation", { name: "Chat list" });
+    const row = within(sidebar).getByRole("button", { name: /Chief/ });
+    await fireEvent.contextMenu(row, { clientX: 120, clientY: 90 });
+    await fireEvent.pointerUp(screen.getByRole("menuitem", { name: "Rename" }), { button: 0 });
+    const name = await screen.findByRole("textbox", { name: "Agent name" });
+    expect(name).toHaveValue("Chief");
+    await fireEvent.input(name, { target: { value: "Coordinator" } });
+    await fireEvent.blur(name);
+    await waitFor(() =>
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith({
+        botId: "chief",
+        name: "Coordinator",
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Coordinator" })).toBeInTheDocument();
+      expect(within(sidebar).getByRole("button", { name: /Coordinator/ })).toBeInTheDocument();
+    });
+  });
+
   it("confirms and persistently deletes a bot from its context menu", async () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
