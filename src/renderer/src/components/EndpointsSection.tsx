@@ -1,6 +1,7 @@
 import {
   checkEndpointUrl,
   ENDPOINT_LIMITS,
+  ENDPOINT_CLOUD_PRESETS,
   ENDPOINT_PRESETS,
   type EndpointKind,
   type EndpointsDesktopApi,
@@ -306,6 +307,22 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                     )}
                   </For>
                 </fieldset>
+                <fieldset class="providers-actions" aria-label="Hosted services">
+                  <For each={ENDPOINT_CLOUD_PRESETS}>
+                    {(preset) => (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => patch({ label: preset.label, kind: preset.kind, baseUrl: preset.baseUrl })}
+                      >
+                        Use {preset.label}
+                      </Button>
+                    )}
+                  </For>
+                </fieldset>
+                <Text as="p" tone="muted">
+                  Hosted services need an API key, and your messages go to another computer.
+                </Text>
               </Show>
               <Field label="Name" required>
                 <Input
