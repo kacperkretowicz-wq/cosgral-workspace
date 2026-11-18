@@ -1,6 +1,7 @@
 import { type AgentApproval, APPROVAL_RULES_NEVER_COVER, type ApprovalRuleScope } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
 import { alwaysAllowChoice } from "../always-allow";
+import { t } from "../i18n";
 import { Button, NativeSelect, Text } from "./ui";
 
 /** What "Always allow" would save for this approval, and the button that opens its choices; nothing for kinds it cannot cover. */
@@ -42,7 +43,7 @@ export function AlwaysAllowPanel(props: {
           </Show>
         }
       >
-        <section class="always-allow-panel" aria-label="Always allow">
+        <section class="always-allow-panel" aria-label={t("Always allow")}>
           <Show when={choice()} keyed>
             {(current) => {
               if (!current.available) return null;

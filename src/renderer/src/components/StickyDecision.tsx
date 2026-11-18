@@ -1,5 +1,6 @@
 import type { AgentApproval, AgentEvent, ApprovalRuleScope } from "@openbot/contracts/ipc";
 import { Show } from "solid-js";
+import { t } from "../i18n";
 import { stickyDecisionForBot } from "../needs-you";
 import { ApprovalCard } from "./ConversationPrompts";
 
@@ -21,7 +22,7 @@ export function StickyDecision(props: StickyDecisionProps) {
   return (
     <Show when={decision()}>
       {(active) => (
-        <section class="sticky-decision" data-kind={active().kind} aria-label="Decision">
+        <section class="sticky-decision" data-kind={active().kind} aria-label={t("Decision")}>
           <div class="sticky-decision-kicker">Decision · pinned</div>
           <Show when={active().kind === "question" && active().prompt}>
             {(prompt) => (

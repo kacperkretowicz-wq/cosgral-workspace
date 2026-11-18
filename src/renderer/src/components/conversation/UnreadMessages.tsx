@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Button } from "../ui";
 import { preferredMessageScrollBehavior } from "./MessageNavigation";
 
@@ -28,7 +29,7 @@ export function UnreadMessagesBanner(props: {
 export function UnreadMessagesDivider(props: { elementRef?: (element: HTMLDivElement) => void }) {
   return (
     <div class="unread-messages-divider" ref={props.elementRef}>
-      <hr aria-label="New messages" />
+      <hr aria-label={t("New messages")} />
       <span>NEW</span>
       <hr />
     </div>

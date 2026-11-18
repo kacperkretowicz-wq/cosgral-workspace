@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+import { t } from "../i18n";
 import type { AccountLimitReachedView, AccountSwitchedView } from "./account-usage-view";
 import { formatResetTime } from "./ProvidersPage";
 import { Button, Card, Heading, Text } from "./ui";
@@ -15,7 +16,7 @@ export function AccountLimitReachedCard(props: {
     <Card
       class="account-limit-card"
       role="region"
-      aria-label="Account limit reached"
+      aria-label={t("Account limit reached")}
       data-kind="limit-reached"
       tabindex={0}
     >
@@ -80,12 +81,12 @@ export function AccountSwitchedCard(props: { view: AccountSwitchedView; onDismis
       class="account-switched-card"
       role="status"
       aria-live="polite"
-      aria-label={`Switched to account ${props.view.toAccountLabel}`}
+      aria-label={t("Switched to account {label}", { label: props.view.toAccountLabel })}
       data-kind="account-switched"
       tabindex={0}
     >
       <Heading as="h3" size="sm">
-        Switched to account {props.view.toAccountLabel}
+        {t("Switched to account {label}", { label: props.view.toAccountLabel })}
       </Heading>
       <Show when={props.view.fromAccountLabel}>
         <Text as="p" tone="secondary">

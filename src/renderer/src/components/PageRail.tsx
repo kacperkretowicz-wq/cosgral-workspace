@@ -191,7 +191,7 @@ export function PageRail(props: PageRailProps) {
     };
   });
   return (
-    <nav ref={(element) => (rail = element)} class="page-rail panel-edge" aria-label="Pages">
+    <nav ref={(element) => (rail = element)} class="page-rail panel-edge" aria-label={t("Pages")}>
       <AppLogo variant="production" animation="blink" class="page-rail-logo" />
       <div class="page-rail-list">
         <For each={visible()}>

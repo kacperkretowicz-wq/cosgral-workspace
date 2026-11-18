@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { THREAD_LIMITS, THREAD_UNDO_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { SubagentsPanel } from "./SubagentsPanel";
@@ -324,7 +325,7 @@ export function ThreadPanel(props: {
             </ul>
           </Show>
           <Show when={list()?.threads.some((thread) => thread.needsYou > 0)}>
-            <section aria-label="Needs you by thread">
+            <section aria-label={t("Needs you by thread")}>
               <Heading as="h3" size="sm">
                 Needs you by thread
               </Heading>

@@ -27,7 +27,7 @@ Priorytet kolejnych migracji (nie KK-only):
 | P1 | `AccessSettings`, `IsolationSettings`, `BrowserProfileSettings`, `BudgetSettings` | nagłówki i opisy pól (błędy+aria sekcji: KAPI-P) |
 | P1 | `AccountLogin`, `ApiKeysSection`, `McpPanel`, `MemoryPanel`, `AgentSettingsW3` | całe sekcje bez `t()` |
 | P2 | `RemoteDesktopPage`, `MobileConnectPage`, `HostPanel`, `Spaces` | aria + copy |
-| P2 | `Sidebar` (reszta), `App.tsx` loading aria | drobne aria |
+| P2 | `Sidebar` (reszta), `App.tsx` loading aria | **część KAPI-U:** Bot navigation + Pages na `t()` |
 | Uwaga | `AgentAccountPicker` | **zrobione KAPI-S** — cała wyspa na `t()` |
 
 ### Test kompletności

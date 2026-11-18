@@ -1,5 +1,6 @@
 import { APPROVAL_RULES_NEVER_COVER, type ApprovalRule, describeApprovalRule } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Heading, Text } from "./ui";
 
 function whenUsed(rule: ApprovalRule): string {
@@ -17,7 +18,7 @@ export function ApprovalRulesList(props: {
   onRevoke: (ruleId: string) => void;
 }) {
   return (
-    <section class="approval-rules" aria-label="Always-allow rules">
+    <section class="approval-rules" aria-label={t("Always-allow rules")}>
       <Heading as="h4" size="sm">
         Always allowed
       </Heading>
@@ -49,7 +50,7 @@ export function ApprovalRulesList(props: {
                   variant="danger"
                   size="sm"
                   disabled={props.busy}
-                  aria-label={`Remove rule: ${describeApprovalRule(rule)}`}
+                  aria-label={t("Remove rule: {rule}", { rule: describeApprovalRule(rule) })}
                   onClick={() => props.onRevoke(rule.id)}
                 >
                   Remove

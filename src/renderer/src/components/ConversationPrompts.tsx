@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { AgentApproval, AgentPromptQuestion, ApprovalRuleScope } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { AlwaysAllowPanel } from "./AlwaysAllowPanel";
 import { EyesIcon, EyesRequestDetails } from "./EyesIndicator";
 import { Button, Input, RadioGroup } from "./ui";
@@ -70,7 +71,7 @@ export function ChoiceCard(props: {
         class="choice-input"
         value={answer()}
         placeholder="Type your own answer"
-        aria-label="Custom answer"
+        aria-label={t("Custom answer")}
         maxlength={INPUT_LIMITS.promptAnswerText}
         disabled={props.pending}
         onInput={(event) => {
@@ -267,7 +268,7 @@ export function ApprovalCard(props: {
             <Button
               type="button"
               class="approval-icon-button"
-              aria-label="Previous question"
+              aria-label={t("Previous question")}
               disabled={step() === 0 || submitting()}
               onClick={() => setStep((current) => Math.max(0, current - 1))}
             >
@@ -279,7 +280,7 @@ export function ApprovalCard(props: {
             <Button
               type="button"
               class="approval-icon-button"
-              aria-label="Next question"
+              aria-label={t("Next question")}
               disabled={step() >= questionCount() - 1 || !canAdvance()}
               onClick={() => setStep((current) => Math.min(current + 1, questionCount() - 1))}
             >
@@ -403,7 +404,7 @@ function PermissionDetails(props: { permissions: AgentApproval["permissions"] })
     ];
   });
   return (
-    <section class="approval-permissions" aria-label="Requested permissions">
+    <section class="approval-permissions" aria-label={t("Requested permissions")}>
       <For each={details()}>{(detail) => <span>{detail}</span>}</For>
     </section>
   );
