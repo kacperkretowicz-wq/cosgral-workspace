@@ -21,6 +21,7 @@ import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
+import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
   agentMoveTargets,
   buildSidebarRows,
@@ -325,6 +326,8 @@ export function Sidebar(props: SidebarProps) {
   const [accountAvatarFailed, setAccountAvatarFailed] = createSignal(false);
   const [loggingOut, setLoggingOut] = createSignal(false);
   let botList: HTMLElement | undefined;
+  /** Tops before the last unread-first reorder; FLIP plays from these (UI-14). */
+  let agentRowTops = new Map<string, number>();
   let searchInput: HTMLInputElement | undefined;
   let accountAvatarInput: HTMLInputElement | undefined;
   const filteredBots = createMemo(() => {
@@ -497,6 +500,20 @@ export function Sidebar(props: SidebarProps) {
     () => [filteredBots(), filteredPeople()],
     () => {
       requestAnimationFrame(updateScrollFade);
+    },
+  );
+
+  // UI-14: when unread-first (or a new unread) moves agent rows, slide them with transform only.
+  createEffect(
+    () => listRows(),
+    () => {
+      const root = botList;
+      if (!root) return;
+      const before = agentRowTops;
+      requestAnimationFrame(() => {
+        playAgentRowFlip(root, before);
+        agentRowTops = captureAgentRowTops(root);
+      });
     },
   );
 
@@ -905,6 +922,7 @@ export function Sidebar(props: SidebarProps) {
                         ]}
                         aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? "Ukryty. " : ""}${bot.activeModel && bot.activeModel !== bot.model ? `Model zapasowy: ${bot.activeModel}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
                         style={depth > 0 ? { "--folder-level": String(depth - 1) } : undefined}
+                        data-agent-id={bot.id}
                         data-in-folder={depth > 0 ? "true" : undefined}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}

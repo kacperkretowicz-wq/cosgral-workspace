@@ -339,9 +339,17 @@
   }
 }
 
+/* UI-14: unread-first reorder — FLIP clears inline translateY; CSS eases the play. */
+@media (prefers-reduced-motion: no-preference) {
+  .sidebar .bot-row.agent-row {
+    transition: transform 180ms var(--cosgral-ease, ease);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar .bot-row {
     animation: none;
+    transition: none;
   }
 }
 
