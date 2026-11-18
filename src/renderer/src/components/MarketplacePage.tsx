@@ -4,7 +4,6 @@ import type {
   MarketplaceItemDetails,
   MarketplaceItemKind,
 } from "@openbot/contracts/ipc";
-import { MARKETPLACE_CATEGORIES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { MarketplaceGallery } from "./MarketplaceGallery";
