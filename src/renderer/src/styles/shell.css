@@ -256,22 +256,29 @@
   opacity: 1;
 }
 
-/* UI-R: sidebar density. Agent tile 62px with a 40px avatar, calm hover, clear active tile, soft entrance. */
+/* UI-AG: denser sidebar tiles (vs-071: kafle were lighter than 0.71). 68px row, 44px mascot fills the slot. */
 .sidebar .bot-row {
-  height: 62px;
-  min-height: 62px;
+  height: 68px;
+  min-height: 68px;
   gap: 12px;
   padding: 10px 12px;
+  background: color-mix(in srgb, var(--openbot-hover) 55%, transparent);
 }
 
 .sidebar .bot-row + .bot-row {
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .sidebar .bot-row-avatar {
-  width: 40px;
-  height: 40px;
-  flex-basis: 40px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+}
+
+.sidebar .bot-row .bot-avatar,
+.sidebar .person-row .person-avatar {
+  width: 44px;
+  height: 44px;
 }
 
 .sidebar .bot-row-title strong,
@@ -307,8 +314,8 @@
 
 .sidebar .bot-row-active::before {
   position: absolute;
-  top: 14px;
-  bottom: 14px;
+  top: 12px;
+  bottom: 12px;
   left: 0;
   width: 3px;
   border-radius: 0 var(--cosgral-radius-sm) var(--cosgral-radius-sm) 0;
