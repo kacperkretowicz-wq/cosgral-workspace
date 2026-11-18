@@ -1,20 +1,18 @@
 /*
- * COSGRAL motion, second layer (KK-Z). Own code and own numbers. The idea comes from how a good product site lets a list
- * arrive: the cards of a list do not appear at once, each one lands a moment after the one before it, and a loading place
- * pulses instead of showing bare text.
+ * COSGRAL motion, second layer (UI-AE + KK). Own code and own numbers. Idea from product-site rhythm (openbot.run look,
+ * not its code): list cards land one after another; a loading place pulses instead of bare "Loading" text.
  *
  * Rules that keep it safe:
- * - Only `transform` moves. Opacity is never animated from 0 here, because the automatic contrast check and the "is it
- *   visible" checks read the screen right after it is drawn and would see a half-faded card.
- * - At most eight cards are delayed, and the whole arrival stays under 400 ms.
- * - Everything is off for people who asked their system for reduced motion.
+ * - Only `transform` moves on content cards. Opacity is never animated from 0 on those cards (Storybook contrast /
+ *   visibility reads the screen right after paint).
+ * - At most eight cards are delayed; whole arrival stays under 400 ms (durations 120–220 ms per card).
+ * - Everything is off for prefers-reduced-motion.
  */
 :root {
-  /* A strong ease-out for things that arrive, an ease-in-out for things that loop. */
   --cosgral-ease-arrive: cubic-bezier(0.23, 1, 0.32, 1);
   --cosgral-ease-loop: cubic-bezier(0.77, 0, 0.175, 1);
-  --cosgral-arrive-duration: 260ms;
-  --cosgral-arrive-step: 28ms;
+  --cosgral-arrive-duration: 200ms;
+  --cosgral-arrive-step: 24ms;
   --cosgral-pulse-duration: 1.4s;
 }
 
@@ -145,6 +143,20 @@
   min-height: 12px;
   border-radius: var(--cosgral-radius-sm);
   background: var(--cosgral-bg-control-hover);
+}
+
+.agent-cards-skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.cosgral-skeleton-wide {
+  width: 72%;
+}
+
+.cosgral-skeleton-mid {
+  width: 54%;
 }
 
 .cosgral-sweep {
