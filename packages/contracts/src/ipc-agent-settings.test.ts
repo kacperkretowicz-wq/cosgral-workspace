@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
   AGENT_TOOL_GROUPS,
+  APP_AGENT_STEPS,
+  APP_CHAT_ACCENTS,
+  APP_FONTS,
+  APP_SEND_SHORTCUTS,
+  APP_UI_SCALES,
+  DEFAULT_APP_APPEARANCE,
   defaultNotificationPreferences,
   IPC_CHANNELS,
   isAgentEvent,
   isAgentSettings,
   isAgentTemplate,
+  isAppAppearance,
   isAppSettings,
   isOnboardingState,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
+  normalizeAppAppearance,
+  parseAppearancePatch,
   SETTINGS_TABS,
 } from "./ipc";
 
@@ -87,6 +96,14 @@ describe("W3 agent settings contract", () => {
       notifications,
       tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "voice" })),
       navigation: { pinnedPageIds: ["library", "agents"] },
+      appearance: {
+        uiScale: 100,
+        font: "inter",
+        sendShortcut: "enter",
+        chatAccent: "blue",
+        agentSteps: "show",
+        unreadFirst: false,
+      },
     };
     expect(isAppSettings(settings)).toBe(true);
     expect(isAppSettings({ ...settings, navigation: { pinnedPageIds: ["library", "nope"] } })).toBe(false);
@@ -124,9 +141,51 @@ describe("W3 agent settings contract", () => {
           notifications: defaultNotificationPreferences(),
           tabs: [],
           navigation: { pinnedPageIds: [] },
+          appearance: {
+            uiScale: 100,
+            font: "inter",
+            sendShortcut: "enter",
+            chatAccent: "blue",
+            agentSteps: "show",
+            unreadFirst: false,
+          },
         },
       }),
     ).toBe(true);
     expect(isAgentEvent({ type: "agent-templates-changed" })).toBe(false);
+  });
+
+  it("describes the look of the program in short lists, with today's values as defaults (BE-U)", () => {
+    expect(APP_UI_SCALES).toEqual([90, 100, 110, 125, 140]);
+    expect(APP_FONTS).toEqual(["inter", "system", "mono"]);
+    expect(APP_SEND_SHORTCUTS).toEqual(["enter", "mod-enter"]);
+    expect(APP_CHAT_ACCENTS).toHaveLength(6);
+    expect(APP_AGENT_STEPS).toEqual(["show", "collapse"]);
+    expect(isAppAppearance(DEFAULT_APP_APPEARANCE)).toBe(true);
+    expect(isAppAppearance({ ...DEFAULT_APP_APPEARANCE, uiScale: 99 })).toBe(false);
+    expect(isAppAppearance({ ...DEFAULT_APP_APPEARANCE, unreadFirst: "no" })).toBe(false);
+    expect(isAppAppearance(null)).toBe(false);
+  });
+
+  it("reads a saved look back field by field: what is not valid returns to the default (BE-U)", () => {
+    expect(normalizeAppAppearance(undefined)).toEqual(DEFAULT_APP_APPEARANCE);
+    expect(normalizeAppAppearance({ uiScale: 125, font: "wingdings", chatAccent: "pink", unreadFirst: 1 })).toEqual({
+      ...DEFAULT_APP_APPEARANCE,
+      uiScale: 125,
+      chatAccent: "pink",
+    });
+  });
+
+  it("checks a change of the look: known fields, known values, plain sentences (BE-U)", () => {
+    expect(parseAppearancePatch({})).toEqual({});
+    expect(parseAppearancePatch({ uiScale: 90, agentSteps: "collapse" })).toEqual({
+      uiScale: 90,
+      agentSteps: "collapse",
+    });
+    expect(() => parseAppearancePatch("big")).toThrow(/object/);
+    expect(() => parseAppearancePatch({ uiScale: "100" })).toThrow(/uiScale is one of 90, 100, 110, 125, 140/);
+    expect(() => parseAppearancePatch({ sendShortcut: "tab" })).toThrow(/sendShortcut/);
+    expect(() => parseAppearancePatch({ chatAccent: "#fff" })).toThrow(/chatAccent/);
+    expect(() => parseAppearancePatch({ theme: "dark" })).toThrow(/Unknown appearance setting "theme"/);
   });
 });

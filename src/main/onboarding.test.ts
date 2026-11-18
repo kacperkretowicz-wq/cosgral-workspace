@@ -31,6 +31,14 @@ async function setup(options: { failAgent?: boolean } = {}) {
     notifications: defaultNotificationPreferences(),
     tabs: [],
     navigation: { pinnedPageIds: [] },
+    appearance: {
+      uiScale: 100,
+      font: "inter",
+      sendShortcut: "enter",
+      chatAccent: "blue",
+      agentSteps: "show",
+      unreadFirst: false,
+    },
   };
   const steps: string[] = [];
   const created: CreateAgentInput[] = [];

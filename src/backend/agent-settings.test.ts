@@ -237,6 +237,61 @@ describe("AgentSettingsService", () => {
     expect(events).toHaveLength(before);
   });
 
+  it("keeps the look and the send key (BE-U): defaults of today, changes of single fields, survives a restart", async () => {
+    const { dir, database, service, events } = await open();
+    expect(service.appSettings().appearance).toEqual({
+      uiScale: 100,
+      font: "inter",
+      sendShortcut: "enter",
+      chatAccent: "blue",
+      agentSteps: "show",
+      unreadFirst: false,
+    });
+
+    const changed = await service.updateAppSettings({ appearance: { uiScale: 125, sendShortcut: "mod-enter" } });
+    expect(changed.appearance).toMatchObject({
+      uiScale: 125,
+      sendShortcut: "mod-enter",
+      font: "inter",
+      chatAccent: "blue",
+    });
+    expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
+    // A save of other settings keeps the look; a second patch changes only its own fields.
+    await service.updateAppSettings({ language: "pl" });
+    const second = await service.updateAppSettings({ appearance: { chatAccent: "violet", unreadFirst: true } });
+    expect(second.appearance).toEqual({
+      uiScale: 125,
+      font: "inter",
+      sendShortcut: "mod-enter",
+      chatAccent: "violet",
+      agentSteps: "show",
+      unreadFirst: true,
+    });
+    database.close();
+    const reopened = await open(dir);
+    expect(reopened.service.appSettings().appearance).toEqual(second.appearance);
+  });
+
+  it("refuses a look value outside its list, an unknown field, and changes nothing", async () => {
+    const { service, events } = await open();
+    await service.updateAppSettings({ appearance: { font: "mono" } });
+    const before = events.length;
+    // What a window could send: JSON, so the wrong values are not type errors here.
+    const badScale = JSON.parse('{"appearance":{"uiScale":150}}');
+    const badFont = JSON.parse('{"appearance":{"font":"Comic Sans"}}');
+    const unknownField = JSON.parse('{"appearance":{"color":"#ff0000"}}');
+    const badFlag = JSON.parse('{"appearance":{"unreadFirst":"yes"}}');
+    await expect(service.updateAppSettings(badScale)).rejects.toThrow(/uiScale is one of/);
+    await expect(service.updateAppSettings(badFont)).rejects.toThrow(/font is one of/);
+    await expect(service.updateAppSettings(unknownField)).rejects.toThrow(/Unknown appearance setting/);
+    await expect(service.updateAppSettings(badFlag)).rejects.toThrow(/on or off/);
+    // A good field next to a bad one is not saved either: the whole change is refused.
+    const mixed = JSON.parse('{"appearance":{"chatAccent":"green","uiScale":7}}');
+    await expect(service.updateAppSettings(mixed)).rejects.toThrow(/uiScale/);
+    expect(service.appSettings().appearance).toMatchObject({ font: "mono", uiScale: 100, chatAccent: "blue" });
+    expect(events).toHaveLength(before);
+  });
+
   it("marks the tabs of the features built into the program as available (voice needs Windows speech)", () => {
     expect(builtInTabFeatures("win32")).toEqual({ voice: true, mobile: true, dock: true, island: true });
     expect(builtInTabFeatures("linux")).toEqual({ voice: false, mobile: true, dock: true, island: true });

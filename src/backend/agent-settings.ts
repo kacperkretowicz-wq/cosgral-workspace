@@ -19,18 +19,22 @@ import {
   type AgentToolSwitches,
   APP_LANGUAGES,
   APP_PAGE_IDS,
+  type AppAppearanceSettings,
   type AppLanguage,
   type AppPageId,
   type AppSettings,
   type AppTheme,
   type BotSummary,
+  DEFAULT_APP_APPEARANCE,
   defaultNotificationPreferences,
   isClaudeModel,
   isPinnedPageIdList,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   type NotificationPreferences,
+  normalizeAppAppearance,
   normalizeAppTheme,
+  parseAppearancePatch,
   SETTINGS_TABS,
   type SettingsTabId,
   type UpdateAgentSettingsInput,
@@ -118,6 +122,7 @@ interface StoredAppSetting {
   language: AppLanguage | null;
   notifications: NotificationPreferences;
   pinnedPageIds: AppPageId[];
+  appearance: AppAppearanceSettings;
 }
 
 interface NamedTool {
@@ -275,6 +280,7 @@ export class AgentSettingsService {
       languageChosen: stored.language !== null,
       notifications: stored.notifications,
       navigation: { pinnedPageIds: stored.pinnedPageIds },
+      appearance: stored.appearance,
       tabs: SETTINGS_TABS.map((id) => {
         const feature = TAB_FEATURES[id];
         const base = feature === "computer" ? availability.computer !== false : feature !== "missing";
@@ -310,6 +316,9 @@ export class AgentSettingsService {
       }
       stored.pinnedPageIds = [...input.navigation.pinnedPageIds];
     }
+    if (input.appearance !== undefined) {
+      stored.appearance = { ...stored.appearance, ...parseAppearancePatch(input.appearance) };
+    }
     this.#db()
       .prepare(
         `INSERT INTO projection_app_settings (setting_key, value_json, updated_at) VALUES ('app', ?, ?)
@@ -337,6 +346,7 @@ export class AgentSettingsService {
       language: null,
       notifications: defaultNotificationPreferences(),
       pinnedPageIds: [...APP_PAGE_IDS],
+      appearance: { ...DEFAULT_APP_APPEARANCE },
     };
     const row = this.#db().prepare("SELECT value_json FROM projection_app_settings WHERE setting_key = 'app'").get();
     if (!isDynamicRecord(row) || !isString(row.value_json)) return defaults;
@@ -368,6 +378,7 @@ export class AgentSettingsService {
       language: isOneOf(APP_LANGUAGES, parsed.language) ? parsed.language : null,
       notifications,
       pinnedPageIds,
+      appearance: normalizeAppAppearance(parsed.appearance),
     };
   }
 

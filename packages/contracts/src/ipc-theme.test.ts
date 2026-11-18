@@ -13,6 +13,14 @@ it("accepts only the three theme values and defaults unknown input to dark", () 
     notifications: defaultNotificationPreferences(),
     tabs: [],
     navigation: { pinnedPageIds: [] },
+    appearance: {
+      uiScale: 100,
+      font: "inter",
+      sendShortcut: "enter",
+      chatAccent: "blue",
+      agentSteps: "show",
+      unreadFirst: false,
+    },
   };
   expect(isAppSettings(settings)).toBe(true);
   expect(isAppSettings({ ...settings, theme: "sepia" })).toBe(false);
