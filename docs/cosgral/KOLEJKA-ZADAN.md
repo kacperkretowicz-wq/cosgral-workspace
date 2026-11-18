@@ -35,7 +35,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 2. [zrobione: 971d371ea — skrót wysyłania i kroki agenta działają w oknie] Kolejne luki z `luki-silnika-071.md`, najbardziej widoczne dla człowieka.
 3. [zrobione: T-AF, e2e 0 FAIL, W5 33/33; każdy kolejny ^FAIL biorę z raportu Testera] Diagnoza każdego `^FAIL` z e2e i kroków W5, z logiem.
 4. [zrobione: 53002be2b] Ostrzeżenie `MaxListenersExceededWarning` (preload `agent:event`): przyczyna i poprawka.
-5. [w toku: Backend, 21:05] Kontrakt i silnik tablicy Zadań z kolumnami „nieudane” i „anulowane” (dla UI 4).
+5. [zrobione: a29b584f2] Kontrakt i silnik tablicy Zadań z kolumnami „nieudane” i „anulowane” (dla UI 4).
 6. Pozostałe wiersze „ROBIĆ” w `luki-silnika-071.md` oraz `parytet-0.71.md` po stronie silnika (wybierz najbardziej widoczne).
 7. [skrót wysyłania zrobione: 971d371ea; zostaje „nieprzeczytane najpierw” = `appearance.unreadFirst`: sortowanie siedzi w układzie paska z folderami i ręczną kolejnością] Ustawienie „skrót wysyłania” i „nieprzeczytane najpierw” faktycznie używane w polu wiadomości i na liście agentów.
 
