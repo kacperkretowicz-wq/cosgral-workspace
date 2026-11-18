@@ -145,29 +145,68 @@ function asBool(value: unknown): boolean {
   return isBoolean(value) && value;
 }
 
+/** Confirm onboarding model so Attach / composer menus enable (same as sandbox-shots-w12). */
+async function unlockComposer(page: Page): Promise<void> {
+  const attach = page.getByRole("button", { name: /Attach a file|Dołącz plik/i });
+  if ((await attach.count()) && (await attach.first().isEnabled())) return;
+  const picker = page.getByRole("button", { name: /Onboarding model/i });
+  if (await picker.count()) {
+    await picker
+      .first()
+      .click({ timeout: 8_000 })
+      .catch(() => undefined);
+    await page.waitForTimeout(400);
+    const option = page
+      .getByRole("option", { name: /Luna|Codex|gpt|Claude/i })
+      .or(page.getByRole("menuitem", { name: /Luna|Codex|gpt|Claude/i }));
+    if (await option.count())
+      await option
+        .first()
+        .click()
+        .catch(() => undefined);
+    else await page.keyboard.press("Enter").catch(() => undefined);
+    await page.waitForTimeout(600);
+  }
+  if ((await attach.count()) && (await attach.first().isEnabled())) return;
+  const luna = page.getByText(/^Luna$/).first();
+  if (await luna.count()) await luna.click().catch(() => undefined);
+  await page.waitForTimeout(400);
+}
+
 async function probeMenuPlus(page: Page): Promise<ProbeResult> {
+  // Attach stays disabled until the agent has a model + onboarding confirm.
   await page.evaluate(`(async () => {
     const api = window.openbot;
     const bots = await api.agent.listBots();
     let bot = bots.find((row) => !row.hidden) || bots[0];
     if (!bot) bot = await api.agent.createBot();
-    await api.agent.updateBot({ botId: bot.id, name: "Plus probe" });
+    const models = (await api.agent.listModels?.()) ?? [];
+    const model = models[0]?.id ?? bot.model;
+    await api.agent.updateBot({ botId: bot.id, name: "Plus probe", ...(model ? { model } : {}) });
   })()`);
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(800);
+  const agentsNav = page
+    .getByRole("navigation", { name: "Pages" })
+    .or(page.getByRole("navigation", { name: "Strony" }))
+    .getByRole("button", { name: /^(Agents|Agenci)$/i });
+  if (await agentsNav.count()) await agentsNav.click().catch(() => undefined);
+  await page.waitForTimeout(300);
   const row = page.getByRole("button", { name: /Plus probe/i }).first();
-  await row.click({ timeout: 15_000 });
-  await page.waitForTimeout(400);
-  const plus = page
-    .getByRole("button", { name: /^\+$|^Attach|composer/i })
-    .or(page.locator('button:has-text("+")'))
-    .first();
-  // Prefer aria near composer
-  const attachPlus = page.getByRole("button", { name: /Attach|More composer|composer actions|\+/i }).first();
-  if ((await attachPlus.count()) > 0) await attachPlus.click();
-  else await plus.click();
+  if (await row.count()) await row.click({ timeout: 15_000 });
   await page.waitForTimeout(500);
+  await unlockComposer(page);
+  const attachPlus = page.getByRole("button", { name: /Attach a file|Dołącz plik/i }).first();
+  if (!(await attachPlus.count())) {
+    return { name: "menu-plus", ok: false, detail: "MISS:attach-trigger" };
+  }
+  if (await attachPlus.isDisabled()) {
+    return { name: "menu-plus", ok: false, detail: "OFF:attach-trigger (agent not ready / onboarding)" };
+  }
+  await attachPlus.click({ timeout: 10_000 });
+  await page.waitForTimeout(500);
+  // Popover items are Button, not menuitem (see Conversation.tsx + App.test).
   const items = [
-    { id: "attach", re: /Attach files|Załącz pliki/i, needEnabled: true },
+    { id: "attach", re: /Attach files|Załącz pliki|Dołącz pliki/i, needEnabled: true },
     { id: "skill", re: /Use a skill|Użyj skilla/i, needEnabled: true },
     { id: "teach", re: /Teach a task|Naucz zadania/i, needEnabled: false },
     { id: "side", re: /Side question|Pytanie boczne/i, needEnabled: true },
@@ -175,7 +214,7 @@ async function probeMenuPlus(page: Page): Promise<ProbeResult> {
   ];
   const found: string[] = [];
   for (const item of items) {
-    const loc = page.getByRole("menuitem", { name: item.re });
+    const loc = page.getByRole("button", { name: item.re });
     const n = await loc.count();
     if (!n) {
       found.push(`MISS:${item.id}`);
@@ -235,7 +274,16 @@ async function probeRestoreThread(
   await page2.waitForLoadState("domcontentloaded");
   try {
     await reachMain(page2);
-    await page2.waitForTimeout(1800);
+    await page2.waitForTimeout(2500);
+    const agentsNav = page2
+      .getByRole("navigation", { name: "Pages" })
+      .or(page2.getByRole("navigation", { name: "Strony" }))
+      .getByRole("button", { name: /^(Agents|Agenci)$/i });
+    if (await agentsNav.count()) await agentsNav.click().catch(() => undefined);
+    await page2.waitForTimeout(400);
+    const botRow = page2.getByRole("button", { name: /Restore thread probe/i }).first();
+    if (await botRow.count()) await botRow.click({ timeout: 10_000 }).catch(() => undefined);
+    await page2.waitForTimeout(1200);
     const place = asRecord(
       await page2.evaluate(`(async () => {
       const s = await window.openbot.appSettings?.get();
@@ -248,19 +296,24 @@ async function probeRestoreThread(
       };
     })()`),
     );
-    const tab = await page2.getByRole("tab", { name: /Thread to restore/i }).count();
+    // Thread strip uses Button (not role=tab) — see ThreadTabs.tsx.
+    const tabBtn = await page2.getByRole("button", { name: /Thread to restore/i }).count();
+    const tabTitle = await page2.locator('[title="Thread to restore"]').count();
+    const strip = tabBtn + tabTitle;
     const ok =
       asBool(place.restore) &&
       asStr(place.botId) === seededBotId &&
       asStr(place.threadId) === seededThreadId &&
-      tab > 0;
+      strip > 0;
     return {
       name: "restore-thread",
       ok,
       detail: JSON.stringify({
         seeded: { botId: seededBotId, threadId: seededThreadId },
         place,
-        tabVisible: tab > 0,
+        tabVisible: strip > 0,
+        tabBtn,
+        tabTitle,
       }),
     };
   } finally {
@@ -285,14 +338,33 @@ async function probeClearHistory(page: Page): Promise<ProbeResult> {
     const channels = Array.isArray(list) ? list : list?.channels || [];
     let channel = channels[0];
     if (!channel && api.channels.create) {
-      channel = await api.channels.create({ name: "Clear probe channel" });
+      const bots = await api.agent.listBots();
+      const bot = bots.find((row) => !row.hidden) || bots[0];
+      if (!bot?.id) return { error: "no-bot-for-channel", remaining: -1 };
+      channel = await api.channels.create({
+        name: "clear-probe",
+        memberBotIds: [bot.id],
+        leadBotId: bot.id,
+        isolated: false,
+      });
     }
     if (!channel?.id) return { error: "no-channel", remaining: -1 };
     await api.channels.sendMessage?.({ channelId: channel.id, text: "before clear" });
+    // clearHistory refuses while a task is queued/running/paused — stop them first (BE-Y).
+    const taskList = await api.channels.listTasks?.(channel.id);
+    const tasks = Array.isArray(taskList) ? taskList : [];
+    for (const task of tasks) {
+      if (!task?.id) continue;
+      try {
+        await api.channels.actOnTask?.({ taskId: task.id, action: "stop" });
+      } catch {
+        /* already terminal */
+      }
+    }
     const cleared = await api.channels.clearHistory({ channelId: channel.id });
     const messages = await api.channels.listMessages({ channelId: channel.id });
     const rows = Array.isArray(messages) ? messages : messages?.messages || [];
-    return { error: "", cleared, remaining: rows.length };
+    return { error: "", cleared, remaining: rows.length, stopped: tasks.length };
   })()`),
   );
   const error = asStr(result.error);
@@ -312,7 +384,18 @@ async function probeHistoryWindow(page: Page): Promise<ProbeResult> {
     const api = window.openbot;
     const list = await api.channels.list();
     const channels = Array.isArray(list) ? list : list?.channels || [];
-    const channel = channels[0];
+    let channel = channels[0];
+    if (!channel && api.channels.create) {
+      const bots = await api.agent.listBots();
+      const bot = bots.find((row) => !row.hidden) || bots[0];
+      if (!bot?.id) return { skip: true, reason: "no-bot-for-channel" };
+      channel = await api.channels.create({
+        name: "history-window-probe",
+        memberBotIds: [bot.id],
+        leadBotId: bot.id,
+        isolated: false,
+      });
+    }
     if (!channel) return { skip: true, reason: "no-channel" };
     if (!("historyWindow" in channel) && !api.channels.update) {
       return { skip: true, reason: "historyWindow not on tip — run after BE-Z" };
@@ -350,14 +433,18 @@ async function probeExternalLinks(page: Page): Promise<ProbeResult> {
   if (before !== "app") {
     return { name: "external-links", ok: false, detail: `could not set externalLinks=app (got ${String(before)})` };
   }
-  // Prefer IPC path used by Conversation.openMessageLink when present.
+  // browser.open expects { url } (not a bare string). Soft-fail to setting-only if open is missing/broken.
   const opened = asRecord(
     await page.evaluate(`(async () => {
     const browser = window.openbot.browser;
     if (browser?.open) {
-      await browser.open("https://example.invalid/probe-app");
-      const tabs = browser.listTabs ? await browser.listTabs() : null;
-      return { via: "browser.open", tabs };
+      try {
+        await browser.open({ url: "https://example.invalid/probe-app" });
+        const tabs = browser.listTabs ? await browser.listTabs() : null;
+        return { via: "browser.open", tabs };
+      } catch (error) {
+        return { via: "browser.open-error", error: String(error), tabs: null };
+      }
     }
     return { via: "setting-only", tabs: null };
   })()`),
@@ -394,16 +481,27 @@ async function main(): Promise<void> {
       await window.openbot.appSettings?.update({ language: "en" });
     })()`);
 
-    if (want("menu-plus")) results.push(await probeMenuPlus(page));
-    if (want("clear-history")) results.push(await probeClearHistory(page));
-    if (want("history-window")) results.push(await probeHistoryWindow(page));
-    if (want("external-links")) results.push(await probeExternalLinks(page));
+    const run = async (name: string, fn: () => Promise<ProbeResult>) => {
+      if (!want(name)) return;
+      try {
+        results.push(await fn());
+      } catch (error) {
+        results.push({ name, ok: false, detail: `throw: ${String(error)}` });
+      }
+    };
+    await run("menu-plus", () => probeMenuPlus(page));
+    await run("clear-history", () => probeClearHistory(page));
+    await run("history-window", () => probeHistoryWindow(page));
+    await run("external-links", () => probeExternalLinks(page));
 
     if (want("restore-thread") && app) {
       // restore-thread closes and relaunches; leave this for last
-      const restore = await probeRestoreThread(page, app, root, fixture);
-      results.push(restore);
-      app = null;
+      try {
+        results.push(await probeRestoreThread(page, app, root, fixture));
+        app = null;
+      } catch (error) {
+        results.push({ name: "restore-thread", ok: false, detail: `throw: ${String(error)}` });
+      }
     }
   } finally {
     if (app) await app.close().catch(() => undefined);
