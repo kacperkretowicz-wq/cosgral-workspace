@@ -9,6 +9,7 @@ afterEach(() => {
   document.documentElement.removeAttribute("data-ui-scale");
   document.documentElement.removeAttribute("data-font");
   document.documentElement.removeAttribute("data-chat-accent");
+  document.documentElement.removeAttribute("data-unread-first");
   document.documentElement.style.removeProperty("--openbot-ui-scale");
   document.documentElement.style.removeProperty("--openbot-accent");
   document.documentElement.style.removeProperty("--openbot-font-sans");

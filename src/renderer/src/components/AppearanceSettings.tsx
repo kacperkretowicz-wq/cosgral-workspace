@@ -15,7 +15,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
-import { Field, NativeSelect, Text } from "./ui";
+import { Field, NativeSelect, Switch, Text } from "./ui";
 
 const FONT_LABELS: Record<AppFont, string> = {
   inter: "Program font",
@@ -65,13 +65,14 @@ function pickSteps(value: string): AppAgentSteps {
 
 /**
  * Settings → Appearance: theme plus the look/send knobs from appSettings.appearance
- * (scale, font, accent, send shortcut, agent steps). Saved through appSettings.update.
+ * (scale, font, accent, send shortcut, unread first, agent steps). Saved through appSettings.update.
  */
 export function AppearanceSettings() {
   const [theme, setTheme] = createSignal<AppTheme>("dark");
   const [uiScale, setUiScale] = createSignal<AppUiScale>(DEFAULT_APP_APPEARANCE.uiScale);
   const [font, setFont] = createSignal<AppFont>(DEFAULT_APP_APPEARANCE.font);
   const [sendShortcut, setSendShortcut] = createSignal<AppSendShortcut>(DEFAULT_APP_APPEARANCE.sendShortcut);
+  const [unreadFirst, setUnreadFirst] = createSignal(DEFAULT_APP_APPEARANCE.unreadFirst);
   const [chatAccent, setChatAccent] = createSignal<AppChatAccent>(DEFAULT_APP_APPEARANCE.chatAccent);
   const [agentSteps, setAgentSteps] = createSignal<AppAgentSteps>(DEFAULT_APP_APPEARANCE.agentSteps);
   const [ready, setReady] = createSignal(false);
@@ -84,6 +85,7 @@ export function AppearanceSettings() {
       uiScale: AppUiScale;
       font: AppFont;
       sendShortcut: AppSendShortcut;
+      unreadFirst: boolean;
       chatAccent: AppChatAccent;
       agentSteps: AppAgentSteps;
     };
@@ -92,6 +94,7 @@ export function AppearanceSettings() {
     setUiScale(s.appearance.uiScale);
     setFont(s.appearance.font);
     setSendShortcut(s.appearance.sendShortcut);
+    setUnreadFirst(s.appearance.unreadFirst);
     setChatAccent(s.appearance.chatAccent);
     setAgentSteps(s.appearance.agentSteps);
   }
@@ -191,6 +194,14 @@ export function AppearanceSettings() {
           <For each={APP_SEND_SHORTCUTS}>{(item) => <option value={item}>{t(SEND_LABELS[item])}</option>}</For>
         </NativeSelect>
       </Field>
+
+      <Switch
+        checked={unreadFirst()}
+        disabled={disabled()}
+        label={t("Unread first")}
+        description={t("Agents with new replies rise to the top of their group in the sidebar.")}
+        onChange={(checked) => void save({ appearance: { unreadFirst: checked } })}
+      />
 
       <Field label={t("Agent steps")} description={t("Whether thinking and tool steps start open or folded.")}>
         <NativeSelect

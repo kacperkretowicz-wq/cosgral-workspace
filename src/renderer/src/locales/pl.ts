@@ -44,6 +44,9 @@ export const pl = {
   Accent: "Akcent",
   "Colour accent for your own chat bubbles.": "Kolor akcentu Twoich baniek na czacie.",
   "Send message with": "Wyślij wiadomość przez",
+  "Unread first": "Nieprzeczytane najpierw",
+  "Agents with new replies rise to the top of their group in the sidebar.":
+    "Agenci z nowymi odpowiedziami wchodzą na górę swojej grupy w pasku.",
   "Enter sends by default. Ctrl+Enter keeps Enter for a new line.":
     "Domyślnie Enter wysyła. Ctrl+Enter zostawia Enter na nową linię.",
   "Ctrl+Enter": "Ctrl+Enter",
