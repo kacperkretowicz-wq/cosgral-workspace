@@ -3,14 +3,21 @@ import type {
   AgentCardId,
   AgentCardsOverview,
   AgentChatColor,
+  AgentDetailCardId,
   AgentEvent,
   AgentNotificationLevel,
   AgentPreferenceChanges,
   AgentPreferences,
 } from "@openbot/contracts/ipc";
-import { AGENT_BUSY_MESSAGE_MODES, AGENT_CHAT_COLORS, AGENT_NOTIFICATION_LEVELS } from "@openbot/contracts/ipc";
+import {
+  AGENT_BUSY_MESSAGE_MODES,
+  AGENT_CHAT_COLORS,
+  AGENT_DETAIL_CARD_IDS,
+  AGENT_NOTIFICATION_LEVELS,
+} from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { AgentCardDetail } from "./AgentCardDetail";
 import { Button, NativeSelect, Switch } from "./ui";
 import {
   Bell,
@@ -104,6 +111,10 @@ function summaryText(summary: string): string {
   return key ? t(key) : summary;
 }
 
+function detailId(id: string): AgentDetailCardId | null {
+  return AGENT_DETAIL_CARD_IDS.find((item) => item === id) ?? null;
+}
+
 function pick<T extends string>(options: readonly T[], value: string, fallback: T): T {
   return options.find((option) => option === value) ?? fallback;
 }
@@ -120,6 +131,7 @@ export function AgentCardsSection(props: { botId: string }) {
   const [busy, setBusy] = createSignal(false);
   const [confirmReset, setConfirmReset] = createSignal(false);
   const [notice, setNotice] = createSignal("");
+  const [openCard, setOpenCard] = createSignal<AgentDetailCardId | null>(null);
   let generation = 0;
 
   async function load() {
@@ -146,6 +158,7 @@ export function AgentCardsSection(props: { botId: string }) {
       setError("");
       setNotice("");
       setConfirmReset(false);
+      setOpenCard(null);
       void load();
     },
   );
@@ -230,10 +243,32 @@ export function AgentCardsSection(props: { botId: string }) {
                     <Show when={card.available && card.count !== null}>
                       <span class="agent-card-count">{card.count}</span>
                     </Show>
+                    <Show when={card.available && detailId(card.id)}>
+                      {(id) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          class="agent-card-open"
+                          aria-pressed={openCard() === id() ? "true" : "false"}
+                          aria-label={t("Open {title}", { title: t(CARD_LABELS[card.id]) })}
+                          onClick={() => setOpenCard(openCard() === id() ? null : id())}
+                        />
+                      )}
+                    </Show>
                   </li>
                 )}
               </For>
             </ul>
+          )}
+        </Show>
+        <Show when={openCard()}>
+          {(card) => (
+            <AgentCardDetail
+              botId={props.botId}
+              card={card()}
+              title={t(CARD_LABELS[card()])}
+              onClose={() => setOpenCard(null)}
+            />
           )}
         </Show>
         <Show when={prefs()}>
