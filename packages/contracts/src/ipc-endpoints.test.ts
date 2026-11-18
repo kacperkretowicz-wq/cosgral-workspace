@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkEndpointUrl,
   ENDPOINT_CLOUD_PRESETS,
+  ENDPOINT_LIMITS,
   ENDPOINT_PRESETS,
   endpointModelId,
   isAgentEvent,
@@ -128,11 +129,42 @@ describe("own model endpoints contract (W5-K2)", () => {
 
 describe("hosted presets (W12 BE-Q)", () => {
   it("are https addresses of other computers, with the warning, and are not the presets that are probed at start", () => {
-    expect(ENDPOINT_CLOUD_PRESETS.map((preset) => preset.label)).toEqual(["OpenRouter", "xAI (Grok)"]);
+    expect(ENDPOINT_CLOUD_PRESETS.map((preset) => preset.label)).toEqual([
+      "OpenRouter",
+      "xAI (Grok)",
+      "DeepSeek",
+      "Mistral",
+      "Groq",
+      "Together AI",
+      "Moonshot (Kimi)",
+    ]);
     for (const preset of ENDPOINT_CLOUD_PRESETS) {
       expect(preset.kind).toBe("openai-compatible");
       expect(checkEndpointUrl(preset.baseUrl)).toMatchObject({ ok: true, loopback: false });
       expect(ENDPOINT_PRESETS.map((other) => other.baseUrl)).not.toContain(preset.baseUrl);
     }
+  });
+
+  it("have unique labels and addresses, fit the form, and carry the page that states a documented address (BE-T)", () => {
+    const labels = ENDPOINT_CLOUD_PRESETS.map((preset) => preset.label);
+    const addresses = ENDPOINT_CLOUD_PRESETS.map((preset) => preset.baseUrl);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(new Set(addresses).size).toBe(addresses.length);
+    for (const preset of ENDPOINT_CLOUD_PRESETS) {
+      expect(preset.label.length).toBeLessThanOrEqual(ENDPOINT_LIMITS.label);
+      expect(preset.baseUrl.endsWith("/")).toBe(false);
+      // The form would save the address as is: the same text must come back from the check.
+      expect(checkEndpointUrl(preset.baseUrl)).toMatchObject({ ok: true, baseUrl: preset.baseUrl });
+      if (preset.verification === "documented") expect(preset.docs).toMatch(/^https:\/\//);
+      else expect(preset.docs).toBeNull();
+    }
+  });
+
+  it("keeps DeepSeek without /v1, as its documentation states, and only the two addresses not read in documentation are unverified", () => {
+    const deepseek = ENDPOINT_CLOUD_PRESETS.find((preset) => preset.label === "DeepSeek");
+    expect(deepseek?.baseUrl).toBe("https://api.deepseek.com");
+    expect(
+      ENDPOINT_CLOUD_PRESETS.filter((preset) => preset.verification === "unverified").map((preset) => preset.label),
+    ).toEqual(["OpenRouter", "xAI (Grok)"]);
   });
 });

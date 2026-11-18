@@ -86,6 +86,14 @@ it("uses a newer settings event instead of a late load response", async () => {
       notifications: defaultNotificationPreferences(),
       tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
       navigation: { pinnedPageIds: ["phone"] },
+      appearance: {
+        uiScale: 100,
+        font: "inter",
+        sendShortcut: "enter",
+        chatAccent: "blue",
+        agentSteps: "show",
+        unreadFirst: false,
+      },
     },
   });
   finish({ navigation: { pinnedPageIds: ["library"] } });

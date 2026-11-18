@@ -15,6 +15,14 @@ function settings(): AppSettings {
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
     navigation: { pinnedPageIds: [] },
+    appearance: {
+      uiScale: 100,
+      font: "inter",
+      sendShortcut: "enter",
+      chatAccent: "blue",
+      agentSteps: "show",
+      unreadFirst: false,
+    },
   };
 }
 

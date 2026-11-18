@@ -237,6 +237,121 @@ export interface AppNavigationSettings {
   pinnedPageIds: AppPageId[];
 }
 
+// COSGRAL W12 (BE-U): how the program looks and sends, kept with the other app settings (parity row 2). The person picks from
+// short lists (no free colours or font names), so a saved value can never break contrast or load an unknown font. The window
+// turns the values into its own style variables; the engine only keeps and checks them.
+
+/** The size of the whole window in percent of the normal size. */
+export const APP_UI_SCALES = [90, 100, 110, 125, 140] as const;
+export type AppUiScale = (typeof APP_UI_SCALES)[number];
+
+/** inter = the font of the program, system = the font of the computer, mono = a fixed-width font for everything. */
+export const APP_FONTS = ["inter", "system", "mono"] as const;
+export type AppFont = (typeof APP_FONTS)[number];
+
+/** enter = Enter sends and Shift+Enter breaks the line; mod-enter = Ctrl+Enter sends and Enter breaks the line. */
+export const APP_SEND_SHORTCUTS = ["enter", "mod-enter"] as const;
+export type AppSendShortcut = (typeof APP_SEND_SHORTCUTS)[number];
+
+/** Accent of the person's own chat bubbles; every one is a ready colour pair that keeps text contrast. */
+export const APP_CHAT_ACCENTS = ["blue", "green", "violet", "orange", "pink", "gray"] as const;
+export type AppChatAccent = (typeof APP_CHAT_ACCENTS)[number];
+
+/** show = steps of the agent (tool calls) are open in the chat; collapse = they are folded to one line. */
+export const APP_AGENT_STEPS = ["show", "collapse"] as const;
+export type AppAgentSteps = (typeof APP_AGENT_STEPS)[number];
+
+export interface AppAppearanceSettings {
+  uiScale: AppUiScale;
+  font: AppFont;
+  sendShortcut: AppSendShortcut;
+  chatAccent: AppChatAccent;
+  agentSteps: AppAgentSteps;
+  /** True = agents with unread messages go first in the list. */
+  unreadFirst: boolean;
+}
+
+/** What a new installation has: the look and the keys of the program before this setting existed. */
+export const DEFAULT_APP_APPEARANCE: AppAppearanceSettings = {
+  uiScale: 100,
+  font: "inter",
+  sendShortcut: "enter",
+  chatAccent: "blue",
+  agentSteps: "show",
+  unreadFirst: false,
+};
+
+const APPEARANCE_KEYS = ["uiScale", "font", "sendShortcut", "chatAccent", "agentSteps", "unreadFirst"] as const;
+
+export function isAppAppearance(value: unknown): value is AppAppearanceSettings {
+  return (
+    isDynamicRecord(value) &&
+    isOneOf(APP_UI_SCALES, value.uiScale) &&
+    isOneOf(APP_FONTS, value.font) &&
+    isOneOf(APP_SEND_SHORTCUTS, value.sendShortcut) &&
+    isOneOf(APP_CHAT_ACCENTS, value.chatAccent) &&
+    isOneOf(APP_AGENT_STEPS, value.agentSteps) &&
+    isBoolean(value.unreadFirst)
+  );
+}
+
+/** A saved value read back: every field that is not valid goes back to its default (older or edited data is not trusted). */
+export function normalizeAppAppearance(value: unknown): AppAppearanceSettings {
+  const stored = isDynamicRecord(value) ? value : {};
+  const defaults = DEFAULT_APP_APPEARANCE;
+  return {
+    uiScale: isOneOf(APP_UI_SCALES, stored.uiScale) ? stored.uiScale : defaults.uiScale,
+    font: isOneOf(APP_FONTS, stored.font) ? stored.font : defaults.font,
+    sendShortcut: isOneOf(APP_SEND_SHORTCUTS, stored.sendShortcut) ? stored.sendShortcut : defaults.sendShortcut,
+    chatAccent: isOneOf(APP_CHAT_ACCENTS, stored.chatAccent) ? stored.chatAccent : defaults.chatAccent,
+    agentSteps: isOneOf(APP_AGENT_STEPS, stored.agentSteps) ? stored.agentSteps : defaults.agentSteps,
+    unreadFirst: isBoolean(stored.unreadFirst) ? stored.unreadFirst : defaults.unreadFirst,
+  };
+}
+
+/**
+ * A change coming from the window: only the known fields, each with a known value. Throws a plain sentence for the first problem
+ * (an unknown field, a value outside its list) so a typo is not saved as "no change".
+ */
+export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSettings> {
+  if (!isDynamicRecord(value)) throw new Error("appearance must be an object.");
+  for (const key of Object.keys(value)) {
+    if (!isOneOf(APPEARANCE_KEYS, key)) throw new Error(`Unknown appearance setting "${key}".`);
+  }
+  const patch: Partial<AppAppearanceSettings> = {};
+  if (value.uiScale !== undefined) {
+    if (!isOneOf(APP_UI_SCALES, value.uiScale)) throw new Error(`uiScale is one of ${APP_UI_SCALES.join(", ")}.`);
+    patch.uiScale = value.uiScale;
+  }
+  if (value.font !== undefined) {
+    if (!isOneOf(APP_FONTS, value.font)) throw new Error(`font is one of ${APP_FONTS.join(", ")}.`);
+    patch.font = value.font;
+  }
+  if (value.sendShortcut !== undefined) {
+    if (!isOneOf(APP_SEND_SHORTCUTS, value.sendShortcut)) {
+      throw new Error(`sendShortcut is one of ${APP_SEND_SHORTCUTS.join(", ")}.`);
+    }
+    patch.sendShortcut = value.sendShortcut;
+  }
+  if (value.chatAccent !== undefined) {
+    if (!isOneOf(APP_CHAT_ACCENTS, value.chatAccent)) {
+      throw new Error(`chatAccent is one of ${APP_CHAT_ACCENTS.join(", ")}.`);
+    }
+    patch.chatAccent = value.chatAccent;
+  }
+  if (value.agentSteps !== undefined) {
+    if (!isOneOf(APP_AGENT_STEPS, value.agentSteps)) {
+      throw new Error(`agentSteps is one of ${APP_AGENT_STEPS.join(", ")}.`);
+    }
+    patch.agentSteps = value.agentSteps;
+  }
+  if (value.unreadFirst !== undefined) {
+    if (!isBoolean(value.unreadFirst)) throw new Error("unreadFirst is on or off.");
+    patch.unreadFirst = value.unreadFirst;
+  }
+  return patch;
+}
+
 export interface AppSettings {
   theme: AppTheme;
   language: AppLanguage;
@@ -245,6 +360,7 @@ export interface AppSettings {
   notifications: NotificationPreferences;
   tabs: SettingsTab[];
   navigation: AppNavigationSettings;
+  appearance: AppAppearanceSettings;
 }
 
 export interface UpdateAppSettingsInput {
@@ -256,6 +372,8 @@ export interface UpdateAppSettingsInput {
   };
   /** Replaces the whole pinned list (unknown ids and duplicates are refused). An empty list unpins everything. */
   navigation?: { pinnedPageIds: AppPageId[] };
+  /** Changes only the fields that are given; the others stay as they are. */
+  appearance?: Partial<AppAppearanceSettings>;
 }
 
 /** True for a list of known page ids without duplicates. */
@@ -382,7 +500,8 @@ export function isAppSettings(value: unknown): value is AppSettings {
     Array.isArray(value.tabs) &&
     value.tabs.every((tab) => isDynamicRecord(tab) && isOneOf(SETTINGS_TABS, tab.id) && isBoolean(tab.available)) &&
     isDynamicRecord(value.navigation) &&
-    isPinnedPageIdList(value.navigation.pinnedPageIds)
+    isPinnedPageIdList(value.navigation.pinnedPageIds) &&
+    isAppAppearance(value.appearance)
   );
 }
 
