@@ -31,11 +31,11 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 4. [zrobione: 8f6ce332a (po b2f7189aa; powtarzaj po scaleniach)] `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
 5. [zrobione: b136b22a2] Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
 6. [zrobione: 78f6ebbb9] Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
-7. [w toku: KK, 22:48] Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
+7. [zrobione: 3cb782b80] Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
 8. Przegląd `i18n-inwentarz.md`: co zostało po angielsku w moich panelach, tłumaczenie przez `t()`.
 9. Ekran kanałów w kliencie telefonu (PWA) razem z UI: kontrakt `ipc-mobile-channels.ts`, test na atrapie.
 10. Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
-11. [w toku: KK, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
+11. [zrobione: 3cb782b80, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
 
 ## Backend Expert
 1. [zrobione: 41e810e1b] `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
