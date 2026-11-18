@@ -894,4 +894,13 @@ export const en = {
   "Push notifications are off on this computer.": "Push notifications are off on this computer.",
   "The push keys of this computer are not ready (the computer cannot keep a secret key safe).": "The push keys of this computer are not ready (the computer cannot keep a secret key safe).",
   "No phone has allowed notifications yet.": "No phone has allowed notifications yet.",
+  "Could not load the remote desktop settings.": "Could not load the remote desktop settings.",
+  "Could not change the setting.": "Could not change the setting.",
+  "Who may come in": "Who may come in",
+  "Sharing this computer": "Sharing this computer",
+  "{active} of {max} sessions open · {pending} waiting for your answer": "{active} of {max} sessions open · {pending} waiting for your answer",
+  "Ask on this computer every time": "Ask on this computer every time",
+  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.",
+  "Unattended access": "Unattended access",
+  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.",
 } as const;

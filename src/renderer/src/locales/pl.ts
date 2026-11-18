@@ -892,4 +892,13 @@ export const pl = {
   "Push notifications are off on this computer.": "Powiadomienia push są wyłączone na tym komputerze.",
   "The push keys of this computer are not ready (the computer cannot keep a secret key safe).": "Klucze push tego komputera nie są gotowe (komputer nie potrafi bezpiecznie przechować tajnego klucza).",
   "No phone has allowed notifications yet.": "Żaden telefon jeszcze nie zezwolił na powiadomienia.",
+  "Could not load the remote desktop settings.": "Nie udało się wczytać ustawień pulpitu zdalnego.",
+  "Could not change the setting.": "Nie udało się zmienić ustawienia.",
+  "Who may come in": "Kto może wejść",
+  "Sharing this computer": "Udostępnianie tego komputera",
+  "{active} of {max} sessions open · {pending} waiting for your answer": "Otwarte sesje: {active} z {max} · czeka na Twoją odpowiedź: {pending}",
+  "Ask on this computer every time": "Pytaj na tym komputerze za każdym razem",
+  "Also for a viewer you allowed before. You have {seconds} seconds to answer; after that the viewer is refused.": "Także o widza, któremu wcześniej pozwolono. Masz {seconds} s na odpowiedź; potem widz zostaje odrzucony.",
+  "Unattended access": "Dostęp bez nadzoru",
+  "A viewer always waits for you to answer on this computer, so nobody can take over a computer that nobody is sitting at.": "Widz zawsze czeka na Twoją odpowiedź na tym komputerze, więc nikt nie przejmie komputera, przy którym nikt nie siedzi.",
 } as const;

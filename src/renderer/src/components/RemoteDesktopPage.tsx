@@ -10,6 +10,7 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
 
 export function RemoteDesktopSafetyBanner(props: { count: number; onStop: () => void }) {
@@ -197,6 +198,7 @@ export function RemoteDesktopPage() {
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
+      <RemoteDesktopAccessPanel />
       <section>
         <h2>Share this computer</h2>
         <Show when={!host().available}>
