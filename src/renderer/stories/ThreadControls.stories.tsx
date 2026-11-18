@@ -117,7 +117,7 @@ export const DeleteConfirmation: Story = {
     const c = await open(canvasElement);
     await userEvent.click(c.getByRole("button", { name: "Delete Research" }));
     await expect(c.getByRole("group", { name: "Confirm deleting Research" })).toHaveTextContent(
-      "This cannot be undone.",
+      "You can bring it back for 10 minutes.",
     );
     await userEvent.click(c.getByRole("button", { name: "Keep thread" }));
     await expect(c.queryByRole("button", { name: "Delete permanently" })).not.toBeInTheDocument();
