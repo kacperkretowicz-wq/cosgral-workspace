@@ -2,7 +2,9 @@
 
 const AGENT_ROW = ".agent-row[data-agent-id]";
 
-export function prefersReducedMotion(matchMedia = window.matchMedia?.bind(window)): boolean {
+export function prefersReducedMotion(
+  matchMedia: ((query: string) => { matches: boolean }) | undefined = window.matchMedia?.bind(window),
+): boolean {
   return matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
@@ -31,9 +33,9 @@ export function playAgentRowFlip(
     measure?: (el: HTMLElement) => number;
     schedule?: (run: () => void) => void;
   } = {},
-): number {
-  if (options.reducedMotion ?? prefersReducedMotion()) return 0;
-  if (before.size === 0) return 0;
+) {
+  if (options.reducedMotion ?? prefersReducedMotion()) return 0 as const;
+  if (before.size === 0) return 0 as const;
   const measure = options.measure ?? ((el) => el.getBoundingClientRect().top);
   const schedule = options.schedule ?? ((run) => requestAnimationFrame(() => requestAnimationFrame(run)));
   let moved = 0;
@@ -50,7 +52,7 @@ export function playAgentRowFlip(
     pending.push(node);
     moved += 1;
   }
-  if (pending.length === 0) return 0;
+  if (pending.length === 0) return 0 as const;
   schedule(() => {
     for (const node of pending) {
       node.style.transition = "";

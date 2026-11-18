@@ -23,8 +23,8 @@ function row(id: string, top: number): HTMLElement {
 
 describe("sidebar-row-flip", () => {
   it("reads reduced motion from matchMedia", () => {
-    expect(prefersReducedMotion(() => ({ matches: true }) as MediaQueryList)).toBe(true);
-    expect(prefersReducedMotion(() => ({ matches: false }) as MediaQueryList)).toBe(false);
+    expect(prefersReducedMotion(() => ({ matches: true }))).toBe(true);
+    expect(prefersReducedMotion(() => ({ matches: false }))).toBe(false);
   });
 
   it("captures tops by data-agent-id", () => {

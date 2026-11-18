@@ -21,7 +21,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 11. [zrobione: edbd5db1e] Zakładki i podgląd mediów w rozmowie: zamiast tekstu „Loading” szkielet; ContextIndicator.
 12. [zrobione: 0e4685b6f] Przełącznik „Unread first” obok „Send message with” w ustawieniach wyglądu (silnik gotowy: Backend BE-AC).
 13. [zrobione: 1682b267a] Klient telefonu (PWA): ekran kanałów, wiadomości i zadań na API z `ipc-mobile-channels.ts` (Backend BE-AB); współpraca z KK.
-14. [w toku: UI, 22:45] Pasek boczny: animacja przesunięcia wiersza przy „unread first” (tylko transform, z reduced-motion).
+14. [zrobione: 9a5a7ed95] Pasek boczny: animacja przesunięcia wiersza przy „unread first” (tylko transform, z reduced-motion).
 15. Poprawki dostępności z sondy Testera (fokus, kontrast, reduced motion), gdy wynik będzie.
 
 ## KK Fullstack
