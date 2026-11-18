@@ -18,7 +18,7 @@ test("overflow navigation keeps pages and settings reachable by keyboard and res
   await page.getByRole("button", { name: "More pages (current: Phone)" }).click();
   await expect.element(page.getByRole("menu", { name: "More pages" })).toBeVisible();
   await userEvent.keyboard("{End}");
-  await expect.poll(() => document.activeElement?.textContent?.trim()).toBe("Phone");
+  await expect.poll(() => document.activeElement?.textContent?.trim()).toBe("Server settings");
   await userEvent.keyboard("{Home}");
   await expect.poll(() => document.activeElement?.textContent?.trim()).toBe("Workflows");
   await page.getByRole("menuitem", { name: "Library" }).click();
