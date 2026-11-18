@@ -648,4 +648,143 @@ export const en = {
   "Version {number}": "Version {number}",
   "Against the current one": "Against the current one",
   "Restore this version": "Restore this version",
+  "Not checked yet": "Not checked yet",
+  "Downloading…": "Downloading…",
+  "Ready to install": "Ready to install",
+  "Installing…": "Installing…",
+  "Not available here": "Not available here",
+  Preview: "Preview",
+  Stable: "Stable",
+  "Every hour": "Every hour",
+  "Every day": "Every day",
+  "Every {count} days": "Every {count} days",
+  "Every {count} hours": "Every {count} hours",
+  "Could not load the update settings.": "Could not load the update settings.",
+  "Could not save the update settings.": "Could not save the update settings.",
+  "Version {version} is available.": "Version {version} is available.",
+  "Downloading the update…": "Downloading the update…",
+  "Downloading the update: {percent}%": "Downloading the update: {percent}%",
+  "Version {version} is downloaded and ready.": "Version {version} is downloaded and ready.",
+  "Update settings are not available in this version.": "Update settings are not available in this version.",
+  "Could not download the update.": "Could not download the update.",
+  "Could not install the update.": "Could not install the update.",
+  "Restart and install": "Restart and install",
+  "Could not check for updates.": "Could not check for updates.",
+  "Update track": "Update track",
+  "Stable receives tested releases.": "Stable receives tested releases.",
+  "Preview also receives pre-releases, a little earlier and less tested.":
+    "Preview also receives pre-releases, a little earlier and less tested.",
+  "Check for updates automatically": "Check for updates automatically",
+  "Without it the program makes no network request about updates by itself.":
+    "Without it the program makes no network request about updates by itself.",
+  "How often": "How often",
+  "Install a downloaded update when the program closes": "Install a downloaded update when the program closes",
+  "Otherwise it waits until you restart yourself.": "Otherwise it waits until you restart yourself.",
+  "Restart when idle": "Restart when idle",
+  "Waiting for the agents to finish, then the program restarts.":
+    "Waiting for the agents to finish, then the program restarts.",
+  "Restarts into the downloaded update once no agent is working.":
+    "Restarts into the downloaded update once no agent is working.",
+  "No update has been downloaded yet.": "No update has been downloaded yet.",
+  "Could not schedule the restart.": "Could not schedule the restart.",
+  "Could not cancel the restart.": "Could not cancel the restart.",
+  "Stop waiting": "Stop waiting",
+  "Allow updates from server members": "Allow updates from server members",
+  "This program has no server members: only you update it.": "This program has no server members: only you update it.",
+  "What's new": "What's new",
+  "This version has no release-notes page. The list of changes is in the repository.":
+    "This version has no release-notes page. The list of changes is in the repository.",
+  "Signed out": "Signed out",
+  "Waiting for the browser": "Waiting for the browser",
+  "Finishing the sign-in…": "Finishing the sign-in…",
+  "Signed in": "Signed in",
+  "Sign-in failed": "Sign-in failed",
+  "The program renews the sign-in by itself.": "The program renews the sign-in by itself.",
+  "The sign-in is renewed by itself; it runs out {date}.": "The sign-in is renewed by itself; it runs out {date}.",
+  "Could not load the sign-ins.": "Could not load the sign-ins.",
+  "Sign in to MCP servers": "Sign in to MCP servers",
+  "Some servers need you to sign in on the service's own page. The program opens your browser and keeps the sign-in; agents never see it.":
+    "Some servers need you to sign in on the service's own page. The program opens your browser and keeps the sign-in; agents never see it.",
+  "No server here needs a sign-in. Add a server over the web first.":
+    "No server here needs a sign-in. Add a server over the web first.",
+  "Finish the sign-in in the browser. The program waits {minutes} minutes.":
+    "Finish the sign-in in the browser. The program waits {minutes} minutes.",
+  "Could not start the sign-in.": "Could not start the sign-in.",
+  "Sign in again": "Sign in again",
+  "Try again": "Try again",
+  "Sign in": "Sign in",
+  "Could not sign out.": "Could not sign out.",
+  "Could not cancel the sign-in.": "Could not cancel the sign-in.",
+  "Only a server reached over the web can be signed in to this way.":
+    "Only a server reached over the web can be signed in to this way.",
+  "This server does not offer a sign-in the program can use.":
+    "This server does not offer a sign-in the program can use.",
+  "The server did not let the program register for a sign-in.":
+    "The server did not let the program register for a sign-in.",
+  "The sign-in was refused on the service's page.": "The sign-in was refused on the service's page.",
+  "The sign-in was not finished in time. Try again.": "The sign-in was not finished in time. Try again.",
+  "That answer did not belong to this sign-in, so it was ignored. Try again.":
+    "That answer did not belong to this sign-in, so it was ignored. Try again.",
+  "The sign-in could not be completed. Try again.": "The sign-in could not be completed. Try again.",
+  "Something went wrong with the sign-in. Try again.": "Something went wrong with the sign-in. Try again.",
+  "That does not look like a token of {name}. Check it and paste it again.":
+    "That does not look like a token of {name}. Check it and paste it again.",
+  "Choose the agent that answers.": "Choose the agent that answers.",
+  "Could not load the messengers.": "Could not load the messengers.",
+  "Could not allow the conversation.": "Could not allow the conversation.",
+  Messengers: "Messengers",
+  "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.":
+    "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.",
+  "Messengers are not available in this version.": "Messengers are not available in this version.",
+  "Connected as {name}.": "Connected as {name}.",
+  "Connected.": "Connected.",
+  "Since the program started: {forwarded} passed to an agent, {replied} answered, {ignored} ignored.":
+    "Since the program started: {forwarded} passed to an agent, {replied} answered, {ignored} ignored.",
+  "Checking the token…": "Checking the token…",
+  "Bot token": "Bot token",
+  "App-level token": "App-level token",
+  "Replace the token": "Replace the token",
+  "The token is saved encrypted on this computer and is never shown again.":
+    "The token is saved encrypted on this computer and is never shown again.",
+  "How to set it up": "How to set it up",
+  "Who may talk to an agent": "Who may talk to an agent",
+  "Nobody is allowed yet.": "Nobody is allowed yet.",
+  "Could not remove the conversation.": "Could not remove the conversation.",
+  "These conversations wrote to the bot and are not allowed. What they wrote is never shown.":
+    "These conversations wrote to the bot and are not allowed. What they wrote is never shown.",
+  "{count} messages": "{count} messages",
+  "Conversation id": "Conversation id",
+  "Name (optional)": "Name (optional)",
+  "Agent that answers": "Agent that answers",
+  "Allow this conversation": "Allow this conversation",
+  "From BotFather in Telegram, like 123456789:AA…": "From BotFather in Telegram, like 123456789:AA…",
+  "Starts with xoxb-. From OAuth & Permissions of your Slack app.":
+    "Starts with xoxb-. From OAuth & Permissions of your Slack app.",
+  "Starts with xapp-. From Basic Information, with the connections:write scope.":
+    "Starts with xapp-. From Basic Information, with the connections:write scope.",
+  "A number, like 123456789. Write to the bot once: the settings then show who wrote, and you can allow them.":
+    "A number, like 123456789. Write to the bot once: the settings then show who wrote, and you can allow them.",
+  "A direct-message id starting with D, like D01ABC23DEF. Write to the bot once: the settings then show who wrote, and you can allow them. Channels are not allowed.":
+    "A direct-message id starting with D, like D01ABC23DEF. Write to the bot once: the settings then show who wrote, and you can allow them. Channels are not allowed.",
+  "Open BotFather in Telegram and make a bot.": "Open BotFather in Telegram and make a bot.",
+  "Paste the bot token here.": "Paste the bot token here.",
+  "Write a message to the bot. It appears under the conversations that wrote.":
+    "Write a message to the bot. It appears under the conversations that wrote.",
+  "Allow that conversation and choose the agent that answers it.":
+    "Allow that conversation and choose the agent that answers it.",
+  "Make a Slack app and turn on Socket Mode.": "Make a Slack app and turn on Socket Mode.",
+  "Give the bot token the scopes chat:write, im:history and im:read, and subscribe to the message.im event.":
+    "Give the bot token the scopes chat:write, im:history and im:read, and subscribe to the message.im event.",
+  "Paste the bot token (xoxb-) and the app-level token (xapp-, scope connections:write) here.":
+    "Paste the bot token (xoxb-) and the app-level token (xapp-, scope connections:write) here.",
+  "Write a direct message to the bot. It appears under the conversations that wrote.":
+    "Write a direct message to the bot. It appears under the conversations that wrote.",
+  "Telegram does not accept the token (it may have been revoked). Make a new one with BotFather and connect again.":
+    "Telegram does not accept the token (it may have been revoked). Make a new one with BotFather and connect again.",
+  "Telegram cannot be reached right now. The program tries again by itself.":
+    "Telegram cannot be reached right now. The program tries again by itself.",
+  "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.":
+    "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.",
+  "Slack cannot be reached right now. The program tries again by itself.":
+    "Slack cannot be reached right now. The program tries again by itself.",
 } as const;

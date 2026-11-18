@@ -645,4 +645,144 @@ export const pl = {
   "Version {number}": "Wersja {number}",
   "Against the current one": "W porównaniu z bieżącą",
   "Restore this version": "Przywróć tę wersję",
+  "Not checked yet": "Jeszcze nie sprawdzano",
+  "Downloading…": "Pobieranie…",
+  "Ready to install": "Gotowa do instalacji",
+  "Installing…": "Instalowanie…",
+  "Not available here": "Niedostępne tutaj",
+  Preview: "Podgląd",
+  Stable: "Stabilny",
+  "Every hour": "Co godzinę",
+  "Every day": "Codziennie",
+  "Every {count} days": "Co {count} dni",
+  "Every {count} hours": "Co {count} godz.",
+  "Could not load the update settings.": "Nie udało się wczytać ustawień aktualizacji.",
+  "Could not save the update settings.": "Nie udało się zapisać ustawień aktualizacji.",
+  "Version {version} is available.": "Dostępna jest wersja {version}.",
+  "Downloading the update…": "Pobieranie aktualizacji…",
+  "Downloading the update: {percent}%": "Pobieranie aktualizacji: {percent}%",
+  "Version {version} is downloaded and ready.": "Wersja {version} jest pobrana i gotowa.",
+  "Update settings are not available in this version.": "Ustawienia aktualizacji nie są dostępne w tej wersji.",
+  "Could not download the update.": "Nie udało się pobrać aktualizacji.",
+  "Could not install the update.": "Nie udało się zainstalować aktualizacji.",
+  "Restart and install": "Uruchom ponownie i zainstaluj",
+  "Could not check for updates.": "Nie udało się sprawdzić aktualizacji.",
+  "Update track": "Kanał aktualizacji",
+  "Stable receives tested releases.": "Stabilny dostaje sprawdzone wydania.",
+  "Preview also receives pre-releases, a little earlier and less tested.":
+    "Podgląd dostaje też wersje przedpremierowe, trochę wcześniej i mniej sprawdzone.",
+  "Check for updates automatically": "Sprawdzaj aktualizacje automatycznie",
+  "Without it the program makes no network request about updates by itself.":
+    "Bez tego program sam nie wysyła żadnych zapytań o aktualizacje.",
+  "How often": "Jak często",
+  "Install a downloaded update when the program closes": "Instaluj pobraną aktualizację przy zamknięciu programu",
+  "Otherwise it waits until you restart yourself.": "W przeciwnym razie czeka, aż sam uruchomisz program ponownie.",
+  "Restart when idle": "Uruchom ponownie, gdy będę bezczynny",
+  "Waiting for the agents to finish, then the program restarts.":
+    "Czekam, aż agenci skończą pracę, potem program uruchomi się ponownie.",
+  "Restarts into the downloaded update once no agent is working.":
+    "Uruchamia się ponownie z pobraną aktualizacją, gdy żaden agent nie pracuje.",
+  "No update has been downloaded yet.": "Żadna aktualizacja nie została jeszcze pobrana.",
+  "Could not schedule the restart.": "Nie udało się zaplanować ponownego uruchomienia.",
+  "Could not cancel the restart.": "Nie udało się anulować ponownego uruchomienia.",
+  "Stop waiting": "Przestań czekać",
+  "Allow updates from server members": "Zezwalaj na aktualizacje od członków serwera",
+  "This program has no server members: only you update it.":
+    "Ten program nie ma członków serwera: aktualizujesz go tylko Ty.",
+  "What's new": "Co nowego",
+  "This version has no release-notes page. The list of changes is in the repository.":
+    "Ta wersja nie ma strony ze zmianami. Lista zmian jest w repozytorium.",
+  "Signed out": "Wylogowano",
+  "Waiting for the browser": "Czekam na przeglądarkę",
+  "Finishing the sign-in…": "Kończę logowanie…",
+  "Signed in": "Zalogowano",
+  "Sign-in failed": "Logowanie nie udało się",
+  "The program renews the sign-in by itself.": "Program sam odnawia logowanie.",
+  "The sign-in is renewed by itself; it runs out {date}.": "Logowanie odnawia się samo; wygasa {date}.",
+  "Could not load the sign-ins.": "Nie udało się wczytać logowań.",
+  "Sign in to MCP servers": "Logowanie do serwerów MCP",
+  "Some servers need you to sign in on the service's own page. The program opens your browser and keeps the sign-in; agents never see it.":
+    "Niektóre serwery wymagają zalogowania na stronie usługi. Program otwiera przeglądarkę i zapamiętuje logowanie; agenci nigdy go nie widzą.",
+  "No server here needs a sign-in. Add a server over the web first.":
+    "Żaden serwer nie wymaga logowania. Najpierw dodaj serwer działający przez internet.",
+  "Finish the sign-in in the browser. The program waits {minutes} minutes.":
+    "Dokończ logowanie w przeglądarce. Program czeka {minutes} min.",
+  "Could not start the sign-in.": "Nie udało się rozpocząć logowania.",
+  "Sign in again": "Zaloguj ponownie",
+  "Try again": "Spróbuj jeszcze raz",
+  "Sign in": "Zaloguj",
+  "Could not sign out.": "Nie udało się wylogować.",
+  "Could not cancel the sign-in.": "Nie udało się anulować logowania.",
+  "Only a server reached over the web can be signed in to this way.":
+    "Tak można zalogować tylko serwer dostępny przez internet.",
+  "This server does not offer a sign-in the program can use.":
+    "Ten serwer nie oferuje logowania, z którego program może skorzystać.",
+  "The server did not let the program register for a sign-in.":
+    "Serwer nie pozwolił programowi zarejestrować się do logowania.",
+  "The sign-in was refused on the service's page.": "Logowanie zostało odrzucone na stronie usługi.",
+  "The sign-in was not finished in time. Try again.": "Logowanie nie zostało dokończone na czas. Spróbuj jeszcze raz.",
+  "That answer did not belong to this sign-in, so it was ignored. Try again.":
+    "Ta odpowiedź nie należała do tego logowania, więc ją zignorowano. Spróbuj jeszcze raz.",
+  "The sign-in could not be completed. Try again.": "Nie udało się dokończyć logowania. Spróbuj jeszcze raz.",
+  "Something went wrong with the sign-in. Try again.": "Coś poszło nie tak z logowaniem. Spróbuj jeszcze raz.",
+  "That does not look like a token of {name}. Check it and paste it again.":
+    "To nie wygląda na token usługi {name}. Sprawdź go i wklej ponownie.",
+  "Choose the agent that answers.": "Wybierz agenta, który ma odpowiadać.",
+  "Could not load the messengers.": "Nie udało się wczytać komunikatorów.",
+  "Could not allow the conversation.": "Nie udało się dopuścić rozmowy.",
+  Messengers: "Komunikatory",
+  "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.":
+    "Rozmawiaj z agentem z Telegrama lub Slacka. Odpowiedzi dostają tylko rozmowy prywatne, a nikt nie ma dostępu, dopóki go nie dodasz.",
+  "Messengers are not available in this version.": "Komunikatory nie są dostępne w tej wersji.",
+  "Connected as {name}.": "Połączony jako {name}.",
+  "Connected.": "Połączony.",
+  "Since the program started: {forwarded} passed to an agent, {replied} answered, {ignored} ignored.":
+    "Od startu programu: {forwarded} przekazanych agentowi, {replied} odpowiedzi, {ignored} pominiętych.",
+  "Checking the token…": "Sprawdzam token…",
+  "Bot token": "Token bota",
+  "App-level token": "Token aplikacji",
+  "Replace the token": "Zmień token",
+  "The token is saved encrypted on this computer and is never shown again.":
+    "Token jest zapisany zaszyfrowany na tym komputerze i nigdy nie jest pokazywany ponownie.",
+  "How to set it up": "Jak to skonfigurować",
+  "Who may talk to an agent": "Kto może rozmawiać z agentem",
+  "Nobody is allowed yet.": "Nikt nie jest jeszcze dopuszczony.",
+  "Could not remove the conversation.": "Nie udało się usunąć rozmowy.",
+  "These conversations wrote to the bot and are not allowed. What they wrote is never shown.":
+    "Te rozmowy napisały do bota i nie są dopuszczone. To, co napisały, nigdy nie jest pokazywane.",
+  "{count} messages": "{count} wiadomości",
+  "Conversation id": "Numer rozmowy",
+  "Name (optional)": "Nazwa (opcjonalnie)",
+  "Agent that answers": "Agent, który odpowiada",
+  "Allow this conversation": "Dopuść tę rozmowę",
+  "From BotFather in Telegram, like 123456789:AA…": "Z BotFather w Telegramie, np. 123456789:AA…",
+  "Starts with xoxb-. From OAuth & Permissions of your Slack app.":
+    "Zaczyna się od xoxb-. Z zakładki OAuth & Permissions Twojej aplikacji Slack.",
+  "Starts with xapp-. From Basic Information, with the connections:write scope.":
+    "Zaczyna się od xapp-. Z zakładki Basic Information, z uprawnieniem connections:write.",
+  "A number, like 123456789. Write to the bot once: the settings then show who wrote, and you can allow them.":
+    "Liczba, np. 123456789. Napisz raz do bota: ustawienia pokażą, kto napisał, i będziesz mógł go dopuścić.",
+  "A direct-message id starting with D, like D01ABC23DEF. Write to the bot once: the settings then show who wrote, and you can allow them. Channels are not allowed.":
+    "Numer wiadomości prywatnej zaczynający się od D, np. D01ABC23DEF. Napisz raz do bota: ustawienia pokażą, kto napisał, i będziesz mógł go dopuścić. Kanały nie są dopuszczane.",
+  "Open BotFather in Telegram and make a bot.": "Otwórz BotFather w Telegramie i utwórz bota.",
+  "Paste the bot token here.": "Wklej tutaj token bota.",
+  "Write a message to the bot. It appears under the conversations that wrote.":
+    "Napisz wiadomość do bota. Pojawi się wśród rozmów, które napisały.",
+  "Allow that conversation and choose the agent that answers it.":
+    "Dopuść tę rozmowę i wybierz agenta, który ma na nią odpowiadać.",
+  "Make a Slack app and turn on Socket Mode.": "Utwórz aplikację Slack i włącz Socket Mode.",
+  "Give the bot token the scopes chat:write, im:history and im:read, and subscribe to the message.im event.":
+    "Nadaj tokenowi bota uprawnienia chat:write, im:history i im:read oraz zasubskrybuj zdarzenie message.im.",
+  "Paste the bot token (xoxb-) and the app-level token (xapp-, scope connections:write) here.":
+    "Wklej tutaj token bota (xoxb-) i token aplikacji (xapp-, uprawnienie connections:write).",
+  "Write a direct message to the bot. It appears under the conversations that wrote.":
+    "Napisz do bota wiadomość prywatną. Pojawi się wśród rozmów, które napisały.",
+  "Telegram does not accept the token (it may have been revoked). Make a new one with BotFather and connect again.":
+    "Telegram nie przyjmuje tokenu (mógł zostać unieważniony). Utwórz nowy w BotFather i połącz ponownie.",
+  "Telegram cannot be reached right now. The program tries again by itself.":
+    "Nie można teraz połączyć się z Telegramem. Program spróbuje sam ponownie.",
+  "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.":
+    "Slack nie przyjmuje tokenów (mogły zostać unieważnione albo aplikacji brakuje uprawnienia). Utwórz nowe i połącz ponownie.",
+  "Slack cannot be reached right now. The program tries again by itself.":
+    "Nie można teraz połączyć się ze Slackiem. Program spróbuje sam ponownie.",
 } as const;
