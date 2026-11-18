@@ -13,7 +13,7 @@ Gałąź `team/backend/w12-ad` (z integracji). Bez Electrona i Storybooka.
 - Silnik nie zna agentów zdalnych, więc ich miejsc nie sprawdza (sprawdza okno); agent lokalny nadal jest wycinany po usunięciu.
 - Jedna funkcja `applyWorkspacePatch` dla silnika i atrapy Storybooka.
 
-## 10. Szczegół zadania kanału w API telefonu (`SHA w kolejce`)
+## 10. Szczegół zadania kanału w API telefonu (``9d766313a``)
 - `GET /v1/channels/:id/tasks/:taskId` → `{ task, request, result, steps }`: wiadomość startowa, wynik (gdy jest) i kroki (zadania podrzędne bez zarchiwizowanych). Telefon nie musi przeglądać wiadomości. Zadanie z innego kanału lub nieznane = 404; inna metoda niż GET = 405.
 - Adapter: `MobilePhoneChannels.message` (jedna wiadomość lub null).
 

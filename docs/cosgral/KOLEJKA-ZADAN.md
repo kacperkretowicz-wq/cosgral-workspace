@@ -47,7 +47,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 7. [zrobione: 4e750b4a7; skrót wysyłania zrobione: 971d371ea; zostaje „nieprzeczytane najpierw” = `appearance.unreadFirst`: sortowanie siedzi w układzie paska z folderami i ręczną kolejnością] Ustawienie „skrót wysyłania” i „nieprzeczytane najpierw” faktycznie używane w polu wiadomości i na liście agentów.
 8. [zrobione: 2a2ae3772] Strumień `/v1/events` niesie też zmiany kanałów (luka BE-AB: telefon dziś pyta ponownie).
 9. [zrobione: 9d79bedfc] Przywracanie miejsca osobno na serwer (luka BE-X: dziś jedno miejsce).
-10. [w toku: Backend, 22:21; szczegół zadania kanału (wynik + kroki) w API telefonu] Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
+10. [zrobione: 9d766313a — szczegół zadania kanału w API telefonu; push dla zadań kanału: luka] Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
 11. Kolejne luki z `parytet-0.71.md`, jeśli tabela „ROBIĆ” znów się wypełni po odbiorze Testera.
 
 ## KAPI
