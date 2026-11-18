@@ -71,7 +71,7 @@ async function open(root?: string) {
 
 it("persists theme across reopening and normalizes older or edited settings", async () => {
   const { dir, database, service, events } = await open();
-  expect(service.appSettings().theme).toBe("system");
+  expect(service.appSettings().theme).toBe("dark");
   await service.updateAppSettings({ theme: "light" });
   expect(events).toContainEqual({ type: "app-settings-changed", settings: service.appSettings() });
   database.close();
@@ -84,5 +84,5 @@ it("persists theme across reopening and normalizes older or edited settings", as
     .run(JSON.stringify({ theme: "sepia" }));
   reopened.database.close();
   const repaired = await open(dir);
-  expect(repaired.service.appSettings().theme).toBe("system");
+  expect(repaired.service.appSettings().theme).toBe("dark");
 });

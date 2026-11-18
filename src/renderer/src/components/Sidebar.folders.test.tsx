@@ -425,9 +425,9 @@ it("offers hide and duplicate without inventing thread/window actions", async ()
   await waitFor(() => expect(screen.getByRole("button", { name: /^Research,/ })).toHaveAttribute("data-closed"));
   openMenu(screen.getByRole("button", { name: /^Research,/ }));
   menu = await latestMenu("Agent actions");
-  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Duplikuj" }));
+  await fireEvent.pointerUp(within(menu).getByRole("menuitem", { name: "Duplicate" }));
   await waitFor(() => expect(duplicate).toHaveBeenCalledWith("research"));
-  expect(screen.queryByRole("menuitem", { name: "Nowy wątek" })).toBeNull();
+  expect(screen.queryByRole("menuitem", { name: "New thread" })).toBeNull();
 });
 
 it("refreshes folder counts when hidden agents become visible", async () => {

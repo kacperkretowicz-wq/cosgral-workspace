@@ -154,7 +154,9 @@ describe("App page rail", () => {
     await openPage("Marketplace");
     expect(await screen.findByRole("heading", { name: "Marketplace", level: 1 })).toBeInTheDocument();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Agents" }));
+    await fireEvent.click(
+      within(screen.getByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Agents" }),
+    );
     expect(await screen.findByRole("heading", { name: "Chief" })).toBeInTheDocument();
     expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Chat list" })).toBe(list);
@@ -177,6 +179,11 @@ describe("App page rail", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     await waitFor(() => expect(view.container.querySelector(".initial-setup-screen")).not.toBeNull());
     // The dialog hides the rest of the app from assistive tech, so look past `aria-hidden`.
-    expect(screen.getByRole("button", { name: "Agents", hidden: true })).toHaveAttribute("aria-current", "page");
+    expect(
+      within(screen.getByRole("navigation", { name: "Pages", hidden: true })).getByRole("button", {
+        name: "Agents",
+        hidden: true,
+      }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });
