@@ -233,7 +233,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
     navigation: { pinnedPageIds: [] },
     appearance: { ...DEFAULT_APP_APPEARANCE },
-    behavior: { launchAtLogin: false },
+    behavior: { launchAtLogin: false, keepBackground: false },
   };
   const agentStatus = clone(options.agentStatus ?? STORY_AGENT_STATUS);
   let bots = clone(options.bots ?? STORY_BOT_SUMMARIES);

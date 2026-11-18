@@ -1450,8 +1450,7 @@ export const pl = {
   "Ready settings": "Gotowe ustawienia",
   "Hosted services": "Usługi hostowane",
   "Use {label}": "Użyj {label}",
-  "Hosted services need an API key, and your messages go to another computer.":
-    "Usługi hostowane wymagają klucza API, a Twoje wiadomości idą na inny komputer.",
+  "Hosted services need an API key.": "Usługi hostowane wymagają klucza API.",
   Kind: "Rodzaj",
   "Including the version, for example http://127.0.0.1:11434/v1. Only http:// and https://.":
     "Z wersją, na przykład http://127.0.0.1:11434/v1. Tylko http:// i https://.",

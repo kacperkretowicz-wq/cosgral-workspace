@@ -334,7 +334,7 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                   </For>
                 </fieldset>
                 <Text as="p" tone="muted">
-                  {t("Hosted services need an API key, and your messages go to another computer.")}
+                  {t("Hosted services need an API key.")}
                 </Text>
               </Show>
               <Field label={t("Name")} required>

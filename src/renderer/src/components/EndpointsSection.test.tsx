@@ -35,6 +35,9 @@ describe("EndpointsSection", () => {
     for (const preset of ENDPOINT_CLOUD_PRESETS) {
       expect(within(hosted).getByRole("button", { name: `Use ${preset.label}` })).toBeInTheDocument();
     }
+    expect(within(form).getByText("Hosted services need an API key.")).toBeInTheDocument();
+    // BE-V: no sentence about another computer while the address is on this one (the W5 step E01 reads the form for that).
+    expect(form.textContent ?? "").not.toMatch(/another computer/);
     const first = ENDPOINT_CLOUD_PRESETS[0];
     const last = ENDPOINT_CLOUD_PRESETS[ENDPOINT_CLOUD_PRESETS.length - 1];
     await fireEvent.click(within(hosted).getByRole("button", { name: `Use ${first.label}` }));
@@ -43,7 +46,8 @@ describe("EndpointsSection", () => {
     await fireEvent.click(within(hosted).getByRole("button", { name: `Use ${last.label}` }));
     expect(within(form).getByLabelText(/^Address/)).toHaveValue(last.baseUrl);
     expect(within(form).getByLabelText(/^Name/)).toHaveValue(last.label);
-    expect(within(form).getByText(/your messages go to another computer/)).toBeInTheDocument();
+    // The warning comes from the address itself, once a hosted address is in the form: "This server is not on this computer (host)...".
+    expect(within(form).getByRole("note")).toHaveTextContent(/not on this computer/);
     expect(check).not.toHaveBeenCalled();
   });
 

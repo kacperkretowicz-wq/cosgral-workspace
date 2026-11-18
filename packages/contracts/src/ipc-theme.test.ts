@@ -21,7 +21,7 @@ it("accepts only the three theme values and defaults unknown input to dark", () 
       agentSteps: "show",
       unreadFirst: false,
     },
-    behavior: { launchAtLogin: false },
+    behavior: { launchAtLogin: false, keepBackground: false },
   };
   expect(isAppSettings(settings)).toBe(true);
   expect(isAppSettings({ ...settings, theme: "sepia" })).toBe(false);
