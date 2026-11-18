@@ -109,7 +109,7 @@ async function main(): Promise<void> {
   console.log(`quiet-check: logs in ${out}; COSGRAL_TEST_TIMEOUT_SCALE=${scale}`);
   if (scale === "1")
     console.log("quiet-check: WARNING the scale is 1; for a busy computer use COSGRAL_TEST_TIMEOUT_SCALE=3");
-  await waitForQuietMachine("quiet-check", { maxCpu: 50, minFreeMb: 2000, maxWaitMs: 20 * 60_000 });
+  await waitForQuietMachine("quiet-check", { maxCpu: 60, minFreeMb: 1200, maxWaitMs: 10 * 60_000 });
   const results: Result[] = [];
   for (const step of steps) {
     const load = describeLoad(await cpuBusyPercent(1000));

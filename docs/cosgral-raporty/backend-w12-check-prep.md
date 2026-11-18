@@ -10,7 +10,7 @@ set COSGRAL_TEST_TIMEOUT_SCALE=3
 node scripts/quiet-check.ts --out C:\Users\x1 Yoga\OpenBot\Shared\cosgral-sandbox\check-final
 ```
 - Skrypt robi **te same 11 kroków co `bun run check`**, w tej samej kolejności, ale każdy ma własny log (`<krok>.log`) i czas, idzie dalej po czerwonym kroku (`--stop` zatrzymuje) i na końcu drukuje tabelę: krok, OK/RED, sekundy, **przyczyna** (timeout = maszyna, asercja = program). Kod wyjścia 0 tylko, gdy wszystkie 11 kroków zielone.
-- Przed startem czeka do 20 min na spokojną maszynę (procesor < 50%, wolne ≥ 2 GB) i zapisuje obciążenie (`sandbox-load.ts`). `COSGRAL_SKIP_LOAD_WAIT=1` pomija.
+- Przed startem czeka do 10 min na spokojną maszynę (procesor < 60%, wolne ≥ 1,2 GB; na tej maszynie agenci trzymają ok. 1,4–1,5 GB wolnego, więc próg 2 GB nigdy by nie przeszedł) i zapisuje obciążenie (`sandbox-load.ts`). `COSGRAL_SKIP_LOAD_WAIT=1` pomija.
 - `COSGRAL_TEST_TIMEOUT_SCALE=3` mnoży limity: globalne vitest (`testTimeout` 5 s, `hookTimeout` 10 s, `teardownTimeout` 10 s) i limity wolnych zestawów (`suiteTimeout`, 19 plików). Bez zmiennej nic się nie zmienia.
 - Opcje: `--only a,b` (tylko te kroki), `--skip a,b`, `--out <folder>`. Przykład powtórki jednego czerwonego kroku: `node scripts/quiet-check.ts --only test`.
 - Krok `test` to `vitest run --maxWorkers=1` (pliki i tak idą po kolei: `fileParallelism: false`; jeden proces = mniej pamięci i brak „Timeout terminating forks worker”).
