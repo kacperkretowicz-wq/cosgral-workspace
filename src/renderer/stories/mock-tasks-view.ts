@@ -4,11 +4,13 @@
 
 import {
   buildTaskDetail,
+  buildTasksBoard,
   buildTasksViewPage,
   type ChannelAssignment,
   type ChannelMessage,
   type ChannelTask,
   parseTaskDetailInput,
+  parseTasksBoardQuery,
   parseTasksViewQuery,
   type TasksViewDesktopApi,
   type TasksViewSource,
@@ -92,6 +94,28 @@ function sample(): MockTasksViewOptions {
       archivedAt: "2026-11-16T09:30:00.000Z",
       updatedAt: "2026-11-16T09:30:00.000Z",
     },
+    {
+      ...base,
+      id: "sample-task-5",
+      ownerBotId: "research",
+      state: "failed",
+      title: "Fetch the price list",
+      requestMessageId: "sample-request-2",
+      resultMessageId: null,
+      parentTaskId: null,
+      updatedAt: "2026-11-16T09:25:00.000Z",
+    },
+    {
+      ...base,
+      id: "sample-task-6",
+      ownerBotId: "chief",
+      state: "cancelled",
+      title: "Draft the press kit",
+      requestMessageId: "sample-request-2",
+      resultMessageId: null,
+      parentTaskId: null,
+      updatedAt: "2026-11-16T09:22:00.000Z",
+    },
   ];
   const message = (patch: Partial<ChannelMessage> & { id: string }): ChannelMessage => ({
     channelId: channel.id,
@@ -158,6 +182,7 @@ export function createMockTasksView(options: MockTasksViewOptions = sample()): R
   };
   return {
     list: async (query) => structuredClone(buildTasksViewPage(parseTasksViewQuery(query), source())),
+    board: async (query) => structuredClone(buildTasksBoard(parseTasksBoardQuery(query), source())),
     detail: async (input) => structuredClone(buildTaskDetail(parseTaskDetailInput(input).taskId, source())),
   };
 }

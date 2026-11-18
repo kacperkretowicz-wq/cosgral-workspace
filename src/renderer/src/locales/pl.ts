@@ -90,6 +90,7 @@ export const pl = {
   "Remote desktop": "Zdalny pulpit",
   Phone: "Telefon",
   "More pages": "Więcej stron",
+  "More in the full list.": "Więcej w pełnej liście.",
   Pinned: "Przypięta",
   Pin: "Przypnij",
   Unpin: "Odepnij",

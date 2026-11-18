@@ -17,8 +17,17 @@ it("lists the tasks with counts for active and archived", async () => {
   expect(active).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("button", { name: /Archived/ })).toBeInTheDocument();
   expect(screen.getByText(/Hand off the work/)).toBeInTheDocument();
-  expect((await screen.findAllByRole("listitem")).length).toBeGreaterThan(0);
   expect(await screen.findByRole("heading", { name: /Needs you/ })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: /Failed/ })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: /Stopped/ })).toBeInTheDocument();
+});
+
+it("shows failed and stopped tasks on the board columns", async () => {
+  const board = vi.spyOn(tasks, "board");
+  render(() => <TasksViewScreen bots={[]} />);
+  await waitFor(() => expect(board).toHaveBeenCalled());
+  expect(await screen.findByText("Fetch the price list")).toBeInTheDocument();
+  expect(await screen.findByText("Draft the press kit")).toBeInTheDocument();
 });
 
 it("switches to the archived tasks", async () => {

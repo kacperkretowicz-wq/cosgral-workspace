@@ -3,8 +3,10 @@
 import {
   IPC_CHANNELS,
   isTaskDetail,
+  isTasksBoard,
   isTasksViewPage,
   type TaskDetail,
+  type TasksBoard,
   type TasksViewDesktopApi,
   type TasksViewPage,
 } from "@openbot/contracts/ipc";
@@ -14,12 +16,18 @@ type Invoke = <TResult>(channel: string, payload: unknown, decoder: (value: unkn
 export function createTasksViewApi(invoke: Invoke): TasksViewDesktopApi {
   return {
     list: (query) => invoke(IPC_CHANNELS.tasksViewList, query ?? {}, decodePage),
+    board: (query) => invoke(IPC_CHANNELS.tasksViewBoard, query ?? {}, decodeBoard),
     detail: (input) => invoke(IPC_CHANNELS.tasksViewDetail, input, decodeDetail),
   };
 }
 
 function decodePage(value: unknown): TasksViewPage {
   if (!isTasksViewPage(value)) throw new Error("Invalid task list.");
+  return value;
+}
+
+function decodeBoard(value: unknown): TasksBoard {
+  if (!isTasksBoard(value)) throw new Error("Invalid task board.");
   return value;
 }
 

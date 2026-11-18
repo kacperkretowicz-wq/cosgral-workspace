@@ -90,6 +90,7 @@ export const en = {
   "Remote desktop": "Remote desktop",
   Phone: "Phone",
   "More pages": "More pages",
+  "More in the full list.": "More in the full list.",
   Pinned: "Pinned",
   Pin: "Pin",
   Unpin: "Unpin",

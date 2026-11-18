@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   assignmentReasonText,
   buildTaskDetail,
+  buildTasksBoard,
   buildTasksViewPage,
   isTaskDetail,
+  isTasksBoard,
   isTasksViewPage,
   parseTaskDetailInput,
+  parseTasksBoardQuery,
   parseTasksViewQuery,
+  TASKS_BOARD_LIMITS,
   TASKS_VIEW_LIMITS,
+  type TasksBoard,
+  type TasksBoardColumn,
   type TasksViewSource,
   taskActionStates,
 } from "./ipc-tasks-view";
@@ -375,4 +381,132 @@ describe("assignment reasons in plain words (W12 BE-J)", () => {
     expect(assignmentReasonText("channel-task.reassigned")).toBe("Given to another agent.");
     expect(assignmentReasonText("Started by a person")).toBe("Started by a person");
   });
+});
+
+describe("the board of the Tasks view (W12 BE-AA)", () => {
+  const t = (patch: Partial<ChannelTask> & { channelId: string }) => task(patch);
+  const needs = t({ channelId: "c1", title: "Answer waits", state: "done", updatedAt: "2026-11-16T12:00:00.000Z" });
+  const askHelp = t({
+    channelId: "c1",
+    title: "Waits for a helper",
+    state: "waiting",
+    updatedAt: "2026-11-16T11:00:00.000Z",
+  });
+  const work = t({ channelId: "c1", title: "Running", state: "running", updatedAt: "2026-11-16T10:00:00.000Z" });
+  const queued = t({
+    channelId: "c2",
+    title: "Queued",
+    state: "queued",
+    ownerBotId: "writer",
+    updatedAt: "2026-11-16T09:50:00.000Z",
+  });
+  const paused = t({ channelId: "c1", title: "Paused", state: "paused", updatedAt: "2026-11-16T09:40:00.000Z" });
+  const broke = t({ channelId: "c2", title: "Broke", state: "failed", updatedAt: "2026-11-16T09:30:00.000Z" });
+  const broke2 = t({ channelId: "c2", title: "Broke again", state: "failed", updatedAt: "2026-11-16T09:20:00.000Z" });
+  const broke3 = t({
+    channelId: "c1",
+    title: "Broke a third time",
+    state: "failed",
+    updatedAt: "2026-11-16T09:10:00.000Z",
+  });
+  const stopped = t({ channelId: "c1", title: "Stopped", state: "cancelled", updatedAt: "2026-11-16T09:05:00.000Z" });
+  const step = t({
+    channelId: "c1",
+    title: "A step of the running one",
+    parentTaskId: work.id,
+    state: "failed",
+    updatedAt: "2026-11-16T12:30:00.000Z",
+  });
+  const archived = t({
+    channelId: "c1",
+    title: "Old",
+    state: "failed",
+    archivedAt: "2026-11-16T08:00:00.000Z",
+    updatedAt: "2026-11-16T08:00:00.000Z",
+  });
+  const all = [needs, askHelp, work, queued, paused, broke, broke2, broke3, stopped, step, archived];
+  const view = source(all, []);
+  const ids = (entry: { items: { task: ChannelTask }[] }) => entry.items.map((item) => item.task.id);
+  const column = (board: TasksBoard, index: number): TasksBoardColumn => {
+    const found = board.columns[index];
+    if (!found) throw new Error(`The board has no column ${index}.`);
+    return found;
+  };
+
+  it("has five fixed columns, each task of a top-level kind in its own, newest change first, with the real totals", () => {
+    const board = buildTasksBoard(parseTasksBoardQuery({}), view);
+    expect(board.columns.map((column) => column.id)).toEqual(["needs-you", "working", "paused", "failed", "cancelled"]);
+    expect(board.columns.map((column) => column.states)).toEqual([
+      ["waiting", "done"],
+      ["running", "queued"],
+      ["paused"],
+      ["failed"],
+      ["cancelled"],
+    ]);
+    expect(ids(column(board, 0))).toEqual([needs.id, askHelp.id]);
+    expect(ids(column(board, 1))).toEqual([work.id, queued.id]);
+    expect(ids(column(board, 2))).toEqual([paused.id]);
+    // The failed column: the three failed tasks, NOT the failed step (it is counted in its parent) and NOT the archived one.
+    expect(ids(column(board, 3))).toEqual([broke.id, broke2.id, broke3.id]);
+    expect(ids(column(board, 4))).toEqual([stopped.id]);
+    expect(board.columns.map((column) => column.total)).toEqual([2, 2, 1, 3, 1]);
+    expect(board.columns.every((column) => !column.hasMore)).toBe(true);
+    // The parent shows its steps.
+    const running = board.columns[1]?.items.find((item) => item.task.id === work.id);
+    expect(running).toMatchObject({ stepCount: 1, stepsDone: 0, channelName: "launch", ownerName: "Chief" });
+  });
+
+  it("cuts a column at the size asked for and says how many are left, without losing the total", () => {
+    const board = buildTasksBoard(parseTasksBoardQuery({ perColumn: 2 }), view);
+    const failed = board.columns[3];
+    expect(failed?.items.map((item) => item.task.id)).toEqual([broke.id, broke2.id]);
+    expect(failed).toMatchObject({ total: 3, hasMore: true });
+    expect(board.columns[0]).toMatchObject({ total: 2, hasMore: false });
+  });
+
+  it("applies scope, channel, agent and text to every column, and the counts stay those of the whole view", () => {
+    const archivedBoard = buildTasksBoard(parseTasksBoardQuery({ scope: "archived" }), view);
+    expect(archivedBoard.columns.map((column) => column.total)).toEqual([0, 0, 0, 1, 0]);
+    const channelBoard = buildTasksBoard(parseTasksBoardQuery({ channelId: "c2" }), view);
+    expect(channelBoard.columns.map((column) => column.total)).toEqual([0, 1, 0, 2, 0]);
+    const agentBoard = buildTasksBoard(parseTasksBoardQuery({ ownerBotId: "writer" }), view);
+    expect(agentBoard.columns.map((column) => column.total)).toEqual([0, 1, 0, 0, 0]);
+    const textBoard = buildTasksBoard(parseTasksBoardQuery({ query: "  BROKE " }), view);
+    expect(textBoard.columns.map((column) => column.total)).toEqual([0, 0, 0, 3, 0]);
+    // The counts of the page (top-level tasks, by state) come with the board.
+    expect(board_counts(view).byState.failed).toBe(3);
+    expect(board_counts(view).active).toBe(9);
+    expect(board_counts(view).archived).toBe(1);
+  });
+
+  it("reads only what a board can answer: a column size, no states, no paging", () => {
+    expect(parseTasksBoardQuery(undefined)).toMatchObject({
+      scope: "active",
+      perColumn: TASKS_BOARD_LIMITS.defaultPerColumn,
+    });
+    expect(parseTasksBoardQuery({ perColumn: 50 }).perColumn).toBe(50);
+    expect(() => parseTasksBoardQuery({ perColumn: 0 })).toThrow("The column size is a whole number from 1 to 50.");
+    expect(() => parseTasksBoardQuery({ perColumn: 51 })).toThrow("The column size is a whole number from 1 to 50.");
+    expect(() => parseTasksBoardQuery({ perColumn: 2.5 })).toThrow("The column size is a whole number from 1 to 50.");
+    expect(() => parseTasksBoardQuery({ states: ["done"] })).toThrow("The board has fixed columns");
+    expect(() => parseTasksBoardQuery({ limit: 10 })).toThrow("The board has fixed columns");
+    expect(() => parseTasksBoardQuery({ offset: 10 })).toThrow("The board has fixed columns");
+    expect(() => parseTasksBoardQuery("x")).toThrow("The task query is a set of fields.");
+    expect(() => parseTasksBoardQuery({ scope: "nope" })).toThrow("The scope is");
+  });
+
+  it("checks a board before the window uses it", () => {
+    const board = buildTasksBoard(parseTasksBoardQuery({}), view);
+    expect(isTasksBoard(board)).toBe(true);
+    expect(isTasksBoard({ ...board, columns: board.columns.slice(1) })).toBe(false);
+    expect(
+      isTasksBoard({ ...board, columns: [{ ...board.columns[0], hasMore: "no" }, ...board.columns.slice(1)] }),
+    ).toBe(false);
+    expect(isTasksBoard({ ...board, counts: undefined })).toBe(false);
+    expect(isTasksBoard(null)).toBe(false);
+  });
+
+  function board_counts(source_: TasksViewSource) {
+    return buildTasksBoard(parseTasksBoardQuery({}), source_).counts;
+  }
 });
