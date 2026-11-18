@@ -1,7 +1,14 @@
-import type { ChannelHistoryCleared, ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
+import type {
+  ChannelHistoryCleared,
+  ChannelHistoryWindow,
+  ChannelMessage,
+  ChannelTask,
+  WorkspaceChannel,
+} from "@openbot/contracts/ipc";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { t } from "../i18n";
 import { ChannelHistoryClear } from "./ChannelHistoryClear";
+import { ChannelHistoryWindowSetting } from "./ChannelHistoryWindow";
 import { ChannelRoutinesPanel } from "./ChannelRoutinesPanel";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
@@ -19,6 +26,8 @@ export function ChannelView(props: {
   onReassign: (id: string, botId: string) => void;
   /** Clears the messages and tasks of this channel; the button is hidden without it. */
   onClearHistory?: () => Promise<ChannelHistoryCleared>;
+  /** Saves how many of the last messages an agent gets with a task; the list is hidden without it. */
+  onChangeHistoryWindow?: (value: ChannelHistoryWindow) => Promise<void>;
 }) {
   const tabsId = createUniqueId();
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
@@ -78,13 +87,14 @@ export function ChannelView(props: {
             <ChannelRoutinesPanel channel={props.channel} onOpenTask={openTask} />
           </Show>
         </details>
-        <Show when={props.onClearHistory}>
-          {(clear) => (
-            <details>
-              <summary>{t("Channel history")}</summary>
-              <ChannelHistoryClear onClear={clear()} />
-            </details>
-          )}
+        <Show when={props.onClearHistory || props.onChangeHistoryWindow}>
+          <details>
+            <summary>{t("Channel history")}</summary>
+            <Show when={props.onChangeHistoryWindow}>
+              {(change) => <ChannelHistoryWindowSetting value={props.channel.historyWindow} onChange={change()} />}
+            </Show>
+            <Show when={props.onClearHistory}>{(clear) => <ChannelHistoryClear onClear={clear()} />}</Show>
+          </details>
         </Show>
         <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
       </header>
