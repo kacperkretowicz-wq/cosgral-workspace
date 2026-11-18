@@ -70,7 +70,7 @@
   --openbot-warning: var(--cosgral-warning);
   --openbot-warning-soft: rgba(227, 184, 102, 0.12);
   --openbot-text-on-danger: var(--openbot-text-on-light);
-  --openbot-danger: var(--cosgral-danger);
+  --openbot-danger: var(--cosgral-danger-text);
   --openbot-danger-soft: rgba(228, 125, 117, 0.13);
   --openbot-danger-strong: var(--cosgral-danger);
   --openbot-file-blue: #74b9ff;

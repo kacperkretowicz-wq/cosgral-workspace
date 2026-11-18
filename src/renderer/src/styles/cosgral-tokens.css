@@ -20,7 +20,7 @@
   /* Text */
   --cosgral-text-primary: #ffffff;
   --cosgral-text-secondary: #dcdcdc;
-  --cosgral-text-muted: #979797;
+  --cosgral-text-muted: #a8a8a8;
   --cosgral-text-dim: #6a6a6a;
   --cosgral-text-placeholder: #7d7d7d;
 
@@ -35,6 +35,7 @@
   --cosgral-accent-soft: rgba(0, 124, 247, 0.16);
   --cosgral-accent-strong: rgba(0, 124, 247, 0.34);
   --cosgral-danger: #fd2f3b;
+  --cosgral-danger-text: #ff777f; /* error text on the dark reds: 4.56:1 on the lightest (#4b3230) */
   --cosgral-warning: #ff9412;
   --cosgral-success: #31cf76;
 
@@ -87,6 +88,7 @@
   --cosgral-border: rgba(20, 20, 30, 0.1);
   --cosgral-border-strong: #73737d;
   --cosgral-accent: #0069d9;
+  --cosgral-danger-text: #aa241d;
   --cosgral-accent-hover: #0057b3;
   --cosgral-accent-text: #0057b3;
   --cosgral-accent-soft: rgba(0, 105, 217, 0.12);

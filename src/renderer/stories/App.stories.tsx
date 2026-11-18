@@ -164,7 +164,7 @@ export const AgentMenuActions: Story = {
       await userEvent.click(await body.findByRole("menuitem", { name: "Show" }));
       await waitFor(() => expect(c.queryByText("Hidden")).not.toBeInTheDocument());
       await userEvent.pointer({ target: c.getByRole("button", { name: /^Research,/ }), keys: "[MouseRight]" });
-      await userEvent.click(await body.findByRole("menuitem", { name: "Duplikuj" }));
+      await userEvent.click(await body.findByRole("menuitem", { name: "Duplicate" }));
       await c.findByRole("heading", { name: "Research kopia" });
       await c.findByText(/Kopia gotowa/);
       await expect(errors).toEqual([]);
