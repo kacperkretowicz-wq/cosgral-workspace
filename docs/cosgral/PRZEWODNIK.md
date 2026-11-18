@@ -46,6 +46,8 @@ Pełne zestawienie z liczbami: `docs/cosgral/parytet-0.71.md`.
 | **Ustawienia serwera (14 sekcji)** | **Częściowo** | Jedna strona z 14 działami (ogólne, osobowość, agenci, sejf, członkowie, zdalny pulpit, MCP, pamięć masowa, strony, dostawcy, import, transfer, rutyny, profile przeglądarki). Działy „Członkowie” i „Strony” mówią, że ich nie ma. |
 | **Aktualizacje programu** | **Ekran jest, jeszcze nie oglądany w oknie** | Tor „Stabilny / Podgląd”, pobieranie i instalacja przy zamknięciu, „Zrestartuj, gdy będę bezczynny”. Dział „Updates” w oknie ustawień. |
 | **Cofnij usunięcie wątku** | **Ekran jest, jeszcze nie oglądany w oknie** | Usunięty wątek jest ukryty przez 10 minut: nad listą wątków widać wiersz „Usunięto …” z odliczaniem i przyciskiem „Cofnij”. Po 10 minutach znika na stałe. |
+| **Podagenci** | **Ekran jest, jeszcze nie oglądany w oknie** | Agent może uruchomić krótkich pomocników (do 3 naraz w wątku). W panelu wątków widzisz każdego: zadanie, stan, na bieżąco to, co napisał, i jego odpowiedź. Możesz go zatrzymać. Jego pytania trafiają jako karty do „Needs you”. |
+| **Integracje kont: GitHub, Google, Notion, Meta** | **Ekran jest, jeszcze nie oglądany w oknie** | Panel „Connect accounts” na stronie Biblioteka. Najpierw rejestrujesz aplikację w usłudze i wpisujesz jej identyfikator; potem „Connect account” otwiera przeglądarkę. Logowanie jest zaszyfrowane na tym komputerze, agenci go nie widzą. Wymaga Twojej własnej aplikacji w usłudze. |
 
 ---
 
@@ -186,6 +188,8 @@ Możesz nadzorować pracę swoich agentów ze smartfona (iPhone lub Android) bez
    - Możesz ustawić 4- lub 6-cyfrowy kod PIN na telefonie. Aplikacja wymaga podania PIN-u po 5 minutach bezczynności i od razu, gdy strona schodzi w tło, a 5 błędnych prób natychmiast odcina urządzenie.
 5. **Powiadomienia Web Push:**
    - Otrzymujesz powiadomienie na telefon tylko wtedy, gdy agent naprawdę potrzebuje Twojej decyzji (nowa karta „Needs you”).
+   - Na stronie Phone przełącznik „Send notifications to phones” włącza je na tym komputerze (domyślnie wyłączone). Przy telefonie, który zezwolił na powiadomienia, jest przycisk „Send a test notification”; ekran mówi, czy poszło, a jeśli nie, dlaczego.
+6. **Instrukcja Tailscale** jest na tej samej stronie, rozwijana: sześć kroków i trzy uwagi (np. że rozmowa idzie między Twoimi urządzeniami, nie przez cudzy serwer).
 
 ### Komunikatory: Telegram i Slack
 Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa to tylko w rozmowach prywatnych (jeden do jednego), nigdy w grupach i kanałach.
@@ -201,6 +205,21 @@ Możesz rozmawiać z agentem z aplikacji, której używasz na co dzień. Działa
    - Tokeny wpisujesz raz i nigdy nie są ponownie pokazywane (ani w oknie, ani agentom).
    - Błędy połączenia pokazują krótkie, stałe zdania, bez surowych komunikatów usługi.
 4. Na stronie Biblioteka (panel „Komunikatory”) widzisz dla każdego komunikatora: stan („połączony”, „wymaga tokenu”, „błąd”), pola na tokeny tylko do zapisu, listę dopuszczonych rozmów i listę nieznanych, które napisały (bez ich treści; „Allow” wypełnia formularz). Discord jest wstrzymany, WhatsApp nie jest planowany.
+
+### Podagenci
+1. **Podagent** to krótki pomocnik, którego uruchamia agent do jednego zadania (np. „sprawdź te liczby”). Ty go nie uruchamiasz, ale go widzisz i możesz zatrzymać.
+2. W panelu wątków (nad rozmową) jest rozwijana sekcja „Subagents: pracuje X z Y”. Każdy podagent ma: nazwę, zadanie, stan (pracuje, czeka na Ciebie, gotowy, nie udało się, zatrzymany), fragment tego, co pisze, i odpowiedź po zakończeniu.
+3. Gdy podagent czegoś potrzebuje (pytanie, zgoda), ekran mówi: „odpowiedz na karcie w Needs you”. Karta jest przy wątku agenta, który go uruchomił.
+4. W jednym wątku pracują naraz co najwyżej 3 podagenci; podagent nie uruchamia kolejnych. Przycisk „Stop” kończy go od razu.
+5. Gdy w wątku nie ma podagentów, sekcja się nie pokazuje.
+
+### Integracje kont: GitHub, Google, Notion, Meta
+1. Panel „Connect accounts” (strona Biblioteka, pod Komunikatorami) pozwala agentom używać Twojego konta w tych czterech usługach. Każda usługa to osobny serwer MCP, który włączasz agentowi tak samo jak inne.
+2. **Najpierw Ty:** w usłudze rejestrujesz własną aplikację (kroki są pod „Set up the app”) i dodajesz do niej pokazany adres zwrotny. Wpisujesz identyfikator klienta, a tam, gdzie usługa wymaga, także sekret. Sekret jest tylko do zapisu: po wysłaniu pole się czyści i nigdy nie wraca.
+3. „Connect account” otwiera przeglądarkę na stronie usługi. Program czeka 5 minut. Jeśli przeglądarka się nie otworzy, ekran pokazuje adres do otwarcia ręcznie.
+4. Stany: aplikacja nieskonfigurowana, niepołączone, czeka na przeglądarkę, połączone, logowanie nie powiodło się (z powodem), zaloguj ponownie (usługa przestała przyjmować zapisane logowanie).
+5. „Disconnect” usuwa wpis serwera MCP i zapisane logowanie. Przełącznik obok może usunąć też identyfikator klienta.
+6. Agent nigdy nie prosi o hasło ani kod w rozmowie.
 
 ### Przepływy pracy i rutyny
 1. **Przepływ** to plan na płótnie: najpierw **wyzwalacz** (Ty naciskasz „Uruchom” albo robi to rutyna), potem **kroki**: agent wykonuje polecenie, **zgoda** pokazuje Ci kartę „Zezwól / Odmów” w sekcji „Needs you”, a **wyjście** wysyła wiadomość do kanału. Tekst kroku może użyć wyniku poprzedniego kroku.
