@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
+import { waitForQuietMachine } from "./sandbox-load.ts";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -416,7 +417,7 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
       assert((await setup.getByRole("radio").count()) >= 2, "provider choice");
       assert(/Computer Use/.test(await setup.innerText()), "Computer Use is explained");
       await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
-      await setup.getByRole("button", { name: "Continue with Codex" }).click();
+      await setup.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 120_000 });
       await page
         .getByRole("button", { name: /^Assistant, / })
         .first()
@@ -2495,7 +2496,7 @@ async function w5Main(root: string, evidence: string): Promise<void> {
         const setup = page.getByRole("dialog", { name: "Set up this computer" });
         await setup.waitFor({ timeout: 30_000 });
         await setup.getByRole("combobox", { name: "First agent" }).selectOption({ index: 1 });
-        await setup.getByRole("button", { name: "Continue with Codex" }).click();
+        await setup.getByRole("button", { name: "Continue with Codex" }).click({ timeout: 120_000 });
         await page
           .getByRole("button", { name: /^Assistant, / })
           .first()
@@ -3595,6 +3596,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  await waitForQuietMachine(
+    process.env.COSGRAL_MODE ? `sandbox acceptance ${process.env.COSGRAL_MODE}` : "sandbox acceptance",
+  );
   const root = sandboxRoot();
   const evidence = join(root, "evidence");
   resultsFile = join(evidence, only.length ? "acceptance-rerun.json" : "acceptance.json");

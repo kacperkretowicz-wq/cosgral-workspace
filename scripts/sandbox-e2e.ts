@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
+import { waitForQuietMachine } from "./sandbox-load.ts";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -47,7 +48,8 @@ const GETTER_SMOKE = `(async () => {
   const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
   const call = async (name, fn) => {
     try {
-      await Promise.race([Promise.resolve(fn()), timeout(8000)]);
+      // 30 s, not 8: on a busy computer a call that starts the CLI check (subscriptions.listCli) needs the time the program gives it.
+      await Promise.race([Promise.resolve(fn()), timeout(30000)]);
       out.push({ name, ok: true });
     } catch (error) {
       out.push({ name, ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -371,7 +373,8 @@ async function reachMainWindow(page: Page, choose: { agent: string | null }): Pr
         const option = firstAgent.locator("option", { hasText: choose.agent }).first();
         await firstAgent.selectOption((await option.getAttribute("value")) ?? "");
       }
-      await page.getByRole("button", { name: /Continue with Codex|Kontynuuj z Codex/i }).click({ timeout: 30_000 });
+      // The button waits for the CLI check (the program allows 20 s twice on a busy computer), so wait longer than that.
+      await page.getByRole("button", { name: /Continue with Codex|Kontynuuj z Codex/i }).click({ timeout: 120_000 });
       await local.waitFor({ state: "detached", timeout: 15_000 });
     }
     await page.waitForTimeout(500);
@@ -380,6 +383,7 @@ async function reachMainWindow(page: Page, choose: { agent: string | null }): Pr
 }
 
 async function main(): Promise<void> {
+  await waitForQuietMachine("sandbox:e2e");
   const root = sandboxRoot();
   const evidence = join(root, "evidence");
   if (!process.argv.includes("--keep")) await rm(root, { recursive: true, force: true });
@@ -600,8 +604,25 @@ async function main(): Promise<void> {
       await dump(page, evidence, "05-after-restart");
     });
     await step("agent tools: the agent builds a shared table through the program's tool bridge", async () => {
-      // After a restart the agent CLI connects again; the composer stays disabled until then.
-      await page.getByRole("textbox", { name: "Message New agent" }).fill("DATA CREATE", { timeout: 90_000 });
+      // After a restart the agent CLI connects again; the composer stays disabled until then. When the check ran out of time on a
+      // busy computer the program says "Agent CLI setup required ... choose Try again": do that (up to 3 times) like a person would.
+      const composer = page.getByRole("textbox", { name: "Message New agent" });
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const deadline = Date.now() + 45_000;
+        while (
+          Date.now() < deadline &&
+          (await composer.getAttribute("aria-disabled", { timeout: 5_000 }).catch(() => "true")) === "true"
+        ) {
+          await page.waitForTimeout(1_000);
+        }
+        if ((await composer.getAttribute("aria-disabled", { timeout: 5_000 }).catch(() => "true")) !== "true") break;
+        const retry = page.getByRole("button", { name: "Try again" });
+        if (await retry.isVisible().catch(() => false)) {
+          console.log(`     agent tools: the CLI check ran out of time; Try again (${attempt + 1})`);
+          await retry.click();
+        }
+      }
+      await composer.fill("DATA CREATE", { timeout: 90_000 });
       await page.getByRole("button", { name: "Send message" }).click();
       await page
         .getByText(/DATA-RESULT/)
