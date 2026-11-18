@@ -134,13 +134,35 @@ export function TasksViewScreen(props: {
     void load(patch);
   };
 
+  const boardGroups = () => {
+    const items = page()?.items ?? [];
+    return [
+      {
+        id: "needs-you",
+        title: "Needs you",
+        items: items.filter((item) => item.task.state === "waiting" || item.task.state === "done"),
+      },
+      {
+        id: "working",
+        title: "Working",
+        items: items.filter((item) => item.task.state === "running" || item.task.state === "queued"),
+      },
+      {
+        id: "waiting",
+        title: "Waiting",
+        items: items.filter((item) => item.task.state === "paused"),
+      },
+    ] as const;
+  };
+
   return (
     <main class="w2-library tasks-screen" aria-label={t("Tasks")}>
-      <header>
+      <header class="tasks-screen-hero">
         <h1>{t("Tasks")}</h1>
-        <p class="tasks-screen-note">
-          {t("Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.")}
+        <p class="tasks-screen-hero-lead">
+          {t("Hand off the work. Come back to an")} <em>{t("answer.")}</em>
         </p>
+        <p class="tasks-screen-note">{t("Your agents work on tasks side by side. Each answer waits here for you.")}</p>
       </header>
       <Show
         when={view}
@@ -216,39 +238,88 @@ export function TasksViewScreen(props: {
         <div class="tasks-split">
           <Show when={page()} fallback={<p role="status">{t("Loading tasks…")}</p>}>
             {(current) => (
-              <ul class="tasks-screen-list" aria-label={t("Tasks")}>
-                <Show when={current().items.length === 0}>
-                  <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
+              <div class="tasks-board">
+                <Show when={scope() === "active" && !state() && !query().trim()}>
+                  <div class="tasks-board-columns">
+                    <For each={boardGroups()}>
+                      {(group) => (
+                        <section class="tasks-board-column" aria-label={t(group.title)}>
+                          <h2 class="tasks-board-heading">
+                            {t(group.title)} <span class="tasks-count">{group.items.length}</span>
+                          </h2>
+                          <ul class="tasks-screen-list">
+                            <Show when={group.items.length === 0}>
+                              <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
+                            </Show>
+                            <For each={group.items}>
+                              {(item) => (
+                                <li
+                                  data-state={item.task.state}
+                                  data-open={detail()?.task.id === item.task.id ? "true" : "false"}
+                                >
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    class="tasks-screen-row"
+                                    onClick={() => void open(item.task.id)}
+                                  >
+                                    <span class="tasks-screen-title">{item.task.title}</span>
+                                    <span class="tasks-screen-meta">
+                                      #{item.channelName} · {item.ownerName ?? t("Removed agent")} ·{" "}
+                                      {formatTime(item.task.updatedAt)}
+                                    </span>
+                                    <Badge tone={STATE_VIEW[item.task.state].tone} dot>
+                                      {t(STATE_VIEW[item.task.state].label)}
+                                    </Badge>
+                                  </Button>
+                                </li>
+                              )}
+                            </For>
+                          </ul>
+                        </section>
+                      )}
+                    </For>
+                  </div>
                 </Show>
-                <For each={current().items}>
-                  {(item) => (
-                    <li data-state={item.task.state} data-open={detail()?.task.id === item.task.id ? "true" : "false"}>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        class="tasks-screen-row"
-                        onClick={() => void open(item.task.id)}
-                      >
-                        <span class="tasks-screen-title">{item.task.title}</span>
-                        <span class="tasks-screen-meta">
-                          #{item.channelName} · {item.ownerName ?? t("Removed agent")} ·{" "}
-                          {formatTime(item.task.updatedAt)}
-                          <Show when={item.stepCount > 0}>
-                            {" "}
-                            · {t("{done}/{total} steps", { done: item.stepsDone, total: item.stepCount })}
-                          </Show>
-                        </span>
-                        <Show when={item.resultPreview}>
-                          <span class="tasks-screen-preview">{item.resultPreview}</span>
-                        </Show>
-                        <Badge tone={STATE_VIEW[item.task.state].tone} dot>
-                          {t(STATE_VIEW[item.task.state].label)}
-                        </Badge>
-                      </Button>
-                    </li>
-                  )}
-                </For>
-              </ul>
+                <Show when={scope() !== "active" || state() || query().trim()}>
+                  <ul class="tasks-screen-list" aria-label={t("Tasks")}>
+                    <Show when={current().items.length === 0}>
+                      <li class="tasks-screen-note">{t("No tasks here yet.")}</li>
+                    </Show>
+                    <For each={current().items}>
+                      {(item) => (
+                        <li
+                          data-state={item.task.state}
+                          data-open={detail()?.task.id === item.task.id ? "true" : "false"}
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            class="tasks-screen-row"
+                            onClick={() => void open(item.task.id)}
+                          >
+                            <span class="tasks-screen-title">{item.task.title}</span>
+                            <span class="tasks-screen-meta">
+                              #{item.channelName} · {item.ownerName ?? t("Removed agent")} ·{" "}
+                              {formatTime(item.task.updatedAt)}
+                              <Show when={item.stepCount > 0}>
+                                {" "}
+                                · {t("{done}/{total} steps", { done: item.stepsDone, total: item.stepCount })}
+                              </Show>
+                            </span>
+                            <Show when={item.resultPreview}>
+                              <span class="tasks-screen-preview">{item.resultPreview}</span>
+                            </Show>
+                            <Badge tone={STATE_VIEW[item.task.state].tone} dot>
+                              {t(STATE_VIEW[item.task.state].label)}
+                            </Badge>
+                          </Button>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </Show>
+              </div>
             )}
           </Show>
 

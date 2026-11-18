@@ -28,6 +28,7 @@ export { default as Layers } from "lucide-solid/icons/layers";
 export { default as LoaderCircle } from "lucide-solid/icons/loader-circle";
 export { default as Menu } from "lucide-solid/icons/menu";
 export { default as Mic } from "lucide-solid/icons/mic";
+export { default as Monitor } from "lucide-solid/icons/monitor";
 export { default as Palette } from "lucide-solid/icons/palette";
 export { default as Paperclip } from "lucide-solid/icons/paperclip";
 export { default as Pencil } from "lucide-solid/icons/pencil";

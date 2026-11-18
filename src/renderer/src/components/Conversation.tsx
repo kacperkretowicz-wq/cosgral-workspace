@@ -40,10 +40,12 @@ import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
 import { AgentAvatar } from "./AgentAvatar";
+import { AgentCardDetail } from "./AgentCardDetail";
 import { AgentCardsSection } from "./AgentCardsSection";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
 import type { AccountNotice } from "./account-usage-view";
+import { ChatRightPanelTabs, ChatSidePanelLauncher, type ChatSidePanelTarget } from "./ChatSidePanelLauncher";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ContextIndicator } from "./ContextIndicator";
 import { ChoiceCard } from "./ConversationPrompts";
@@ -207,7 +209,7 @@ interface MediaPreview {
   error: string | null;
 }
 
-type RightPanelMode = "none" | "browser" | "desktop" | "settings";
+type RightPanelMode = "none" | "browser" | "desktop" | "settings" | "files" | "voice";
 
 const EMPTY_DRAFT: ComposerDraft = {
   text: "",
@@ -363,6 +365,11 @@ export function Conversation(props: ConversationProps) {
   const screenOpen = () => activeRightPanel() === "browser";
   const remoteDesktopOpen = () => activeRightPanel() === "desktop";
   const settingsOpen = () => activeRightPanel() === "settings";
+  const filesOpen = () => activeRightPanel() === "files";
+  const voiceOpen = () => activeRightPanel() === "voice";
+  function openChatSidePanel(target: ChatSidePanelTarget) {
+    setActiveRightPanel(target);
+  }
   const browserTabs = createMemo(() => {
     const bot = props.bot;
     if (!bot) return [];
@@ -1562,6 +1569,7 @@ export function Conversation(props: ConversationProps) {
           "conversation-drop-active": dropActive(),
           "browser-panel-active": screenOpen(),
           "remote-desktop-panel-active": remoteDesktopOpen(),
+          "chat-side-panel-active": filesOpen() || voiceOpen() || settingsOpen(),
         },
       ]}
       style={`--settings-panel-width: ${settingsPanelWidth()}px; --browser-panel-width: ${browserPanelWidth()}px; --remote-desktop-panel-width: ${remoteDesktopPanelWidth()}px`}
@@ -2490,6 +2498,10 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </Dialog.Root>
 
+      <Show when={props.bot && activeRightPanel() === "none"}>
+        <ChatSidePanelLauncher onOpen={openChatSidePanel} />
+      </Show>
+
       <Show when={screenOpen()}>
         <Tabs.Root
           as="aside"
@@ -2520,6 +2532,7 @@ export function Conversation(props: ConversationProps) {
             onResize={setBrowserPanelWidth}
             onResizeEnd={(value) => savePanelWidth(BROWSER_PANEL_STORAGE_KEY, value)}
           />
+          <ChatRightPanelTabs active="browser" onSelect={openChatSidePanel} />
           <header class="browser-panel-header">
             <div class="browser-tabs">
               <Tabs.List class="browser-tab-strip" aria-label={t("Browser tabs")}>
@@ -2670,11 +2683,92 @@ export function Conversation(props: ConversationProps) {
         />
       </Show>
 
-      <Show when={settingsOpen() && props.bot}>
-        <aside id="settings-side-panel" class="agent-settings-panel" aria-label="Agent settings">
+      <Show when={filesOpen() && props.bot}>
+        <aside id="files-side-panel" class="chat-files-panel" aria-label={t("Files")}>
           <PanelResizer
             class="right-panel-resizer"
-            label="Resize right panel"
+            label={t("Resize right panel")}
+            controls="files-side-panel"
+            direction="right"
+            value={settingsPanelWidth()}
+            defaultValue={SETTINGS_PANEL_DEFAULT}
+            min={SETTINGS_PANEL_MIN}
+            max={() =>
+              Math.min(
+                SETTINGS_PANEL_MAX,
+                Math.max(
+                  SETTINGS_PANEL_MIN,
+                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
+                ),
+              )
+            }
+            onResize={setSettingsPanelWidth}
+            onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
+          />
+          <ChatRightPanelTabs active="files" onSelect={openChatSidePanel} />
+          <div class="chat-files-panel-body">
+            <Show when={props.bot?.id} keyed>
+              {(botId) => (
+                <AgentCardDetail
+                  botId={botId}
+                  card="files"
+                  title={t("Files")}
+                  onClose={() => setActiveRightPanel("none")}
+                />
+              )}
+            </Show>
+          </div>
+        </aside>
+      </Show>
+
+      <Show when={voiceOpen() && props.bot}>
+        <aside id="voice-side-panel" class="chat-voice-panel" aria-label={t("Voice")}>
+          <PanelResizer
+            class="right-panel-resizer"
+            label={t("Resize right panel")}
+            controls="voice-side-panel"
+            direction="right"
+            value={settingsPanelWidth()}
+            defaultValue={SETTINGS_PANEL_DEFAULT}
+            min={SETTINGS_PANEL_MIN}
+            max={() =>
+              Math.min(
+                SETTINGS_PANEL_MAX,
+                Math.max(
+                  SETTINGS_PANEL_MIN,
+                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
+                ),
+              )
+            }
+            onResize={setSettingsPanelWidth}
+            onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
+          />
+          <ChatRightPanelTabs active="voice" onSelect={openChatSidePanel} />
+          <div class="chat-voice-panel-body">
+            <p class="chat-voice-panel-note">
+              {t("Record a short voice note for this agent. Full voice models stay in Settings → Voice.")}
+            </p>
+            <Show when={props.bot?.id} keyed>
+              {(botId) => (
+                <VoiceRecorder
+                  onTranscript={(text) =>
+                    setDrafts((current) => {
+                      const draft = current[botId] ?? EMPTY_DRAFT;
+                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
+                    })
+                  }
+                />
+              )}
+            </Show>
+          </div>
+        </aside>
+      </Show>
+
+      <Show when={settingsOpen() && props.bot}>
+        <aside id="settings-side-panel" class="agent-settings-panel" aria-label={t("Agent settings")}>
+          <PanelResizer
+            class="right-panel-resizer"
+            label={t("Resize right panel")}
             controls="settings-side-panel"
             direction="right"
             value={settingsPanelWidth()}
@@ -2692,39 +2786,27 @@ export function Conversation(props: ConversationProps) {
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />
+          <ChatRightPanelTabs active="settings" onSelect={openChatSidePanel} />
           <header class="agent-settings-header">
             <Button
               type="button"
               class="agent-settings-nav-button"
-              aria-label="Back to details"
+              aria-label={t("Back to details")}
               onClick={() => setActiveRightPanel("none")}
             >
               <BackIcon />
             </Button>
-            <h2>Settings</h2>
+            <h2>{t("Agent settings")}</h2>
             <Button
               type="button"
               class="agent-settings-nav-button"
-              aria-label="Close details"
+              aria-label={t("Close details")}
               onClick={() => setActiveRightPanel("none")}
             >
               <SettingsForwardIcon />
             </Button>
           </header>
           <div class="agent-settings-content">
-            <Show when={props.bot?.id} keyed>
-              {(botId) => (
-                <>
-                  <AgentCardsSection botId={botId} />
-                  <AgentMemorySettingsView botId={botId} />
-                  <AgentSettingsW3 botId={botId} />
-                  <ApprovalRulesSettings botId={botId} />
-                  <SkillsSettings botId={botId} />
-                  <McpSettings botId={botId} />
-                  <RoutinePanel botId={botId} bots={props.bots} />
-                </>
-              )}
-            </Show>
             <div ref={(element) => (avatarPickerRoot = element)} class="agent-settings-avatar-picker">
               <Popover.Root
                 open={avatarPickerOpen()}
@@ -2971,6 +3053,19 @@ export function Conversation(props: ConversationProps) {
                 <p class="agent-settings-save-error" role="alert">
                   {message()}
                 </p>
+              )}
+            </Show>
+            <Show when={props.bot?.id} keyed>
+              {(botId) => (
+                <>
+                  <AgentCardsSection botId={botId} />
+                  <AgentMemorySettingsView botId={botId} />
+                  <AgentSettingsW3 botId={botId} />
+                  <ApprovalRulesSettings botId={botId} />
+                  <SkillsSettings botId={botId} />
+                  <McpSettings botId={botId} />
+                  <RoutinePanel botId={botId} bots={props.bots} />
+                </>
               )}
             </Show>
             <div class="agent-settings-notifications">
