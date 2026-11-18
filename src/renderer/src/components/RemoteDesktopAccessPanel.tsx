@@ -1,7 +1,7 @@
 import { type RemoteDesktopBadge, type RemoteDesktopHostState, remoteDesktopSummary } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { LoadingPlaceholder } from "./LoadingPlaceholder";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Card, Heading, Switch, Text } from "./ui";
 
 const BADGE_VIEW: Record<RemoteDesktopBadge, { label: string; tone: BadgeTone }> = {
@@ -86,7 +86,7 @@ export function RemoteDesktopAccessPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<LoadingPlaceholder />}>
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
           <Show when={summary()}>
             {(view) => (
               <Card class="settings-modal-card">

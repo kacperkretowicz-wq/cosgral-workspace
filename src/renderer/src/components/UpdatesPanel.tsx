@@ -1,7 +1,7 @@
 import { UPDATE_TRACKS, type UpdateStatus, type UpdatesOverview, updateTrackChange } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { LoadingPlaceholder } from "./LoadingPlaceholder";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Card, Heading, NativeSelect, Switch, Text } from "./ui";
 
 const CHECK_HOURS = [1, 4, 12, 24, 72, 168] as const;
@@ -119,7 +119,7 @@ export function UpdatesPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<LoadingPlaceholder />}>
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading…")} />}>
           <Show when={overview()}>
             {(view) => (
               <Card class="settings-modal-card">

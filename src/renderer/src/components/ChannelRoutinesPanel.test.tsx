@@ -21,7 +21,11 @@ async function fill(name: string, prompt: string) {
   return form;
 }
 
-afterEach(() => setLanguage("en"));
+afterEach(() => {
+  setLanguage("en");
+  // A spy left by one test (the confirm of the delete question) must not count calls of the next one.
+  vi.restoreAllMocks();
+});
 
 describe("ChannelRoutinesPanel", () => {
   it("creates a daily routine, runs it now and shows the history with the task state", async () => {
