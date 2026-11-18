@@ -4,10 +4,10 @@ Gałąź `team/backend/w12-check-prep` (z integracji c6a0c24cb). Zmienione: time
 
 ## 1. Komenda do cichego okna (kopiuj)
 ```
-cd C:\Users\x1 Yoga\OpenBot\Shared\cosgral-desktop
-set PATH=C:\Users\x1 Yoga\OpenBot\Shared\tools\bun;C:\Users\x1 Yoga\OpenBot\Shared\tools\node;C:\Users\x1 Yoga\OpenBot\Shared\tools\git\cmd;%PATH%
+cd <Shared>\cosgral-desktop
+set PATH=<Shared>\tools\bun;<Shared>\tools\node;<Shared>\tools\git\cmd;%PATH%
 set COSGRAL_TEST_TIMEOUT_SCALE=3
-node scripts/quiet-check.ts --out C:\Users\x1 Yoga\OpenBot\Shared\cosgral-sandbox\check-final
+node scripts/quiet-check.ts --out <Shared>\cosgral-sandbox\check-final
 ```
 - Skrypt robi **te same 11 kroków co `bun run check`**, w tej samej kolejności, ale każdy ma własny log (`<krok>.log`) i czas, idzie dalej po czerwonym kroku (`--stop` zatrzymuje) i na końcu drukuje tabelę: krok, OK/RED, sekundy, **przyczyna** (timeout = maszyna, asercja = program). Kod wyjścia 0 tylko, gdy wszystkie 11 kroków zielone.
 - Przed startem czeka do 10 min na spokojną maszynę (procesor < 60%, wolne ≥ 1,2 GB; na tej maszynie agenci trzymają ok. 1,4–1,5 GB wolnego, więc próg 2 GB nigdy by nie przeszedł) i zapisuje obciążenie (`sandbox-load.ts`). `COSGRAL_SKIP_LOAD_WAIT=1` pomija.
