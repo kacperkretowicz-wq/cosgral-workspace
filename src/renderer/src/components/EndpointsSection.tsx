@@ -9,21 +9,22 @@ import {
   type ModelEndpoint,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
 
-const KIND_LABELS: Record<EndpointKind, string> = {
-  "openai-compatible": "OpenAI-compatible",
-  ollama: "Ollama",
-  lmstudio: "LM Studio",
-};
+function kindLabel(kind: EndpointKind): string {
+  if (kind === "ollama") return t("Ollama");
+  if (kind === "lmstudio") return t("LM Studio");
+  return t("OpenAI-compatible");
+}
 
-const STATE_VIEW = {
-  unchecked: { tone: "neutral", label: "Not checked" },
-  checking: { tone: "accent", label: "Checking…" },
-  ok: { tone: "success", label: "Reachable" },
-  rejected: { tone: "danger", label: "Key refused" },
-  unreachable: { tone: "danger", label: "Unreachable" },
-} as const;
+function stateView(state: ModelEndpoint["state"] | "checking") {
+  if (state === "checking") return { tone: "accent" as const, label: t("Checking…") };
+  if (state === "ok") return { tone: "success" as const, label: t("Reachable") };
+  if (state === "rejected") return { tone: "danger" as const, label: t("Key refused") };
+  if (state === "unreachable") return { tone: "danger" as const, label: t("Unreachable") };
+  return { tone: "neutral" as const, label: t("Not checked") };
+}
 
 interface Draft {
   id: string | null;
@@ -59,7 +60,7 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
     void api
       .list()
       .then(setEndpoints)
-      .catch((e: unknown) => setError(errorText(e, "Could not load the endpoints.")));
+      .catch((e: unknown) => setError(errorText(e, t("Could not load the endpoints."))));
     const off = window.openbot?.agent?.onEvent((event) => {
       if (event.type === "endpoints-changed") setEndpoints(event.endpoints);
     });
@@ -99,7 +100,7 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
       // The key is not shown again: the field is emptied with the form.
       setDraft(null);
     } catch (e) {
-      setError(errorText(e, "Could not save the endpoint."));
+      setError(errorText(e, t("Could not save the endpoint.")));
     } finally {
       setBusy(false);
     }
@@ -112,7 +113,7 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
     try {
       replace(await api.check({ id }));
     } catch (e) {
-      setError(errorText(e, "Could not check the endpoint."));
+      setError(errorText(e, t("Could not check the endpoint.")));
     } finally {
       setChecking((set) => {
         const next = new Set(set);
@@ -129,7 +130,7 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
       setEndpoints((list) => list.filter((item) => item.id !== id));
       setError("");
     } catch (e) {
-      setError(errorText(e, "Could not remove the endpoint."));
+      setError(errorText(e, t("Could not remove the endpoint.")));
     } finally {
       setRemoving(null);
     }
@@ -145,11 +146,11 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
       setEndpoints(await api.list());
       setNotice(
         found.length === 0
-          ? "Nothing found on this computer (Ollama on port 11434, LM Studio on port 1234)."
-          : `Found: ${found.map((item) => item.label).join(", ")}.`,
+          ? t("Nothing found on this computer (Ollama on port 11434, LM Studio on port 1234).")
+          : t("Found: {list}.", { list: found.map((item) => item.label).join(", ") }),
       );
     } catch (e) {
-      setError(errorText(e, "Could not look for local servers."));
+      setError(errorText(e, t("Could not look for local servers.")));
     } finally {
       setBusy(false);
     }
@@ -157,13 +158,14 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
 
   return (
     <Show when={api}>
-      <Card class="providers-section" role="region" aria-label="Own model endpoints">
+      <Card class="providers-section" role="region" aria-label={t("Own model endpoints")}>
         <Heading as="h2" size="md">
-          Own model endpoints
+          {t("Own model endpoints")}
         </Heading>
         <Text as="p" tone="secondary">
-          Connect a server you run yourself (Ollama, LM Studio) or any OpenAI-compatible server. Its models appear in
-          the model choice of every agent. Agents talk to them in chat only: no program tools.
+          {t(
+            "Connect a server you run yourself (Ollama, LM Studio) or any OpenAI-compatible server. Its models appear in the model choice of every agent. Agents talk to them in chat only: no program tools.",
+          )}
         </Text>
         <Show when={error()}>
           <Text as="p" tone="danger" role="alert">
@@ -179,24 +181,28 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
           when={endpoints().length}
           fallback={
             <Text as="p" tone="muted">
-              No endpoint is added.
+              {t("No endpoint is added.")}
             </Text>
           }
         >
-          <ul class="providers-list" aria-label="Endpoints">
+          <ul class="providers-list" aria-label={t("Endpoints")}>
             <For each={endpoints()}>
               {(item) => {
-                const state = () => STATE_VIEW[checking().has(item.id) ? "checking" : item.state];
+                const state = () => stateView(checking().has(item.id) ? "checking" : item.state);
+                const more =
+                  item.models.length > SHOWN_MODELS
+                    ? t(" and {count} more", { count: item.models.length - SHOWN_MODELS })
+                    : "";
                 return (
                   <li class="providers-row">
                     <div>
-                      <Text as="strong">{item.label}</Text> <Badge size="sm">{KIND_LABELS[item.kind]}</Badge>{" "}
+                      <Text as="strong">{item.label}</Text> <Badge size="sm">{kindLabel(item.kind)}</Badge>{" "}
                       <Badge size="sm" tone={state().tone}>
                         {state().label}
                       </Badge>
                       <Text as="p" tone="muted">
                         <code>{item.baseUrl}</code>
-                        <Show when={item.hasKey}> · Key {item.maskedKey}</Show>
+                        <Show when={item.hasKey}> · {t("Key {masked}", { masked: item.maskedKey ?? "" })}</Show>
                       </Text>
                       <Show when={item.warning}>
                         <Text as="p" tone="warning" role="note">
@@ -210,9 +216,11 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                       </Show>
                       <Show when={item.models.length}>
                         <Text as="p" tone="muted">
-                          Models: {item.models.slice(0, SHOWN_MODELS).join(", ")}
-                          {item.models.length > SHOWN_MODELS ? ` and ${item.models.length - SHOWN_MODELS} more` : ""}.
-                          Agent model id: <code>{endpointModelId(item.id, item.models[0] ?? "model")}</code>
+                          {t("Models: {list}{more}.", {
+                            list: item.models.slice(0, SHOWN_MODELS).join(", "),
+                            more,
+                          })}{" "}
+                          {t("Agent model id:")} <code>{endpointModelId(item.id, item.models[0] ?? "model")}</code>
                         </Text>
                       </Show>
                     </div>
@@ -224,15 +232,15 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                             type="button"
                             size="sm"
                             disabled={checking().has(item.id)}
-                            aria-label={`Check connection to ${item.label}`}
+                            aria-label={t("Check connection to {label}", { label: item.label })}
                             onClick={() => void check(item.id)}
                           >
-                            Check connection
+                            {t("Check connection")}
                           </Button>
                           <Button
                             type="button"
                             size="sm"
-                            aria-label={`Edit ${item.label}`}
+                            aria-label={t("Edit {label}", { label: item.label })}
                             onClick={() =>
                               setDraft({
                                 id: item.id,
@@ -244,30 +252,35 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                               })
                             }
                           >
-                            Edit
+                            {t("Edit")}
                           </Button>
                           <Button
                             type="button"
                             variant="danger"
                             size="sm"
-                            aria-label={`Remove ${item.label}`}
+                            aria-label={t("Remove {label}", { label: item.label })}
                             onClick={() => setRemoving(item.id)}
                           >
-                            Remove
+                            {t("Remove")}
                           </Button>
                         </div>
                       }
                     >
-                      <fieldset class="providers-confirm" aria-label={`Confirm removing ${item.label}`}>
+                      <fieldset
+                        class="providers-confirm"
+                        aria-label={t("Confirm removing {label}", { label: item.label })}
+                      >
                         <Text tone="danger">
-                          Its models disappear from the choice, its key is deleted, and agents set to one of its models
-                          get an error until you pick another model. Remove {item.label}?
+                          {t(
+                            "Its models disappear from the choice, its key is deleted, and agents set to one of its models get an error until you pick another model. Remove {label}?",
+                            { label: item.label },
+                          )}
                         </Text>
                         <Button type="button" variant="danger" size="sm" onClick={() => void remove(item.id)}>
-                          Yes, remove
+                          {t("Yes, remove")}
                         </Button>
                         <Button type="button" size="sm" onClick={() => setRemoving(null)}>
-                          Keep
+                          {t("Keep")}
                         </Button>
                       </fieldset>
                     </Show>
@@ -279,22 +292,22 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
         </Show>
         <div class="providers-actions">
           <Button type="button" disabled={busy()} onClick={() => void detect()}>
-            Detect local servers
+            {t("Detect local servers")}
           </Button>
           <Show when={!draft()}>
             <Button type="button" variant="primary" disabled={atLimit()} onClick={() => setDraft({ ...EMPTY })}>
-              Add an endpoint
+              {t("Add an endpoint")}
             </Button>
           </Show>
         </div>
         <Show when={draft()}>
           {(current) => (
-            <form class="providers-form" aria-label="Endpoint" onSubmit={(event) => void save(event)}>
+            <form class="providers-form" aria-label={t("Endpoint")} onSubmit={(event) => void save(event)}>
               <Heading as="h3" size="sm" tone="secondary">
-                {current().id ? "Edit the endpoint" : "Add an endpoint"}
+                {current().id ? t("Edit the endpoint") : t("Add an endpoint")}
               </Heading>
               <Show when={!current().id}>
-                <fieldset class="providers-actions" aria-label="Ready settings">
+                <fieldset class="providers-actions" aria-label={t("Ready settings")}>
                   <For each={ENDPOINT_PRESETS}>
                     {(preset) => (
                       <Button
@@ -302,12 +315,12 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                         size="sm"
                         onClick={() => patch({ label: preset.label, kind: preset.kind, baseUrl: preset.baseUrl })}
                       >
-                        Use {preset.label}
+                        {t("Use {label}", { label: preset.label })}
                       </Button>
                     )}
                   </For>
                 </fieldset>
-                <fieldset class="providers-actions" aria-label="Hosted services">
+                <fieldset class="providers-actions" aria-label={t("Hosted services")}>
                   <For each={ENDPOINT_CLOUD_PRESETS}>
                     {(preset) => (
                       <Button
@@ -315,23 +328,23 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                         size="sm"
                         onClick={() => patch({ label: preset.label, kind: preset.kind, baseUrl: preset.baseUrl })}
                       >
-                        Use {preset.label}
+                        {t("Use {label}", { label: preset.label })}
                       </Button>
                     )}
                   </For>
                 </fieldset>
                 <Text as="p" tone="muted">
-                  Hosted services need an API key, and your messages go to another computer.
+                  {t("Hosted services need an API key, and your messages go to another computer.")}
                 </Text>
               </Show>
-              <Field label="Name" required>
+              <Field label={t("Name")} required>
                 <Input
                   value={current().label}
                   maxlength={ENDPOINT_LIMITS.label}
                   onInput={(e) => patch({ label: e.currentTarget.value })}
                 />
               </Field>
-              <Field label="Kind">
+              <Field label={t("Kind")}>
                 <NativeSelect
                   value={current().kind}
                   onChange={(e) => {
@@ -339,13 +352,15 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                     if (kind) patch({ kind });
                   }}
                 >
-                  <For each={KIND_OPTIONS}>{(kind) => <option value={kind}>{KIND_LABELS[kind]}</option>}</For>
+                  <For each={KIND_OPTIONS}>{(kind) => <option value={kind}>{kindLabel(kind)}</option>}</For>
                 </NativeSelect>
               </Field>
               <Field
-                label="Address"
+                label={t("Address")}
                 required
-                description="Including the version, for example http://127.0.0.1:11434/v1. Only http:// and https://."
+                description={t(
+                  "Including the version, for example http://127.0.0.1:11434/v1. Only http:// and https://.",
+                )}
                 error={(() => {
                   const result = urlCheck();
                   return result && !result.ok ? result.reason : undefined;
@@ -371,11 +386,11 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                 )}
               </Show>
               <Field
-                label="Key (optional)"
+                label={t("Key (optional)")}
                 description={
                   current().id
-                    ? "Leave empty to keep the saved key. A key is for one host: it is removed if the host changes."
-                    : "Only if the server asks for one. It is stored encrypted and sent only to this address."
+                    ? t("Leave empty to keep the saved key. A key is for one host: it is removed if the host changes.")
+                    : t("Only if the server asks for one. It is stored encrypted and sent only to this address.")
                 }
               >
                 <Input
@@ -390,12 +405,12 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                 <Switch
                   checked={current().clearKey}
                   onChange={(checked) => patch({ clearKey: checked })}
-                  label="Remove the saved key"
+                  label={t("Remove the saved key")}
                 />
               </Show>
               <div class="providers-actions">
-                <Button type="submit" variant="primary" loading={busy()} loadingLabel="Saving…">
-                  Save
+                <Button type="submit" variant="primary" loading={busy()} loadingLabel={t("Saving…")}>
+                  {t("Save")}
                 </Button>
                 <Button
                   type="button"
@@ -404,11 +419,11 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                     setError("");
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               </div>
               <Text as="p" tone="muted">
-                Saving does not contact the server. Use “Check connection” to fetch its models.
+                {t("Saving does not contact the server. Use “Check connection” to fetch its models.")}
               </Text>
             </form>
           )}
