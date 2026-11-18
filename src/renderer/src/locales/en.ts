@@ -6,10 +6,7 @@ export const en = {
   Appearance: "Appearance",
   "Data and privacy": "Data and privacy",
   Advanced: "Advanced",
-  "Settings sections": "Settings sections",
   "Coming soon": "Coming soon",
-  Soon: "Soon",
-  "Close settings": "Close settings",
   "Control how COSGRAL Workspace behaves on this computer.": "Control how COSGRAL Workspace behaves on this computer.",
   "App behavior": "App behavior",
   "Launch COSGRAL Workspace at login": "Launch COSGRAL Workspace at login",
@@ -105,8 +102,6 @@ export const en = {
   "Save language": "Save language",
   "Could not save language. Try again.": "Could not save language. Try again.",
   "Could not load language settings.": "Could not load language settings.",
-  "Changes apply immediately and are saved on this computer.":
-    "Changes apply immediately and are saved on this computer.",
   "Context settings": "Context settings",
   "Conversation context": "Conversation context",
   "Could not load context settings.": "Could not load context settings.",
@@ -1564,4 +1559,14 @@ export const en = {
   Attachment: "Attachment",
   "{name} is controlling the browser": "{name} is controlling the browser",
   "{title}, controlled by {name}": "{title}, controlled by {name}",
+  "Channel history": "Channel history",
+  "Clear history": "Clear history",
+  "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.":
+    "Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.",
+  "Confirm clearing the history": "Confirm clearing the history",
+  "Clear the whole history of this channel? This cannot be undone.":
+    "Clear the whole history of this channel? This cannot be undone.",
+  "Yes, clear": "Yes, clear",
+  "Could not clear the history.": "Could not clear the history.",
+  "Removed {messages} messages and {tasks} tasks.": "Removed {messages} messages and {tasks} tasks.",
 } as const;

@@ -1,6 +1,7 @@
-import type { ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
+import type { ChannelHistoryCleared, ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { t } from "../i18n";
+import { ChannelHistoryClear } from "./ChannelHistoryClear";
 import { ChannelRoutinesPanel } from "./ChannelRoutinesPanel";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
@@ -16,6 +17,8 @@ export function ChannelView(props: {
   supportsReplies?: boolean;
   onResume: (id: string) => void;
   onReassign: (id: string, botId: string) => void;
+  /** Clears the messages and tasks of this channel; the button is hidden without it. */
+  onClearHistory?: () => Promise<ChannelHistoryCleared>;
 }) {
   const tabsId = createUniqueId();
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
@@ -75,6 +78,14 @@ export function ChannelView(props: {
             <ChannelRoutinesPanel channel={props.channel} onOpenTask={openTask} />
           </Show>
         </details>
+        <Show when={props.onClearHistory}>
+          {(clear) => (
+            <details>
+              <summary>{t("Channel history")}</summary>
+              <ChannelHistoryClear onClear={clear()} />
+            </details>
+          )}
+        </Show>
         <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
       </header>
       <Show

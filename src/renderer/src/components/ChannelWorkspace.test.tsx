@@ -58,6 +58,42 @@ describe("channel workspace", () => {
     );
   });
 
+  it("clears the history of a channel after the question, and shows the refusal while a task is going", async () => {
+    Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
+    render(() => (
+      <ChannelWorkspace
+        bots={[
+          { id: "chief", name: "Chief" },
+          { id: "research", name: "Research" },
+        ]}
+      />
+    ));
+    await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
+    await screen.findByText("Prepare the release plan.");
+    const open = async () => {
+      const summary = screen.getByText("Channel history");
+      const details = summary.closest("details");
+      if (details && !details.open) await fireEvent.click(summary);
+    };
+    await open();
+    await fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Yes, clear" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/in progress or paused/));
+    expect(screen.getByText("Prepare the release plan.")).toBeInTheDocument();
+
+    // The demo has no way to stop a task, so the success path answers like the program does once nothing runs.
+    const channels = mock.api.channels;
+    if (!channels?.clearHistory) throw new Error("the mock has no clearHistory");
+    vi.spyOn(channels, "clearHistory").mockImplementationOnce(async ({ channelId }) => {
+      mock.emitAgentEvent({ type: "channel-history-cleared", channelId });
+      return { channelId, removedMessages: 2, removedTasks: 3 };
+    });
+    await fireEvent.click(await screen.findByRole("button", { name: "Clear history" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "Yes, clear" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Removed 2 messages and 3 tasks."));
+    await waitFor(() => expect(screen.queryByText("Prepare the release plan.")).not.toBeInTheDocument());
+  });
+
   it("creates through the contract and opens the new channel", async () => {
     const api = createMockOpenBot();
     const channels = api.api.channels;
