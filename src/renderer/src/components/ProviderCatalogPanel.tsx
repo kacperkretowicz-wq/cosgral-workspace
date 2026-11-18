@@ -127,10 +127,7 @@ export function ProviderCatalogPanel() {
             </Button>
           </p>
         </Show>
-        <Show
-          when={loaded()}
-          fallback={<CosgralLoadingSkeleton label={t("Loading providers…")} />}
-        >
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading providers…")} />}>
           <ul class="provider-catalog-grid">
             <For each={items()}>
               {(item) => (

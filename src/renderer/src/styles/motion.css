@@ -137,7 +137,7 @@
   }
 
   /* Buttons and agent rows answer the pointer (120 ms). Scale already on .ui-button:active in primitives. */
-  .ui-button:not([data-variant="link"]),
+  .ui-button:not([data-variant="link"]):not([data-variant^="danger"]),
   .page-rail-button,
   .bot-row.agent-row {
     transition:
@@ -191,7 +191,7 @@
     animation: none;
   }
 
-  .ui-button:not([data-variant="link"]),
+  .ui-button:not([data-variant="link"]):not([data-variant^="danger"]),
   .bot-row.agent-row {
     transition: none;
   }

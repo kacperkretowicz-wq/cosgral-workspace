@@ -81,7 +81,10 @@ export function ChannelView(props: {
         when={mode() === "chat"}
         fallback={
           <ViewTabPanel idPrefix={tabsId} value="tasks" class="channel-view-content">
-            <Show when={props.tasks.some((task) => !task.archivedAt)} fallback={<p>{t("No tasks in this channel.")}</p>}>
+            <Show
+              when={props.tasks.some((task) => !task.archivedAt)}
+              fallback={<p>{t("No tasks in this channel.")}</p>}
+            >
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
                   <article
@@ -132,7 +135,9 @@ export function ChannelView(props: {
                     <strong>{name(message.authorBotId)}</strong>{" "}
                     <small>
                       {message.kind}
-                      {message.resultVersion !== null ? t(" · version {number}", { number: message.resultVersion }) : ""}
+                      {message.resultVersion !== null
+                        ? t(" · version {number}", { number: message.resultVersion })
+                        : ""}
                       {message.superseded ? t(" · Superseded") : ""}
                     </small>
                     <Show when={message.replyToMessageId}>
@@ -144,7 +149,8 @@ export function ChannelView(props: {
                           }
                         >
                           ↳{" "}
-                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? t("Earlier message")}
+                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ??
+                            t("Earlier message")}
                         </Button>
                       )}
                     </Show>

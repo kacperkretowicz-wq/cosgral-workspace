@@ -10,8 +10,8 @@ import type {
 import { LIBRARY_KINDS, LIBRARY_SORTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { formatFileSize } from "./conversation/AttachmentCards";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button, Input, NativeSelect } from "./ui";
 
 type OriginFilter = "all" | LibraryOrigin;
