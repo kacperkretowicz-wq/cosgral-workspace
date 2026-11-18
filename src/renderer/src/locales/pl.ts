@@ -1848,4 +1848,64 @@ export const pl = {
   "Answering with account: {label}": "Teraz odpowiada kontem: {label}",
   "Account picking is unavailable in this version.": "Wybór kont niedostępny w tej wersji.",
   "Reload accounts": "Ponów wczytanie kont",
+  "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.":
+    "Sparuj telefon, żeby czytać i odpowiadać agentom z jego poziomu. Wszystko, czego telefon nie może robić, zostaje na tym komputerze.",
+  "Phone connection security": "Bezpieczeństwo połączenia z telefonem",
+  "Encrypted (TLS)": "Szyfrowane (TLS)",
+  "Not encrypted": "Bez szyfrowania",
+  Connection: "Połączenie",
+  "Who can reach this computer": "Kto może połączyć się z tym komputerem",
+  "Phones on your local network can connect. This needs encryption (TLS); without it the program refuses.":
+    "Telefony w Twojej sieci lokalnej mogą się połączyć. Wymaga to szyfrowania (TLS); bez niego program odmawia.",
+  "Only this computer. A phone reaches it through a tunnel you trust (VPN or USB forwarding).":
+    "Tylko ten komputer. Telefon łączy się przez tunel, któremu ufasz (VPN albo przekierowanie przez USB).",
+  "This computer only (tunnel)": "Tylko ten komputer (tunel)",
+  "Local network (LAN)": "Sieć lokalna (LAN)",
+  "Listening on {addresses}.": "Nasłuchuje na {addresses}.",
+  "this computer": "ten komputer",
+  "The phone server is off.": "Serwer telefonu jest wyłączony.",
+  "Pair another phone": "Sparuj kolejny telefon",
+  "Turn on and pair a phone": "Włącz i sparuj telefon",
+  "Turn off": "Wyłącz",
+  "Pair a phone": "Sparuj telefon",
+  "Scan this code with the phone camera, or open the link on the phone.":
+    "Zeskanuj ten kod aparatem telefonu albo otwórz link na telefonie.",
+  "Pairing QR code": "Kod QR do parowania",
+  "Code valid for {time}": "Kod ważny jeszcze {time}",
+  "This code has expired.": "Ten kod wygasł.",
+  "A phone is asking to pair. Approve or decline on the confirm card in Needs you.":
+    "Telefon prosi o sparowanie. Zatwierdź albo odrzuć na karcie potwierdzenia w Needs you.",
+  "Waiting for a phone. Wrong tries left: {count}.": "Czekam na telefon. Pozostało błędnych prób: {count}.",
+  "Pairing link": "Link do parowania",
+  "Valid for one phone and a few minutes. Do not share it.":
+    "Ważny dla jednego telefonu i kilka minut. Nie udostępniaj go.",
+  "Phone app address": "Adres aplikacji telefonu",
+  "Certificate fingerprint (SHA-256)": "Odcisk certyfikatu (SHA-256)",
+  "A web browser cannot check this by itself: when it warns about the certificate, compare the fingerprint it shows with this one.":
+    "Przeglądarka nie sprawdzi tego sama: gdy ostrzeże o certyfikacie, porównaj pokazany odcisk z tym.",
+  "Cancel pairing": "Anuluj parowanie",
+  "Paired phones": "Sparowane telefony",
+  "No phone is paired.": "Żaden telefon nie jest sparowany.",
+  Certificate: "Certyfikat",
+  "A new certificate has a new fingerprint. Every phone pinned the old one, so rotating removes all paired phones and each must pair again.":
+    "Nowy certyfikat ma nowy odcisk. Każdy telefon zapamiętał stary, więc wymiana usuwa wszystkie sparowane telefony i każdy musi się sparować od nowa.",
+  "Rotate certificate…": "Wymień certyfikat…",
+  "Confirm certificate rotation": "Potwierdź wymianę certyfikatu",
+  "This removes {count} paired phone at once. They stop working until paired again.":
+    "To usuwa naraz {count} sparowany telefon. Przestanie działać, dopóki nie zostanie sparowany ponownie.",
+  "This removes {count} paired phones at once. They stop working until paired again.":
+    "To usuwa naraz sparowane telefony: {count}. Przestaną działać, dopóki nie zostaną sparowane ponownie.",
+  "Rotate and remove all phones": "Wymień i usuń wszystkie telefony",
+  "Keep the current certificate": "Zostaw obecny certyfikat",
+  "Something went wrong.": "Coś poszło nie tak.",
+  "Mobile Connect is unavailable.": "Mobile Connect jest niedostępny.",
+  "{name} is paired.": "Sparowano: {name}.",
+  "The certificate was replaced. Every phone must pair again.":
+    "Certyfikat został wymieniony. Każdy telefon musi się sparować od nowa.",
+  "Copied.": "Skopiowano.",
+  "Could not copy; select the text manually.": "Nie udało się skopiować; zaznacz tekst ręcznie.",
+  "Traffic between the phone and this computer is encrypted. The computer proves who it is with the certificate fingerprint from the QR code: an app that pins it cannot be fooled by another device on the network. A web browser cannot pin it, so compare the fingerprint the first time it warns about the certificate. Encryption does not help if the phone or this computer is in someone else's hands: remove a lost phone at once.":
+    "Ruch między telefonem a tym komputerem jest szyfrowany. Komputer potwierdza, kim jest, odciskiem certyfikatu z kodu QR: aplikacja, która go zapamięta, nie da się oszukać innym urządzeniem w sieci. Przeglądarka nie potrafi go zapamiętać, więc porównaj odcisk przy pierwszym ostrzeżeniu o certyfikacie. Szyfrowanie nie pomoże, gdy telefon albo ten komputer trafi w cudze ręce: usuń zgubiony telefon od razu.",
+  "Traffic between the phone and this computer is not encrypted. It stays on this computer (loopback); use it only through a tunnel you trust, such as a VPN or USB forwarding.":
+    "Ruch między telefonem a tym komputerem nie jest szyfrowany. Zostaje na tym komputerze (loopback); używaj go tylko przez tunel, któremu ufasz, np. VPN albo przekierowanie przez USB.",
 } as const;
