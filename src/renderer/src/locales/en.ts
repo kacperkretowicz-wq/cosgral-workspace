@@ -255,6 +255,11 @@ export const en = {
   "Stopped.": "Stopped.",
   "The side question failed.": "The side question failed.",
   "Use a skill": "Use a skill",
+  "Teach a task": "Teach a task",
+  "Teach a task needs browser teach — not in this build yet.":
+    "Teach a task needs browser teach — not in this build yet.",
+  "Voice side panel needs engine support — not in this build yet.":
+    "Voice side panel needs engine support — not in this build yet.",
   "Skills are not available in this version.": "Skills are not available in this version.",
   "Could not load skills.": "Could not load skills.",
   "Loading skills…": "Loading skills…",

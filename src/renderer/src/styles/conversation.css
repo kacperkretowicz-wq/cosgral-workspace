@@ -4592,7 +4592,7 @@
 
 .attachment-menu {
   z-index: var(--openbot-layer-popover);
-  width: 174px;
+  width: 196px;
   overflow: hidden;
   border: 1px solid var(--openbot-border);
   border-radius: var(--openbot-radius-lg);
@@ -4624,9 +4624,14 @@
   text-align: left;
 }
 
-.attachment-menu button:hover {
+.attachment-menu button:hover:not(:disabled) {
   background: var(--openbot-border);
   color: var(--openbot-white);
+}
+
+.attachment-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .attachment-menu button svg {

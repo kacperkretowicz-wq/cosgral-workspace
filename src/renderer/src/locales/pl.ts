@@ -254,6 +254,11 @@ export const pl = {
   "Stopped.": "Zatrzymano.",
   "The side question failed.": "Pytanie boczne się nie udało.",
   "Use a skill": "Użyj skilla",
+  "Teach a task": "Naucz zadania",
+  "Teach a task needs browser teach — not in this build yet.":
+    "Nauczanie zadania wymaga teach w przeglądarce — jeszcze nie w tej wersji.",
+  "Voice side panel needs engine support — not in this build yet.":
+    "Panel głosu w menu + wymaga silnika — jeszcze nie w tej wersji.",
   "Skills are not available in this version.": "Skille nie są dostępne w tej wersji.",
   "Could not load skills.": "Nie udało się wczytać skilli.",
   "Loading skills…": "Wczytywanie skilli…",
