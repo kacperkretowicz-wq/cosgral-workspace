@@ -1685,4 +1685,97 @@ export const pl = {
   "Channel history is unavailable in this build.": "Historia kanału jest niedostępna w tej wersji.",
   "Channels are unavailable in this build.": "Kanały są niedostępne w tej wersji.",
   "Could not load channel.": "Nie udało się wczytać kanału.",
+  "Process isolation": "Izolacja procesu",
+  "Isolation is unavailable on this connection.": "Izolacja jest niedostępna na tym połączeniu.",
+  "Loading isolation…": "Wczytywanie izolacji…",
+  "Isolation: {state}": "Izolacja: {state}",
+  "Codex: one shared process, not isolated per agent": "Codex: jeden wspólny proces, bez izolacji na agenta",
+  "Process limits are active. This does not provide an AppContainer disk boundary.":
+    "Limity procesu są aktywne. To nie daje granicy dysku AppContainer.",
+  "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.":
+    "izolacja-niedostępna: narzędzia plików i powłoki poniżej Pełnego dostępu są odrzucane. Dostęp nie jest automatycznie poszerzany.",
+  "Enable process isolation": "Włącz izolację procesu",
+  "Access level": "Poziom dostępu",
+  "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.":
+    "Computer Use i kamera proszą o osobną zgodę. Wykluczone foldery są zabronione na każdym poziomie, także Pełnym.",
+  "Access settings are unavailable on this connection.": "Ustawienia dostępu są niedostępne na tym połączeniu.",
+  "Loading access settings…": "Wczytywanie ustawień dostępu…",
+  "Approval requested in Needs you. The current level stays unchanged until you approve.":
+    "Prośba o zgodę w Needs you. Obecny poziom zostaje bez zmian, aż zatwierdzisz.",
+  "Access level updated.": "Poziom dostępu zaktualizowany.",
+  "Current: {name}. {summary}": "Obecnie: {name}. {summary}",
+  "Last approved increase: {at}": "Ostatnie zatwierdzone podniesienie: {at}",
+  "Additional folders": "Dodatkowe foldery",
+  "Absolute paths, one folder per line.": "Ścieżki bezwzględne, jeden folder na linię.",
+  "Excluded folders": "Wykluczone foldery",
+  "Always refused, including at Full access. Absolute paths, one per line.":
+    "Zawsze odrzucane, także przy Pełnym dostępie. Ścieżki bezwzględne, jedna na linię.",
+  "Save folder rules": "Zapisz reguły folderów",
+  "Folder rules saved.": "Reguły folderów zapisane.",
+  "Retry access settings": "Ponów ustawienia dostępu",
+  "Browser profile": "Profil przeglądarki",
+  "This agent starts signed out in its own profile. Cookies, storage, cache and history are separate from other agents.":
+    "Ten agent startuje wylogowany we własnym profilu. Cookies, magazyn, pamięć podręczna i historia są oddzielne od innych agentów.",
+  "Browser profile updated. Reopen settings to load saved domain rules; your current draft is kept.":
+    "Profil przeglądarki zaktualizowany. Otwórz ustawienia ponownie, żeby wczytać zapisane reguły domen; bieżący szkic zostaje.",
+  "Browser data cleared for this agent. Domain rules are kept.":
+    "Dane przeglądarki tego agenta wyczyszczone. Reguły domen zostają.",
+  "Domain rules saved.": "Reguły domen zapisane.",
+  "Browser profiles are unavailable on this connection.": "Profile przeglądarki są niedostępne na tym połączeniu.",
+  "Loading browser profile…": "Wczytywanie profilu przeglądarki…",
+  "Allowed domains": "Dozwolone domeny",
+  "One domain per line. Empty allows any page except blocked domains. Includes subdomains.":
+    "Jedna domena na linię. Puste = dowolna strona poza zablokowanymi. Obejmuje subdomeny.",
+  "Blocked domains": "Zablokowane domeny",
+  "Blocks pages and resources, including subdomains. Block wins over allow.":
+    "Blokuje strony i zasoby, w tym subdomeny. Blok wygrywa z listą dozwolonych.",
+  "Save domain rules": "Zapisz reguły domen",
+  "Clear browser data": "Wyczyść dane przeglądarki",
+  "Clear this agent’s browser data?": "Wyczyścić dane przeglądarki tego agenta?",
+  "This permanently removes this agent’s sign-ins, cookies, storage, cache and history. Domain rules and other profiles are kept.":
+    "Trwale usuwa logowania, cookies, magazyn, cache i historię tego agenta. Reguły domen i inne profile zostają.",
+  "Confirm clear browser data": "Potwierdź czyszczenie danych przeglądarki",
+  "Usage this period": "Użycie w tym okresie",
+  "{tokens} tokens · {turns} turns": "{tokens} tokenów · {turns} tur",
+  "{start} – {end} (UTC)": "{start} – {end} (UTC)",
+  "Provider estimate: {amount} USD": "Szacunek dostawcy: {amount} USD",
+  "Provider estimate: {amount} USD (incomplete)": "Szacunek dostawcy: {amount} USD (niepełny)",
+  "Cost unavailable: the provider has not reported a price.": "Koszt niedostępny: dostawca nie podał ceny.",
+  "Cost unavailable for some turns. The reported estimate is incomplete.":
+    "Koszt niedostępny dla części tur. Podany szacunek jest niepełny.",
+  "The dollar limit cannot fully protect this budget while costs are unavailable. Set a token limit for enforceable protection.":
+    "Limit dolarowy nie chroni w pełni budżetu, gdy koszty są niedostępne. Ustaw limit tokenów dla egzekwowalnej ochrony.",
+  "Dollar limit not enforceable: no provider price is available.":
+    "Limit dolarowy nieegzekwowalny: brak ceny dostawcy.",
+  "New turns are blocked. A running turn is allowed to finish.":
+    "Nowe tury są zablokowane. Trwająca tura może się dokończyć.",
+  "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.":
+    "Limity resetują się o północy UTC każdego dnia albo pierwszego dnia miesiąca. Kwoty w dolarach to szacunki dostawcy, nie rachunek.",
+  "Could not update the budget.": "Nie udało się zaktualizować budżetu.",
+  "Budget saved.": "Budżet zapisany.",
+  "Budget period (UTC)": "Okres budżetu (UTC)",
+  "Day (UTC)": "Dzień (UTC)",
+  "Calendar month (UTC)": "Miesiąc kalendarzowy (UTC)",
+  "Token limit": "Limit tokenów",
+  "Leave empty for no token limit.": "Zostaw puste, jeśli bez limitu tokenów.",
+  "Dollar limit (USD, optional)": "Limit dolarowy (USD, opcjonalnie)",
+  "Only prices reported by providers count. Missing prices are never estimated by the app.":
+    "Liczą się tylko ceny podane przez dostawców. Brakujących cen aplikacja nigdy nie szacuje.",
+  "Warn at (%)": "Ostrzeż przy (%)",
+  "50–99% of a limit.": "50–99% limitu.",
+  "Stop new turns when exhausted": "Zatrzymaj nowe tury po wyczerpaniu",
+  "A running turn is never interrupted.": "Trwająca tura nigdy nie jest przerywana.",
+  "Save budget": "Zapisz budżet",
+  "Budget removed. Usage is retained.": "Budżet usunięty. Użycie zostaje.",
+  "Remove budget": "Usuń budżet",
+  "CSV download requested.": "Zażądano pobrania CSV.",
+  "Export usage CSV": "Eksport użycia CSV",
+  "Exports this space’s daily usage for all agents, using UTC dates.":
+    "Eksportuje dzienne użycie tej przestrzeni dla wszystkich agentów (daty UTC).",
+  "From (UTC)": "Od (UTC)",
+  "To (UTC)": "Do (UTC)",
+  "Export CSV": "Eksportuj CSV",
+  "Retry budget usage": "Ponów użycie budżetu",
+  "Budgets are unavailable on this connection.": "Budżety są niedostępne na tym połączeniu.",
+  "Loading budget usage…": "Wczytywanie użycia budżetu…",
 } as const;

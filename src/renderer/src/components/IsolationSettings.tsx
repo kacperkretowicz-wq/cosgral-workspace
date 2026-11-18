@@ -56,7 +56,7 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
   return (
     <section class="providers-form" aria-label={t("Agent isolation")}>
       <Heading as="h3" size="sm">
-        Process isolation
+        {t("Process isolation")}
       </Heading>
       <Show when={error()}>
         <Text role="alert" tone="danger">
@@ -69,31 +69,32 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
       <Show
         when={state()}
         fallback={
-          <Show when={api} fallback={<Text>Isolation is unavailable on this connection.</Text>}>
-            <CosgralLoadingSkeleton label="Loading isolation…" />
+          <Show when={api} fallback={<Text>{t("Isolation is unavailable on this connection.")}</Text>}>
+            <CosgralLoadingSkeleton label={t("Loading isolation…")} />
           </Show>
         }
       >
         {(current) => (
           <>
-            <Text>Isolation: {current().state}</Text>
+            <Text>{t("Isolation: {state}", { state: current().state })}</Text>
             <Show when={current().state === "shared-process"}>
-              <Text>Codex: one shared process, not isolated per agent</Text>
+              <Text>{t("Codex: one shared process, not isolated per agent")}</Text>
             </Show>
             <Show when={current().reason}>
               <Text>{current().reason}</Text>
             </Show>
             <Show when={current().state === "active"}>
-              <Text>Process limits are active. This does not provide an AppContainer disk boundary.</Text>
+              <Text>{t("Process limits are active. This does not provide an AppContainer disk boundary.")}</Text>
             </Show>
             <Show when={current().state === "unavailable"}>
               <Text>
-                isolation-unavailable: file and shell tools below Full access are refused. Access is not widened
-                automatically.
+                {t(
+                  "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
+                )}
               </Text>
             </Show>
             <Switch
-              label="Enable process isolation"
+              label={t("Enable process isolation")}
               checked={current().enabled}
               disabled={busy()}
               onChange={() => void toggle()}

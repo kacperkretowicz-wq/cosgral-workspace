@@ -1683,4 +1683,98 @@ export const en = {
   "Channel history is unavailable in this build.": "Channel history is unavailable in this build.",
   "Channels are unavailable in this build.": "Channels are unavailable in this build.",
   "Could not load channel.": "Could not load channel.",
+  "Process isolation": "Process isolation",
+  "Isolation is unavailable on this connection.": "Isolation is unavailable on this connection.",
+  "Loading isolation…": "Loading isolation…",
+  "Isolation: {state}": "Isolation: {state}",
+  "Codex: one shared process, not isolated per agent": "Codex: one shared process, not isolated per agent",
+  "Process limits are active. This does not provide an AppContainer disk boundary.":
+    "Process limits are active. This does not provide an AppContainer disk boundary.",
+  "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.":
+    "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
+  "Enable process isolation": "Enable process isolation",
+  "Access level": "Access level",
+  "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.":
+    "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.",
+  "Access settings are unavailable on this connection.": "Access settings are unavailable on this connection.",
+  "Loading access settings…": "Loading access settings…",
+  "Approval requested in Needs you. The current level stays unchanged until you approve.":
+    "Approval requested in Needs you. The current level stays unchanged until you approve.",
+  "Access level updated.": "Access level updated.",
+  "Current: {name}. {summary}": "Current: {name}. {summary}",
+  "Last approved increase: {at}": "Last approved increase: {at}",
+  "Additional folders": "Additional folders",
+  "Absolute paths, one folder per line.": "Absolute paths, one folder per line.",
+  "Excluded folders": "Excluded folders",
+  "Always refused, including at Full access. Absolute paths, one per line.":
+    "Always refused, including at Full access. Absolute paths, one per line.",
+  "Save folder rules": "Save folder rules",
+  "Folder rules saved.": "Folder rules saved.",
+  "Retry access settings": "Retry access settings",
+  "Browser profile": "Browser profile",
+  "This agent starts signed out in its own profile. Cookies, storage, cache and history are separate from other agents.":
+    "This agent starts signed out in its own profile. Cookies, storage, cache and history are separate from other agents.",
+  "Browser profile updated. Reopen settings to load saved domain rules; your current draft is kept.":
+    "Browser profile updated. Reopen settings to load saved domain rules; your current draft is kept.",
+  "Browser data cleared for this agent. Domain rules are kept.":
+    "Browser data cleared for this agent. Domain rules are kept.",
+  "Domain rules saved.": "Domain rules saved.",
+  "Browser profiles are unavailable on this connection.": "Browser profiles are unavailable on this connection.",
+  "Loading browser profile…": "Loading browser profile…",
+  "Allowed domains": "Allowed domains",
+  "One domain per line. Empty allows any page except blocked domains. Includes subdomains.":
+    "One domain per line. Empty allows any page except blocked domains. Includes subdomains.",
+  "Blocked domains": "Blocked domains",
+  "Blocks pages and resources, including subdomains. Block wins over allow.":
+    "Blocks pages and resources, including subdomains. Block wins over allow.",
+  "Save domain rules": "Save domain rules",
+  "Clear browser data": "Clear browser data",
+  "Clear this agent’s browser data?": "Clear this agent’s browser data?",
+  "This permanently removes this agent’s sign-ins, cookies, storage, cache and history. Domain rules and other profiles are kept.":
+    "This permanently removes this agent’s sign-ins, cookies, storage, cache and history. Domain rules and other profiles are kept.",
+  "Confirm clear browser data": "Confirm clear browser data",
+  "Usage this period": "Usage this period",
+  "{tokens} tokens · {turns} turns": "{tokens} tokens · {turns} turns",
+  "{start} – {end} (UTC)": "{start} – {end} (UTC)",
+  "Provider estimate: {amount} USD": "Provider estimate: {amount} USD",
+  "Provider estimate: {amount} USD (incomplete)": "Provider estimate: {amount} USD (incomplete)",
+  "Cost unavailable: the provider has not reported a price.":
+    "Cost unavailable: the provider has not reported a price.",
+  "Cost unavailable for some turns. The reported estimate is incomplete.":
+    "Cost unavailable for some turns. The reported estimate is incomplete.",
+  "The dollar limit cannot fully protect this budget while costs are unavailable. Set a token limit for enforceable protection.":
+    "The dollar limit cannot fully protect this budget while costs are unavailable. Set a token limit for enforceable protection.",
+  "Dollar limit not enforceable: no provider price is available.":
+    "Dollar limit not enforceable: no provider price is available.",
+  "New turns are blocked. A running turn is allowed to finish.":
+    "New turns are blocked. A running turn is allowed to finish.",
+  "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.":
+    "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.",
+  "Could not update the budget.": "Could not update the budget.",
+  "Budget saved.": "Budget saved.",
+  "Budget period (UTC)": "Budget period (UTC)",
+  "Day (UTC)": "Day (UTC)",
+  "Calendar month (UTC)": "Calendar month (UTC)",
+  "Token limit": "Token limit",
+  "Leave empty for no token limit.": "Leave empty for no token limit.",
+  "Dollar limit (USD, optional)": "Dollar limit (USD, optional)",
+  "Only prices reported by providers count. Missing prices are never estimated by the app.":
+    "Only prices reported by providers count. Missing prices are never estimated by the app.",
+  "Warn at (%)": "Warn at (%)",
+  "50–99% of a limit.": "50–99% of a limit.",
+  "Stop new turns when exhausted": "Stop new turns when exhausted",
+  "A running turn is never interrupted.": "A running turn is never interrupted.",
+  "Save budget": "Save budget",
+  "Budget removed. Usage is retained.": "Budget removed. Usage is retained.",
+  "Remove budget": "Remove budget",
+  "CSV download requested.": "CSV download requested.",
+  "Export usage CSV": "Export usage CSV",
+  "Exports this space’s daily usage for all agents, using UTC dates.":
+    "Exports this space’s daily usage for all agents, using UTC dates.",
+  "From (UTC)": "From (UTC)",
+  "To (UTC)": "To (UTC)",
+  "Export CSV": "Export CSV",
+  "Retry budget usage": "Retry budget usage",
+  "Budgets are unavailable on this connection.": "Budgets are unavailable on this connection.",
+  "Loading budget usage…": "Loading budget usage…",
 } as const;
