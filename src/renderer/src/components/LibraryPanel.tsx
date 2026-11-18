@@ -1,6 +1,8 @@
 import type { DraftAttachment, LibraryItem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input } from "./ui";
+
 export function LibraryItems(props: {
   items: LibraryItem[];
   onAttach?: (id: string) => void;
@@ -8,26 +10,24 @@ export function LibraryItems(props: {
   onOpen: (id: string, action?: "open" | "download" | "reveal") => void;
 }) {
   return (
-    <For each={props.items} fallback={<p>No files found.</p>}>
+    <For each={props.items} fallback={<p>{t("No files found.")}</p>}>
       {(item) => (
         <article class="w2-item">
           <strong>{item.name}</strong>
-          <small>
-            {item.origin} · {item.size} bytes
-          </small>
+          <small>{t("{origin} · {size} bytes", { origin: item.origin, size: item.size })}</small>
           <div>
             <Button unstyled type="button" onClick={() => props.onOpen(item.id)}>
-              Open
+              {t("Open")}
             </Button>{" "}
             <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "download")}>
-              Pobierz
+              {t("Download")}
             </Button>{" "}
             <Button type="button" variant="secondary" onClick={() => props.onOpen(item.id, "reveal")}>
-              Pokaż w folderze
+              {t("Show in folder")}
             </Button>{" "}
             <Show when={props.onAttach}>
               <Button unstyled type="button" onClick={() => props.onAttach?.(item.id)}>
-                Attach
+                {t("Attach")}
               </Button>
             </Show>{" "}
             <Show when={item.origin !== "chat"}>
@@ -35,10 +35,10 @@ export function LibraryItems(props: {
                 unstyled
                 type="button"
                 onClick={() => {
-                  if (window.confirm(`Delete ${item.name}?`)) props.onDelete(item.id);
+                  if (window.confirm(t("Delete {name}?", { name: item.name }))) props.onDelete(item.id);
                 }}
               >
-                Delete
+                {t("Delete")}
               </Button>
             </Show>
           </div>
@@ -55,7 +55,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
   async function refresh(search = query()) {
     const api = window.openbot.library;
     if (!api) {
-      setError("File library unavailable in this build.");
+      setError(t("File library unavailable in this build."));
       return;
     }
     const n = ++seq;
@@ -66,7 +66,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
         setError("");
       }
     } catch (e) {
-      if (n === seq) setError(e instanceof Error ? e.message : "Could not load files.");
+      if (n === seq) setError(e instanceof Error ? e.message : t("Could not load files."));
     }
   }
   async function action(fn: () => Promise<unknown>) {
@@ -75,7 +75,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "File action failed.");
+      setError(e instanceof Error ? e.message : t("File action failed."));
     }
   }
   onSettled(() => {
@@ -91,13 +91,13 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
     };
   });
   return (
-    <section class="w2-panel" aria-label="File library">
-      <h2>Files</h2>
+    <section class="w2-panel" aria-label={t("File library")}>
+      <h2>{t("Files")}</h2>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
       <label>
-        Search files
+        {t("Search files")}
         <Input
           unstyled
           type="search"
@@ -114,26 +114,26 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
         onClick={() =>
           void action(async () => {
             const api = window.openbot.library;
-            if (!api) throw new Error("File library unavailable");
+            if (!api) throw new Error(t("File library unavailable"));
             await api.choose();
           })
         }
       >
-        Add files
+        {t("Add files")}
       </Button>
       <LibraryItems
         items={items()}
         onOpen={(fileId, fileAction = "open") =>
           void action(async () => {
             const api = window.openbot.library;
-            if (!api) throw new Error("File library unavailable");
+            if (!api) throw new Error(t("File library unavailable"));
             await api.open({ fileId, action: fileAction });
           })
         }
         onDelete={(fileId) =>
           void action(async () => {
             const api = window.openbot.library;
-            if (!api) throw new Error("File library unavailable");
+            if (!api) throw new Error(t("File library unavailable"));
             await api.delete({ fileId });
           })
         }
@@ -142,7 +142,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
             ? (fileId) =>
                 void action(async () => {
                   const api = window.openbot.library;
-                  if (!api) throw new Error("File library unavailable");
+                  if (!api) throw new Error(t("File library unavailable"));
                   props.onAttach?.(await api.attachToDraft({ fileId }));
                 })
             : undefined

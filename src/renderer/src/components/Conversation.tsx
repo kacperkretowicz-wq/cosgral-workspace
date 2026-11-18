@@ -212,7 +212,7 @@ const EMPTY_DRAFT: ComposerDraft = {
   attachments: [],
   replyToMessageId: null,
 };
-const ONBOARDING_CHOICES = ["Work & projects", "Research & writing", "Sales & outreach", "Something else"];
+const ONBOARDING_CHOICE_KEYS = ["Work & projects", "Research & writing", "Sales & outreach", "Something else"] as const;
 const SETTINGS_PANEL_STORAGE_KEY = "openbot:settings-panel-width";
 const SETTINGS_PANEL_DEFAULT = 296;
 const SETTINGS_PANEL_MIN = 180;
@@ -223,20 +223,23 @@ const BROWSER_PANEL_MIN = 220;
 const BROWSER_PANEL_MAX = 1600;
 const CONVERSATION_PANEL_MIN = 96;
 
-const BROWSER_ACTION_LABELS: Record<BrowserControlAction, string> = {
-  open: "Opening a page…",
-  "list-tabs": "Checking tabs…",
-  snapshot: "Reading the page…",
-  click: "Clicking…",
-  type: "Typing…",
-  key: "Using the keyboard…",
-  scroll: "Scrolling…",
-  back: "Going back…",
-  forward: "Going forward…",
-  reload: "Reloading…",
-  screenshot: "Taking a screenshot…",
-  "close-tab": "Closing a tab…",
-};
+function browserActionLabel(action: BrowserControlAction): string {
+  const labels: Record<BrowserControlAction, string> = {
+    open: t("Opening a page…"),
+    "list-tabs": t("Checking tabs…"),
+    snapshot: t("Reading the page…"),
+    click: t("Clicking…"),
+    type: t("Typing…"),
+    key: t("Using the keyboard…"),
+    scroll: t("Scrolling…"),
+    back: t("Going back…"),
+    forward: t("Going forward…"),
+    reload: t("Reloading…"),
+    screenshot: t("Taking a screenshot…"),
+    "close-tab": t("Closing a tab…"),
+  };
+  return labels[action];
+}
 
 export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
@@ -535,7 +538,7 @@ export function Conversation(props: ConversationProps) {
       await props.onUpdateBot(botId, updates);
       return true;
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : "Could not save agent settings.");
+      setSettingsSaveError(error instanceof Error ? error.message : t("Could not save agent settings."));
       return false;
     }
   }
@@ -543,7 +546,7 @@ export function Conversation(props: ConversationProps) {
   function saveSettingsName(): void {
     const botId = props.bot?.id;
     if (!botId) return;
-    const name = settingsName().trim() || "New agent";
+    const name = settingsName().trim() || t("New agent");
     setSettingsName(name);
     if (settingsNameInput) settingsNameInput.value = name;
     setTimeout(() => {
@@ -588,7 +591,7 @@ export function Conversation(props: ConversationProps) {
       await props.onSetAgentAvatar(botId, image);
       return true;
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : "Could not save the agent avatar.");
+      setSettingsSaveError(error instanceof Error ? error.message : t("Could not save the agent avatar."));
       return false;
     } finally {
       setAvatarUploadBusy(false);
@@ -605,7 +608,7 @@ export function Conversation(props: ConversationProps) {
       if (!botId) return;
       await props.onSetAgentAvatar(botId, image);
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : "Could not process the agent avatar.");
+      setSettingsSaveError(error instanceof Error ? error.message : t("Could not process the agent avatar."));
     } finally {
       setAvatarUploadBusy(false);
       if (avatarFileInput) avatarFileInput.value = "";
@@ -634,7 +637,7 @@ export function Conversation(props: ConversationProps) {
     if (saved) return true;
     setSettingsModel(previousModel);
     setSettingsReasoning(previousReasoning);
-    if (reportComposerError) setComposerError("Could not change model. Try again.");
+    if (reportComposerError) setComposerError(t("Could not change model. Try again."));
     return false;
   }
 
@@ -1843,7 +1846,7 @@ export function Conversation(props: ConversationProps) {
                 </strong>
                 <p>
                   {props.agentStatus.message ??
-                    "Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace."}
+                    t("Install and sign in to Codex CLI or Claude CLI, then restart COSGRAL Workspace.")}
                 </p>
               </div>
               <Show when={props.agentStatus.phase !== "starting" && props.agentStatus.phase !== "restarting"}>
@@ -1854,7 +1857,7 @@ export function Conversation(props: ConversationProps) {
                         type="button"
                         variant="primary"
                         loading={retryingStart()}
-                        loadingLabel="Starting…"
+                        loadingLabel={t("Starting…")}
                         onClick={() => {
                           setRetryingStart(true);
                           void retryStart()()
@@ -1862,7 +1865,7 @@ export function Conversation(props: ConversationProps) {
                             .finally(() => setRetryingStart(false));
                         }}
                       >
-                        Try again
+                        {t("Try again")}
                       </Button>
                     )}
                   </Show>
@@ -1874,7 +1877,7 @@ export function Conversation(props: ConversationProps) {
                         .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
                     }
                   >
-                    Setup guide
+                    {t("Setup guide")}
                   </Button>
                 </div>
               </Show>
@@ -1882,17 +1885,17 @@ export function Conversation(props: ConversationProps) {
           </Show>
           <Show when={props.messages.length > 0}>
             <div class="time-marker">
-              <span>{props.messages[0]?.time ?? "now"}</span>
+              <span>{props.messages[0]?.time ?? t("now")}</span>
             </div>
           </Show>
           <Show when={agentReady() && onboardingActive() && !props.activeTurnId}>
             <article class="message-entry message-entry-animated message-entry-bot onboarding-message">
               <div class="bot-bubble">
-                <p class="message-copy">Choose a model to get started.</p>
+                <p class="message-copy">{t("Choose a model to get started.")}</p>
               </div>
               <div class="onboarding-model-picker">
                 <ProviderModelPicker
-                  ariaLabel="Onboarding model"
+                  ariaLabel={t("Onboarding model")}
                   value={settingsModel()}
                   agentStatus={props.agentStatus}
                   modelOptions={props.modelOptions}
@@ -1905,10 +1908,10 @@ export function Conversation(props: ConversationProps) {
                   data-collapsed={props.messages.length > 0 ? "true" : undefined}
                 >
                   <ChoiceCard
-                    title="What do you want me helping with most?"
-                    hint="This becomes my ongoing specialty. You can change it later in Settings."
-                    choices={ONBOARDING_CHOICES}
-                    customChoice="Something else"
+                    title={t("What do you want me helping with most?")}
+                    hint={t("This becomes my ongoing specialty. You can change it later in Settings.")}
+                    choices={ONBOARDING_CHOICE_KEYS.map((key) => t(key))}
+                    customChoice={t("Something else")}
                     pending={submitting()}
                     onSubmit={async (answer) => {
                       if (submitting()) return false;
@@ -2262,7 +2265,7 @@ export function Conversation(props: ConversationProps) {
                     <span>Editing queued message</span>
                     <p>{delivery()?.text || "Attachment"}</p>
                   </div>
-                  <Button type="button" aria-label="Cancel queued message edit" onClick={cancelQueuedMessageEdit}>
+                  <Button type="button" aria-label={t("Cancel queued message edit")} onClick={cancelQueuedMessageEdit}>
                     <CloseIcon />
                   </Button>
                 </div>
@@ -2531,7 +2534,7 @@ export function Conversation(props: ConversationProps) {
                                     "browser-tab-control-acting": session().phase === "acting",
                                   },
                                 ]}
-                                title={`${controller()?.name ?? "Agent"}: ${BROWSER_ACTION_LABELS[session().action]}`}
+                                title={`${controller()?.name ?? t("Agent")}: ${browserActionLabel(session().action)}`}
                               >
                                 <BrowserControlIcon />
                               </span>

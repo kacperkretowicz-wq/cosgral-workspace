@@ -10,13 +10,16 @@ export function AgentActivityIndicator(props: { bot: BotProfile | undefined; sta
       <div
         class="agent-activity-entry agent-activity-entry-visible"
         role="status"
-        aria-label={`${props.bot?.name ?? "Agent"} is ${props.state?.toLowerCase()}`}
+        aria-label={t("{name} is {state}", {
+          name: props.bot?.name ?? t("Agent"),
+          state: props.state === "Working" ? t("working") : t("queued"),
+        })}
       >
         <Show when={props.state !== "Working"}>
           <AgentAvatar bot={props.bot} class="agent-activity-avatar" />
         </Show>
         <div class="agent-activity-bubble" aria-hidden="true">
-          <span>{props.state}</span>
+          <span>{props.state === "Working" ? t("Working") : t("Queued")}</span>
           <span class="agent-activity-dots">
             <i />
             <i />
