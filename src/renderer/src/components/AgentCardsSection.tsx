@@ -12,6 +12,23 @@ import { AGENT_BUSY_MESSAGE_MODES, AGENT_CHAT_COLORS, AGENT_NOTIFICATION_LEVELS 
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Button, NativeSelect, Switch } from "./ui";
+import {
+  Bell,
+  Brain,
+  Clock,
+  FileText,
+  Folder,
+  FolderTree,
+  Gauge,
+  Layers,
+  Palette,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Table2,
+  Upload,
+} from "./ui/icons";
+import "../styles/agent-cards-grid.css";
 
 const CARD_LABELS: Record<AgentCardId, string> = {
   "chat-color": "Chat color",
@@ -28,6 +45,24 @@ const CARD_LABELS: Record<AgentCardId, string> = {
   folders: "Folders",
   notifications: "Notify",
   "backup-models": "Backup models",
+};
+
+/** One own icon per card (20px, 1.5px line), drawn from the shared icon set. */
+const CARD_ICONS: Record<AgentCardId, typeof Palette> = {
+  "chat-color": Palette,
+  instructions: FileText,
+  memory: Brain,
+  skills: Sparkles,
+  files: Folder,
+  tables: Table2,
+  routines: Clock,
+  usage: Gauge,
+  publish: Upload,
+  permissions: ShieldCheck,
+  advanced: SlidersHorizontal,
+  folders: FolderTree,
+  notifications: Bell,
+  "backup-models": Layers,
 };
 
 const COLOR_LABELS: Record<AgentChatColor, string> = {
@@ -179,7 +214,13 @@ export function AgentCardsSection(props: { botId: string }) {
             <ul class="agent-cards-list">
               <For each={cards().cards}>
                 {(card) => (
-                  <li class="agent-card-row" data-available={card.available ? "true" : "false"}>
+                  <li class="agent-card-row" data-card={card.id} data-available={card.available ? "true" : "false"}>
+                    <span class="agent-card-icon" aria-hidden="true">
+                      {(() => {
+                        const Icon = CARD_ICONS[card.id];
+                        return <Icon size={20} stroke-width={1.5} />;
+                      })()}
+                    </span>
                     <strong>{t(CARD_LABELS[card.id])}</strong>
                     <span class="agent-card-summary">
                       {card.available

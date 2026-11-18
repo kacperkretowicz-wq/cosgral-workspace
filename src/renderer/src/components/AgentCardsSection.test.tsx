@@ -76,3 +76,10 @@ it("says so without the contract", () => {
   render(() => <AgentCardsSection botId="bot" />);
   expect(screen.getByText("Agent cards are not available in this version.")).toBeInTheDocument();
 });
+
+it("draws every card as a tile with its own icon", async () => {
+  const { container } = render(() => <AgentCardsSection botId="bot" />);
+  await screen.findByText("Memories");
+  expect(container.querySelectorAll(".agent-card-icon svg")).toHaveLength(14);
+  expect(container.querySelector('[data-card="memory"]')).not.toBeNull();
+});
