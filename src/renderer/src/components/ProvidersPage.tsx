@@ -65,10 +65,9 @@ export function validateAcpAgentDraft(draft: AcpAgentDraft, existingIds: readonl
   const id = draft.id.trim();
   if (!id) errors.id = t("Choose an id.");
   else if (!isAcpAgentId(id))
-    errors.id = t(
-      "Start with a lowercase letter, then lowercase letters, digits and dashes (up to {limit}).",
-      { limit: PROVIDER_LIMITS.acpId },
-    );
+    errors.id = t("Start with a lowercase letter, then lowercase letters, digits and dashes (up to {limit}).", {
+      limit: PROVIDER_LIMITS.acpId,
+    });
   else if (existingIds.includes(id)) errors.id = t("An agent with this id already exists.");
   const name = draft.name.trim();
   if (!name) errors.name = t("Give the agent a name.");
