@@ -6,11 +6,12 @@
  * is demo data from `stories/fixtures.ts`; no agent, file or network call is real.
  */
 import { render } from "@solidjs/web";
-import "blobatar/motion.css";
 import { App } from "../../src/renderer/src/App";
 import "../../src/renderer/src/styles.css";
 import { STORY_APP_INFO } from "../../src/renderer/stories/fixtures";
 import { createMockOpenBot } from "../../src/renderer/stories/mock-openbot";
+
+// Preview skips blobatar/motion.css (~8–50 KB) — avatars stay static; desktop build keeps motion.
 
 const mock = createMockOpenBot({ appInfo: { ...STORY_APP_INFO, version: "0.2.0", platform: "win32" } });
 window.openbot = mock.api;

@@ -6,6 +6,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
 const STATE_VIEW: Record<VaultConnectorStatus["state"], { label: string; tone: BadgeTone }> = {
@@ -161,7 +162,7 @@ export function VaultConnectorsPanel() {
             </Button>
           </p>
         </Show>
-        <Show when={loaded()} fallback={<p role="status">{t("Loading connectors…")}</p>}>
+        <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading connectors…")} />}>
           <ul class="vault-connector-list">
             <For each={connectors()}>
               {(status) => (

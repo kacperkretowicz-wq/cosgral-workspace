@@ -205,7 +205,7 @@ Wiersze, w których przybył dowód z okna (kolumna „O”):
 | 77 | Zmiana nazwy agenta | nie → tak | probe Rename: menu → pole → pasek boczny i nagłówek |
 | 4 | Głos | część → część | nagłówek Voice i mikrofon widoczne; nagrywanie nie sprawdzone |
 
-Bez dowodu z okna (nadal „nie”): wiersz 75 (miejsce linków; Tester go nie sprawdzał) oraz nowe elementy po `4ddcbb5d3` (wątek w „Restore”, menu „+” z UI-AH, czyszczenie historii kanału, okno historii).
+Bez dowodu z okna (nadal „nie”): wiersz 75 (miejsce linków; Tester go nie sprawdzał) oraz nowe elementy po `4ddcbb5d3` (wątek w „Restore”, menu „+” z UI-AH, czyszczenie historii kanału, okno historii: od KK-AI jest w kodzie i w teście, w oknie nie sprawdzone).
 
 ## Poprzednie zmiany: od wersji @ `eb9df8800` (78,5% kod / 47,2% w oknie / 59,0% ostrożnie, 72 funkcje)
 

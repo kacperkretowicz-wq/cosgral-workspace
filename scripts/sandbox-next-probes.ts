@@ -2,11 +2,13 @@
 //   COSGRAL_PROBE=restore-thread|menu-plus|clear-history|history-window|external-links|all
 //   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_GO_DIR=<Shared/cosgral-sandbox> node scripts/sandbox-next-probes.ts
 // Always: --lang=en-US + language=en + Codex fixture. Soft-SKIP when the product API is not on the tip yet.
+// page.evaluate uses string sources (like sandbox-rename-probe / sandbox-acceptance) so Window.openbot stays untyped in node TS.
 
 import assert from "node:assert/strict";
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
 
@@ -127,14 +129,30 @@ async function ensureDirs(root: string): Promise<void> {
 
 type ProbeResult = { name: string; ok: boolean; detail: string; skip?: boolean };
 
+function asRecord(value: unknown): DynamicRecord {
+  return isDynamicRecord(value) ? value : {};
+}
+
+function asStr(value: unknown): string {
+  return isString(value) ? value : "";
+}
+
+function asNum(value: unknown): number {
+  return isNumber(value) ? value : Number.NaN;
+}
+
+function asBool(value: unknown): boolean {
+  return isBoolean(value) && value;
+}
+
 async function probeMenuPlus(page: Page): Promise<ProbeResult> {
-  await page.evaluate(async () => {
+  await page.evaluate(`(async () => {
     const api = window.openbot;
     const bots = await api.agent.listBots();
     let bot = bots.find((row) => !row.hidden) || bots[0];
     if (!bot) bot = await api.agent.createBot();
     await api.agent.updateBot({ botId: bot.id, name: "Plus probe" });
-  });
+  })()`);
   await page.waitForTimeout(600);
   const row = page.getByRole("button", { name: /Plus probe/i }).first();
   await row.click({ timeout: 15_000 });
@@ -181,7 +199,8 @@ async function probeRestoreThread(
   root: string,
   fixture: { codex: string; claude: string },
 ): Promise<ProbeResult> {
-  const seeded = await page.evaluate(async () => {
+  const seeded = asRecord(
+    await page.evaluate(`(async () => {
     const api = window.openbot;
     const bots = await api.agent.listBots();
     let bot = bots.find((row) => !row.hidden) || bots[0];
@@ -193,7 +212,7 @@ async function probeRestoreThread(
     const threads = Array.isArray(created?.threads) ? created.threads : [];
     const tid =
       created?.activeThreadId ||
-      threads.find((row: { title?: string }) => row.title === "Thread to restore")?.id ||
+      threads.find((row) => row.title === "Thread to restore")?.id ||
       null;
     if (!tid) return { botId: bot.id, threadId: "" };
     await api.appSettings?.update({
@@ -203,8 +222,11 @@ async function probeRestoreThread(
       },
     });
     return { botId: bot.id, threadId: tid };
-  });
-  if (!seeded.threadId) {
+  })()`),
+  );
+  const seededBotId = asStr(seeded.botId);
+  const seededThreadId = asStr(seeded.threadId);
+  if (!seededThreadId) {
     return { name: "restore-thread", ok: false, detail: "threads.create missing or no threadId", skip: false };
   }
   await app.close().catch(() => undefined);
@@ -214,7 +236,8 @@ async function probeRestoreThread(
   try {
     await reachMain(page2);
     await page2.waitForTimeout(1800);
-    const place = await page2.evaluate(async () => {
+    const place = asRecord(
+      await page2.evaluate(`(async () => {
       const s = await window.openbot.appSettings?.get();
       const last = s?.workspace.last;
       return {
@@ -223,13 +246,22 @@ async function probeRestoreThread(
         botId: last?.botId ?? null,
         threadId: last?.threadId ?? null,
       };
-    });
+    })()`),
+    );
     const tab = await page2.getByRole("tab", { name: /Thread to restore/i }).count();
-    const ok = place.restore && place.botId === seeded.botId && place.threadId === seeded.threadId && tab > 0;
+    const ok =
+      asBool(place.restore) &&
+      asStr(place.botId) === seededBotId &&
+      asStr(place.threadId) === seededThreadId &&
+      tab > 0;
     return {
       name: "restore-thread",
       ok,
-      detail: JSON.stringify({ seeded, place, tabVisible: tab > 0 }),
+      detail: JSON.stringify({
+        seeded: { botId: seededBotId, threadId: seededThreadId },
+        place,
+        tabVisible: tab > 0,
+      }),
     };
   } finally {
     await app2.close().catch(() => undefined);
@@ -237,7 +269,7 @@ async function probeRestoreThread(
 }
 
 async function probeClearHistory(page: Page): Promise<ProbeResult> {
-  const hasApi = await page.evaluate(() => Boolean(window.openbot.channels?.clearHistory));
+  const hasApi = asBool(await page.evaluate(`(() => Boolean(window.openbot.channels?.clearHistory))()`));
   if (!hasApi) {
     return {
       name: "clear-history",
@@ -246,7 +278,8 @@ async function probeClearHistory(page: Page): Promise<ProbeResult> {
       detail: "SKIP: channels.clearHistory not on tip — run after KK-AG merge",
     };
   }
-  const result = await page.evaluate(async () => {
+  const result = asRecord(
+    await page.evaluate(`(async () => {
     const api = window.openbot;
     const list = await api.channels.list();
     const channels = Array.isArray(list) ? list : list?.channels || [];
@@ -260,19 +293,22 @@ async function probeClearHistory(page: Page): Promise<ProbeResult> {
     const messages = await api.channels.listMessages({ channelId: channel.id });
     const rows = Array.isArray(messages) ? messages : messages?.messages || [];
     return { error: "", cleared, remaining: rows.length };
-  });
-  if (result.error) {
-    return { name: "clear-history", ok: false, detail: result.error };
+  })()`),
+  );
+  const error = asStr(result.error);
+  if (error) {
+    return { name: "clear-history", ok: false, detail: error };
   }
   return {
     name: "clear-history",
-    ok: result.remaining === 0,
+    ok: asNum(result.remaining) === 0,
     detail: JSON.stringify(result),
   };
 }
 
 async function probeHistoryWindow(page: Page): Promise<ProbeResult> {
-  const probe = await page.evaluate(async () => {
+  const probe = asRecord(
+    await page.evaluate(`(async () => {
     const api = window.openbot;
     const list = await api.channels.list();
     const channels = Array.isArray(list) ? list : list?.channels || [];
@@ -290,31 +326,33 @@ async function probeHistoryWindow(page: Page): Promise<ProbeResult> {
     }
     const again = await api.channels.list();
     const rows = Array.isArray(again) ? again : again?.channels || [];
-    const updated = rows.find((row: { id?: string }) => row.id === channel.id);
+    const updated = rows.find((row) => row.id === channel.id);
     return { skip: false, historyWindow: updated?.historyWindow ?? null };
-  });
-  if (probe.skip) {
-    return { name: "history-window", ok: true, skip: true, detail: `SKIP: ${probe.reason}` };
+  })()`),
+  );
+  if (asBool(probe.skip)) {
+    return { name: "history-window", ok: true, skip: true, detail: `SKIP: ${asStr(probe.reason)}` };
   }
   return {
     name: "history-window",
-    ok: probe.historyWindow === 20,
+    ok: asNum(probe.historyWindow) === 20,
     detail: JSON.stringify(probe),
   };
 }
 
 async function probeExternalLinks(page: Page): Promise<ProbeResult> {
-  const before = await page.evaluate(async () => {
+  const before = await page.evaluate(`(async () => {
     const api = window.openbot.appSettings;
     await api?.update({ behavior: { externalLinks: "app" } });
     const s = await api?.get();
     return s?.behavior.externalLinks ?? null;
-  });
+  })()`);
   if (before !== "app") {
     return { name: "external-links", ok: false, detail: `could not set externalLinks=app (got ${String(before)})` };
   }
   // Prefer IPC path used by Conversation.openMessageLink when present.
-  const opened = await page.evaluate(async () => {
+  const opened = asRecord(
+    await page.evaluate(`(async () => {
     const browser = window.openbot.browser;
     if (browser?.open) {
       await browser.open("https://example.invalid/probe-app");
@@ -322,11 +360,14 @@ async function probeExternalLinks(page: Page): Promise<ProbeResult> {
       return { via: "browser.open", tabs };
     }
     return { via: "setting-only", tabs: null };
-  });
-  await page.evaluate(async () => {
+  })()`),
+  );
+  await page.evaluate(`(async () => {
     await window.openbot.appSettings?.update({ behavior: { externalLinks: "browser" } });
-  });
-  const after = await page.evaluate(async () => (await window.openbot.appSettings?.get())?.behavior.externalLinks);
+  })()`);
+  const after = await page.evaluate(
+    `(async () => (await window.openbot.appSettings?.get())?.behavior.externalLinks)()`,
+  );
   return {
     name: "external-links",
     ok: before === "app" && after === "browser",
@@ -349,9 +390,9 @@ async function main(): Promise<void> {
   await page.waitForLoadState("domcontentloaded");
   try {
     await reachMain(page);
-    await page.evaluate(async () => {
+    await page.evaluate(`(async () => {
       await window.openbot.appSettings?.update({ language: "en" });
-    });
+    })()`);
 
     if (want("menu-plus")) results.push(await probeMenuPlus(page));
     if (want("clear-history")) results.push(await probeClearHistory(page));

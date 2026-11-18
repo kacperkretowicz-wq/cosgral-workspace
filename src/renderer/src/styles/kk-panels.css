@@ -276,3 +276,45 @@
   padding: 12px 16px;
   color: var(--cosgral-text-secondary);
 }
+
+/* Shared panel empty / error / unavailable (Library, Usage, Schedule). */
+.cosgral-panel-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin: 0;
+  border: 1px dashed var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-accent-soft);
+  padding: 14px 16px;
+  color: var(--cosgral-text-secondary);
+}
+
+.cosgral-panel-state[data-kind="error"] {
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--cosgral-danger) 45%, var(--cosgral-border-strong));
+  background: color-mix(in oklch, var(--cosgral-danger) 12%, var(--cosgral-bg-raised));
+  color: var(--cosgral-text);
+}
+
+.cosgral-panel-state[data-kind="unavailable"] {
+  background: var(--cosgral-bg-raised);
+}
+
+.cosgral-panel-state-title {
+  margin: 0;
+  font-size: var(--cosgral-text-md);
+  font-weight: 600;
+  color: inherit;
+}
+
+.cosgral-panel-state-detail {
+  margin: 0;
+  font-size: var(--cosgral-text-sm);
+  color: var(--cosgral-text-muted);
+  line-height: 1.4;
+}
+
+.cosgral-panel-state[data-kind="error"] .cosgral-panel-state-title {
+  color: var(--cosgral-danger);
+}

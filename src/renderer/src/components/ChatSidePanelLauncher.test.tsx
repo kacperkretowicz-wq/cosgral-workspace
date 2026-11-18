@@ -36,3 +36,11 @@ it("marks the active panel tab", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Files" }));
   expect(onSelect).toHaveBeenCalledWith("files");
 });
+
+it("keeps launcher openers keyboard-focusable", () => {
+  render(() => <ChatSidePanelLauncher onOpen={() => undefined} />);
+  const browser = screen.getByRole("button", { name: "Open Browser" });
+  browser.focus();
+  expect(browser).toHaveFocus();
+  expect(browser.tabIndex).toBeGreaterThanOrEqual(0);
+});

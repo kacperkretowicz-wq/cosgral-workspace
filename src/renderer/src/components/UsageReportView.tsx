@@ -2,6 +2,8 @@ import type { UsagePeriod, UsageReport, UsageTokenSplit } from "@openbot/contrac
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { CosgralPanelState } from "./CosgralPanelState";
 import { Button } from "./ui";
 
 const BAR_AREA = { width: 600, height: 120 } as const;
@@ -102,7 +104,12 @@ export function UsageReportView() {
 
   return (
     <section class="usage-report" aria-label={t("Usage report")}>
-      <Show when={api} fallback={<p class="usage-note">{t("The usage report is not available in this version.")}</p>}>
+      <Show
+        when={api}
+        fallback={
+          <CosgralPanelState kind="unavailable" title={t("The usage report is not available in this version.")} />
+        }
+      >
         <nav class="usage-periods" aria-label={t("Period")}>
           <For each={USAGE_PERIODS}>
             {(days) => (
@@ -118,14 +125,23 @@ export function UsageReportView() {
           </For>
         </nav>
         <Show when={error()}>
-          <p class="usage-error" role="alert">
-            {error()}
-            <Button type="button" variant="ghost" onClick={() => void load(period())}>
-              {t("Retry")}
-            </Button>
-          </p>
+          {(message) => (
+            <CosgralPanelState
+              kind="error"
+              title={message()}
+              actionLabel={t("Retry")}
+              onAction={() => void load(period())}
+            />
+          )}
         </Show>
-        <Show when={report()} fallback={<Show when={!error()}>{<p role="status">{t("Loading usage…")}</p>}</Show>}>
+        <Show
+          when={report()}
+          fallback={
+            <Show when={!error()}>
+              <CosgralLoadingSkeleton label={t("Loading usage…")} />
+            </Show>
+          }
+        >
           {(current) => (
             <>
               <dl class="usage-totals">
@@ -150,7 +166,11 @@ export function UsageReportView() {
                 {(since) => <p class="usage-note">{t("Counted since {day}.", { day: since() })}</p>}
               </Show>
               <Show when={!current().collectingSince}>
-                <p class="usage-note">{t("Nothing has been counted yet.")}</p>
+                <CosgralPanelState
+                  kind="empty"
+                  title={t("Nothing has been counted yet.")}
+                  detail={t("Token and turn totals appear here after agents run.")}
+                />
               </Show>
 
               <figure class="usage-chart">

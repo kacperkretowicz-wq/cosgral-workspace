@@ -8,6 +8,7 @@ import {
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { t } from "../i18n";
 import { accountError, useAccounts } from "./account-state";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 
 export type AccountAction =
@@ -321,7 +322,9 @@ export function ProviderAccounts() {
       <Show
         when={state.snapshot()}
         fallback={
-          <Text as="p">{api() ? t("Loading accounts…") : t("Accounts are not available in this version.")}</Text>
+          <Show when={api()} fallback={<Text as="p">{t("Accounts are not available in this version.")}</Text>}>
+            <CosgralLoadingSkeleton label={t("Loading accounts…")} />
+          </Show>
         }
       >
         {(snapshot) => (

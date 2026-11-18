@@ -7,6 +7,7 @@ import { defineConfig, type Plugin } from "vite";
 // every file under 1 MB, total under ~1.8 MB (hosting cap 2 MB).
 const root = fileURLToPath(new URL(".", import.meta.url));
 const outDir = process.env.COSGRAL_PREVIEW_OUT ?? fileURLToPath(new URL("../../out/web-preview", import.meta.url));
+const localeStubs = fileURLToPath(new URL("./locale-stubs.ts", import.meta.url));
 
 // The preview is public, so the Storybook fixtures are neutralised for it only:
 // no real person's name and no links to another product's site.
@@ -30,7 +31,7 @@ function previewDemoData(): Plugin {
 }
 
 /**
- * Preview only: drop bundled Inter (~133 KB) and use system fonts.
+ * Preview only: drop Inter fonts (~133 KB) and motion CSS sheets; use system fonts.
  * CSS is rewritten after minify, and .woff2 assets are removed from the bundle.
  * Electron / desktop builds are unchanged (this config is only for web-preview).
  */
@@ -41,17 +42,20 @@ function previewSystemFonts(): Plugin {
     transform(code, id) {
       const norm = id.replace(/\\/g, "/");
       if (!norm.endsWith("/renderer/src/styles.css")) return null;
-      if (!code.includes('"./styles/fonts.css"') && !code.includes("'./styles/fonts.css'")) return null;
-      const next = code.replace(
-        /@import\s+["']\.\/styles\/fonts\.css["'];?/,
-        [
-          "/* Preview: system fonts instead of Inter woff2 (hosting size). */",
-          ":root {",
-          '  --openbot-font-sans: system-ui, "Segoe UI", sans-serif;',
-          "  --openbot-font-mono: ui-monospace, Consolas, monospace;",
-          "}",
-        ].join("\n"),
-      );
+      let next = code;
+      if (next.includes("./styles/fonts.css")) {
+        next = next.replace(
+          /@import\s+["']\.\/styles\/fonts\.css["'];?/,
+          [
+            "/* Preview: system fonts instead of Inter woff2 (hosting size). */",
+            ":root {",
+            '  --openbot-font-sans: system-ui, "Segoe UI", sans-serif;',
+            "  --openbot-font-mono: ui-monospace, Consolas, monospace;",
+            "}",
+          ].join("\n"),
+        );
+      }
+      next = next.replace(/@import\s+["']\.\/styles\/motion(?:-reveal)?\.css["'];?\s*/g, "");
       return next === code ? null : { code: next, map: null };
     },
     generateBundle(_options, bundle) {
@@ -80,23 +84,55 @@ function asForwardSlashes(id: string): string {
   return id.replace(/\\/g, "/");
 }
 
+/** Preview only: swap full en/pl catalogs for empty Proxies (~87 KB → ~0.5 KB). */
+function previewLocaleStubs(): Plugin {
+  return {
+    name: "cosgral-preview-locale-stubs",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (!importer) return null;
+      const from = asForwardSlashes(importer);
+      if (!from.includes("/renderer/src/")) return null;
+      if (
+        source === "./locales/en" ||
+        source === "./locales/pl" ||
+        source.endsWith("/locales/en") ||
+        source.endsWith("/locales/pl")
+      ) {
+        return localeStubs;
+      }
+      if (source.endsWith("/locales/en.ts") || source.endsWith("/locales/pl.ts")) {
+        return localeStubs;
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   root,
   base: "./",
-  plugins: [previewDemoData(), previewSystemFonts(), solidPlugin(), tailwindcss({ optimize: true })],
+  plugins: [
+    previewLocaleStubs(),
+    previewDemoData(),
+    previewSystemFonts(),
+    solidPlugin(),
+    tailwindcss({ optimize: true }),
+  ],
   build: {
     outDir,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",
     cssMinify: true,
+    target: "es2022",
     chunkSizeWarningLimit: 950,
     rollupOptions: {
       output: {
         manualChunks(id) {
           const path = asForwardSlashes(id);
           // Dictionaries and the Storybook fixtures are large; their own chunks keep every file under 1 MB.
-          if (path.includes("/src/renderer/src/locales/") || path.includes("/src/renderer/locales/")) return "locales";
+          if (path.includes("/web-preview/locale-stubs") || path.includes("/locales/")) return "locales";
           if (path.includes("/src/renderer/stories/")) return "fixtures";
           if (!path.includes("/node_modules/")) return undefined;
           if (/\/node_modules\/(solid-js|@solidjs)\//.test(path)) return "solid";

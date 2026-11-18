@@ -63,13 +63,42 @@
 }
 
 .workflow-canvas .workflow-node {
-  width: 240px;
+  width: 260px;
   display: grid;
   gap: 8px;
   border: 1px solid var(--cosgral-border-strong);
   border-radius: var(--cosgral-radius-lg);
   background: var(--cosgral-bg-raised);
   padding: 0 12px 12px;
+}
+
+.workflow-canvas .workflow-node[data-type="prompt"],
+.workflow-canvas .workflow-node[data-type="condition"] {
+  border-color: oklch(0.62 0.12 var(--step-hue) / 0.55);
+  box-shadow: inset 3px 0 0 oklch(0.72 0.14 var(--step-hue));
+}
+
+.workflow-node-preview {
+  margin: 0;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-sm);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.workflow-field-hint,
+.workflow-condition-paths {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  line-height: 1.35;
+}
+
+.workflow-prompt-text,
+.workflow-condition-subject {
+  min-height: 4.5rem;
+  font-family: var(--cosgral-font-mono, ui-monospace, monospace);
+  font-size: var(--cosgral-text-sm);
 }
 
 .workflow-canvas .workflow-drag {

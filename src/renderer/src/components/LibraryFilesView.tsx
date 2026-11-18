@@ -11,6 +11,7 @@ import { LIBRARY_KINDS, LIBRARY_SORTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { CosgralPanelState } from "./CosgralPanelState";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button, Input, NativeSelect } from "./ui";
 
@@ -156,7 +157,9 @@ export function LibraryFilesView() {
     <section class="library-view" aria-label={t("File library")}>
       <Show
         when={view}
-        fallback={<p class="library-note">{t("The file library is not available in this version.")}</p>}
+        fallback={
+          <CosgralPanelState kind="unavailable" title={t("The file library is not available in this version.")} />
+        }
       >
         <nav class="library-origins" aria-label={t("Library sections")}>
           <For each={ORIGINS}>
@@ -232,12 +235,14 @@ export function LibraryFilesView() {
         </form>
 
         <Show when={error()}>
-          <p class="library-error" role="alert">
-            {error()}
-            <Button type="button" variant="ghost" onClick={() => void refresh()}>
-              {t("Retry")}
-            </Button>
-          </p>
+          {(message) => (
+            <CosgralPanelState
+              kind="error"
+              title={message()}
+              actionLabel={t("Retry")}
+              onAction={() => void refresh()}
+            />
+          )}
         </Show>
         <Show when={notice()}>
           <p class="library-note" role="status">
@@ -271,7 +276,11 @@ export function LibraryFilesView() {
                 {t("{count} files", { count: current().total })} · {formatFileSize(current().bytes)}
               </p>
               <Show when={current().items.length === 0}>
-                <p class="library-note cosgral-empty-enter">{t("No files found.")}</p>
+                <CosgralPanelState
+                  kind="empty"
+                  title={t("No files found.")}
+                  detail={t("Add files or clear filters to see items here.")}
+                />
               </Show>
               <ul class="library-list">
                 <For each={current().items}>

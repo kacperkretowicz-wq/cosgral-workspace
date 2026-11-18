@@ -7,7 +7,7 @@
 .agent-cards-group-title {
   margin: 0 0 8px;
   color: var(--cosgral-fg-muted);
-  font-size: 12px;
+  font-size: var(--cosgral-text-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;

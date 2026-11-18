@@ -13,6 +13,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, Match, onSettled, Show, Switch as SolidSwitch, untrack } from "solid-js";
 import { t } from "../i18n";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { InstanceTransferPanel } from "./InstanceTransferPanel";
 import type { PageId } from "./PageRail";
 import { Button, Input, NativeSelect, Switch } from "./ui";
@@ -203,7 +204,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
               </p>
             </Show>
             <Show when={!current() && !error()}>
-              <p role="status">{t("Loading…")}</p>
+              <CosgralLoadingSkeleton label={t("Loading…")} />
             </Show>
             <Show when={current()}>
               {(section) => (

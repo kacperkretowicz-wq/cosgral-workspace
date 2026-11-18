@@ -1,0 +1,85 @@
+/**
+ * Accessibility for recent UI screens (chat launcher, agent cards, tasks,
+ * workflow Prompt/Condition, shared panel empty/error): focus, contrast, motion.
+ */
+
+.chat-side-panel-launcher-item:focus-visible,
+.chat-right-panel-tab:focus-visible,
+.agent-cards .agent-card-row:focus-visible,
+.agent-cards .agent-card-open:focus-visible,
+.workflow-canvas .workflow-drag:focus-visible,
+.workflow-canvas .workflow-port:focus-visible,
+.workflow-palette-button:focus-visible,
+.cosgral-panel-state .ui-button:focus-visible,
+.tasks-board-column .ui-button:focus-visible {
+  outline: 2px solid var(--cosgral-accent, var(--openbot-accent));
+  outline-offset: 2px;
+}
+
+.workflow-canvas .workflow-node .ui-input:focus-visible,
+.workflow-canvas .workflow-node .ui-textarea:focus-visible,
+.workflow-canvas .workflow-node .ui-native-select:focus-visible,
+.workflow-prompt-text:focus-visible,
+.workflow-condition-subject:focus-visible {
+  border-color: var(--cosgral-accent, var(--openbot-border-focus));
+  outline: 2px solid color-mix(in oklch, var(--cosgral-accent) 55%, transparent);
+  outline-offset: 1px;
+  box-shadow: var(--cosgral-focus-ring, var(--openbot-focus-ring, none));
+}
+
+@media (prefers-contrast: more) {
+  .tasks-screen-hero-lead em {
+    background: none;
+    color: var(--cosgral-accent-text, var(--cosgral-accent));
+    -webkit-text-fill-color: var(--cosgral-accent-text, var(--cosgral-accent));
+  }
+
+  .workflow-node-preview,
+  .workflow-field-hint,
+  .workflow-condition-paths,
+  .cosgral-panel-state-detail {
+    color: var(--cosgral-text-primary, var(--cosgral-fg));
+  }
+
+  .cosgral-panel-state[data-kind="error"] {
+    border-width: 2px;
+  }
+}
+
+/* Gradient label can fall below 4.5:1 on light theme — solid accent text. */
+:root[data-theme="light"] .tasks-screen-hero-lead em,
+[data-story-theme="light"] .tasks-screen-hero-lead em {
+  background: none;
+  color: var(--cosgral-accent-text);
+  -webkit-text-fill-color: var(--cosgral-accent-text);
+}
+
+@media (forced-colors: active) {
+  .chat-side-panel-launcher-item,
+  .chat-right-panel-tab,
+  .agent-cards .agent-card-row,
+  .cosgral-panel-state,
+  .workflow-canvas .workflow-node {
+    border: 1px solid ButtonText;
+  }
+
+  .chat-side-panel-launcher-item:focus-visible,
+  .chat-right-panel-tab:focus-visible,
+  .agent-cards .agent-card-row:focus-visible,
+  .workflow-canvas .workflow-drag:focus-visible,
+  .workflow-canvas .workflow-port:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-side-panel-launcher-item:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .cosgral-panel-state.cosgral-empty-enter,
+  .cosgral-arrive {
+    animation: none;
+    transition: none;
+  }
+}

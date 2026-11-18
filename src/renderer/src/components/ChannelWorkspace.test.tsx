@@ -94,6 +94,24 @@ describe("channel workspace", () => {
     await waitFor(() => expect(screen.queryByText("Prepare the release plan.")).not.toBeInTheDocument());
   });
 
+  it("saves the history window of a channel through channels.update and keeps it after a reload of the list", async () => {
+    Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
+    const channels = mock.api.channels;
+    if (!channels) throw new Error("the mock has no channels");
+    const update = vi.spyOn(channels, "update");
+    render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} />);
+    await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
+    await screen.findByText("Prepare the release plan.");
+    await fireEvent.click(screen.getByText("Channel history"));
+    expect(await screen.findByRole("combobox", { name: "History window" })).toHaveValue("200");
+    await fireEvent.change(screen.getByRole("combobox", { name: "History window" }), { target: { value: "50" } });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("History window saved."));
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ historyWindow: 50 }));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "History window" })).toHaveValue("50"));
+    const saved = (await channels.list()).find((item) => item.title === "Project" || item.name === "project");
+    expect(saved?.historyWindow).toBe(50);
+  });
+
   it("creates through the contract and opens the new channel", async () => {
     const api = createMockOpenBot();
     const channels = api.api.channels;

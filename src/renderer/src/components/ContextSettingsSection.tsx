@@ -3,6 +3,7 @@ import { applyContextSettings, CONTEXT_SETTINGS_LIMITS } from "@openbot/contract
 import { createSignal, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import type { ContextEvents } from "./ContextIndicator";
+import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
 import "../styles/context.css";
@@ -88,9 +89,16 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
       <Show
         when={settings()}
         fallback={
-          <Text as="p" tone="secondary">
-            {api ? t("Loading context settings...") : t("Context settings are unavailable in this version.")}
-          </Text>
+          <Show
+            when={api}
+            fallback={
+              <Text as="p" tone="secondary">
+                {t("Context settings are unavailable in this version.")}
+              </Text>
+            }
+          >
+            <CosgralLoadingSkeleton label={t("Loading context settings...")} />
+          </Show>
         }
       >
         {(value) => (

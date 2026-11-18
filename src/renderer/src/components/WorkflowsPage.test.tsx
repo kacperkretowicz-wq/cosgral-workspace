@@ -46,4 +46,43 @@ describe("workflow editor steps", () => {
     expect(screen.getByRole("option", { name: "Yes" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "No" })).toBeInTheDocument();
   });
+
+  it("shows readable Prompt and Condition fields with a live preview", async () => {
+    const [graph, setGraph] = createSignal<WorkflowGraph>({
+      nodes: [
+        { id: "p", type: "prompt", title: "Say hi", x: 0, y: 0, text: "Hello next step" },
+        {
+          id: "c",
+          type: "condition",
+          title: "Gate",
+          x: 280,
+          y: 0,
+          subject: "{{previous}}",
+          operator: "contains",
+          value: "Hello",
+          caseSensitive: false,
+        },
+      ],
+      edges: [],
+    });
+    const { container } = render(() => (
+      <WorkflowCanvas nodes={graph().nodes} edges={graph().edges} onChange={setGraph} />
+    ));
+    const promptField = container.querySelector<HTMLTextAreaElement>(".workflow-prompt-text");
+    const subjectField = container.querySelector<HTMLTextAreaElement>(".workflow-condition-subject");
+    expect(promptField).not.toBeNull();
+    expect(subjectField).not.toBeNull();
+    expect(promptField).toHaveValue("Hello next step");
+    expect(container.querySelector('[data-workflow-preview="prompt"]')).toHaveTextContent("Hello next step");
+    expect(subjectField).toHaveValue("{{previous}}");
+    expect(screen.getByDisplayValue("Hello")).toBeInTheDocument();
+    expect(container.querySelector('[data-workflow-preview="condition"]')).toHaveTextContent(
+      '{{previous}} contains "Hello"',
+    );
+    expect(screen.getByText("Connect Yes when the test passes, No when it fails.")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Match case" })).toBeInTheDocument();
+    if (!promptField) throw new Error("prompt field missing");
+    await fireEvent.input(promptField, { target: { value: "Updated prompt" } });
+    expect(graph().nodes.find((node) => node.id === "p")).toMatchObject({ text: "Updated prompt" });
+  });
 });
