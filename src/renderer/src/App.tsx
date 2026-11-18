@@ -58,6 +58,7 @@ import { LibraryFilesView } from "./components/LibraryFilesView";
 import { LibraryPanel } from "./components/LibraryPanel";
 import { MarketplacePage } from "./components/MarketplacePage";
 import { McpSettings } from "./components/McpSettings";
+import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { MessengersPanel } from "./components/MessengersPanel";
 import { MobileConnectPage } from "./components/MobileConnectPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
@@ -2151,6 +2152,7 @@ export function App() {
                   <VaultPanel />
                   <VaultConnectorsPanel />
                   <MessengersPanel />
+                  <IntegrationsPanel />
                   <TablesPanel />
                   <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
                     <LibraryFilesView />
