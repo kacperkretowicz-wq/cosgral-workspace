@@ -32,7 +32,7 @@ export function ChannelView(props: {
   const [reply, setReply] = createSignal<ChannelMessage>();
   const [sending, setSending] = createSignal(false);
   const [error, setError] = createSignal("");
-  const name = (id: string | null) => (id === null ? "You" : (props.bots.find((bot) => bot.id === id)?.name ?? id));
+  const name = (id: string | null) => (id === null ? t("You") : (props.bots.find((bot) => bot.id === id)?.name ?? id));
   async function send() {
     if (!text().trim() || sending()) return;
     setSending(true);
@@ -42,7 +42,7 @@ export function ChannelView(props: {
       setText("");
       setReply(undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send message");
+      setError(e instanceof Error ? e.message : t("Could not send message"));
     } finally {
       setSending(false);
     }
@@ -52,16 +52,19 @@ export function ChannelView(props: {
       <header class="channel-view-header">
         <h1>{props.channel.title || props.channel.name}</h1>
         <p>
-          Lead: {name(props.channel.leadBotId)} · Members: {props.channel.memberBotIds.map(name).join(", ")}
+          {t("Lead: {lead} · Members: {members}", {
+            lead: name(props.channel.leadBotId),
+            members: props.channel.memberBotIds.map(name).join(", "),
+          })}
         </p>
         <Show when={props.channel.instructions}>
           <details>
-            <summary>Instructions</summary>
+            <summary>{t("Instructions")}</summary>
             <p class="channel-prewrap">{props.channel.instructions}</p>
           </details>
         </Show>
         <details onToggle={(event) => setMemoryOpen(event.currentTarget.open)}>
-          <summary>Channel memory</summary>
+          <summary>{t("Channel memory")}</summary>
           <Show when={memoryOpen()}>
             <ChannelMemorySettingsView channelId={props.channel.id} />
           </Show>
@@ -78,7 +81,7 @@ export function ChannelView(props: {
         when={mode() === "chat"}
         fallback={
           <ViewTabPanel idPrefix={tabsId} value="tasks" class="channel-view-content">
-            <Show when={props.tasks.some((task) => !task.archivedAt)} fallback={<p>No tasks in this channel.</p>}>
+            <Show when={props.tasks.some((task) => !task.archivedAt)} fallback={<p>{t("No tasks in this channel.")}</p>}>
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
                   <article
@@ -99,12 +102,12 @@ export function ChannelView(props: {
                     </Show>
                     <Show when={task.state === "paused"}>
                       <Button type="button" onClick={() => props.onResume(task.id)}>
-                        Resume
+                        {t("Resume")}
                       </Button>
                     </Show>
                     <label>
                       {" "}
-                      Reassign{" "}
+                      {t("Reassign")}{" "}
                       <NativeSelect
                         aria-label={`Reassign ${task.title}`}
                         value={task.ownerBotId}
@@ -121,16 +124,16 @@ export function ChannelView(props: {
         }
       >
         <ViewTabPanel idPrefix={tabsId} value="chat" class="channel-chat-panel">
-          <section class="channel-view-content" aria-label="Channel messages">
-            <Show when={props.messages.length} fallback={<p>No messages yet.</p>}>
+          <section class="channel-view-content" aria-label={t("Channel messages")}>
+            <Show when={props.messages.length} fallback={<p>{t("No messages yet.")}</p>}>
               <For each={props.messages}>
                 {(message) => (
                   <article class="channel-item" id={`channel-message-${message.id}`}>
                     <strong>{name(message.authorBotId)}</strong>{" "}
                     <small>
                       {message.kind}
-                      {message.resultVersion !== null ? ` · version ${message.resultVersion}` : ""}
-                      {message.superseded ? " · Superseded" : ""}
+                      {message.resultVersion !== null ? t(" · version {number}", { number: message.resultVersion }) : ""}
+                      {message.superseded ? t(" · Superseded") : ""}
                     </small>
                     <Show when={message.replyToMessageId}>
                       {(id) => (
@@ -141,7 +144,7 @@ export function ChannelView(props: {
                           }
                         >
                           ↳{" "}
-                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? "Earlier message"}
+                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ?? t("Earlier message")}
                         </Button>
                       )}
                     </Show>
@@ -152,7 +155,7 @@ export function ChannelView(props: {
                         aria-label={`Reply to ${message.text.slice(0, 100)}`}
                         onClick={() => setReply(message)}
                       >
-                        Reply
+                        {t("Reply")}
                       </Button>
                     </Show>
                   </article>
@@ -167,13 +170,13 @@ export function ChannelView(props: {
               void send();
             }}
           >
-            <label for="channel-message-input">New message to channel lead</label>
+            <label for="channel-message-input">{t("New message to channel lead")}</label>
             <Show when={reply()}>
               {(item) => (
                 <p>
-                  Replying to: {item().text.slice(0, 100)}{" "}
+                  {t("Replying to:")} {item().text.slice(0, 100)}{" "}
                   <Button type="button" onClick={() => setReply(undefined)}>
-                    Cancel reply
+                    {t("Cancel reply")}
                   </Button>
                 </p>
               )}
@@ -188,7 +191,7 @@ export function ChannelView(props: {
               <p role="alert">{error()}</p>
             </Show>
             <Button type="submit" disabled={sending() || !text().trim()}>
-              Send
+              {t("Send")}
             </Button>
           </form>
         </ViewTabPanel>

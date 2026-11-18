@@ -11,6 +11,7 @@ import type {
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, type Element as SolidElement } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Button, Dialog, Input, NativeSelect, Tabs } from "./ui";
 
 type AdminSection = "overview" | "people" | "desktop";
@@ -77,7 +78,7 @@ export function HostPanel(props: HostPanelProps) {
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The server action failed.");
+      setError(cause instanceof Error ? cause.message : t("The server action failed."));
     } finally {
       setBusy(false);
     }
@@ -124,20 +125,20 @@ export function HostPanel(props: HostPanelProps) {
             <header class="remote-admin-header">
               <div>
                 <span class="remote-dialog-eyebrow">
-                  {props.status.configured ? "Published access" : "This COSGRAL Workspace"}
+                  {props.status.configured ? t("Published access") : t("This COSGRAL Workspace")}
                 </span>
                 <Dialog.Title as="h2" id="host-title">
                   {props.status.configured
-                    ? (props.status.serverName ?? "COSGRAL server")
-                    : "Publish this COSGRAL Workspace"}
+                    ? (props.status.serverName ?? t("COSGRAL server"))
+                    : t("Publish this COSGRAL Workspace")}
                 </Dialog.Title>
               </div>
-              <Button type="button" aria-label="Close" onClick={props.onClose}>
+              <Button type="button" aria-label={t("Close")} onClick={props.onClose}>
                 ×
               </Button>
             </header>
             <Dialog.Description class="sr-only">
-              Configure publishing, access, people, and remote desktop settings for this COSGRAL Workspace.
+              {t("Configure publishing, access, people, and remote desktop settings for this COSGRAL Workspace.")}
             </Dialog.Description>
 
             <Show
@@ -153,16 +154,16 @@ export function HostPanel(props: HostPanelProps) {
               }
             >
               <div class="remote-admin-shell">
-                <nav class="remote-admin-nav" aria-label="Published access administration">
+                <nav class="remote-admin-nav" aria-label={t("Published access administration")}>
                   <AdminNavButton
                     active={section() === "overview"}
-                    label="Publishing"
+                    label={t("Publishing")}
                     icon="pulse"
                     onSelect={() => setSection("overview")}
                   />
                   <AdminNavButton
                     active={section() === "people"}
-                    label="People"
+                    label={t("People")}
                     count={props.members.length}
                     icon="people"
                     onSelect={() => setSection("people")}
@@ -170,14 +171,14 @@ export function HostPanel(props: HostPanelProps) {
                   <Show when={props.platform === "darwin"}>
                     <AdminNavButton
                       active={section() === "desktop"}
-                      label="Remote desktop"
+                      label={t("Remote desktop")}
                       icon="screen"
                       onSelect={() => setSection("desktop")}
                     />
                   </Show>
                   <div class="remote-admin-nav-state">
                     <i class={online() ? "online" : ""} />
-                    <span>{online() ? "Public" : "Private"}</span>
+                    <span>{online() ? t("Public") : t("Private")}</span>
                   </div>
                 </nav>
 
@@ -186,9 +187,9 @@ export function HostPanel(props: HostPanelProps) {
                     <section class="remote-admin-view" aria-labelledby="server-overview-title">
                       <div class="remote-admin-view-heading">
                         <div>
-                          <span class="remote-admin-kicker">This COSGRAL Workspace</span>
-                          <h3 id="server-overview-title">Published access</h3>
-                          <p>Control the secure public address for this local COSGRAL Workspace instance.</p>
+                          <span class="remote-admin-kicker">{t("This COSGRAL Workspace")}</span>
+                          <h3 id="server-overview-title">{t("Published access")}</h3>
+                          <p>{t("Control the secure public address for this local COSGRAL Workspace instance.")}</p>
                         </div>
                         <Badge
                           class={["remote-admin-status-pill", { online: online() }]}
@@ -196,33 +197,33 @@ export function HostPanel(props: HostPanelProps) {
                           shape="pill"
                           dot
                         >
-                          {online() ? "Public" : "Private"}
+                          {online() ? t("Public") : t("Private")}
                         </Badge>
                       </div>
                       <div class="remote-status-grid">
                         <StatusCard
-                          label="Public API"
+                          label={t("Public API")}
                           online={props.status.apiOnline}
-                          value={props.status.apiUrl ?? "Not running"}
+                          value={props.status.apiUrl ?? t("Not running")}
                         />
                         <Show when={props.platform === "darwin"}>
                           <StatusCard
-                            label="Remote Mac"
+                            label={t("Remote Mac")}
                             online={props.status.vncOnline}
-                            value={props.status.vncHostname ?? "Not available"}
+                            value={props.status.vncHostname ?? t("Not available")}
                           />
                         </Show>
                       </div>
                       <fieldset class="remote-admin-metrics">
-                        <legend class="sr-only">Server access summary</legend>
-                        <Metric value={props.members.length} label="People" />
-                        <Metric value={activeInvites().length} label="Pending invites" />
-                        <Metric value={props.sessions.length} label="Active sessions" />
+                        <legend class="sr-only">{t("Server access summary")}</legend>
+                        <Metric value={props.members.length} label={t("People")} />
+                        <Metric value={activeInvites().length} label={t("Pending invites")} />
+                        <Metric value={props.sessions.length} label={t("Active sessions")} />
                       </fieldset>
                       <section class="remote-admin-control-card">
                         <div>
-                          <h3>Publishing controls</h3>
-                          <p>{props.status.message ?? "The address is public, but only invited people can sign in."}</p>
+                          <h3>{t("Publishing controls")}</h3>
+                          <p>{props.status.message ?? t("The address is public, but only invited people can sign in.")}</p>
                         </div>
                         <div class="remote-host-actions">
                           <Show
@@ -234,7 +235,7 @@ export function HostPanel(props: HostPanelProps) {
                                 disabled={busy() || props.status.phase === "starting"}
                                 onClick={() => void run(props.onStart)}
                               >
-                                {props.status.phase === "starting" ? "Publishing…" : "Make public"}
+                                {props.status.phase === "starting" ? t("Publishing…") : t("Make public")}
                               </Button>
                             }
                           >
@@ -244,7 +245,7 @@ export function HostPanel(props: HostPanelProps) {
                               disabled={busy()}
                               onClick={() => void run(props.onStop)}
                             >
-                              Make private
+                              {t("Make private")}
                             </Button>
                           </Show>
                           <Button
@@ -253,7 +254,7 @@ export function HostPanel(props: HostPanelProps) {
                             disabled={!props.status.apiOnline || busy()}
                             onClick={() => void run(props.onCopyAddressUpdate)}
                           >
-                            Copy address update
+                            {t("Copy address update")}
                           </Button>
                         </div>
                       </section>
@@ -264,27 +265,27 @@ export function HostPanel(props: HostPanelProps) {
                     <section class="remote-admin-view" aria-labelledby="people-access-title">
                       <div class="remote-admin-view-heading">
                         <div>
-                          <span class="remote-admin-kicker">Access control</span>
-                          <h3 id="people-access-title">People and invitations</h3>
-                          <p>Add people by email or create a private one-time link.</p>
+                          <span class="remote-admin-kicker">{t("Access control")}</span>
+                          <h3 id="people-access-title">{t("People and invitations")}</h3>
+                          <p>{t("Add people by email or create a private one-time link.")}</p>
                         </div>
                       </div>
 
                       <section class="remote-invite-composer" aria-labelledby="invite-team-title">
                         <div class="remote-section-heading">
                           <div>
-                            <h3 id="invite-team-title">Invite a person</h3>
-                            <p>Each invitation can be used once and expires automatically.</p>
+                            <h3 id="invite-team-title">{t("Invite a person")}</h3>
+                            <p>{t("Each invitation can be used once and expires automatically.")}</p>
                           </div>
                           <label>
-                            <span>Role</span>
+                            <span>{t("Role")}</span>
                             <NativeSelect
-                              aria-label="Invitation role"
+                              aria-label={t("Invitation role")}
                               value={inviteRole()}
                               onChange={(event) => setInviteRole(readTeamRole(event.currentTarget.value))}
                             >
-                              <option value="member">Member</option>
-                              <option value="admin">Admin</option>
+                              <option value="member">{t("Member")}</option>
+                              <option value="admin">{t("Admin")}</option>
                             </NativeSelect>
                           </label>
                         </div>
@@ -296,27 +297,27 @@ export function HostPanel(props: HostPanelProps) {
                             setInvite(null);
                           }}
                         >
-                          <Tabs.List class="remote-invite-tabs" aria-label="Invitation method">
+                          <Tabs.List class="remote-invite-tabs" aria-label={t("Invitation method")}>
                             <Tabs.Trigger value="link" class={inviteMode() === "link" ? "active" : ""}>
-                              Invitation link
+                              {t("Invitation link")}
                             </Tabs.Trigger>
                             <Tabs.Trigger value="email" class={inviteMode() === "email" ? "active" : ""}>
-                              Email invitation
+                              {t("Email invitation")}
                             </Tabs.Trigger>
                           </Tabs.List>
                           <Tabs.Content value="email">
                             <label class="remote-field remote-invite-email">
-                              <span>Email address</span>
+                              <span>{t("Email address")}</span>
                               <Input
                                 type="email"
-                                aria-label="Email address"
+                                aria-label={t("Email address")}
                                 autocomplete="email"
                                 maxlength={INPUT_LIMITS.email}
                                 value={inviteEmail()}
                                 placeholder="person@company.com"
                                 onInput={(event) => setInviteEmail(event.currentTarget.value)}
                               />
-                              <small>Only this email address can accept the invitation.</small>
+                              <small>{t("Only this email address can accept the invitation.")}</small>
                             </label>
                           </Tabs.Content>
                         </Tabs.Root>
@@ -329,13 +330,13 @@ export function HostPanel(props: HostPanelProps) {
                           onClick={() => void createInvite()}
                         >
                           {busy()
-                            ? "Creating…"
+                            ? t("Creating…")
                             : inviteMode() === "email"
-                              ? "Send email invitation"
-                              : "Create invitation link"}
+                              ? t("Send email invitation")
+                              : t("Create invitation link")}
                         </Button>
                         <Show when={!props.status.apiOnline}>
-                          <p class="remote-inline-note">Make this COSGRAL Workspace public before inviting people.</p>
+                          <p class="remote-inline-note">{t("Make this COSGRAL Workspace public before inviting people.")}</p>
                         </Show>
                         <Show when={invite()}>
                           {(item) => (
@@ -348,7 +349,7 @@ export function HostPanel(props: HostPanelProps) {
                         </Show>
                       </section>
 
-                      <AdminList title="Members" count={props.members.length}>
+                      <AdminList title={t("Members")} count={props.members.length}>
                         <For each={props.members}>
                           {(member) => (
                             <MemberRow
@@ -378,19 +379,19 @@ export function HostPanel(props: HostPanelProps) {
                         </For>
                       </AdminList>
 
-                      <AdminList title="Pending invitations" count={activeInvites().length}>
+                      <AdminList title={t("Pending invitations")} count={activeInvites().length}>
                         <Show
                           when={activeInvites().length > 0}
-                          fallback={<EmptyAdminList>New invitations will appear here.</EmptyAdminList>}
+                          fallback={<EmptyAdminList>{t("New invitations will appear here.")}</EmptyAdminList>}
                         >
                           <For each={activeInvites()}>
                             {(item) => (
                               <div class="remote-access-row">
-                                <IdentityMark value={item.email ?? "Link"} muted />
+                                <IdentityMark value={item.email ?? t("Link")} muted />
                                 <div class="remote-access-copy">
-                                  <strong>{item.email ?? "Shareable invitation link"}</strong>
+                                  <strong>{item.email ?? t("Shareable invitation link")}</strong>
                                   <span>
-                                    {roleLabel(item.role)} · Expires {formatDate(item.expiresAt)}
+                                    {roleLabel(item.role)} · {t("Expires {when}", { when: formatDate(item.expiresAt) })}
                                   </span>
                                 </div>
                                 <Button
@@ -399,7 +400,7 @@ export function HostPanel(props: HostPanelProps) {
                                   disabled={busy()}
                                   onClick={() => void run(() => props.onRevokeInvite(item.id))}
                                 >
-                                  Revoke
+                                  {t("Revoke")}
                                 </Button>
                               </div>
                             )}
@@ -407,10 +408,10 @@ export function HostPanel(props: HostPanelProps) {
                         </Show>
                       </AdminList>
 
-                      <AdminList title="Active sessions" count={props.sessions.length}>
+                      <AdminList title={t("Active sessions")} count={props.sessions.length}>
                         <Show
                           when={props.sessions.length > 0}
-                          fallback={<EmptyAdminList>No active member sessions.</EmptyAdminList>}
+                          fallback={<EmptyAdminList>{t("No active member sessions.")}</EmptyAdminList>}
                         >
                           <For each={props.sessions}>
                             {(item) => (
@@ -418,7 +419,7 @@ export function HostPanel(props: HostPanelProps) {
                                 <IdentityMark value={item.username} muted />
                                 <div class="remote-access-copy">
                                   <strong>{item.username}</strong>
-                                  <span>Expires {formatDate(item.expiresAt)}</span>
+                                  <span>{t("Expires {when}", { when: formatDate(item.expiresAt) })}</span>
                                 </div>
                                 <Button
                                   type="button"
@@ -426,7 +427,7 @@ export function HostPanel(props: HostPanelProps) {
                                   disabled={busy()}
                                   onClick={() => void run(() => props.onRevokeSession(item.id))}
                                 >
-                                  Sign out
+                                  {t("Sign out")}
                                 </Button>
                               </div>
                             )}
@@ -440,9 +441,9 @@ export function HostPanel(props: HostPanelProps) {
                     <section class="remote-admin-view" aria-labelledby="desktop-access-title">
                       <div class="remote-admin-view-heading">
                         <div>
-                          <span class="remote-admin-kicker">Screen control</span>
-                          <h3 id="desktop-access-title">Remote desktop access</h3>
-                          <p>Every active server member can control this Mac without a second login.</p>
+                          <span class="remote-admin-kicker">{t("Screen control")}</span>
+                          <h3 id="desktop-access-title">{t("Remote desktop access")}</h3>
+                          <p>{t("Every active server member can control this Mac without a second login.")}</p>
                         </div>
                         <span
                           class={[
@@ -450,19 +451,20 @@ export function HostPanel(props: HostPanelProps) {
                             { ready: props.status.remoteDesktopCredentialConfigured },
                           ]}
                         >
-                          {props.status.remoteDesktopCredentialConfigured ? "Managed" : "Setup needed"}
+                          {props.status.remoteDesktopCredentialConfigured ? t("Managed") : t("Setup needed")}
                         </span>
                       </div>
                       <section class="remote-desktop-access-card">
                         <div class="remote-desktop-access-instructions">
-                          <span>Set the same password on this Mac</span>
+                          <span>{t("Set the same password on this Mac")}</span>
                           <p>
-                            Open System Settings → General → Sharing → Screen Sharing. Enable “VNC viewers may control
-                            screen with password”, then enter the same dedicated password below.
+                            {t(
+                              "Open System Settings → General → Sharing → Screen Sharing. Enable “VNC viewers may control screen with password”, then enter the same dedicated password below.",
+                            )}
                           </p>
                         </div>
                         <label class="remote-field remote-desktop-password-field">
-                          <span>Dedicated VNC password</span>
+                          <span>{t("Dedicated VNC password")}</span>
                           <Input
                             type="password"
                             autocomplete="new-password"
@@ -471,12 +473,12 @@ export function HostPanel(props: HostPanelProps) {
                             value={remoteDesktopPassword()}
                             placeholder={
                               props.status.remoteDesktopCredentialConfigured
-                                ? "Enter a new password to replace it"
-                                : "1–8 characters"
+                                ? t("Enter a new password to replace it")
+                                : t("1–8 characters")
                             }
                             onInput={(event) => setRemoteDesktopPassword(event.currentTarget.value)}
                           />
-                          <small>Do not use your macOS account password.</small>
+                          <small>{t("Do not use your macOS account password.")}</small>
                         </label>
                         <Button
                           type="button"
@@ -490,8 +492,8 @@ export function HostPanel(props: HostPanelProps) {
                           }
                         >
                           {props.status.remoteDesktopCredentialConfigured
-                            ? "Replace VNC password"
-                            : "Save VNC password"}
+                            ? t("Replace VNC password")
+                            : t("Save VNC password")}
                         </Button>
                       </section>
                     </section>
@@ -517,23 +519,22 @@ function HostSetup(props: {
   return (
     <div class="remote-host-setup">
       <p>
-        Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a
-        secure public address. Only people you invite can sign in.
+        {t("Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.")}
       </p>
       <label class="remote-field">
-        <span>Server name</span>
+        <span>{t("Server name")}</span>
         <Input
           value={props.serverName}
           minlength={INPUT_LIMITS.serverNameMin}
           maxlength={INPUT_LIMITS.serverName}
-          placeholder="Design studio"
+          placeholder={t("Design studio")}
           onInput={(event) => props.onServerName(event.currentTarget.value)}
         />
       </label>
       <div class="remote-account-chip">
         <span aria-hidden="true">@</span>
         <div>
-          <small>Owner account</small>
+          <small>{t("Owner account")}</small>
           <strong>{props.accountEmail}</strong>
         </div>
       </div>
@@ -543,7 +544,7 @@ function HostSetup(props: {
         disabled={props.busy || props.serverName.trim().length < INPUT_LIMITS.serverNameMin}
         onClick={props.onCreate}
       >
-        {props.busy ? "Publishing…" : "Publish this COSGRAL Workspace"}
+        {props.busy ? t("Publishing…") : t("Publish this COSGRAL Workspace")}
       </Button>
     </div>
   );
@@ -598,7 +599,7 @@ function StatusCard(props: { label: string; online: boolean; value: string }) {
         <i class={props.online ? "online" : ""} />
         {props.label}
       </span>
-      <strong>{props.online ? "Online" : "Offline"}</strong>
+      <strong>{props.online ? t("Online") : t("Offline")}</strong>
       <small>{props.value}</small>
     </div>
   );
@@ -651,35 +652,35 @@ function MemberRow(props: {
           <span>{props.member.email ?? props.member.username}</span>
           <small class={["remote-member-presence", { online: props.online }]}>
             <i aria-hidden="true" />
-            {props.typing ? "Typing now" : props.online ? "Online" : "Offline"}
+            {props.typing ? t("Typing now") : props.online ? t("Online") : t("Offline")}
           </small>
         </div>
         <Show
           when={props.member.role !== "owner"}
           fallback={
             <Badge class="remote-role-badge" tone="accent">
-              Owner
+              {t("Owner")}
             </Badge>
           }
         >
           <label class="remote-role-select">
-            <span class="sr-only">Role for {displayName()}</span>
+            <span class="sr-only">{t("Role for {name}", { name: displayName() })}</span>
             <NativeSelect
               value={props.member.role}
               disabled={props.busy || props.member.disabled}
               onChange={(event) => props.onChangeRole(readTeamRole(event.currentTarget.value))}
             >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
+              <option value="member">{t("Member")}</option>
+              <option value="admin">{t("Admin")}</option>
             </NativeSelect>
           </label>
           <Button type="button" class="remote-text-button" disabled={props.busy} onClick={props.onToggleAccess}>
-            {props.member.disabled ? "Restore access" : "Pause access"}
+            {props.member.disabled ? t("Restore access") : t("Pause access")}
           </Button>
           <Button
             type="button"
             class="remote-more-button"
-            aria-label={`Remove ${displayName()}`}
+            aria-label={t("Remove {name}", { name: displayName() })}
             disabled={props.busy}
             onClick={props.onAskRemove}
           >
@@ -692,12 +693,12 @@ function MemberRow(props: {
       </div>
       <Show when={props.confirmingRemoval}>
         <div class="remote-remove-confirmation" role="alert">
-          <span>Remove this person and end all active sessions?</span>
+          <span>{t("Remove this person and end all active sessions?")}</span>
           <Button type="button" onClick={props.onCancelRemove} disabled={props.busy}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button type="button" class="danger" onClick={props.onRemove} disabled={props.busy}>
-            Remove person
+            {t("Remove person")}
           </Button>
         </div>
       </Show>
@@ -725,27 +726,27 @@ function InviteResult(props: { invite: InviteSummary; copied: boolean; onCopy: (
         when={!props.invite.email}
         fallback={
           <div>
-            <strong>Invitation sent</strong>
+            <strong>{t("Invitation sent")}</strong>
             <span>
-              {props.invite.email} can join until {formatDate(props.invite.expiresAt)}.
+              {t("{email} can join until {when}.", { email: props.invite.email, when: formatDate(props.invite.expiresAt) })}
             </span>
           </div>
         }
       >
         <div>
-          <strong>{props.copied ? "Link copied" : "Invitation link ready"}</strong>
-          <span>It expires {formatDate(props.invite.expiresAt)}.</span>
+          <strong>{props.copied ? t("Link copied") : t("Invitation link ready")}</strong>
+          <span>{t("It expires {when}.", { when: formatDate(props.invite.expiresAt) })}</span>
         </div>
         <Button type="button" onClick={props.onCopy}>
-          {props.copied ? "Copy again" : "Copy link"}
+          {props.copied ? t("Copy again") : t("Copy link")}
         </Button>
       </Show>
     </div>
   );
 }
 
-function roleLabel(role: Exclude<TeamRole, "owner">): "Admin" | "Member" {
-  return role === "admin" ? "Admin" : "Member";
+function roleLabel(role: Exclude<TeamRole, "owner">): string {
+  return role === "admin" ? t("Admin") : t("Member");
 }
 
 function formatDate(value: string): string {
