@@ -42,6 +42,7 @@ export * from "./ipc-plan";
 export * from "./ipc-plugin-catalog";
 export * from "./ipc-provider-catalog";
 export * from "./ipc-providers";
+export * from "./ipc-queue-holds";
 export * from "./ipc-remote-desktop";
 export * from "./ipc-routines";
 export * from "./ipc-search";

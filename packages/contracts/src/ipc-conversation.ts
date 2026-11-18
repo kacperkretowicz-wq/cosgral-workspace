@@ -81,6 +81,7 @@ import {
 } from "./ipc-subscriptions";
 import { isSharedTable, type SharedTable } from "./ipc-tables";
 import { isThreadTabsChanged, type ThreadTabsChanged } from "./ipc-thread-tabs";
+import type { QueueHoldKind } from "./ipc-queue-holds";
 import { isThreadDeletesChanged, type ThreadDeletesChanged } from "./ipc-thread-undo";
 import { isThreadActivity, isThreadsChanged, type ThreadActivity, type ThreadsChanged } from "./ipc-threads";
 import {
@@ -395,8 +396,10 @@ export interface QueueSnapshot {
   deliveries: QueueDelivery[];
   /** COSGRAL W3: set by the program; absent in snapshots from older servers (treat as available). */
   steer?: QueueSteerSupport;
-  /** COSGRAL W8-BE2: a budget keeps the queue from starting a new turn; one plain sentence for the person (null/absent: not held). */
+  /** COSGRAL W8-BE2 / W12: the queue waits before a new turn; one plain sentence for the person (null/absent: not held). */
   heldReason?: string | null;
+  /** COSGRAL W12 (BE-N): which hold `heldReason` is (see ipc-queue-holds.ts); null/absent: not held (older servers send none). */
+  heldKind?: QueueHoldKind | null;
 }
 
 export interface ConversationMessage {

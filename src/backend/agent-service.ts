@@ -56,6 +56,7 @@ import type {
   PinMessageInput,
   PromptResolution,
   QueuedMessageReceipt,
+  queueHoldOf,
   QueueSnapshot,
   RenameThreadInput,
   ReorderQueueInput,
@@ -1737,8 +1738,15 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const bot = this.#store.list().find((candidate) => candidate.id === botId);
     // COSGRAL W6-BE1: the queue the window shows is the queue of the thread that is active.
     const snapshot = this.#mailbox.listQueue(botId, bot?.threadId);
-    const held = this.#budgetHolds.get(botId);
-    const shown = held ? { ...snapshot, heldReason: held } : snapshot;
+    // COSGRAL W12 (BE-N): why the queue waits (budget, agent restart, server limit of turns, thread limit): see ipc-queue-holds.ts.
+    const hold = queueHoldOf({
+      budget: this.#budgetHolds.get(botId) ?? null,
+      serverBusy: this.#limitHeld.has(botId),
+      restarting: this.#status.phase === "starting" || this.#status.phase === "restarting",
+      threadFull: !this.#threads.hasRoom(botId),
+      queued: snapshot.deliveries.filter((delivery) => delivery.status === "queued").length,
+    });
+    const shown = hold ? { ...snapshot, heldReason: hold.reason, heldKind: hold.kind } : snapshot;
     return bot ? withSteerSupport(shown, providerForBot(bot)) : shown;
   }
 
@@ -2605,7 +2613,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           this.#policy?.maxTurns() ?? null,
         )
       ) {
-        this.#limitHeld.add(botId);
+        // The person sees why it waits (heldKind "server-busy") as soon as it starts to.
+        if (!this.#limitHeld.has(botId)) {
+          this.#limitHeld.add(botId);
+          this.#emitQueue(botId);
+        }
         return;
       }
       this.#limitHeld.delete(botId);
@@ -4741,6 +4753,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #setStatus(patch: Partial<AgentStatus>): void {
+    const phaseBefore = this.#status.phase;
     this.#status = {
       ...this.#status,
       ...patch,
@@ -4748,6 +4761,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     };
     if (patch.providers) this.#providers?.setProviderStatuses(patch.providers); // COSGRAL W4-BE1: one source
     this.#emit({ type: "status", status: this.getStatus() });
+    if (patch.phase !== undefined && patch.phase !== phaseBefore) this.#emitWaitingQueues();
+  }
+
+  /** COSGRAL W12 (BE-N): the agent CLI started or stopped restarting: queues with waiting messages say so (heldKind "agent-restart"). */
+  #emitWaitingQueues(): void {
+    for (const bot of this.#store.list()) {
+      const snapshot = this.#queueSnapshot(bot.id);
+      if (snapshot.deliveries.some((delivery) => delivery.status === "queued")) {
+        this.#emit({ type: "queue-changed", snapshot });
+      }
+    }
   }
 
   #emitConversation(
