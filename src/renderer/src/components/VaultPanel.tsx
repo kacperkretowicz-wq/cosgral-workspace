@@ -93,7 +93,7 @@ export function VaultForm(props: {
       setSecret("");
       setKey("");
     } catch {
-      setError("Could not save item. Check the fields and encryption status.");
+      setError(t("Could not save item. Check the fields and encryption status."));
     } finally {
       setBusy(false);
     }
@@ -263,7 +263,7 @@ export function VaultPanel() {
   async function refresh() {
     const api = window.openbot.vault;
     if (!api) {
-      setError("Vault is unavailable in this build.");
+      setError(t("Vault is unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -275,7 +275,7 @@ export function VaultPanel() {
         setError("");
       }
     } catch {
-      if (n === serial) setError("Could not load Vault.");
+      if (n === serial) setError(t("Could not load Vault."));
     }
   }
   onSettled(() => {
@@ -332,10 +332,10 @@ export function VaultPanel() {
                     void vault
                       .delete({ itemId: item.id })
                       .then(refresh)
-                      .catch(() => setError("Could not delete item."));
+                      .catch(() => setError(t("Could not delete item.")));
                 }}
               >
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </article>

@@ -1214,7 +1214,7 @@ export function Conversation(props: ConversationProps) {
         attachments: [...draft.attachments, ...accepted],
       },
     }));
-    if (selected.length > accepted.length) setComposerError("You can attach at most 10 files.");
+    if (selected.length > accepted.length) setComposerError(t("You can attach at most 10 files."));
     setShowAttachments(false);
   }
 
@@ -1276,7 +1276,7 @@ export function Conversation(props: ConversationProps) {
     if (!botId || !deliveryId || submitting()) return;
     const delivery = props.queue?.deliveries.find((item) => item.id === deliveryId);
     if (delivery?.status !== "queued") {
-      setComposerError("This queued message is no longer available.");
+      setComposerError(t("This queued message is no longer available."));
       cancelQueuedMessageEdit();
       return;
     }
@@ -1459,7 +1459,7 @@ export function Conversation(props: ConversationProps) {
       }
       await window.openbot.openUrl(url);
     } catch {
-      setComposerError("Could not open the link.");
+      setComposerError(t("Could not open the link."));
     }
   }
 

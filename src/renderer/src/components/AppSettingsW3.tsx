@@ -208,8 +208,8 @@ export function OnboardingFields(props: {
         </Text>
         <Text as="p" tone="muted">
           {props.state.computerUse.available
-            ? "Available; every action asks for your approval first."
-            : (props.state.computerUse.reason ?? "Not available on this computer.")}
+            ? t("Available; every action asks for your approval first.")
+            : (props.state.computerUse.reason ?? t("Not available on this computer."))}
         </Text>
       </div>
     </div>

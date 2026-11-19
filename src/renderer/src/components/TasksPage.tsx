@@ -106,7 +106,7 @@ export function TasksPage(props: {
       setTasks(all.flat());
       setError("");
     } catch (e) {
-      fail(e, "Could not load tasks.");
+      fail(e, t("Could not load tasks."));
     } finally {
       setLoaded(true);
     }

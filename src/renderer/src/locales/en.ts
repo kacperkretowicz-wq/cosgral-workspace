@@ -2416,4 +2416,15 @@ export const en = {
   "Could not remove the rule.": "Could not remove the rule.",
   "Could not update memory.": "Could not update memory.",
   "Could not copy the message.": "Could not copy the message.",
+  "Could not create routine.": "Could not create routine.",
+  "Routines are unavailable in this build.": "Routines are unavailable in this build.",
+  "Routine action failed.": "Routine action failed.",
+  "Could not load tasks.": "Could not load tasks.",
+  "You can attach at most 10 files.": "You can attach at most 10 files.",
+  "This queued message is no longer available.": "This queued message is no longer available.",
+  "Could not save item. Check the fields and encryption status.":
+    "Could not save item. Check the fields and encryption status.",
+  "Vault is unavailable in this build.": "Vault is unavailable in this build.",
+  "Could not load Vault.": "Could not load Vault.",
+  "Could not delete item.": "Could not delete item.",
 } as const;

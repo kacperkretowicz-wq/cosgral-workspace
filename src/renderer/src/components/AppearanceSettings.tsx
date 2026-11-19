@@ -103,7 +103,7 @@ export function AppearanceSettings() {
         applyFromSettings(s);
         setReady(true);
       })
-      .catch(() => setError("Could not load appearance settings."));
+      .catch(() => setError(t("Could not load appearance settings.")));
   });
 
   async function save(patch: { theme?: AppTheme; appearance?: Record<string, string | number | boolean> }) {
@@ -113,7 +113,7 @@ export function AppearanceSettings() {
       if (result) applyFromSettings(result);
       setError("");
     } catch {
-      setError("Could not save appearance. Try again.");
+      setError(t("Could not save appearance. Try again."));
       try {
         const current = await window.openbot.appSettings?.get();
         if (current) applyFromSettings(current);

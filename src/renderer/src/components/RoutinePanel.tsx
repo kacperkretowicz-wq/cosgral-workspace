@@ -21,13 +21,13 @@ export function RoutineForm(props: {
   const [error, setError] = createSignal("");
   async function create() {
     setError("");
-    const t = trigger();
+    const kind = trigger();
     const schedule =
-      t === "interval"
+      kind === "interval"
         ? { type: "interval" as const, everyMinutes: Number(interval()) }
-        : t === "daily"
+        : kind === "daily"
           ? { type: "daily" as const, time: time() }
-          : t === "cron"
+          : kind === "cron"
             ? { type: "cron" as const, expression: cron() }
             : undefined;
     try {
@@ -35,14 +35,14 @@ export function RoutineForm(props: {
         botId: bot(),
         name: name().trim(),
         prompt: prompt().trim(),
-        trigger: t === "webhook" ? "webhook" : "schedule",
+        trigger: kind === "webhook" ? "webhook" : "schedule",
         ...(schedule ? { schedule } : {}),
         timezone: timezone(),
       });
       setName("");
       setPrompt("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create routine.");
+      setError(e instanceof Error ? e.message : t("Could not create routine."));
     }
   }
   return (
@@ -143,7 +143,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
   async function refresh() {
     const api = window.openbot.routines;
     if (!api) {
-      setError("Routines are unavailable in this build.");
+      setError(t("Routines are unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -151,7 +151,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       const list = await api.list(props.botId);
       if (n === serial) setRoutines(list);
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : "Could not load routines.");
+      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load routines."));
     }
   }
   async function run(fn: () => Promise<unknown>) {
@@ -160,7 +160,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Routine action failed.");
+      setError(e instanceof Error ? e.message : t("Routine action failed."));
     }
   }
   async function loadHistory(routineId: string) {
@@ -170,7 +170,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       setRuns(await api.listRuns({ routineId }));
       setHistory(routineId);
     } catch {
-      setError("Could not load history.");
+      setError(t("Could not load history."));
     }
   }
   onSettled(() => {

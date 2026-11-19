@@ -2414,4 +2414,15 @@ export const pl = {
   "Could not remove the rule.": "Nie udało się usunąć reguły.",
   "Could not update memory.": "Nie udało się zaktualizować pamięci.",
   "Could not copy the message.": "Nie udało się skopiować wiadomości.",
+  "Could not create routine.": "Nie udało się utworzyć rutyny.",
+  "Routines are unavailable in this build.": "Rutyny nie są dostępne w tej wersji.",
+  "Routine action failed.": "Akcja rutyny nie powiodła się.",
+  "Could not load tasks.": "Nie udało się wczytać zadań.",
+  "You can attach at most 10 files.": "Możesz dołączyć co najwyżej 10 plików.",
+  "This queued message is no longer available.": "Ta wiadomość z kolejki już nie jest dostępna.",
+  "Could not save item. Check the fields and encryption status.":
+    "Nie udało się zapisać pozycji. Sprawdź pola i status szyfrowania.",
+  "Vault is unavailable in this build.": "Vault nie jest dostępny w tej wersji.",
+  "Could not load Vault.": "Nie udało się wczytać Vault.",
+  "Could not delete item.": "Nie udało się usunąć pozycji.",
 } as const;
