@@ -36,6 +36,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 9. [zamknięte bez kodu KK: kontrakt i test BE-AB e0b9d2e3c, ekran PWA UI-13 1682b267a na team/ui/w12-ai, czeka na scalenie] Ekran kanałów w kliencie telefonu (PWA) razem z UI: kontrakt `ipc-mobile-channels.ts`, test na atrapie.
 10. [zrobione: c28af4dde (po T-AJ; powtórz po UI-AT i UI-13)] Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
 11. [zrobione: 3cb782b80, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
+12. [zrobione: 38566682e] `ChannelWorkspace`: lista kanałów, przyciski i komunikaty dostępności przez `t()` (luka wskazana przez KAPI), klucze wstawione w środku katalogów, żeby nie kolidowały z dopiskami KAPI.
 
 ## Backend Expert
 1. [zrobione: 41e810e1b] `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
