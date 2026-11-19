@@ -106,6 +106,110 @@
     radial-gradient(55% 45% at 100% 0%, rgba(25, 81, 252, 0.12), rgba(25, 81, 252, 0) 70%);
   --cosgral-grain-opacity: 0.09;
   --cosgral-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /*
+   * Reference recipes, close to 1:1 (owner, 19.11): glass tiles that pool their colour at the bottom with a lit rim,
+   * mesh-gradient icon tiles, glossy pills. Illustrations: their colours are fixed and only used through these tokens.
+   */
+  --cosgral-tile-base: #06080d;
+  --cosgral-tile-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --cosgral-tile-blue:
+    radial-gradient(
+      70% 42% at 50% 106%,
+      rgba(190, 222, 255, 0.95) 0%,
+      rgba(55, 129, 252, 0.65) 45%,
+      rgba(55, 129, 252, 0) 100%
+    ),
+    linear-gradient(180deg, rgba(3, 25, 91, 0) 34%, rgba(11, 44, 177, 0.42) 66%, rgba(25, 81, 252, 0.88) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
+  --cosgral-tile-blue-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(120, 170, 255, 0.12),
+    inset 0 -2px 0 rgba(160, 205, 255, 0.95), inset 0 -18px 26px -16px rgba(80, 150, 255, 0.95),
+    0 22px 46px -24px rgba(25, 81, 252, 0.85);
+  --cosgral-tile-red:
+    radial-gradient(
+      70% 42% at 50% 106%,
+      rgba(255, 200, 150, 0.95) 0%,
+      rgba(255, 70, 50, 0.7) 45%,
+      rgba(255, 45, 85, 0) 100%
+    ),
+    linear-gradient(180deg, rgba(60, 4, 18, 0) 34%, rgba(138, 11, 42, 0.5) 66%, rgba(255, 45, 70, 0.9) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
+  --cosgral-tile-red-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 140, 150, 0.12),
+    inset 0 -2px 0 rgba(255, 190, 170, 0.95), inset 0 -18px 26px -16px rgba(255, 70, 70, 0.95),
+    0 22px 46px -24px rgba(255, 45, 85, 0.8);
+  --cosgral-tile-green:
+    radial-gradient(
+      70% 42% at 50% 106%,
+      rgba(200, 255, 215, 0.95) 0%,
+      rgba(60, 230, 120, 0.65) 45%,
+      rgba(34, 197, 94, 0) 100%
+    ),
+    linear-gradient(180deg, rgba(3, 40, 20, 0) 34%, rgba(10, 107, 58, 0.45) 66%, rgba(34, 197, 94, 0.88) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
+  --cosgral-tile-green-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(130, 255, 180, 0.12),
+    inset 0 -2px 0 rgba(190, 255, 210, 0.95), inset 0 -18px 26px -16px rgba(60, 230, 120, 0.9),
+    0 22px 46px -24px rgba(34, 197, 94, 0.75);
+  --cosgral-tile-quiet:
+    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.32) 0%, rgba(55, 129, 252, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-quiet-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(140, 185, 204, 0.1),
+    inset 0 -1px 0 rgba(120, 170, 255, 0.45);
+  --cosgral-mesh-blue:
+    radial-gradient(48% 16% at 50% 52%, #e6f6ff 0%, #8fd0ff 35%, rgba(55, 129, 252, 0) 100%),
+    radial-gradient(75% 55% at 50% 52%, #3781fc 0%, rgba(25, 81, 252, 0) 100%),
+    linear-gradient(180deg, #0b2cb1 0%, #1e1a8f 50%, #2a3fd9 100%);
+  --cosgral-mesh-red:
+    radial-gradient(55% 40% at 45% 8%, #14000a 0%, rgba(20, 0, 10, 0) 100%),
+    radial-gradient(90% 70% at 50% 100%, #ff7a2f 0%, rgba(255, 122, 47, 0) 100%),
+    linear-gradient(180deg, #ff1f3d 0%, #ff3b1f 100%);
+  --cosgral-mesh-lime:
+    radial-gradient(38% 42% at 58% 62%, #7c3aed 0%, rgba(124, 58, 237, 0) 100%),
+    radial-gradient(70% 60% at 25% 15%, #f7ff3c 0%, rgba(247, 255, 60, 0) 100%),
+    linear-gradient(160deg, #c7f23a 0%, #84cc16 100%);
+  --cosgral-mesh-green:
+    radial-gradient(55% 45% at 50% 82%, #63f59a 0%, rgba(99, 245, 154, 0) 100%),
+    radial-gradient(70% 50% at 50% 10%, #021a0b 0%, rgba(2, 26, 11, 0) 100%),
+    linear-gradient(180deg, #0b3d1d 0%, #22c55e 100%);
+  --cosgral-mesh-cyan:
+    radial-gradient(30% 34% at 30% 32%, #ff6bd6 0%, rgba(255, 107, 214, 0) 100%),
+    radial-gradient(30% 34% at 72% 70%, #ff6bd6 0%, rgba(255, 107, 214, 0) 100%),
+    linear-gradient(135deg, #56d8f5 0%, #0b2a20 48%, #0b2a20 52%, #56d8f5 100%);
+  --cosgral-mesh-pink:
+    radial-gradient(42% 42% at 52% 60%, #170019 0%, #5b1a8c 55%, rgba(91, 26, 140, 0) 100%),
+    linear-gradient(180deg, #ff8fd6 0%, #e879f9 100%);
+  --cosgral-mesh-orange:
+    radial-gradient(70% 50% at 50% 100%, #ffb057 0%, rgba(255, 176, 87, 0) 100%),
+    radial-gradient(60% 45% at 50% 0%, #2a0d00 0%, rgba(42, 13, 0, 0) 100%),
+    linear-gradient(180deg, #c2410c 0%, #ff6a1a 100%);
+  --cosgral-mesh-edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(
+      255,
+      255,
+      255,
+      0.12
+    ),
+    0 6px 16px -6px rgba(0, 0, 0, 0.6);
+  --cosgral-pill-glossy:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #3781fc 0%, #1951fc 50%, #0b2cb1 100%);
+  --cosgral-pill-glossy-red:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #ff4466 0%, #e01543 50%, #a50d33 100%);
+  --cosgral-pill-glossy-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(55, 129, 252, 0.55),
+    0 8px 22px -8px rgba(25, 81, 252, 0.9);
+  --cosgral-pill-glossy-red-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 45, 85, 0.55),
+    0 8px 22px -8px rgba(255, 45, 85, 0.85);
+  --cosgral-status-blue: #6fa8ff;
+  --cosgral-status-green: #4ade80;
+  --cosgral-status-amber: #fbbf24;
+  --cosgral-status-red: #ff5c7a;
+  --cosgral-status-violet: #b794ff;
 }
 
 :root[data-theme="light"],
@@ -144,6 +248,45 @@
   --cosgral-ambient:
     radial-gradient(70% 55% at 0% 0%, rgba(0, 99, 142, 0.1), rgba(0, 99, 142, 0) 70%),
     radial-gradient(55% 45% at 100% 0%, rgba(140, 185, 204, 0.18), rgba(140, 185, 204, 0) 70%);
+  --cosgral-tile-base: #ffffff;
+  --cosgral-tile-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(0, 74, 107, 0.12);
+  --cosgral-tile-blue:
+    radial-gradient(85% 55% at 50% 118%, rgba(55, 129, 252, 0.3) 0%, rgba(55, 129, 252, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-blue-shadow:
+    inset 0 0 0 1px rgba(0, 74, 107, 0.12), inset 0 -2px 0 rgba(25, 81, 252, 0.55),
+    0 16px 30px -22px rgba(25, 81, 252, 0.6);
+  --cosgral-tile-red:
+    radial-gradient(85% 55% at 50% 118%, rgba(224, 21, 67, 0.24) 0%, rgba(224, 21, 67, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-red-shadow:
+    inset 0 0 0 1px rgba(0, 74, 107, 0.12), inset 0 -2px 0 rgba(224, 21, 67, 0.55),
+    0 16px 30px -22px rgba(224, 21, 67, 0.55);
+  --cosgral-tile-green:
+    radial-gradient(85% 55% at 50% 118%, rgba(34, 197, 94, 0.26) 0%, rgba(34, 197, 94, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-green-shadow:
+    inset 0 0 0 1px rgba(0, 74, 107, 0.12), inset 0 -2px 0 rgba(22, 163, 74, 0.55),
+    0 16px 30px -22px rgba(22, 163, 74, 0.5);
+  --cosgral-tile-quiet:
+    radial-gradient(90% 45% at 50% 115%, rgba(0, 99, 142, 0.12) 0%, rgba(0, 99, 142, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-quiet-shadow: inset 0 0 0 1px rgba(0, 74, 107, 0.12), inset 0 -1px 0 rgba(0, 99, 142, 0.3);
+  --cosgral-mesh-edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.08), 0 6px 14px -8px rgba(0, 40, 60, 0.45);
+  --cosgral-pill-glossy:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #00739f 0%, #00638e 50%, #004a6b 100%);
+  --cosgral-pill-glossy-red:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #c8102e 0%, #a80b2f 100%);
+  --cosgral-pill-glossy-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -8px rgba(0, 74, 107, 0.6);
+  --cosgral-pill-glossy-red-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -8px rgba(168, 11, 47, 0.55);
+  --cosgral-status-blue: #00587e;
+  --cosgral-status-green: #166534;
+  --cosgral-status-amber: #8a5a00;
+  --cosgral-status-red: #a80b2f;
+  --cosgral-status-violet: #5b2bb5;
   --cosgral-grain-opacity: 0.035;
   --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);

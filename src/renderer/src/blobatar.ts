@@ -208,7 +208,7 @@ export function buildAnimatedAvatarSvg(
   const bob = document.createElementNS(SVG_NAMESPACE, "g");
   bob.setAttribute("class", "mo-bob");
   const features = moodFeatures(document, mood, resolvedLayout.eyes, shadeId);
-  bob.append(bodyGroup, shade.highlight, ...features.underEyes, eyesGroup, ...features.overEyes);
+  bob.append(bodyGroup, shade.rim, shade.highlight, ...features.underEyes, eyesGroup, ...features.overEyes);
   if (poseTransform) {
     const pose = document.createElementNS(SVG_NAMESPACE, "g");
     pose.setAttribute("class", "mo-pose");
@@ -342,7 +342,7 @@ function addBodyShading(
   head: string,
   id: string,
   body: Ellipse,
-): { defs: Element; highlight: Element } {
+): { defs: Element; highlight: Element; rim: Element } {
   const element = (name: string, attributes: Record<string, string | number>) => {
     const node = document.createElementNS(SVG_NAMESPACE, name);
     for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
@@ -357,12 +357,18 @@ function addBodyShading(
   );
   const shineGradient = element("radialGradient", { id: `${id}-shine` });
   shineGradient.append(
-    element("stop", { offset: 0, "stop-color": "#ffffff", "stop-opacity": 0.62 }),
+    element("stop", { offset: 0, "stop-color": "#ffffff", "stop-opacity": 0.78 }),
     element("stop", { offset: 1, "stop-color": "#ffffff", "stop-opacity": 0 }),
+  );
+  // Light bounced back into the lower edge, like the glossy pills of the owner's references.
+  const rimGradient = element("radialGradient", { id: `${id}-rim`, cy: 1, r: 0.9 });
+  rimGradient.append(
+    element("stop", { offset: 0, "stop-color": mixHex(head, "#ffffff", 0.55), "stop-opacity": 0.75 }),
+    element("stop", { offset: 1, "stop-color": mixHex(head, "#ffffff", 0.55), "stop-opacity": 0 }),
   );
   const clip = element("clipPath", { id: `${id}-clip` });
   for (const shape of Array.from(bodyGroup.children)) clip.append(shape.cloneNode(true));
-  defs.append(bodyGradient, shineGradient, clip);
+  defs.append(bodyGradient, shineGradient, rimGradient, clip);
   bodyGroup.setAttribute("fill", `url(#${id}-body)`);
 
   const cx = round2(body.cx - body.rx * 0.3);
@@ -377,7 +383,16 @@ function addBodyShading(
     fill: `url(#${id}-shine)`,
     "clip-path": `url(#${id}-clip)`,
   });
-  return { defs, highlight };
+  const rim = element("ellipse", {
+    "data-shade": "rim",
+    cx: round2(body.cx),
+    cy: round2(body.cy + body.ry * 0.82),
+    rx: round2(body.rx * 0.78),
+    ry: round2(body.ry * 0.3),
+    fill: `url(#${id}-rim)`,
+    "clip-path": `url(#${id}-clip)`,
+  });
+  return { defs, highlight, rim };
 }
 
 /** A happy eye is an upturned arc ("^"), drawn where the pose put the eye. */

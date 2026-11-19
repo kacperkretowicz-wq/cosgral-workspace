@@ -42,6 +42,8 @@
     elektryczny błękit, chłodna czerwień), szkło podświetlone od dołu, przejścia kolorów, ziarno, świecące pigułki,
     mocniejsze stworki. Tokeny w `cosgral-tokens.css` i `styles.css`, reguły w `styles/azure-glass.css`, opis w
     dzienniku `PROMPT-UI-JAKOSC.md` (wiersz 19.11 (6)). Storybook 370/370 (axe), testy renderera 1119/1119.
+    Druga runda (prawie 1:1 z inspiracjami): kafle podświetlone od dołu, ikony z siatką gradientów, pigułki stanów,
+    błyszczące pigułki akcji, połysk stworków także u osób (wiersz 19.11 (7) w dzienniku).
     **Do obejrzenia na Windows:** testy wizualne zmienią się na każdym ekranie (inna paleta) — wzorce aktualizować
     dopiero po obejrzeniu różnic.
 
