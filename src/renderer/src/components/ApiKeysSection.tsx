@@ -3,6 +3,7 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { emptyApiKeys, providerLabel, statusLabel, statusTone } from "./api-keys-view";
 import { Badge, Button, Card, Field, Heading, Input, Text } from "./ui";
+import { KeyRound } from "./ui/icons";
 
 function ApiKeyCard(props: {
   record: ApiKeyEntry;
@@ -16,57 +17,87 @@ function ApiKeyCard(props: {
   const label = () => providerLabel(props.record.provider);
   const hasKey = () => props.record.maskedKey !== null;
   return (
-    <Card
-      class="api-key-card"
-      role="group"
+    <fieldset
+      class="api-key-card provider-key-row"
       aria-label={t("{name} key", { name: label() })}
       data-status={props.record.status}
       data-has-key={hasKey() ? "true" : "false"}
     >
-      <div class="api-key-card-head">
-        <Heading as="h3" size="sm">
-          {label()}
-        </Heading>
-        <Show when={hasKey()}>
-          <Badge tone={statusTone(props.record.status)} size="sm" dot>
-            {statusLabel(props.record.status)}
-          </Badge>
-        </Show>
+      <div class="provider-key-head">
+        <span class="provider-key-icon" aria-hidden="true">
+          <KeyRound size={18} stroke-width={1.75} />
+        </span>
+        <div class="provider-key-copy">
+          <div class="api-key-card-head">
+            <Heading as="h3" size="sm">
+              {label()}
+            </Heading>
+            <Show when={hasKey()}>
+              <Badge tone={statusTone(props.record.status)} size="sm" dot>
+                {statusLabel(props.record.status)}
+              </Badge>
+            </Show>
+          </div>
+          <Show
+            when={hasKey()}
+            fallback={
+              <Text as="p" tone="muted">
+                {t("No key saved")}
+              </Text>
+            }
+          >
+            <Text as="p" tone="muted" role="status" class="provider-key-saved">
+              {t("Saved key: {key}", { key: props.record.maskedKey ?? "" })}
+            </Text>
+          </Show>
+          <Show when={props.record.message}>
+            <Text as="p" tone="muted" role="status">
+              {props.record.message}
+            </Text>
+          </Show>
+        </div>
+        <div class="api-key-card-actions">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={props.busy || !hasKey() || props.checking}
+            loading={props.checking}
+            loadingLabel={t("Checking connection")}
+            onClick={() => void props.onCheck(props.record.provider)}
+          >
+            {t("Check connection")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={props.busy || !hasKey()}
+            onClick={() => {
+              setDraft("");
+              void props.onRemove(props.record.provider);
+            }}
+          >
+            {t("Remove key")}
+          </Button>
+        </div>
       </div>
-      <Show
-        when={hasKey()}
-        fallback={
-          <Text as="p" tone="muted">
-            {t("No key saved")}
-          </Text>
-        }
-      >
-        <Text as="p" role="status">
-          {t("Saved key: {key}", { key: props.record.maskedKey ?? "" })}
-        </Text>
-      </Show>
-      <Show when={props.record.message}>
-        <Text as="p" role="status">
-          {props.record.message}
-        </Text>
-      </Show>
-      <Field label={t("{name} API key", { name: label() })}>
-        <Input
-          type="password"
-          autocomplete="off"
-          spellcheck={false}
-          value={draft()}
-          aria-describedby={`api-key-hint-${props.record.provider}`}
-          disabled={props.busy}
-          onInput={(e) => setDraft(e.currentTarget.value)}
-        />
-      </Field>
-      <Text as="p" tone="muted" id={`api-key-hint-${props.record.provider}`}>
-        {t("The key is never shown again after you save it. Paste it only into this password field.")}
-      </Text>
-      <div class="api-key-card-actions">
+      <div class="provider-key-form-row">
+        <Field label={t("{name} API key", { name: label() })}>
+          <Input
+            type="password"
+            autocomplete="off"
+            spellcheck={false}
+            value={draft()}
+            aria-describedby={`api-key-hint-${props.record.provider}`}
+            disabled={props.busy}
+            onInput={(e) => setDraft(e.currentTarget.value)}
+          />
+        </Field>
         <Button
           type="button"
+          size="sm"
+          variant="primary"
           disabled={props.busy || !draft().trim()}
           onClick={() => {
             const key = draft().trim();
@@ -77,29 +108,11 @@ function ApiKeyCard(props: {
         >
           {t("Save key")}
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={props.busy || !hasKey() || props.checking}
-          loading={props.checking}
-          loadingLabel={t("Checking connection")}
-          onClick={() => void props.onCheck(props.record.provider)}
-        >
-          {t("Check connection")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={props.busy || !hasKey()}
-          onClick={() => {
-            setDraft("");
-            void props.onRemove(props.record.provider);
-          }}
-        >
-          {t("Remove key")}
-        </Button>
       </div>
-    </Card>
+      <Text as="p" tone="muted" id={`api-key-hint-${props.record.provider}`} class="provider-key-hint">
+        {t("The key is never shown again after you save it. Paste it only into this password field.")}
+      </Text>
+    </fieldset>
   );
 }
 

@@ -395,7 +395,7 @@ export function SelectionActionsBar(props: {
             <Show when={mode() === "sending"}>
               <span class="selection-actions-status" role="status">
                 <span class="selection-actions-spinner" aria-hidden="true" />
-                Sending…
+                {t("Sending…")}
               </span>
             </Show>
 

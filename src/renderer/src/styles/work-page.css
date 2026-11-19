@@ -1203,3 +1203,221 @@
   border-color: var(--openbot-accent-hover);
   background: var(--openbot-accent);
 }
+
+/* Providers › CLI tools, API keys, Own endpoints: rows with an icon and a state, settings as a list, forms as ---- */
+/* a card in two columns (ManagedCliSection, ApiKeysSection, EndpointsSection). ------------------------------------ */
+
+.provider-cli-list,
+.api-keys-list,
+.work-page .providers-list {
+  display: grid;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.provider-cli,
+.provider-key-row {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-3);
+  margin: 0;
+  border: 0;
+  padding: var(--openbot-space-4);
+}
+
+.provider-cli + .provider-cli,
+.provider-key-row + .provider-key-row,
+.work-page .providers-list > .providers-row + .providers-row {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-cli-head,
+.provider-key-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.provider-cli-icon,
+.provider-key-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 30%;
+  background: var(--openbot-mesh-cyan);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.provider-key-icon {
+  background: var(--openbot-mesh-orange);
+}
+
+.endpoint-row .provider-key-icon {
+  background: var(--openbot-mesh-green);
+}
+
+.provider-cli[data-status="error"] .provider-cli-icon {
+  background: var(--openbot-mesh-red);
+}
+
+.provider-cli[data-status="off"] .provider-cli-icon {
+  filter: saturate(0.5) brightness(0.8);
+}
+
+.provider-cli-copy,
+.provider-key-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-cli-title,
+.api-key-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .provider-cli-title h3,
+.work-page .api-key-card-head h3 {
+  margin: 0;
+  font-size: var(--openbot-text-md);
+}
+
+.work-page .provider-cli-meta,
+.work-page .provider-key-copy p,
+.work-page .provider-cli-phase {
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.work-page .provider-cli-phase,
+.provider-cli > [role="progressbar"],
+.provider-cli > [role="alert"] {
+  margin-left: 48px;
+}
+
+.work-page .provider-cli-phase {
+  color: var(--openbot-text-muted);
+}
+
+.provider-cli-actions,
+.api-key-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-1-5);
+}
+
+.provider-cli-settings {
+  display: grid;
+  margin-left: 48px;
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-cli-settings > .ui-switch {
+  width: 100%;
+  min-height: 44px;
+  justify-content: space-between;
+}
+
+.work-page .provider-cli-settings > .provider-cli-note {
+  margin: 0;
+  border-bottom: 1px solid var(--openbot-border);
+  padding-bottom: var(--openbot-space-3);
+  font-size: var(--openbot-text-xs);
+}
+
+.provider-cli-setting,
+.provider-key-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: var(--openbot-space-2);
+  padding-block: var(--openbot-space-3);
+}
+
+.provider-cli-setting + .provider-cli-setting {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-key-form-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-left: 48px;
+  padding-block: 0;
+}
+
+.work-page .provider-key-hint {
+  margin: 0 0 0 48px;
+  font-size: var(--openbot-text-xs);
+}
+
+.endpoint-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--openbot-space-3);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.work-page .endpoint-row-copy p {
+  margin: var(--openbot-space-0-5) 0 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.work-page .endpoint-row .providers-confirm {
+  grid-column: 2 / -1;
+  max-width: none;
+  justify-content: flex-start;
+}
+
+/* The add / edit form is a card: fields in two columns, presets, hints and the actions across both. */
+.work-page .providers-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--openbot-space-3) var(--openbot-space-4);
+  border: 1px dashed var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .providers-form > :is(h3, fieldset, p, .providers-actions, .ui-switch, [role="note"]),
+.work-page .providers-form > .ui-field:has(input[type="password"], input[inputmode="url"]) {
+  grid-column: 1 / -1;
+}
+
+@container (max-width: 760px) {
+  .work-page .providers-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .provider-cli-settings,
+  .provider-key-form-row,
+  .work-page .provider-key-hint {
+    margin-left: 0;
+  }
+
+  .provider-cli-head,
+  .provider-key-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .provider-cli-actions,
+  .api-key-card-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* A field's label with the "required" star stays on one line (the generic label rule made it a grid). */
+.work-page .ui-field > label.ui-label {
+  display: block;
+}

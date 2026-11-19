@@ -18,12 +18,17 @@ Szczegóły: górny rozdział `PRZEKAZANIE.md`. W skrócie, względem list niże
 | P1 1 Ustawienia | **Zrobione** (`SettingsDialog.tsx`). |
 | P1 2 Okno kanału | **Zrobione.** |
 | P1 3 Nowy agent | **Zrobione** (pracownia stworka z podglądem min). |
-| P1 4 Dostawcy | **Częściowo:** Konta i pula zrobione; CLI, Klucze API, Punkty końcowe zostały. Region „Fallback models” nie ruszany. |
+| P1 4 Dostawcy | **Zrobione:** Konta i pula, CLI agentów, Klucze API, Punkty końcowe (wiersze z ikoną i stanem; formularz w dwóch kolumnach). Region „Fallback models” nie ruszany. |
 | P1 5 Katalog | **Zrobione** (nagłówek, ikony kategorii, opisy w dwóch liniach). |
 | P1 6 Ustawienia serwera | **Zrobione** (nagłówek, sekcje z ikonami i opisem, pola jako wiersze). Parytet 14 sekcji z 0.71 bez zmian. |
 | P2 5.8 testy | **Zrobione** (oba). |
-| P2 pozostałe (reaktywność, jasne historyjki, pasek kanału, DM, `lazy()`, duże pliki) | Bez zmian. |
-| P3 6.1 napisy | **Prawie całość:** zrobione m.in. `VaultPanel`, `RemoteMacPanel`, `Sidebar`, `MessageRendering`, `QueuePanel`, `MemoryPanel`, karty kont, `Conversation`, wątki, głos. Zostały pojedyncze z wiersza „pozostałe” tabeli 6.1 (`ApprovalRulesSettings`, `ChannelView`, `WorkflowsPage`, `AttachmentCards`, `UnreadMessages`, `ComposerEditor`, `RoutinePanel`, `SelectionActions`, `RichMessageText`). |
+| P2 5.1 reaktywność | **Częściowo:** `Field` (`ui/form.tsx`) przekazywał kontekst jako kopię — błąd/opis nie dochodził do `aria-describedby`; teraz gettery. `ChannelEditor` czyta wartości początkowe przez `untrack`. Skrypt zliczający (patrz § 7): 876 ostrzeżeń w 108 z 373 historyjek (poprzednio 3319 w 172; metoda nieidentyczna: 0,9 s po otwarciu, bez `play`). Zostało głównie Kobalte (`ButtonRoot`, `Menu`, `PopperRoot`), `ComposerEditor`, sidebar `mark-as-read`. |
+| P2 5.3 jasne historyjki | **Zrobione:** `Work pages` Biblioteka / Przepływy / Harmonogram w jasnym. |
+| P2 5.4 pasek kanału | **Zrobione** (pigułki do ikon w wąskim oknie). |
+| P2 5.5 wiadomość bezpośrednia | **Zrobione** (akcja „Oznacz rozmowę jako przeczytaną”, nagłówek jak u agenta). |
+| P2 5.6 wydajność | **Częściowo:** cztery strony leniwie (główny JS 3,17 → 2,94 MB). Zostały Zdalny pulpit (współdzieli plik z `RemoteDesktopSafety`) i duże pliki do podziału. `theme-init.js` bez `type="module"` jest celowe (blokuje, żeby nie było błysku motywu). |
+| P2 pozostałe (mimika w kanale, mrugnięcie, duże pliki) | Bez zmian. |
+| P3 6.1 napisy | **Całość z tabeli:** zrobione m.in. `VaultPanel`, `RemoteMacPanel`, `Sidebar`, `MessageRendering`, `QueuePanel`, `MemoryPanel`, karty kont, `Conversation`, wątki, głos. Dołożone: `ChannelView`, `WorkflowsPage`, `AttachmentCards`, `UnreadMessages`, `RoutinePanel`, `SelectionActions`, `RichMessageText`. Nowy skan angielskich napisów po całym kodzie nie był robiony. |
 | P3 6.3 ostrzeżenie Biome | **Zrobione.** |
 
 ## 0. Start w 10 minut

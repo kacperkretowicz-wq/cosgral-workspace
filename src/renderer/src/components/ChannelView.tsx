@@ -173,9 +173,9 @@ export function ChannelView(props: {
           <div class="channel-view-settings" ref={(element) => (settings = element)}>
             <Show when={props.channel.instructions}>
               <details onToggle={onlyOne}>
-                <summary>
+                <summary title={t("Instructions")}>
                   <FileText size={14} stroke-width={1.5} aria-hidden="true" />
-                  {t("Instructions")}
+                  <span class="channel-pill-label">{t("Instructions")}</span>
                 </summary>
                 <div class="channel-view-card">
                   <p class="channel-prewrap">{props.channel.instructions}</p>
@@ -188,9 +188,9 @@ export function ChannelView(props: {
                 setMemoryOpen(event.currentTarget.open);
               }}
             >
-              <summary>
+              <summary title={t("Channel memory")}>
                 <Brain size={14} stroke-width={1.5} aria-hidden="true" />
-                {t("Channel memory")}
+                <span class="channel-pill-label">{t("Channel memory")}</span>
               </summary>
               <div class="channel-view-card">
                 <Show when={memoryOpen()}>
@@ -204,9 +204,9 @@ export function ChannelView(props: {
                 setRoutinesOpen(event.currentTarget.open);
               }}
             >
-              <summary>
+              <summary title={t("Channel routines")}>
                 <RefreshCw size={14} stroke-width={1.5} aria-hidden="true" />
-                {t("Channel routines")}
+                <span class="channel-pill-label">{t("Channel routines")}</span>
               </summary>
               <div class="channel-view-card">
                 <Show when={routinesOpen()}>
@@ -216,9 +216,9 @@ export function ChannelView(props: {
             </details>
             <Show when={props.onClearHistory || props.onChangeHistoryWindow}>
               <details onToggle={onlyOne}>
-                <summary>
+                <summary title={t("Channel history")}>
                   <Clock size={14} stroke-width={1.5} aria-hidden="true" />
-                  {t("Channel history")}
+                  <span class="channel-pill-label">{t("Channel history")}</span>
                 </summary>
                 <div class="channel-view-card">
                   <Show when={props.onChangeHistoryWindow}>
@@ -269,7 +269,7 @@ export function ChannelView(props: {
                       {" "}
                       {t("Reassign")}{" "}
                       <NativeSelect
-                        aria-label={`Reassign ${task.title}`}
+                        aria-label={t("Reassign {title}", { title: task.title })}
                         value={task.ownerBotId}
                         onChange={(e) => props.onReassign(task.id, e.currentTarget.value)}
                       >
@@ -343,7 +343,7 @@ export function ChannelView(props: {
                         type="button"
                         unstyled
                         class="channel-reply-button"
-                        aria-label={`Reply to ${message.text.slice(0, 100)}`}
+                        aria-label={t("Reply to {text}", { text: message.text.slice(0, 100) })}
                         title={t("Reply")}
                         onClick={() => {
                           setReply(message);

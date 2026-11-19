@@ -341,7 +341,7 @@ export function WorkflowCanvas(
               <Button
                 type="button"
                 class="workflow-drag"
-                aria-label={`Move ${node.title}; use X and Y fields with a keyboard`}
+                aria-label={t("Move {title}; use X and Y fields with a keyboard", { title: node.title })}
                 onPointerDown={(event) => startDrag(event, node)}
               >
                 <span class="workflow-node-type">
@@ -354,7 +354,9 @@ export function WorkflowCanvas(
                 type="button"
                 class="workflow-port"
                 onPointerDown={(event) => startConnection(event, node)}
-                aria-label={`Drag connection from ${node.title}; use Connections controls for keyboard`}
+                aria-label={t("Drag connection from {title}; use Connections controls for keyboard", {
+                  title: node.title,
+                })}
               >
                 <span class="sr-only">{t("Connect by drag")}</span>
               </Button>

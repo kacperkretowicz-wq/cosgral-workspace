@@ -11,6 +11,7 @@ import {
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
+import { Server } from "./ui/icons";
 
 function kindLabel(kind: EndpointKind): string {
   if (kind === "ollama") return t("Ollama");
@@ -194,8 +195,11 @@ export function EndpointsSection(props: { api?: EndpointsDesktopApi } = {}) {
                     ? t(" and {count} more", { count: item.models.length - SHOWN_MODELS })
                     : "";
                 return (
-                  <li class="providers-row">
-                    <div>
+                  <li class="providers-row endpoint-row" data-state={item.state}>
+                    <span class="provider-key-icon" aria-hidden="true">
+                      <Server size={18} stroke-width={1.75} />
+                    </span>
+                    <div class="endpoint-row-copy">
                       <Text as="strong">{item.label}</Text> <Badge size="sm">{kindLabel(item.kind)}</Badge>{" "}
                       <Badge size="sm" tone={state().tone}>
                         {state().label}

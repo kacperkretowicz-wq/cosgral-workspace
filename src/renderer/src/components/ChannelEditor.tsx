@@ -1,5 +1,5 @@
 import type { CreateWorkspaceChannelInput, WorkspaceChannel } from "@openbot/contracts/ipc";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
@@ -22,11 +22,13 @@ export function ChannelEditor(props: {
   onClose: () => void;
   onSave: (input: CreateWorkspaceChannelInput) => Promise<void>;
 }) {
-  const [name, setName] = createSignal(props.channel?.name ?? "");
-  const [title, setTitle] = createSignal(props.channel?.title ?? "");
-  const [instructions, setInstructions] = createSignal(props.channel?.instructions ?? "");
-  const [members, setMembers] = createSignal(props.channel?.memberBotIds ?? []);
-  const [lead, setLead] = createSignal(props.channel?.leadBotId ?? "");
+  // The channel being edited gives the fields their first values; later changes to the prop do not overwrite typing.
+  const initial = untrack(() => props.channel);
+  const [name, setName] = createSignal(initial?.name ?? "");
+  const [title, setTitle] = createSignal(initial?.title ?? "");
+  const [instructions, setInstructions] = createSignal(initial?.instructions ?? "");
+  const [members, setMembers] = createSignal(initial?.memberBotIds ?? []);
+  const [lead, setLead] = createSignal(initial?.leadBotId ?? "");
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
   const memberBots = () =>

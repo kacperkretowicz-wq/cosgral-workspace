@@ -9,6 +9,7 @@ export { default as Bot } from "lucide-solid/icons/bot";
 export { default as Brain } from "lucide-solid/icons/brain";
 export { default as CalendarClock } from "lucide-solid/icons/calendar-clock";
 export { default as Check } from "lucide-solid/icons/check";
+export { default as CheckCheck } from "lucide-solid/icons/check-check";
 export { default as ChevronDown } from "lucide-solid/icons/chevron-down";
 export { default as ChevronLeft } from "lucide-solid/icons/chevron-left";
 export { default as ChevronRight } from "lucide-solid/icons/chevron-right";

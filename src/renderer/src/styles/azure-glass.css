@@ -757,3 +757,74 @@ body [role="tooltip"] {
   box-shadow: var(--openbot-tile-quiet-shadow), var(--openbot-glow-accent);
   color: var(--openbot-text-primary);
 }
+
+/* Channel: the Chat / Tasks switch is a glass track with a glossy active pill; the channel's pills are glass. ---- */
+
+.chat-tasks-switch {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.chat-tasks-switch .chat-tasks-switch-tab {
+  border-radius: var(--openbot-radius-pill);
+}
+
+.chat-tasks-switch .chat-tasks-switch-tab-active {
+  background-color: var(--openbot-accent);
+  background-image: var(--openbot-pill-glossy);
+  box-shadow: var(--openbot-pill-glossy-shadow);
+}
+
+.channel-view-settings > details > summary {
+  border-color: transparent;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.channel-view-settings > details[open] > summary {
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-accent);
+}
+
+.channel-view-card {
+  background: var(--openbot-tile-quiet), var(--openbot-popover-glass);
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    0 18px 50px -12px var(--openbot-shadow-dialog);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+.chat-tasks-switch .chat-tasks-switch-context {
+  padding-right: var(--openbot-space-3);
+}
+
+/* Direct message header: the same finish as an agent's header; "Private" is a glass pill, online glows. ---------- */
+
+.direct-conversation-header {
+  height: 52px;
+  border-bottom-color: var(--openbot-border);
+}
+
+.direct-conversation-person .person-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.direct-conversation-person h1 {
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.direct-conversation-person div > span.online i {
+  box-shadow: 0 0 8px var(--openbot-success);
+}
+
+.direct-conversation .direct-private-label {
+  gap: var(--openbot-space-1-5);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-1) var(--openbot-space-3);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+}

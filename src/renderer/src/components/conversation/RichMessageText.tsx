@@ -2,6 +2,7 @@ import { attachmentReferences } from "@openbot/contracts/attachment-references";
 import type { AttachmentSummary } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import type { BotProfile, MessageCitation } from "../../data";
+import { t } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { Button } from "../ui";
 import { AnchoredTooltip } from "./AnchoredTooltip";
@@ -65,7 +66,7 @@ export function RichMessageText(props: {
                 type="button"
                 class="message-file-reference"
                 data-file-tone={attachmentReferenceTone(attachment.name)}
-                aria-label={`Open attached file ${attachment.name}`}
+                aria-label={t("Open attached file {name}", { name: attachment.name })}
                 aria-describedby={tooltipId}
                 onPointerEnter={(event) => openTooltip(event.currentTarget, attachment.name, true)}
                 onMouseEnter={(event) => openTooltip(event.currentTarget, attachment.name, true)}
@@ -116,7 +117,7 @@ export function RichMessageText(props: {
               <Button
                 type="button"
                 class="message-agent-tag"
-                aria-label={`Open agent ${part.bot.name}`}
+                aria-label={t("Open agent {name}", { name: part.bot.name })}
                 onClick={() => props.onSelectAgent(part.bot?.id ?? "")}
               >
                 <AgentAvatar bot={part.bot} />
@@ -130,7 +131,10 @@ export function RichMessageText(props: {
                 <a
                   class="message-citation-mark"
                   href={part.citation.url}
-                  aria-label={`Open citation ${part.citation.number}: ${part.citation.label}`}
+                  aria-label={t("Open citation {number}: {label}", {
+                    number: part.citation.number,
+                    label: part.citation.label,
+                  })}
                   aria-describedby={tooltipId}
                   onPointerEnter={(event) => openTooltip(event.currentTarget, part.citation?.label ?? "")}
                   onMouseEnter={(event) => openTooltip(event.currentTarget, part.citation?.label ?? "")}
@@ -160,7 +164,7 @@ export function RichMessageText(props: {
               <a
                 class="message-citation-ref"
                 href={citation.url}
-                aria-label={`Open source ${citation.number}: ${citation.label}`}
+                aria-label={t("Open source {number}: {label}", { number: citation.number, label: citation.label })}
                 onClick={(event) => {
                   event.preventDefault();
                   props.onOpenLink(citation.url);

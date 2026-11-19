@@ -131,7 +131,7 @@ export function RoutineForm(props: {
         disabled={!bot() || !name().trim() || !prompt().trim()}
         onClick={() => void create()}
       >
-        Create routine
+        {t("Create routine")}
       </Button>
     </section>
   );

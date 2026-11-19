@@ -2758,4 +2758,18 @@ export const pl = {
     "Właściciel hosta musi skonfigurować dostęp do zdalnego pulpitu.",
   "The remote desktop connection ended unexpectedly.": "Połączenie ze zdalnym pulpitem nieoczekiwanie się zakończyło.",
   "Use view-only mode": "Tryb tylko podglądu",
+  "Mark conversation as read": "Oznacz rozmowę jako przeczytaną",
+  "Reassign {title}": "Przypisz ponownie: {title}",
+  "Reply to {text}": "Odpowiedz na: {text}",
+  "Move {title}; use X and Y fields with a keyboard": "Przesuń: {title}; z klawiatury użyj pól X i Y",
+  "Drag connection from {title}; use Connections controls for keyboard":
+    "Przeciągnij połączenie z: {title}; z klawiatury użyj sekcji Połączenia",
+  "Preview {name}": "Podgląd: {name}",
+  "Open attached file {name}": "Otwórz załączony plik {name}",
+  "Open agent {name}": "Otwórz agenta {name}",
+  "Open citation {number}: {label}": "Otwórz cytat {number}: {label}",
+  "Open source {number}: {label}": "Otwórz źródło {number}: {label}",
+  "1 new message": "1 nowa wiadomość",
+  "{count} new messages": "Nowe wiadomości: {count}",
+  "Jump to {label}": "Przejdź do: {label}",
 } as const;

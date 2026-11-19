@@ -42,7 +42,8 @@ import type {
   WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
-import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { createEffect, createMemo, createSignal, createStore, flush, Loading, lazy, onSettled, Show } from "solid-js";
 import { markSidebarConversationRead } from "./agent-read-actions";
 import { AccountLogin } from "./components/AccountLogin";
 import type { OnboardingChoice } from "./components/AppSettingsW3";
@@ -50,14 +51,13 @@ import { type AccountNotice, addAccountNotice } from "./components/account-usage
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
+import { CosgralLoadingSkeleton } from "./components/CosgralLoadingSkeleton";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
 import { LibraryPage } from "./components/LibraryPage";
-import { MarketplacePage } from "./components/MarketplacePage";
-import { MobileConnectPage } from "./components/MobileConnectPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
@@ -65,13 +65,11 @@ import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { SchedulePage } from "./components/SchedulePage";
 import { ServerRail } from "./components/ServerRail";
-import { ServerSettingsPage } from "./components/ServerSettingsPage";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { TasksPage } from "./components/TasksPage";
 import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
-import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
 import { t } from "./i18n";
 import { selectIslandCard } from "./island-selection";
@@ -94,6 +92,34 @@ import {
 import { rowStateFor, type SidebarAgentState } from "./row-activity";
 import { cardsInThread, pendingCardThreadId, threadAttentionItems } from "./thread-view";
 import { useRestoreWorkspace } from "./useRestoreWorkspace";
+
+// Pages that are rarely open load on first use, so the first window paints sooner (one 3 MB bundle before).
+const WorkflowsPage = lazy(() =>
+  import("./components/WorkflowsPage").then((module) => ({ default: module.WorkflowsPage })),
+);
+const MarketplacePage = lazy(() =>
+  import("./components/MarketplacePage").then((module) => ({ default: module.MarketplacePage })),
+);
+const MobileConnectPage = lazy(() =>
+  import("./components/MobileConnectPage").then((module) => ({ default: module.MobileConnectPage })),
+);
+const ServerSettingsPage = lazy(() =>
+  import("./components/ServerSettingsPage").then((module) => ({ default: module.ServerSettingsPage })),
+);
+
+function LazyPage(props: { children: JSX.Element }) {
+  return (
+    <Loading
+      fallback={
+        <main class="w2-library work-page" aria-busy="true">
+          <CosgralLoadingSkeleton label={t("Loading…")} />
+        </main>
+      }
+    >
+      {props.children}
+    </Loading>
+  );
+}
 
 const FALLBACK_STATUS: AgentStatus = {
   phase: "starting",
@@ -2200,10 +2226,14 @@ export function App() {
                 <SchedulePage bots={botList()} />
               </Show>
               <Show when={activePage() === "marketplace"}>
-                <MarketplacePage bots={botList()} />
+                <LazyPage>
+                  <MarketplacePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "workflows"}>
-                <WorkflowsPage />
+                <LazyPage>
+                  <WorkflowsPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "remote-desktop"}>
                 <RemoteDesktopPage />
@@ -2212,7 +2242,9 @@ export function App() {
                 <ProvidersPage fallbackNotices={fallbackNotices()} />
               </Show>
               <Show when={activePage() === "phone"}>
-                <MobileConnectPage />
+                <LazyPage>
+                  <MobileConnectPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "tasks"}>
                 {(() => {
@@ -2236,7 +2268,9 @@ export function App() {
                 <UsagePage bots={botList()} />
               </Show>
               <Show when={activePage() === "server-settings"}>
-                <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />
+                <LazyPage>
+                  <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />
+                </LazyPage>
               </Show>
               <Show
                 when={

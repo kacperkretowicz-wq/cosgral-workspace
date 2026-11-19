@@ -8,13 +8,13 @@ export function UnreadMessagesBanner(props: {
   onJumpToUnread: () => void;
   onMarkRead: () => void;
 }) {
-  const label = () => `${props.count} new ${props.count === 1 ? "message" : "messages"}`;
+  const label = () => (props.count === 1 ? t("1 new message") : t("{count} new messages", { count: props.count }));
   return (
     <div class="unread-messages-banner" role="status" aria-label={label()}>
       <Button
         class="unread-messages-jump"
         type="button"
-        aria-label={`Jump to ${label()}`}
+        aria-label={t("Jump to {label}", { label: label() })}
         onClick={props.onJumpToUnread}
       >
         {label()}

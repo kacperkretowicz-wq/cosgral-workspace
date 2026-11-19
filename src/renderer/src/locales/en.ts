@@ -2755,4 +2755,18 @@ export const en = {
   "The host owner must configure Remote Desktop access.": "The host owner must configure Remote Desktop access.",
   "The remote desktop connection ended unexpectedly.": "The remote desktop connection ended unexpectedly.",
   "Use view-only mode": "Use view-only mode",
+  "Mark conversation as read": "Mark conversation as read",
+  "Reassign {title}": "Reassign {title}",
+  "Reply to {text}": "Reply to {text}",
+  "Move {title}; use X and Y fields with a keyboard": "Move {title}; use X and Y fields with a keyboard",
+  "Drag connection from {title}; use Connections controls for keyboard":
+    "Drag connection from {title}; use Connections controls for keyboard",
+  "Preview {name}": "Preview {name}",
+  "Open attached file {name}": "Open attached file {name}",
+  "Open agent {name}": "Open agent {name}",
+  "Open citation {number}: {label}": "Open citation {number}: {label}",
+  "Open source {number}: {label}": "Open source {number}: {label}",
+  "1 new message": "1 new message",
+  "{count} new messages": "{count} new messages",
+  "Jump to {label}": "Jump to {label}",
 } as const;

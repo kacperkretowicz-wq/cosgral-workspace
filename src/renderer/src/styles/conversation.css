@@ -6211,3 +6211,9 @@
 .thinking-steps li[data-live="true"] p {
   color: var(--openbot-text-primary);
 }
+
+.direct-conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}

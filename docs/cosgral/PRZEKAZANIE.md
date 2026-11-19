@@ -50,6 +50,10 @@
     **Do obejrzenia na Windows:** testy wizualne zmienią się na każdym ekranie (inna paleta) — wzorce aktualizować
     dopiero po obejrzeniu różnic.
 
+13. **Kontynuacja według schematu (P1 → P2 → P3):** wnętrza Dostawców (CLI, Klucze API, Endpointy), pasek kanału w wąskim
+    oknie, nagłówek wiadomości bezpośredniej, jasne historyjki, leniwe ładowanie czterech stron, błąd kontekstu `Field`,
+    ostatnie angielskie napisy (wiersz 19.11 (9) w dzienniku).
+
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 
 ---
