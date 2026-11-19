@@ -2181,7 +2181,6 @@ export const pl = {
   "Use lowercase letters, digits and dashes for the channel name.": "Nazwa kanału: małe litery, cyfry i myślniki.",
   "Choose a lead from the channel members.": "Wybierz lidera spośród członków kanału.",
   "Could not save the channel. Try again.": "Nie udało się zapisać kanału. Spróbuj ponownie.",
-  "Edit channel": "Edytuj kanał",
   "Choose the team and shared instructions for this channel.": "Wybierz zespół i wspólne instrukcje dla tego kanału.",
   "Channel name": "Nazwa kanału",
   "The short name cannot be changed. You can change the display title.":

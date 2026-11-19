@@ -2178,7 +2178,6 @@ export const en = {
     "Use lowercase letters, digits and dashes for the channel name.",
   "Choose a lead from the channel members.": "Choose a lead from the channel members.",
   "Could not save the channel. Try again.": "Could not save the channel. Try again.",
-  "Edit channel": "Edit channel",
   "Choose the team and shared instructions for this channel.":
     "Choose the team and shared instructions for this channel.",
   "Channel name": "Channel name",
