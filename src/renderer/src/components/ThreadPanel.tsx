@@ -8,7 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { THREAD_LIMITS, THREAD_UNDO_LIMITS, threadTitleProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { SubagentsPanel } from "./SubagentsPanel";
@@ -47,7 +47,7 @@ export function ThreadPanel(props: {
       const next = await api.list({ botId: props.botId });
       if (serial === generation) apply(next);
     } catch (e) {
-      if (serial === generation) setError(providerError(e, "Could not load threads."));
+      if (serial === generation) setError(providerError(e, t("Could not load threads.")));
     }
   }
   createEffect(
@@ -123,7 +123,7 @@ export function ThreadPanel(props: {
         setDeleting(null);
       }
     } catch (e) {
-      if (botId === props.botId) setError(providerError(e, "The thread action failed."));
+      if (botId === props.botId) setError(providerError(e, t("The thread action failed.")));
     } finally {
       if (botId === props.botId) setBusy(false);
     }
@@ -140,7 +140,7 @@ export function ThreadPanel(props: {
         setPending((items) => items.filter((entry) => entry.threadId !== item.threadId));
       }
     } catch (e) {
-      if (botId === props.botId) setError(providerError(e, "Could not bring the thread back."));
+      if (botId === props.botId) setError(providerError(e, t("Could not bring the thread back.")));
     } finally {
       if (botId === props.botId) setBusy(false);
     }
@@ -165,31 +165,32 @@ export function ThreadPanel(props: {
       <ThreadUndoBar pending={pending()} busy={busy()} onUndo={(item) => void undo(item)} />
       <SubagentsPanel botId={props.botId} />
       <details class="thread-panel">
-        <summary>Threads: {active()?.title ?? "Loading..."}</summary>
+        <summary>{t("Threads: {title}", { title: active()?.title ?? t("Loading...") })}</summary>
         <div class="thread-panel-body">
           <Heading as="h2" size="sm">
-            Agent threads
+            {t("Agent threads")}
           </Heading>
           <Text as="p" tone="secondary">
-            Running turns finish in their own thread. History, queued messages and Needs you stay with that thread.
-            Memory is shared by this agent.
+            {t(
+              "Running turns finish in their own thread. History, queued messages and Needs you stay with that thread. Memory is shared by this agent.",
+            )}
           </Text>
           <Show when={error()}>
             <Text as="p" role="alert" tone="danger">
               {error()}
             </Text>
             <Button disabled={busy()} onClick={() => void load()}>
-              Reload threads
+              {t("Reload threads")}
             </Button>
           </Show>
           <Button
             disabled={busy() || !loaded() || (list()?.threads.length ?? 0) >= THREAD_LIMITS.threadsPerAgent}
             onClick={() => void run((service, botId) => service.create({ botId }))}
           >
-            New thread
+            {t("New thread")}
           </Button>
-          <Switch label="Show archived threads" checked={archived()} onChange={setArchived} />
-          <Show when={loaded()} fallback={<CosgralLoadingSkeleton label="Loading threads..." />}>
+          <Switch label={t("Show archived threads")} checked={archived()} onChange={setArchived} />
+          <Show when={loaded()} fallback={<CosgralLoadingSkeleton label={t("Loading threads...")} />}>
             <ul class="thread-list">
               <For each={visible()}>
                 {(thread) => (
@@ -199,17 +200,21 @@ export function ThreadPanel(props: {
                         {thread.title}
                       </Heading>
                       <Badge tone={thread.state === "waiting" ? "warning" : "neutral"}>
-                        {thread.state === "running" && !thread.active ? "Working in background" : thread.state}
+                        {thread.state === "running" && !thread.active ? t("Working in background") : thread.state}
                       </Badge>
                       <Show when={thread.active}>
-                        <Badge>Current</Badge>
+                        <Badge>{t("Current")}</Badge>
                       </Show>
                       <Text as="p" tone="secondary">
-                        {thread.preview || "No messages yet."}
+                        {thread.preview || t("No messages yet.")}
                       </Text>
                       <Text as="p" tone="secondary">
-                        {thread.unread} unread; {thread.queued} queued; {thread.needsYou} Needs you. Updated{" "}
-                        {new Date(thread.updatedAt).toLocaleString("en-US")}
+                        {t("{unread} unread; {queued} queued; {needsYou} Needs you. Updated {when}", {
+                          unread: thread.unread,
+                          queued: thread.queued,
+                          needsYou: thread.needsYou,
+                          when: new Date(thread.updatedAt).toLocaleString(language() === "pl" ? "pl-PL" : "en-US"),
+                        })}
                       </Text>
                       <Show when={thread.parentThreadId}>
                         <Button
@@ -223,7 +228,9 @@ export function ThreadPanel(props: {
                             if (parent) select(parent);
                           }}
                         >
-                          From thread: {thread.parentTitle ?? thread.parentThreadId}
+                          {t("From thread: {title}", {
+                            title: thread.parentTitle ?? thread.parentThreadId ?? "",
+                          })}
                         </Button>
                       </Show>
                     </div>
@@ -237,12 +244,12 @@ export function ThreadPanel(props: {
                               void run((service, botId) => service.restore({ botId, threadId: thread.id }))
                             }
                           >
-                            Restore {thread.title}
+                            {t("Restore {name}", { name: thread.title })}
                           </Button>
                         }
                       >
                         <Button disabled={busy() || thread.active} onClick={() => select(thread)}>
-                          Open {thread.title}
+                          {t("Open {name}", { name: thread.title })}
                         </Button>
                         <Button
                           disabled={busy()}
@@ -252,13 +259,13 @@ export function ThreadPanel(props: {
                             setDeleting(null);
                           }}
                         >
-                          Rename {thread.title}
+                          {t("Rename {name}", { name: thread.title })}
                         </Button>
                         <Button
                           disabled={busy()}
                           onClick={() => void run((service, botId) => service.archive({ botId, threadId: thread.id }))}
                         >
-                          Archive {thread.title}
+                          {t("Archive {name}", { name: thread.title })}
                         </Button>
                       </Show>
                       <Button
@@ -269,12 +276,12 @@ export function ThreadPanel(props: {
                           setRename(null);
                         }}
                       >
-                        Delete {thread.title}
+                        {t("Delete {name}", { name: thread.title })}
                       </Button>
                     </div>
                     <Show when={rename() === thread.id}>
                       <form
-                        aria-label={`Rename ${thread.title}`}
+                        aria-label={t("Rename {name}", { name: thread.title })}
                         onSubmit={(event) => {
                           event.preventDefault();
                           const problem = threadTitleProblem(title());
@@ -285,7 +292,7 @@ export function ThreadPanel(props: {
                           void run((service, botId) => service.rename({ botId, threadId: thread.id, title: title() }));
                         }}
                       >
-                        <Field label="Thread title">
+                        <Field label={t("Thread title")}>
                           <Input
                             value={title()}
                             maxlength={THREAD_LIMITS.title}
@@ -294,28 +301,34 @@ export function ThreadPanel(props: {
                           />
                         </Field>
                         <Text as="p" tone="secondary">
-                          Leave empty to use the automatic title.
+                          {t("Leave empty to use the automatic title.")}
                         </Text>
                         <Button type="submit" disabled={busy()}>
-                          Save title
+                          {t("Save title")}
                         </Button>
                         <Button type="button" disabled={busy()} onClick={() => setRename(null)}>
-                          Cancel rename
+                          {t("Cancel rename")}
                         </Button>
                       </form>
                     </Show>
                     <Show when={deleting() === thread.id}>
-                      <fieldset aria-label={`Confirm deleting ${thread.title}`}>
+                      <fieldset aria-label={t("Confirm deleting {name}", { name: thread.title })}>
                         <Text as="p">
                           {undoApi
-                            ? `Delete ${thread.title}? You can bring it back for ${THREAD_UNDO_LIMITS.windowMinutes} minutes.`
-                            : `Permanently delete ${thread.title}, its history, queued messages and Needs you cards? This cannot be undone.`}
+                            ? t("Delete {name}? You can bring it back for {minutes} minutes.", {
+                                name: thread.title,
+                                minutes: THREAD_UNDO_LIMITS.windowMinutes,
+                              })
+                            : t(
+                                "Permanently delete {name}, its history, queued messages and Needs you cards? This cannot be undone.",
+                                { name: thread.title },
+                              )}
                         </Text>
                         <Button variant="danger" disabled={busy()} onClick={() => void remove(thread)}>
-                          {undoApi ? "Delete" : "Delete permanently"}
+                          {undoApi ? t("Delete") : t("Delete permanently")}
                         </Button>
                         <Button disabled={busy()} onClick={() => setDeleting(null)}>
-                          Keep thread
+                          {t("Keep thread")}
                         </Button>
                       </fieldset>
                     </Show>
@@ -327,12 +340,12 @@ export function ThreadPanel(props: {
           <Show when={list()?.threads.some((thread) => thread.needsYou > 0)}>
             <section aria-label={t("Needs you by thread")}>
               <Heading as="h3" size="sm">
-                Needs you by thread
+                {t("Needs you by thread")}
               </Heading>
               <For each={list()?.threads.filter((thread) => thread.needsYou > 0) ?? []}>
                 {(thread) => (
                   <Button disabled={busy() || thread.state === "archived"} onClick={() => select(thread)}>
-                    {thread.title}: {thread.needsYou} Needs you
+                    {t("{title}: {count} Needs you", { title: thread.title, count: thread.needsYou })}
                   </Button>
                 )}
               </For>

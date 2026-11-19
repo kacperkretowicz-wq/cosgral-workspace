@@ -77,6 +77,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 23. [zrobione: 980f578] Aria/i18n: `AccountLogin` + `OtpInput`.
 24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
 25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
+26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
+27. [w toku: KAPI, 05:50] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.
