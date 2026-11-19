@@ -9,16 +9,18 @@ describe("mock tasks view (W12 BE-J)", () => {
     const page = await mock.list();
     expect(isTasksViewPage(page)).toBe(true);
     expect(page.items.map((item) => item.task.title)).toEqual([
+      "Fetch the price list",
+      "Draft the press kit",
       "Compare the competitors",
       "Write the launch post",
       "Collect the facts",
     ]);
-    expect(page.items[1]).toMatchObject({
+    expect(page.items[3]).toMatchObject({
       stepCount: 1,
       stepsDone: 1,
       resultPreview: "Here is the post. It is short and clear.",
     });
-    expect(page.counts).toMatchObject({ active: 3, archived: 1 });
+    expect(page.counts).toMatchObject({ active: 5, archived: 1 });
     expect((await mock.list({ scope: "archived" })).items.map((item) => item.task.id)).toEqual(["sample-task-4"]);
     expect((await mock.list({ states: ["running"] })).total).toBe(1);
   });

@@ -401,7 +401,7 @@ export function SelectionActionsBar(props: {
 
             <Show when={mode() === "error"}>
               <span class="selection-actions-error" role="alert">
-                {t("Couldn't send")}
+                {t("Couldn’t send")}
               </span>
               <Button
                 type="button"

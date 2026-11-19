@@ -2474,7 +2474,7 @@ export const pl = {
   "{count} agents, show list": "{count} agentów, pokaż listę",
   "Queue paused": "Kolejka wstrzymana",
   "Resume queue": "Wznów kolejkę",
-  "Couldn't send": "Nie udało się wysłać",
+  "Couldn’t send": "Nie udało się wysłać",
   Explain: "Wyjaśnij",
   Improve: "Ulepsz",
   Shorten: "Skróć",

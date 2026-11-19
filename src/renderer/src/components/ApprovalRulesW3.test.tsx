@@ -107,7 +107,7 @@ describe("AlwaysAllowPanel", () => {
       />
     ));
     await fireEvent.click(screen.getByRole("button", { name: "Always allow…" }));
-    expect(screen.getByText("C:\\work\\app")).toBeInTheDocument();
+    expect(screen.getByText(/C:\\work\\app/)).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: "Always allow" }));
     expect(onConfirm).toHaveBeenCalledWith({});
   });

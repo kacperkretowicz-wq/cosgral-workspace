@@ -2475,7 +2475,7 @@ export const en = {
   "{count} agents, show list": "{count} agents, show list",
   "Queue paused": "Queue paused",
   "Resume queue": "Resume queue",
-  "Couldn't send": "Couldn't send",
+  "Couldn’t send": "Couldn’t send",
   Explain: "Explain",
   Improve: "Improve",
   Shorten: "Shorten",
