@@ -1,13 +1,15 @@
 import type { ChannelHistoryWindow, ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { ChannelEditor } from "./ChannelEditor";
 import { ChannelView } from "./ChannelView";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
+import { Plus, Settings } from "./ui/icons";
 
 export function ChannelWorkspace(props: {
-  bots: { id: string; name: string }[];
+  bots: ({ id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>)[];
   createRequested?: boolean;
   onCreateHandled?: () => void;
   /** Opens this channel as soon as the workspace shows (from the Tasks page). */
@@ -15,6 +17,8 @@ export function ChannelWorkspace(props: {
   /** The message to scroll to after the channel is shown (the message of a task). */
   openAnchorMessageId?: string | null;
   onOpenHandled?: () => void;
+  /** The channel was opened from the sidebar list, which already lists the channels: no second list here. */
+  hideList?: boolean;
 }) {
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [selected, setSelected] = createSignal("");
@@ -176,15 +180,19 @@ export function ChannelWorkspace(props: {
     }
   }
   return (
-    <div class="channel-workspace">
-      <aside aria-label={t("Channels")}>
+    <div class="channel-workspace" data-list={props.hideList && channel() ? "hidden" : undefined}>
+      <aside aria-label={t("Channels")} hidden={props.hideList && !!channel()}>
         <h2>{t("Channels")}</h2>
-        <Button onClick={() => setEditor("new")}>{t("New channel")}</Button>
+        <Button class="channel-workspace-new" onClick={() => setEditor("new")}>
+          <Plus size={15} stroke-width={1.75} aria-hidden="true" />
+          {t("New channel")}
+        </Button>
         <Show when={channels().length} fallback={<p>{t("No channels yet.")}</p>}>
           <For each={channels().filter((item) => !item.archived)}>
             {(item) => (
               <Button
                 type="button"
+                class="channel-workspace-item"
                 aria-pressed={selected() === item.id ? "true" : "false"}
                 onClick={() => void choose(item.id)}
               >
@@ -195,9 +203,6 @@ export function ChannelWorkspace(props: {
         </Show>
       </aside>
       <div class="channel-workspace-main">
-        <Show when={channel()}>
-          <Button onClick={() => setEditor(channel())}>{t("Edit channel")}</Button>
-        </Show>
         <Show when={error()}>
           <p role="alert">{error()}</p>
         </Show>
@@ -222,6 +227,12 @@ export function ChannelWorkspace(props: {
                   onSend={send}
                   onClearHistory={window.openbot.channels?.clearHistory ? clearHistory : undefined}
                   onChangeHistoryWindow={window.openbot.channels?.update ? changeHistoryWindow : undefined}
+                  actions={
+                    <Button type="button" variant="ghost" class="channel-edit" onClick={() => setEditor(channel())}>
+                      <Settings size={15} stroke-width={1.5} aria-hidden="true" />
+                      {t("Edit channel")}
+                    </Button>
+                  }
                   onResume={(id) => void action(id)}
                   onReassign={(id, botId) => void action(id, botId)}
                 />

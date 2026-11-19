@@ -856,7 +856,7 @@
   font-weight: var(--openbot-weight-semibold);
 }
 
-.work-page .usage-card-header > span {
+.work-page .usage-peak {
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-sm);
   font-variant-numeric: tabular-nums;

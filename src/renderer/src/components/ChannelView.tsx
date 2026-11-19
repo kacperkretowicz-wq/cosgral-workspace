@@ -5,16 +5,70 @@ import type {
   ChannelTask,
   WorkspaceChannel,
 } from "@openbot/contracts/ipc";
+import type { JSX } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
+import { AgentAvatar } from "./AgentAvatar";
 import { ChannelHistoryClear } from "./ChannelHistoryClear";
 import { ChannelHistoryWindowSetting } from "./ChannelHistoryWindow";
 import { ChannelRoutinesPanel } from "./ChannelRoutinesPanel";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
 import { Button, NativeSelect, Textarea, ViewTabPanel } from "./ui";
+import { ArrowUp, Brain, Clock, CornerUpLeft, FileText, RefreshCw, X } from "./ui/icons";
 
-type Person = { id: string; name: string };
+type Person = { id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>;
+
+const KIND_LABELS: Record<ChannelMessage["kind"], string> = {
+  human: "",
+  assignment: "Task",
+  question: "Question",
+  reply: "Reply",
+  result: "Result",
+  note: "Note",
+  system: "System",
+};
+
+const TASK_STATE_LABELS: Record<ChannelTask["state"], string> = {
+  queued: "Queued",
+  running: "Running",
+  waiting: "Waiting",
+  paused: "Paused",
+  done: "Done",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+
+function messageTime(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+/** A creature for an agent; a plain initial tile for the person (and for an agent that is gone). */
+function Author(props: { person: Person | undefined; human: boolean }) {
+  return (
+    <Show
+      when={!props.human && props.person?.avatarSeed ? props.person : undefined}
+      fallback={
+        <span class="channel-author-initial" data-human={props.human ? "true" : undefined} aria-hidden="true">
+          {(props.human ? t("You") : (props.person?.name ?? "?")).slice(0, 1).toUpperCase()}
+        </span>
+      }
+    >
+      {(bot) => (
+        <AgentAvatar
+          class="channel-author-avatar"
+          bot={{
+            avatarSeed: bot().avatarSeed ?? bot().id,
+            avatarHue: bot().avatarHue ?? null,
+            avatarUrl: bot().avatarUrl ?? null,
+          }}
+        />
+      )}
+    </Show>
+  );
+}
 export function ChannelView(props: {
   channel: WorkspaceChannel;
   bots: Person[];
@@ -28,6 +82,8 @@ export function ChannelView(props: {
   onClearHistory?: () => Promise<ChannelHistoryCleared>;
   /** Saves how many of the last messages an agent gets with a task; the list is hidden without it. */
   onChangeHistoryWindow?: (value: ChannelHistoryWindow) => Promise<void>;
+  /** Buttons at the right end of the channel header (e.g. Edit channel). */
+  actions?: JSX.Element;
 }) {
   const tabsId = createUniqueId();
   const [mode, setMode] = createSignal<"chat" | "tasks">("chat");
@@ -45,6 +101,23 @@ export function ChannelView(props: {
   const [sending, setSending] = createSignal(false);
   const [error, setError] = createSignal("");
   const name = (id: string | null) => (id === null ? t("You") : (props.bots.find((bot) => bot.id === id)?.name ?? id));
+  const person = (id: string | null) => (id === null ? undefined : props.bots.find((bot) => bot.id === id));
+  const members = () =>
+    [
+      ...(props.channel.leadBotId ? [props.channel.leadBotId] : []),
+      ...props.channel.memberBotIds.filter((id) => id !== props.channel.leadBotId),
+    ].flatMap((id) => {
+      const bot = person(id);
+      return bot ? [bot] : [];
+    });
+  let settings: HTMLDivElement | undefined;
+  // One settings card at a time: opening one closes the others.
+  const onlyOne = (event: Event) => {
+    const opened = event.currentTarget;
+    if (!(opened instanceof HTMLDetailsElement) || !opened.open) return;
+    for (const other of Array.from(settings?.querySelectorAll("details[open]") ?? []))
+      if (other !== opened && other instanceof HTMLDetailsElement) other.open = false;
+  };
   async function send() {
     if (!text().trim() || sending()) return;
     setSending(true);
@@ -62,41 +135,103 @@ export function ChannelView(props: {
   return (
     <main class="channel-view">
       <header class="channel-view-header">
-        <h1>{props.channel.title || props.channel.name}</h1>
-        <p>
-          {t("Lead: {lead} · Members: {members}", {
-            lead: name(props.channel.leadBotId),
-            members: props.channel.memberBotIds.map(name).join(", "),
-          })}
-        </p>
-        <Show when={props.channel.instructions}>
-          <details>
-            <summary>{t("Instructions")}</summary>
-            <p class="channel-prewrap">{props.channel.instructions}</p>
-          </details>
-        </Show>
-        <details onToggle={(event) => setMemoryOpen(event.currentTarget.open)}>
-          <summary>{t("Channel memory")}</summary>
-          <Show when={memoryOpen()}>
-            <ChannelMemorySettingsView channelId={props.channel.id} />
+        <div class="channel-view-title">
+          <span class="channel-view-stack" data-count={Math.min(3, members().length)} aria-hidden="true">
+            <For each={members().slice(0, 3)}>
+              {(bot) => (
+                <AgentAvatar
+                  class="channel-view-member"
+                  bot={{
+                    avatarSeed: bot.avatarSeed ?? bot.id,
+                    avatarHue: bot.avatarHue ?? null,
+                    avatarUrl: bot.avatarUrl ?? null,
+                  }}
+                />
+              )}
+            </For>
+          </span>
+          <div class="channel-view-heading">
+            <h1>{props.channel.title || props.channel.name}</h1>
+            <p>
+              {t("Lead: {lead} · Members: {members}", {
+                lead: name(props.channel.leadBotId),
+                members: props.channel.memberBotIds.map(name).join(", "),
+              })}
+            </p>
+          </div>
+          <Show when={props.actions}>
+            <div class="channel-view-actions">{props.actions}</div>
           </Show>
-        </details>
-        <details onToggle={(event) => setRoutinesOpen(event.currentTarget.open)}>
-          <summary>{t("Channel routines")}</summary>
-          <Show when={routinesOpen()}>
-            <ChannelRoutinesPanel channel={props.channel} onOpenTask={openTask} />
-          </Show>
-        </details>
-        <Show when={props.onClearHistory || props.onChangeHistoryWindow}>
-          <details>
-            <summary>{t("Channel history")}</summary>
-            <Show when={props.onChangeHistoryWindow}>
-              {(change) => <ChannelHistoryWindowSetting value={props.channel.historyWindow} onChange={change()} />}
+        </div>
+        <div class="channel-view-toolbar">
+          <ChatTasksSwitch
+            idPrefix={tabsId}
+            mode={mode()}
+            onChange={setMode}
+            channelLabel={`# ${props.channel.name}`}
+          />
+          <div class="channel-view-settings" ref={(element) => (settings = element)}>
+            <Show when={props.channel.instructions}>
+              <details onToggle={onlyOne}>
+                <summary>
+                  <FileText size={14} stroke-width={1.5} aria-hidden="true" />
+                  {t("Instructions")}
+                </summary>
+                <div class="channel-view-card">
+                  <p class="channel-prewrap">{props.channel.instructions}</p>
+                </div>
+              </details>
             </Show>
-            <Show when={props.onClearHistory}>{(clear) => <ChannelHistoryClear onClear={clear()} />}</Show>
-          </details>
-        </Show>
-        <ChatTasksSwitch idPrefix={tabsId} mode={mode()} onChange={setMode} channelLabel={`# ${props.channel.name}`} />
+            <details
+              onToggle={(event) => {
+                onlyOne(event);
+                setMemoryOpen(event.currentTarget.open);
+              }}
+            >
+              <summary>
+                <Brain size={14} stroke-width={1.5} aria-hidden="true" />
+                {t("Channel memory")}
+              </summary>
+              <div class="channel-view-card">
+                <Show when={memoryOpen()}>
+                  <ChannelMemorySettingsView channelId={props.channel.id} />
+                </Show>
+              </div>
+            </details>
+            <details
+              onToggle={(event) => {
+                onlyOne(event);
+                setRoutinesOpen(event.currentTarget.open);
+              }}
+            >
+              <summary>
+                <RefreshCw size={14} stroke-width={1.5} aria-hidden="true" />
+                {t("Channel routines")}
+              </summary>
+              <div class="channel-view-card">
+                <Show when={routinesOpen()}>
+                  <ChannelRoutinesPanel channel={props.channel} onOpenTask={openTask} />
+                </Show>
+              </div>
+            </details>
+            <Show when={props.onClearHistory || props.onChangeHistoryWindow}>
+              <details onToggle={onlyOne}>
+                <summary>
+                  <Clock size={14} stroke-width={1.5} aria-hidden="true" />
+                  {t("Channel history")}
+                </summary>
+                <div class="channel-view-card">
+                  <Show when={props.onChangeHistoryWindow}>
+                    {(change) => (
+                      <ChannelHistoryWindowSetting value={props.channel.historyWindow} onChange={change()} />
+                    )}
+                  </Show>
+                  <Show when={props.onClearHistory}>{(clear) => <ChannelHistoryClear onClear={clear()} />}</Show>
+                </div>
+              </details>
+            </Show>
+          </div>
+        </div>
       </header>
       <Show
         when={mode() === "chat"}
@@ -109,16 +244,17 @@ export function ChannelView(props: {
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
                   <article
-                    class="channel-item"
+                    class="channel-item channel-task"
                     id={`channel-task-${task.id}`}
+                    data-state={task.state}
                     aria-current={openedTask() === task.id ? "true" : undefined}
                   >
+                    <Author person={person(task.ownerBotId)} human={false} />
                     <strong>{task.title}</strong>
                     <p>
                       {name(task.ownerBotId)} ·{" "}
-                      <span>
-                        {task.state[0]?.toUpperCase()}
-                        {task.state.slice(1)}
+                      <span class="channel-task-state" data-state={task.state}>
+                        {t(TASK_STATE_LABELS[task.state])}
                       </span>
                     </p>
                     <Show when={task.pauseReason}>
@@ -149,40 +285,72 @@ export function ChannelView(props: {
       >
         <ViewTabPanel idPrefix={tabsId} value="chat" class="channel-chat-panel">
           <section class="channel-view-content" aria-label={t("Channel messages")}>
-            <Show when={props.messages.length} fallback={<p>{t("No messages yet.")}</p>}>
+            <Show
+              when={props.messages.length}
+              fallback={
+                <div class="channel-empty">
+                  <strong>{t("No messages yet.")}</strong>
+                  <p>{t("Write to the lead below; the lead hands tasks to the members.")}</p>
+                </div>
+              }
+            >
               <For each={props.messages}>
                 {(message) => (
-                  <article class="channel-item" id={`channel-message-${message.id}`}>
-                    <strong>{name(message.authorBotId)}</strong>{" "}
-                    <small>
-                      {message.kind}
-                      {message.resultVersion !== null
-                        ? t(" · version {number}", { number: message.resultVersion })
-                        : ""}
-                      {message.superseded ? t(" · Superseded") : ""}
-                    </small>
-                    <Show when={message.replyToMessageId}>
-                      {(id) => (
-                        <Button
-                          type="button"
-                          onClick={() =>
-                            document.getElementById(`channel-message-${id()}`)?.scrollIntoView({ block: "center" })
-                          }
-                        >
-                          ↳{" "}
-                          {props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ??
-                            t("Earlier message")}
-                        </Button>
-                      )}
-                    </Show>
-                    <p class="channel-prewrap">{message.text}</p>
+                  <article
+                    class="channel-item channel-message"
+                    id={`channel-message-${message.id}`}
+                    data-kind={message.kind}
+                    data-human={message.authorBotId === null ? "true" : undefined}
+                  >
+                    <Author person={person(message.authorBotId)} human={message.authorBotId === null} />
+                    <div class="channel-message-body">
+                      <div class="channel-message-meta">
+                        <strong>{name(message.authorBotId)}</strong>{" "}
+                        <small>
+                          <Show when={KIND_LABELS[message.kind]}>
+                            <span class="channel-kind" data-kind={message.kind}>
+                              {t(KIND_LABELS[message.kind])}
+                            </span>{" "}
+                          </Show>
+                          <time datetime={message.createdAt}>{messageTime(message.createdAt)}</time>
+                          {message.resultVersion !== null
+                            ? t(" · version {number}", { number: message.resultVersion })
+                            : ""}
+                          {message.superseded ? t(" · Superseded") : ""}
+                        </small>
+                      </div>
+                      <Show when={message.replyToMessageId}>
+                        {(id) => (
+                          <Button
+                            type="button"
+                            unstyled
+                            class="channel-reply-quote"
+                            onClick={() =>
+                              document.getElementById(`channel-message-${id()}`)?.scrollIntoView({ block: "center" })
+                            }
+                          >
+                            {`↳ ${
+                              props.messages.find((parent) => parent.id === id())?.text.slice(0, 100) ??
+                              t("Earlier message")
+                            }`}
+                          </Button>
+                        )}
+                      </Show>
+                      <p class="channel-prewrap">{message.text}</p>
+                    </div>
                     <Show when={props.supportsReplies}>
                       <Button
                         type="button"
+                        unstyled
+                        class="channel-reply-button"
                         aria-label={`Reply to ${message.text.slice(0, 100)}`}
-                        onClick={() => setReply(message)}
+                        title={t("Reply")}
+                        onClick={() => {
+                          setReply(message);
+                          document.getElementById("channel-message-input")?.focus();
+                        }}
                       >
-                        {t("Reply")}
+                        <CornerUpLeft size={15} stroke-width={1.5} aria-hidden="true" />
                       </Button>
                     </Show>
                   </article>
@@ -197,29 +365,51 @@ export function ChannelView(props: {
               void send();
             }}
           >
-            <label for="channel-message-input">{t("New message to channel lead")}</label>
+            <label for="channel-message-input" class="sr-only">
+              {t("New message to channel lead")}
+            </label>
             <Show when={reply()}>
               {(item) => (
-                <p>
-                  {t("Replying to:")} {item().text.slice(0, 100)}{" "}
-                  <Button type="button" onClick={() => setReply(undefined)}>
-                    {t("Cancel reply")}
+                <p class="channel-composer-reply">
+                  <CornerUpLeft size={13} stroke-width={1.75} aria-hidden="true" />
+                  <span>
+                    {t("Replying to:")} {item().text.slice(0, 100)}
+                  </span>
+                  <Button type="button" unstyled aria-label={t("Cancel reply")} onClick={() => setReply(undefined)}>
+                    <X size={14} stroke-width={1.75} aria-hidden="true" />
                   </Button>
                 </p>
               )}
             </Show>
-            <Textarea
-              id="channel-message-input"
-              maxlength={32000}
-              value={text()}
-              onInput={(e) => setText(e.currentTarget.value)}
-            />
+            <div class="channel-composer-field">
+              <Textarea
+                id="channel-message-input"
+                maxlength={32000}
+                rows={1}
+                placeholder={t("Message {lead}, the channel lead", { lead: name(props.channel.leadBotId) })}
+                value={text()}
+                onInput={(e) => setText(e.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                    event.preventDefault();
+                    void send();
+                  }
+                }}
+              />
+              <Button
+                type="submit"
+                unstyled
+                class="channel-send"
+                aria-label={t("Send")}
+                title={t("Send")}
+                disabled={sending() || !text().trim()}
+              >
+                <ArrowUp size={16} stroke-width={2} aria-hidden="true" />
+              </Button>
+            </div>
             <Show when={error()}>
               <p role="alert">{error()}</p>
             </Show>
-            <Button type="submit" disabled={sending() || !text().trim()}>
-              {t("Send")}
-            </Button>
           </form>
         </ViewTabPanel>
       </Show>

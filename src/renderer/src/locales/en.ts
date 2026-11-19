@@ -2632,4 +2632,8 @@ export const en = {
   "Peak {value}": "Peak {value}",
   "{count} members": "{count} members",
   "led by {name}": "led by {name}",
+  Task: "Task",
+  "Write to the lead below; the lead hands tasks to the members.":
+    "Write to the lead below; the lead hands tasks to the members.",
+  "Message {lead}, the channel lead": "Message {lead}, the channel lead",
 } as const;

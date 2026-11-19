@@ -210,7 +210,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
                 <figure class="usage-chart">
                   <header class="usage-card-header">
                     <h3>{t("Tokens per day")}</h3>
-                    <span>{t("Peak {value}", { value: compact(peak()) })}</span>
+                    <span class="usage-peak">{t("Peak {value}", { value: compact(peak()) })}</span>
                   </header>
                   <div class="usage-chart-plot">
                     <span class="usage-chart-grid" aria-hidden="true">

@@ -18,6 +18,7 @@ export { default as Clock } from "lucide-solid/icons/clock";
 export { default as Coins } from "lucide-solid/icons/coins";
 export { default as Contact } from "lucide-solid/icons/contact";
 export { default as Copy } from "lucide-solid/icons/copy";
+export { default as CornerUpLeft } from "lucide-solid/icons/corner-up-left";
 export { default as Cpu } from "lucide-solid/icons/cpu";
 export { default as CreditCard } from "lucide-solid/icons/credit-card";
 export { default as Crosshair } from "lucide-solid/icons/crosshair";

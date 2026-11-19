@@ -2278,6 +2278,7 @@ export function App() {
                   openChannelId={openChannelId()}
                   openAnchorMessageId={openAnchorId()}
                   onOpenHandled={() => setOpenChannelId(null)}
+                  hideList={sidebarChannelId() !== null}
                 />
               </Show>
               <Show when={activePage() === "agents" && newAgentOpen()}>

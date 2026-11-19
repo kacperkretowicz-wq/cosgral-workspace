@@ -2633,4 +2633,8 @@ export const pl = {
   "Peak {value}": "Szczyt {value}",
   "{count} members": "Członkowie: {count}",
   "led by {name}": "prowadzi {name}",
+  Task: "Zadanie",
+  "Write to the lead below; the lead hands tasks to the members.":
+    "Napisz poniżej do prowadzącego; on rozdziela zadania członkom.",
+  "Message {lead}, the channel lead": "Napisz do {lead}, prowadzącego kanał",
 } as const;

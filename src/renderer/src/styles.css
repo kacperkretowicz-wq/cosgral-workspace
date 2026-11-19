@@ -16,6 +16,7 @@
 @import "./styles/motion-reveal.css";
 @import "./styles/shell.css";
 @import "./styles/work-page.css";
+@import "./styles/channel-view.css";
 @import "./styles/theme-light.css";
 
 :root {
