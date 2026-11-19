@@ -1,11 +1,12 @@
 import { API_KEY_PROVIDERS, type ApiKeyEntry, type ApiKeyProvider, type ApiKeyStatus } from "@openbot/contracts/ipc";
+import { t } from "../i18n";
 export function providerLabel(provider: ApiKeyProvider) {
   return provider === "codex" ? "OpenAI" : "Anthropic";
 }
 export function statusLabel(status: ApiKeyStatus) {
-  if (status === "ok") return "OK";
-  if (status === "rejected") return "Rejected";
-  return "Unchecked";
+  if (status === "ok") return t("OK");
+  if (status === "rejected") return t("Rejected");
+  return t("Unchecked");
 }
 
 export function statusTone(status: ApiKeyStatus): "success" | "danger" | "warning" {

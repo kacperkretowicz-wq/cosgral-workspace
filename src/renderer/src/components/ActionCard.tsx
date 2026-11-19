@@ -1,5 +1,6 @@
 import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
+import { t } from "../i18n";
 import type { PendingCard } from "../pending-cards";
 import { Button, Textarea } from "./ui";
 
@@ -27,7 +28,7 @@ export function ActionCard(props: {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Action failed. Try again.");
+      setError(e instanceof Error ? e.message : t("Action failed. Try again."));
     } finally {
       setBusy(false);
     }
@@ -40,18 +41,20 @@ export function ActionCard(props: {
             <strong>{item().card.title}</strong>
             <Show when={item().card.recipient}>
               <div>
-                To: <span>{item().card.recipient}</span>
+                {t("To:")} <span>{item().card.recipient}</span>
               </div>
             </Show>
             <Show when={item().card.channel}>
-              <div>Via: {item().card.channel}</div>
+              <div>
+                {t("Via:")} {item().card.channel}
+              </div>
             </Show>
             <Show when={editing()} fallback={<pre class="action-card-preview">{item().card.preview}</pre>}>
               <label>
-                Draft text
+                {t("Draft text")}
                 <Textarea
                   unstyled
-                  aria-label="Draft text"
+                  aria-label={t("Draft text")}
                   value={text()}
                   onInput={(e) => setText(e.currentTarget.value)}
                 />
@@ -70,10 +73,10 @@ export function ActionCard(props: {
                         void run(() => props.onDraft({ requestId: item().requestId, decision: "edit", text: text() }))
                       }
                     >
-                      Request revision
+                      {t("Request revision")}
                     </Button>
                     <Button unstyled type="button" onClick={() => setEditing(false)}>
-                      Back
+                      {t("Back")}
                     </Button>
                   </>
                 }
@@ -84,10 +87,10 @@ export function ActionCard(props: {
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "send" }))}
                 >
-                  {item().card.variant === "draft" ? "Send" : "Confirm"}
+                  {item().card.variant === "draft" ? t("Send") : t("Confirm")}
                 </Button>
                 <Button unstyled type="button" disabled={busy()} onClick={() => setEditing(true)}>
-                  Edit
+                  {t("Edit")}
                 </Button>
                 <Button
                   unstyled
@@ -95,7 +98,7 @@ export function ActionCard(props: {
                   disabled={busy()}
                   onClick={() => void run(() => props.onDraft({ requestId: item().requestId, decision: "keep-draft" }))}
                 >
-                  {item().card.variant === "draft" ? "Keep draft" : "Cancel"}
+                  {item().card.variant === "draft" ? t("Keep draft") : t("Cancel")}
                 </Button>
               </Show>
             </div>
@@ -105,7 +108,7 @@ export function ActionCard(props: {
       <Show when={props.card.kind === "browser-takeover" ? props.card : undefined}>
         {(item) => (
           <>
-            <strong>Browser help requested</strong>
+            <strong>{t("Browser help requested")}</strong>
             <p>{item().request.reason}</p>
             <p>{item().request.url}</p>
             <div class="action-card-buttons">
@@ -121,7 +124,7 @@ export function ActionCard(props: {
                         void run(() => props.onTakeover({ requestId: item().requestId, action: "take-over" }))
                       }
                     >
-                      Take over
+                      {t("Take over")}
                     </Button>
                     <Button
                       unstyled
@@ -131,7 +134,7 @@ export function ActionCard(props: {
                         void run(() => props.onTakeover({ requestId: item().requestId, action: "decline" }))
                       }
                     >
-                      Decline
+                      {t("Decline")}
                     </Button>
                   </>
                 }
@@ -142,7 +145,7 @@ export function ActionCard(props: {
                   disabled={busy()}
                   onClick={() => void run(() => props.onTakeover({ requestId: item().requestId, action: "return" }))}
                 >
-                  Return to agent
+                  {t("Return to agent")}
                 </Button>
               </Show>
             </div>

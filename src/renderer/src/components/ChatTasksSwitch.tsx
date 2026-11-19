@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
 import type { ChannelViewMode } from "../channel-tasks";
+import { t } from "../i18n";
 import { ViewTabList } from "./ui";
 export function ChatTasksSwitch(props: {
   mode: ChannelViewMode;
@@ -13,10 +14,10 @@ export function ChatTasksSwitch(props: {
       value={props.mode}
       onChange={(value) => props.onChange(value === "tasks" ? "tasks" : "chat")}
       tabs={[
-        { value: "chat", label: "Chat" },
-        { value: "tasks", label: "Tasks" },
+        { value: "chat", label: t("Chat") },
+        { value: "tasks", label: t("Tasks") },
       ]}
-      label="Channel view"
+      label={t("Channel view")}
       class="chat-tasks-switch"
       tabClass={(value) => ["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === value }]}
     >

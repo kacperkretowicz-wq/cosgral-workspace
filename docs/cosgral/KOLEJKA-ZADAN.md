@@ -68,6 +68,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 15. [zrobione: dba28510c] Aria/i18n: `SkillsSettings` + `QueueHoldNotice` + `EyesIndicator` (błędy/aria/Stop).
 16. [zrobione: ab2c7394d] Aria/i18n: `ProviderModelPicker` (wybór modelu / statusy dostawcy).
 17. [zrobione: a192f6f8f] Aria/i18n: rozdziel `View`→`Show` (kolizja z KK) + `TablesPanel` / `VaultRequestCard`.
+18. [zrobione: da0d5edac] Aria/i18n: `ActionCard` + `ApiKeysSection` + `ComingSoon` + `ChatTasksSwitch`.
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.
