@@ -35,7 +35,9 @@ export function VaultForm(props: {
       props.initial &&
       (kind() === "contact" || kind() === "totp") &&
       !window.confirm(
-        "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?",
+        t(
+          "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?",
+        ),
       )
     )
       return;
@@ -321,14 +323,14 @@ export function VaultPanel() {
                   setEditing(item);
                 }}
               >
-                Edit
+                {t("Edit")}
               </Button>{" "}
               <Button
                 unstyled
                 type="button"
                 onClick={() => {
                   const vault = window.openbot.vault;
-                  if (vault && window.confirm(`Delete ${item.label}?`))
+                  if (vault && window.confirm(t("Delete {name}?", { name: item.label })))
                     void vault
                       .delete({ itemId: item.id })
                       .then(refresh)
@@ -350,7 +352,7 @@ export function VaultPanel() {
           setAdding(true);
         }}
       >
-        Add item
+        {t("Add item")}
       </Button>
       <Show when={editing() ?? (adding() ? "new" : undefined)} keyed>
         {(item) => (

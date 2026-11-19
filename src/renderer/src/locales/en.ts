@@ -2427,4 +2427,10 @@ export const en = {
   "Vault is unavailable in this build.": "Vault is unavailable in this build.",
   "Could not load Vault.": "Could not load Vault.",
   "Could not delete item.": "Could not delete item.",
+  "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?":
+    "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?",
+  "Replace the webhook secret? Existing senders must be updated.":
+    "Replace the webhook secret? Existing senders must be updated.",
+  "Generate new secret": "Generate new secret",
+  "Delete this memory?": "Delete this memory?",
 } as const;

@@ -85,7 +85,7 @@ export function MemoryPanel(props: {
                 unstyled
                 type="button"
                 onClick={() => {
-                  if (window.confirm("Delete this memory?")) void run(() => props.onDelete(entry.id));
+                  if (window.confirm(t("Delete this memory?"))) void run(() => props.onDelete(entry.id));
                 }}
               >
                 Delete

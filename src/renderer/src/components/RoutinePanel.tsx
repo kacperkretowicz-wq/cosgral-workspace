@@ -219,14 +219,16 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 unstyled
                 type="button"
                 onClick={() => {
-                  if (window.confirm("Replace the webhook secret? Existing senders must be updated."))
+                  if (window.confirm(t("Replace the webhook secret? Existing senders must be updated.")))
                     void run(async () => {
-                      const result = await window.openbot.routines?.regenerateSecret({ routineId: routine.id });
+                      const result = await window.openbot.routines?.regenerateSecret({
+                        routineId: routine.id,
+                      });
                       if (result?.secret) setSecret(result.secret);
                     });
                 }}
               >
-                Generate new secret
+                {t("Generate new secret")}
               </Button>
             </Show>
             <div>
