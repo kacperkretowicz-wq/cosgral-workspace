@@ -82,7 +82,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 29. [zrobione: 5cb0d5c46] Aria/i18n: `AccountLogin` placeholder + skan pozostałych TSX poza Remote/Mobile.
 30. [zrobione: 316fe2e1d] Aria/i18n: Sidebar SVG titles Limit/Error/Responded + drobne resztki poza Remote/Mobile.
 31. [zrobione: bccd741a4] Aria/i18n: TasksViewScreen status labels (Done/Failed/…) + resztki statusów w App.tsx.
-32. [w toku: KAPI, 08:05] Aria/i18n: AppSettingsW3 powiadomienia + AgentCard* Working folder + fallbacki ApprovalRules/Memory.
+32. [zrobione: 06268e5f4] Aria/i18n: AppSettingsW3 powiadomienia + AgentCard* Working folder + fallbacki ApprovalRules/Memory.
+33. [w toku: KAPI, 08:12] Aria/i18n: RoutinePanel create/load fallbacki + skan pozostałych setError EN.
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
