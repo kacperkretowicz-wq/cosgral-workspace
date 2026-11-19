@@ -76,7 +76,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 23. [zrobione: 980f578] Aria/i18n: `AccountLogin` + `OtpInput`.
 24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
 25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
-26. [zrobione: 64f00262e] Aria/i18n: `ThreadPanel` + `DirectConversation`.
+26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
+27. [w toku: KAPI, 05:50] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
