@@ -2363,4 +2363,7 @@ export const pl = {
   Grammar: "Gramatyka",
   "Show fewer actions": "Pokaż mniej działań",
   "Show more actions": "Pokaż więcej działań",
+  "Loading COSGRAL Workspace": "Wczytywanie COSGRAL Workspace",
+  "Resize left sidebar": "Zmień szerokość lewego paska",
+  "person@company.com": "osoba@firma.pl",
 } as const;

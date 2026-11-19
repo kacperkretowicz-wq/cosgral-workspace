@@ -78,7 +78,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
 26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
 27. [zrobione: 79a742675] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
-28. [w toku: KAPI, 06:20] Aria/i18n: `App.tsx` Library / Schedule / Loading + `HostPanel` / resztki aria.
+28. [zrobione: SHA_AL] Aria/i18n: `App.tsx` Library / Schedule / Loading + `HostPanel` / resztki aria.
+29. [w toku: KAPI, 06:47] Aria/i18n: `AccountLogin` placeholder + skan pozostałych TSX poza Remote/Mobile.
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.

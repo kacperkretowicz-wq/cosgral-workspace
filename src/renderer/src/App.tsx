@@ -2022,7 +2022,7 @@ export function App() {
   return (
     <Show
       when={setupLoaded() && appInfo() !== null}
-      fallback={<div class="initial-setup-screen" role="status" aria-label="Loading COSGRAL Workspace" />}
+      fallback={<div class="initial-setup-screen" role="status" aria-label={t("Loading COSGRAL Workspace")} />}
     >
       <Show
         when={visibleSignedInAccount()}
@@ -2153,7 +2153,7 @@ export function App() {
               />
               <PanelResizer
                 class="left-panel-resizer"
-                label="Resize left sidebar"
+                label={t("Resize left sidebar")}
                 controls="bot-sidebar"
                 direction="left"
                 value={leftPanelWidth()}
@@ -2175,7 +2175,7 @@ export function App() {
               />
               <Show when={activePage() === "library"}>
                 <main class="w2-library">
-                  <h1>Library</h1>
+                  <h1>{t("Library")}</h1>
                   <SkillsSettings />
                   <VaultPanel />
                   <VaultConnectorsPanel />
@@ -2190,7 +2190,7 @@ export function App() {
               </Show>
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">
-                  <h1>Schedule</h1>
+                  <h1>{t("Schedule")}</h1>
                   <Show when={window.openbot?.schedule}>
                     <ScheduleOverview />
                   </Show>

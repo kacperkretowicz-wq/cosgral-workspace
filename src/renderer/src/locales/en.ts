@@ -2365,4 +2365,7 @@ export const en = {
   Grammar: "Grammar",
   "Show fewer actions": "Show fewer actions",
   "Show more actions": "Show more actions",
+  "Loading COSGRAL Workspace": "Loading COSGRAL Workspace",
+  "Resize left sidebar": "Resize left sidebar",
+  "person@company.com": "person@company.com",
 } as const;

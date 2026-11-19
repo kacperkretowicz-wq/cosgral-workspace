@@ -11,7 +11,7 @@ import type {
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, type Element as SolidElement } from "solid-js";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 import { Badge, Button, Dialog, Input, NativeSelect, Tabs } from "./ui";
 
 type AdminSection = "overview" | "people" | "desktop";
@@ -316,7 +316,7 @@ export function HostPanel(props: HostPanelProps) {
                                 autocomplete="email"
                                 maxlength={INPUT_LIMITS.email}
                                 value={inviteEmail()}
-                                placeholder="person@company.com"
+                                placeholder={t("person@company.com")}
                                 onInput={(event) => setInviteEmail(event.currentTarget.value)}
                               />
                               <small>{t("Only this email address can accept the invitation.")}</small>
@@ -759,7 +759,7 @@ function roleLabel(role: Exclude<TeamRole, "owner">): string {
 }
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleString([], {
+  return new Date(value).toLocaleString(language() === "pl" ? "pl-PL" : "en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
