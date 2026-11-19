@@ -1955,4 +1955,13 @@ export const en = {
     "In control mode, focus the screen to send keys. Press F10 to leave the remote screen.",
   "Remote screen. Focus to send keyboard input when control is granted.":
     "Remote screen. Focus to send keyboard input when control is granted.",
+  "Sending is unavailable in this build.": "Sending is unavailable in this build.",
+  "Replies are not available in this build.": "Replies are not available in this build.",
+  "Clearing the history is unavailable in this build.": "Clearing the history is unavailable in this build.",
+  "Saving the history window is unavailable in this build.": "Saving the history window is unavailable in this build.",
+  "Channels unavailable": "Channels unavailable",
+  "No channels yet.": "No channels yet.",
+  "Edit channel": "Edit channel",
+  "Select a channel.": "Select a channel.",
+  "Channels are unavailable.": "Channels are unavailable.",
 } as const;

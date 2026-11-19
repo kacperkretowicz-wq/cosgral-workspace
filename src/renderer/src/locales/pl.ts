@@ -1958,4 +1958,13 @@ export const pl = {
     "W trybie sterowania zaznacz ekran, żeby wysyłać klawisze. Naciśnij F10, żeby opuścić zdalny ekran.",
   "Remote screen. Focus to send keyboard input when control is granted.":
     "Zdalny ekran. Zaznacz, żeby wysyłać klawiaturę, gdy przyznano sterowanie.",
+  "Sending is unavailable in this build.": "Wysyłanie jest niedostępne w tej wersji.",
+  "Replies are not available in this build.": "Odpowiedzi na wiadomości są niedostępne w tej wersji.",
+  "Clearing the history is unavailable in this build.": "Czyszczenie historii jest niedostępne w tej wersji.",
+  "Saving the history window is unavailable in this build.": "Zapis okna historii jest niedostępny w tej wersji.",
+  "Channels unavailable": "Kanały są niedostępne",
+  "No channels yet.": "Nie ma jeszcze kanałów.",
+  "Edit channel": "Edytuj kanał",
+  "Select a channel.": "Wybierz kanał.",
+  "Channels are unavailable.": "Kanały są niedostępne.",
 } as const;

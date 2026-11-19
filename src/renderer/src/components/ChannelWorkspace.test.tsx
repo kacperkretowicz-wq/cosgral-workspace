@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockOpenBot } from "../../stories/mock-openbot";
+import { setLanguage } from "../i18n";
 import { ChannelWorkspace } from "./ChannelWorkspace";
 
 describe("channel workspace", () => {
@@ -183,5 +184,20 @@ describe("channel workspace", () => {
     render(() => <ChannelWorkspace bots={[]} createRequested onCreateHandled={handled} />);
     await screen.findByRole("dialog");
     expect(handled).toHaveBeenCalledOnce();
+  });
+
+  it("speaks Polish: the list of channels, its buttons, the empty hint and the refused clear of the history", async () => {
+    setLanguage("pl");
+    try {
+      Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
+      render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} />);
+      expect(await screen.findByRole("heading", { name: "Kanały" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Nowy kanał" })).toBeInTheDocument();
+      expect(screen.getByText("Wybierz kanał.")).toBeInTheDocument();
+      await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
+      expect(await screen.findByRole("button", { name: "Edytuj kanał" })).toBeInTheDocument();
+    } finally {
+      setLanguage("en");
+    }
   });
 });
