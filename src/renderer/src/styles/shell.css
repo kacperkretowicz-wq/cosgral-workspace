@@ -470,3 +470,85 @@
   font-weight: 600;
   line-height: 20px;
 }
+
+/*
+ * Channels on the sidebar list: up to three member creatures stacked (lead in front), the title, the member count,
+ * and "#name · led by ..." as the preview. Same row anatomy as an agent row.
+ */
+.sidebar .channel-row-stack {
+  position: relative;
+}
+
+.sidebar .channel-row-stack .channel-row-member {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-sidebar);
+  box-shadow: 0 0 0 2px var(--openbot-bg-sidebar);
+}
+
+/* One member fills the slot; two sit diagonally; three form a small triangle. */
+.sidebar .channel-row-stack[data-count="1"] .channel-row-member {
+  inset: 4px;
+  width: 34px;
+  height: 34px;
+}
+
+.sidebar .channel-row-stack[data-count="2"] .channel-row-member:nth-child(1),
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(1) {
+  z-index: 3;
+  bottom: 0;
+  left: 0;
+}
+
+.sidebar .channel-row-stack[data-count="2"] .channel-row-member:nth-child(2) {
+  z-index: 2;
+  top: 0;
+  right: 0;
+}
+
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(2) {
+  z-index: 2;
+  bottom: 0;
+  right: 0;
+}
+
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(3) {
+  z-index: 1;
+  top: 0;
+  left: 8px;
+}
+
+.sidebar .bot-row-active .channel-row-member {
+  background: var(--openbot-active);
+  box-shadow: 0 0 0 2px var(--openbot-active);
+}
+
+.channel-row-hash {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.sidebar .channel-row-count {
+  min-width: 18px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control);
+  padding: 0 6px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  text-align: center;
+}
+
+.channel-row-name {
+  color: var(--openbot-text-dim);
+}

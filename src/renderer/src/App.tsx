@@ -39,6 +39,7 @@ import type {
   ThreadList,
   UpdateBotInput,
   UpdateStatus,
+  WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
@@ -236,6 +237,9 @@ export function App() {
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [channelsOpen, setChannelsOpen] = createSignal(false);
   const [openChannelId, setOpenChannelId] = createSignal<string | null>(null);
+  /** Channels on the sidebar list, and the one opened from it (cleared when anything else is opened). */
+  const [channelList, setChannelList] = createSignal<WorkspaceChannel[]>([]);
+  const [sidebarChannelId, setSidebarChannelId] = createSignal<string | null>(null);
   const [openAnchorId, setOpenAnchorId] = createSignal<string | null>(null);
   const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
@@ -377,6 +381,14 @@ export function App() {
       setLeftPanelAutoCompact(shouldAutoCompactSidebar(platform, panelWidth));
     },
   );
+
+  onSettled(() => {
+    // Channels for the sidebar list; later changes arrive as "channels-changed".
+    void window.openbot?.channels
+      ?.list()
+      .then(setChannelList)
+      .catch(() => undefined);
+  });
 
   onSettled(() => {
     window.addEventListener("resize", updateResponsiveSidebar);
@@ -721,6 +733,9 @@ export function App() {
         return;
       case "bots-changed":
         applyStoredBots(event.bots);
+        return;
+      case "channels-changed":
+        setChannelList(event.channels);
         return;
       case "conversation":
         if (
@@ -2105,7 +2120,21 @@ export function App() {
                 copyNotice={agentCopyNotice()}
                 onDismissCopyNotice={() => setAgentCopyNotice("")}
                 modelOptions={modelOptions()}
+                channels={channelList()}
+                activeChannelId={activePage() === "agents" && channelsOpen() ? sidebarChannelId() : null}
+                onOpenChannel={(channelId) => {
+                  setCreateChannel(false);
+                  setNewAgentOpen(false);
+                  setActivePage("agents");
+                  setActiveDirectMemberId(null);
+                  setAgentPickerOpen(false);
+                  setOpenAnchorId(null);
+                  setOpenChannelId(channelId);
+                  setSidebarChannelId(channelId);
+                  setChannelsOpen(true);
+                }}
                 onSelectChannels={(create) => {
+                  setSidebarChannelId(null);
                   setCreateChannel(!!create);
                   setNewAgentOpen(false);
                   setActivePage("agents");

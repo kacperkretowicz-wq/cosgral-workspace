@@ -13,6 +13,7 @@ import type {
   TeamPresenceMember,
   ThreadList,
   UpdateStatus,
+  WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { emptySidebarLayout } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
@@ -90,6 +91,10 @@ interface SidebarProps {
   modelOptions?: AgentModelOption[];
   onMarkBotRead?: (botId: string) => Promise<void>;
   onSelectChannels?: (create?: boolean) => void;
+  /** Channels shown on the list (archived ones are left out); a row opens its channel. */
+  channels?: ReadonlyArray<WorkspaceChannel>;
+  activeChannelId?: string | null;
+  onOpenChannel?: (channelId: string) => void;
   onSelectNeedsYou?: (botId: string, threadId?: string) => void;
   onSelectPerson: (memberId: string) => void;
   onCreateBot: () => void;
@@ -418,6 +423,16 @@ export function Sidebar(props: SidebarProps) {
   const directThreadByMember = createMemo(
     () => new Map(props.directThreads.map((thread) => [thread.otherMemberId, thread])),
   );
+  const filteredChannels = createMemo(() => {
+    const normalizedQuery = query().trim().toLowerCase();
+    return (props.channels ?? []).filter(
+      (channel) =>
+        !channel.archived &&
+        (!normalizedQuery || `${channel.title} ${channel.name}`.toLowerCase().includes(normalizedQuery)),
+    );
+  });
+  const showChannels = () => Boolean(props.onOpenChannel) && filteredChannels().length > 0;
+  const botById = createMemo(() => new Map(props.bots.map((bot) => [bot.id, bot])));
   const filteredPeople = createMemo(() => {
     const normalizedQuery = query().trim().toLowerCase();
     return [...props.people]
@@ -893,13 +908,75 @@ export function Sidebar(props: SidebarProps) {
               </For>
             </section>
           </Show>
+          <Show when={showChannels()}>
+            <section class="sidebar-chat-group" aria-labelledby="sidebar-channels-heading">
+              <header>
+                <h2 id="sidebar-channels-heading">{t("Channels")}</h2>
+              </header>
+              <For each={filteredChannels()}>
+                {(channel) => {
+                  const members = () =>
+                    [
+                      ...(channel.leadBotId ? [channel.leadBotId] : []),
+                      ...channel.memberBotIds.filter((id) => id !== channel.leadBotId),
+                    ].flatMap((id) => {
+                      const bot = botById().get(id);
+                      return bot ? [bot] : [];
+                    });
+                  const lead = () => (channel.leadBotId ? botById().get(channel.leadBotId) : undefined);
+                  const title = () => channel.title.trim() || channel.name;
+                  return (
+                    <Button
+                      type="button"
+                      class={["bot-row channel-row", { "bot-row-active": props.activeChannelId === channel.id }]}
+                      aria-pressed={props.activeChannelId === channel.id ? "true" : "false"}
+                      aria-label={`${t("Channel")} ${title()}. ${t("{count} members", { count: channel.memberBotIds.length })}`}
+                      data-channel-id={channel.id}
+                      onClick={() => props.onOpenChannel?.(channel.id)}
+                    >
+                      <span class="bot-row-avatar channel-row-stack" data-count={Math.min(3, members().length)}>
+                        <For each={members().slice(0, 3)}>
+                          {(bot, index) => (
+                            <AgentAvatar
+                              bot={bot}
+                              class="channel-row-member"
+                              style={{ "--stack-index": String(index()) }}
+                            />
+                          )}
+                        </For>
+                        <Show when={members().length === 0}>
+                          <span class="channel-row-hash" aria-hidden="true">
+                            #
+                          </span>
+                        </Show>
+                      </span>
+                      <span class="bot-row-copy">
+                        <span class="bot-row-heading">
+                          <span class="bot-row-title">
+                            <strong>{title()}</strong>
+                          </span>
+                          <span class="bot-row-meta">
+                            <span class="channel-row-count">{channel.memberBotIds.length}</span>
+                          </span>
+                        </span>
+                        <span class="bot-row-preview">
+                          <span class="channel-row-name">#{channel.name}</span>
+                          <Show when={lead()}>{(bot) => <> · {t("led by {name}", { name: bot().name })}</>}</Show>
+                        </span>
+                      </span>
+                    </Button>
+                  );
+                }}
+              </For>
+            </section>
+          </Show>
           <Show when={listRows().length > 0}>
             <section
               class="sidebar-chat-group"
-              aria-label={filteredPeople().length > 0 ? undefined : "Agents"}
-              aria-labelledby={filteredPeople().length > 0 ? "sidebar-agents-heading" : undefined}
+              aria-label={filteredPeople().length > 0 || showChannels() ? undefined : "Agents"}
+              aria-labelledby={filteredPeople().length > 0 || showChannels() ? "sidebar-agents-heading" : undefined}
             >
-              <Show when={filteredPeople().length > 0}>
+              <Show when={filteredPeople().length > 0 || showChannels()}>
                 <header>
                   <h2 id="sidebar-agents-heading">{t("Agents")}</h2>
                 </header>

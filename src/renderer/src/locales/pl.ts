@@ -2631,4 +2631,6 @@ export const pl = {
   "{count} priced turns": "Tury z ceną: {count}",
   "Tokens per day": "Tokeny dziennie",
   "Peak {value}": "Szczyt {value}",
+  "{count} members": "Członkowie: {count}",
+  "led by {name}": "prowadzi {name}",
 } as const;

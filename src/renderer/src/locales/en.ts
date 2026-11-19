@@ -2630,4 +2630,6 @@ export const en = {
   "{count} priced turns": "{count} priced turns",
   "Tokens per day": "Tokens per day",
   "Peak {value}": "Peak {value}",
+  "{count} members": "{count} members",
+  "led by {name}": "led by {name}",
 } as const;
