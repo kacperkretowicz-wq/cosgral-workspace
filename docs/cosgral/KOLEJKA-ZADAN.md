@@ -109,7 +109,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 39. Skróty klawiszowe: pełna mapa 0.71 (wiersz 72) w kontrakcie `ipc-shortcuts` + testy; ekran zostawia UI.
 
 ## Tester
-0. [w toku: Tester, 09:20] T-AL GO Electron @ 978195fbd (e2e, W5, sondy, zrzuty 17-11-k).
+0. [zrobione: SHA-PLACEHOLDER] T-AL GO Electron @ 978195fbd (e2e, W5, sondy, zrzuty 17-11-k).
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.
 2. [zrobione: team/tester/w12-tg] Tabela zgodności ekranów z 0.71 (zgodny / częściowo / brak) i lista priorytetów dla UI — `docs/cosgral-raporty/tester-w12-tg.md` (P0/P1: 3 zgodne / 4 częściowo / 0 brak).
 3. [zrobione: T-AD] Skrypty odbioru: język angielski we wszystkich ścieżkach, bez luzowania asercji.
