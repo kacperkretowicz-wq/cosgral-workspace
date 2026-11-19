@@ -31,7 +31,7 @@ export function AppSettingsW3() {
       document.documentElement.lang = value.language;
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save settings.");
+      setError(e instanceof Error ? e.message : t("Could not save settings."));
     }
   }
   return (
@@ -79,7 +79,7 @@ export function AppSettingsW3() {
                           <td>
                             <Input
                               unstyled
-                              aria-label={`${t(EVENT_LABELS[event])}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
+                              aria-label={`${t(EVENT_LABELS[event])}: ${t(CHANNEL_LABELS[channel])}`}
                               type="checkbox"
                               checked={value().notifications.matrix[event][channel]}
                               onChange={(e) =>

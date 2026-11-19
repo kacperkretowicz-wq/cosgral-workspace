@@ -2410,4 +2410,8 @@ export const pl = {
   "Working in background: {title}": "Praca w tle: {title}",
   "Working in: {title}": "Pracuje w: {title}",
   "Next: {when} ({timezone})": "Następne: {when} ({timezone})",
+  "Could not load the rules.": "Nie udało się wczytać reguł.",
+  "Could not remove the rule.": "Nie udało się usunąć reguły.",
+  "Could not update memory.": "Nie udało się zaktualizować pamięci.",
+  "Could not copy the message.": "Nie udało się skopiować wiadomości.",
 } as const;

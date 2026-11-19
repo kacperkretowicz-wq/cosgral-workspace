@@ -1286,7 +1286,7 @@ export function App() {
     try {
       await markDirectMessagesRead(memberId, message.sequence);
     } catch (error) {
-      readError = error instanceof Error ? error.message : "Could not mark messages as read.";
+      readError = error instanceof Error ? error.message : t("Could not mark messages as read.");
     }
     await refreshDirectThreads();
     return { message, ...(readError ? { readError } : {}) };

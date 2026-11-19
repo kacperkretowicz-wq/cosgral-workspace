@@ -2412,4 +2412,8 @@ export const en = {
   "Working in background: {title}": "Working in background: {title}",
   "Working in: {title}": "Working in: {title}",
   "Next: {when} ({timezone})": "Next: {when} ({timezone})",
+  "Could not load the rules.": "Could not load the rules.",
+  "Could not remove the rule.": "Could not remove the rule.",
+  "Could not update memory.": "Could not update memory.",
+  "Could not copy the message.": "Could not copy the message.",
 } as const;

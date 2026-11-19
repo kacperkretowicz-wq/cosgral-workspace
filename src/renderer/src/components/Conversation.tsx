@@ -1347,7 +1347,7 @@ export function Conversation(props: ConversationProps) {
     try {
       await props.onMarkRead();
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : "Could not mark messages as read.");
+      setComposerError(error instanceof Error ? error.message : t("Could not mark messages as read."));
     } finally {
       setMarkingRead(false);
     }
@@ -1420,7 +1420,7 @@ export function Conversation(props: ConversationProps) {
         if (copiedMessageId() === message.id) setCopiedMessageId(null);
       }, 1_400);
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : "Could not copy the message.");
+      setComposerError(error instanceof Error ? error.message : t("Could not copy the message."));
     }
   }
 
