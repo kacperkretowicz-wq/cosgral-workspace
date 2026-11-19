@@ -86,7 +86,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 33. [zrobione: bf525199f] Aria/i18n: RoutinePanel create/load fallbacki + skan pozostałych setError EN.
 34. [zrobione: 8ddab6ca4] Aria/i18n: VaultPanel confirm Delete + skan window.confirm / resztki EN.
 35. [zrobione: e160e1366] Aria/i18n: App.tsx publish fallback + skan throw/Error EN w UI (poza Remote).
-36. [w toku: KAPI, 08:20] Lekkie: odśwież `i18n-inwentarz.md` + sprawdzenie równości kluczy PL/EN (`i18n.test`).
+36. [zrobione: 0c9d7f356] Lekkie: odśwież `i18n-inwentarz.md` + sprawdzenie równości kluczy PL/EN (`i18n.test`).
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
