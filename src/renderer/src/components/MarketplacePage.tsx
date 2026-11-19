@@ -9,6 +9,8 @@ import { t } from "../i18n";
 import { MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
 import { Button, NativeSelect } from "./ui";
+import { Bot, Plug, Sparkles } from "./ui/icons";
+import { WorkPage } from "./WorkPage";
 import "../styles/plugin-apps.css";
 
 type Person = { id: string; name: string };
@@ -182,80 +184,82 @@ export function MarketplacePage(props: { bots: Person[] }) {
     };
   });
   return (
-    <main class="w2-library marketplace-shell" data-single={hasApps ? "false" : "true"}>
-      <Show when={hasApps}>
-        <aside class="marketplace-nav" aria-label={t("Marketplace")}>
-          <h1>{t("Marketplace")}</h1>
-          <nav class="marketplace-nav-list" aria-label={t("Marketplace sections")}>
+    <WorkPage
+      page="marketplace"
+      class="marketplace-shell"
+      title={t("Marketplace")}
+      description={t("Apps, agents and skills for your team. Connect or install them in one click.")}
+    >
+      <div class="work-page-body marketplace-body" data-single={hasApps ? "false" : "true"}>
+        <Show when={hasApps}>
+          <nav class="work-page-nav marketplace-nav-list" aria-label={t("Marketplace sections")}>
             <For
               each={
                 [
-                  ["apps", "Apps"],
-                  ["agents", "Agents"],
-                  ["skills", "Skills"],
+                  ["apps", "Apps", Plug],
+                  ["agents", "Agents", Bot],
+                  ["skills", "Skills", Sparkles],
                 ] as const
               }
             >
-              {([id, label]) => (
-                <Button
+              {([id, label, Icon]) => (
+                <button
                   type="button"
-                  variant="ghost"
+                  class="work-page-nav-item"
                   aria-current={tab() === id ? "page" : undefined}
                   onClick={() => selectTab(id)}
                 >
-                  {t(label)}
-                </Button>
+                  <Icon aria-hidden="true" size={16} stroke-width={1.5} />
+                  <span>{t(label)}</span>
+                </button>
               )}
             </For>
           </nav>
-        </aside>
-      </Show>
-      <div class="marketplace-main">
-        <Show when={!hasApps}>
-          <h1>{t("Marketplace")}</h1>
         </Show>
-        <Show when={tab() === "apps"}>
-          <PluginAppsPanel />
-        </Show>
-        <Show when={tab() !== "apps"}>
-          <Show when={error()}>
-            <p role="alert">{error()}</p>
+        <div class="marketplace-main">
+          <Show when={tab() === "apps"}>
+            <PluginAppsPanel />
           </Show>
-          <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
-          <MarketplaceGallery
-            items={items()}
-            query={query()}
-            category={category()}
-            selectedId={details()?.item.id ?? ""}
-            onQuery={(value) => {
-              setQuery(value);
-              queueSearch(value);
-            }}
-            onCategory={(value) => {
-              setCategory(value);
-              void refresh({ category: value });
-            }}
-            onSearch={() => void refresh()}
-            onOpen={(item) => void choose(item)}
-            onInstall={(item) => void install(item)}
-          />
-          <Show when={details()}>
-            {(value) => (
-              <MarketplaceDetail
-                details={value()}
-                bots={props.bots}
-                selectedBot={botId()}
-                onSelectBot={(id) => {
-                  setBotId(id);
-                  void refresh();
-                }}
-                onInstall={() => void install()}
-                onUninstall={(id) => void uninstall(id)}
-              />
-            )}
+          <Show when={tab() !== "apps"}>
+            <Show when={error()}>
+              <p role="alert">{error()}</p>
+            </Show>
+            <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
+            <MarketplaceGallery
+              items={items()}
+              query={query()}
+              category={category()}
+              selectedId={details()?.item.id ?? ""}
+              onQuery={(value) => {
+                setQuery(value);
+                queueSearch(value);
+              }}
+              onCategory={(value) => {
+                setCategory(value);
+                void refresh({ category: value });
+              }}
+              onSearch={() => void refresh()}
+              onOpen={(item) => void choose(item)}
+              onInstall={(item) => void install(item)}
+            />
+            <Show when={details()}>
+              {(value) => (
+                <MarketplaceDetail
+                  details={value()}
+                  bots={props.bots}
+                  selectedBot={botId()}
+                  onSelectBot={(id) => {
+                    setBotId(id);
+                    void refresh();
+                  }}
+                  onInstall={() => void install()}
+                  onUninstall={(id) => void uninstall(id)}
+                />
+              )}
+            </Show>
           </Show>
-        </Show>
+        </div>
       </div>
-    </main>
+    </WorkPage>
   );
 }

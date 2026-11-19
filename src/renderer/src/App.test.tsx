@@ -665,7 +665,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Open account menu" }));
     await fireEvent.click(screen.getByRole("button", { name: "Providers & permissions" }));
 
-    expect(screen.getByRole("dialog", { name: "Providers & permissions" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
     const providers = screen.getByRole("radiogroup", { name: "Default provider" });
     expect(within(providers).getByRole("radio", { name: /Codex.*Available/ })).toBeChecked();
     expect(within(providers).getByText("norbert@example.com")).toBeInTheDocument();
@@ -673,8 +673,8 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     await fireEvent.click(within(providers).getByRole("radio", { name: /Claude.*Available/ }));
     await fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(window.openbot.saveSetup).toHaveBeenLastCalledWith({ preferredProvider: "claude" });
-    expect(screen.queryByRole("dialog", { name: "Providers & permissions" })).not.toBeInTheDocument();
+    await waitFor(() => expect(window.openbot.saveSetup).toHaveBeenLastCalledWith({ preferredProvider: "claude" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument());
   });
 
   it("starts on the New agent page for a new user with no agents", async () => {

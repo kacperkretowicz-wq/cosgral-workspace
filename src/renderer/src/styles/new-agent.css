@@ -1,182 +1,251 @@
-/* W11-UI1: "New agent" page. One centred column, tokens only. */
-.new-agent-page {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  background: var(--cosgral-bg-canvas);
+/*
+ * "New agent" (NewAgentPage.tsx) on the work-page frame: the creature studio on the left (a stage with the creature
+ * and its moods, shape and colour), the details on the right. Palette tokens only (`--openbot-*`).
+ */
+
+.new-agent-page .new-agent-layout {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-8);
 }
 
-.new-agent-header {
-  display: flex;
-  height: var(--left-header-height, 38px);
-  flex: 0 0 var(--left-header-height, 38px);
-  align-items: center;
-  border-bottom: 1px solid var(--cosgral-border);
-  padding: 0 16px 0 36px;
+/* Studio ------------------------------------------------------------------------------------------------- */
+
+.new-agent-studio {
+  display: grid;
+  gap: var(--openbot-space-4);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-sidebar);
+  padding: var(--openbot-space-4);
 }
 
-.new-agent-header h1 {
+.new-agent-stage {
+  display: grid;
+  justify-items: center;
+  gap: var(--openbot-space-4);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-inset);
+  padding: var(--openbot-space-6) var(--openbot-space-3) var(--openbot-space-3);
+}
+
+.new-agent-page .new-agent-preview {
+  width: 128px;
+  height: 128px;
+}
+
+.new-agent-moods {
+  display: grid;
   margin: 0;
-  font-size: var(--cosgral-text-md);
-  font-weight: 500;
-  color: var(--cosgral-text-secondary);
+  border: 0;
+  padding: 0;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--openbot-space-1);
 }
 
-.new-agent-scroll {
+.new-agent-mood {
   display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
   align-items: center;
-  overflow-y: auto;
-  padding: 32px 24px 24px;
+  white-space: nowrap;
+  min-width: 0;
+  gap: var(--openbot-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: var(--openbot-space-1) var(--openbot-space-1-5);
+  color: var(--openbot-text-muted);
+  font: inherit;
+  font-size: var(--openbot-text-xs);
+  line-height: var(--openbot-leading-xs);
+  cursor: pointer;
 }
 
-.new-agent-form {
+.new-agent-mood span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.new-agent-mood .new-agent-mood-avatar {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.new-agent-mood:hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.new-agent-mood:has(input:checked) {
+  border-color: var(--openbot-accent-strong);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-text-primary);
+}
+
+.new-agent-studio-group {
+  display: grid;
+  gap: var(--openbot-space-2);
+}
+
+.new-agent-studio-label {
   display: flex;
-  width: min(440px, 100%);
-  flex-direction: column;
-  gap: 14px;
-}
-
-.new-agent-preview {
-  width: 140px;
-  height: 140px;
-  align-self: center;
-}
-
-.new-agent-colors,
-.new-agent-faces {
-  display: flex;
-  flex-wrap: wrap;
+  min-height: 28px;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.new-agent-studio-label small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.new-agent-page .new-agent-more-faces {
+  gap: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+}
+
+.new-agent-faces,
+.new-agent-colors {
   margin: 0;
   border: 0;
   padding: 0;
 }
 
-.new-agent-swatch,
-.new-agent-face {
+.new-agent-faces {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--openbot-space-1-5);
+}
+
+.new-agent-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 28px);
+  justify-content: space-between;
+  gap: var(--openbot-space-1-5);
+}
+
+.new-agent-face,
+.new-agent-swatch {
   display: grid;
   place-items: center;
-  border: 2px solid transparent;
-  border-radius: var(--cosgral-radius-pill);
+  border: 1px solid transparent;
   background: transparent;
-  padding: 2px;
   cursor: pointer;
   transition:
-    border-color var(--cosgral-duration-normal) var(--cosgral-ease),
-    transform var(--cosgral-duration-normal) var(--cosgral-ease);
+    border-color var(--openbot-duration-fast) var(--openbot-ease-out),
+    background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.new-agent-face {
+  aspect-ratio: 1;
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1);
+}
+
+.new-agent-page .new-agent-face .bot-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.new-agent-face:hover {
+  background: var(--openbot-hover);
 }
 
 .new-agent-swatch {
-  width: 26px;
-  height: 26px;
-}
-
-/* Two even rows of colours under the avatar. */
-.new-agent-colors {
-  max-width: 300px;
-  align-self: center;
-  gap: 6px;
-}
-
-.new-agent-face {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--cosgral-radius-md);
-}
-
-.new-agent-swatch:hover,
-.new-agent-face:hover {
-  transform: scale(1.06);
-}
-
-.new-agent-choice-selected {
-  border-color: var(--cosgral-accent);
+  width: 28px;
+  height: 28px;
+  place-items: stretch;
+  border-radius: var(--openbot-radius-pill);
+  padding: 3px;
 }
 
 .new-agent-swatch-fill {
+  display: block;
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: var(--openbot-radius-pill);
+}
+
+.new-agent-face:focus-visible,
+.new-agent-swatch:focus-visible,
+.new-agent-mood:has(input:focus-visible) {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: 1px;
+}
+
+.new-agent-face.new-agent-choice-selected {
+  border-color: var(--openbot-accent);
+  background: var(--openbot-accent-soft);
+}
+
+.new-agent-swatch.new-agent-choice-selected {
+  border-color: var(--openbot-text-primary);
+}
+
+/* Details ------------------------------------------------------------------------------------------------ */
+
+.new-agent-details {
   display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  border-radius: var(--cosgral-radius-pill);
-  font-size: var(--cosgral-text-sm);
-  color: var(--cosgral-text-secondary);
-}
-
-.new-agent-face .bot-avatar {
-  width: 100%;
-  height: 100%;
-}
-
-/* The shuffle button stays out of the way until the row is hovered or focused. */
-.new-agent-more-faces {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  color: var(--cosgral-text-muted);
-  opacity: 0;
-  transition: opacity var(--cosgral-duration-normal) var(--cosgral-ease);
-}
-
-.new-agent-more-faces svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-
-.new-agent-faces:hover .new-agent-more-faces,
-.new-agent-faces:focus-within .new-agent-more-faces {
-  opacity: 1;
+  min-width: 0;
+  gap: var(--openbot-space-4);
 }
 
 .new-agent-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: var(--cosgral-text-sm);
-  color: var(--cosgral-text-secondary);
+  display: grid;
+  gap: var(--openbot-space-1-5);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
 }
 
 .new-agent-field b {
-  color: var(--cosgral-danger);
+  color: var(--openbot-danger);
 }
 
 .new-agent-field input,
 .new-agent-textarea {
   width: 100%;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-md);
-  background: var(--cosgral-bg-surface);
-  padding: 8px 12px;
-  color: var(--cosgral-text-primary);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-2) var(--openbot-space-3);
+  color: var(--openbot-text-primary);
   font: inherit;
-  font-size: var(--cosgral-text-lg);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-regular);
 }
 
 .new-agent-textarea {
-  min-height: 64px;
+  min-height: 96px;
   resize: vertical;
 }
 
 .new-agent-field input:focus-visible,
 .new-agent-textarea:focus-visible {
-  border-color: var(--cosgral-accent);
-  box-shadow: var(--cosgral-focus-ring);
+  border-color: var(--openbot-accent);
+  box-shadow: var(--openbot-focus-ring);
   outline: 0;
 }
 
 .new-agent-model-row {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
 }
 
 .new-agent-model-row .provider-model-picker {
@@ -186,9 +255,9 @@
 
 .new-agent-model-row .provider-model-trigger-field {
   height: 40px;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-md);
-  background: var(--cosgral-bg-surface);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .new-agent-effort {
@@ -199,209 +268,115 @@
 .new-agent-effort select {
   height: 40px;
   min-width: 112px;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-md);
-  background-color: var(--cosgral-bg-surface);
+  border: 0;
+  border-left: 1px solid var(--openbot-border);
+  border-radius: 0;
+  background-color: transparent;
   padding: 0 32px 0 12px;
-  color: var(--cosgral-text-secondary);
+  color: var(--openbot-text-secondary);
   font: inherit;
-  font-size: var(--cosgral-text-md);
+  font-size: var(--openbot-text-md);
 }
 
 .new-agent-error {
   margin: 0;
-  color: var(--cosgral-danger);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-sm);
 }
 
 .new-agent-actions {
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding-top: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-2);
+  border-top: 1px solid var(--openbot-border);
+  padding-top: var(--openbot-space-4);
 }
+
+.new-agent-reason {
+  margin-right: auto;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.new-agent-actions .ui-button[type="submit"] {
+  min-width: 124px;
+}
+
+/* Suggestions -------------------------------------------------------------------------------------------- */
 
 .new-agent-suggestions {
-  width: min(860px, 100%);
-  margin-top: 40px;
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin-top: var(--openbot-space-4);
+  container-type: inline-size;
 }
 
-.new-agent-suggestions h2 {
-  margin: 0 0 8px;
-  font-size: var(--cosgral-text-sm);
-  font-weight: 500;
-  color: var(--cosgral-text-muted);
+.new-agent-page .new-agent-suggestions h2 {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
 }
 
 .new-agent-suggestion-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--openbot-space-2);
 }
 
-@container (max-width: 760px) {
-  .new-agent-suggestion-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.new-agent-suggestions {
-  container-type: inline-size;
-}
-
-.new-agent-suggestion {
+.new-agent-page .new-agent-suggestion {
   display: flex;
   width: 100%;
   min-width: 0;
   height: auto;
-  min-height: 72px;
-  align-items: flex-start;
-  gap: 12px;
-  white-space: normal;
-  border: 1px solid var(--cosgral-border);
-  border-radius: var(--cosgral-radius-lg);
+  min-height: 64px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--openbot-space-3);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
   background: transparent;
-  padding: 14px;
+  padding: var(--openbot-space-3);
+  color: var(--openbot-text-primary);
   text-align: left;
-  color: var(--cosgral-text-primary);
-  cursor: pointer;
-  transition: background-color var(--cosgral-duration-normal) var(--cosgral-ease);
+  white-space: normal;
 }
 
-.new-agent-suggestion:hover {
-  background: var(--cosgral-hover);
+.new-agent-page .new-agent-suggestion:hover {
+  background: var(--openbot-hover);
 }
 
-.new-agent-suggestion .bot-avatar {
+.new-agent-page .new-agent-suggestion .bot-avatar {
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
 }
 
 .new-agent-suggestion > span {
+  display: grid;
   min-width: 0;
   flex: 1;
+  gap: var(--openbot-space-0-5);
 }
 
 .new-agent-suggestion strong {
-  display: block;
-  font-size: var(--cosgral-text-lg);
-  font-weight: 500;
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .new-agent-suggestion small {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-height: 1.4;
-  font-size: var(--cosgral-text-sm);
-  color: var(--cosgral-text-muted);
+  -webkit-line-clamp: 2;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
 }
 
-/* UI-R: denser layout. Colours are small solid dots in two rows, the 12 faces sit in one row, Model is one bar, Create is the light primary. */
-.new-agent-page .new-agent-form {
-  width: min(440px, 100%);
-  gap: 12px;
-}
-
-.new-agent-page .new-agent-colors {
-  max-width: 272px;
-  gap: 6px;
-}
-
-.new-agent-page .new-agent-swatch {
-  width: 24px;
-  height: 24px;
-  padding: 2px;
-}
-
-/* UI-AG: show all 12 mascot faces (nowrap hid them). Two rows of six + shuffle. */
-.new-agent-page .new-agent-faces {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(6, 40px);
-  justify-content: center;
-  gap: 6px;
-  max-width: 280px;
-  align-self: center;
-}
-
-.new-agent-page .new-agent-face {
-  width: 40px;
-  height: 40px;
-  padding: 2px;
-}
-
-.new-agent-page .new-agent-more-faces {
-  position: absolute;
-  top: 50%;
-  right: -44px;
-  width: 36px;
-  height: 36px;
-  transform: translateY(-50%);
-}
-
-.new-agent-page .new-agent-model-row {
-  align-items: center;
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-md);
-  background: var(--cosgral-bg-surface);
-}
-
-.new-agent-page .new-agent-model-row .provider-model-picker {
-  min-width: 0;
-  flex: 1;
-}
-
-.new-agent-page .new-agent-model-row .provider-model-trigger-field {
-  height: 40px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.new-agent-page .new-agent-effort select {
-  min-width: 96px;
-  height: 40px;
-  border: 0;
-  border-left: 1px solid var(--cosgral-border);
-  border-radius: 0;
-  background-color: transparent;
-}
-
-.new-agent-page .new-agent-actions {
-  flex-direction: row-reverse;
-  justify-content: center;
-}
-
-.new-agent-page .new-agent-actions .ui-button[type="submit"] {
-  min-width: 124px;
-  border-color: transparent;
-  background: var(--cosgral-text-primary);
-  color: var(--cosgral-bg-canvas);
-  font-weight: 500;
-}
-
-.new-agent-page .new-agent-actions .ui-button[type="submit"]:disabled {
-  opacity: 0.45;
-}
-
-.new-agent-page .new-agent-suggestion {
-  min-height: 96px;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-}
-
-.new-agent-page .new-agent-suggestion .bot-avatar {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
-}
-
-.new-agent-page .new-agent-suggestion strong {
-  font-size: var(--cosgral-text-xl);
+/* Narrow window: studio above the details. */
+@container (max-width: 820px) {
+  .new-agent-page .new-agent-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -343,3 +343,268 @@
     transition: none;
   }
 }
+
+/*
+ * Settings window (SettingsDialog.tsx): the settings-modal frame above, larger, with the section list as a scroll
+ * spy, every section on one scrolling page, and the actions in one footer. Tokens only.
+ */
+
+.initial-setup-screen.settings-dialog-backdrop {
+  position: fixed;
+  min-height: 0;
+  padding: var(--openbot-space-6);
+  background: var(--openbot-command-overlay);
+  -webkit-app-region: no-drag;
+}
+
+.settings-modal.settings-dialog {
+  width: min(1040px, calc(100vw - 48px));
+  height: min(760px, calc(100dvh - 48px));
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+
+.settings-dialog-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-3);
+  padding: 0 var(--openbot-space-2) var(--openbot-space-2);
+}
+
+.settings-dialog-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
+}
+
+.settings-dialog-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.settings-dialog-title {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.settings-modal-sidebar .settings-modal-nav {
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.settings-dialog-nav-item {
+  grid-template-columns: var(--openbot-icon-md) minmax(0, 1fr);
+  color: var(--openbot-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--openbot-duration-fast) var(--openbot-ease-out),
+    color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.settings-dialog-nav-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-dialog-nav-item:hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.settings-dialog-nav-item[aria-current="true"] {
+  background: var(--openbot-active);
+  color: var(--openbot-text-primary);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.settings-dialog-nav-item[aria-current="true"] svg {
+  color: var(--openbot-accent-text);
+}
+
+.settings-dialog-account {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-top: 1px solid var(--openbot-border);
+  padding: var(--openbot-space-3) var(--openbot-space-2) 0;
+}
+
+.settings-dialog-account .initial-setup-account span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-dialog-account .ui-button {
+  justify-self: start;
+  margin-left: calc(var(--openbot-space-2) * -1);
+}
+
+.settings-dialog-main {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.settings-dialog-main .settings-modal-header {
+  align-items: center;
+  border-bottom: 1px solid var(--openbot-border);
+  padding: var(--openbot-space-4) var(--openbot-space-6);
+}
+
+.settings-dialog-main .settings-modal-description {
+  margin: 0;
+}
+
+.settings-dialog-main .settings-modal-content {
+  gap: var(--openbot-space-8);
+  padding-top: var(--openbot-space-6);
+  padding-bottom: var(--openbot-space-8);
+}
+
+.settings-dialog-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+  scroll-margin-top: var(--openbot-space-6);
+}
+
+.settings-dialog-section-header {
+  display: grid;
+  gap: var(--openbot-space-1);
+}
+
+.settings-dialog-section-header h2 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-lg);
+}
+
+.settings-dialog-section-header p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+.settings-dialog-section-body {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+/* The content brings its own heading with the section's name: keep it for assistive tech, hide the second copy. */
+.settings-dialog-section-flat .settings-dialog-section-body > * > :is(h2, h3):first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Panels that came as cards sit flat in their section. */
+.settings-dialog-section-body > :is(.cosgral-settings-block, .context-panel).ui-card {
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-control);
+  box-shadow: none;
+}
+
+.settings-dialog-section-body .mac-permissions {
+  margin: 0;
+}
+
+.app-settings {
+  display: contents;
+}
+
+.settings-notification-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-control);
+}
+
+.settings-notification-table th,
+.settings-notification-table td {
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+  text-align: left;
+}
+
+.settings-notification-table thead th {
+  border-bottom: 1px solid var(--openbot-border);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.settings-notification-table thead th:not(:first-child),
+.settings-notification-table td {
+  width: 112px;
+  text-align: center;
+}
+
+.settings-notification-table tbody th {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.settings-notification-table tbody tr + tr > * {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.settings-notification-table td .ui-switch {
+  justify-content: center;
+}
+
+.settings-notification-table .ui-switch[data-checked] .ui-switch-control {
+  border-color: var(--openbot-accent-hover);
+  background: var(--openbot-accent);
+}
+
+.settings-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-2);
+  border-top: 1px solid var(--openbot-border);
+  padding: var(--openbot-space-3) var(--openbot-space-6);
+}
+
+.settings-dialog-footer .initial-setup-error {
+  margin: 0 auto 0 0;
+}
+
+@media (max-width: 700px) {
+  .settings-modal.settings-dialog {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-dialog-brand,
+  .settings-dialog-account {
+    display: none;
+  }
+
+  .settings-modal-sidebar .settings-modal-nav {
+    flex: 0 0 auto;
+  }
+}

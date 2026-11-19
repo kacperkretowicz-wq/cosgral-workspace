@@ -968,3 +968,238 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Providers › Accounts and pool (ProviderAccounts.tsx): accounts as rows, pool settings and "Add account" inline -- */
+
+.provider-account-settings {
+  display: grid;
+  gap: var(--openbot-space-3);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-control);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.provider-account-settings > .ui-switch {
+  width: 100%;
+  justify-content: space-between;
+  border-top: 1px solid var(--openbot-border);
+  padding-top: var(--openbot-space-3);
+}
+
+.provider-account-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--openbot-space-3);
+}
+
+.provider-account-inline > .ui-field {
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
+.provider-account-inline > .ui-text {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+.provider-account-provider {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+  margin-top: var(--openbot-space-2);
+}
+
+.provider-account-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+}
+
+.provider-account-row {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  gap: var(--openbot-space-2);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.provider-account-row + .provider-account-row {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-account-row:hover {
+  background: var(--openbot-hover);
+}
+
+.provider-account-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: var(--openbot-space-2);
+}
+
+.provider-account-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--openbot-border);
+  color: var(--openbot-text-muted);
+}
+
+.provider-account-order {
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.provider-account-row[data-status="ready"] .provider-account-icon {
+  background: var(--openbot-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
+}
+
+.provider-account-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-account-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+}
+
+.work-page .provider-account-title h4 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--openbot-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .provider-account-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--openbot-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.provider-account-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-text-dim);
+}
+
+.provider-account-row[data-status="ready"] .provider-account-dot {
+  background: var(--openbot-success);
+}
+
+.provider-account-row[data-status="pending"] .provider-account-dot {
+  background: var(--openbot-warning);
+}
+
+.provider-account-row[data-status="error"] .provider-account-dot {
+  background: var(--openbot-danger);
+}
+
+/* The switches sit under the name, so a long account name keeps its room. */
+.provider-account-switches {
+  display: flex;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  align-items: center;
+  gap: var(--openbot-space-6);
+}
+
+.provider-account-switches .ui-switch {
+  flex-direction: row-reverse;
+  gap: var(--openbot-space-2);
+}
+
+.provider-account-switches .ui-switch-label {
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.provider-account-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-account-actions .provider-account-remove:hover:not(:disabled) {
+  color: var(--openbot-danger);
+}
+
+.provider-account-details {
+  display: grid;
+  gap: var(--openbot-space-2);
+  padding-left: 44px;
+}
+
+.provider-account-details:not(:has(> :not(.provider-account-phase:empty))) {
+  display: none;
+}
+
+.work-page .provider-account-details > .ui-text,
+.work-page .provider-account-phase {
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.provider-account-phase:empty {
+  display: none;
+}
+
+.provider-account-confirm {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  gap: var(--openbot-space-2);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  padding: var(--openbot-space-3);
+}
+
+.provider-account-confirm .managed-cli-actions {
+  justify-content: flex-end;
+}
+
+.provider-account-add {
+  display: grid;
+  gap: var(--openbot-space-2);
+  border: 1px dashed var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.work-page .provider-account-note {
+  margin: 0;
+  font-size: var(--openbot-text-xs);
+}
+
+.provider-account-switches .ui-switch[data-checked] .ui-switch-control,
+.provider-account-settings .ui-switch[data-checked] .ui-switch-control {
+  border-color: var(--openbot-accent-hover);
+  background: var(--openbot-accent);
+}

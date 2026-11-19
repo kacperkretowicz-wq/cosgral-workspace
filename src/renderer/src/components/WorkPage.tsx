@@ -15,10 +15,12 @@ export function WorkPage(props: {
   actions?: JSX.Element;
   /** Extra class on `<main>` (page-specific layout). */
   class?: string;
+  /** Accessible name of the page landmark, when tests or scripts look the page up by it. */
+  label?: string;
   children: JSX.Element;
 }) {
   return (
-    <main class={["w2-library work-page", props.class]} data-page={props.page}>
+    <main class={["w2-library work-page", props.class]} data-page={props.page} aria-label={props.label}>
       <header class="work-page-header">
         <span class="work-page-icon" aria-hidden="true">
           <PageIcon page={props.page} />

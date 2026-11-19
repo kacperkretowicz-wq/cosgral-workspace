@@ -1514,23 +1514,24 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
     return "island showed the question; click opened Res with its card";
   });
 
-  await row("39", "settings: notification matrix saved; language saved (UI strings stay English)", async () => {
+  await row("39", "settings: notification matrix and language saved from the Settings window footer", async () => {
+    const before = asRecord(await d.ev("window.openbot.appSettings.get()"));
     await d.openPage("Settings");
     const app = page.getByRole("region", { name: "Application settings" });
+    await app.getByRole("switch", { name: "Needs your answer: notification" }).uncheck();
     await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "Polski" });
-    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).uncheck();
-    await app.getByRole("button", { name: "Save application settings" }).click();
+    await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForTimeout(2_000);
     const saved = asRecord(await d.ev("window.openbot.appSettings.get()"));
     assert.equal(saved.language, "pl");
     assert.equal(asRecord(asRecord(asRecord(saved.notifications).matrix)["needs-input"]).desktop, false);
-    const stillEnglish = await page.getByRole("button", { name: "Save application settings" }).count();
-    await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "English" });
-    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).check();
-    await app.getByRole("button", { name: "Save application settings" }).click();
+    const polish = await page.getByRole("navigation", { name: "Strony" }).count();
+    // Back to English and the old notifications (the window follows the saved language).
+    await d.ev(
+      `window.openbot.appSettings.update(${JSON.stringify({ language: "en", notifications: before.notifications })})`,
+    );
     await page.waitForTimeout(1_500);
-    await page.getByRole("button", { name: "Cancel" }).click();
-    return `saved; the UI strings are English after choosing Polski: ${stillEnglish > 0}`;
+    return `saved; the window switched to Polish after saving: ${polish > 0}`;
   });
 
   await row("42-44", "phone: pairing over TLS, chat and decisions, creating an agent from the phone", async () => {

@@ -4,7 +4,7 @@ import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Input, NativeSelect } from "./ui";
-import { Plus, Search } from "./ui/icons";
+import { Blocks, FileText, Palette, Plus, Search, Table2, Terminal, Workflow, Zap } from "./ui/icons";
 import "../styles/plugin-apps.css";
 
 interface CustomForm {
@@ -33,12 +33,6 @@ const STATE_LABELS = {
 /** How many apps to show per category before “See all”. */
 const SECTION_PREVIEW = 6;
 
-function monogram(name: string): string {
-  const words = name.split(/\s+/).filter(Boolean);
-  const letters = words.length > 1 ? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}` : name.slice(0, 2);
-  return letters.toUpperCase();
-}
-
 function groupByCategory(plugins: PluginSummary[]): Array<{ category: PluginCategory; items: PluginSummary[] }> {
   const buckets = new Map<PluginCategory, PluginSummary[]>();
   for (const plugin of plugins) {
@@ -50,6 +44,23 @@ function groupByCategory(plugins: PluginSummary[]): Array<{ category: PluginCate
     category,
     items: buckets.get(category) ?? [],
   }));
+}
+
+const CATEGORY_ICONS: Record<PluginCategory, typeof Terminal> = {
+  coding: Terminal,
+  productivity: Zap,
+  "data-analytics": Table2,
+  automation: Workflow,
+  research: Search,
+  design: Palette,
+  documents: FileText,
+  other: Blocks,
+};
+
+/** One icon per category instead of the name's initials ("DB", "DF"), which said nothing about the app. */
+function CategoryIcon(props: { category: PluginCategory }) {
+  const Icon = CATEGORY_ICONS[untrack(() => props.category)] ?? Blocks;
+  return <Icon size={18} stroke-width={1.75} />;
 }
 
 function PluginRow(props: {
@@ -68,8 +79,8 @@ function PluginRow(props: {
         aria-label={props.plugin.name}
         onClick={() => props.onOpen(props.plugin)}
       >
-        <span class="plugin-row-icon" aria-hidden="true">
-          {monogram(props.plugin.name)}
+        <span class="plugin-row-icon" aria-hidden="true" data-category={props.plugin.category}>
+          <CategoryIcon category={props.plugin.category} />
         </span>
         <span class="plugin-row-copy">
           <strong>{props.plugin.name}</strong>

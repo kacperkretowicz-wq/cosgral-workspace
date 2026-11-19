@@ -17,6 +17,23 @@ import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { InstanceTransferPanel } from "./InstanceTransferPanel";
 import type { PageId } from "./PageRail";
 import { Button, Input, NativeSelect, Switch } from "./ui";
+import {
+  Bot,
+  CalendarClock,
+  Contact,
+  Download,
+  Eye,
+  FolderOpen,
+  Globe,
+  Layers,
+  Lock,
+  Monitor,
+  Server,
+  SlidersHorizontal,
+  Sparkles,
+  Upload,
+} from "./ui/icons";
+import { WorkPage } from "./WorkPage";
 
 const SECTION_LABELS: Record<ServerSettingsSectionId, string> = {
   general: "General",
@@ -36,6 +53,45 @@ const SECTION_LABELS: Record<ServerSettingsSectionId, string> = {
 };
 
 /** Sections that live on a page of their own; the others open the settings dialog. */
+const SECTION_DESCRIPTIONS: Record<ServerSettingsSectionId, string> = {
+  general: "Name, time zone and how much runs at once.",
+  personality: "How agents talk and behave on this server.",
+  agents: "Defaults for every agent on this server.",
+  vault: "Secrets agents can use without seeing them.",
+  members: "People who can use this server.",
+  "remote-desktop": "Control of this computer from another one.",
+  mcp: "Tool servers the agents can call.",
+  storage: "What takes space on this computer.",
+  sites: "Web pages published by agents.",
+  providers: "Accounts, keys and models.",
+  import: "Bring agents and data from another computer.",
+  transfer: "Move this server to another computer.",
+  routines: "Work that runs on a schedule.",
+  "browser-profiles": "Separate browser sign-ins for agents.",
+};
+
+const SECTION_ICONS: Record<ServerSettingsSectionId, typeof Bot> = {
+  general: SlidersHorizontal,
+  personality: Sparkles,
+  agents: Bot,
+  vault: Lock,
+  members: Contact,
+  "remote-desktop": Monitor,
+  mcp: Server,
+  storage: FolderOpen,
+  sites: Globe,
+  providers: Layers,
+  import: Download,
+  transfer: Upload,
+  routines: CalendarClock,
+  "browser-profiles": Eye,
+};
+
+function SectionIcon(props: { id: ServerSettingsSectionId }) {
+  const Icon = SECTION_ICONS[untrack(() => props.id)];
+  return <Icon aria-hidden="true" size={16} stroke-width={1.5} />;
+}
+
 const PAGE_OF_SECTION: Partial<Record<ServerSettingsSectionId, PageId>> = {
   "remote-desktop": "remote-desktop",
   providers: "providers",
@@ -162,22 +218,24 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
   const current = () => sections().find((section) => section.id === active());
 
   return (
-    <main class="server-settings" aria-label={t("Server settings")}>
-      <header class="server-settings-header">
-        <h1>{t("Server settings")}</h1>
-      </header>
+    <WorkPage
+      page="server-settings"
+      class="server-settings"
+      label={t("Server settings")}
+      title={t("Server settings")}
+      description={t("How this COSGRAL server runs: its name, agents, members, storage and connections.")}
+    >
       <Show
         when={api}
         fallback={<p class="server-settings-note">{t("Server settings are not available in this version.")}</p>}
       >
-        <div class="server-settings-body">
-          <nav class="server-settings-nav" aria-label={t("Sections")}>
+        <div class="work-page-body server-settings-body">
+          <nav class="work-page-nav server-settings-nav" aria-label={t("Sections")}>
             <For each={sections()}>
               {(section) => (
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  class="server-settings-nav-item"
+                  class="work-page-nav-item server-settings-nav-item"
                   aria-current={section.id === active() ? "page" : undefined}
                   onClick={() => {
                     setActive(section.id);
@@ -185,16 +243,20 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
                     if (section.id === "storage" && !storage()) void measure(false);
                   }}
                 >
-                  {t(SECTION_LABELS[section.id])}
+                  <SectionIcon id={section.id} />
+                  <span>{t(SECTION_LABELS[section.id])}</span>
                   <Show when={section.source.kind === "unavailable"}>
                     <small>{t("Unavailable")}</small>
                   </Show>
-                </Button>
+                </button>
               )}
             </For>
           </nav>
-          <section class="server-settings-panel" aria-label={t(SECTION_LABELS[active()])}>
-            <h2>{t(SECTION_LABELS[active()])}</h2>
+          <section class="work-page-section server-settings-panel" aria-label={t(SECTION_LABELS[active()])}>
+            <header class="work-page-section-header">
+              <h2>{t(SECTION_LABELS[active()])}</h2>
+              <p>{t(SECTION_DESCRIPTIONS[active()])}</p>
+            </header>
             <Show when={error()}>
               <p class="server-settings-error" role="alert">
                 {error()}
@@ -484,6 +546,6 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
           </section>
         </div>
       </Show>
-    </main>
+    </WorkPage>
   );
 }

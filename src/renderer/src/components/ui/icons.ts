@@ -34,6 +34,7 @@ export { default as FolderTree } from "lucide-solid/icons/folder-tree";
 export { default as Gauge } from "lucide-solid/icons/gauge";
 export { default as GitBranch } from "lucide-solid/icons/git-branch";
 export { default as Globe } from "lucide-solid/icons/globe";
+export { default as Hash } from "lucide-solid/icons/hash";
 export { default as Image } from "lucide-solid/icons/image";
 export { default as KeyRound } from "lucide-solid/icons/key-round";
 export { default as Layers } from "lucide-solid/icons/layers";

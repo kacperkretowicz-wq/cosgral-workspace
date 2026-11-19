@@ -322,3 +322,110 @@
     transition: none;
   }
 }
+
+/* Marketplace on the work-page frame (MarketplacePage.tsx): page header, section list with icons, rows of apps with
+ * a category icon and a two-line description (Polish taglines no longer cut at 70 px). Palette tokens only. */
+
+.work-page.marketplace-shell {
+  display: flex;
+  height: auto;
+  grid-template-columns: none;
+}
+
+.marketplace-body[data-single="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.marketplace-shell .marketplace-main {
+  min-width: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.marketplace-shell .plugin-apps-hero {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.marketplace-shell .plugin-apps-hero h2 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.marketplace-shell .plugin-apps-hero p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.marketplace-shell .plugin-rows {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--openbot-space-1) var(--openbot-space-4);
+}
+
+.marketplace-shell .plugin-row {
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1-5) var(--openbot-space-2) var(--openbot-space-1-5) var(--openbot-space-1);
+}
+
+.marketplace-shell .plugin-row:hover {
+  background: var(--openbot-hover);
+}
+
+.marketplace-shell .plugin-row-open {
+  height: auto;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: var(--openbot-space-3);
+  white-space: normal;
+}
+
+.marketplace-shell .plugin-row-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--openbot-border);
+  color: var(--openbot-text-secondary);
+}
+
+.marketplace-shell .plugin-row-icon[data-category="coding"],
+.marketplace-shell .plugin-row-icon[data-category="automation"] {
+  color: var(--openbot-accent-text);
+}
+
+.marketplace-shell .plugin-row-icon[data-category="data-analytics"],
+.marketplace-shell .plugin-row-icon[data-category="documents"] {
+  color: var(--openbot-success);
+}
+
+.marketplace-shell .plugin-row-icon[data-category="design"],
+.marketplace-shell .plugin-row-icon[data-category="productivity"] {
+  color: var(--openbot-warning);
+}
+
+.marketplace-shell .plugin-row-copy strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.marketplace-shell .plugin-row-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+  white-space: normal;
+}
+
+.marketplace-shell .plugin-row-state {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+}

@@ -20,8 +20,22 @@ import { ContextSettingsSection } from "./ContextSettingsSection";
 import { DataWipeSection } from "./DataWipeSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
+import { SettingsDialog, SettingsSection } from "./SettingsDialog";
 import { UpdatesPanel } from "./UpdatesPanel";
 import { Button, Dialog, Textarea } from "./ui";
+import {
+  Bell,
+  Download,
+  Lock,
+  MessageCircle,
+  Mic,
+  Monitor,
+  Palette,
+  Server,
+  ShieldCheck,
+  SlidersHorizontal,
+  Wallet,
+} from "./ui/icons";
 import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 
 interface InitialSetupProps {
@@ -227,6 +241,142 @@ export function InitialSetup(props: InitialSetupProps) {
     return t("Use this computer, or connect to a COSGRAL host that runs somewhere else.");
   };
 
+  const permissionsSection = () => (
+    <section class="mac-permissions" aria-labelledby="mac-permissions-title">
+      <div class="mac-permissions-heading">
+        <div>
+          <h2 id="mac-permissions-title">{t("Mac permissions")}</h2>
+          <p>{t("Optional. Computer Use needs both permissions.")}</p>
+        </div>
+      </div>
+      <div class="mac-permission-list">
+        <For each={PERMISSIONS}>
+          {(permission) => {
+            const state = () => permissionState(permissions(), permission.id);
+            return (
+              <div class="mac-permission-row">
+                <span class="mac-permission-copy">
+                  <strong>{t(permission.title)}</strong>
+                  <small>{t(permission.description)}</small>
+                </span>
+                <Button
+                  type="button"
+                  class={["mac-permission-action", { "mac-permission-allowed": state() === "granted" }]}
+                  disabled={permissionBusy() !== null || state() === "granted" || state() === "restricted"}
+                  onClick={() => void requestPermission(permission.id)}
+                >
+                  {permissionBusy() === permission.id ? t("Checking…") : t(permissionLabel(state()))}
+                </Button>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+    </section>
+  );
+
+  // Settings (gear on the page rail, account menu): its own window with sections, not the first-run wizard.
+  if (untrack(() => props.reviewing)) {
+    let saveAppSettings: (() => Promise<boolean>) | undefined;
+    const saveAll = async () => {
+      if (saving()) return;
+      // Language and notifications first: when they fail, the window stays open with the reason.
+      if (saveAppSettings && !(await saveAppSettings())) return;
+      await saveLocal();
+    };
+    const sections = () => [
+      { id: "general", label: t("General"), icon: SlidersHorizontal },
+      { id: "notifications", label: t("Notifications"), icon: Bell },
+      { id: "behavior", label: t("App behavior"), icon: Monitor },
+      { id: "providers", label: t("Providers"), icon: Server },
+      ...(props.platform === "darwin" ? [{ id: "permissions", label: t("Permissions"), icon: ShieldCheck }] : []),
+      { id: "appearance", label: t("Appearance"), icon: Palette },
+      { id: "conversations", label: t("Conversations"), icon: MessageCircle },
+      { id: "budget", label: t("Budget"), icon: Wallet },
+      { id: "voice", label: t("Voice"), icon: Mic },
+      { id: "updates", label: t("Updates"), icon: Download },
+      { id: "data", label: t("Data and privacy"), icon: Lock },
+    ];
+    return (
+      <SettingsDialog
+        title={t("Settings")}
+        description={description()}
+        accountEmail={props.accountEmail}
+        sections={sections()}
+        onLogout={() => void props.onLogout()}
+        onClose={props.onClose}
+        footer={
+          <>
+            <Show when={error()}>
+              <p class="initial-setup-error" role="alert">
+                {error()}
+              </p>
+            </Show>
+            <Button type="button" variant="ghost" onClick={props.onClose}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={saving() || !selectedProvider()}
+              onClick={() => void saveAll()}
+            >
+              {saving() ? t("Saving…") : t("Save changes")}
+            </Button>
+          </>
+        }
+      >
+        <AppSettingsW3 onRegisterSave={(save) => (saveAppSettings = save)} />
+        <SettingsSection id="behavior" title={t("App behavior")} class="settings-dialog-section-flat">
+          <AppBehaviorSection />
+        </SettingsSection>
+        <SettingsSection
+          id="providers"
+          title={t("Providers")}
+          description={t("Accounts, keys and fallback models live on the Providers page.")}
+        >
+          <ProviderPicker
+            value={selectedProvider()}
+            options={providerOptions()}
+            ariaLabel={t("Default provider")}
+            label={t("Default provider")}
+            hint={t("Used for new local agents. You can change it for each agent later.")}
+            disabled={saving()}
+            allowUnavailableSelection
+            onChange={setSelectedProvider}
+          />
+        </SettingsSection>
+        <Show when={props.platform === "darwin"}>
+          <SettingsSection id="permissions" title={t("Permissions")} class="settings-dialog-section-flat">
+            {permissionsSection()}
+          </SettingsSection>
+        </Show>
+        <SettingsSection id="appearance" title={t("Appearance")}>
+          <AppearanceSettings />
+        </SettingsSection>
+        <SettingsSection id="conversations" title={t("Conversations")}>
+          <ContextSettingsSection />
+        </SettingsSection>
+        <SettingsSection id="budget" title={t("Budget")}>
+          <BudgetSettings />
+        </SettingsSection>
+        <SettingsSection id="voice" title={t("Voice")} class="settings-dialog-section-flat">
+          <VoiceOverviewPanel />
+        </SettingsSection>
+        <SettingsSection id="updates" title={t("Updates")} class="settings-dialog-section-flat">
+          <UpdatesPanel />
+        </SettingsSection>
+        <SettingsSection
+          id="data"
+          title={t("Data and privacy")}
+          description={t("Agents, conversations, and files stay on this computer.")}
+        >
+          <DataWipeSection />
+        </SettingsSection>
+      </SettingsDialog>
+    );
+  }
+
   return (
     <Dialog.Root open onOpenChange={(open) => !open && props.onClose?.()}>
       <main class="initial-setup-screen">
@@ -352,50 +502,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 )}
               </Show>
 
-              <Show when={props.platform === "darwin"}>
-                <section class="mac-permissions" aria-labelledby="mac-permissions-title">
-                  <div class="mac-permissions-heading">
-                    <div>
-                      <h2 id="mac-permissions-title">{t("Mac permissions")}</h2>
-                      <p>{t("Optional. Computer Use needs both permissions.")}</p>
-                    </div>
-                  </div>
-                  <div class="mac-permission-list">
-                    <For each={PERMISSIONS}>
-                      {(permission) => {
-                        const state = () => permissionState(permissions(), permission.id);
-                        return (
-                          <div class="mac-permission-row">
-                            <span class="mac-permission-copy">
-                              <strong>{t(permission.title)}</strong>
-                              <small>{t(permission.description)}</small>
-                            </span>
-                            <Button
-                              type="button"
-                              class={["mac-permission-action", { "mac-permission-allowed": state() === "granted" }]}
-                              disabled={permissionBusy() !== null || state() === "granted" || state() === "restricted"}
-                              onClick={() => void requestPermission(permission.id)}
-                            >
-                              {permissionBusy() === permission.id ? t("Checking…") : t(permissionLabel(state()))}
-                            </Button>
-                          </div>
-                        );
-                      }}
-                    </For>
-                  </div>
-                </section>
-              </Show>
-              <Show when={props.reviewing}>
-                <AppSettingsW3 />
-                {/* KK-AC: the dialog of app settings was never opened from the program, so Updates and the microphone were out of reach. */}
-                <AppBehaviorSection />
-                <AppearanceSettings />
-                <ContextSettingsSection />
-                <BudgetSettings />
-                <UpdatesPanel />
-                <VoiceOverviewPanel />
-                <DataWipeSection />
-              </Show>
+              <Show when={props.platform === "darwin"}>{permissionsSection()}</Show>
             </div>
           </Show>
 
