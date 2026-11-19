@@ -1,5 +1,6 @@
 import type { DataWipePlan } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Card, Field, Heading, Input, Text } from "./ui";
 
 /**
@@ -25,7 +26,7 @@ export function DataWipeSection() {
       setTyped("");
       setOpen(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not prepare the deletion.");
+      setError(e instanceof Error ? e.message : t("Could not prepare the deletion."));
     }
   }
 
@@ -38,7 +39,7 @@ export function DataWipeSection() {
       await appData.requestWipe({ confirmation: word });
       setRestarting(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete the data.");
+      setError(e instanceof Error ? e.message : t("Could not delete the data."));
     } finally {
       setBusy(false);
     }
@@ -48,11 +49,12 @@ export function DataWipeSection() {
     <Show when={api()}>
       <Card class="cosgral-settings-block data-wipe" role="region" aria-labelledby="data-wipe-title">
         <Heading as="h2" size="sm" id="data-wipe-title">
-          Delete my data
+          {t("Delete my data")}
         </Heading>
         <Text as="p" tone="secondary">
-          Removes everything COSGRAL Workspace keeps on this computer and starts it fresh. Uninstalling the program
-          keeps your data; this is the way to remove it.
+          {t(
+            "Removes everything COSGRAL Workspace keeps on this computer and starts it fresh. Uninstalling the program keeps your data; this is the way to remove it.",
+          )}
         </Text>
         <Show when={error()}>
           <Text as="p" tone="danger" role="alert">
@@ -64,7 +66,7 @@ export function DataWipeSection() {
           fallback={
             <div class="cosgral-settings-actions data-wipe-start">
               <Button type="button" variant="danger" onClick={() => void start()}>
-                Delete my data…
+                {t("Delete my data…")}
               </Button>
             </div>
           }
@@ -72,7 +74,7 @@ export function DataWipeSection() {
           {(current) => (
             <div class="data-wipe-confirm">
               <Text as="strong" variant="label-sm">
-                Will be deleted
+                {t("Will be deleted")}
               </Text>
               <ul class="data-wipe-list">
                 <For each={current().removes}>
@@ -91,7 +93,7 @@ export function DataWipeSection() {
                 </For>
               </ul>
               <Text as="strong" variant="label-sm">
-                Never touched
+                {t("Never touched")}
               </Text>
               <ul class="data-wipe-list">
                 <For each={current().keeps}>
@@ -109,7 +111,7 @@ export function DataWipeSection() {
                   )}
                 </For>
               </ul>
-              <Field label={`Type ${current().confirmationWord} to confirm`}>
+              <Field label={t("Type {word} to confirm", { word: current().confirmationWord })}>
                 <Input
                   value={typed()}
                   autocomplete="off"
@@ -122,13 +124,13 @@ export function DataWipeSection() {
                 when={!restarting()}
                 fallback={
                   <Text as="p" role="status">
-                    Stopping the agents and restarting. The data is deleted before the next start.
+                    {t("Stopping the agents and restarting. The data is deleted before the next start.")}
                   </Text>
                 }
               >
                 <div class="cosgral-settings-actions">
                   <Button type="button" onClick={() => setOpen(false)} disabled={busy()}>
-                    Cancel
+                    {t("Cancel")}
                   </Button>
                   <Button
                     type="button"
@@ -137,7 +139,7 @@ export function DataWipeSection() {
                     loading={busy()}
                     onClick={() => void wipe()}
                   >
-                    Delete and restart
+                    {t("Delete and restart")}
                   </Button>
                 </div>
               </Show>

@@ -69,6 +69,12 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 16. [zrobione: ab2c7394d] Aria/i18n: `ProviderModelPicker` (wybór modelu / statusy dostawcy).
 17. [zrobione: a192f6f8f] Aria/i18n: rozdziel `View`→`Show` (kolizja z KK) + `TablesPanel` / `VaultRequestCard`.
 18. [zrobione: da0d5edac] Aria/i18n: `ActionCard` + `ApiKeysSection` + `ComingSoon` + `ChatTasksSwitch`.
+19. [zrobione: ab5cd9549] Aria/i18n: `ChannelEditor` + `JoinServerDialog` + `MemorySettings`.
+20. [zrobione: c6a9d1cd5] Aria/i18n: `VoicePlayback` + `VoiceRecorder` + `VoiceSettings`.
+21. [zrobione: 6f522b834] Aria/i18n: `ProviderPicker` + `DataWipeSection` + `AcpLogin` (karta).
+22. [zrobione: 531a936] Aria/i18n: `AcpPresetCard` + `AcpPresets`.
+23. [zrobione: 980f578] Aria/i18n: `AccountLogin` + `OtpInput`.
+24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.

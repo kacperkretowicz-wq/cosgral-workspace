@@ -1,5 +1,6 @@
 import { checkVoiceWav, encodeVoiceWav, VOICE_LIMITS, VOICE_SAMPLE_RATE } from "@openbot/contracts/ipc";
 import { createSignal, onCleanup, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button } from "./ui";
 
 export function samplesToVoiceWav(chunks: Float32Array[], rate: number): Uint8Array {
@@ -62,11 +63,11 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
     try {
       const audio = samplesToVoiceWav(recordingChunks, rate);
       const api = window.openbot.voice;
-      if (!api) throw new Error("Voice is unavailable.");
+      if (!api) throw new Error(t("Voice is unavailable."));
       const result = await api.transcribe({ audio });
       if (active && run === generation && result.text) props.onTranscript(result.text);
     } catch (e) {
-      if (active && run === generation) setError(e instanceof Error ? e.message : "Transcription failed.");
+      if (active && run === generation) setError(e instanceof Error ? e.message : t("Transcription failed."));
     } finally {
       if (active && run === generation) setBusy(false);
     }
@@ -115,8 +116,8 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
       release();
       setError(
         e instanceof Error
-          ? `Microphone unavailable: ${e.message}`
-          : "Microphone permission was denied or unavailable.",
+          ? t("Microphone unavailable: {message}", { message: e.message })
+          : t("Microphone permission was denied or unavailable."),
       );
     } finally {
       if (active && run === generation) setBusy(false);
@@ -160,8 +161,8 @@ export function VoiceRecorder(props: { onTranscript: (text: string) => void }) {
           unstyled
           type="button"
           class={["composer-button", { "voice-button-active": recording() }]}
-          aria-label={recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
-          title={recording() ? "Stop recording" : busy() ? "Transcribing…" : "Record voice"}
+          aria-label={recording() ? t("Stop recording") : busy() ? t("Transcribing…") : t("Record voice")}
+          title={recording() ? t("Stop recording") : busy() ? t("Transcribing…") : t("Record voice")}
           aria-pressed={recording() ? "true" : "false"}
           aria-busy={busy() ? "true" : undefined}
           disabled={busy()}

@@ -1,6 +1,7 @@
 import type { AcpLoginState, AcpPresetInfo } from "@openbot/contracts/ipc";
 import { isSafeAcpLoginUrl } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Button, Card, Field, Heading, Input, Text } from "./ui";
 
 export function AcpLoginCard(props: {
@@ -26,21 +27,21 @@ export function AcpLoginCard(props: {
     try {
       await action();
     } catch {
-      setError("Sign-in could not continue. Try again.");
+      setError(t("Sign-in could not continue. Try again."));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section class="providers-form" aria-label={`${props.name} sign-in`}>
+    <section class="providers-form" aria-label={t("{name} sign-in", { name: props.name })}>
       <Text as="p" role="status">
         {props.state.signedIn
-          ? "Signed in"
+          ? t("Signed in")
           : props.state.phase === "cancelled"
-            ? "Sign-in cancelled"
+            ? t("Sign-in cancelled")
             : props.state.phase === "starting"
-              ? "Waiting for sign-in…"
-              : "Authentication required. Sign in to use this agent."}
+              ? t("Waiting for sign-in…")
+              : t("Authentication required. Sign in to use this agent.")}
       </Text>
       <Show when={props.state.message}>
         <Text
@@ -49,7 +50,7 @@ export function AcpLoginCard(props: {
           tone={props.state.phase === "error" ? "danger" : "secondary"}
         >
           {props.state.message?.includes("invalid_grant")
-            ? "Code rejected, a new link was issued"
+            ? t("Code rejected, a new link was issued")
             : props.state.message}
         </Text>
       </Show>
@@ -66,7 +67,7 @@ export function AcpLoginCard(props: {
             if (isSafeAcpLoginUrl(url)) void act(() => window.openbot.openUrl(url));
           }}
         >
-          Open sign-in page
+          {t("Open sign-in page")}
         </Button>
         <form
           class="providers-form"
@@ -77,11 +78,14 @@ export function AcpLoginCard(props: {
             void act(() => props.onCode(code));
           }}
         >
-          <Field label="Authorization code" description="Paste the code from the sign-in page. It is not saved.">
+          <Field
+            label={t("Authorization code")}
+            description={t("Paste the code from the sign-in page. It is not saved.")}
+          >
             <Input ref={input} type="password" autocomplete="off" spellcheck={false} required maxlength={512} />
           </Field>
           <Button type="submit" disabled={busy()}>
-            Submit code
+            {t("Submit code")}
           </Button>
         </form>
       </Show>
@@ -90,7 +94,7 @@ export function AcpLoginCard(props: {
         fallback={
           <Show when={!props.state.signedIn}>
             <Button disabled={busy()} onClick={() => void act(props.onStart)}>
-              Log in
+              {t("Log in")}
             </Button>
           </Show>
         }
@@ -102,7 +106,7 @@ export function AcpLoginCard(props: {
             void act(props.onCancel);
           }}
         >
-          Cancel
+          {t("Cancel")}
         </Button>
       </Show>
     </section>
@@ -117,12 +121,12 @@ export function AcpPresetCard(props: { preset: AcpPresetInfo; onAdded: () => voi
     <div class="providers-form">
       <Text as="strong">{props.preset.name}</Text>
       <Show when={!props.preset.detectedCommand}>
-        <Text as="p">Command not found. Install it from the official page or provide its command.</Text>
+        <Text as="p">{t("Command not found. Install it from the official page or provide its command.")}</Text>
       </Show>
       <Button onClick={() => void window.openbot.openUrl(props.preset.installUrl)}>
-        Official installation instructions
+        {t("Official installation instructions")}
       </Button>
-      <Field label={`${props.preset.name} command`}>
+      <Field label={t("{name} command", { name: props.preset.name })}>
         <Input
           value={command()}
           maxlength={520}
@@ -149,17 +153,17 @@ export function AcpPresetCard(props: { preset: AcpPresetInfo; onAdded: () => voi
                 });
                 props.onAdded();
               } catch {
-                setError("Could not add this command. Check its path and try again.");
+                setError(t("Could not add this command. Check its path and try again."));
               } finally {
                 setBusy(false);
               }
             }}
           >
-            Add {props.preset.name}
+            {t("Add {name}", { name: props.preset.name })}
           </Button>
         }
       >
-        <Badge>Added</Badge>
+        <Badge>{t("Added")}</Badge>
       </Show>
     </div>
   );
@@ -183,7 +187,7 @@ export function AcpPresets() {
     <Show when={presets().length}>
       <Card class="providers-section">
         <Heading as="h2" size="md">
-          Quick add ACP agents
+          {t("Quick add ACP agents")}
         </Heading>
         <For each={presets()}>{(preset) => <AcpPresetCard preset={preset} onAdded={refresh} />}</For>
       </Card>

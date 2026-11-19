@@ -1,6 +1,7 @@
 import type { SpaceDescription, SpaceList, SpaceSummary, SpacesDesktopApi } from "@openbot/contracts/ipc";
 import { spaceNameProblem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { AlertDialog, Badge, Button, Dialog, Field, Heading, Input, Text } from "./ui";
 
 export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; onChange: (list: SpaceList) => void }) {
@@ -20,7 +21,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
       setConfirmation(undefined);
       setDescription(undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update spaces. Try again.");
+      setError(e instanceof Error ? e.message : t("Could not update spaces. Try again."));
     } finally {
       setBusy(false);
     }
@@ -33,8 +34,9 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
   return (
     <div class="providers-form">
       <Text as="p">
-        Each space keeps its own agents, conversations, files, Vault, browser, MCP servers and memory. Switching
-        restarts the app and stops running turns.
+        {t(
+          "Each space keeps its own agents, conversations, files, Vault, browser, MCP servers and memory. Switching restarts the app and stops running turns.",
+        )}
       </Text>
       <Show when={props.list.problem}>
         <Text role="alert" tone="warning">
@@ -47,9 +49,9 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
         </Text>
       </Show>
       <Show when={props.list.selectedId !== props.list.runningId}>
-        <Text role="status">A different space is selected. Waiting for the app to restart.</Text>
+        <Text role="status">{t("A different space is selected. Waiting for the app to restart.")}</Text>
       </Show>
-      <ul class="providers-list" aria-label="Client spaces">
+      <ul class="providers-list" aria-label={t("Client spaces")}>
         <For each={props.list.spaces}>
           {(space) => (
             <li class="providers-form">
@@ -58,10 +60,10 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                   {space.name}
                 </Heading>
                 <Show when={space.running}>
-                  <Badge tone="success">Running</Badge>
+                  <Badge tone="success">{t("Running")}</Badge>
                 </Show>
                 <Show when={space.archivedAt}>
-                  <Badge>Archived</Badge>
+                  <Badge>{t("Archived")}</Badge>
                 </Show>
               </div>
               <div class="providers-heading spaces-actions">
@@ -72,15 +74,15 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                     try {
                       setDescription(await props.api.describe({ id: space.id }));
                     } catch {
-                      setError("Could not load space details.");
+                      setError(t("Could not load space details."));
                     }
                   }}
                 >
-                  Details for {space.name}
+                  {t("Details for {name}", { name: space.name })}
                 </Button>
                 <Show when={!space.running && !space.archivedAt}>
                   <Button disabled={busy()} onClick={() => setConfirmation({ space, action: "switch" })}>
-                    Switch to {space.name}
+                    {t("Switch to {name}", { name: space.name })}
                   </Button>
                 </Show>
                 <Show when={!space.main}>
@@ -91,7 +93,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                       setName(space.name);
                     }}
                   >
-                    Rename {space.name}
+                    {t("Rename {name}", { name: space.name })}
                   </Button>
                   <Show when={!space.running}>
                     <Button
@@ -102,14 +104,16 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                         )
                       }
                     >
-                      {space.archivedAt ? "Restore" : "Archive"} {space.name}
+                      {space.archivedAt
+                        ? t("Restore {name}", { name: space.name })
+                        : t("Archive {name}", { name: space.name })}
                     </Button>
                     <Button
                       variant="danger"
                       disabled={busy()}
                       onClick={() => setConfirmation({ space, action: "delete" })}
                     >
-                      Delete {space.name}
+                      {t("Delete {name}", { name: space.name })}
                     </Button>
                   </Show>
                 </Show>
@@ -120,24 +124,26 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
       </ul>
       <Show when={description()}>
         {(detail) => (
-          <section aria-label="Space details">
+          <section aria-label={t("Space details")}>
             <Heading as="h3" size="sm">
               {detail().name}
             </Heading>
             <Text as="p">
-              {detail().separateFolder ? "Separate data folder" : "Original main data folder"}.{" "}
-              {detail().hasData ? "Contains saved data." : "Not started yet."}
+              {detail().separateFolder ? t("Separate data folder") : t("Original main data folder")}.{" "}
+              {detail().hasData ? t("Contains saved data.") : t("Not started yet.")}
             </Text>
             <Text as="p">
-              Separate: {detail().isolated.join(", ")}. Size:{" "}
-              {detail().sizeBytes === null ? "not measured" : `${detail().sizeBytes} bytes`}.
+              {t("Separate: {list}. Size: {size}.", {
+                list: detail().isolated.join(", "),
+                size: detail().sizeBytes === null ? t("not measured") : t("{n} bytes", { n: detail().sizeBytes ?? 0 }),
+              })}
             </Text>
           </section>
         )}
       </Show>
       <form
         class="providers-form"
-        aria-label={editing() ? "Rename space" : "Create space"}
+        aria-label={editing() ? t("Rename space") : t("Create space")}
         onSubmit={(event) => {
           event.preventDefault();
           if (nameProblem()) {
@@ -151,14 +157,14 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
         }}
       >
         <Field
-          label={editing() ? "New space name" : "Space name"}
-          description="“Main” is reserved. Names must be unique."
+          label={editing() ? t("New space name") : t("Space name")}
+          description={t("“Main” is reserved. Names must be unique.")}
           error={name() ? (nameProblem() ?? undefined) : undefined}
         >
           <Input value={name()} maxlength={60} required onInput={(e) => setName(e.currentTarget.value)} />
         </Field>
         <Button type="submit" disabled={busy() || !!nameProblem()}>
-          {editing() ? "Save name" : "Create space"}
+          {editing() ? t("Save name") : t("Create space")}
         </Button>
         <Show when={editing()}>
           <Button
@@ -167,7 +173,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
               setName("");
             }}
           >
-            Cancel rename
+            {t("Cancel rename")}
           </Button>
         </Show>
       </form>
@@ -183,12 +189,14 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
               <AlertDialog.Overlay class="bot-delete-backdrop">
                 <AlertDialog.Content class="bot-delete-dialog">
                   <AlertDialog.Title>
-                    {pending().action === "switch" ? "Restart and switch" : "Delete space"}: {pending().space.name}?
+                    {pending().action === "switch"
+                      ? t("Restart and switch: {name}?", { name: pending().space.name })
+                      : t("Delete space: {name}?", { name: pending().space.name })}
                   </AlertDialog.Title>
                   <AlertDialog.Description>
                     {pending().action === "switch"
-                      ? "The app will restart. Running turns in this space will stop. Your saved work stays here."
-                      : "All data in this client space will be permanently deleted. This cannot be undone."}
+                      ? t("The app will restart. Running turns in this space will stop. Your saved work stays here.")
+                      : t("All data in this client space will be permanently deleted. This cannot be undone.")}
                   </AlertDialog.Description>
                   <Show when={error()}>
                     <Text role="alert" tone="danger">
@@ -197,7 +205,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                   </Show>
                   <div class="bot-delete-actions">
                     <Button disabled={busy()} onClick={() => setConfirmation(undefined)}>
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                     <Button
                       disabled={busy()}
@@ -207,7 +215,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                         void run(() => props.api[value.action]({ id: value.space.id, confirm: true }));
                       }}
                     >
-                      {pending().action === "switch" ? "Restart and switch" : "Delete permanently"}
+                      {pending().action === "switch" ? t("Restart and switch") : t("Delete permanently")}
                     </Button>
                   </div>
                 </AlertDialog.Content>
@@ -238,21 +246,27 @@ export function SpacesRail(props: { compact?: boolean } = {}) {
         <Dialog.Root open={open()} onOpenChange={setOpen}>
           <Button
             class="no-drag spaces-rail"
-            title={`Client space: ${current().spaces.find((s) => s.running)?.name ?? "Main"}`}
-            aria-label={`Client space: ${current().spaces.find((s) => s.running)?.name ?? "Main"}. Manage spaces`}
+            title={t("Client space: {name}", {
+              name: current().spaces.find((s) => s.running)?.name ?? t("Main"),
+            })}
+            aria-label={t("Client space: {name}. Manage spaces", {
+              name: current().spaces.find((s) => s.running)?.name ?? t("Main"),
+            })}
             onClick={() => setOpen(true)}
           >
-            {props.compact ? "S" : `Space: ${current().spaces.find((s) => s.running)?.name ?? "Main"}`}
+            {props.compact
+              ? "S"
+              : t("Space: {name}", { name: current().spaces.find((s) => s.running)?.name ?? t("Main") })}
           </Button>
           <Dialog.Portal>
             <Dialog.Overlay class="bot-delete-backdrop">
               <Dialog.Content class="bot-delete-dialog spaces-dialog">
-                <Dialog.Title>Client spaces</Dialog.Title>
-                <Dialog.Description>Manage separate workspaces on this computer.</Dialog.Description>
+                <Dialog.Title>{t("Client spaces")}</Dialog.Title>
+                <Dialog.Description>{t("Manage separate workspaces on this computer.")}</Dialog.Description>
                 <Show when={window.openbot.spaces}>
                   {(api) => <SpacesManager api={api()} list={current()} onChange={setList} />}
                 </Show>
-                <Button onClick={() => setOpen(false)}>Close spaces</Button>
+                <Button onClick={() => setOpen(false)}>{t("Close spaces")}</Button>
               </Dialog.Content>
             </Dialog.Overlay>
           </Dialog.Portal>

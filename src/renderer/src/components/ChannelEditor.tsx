@@ -1,5 +1,6 @@
 import type { CreateWorkspaceChannelInput, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Dialog, Input, NativeSelect, Textarea } from "./ui";
 
 export function ChannelEditor(props: {
@@ -18,11 +19,11 @@ export function ChannelEditor(props: {
   async function save() {
     if (busy()) return;
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name().trim())) {
-      setError("Use lowercase letters, digits and dashes for the channel name.");
+      setError(t("Use lowercase letters, digits and dashes for the channel name."));
       return;
     }
     if (!lead() || !members().includes(lead())) {
-      setError("Choose a lead from the channel members.");
+      setError(t("Choose a lead from the channel members."));
       return;
     }
     setBusy(true);
@@ -38,7 +39,7 @@ export function ChannelEditor(props: {
       });
       props.onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the channel. Try again.");
+      setError(cause instanceof Error ? cause.message : t("Could not save the channel. Try again."));
     } finally {
       setBusy(false);
     }
@@ -48,8 +49,8 @@ export function ChannelEditor(props: {
       <Dialog.Portal>
         <Dialog.Overlay class="remote-dialog-backdrop">
           <Dialog.Content class="remote-dialog">
-            <Dialog.Title>{props.channel ? "Edit channel" : "New channel"}</Dialog.Title>
-            <Dialog.Description>Choose the team and shared instructions for this channel.</Dialog.Description>
+            <Dialog.Title>{props.channel ? t("Edit channel") : t("New channel")}</Dialog.Title>
+            <Dialog.Description>{t("Choose the team and shared instructions for this channel.")}</Dialog.Description>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -58,7 +59,7 @@ export function ChannelEditor(props: {
             >
               <fieldset disabled={busy()} class="channel-editor-fields">
                 <label class="remote-field">
-                  Channel name
+                  {t("Channel name")}
                   <Input
                     value={name()}
                     maxlength={40}
@@ -67,14 +68,14 @@ export function ChannelEditor(props: {
                   />
                 </label>
                 <Show when={props.channel}>
-                  <p>The short name cannot be changed. You can change the display title.</p>
+                  <p>{t("The short name cannot be changed. You can change the display title.")}</p>
                 </Show>
                 <label class="remote-field">
-                  Display title
+                  {t("Display title")}
                   <Input value={title()} maxlength={120} onInput={(e) => setTitle(e.currentTarget.value)} />
                 </label>
                 <fieldset>
-                  <legend>Members (up to 20)</legend>
+                  <legend>{t("Members (up to 20)")}</legend>
                   <For each={props.bots}>
                     {(bot) => (
                       <Button
@@ -94,16 +95,16 @@ export function ChannelEditor(props: {
                   </For>
                 </fieldset>
                 <label class="remote-field">
-                  Lead agent
+                  {t("Lead agent")}
                   <NativeSelect value={lead()} onChange={(e) => setLead(e.currentTarget.value)}>
-                    <option value="">Choose a member</option>
+                    <option value="">{t("Choose a member")}</option>
                     <For each={props.bots.filter((bot) => members().includes(bot.id))}>
                       {(bot) => <option value={bot.id}>{bot.name}</option>}
                     </For>
                   </NativeSelect>
                 </label>
                 <label class="remote-field">
-                  Channel instructions
+                  {t("Channel instructions")}
                   <Textarea
                     rows={5}
                     maxlength={2000}
@@ -117,10 +118,10 @@ export function ChannelEditor(props: {
               </Show>
               <footer>
                 <Button type="button" disabled={busy()} onClick={props.onClose}>
-                  Cancel
+                  {t("Cancel")}
                 </Button>
-                <Button type="submit" variant="primary" loading={busy()} loadingLabel="Saving…">
-                  {props.channel ? "Save changes" : "Create channel"}
+                <Button type="submit" variant="primary" loading={busy()} loadingLabel={t("Saving…")}>
+                  {props.channel ? t("Save changes") : t("Create channel")}
                 </Button>
               </footer>
             </form>

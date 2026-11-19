@@ -1,5 +1,6 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import { createSignal, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { Button, Dialog, Textarea } from "./ui";
 
 interface JoinServerDialogProps {
@@ -21,7 +22,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
     try {
       await props.onJoin({ inviteUrl: inviteUrl() });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not join the server.");
+      setError(cause instanceof Error ? cause.message : t("Could not join the server."));
     } finally {
       setBusy(false);
     }
@@ -34,20 +35,20 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
           <Dialog.Content as="section" class="remote-dialog">
             <header>
               <div>
-                <span class="remote-dialog-eyebrow">Remote server</span>
+                <span class="remote-dialog-eyebrow">{t("Remote server")}</span>
                 <Dialog.Title as="h2" id="join-title">
-                  Join a COSGRAL team
+                  {t("Join a COSGRAL team")}
                 </Dialog.Title>
               </div>
-              <Button type="button" aria-label="Close" disabled={busy()} onClick={props.onClose}>
+              <Button type="button" aria-label={t("Close")} disabled={busy()} onClick={props.onClose}>
                 ×
               </Button>
             </header>
             <Dialog.Description>
-              Paste the one-time invitation link. You will join with your signed-in COSGRAL account.
+              {t("Paste the one-time invitation link. You will join with your signed-in COSGRAL account.")}
             </Dialog.Description>
             <label class="remote-field">
-              <span>Invitation link</span>
+              <span>{t("Invitation link")}</span>
               <Textarea
                 value={inviteUrl()}
                 onInput={(event) => setInviteUrl(event.currentTarget.value)}
@@ -59,7 +60,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
             <div class="remote-account-chip">
               <span aria-hidden="true">@</span>
               <div>
-                <small>Joining as</small>
+                <small>{t("Joining as")}</small>
                 <strong>{props.accountEmail}</strong>
               </div>
             </div>
@@ -71,10 +72,10 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
                 disabled={busy() || !inviteUrl().trim()}
                 onClick={props.onClose}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button type="button" class="remote-primary-button" disabled={busy()} onClick={() => void join()}>
-                {busy() ? "Joining…" : "Join server"}
+                {busy() ? t("Joining…") : t("Join server")}
               </Button>
             </footer>
           </Dialog.Content>

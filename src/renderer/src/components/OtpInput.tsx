@@ -1,5 +1,6 @@
 import { ONE_TIME_CODE_ALPHABET, ONE_TIME_CODE_LENGTH } from "@openbot/contracts/validation";
 import { createEffect, createMemo, createSignal, createUniqueId, For, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { Input } from "./ui";
 
 export type OtpInputStatus = "idle" | "verifying" | "error" | "success";
@@ -29,9 +30,9 @@ export function OtpInput(props: OtpInputProps) {
   const status = () => props.status ?? "idle";
   const disabled = () => Boolean(props.disabled || status() === "verifying" || status() === "success");
   const message = createMemo(() => {
-    if (status() === "success") return props.successMessage ?? "Verified. Opening COSGRAL Workspace…";
-    if (status() === "error") return props.errorMessage ?? "That code is incorrect. Try again.";
-    if (status() === "verifying") return "Verifying…";
+    if (status() === "success") return props.successMessage ?? t("Verified. Opening COSGRAL Workspace…");
+    if (status() === "error") return props.errorMessage ?? t("That code is incorrect. Try again.");
+    if (status() === "verifying") return t("Verifying…");
     return props.hint;
   });
 
@@ -196,7 +197,7 @@ export function OtpInput(props: OtpInputProps) {
           value=""
           readonly={Boolean(props.disabled || status() === "success")}
           maxlength={ONE_TIME_CODE_LENGTH}
-          aria-label="One-time code"
+          aria-label={t("One-time code")}
           aria-invalid={status() === "error" ? "true" : undefined}
           aria-describedby={message() ? messageId : undefined}
           autofocus={props.autofocus}
