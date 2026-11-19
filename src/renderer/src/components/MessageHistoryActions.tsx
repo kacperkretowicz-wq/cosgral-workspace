@@ -72,7 +72,7 @@ export function MessageHistoryActions(
     },
   );
   function problem(action: MessageAction): string | null {
-    if (!api) return "Message actions are unavailable on this computer.";
+    if (!api) return t("Message actions are unavailable on this computer.");
     return (
       menuProblem(action) ??
       messageActionProblem(
@@ -116,21 +116,21 @@ export function MessageHistoryActions(
       }
       if (serial === generation) setDialog(null);
     } catch (e) {
-      if (serial === generation) setError(e instanceof Error ? e.message : "Could not change this message.");
+      if (serial === generation) setError(e instanceof Error ? e.message : t("Could not change this message."));
     } finally {
       if (serial === generation) setBusy(false);
     }
   }
   const label = (action: MessageAction) =>
     action === "retry"
-      ? "Retry"
+      ? t("Retry")
       : action === "edit"
-        ? "Edit message"
+        ? t("Edit message")
         : action === "delete"
-          ? "Delete message"
+          ? t("Delete message")
           : (menuAction("pin")?.active ?? pinned())
-            ? "Unpin message"
-            : "Pin message";
+            ? t("Unpin message")
+            : t("Pin message");
   return (
     <>
       <DropdownMenu.Root
@@ -147,11 +147,13 @@ export function MessageHistoryActions(
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="message-more-menu">
           <Show when={props.onCopy}>
-            <DropdownMenu.Item onSelect={() => props.onCopy?.()}>{props.copied ? "Copied" : "Copy"}</DropdownMenu.Item>
+            <DropdownMenu.Item onSelect={() => props.onCopy?.()}>
+              {props.copied ? t("Copied") : t("Copy")}
+            </DropdownMenu.Item>
           </Show>
           <Show when={props.onBranch}>
             <DropdownMenu.Item disabled={Boolean(menuProblem("branch"))} onSelect={() => props.onBranch?.()}>
-              Branch from here
+              {t("Branch from here")}
               <Show when={menuProblem("branch")}>
                 <span class="thread-work-action-note">{menuProblem("branch")}</span>
               </Show>
@@ -197,16 +199,18 @@ export function MessageHistoryActions(
         <Dialog.Portal>
           <Dialog.Overlay class="thread-work-backdrop" />
           <Dialog.Content class="thread-work-dialog">
-            <Dialog.Title>{dialog() === "edit" ? "Edit message" : "Delete message?"}</Dialog.Title>
+            <Dialog.Title>{dialog() === "edit" ? t("Edit message") : t("Delete message?")}</Dialog.Title>
             <Dialog.Description>
               {dialog() === "delete"
-                ? "Delete only this message from the conversation? This cannot be undone."
+                ? t("Delete only this message from the conversation? This cannot be undone.")
                 : editNeedsConfirmation(props.laterMessages)
-                  ? `Editing will remove ${props.laterMessages} later message${props.laterMessages === 1 ? "" : "s"} and send your revised text to the agent.`
-                  : "Send your revised text to the agent."}
+                  ? t("Editing will remove {count} later messages and send your revised text to the agent.", {
+                      count: props.laterMessages,
+                    })
+                  : t("Send your revised text to the agent.")}
             </Dialog.Description>
             <Show when={dialog() === "edit"}>
-              <Field label="Message text">
+              <Field label={t("Message text")}>
                 <Textarea
                   value={text()}
                   maxlength={MESSAGE_ACTION_LIMITS.editedText}
@@ -228,10 +232,10 @@ export function MessageHistoryActions(
                 disabled={busy() || Boolean(problem(dialog() ?? "delete")) || (dialog() === "edit" && !text().trim())}
                 onClick={() => void run(dialog() ?? "delete")}
               >
-                {dialog() === "delete" ? "Delete message" : "Replace and send"}
+                {dialog() === "delete" ? t("Delete message") : t("Replace and send")}
               </Button>
               <Button variant="secondary" disabled={busy()} onClick={() => setDialog(null)}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </Dialog.Content>

@@ -401,7 +401,7 @@ export function SelectionActionsBar(props: {
 
             <Show when={mode() === "error"}>
               <span class="selection-actions-error" role="alert">
-                Couldn’t send
+                {t("Couldn't send")}
               </span>
               <Button
                 type="button"
@@ -410,7 +410,7 @@ export function SelectionActionsBar(props: {
                 onClick={() => void submit(lastInstruction())}
               >
                 <RetryIcon />
-                <span class="selection-actions-label">Retry</span>
+                <span class="selection-actions-label">{t("Retry")}</span>
               </Button>
               <Button
                 type="button"
@@ -448,7 +448,7 @@ export function SelectionActionsBar(props: {
                   <Input
                     value={prompt()}
                     aria-label={t("Describe edits")}
-                    placeholder="Describe edits"
+                    placeholder={t("Describe edits")}
                     maxlength={maximumInstructionLength()}
                     onInput={(event) => updatePrompt(event.currentTarget.value)}
                   />
@@ -469,29 +469,29 @@ export function SelectionActionsBar(props: {
                   <span class="selection-actions-divider" aria-hidden="true" />
                 </Show>
                 <PresetButton
-                  label="Explain"
+                  label={t("Explain")}
                   icon={<ExplainIcon />}
                   onSelect={() => void submit(SELECTION_ACTION_INSTRUCTIONS.Explain)}
                 />
                 <PresetButton
-                  label="Improve"
+                  label={t("Improve")}
                   icon={<ImproveIcon />}
                   onSelect={() => void submit(SELECTION_ACTION_INSTRUCTIONS.Improve)}
                 />
                 <Show when={expanded()}>
                   <div class="selection-actions-more-presets">
                     <PresetButton
-                      label="Shorten"
+                      label={t("Shorten")}
                       icon={<ShortenIcon />}
                       onSelect={() => void submit(SELECTION_ACTION_INSTRUCTIONS.Shorten)}
                     />
                     <PresetButton
-                      label="Tone"
+                      label={t("Tone")}
                       icon={<ToneIcon />}
                       onSelect={() => void submit(SELECTION_ACTION_INSTRUCTIONS.Tone)}
                     />
                     <PresetButton
-                      label="Grammar"
+                      label={t("Grammar")}
                       icon={<GrammarIcon />}
                       onSelect={() => void submit(SELECTION_ACTION_INSTRUCTIONS.Grammar)}
                     />
@@ -501,7 +501,7 @@ export function SelectionActionsBar(props: {
                 <Button
                   type="button"
                   class="selection-actions-icon-button selection-actions-expand"
-                  aria-label={expanded() ? "Show fewer actions" : "Show more actions"}
+                  aria-label={expanded() ? t("Show fewer actions") : t("Show more actions")}
                   aria-expanded={expanded() ? "true" : "false"}
                   onPointerDown={(event) => event.preventDefault()}
                   onClick={() => setExpanded((value) => !value)}

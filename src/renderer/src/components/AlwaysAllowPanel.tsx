@@ -32,11 +32,11 @@ export function AlwaysAllowPanel(props: {
                   disabled={props.busy}
                   onClick={() => setOpen(true)}
                 >
-                  Always allow…
+                  {t("Always allow…")}
                 </Button>
               ) : (
                 <Text class="always-allow-note" tone="muted" title={current.reason}>
-                  Only once: {current.reason}
+                  {t("Only once: {reason}", { reason: current.reason })}
                 </Text>
               )
             }
@@ -50,7 +50,7 @@ export function AlwaysAllowPanel(props: {
               if (current.kind === "command") {
                 return (
                   <label class="always-allow-field">
-                    <Text variant="label-sm">Always allow commands that start with</Text>
+                    <Text variant="label-sm">{t("Always allow commands that start with")}</Text>
                     <NativeSelect value={chosenPrefix()} onChange={(event) => setPrefix(event.currentTarget.value)}>
                       <For each={current.prefixes}>{(item) => <option value={item}>{item}</option>}</For>
                     </NativeSelect>
@@ -60,26 +60,31 @@ export function AlwaysAllowPanel(props: {
               if (current.kind === "file-change") {
                 return (
                   <Text as="p">
-                    Always allow this agent to change files in <strong>{current.folder}</strong> and the folders inside
-                    it.
+                    {t("Always allow this agent to change files in {folder} and the folders inside it.", {
+                      folder: current.folder,
+                    })}
                   </Text>
                 );
               }
               return (
                 <Text as="p">
-                  Always allow this agent to {current.writes ? "read and write" : "read"} in the folder that contains
-                  everything it asks for now.
+                  {current.writes
+                    ? t(
+                        "Always allow this agent to read and write in the folder that contains everything it asks for now.",
+                      )
+                    : t("Always allow this agent to read in the folder that contains everything it asks for now.")}
                 </Text>
               );
             }}
           </Show>
           <Text as="p" tone="muted" class="always-allow-note">
-            For this agent only. It never covers {APPROVAL_RULES_NEVER_COVER.join(", ")}. You can remove the rule in the
-            agent's settings.
+            {t("For this agent only. It never covers {kinds}. You can remove the rule in the agent's settings.", {
+              kinds: APPROVAL_RULES_NEVER_COVER.join(", "),
+            })}
           </Text>
           <div class="approval-card-actions">
             <Button type="button" class="approval-button approval-button-ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               type="button"
@@ -90,7 +95,7 @@ export function AlwaysAllowPanel(props: {
                 props.onConfirm(current.available && current.kind === "command" ? { prefix: chosenPrefix() } : {});
               }}
             >
-              Always allow
+              {t("Always allow")}
             </Button>
           </div>
         </section>
