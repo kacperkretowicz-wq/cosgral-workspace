@@ -137,9 +137,9 @@ export function ChannelWorkspace(props: {
   }
   async function send(text: string, replyToMessageId?: string) {
     const api = window.openbot.channels;
-    if (!api?.sendMessage) throw new Error("Sending is unavailable in this build.");
+    if (!api?.sendMessage) throw new Error(t("Sending is unavailable in this build."));
     const supportsReplies = "supportsMessageReplies" in api && api.supportsMessageReplies === true;
-    if (replyToMessageId && !supportsReplies) throw new Error("Replies are not available in this build.");
+    if (replyToMessageId && !supportsReplies) throw new Error(t("Replies are not available in this build."));
     const input = { channelId: selected(), text, ...(replyToMessageId ? { replyToMessageId } : {}) };
     const result = await api.sendMessage(input);
     if (result.message.channelId === selected()) {
@@ -149,7 +149,7 @@ export function ChannelWorkspace(props: {
   }
   async function clearHistory() {
     const api = window.openbot.channels;
-    if (!api?.clearHistory) throw new Error("Clearing the history is unavailable in this build.");
+    if (!api?.clearHistory) throw new Error(t("Clearing the history is unavailable in this build."));
     const channelId = selected();
     const result = await api.clearHistory({ channelId });
     if (channelId === selected()) {
@@ -160,13 +160,13 @@ export function ChannelWorkspace(props: {
   }
   async function changeHistoryWindow(historyWindow: ChannelHistoryWindow) {
     const api = window.openbot.channels;
-    if (!api?.update) throw new Error("Saving the history window is unavailable in this build.");
+    if (!api?.update) throw new Error(t("Saving the history window is unavailable in this build."));
     rememberChannel(await api.update({ channelId: selected(), historyWindow }));
   }
   async function action(taskId: string, ownerBotId?: string) {
     try {
       const api = window.openbot.channels;
-      if (!api) throw new Error("Channels unavailable");
+      if (!api) throw new Error(t("Channels unavailable"));
       const task = ownerBotId
         ? await api.reassignTask({ taskId, ownerBotId })
         : await api.actOnTask({ taskId, action: "resume" });
@@ -178,9 +178,9 @@ export function ChannelWorkspace(props: {
   return (
     <div class="channel-workspace">
       <aside aria-label={t("Channels")}>
-        <h2>Channels</h2>
-        <Button onClick={() => setEditor("new")}>New channel</Button>
-        <Show when={channels().length} fallback={<p>No channels yet.</p>}>
+        <h2>{t("Channels")}</h2>
+        <Button onClick={() => setEditor("new")}>{t("New channel")}</Button>
+        <Show when={channels().length} fallback={<p>{t("No channels yet.")}</p>}>
           <For each={channels().filter((item) => !item.archived)}>
             {(item) => (
               <Button
@@ -196,7 +196,7 @@ export function ChannelWorkspace(props: {
       </aside>
       <div class="channel-workspace-main">
         <Show when={channel()}>
-          <Button onClick={() => setEditor(channel())}>Edit channel</Button>
+          <Button onClick={() => setEditor(channel())}>{t("Edit channel")}</Button>
         </Show>
         <Show when={error()}>
           <p role="alert">{error()}</p>
@@ -205,7 +205,7 @@ export function ChannelWorkspace(props: {
           <CosgralLoadingSkeleton label={t("Loading channel…")} />
         </Show>
         {/* Keyed by the id: saving a setting of the channel replaces its object, and the open sections and their notes must stay. */}
-        <Show when={channel()?.id} fallback={<p>Select a channel.</p>} keyed>
+        <Show when={channel()?.id} fallback={<p>{t("Select a channel.")}</p>} keyed>
           {(_id) => (
             <Show when={channel()}>
               {(item) => (
@@ -238,12 +238,12 @@ export function ChannelWorkspace(props: {
             onClose={() => setEditor(undefined)}
             onSave={async (input) => {
               const api = window.openbot.channels;
-              if (!api) throw new Error("Channels are unavailable.");
+              if (!api) throw new Error(t("Channels are unavailable."));
               let saved: WorkspaceChannel;
               if (editing === "new") saved = await api.create(input);
               else {
                 const current = (await api.list()).find((item) => item.id === editing.id);
-                if (!current) throw new Error("This channel no longer exists.");
+                if (!current) throw new Error(t("This channel no longer exists."));
                 for (const botId of input.memberBotIds.filter((id) => !current.memberBotIds.includes(id)))
                   await api.addMember({ channelId: current.id, botId });
                 await api.setLead({ channelId: current.id, botId: input.leadBotId });
