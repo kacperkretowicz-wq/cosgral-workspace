@@ -839,7 +839,7 @@
   padding: var(--openbot-space-4);
 }
 
-.usage-card-header {
+.work-page .usage-card-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -856,7 +856,7 @@
   font-weight: var(--openbot-weight-semibold);
 }
 
-.usage-card-header > span {
+.work-page .usage-card-header > span {
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-sm);
   font-variant-numeric: tabular-nums;

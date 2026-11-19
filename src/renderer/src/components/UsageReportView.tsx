@@ -1,11 +1,11 @@
 import type { UsagePeriod, UsageReport, UsageTokenSplit } from "@openbot/contracts/ipc";
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
+import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
-import type { BotProfile } from "../data";
-import { AgentAvatar } from "./AgentAvatar";
 import { Button } from "./ui";
 import { Coins, Cpu, MessageCircle, Wallet } from "./ui/icons";
 
