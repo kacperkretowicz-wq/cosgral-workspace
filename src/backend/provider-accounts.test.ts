@@ -1,4 +1,4 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 // COSGRAL W5-BE2: provider accounts on a fake CLI. The account folder is a black box: the tests check only that the
 // folder reached the CLI process (the fake logs CODEX_HOME / CLAUDE_CONFIG_DIR to a file outside it).
 import { existsSync } from "node:fs";
@@ -108,7 +108,7 @@ async function until(read: () => ProviderAccount, done: (account: ProviderAccoun
 describe("account helpers (W5-BE2)", () => {
   it("masks e-mails and names, never returning them whole", () => {
     expect(maskAccount("person@example.com")).toBe("p***@e***.com");
-    expect(maskAccount("Kacper")).toBe("K***");
+    expect(maskAccount("Anna")).toBe("A***");
     expect(maskAccount("a@b")).toBe("a***@b***");
   });
 

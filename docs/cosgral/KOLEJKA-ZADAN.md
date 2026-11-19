@@ -104,7 +104,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 34. [zrobione: 8ddab6ca4] Aria/i18n: VaultPanel confirm Delete + skan window.confirm / resztki EN.
 35. [zrobione: e160e1366] Aria/i18n: App.tsx publish fallback + skan throw/Error EN w UI (poza Remote).
 36. [zrobione: 0c9d7f356] Lekkie: odśwież `i18n-inwentarz.md` + sprawdzenie równości kluczy PL/EN (`i18n.test`).
-37. Skan prywatności całego repo (nazwa profilu, e-mail, ścieżki użytkownika, klucze) + raport; popraw znaleziska w dokumentach.
+37. [zrobione: KAPI-AU] Skan prywatności całego repo (nazwa profilu, e-mail, ścieżki użytkownika, klucze) + raport; popraw znaleziska w dokumentach.
 38. Wersje przepływów: przywracanie/różnice — test jednego pliku na atrapie i luki do raportu (wiersz 61).
 39. Skróty klawiszowe: pełna mapa 0.71 (wiersz 72) w kontrakcie `ipc-shortcuts` + testy; ekran zostawia UI.
 

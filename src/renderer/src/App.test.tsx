@@ -2863,7 +2863,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
         turnId: "turn-1",
         kind: "command",
         command: "npm test -- --runInBand",
-        cwd: "/Users/norbertbodziony/projects/openbot",
+        cwd: "/Users/example/projects/demo",
         reason: "Run the verification suite.",
         grantRoot: null,
         permissions: null,

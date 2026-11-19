@@ -1,4 +1,4 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 // COSGRAL W10-KK2: the Telegram bridge on a real database, against a mock Telegram on this computer and a fake agent. No real bot,
 // no real token, no call outside this computer. Every test also looks for the token where it must not be.
 
@@ -215,12 +215,12 @@ describe("Telegram bridge: who may write (W10-KK2)", () => {
   it("an unknown chat that is then allowed leaves the unknown list and is passed on from then on", async () => {
     const { bridge, telegram, agent } = await setup();
     await bridge.connect("telegram", TOKEN);
-    telegram.say({ chatId: 7, text: "hello", name: "Kacper" });
+    telegram.say({ chatId: 7, text: "hello", name: "Anna" });
     await until(() => bridge.status("telegram").unknownChats.length === 1, "unknown chat");
     bridge.allowChat({ kind: "telegram", chatId: "7", botId: "helper" });
     expect(bridge.status("telegram")).toMatchObject({
       unknownChats: [],
-      allowedChats: [expect.objectContaining({ chatId: "7", label: "Kacper", botId: "helper" })],
+      allowedChats: [expect.objectContaining({ chatId: "7", label: "Anna", botId: "helper" })],
     });
     telegram.say({ chatId: 7, text: "now?" });
     await until(() => agent.received.length === 1, "passed on");
