@@ -1,5 +1,6 @@
 import type { UpdateVoiceSettingsInput, VoiceInfo, VoiceModelId, VoiceState } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect } from "./ui";
 
 export function VoiceSettingsView(props: {
@@ -13,9 +14,9 @@ export function VoiceSettingsView(props: {
 }) {
   const settings = () => props.state.settings;
   return (
-    <section class="ui-card cosgral-settings-block cosgral-form" aria-label="Voice settings">
-      <h2>Voice</h2>
-      <p>Audio stays on this computer. The first download requires approval on a Needs you card.</p>
+    <section class="ui-card cosgral-settings-block cosgral-form" aria-label={t("Voice settings")}>
+      <h2>{t("Voice")}</h2>
+      <p>{t("Audio stays on this computer. The first download requires approval on a Needs you card.")}</p>
       <label>
         <Input
           unstyled
@@ -23,21 +24,21 @@ export function VoiceSettingsView(props: {
           checked={settings().enabled}
           onChange={(e) => props.update({ enabled: e.currentTarget.checked })}
         />{" "}
-        Enable voice
+        {t("Enable voice")}
       </label>
       <p>
         {props.state.speech.available
-          ? "System speech available."
-          : (props.state.speech.unavailableReason ?? "System speech unavailable.")}
+          ? t("System speech available.")
+          : (props.state.speech.unavailableReason ?? t("System speech unavailable."))}
       </p>
       <label>
-        Voice{" "}
+        {t("Voice")}{" "}
         <NativeSelect
           unstyled
           value={settings().voiceId ?? ""}
           onChange={(e) => props.update({ voiceId: e.currentTarget.value || null })}
         >
-          <option value="">System default</option>
+          <option value="">{t("System default")}</option>
           <For each={props.voices}>
             {(voice) => (
               <option value={voice.id}>
@@ -48,7 +49,7 @@ export function VoiceSettingsView(props: {
         </NativeSelect>
       </label>
       <label>
-        Speed{" "}
+        {t("Speed")}{" "}
         <Input
           unstyled
           type="number"
@@ -66,10 +67,10 @@ export function VoiceSettingsView(props: {
           checked={settings().autoRead}
           onChange={(e) => props.update({ autoRead: e.currentTarget.checked })}
         />{" "}
-        Read new replies automatically
+        {t("Read new replies automatically")}
       </label>
       <label>
-        Recording language{" "}
+        {t("Recording language")}{" "}
         <NativeSelect
           unstyled
           value={settings().language}
@@ -78,13 +79,13 @@ export function VoiceSettingsView(props: {
             if (value === "auto" || value === "en" || value === "pl") props.update({ language: value });
           }}
         >
-          <option value="auto">Automatic</option>
-          <option value="en">English</option>
-          <option value="pl">Polski</option>
+          <option value="auto">{t("Automatic")}</option>
+          <option value="en">{t("English")}</option>
+          <option value="pl">{t("Polski")}</option>
         </NativeSelect>
       </label>
       <p>
-        Runtime: {props.state.transcription.runtime.state} ·{" "}
+        {t("Runtime:")} {props.state.transcription.runtime.state} ·{" "}
         {(props.state.transcription.runtime.sizeBytes / 1048576).toFixed(1)} MB
         <Show when={props.state.transcription.runtime.progress}>
           {(progress) => (
@@ -96,7 +97,7 @@ export function VoiceSettingsView(props: {
         <p role="alert">{props.state.transcription.runtime.error}</p>
       </Show>
       <p>
-        {props.state.transcription.available ? "Transcription ready." : props.state.transcription.unavailableReason}
+        {props.state.transcription.available ? t("Transcription ready.") : props.state.transcription.unavailableReason}
       </p>
       <ul>
         <For each={props.state.transcription.models}>
@@ -124,23 +125,23 @@ export function VoiceSettingsView(props: {
                 when={model.state === "downloading"}
                 fallback={
                   <Button unstyled type="button" onClick={() => props.download(model.id)}>
-                    Download
+                    {t("Download")}
                   </Button>
                 }
               >
                 <Button unstyled type="button" onClick={() => props.cancel(model.id)}>
-                  Cancel download
+                  {t("Cancel download")}
                 </Button>
               </Show>
               <Button unstyled type="button" disabled={model.state !== "ready"} onClick={() => props.remove(model.id)}>
-                Delete model
+                {t("Delete model")}
               </Button>
             </li>
           )}
         </For>
       </ul>
       <Button unstyled type="button" onClick={props.removeRuntime}>
-        Delete runtime and revoke consent
+        {t("Delete runtime and revoke consent")}
       </Button>
     </section>
   );
@@ -153,7 +154,7 @@ export function VoiceSettings() {
   async function refresh() {
     const api = window.openbot.voice;
     if (!api) {
-      setError("Voice is unavailable in this build.");
+      setError(t("Voice is unavailable in this build."));
       return;
     }
     // W3-BE9: the Windows voice list comes from PowerShell and can take seconds; show the settings first.
@@ -165,7 +166,7 @@ export function VoiceSettings() {
       setState(await api.getState());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load voice.");
+      setError(e instanceof Error ? e.message : t("Could not load voice."));
     }
   }
   async function action(fn: () => Promise<unknown>) {
@@ -173,7 +174,7 @@ export function VoiceSettings() {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Voice action failed.");
+      setError(e instanceof Error ? e.message : t("Voice action failed."));
     }
   }
   onSettled(() => {
@@ -206,10 +207,10 @@ export function VoiceSettings() {
                   const result = await api.downloadModel({ modelId });
                   setNotice(
                     result.status === "declined"
-                      ? "Download was declined."
+                      ? t("Download was declined.")
                       : result.status === "ready"
-                        ? "Model is ready."
-                        : "Download started.",
+                        ? t("Model is ready.")
+                        : t("Download started."),
                   );
                 });
             }}
@@ -219,12 +220,12 @@ export function VoiceSettings() {
             }}
             remove={(modelId) => {
               const api = window.openbot.voice;
-              if (api && window.confirm("Delete this downloaded model?"))
+              if (api && window.confirm(t("Delete this downloaded model?")))
                 void action(() => api.deleteModel({ modelId }));
             }}
             removeRuntime={() => {
               const api = window.openbot.voice;
-              if (api && window.confirm("Delete the runtime and revoke consent?"))
+              if (api && window.confirm(t("Delete the runtime and revoke consent?")))
                 void action(() => api.deleteRuntime());
             }}
           />

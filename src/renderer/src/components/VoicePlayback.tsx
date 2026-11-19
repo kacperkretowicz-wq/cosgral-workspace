@@ -1,6 +1,7 @@
 import { VOICE_LIMITS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
 import type { BotMessage } from "../data";
+import { t } from "../i18n";
 import { Button } from "./ui";
 
 /** The reply that is being read right now (one at a time: speaking a new one stops the old one). */
@@ -30,6 +31,7 @@ export function VoicePlayback(props: { messageId: string; text: string; enabled:
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+  const label = () => (reading() ? t("Stop reading") : t("Read aloud"));
   return (
     <Show when={props.enabled}>
       <span class={["message-actions", "voice-playback", { "message-actions-open": reading() || Boolean(error()) }]}>
@@ -37,8 +39,8 @@ export function VoicePlayback(props: { messageId: string; text: string; enabled:
           unstyled
           type="button"
           class="message-action-button"
-          aria-label={reading() ? "Stop reading" : "Read aloud"}
-          title={reading() ? "Stop reading" : "Read aloud"}
+          aria-label={label()}
+          title={label()}
           aria-pressed={reading() ? "true" : "false"}
           onClick={() => void (reading() ? stop() : read())}
         >
