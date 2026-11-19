@@ -1082,6 +1082,8 @@
 }
 .page-rail-list {
   overflow-y: auto;
+  /* The list is 35 px and a button 36 px: `overflow-y: auto` made x auto too, and a grey scrollbar sat under the icons. */
+  overflow-x: hidden;
   flex-shrink: 1;
   width: 100%;
 }
@@ -1267,22 +1269,94 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   box-shadow: var(--cosgral-focus-ring);
 }
 
-.sidebar-search-row .sidebar-new-button {
+.sidebar-search-row .sidebar-new-button,
+.sidebar-search-row .sidebar-filter-button {
   width: 32px;
   height: 32px;
-  flex-basis: 32px;
+  flex: 0 0 32px;
   border-radius: var(--cosgral-radius-md);
   color: var(--cosgral-text-secondary);
 }
 
 .sidebar-search-row .sidebar-new-button:hover,
-.sidebar-search-row .sidebar-new-button[data-expanded] {
+.sidebar-search-row .sidebar-new-button[data-expanded],
+.sidebar-search-row .sidebar-filter-button:hover,
+.sidebar-search-row .sidebar-filter-button[data-expanded] {
   background: var(--cosgral-bg-control-hover);
   color: var(--cosgral-text-primary);
 }
 
-.sidebar-new-menu {
+/* A filter that hides nothing looks like every other tool; one that changes the list says so. */
+.sidebar-search-row .sidebar-filter-button.is-active {
+  background: var(--openbot-accent-soft);
+  color: var(--cosgral-text-primary);
+}
+
+.sidebar-new-menu,
+.sidebar-filter-menu {
   min-width: 168px;
+}
+
+.bot-context-menu [role="menuitemcheckbox"] {
+  display: flex;
+  width: 100%;
+  min-height: 26px;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  border-radius: var(--openbot-radius-xs);
+  padding: var(--openbot-space-1) var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  line-height: var(--openbot-leading-md);
+  cursor: default;
+  outline: 0;
+}
+
+.bot-context-menu [role="menuitemcheckbox"]:hover,
+.bot-context-menu [role="menuitemcheckbox"][data-highlighted] {
+  background-color: var(--openbot-bg-control-hover);
+}
+
+.sidebar-filter-check {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  border: 1px solid var(--openbot-border-strong, var(--openbot-border));
+  border-radius: var(--openbot-radius-xs);
+  color: var(--openbot-text-primary);
+}
+
+[data-checked] > .sidebar-filter-check {
+  border-color: var(--openbot-accent);
+  background: var(--openbot-accent);
+  color: var(--openbot-text-on-accent, #fff);
+}
+
+/* First run: the empty list is a first step, not a grey sentence. */
+.sidebar-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--openbot-space-2);
+  margin: 40px var(--openbot-space-3) 0;
+  text-align: center;
+}
+
+.sidebar-empty-title {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold, 600);
+}
+
+.sidebar-empty-hint {
+  max-width: 28ch;
+  margin: 0 0 var(--openbot-space-2);
+  color: var(--openbot-text-readable);
+  font-size: var(--openbot-text-sm);
+  line-height: 1.45;
+  text-wrap: balance;
 }
 
 /* W11-UI1: thread tabs above the chat. */

@@ -1,4 +1,10 @@
-import type { AgentEvent, ThreadList, ThreadSummary, ThreadTabCloseMode } from "@openbot/contracts/ipc";
+import {
+  type AgentEvent,
+  NEW_THREAD_TITLE,
+  type ThreadList,
+  type ThreadSummary,
+  type ThreadTabCloseMode,
+} from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Button, ContextMenu, DropdownMenu } from "./ui";
@@ -160,17 +166,17 @@ export function ThreadTabs(props: ThreadTabsProps) {
                     class="thread-tab-label"
                     aria-current={thread.id === activeId() ? "true" : undefined}
                     tabindex={thread.id === activeId() ? 0 : -1}
-                    title={thread.title}
+                    title={threadTitle(thread.title)}
                     onClick={() => void select(thread)}
                     onKeyDown={(event) => onTabKeyDown(event, index())}
                   >
-                    {thread.title}
+                    {threadTitle(thread.title)}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     class="thread-tab-close"
-                    aria-label={`${t("Close tab")}: ${thread.title}`}
+                    aria-label={`${t("Close tab")}: ${threadTitle(thread.title)}`}
                     onClick={() => void close(thread, "this")}
                   >
                     <X aria-hidden="true" />
@@ -221,7 +227,7 @@ export function ThreadTabs(props: ThreadTabsProps) {
                 <For each={closedThreads()}>
                   {(thread) => (
                     <DropdownMenu.Item onSelect={() => void openFromList(thread)}>
-                      <span>{thread.title}</span>
+                      <span>{threadTitle(thread.title)}</span>
                     </DropdownMenu.Item>
                   )}
                 </For>
@@ -237,4 +243,9 @@ export function ThreadTabs(props: ThreadTabsProps) {
       </Show>
     </Show>
   );
+}
+
+/** The default title from the store ("New thread") is shown in the window language; a title the person gave is not. */
+function threadTitle(title: string): string {
+  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
 }

@@ -1,3 +1,134 @@
+# Przekazanie projektu (aktualne): sesja 19.11.2026 po południu
+
+**Dla następnego agenta. Najpierw ten rozdział, potem `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.**
+Starsze przekazanie (zespół OpenBota, rano 19.11) jest niżej, pod kreską. Jego fakty o rutynach i decyzjach właściciela nadal obowiązują.
+
+## 0. Na czym zależy właścicielowi (najważniejsze)
+
+1. **Duże, widoczne skoki jakości UI w każdej sekcji.** Układ jak w OpenBocie (pasek stron, lista agentów, rozmowa), ale wykonanie
+   co najmniej na poziomie OpenBota, najlepiej lepsze: ikony z jednej rodziny, porządne sekcje, stany puste, brak uciętych napisów.
+   Kosmetyka się nie liczy: zrzut przed i po ma pokazywać wyraźną różnicę. Kolory są mniej ważne niż struktura i wykończenie.
+2. **Stworki (awatary agentów) to serce produktu:** dopracowane, z mimiką i ruchem, zawsze też w wersji bez animacji.
+   Właściciel pozwala użyć ChatGPT albo Gemini w przeglądarce do generowania grafik, jeśli kod nie wystarczy.
+3. **Program po polsku**, bez angielskich resztek.
+4. Logo „C”, ciemny motyw domyślny i stworki zostają (zobowiązania marki, `PRODUCT.md`).
+5. Właściciel uruchamia Gemini CLI do oceny UI i podobieństwa do OpenBota. Jego uwagi traktuj jak recenzję.
+6. Użytkownicy: właściciel i jego kolega. Obaj znają OpenBota.
+7. **Strona Zadań nie jest teraz potrzebna** (właściciel, 19.11). Przerabiałem ją, ale cofnąłem; nie wracaj do niej bez prośby.
+
+## 1. Gdzie jest praca
+
+| Co | Gdzie |
+|---|---|
+| Gałąź z tą pracą | `team/lider/poprawki-po-exe` na GitHubie (odbita od `codex/cosgral-desktop` @ `cdc9c29`) |
+| Scalenie do integracji | **Nie zrobione.** `codex/cosgral-desktop` nie ma tych zmian. Scal po zielonym checku i przeglądzie. |
+| Lokalny klon u właściciela | `Projekty\cosgral-workspace` w profilu właściciela. Folderu `Shared\...` z porannego przekazania na tym komputerze nie ma. |
+| Instalator | `dist\COSGRAL Workspace-0.2.0-x64.exe` zbudowany z `cdc9c29`, **przed** poprawkami z tej gałęzi. Do przebudowania: `bun run dist:win` (~10 min). |
+| Zasady jakości UI i dziennik sekcji | `docs/cosgral/PROMPT-UI-JAKOSC.md` |
+| Prawda o produkcie | `PRODUCT.md` (wywiad z właścicielem, 19.11) |
+
+## 2. Co zrobiono w tej sesji (wszystko sprawdzone w oknie programu albo w Storybooku)
+
+**Błędy znalezione w zbudowanym `.exe` i naprawione (z testami):**
+
+1. **Niewidoczne wiadomości przy „ogranicz animacje”** (komputer właściciela ma to włączone): `.message-entry-animated` miało stałe
+   `opacity: 0`, a przy reduced motion animacja była wyłączona. Teraz `animation-fill-mode: both` (`conversation.css`).
+2. Konfiguracja startowa wysyłała język „English”, choć okno było po polsku → program przechodził na angielski (`InitialSetup.tsx`).
+3. Pierwszy fokus konfiguracji był na „Wyloguj” (Enter wylogowywał). Teraz na pierwszym wyborze (`InitialSetup.tsx`).
+4. Karta CLI pokazywała „Brak” przy dostawcy „Dostępny”, gdy CLI szło ze zmiennej `OPENBOT_CODEX_PATH` (`backend/cli.ts`, `findSystemCli`).
+5. Przyciski `md` miały 16px zamiast 13px (`primitives.css`: rozmiar czcionki dla `data-size="md"`).
+6. Przyciski renderowane przez Kobalte (`as={Button}`) wrzucały do DOM atrybuty `as`/`component` z całym kodem funkcji (~16 KB).
+   Poprawka w `ui/button.tsx`. **Uwaga:** takie przyciski celowo nie dostają klasy `ui-button` (ich wygląd należy do własnej klasy);
+   pierwsza wersja poprawki to zmieniła i wiersze agentów zrobiły się kartami, więc to cofnąłem.
+7. Brakujące tłumaczenia: rola „New teammate”, „New thread”, poziom wysiłku w nagłówku, podpowiedzi pola wiadomości, „No agents yet”.
+8. Szary poziomy pasek przewijania pod ikonami paska stron (`cosgral.css`, `.page-rail-list { overflow-x: hidden }`).
+9. Kontrast zielonego w jasnym motywie (4,34 → 4,84 na tle wiersza; `theme-light.css`).
+10. Pływająca kolumna „Otwórz…” ucinała polskie etykiety (później i tak przeniesiona do nagłówka, punkt UI-4).
+
+**Zmiany UI (układ OpenBota, wyższa jakość):**
+
+1. **Pasek stron:** domyślnie 5 stron jak w OpenBocie (Agenci, Przepływy, Zadania, Zużycie, Biblioteka) + „Więcej”; bez niebieskiej
+   kropki „przypięta” na każdej ikonie (`agent-settings.ts`, `shell.css`). Istniejące instalacje zachowują swoje przypięcia.
+2. **Lista agentów:** „Pokaż ukryte” przeniesione do menu filtra (ikona obok szukania), „Przeglądaj/Nowy kanał” do menu „+”,
+   pusta lista z jednym zdaniem i przyciskiem „Nowy agent” (`Sidebar.tsx`, `cosgral.css`).
+3. **Wiersze agentów płaskie jak w OpenBocie:** bez karty pod każdym wierszem, bez kolorowego paska z lewej, stworek 42px, rola
+   nie ucina już nazwy (agent bez wiadomości pokazuje rolę w linii podglądu) (`shell.css`, `Sidebar.tsx`).
+4. **Nagłówek rozmowy:** Pliki, Ustawienia agenta i Głos jako ikony w nagłówku (jak w OpenBocie) zamiast pływającej kolumny dużych
+   przycisków nad rozmową (`ChatSidePanelLauncher.tsx` wariant `header`, `Conversation.tsx`).
+5. **Pole wiadomości:** „Wybierz z biblioteki” przeniesione do menu „+”; każda pozycja menu „+” ma ikonę.
+6. **Stworki z objętością:** gradient światła, odblask przycięty do kształtu, błysk w oczach (mruga z okiem), miękki cień
+   (`blobatar.ts`, `app-shell.css`). Kształty zostały z biblioteki `blobatar` (test geometrii pilnuje).
+
+**Testy:** do zmian są testy (TDD). Wzorzec zrzutu `ui-foundation` zaktualizowany po obejrzeniu różnicy (tylko rozmiar przycisków).
+Skrypt e2e `scripts/sandbox-e2e.ts` dostosowany do menu filtra, **ale e2e w Electronie nie był uruchomiony**.
+
+## 3. Co zostało do zrobienia (kolejność)
+
+1. **Przebudować instalator** z tej gałęzi i uruchomić go w piaskownicy (sekcja 4). Pokazać właścicielowi.
+2. **Uruchomić e2e i W5 w Electronie** (`bun run sandbox:e2e`, wymaga Node 24 i zbudowanego programu) na tej gałęzi.
+3. **Stworki dalej:** mimika stanów (pracuje, ma wiadomość, potrzebuje Cię, błąd), mrugnięcie i spojrzenie przy najechaniu,
+   wersja bez ruchu. Rozważyć grafiki z generatora (zgoda właściciela). Plik: `src/renderer/src/blobatar.ts`.
+4. **Licznik nieprzeczytanych na awatarze** w wierszu agenta (OpenBot ma kółko z liczbą na rogu stworka) i kanały na liście
+   jako wiersze ze stosem awatarów członków.
+5. **Pasek kart wątków nad rozmową** (`ThreadTabs`): przy jednym wątku zbędny; uprościć jak w OpenBocie.
+6. **Przegląd pozostałych stron** z porównaniem do OpenBota: Przepływy, Zużycie, Biblioteka, Katalog dodatków, Dostawcy,
+   Ustawienia, okna dialogowe. Każda: zrzut przed/po, wpis w dzienniku w `PROMPT-UI-JAKOSC.md`.
+7. **Resztki angielskiego** w oknie: np. „Controlling computer”/„Stop” w `Sidebar.tsx`, „Show in Finder” (na Windows to Eksplorator),
+   placeholdery przycisków. Skan: `i18n.test` + przejście okna po polsku.
+8. **Scalić gałąź** do `codex/cosgral-desktop` po pełnym checku (bez `--force`, nie na gałąź domyślną).
+9. Decyzje właściciela z porannego przekazania (sekcja 9 niżej) nadal otwarte.
+
+## 3a. Stan sprawdzenia w chwili wypchnięcia (bądź ostrożny)
+
+| Sprawdzenie | Wynik |
+|---|---|
+| `bun run lint` | zielone |
+| `bun run typecheck` (6 projektów) | zielone |
+| Testy jednostkowe całości | **ostatni pełny przebieg 3393/3393 zielony przed zmianami UI** (lista agentów, wiersze, nagłówek, stworki, menu „+”). Po nich puszczone tylko testy dotkniętych obszarów (App, Sidebar, Conversation, ChatSidePanelLauncher, blobatar, ui, agent-settings, i18n: zielone). **Pełnego przebiegu po ostatnich zmianach nie było** (właściciel kazał wypchnąć bez niego). |
+| Storybook | historyjki Sidebar, App i Themes zielone po zmianach listy; pełny przebieg 366 przerwany. |
+| Testy wizualne | 7/7 zielone po zmianie przycisków; po zmianach wierszy/nagłówka nie powtórzone. |
+| e2e / W5 w Electronie | nie uruchomione na tej gałęzi. |
+
+**Pierwsza rzecz dla następnego agenta:** `bun run test`, `bun run test:storybook`, `bun run test:visual`. Jeśli coś padnie, to
+najpewniej asercje o starym wyglądzie (karty wierszy, plakietka roli, pływająca kolumna „Otwórz…”, przełącznik „Show hidden”).
+Popraw test pod nowe zachowanie opisane w sekcji 2, nie cofaj wyglądu.
+
+## 3b. Rozszerzenie działań: pomysły na kolejne duże skoki UI (do oceny z właścicielem)
+
+1. **Stworki jako „żywy zespół”:** stan agenta widoczny na samym stworku (oczy zamknięte = śpi, oczy w ruchu = pracuje, uniesione
+   brwi = potrzebuje Cię, plaster = błąd), w liście, nagłówku i kanałach. To mocniejszy znak niż kropki i plakietki.
+2. **Edytor stworka:** wybór kształtu i koloru z podglądem mimiki; dziś jest tylko losowanie z 12 propozycji.
+3. **Lista agentów:** sekcje „Nieprzeczytane” / „Przypięte” / reszta jak w OpenBocie, licznik na stworku, przeciąganie kolejności.
+4. **Rozmowa:** odpowiedź agenta bez dymka (czysty tekst z markdownem, jak w OpenBocie), dymek tylko dla wiadomości człowieka;
+   kroki agenta („3 kroków”) jako zwijana oś czasu z ikonami narzędzi.
+5. **Pole wiadomości:** jedno pole z „+” po lewej, mikrofon i wyślij po prawej, wybór agenta w polu przy kanałach.
+6. **Strony robocze** (Przepływy, Zużycie, Biblioteka): wspólny szkielet strony (tytuł w nagłówku okna, wyśrodkowana kolumna,
+   jeden pasek narzędzi, płaskie listy, porządne stany puste), zamiast osobnego wyglądu każdej strony.
+7. **Ikony:** jedna rodzina (lucide 1.5px) w całym programie; własne SVG w `PageRail.tsx` i `Sidebar.tsx` wyrównać do niej.
+8. **Gemini CLI jako recenzent:** po każdej sekcji zrzut przed/po do właściciela, uwagi z Gemini wpisać do dziennika w
+   `PROMPT-UI-JAKOSC.md` i zamknąć.
+
+## 4. Jak pracować na komputerze właściciela (sprawdzone)
+
+1. Narzędzia: Bun 1.3.11 zainstalowany globalnie przez `npm i -g bun@1.3.11`; Node 24; Git. `bun install` w repo.
+2. Przeglądarki Playwrighta są w domyślnym folderze (`%LOCALAPPDATA%\ms-playwright`), więc `PLAYWRIGHT_BROWSERS_PATH` nie jest
+   potrzebne. Jeśli testy wizualne/Storybook zgłoszą brak przeglądarki: `bun x playwright install chromium`.
+3. **Uruchamianie programu do oglądania:** zawsze w piaskownicy (osobne `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`,
+   `OPENBOT_CODEX_PATH` na atrapę z `src/backend/testing/channel-codex.cjs`), jak w `start-cosgral-sandbox.cmd`, plus
+   `--remote-debugging-port=<port>`. Zrzuty i klikanie przez CDP (`Page.captureScreenshot`, `Runtime.evaluate`).
+   Pułapka: gdy okno jest zminimalizowane, `document.visibilityState` = `hidden` i zrzut CDP wisi.
+4. **Iteracja UI najszybciej w Storybooku** (`bun run storybook`, http://localhost:6006/iframe.html?id=app--playground):
+   pełna aplikacja na danych testowych, okno się nie minimalizuje. Strony otwierasz przez „Więcej” na pasku.
+5. **Porównanie z OpenBotem:** OpenBot jest zainstalowany u właściciela. Tylko patrz (zrzuty, przełączanie stron);
+   nie pisz w jego rozmowach, nie zmieniaj danych. Kodu i obrazków z OpenBota 0.71 nie kopiujemy do repo (licencja, repo publiczne).
+6. Ten komputer ma włączone **„ogranicz animacje”**: każdy nowy stan musi działać bez ruchu.
+7. Testy menu Kobalte w jsdom: `fireEvent.pointerDown(trigger, { button: 0, pointerType: "mouse" })`, potem `pointerUp` na pozycji
+   (pomocniki `createNew` i `toggleShowHidden` w `src/renderer/src/sidebar-test-utils.ts`).
+8. PowerShell 5.1 `Set-Content -Encoding utf8` dodaje BOM: edytuj pliki narzędziami do edycji albo Pythonem.
+9. Pełny check: `bun run lint`, `bun run typecheck`, `bun run test` (~17 min, 473 pliki), `bun run test:storybook`, `bun run test:visual`.
+
+---
+
 # Przekazanie projektu: co jest, czego nie ma, co dalej (19.11.2026)
 
 **Dla agenta, który zaczyna od zera. Przeczytaj ten plik, potem rób punkty z sekcji „Zacznij tutaj”.**

@@ -167,20 +167,17 @@ export const Channels: Story = {
   args: { onSelectChannels: fn() },
   decorators: [(Story) => <div style={{ width: "280px", height: "100vh" }}>{Story()}</div>],
   play: async ({ canvas, args, userEvent }) => {
-    const browse = canvas.getByRole("button", { name: "Browse channels" });
-    const create = canvas.getByRole("button", { name: "New channel" });
-    await expect(browse.querySelector("svg")).not.toBeNull();
-    await expect(create.querySelector("svg")).not.toBeNull();
-    // UI-I: the channel actions are quiet rows (no fill at rest; the hover fill comes from --cosgral-hover).
-    await expect(getComputedStyle(browse).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    browse.focus();
-    await expect(browse).toHaveFocus();
-    await expect(getComputedStyle(browse).boxShadow).not.toBe("none");
-    await userEvent.keyboard("{Enter}");
+    // Channels are opened from the Create new menu (like OpenBot), not from a block above the list.
+    await expect(canvas.queryByRole("button", { name: "Browse channels" })).toBeNull();
+    const createNew = canvas.getByRole("button", { name: "Create new" });
+    createNew.focus();
+    await expect(getComputedStyle(createNew).boxShadow).not.toBe("none");
+    await userEvent.click(createNew);
+    const body = within(document.body);
+    await userEvent.click(await body.findByRole("menuitem", { name: "Browse channels" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith();
-    await userEvent.tab();
-    await expect(create).toHaveFocus();
-    await userEvent.keyboard("{Enter}");
+    await userEvent.click(createNew);
+    await userEvent.click(await body.findByRole("menuitem", { name: "New channel" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith(true);
   },
 };
@@ -246,11 +243,12 @@ export const HiddenAgents: Story = {
     onSetBotHidden: fn(),
     onDuplicateBot: fn(),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const c = within(canvasElement);
     await expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument();
-    await fireEvent.click(c.getByRole("switch", { name: "Show hidden" }));
-    await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
+    await userEvent.click(c.getByRole("button", { name: "Filter" }));
+    await userEvent.click(await within(document.body).findByRole("menuitemcheckbox", { name: "Show hidden" }));
+    await expect(await c.findByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
   },
 };
 export const FallbackModel: Story = {

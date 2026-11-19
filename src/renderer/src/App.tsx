@@ -2540,7 +2540,7 @@ function cleanPreview(preview: string): string {
     .replace(/\binbox\s+at\s+zero\b[:,]?\s*/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();
-  return cleaned || "No messages yet";
+  return cleaned || t("No messages yet");
 }
 
 function botProfilesEqual(left: BotProfile, right: BotProfile): boolean {

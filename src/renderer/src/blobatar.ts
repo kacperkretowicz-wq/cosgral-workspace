@@ -135,6 +135,9 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
   const eyeElements = Array.from(eyesGroup.children);
   if (eyeElements.length !== resolvedLayout.eyes.length) return svgMarkup;
 
+  const headColor = bodyGroup.getAttribute("fill") ?? "#000000";
+  const shade = addBodyShading(document, bodyGroup, headColor, avatarShadeId(seed, hue), resolvedLayout.body);
+
   eyesGroup.classList.add("mo-eyes");
   eyeElements.forEach((element, index) => {
     const eye = resolvedLayout.eyes[index];
@@ -150,7 +153,7 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
       ].join(";"),
     );
     eyesGroup.insertBefore(wrapper, element);
-    wrapper.append(element);
+    wrapper.append(element, catchlight(document, eye));
   });
 
   const root = document.createElementNS(SVG_NAMESPACE, "g");
@@ -159,7 +162,7 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
     "style",
     serializeMotionVariables({
       ...motionVariables(reader),
-      "--mo-head": bodyGroup.getAttribute("fill") ?? "#000000",
+      "--mo-head": headColor,
       "--mo-eye": eyesGroup.getAttribute("fill") ?? "#ffffff",
     }),
   );
@@ -167,13 +170,105 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
   breathe.setAttribute("class", "mo-breathe");
   const bob = document.createElementNS(SVG_NAMESPACE, "g");
   bob.setAttribute("class", "mo-bob");
-  bob.append(bodyGroup, eyesGroup);
+  bob.append(bodyGroup, shade.highlight, eyesGroup);
   breathe.append(bob);
   root.append(breathe);
-  svg.replaceChildren(root);
+  svg.replaceChildren(shade.defs, root);
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   return new XMLSerializer().serializeToString(svg);
+}
+
+interface Ellipse {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+}
+
+/** Stable per face and colour, so the same avatar twice on a page shares identical definitions. */
+function avatarShadeId(seed: string, hue: BotAvatarHue | null): string {
+  let hash = 2166136261;
+  for (const character of `${seed}|${hue ?? "auto"}`) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `av${(hash >>> 0).toString(36)}`;
+}
+
+/**
+ * COSGRAL finish: the flat Blobatar body gets volume. A radial gradient lit from the upper left, a soft highlight
+ * clipped to the body's own outline, and (in `catchlight`) a glint in each eye. The geometry stays the package's.
+ */
+function addBodyShading(
+  document: Document,
+  bodyGroup: Element,
+  head: string,
+  id: string,
+  body: Ellipse,
+): { defs: Element; highlight: Element } {
+  const element = (name: string, attributes: Record<string, string | number>) => {
+    const node = document.createElementNS(SVG_NAMESPACE, name);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+    return node;
+  };
+  const defs = element("defs", {});
+  const bodyGradient = element("radialGradient", { id: `${id}-body`, cx: 0.36, cy: 0.28, r: 0.86 });
+  bodyGradient.append(
+    element("stop", { offset: 0, "stop-color": mixHex(head, "#ffffff", 0.3) }),
+    element("stop", { offset: 0.56, "stop-color": head }),
+    element("stop", { offset: 1, "stop-color": mixHex(head, "#000000", 0.3) }),
+  );
+  const shineGradient = element("radialGradient", { id: `${id}-shine` });
+  shineGradient.append(
+    element("stop", { offset: 0, "stop-color": "#ffffff", "stop-opacity": 0.62 }),
+    element("stop", { offset: 1, "stop-color": "#ffffff", "stop-opacity": 0 }),
+  );
+  const clip = element("clipPath", { id: `${id}-clip` });
+  for (const shape of Array.from(bodyGroup.children)) clip.append(shape.cloneNode(true));
+  defs.append(bodyGradient, shineGradient, clip);
+  bodyGroup.setAttribute("fill", `url(#${id}-body)`);
+
+  const cx = round2(body.cx - body.rx * 0.3);
+  const cy = round2(body.cy - body.ry * 0.42);
+  const highlight = element("ellipse", {
+    "data-shade": "highlight",
+    cx,
+    cy,
+    rx: round2(body.rx * 0.36),
+    ry: round2(body.ry * 0.2),
+    transform: `rotate(-24 ${cx} ${cy})`,
+    fill: `url(#${id}-shine)`,
+    "clip-path": `url(#${id}-clip)`,
+  });
+  return { defs, highlight };
+}
+
+function catchlight(document: Document, eye: Ellipse): Element {
+  const glint = document.createElementNS(SVG_NAMESPACE, "circle");
+  glint.setAttribute("data-shade", "catchlight");
+  glint.setAttribute("cx", String(round2(eye.cx - eye.rx * 0.22)));
+  glint.setAttribute("cy", String(round2(eye.cy - eye.ry * 0.42)));
+  glint.setAttribute("r", String(round2(Math.min(1.9, Math.max(0.9, Math.min(eye.rx, eye.ry) * 0.46)))));
+  glint.setAttribute("fill", "#ffffff");
+  glint.setAttribute("fill-opacity", "0.9");
+  return glint;
+}
+
+/** Mixes two `#rrggbb` colours; `amount` 0 keeps `from`, 1 gives `to`. Other formats are returned unchanged. */
+function mixHex(from: string, to: string, amount: number): string {
+  const parse = (hex: string) =>
+    /^#[0-9a-f]{6}$/iu.test(hex) ? [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)) : null;
+  const a = parse(from);
+  const b = parse(to);
+  if (!a || !b) return from;
+  return `#${a
+    .map((channel, index) =>
+      Math.round(channel + ((b[index] ?? channel) - channel) * amount)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }
 
 function round2(value: number): number {

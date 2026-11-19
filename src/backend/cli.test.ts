@@ -140,6 +140,25 @@ describe("Windows CLI fallback paths", () => {
     },
   );
 
+  it.runIf(process.platform === "win32")(
+    "the CLI card sees the environment override the program really uses (no 'none' next to 'Available')",
+    async () => {
+      await createWindowsNpmShims();
+      const root = await mkdtemp(join(tmpdir(), "openbot-cli-override-"));
+      temporaryPaths.push(root);
+      const override = join(root, "codex.cmd");
+      await writeFile(override, "@echo off\r\necho codex-cli 0.160.0\r\n");
+      const previous = process.env.OPENBOT_CODEX_PATH;
+      process.env.OPENBOT_CODEX_PATH = override;
+      try {
+        await expect(resolveCodexCli()).resolves.toEqual({ executable: override, version: "0.160.0" });
+        await expect(findSystemCli("codex")).resolves.toEqual({ executable: override, version: "0.160.0" });
+      } finally {
+        restoreEnvironment("OPENBOT_CODEX_PATH", previous);
+      }
+    },
+  );
+
   it.runIf(process.platform === "win32")("reports a CLI that exists but cannot start", async () => {
     const root = await mkdtemp(join(tmpdir(), "openbot-cli-test-"));
     temporaryPaths.push(root);

@@ -1050,14 +1050,16 @@ async function main(): Promise<void> {
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden===true`,
       );
-      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
+      await page.getByRole("button", { name: /^Filter/ }).click();
+      await page.getByRole("menuitemcheckbox", { name: "Show hidden" }).click();
       await row.waitFor();
       await row.click({ button: "right" });
       await page.getByRole("menuitem", { name: "Show", exact: true }).click();
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden!==true`,
       );
-      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
+      await page.getByRole("button", { name: /^Filter/ }).click();
+      await page.getByRole("menuitemcheckbox", { name: "Show hidden" }).click();
       await row.waitFor();
       await dump(page, evidence, "navigation-hide-show");
     });

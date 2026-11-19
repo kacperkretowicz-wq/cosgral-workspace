@@ -8,7 +8,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(168px, 40vw);
+  /* As wide as the longest label (Polish ones are longer), so "Otwórz przeglądarkę" is not cut to "Otwórz przegląd...". */
+  width: max-content;
+  max-width: min(240px, 40vw);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -115,4 +117,17 @@
   .chat-side-panel-launcher-item {
     transition: none;
   }
+}
+
+/* Header variant: the panel openers sit with the header's own icon buttons, like OpenBot's header. */
+.chat-header-panels {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-header-panels .header-panel-toggle {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
 }

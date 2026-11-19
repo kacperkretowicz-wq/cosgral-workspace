@@ -45,7 +45,7 @@ import {
 import { SpacesRail } from "./Spaces";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
-import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Switch, Text } from "./ui";
+import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Text } from "./ui";
 
 export interface NeedsYouSidebarItem {
   threadId?: string;
@@ -151,6 +151,17 @@ function SearchIcon() {
     <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current">
       <circle cx="8.5" cy="8.5" r="5.5" stroke-width="1.6" />
       <path d="m12.7 12.7 3.6 3.6" stroke-width="1.6" stroke-linecap="round" />
+    </svg>
+  );
+}
+
+/** The preview the bot store gives an agent before its first message. */
+const NO_MESSAGES_PREVIEW = "No messages yet";
+
+function FilterIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current">
+      <path d="M3.5 5.5h13M6 10h8M8.5 14.5h3" stroke-width="1.6" stroke-linecap="round" />
     </svg>
   );
 }
@@ -672,6 +683,35 @@ export function Sidebar(props: SidebarProps) {
               maxlength={INPUT_LIMITS.agentName}
             />
           </label>
+          <Show when={!props.compact && props.onSetBotHidden}>
+            <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
+              <DropdownMenu.Trigger
+                as={Button}
+                type="button"
+                class={["sidebar-icon-button sidebar-filter-button no-drag", { "is-active": showHidden() }]}
+                aria-label={showHidden() ? t("Filter, hidden agents shown") : t("Filter")}
+                title={t("Filter")}
+              >
+                <FilterIcon />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content class="bot-context-menu sidebar-filter-menu" aria-label={t("Filter")}>
+                  <DropdownMenu.CheckboxItem
+                    class="sidebar-filter-item"
+                    checked={showHidden()}
+                    onChange={setShowHidden}
+                  >
+                    <span class="sidebar-filter-check" aria-hidden="true">
+                      <Show when={showHidden()}>
+                        <Check size={14} />
+                      </Show>
+                    </span>
+                    <span>{t("Show hidden")}</span>
+                  </DropdownMenu.CheckboxItem>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </Show>
           <Show when={!props.compact}>
             <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
               <DropdownMenu.Trigger
@@ -691,6 +731,9 @@ export function Sidebar(props: SidebarProps) {
                   <Show when={props.onSelectChannels}>
                     <DropdownMenu.Item onSelect={() => props.onSelectChannels?.(true)}>
                       <span>{t("New channel")}</span>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item onSelect={() => props.onSelectChannels?.()}>
+                      <span>{t("Browse channels")}</span>
                     </DropdownMenu.Item>
                   </Show>
                   <Show when={props.layout && props.folderActions}>
@@ -723,14 +766,6 @@ export function Sidebar(props: SidebarProps) {
           </Button>
         </Text>
       </Show>
-      <Show when={!props.compact && props.onSetBotHidden}>
-        <Switch
-          class="sidebar-hidden-switch"
-          label={t("Show hidden")}
-          checked={showHidden()}
-          onChange={setShowHidden}
-        />
-      </Show>
       <Show when={rowActionError()}>
         <p role="alert" class="sidebar-row-action-error">
           {rowActionError()}
@@ -748,27 +783,22 @@ export function Sidebar(props: SidebarProps) {
         ]}
         onScroll={() => updateScrollFade()}
       >
-        <Show when={props.onSelectChannels && !props.compact}>
-          <section class="sidebar-chat-group">
-            <header>
-              <h2>{t("Channels")}</h2>
-            </header>
-            <div class="sidebar-channel-actions">
-              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.()}>
-                <SearchIcon /> {t("Browse channels")}
-              </Button>
-              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.(true)}>
-                <PlusIcon /> {t("New channel")}
-              </Button>
-            </div>
-          </section>
-        </Show>
         <Show
           when={filteredBots().length > 0 || filteredPeople().length > 0}
           fallback={
-            <p class="empty-search">
-              {query().trim() ? "No matches" : props.bots.length ? "No matches" : "No agents yet"}
-            </p>
+            <Show
+              when={!query().trim() && props.bots.length === 0}
+              fallback={<p class="empty-search">{t("No matches")}</p>}
+            >
+              <div class="sidebar-empty">
+                <p class="sidebar-empty-title">{t("No agents yet")}</p>
+                <p class="sidebar-empty-hint">{t("An agent is a teammate with its own skills, memory and chats.")}</p>
+                <Button type="button" size="sm" variant="primary" onClick={() => props.onCreateBot()}>
+                  <PlusIcon />
+                  {t("New agent")}
+                </Button>
+              </div>
+            </Show>
           }
         >
           <Show when={filteredPeople().length > 0}>
@@ -901,7 +931,8 @@ export function Sidebar(props: SidebarProps) {
                   }
                   const bot = row.bot;
                   const depth = row.depth;
-                  const role = () => bot.role.trim();
+                  // The store's default role ("New teammate") is shown in the window language; a role the person typed is not.
+                  const role = () => (bot.role.trim() === "New teammate" ? t("New teammate") : bot.role.trim());
                   const state = () => props.agentStates[bot.id];
                   const note = () => sidebarAgentStateNote(state());
                   const stateLabel = () => {
@@ -909,6 +940,11 @@ export function Sidebar(props: SidebarProps) {
                     return current ? sidebarAgentStateLabel(current) : "";
                   };
                   const looking = () => props.lookingBotIds?.includes(bot.id) ?? false;
+                  // A new agent has no messages yet: its role says more than "No messages yet", and keeps the name whole.
+                  const preview = () =>
+                    !bot.preview.trim() || bot.preview === NO_MESSAGES_PREVIEW || bot.preview === t(NO_MESSAGES_PREVIEW)
+                      ? role() || t("No messages yet")
+                      : bot.preview;
                   return (
                     <ContextMenu.Root modal={false}>
                       <ContextMenu.Trigger
@@ -977,13 +1013,6 @@ export function Sidebar(props: SidebarProps) {
                                   onBlur={() => void commitInlineRename(bot.id)}
                                 />
                               </Show>
-                              <Show when={renamingBotId() !== bot.id && role()}>
-                                {(label) => (
-                                  <Badge class="bot-role-badge" size="sm" title={label()}>
-                                    {label()}
-                                  </Badge>
-                                )}
-                              </Show>
                             </span>
                             <span class="bot-row-meta">
                               <Show when={looking()}>
@@ -996,7 +1025,7 @@ export function Sidebar(props: SidebarProps) {
                             class={["bot-row-preview", { "bot-row-note": note() !== null }]}
                             data-activity={state()?.kind}
                           >
-                            {note() ?? bot.preview}
+                            {note() ?? preview()}
                           </span>
                         </span>
                         <Show when={props.agentStates[bot.id]}>

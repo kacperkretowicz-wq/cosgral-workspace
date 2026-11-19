@@ -9,7 +9,7 @@ import {
   STORY_USAGE,
 } from "../../stories/fixtures";
 import type { BotProfile } from "../data";
-import { createNew } from "../sidebar-test-utils";
+import { createNew, toggleShowHidden } from "../sidebar-test-utils";
 import { Sidebar } from "./Sidebar";
 import type { SidebarFolderActions } from "./SidebarFolders";
 
@@ -51,6 +51,7 @@ function renderSidebar(
     onSelectChannels?: (create?: boolean) => void;
     onMarkBotRead?: (botId: string) => Promise<void>;
     onSelectBot?: (botId: string) => void;
+    onCreateBot?: () => void;
   } = {},
 ) {
   return render(() => (
@@ -75,7 +76,7 @@ function renderSidebar(
       onMarkBotRead={props.onMarkBotRead}
       onSelectBot={props.onSelectBot ?? vi.fn()}
       onSelectPerson={vi.fn()}
-      onCreateBot={vi.fn()}
+      onCreateBot={props.onCreateBot ?? vi.fn()}
       onEditBot={vi.fn()}
       onDeleteBot={async () => undefined}
       onRefreshUsage={async () => STORY_USAGE}
@@ -330,13 +331,29 @@ describe("Sidebar folders", () => {
     expect(within(menu).queryByRole("menuitem", { name: "Move to…" })).not.toBeInTheDocument();
   });
 
-  it("opens channel browsing and creation through their separate actions", async () => {
+  it("opens channel browsing and creation from the Create new menu, without a channel block above the list", async () => {
     const select = vi.fn();
     renderSidebar({ onSelectChannels: select });
-    await fireEvent.click(screen.getByRole("button", { name: "Browse channels" }));
+    expect(screen.queryByRole("button", { name: "Browse channels" })).toBeNull();
+    await createNew("Browse channels");
     expect(select).toHaveBeenLastCalledWith();
-    await fireEvent.click(screen.getByRole("button", { name: "New channel" }));
+    await createNew("New channel");
     expect(select).toHaveBeenLastCalledWith(true);
+  });
+
+  it("shows an empty list as a first step: one sentence and a New agent button", async () => {
+    const create = vi.fn();
+    renderSidebar({ bots: [], onCreateBot: create });
+    expect(screen.getByText("No agents yet")).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "New agent" }));
+    expect(create).toHaveBeenCalledOnce();
+  });
+
+  it("keeps Show hidden in the filter menu instead of a switch above the list", async () => {
+    renderSidebar({ onSetBotHidden: vi.fn() });
+    expect(screen.queryByRole("switch", { name: "Show hidden" })).toBeNull();
+    await toggleShowHidden();
+    expect(await screen.findByRole("button", { name: "Filter, hidden agents shown" })).toBeInTheDocument();
   });
 
   it("marks a background agent read without selecting its conversation", async () => {
@@ -405,7 +422,7 @@ it("hides stored hidden agents, then exposes them with a Show action", async () 
   const change = vi.fn().mockResolvedValue(undefined);
   renderSidebar({ bots: STORY_BOTS.map((bot, index) => ({ ...bot, hidden: index === 0 })), onSetBotHidden: change });
   expect(screen.queryByRole("button", { name: /^Chief,/ })).toBeNull();
-  await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
+  await toggleShowHidden();
   const row = await screen.findByRole("button", { name: /^Chief,/ });
   expect(row).toHaveClass("bot-row-hidden");
   openMenu(row);
@@ -437,6 +454,6 @@ it("refreshes folder counts when hidden agents become visible", async () => {
     onSetBotHidden: async () => {},
   });
   expect(screen.getByRole("button", { name: "Work, folder, 1 agent" })).toBeInTheDocument();
-  await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
+  await toggleShowHidden();
   await screen.findByRole("button", { name: "Work, folder, 2 agents" });
 });
