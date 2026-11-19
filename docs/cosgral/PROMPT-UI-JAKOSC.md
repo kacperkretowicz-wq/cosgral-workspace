@@ -48,11 +48,17 @@ Wkład produktowy: `PRODUCT.md` (użytkownicy, zasady, ograniczenia). Ten plik m
 | 19.11 | Stworki | Gradient światła, odblask przycięty do kształtu, błysk w oczach, miękki cień; kształty bez zmian | — |
 | 19.11 | Nagłówek rozmowy | Pliki / Ustawienia agenta / Głos jako ikony w nagłówku zamiast pływającej kolumny przycisków | — |
 | 19.11 | Pole wiadomości | „Wybierz z biblioteki” w menu „+”, ikony przy każdej pozycji menu | — |
+| 19.11 (2) | Stworki: mimika | Twarz mówi stan agenta: pracuje (oczy na dwóch wysokościach, z ruchem rozgląda się), potrzebuje Cię (szerokie oczy, uniesione brwi, z ruchem podskok), nowa wiadomość/odpowiedział („^ ^” i rumieńce), błąd (smutne oczy, kropla potu), limit (przymknięte oczy, „zz”). Pozy są statyczne (`blobatar/expression`, zapieczone w geometrii), więc działają przy „ogranicz animacje”. Historyjka `Identity/AgentAvatar › Moods` | Storybook `identity-agentavatar--moods` |
+| 19.11 (2) | Wiersze agentów | Godzina nigdy nie jest ucinana („Yesterd…”, „10:00 …” → pełne); „Pracuje w: …” w linii podglądu zamiast w kółku stworka; stworek pokazuje stan miną | `cosgral-w1-ui2--activity-states-dark/light` |
+| 19.11 (2) | Nagłówek rozmowy | Stworek 24px i nazwa pogrubiona; stworek „myśli”, gdy agent pracuje; „Nowy wątek” jako ikona w nagłówku, gdy agent ma jeden wątek | `app--playground` |
+| 19.11 (2) | Pasek kart wątków | Przy jednym wątku nie rysuje się wcale (jedna karta nic nie mówi); od dwóch wątków jak dotąd | — |
+| 19.11 (2) | Wiadomości | Odpowiedź agenta bez dymka (czysty tekst na tle, wiersz 22px, max 720px), dymek tylko dla wiadomości człowieka (jak w OpenBocie) | `app--playground` |
+| 19.11 (2) | Po polsku | Stany w wierszu („Limit · wznowi o…”, „Błąd · …”, „Myśli”, liczba odpowiedzi), „Steruje komputerem / Zatrzymaj”, „Oznacz jako przeczytane”, etykiety dostępności wiersza | — |
 
 ## Następne sekcje (kolejność)
 
-1. Stworki: mimika stanów (pracuje, ma wiadomość, potrzebuje Cię, błąd), mrugnięcie przy najechaniu, wersja bez ruchu; jeśli trzeba, grafiki z generatora obrazów (zgoda właściciela).
-2. Wiersz agenta: licznik nieprzeczytanych na rogu stworka, kanały jako wiersze ze stosem awatarów członków.
-3. Pasek kart wątków nad rozmową: uprościć, gdy jest jeden wątek.
+1. Stworki dalej: mimika także w kanałach i w wiadomościach (awatar przy odpowiedzi), edytor stworka (kształt + kolor z podglądem min).
+2. Wiersz agenta: kanały jako wiersze ze stosem awatarów członków; sekcje „Nieprzeczytane / Przypięte / reszta”.
+3. Rozmowa: kroki agenta jako zwijana oś czasu z ikonami narzędzi; pole wiadomości (wybór agenta przy kanałach).
 4. Strony: Przepływy, Zużycie, Biblioteka, Katalog dodatków, Dostawcy (Zadania: właściciel mówi, że na razie niepotrzebne).
 5. Ustawienia i okna dialogowe.

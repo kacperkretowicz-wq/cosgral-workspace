@@ -29,6 +29,7 @@ export { default as LibraryBig } from "lucide-solid/icons/library-big";
 export { default as LoaderCircle } from "lucide-solid/icons/loader-circle";
 export { default as Menu } from "lucide-solid/icons/menu";
 export { default as MessageCircleQuestion } from "lucide-solid/icons/message-circle-question-mark";
+export { default as MessageSquarePlus } from "lucide-solid/icons/message-square-plus";
 export { default as Mic } from "lucide-solid/icons/mic";
 export { default as Monitor } from "lucide-solid/icons/monitor";
 export { default as Palette } from "lucide-solid/icons/palette";

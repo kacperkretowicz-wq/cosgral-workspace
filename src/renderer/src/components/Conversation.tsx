@@ -103,7 +103,7 @@ import { SideQuestionPanel } from "./SideQuestionPanel";
 import { SkillQuickPick } from "./SkillQuickPick";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
-import { ThreadTabs } from "./ThreadTabs";
+import { NewThreadButton, ThreadTabs } from "./ThreadTabs";
 import {
   AudioLines,
   Button,
@@ -267,6 +267,8 @@ export function Conversation(props: ConversationProps) {
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
+  /** One thread: no tab strip, "New thread" sits in the header (set by ThreadTabs once the list arrived). */
+  const [singleThread, setSingleThread] = createSignal(false);
   const [libraryOpen, setLibraryOpen] = createSignal(false);
   let libraryDetails: HTMLDetailsElement | undefined;
   let libraryOwner: string | undefined;
@@ -1613,7 +1615,7 @@ export function Conversation(props: ConversationProps) {
                         setActiveRightPanel("settings");
                       }}
                     >
-                      <AgentAvatar bot={bot()} />
+                      <AgentAvatar bot={bot()} mood={agentActivity() === "Working" ? "working" : "idle"} />
                       <h1>{bot().name}</h1>
                     </Button>
                   )}
@@ -1652,6 +1654,9 @@ export function Conversation(props: ConversationProps) {
                       {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
                     </For>
                   </NativeSelect>
+                </Show>
+                <Show when={props.bot && singleThread() ? props.bot : undefined}>
+                  {(bot) => <NewThreadButton botId={bot().id} onChanged={props.onThreadsChanged} />}
                 </Show>
                 <Show when={props.bot}>
                   <ChatSidePanelLauncher variant="header" onOpen={openChatSidePanel} />
@@ -1777,7 +1782,11 @@ export function Conversation(props: ConversationProps) {
       <Show when={threadActionError()}>
         <p role="alert">{threadActionError()}</p>
       </Show>
-      <Show when={props.bot}>{(bot) => <ThreadTabs botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
+      <Show when={props.bot}>
+        {(bot) => (
+          <ThreadTabs botId={bot().id} onChanged={props.onThreadsChanged} onSingleThreadChange={setSingleThread} />
+        )}
+      </Show>
       <Show when={props.bot}>
         {(bot) => (
           <details class="chat-tools">

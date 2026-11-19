@@ -8,12 +8,48 @@ import {
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Button, ContextMenu, DropdownMenu } from "./ui";
-import { ChevronDown, Plus, X } from "./ui/icons";
+import { ChevronDown, MessageSquarePlus, Plus, X } from "./ui/icons";
 
 interface ThreadTabsProps {
   botId: string;
   /** Called after the visible thread list changed, so the rest of the window follows (same as ThreadPanel). */
   onChanged?: (list: ThreadList) => void;
+  /**
+   * Told whether the agent has a single thread. Then the strip draws nothing (one tab says nothing the header does
+   * not) and the window shows `NewThreadButton` in the header instead.
+   */
+  onSingleThreadChange?: (single: boolean) => void;
+}
+
+/** "New thread" as a header icon, for an agent with one thread (no tab strip). */
+export function NewThreadButton(props: { botId: string; onChanged?: (list: ThreadList) => void }) {
+  const threadsApi = untrack(() => window.openbot?.threads);
+  const [busy, setBusy] = createSignal(false);
+  async function create() {
+    if (!threadsApi || busy()) return;
+    setBusy(true);
+    try {
+      const next = await threadsApi.create({ botId: props.botId });
+      if (next.botId === props.botId) props.onChanged?.(next);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Show when={threadsApi}>
+      <Button
+        type="button"
+        unstyled
+        class="header-panel-toggle new-thread-button"
+        aria-label={t("New thread")}
+        title={t("New thread")}
+        disabled={busy()}
+        onClick={() => void create()}
+      >
+        <MessageSquarePlus size={16} stroke-width={1.5} aria-hidden="true" />
+      </Button>
+    </Show>
+  );
 }
 
 /**
@@ -39,6 +75,11 @@ export function ThreadTabs(props: ThreadTabsProps) {
   );
   const closedThreads = createMemo(() => activeThreads().filter((thread) => !open().includes(thread.id)));
   const activeId = () => list()?.activeThreadId ?? null;
+  /** Known only once the list arrived; until then the strip stays hidden and the header keeps its usual buttons. */
+  const single = createMemo(() => (list() ? activeThreads().length <= 1 : null));
+  createEffect(single, (value) => {
+    if (value !== null) props.onSingleThreadChange?.(value);
+  });
 
   async function guarded<T>(work: () => Promise<T>): Promise<T | undefined> {
     setError("");
@@ -149,7 +190,7 @@ export function ThreadTabs(props: ThreadTabsProps) {
   }
 
   return (
-    <Show when={tabsApi && threadsApi && tabs().length > 0}>
+    <Show when={tabsApi && threadsApi && tabs().length > 0 && single() === false}>
       <div class="thread-tabs">
         <nav class="thread-tabs-list" aria-label={t("Threads")}>
           <For each={tabs()}>

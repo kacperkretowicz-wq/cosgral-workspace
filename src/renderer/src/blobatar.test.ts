@@ -122,3 +122,62 @@ describe("own avatar shapes", () => {
     expect(markup).toContain("--mo-head");
   });
 });
+
+describe("avatar moods", () => {
+  const parse = (markup: string) => new DOMParser().parseFromString(markup, "image/svg+xml");
+
+  it("keeps the idle face identical to the default call", () => {
+    expect(buildAnimatedAvatarSvg("chief", 215, "hover", "idle")).toBe(buildAnimatedAvatarSvg("chief", 215));
+    expect(buildAnimatedAvatarSvg("chief", 215)).not.toContain("data-mood");
+  });
+
+  it("marks every mood on the root and keeps the motion structure and the body", () => {
+    for (const mood of ["working", "needs-you", "happy", "error", "limited"] as const) {
+      const document = parse(buildAnimatedAvatarSvg("chief", 215, "hover", mood));
+      expect(document.querySelector(".mo-root")?.getAttribute("data-mood")).toBe(mood);
+      expect(document.querySelectorAll(".mo-eye")).toHaveLength(2);
+      expect(document.querySelector(".mo-bob > g")?.getAttribute("fill")).toMatch(/^url\(#/u);
+    }
+  });
+
+  it("draws a still face per mood, so it reads without motion", () => {
+    const idle = parse(buildAnimatedAvatarSvg("chief", 215));
+    const eyePaths = (document: Document) =>
+      Array.from(document.querySelectorAll(".mo-eye > path")).map((path) => path.getAttribute("d"));
+
+    const working = parse(buildAnimatedAvatarSvg("chief", 215, "hover", "working"));
+    expect(eyePaths(working)).not.toEqual(eyePaths(idle));
+
+    const happy = parse(buildAnimatedAvatarSvg("chief", 215, "hover", "happy"));
+    expect(happy.querySelectorAll("[data-face='smiling-eye']")).toHaveLength(2);
+    expect(happy.querySelectorAll("[data-shade='blush']")).toHaveLength(2);
+
+    const needsYou = parse(buildAnimatedAvatarSvg("chief", 215, "hover", "needs-you"));
+    expect(needsYou.querySelectorAll("[data-shade='brow']")).toHaveLength(2);
+
+    expect(
+      parse(buildAnimatedAvatarSvg("chief", 215, "hover", "error")).querySelector("[data-shade='sweat']"),
+    ).not.toBeNull();
+    expect(
+      parse(buildAnimatedAvatarSvg("chief", 215, "hover", "limited")).querySelector("[data-shade='zz']"),
+    ).not.toBeNull();
+  });
+
+  it("does not put a glint on closed or squinting eyes", () => {
+    expect(
+      parse(buildAnimatedAvatarSvg("chief", 215, "hover", "limited")).querySelectorAll("[data-shade='catchlight']"),
+    ).toHaveLength(0);
+    expect(
+      parse(buildAnimatedAvatarSvg("chief", 215, "hover", "happy")).querySelectorAll("[data-shade='catchlight']"),
+    ).toHaveLength(0);
+  });
+
+  it("renders every mood for all twelve body shapes", () => {
+    for (const seed of avatarCandidateSeeds("chief", "chief:avatar:4:7", 0)) {
+      for (const mood of ["working", "needs-you", "happy", "error", "limited"] as const) {
+        const markup = buildAnimatedAvatarSvg(seed, null, "hover", mood);
+        expect(markup).toContain(`data-mood="${mood}"`);
+      }
+    }
+  });
+});

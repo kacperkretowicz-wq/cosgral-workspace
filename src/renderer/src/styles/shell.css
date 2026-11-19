@@ -371,3 +371,102 @@
   font-size: var(--cosgral-text-sm);
   font-variant-numeric: tabular-nums;
 }
+
+/* The time is short ("10:00", "Yesterday", "Mon"): it is never cut; the name gives way instead. */
+.sidebar .bot-row-time {
+  max-width: none;
+  overflow: visible;
+}
+
+/*
+ * Creature moods (blobatar.ts `AvatarMood`). The face itself is a still pose, so every mood reads without motion;
+ * with motion allowed a busy creature looks around and one that needs you gives a small hop.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .mo-root[data-mood="working"] .mo-eyes {
+    animation: mo-mood-look 2.6s var(--cosgral-ease-loop) infinite;
+  }
+
+  .mo-root[data-mood="needs-you"] .mo-mood {
+    animation: mo-mood-hop 2.4s var(--cosgral-ease) infinite;
+  }
+
+  .mo-root[data-mood="limited"] [data-shade="zz"] {
+    animation: mo-mood-doze 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes mo-mood-look {
+  0%,
+  100% {
+    translate: -1.6px 0;
+  }
+  50% {
+    translate: 1.6px 0;
+  }
+}
+
+@keyframes mo-mood-hop {
+  0%,
+  70%,
+  100% {
+    translate: 0 0;
+  }
+  80% {
+    translate: 0 -3.5px;
+  }
+  90% {
+    translate: 0 0.5px;
+  }
+}
+
+@keyframes mo-mood-doze {
+  0%,
+  100% {
+    opacity: 0.45;
+    translate: 0 0.5px;
+  }
+  50% {
+    opacity: 1;
+    translate: 0 -1px;
+  }
+}
+
+/* The line under the name while a thread runs: same place as the preview, the accent says "in progress". */
+.sidebar .bot-row-working {
+  color: var(--cosgral-text-secondary);
+}
+
+/*
+ * Conversation, OpenBot layout: the agent answers as plain text on the canvas (easier to read long answers, lists
+ * and code); only the person's own message sits in a bubble on the right.
+ */
+.message-entry-bot .bot-bubble {
+  max-width: min(720px, 100%);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 2px 0;
+  line-height: 22px;
+}
+
+.message-entry-bot .message-copy + .message-copy,
+.message-entry-bot .message-content-blocks > * + * {
+  margin-top: var(--openbot-space-2, 8px);
+}
+
+/* Conversation header: the agent is the subject of the window, so its creature and name read first. */
+.conversation-title {
+  gap: 8px;
+  padding: 2px 8px 2px 4px;
+}
+
+.conversation-header .conversation-title .bot-avatar {
+  width: 24px;
+  height: 24px;
+}
+
+.conversation-title h1 {
+  font-size: var(--openbot-text-lg);
+  font-weight: 600;
+  line-height: 20px;
+}

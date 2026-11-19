@@ -131,3 +131,10 @@
   height: 28px;
   flex-basis: 28px;
 }
+
+/* "New thread" in the header when the agent has one thread (no tab strip); same size as the panel icons. */
+.new-thread-button {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}

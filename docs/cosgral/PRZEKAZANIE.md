@@ -1,3 +1,51 @@
+# Przekazanie projektu (najnowsze): sesja 19.11.2026, kontynuacja PR #24
+
+**Dla następnego agenta.** Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem
+rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.
+
+## A. Gdzie jest praca
+
+| Co | Gdzie |
+|---|---|
+| Gałąź tej sesji | `claude/friendly-noether-jpw1if` = `team/lider/poprawki-po-exe` (@ `159250b`) + commity tej sesji |
+| Do scalenia | najpierw do `team/lider/poprawki-po-exe` (PR #24), potem razem do `codex/cosgral-desktop` |
+| Środowisko | kontener Linux (nie komputer właściciela): Bun 1.4, Node 22, Chromium Playwrighta; Storybook jako okno do oglądania |
+
+## B. Co zrobiono (każda zmiana obejrzana w Storybooku, z testami)
+
+1. **Mimika stworków** (`blobatar.ts`, `AgentAvatar` prop `mood`, `row-activity.ts` `avatarMoodFor`): twarz mówi stan agenta.
+   Pracuje = oczy na dwóch wysokościach (`thinking`), potrzebuje Cię = szerokie oczy + uniesione brwi (`surprised`),
+   nowa wiadomość / odpowiedział = „^ ^” + rumieńce (`happy`), błąd = smutne oczy + kropla potu (`sad`), limit = przymknięte
+   oczy + „zz” (`sleepy`). Pozy pochodzą z `blobatar/expression` i są **zapieczone w geometrii**, więc działają bez ruchu
+   („ogranicz animacje” u właściciela). Ruch tylko dodaje (`shell.css`: rozglądanie się, podskok, migające „zz”).
+   Kształty i kolory stworków bez zmian (test geometrii nadal pilnuje pozy spoczynkowej). Galeria: `Identity/AgentAvatar › Moods`.
+2. **Wiersze agentów:** godzina nie jest już ucinana („Yesterd…”, „10:00 …”); „Pracuje w: …” trafiło do linii podglądu
+   (wcześniej siedziało w kółku stworka); stworek w wierszu ma minę stanu.
+3. **Nagłówek rozmowy:** stworek 24px, nazwa pogrubiona, stworek „myśli”, gdy agent pracuje. Przy jednym wątku pasek kart
+   znika, a „Nowy wątek” jest ikoną w nagłówku (`NewThreadButton` w `ThreadTabs.tsx`, `onSingleThreadChange`).
+4. **Wiadomości:** odpowiedź agenta bez dymka (czysty tekst, wiersz 22px, max 720px); dymek tylko dla człowieka.
+5. **Po polsku:** stany w wierszu („Limit · wznowi o …”, „Błąd · …”, „Myśli”, liczba odpowiedzi, dni tygodnia po polsku),
+   „Steruje komputerem / Zatrzymaj”, „Oznacz jako przeczytane”, etykiety dostępności wiersza (`Ukryty`, model zapasowy).
+
+## C. Stan sprawdzenia
+
+| Sprawdzenie | Wynik (kontener Linux) |
+|---|---|
+| `bun run lint` | zielone (1 ostrzeżenie w `cosgral.css:2812`, było już przed tą sesją) |
+| `bun run typecheck` (6 projektów) | zielone |
+| `bun run test` | 3387 zielonych, 18 pominiętych, **2 czerwone** w `src/backend/acp-presets.test.ts` (testy zakładają Windows: wielkość liter i rozszerzenia `.cmd/.exe` w PATH). Na czystym PR #24 w tym kontenerze padają te same 2, więc to nie skutek zmian UI; na Windows powinny przejść. |
+| `bun run test:storybook` | 367/367 zielonych. Dwie historyjki z PR #24 miały stare asercje (`Sidebar › Agent Tiles`: wiersz 68px/stworek 44px → 60/42 po spłaszczeniu wierszy; `Sidebar › Channels`: pierścień fokusu to teraz `outline`, nie `box-shadow`); poprawione pod nowy wygląd. W kontenerze uruchamiane z lokalną kopią configu wskazującą na zainstalowany Chromium (nie w repo). |
+| `bun run test:visual` | nie uruchomione: wzorce są `*-chromium-win32.png`, na Linuksie nie da się ich porównać. Do zrobienia na Windows. |
+| e2e / W5 w Electronie, `.exe` | nie uruchomione (brak Windows w kontenerze). |
+
+## D. Co dalej
+
+1. Obejrzeć zmiany w prawdziwym oknie na Windows (`bun run build`, piaskownica, zrzut CDP) i przebudować `.exe`.
+2. `bun run test:visual` na Windows: wzorce są `*-chromium-win32.png`, na Linuksie nie da się ich porównać.
+3. Dalsze sekcje: `docs/cosgral/PROMPT-UI-JAKOSC.md` → „Następne sekcje”.
+
+---
+
 # Przekazanie projektu (aktualne): sesja 19.11.2026 po południu
 
 **Dla następnego agenta. Najpierw ten rozdział, potem `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.**

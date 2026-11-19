@@ -1,10 +1,25 @@
 import type { BotAvatarHue } from "@openbot/contracts/ipc";
 import { palette, traits } from "blobatar";
 import { blobatar, layout, type Shape } from "blobatar/blob";
+import { type Expression, happy, sad, sleepy, surprised, thinking } from "blobatar/expression";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 export type AvatarMotion = "hover" | "always";
+
+/**
+ * What the creature's face says about its agent. Each mood is a still pose from `blobatar/expression`, baked into
+ * the geometry, so it reads in a screenshot and with reduced motion; motion only adds to it (see `app-shell.css`).
+ */
+export type AvatarMood = "idle" | "working" | "needs-you" | "happy" | "error" | "limited";
+
+const MOOD_EXPRESSIONS: Record<Exclude<AvatarMood, "idle">, Expression> = {
+  working: thinking,
+  "needs-you": surprised,
+  happy,
+  error: sad,
+  limited: sleepy,
+};
 
 const BLOBATAR_BODY_VARIANTS = [
   "round",
@@ -115,13 +130,25 @@ export function avatarCandidateSeeds(botId: string, currentSeed: string, batch: 
   return candidates;
 }
 
-export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, motion: AvatarMotion = "hover"): string {
-  const svgMarkup = blobatar(seed, hue === null ? undefined : { hue });
+export function buildAnimatedAvatarSvg(
+  seed: string,
+  hue: BotAvatarHue | null,
+  motion: AvatarMotion = "hover",
+  mood: AvatarMood = "idle",
+): string {
+  const expression = mood === "idle" ? undefined : MOOD_EXPRESSIONS[mood];
+  const svgMarkup = blobatar(seed, {
+    ...(hue === null ? {} : { hue }),
+    ...(expression ? { expression } : {}),
+  });
   const document = new DOMParser().parseFromString(svgMarkup, "image/svg+xml");
   const svg = document.documentElement;
   if (svg.localName !== "svg" || svg.querySelector("parsererror")) return svgMarkup;
 
-  const [bodyGroup, eyesGroup] = Array.from(svg.children);
+  // A posed face comes wrapped in one `<g transform>` (the pose lifts or sinks the whole creature).
+  const only = svg.children.length === 1 ? svg.children[0] : undefined;
+  const poseTransform = only?.localName === "g" ? only.getAttribute("transform") : null;
+  const [bodyGroup, eyesGroup] = Array.from((poseTransform !== null && only ? only : svg).children);
   if (!bodyGroup || !eyesGroup) return svgMarkup;
   const own = ownAvatarBody(seed);
   if (own) {
@@ -131,12 +158,15 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
   }
 
   const reader = traits(seed);
-  const resolvedLayout = layout(reader);
+  const baseLayout = layout(reader);
+  const resolvedLayout = expression ? expression.bake(baseLayout, expression.p).l : baseLayout;
   const eyeElements = Array.from(eyesGroup.children);
   if (eyeElements.length !== resolvedLayout.eyes.length) return svgMarkup;
 
   const headColor = bodyGroup.getAttribute("fill") ?? "#000000";
-  const shade = addBodyShading(document, bodyGroup, headColor, avatarShadeId(seed, hue), resolvedLayout.body);
+  const eyeColor = eyesGroup.getAttribute("fill") ?? "#ffffff";
+  const shadeId = avatarShadeId(seed, hue);
+  const shade = addBodyShading(document, bodyGroup, headColor, shadeId, resolvedLayout.body);
 
   eyesGroup.classList.add("mo-eyes");
   eyeElements.forEach((element, index) => {
@@ -153,30 +183,135 @@ export function buildAnimatedAvatarSvg(seed: string, hue: BotAvatarHue | null, m
       ].join(";"),
     );
     eyesGroup.insertBefore(wrapper, element);
-    wrapper.append(element, catchlight(document, eye));
+    wrapper.append(mood === "happy" ? smilingEye(document, eye, eyeColor) : element);
+    if (mood === "happy") element.remove();
+    // A glint needs an open eye; on a closed or squinting one it reads as a crack.
+    if (Math.min(eye.rx, eye.ry) >= 1.4 && eye.ry >= 2.6) wrapper.append(catchlight(document, eye));
   });
 
   const root = document.createElementNS(SVG_NAMESPACE, "g");
   root.setAttribute("class", motion === "always" ? "mo-root mo-always" : "mo-root");
+  if (mood !== "idle") root.setAttribute("data-mood", mood);
   root.setAttribute(
     "style",
     serializeMotionVariables({
       ...motionVariables(reader),
       "--mo-head": headColor,
-      "--mo-eye": eyesGroup.getAttribute("fill") ?? "#ffffff",
+      "--mo-eye": eyeColor,
     }),
   );
+  const moodGroup = document.createElementNS(SVG_NAMESPACE, "g");
+  moodGroup.setAttribute("class", "mo-mood");
   const breathe = document.createElementNS(SVG_NAMESPACE, "g");
   breathe.setAttribute("class", "mo-breathe");
   const bob = document.createElementNS(SVG_NAMESPACE, "g");
   bob.setAttribute("class", "mo-bob");
-  bob.append(bodyGroup, shade.highlight, eyesGroup);
-  breathe.append(bob);
-  root.append(breathe);
+  const features = moodFeatures(document, mood, resolvedLayout.eyes, shadeId);
+  bob.append(bodyGroup, shade.highlight, ...features.underEyes, eyesGroup, ...features.overEyes);
+  if (poseTransform) {
+    const pose = document.createElementNS(SVG_NAMESPACE, "g");
+    pose.setAttribute("class", "mo-pose");
+    pose.setAttribute("transform", poseTransform);
+    pose.append(bob);
+    breathe.append(pose);
+  } else {
+    breathe.append(bob);
+  }
+  moodGroup.append(breathe);
+  root.append(moodGroup);
   svg.replaceChildren(shade.defs, root);
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   return new XMLSerializer().serializeToString(svg);
+}
+
+/**
+ * Small marks a pose cannot make with two eyes: cheeks when the agent has news for you, a sweat drop on an error,
+ * a "z" when it waits for its usage limit. Decoration (`data-shade`), never package geometry.
+ */
+function moodFeatures(
+  document: Document,
+  mood: AvatarMood,
+  eyes: readonly Ellipse[],
+  shadeId: string,
+): { underEyes: Element[]; overEyes: Element[] } {
+  const element = (name: string, attributes: Record<string, string | number>) => {
+    const node = document.createElementNS(SVG_NAMESPACE, name);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+    return node;
+  };
+  const [left, right] = eyes;
+  if (!left || !right) return { underEyes: [], overEyes: [] };
+  const outerX = Math.max(left.cx, right.cx) + Math.max(left.rx, right.rx);
+  const topY = Math.min(left.cy - left.ry, right.cy - right.ry);
+  if (mood === "happy") {
+    const cheeks = [left, right].map((eye, index) =>
+      element("ellipse", {
+        "data-shade": "blush",
+        cx: round2(eye.cx + (index === 0 ? -1 : 1) * Math.max(2.2, eye.rx * 0.5)),
+        cy: round2(eye.cy + Math.max(eye.ry, 2) + 4.6),
+        rx: 5.2,
+        ry: 2.9,
+        fill: "#ff5f8f",
+        "fill-opacity": 0.55,
+        "clip-path": `url(#${shadeId}-clip)`,
+      }),
+    );
+    return { underEyes: cheeks, overEyes: [] };
+  }
+  if (mood === "needs-you") {
+    // Raised brows: the eyes are already wide, the brows make it "looking at you".
+    const brows = [left, right].map((eye, index) => {
+      const side = index === 0 ? -1 : 1;
+      const y = round2(eye.cy - eye.ry - 3.6);
+      const inner = round2(eye.cx - side * 2.6);
+      const outer = round2(eye.cx + side * 3.4);
+      return element("path", {
+        "data-shade": "brow",
+        d: `M${inner} ${round2(y + 0.6)}Q${round2(eye.cx + side * 0.6)} ${round2(y - 2.2)} ${outer} ${round2(y + 0.4)}`,
+        style: "fill:none;stroke:var(--mo-eye);stroke-width:1.7;stroke-linecap:round",
+      });
+    });
+    return { underEyes: [], overEyes: brows };
+  }
+  if (mood === "error") {
+    const x = round2(outerX + 5.5);
+    const y = round2(topY - 1);
+    return {
+      underEyes: [],
+      overEyes: [
+        element("path", {
+          "data-shade": "sweat",
+          d: `M${x} ${round2(y - 5.2)}C${round2(x + 3.6)} ${round2(y - 0.4)} ${round2(x + 3.6)} ${round2(y + 3.4)} ${x} ${round2(y + 3.4)}C${round2(x - 3.6)} ${round2(y + 3.4)} ${round2(x - 3.6)} ${round2(y - 0.4)} ${x} ${round2(y - 5.2)}Z`,
+          fill: "#9fd8ff",
+          stroke: "#ffffff",
+          "stroke-opacity": 0.7,
+          "stroke-width": 0.8,
+        }),
+      ],
+    };
+  }
+  if (mood === "limited") {
+    const x = round2(outerX + 4);
+    const y = round2(topY - 4);
+    return {
+      underEyes: [],
+      overEyes: [
+        element("path", {
+          "data-shade": "zz",
+          d: `M${x} ${y}h5.2l-5.2 5.6h5.2M${round2(x + 7)} ${round2(y - 6)}h3.6l-3.6 3.9h3.6`,
+          fill: "none",
+          // Drawn beside the body, on the page: the text colour keeps it readable in both themes.
+          stroke: "currentColor",
+          "stroke-opacity": 0.8,
+          "stroke-width": 1.5,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        }),
+      ],
+    };
+  }
+  return { underEyes: [], overEyes: [] };
 }
 
 interface Ellipse {
@@ -242,6 +377,20 @@ function addBodyShading(
     "clip-path": `url(#${id}-clip)`,
   });
   return { defs, highlight };
+}
+
+/** A happy eye is an upturned arc ("^"), drawn where the pose put the eye. */
+function smilingEye(document: Document, eye: Ellipse, color: string): Element {
+  const arc = document.createElementNS(SVG_NAMESPACE, "path");
+  const half = round2(Math.max(3.2, eye.rx * 0.95));
+  const base = round2(eye.cy + 1.6);
+  arc.setAttribute("data-face", "smiling-eye");
+  arc.setAttribute(
+    "d",
+    `M${round2(eye.cx - half)} ${base}Q${round2(eye.cx)} ${round2(eye.cy - 3.4)} ${round2(eye.cx + half)} ${base}`,
+  );
+  arc.setAttribute("style", `fill:none;stroke:${color};stroke-width:2.4;stroke-linecap:round`);
+  return arc;
 }
 
 function catchlight(document: Document, eye: Ellipse): Element {

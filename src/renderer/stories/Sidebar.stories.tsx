@@ -83,8 +83,10 @@ export const AgentTiles: Story = {
     const preview = tile.querySelector<HTMLElement>(".bot-row-preview");
     const time = tile.querySelector<HTMLElement>(".bot-row-time");
     if (!avatar || !title || !preview || !time) throw new Error("Agent tile anatomy is incomplete.");
-    await expect(tile.getBoundingClientRect().height).toBe(68);
-    await expect(avatar.getBoundingClientRect().width).toBe(44);
+    // Flat OpenBot rows (PR #24): 60px row, 42px creature; the time is never cut.
+    await expect(tile.getBoundingClientRect().height).toBe(60);
+    await expect(avatar.getBoundingClientRect().width).toBe(42);
+    await expect(time.scrollWidth).toBeLessThanOrEqual(time.clientWidth);
     await expect(getComputedStyle(title).fontSize).toBe("14px");
     await expect(getComputedStyle(preview).fontSize).toBe("13px");
     await expect(getComputedStyle(time).fontSize).toBe("12px");
@@ -171,7 +173,9 @@ export const Channels: Story = {
     await expect(canvas.queryByRole("button", { name: "Browse channels" })).toBeNull();
     const createNew = canvas.getByRole("button", { name: "Create new" });
     createNew.focus();
-    await expect(getComputedStyle(createNew).boxShadow).not.toBe("none");
+    // The keyboard focus ring is an outline or a shadow; either way it must be there.
+    const focusStyle = getComputedStyle(createNew);
+    await expect(focusStyle.outlineStyle !== "none" || focusStyle.boxShadow !== "none").toBe(true);
     await userEvent.click(createNew);
     const body = within(document.body);
     await userEvent.click(await body.findByRole("menuitem", { name: "Browse channels" }));

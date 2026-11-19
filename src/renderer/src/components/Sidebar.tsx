@@ -20,7 +20,7 @@ import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
-import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
+import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
   agentMoveTargets,
@@ -958,26 +958,17 @@ export function Sidebar(props: SidebarProps) {
                             "bot-row-hidden": bot.hidden === true,
                           },
                         ]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? "Ukryty. " : ""}${bot.activeModel && bot.activeModel !== bot.model ? `Model zapasowy: ${bot.activeModel}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? `${t("Hidden")}. ` : ""}${bot.activeModel && bot.activeModel !== bot.model ? `${t("Fallback model: {model}", { model: bot.activeModel })}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? `${t("Looking")}. ` : ""}${bot.preview}`}
                         style={depth > 0 ? { "--folder-level": String(depth - 1) } : undefined}
                         data-agent-id={bot.id}
                         data-in-folder={depth > 0 ? "true" : undefined}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >
-                        <span class="bot-row-avatar">
-                          <AgentAvatar bot={bot} />
+                        <span class="bot-row-avatar" data-mood={avatarMoodFor(state())}>
+                          <AgentAvatar bot={bot} mood={avatarMoodFor(state())} />
                           <Show when={props.threadLists?.[bot.id]}>
                             {(list) => <span class="sr-only">{threadRowLabel(list())}</span>}
-                          </Show>
-                          <Show when={props.activities?.[bot.id]?.workingThread}>
-                            {(thread) => (
-                              <span class="bot-row-preview">
-                                {thread().background
-                                  ? t("Working in background: {title}", { title: thread().title })
-                                  : t("Working in: {title}", { title: thread().title })}
-                              </span>
-                            )}
                           </Show>
                           <Show when={props.agentStates[bot.id]}>
                             {(state) => <SidebarAgentIndicator state={state()} />}
@@ -1021,12 +1012,25 @@ export function Sidebar(props: SidebarProps) {
                               <span class="bot-row-time">{bot.time}</span>
                             </span>
                           </span>
-                          <span
-                            class={["bot-row-preview", { "bot-row-note": note() !== null }]}
-                            data-activity={state()?.kind}
+                          <Show
+                            when={props.activities?.[bot.id]?.workingThread}
+                            fallback={
+                              <span
+                                class={["bot-row-preview", { "bot-row-note": note() !== null }]}
+                                data-activity={state()?.kind}
+                              >
+                                {note() ?? preview()}
+                              </span>
+                            }
                           >
-                            {note() ?? preview()}
-                          </span>
+                            {(thread) => (
+                              <span class="bot-row-preview bot-row-working" data-activity="working">
+                                {thread().background
+                                  ? t("Working in background: {title}", { title: thread().title })
+                                  : t("Working in: {title}", { title: thread().title })}
+                              </span>
+                            )}
+                          </Show>
                         </span>
                         <Show when={props.agentStates[bot.id]}>
                           {(state) => <span class="sr-only">{sidebarAgentStateLabel(state())}</span>}
@@ -1034,14 +1038,14 @@ export function Sidebar(props: SidebarProps) {
                       </ContextMenu.Trigger>
                       <Show when={props.computerUsingBotIds?.includes(bot.id)}>
                         <div class="computer-use-row" role="status">
-                          <span>Controlling computer</span>{" "}
+                          <span>{t("Controlling computer")}</span>{" "}
                           <Button
                             unstyled
                             type="button"
-                            aria-label={`Stop computer control for ${bot.name}`}
+                            aria-label={t("Stop computer control for {name}", { name: bot.name })}
                             onClick={() => props.onStopComputerUse?.(bot.id)}
                           >
-                            Stop
+                            {t("Stop")}
                           </Button>
                         </div>
                       </Show>
@@ -1073,7 +1077,7 @@ export function Sidebar(props: SidebarProps) {
                           <Show when={props.onMarkBotRead}>
                             <ContextMenu.Item disabled={readBusy()} onSelect={() => void markRead(bot.id)}>
                               <Check class="bot-context-icon" aria-hidden="true" />
-                              <span>{readBusy() ? "Marking as read…" : "Mark as read"}</span>
+                              <span>{readBusy() ? t("Marking as read…") : t("Mark as read")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.layout && props.folderActions}>

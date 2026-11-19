@@ -1,6 +1,6 @@
 import type { AgentActivity } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
-import { formatLimitResume, rowStateFor, sidebarAgentStateLabel } from "./row-activity";
+import { avatarMoodFor, formatLimitResume, rowStateFor, sidebarAgentStateLabel } from "./row-activity";
 
 function activity(overrides: Partial<AgentActivity> = {}): AgentActivity {
   return {
@@ -134,5 +134,17 @@ describe("sidebarAgentStateLabel", () => {
     expect(
       sidebarAgentStateLabel({ kind: "limited", resetsAt: localSeconds(15, 40) }, new Date(2026, 10, 12, 14)),
     ).toBe("Limit · resumes 15:40");
+  });
+});
+
+describe("avatarMoodFor", () => {
+  it("gives each row state its own face", () => {
+    expect(avatarMoodFor(undefined)).toBe("idle");
+    expect(avatarMoodFor({ kind: "working" })).toBe("working");
+    expect(avatarMoodFor({ kind: "needs-you" })).toBe("needs-you");
+    expect(avatarMoodFor({ kind: "unread", count: 2 })).toBe("happy");
+    expect(avatarMoodFor({ kind: "responded" })).toBe("happy");
+    expect(avatarMoodFor({ kind: "error", message: "x" })).toBe("error");
+    expect(avatarMoodFor({ kind: "limited", resetsAt: null })).toBe("limited");
   });
 });
