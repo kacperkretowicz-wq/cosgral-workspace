@@ -101,6 +101,8 @@ function fakeChannels() {
       if (end < 0) throw new Error("This message is not in the channel.");
       return own.slice(Math.max(0, end - page.limit), end);
     },
+    message: (channelId, messageId) =>
+      messages.find((item) => item.channelId === channelId && item.id === messageId) ?? null,
     send: (input) => {
       sent.push(input);
       const next = channelMessage(`sent-${sent.length}`, input.channelId, { text: input.text });
