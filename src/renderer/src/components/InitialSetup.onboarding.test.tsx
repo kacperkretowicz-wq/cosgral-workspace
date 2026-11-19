@@ -1,6 +1,7 @@
 ﻿import type { AgentStatus, AgentTemplate, OnboardingState } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setLanguage } from "../i18n";
 import { InitialSetup } from "./InitialSetup";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -86,6 +87,30 @@ describe("first run: one flow", () => {
       language: "pl",
       firstAgent: { templateId: "meeting-notes" },
     });
+  });
+
+  it("starts the language field on the language the window already shows, not on English", async () => {
+    // The window follows the system language (Polish) before a language was chosen; the field must not send "en".
+    setLanguage("pl");
+    try {
+      vi.stubGlobal("openbot", { onboarding: { getState: vi.fn().mockResolvedValue(onboarding()) } });
+      const onSave = renderSetup();
+      await fireEvent.click(screen.getByRole("button", { name: /Użyj tego komputera/ }));
+      expect(await screen.findByLabelText("Język")).toHaveValue("pl");
+      await fireEvent.click(screen.getByRole("button", { name: "Kontynuuj z Codex" }));
+      expect(onSave).toHaveBeenCalledWith("codex", { language: "pl", firstAgent: null });
+    } finally {
+      setLanguage("en");
+    }
+  });
+
+  it("puts the first focus on the first connection choice, not on Sign out (Enter must not sign out)", async () => {
+    vi.stubGlobal("openbot", {});
+    renderSetup();
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: /Use this computer/ })),
+    );
+    expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Sign out" }));
   });
 
   it("keeps the original setup when the program has no onboarding", async () => {

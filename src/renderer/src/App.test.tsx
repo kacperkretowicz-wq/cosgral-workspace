@@ -13,7 +13,7 @@ import type {
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import { createNew } from "./sidebar-test-utils";
+import { createNew, toggleShowHidden } from "./sidebar-test-utils";
 
 let emitAgentEvent: ((event: AgentEvent) => void) | undefined;
 const agentEventListeners = new Set<(event: AgentEvent) => void>();
@@ -1019,13 +1019,17 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("heading", { name: "Sales Outbound" })).toBeInTheDocument();
   });
 
-  it("shows agent role badges without a redundant standalone heading", async () => {
-    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([BOTS[0], { ...BOTS[1], role: "   " }]);
+  it("keeps the role out of the name line (whole names) and shows it while an agent has no messages", async () => {
+    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([
+      { ...BOTS[0], preview: "No messages yet" },
+      { ...BOTS[1], role: "   " },
+    ]);
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
 
-    expect(screen.getByText("Chief of staff")).toHaveClass("bot-role-badge");
-    expect(screen.getByText("Chief of staff")).toHaveAttribute("title", "Chief of staff");
+    expect(document.querySelector(".bot-role-badge")).toBeNull();
+    expect(screen.getByText("Chief of staff")).toHaveClass("bot-row-preview");
+    expect(screen.getByRole("button", { name: /^Chief, Chief of staff/ })).toBeInTheDocument();
     expect(screen.queryByText("Outbound specialist")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Agents" })).not.toBeInTheDocument();
 
@@ -3665,7 +3669,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await fireEvent.contextMenu(list.getByRole("button", { name: /^Sales Outbound/ }));
     await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Hide" }));
     await waitFor(() => expect(list.queryByRole("button", { name: /^Sales Outbound/ })).toBeNull());
-    await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
+    await toggleShowHidden();
     const hidden = await list.findByRole("button", { name: /^Sales Outbound/ });
     expect(hidden).toHaveClass("bot-row-hidden");
     await fireEvent.contextMenu(hidden);

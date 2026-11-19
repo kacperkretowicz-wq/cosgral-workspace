@@ -205,9 +205,12 @@ describe("AgentSettingsService", () => {
     expect(reopened.service.appSettings().notifications.matrix.finished.desktop).toBe(false);
   });
 
-  it("pins pages to the rail: every page pinned by default, kept in the chosen order, replaced as a whole, survives a restart", async () => {
+  it("pins pages to the rail: the five main pages by default (like OpenBot), kept in the chosen order, replaced as a whole, survives a restart", async () => {
     const { dir, database, service, events } = await open();
-    expect(service.appSettings().navigation).toEqual({ pinnedPageIds: [...APP_PAGE_IDS] });
+    expect(service.appSettings().navigation).toEqual({
+      pinnedPageIds: ["agents", "workflows", "tasks", "usage", "library"],
+    });
+    expect(APP_PAGE_IDS).toEqual(expect.arrayContaining(service.appSettings().navigation.pinnedPageIds));
 
     const pinned = await service.updateAppSettings({ navigation: { pinnedPageIds: ["library", "agents", "phone"] } });
     expect(pinned.navigation).toEqual({ pinnedPageIds: ["library", "agents", "phone"] });

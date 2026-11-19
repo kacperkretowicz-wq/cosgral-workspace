@@ -11,7 +11,7 @@ import type {
   OnboardingState,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
@@ -77,7 +77,11 @@ export function InitialSetup(props: InitialSetupProps) {
   const [error, setError] = createSignal("");
   const [inviteUrl, setInviteUrl] = createSignal("");
   const [onboarding, setOnboarding] = createSignal<OnboardingState>();
-  const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({ language: "en", firstAgent: null });
+  // Start on the language the window already shows (system language until one is chosen), not on a fixed "en".
+  const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({
+    language: untrack(language),
+    firstAgent: null,
+  });
   const [cliReady, setCliReady] = createSignal<Record<string, boolean>>({});
   let permissionRevision = 0;
 
@@ -226,7 +230,20 @@ export function InitialSetup(props: InitialSetupProps) {
   return (
     <Dialog.Root open onOpenChange={(open) => !open && props.onClose?.()}>
       <main class="initial-setup-screen">
-        <Dialog.Content as="section" class="initial-setup">
+        <Dialog.Content
+          as="section"
+          class="initial-setup"
+          onOpenAutoFocus={(event: Event) => {
+            // The dialog would focus its first button, "Sign out", so Enter would sign out. Focus the first choice.
+            const container = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+            const first = container?.querySelector<HTMLElement>(
+              ".setup-route-button, .setup-local-content input, .setup-local-content button",
+            );
+            if (!first) return;
+            event.preventDefault();
+            first.focus();
+          }}
+        >
           <header class="initial-setup-header">
             <div class="initial-setup-account-row">
               <Show when={!props.reviewing && route()}>

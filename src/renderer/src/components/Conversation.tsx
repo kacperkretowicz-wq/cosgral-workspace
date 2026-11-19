@@ -111,10 +111,13 @@ import {
   Crosshair,
   Dialog,
   Input,
+  LibraryBig,
+  MessageCircleQuestion,
   NativeSelect,
   Paperclip,
   Popover,
   SlidersHorizontal,
+  Sparkles,
   Switch,
   Tabs,
   Text,
@@ -1650,6 +1653,9 @@ export function Conversation(props: ConversationProps) {
                     </For>
                   </NativeSelect>
                 </Show>
+                <Show when={props.bot}>
+                  <ChatSidePanelLauncher variant="header" onOpen={openChatSidePanel} />
+                </Show>
                 <Show when={props.server?.kind === "remote"}>
                   <Button
                     type="button"
@@ -2194,7 +2200,8 @@ export function Conversation(props: ConversationProps) {
               setLibraryOpen(event.currentTarget.open);
             }}
           >
-            <summary>{t("Choose from library")}</summary>
+            {/* Opened from the + menu ("Choose from library"); no separate link above the composer. */}
+            <summary class="sr-only">{t("Choose from library")}</summary>
             <Show when={libraryOpen()}>
               <LibraryPanel
                 onAttach={(draft) => {
@@ -2350,7 +2357,21 @@ export function Conversation(props: ConversationProps) {
                       <Paperclip aria-hidden="true" />
                       {attachmentBusy() ? t("Importing…") : t("Attach files")}
                     </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowAttachments(false);
+                        if (!libraryDetails) return;
+                        libraryOwner = props.bot?.id;
+                        libraryDetails.open = true;
+                        setLibraryOpen(true);
+                      }}
+                    >
+                      <LibraryBig aria-hidden="true" />
+                      {t("Choose from library")}
+                    </Button>
                     <Button type="button" onClick={() => setAttachMenuView("skills")}>
+                      <Sparkles aria-hidden="true" />
                       {t("Use a skill")}
                     </Button>
                     <Button
@@ -2369,6 +2390,7 @@ export function Conversation(props: ConversationProps) {
                         setSideQuestionOpen(true);
                       }}
                     >
+                      <MessageCircleQuestion aria-hidden="true" />
                       {t("Side question")}
                     </Button>
                     <Button
@@ -2399,14 +2421,18 @@ export function Conversation(props: ConversationProps) {
                 }
                 placeholder={
                   !agentReady()
-                    ? "Complete agent CLI setup to start"
+                    ? t("Complete agent CLI setup to start")
                     : onboardingModelRequired()
-                      ? "Choose a model to continue"
+                      ? t("Choose a model to continue")
                       : replyTarget()
-                        ? "Reply…"
-                        : `Message ${props.agentPickerOpen ? "agent" : (props.bot?.name ?? "agent")}`
+                        ? t("Reply…")
+                        : t("Message {name}", {
+                            name: props.agentPickerOpen ? t("agent") : (props.bot?.name ?? t("agent")),
+                          })
                 }
-                ariaLabel={`Message ${props.agentPickerOpen ? "agent" : (props.bot?.name ?? "agent")}`}
+                ariaLabel={t("Message {name}", {
+                  name: props.agentPickerOpen ? t("agent") : (props.bot?.name ?? t("agent")),
+                })}
                 onValueChange={(text) => {
                   updateCurrentDraft({ text });
                   updateTeamTyping(text);
@@ -2498,10 +2524,6 @@ export function Conversation(props: ConversationProps) {
           )}
         </Show>
       </Dialog.Root>
-
-      <Show when={props.bot && activeRightPanel() === "none"}>
-        <ChatSidePanelLauncher onOpen={openChatSidePanel} />
-      </Show>
 
       <Show when={screenOpen()}>
         <Tabs.Root
@@ -3098,5 +3120,5 @@ export function Conversation(props: ConversationProps) {
 
 function reasoningLabel(effort: AgentReasoningEffort): string {
   if (effort === "xhigh") return t("Extra high");
-  return `${effort.slice(0, 1).toUpperCase()}${effort.slice(1)}`;
+  return t(`${effort.slice(0, 1).toUpperCase()}${effort.slice(1)}`);
 }

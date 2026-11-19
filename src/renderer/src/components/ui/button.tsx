@@ -25,8 +25,26 @@ export interface ButtonProps
   ref?: Ref<HTMLButtonElement>;
 }
 
+/**
+ * When Kobalte renders `as={Button}` it hands over its props as a proxy that `omit` does not filter, so `as`/`component`
+ * (the whole function source), `variant` and `size` reached the DOM and the outside `class` replaced `ui-button`.
+ * These keys are cleared after the spread, and the button's own attributes come last.
+ */
+const OWN_PROPS_OFF_THE_DOM = {
+  as: undefined,
+  component: undefined,
+  variant: undefined,
+  size: undefined,
+  unstyled: undefined,
+  loading: undefined,
+  loadingLabel: undefined,
+  fullWidth: undefined,
+} satisfies Record<string, undefined>;
+
 export function Button(props: ButtonProps): JSX.Element {
   const local = props;
+  // Rendered by Kobalte (`as={Button}`): the trigger's own stylesheet owns the look, as it always did.
+  const polymorphic = () => local.as !== undefined || local.component !== undefined;
   const others = omit(
     local,
     "class",
@@ -43,12 +61,13 @@ export function Button(props: ButtonProps): JSX.Element {
   );
   return (
     <button
-      class={cx(!local.unstyled && "ui-button", local.fullWidth && "ui-button-full", local.class)}
+      {...others}
+      {...OWN_PROPS_OFF_THE_DOM}
+      class={cx(!local.unstyled && !polymorphic() && "ui-button", local.fullWidth && "ui-button-full", local.class)}
       data-variant={local.variant ?? "secondary"}
       data-size={local.size ?? "md"}
       disabled={Boolean(local.disabled || local.loading)}
       aria-busy={local.loading ? "true" : undefined}
-      {...others}
     >
       <Show when={local.loading}>
         <Spinner size="sm" />

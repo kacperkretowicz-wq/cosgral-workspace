@@ -141,6 +141,12 @@ interface NamedTool {
   tools?: ReadonlyArray<{ name: string }>;
 }
 
+/**
+ * The rail shows the five main pages by default, like OpenBot; the others are under "More" and can be pinned.
+ * All eleven pinned made a crowded rail with a "pinned" dot on every icon.
+ */
+const DEFAULT_PINNED_PAGE_IDS: readonly AppPageId[] = ["agents", "workflows", "tasks", "usage", "library"];
+
 export class AgentSettingsService {
   readonly #deps: AgentSettingsDeps;
   readonly #ready = new WeakSet<DatabaseSync>();
@@ -371,7 +377,7 @@ export class AgentSettingsService {
       theme: "dark",
       language: null,
       notifications: defaultNotificationPreferences(),
-      pinnedPageIds: [...APP_PAGE_IDS],
+      pinnedPageIds: [...DEFAULT_PINNED_PAGE_IDS],
       appearance: { ...DEFAULT_APP_APPEARANCE },
       behavior: { ...DEFAULT_APP_BEHAVIOR },
       workspace: { ...DEFAULT_APP_WORKSPACE },

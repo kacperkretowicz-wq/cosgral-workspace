@@ -5,9 +5,10 @@ import { avatarCandidateSeeds, avatarHeadColor, buildAnimatedAvatarSvg, ownAvata
 
 const avatarGeometryMarkup = (markup: string) => {
   const document = new DOMParser().parseFromString(markup, "image/svg+xml");
-  return Array.from(document.querySelectorAll("circle, ellipse, line, path, polygon, polyline, rect")).map(
-    (element) => element.outerHTML,
-  );
+  // Shading (gradients, the highlight, eye catchlights) is decoration on top of the package geometry.
+  return Array.from(document.querySelectorAll("circle, ellipse, line, path, polygon, polyline, rect"))
+    .filter((element) => !element.closest("defs, [data-shade]"))
+    .map((element) => element.outerHTML.replace(/ fill="url\(#[^)]+\)"/u, ""));
 };
 
 /** The two own bodies replace the whole body; the two eye shapes must still match the package. */
@@ -77,6 +78,26 @@ describe("animated Blobatar adapter", () => {
         withoutOwnBody(seed, avatarGeometryMarkup(blobatar(seed, { hue: 215 }))),
       );
     }
+  });
+});
+
+describe("avatar finish", () => {
+  it("gives the body volume: a shaded fill, a clipped highlight and a catchlight in each eye", () => {
+    const markup = buildAnimatedAvatarSvg("chief", 215);
+    const document = new DOMParser().parseFromString(markup, "image/svg+xml");
+    const gradient = document.querySelector("defs radialGradient");
+    expect(gradient?.querySelectorAll("stop")).toHaveLength(3);
+    const body = document.querySelector(".mo-bob > g");
+    expect(body?.getAttribute("fill")).toBe(`url(#${gradient?.id})`);
+    const highlight = document.querySelector("[data-shade='highlight']");
+    expect(highlight?.getAttribute("clip-path")).toMatch(/^url\(#.+\)$/u);
+    expect(document.querySelectorAll(".mo-eye [data-shade='catchlight']")).toHaveLength(2);
+  });
+
+  it("keeps ids stable per face and colour, and different between colours", () => {
+    const ids = (markup: string) => [...markup.matchAll(/ id="([^"]+)"/gu)].map((match) => match[1]);
+    expect(ids(buildAnimatedAvatarSvg("chief", 215))).toEqual(ids(buildAnimatedAvatarSvg("chief", 215)));
+    expect(ids(buildAnimatedAvatarSvg("chief", 215))).not.toEqual(ids(buildAnimatedAvatarSvg("chief", 0)));
   });
 });
 

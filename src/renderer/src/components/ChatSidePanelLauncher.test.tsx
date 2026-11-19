@@ -44,3 +44,18 @@ it("keeps launcher openers keyboard-focusable", () => {
   expect(browser).toHaveFocus();
   expect(browser.tabIndex).toBeGreaterThanOrEqual(0);
 });
+
+it("in the header shows compact icon buttons for Files, Agent settings and Voice (Browser has its own header button)", async () => {
+  const onOpen = vi.fn();
+  render(() => <ChatSidePanelLauncher variant="header" onOpen={onOpen} />);
+  const nav = screen.getByRole("navigation", { name: "Chat side panels" });
+  expect(nav).toHaveClass("chat-header-panels");
+  expect(screen.queryByRole("button", { name: "Open Browser" })).toBeNull();
+  const files = screen.getByRole("button", { name: "Open Files" });
+  expect(files).toHaveAttribute("title", "Open Files");
+  expect(files.textContent?.trim()).toBe("");
+  await fireEvent.click(files);
+  await fireEvent.click(screen.getByRole("button", { name: "Open Agent settings" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Open Voice" }));
+  expect(onOpen.mock.calls.map((call) => call[0])).toEqual(["files", "settings", "voice"]);
+});

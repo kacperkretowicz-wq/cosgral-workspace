@@ -16,22 +16,27 @@ const ITEMS: Array<{
 ];
 
 /**
- * Right-edge openers for the chat chrome (0.71 screen 052): Browser, Files, Agent settings, Voice.
- * Shown only while no right panel is open.
+ * Openers for the chat side panels (0.71 screen 052): Browser, Files, Agent settings, Voice.
+ * `floating`: the labelled column at the right edge of the chat. `header`: compact icon buttons in the conversation
+ * header, like OpenBot's header icons; Browser is left out there because the header has its own browser button.
  */
 export function ChatSidePanelLauncher(props: {
   onOpen: (target: ChatSidePanelTarget) => void;
   voiceDisabledReason?: string;
+  variant?: "floating" | "header";
 }) {
+  const header = () => props.variant === "header";
+  const items = () => (header() ? ITEMS.filter((item) => item.id !== "browser") : ITEMS);
   return (
-    <nav class="chat-side-panel-launcher" aria-label={t("Chat side panels")}>
-      {ITEMS.map((item) => {
+    <nav class={header() ? "chat-header-panels" : "chat-side-panel-launcher"} aria-label={t("Chat side panels")}>
+      {items().map((item) => {
         const disabled = item.id === "voice" && Boolean(props.voiceDisabledReason);
         const Icon = item.Icon;
         return (
           <Button
             type="button"
-            class="chat-side-panel-launcher-item"
+            unstyled={header()}
+            class={header() ? "header-panel-toggle chat-header-panel" : "chat-side-panel-launcher-item"}
             aria-label={t(item.label)}
             title={disabled ? props.voiceDisabledReason : t(item.label)}
             disabled={disabled}
@@ -39,8 +44,8 @@ export function ChatSidePanelLauncher(props: {
               if (!disabled) props.onOpen(item.id);
             }}
           >
-            <Icon size={18} stroke-width={1.5} aria-hidden="true" />
-            <span>{t(item.label)}</span>
+            <Icon size={header() ? 16 : 18} stroke-width={1.5} aria-hidden="true" />
+            {header() ? null : <span>{t(item.label)}</span>}
           </Button>
         );
       })}

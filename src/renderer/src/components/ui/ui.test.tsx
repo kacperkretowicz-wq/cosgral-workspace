@@ -1,3 +1,4 @@
+import * as DropdownMenu from "@kobalte/core/dropdown-menu";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
@@ -35,6 +36,24 @@ describe("UI primitives", () => {
     const loading = screen.getByRole("button", { name: "Saving" });
     expect(loading).toBeDisabled();
     expect(loading).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("keeps its own props out of the DOM when Kobalte renders it with as={Button}", () => {
+    // Kobalte passes props as a proxy; the page rail leaked `as`/`component` (the whole function source, ~16 KB),
+    // `variant`, and lost the `ui-button` class.
+    render(() => (
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger as={Button} variant="ghost" class="rail-test" aria-label="Pages">
+          x
+        </DropdownMenu.Trigger>
+      </DropdownMenu.Root>
+    ));
+    const trigger = screen.getByRole("button", { name: "Pages" });
+    // The trigger's own class owns the look (rows, rails); no generic button fill under them.
+    expect(trigger).toHaveClass("rail-test");
+    expect(trigger).not.toHaveClass("ui-button");
+    expect(trigger).toHaveAttribute("data-variant", "ghost");
+    for (const leaked of ["as", "component", "variant", "size"]) expect(trigger).not.toHaveAttribute(leaked);
   });
 
   it("exposes button variants, sizes, layout, and native props", () => {

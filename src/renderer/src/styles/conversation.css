@@ -2078,8 +2078,8 @@
 }
 
 .message-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0. With reduced motion the animation is off, and a fixed 0 hid every new message. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .message-entry-bot {
@@ -2421,8 +2421,8 @@
 }
 
 .exchange-message-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0. With reduced motion the animation is off, and a fixed 0 hid every new message. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .agent-activity-entry {

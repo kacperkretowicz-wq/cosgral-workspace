@@ -150,11 +150,16 @@ async function collectCandidates(command: "codex" | "claude", configuredPath: st
   return [...new Set([...(own?.managed ? [own.managed] : []), ...(await systemCandidates(command))])];
 }
 
-/** COSGRAL W5-BE1: a CLI installed on the system (not the custom or downloaded one), with its version; null if none. */
+/**
+ * COSGRAL W5-BE1: a CLI installed on the system (not the custom or downloaded one), with its version; null if none.
+ * The environment override comes first, as in `collectCandidates`: the program runs that CLI, so the CLI card must not
+ * say "none" next to a provider that is "Available".
+ */
 export async function findSystemCli(
   command: "codex" | "claude",
 ): Promise<{ executable: string; version: string | null } | null> {
-  for (const candidate of await systemCandidates(command)) {
+  const override = (command === "codex" ? process.env.OPENBOT_CODEX_PATH : process.env.OPENBOT_CLAUDE_PATH)?.trim();
+  for (const candidate of [...(override ? [override] : []), ...(await systemCandidates(command))]) {
     if (!(await isExecutable(candidate))) continue;
     try {
       const output = await readCliVersion(candidate);
