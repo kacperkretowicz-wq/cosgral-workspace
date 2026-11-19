@@ -287,6 +287,6 @@ export function ThreadTabs(props: ThreadTabsProps) {
 }
 
 /** The default title from the store ("New thread") is shown in the window language; a title the person gave is not. */
-function threadTitle(title: string): string {
+export function threadTitle(title: string): string {
   return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
 }

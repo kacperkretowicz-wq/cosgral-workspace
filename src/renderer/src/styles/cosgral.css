@@ -2753,12 +2753,12 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   font-size: var(--cosgral-text-md);
 }
 
-.provider-key-list li[data-enabled="false"] .provider-key-name {
-  opacity: 0.55;
-}
-
 .provider-key-name {
   flex: 1;
+}
+
+.provider-key-list li[data-enabled="false"] .provider-key-name {
+  opacity: 0.55;
 }
 
 .provider-key-limit {

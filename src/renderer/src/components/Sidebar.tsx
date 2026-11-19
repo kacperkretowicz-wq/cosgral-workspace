@@ -671,10 +671,10 @@ export function Sidebar(props: SidebarProps) {
             type="button"
             class="sidebar-icon-button sidebar-toggle-button no-drag"
             onClick={() => (props.compact ? props.onExpand() : props.onCollapse())}
-            aria-label={props.compact ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={props.compact ? t("Expand sidebar") : t("Collapse sidebar")}
             aria-controls="bot-sidebar"
             aria-expanded={props.compact ? "false" : "true"}
-            title={props.compact ? "Expand sidebar" : "Collapse sidebar"}
+            title={props.compact ? t("Expand sidebar") : t("Collapse sidebar")}
           >
             <SidebarToggleIcon />
           </Button>
@@ -833,7 +833,7 @@ export function Sidebar(props: SidebarProps) {
                           "bot-row-active": props.activeDirectMemberId === member.id,
                         },
                       ]}
-                      aria-label={`${teamMemberName(member)}. ${thread()?.lastMessage.text ?? (member.online ? "Online now" : "Offline")}`}
+                      aria-label={`${teamMemberName(member)}. ${thread()?.lastMessage.text ?? (member.online ? t("Online now") : t("Offline"))}`}
                       aria-pressed={props.activeDirectMemberId === member.id ? "true" : "false"}
                       onClick={() => props.onSelectPerson(member.id)}
                     >
@@ -851,7 +851,7 @@ export function Sidebar(props: SidebarProps) {
                           <span>{thread() ? sidebarMessageTime(thread()?.updatedAt ?? "") : ""}</span>
                         </span>
                         <span class="bot-row-preview">
-                          {thread()?.lastMessage.text ?? (member.online ? "Online now" : "Offline")}
+                          {thread()?.lastMessage.text ?? (member.online ? t("Online now") : t("Offline"))}
                         </span>
                       </span>
                       <Show when={(thread()?.unreadCount ?? 0) > 0}>
@@ -1236,7 +1236,7 @@ export function Sidebar(props: SidebarProps) {
             </span>
             <Show when={updateAvailable()}>
               <Badge class="sidebar-update-pill" tone="accent" shape="pill">
-                Update
+                {t("Update")}
               </Badge>
               <span class="sr-only">{t("COSGRAL Workspace update available")}</span>
             </Show>
@@ -1261,7 +1261,11 @@ export function Sidebar(props: SidebarProps) {
                   </Show>
                   <div class="account-profile-actions">
                     <Button type="button" onClick={() => accountAvatarInput?.click()} disabled={avatarUploadBusy()}>
-                      {avatarUploadBusy() ? "Saving…" : props.account.avatarUrl ? "Replace photo" : "Upload photo"}
+                      {avatarUploadBusy()
+                        ? t("Saving…")
+                        : props.account.avatarUrl
+                          ? t("Replace photo")
+                          : t("Upload photo")}
                     </Button>
                     <Show when={props.account.avatarUrl}>
                       <Button

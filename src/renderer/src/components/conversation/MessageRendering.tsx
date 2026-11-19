@@ -179,7 +179,7 @@ export function MessageBody(props: {
       <Show when={props.referencedMessage}>
         {(referenced) => (
           <div class="message-reply-context">
-            <span>{referenced().author === "you" ? "You" : "Agent"}</span>
+            <span>{referenced().author === "you" ? t("You") : t("Agent")}</span>
             <p>{referenced().body || "Attachment"}</p>
           </div>
         )}
@@ -280,7 +280,7 @@ export function MessageActions(props: {
     <div
       class={["message-actions", { "message-actions-open": props.pickerOpen || props.moreOpen }]}
       role="toolbar"
-      aria-label={`${props.message.author === "you" ? "User" : "Agent"} message actions`}
+      aria-label={props.message.author === "you" ? t("User message actions") : t("Agent message actions")}
     >
       <div class="message-action-popover-anchor">
         <DropdownMenu.Root
@@ -303,7 +303,7 @@ export function MessageActions(props: {
                   {(emoji) => (
                     <DropdownMenu.RadioItem
                       value={emoji}
-                      aria-label={`React with ${emoji}`}
+                      aria-label={t("React with {emoji}", { emoji })}
                       onSelect={() => props.onReact(props.message.reaction === emoji ? null : emoji)}
                     >
                       {emoji}
@@ -327,7 +327,7 @@ export function MessageActions(props: {
                     {(emoji) => (
                       <DropdownMenu.RadioItem
                         value={emoji}
-                        aria-label={`React with ${emoji}`}
+                        aria-label={t("React with {emoji}", { emoji })}
                         onSelect={() => props.onReact(props.message.reaction === emoji ? null : emoji)}
                       >
                         {emoji}
@@ -343,7 +343,7 @@ export function MessageActions(props: {
       <Button
         type="button"
         class="message-action-button"
-        aria-label={`Reply to ${props.message.author === "you" ? "User" : "Agent"} message`}
+        aria-label={props.message.author === "you" ? t("Reply to User message") : t("Reply to Agent message")}
         onClick={props.onReply}
       >
         <ReplyIcon />
@@ -358,11 +358,11 @@ export function MessageActions(props: {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>
                 <Show when={props.onBranch}>
-                  <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => props.onBranch?.()}>{t("Branch from here")}</DropdownMenu.Item>
                 </Show>
                 <DropdownMenu.Item onSelect={props.onCopy}>
                   {props.copied ? <CheckIcon /> : <CopyIcon />}
-                  <span>{props.copied ? "Copied" : "Copy"}</span>
+                  <span>{props.copied ? t("Copied") : t("Copy")}</span>
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>

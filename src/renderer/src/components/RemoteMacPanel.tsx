@@ -1,6 +1,7 @@
 import RFB from "@novnc/novnc";
 import type { RemoteMacSession, ServerSummary } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
+import { t } from "../i18n";
 import { PanelResizer } from "./PanelResizer";
 import { Button } from "./ui";
 
@@ -96,7 +97,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
       const handleDisconnect = (event: CustomEvent<{ clean: boolean }>) => {
         if (!event.detail.clean) {
           setViewerState("error");
-          setViewerError("The remote desktop connection ended unexpectedly.");
+          setViewerError(t("The remote desktop connection ended unexpectedly."));
         } else {
           setViewerState("idle");
         }
@@ -105,7 +106,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
         setViewerState("connecting");
         if (!sessionId) {
           setViewerState("error");
-          setViewerError("The Remote Desktop session is unavailable.");
+          setViewerError(t("The Remote Desktop session is unavailable."));
           return;
         }
         void window.openbot.remoteMac
@@ -114,7 +115,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             if (rfb !== client) return;
             if (!credentials) {
               setViewerState("error");
-              setViewerError("The host owner must configure Remote Desktop access.");
+              setViewerError(t("The host owner must configure Remote Desktop access."));
               return;
             }
             client.sendCredentials(credentials);
@@ -169,7 +170,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
       await onConnect(hostname, server.id);
     } catch (error) {
       setViewerState("error");
-      setViewerError(error instanceof Error ? error.message : "Could not connect to this Mac.");
+      setViewerError(error instanceof Error ? error.message : t("Could not connect to this Mac."));
     } finally {
       setBusy(false);
     }
@@ -187,12 +188,12 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
       ref={(element) => (panelElement = element)}
       id="remote-desktop-side-panel"
       class="remote-desktop-panel"
-      aria-label="Remote desktop"
+      aria-label={t("Remote desktop")}
       style={`--remote-desktop-panel-width: ${props.width}px`}
     >
       <PanelResizer
         class="right-panel-resizer"
-        label="Resize remote desktop panel"
+        label={t("Resize remote desktop panel")}
         controls="remote-desktop-side-panel"
         direction="right"
         value={props.width}
@@ -212,7 +213,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
           <span class={`remote-desktop-status remote-desktop-status-${viewerState()}`} aria-hidden="true" />
           <div>
             <strong>Remote desktop</strong>
-            <span>{props.server?.name ?? "No remote host"}</span>
+            <span>{props.server?.name ?? t("No remote host")}</span>
           </div>
         </div>
         <div class="remote-desktop-actions">
@@ -220,15 +221,15 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             <Button
               type="button"
               class={["remote-desktop-mode", { "remote-desktop-mode-active": !viewOnly() }]}
-              aria-label={viewOnly() ? "Enable remote control" : "Use view-only mode"}
+              aria-label={viewOnly() ? t("Enable remote control") : t("Use view-only mode")}
               onClick={() => setViewOnly((current) => !current)}
             >
-              {viewOnly() ? "View only" : "Control"}
+              {viewOnly() ? t("View only") : t("Control")}
             </Button>
             <Button
               type="button"
               class="remote-desktop-icon-button"
-              aria-label="Enter remote desktop full screen"
+              aria-label={t("Enter remote desktop full screen")}
               onClick={() => void panelElement?.requestFullscreen()}
             >
               <FullscreenIcon />
@@ -237,7 +238,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
           <Button
             type="button"
             class="remote-desktop-icon-button"
-            aria-label="Close remote desktop"
+            aria-label={t("Close remote desktop")}
             onClick={props.onClose}
           >
             <CloseIcon />
@@ -255,17 +256,20 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
 
         <Show when={props.server?.kind !== "remote"}>
           <DesktopEmptyState
-            title="Select a remote host"
-            message="Remote desktop is available for agents that run on a remote Mac."
+            title={t("Select a remote host")}
+            message={t("Remote desktop is available for agents that run on a remote Mac.")}
           />
         </Show>
         <Show when={props.server?.kind === "remote" && props.server?.state !== "online"}>
-          <DesktopEmptyState title="Host is offline" message="Reconnect to the host before you open its desktop." />
+          <DesktopEmptyState
+            title={t("Host is offline")}
+            message={t("Reconnect to the host before you open its desktop.")}
+          />
         </Show>
         <Show when={sessionBusy() || busy() || viewerState() === "connecting"}>
           <div class="remote-desktop-overlay" role="status">
             <span class="remote-desktop-spinner" />
-            <strong>{props.session?.message ?? "Connecting to the Mac…"}</strong>
+            <strong>{props.session?.message ?? t("Connecting to the Mac…")}</strong>
             <span>The secure tunnel can take a few seconds.</span>
           </div>
         </Show>
@@ -295,7 +299,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
       </div>
 
       <footer class="remote-desktop-footer">
-        <span>{viewOnly() ? "View only" : "Keyboard and pointer control enabled"}</span>
+        <span>{viewOnly() ? t("View only") : t("Keyboard and pointer control enabled")}</span>
         <Show when={props.session?.phase === "connected" ? props.session : undefined}>
           {(session) => (
             <Button type="button" onClick={() => void props.onDisconnect(session().id)}>

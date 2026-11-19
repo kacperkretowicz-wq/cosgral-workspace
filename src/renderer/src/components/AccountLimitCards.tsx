@@ -21,7 +21,7 @@ export function AccountLimitReachedCard(props: {
       tabindex={0}
     >
       <Heading as="h3" size="sm">
-        Limit reached
+        {t("Limit reached")}
       </Heading>
       <Text as="p" tone="danger" role="alert">
         {props.view.reason}
@@ -60,13 +60,13 @@ export function AccountLimitReachedCard(props: {
       </Show>
       <Show when={!reset()}>
         <Text as="p" tone="muted">
-          No reset time was given
+          {t("No reset time was given")}
         </Text>
       </Show>
       <Show when={props.onDismiss}>
         <div class="account-limit-card-actions">
           <Button type="button" variant="ghost" onClick={() => props.onDismiss?.()}>
-            Dismiss
+            {t("Dismiss")}
           </Button>
         </div>
       </Show>
@@ -100,7 +100,7 @@ export function AccountSwitchedCard(props: { view: AccountSwitchedView; onDismis
       </Show>
       <div class="account-limit-card-actions">
         <Button type="button" variant="ghost" onClick={() => props.onDismiss()}>
-          Dismiss
+          {t("Dismiss")}
         </Button>
       </div>
     </Card>

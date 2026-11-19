@@ -712,7 +712,9 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
     async () => {
       await d.openAgent("Assistant");
       const channelName = `accept-${Date.now().toString(36)}`;
-      await page.getByRole("button", { name: "New channel", exact: true }).first().click();
+      await page.getByRole("button", { name: "Create new", exact: true }).first().click();
+      // Since PR #24 "New channel" is an item of the sidebar's "+" menu, not a button on the Agents page.
+      await page.getByRole("menuitem", { name: "New channel" }).first().click();
       let dialog = page.getByRole("dialog");
       await dialog.getByLabel("Channel name", { exact: true }).fill(channelName);
       await dialog.getByLabel("Display title").fill("Accept team");

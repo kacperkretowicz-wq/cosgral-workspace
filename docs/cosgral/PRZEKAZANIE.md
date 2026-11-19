@@ -1,4 +1,48 @@
-# Przekazanie projektu (najnowsze): sesja 19.11.2026, kontynuacja PR #24
+# Przekazanie projektu (najnowsze): sesja 19.11.2026 wieczór, ekrany P1 i reszta
+
+**Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md`, punkt „Stan po sesji 19.11 wieczór”.**
+
+## W. Ta sesja (gałąź `claude/charming-euler-ag7ese`)
+
+| Co | Gdzie |
+|---|---|
+| Gałąź | `claude/charming-euler-ag7ese` = `claude/friendly-noether-jpw1if` (@ `5f0d878`) + commity tej sesji |
+| Do scalenia | razem z `claude/friendly-noether-jpw1if` do `team/lider/poprawki-po-exe` (PR #24), potem do `codex/cosgral-desktop` |
+
+**Zrobione (każdy ekran obejrzany w Storybooku przed i po, po polsku i po angielsku, z testami):**
+
+1. **Ustawienia** (ikona na dole paska stron, menu konta): własne okno `SettingsDialog.tsx` zamiast kreatora w trybie
+   przeglądu. Spis sekcji z ikonami (Ogólne, Powiadomienia, Działanie aplikacji, Dostawcy, Uprawnienia na macOS, Wygląd,
+   Rozmowy, Budżet, Głos, Aktualizacje, Dane i prywatność), który przewija i podąża za przewijaniem; wszystkie sekcje
+   zostają na stronie (testy i skrypty ich szukają). Jedna stopka: „Zapisz zmiany” zapisuje dostawcę, język i
+   powiadomienia. Powiadomienia jako przełączniki. Pierwsze uruchomienie zostaje kreatorem.
+2. **Okno kanału** (`ChannelEditor.tsx`): podgląd stosu stworków, członkowie jako lista ze stworkami, prowadzący
+   oznaczony na liście, podpowiedzi pod polami. Nazwy pól dla testów i e2e bez zmian.
+3. **Nowy agent** (`NewAgentPage.tsx`, `new-agent.css` na `--openbot-*`): nagłówek `WorkPage`, pracownia stworka
+   (scena, podgląd min, kształt, kolor; próbki kolorów były niewidoczne), powód przy wyłączonym przycisku.
+4. **Dostawcy › Konta** (`ProviderAccounts.tsx`): wiersze z kolejnością w puli, stanem i akcjami jako ikony.
+   **Nie zrobione:** CLI agentów, Klucze API, Punkty końcowe (dalej stosy pól).
+5. **Katalog dodatków** (`MarketplacePage.tsx`, `PluginAppsPanel.tsx`): nagłówek `WorkPage`, ikony kategorii, opisy
+   w dwóch liniach (po polsku nie są ucinane).
+6. **Ustawienia serwera** (`ServerSettingsPage.tsx`): nagłówek `WorkPage`, 14 sekcji z ikonami i opisem, pola jako wiersze.
+7. **Bezpieczeństwo (P0 3.1):** `electron` 43.4.0 → 43.8.12, `@modelcontextprotocol/sdk` 1.30.0 → 1.32.2,
+   `zod` 4.4.3 → 4.6.7. `bun audit` nie pokazuje już tych paczek. `undici` zostaje tylko w narzędziach (jsdom,
+   pobieranie Electrona, miniflare), nie w programie. **`.exe` trzeba przebudować na Windows.**
+8. **e2e (P0 3.2.4):** `sandbox-e2e.ts` i `sandbox-acceptance.ts` otwierają „Nowy kanał” z menu „+”; wiersz 39
+   akceptacji używa przełączników i stopki okna Ustawień.
+9. **Testy (P2 5.8):** `acp-presets.test.ts` działa na każdym systemie (pliki szukane jak na Windows przez podany
+   `isFile`, pełna ścieżka z korzenia bieżącego systemu); niestabilny test kompaktowania wątku poprawiony (przy 95 %
+   program sam kompaktował wątek po turze i wyścig decydował o 1 albo 2 kompaktowaniach; test działa teraz poniżej
+   progu; 6/6 przebiegów zielonych).
+10. **Po polsku (P3 6.1, część):** lista osób, pasek, wątki („New thread”), akcje wiadomości, kolejka, pamięć, karty
+    kont i limitów, załączniki, komunikaty głosu, Sejf, Zdalny pulpit. Zostały drobne z wiersza „pozostałe” tabeli 6.1.
+11. **Biome:** stare ostrzeżenie w `cosgral.css` usunięte, `bun run lint` bez ostrzeżeń.
+
+**Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
+
+---
+
+# Przekazanie (poprzednie): sesja 19.11.2026, kontynuacja PR #24
 
 **Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (UI i reszta: P0–P3, pliki, jak sprawdzać).**
 Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem

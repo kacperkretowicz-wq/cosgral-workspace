@@ -67,7 +67,7 @@ export function MemoryPanel(props: {
           <article class="w2-item">
             <p>{entry.text}</p>
             <Show when={entry.inclusion}>
-              <small>{entry.inclusion === "essential" ? "Always" : "When needed"}</small>
+              <small>{entry.inclusion === "essential" ? t("Always") : t("When needed")}</small>
             </Show>
             <div>
               <Button
@@ -133,7 +133,7 @@ export function MemoryPanel(props: {
           })
         }
       >
-        Save memory
+        {t("Save memory")}
       </Button>
       <Show when={editing()}>
         <Button
@@ -144,7 +144,7 @@ export function MemoryPanel(props: {
             setText("");
           }}
         >
-          Cancel edit
+          {t("Cancel edit")}
         </Button>
       </Show>
       <Show when={error()}>

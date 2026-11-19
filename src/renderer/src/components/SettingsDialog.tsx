@@ -102,7 +102,7 @@ export function SettingsDialog(props: {
             </div>
           </aside>
           <div class="settings-modal-main settings-dialog-main">
-            <header class="settings-modal-header">
+            <div class="settings-modal-header">
               <Dialog.Description as="p" class="settings-modal-description">
                 {props.description}
               </Dialog.Description>
@@ -117,7 +117,7 @@ export function SettingsDialog(props: {
                   <X aria-hidden="true" size={16} stroke-width={1.75} />
                 </IconButton>
               </Show>
-            </header>
+            </div>
             <div
               class="settings-modal-scroll-frame"
               data-scroll-up={edges().up ? "" : undefined}
@@ -146,14 +146,15 @@ export function SettingsSection(props: {
 }) {
   const headingId = untrack(() => `settings-section-${props.id}`);
   return (
-    <section class={["settings-dialog-section", props.class]} data-anchor={props.id} aria-labelledby={headingId}>
-      <header class="settings-dialog-section-header">
+    // A plain block, not a landmark: the panels inside are regions with the same names ("Updates", "Appearance").
+    <div class={["settings-dialog-section", props.class]} data-anchor={props.id}>
+      <div class="settings-dialog-section-header">
         <h2 id={headingId}>{props.title}</h2>
         <Show when={props.description}>
           <p>{props.description}</p>
         </Show>
-      </header>
+      </div>
       <div class="settings-dialog-section-body">{props.children}</div>
-    </section>
+    </div>
   );
 }

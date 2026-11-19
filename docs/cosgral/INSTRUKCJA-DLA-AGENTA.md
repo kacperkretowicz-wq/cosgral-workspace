@@ -6,6 +6,26 @@ Zgłoszenie na GitHubie: **#25**. Gałąź z pracą: **`claude/friendly-noether-
 
 ---
 
+## Stan po sesji 19.11 wieczór (gałąź `claude/charming-euler-ag7ese`)
+
+Szczegóły: górny rozdział `PRZEKAZANIE.md`. W skrócie, względem list niżej:
+
+| Pozycja | Stan |
+|---|---|
+| P0 3.1 zależności | **Zrobione w kodzie** (`electron` 43.8.12, SDK MCP 1.32.2, `zod` 4.6.7). Zostaje przebudowa `.exe` na Windows. Narzędzia deweloperskie (Storybook, Vitest) nie ruszane. |
+| P0 3.2.4 krok „channel UI” | **Zrobione** (menu „+” → „New channel” w `sandbox-e2e.ts` i `sandbox-acceptance.ts`). Nie uruchomione: wymaga Windows. |
+| P0 3.2 (1–3), 3.3, 3.4 | Bez zmian: Windows, decyzje właściciela. |
+| P1 1 Ustawienia | **Zrobione** (`SettingsDialog.tsx`). |
+| P1 2 Okno kanału | **Zrobione.** |
+| P1 3 Nowy agent | **Zrobione** (pracownia stworka z podglądem min). |
+| P1 4 Dostawcy | **Częściowo:** Konta i pula zrobione; CLI, Klucze API, Punkty końcowe zostały. Region „Fallback models” nie ruszany. |
+| P1 5 Katalog | **Zrobione** (nagłówek, ikony kategorii, opisy w dwóch liniach). |
+| P1 6 Ustawienia serwera | **Zrobione** (nagłówek, sekcje z ikonami i opisem, pola jako wiersze). Parytet 14 sekcji z 0.71 bez zmian. |
+| P2 5.8 testy | **Zrobione** (oba). |
+| P2 pozostałe (reaktywność, jasne historyjki, pasek kanału, DM, `lazy()`, duże pliki) | Bez zmian. |
+| P3 6.1 napisy | **Prawie całość:** zrobione m.in. `VaultPanel`, `RemoteMacPanel`, `Sidebar`, `MessageRendering`, `QueuePanel`, `MemoryPanel`, karty kont, `Conversation`, wątki, głos. Zostały pojedyncze z wiersza „pozostałe” tabeli 6.1 (`ApprovalRulesSettings`, `ChannelView`, `WorkflowsPage`, `AttachmentCards`, `UnreadMessages`, `ComposerEditor`, `RoutinePanel`, `SelectionActions`, `RichMessageText`). |
+| P3 6.3 ostrzeżenie Biome | **Zrobione.** |
+
 ## 0. Start w 10 minut
 
 1. Przeczytaj w tej kolejności: ten plik → `AGENTS.md` → `PRODUCT.md` → `docs/cosgral/PROMPT-UI-JAKOSC.md` (cel, zasady,
@@ -224,6 +244,7 @@ generowanych stworków (`blobatar.ts`) są dozwolone, bo to granica integracji.
 | Atrapa | `stories/mock-openbot.ts` przypina 5 domyślnych stron jak nowa instalacja. |
 | Pełny check | `bun run lint`, `bun run typecheck`, `bun run test` (ok. 7 min na Linuksie), `bun run test:storybook`, `bun run build`, `bun audit`. |
 | Wyniki końcowe (`dfee751`, po audycie) | lint zielone (1 stare ostrzeżenie); typecheck 6/6; build zielone; `bun run test` 3391 zielonych, 18 pominiętych, 3 znane czerwone (pkt 5.8), 476 s; `bun run test:storybook` 370/370; ostrzeżenia reaktywności 3319 w 172 historyjkach (pkt 5.1). Nie uruchomione: testy wizualne, e2e, `.exe` (Windows). |
+| Wyniki końcowe, sesja wieczór (`claude/charming-euler-ag7ese`) | `bun run lint` zielone **bez ostrzeżeń**; typecheck 6/6; build zielone (JS 3,1 MB, CSS 509 KB); `bun run test` 3393 zielone, 18 pominiętych, 1 czerwony w przebiegu pełnym (`i18n.test` złapał plik Sejfu w trakcie edycji; po niej zielony, potwierdzone osobnym przebiegiem dotkniętych plików: 377/377), 438 s; `bun run test:storybook` **370/370** (axe złapał po drodze kontrast plakietki „Prowadzi” i zdublowane obszary w oknie Ustawień; poprawione). Testy `acp-presets` i kompaktowania wątku już nie padają na Linuksie. Nie uruchomione: testy wizualne, e2e, `.exe` (Windows); licznik ostrzeżeń reaktywności nie mierzony ponownie. |
 
 ## 8. Decyzje właściciela, które blokują część pracy
 

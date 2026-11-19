@@ -29,7 +29,7 @@ export function VoiceSettingsView(props: {
       <p>
         {props.state.speech.available
           ? t("System speech available.")
-          : (props.state.speech.unavailableReason ?? t("System speech unavailable."))}
+          : t(props.state.speech.unavailableReason ?? "") || t("System speech unavailable.")}
       </p>
       <label>
         {t("Voice")}{" "}
@@ -97,7 +97,9 @@ export function VoiceSettingsView(props: {
         <p role="alert">{props.state.transcription.runtime.error}</p>
       </Show>
       <p>
-        {props.state.transcription.available ? t("Transcription ready.") : props.state.transcription.unavailableReason}
+        {props.state.transcription.available
+          ? t("Transcription ready.")
+          : t(props.state.transcription.unavailableReason ?? "")}
       </p>
       <ul>
         <For each={props.state.transcription.models}>

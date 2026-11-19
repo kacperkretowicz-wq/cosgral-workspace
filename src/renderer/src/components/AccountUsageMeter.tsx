@@ -1,4 +1,5 @@
 import { For, Show } from "solid-js";
+import { t } from "../i18n";
 import {
   type AccountUsageView,
   type AccountUsageWindowView,
@@ -60,7 +61,7 @@ export function UsageWindowMeter(props: { window: AccountUsageWindowView; nowMs:
       </Show>
       <Show when={percent() === null}>
         <Text as="p" tone="muted">
-          Usage not reported
+          {t("Usage not reported")}
         </Text>
       </Show>
       <Show when={reset()}>
@@ -70,7 +71,7 @@ export function UsageWindowMeter(props: { window: AccountUsageWindowView; nowMs:
       </Show>
       <Show when={!reset() && props.window.state !== "ok"}>
         <Text as="p" tone="muted">
-          No reset time was given
+          {t("No reset time was given")}
         </Text>
       </Show>
     </fieldset>
@@ -110,7 +111,7 @@ export function AccountUsageMeter(props: { usage: AccountUsageView; nowMs: numbe
         when={props.usage.windows.length}
         fallback={
           <Text as="p" tone="muted">
-            No usage windows for this account yet.
+            {t("No usage windows for this account yet.")}
           </Text>
         }
       >

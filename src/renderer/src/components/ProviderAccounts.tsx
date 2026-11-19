@@ -101,8 +101,8 @@ export function ProviderAccountCard(props: {
             {props.account.loggedIn ? t("Signed in") : t("Signed out")} ·{" "}
             {props.account.account ?? t("Unknown account")} · {props.account.plan ?? t("Unknown plan")}
             <Show when={props.account.inPool}>
-              {" · "}
-              {t("Pool order: {order}", { order: String(props.account.poolOrder) })}
+              <span aria-hidden="true">·</span>
+              <span>{t("Pool order: {order}", { order: String(props.account.poolOrder) })}</span>
             </Show>
           </Text>
         </div>

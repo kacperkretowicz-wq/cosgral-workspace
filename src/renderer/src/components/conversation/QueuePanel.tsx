@@ -239,7 +239,7 @@ export function QueuePanel(props: QueuePanelProps) {
                       class="agent-queue-steer"
                       disabled={!props.canSteer || delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Steer queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Steer queued message {position}", { position: delivery.position ?? "" })}
                       title={props.steerReason ?? undefined}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
@@ -254,14 +254,14 @@ export function QueuePanel(props: QueuePanelProps) {
                       }}
                     >
                       <SteerIcon />
-                      <span>{delivery.status === "starting" ? "Steering" : "Steer"}</span>
+                      <span>{delivery.status === "starting" ? t("Steering") : t("Steer")}</span>
                     </Button>
                     <Button
                       type="button"
                       class="agent-queue-icon-button agent-queue-delete"
                       disabled={delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Delete queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Delete queued message {position}", { position: delivery.position ?? "" })}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, "Delete message")}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, "Delete message")}
                       onPointerLeave={(event) => closeActionTooltip(event.currentTarget)}
@@ -281,7 +281,7 @@ export function QueuePanel(props: QueuePanelProps) {
                       class="agent-queue-icon-button agent-queue-edit"
                       disabled={delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Edit queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Edit queued message {position}", { position: delivery.position ?? "" })}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, "Edit message")}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, "Edit message")}
                       onPointerLeave={(event) => closeActionTooltip(event.currentTarget)}

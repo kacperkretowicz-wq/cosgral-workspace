@@ -2518,13 +2518,13 @@ export function Conversation(props: ConversationProps) {
                   <div class="media-caption">
                     <span>{preview().attachment.name}</span>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "open")}>
-                      Open
+                      {t("Open")}
                     </Button>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "download")}>
-                      Download
+                      {t("Download")}
                     </Button>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "reveal")}>
-                      Show in Finder
+                      {navigator.userAgent.includes("Windows") ? t("Show in Explorer") : t("Show in Finder")}
                     </Button>
                   </div>
                 </Dialog.Content>

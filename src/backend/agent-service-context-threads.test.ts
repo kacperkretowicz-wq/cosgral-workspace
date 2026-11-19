@@ -114,7 +114,9 @@ describe.sequential("the context of a conversation, per thread", {
 
   it("compacts a thread that is not on screen when it is idle, and says so for that thread only", async () => {
     const { service: s, cli, events } = await fixture();
-    cli.usage.set("cli-thread-1", 95_000);
+    // Below the automatic threshold (90 %): at 95 % the program compacted A by itself right after the turn, and
+    // whether that ran before or after the request below decided between one and two compactions (a flaky test).
+    cli.usage.set("cli-thread-1", 85_000);
     await s.sendMessage({ botId: "chief", text: "Big work in A" });
     await waitFor(() => completed(events) === 1);
     const a = (await s.listThreads("chief")).activeThreadId ?? "";
@@ -128,7 +130,7 @@ describe.sequential("the context of a conversation, per thread", {
     expect(s.contextState("chief", a)).toMatchObject({
       compacting: false,
       stale: true,
-      lastCompactedFromTokens: 95_000,
+      lastCompactedFromTokens: 85_000,
     });
     expect(s.contextState("chief", b)).toMatchObject({ compactions: 0, compacting: false });
     // The conversation on screen (B) was not touched by it.

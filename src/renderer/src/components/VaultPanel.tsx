@@ -148,20 +148,20 @@ export function VaultForm(props: {
         </NativeSelect>
       </label>
       <label>
-        Label
+        {t("Label")}
         <Input unstyled value={label()} onInput={(e) => setLabel(e.currentTarget.value)} />
       </label>
       <Show when={kind() === "login"}>
         <label>
-          Site URL
+          {t("Site URL")}
           <Input unstyled value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
         </label>
         <label>
-          Username
+          {t("Username")}
           <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
         </label>
         <label>
-          Password
+          {t("Password")}
           <Input
             unstyled
             aria-label={t("Password")}
@@ -172,7 +172,7 @@ export function VaultForm(props: {
           />
         </label>
         <label>
-          Two-step key
+          {t("Two-step key")}
           <Input
             unstyled
             type="password"
@@ -184,11 +184,11 @@ export function VaultForm(props: {
       </Show>
       <Show when={kind() === "card"}>
         <label>
-          Cardholder
+          {t("Cardholder")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
-          Card number
+          {t("Card number")}
           <Input
             unstyled
             type="password"
@@ -198,15 +198,15 @@ export function VaultForm(props: {
           />
         </label>
         <label>
-          Expiry month
+          {t("Expiry month")}
           <Input unstyled type="number" value={month()} onInput={(e) => setMonth(e.currentTarget.value)} />
         </label>
         <label>
-          Expiry year
+          {t("Expiry year")}
           <Input unstyled type="number" value={year()} onInput={(e) => setYear(e.currentTarget.value)} />
         </label>
         <label>
-          Security code
+          {t("Security code")}
           <Input
             unstyled
             type="password"
@@ -218,19 +218,19 @@ export function VaultForm(props: {
       </Show>
       <Show when={kind() === "contact"}>
         <label>
-          Name
+          {t("Name")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
-          Email
+          {t("Email")}
           <Input unstyled value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
         </label>
         <label>
-          Phone
+          {t("Phone")}
           <Input unstyled value={phone()} onInput={(e) => setPhone(e.currentTarget.value)} />
         </label>
         <label>
-          Address
+          {t("Address")}
           <Textarea unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
         </label>
       </Show>
@@ -241,12 +241,12 @@ export function VaultForm(props: {
         </label>
         <Show when={kind() === "totp"}>
           <label>
-            Account
+            {t("Account")}
             <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
           </label>
         </Show>
         <label>
-          Secret
+          {t("Secret")}
           <Input
             unstyled
             type="password"
@@ -257,7 +257,7 @@ export function VaultForm(props: {
         </label>
       </Show>
       <Show when={props.initial}>
-        <small>Leave secret fields empty to keep their existing values.</small>
+        <small>{t("Leave secret fields empty to keep their existing values.")}</small>
         <Show when={kind() === "contact" || kind() === "totp"}>
           <p>
             Existing contact fields or account cannot be read back. Enter all values to retain them; blank values
@@ -323,9 +323,9 @@ export function VaultPanel() {
         {(s) => (
           <p>
             {s().encryptionAvailable
-              ? "System encryption available"
-              : "System encryption unavailable — saving is disabled"}{" "}
-            · {s().items} items
+              ? t("System encryption available")
+              : t("System encryption unavailable — saving is disabled")}{" "}
+            · {t("{count} items", { count: s().items })}
           </p>
         )}
       </Show>
