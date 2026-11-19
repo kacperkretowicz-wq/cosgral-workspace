@@ -38,6 +38,13 @@
     kont i limitów, załączniki, komunikaty głosu, Sejf, Zdalny pulpit. Zostały drobne z wiersza „pozostałe” tabeli 6.1.
 11. **Biome:** stare ostrzeżenie w `cosgral.css` usunięte, `bun run lint` bez ostrzeżeń.
 
+12. **Azure Glass (styl z inspiracji właściciela, 19.11 wieczór):** nowa paleta (granatowa czerń, Dark Azure,
+    elektryczny błękit, chłodna czerwień), szkło podświetlone od dołu, przejścia kolorów, ziarno, świecące pigułki,
+    mocniejsze stworki. Tokeny w `cosgral-tokens.css` i `styles.css`, reguły w `styles/azure-glass.css`, opis w
+    dzienniku `PROMPT-UI-JAKOSC.md` (wiersz 19.11 (6)). Storybook 370/370 (axe), testy renderera 1119/1119.
+    **Do obejrzenia na Windows:** testy wizualne zmienią się na każdym ekranie (inna paleta) — wzorce aktualizować
+    dopiero po obejrzeniu różnic.
+
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 
 ---

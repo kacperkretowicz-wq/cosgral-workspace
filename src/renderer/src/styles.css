@@ -17,27 +17,48 @@
 @import "./styles/shell.css";
 @import "./styles/work-page.css";
 @import "./styles/channel-view.css";
+@import "./styles/azure-glass.css";
 @import "./styles/theme-light.css";
 
 :root {
   color-scheme: dark;
   /* Grok Bot-inspired neutral system. Keep UI colors here, not in components. */
   --openbot-contrast-white: #fff;
+  /* Azure Glass: gradients, glass, glows and grain (cosgral-tokens.css). */
+  --openbot-gradient-brand: var(--cosgral-gradient-brand);
+  --openbot-gradient-electric: var(--cosgral-gradient-electric);
+  --openbot-gradient-red: var(--cosgral-gradient-red);
+  --openbot-glass: var(--cosgral-glass);
+  --openbot-glass-edge: var(--cosgral-glass-edge);
+  --openbot-glass-glow: var(--cosgral-glass-glow);
+  --openbot-glass-glow-red: var(--cosgral-glass-glow-red);
+  --openbot-glow-accent: var(--cosgral-glow-accent);
+  --openbot-glow-red: var(--cosgral-glow-red);
+  --openbot-gradient-green: var(--cosgral-gradient-green);
+  --openbot-glass-glow-green: var(--cosgral-glass-glow-green);
+  --openbot-glow-green: var(--cosgral-glow-green);
+  --openbot-ambient: var(--cosgral-ambient);
+  --openbot-grain: var(--cosgral-grain);
+  --openbot-grain-opacity: var(--cosgral-grain-opacity);
+  --openbot-azure: var(--cosgral-azure-600);
+  --openbot-azure-light: var(--cosgral-azure-300);
+  --openbot-electric: var(--cosgral-electric-500);
+  --openbot-red-neon: var(--cosgral-red-neon);
   --openbot-bg-remote-canvas: #17171b;
   --openbot-bg-canvas: var(--cosgral-bg-canvas);
   /* Below the canvas: editor wells such as the workflow canvas (the window frame shade). */
   --openbot-bg-inset: var(--cosgral-bg-frame);
   --openbot-bg-sidebar: var(--cosgral-bg-sidebar);
   --openbot-bg-surface: var(--cosgral-bg-surface);
-  --openbot-bg-surface-clear: rgba(33, 33, 33, 0);
+  --openbot-bg-surface-clear: rgba(17, 22, 30, 0);
   --openbot-bg-surface-raised: var(--cosgral-bg-raised);
   --openbot-bg-control: var(--cosgral-bg-control);
   --openbot-bg-control-hover: var(--cosgral-bg-control-hover);
   --openbot-bg-control-active: var(--cosgral-bg-control-active);
-  --openbot-bg-switch: #5f5f5f;
-  --openbot-bg-overlay: rgba(26, 26, 26, 0.94);
-  --openbot-command-overlay: rgba(13, 13, 13, 0.72);
-  --openbot-bg-glass: rgba(33, 33, 33, 0.8);
+  --openbot-bg-switch: #34404e;
+  --openbot-bg-overlay: rgba(10, 13, 18, 0.9);
+  --openbot-command-overlay: rgba(2, 5, 9, 0.66);
+  --openbot-bg-glass: rgba(17, 22, 30, 0.72);
   --openbot-bg-host-canvas: #14161b;
   --openbot-bg-host-header: #15171c;
   --openbot-bg-host-inset: #101216;
@@ -95,9 +116,9 @@
   --openbot-file-pink-soft: rgba(217, 138, 201, 0.14);
   --openbot-file-purple: var(--openbot-accent-text);
   --openbot-file-purple-soft: rgba(105, 96, 241, 0.14);
-  --openbot-data-table-header-bg: #242424;
-  --openbot-data-table-body-bg: #1a1a1a;
-  --openbot-data-table-border: #303030;
+  --openbot-data-table-header-bg: #151b24;
+  --openbot-data-table-body-bg: #0f141b;
+  --openbot-data-table-border: #222c3a;
   --openbot-data-table-header-text: #a1a1a1;
   --openbot-data-table-text: #f5f5f5;
   --openbot-data-table-outer-border: rgba(255, 255, 255, 0);

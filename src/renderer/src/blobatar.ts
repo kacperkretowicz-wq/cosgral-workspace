@@ -98,14 +98,14 @@ export const AVATAR_HUE_OPTIONS: ReadonlyArray<{
 export function avatarHueSwatch(hue: BotAvatarHue): string {
   const swatch = palette(hue, true, 0.49).head;
   if (!swatch) throw new Error(`Blobatar did not return a head color for hue ${hue}.`);
-  return swatch;
+  return vividHex(swatch);
 }
 
 export function avatarHeadColor(seed: string, hue: BotAvatarHue | null): string {
   const reader = traits(seed);
   const head = palette(hue ?? reader.num("hue", 0, 360), true, reader("tone")).head;
   if (!head) throw new Error(`Blobatar did not return a head color for seed ${seed}.`);
-  return head;
+  return vividHex(head);
 }
 
 export function avatarCandidateSeeds(botId: string, currentSeed: string, batch: number): string[] {
@@ -163,7 +163,8 @@ export function buildAnimatedAvatarSvg(
   const eyeElements = Array.from(eyesGroup.children);
   if (eyeElements.length !== resolvedLayout.eyes.length) return svgMarkup;
 
-  const headColor = bodyGroup.getAttribute("fill") ?? "#000000";
+  // Stronger colour than Blobatar's own (owner, 19.11: "mocniejsze kolory stworków, jak w OpenBocie").
+  const headColor = vividHex(bodyGroup.getAttribute("fill") ?? "#000000");
   const eyeColor = eyesGroup.getAttribute("fill") ?? "#ffffff";
   const shadeId = avatarShadeId(seed, hue);
   const shade = addBodyShading(document, bodyGroup, headColor, shadeId, resolvedLayout.body);
@@ -350,9 +351,9 @@ function addBodyShading(
   const defs = element("defs", {});
   const bodyGradient = element("radialGradient", { id: `${id}-body`, cx: 0.36, cy: 0.28, r: 0.86 });
   bodyGradient.append(
-    element("stop", { offset: 0, "stop-color": mixHex(head, "#ffffff", 0.3) }),
-    element("stop", { offset: 0.56, "stop-color": head }),
-    element("stop", { offset: 1, "stop-color": mixHex(head, "#000000", 0.3) }),
+    element("stop", { offset: 0, "stop-color": mixHex(head, "#ffffff", 0.38) }),
+    element("stop", { offset: 0.5, "stop-color": head }),
+    element("stop", { offset: 1, "stop-color": mixHex(head, "#000000", 0.42) }),
   );
   const shineGradient = element("radialGradient", { id: `${id}-shine` });
   shineGradient.append(
@@ -405,6 +406,49 @@ function catchlight(document: Document, eye: Ellipse): Element {
 }
 
 /** Mixes two `#rrggbb` colours; `amount` 0 keeps `from`, 1 gives `to`. Other formats are returned unchanged. */
+/**
+ * A more saturated version of a creature colour: saturation up, lightness kept in the band where a colour reads as
+ * "strong" on both themes. Colours that are not `#rrggbb` come back unchanged.
+ */
+export function vividHex(hex: string): string {
+  if (!/^#[0-9a-f]{6}$/iu.test(hex)) return hex;
+  const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
+  const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
+  const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const light = (max + min) / 2;
+  const delta = max - min;
+  if (delta < 0.04) return hex;
+  const saturation = delta / (1 - Math.abs(2 * light - 1));
+  let hue = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  hue = (hue * 60 + 360) % 360;
+  const s2 = Math.min(1, saturation * 1.3 + 0.12);
+  const l2 = Math.min(0.64, Math.max(0.5, light));
+  const chroma = (1 - Math.abs(2 * l2 - 1)) * s2;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l2 - chroma / 2;
+  const [r1, g1, b1] =
+    hue < 60
+      ? [chroma, x, 0]
+      : hue < 120
+        ? [x, chroma, 0]
+        : hue < 180
+          ? [0, chroma, x]
+          : hue < 240
+            ? [0, x, chroma]
+            : hue < 300
+              ? [x, 0, chroma]
+              : [chroma, 0, x];
+  return `#${[r1, g1, b1]
+    .map((channel) =>
+      Math.round((channel + m) * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
 function mixHex(from: string, to: string, amount: number): string {
   const parse = (hex: string) =>
     /^#[0-9a-f]{6}$/iu.test(hex) ? [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)) : null;

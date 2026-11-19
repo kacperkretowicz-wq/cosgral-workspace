@@ -6,36 +6,36 @@
  */
 :root {
   /* Surfaces: frame < canvas < surface < control < raised */
-  --cosgral-bg-frame: #0d0d0d;
-  --cosgral-bg-canvas: #1a1a1a;
-  --cosgral-bg-sidebar: #1a1a1a;
-  --cosgral-bg-surface: #212121;
-  --cosgral-bg-control: #242424;
-  --cosgral-bg-control-hover: #2a2a2a;
-  --cosgral-bg-control-active: #303030;
-  --cosgral-bg-raised: #2a2a2a;
-  --cosgral-hover: rgba(255, 255, 255, 0.06);
-  --cosgral-selected: rgba(255, 255, 255, 0.07);
+  --cosgral-bg-frame: #05070a;
+  --cosgral-bg-canvas: #0a0d12;
+  --cosgral-bg-sidebar: #0c1016;
+  --cosgral-bg-surface: #11161e;
+  --cosgral-bg-control: #151b24;
+  --cosgral-bg-control-hover: #1b2330;
+  --cosgral-bg-control-active: #222c3a;
+  --cosgral-bg-raised: #18202b;
+  --cosgral-hover: rgba(140, 185, 204, 0.07);
+  --cosgral-selected: rgba(140, 185, 204, 0.1);
 
   /* Text */
-  --cosgral-text-primary: #ffffff;
-  --cosgral-text-secondary: #dcdcdc;
-  --cosgral-text-muted: #a8a8a8;
-  --cosgral-text-dim: #6a6a6a;
-  --cosgral-text-placeholder: #7d7d7d;
+  --cosgral-text-primary: #f3f6fa;
+  --cosgral-text-secondary: #d2dae3;
+  --cosgral-text-muted: #9ba8b6;
+  --cosgral-text-dim: #6b7886;
+  --cosgral-text-placeholder: #7d8a98;
 
   /* Lines */
-  --cosgral-border: rgba(255, 255, 255, 0.043);
-  --cosgral-border-strong: rgba(255, 255, 255, 0.11);
+  --cosgral-border: rgba(140, 185, 204, 0.08);
+  --cosgral-border-strong: rgba(140, 185, 204, 0.17);
 
   /* Accent and status */
-  --cosgral-accent: #007cf7;
-  --cosgral-accent-hover: #1f8fff;
-  --cosgral-accent-text: #42a0ff;
-  --cosgral-accent-soft: rgba(0, 124, 247, 0.16);
-  --cosgral-accent-strong: rgba(0, 124, 247, 0.34);
-  --cosgral-danger: #fd2f3b;
-  --cosgral-danger-text: #ff777f; /* error text on the dark reds: 4.56:1 on the lightest (#4b3230) */
+  --cosgral-accent: #1a5cf0;
+  --cosgral-accent-hover: #2f6ff5;
+  --cosgral-accent-text: #7ab6ff;
+  --cosgral-accent-soft: rgba(26, 92, 240, 0.18);
+  --cosgral-accent-strong: rgba(55, 129, 252, 0.42);
+  --cosgral-danger: #e01543;
+  --cosgral-danger-text: #ff6f88; /* cool red text: 5.3:1 on the lightest dark control */
   --cosgral-warning: #ff9412;
   --cosgral-success: #31cf76;
 
@@ -68,14 +68,49 @@
     0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.45);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 32px rgba(0, 0, 0, 0.48);
   --cosgral-shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --cosgral-focus-ring: 0 0 0 2px rgba(0, 124, 247, 0.4);
+  --cosgral-focus-ring: 0 0 0 2px rgba(55, 129, 252, 0.55);
+  /*
+   * Azure Glass (19.11, owner's references): deep blue-black, Dark Azure ramp, electric blue, a cool red, glass
+   * surfaces lit from below and a film grain. Gradients and glows are tokens like colours.
+   */
+  --cosgral-azure-950: #02121b;
+  --cosgral-azure-800: #004a6b;
+  --cosgral-azure-600: #00638e;
+  --cosgral-azure-300: #8cb9cc;
+  --cosgral-azure-100: #bfd8e3;
+  --cosgral-electric-900: #03195b;
+  --cosgral-electric-700: #0b2cb1;
+  --cosgral-electric-500: #1951fc;
+  --cosgral-electric-400: #3781fc;
+  --cosgral-electric-100: #cbe9fd;
+  --cosgral-red-neon: #ff2d55;
+  --cosgral-red-deep: #8a0b2a;
+  --cosgral-gradient-brand: linear-gradient(120deg, #000000 0%, #004a6b 40%, #00638e 66%, #8cb9cc 100%);
+  --cosgral-gradient-electric: linear-gradient(180deg, #1951fc 0%, #0b2cb1 100%);
+  --cosgral-gradient-red: linear-gradient(180deg, #e01543 0%, #a50d33 100%);
+  --cosgral-glass: linear-gradient(180deg, rgba(191, 216, 227, 0.055) 0%, rgba(191, 216, 227, 0.015) 100%);
+  --cosgral-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(140, 185, 204, 0.09);
+  --cosgral-glass-glow: radial-gradient(120% 70% at 50% 120%, rgba(55, 129, 252, 0.34), rgba(55, 129, 252, 0) 62%);
+  --cosgral-glass-glow-red: radial-gradient(120% 70% at 50% 120%, rgba(255, 45, 85, 0.32), rgba(255, 45, 85, 0) 62%);
+  --cosgral-glow-accent: 0 0 0 1px rgba(55, 129, 252, 0.45), 0 6px 24px -6px rgba(25, 81, 252, 0.7);
+  --cosgral-glow-red: 0 0 0 1px rgba(255, 45, 85, 0.45), 0 6px 24px -6px rgba(255, 45, 85, 0.6);
+  --cosgral-gradient-green: linear-gradient(180deg, #13a85a 0%, #0a6b3a 100%);
+  --cosgral-glass-glow-green: radial-gradient(
+    120% 70% at 50% 120%,
+    rgba(49, 207, 118, 0.22),
+    rgba(49, 207, 118, 0) 62%
+  );
+  --cosgral-glow-green: 0 0 0 1px rgba(49, 207, 118, 0.4), 0 6px 24px -6px rgba(49, 207, 118, 0.5);
+  --cosgral-ambient:
+    radial-gradient(70% 55% at 0% 0%, rgba(0, 99, 142, 0.28), rgba(0, 99, 142, 0) 70%),
+    radial-gradient(55% 45% at 100% 0%, rgba(25, 81, 252, 0.12), rgba(25, 81, 252, 0) 70%);
+  --cosgral-grain-opacity: 0.09;
+  --cosgral-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 :root[data-theme="light"],
 [data-story-theme="light"] {
   --cosgral-bg-frame: #e6e6ea;
-  --cosgral-bg-canvas: #f6f6f8;
-  --cosgral-bg-sidebar: #ececf0;
   --cosgral-bg-surface: #ffffff;
   --cosgral-bg-control: #f1f1f5;
   --cosgral-bg-control-hover: #e4e4ea;
@@ -89,11 +124,27 @@
   --cosgral-text-dim: #595961;
   --cosgral-border: rgba(20, 20, 30, 0.1);
   --cosgral-border-strong: #73737d;
-  --cosgral-accent: #0069d9;
-  --cosgral-danger-text: #aa241d;
-  --cosgral-accent-hover: #0057b3;
-  --cosgral-accent-text: #0057b3;
-  --cosgral-accent-soft: rgba(0, 105, 217, 0.12);
+  --cosgral-accent: #00638e;
+  --cosgral-danger-text: #a80b2f;
+  --cosgral-accent-hover: #004a6b;
+  --cosgral-accent-text: #00587e;
+  --cosgral-accent-soft: rgba(0, 99, 142, 0.12);
+  --cosgral-bg-canvas: #f4f7fa;
+  --cosgral-bg-sidebar: #eaf0f4;
+  --cosgral-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.72) 100%);
+  --cosgral-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(0, 74, 107, 0.1);
+  --cosgral-glass-glow: radial-gradient(120% 70% at 50% 120%, rgba(0, 99, 142, 0.14), rgba(0, 99, 142, 0) 62%);
+  --cosgral-glass-glow-red: radial-gradient(120% 70% at 50% 120%, rgba(200, 16, 46, 0.12), rgba(200, 16, 46, 0) 62%);
+  --cosgral-glow-accent: 0 0 0 1px rgba(0, 99, 142, 0.35), 0 6px 18px -8px rgba(0, 74, 107, 0.45);
+  --cosgral-glow-red: 0 0 0 1px rgba(200, 16, 46, 0.35), 0 6px 18px -8px rgba(200, 16, 46, 0.4);
+  --cosgral-glass-glow-green: radial-gradient(120% 70% at 50% 120%, rgba(26, 110, 57, 0.12), rgba(26, 110, 57, 0) 62%);
+  --cosgral-glow-green: 0 0 0 1px rgba(26, 110, 57, 0.3), 0 6px 18px -8px rgba(26, 110, 57, 0.35);
+  --cosgral-gradient-electric: linear-gradient(180deg, #00638e 0%, #004a6b 100%);
+  --cosgral-gradient-red: linear-gradient(180deg, #c8102e 0%, #a50d33 100%);
+  --cosgral-ambient:
+    radial-gradient(70% 55% at 0% 0%, rgba(0, 99, 142, 0.1), rgba(0, 99, 142, 0) 70%),
+    radial-gradient(55% 45% at 100% 0%, rgba(140, 185, 204, 0.18), rgba(140, 185, 204, 0) 70%);
+  --cosgral-grain-opacity: 0.035;
   --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);
 }

@@ -2,8 +2,8 @@
 :root[data-theme="light"],
 [data-story-theme="light"] {
   color-scheme: light;
-  --openbot-bg-canvas: #f6f6f8;
-  --openbot-bg-sidebar: #ececf0;
+  --openbot-bg-canvas: #f4f7fa;
+  --openbot-bg-sidebar: #eaf0f4;
   --openbot-bg-surface: #ffffff;
   --openbot-bg-surface-raised: #ffffff;
   --openbot-bg-control: #f1f1f5;
@@ -17,15 +17,15 @@
   --openbot-text-muted: rgba(20, 20, 28, 0.66);
   --openbot-text-readable: rgba(20, 20, 28, 0.66);
   --openbot-text-dim: #595961;
-  --openbot-accent: #0069d9;
-  --openbot-accent-text: #0057b3;
-  --openbot-accent-soft: rgba(0, 105, 217, 0.12);
+  --openbot-accent: #00638e;
+  --openbot-accent-text: #00587e;
+  --openbot-accent-soft: rgba(0, 99, 142, 0.12);
   --openbot-warning: #6e4a0d;
   --openbot-warning-soft: rgba(154, 107, 18, 0.14);
   --openbot-text-on-danger: var(--openbot-contrast-white);
-  --openbot-danger: #aa241d;
-  --openbot-danger-soft: rgba(179, 38, 30, 0.1);
-  --openbot-danger-strong: #8f1c16;
+  --openbot-danger: #a80b2f;
+  --openbot-danger-soft: rgba(200, 16, 46, 0.1);
+  --openbot-danger-strong: #8a0b2a;
   /* #1a6e39 had 4.34:1 on the hover/focus row (#d0d8d8); this keeps 4.5:1 there and 7:1 on white. */
   --openbot-success: #17663a;
   --openbot-unread-surface: #1f5fbf;
@@ -39,7 +39,7 @@
   --openbot-data-table-text: #14141c;
   --openbot-shadow-popover-ambient: rgba(20, 20, 30, 0.12);
   --openbot-text-placeholder: #595961;
-  --openbot-border-focus: #0069d9;
+  --openbot-border-focus: #00638e;
   --openbot-focus-ring: 0 0 0 3px var(--openbot-border-focus);
   --openbot-text-on-success: #ffffff;
   --openbot-bg-host-canvas: #f6f6f8;
@@ -47,8 +47,8 @@
   --openbot-bg-host-inset: #ffffff;
   --openbot-bg-remote-canvas: #ececf0;
   --openbot-bg-surface-clear: rgba(255, 255, 255, 0);
-  --openbot-accent-hover: #0057b3;
-  --openbot-accent-strong: rgba(0, 105, 217, 0.25);
+  --openbot-accent-hover: #004a6b;
+  --openbot-accent-strong: rgba(0, 99, 142, 0.28);
   --openbot-success-soft: rgba(26, 110, 57, 0.1);
   --openbot-success-wash: rgba(26, 110, 57, 0.04);
   --openbot-unread-text: #ffffff;

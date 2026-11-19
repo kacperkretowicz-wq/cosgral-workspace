@@ -1,0 +1,299 @@
+/*
+ * Azure Glass (19.11, from the owner's references): deep blue-black, Dark Azure fades, electric blue, a cool red,
+ * glass surfaces lit from below, glowing status pills and a film grain over the whole window.
+ * One layer over the existing screens; colours, gradients and glows come from the palette tokens only.
+ * Nothing here waits for an animation: every rule is a still look, so it holds with reduced motion.
+ */
+
+/* Grain: one still texture over the window; it never takes a click. ------------------------------------------- */
+
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background-image: var(--openbot-grain);
+  background-size: 160px 160px;
+  content: "";
+  mix-blend-mode: overlay;
+  opacity: var(--openbot-grain-opacity);
+  pointer-events: none;
+}
+
+/* Ambient light: the canvas fades from Dark Azure in the top corner, like the references' backgrounds. -------- */
+
+.app-frame-with-page-rail .work-page,
+.new-agent-page {
+  background: var(--openbot-ambient), var(--openbot-bg-canvas);
+}
+
+.sidebar {
+  background:
+    radial-gradient(120% 40% at 0% 0%, var(--openbot-accent-soft), transparent 70%), var(--openbot-bg-sidebar);
+}
+
+/* Page header: the page icon sits in a brand-gradient glass tile, a fading azure line under the header. -------- */
+
+.work-page-header {
+  position: relative;
+  border-bottom-color: transparent;
+}
+
+.work-page-header::after {
+  position: absolute;
+  right: 40px;
+  bottom: 0;
+  left: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--openbot-azure), var(--openbot-accent-strong) 40%, transparent);
+  content: "";
+}
+
+.work-page-icon,
+.settings-dialog-icon {
+  background: var(--openbot-gradient-brand);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-accent);
+  color: var(--openbot-contrast-white);
+}
+
+/* Selection: a fade of the accent from the left edge instead of a flat grey block. ----------------------------- */
+
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]),
+.settings-dialog-nav-item[aria-current="true"] {
+  background: linear-gradient(90deg, var(--openbot-accent-soft), transparent 92%);
+  box-shadow: inset 2px 0 0 var(--openbot-accent);
+}
+
+.sidebar .bot-row-active {
+  background: linear-gradient(90deg, var(--openbot-accent-soft), transparent 85%), var(--openbot-active);
+  box-shadow: inset 0 0 0 1px var(--openbot-border);
+}
+
+.page-rail-button-active[data-variant],
+.page-rail-button-active[data-variant]:hover:not(:disabled) {
+  background: var(--openbot-accent-soft);
+  box-shadow: var(--openbot-glow-accent);
+  color: var(--openbot-accent-text);
+}
+
+.page-rail-button-active .page-rail-mark {
+  background: var(--openbot-accent);
+}
+
+/* Glass: cards, lists and windows are frosted, edged with light on top and lit from below. ----------------------- */
+
+.ui-card,
+.provider-account-list,
+.provider-account-settings,
+.settings-notification-table,
+.new-agent-studio,
+.channel-member-list,
+.w2-panel {
+  border-color: var(--openbot-border);
+  background: var(--openbot-glass-glow), var(--openbot-glass), var(--openbot-bg-surface);
+  box-shadow: var(--openbot-glass-edge);
+}
+
+.settings-modal,
+.remote-dialog {
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-glass-glow), var(--openbot-glass), var(--openbot-bg-glass);
+  box-shadow:
+    var(--openbot-glass-edge),
+    0 30px 90px var(--openbot-shadow-dialog);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.settings-modal-sidebar {
+  background: var(--openbot-ambient), var(--openbot-bg-sidebar);
+}
+
+.settings-modal-main {
+  background: transparent;
+}
+
+.remote-dialog-backdrop,
+.initial-setup-screen.settings-dialog-backdrop {
+  backdrop-filter: blur(6px);
+}
+
+/* Rows light up from below on hover, like the references' tiles. */
+.work-page .w2-item:hover,
+.provider-account-row:hover,
+.marketplace-shell .plugin-row:hover,
+.channel-member-row:hover:not([data-picked]) {
+  background: var(--openbot-glass-glow), var(--openbot-hover);
+}
+
+/* Buttons: the primary action is electric glass; destructive ones are the cool red. ----------------------------- */
+
+:where(.ui-button)[data-variant="primary"] {
+  border-color: transparent;
+  /* A solid colour under the gradient: contrast is measured against it (white text, 5.5:1 or more). */
+  background-color: var(--openbot-accent);
+  background-image: var(--openbot-gradient-electric);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-accent);
+  color: var(--openbot-contrast-white);
+}
+
+.ui-button[data-variant="danger-solid"] {
+  border-color: transparent;
+  background-color: var(--openbot-danger-strong);
+  background-image: var(--openbot-gradient-red);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-red);
+  color: var(--openbot-contrast-white);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(.ui-button)[data-variant="primary"]:hover:not(:disabled) {
+    background-color: var(--openbot-accent);
+    background-image: var(--openbot-gradient-electric);
+    color: var(--openbot-contrast-white);
+    filter: brightness(1.14);
+  }
+
+  :where(.ui-button)[data-variant="danger"]:hover:not(:disabled),
+  .ui-button[data-variant="danger-solid"]:hover:not(:disabled) {
+    background-color: var(--openbot-danger-strong);
+    background-image: var(--openbot-gradient-red);
+    box-shadow: var(--openbot-glow-red);
+    color: var(--openbot-contrast-white);
+  }
+}
+
+:where(.ui-button)[data-variant="primary"]:disabled {
+  box-shadow: none;
+  filter: saturate(0.4);
+}
+
+/* Status pills glow in their own colour (In progress, Done, Blocked...). ----------------------------------------- */
+
+:where(.ui-badge)[data-tone="accent"],
+:where(.ui-badge)[data-tone="success"],
+:where(.ui-badge)[data-tone="warning"],
+:where(.ui-badge)[data-tone="danger"] {
+  box-shadow:
+    inset 0 0 0 1px currentColor,
+    0 0 14px -5px currentColor;
+}
+
+:where(.ui-badge)[data-shape="pill"] {
+  padding-inline: var(--openbot-space-2);
+}
+
+/* Switches: electric glass when on. */
+.ui-switch[data-checked] .ui-switch-control {
+  border-color: transparent;
+  background-color: var(--openbot-accent);
+  background-image: var(--openbot-gradient-electric);
+  box-shadow: var(--openbot-glow-accent);
+}
+
+/* Unread count: the cool red, the one loud colour on the list. */
+.person-unread-badge {
+  background-color: var(--openbot-danger-strong);
+  background-image: var(--openbot-gradient-red);
+  box-shadow: var(--openbot-glow-red);
+  color: var(--openbot-contrast-white);
+}
+
+/* Creatures: their own colour glows under them where they are large. -------------------------------------------- */
+
+.new-agent-stage {
+  background: var(--openbot-glass-glow), var(--openbot-ambient), var(--openbot-bg-inset);
+  box-shadow: var(--openbot-glass-edge);
+}
+
+.new-agent-page .new-agent-preview .mo-root {
+  filter: drop-shadow(0 10px 22px var(--mo-head));
+}
+
+.new-agent-swatch.new-agent-choice-selected,
+.new-agent-face.new-agent-choice-selected {
+  box-shadow: var(--openbot-glow-accent);
+}
+
+/* Usage: the three numbers are glass tiles lit from below in three colours (blue, red, green), the bars fade from
+ * electric blue into the dark and today's bar glows. ------------------------------------------------------------ */
+
+.work-page .usage-totals > div {
+  border-color: var(--openbot-border);
+  background: var(--openbot-glass-glow), var(--openbot-glass), var(--openbot-bg-surface);
+  box-shadow: var(--openbot-glass-edge);
+}
+
+.work-page .usage-totals > div:nth-child(2) {
+  background: var(--openbot-glass-glow-red), var(--openbot-glass), var(--openbot-bg-surface);
+}
+
+.work-page .usage-totals > div:nth-child(3) {
+  background: var(--openbot-glass-glow-green), var(--openbot-glass), var(--openbot-bg-surface);
+}
+
+.usage-stat-icon {
+  background: var(--openbot-gradient-electric);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-accent);
+  color: var(--openbot-contrast-white);
+}
+
+.work-page .usage-totals > div:nth-child(2) .usage-stat-icon {
+  background: var(--openbot-gradient-red);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-red);
+}
+
+.work-page .usage-totals > div:nth-child(3) .usage-stat-icon {
+  background: var(--openbot-gradient-green);
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-green);
+}
+
+.work-page .usage-chart,
+.usage-machine,
+.work-page .usage-table,
+.work-page .usage-split {
+  background: var(--openbot-glass-glow), var(--openbot-glass), var(--openbot-bg-surface);
+  box-shadow: var(--openbot-glass-edge);
+}
+
+.usage-bar-stop-top {
+  stop-color: var(--openbot-electric);
+  stop-opacity: 0.85;
+}
+
+.usage-bar-stop-bottom {
+  stop-color: var(--openbot-electric);
+  stop-opacity: 0.12;
+}
+
+.usage-bar-stop-last-top {
+  stop-color: var(--openbot-azure-light);
+}
+
+.usage-bar-stop-last-bottom {
+  stop-color: var(--openbot-electric);
+}
+
+.work-page .usage-bar {
+  fill: url(#usage-bar-fill);
+}
+
+.work-page .usage-bar[data-last="true"],
+.work-page .usage-bar:hover {
+  fill: url(#usage-bar-fill-last);
+  filter: drop-shadow(0 0 6px var(--openbot-electric));
+}
+
+.work-page .usage-share-fill,
+.usage-ring-fill {
+  filter: drop-shadow(0 0 4px var(--openbot-electric));
+}
+
+/* Composer: a glass pill lit from below, the send button electric. ------------------------------------------------ */
+
+.composer {
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-glass-glow), var(--openbot-glass), var(--openbot-bg-surface);
+  box-shadow: var(--openbot-glass-edge);
+}
+
+.composer:focus-within {
+  box-shadow: var(--openbot-glass-edge), var(--openbot-glow-accent);
+}

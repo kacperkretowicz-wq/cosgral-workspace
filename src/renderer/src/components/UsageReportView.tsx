@@ -224,6 +224,17 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
                       role="img"
                       aria-label={t("Tokens per day, {from} to {to}", { from: current().from, to: current().to })}
                     >
+                      <defs>
+                        {/* Electric fade from the top of a bar into the dark (Azure Glass); colours from the palette. */}
+                        <linearGradient id="usage-bar-fill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" class="usage-bar-stop-top" />
+                          <stop offset="1" class="usage-bar-stop-bottom" />
+                        </linearGradient>
+                        <linearGradient id="usage-bar-fill-last" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" class="usage-bar-stop-last-top" />
+                          <stop offset="1" class="usage-bar-stop-last-bottom" />
+                        </linearGradient>
+                      </defs>
                       <For each={bars()}>
                         {(bar) => (
                           <rect
