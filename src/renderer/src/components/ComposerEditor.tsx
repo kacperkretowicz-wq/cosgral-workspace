@@ -493,10 +493,10 @@ export function ComposerEditor(props: ComposerEditorProps) {
               return (
                 <>
                   <Show when={option.type === "bot" && item.index === 0}>
-                    <div class="mention-picker-section">Agents</div>
+                    <div class="mention-picker-section">{t("Agents")}</div>
                   </Show>
                   <Show when={option.type === "attachment" && item.index === firstAttachmentIndex()}>
-                    <div class="mention-picker-section">Files</div>
+                    <div class="mention-picker-section">{t("Files")}</div>
                   </Show>
                   <Show when={option.type === "remote" && item.index === firstRemoteIndex()}>
                     <div class="mention-picker-section">{t("Channels and files")}</div>

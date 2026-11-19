@@ -1214,7 +1214,7 @@ export function Conversation(props: ConversationProps) {
         attachments: [...draft.attachments, ...accepted],
       },
     }));
-    if (selected.length > accepted.length) setComposerError("You can attach at most 10 files.");
+    if (selected.length > accepted.length) setComposerError(t("You can attach at most 10 files."));
     setShowAttachments(false);
   }
 
@@ -1276,7 +1276,7 @@ export function Conversation(props: ConversationProps) {
     if (!botId || !deliveryId || submitting()) return;
     const delivery = props.queue?.deliveries.find((item) => item.id === deliveryId);
     if (delivery?.status !== "queued") {
-      setComposerError("This queued message is no longer available.");
+      setComposerError(t("This queued message is no longer available."));
       cancelQueuedMessageEdit();
       return;
     }
@@ -1347,7 +1347,7 @@ export function Conversation(props: ConversationProps) {
     try {
       await props.onMarkRead();
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : "Could not mark messages as read.");
+      setComposerError(error instanceof Error ? error.message : t("Could not mark messages as read."));
     } finally {
       setMarkingRead(false);
     }
@@ -1420,7 +1420,7 @@ export function Conversation(props: ConversationProps) {
         if (copiedMessageId() === message.id) setCopiedMessageId(null);
       }, 1_400);
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : "Could not copy the message.");
+      setComposerError(error instanceof Error ? error.message : t("Could not copy the message."));
     }
   }
 
@@ -1459,7 +1459,7 @@ export function Conversation(props: ConversationProps) {
       }
       await window.openbot.openUrl(url);
     } catch {
-      setComposerError("Could not open the link.");
+      setComposerError(t("Could not open the link."));
     }
   }
 
@@ -1490,13 +1490,13 @@ export function Conversation(props: ConversationProps) {
 
   async function respondActionDraft(input: import("@openbot/contracts/ipc").RespondToDraftPreviewInput) {
     const respond = window.openbot.agent.respondToDraftPreview;
-    if (!respond) throw new Error("Draft actions are unavailable in this build.");
+    if (!respond) throw new Error(t("Draft actions are unavailable in this build."));
     await respond(input);
   }
 
   async function respondActionTakeover(input: import("@openbot/contracts/ipc").RespondToBrowserTakeoverInput) {
     const respond = window.openbot.agent.respondToBrowserTakeover;
-    if (!respond) throw new Error("Browser takeover is unavailable in this build.");
+    if (!respond) throw new Error(t("Browser takeover is unavailable in this build."));
     await respond(input);
     if (input.action === "take-over" && props.actionCard?.kind === "browser-takeover") {
       props.onActivateBrowserTab(props.actionCard.request.tabId);
@@ -1531,7 +1531,7 @@ export function Conversation(props: ConversationProps) {
     if (attachment.previewKind !== "text") return;
     try {
       const response = await fetch(attachment.previewUrl);
-      if (!response.ok) throw new Error("Preview is unavailable.");
+      if (!response.ok) throw new Error(t("Preview is unavailable."));
       const text = await response.text();
       setMediaPreview((current) =>
         current?.attachment.id === attachment.id

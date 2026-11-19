@@ -119,20 +119,20 @@ function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
       </Show>
       <Show when={props.state.kind === "limited"}>
         <svg viewBox="0 0 12 12">
-          <title>Limit</title>
+          <title>{t("Limit")}</title>
           <circle cx="6" cy="6" r="3.8" />
           <path d="M6 4.1V6l1.3.8" />
         </svg>
       </Show>
       <Show when={props.state.kind === "error"}>
         <svg viewBox="0 0 12 12">
-          <title>Error</title>
+          <title>{t("Error")}</title>
           <path d="M6 3.2v3.4M6 8.6v.2" />
         </svg>
       </Show>
       <Show when={props.state.kind === "responded"}>
         <svg viewBox="0 0 12 12">
-          <title>Responded</title>
+          <title>{t("Responded")}</title>
           <path d="m3 6.2 1.8 1.8L9 3.8" />
         </svg>
       </Show>
@@ -267,7 +267,9 @@ export function Sidebar(props: SidebarProps) {
     try {
       await change();
     } catch (error) {
-      setRowActionError(error instanceof Error ? error.message : "Nie udało się zmienić agenta. Ponów akcję z menu.");
+      setRowActionError(
+        error instanceof Error ? error.message : t("Could not change this agent. Try again from the menu."),
+      );
     } finally {
       setAgentActionBusy(false);
     }
@@ -282,14 +284,14 @@ export function Sidebar(props: SidebarProps) {
   const [rowActionError, setRowActionError] = createSignal("");
   async function markRead(botId: string) {
     if (readBusy() || !props.onMarkBotRead) return;
-    const name = props.bots.find((bot) => bot.id === botId)?.name ?? "this agent";
+    const name = props.bots.find((bot) => bot.id === botId)?.name ?? t("this agent");
     setReadBusy(true);
     setRowActionError("");
     try {
       await props.onMarkBotRead(botId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Try again.";
-      setRowActionError(`Could not mark ${name} as read. ${message}`);
+      const message = error instanceof Error ? error.message : t("Try again");
+      setRowActionError(t("Could not mark {name} as read. {message}", { name, message }));
     } finally {
       setReadBusy(false);
     }
@@ -548,7 +550,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onRefreshUsage();
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : "Usage is unavailable.");
+      setAccountError(error instanceof Error ? error.message : t("Usage is unavailable."));
     } finally {
       setUsageLoading(false);
     }
@@ -559,7 +561,7 @@ export function Sidebar(props: SidebarProps) {
     void props
       .onOpenExternal(destination)
       .then(() => setAccountMenuOpen(false))
-      .catch((error) => setAccountError(error instanceof Error ? error.message : "Could not open the link."));
+      .catch((error) => setAccountError(error instanceof Error ? error.message : t("Could not open the link.")));
   }
 
   function runUpdateAction() {
@@ -567,7 +569,7 @@ export function Sidebar(props: SidebarProps) {
     void props
       .onUpdateAction()
       .catch((error) =>
-        setAccountError(error instanceof Error ? error.message : "Could not update COSGRAL Workspace."),
+        setAccountError(error instanceof Error ? error.message : t("Could not update COSGRAL Workspace.")),
       );
   }
 
@@ -578,7 +580,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onLogout();
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : "Could not sign out.");
+      setAccountError(error instanceof Error ? error.message : t("Could not sign out."));
       setLoggingOut(false);
     }
   }
@@ -590,7 +592,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onUpdateAccountAvatar(image);
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : "Could not update your avatar.");
+      setAccountError(error instanceof Error ? error.message : t("Could not update your avatar."));
     } finally {
       setAvatarUploadBusy(false);
     }
@@ -603,7 +605,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onUpdateAccountAvatar(await normalizeAvatarFile(file));
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : "Could not update your avatar.");
+      setAccountError(error instanceof Error ? error.message : t("Could not update your avatar."));
     } finally {
       setAvatarUploadBusy(false);
       if (accountAvatarInput) accountAvatarInput.value = "";
@@ -935,8 +937,9 @@ export function Sidebar(props: SidebarProps) {
                           <Show when={props.activities?.[bot.id]?.workingThread}>
                             {(thread) => (
                               <span class="bot-row-preview">
-                                {thread().background ? "Working in background: " : "Working in: "}
-                                {thread().title}
+                                {thread().background
+                                  ? t("Working in background: {title}", { title: thread().title })
+                                  : t("Working in: {title}", { title: thread().title })}
                               </span>
                             )}
                           </Show>

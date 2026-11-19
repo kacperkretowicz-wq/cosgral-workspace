@@ -21,13 +21,13 @@ export function RoutineForm(props: {
   const [error, setError] = createSignal("");
   async function create() {
     setError("");
-    const t = trigger();
+    const kind = trigger();
     const schedule =
-      t === "interval"
+      kind === "interval"
         ? { type: "interval" as const, everyMinutes: Number(interval()) }
-        : t === "daily"
+        : kind === "daily"
           ? { type: "daily" as const, time: time() }
-          : t === "cron"
+          : kind === "cron"
             ? { type: "cron" as const, expression: cron() }
             : undefined;
     try {
@@ -35,14 +35,14 @@ export function RoutineForm(props: {
         botId: bot(),
         name: name().trim(),
         prompt: prompt().trim(),
-        trigger: t === "webhook" ? "webhook" : "schedule",
+        trigger: kind === "webhook" ? "webhook" : "schedule",
         ...(schedule ? { schedule } : {}),
         timezone: timezone(),
       });
       setName("");
       setPrompt("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create routine.");
+      setError(e instanceof Error ? e.message : t("Could not create routine."));
     }
   }
   return (
@@ -143,7 +143,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
   async function refresh() {
     const api = window.openbot.routines;
     if (!api) {
-      setError("Routines are unavailable in this build.");
+      setError(t("Routines are unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -151,7 +151,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       const list = await api.list(props.botId);
       if (n === serial) setRoutines(list);
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : "Could not load routines.");
+      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load routines."));
     }
   }
   async function run(fn: () => Promise<unknown>) {
@@ -160,7 +160,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Routine action failed.");
+      setError(e instanceof Error ? e.message : t("Routine action failed."));
     }
   }
   async function loadHistory(routineId: string) {
@@ -170,7 +170,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       setRuns(await api.listRuns({ routineId }));
       setHistory(routineId);
     } catch {
-      setError("Could not load history.");
+      setError(t("Could not load history."));
     }
   }
   onSettled(() => {
@@ -199,27 +199,36 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
             <strong>{routine.name}</strong>
             <p>
               {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} ·{" "}
-              {routine.paused ? "Paused" : "Active"} · {routine.timezone}
+              {routine.paused ? t("Paused") : t("Active")} · {routine.timezone}
             </p>
             <p>
               {routine.nextRunAt
-                ? `Next: ${new Date(routine.nextRunAt).toLocaleString(undefined, { timeZone: routine.timezone })} (${routine.timezone})`
-                : "No scheduled run"}
+                ? t("Next: {when} ({timezone})", {
+                    when: new Date(routine.nextRunAt).toLocaleString(undefined, {
+                      timeZone: routine.timezone,
+                    }),
+                    timezone: routine.timezone,
+                  })
+                : t("No scheduled run")}
             </p>
             <Show when={routine.webhook}>
-              <p>Webhook: {routine.webhook?.url}</p>
+              <p>
+                {t("Webhook")}: {routine.webhook?.url}
+              </p>
               <Button
                 unstyled
                 type="button"
                 onClick={() => {
-                  if (window.confirm("Replace the webhook secret? Existing senders must be updated."))
+                  if (window.confirm(t("Replace the webhook secret? Existing senders must be updated.")))
                     void run(async () => {
-                      const result = await window.openbot.routines?.regenerateSecret({ routineId: routine.id });
+                      const result = await window.openbot.routines?.regenerateSecret({
+                        routineId: routine.id,
+                      });
                       if (result?.secret) setSecret(result.secret);
                     });
                 }}
               >
-                Generate new secret
+                {t("Generate new secret")}
               </Button>
             </Show>
             <div>
@@ -266,19 +275,19 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       <Show when={secret()}>
         {(value) => (
           <div role="alert">
-            <strong>Copy this secret now. It will not be shown again.</strong>
+            <strong>{t("Copy this secret now. It will not be shown again.")}</strong>
             <code>{value()}</code>
             <Button
               unstyled
               type="button"
               onClick={() =>
-                void navigator.clipboard.writeText(value()).catch(() => setError("Could not copy secret."))
+                void navigator.clipboard.writeText(value()).catch(() => setError(t("Could not copy secret.")))
               }
             >
-              Copy secret
+              {t("Copy secret")}
             </Button>
             <Button unstyled type="button" onClick={() => setSecret("")}>
-              Done
+              {t("Done")}
             </Button>
           </div>
         )}
@@ -288,7 +297,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
         botId={props.botId}
         onCreate={async (input) => {
           const api = window.openbot.routines;
-          if (!api) throw new Error("Routines unavailable");
+          if (!api) throw new Error(t("Routines are unavailable in this build."));
           const result = await api.create(input);
           if (result.secret) setSecret(result.secret);
           await refresh();

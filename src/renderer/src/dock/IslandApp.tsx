@@ -4,15 +4,24 @@ import { Button } from "../components/ui";
 
 import { emptyIslandState, type IslandState, type IslandStatusKind } from "@openbot/contracts/ipc";
 import { createSignal, flush, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 
-const LABELS: Record<IslandStatusKind, string> = {
-  takeover: "Take over",
-  approval: "Approval",
-  question: "Question",
-  error: "Error",
-  message: "Message",
-  working: "Working",
-};
+function islandLabel(kind: IslandStatusKind): string {
+  switch (kind) {
+    case "takeover":
+      return t("Take over");
+    case "approval":
+      return t("Approval");
+    case "question":
+      return t("Question");
+    case "error":
+      return t("Error");
+    case "message":
+      return t("Message");
+    case "working":
+      return t("Working");
+  }
+}
 
 export function IslandApp() {
   const [state, setState] = createSignal<IslandState>(emptyIslandState());
@@ -31,7 +40,7 @@ export function IslandApp() {
       {(status) => (
         <div class={`island is-${status().kind}`} data-testid="island">
           <Button unstyled type="button" class="island-main" onClick={() => void window.openbot.island?.activate()}>
-            <span class="island-kind">{LABELS[status().kind]}</span>
+            <span class="island-kind">{islandLabel(status().kind)}</span>
             <span class="island-text">
               <strong>{status().botName}</strong> {status().summary}
             </span>
@@ -44,7 +53,7 @@ export function IslandApp() {
               unstyled
               type="button"
               class="island-dismiss"
-              title="Dismiss"
+              title={t("Dismiss")}
               onClick={() => void window.openbot.island?.dismiss().then(setState)}
             >
               ×

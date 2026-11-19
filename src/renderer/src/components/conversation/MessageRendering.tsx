@@ -49,7 +49,7 @@ export function ExchangeSystemRow(props: {
     const recipientId = recipients()[0];
     return recipientId ? props.bots.find((bot) => bot.id === recipientId) : undefined;
   };
-  const agentCountLabel = () => `${recipients().length} agents`;
+  const agentCountLabel = () => t("{count} agents", { count: recipients().length });
 
   return (
     <div class="exchange-system-row">
@@ -57,24 +57,26 @@ export function ExchangeSystemRow(props: {
         when={exchange()?.direction === "outgoing"}
         fallback={
           <>
-            <span class="exchange-system-label">Message from</span>
+            <span class="exchange-system-label">{t("Message from")}</span>
             <Button
               type="button"
               class="exchange-agent-trigger exchange-agent-trigger-incoming"
               style={exchangeAgentStyle(sender())}
-              aria-label={`Open exchange with ${sender()?.name ?? exchange()?.senderBotId ?? "agent"}`}
+              aria-label={t("Open exchange with {name}", {
+                name: sender()?.name ?? exchange()?.senderBotId ?? t("Agent"),
+              })}
               onClick={() => {
                 const senderId = exchange()?.senderBotId;
                 if (senderId) props.onSelectAgent(senderId);
               }}
             >
               <ExchangeAgentAvatar bot={sender()} />
-              <span>{sender()?.name ?? exchange()?.senderBotId ?? "Agent"}</span>
+              <span>{sender()?.name ?? exchange()?.senderBotId ?? t("Agent")}</span>
             </Button>
           </>
         }
       >
-        <span class="exchange-system-label">Messaged</span>
+        <span class="exchange-system-label">{t("Messaged")}</span>
         <Show
           when={recipients().length === 1}
           fallback={
@@ -85,7 +87,7 @@ export function ExchangeSystemRow(props: {
                   style={exchangeAgentsStyle(
                     recipients().map((recipientId) => props.bots.find((bot) => bot.id === recipientId)),
                   )}
-                  aria-label={`${agentCountLabel()}, show list`}
+                  aria-label={t("{count} agents, show list", { count: recipients().length })}
                 >
                   <span class="exchange-avatar-stack" aria-hidden="true">
                     <For each={recipients().slice(0, 3)}>
@@ -118,15 +120,17 @@ export function ExchangeSystemRow(props: {
             type="button"
             class="exchange-agent-trigger exchange-agent-trigger-single"
             style={exchangeAgentStyle(singleRecipient())}
-            aria-label={`Open exchange with ${singleRecipient()?.name ?? recipients()[0] ?? "agent"}`}
-            title={singleRecipient()?.name ?? recipients()[0] ?? "Agent"}
+            aria-label={t("Open exchange with {name}", {
+              name: singleRecipient()?.name ?? recipients()[0] ?? t("Agent"),
+            })}
+            title={singleRecipient()?.name ?? recipients()[0] ?? t("Agent")}
             onClick={() => {
               const recipientId = recipients()[0];
               if (recipientId) props.onSelectAgent(recipientId);
             }}
           >
             <ExchangeAgentAvatar bot={singleRecipient()} />
-            <span>{singleRecipient()?.name ?? recipients()[0] ?? "Agent"}</span>
+            <span>{singleRecipient()?.name ?? recipients()[0] ?? t("Agent")}</span>
           </Button>
         </Show>
       </Show>

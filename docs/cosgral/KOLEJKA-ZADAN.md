@@ -78,7 +78,16 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
 25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
 26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
-27. [w toku: KAPI, 05:50] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
+27. [zrobione: 79a742675] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
+28. [zrobione: 91e02bee2] Aria/i18n: `App.tsx` Library / Schedule / Loading + `HostPanel` / resztki aria.
+29. [zrobione: 5cb0d5c46] Aria/i18n: `AccountLogin` placeholder + skan pozostałych TSX poza Remote/Mobile.
+30. [zrobione: 316fe2e1d] Aria/i18n: Sidebar SVG titles Limit/Error/Responded + drobne resztki poza Remote/Mobile.
+31. [zrobione: bccd741a4] Aria/i18n: TasksViewScreen status labels (Done/Failed/…) + resztki statusów w App.tsx.
+32. [zrobione: 06268e5f4] Aria/i18n: AppSettingsW3 powiadomienia + AgentCard* Working folder + fallbacki ApprovalRules/Memory.
+33. [zrobione: bf525199f] Aria/i18n: RoutinePanel create/load fallbacki + skan pozostałych setError EN.
+34. [zrobione: 8ddab6ca4] Aria/i18n: VaultPanel confirm Delete + skan window.confirm / resztki EN.
+35. [zrobione: e160e1366] Aria/i18n: App.tsx publish fallback + skan throw/Error EN w UI (poza Remote).
+36. [zrobione: 0c9d7f356] Lekkie: odśwież `i18n-inwentarz.md` + sprawdzenie równości kluczy PL/EN (`i18n.test`).
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.

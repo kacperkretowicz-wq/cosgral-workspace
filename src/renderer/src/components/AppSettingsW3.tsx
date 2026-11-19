@@ -31,7 +31,7 @@ export function AppSettingsW3() {
       document.documentElement.lang = value.language;
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save settings.");
+      setError(e instanceof Error ? e.message : t("Could not save settings."));
     }
   }
   return (
@@ -79,7 +79,7 @@ export function AppSettingsW3() {
                           <td>
                             <Input
                               unstyled
-                              aria-label={`${t(EVENT_LABELS[event])}: ${CHANNEL_LABELS[channel].toLowerCase()}`}
+                              aria-label={`${t(EVENT_LABELS[event])}: ${t(CHANNEL_LABELS[channel])}`}
                               type="checkbox"
                               checked={value().notifications.matrix[event][channel]}
                               onChange={(e) =>
@@ -208,8 +208,8 @@ export function OnboardingFields(props: {
         </Text>
         <Text as="p" tone="muted">
           {props.state.computerUse.available
-            ? "Available; every action asks for your approval first."
-            : (props.state.computerUse.reason ?? "Not available on this computer.")}
+            ? t("Available; every action asks for your approval first.")
+            : (props.state.computerUse.reason ?? t("Not available on this computer."))}
         </Text>
       </div>
     </div>

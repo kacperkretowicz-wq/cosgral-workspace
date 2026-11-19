@@ -1,17 +1,17 @@
 # Inwentarz napisów UI → katalog i18n
 
-## Stan aktualny (18.11.2026, KAPI-P / kolejka #6)
+## Stan aktualny (19.11.2026, KAPI-AT / kolejka #36)
 
-**Integracja bazowa:** `codex/cosgral-desktop` @ `4f21fbfe7` (+ `team/kapi/w12-p`).  
-**Metoda:** skan plików produkcyjnych `src/renderer/src` (bez `*.test.*`, bez `stories/`, bez `locales/`); test `i18n.test` („has complete, nonempty PL and EN catalogs” + skan `t("…")` na migracjach).
+**Integracja bazowa:** `codex/cosgral-desktop` @ `2dfb55f09` (+ `team/kapi/w12-p`, tip po KAPI-AS).  
+**Metoda:** skan plików produkcyjnych `src/renderer/src` (bez `*.test.*`, bez `stories/`, bez `locales/`); test `i18n.test` (parytet katalogów + skan `t("…")` na migracjach).
 
 | Metryka | Wartość |
 |---|---:|
-| Klucze EN / PL | **1530 / 1530** (równe, wartości niepuste — potwierdzone vitest) |
-| Pliki produkcyjne | ~172 |
-| Z importem `t()` / i18n | ~63 |
-| Bez `t()` (w tym helpery, ikony, CSS-in-ts) | ~109 |
-| Sztywne `aria-label="…"` (literal) | **~91** miejsc |
+| Klucze EN / PL | **2219 / 2219** (równe, wartości niepuste — potwierdzone vitest) |
+| Pliki produkcyjne | ~164 |
+| Z `t()` / i18n | ~119 |
+| Bez `t()` (helpery, ikony, CSS-in-ts) | ~45 |
+| Sztywne `aria-label="…"` (literal) | **9** — tylko Remote/Mobile (`RemoteDesktopPage`, `MobileConnectPage`, `RemoteMacPanel`; KK) |
 
 ### Przegląd paneli KK (KK-AK, 18.11.2026, kolejka KK #8)
 
@@ -26,30 +26,33 @@ Metoda: dla każdego mojego panelu policzyłem import `../i18n` i wywołania `t(
 
 **Zostaje po angielsku (nie z mojego kodu):** teksty z silnika (`unavailableReason`, `client().error`, powody wstrzymania „locked”/„uac”, etykiety sesji widzów, nazwy poziomów dostępu z kontraktu) oraz `McpSettings` (dwa komunikaty błędów; `McpPanel` przetłumaczył KAPI-V na swojej gałęzi). Zrzutów PL moich paneli nie robiłem, sprawdzone testami jednego pliku.
 
-### Co jest już na `t()` (skrót)
+### Co jest już na `t()` (skrót, po KAPI-AN…AS)
 
-Conversation (panel ustawień, kicker Decision, reakcje), ContextIndicator (KAPI-P), AgentCards (Brain/Knows/More + etykiety), Sidebar/PageRail/Needs you (część), Marketplace, Tasks, Workflows, Vault connectors, Schedule/Usage/Library (część), ChannelView/Clear history/history window, InitialSetup, New agent, ThreadTabs, GlobalSearch, …
+Sidebar (SVG titles, błędy konta/wiersza), TasksPage/TasksViewScreen, App delivery status, RoutinePanel (statusy + confirm sekretu), VaultPanel (confirm + błędy), MemoryPanel, Appearance/AppSettingsW3 (powiadomienia + Computer Use), Conversation (draft/takeover/preview + composer errors), HostPanel (rola), throw-y UI w App (folders/DM/publish). Wcześniej: ChatSearch/MessageRendering/Queue/Selection/Composer, Access…Budget, AgentCards, Marketplace, Workflows, …
 
-### Największe pozostałości sztywnego EN (aria / panele)
-
-Priorytet kolejnych migracji (nie KK-only):
+### Największe pozostałości sztywnego EN
 
 | Priorytet | Pliki | Co |
 |---|---|---|
-| P0 | `conversation/ChatSearch`, `MessageRendering`, `SelectionActions`, `QueuePanel`, `ComposerEditor` | **zrobione KAPI-S** — aria na `t()` |
-| P1 | `AccessSettings`, `IsolationSettings`, `BrowserProfileSettings`, `BudgetSettings` | nagłówki i opisy pól (błędy+aria sekcji: KAPI-P) |
-| P1 | `AccountLogin`, `ApiKeysSection`, `McpPanel`, `MemoryPanel`, `AgentSettingsW3` | całe sekcje bez `t()` |
-| P2 | `RemoteDesktopPage`, `MobileConnectPage`, `HostPanel`, `Spaces` | aria + copy |
-| P2 | `Sidebar` (reszta), `App.tsx` loading aria | **część KAPI-U:** Bot navigation + Pages na `t()` |
-| Uwaga | `AgentAccountPicker` | **zrobione KAPI-S** — cała wyspa na `t()` |
+| KK | `RemoteDesktopPage`, `MobileConnectPage`, `RemoteMacPanel` | **9** sztywnych `aria-label` — poza zakresem KAPI |
+| Świadomie | `AppSettingsW3` opcje `English` / `Polski` | nazwy języków |
+| Świadomie | brand COSGRAL / protokół HTTP w McpPanel | bez tłumaczenia |
+| P3 | `index.tsx` | bootstrap „Renderer root…” (nie UI użytkownika) |
+| P3 | dynamiczne `error.message` z silnika | po angielsku gdy API zwraca EN |
 
 ### Test kompletności
 
-`bun x vitest run src/renderer/src/i18n.test.tsx` — katalogi równe + każdy literal `t("…")` w listowanych powierzchniach ma klucz EN i PL. Po KAPI-P lista obejmuje też: ContextIndicator, Access/Isolation/Browser/Budget, ChannelWorkspace, `conversation/AgentActivity`.
+`bun run test -- src/renderer/src/i18n.test.tsx` — katalogi równe + literale `t("…")` w rozszerzonej liście (m.in. RoutinePanel, VaultPanel, MemoryPanel, ApprovalRulesSettings, Conversation/*, ComposerEditor). Próg ≥ 1500 kluczy (faktycznie 2219).
 
 ### Podgląd web
 
 `scripts/web-preview` celowo stubuje katalogi (puste `en`/`pl`) pod limit 1,8 MB — **nie** jest miarą kompletności i18n desktopu (KAPI-O).
+
+---
+
+## Archiwum metryk (18.11.2026, KAPI-P / kolejka #6)
+
+Wtedy: **1530/1530** kluczy, ~63 pliki z `t()`, ~91 sztywnych aria; baza `4f21fbfe7`. Zastąpione sekcją „Stan aktualny” powyżej.
 
 ---
 

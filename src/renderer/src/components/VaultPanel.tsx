@@ -35,7 +35,9 @@ export function VaultForm(props: {
       props.initial &&
       (kind() === "contact" || kind() === "totp") &&
       !window.confirm(
-        "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?",
+        t(
+          "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?",
+        ),
       )
     )
       return;
@@ -93,7 +95,7 @@ export function VaultForm(props: {
       setSecret("");
       setKey("");
     } catch {
-      setError("Could not save item. Check the fields and encryption status.");
+      setError(t("Could not save item. Check the fields and encryption status."));
     } finally {
       setBusy(false);
     }
@@ -263,7 +265,7 @@ export function VaultPanel() {
   async function refresh() {
     const api = window.openbot.vault;
     if (!api) {
-      setError("Vault is unavailable in this build.");
+      setError(t("Vault is unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -275,7 +277,7 @@ export function VaultPanel() {
         setError("");
       }
     } catch {
-      if (n === serial) setError("Could not load Vault.");
+      if (n === serial) setError(t("Could not load Vault."));
     }
   }
   onSettled(() => {
@@ -321,21 +323,21 @@ export function VaultPanel() {
                   setEditing(item);
                 }}
               >
-                Edit
+                {t("Edit")}
               </Button>{" "}
               <Button
                 unstyled
                 type="button"
                 onClick={() => {
                   const vault = window.openbot.vault;
-                  if (vault && window.confirm(`Delete ${item.label}?`))
+                  if (vault && window.confirm(t("Delete {name}?", { name: item.label })))
                     void vault
                       .delete({ itemId: item.id })
                       .then(refresh)
-                      .catch(() => setError("Could not delete item."));
+                      .catch(() => setError(t("Could not delete item.")));
                 }}
               >
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </article>
@@ -350,7 +352,7 @@ export function VaultPanel() {
           setAdding(true);
         }}
       >
-        Add item
+        {t("Add item")}
       </Button>
       <Show when={editing() ?? (adding() ? "new" : undefined)} keyed>
         {(item) => (
@@ -362,7 +364,7 @@ export function VaultPanel() {
             }}
             onSave={async (input) => {
               const vault = window.openbot.vault;
-              if (!vault) throw new Error("Vault unavailable");
+              if (!vault) throw new Error(t("Vault is unavailable in this build."));
               await vault.save(input);
               setAdding(false);
               setEditing(undefined);

@@ -304,9 +304,9 @@ export function QueuePanel(props: QueuePanelProps) {
         </div>
         <Show when={props.paused}>
           <div class="agent-queue-panel-footer">
-            <span>Queue paused</span>
+            <span>{t("Queue paused")}</span>
             <Button type="button" onClick={props.onResume}>
-              Resume queue
+              {t("Resume queue")}
             </Button>
           </div>
         </Show>

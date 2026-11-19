@@ -909,7 +909,7 @@ export function App() {
 
   function requireSidebar(): NonNullable<typeof window.openbot.sidebar> {
     const sidebar = window.openbot.sidebar;
-    if (!sidebar) throw new Error("Folders are not available in this build.");
+    if (!sidebar) throw new Error(t("Folders are not available in this build."));
     return sidebar;
   }
 
@@ -1275,7 +1275,7 @@ export function App() {
     clientMessageId: string,
   ): Promise<{ message: DirectMessage; readError?: string }> {
     const memberId = activeDirectMemberId();
-    if (!memberId) throw new Error("Select a person first.");
+    if (!memberId) throw new Error(t("Select a person first."));
     const message = await window.openbot.servers.sendDirectMessage({
       memberId,
       text,
@@ -1286,7 +1286,7 @@ export function App() {
     try {
       await markDirectMessagesRead(memberId, message.sequence);
     } catch (error) {
-      readError = error instanceof Error ? error.message : "Could not mark messages as read.";
+      readError = error instanceof Error ? error.message : t("Could not mark messages as read.");
     }
     await refreshDirectThreads();
     return { message, ...(readError ? { readError } : {}) };
@@ -1940,7 +1940,7 @@ export function App() {
     setHostStatus(published);
     await refreshHostManagement();
     if (published.phase !== "online") {
-      throw new Error(published.message ?? "This COSGRAL Workspace could not be published.");
+      throw new Error(published.message ?? t("This COSGRAL Workspace could not be published."));
     }
   }
 
@@ -2022,7 +2022,7 @@ export function App() {
   return (
     <Show
       when={setupLoaded() && appInfo() !== null}
-      fallback={<div class="initial-setup-screen" role="status" aria-label="Loading COSGRAL Workspace" />}
+      fallback={<div class="initial-setup-screen" role="status" aria-label={t("Loading COSGRAL Workspace")} />}
     >
       <Show
         when={visibleSignedInAccount()}
@@ -2153,7 +2153,7 @@ export function App() {
               />
               <PanelResizer
                 class="left-panel-resizer"
-                label="Resize left sidebar"
+                label={t("Resize left sidebar")}
                 controls="bot-sidebar"
                 direction="left"
                 value={leftPanelWidth()}
@@ -2175,7 +2175,7 @@ export function App() {
               />
               <Show when={activePage() === "library"}>
                 <main class="w2-library">
-                  <h1>Library</h1>
+                  <h1>{t("Library")}</h1>
                   <SkillsSettings />
                   <VaultPanel />
                   <VaultConnectorsPanel />
@@ -2190,7 +2190,7 @@ export function App() {
               </Show>
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">
-                  <h1>Schedule</h1>
+                  <h1>{t("Schedule")}</h1>
                   <Show when={window.openbot?.schedule}>
                     <ScheduleOverview />
                   </Show>
@@ -2476,13 +2476,13 @@ function toBotMessage(message: ConversationMessage): BotMessage {
     status: message.exchange
       ? undefined
       : message.delivery?.status === "queued"
-        ? `Queued #${message.delivery.position}`
+        ? t("Queued #{n}", { n: message.delivery.position ?? 0 })
         : message.delivery?.status === "cancelled"
-          ? "Cancelled"
+          ? t("Cancelled")
           : message.status === "failed"
-            ? "Failed"
+            ? t("Failed")
             : message.status === "interrupted"
-              ? "Stopped"
+              ? t("Stopped")
               : undefined,
   };
 }

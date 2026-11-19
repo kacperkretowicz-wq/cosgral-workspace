@@ -24,7 +24,7 @@ export function MemoryPanel(props: {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update memory.");
+      setError(e instanceof Error ? e.message : t("Could not update memory."));
     } finally {
       setBusy(false);
     }
@@ -85,7 +85,7 @@ export function MemoryPanel(props: {
                 unstyled
                 type="button"
                 onClick={() => {
-                  if (window.confirm("Delete this memory?")) void run(() => props.onDelete(entry.id));
+                  if (window.confirm(t("Delete this memory?"))) void run(() => props.onDelete(entry.id));
                 }}
               >
                 Delete

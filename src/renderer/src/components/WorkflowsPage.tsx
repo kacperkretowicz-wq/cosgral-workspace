@@ -336,7 +336,7 @@ export function WorkflowCanvas(
                     </NativeSelect>
                     <Show when={trigger().trigger.kind === "routine"}>
                       <NativeSelect
-                        aria-label="Routine"
+                        aria-label={t("Routine")}
                         value={routineId(trigger())}
                         onChange={(e) =>
                           update({ ...trigger(), trigger: { kind: "routine", routineId: e.currentTarget.value } })
