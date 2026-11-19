@@ -43,7 +43,7 @@ interface PageRailProps {
   onOpenSettings: () => void;
 }
 
-function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
+export function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
   switch (props.page) {
     case "remote-desktop":
       return (

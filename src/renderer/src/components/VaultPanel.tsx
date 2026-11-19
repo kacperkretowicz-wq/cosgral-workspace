@@ -9,6 +9,31 @@ import { isString } from "@openbot/contracts/runtime-values";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { Contact, CreditCard, KeyRound, Lock, ShieldCheck } from "./ui/icons";
+
+const VAULT_KIND_LABELS: Record<VaultItemKind, string> = {
+  login: "Login",
+  card: "Card",
+  contact: "Contact",
+  apiKey: "API key",
+  totp: "Authenticator",
+};
+
+function VaultKindIcon(props: { kind: VaultItemKind }) {
+  const common = { size: 18, "stroke-width": 1.5 } as const;
+  switch (props.kind) {
+    case "login":
+      return <KeyRound {...common} />;
+    case "card":
+      return <CreditCard {...common} />;
+    case "contact":
+      return <Contact {...common} />;
+    case "totp":
+      return <ShieldCheck {...common} />;
+    default:
+      return <Lock {...common} />;
+  }
+}
 
 export function VaultForm(props: {
   initial?: VaultItemSummary;
@@ -310,11 +335,17 @@ export function VaultPanel() {
       <For each={items()}>
         {(item) => (
           <article class="w2-item">
+            <span class="w2-item-icon" data-kind={item.kind} aria-hidden="true">
+              <VaultKindIcon kind={item.kind} />
+            </span>
             <strong>{item.label}</strong>
             <span>
-              {item.kind} {item.origin ?? item.name ?? item.cardLast4 ?? ""}
+              {t(VAULT_KIND_LABELS[item.kind] ?? item.kind)}
+              {(item.origin ?? item.name ?? (item.cardLast4 ? `•••• ${item.cardLast4}` : ""))
+                ? ` · ${item.origin ?? item.name ?? `•••• ${item.cardLast4}`}`
+                : ""}
             </span>
-            <div>
+            <div class="w2-item-actions">
               <Button
                 unstyled
                 type="button"

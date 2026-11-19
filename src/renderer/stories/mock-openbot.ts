@@ -235,7 +235,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
-    navigation: { pinnedPageIds: [] },
+    navigation: { pinnedPageIds: ["agents", "workflows", "tasks", "usage", "library"] },
     appearance: { ...DEFAULT_APP_APPEARANCE },
     behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
     workspace: { ...DEFAULT_APP_WORKSPACE },

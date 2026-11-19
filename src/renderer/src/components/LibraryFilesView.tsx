@@ -14,6 +14,7 @@ import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button, Input, NativeSelect } from "./ui";
+import { File, FileText, Image, Search, Table2, Upload } from "./ui/icons";
 
 type OriginFilter = "all" | LibraryOrigin;
 
@@ -38,6 +39,41 @@ function pickKind(value: string): LibraryKind | "" {
 
 function pickSort(value: string): LibrarySort {
   return LIBRARY_SORTS.find((sort) => sort === value) ?? "newest";
+}
+
+/** A tile that says what the file is at a glance: the picture itself for images, a type icon otherwise. */
+function FileTypeTile(props: { entry: LibraryEntry }) {
+  const extension = () => props.entry.name.split(".").pop()?.toLowerCase() ?? "";
+  const tabular = () => ["csv", "tsv", "xls", "xlsx", "ods"].includes(extension());
+  const image = () => props.entry.kind === "image" || props.entry.mimeType.startsWith("image/");
+  return (
+    <span
+      class="library-type"
+      data-type={image() ? "image" : tabular() ? "table" : extension() || "file"}
+      aria-hidden="true"
+    >
+      <Show
+        when={image() && props.entry.previewUrl}
+        fallback={
+          <Show when={!image()} fallback={<Image size={18} stroke-width={1.5} />}>
+            <Show when={!tabular()} fallback={<Table2 size={18} stroke-width={1.5} />}>
+              <Show
+                when={["md", "txt", "pdf", "doc", "docx", "rtf", "html"].includes(extension())}
+                fallback={<File size={18} stroke-width={1.5} />}
+              >
+                <FileText size={18} stroke-width={1.5} />
+              </Show>
+            </Show>
+          </Show>
+        }
+      >
+        {(url) => <img src={url()} alt="" draggable={false} />}
+      </Show>
+      <Show when={!image() && extension()}>
+        <small>{extension().slice(0, 4)}</small>
+      </Show>
+    </span>
+  );
 }
 
 function countOf(counts: LibraryCounts | undefined, origin: OriginFilter): number {
@@ -186,6 +222,9 @@ export function LibraryFilesView() {
             void refresh();
           }}
         >
+          <span class="library-search-icon" aria-hidden="true">
+            <Search size={15} stroke-width={1.5} />
+          </span>
           <Input
             type="search"
             aria-label={t("Search files")}
@@ -216,7 +255,9 @@ export function LibraryFilesView() {
           >
             <For each={LIBRARY_SORTS}>{(item) => <option value={item}>{t(SORT_LABELS[item])}</option>}</For>
           </NativeSelect>
-          <Button type="submit">{t("Search")}</Button>
+          <Button type="submit" class="library-search-submit">
+            {t("Search")}
+          </Button>
           <Show when={files}>
             <Button
               type="button"
@@ -229,6 +270,7 @@ export function LibraryFilesView() {
                 }, t("Could not add the files."))
               }
             >
+              <Upload size={15} stroke-width={1.75} aria-hidden="true" />
               {t("Add files")}
             </Button>
           </Show>
@@ -297,6 +339,7 @@ export function LibraryFilesView() {
                       >
                         <span class="library-pick-mark" aria-hidden="true" />
                       </Button>
+                      <FileTypeTile entry={entry} />
                       <span class="library-name">
                         <strong>{entry.name}</strong>
                         <small>

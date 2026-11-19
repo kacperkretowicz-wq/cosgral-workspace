@@ -2580,4 +2580,21 @@ export const pl = {
   "Mark as read": "Oznacz jako przeczytane",
   "Marking as read…": "Oznaczanie jako przeczytane…",
   "Fallback model: {model}": "Model zapasowy: {model}",
+  "Files your agents made or received. Open, download or clean up.":
+    "Pliki, które agenci zrobili lub dostali. Otwórz, pobierz albo posprzątaj.",
+  "Reusable instructions agents can install. Each change keeps a version.":
+    "Instrukcje wielokrotnego użytku, które agenci mogą zainstalować. Każda zmiana zostaje jako wersja.",
+  "Tables agents and people fill in together.": "Tabele, które agenci i ludzie wypełniają razem.",
+  "Logins and secrets agents may use without seeing them.":
+    "Loginy i sekrety, których agenci mogą używać, nie widząc ich.",
+  "Let agents use logins from 1Password or Bitwarden; you stay in control.":
+    "Agenci mogą używać loginów z 1Password lub Bitwarden; kontrola zostaje u Ciebie.",
+  "Talk to your agents from Telegram, Slack and other messengers.":
+    "Rozmawiaj z agentami z Telegrama, Slacka i innych komunikatorów.",
+  Integrations: "Integracje",
+  "Accounts agents can work in, such as mail and calendars.":
+    "Konta, na których agenci mogą pracować, np. poczta i kalendarze.",
+  "Tool servers every agent can call.": "Serwery narzędzi, z których może korzystać każdy agent.",
+  "Files, skills, tables and access your agents work with.":
+    "Pliki, umiejętności, tabele i dostępy, z których korzystają Twoi agenci.",
 } as const;

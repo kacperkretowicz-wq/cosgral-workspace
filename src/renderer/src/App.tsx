@@ -53,13 +53,9 @@ import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
-import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { JoinServerDialog } from "./components/JoinServerDialog";
-import { LibraryFilesView } from "./components/LibraryFilesView";
-import { LibraryPanel } from "./components/LibraryPanel";
+import { LibraryPage } from "./components/LibraryPage";
 import { MarketplacePage } from "./components/MarketplacePage";
-import { McpSettings } from "./components/McpSettings";
-import { MessengersPanel } from "./components/MessengersPanel";
 import { MobileConnectPage } from "./components/MobileConnectPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
@@ -72,13 +68,9 @@ import { ServerRail } from "./components/ServerRail";
 import { ServerSettingsPage } from "./components/ServerSettingsPage";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
-import { SkillsSettings } from "./components/SkillsSettings";
-import { TablesPanel } from "./components/TablesPanel";
 import { TasksPage } from "./components/TasksPage";
 import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
-import { VaultConnectorsPanel } from "./components/VaultConnectorsPanel";
-import { VaultPanel } from "./components/VaultPanel";
 import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
 import { t } from "./i18n";
@@ -2174,19 +2166,7 @@ export function App() {
                 }}
               />
               <Show when={activePage() === "library"}>
-                <main class="w2-library">
-                  <h1>{t("Library")}</h1>
-                  <SkillsSettings />
-                  <VaultPanel />
-                  <VaultConnectorsPanel />
-                  <MessengersPanel />
-                  <IntegrationsPanel />
-                  <TablesPanel />
-                  <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
-                    <LibraryFilesView />
-                  </Show>
-                  <McpSettings />
-                </main>
+                <LibraryPage />
               </Show>
               <Show when={activePage() === "schedule"}>
                 <main class="w2-library">

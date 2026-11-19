@@ -2581,4 +2581,19 @@ export const en = {
   "Mark as read": "Mark as read",
   "Marking as read…": "Marking as read…",
   "Fallback model: {model}": "Fallback model: {model}",
+  "Files your agents made or received. Open, download or clean up.":
+    "Files your agents made or received. Open, download or clean up.",
+  "Reusable instructions agents can install. Each change keeps a version.":
+    "Reusable instructions agents can install. Each change keeps a version.",
+  "Tables agents and people fill in together.": "Tables agents and people fill in together.",
+  "Logins and secrets agents may use without seeing them.": "Logins and secrets agents may use without seeing them.",
+  "Let agents use logins from 1Password or Bitwarden; you stay in control.":
+    "Let agents use logins from 1Password or Bitwarden; you stay in control.",
+  "Talk to your agents from Telegram, Slack and other messengers.":
+    "Talk to your agents from Telegram, Slack and other messengers.",
+  Integrations: "Integrations",
+  "Accounts agents can work in, such as mail and calendars.":
+    "Accounts agents can work in, such as mail and calendars.",
+  "Tool servers every agent can call.": "Tool servers every agent can call.",
+  "Files, skills, tables and access your agents work with.": "Files, skills, tables and access your agents work with.",
 } as const;

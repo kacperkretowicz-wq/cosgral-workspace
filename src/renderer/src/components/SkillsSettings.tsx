@@ -3,6 +3,7 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { SkillsPanel } from "./SkillsPanel";
 import { Button } from "./ui";
+import { Sparkles } from "./ui/icons";
 export function SkillsSettings(props: { botId?: string }) {
   function skillsApi() {
     const api = window.openbot.skills;
@@ -85,27 +86,32 @@ export function SkillsSettings(props: { botId?: string }) {
             <For each={skills()}>
               {(skill) => (
                 <article class="w2-item">
+                  <span class="w2-item-icon" aria-hidden="true">
+                    <Sparkles size={18} stroke-width={1.5} />
+                  </span>
                   <strong>
-                    {skill.name} · v{skill.version}
+                    {skill.name} <span class="w2-item-tag">v{skill.version}</span>
                   </strong>
                   <p>{skill.description}</p>
-                  <Button unstyled type="button" onClick={() => void inspect(skill.id)}>
-                    {t("View versions")}
-                  </Button>
-                  <Button
-                    unstyled
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(t("Delete this skill and uninstall it from all agents?"))) {
-                        const force = window.confirm(
-                          t("Also remove installed copies with local changes? Choose Cancel to preserve them."),
-                        );
-                        void run(() => skillsApi().delete({ skillId: skill.id, force }));
-                      }
-                    }}
-                  >
-                    {t("Delete")}
-                  </Button>
+                  <div class="w2-item-actions">
+                    <Button unstyled type="button" onClick={() => void inspect(skill.id)}>
+                      {t("View versions")}
+                    </Button>
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(t("Delete this skill and uninstall it from all agents?"))) {
+                          const force = window.confirm(
+                            t("Also remove installed copies with local changes? Choose Cancel to preserve them."),
+                          );
+                          void run(() => skillsApi().delete({ skillId: skill.id, force }));
+                        }
+                      }}
+                    >
+                      {t("Delete")}
+                    </Button>
+                  </div>
                 </article>
               )}
             </For>

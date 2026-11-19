@@ -1,0 +1,526 @@
+/*
+ * Work pages (WorkPage.tsx): one frame for Library, Schedule, Workflows, Usage and the other rail pages.
+ * A header with the page's rail icon, title, one sentence and the main actions; below, the content or a section
+ * list with icons beside the chosen section. Tokens only.
+ */
+
+.app-frame-with-page-rail .work-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  container-type: inline-size;
+  scrollbar-gutter: stable;
+}
+
+/* Header -------------------------------------------------------------------------------------------------- */
+
+.work-page-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-4);
+  border-bottom: 1px solid var(--cosgral-border-strong);
+  padding: var(--openbot-space-8) 40px var(--openbot-space-6);
+}
+
+.work-page-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--cosgral-accent-strong);
+  color: var(--cosgral-accent-text);
+}
+
+.work-page-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.work-page-icon svg circle {
+  fill: currentColor;
+}
+
+.work-page-heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .work-page-heading h1 {
+  margin: 0;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-2xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-2xl);
+  letter-spacing: -0.01em;
+}
+
+.work-page .work-page-heading p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-lg);
+  line-height: var(--openbot-leading-lg);
+}
+
+.work-page-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+/* Content without sections: one centred column under the header. */
+.work-page > :not(.work-page-header, .work-page-body) {
+  width: min(100% - 80px, 980px);
+  margin-inline: auto;
+}
+
+.work-page > .work-page-header + :not(.work-page-body) {
+  margin-top: var(--openbot-space-6);
+}
+
+.work-page > :last-child:not(.work-page-header) {
+  margin-bottom: 56px;
+}
+
+.work-page > :not(.work-page-header, .work-page-body) + :not(.work-page-body) {
+  margin-top: var(--openbot-space-4);
+}
+
+/* Sections: list with icons on the left, chosen section on the right ---------------------------------------- */
+
+.work-page-body {
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-8);
+  width: min(100%, 1200px);
+  padding: var(--openbot-space-6) 40px 56px;
+}
+
+.work-page-nav {
+  position: sticky;
+  top: var(--openbot-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--openbot-space-0-5);
+}
+
+.work-page-nav-item {
+  justify-content: flex-start;
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--cosgral-radius-md);
+  background: transparent;
+  padding: 0 10px;
+  color: var(--cosgral-text-muted);
+  font: inherit;
+  font-size: var(--cosgral-text-md);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--cosgral-duration-fast) var(--cosgral-ease),
+    color var(--cosgral-duration-fast) var(--cosgral-ease);
+}
+
+.work-page-nav-item svg {
+  flex: 0 0 auto;
+}
+
+.work-page-nav-item:hover {
+  background: var(--cosgral-hover);
+  color: var(--cosgral-text-primary);
+}
+
+.work-page-nav-item:focus-visible {
+  outline: 2px solid var(--cosgral-accent);
+  outline-offset: -2px;
+}
+
+.work-page-nav-item[aria-current="page"] {
+  background: var(--cosgral-selected);
+  color: var(--cosgral-text-primary);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page-nav-item[aria-current="page"] svg {
+  color: var(--cosgral-accent-text);
+}
+
+.work-page-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+.work-page-section-header {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--cosgral-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.work-page .work-page-section-header h2 {
+  margin: 0;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.work-page .work-page-section-header p {
+  margin: 0;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+}
+
+.work-page-section-content {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+/*
+ * A panel shown as a section sits flat on the page: the section header above already frames it, so no card around
+ * it and no second copy of its title.
+ */
+.work-page-section-content > :is(section, .w2-panel, .ui-card) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.work-page-section-content > section > :is(h2, h3):first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* List items of the panels: rows with a hover surface instead of bare separators. */
+.work-page-section-content .w2-item {
+  border-top: 1px solid var(--cosgral-border-strong);
+  padding: var(--openbot-space-3) var(--openbot-space-1);
+  white-space: normal;
+}
+
+.work-page-section-content .w2-item:first-of-type {
+  border-top: 0;
+}
+
+/* Narrow window: the section list becomes a row of tabs above the section. */
+@container (max-width: 760px) {
+  .work-page-header {
+    padding-inline: var(--openbot-space-6);
+  }
+
+  .work-page-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--openbot-space-4);
+    padding-inline: var(--openbot-space-6);
+  }
+
+  .work-page-nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .work-page > :not(.work-page-header, .work-page-body) {
+    width: calc(100% - 48px);
+  }
+}
+
+/* Library › Files ------------------------------------------------------------------------------------------- */
+
+.work-page .library-view {
+  gap: var(--openbot-space-4);
+}
+
+/* One toolbar row: search grows, filters keep their size, "Add files" on the right. */
+.work-page .library-view > .library-filters {
+  position: relative;
+  flex-wrap: nowrap;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .library-filters > * {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.work-page .library-filters > input[type="search"],
+.work-page .library-filters > .ui-input {
+  min-width: 160px;
+  flex: 1 1 auto;
+  padding-left: 34px;
+}
+
+.library-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  display: grid;
+  color: var(--cosgral-text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* Enter searches; the button stays for the mouse but does not compete with "Add files". */
+.work-page .library-search-submit {
+  display: none;
+}
+
+.work-page .library-filters > .ui-button[data-variant="primary"],
+.work-page .library-filters > button:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin-left: var(--openbot-space-2);
+}
+
+.work-page .library-origins {
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--cosgral-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.work-page .library-list {
+  gap: 2px;
+}
+
+.work-page .library-row {
+  gap: var(--openbot-space-3);
+  border: 0;
+  border-radius: var(--cosgral-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-1);
+  transition: background-color var(--cosgral-duration-fast) var(--cosgral-ease);
+}
+
+.work-page .library-row:hover {
+  background: var(--cosgral-hover);
+}
+
+.library-type {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-control);
+  box-shadow: inset 0 0 0 1px var(--cosgral-border-strong);
+  color: var(--cosgral-text-secondary);
+}
+
+.library-type img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.library-type small {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  color: var(--cosgral-text-muted);
+  font-size: 9px;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.library-type:has(small) svg {
+  margin-top: -6px;
+}
+
+.library-type[data-type="image"] {
+  color: var(--cosgral-accent-text);
+}
+
+.library-type[data-type="table"] {
+  color: var(--cosgral-success);
+}
+
+.work-page .library-name {
+  gap: 2px;
+}
+
+.work-page .library-name strong {
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+}
+
+/* Row actions appear on hover or keyboard focus, so a long list reads as files, not as buttons. */
+@media (hover: hover) and (pointer: fine) {
+  .work-page .library-actions {
+    opacity: 0;
+    transition: opacity var(--cosgral-duration-fast) var(--cosgral-ease);
+  }
+
+  .work-page .library-row:hover .library-actions,
+  .work-page .library-row:focus-within .library-actions {
+    opacity: 1;
+  }
+}
+
+.work-page .library-cleanup {
+  margin-top: var(--openbot-space-4);
+  border-top: 1px solid var(--cosgral-border-strong);
+  padding-top: var(--openbot-space-4);
+}
+
+/*
+ * List rows of the work-page panels (skills, vault items, MCP servers, routines...): an icon tile, the name and
+ * one or two lines of detail, and the row's actions on the right. Rows without an icon keep two columns.
+ */
+.work-page .w2-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: 2px;
+  border: 0;
+  border-radius: var(--cosgral-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-1);
+  white-space: normal;
+  transition: background-color var(--cosgral-duration-fast) var(--cosgral-ease);
+}
+
+.work-page .w2-item:has(> .w2-item-icon) {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+}
+
+.work-page .w2-item:hover {
+  background: var(--cosgral-hover);
+}
+
+.work-page .w2-item + .w2-item {
+  margin-top: 2px;
+}
+
+.work-page .w2-item > * {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.work-page .w2-item:has(> .w2-item-icon) > * {
+  grid-column: 2;
+}
+
+.work-page .w2-item > .w2-item-icon {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  align-self: start;
+}
+
+.work-page .w2-item > .w2-item-actions {
+  grid-column: -2;
+  grid-row: 1 / span 4;
+  align-self: center;
+}
+
+.work-page .w2-item > strong {
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page .w2-item > :is(p, span, small) {
+  overflow: hidden;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+  text-overflow: ellipsis;
+}
+
+.work-page .w2-item > .w2-item-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-control);
+  box-shadow: inset 0 0 0 1px var(--cosgral-border-strong);
+  color: var(--cosgral-accent-text);
+}
+
+.work-page .w2-item-icon[data-status="error"],
+.work-page .w2-item-icon[data-status="failed"] {
+  color: var(--cosgral-danger-text);
+}
+
+.work-page .w2-item-icon[data-status="connected"],
+.work-page .w2-item-icon[data-status="available"],
+.work-page .w2-item-icon[data-status="ready"] {
+  color: var(--cosgral-success);
+}
+
+.w2-item-tag {
+  display: inline-block;
+  margin-left: var(--openbot-space-1);
+  border-radius: var(--cosgral-radius-xs);
+  background: var(--cosgral-bg-control-hover);
+  padding: 0 5px;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  font-weight: var(--openbot-weight-medium);
+  line-height: 18px;
+  vertical-align: 1px;
+}
+
+.work-page .w2-item .w2-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .w2-item-actions > :is(button, .ui-button) {
+  height: var(--openbot-control-sm);
+  border: 0;
+  border-radius: var(--cosgral-radius-sm);
+  background: transparent;
+  padding: 0 var(--openbot-space-2);
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+  cursor: pointer;
+}
+
+.work-page .w2-item-actions > :is(button, .ui-button):hover {
+  background: var(--cosgral-bg-control-hover);
+  color: var(--cosgral-text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-page .w2-item > .w2-item-actions {
+    opacity: 0;
+    transition: opacity var(--cosgral-duration-fast) var(--cosgral-ease);
+  }
+
+  .work-page .w2-item:hover > .w2-item-actions,
+  .work-page .w2-item:focus-within > .w2-item-actions {
+    opacity: 1;
+  }
+}
