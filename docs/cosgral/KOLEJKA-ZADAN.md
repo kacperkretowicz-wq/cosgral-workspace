@@ -76,6 +76,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 22. [zrobione: 531a936] Aria/i18n: `AcpPresetCard` + `AcpPresets`.
 23. [zrobione: 980f578] Aria/i18n: `AccountLogin` + `OtpInput`.
 24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
+25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.

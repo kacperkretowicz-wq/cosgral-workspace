@@ -27,7 +27,7 @@ export function ChoiceCard(props: {
       <div class="choice-card-heading">
         <div>
           <strong>{props.title}</strong>
-          <span>{props.hint ?? "Pick whatever fits, or type your own."}</span>
+          <span>{props.hint ?? t("Pick whatever fits, or type your own.")}</span>
         </div>
       </div>
       <RadioGroup.Root
@@ -70,7 +70,7 @@ export function ChoiceCard(props: {
         ref={(element) => (customInput = element)}
         class="choice-input"
         value={answer()}
-        placeholder="Type your own answer"
+        placeholder={t("Type your own answer")}
         aria-label={t("Custom answer")}
         maxlength={INPUT_LIMITS.promptAnswerText}
         disabled={props.pending}
@@ -150,7 +150,7 @@ export function ApprovalCard(props: {
   return (
     <section
       class={["approval-card", `approval-card-${props.variant}`]}
-      aria-label={props.variant === "questions" ? "Agent questions" : "Agent approval"}
+      aria-label={props.variant === "questions" ? t("Agent questions") : t("Agent approval")}
       onKeyDown={(event) => {
         if (event.key !== "Enter" || props.variant !== "questions" || !canAdvance()) return;
         if (!(event.target instanceof HTMLElement)) return;
@@ -166,13 +166,13 @@ export function ApprovalCard(props: {
           <CardIcon variant={props.variant} eyes={isEyesApproval(props.approval)} />
         </span>
         <div>
-          <strong>{props.variant === "questions" ? "Questions" : approvalTitle(props.approval)}</strong>
+          <strong>{props.variant === "questions" ? t("Questions") : approvalTitle(props.approval)}</strong>
         </div>
       </header>
 
       <Show when={props.variant === "questions"}>
         <div class="approval-questions-viewport" aria-live="polite">
-          <Show when={currentQuestion()} fallback={<p class="approval-card-empty">No questions are waiting.</p>}>
+          <Show when={currentQuestion()} fallback={<p class="approval-card-empty">{t("No questions are waiting.")}</p>}>
             {(question) => (
               <div class="approval-question">
                 <div class="approval-question-prompt">{question().question}</div>
@@ -228,7 +228,7 @@ export function ApprovalCard(props: {
                         <span class="approval-custom-icon">
                           <PencilIcon />
                         </span>
-                        <span class="approval-custom-label">{answers()[question().id] || "Something else…"}</span>
+                        <span class="approval-custom-label">{answers()[question().id] || t("Something else…")}</span>
                       </Button>
                     }
                   >
@@ -249,8 +249,8 @@ export function ApprovalCard(props: {
                         ref={(element) => (customInput = element)}
                         type={question().isSecret ? "password" : "text"}
                         value={answers()[question().id] ?? ""}
-                        placeholder="Something else…"
-                        aria-label={`Custom answer for: ${question().question}`}
+                        placeholder={t("Something else…")}
+                        aria-label={t("Custom answer for: {question}", { question: question().question })}
                         maxlength={INPUT_LIMITS.promptAnswerText}
                         disabled={submitting()}
                         onKeyDown={(event) => event.stopPropagation()}
@@ -264,7 +264,10 @@ export function ApprovalCard(props: {
           </Show>
         </div>
         <footer class="approval-card-footer">
-          <nav class="approval-question-nav" aria-label={`Question ${step() + 1} of ${questionCount()}`}>
+          <nav
+            class="approval-question-nav"
+            aria-label={t("Question {current} of {total}", { current: step() + 1, total: questionCount() })}
+          >
             <Button
               type="button"
               class="approval-icon-button"
@@ -294,7 +297,7 @@ export function ApprovalCard(props: {
               disabled={submitting()}
               onClick={() => void submitQuestions(true)}
             >
-              Skip
+              {t("Skip")}
             </Button>
             <Button
               type="button"
@@ -305,7 +308,7 @@ export function ApprovalCard(props: {
                 else setStep((current) => Math.min(current + 1, questionCount() - 1));
               }}
             >
-              {submitting() ? "Sending…" : step() === questionCount() - 1 ? "Continue" : "Next"}
+              {submitting() ? t("Sending…") : step() === questionCount() - 1 ? t("Continue") : t("Next")}
               <ReturnIcon />
             </Button>
           </div>
@@ -328,8 +331,8 @@ export function ApprovalCard(props: {
               </Show>
               <Show when={approval().kind === "file-change"}>
                 <div class="approval-detail-row">
-                  <span class="approval-detail-label">Files</span>
-                  <strong>{approval().grantRoot ?? "Agent workspace"}</strong>
+                  <span class="approval-detail-label">{t("Files")}</span>
+                  <strong>{approval().grantRoot ?? t("Agent workspace")}</strong>
                 </div>
               </Show>
               <Show when={approval().eyes}>{(eyes) => <EyesRequestDetails eyes={eyes()} />}</Show>
@@ -360,7 +363,7 @@ export function ApprovalCard(props: {
                   disabled={submitting()}
                   onClick={() => void submitApproval("decline")}
                 >
-                  {submitting() ? "Waiting…" : "Reject"}
+                  {submitting() ? t("Waiting…") : t("Reject")}
                 </Button>
                 <Button
                   type="button"
@@ -368,7 +371,7 @@ export function ApprovalCard(props: {
                   disabled={submitting()}
                   onClick={() => void submitApproval("accept")}
                 >
-                  {submitting() ? "Sending…" : "Approve"}
+                  {submitting() ? t("Sending…") : t("Approve")}
                   <ReturnIcon />
                 </Button>
               </div>
@@ -381,12 +384,12 @@ export function ApprovalCard(props: {
 }
 
 function approvalTitle(approval: AgentApproval | undefined) {
-  if (approval?.kind === "command") return "Run this command?";
-  if (approval?.kind === "file-change") return "Approve file changes?";
+  if (approval?.kind === "command") return t("Run this command?");
+  if (approval?.kind === "file-change") return t("Approve file changes?");
   if (approval?.kind === "screen")
-    return approval.eyes?.source === "window" ? "Allow window access?" : "Allow screen access?";
-  if (approval?.kind === "camera") return "Allow camera?";
-  return "Grant permissions?";
+    return approval.eyes?.source === "window" ? t("Allow window access?") : t("Allow screen access?");
+  if (approval?.kind === "camera") return t("Allow camera?");
+  return t("Grant permissions?");
 }
 
 function isEyesApproval(approval: AgentApproval | undefined): boolean {
@@ -398,9 +401,9 @@ function PermissionDetails(props: { permissions: AgentApproval["permissions"] })
     const permissions = props.permissions;
     if (!permissions) return [];
     return [
-      ...(permissions.network ? ["Network access"] : []),
-      ...permissions.fileSystem.read.map((path) => `Read ${path}`),
-      ...permissions.fileSystem.write.map((path) => `Write ${path}`),
+      ...(permissions.network ? [t("Network access")] : []),
+      ...permissions.fileSystem.read.map((path) => t("Read {path}", { path })),
+      ...permissions.fileSystem.write.map((path) => t("Write {path}", { path })),
     ];
   });
   return (

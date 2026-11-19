@@ -23,7 +23,7 @@ export function StickyDecision(props: StickyDecisionProps) {
     <Show when={decision()}>
       {(active) => (
         <section class="sticky-decision" data-kind={active().kind} aria-label={t("Decision")}>
-          <div class="sticky-decision-kicker">Decision · pinned</div>
+          <div class="sticky-decision-kicker">{t("Decision · pinned")}</div>
           <Show when={active().kind === "question" && active().prompt}>
             {(prompt) => (
               <ApprovalCard variant="questions" questions={prompt().questions} onSubmit={props.onAnswerPrompt} />

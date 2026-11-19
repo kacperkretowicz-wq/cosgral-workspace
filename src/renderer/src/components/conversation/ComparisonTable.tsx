@@ -1,11 +1,12 @@
 import { For } from "solid-js";
+import { t } from "../../i18n";
 import type { ComparisonTableBlock } from "./DataTable";
 
 export function ComparisonTable(props: { table: ComparisonTableBlock }) {
   return (
     <section
       class="message-data-table-scroll message-comparison-table-scroll"
-      aria-label="Comparison table"
+      aria-label={t("Comparison table")}
       tabindex="0"
     >
       <table

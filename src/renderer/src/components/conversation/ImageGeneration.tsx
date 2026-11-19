@@ -1,5 +1,6 @@
 import type { AttachmentSummary, ImageGenerationAspectRatio } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
+import { t } from "../../i18n";
 import { Button } from "../ui";
 import { DownloadIcon } from "./ConversationIcons";
 
@@ -33,15 +34,17 @@ export function ImageGeneration(props: ImageGenerationProps) {
     props.status === "failed" || props.status === "interrupted" || previewError() || previewUnavailable();
   const failure = () =>
     previewError() || previewUnavailable()
-      ? "The generated image preview is unavailable."
+      ? t("The generated image preview is unavailable.")
       : (props.error ??
-        (props.status === "interrupted" ? "Image generation was interrupted." : "Image generation did not complete."));
+        (props.status === "interrupted"
+          ? t("Image generation was interrupted.")
+          : t("Image generation did not complete.")));
   const label = () => {
-    if (props.status === "generating") return "Generating image";
-    if (previewError() || previewUnavailable()) return "Image unavailable";
-    if (props.status === "interrupted") return "Image generation interrupted";
-    if (props.status === "failed") return "Image generation failed";
-    return "Generated image";
+    if (props.status === "generating") return t("Generating image");
+    if (previewError() || previewUnavailable()) return t("Image unavailable");
+    if (props.status === "interrupted") return t("Image generation interrupted");
+    if (props.status === "failed") return t("Image generation failed");
+    return t("Generated image");
   };
   const stageRatio = () => (hasImage() && imageRatio() ? imageRatio() : ratioValue(props.aspectRatio));
 
@@ -54,7 +57,7 @@ export function ImageGeneration(props: ImageGenerationProps) {
           "image-generation-failed": hasFailure(),
         },
       ]}
-      aria-label={hasImage() ? "Generated image" : "Image generation"}
+      aria-label={hasImage() ? t("Generated image") : t("Image generation")}
       aria-live={props.status === "generating" ? "polite" : undefined}
     >
       <div class="image-generation-stage" style={`--image-generation-ratio: ${stageRatio()}`}>
@@ -88,14 +91,14 @@ export function ImageGeneration(props: ImageGenerationProps) {
           <Button
             type="button"
             class={["image-generation-preview", { "image-generation-preview-visible": hasImage() }]}
-            aria-label="Preview generated image"
+            aria-label={t("Preview generated image")}
             onClick={() => {
               if (props.attachment) props.onPreview?.(props.attachment);
             }}
           >
             <img
               src={props.attachment?.previewUrl ?? ""}
-              alt={props.prompt ?? "Generated image"}
+              alt={props.prompt ?? t("Generated image")}
               onLoad={(event) => {
                 const { naturalHeight, naturalWidth } = event.currentTarget;
                 if (naturalWidth > 0 && naturalHeight > 0) setImageRatio(`${naturalWidth} / ${naturalHeight}`);
@@ -108,15 +111,15 @@ export function ImageGeneration(props: ImageGenerationProps) {
           <Button
             type="button"
             class="image-generation-hover-download"
-            aria-label="Download generated image"
-            title="Download generated image"
+            aria-label={t("Download generated image")}
+            title={t("Download generated image")}
             onClick={(event) => {
               event.stopPropagation();
               if (props.attachment) props.onDownload?.(props.attachment);
             }}
           >
             <DownloadIcon />
-            Download
+            {t("Download")}
           </Button>
         </Show>
       </div>
