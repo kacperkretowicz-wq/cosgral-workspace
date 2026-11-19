@@ -2,6 +2,7 @@ import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { AppVariant, CentralAuthIssue, CentralAuthState } from "@openbot/contracts/ipc";
 import { normalizeEmailAddress, normalizeOneTimeCode } from "@openbot/contracts/validation";
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
+import { t } from "../i18n";
 import { AppLogo } from "./AppLogo";
 import { OtpInput, type OtpInputStatus } from "./OtpInput";
 import { ArrowLeft, Button, Input, RefreshCw } from "./ui";
@@ -133,8 +134,8 @@ export function AccountLogin(props: AccountLoginProps) {
   );
 
   function validateEmail(value: string): string | null {
-    if (!value.trim()) return "Enter your email address.";
-    return normalizeEmailAddress(value) ? null : "Enter a valid email address.";
+    if (!value.trim()) return t("Enter your email address.");
+    return normalizeEmailAddress(value) ? null : t("Enter a valid email address.");
   }
 
   function handleEmailInput(value: string): void {
@@ -169,7 +170,7 @@ export function AccountLogin(props: AccountLoginProps) {
     try {
       await props.onRequestEmailCode(normalizedEmail);
     } catch {
-      setLocalError("Something went wrong while sending the code. Try again.");
+      setLocalError(t("Something went wrong while sending the code. Try again."));
     } finally {
       setPendingAction(null);
     }
@@ -179,7 +180,7 @@ export function AccountLogin(props: AccountLoginProps) {
     if (props.state.status !== "code_sent" || pendingAction() || codeBusy() || codeNeedsReplacement()) return;
     const normalizedCode = normalizeOneTimeCode(value);
     if (!normalizedCode) {
-      setCodeError("Enter the full 8-character code.");
+      setCodeError(t("Enter the full 8-character code."));
       return;
     }
     setCodeError(null);
@@ -189,7 +190,7 @@ export function AccountLogin(props: AccountLoginProps) {
     try {
       await props.onVerifyEmailCode(props.state.challengeId, formatCode(normalizedCode));
     } catch {
-      setLocalError("Something went wrong while verifying the code. Try again.");
+      setLocalError(t("Something went wrong while verifying the code. Try again."));
     } finally {
       setPendingAction(null);
     }
@@ -203,7 +204,7 @@ export function AccountLogin(props: AccountLoginProps) {
     try {
       await props.onRequestEmailCode(props.state.email);
     } catch {
-      setLocalError("Something went wrong while sending a new code. Try again.");
+      setLocalError(t("Something went wrong while sending a new code. Try again."));
     } finally {
       setPendingAction(null);
     }
@@ -216,7 +217,7 @@ export function AccountLogin(props: AccountLoginProps) {
     try {
       await props.onRetry();
     } catch {
-      setLocalError("COSGRAL Workspace still can’t reach the account service.");
+      setLocalError(t("COSGRAL Workspace still can’t reach the account service."));
     } finally {
       setPendingAction(null);
     }
@@ -232,7 +233,7 @@ export function AccountLogin(props: AccountLoginProps) {
       setCodeError(null);
       setIssueVisible(false);
     } catch {
-      setLocalError("COSGRAL Workspace couldn’t restart sign in. Try again.");
+      setLocalError(t("COSGRAL Workspace couldn’t restart sign in. Try again."));
     } finally {
       setPendingAction(null);
     }
@@ -255,31 +256,31 @@ export function AccountLogin(props: AccountLoginProps) {
         >
           <h1 id="account-login-title" class="account-login-title">
             {connecting()
-              ? "Connecting to COSGRAL Workspace"
+              ? t("Connecting to COSGRAL Workspace")
               : unavailable()
-                ? "Service unavailable"
+                ? t("Service unavailable")
                 : verified()
-                  ? "You’re signed in"
+                  ? t("You’re signed in")
                   : codeSent()
-                    ? "Check your inbox"
-                    : "Sign in to COSGRAL Workspace"}
+                    ? t("Check your inbox")
+                    : t("Sign in to COSGRAL Workspace")}
           </h1>
           <p id="account-login-description" class="account-login-description">
             <Show
               when={challenge() || verified()}
               fallback={
                 connecting()
-                  ? "Starting the account service. This usually takes a moment."
+                  ? t("Starting the account service. This usually takes a moment.")
                   : unavailable()
-                    ? (currentIssue()?.message ?? "COSGRAL Workspace can’t reach the account service right now.")
-                    : "We’ll email you a one-time code."
+                    ? (currentIssue()?.message ?? t("COSGRAL Workspace can’t reach the account service right now."))
+                    : t("We’ll email you a one-time code.")
               }
             >
               {verified() ? (
-                "Your code was accepted."
+                t("Your code was accepted.")
               ) : (
                 <>
-                  We sent a code to <strong>{challenge()?.email}</strong>.
+                  {t("We sent a code to")} <strong>{challenge()?.email}</strong>.
                 </>
               )}
             </Show>
@@ -288,7 +289,7 @@ export function AccountLogin(props: AccountLoginProps) {
           <Show when={connecting()}>
             <div class="account-login-loader" role="status" aria-live="polite">
               <span class="account-login-spinner" aria-hidden="true" />
-              <span>Connecting securely…</span>
+              <span>{t("Connecting securely…")}</span>
             </div>
           </Show>
 
@@ -306,9 +307,9 @@ export function AccountLogin(props: AccountLoginProps) {
               disabled={pendingAction() === "retry"}
               onClick={() => void retryConnection()}
             >
-              <Show when={pendingAction() === "retry"} fallback="Try again">
+              <Show when={pendingAction() === "retry"} fallback={t("Try again")}>
                 <span class="account-login-button-spinner" aria-hidden="true" />
-                Connecting…
+                {t("Connecting…")}
               </Show>
             </Button>
           </Show>
@@ -328,7 +329,7 @@ export function AccountLogin(props: AccountLoginProps) {
                   }}
                 >
                   <label class="sr-only" for="account-email">
-                    Email
+                    {t("Email")}
                   </label>
                   <Input
                     ref={(element) => (emailInput = element)}
@@ -381,11 +382,13 @@ export function AccountLogin(props: AccountLoginProps) {
                     <Show
                       when={emailBusy()}
                       fallback={
-                        emailRetryIn() > 0 ? `Try again in ${formatTimer(emailRetryIn())}` : "Send sign-in code"
+                        emailRetryIn() > 0
+                          ? t("Try again in {time}", { time: formatTimer(emailRetryIn()) })
+                          : t("Send sign-in code")
                       }
                     >
                       <span class="account-login-button-spinner" aria-hidden="true" />
-                      Sending code…
+                      {t("Sending code…")}
                     </Show>
                   </Button>
                 </form>
@@ -399,9 +402,9 @@ export function AccountLogin(props: AccountLoginProps) {
                 <OtpInput
                   value={code()}
                   status={otpStatus()}
-                  hint="Enter all 8 characters to continue."
+                  hint={t("Enter all 8 characters to continue.")}
                   errorMessage={displayedCodeError()}
-                  successMessage="Verified. Opening COSGRAL Workspace…"
+                  successMessage={t("Verified. Opening COSGRAL Workspace…")}
                   disabled={codeNeedsReplacement() || resendBusy()}
                   autofocus
                   onChange={handleCodeInput}
@@ -410,7 +413,9 @@ export function AccountLogin(props: AccountLoginProps) {
 
                 <Show when={challenge()?.developmentCode}>
                   {(developmentCode) => (
-                    <p class="account-login-development-code">Development code: {developmentCode()}</p>
+                    <p class="account-login-development-code">
+                      {t("Development code: {code}", { code: developmentCode() })}
+                    </p>
                   )}
                 </Show>
                 <Show when={formIssue()}>
@@ -440,12 +445,12 @@ export function AccountLogin(props: AccountLoginProps) {
                         when={resendBusy()}
                         fallback={
                           resendAvailableIn() > 0
-                            ? `Send a new code in ${formatTimer(resendAvailableIn())}`
-                            : "Send a new code"
+                            ? t("Send a new code in {time}", { time: formatTimer(resendAvailableIn()) })
+                            : t("Send a new code")
                         }
                       >
                         <span class="account-login-button-spinner" aria-hidden="true" />
-                        Sending new code…
+                        {t("Sending new code…")}
                       </Show>
                     </Button>
                   </Show>
@@ -460,7 +465,7 @@ export function AccountLogin(props: AccountLoginProps) {
                       onClick={() => void resetEmail()}
                     >
                       <ArrowLeft size={14} aria-hidden="true" />
-                      Change email
+                      {t("Change email")}
                     </Button>
                     <Show when={!codeNeedsReplacement()}>
                       <Button
@@ -470,11 +475,13 @@ export function AccountLogin(props: AccountLoginProps) {
                         size="sm"
                         disabled={pendingAction() !== null || resendAvailableIn() > 0}
                         loading={resendBusy()}
-                        loadingLabel="Sending…"
+                        loadingLabel={t("Sending…")}
                         onClick={() => void resendCode()}
                       >
                         <RefreshCw size={14} aria-hidden="true" />
-                        {resendAvailableIn() > 0 ? `Resend in ${formatTimer(resendAvailableIn())}` : "Resend code"}
+                        {resendAvailableIn() > 0
+                          ? t("Resend in {time}", { time: formatTimer(resendAvailableIn()) })
+                          : t("Resend code")}
                       </Button>
                     </Show>
                   </div>
