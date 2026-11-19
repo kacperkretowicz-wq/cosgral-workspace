@@ -297,7 +297,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
         botId={props.botId}
         onCreate={async (input) => {
           const api = window.openbot.routines;
-          if (!api) throw new Error("Routines unavailable");
+          if (!api) throw new Error(t("Routines are unavailable in this build."));
           const result = await api.create(input);
           if (result.secret) setSecret(result.secret);
           await refresh();

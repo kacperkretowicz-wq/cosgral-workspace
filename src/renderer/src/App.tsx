@@ -909,7 +909,7 @@ export function App() {
 
   function requireSidebar(): NonNullable<typeof window.openbot.sidebar> {
     const sidebar = window.openbot.sidebar;
-    if (!sidebar) throw new Error("Folders are not available in this build.");
+    if (!sidebar) throw new Error(t("Folders are not available in this build."));
     return sidebar;
   }
 
@@ -1275,7 +1275,7 @@ export function App() {
     clientMessageId: string,
   ): Promise<{ message: DirectMessage; readError?: string }> {
     const memberId = activeDirectMemberId();
-    if (!memberId) throw new Error("Select a person first.");
+    if (!memberId) throw new Error(t("Select a person first."));
     const message = await window.openbot.servers.sendDirectMessage({
       memberId,
       text,
@@ -1940,7 +1940,7 @@ export function App() {
     setHostStatus(published);
     await refreshHostManagement();
     if (published.phase !== "online") {
-      throw new Error(published.message ?? "This COSGRAL Workspace could not be published.");
+      throw new Error(published.message ?? t("This COSGRAL Workspace could not be published."));
     }
   }
 

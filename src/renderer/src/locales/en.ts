@@ -2433,4 +2433,11 @@ export const en = {
     "Replace the webhook secret? Existing senders must be updated.",
   "Generate new secret": "Generate new secret",
   "Delete this memory?": "Delete this memory?",
+  "Folders are not available in this build.": "Folders are not available in this build.",
+  "Select a person first.": "Select a person first.",
+  "This COSGRAL Workspace could not be published.": "This COSGRAL Workspace could not be published.",
+  "Draft actions are unavailable in this build.": "Draft actions are unavailable in this build.",
+  "Browser takeover is unavailable in this build.": "Browser takeover is unavailable in this build.",
+  "Preview is unavailable.": "Preview is unavailable.",
+  "Invalid team member role.": "Invalid team member role.",
 } as const;

@@ -364,7 +364,7 @@ export function VaultPanel() {
             }}
             onSave={async (input) => {
               const vault = window.openbot.vault;
-              if (!vault) throw new Error("Vault unavailable");
+              if (!vault) throw new Error(t("Vault is unavailable in this build."));
               await vault.save(input);
               setAdding(false);
               setEditing(undefined);

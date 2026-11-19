@@ -2431,4 +2431,11 @@ export const pl = {
     "Zamienić sekret webhooka? Istniejący wysyłający muszą dostać nowy.",
   "Generate new secret": "Wygeneruj nowy sekret",
   "Delete this memory?": "Usunąć tę pamięć?",
+  "Folders are not available in this build.": "Foldery nie są dostępne w tej wersji.",
+  "Select a person first.": "Najpierw wybierz osobę.",
+  "This COSGRAL Workspace could not be published.": "Nie udało się opublikować tego COSGRAL Workspace.",
+  "Draft actions are unavailable in this build.": "Akcje szkicu nie są dostępne w tej wersji.",
+  "Browser takeover is unavailable in this build.": "Przejęcie przeglądarki nie jest dostępne w tej wersji.",
+  "Preview is unavailable.": "Podgląd jest niedostępny.",
+  "Invalid team member role.": "Nieprawidłowa rola członka zespołu.",
 } as const;

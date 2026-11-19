@@ -1490,13 +1490,13 @@ export function Conversation(props: ConversationProps) {
 
   async function respondActionDraft(input: import("@openbot/contracts/ipc").RespondToDraftPreviewInput) {
     const respond = window.openbot.agent.respondToDraftPreview;
-    if (!respond) throw new Error("Draft actions are unavailable in this build.");
+    if (!respond) throw new Error(t("Draft actions are unavailable in this build."));
     await respond(input);
   }
 
   async function respondActionTakeover(input: import("@openbot/contracts/ipc").RespondToBrowserTakeoverInput) {
     const respond = window.openbot.agent.respondToBrowserTakeover;
-    if (!respond) throw new Error("Browser takeover is unavailable in this build.");
+    if (!respond) throw new Error(t("Browser takeover is unavailable in this build."));
     await respond(input);
     if (input.action === "take-over" && props.actionCard?.kind === "browser-takeover") {
       props.onActivateBrowserTab(props.actionCard.request.tabId);
@@ -1531,7 +1531,7 @@ export function Conversation(props: ConversationProps) {
     if (attachment.previewKind !== "text") return;
     try {
       const response = await fetch(attachment.previewUrl);
-      if (!response.ok) throw new Error("Preview is unavailable.");
+      if (!response.ok) throw new Error(t("Preview is unavailable."));
       const text = await response.text();
       setMediaPreview((current) =>
         current?.attachment.id === attachment.id

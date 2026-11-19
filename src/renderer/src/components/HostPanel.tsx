@@ -714,7 +714,7 @@ function MemberRow(props: {
 
 function readTeamRole(value: string): "admin" | "member" {
   if (value === "admin" || value === "member") return value;
-  throw new Error("Invalid team member role.");
+  throw new Error(t("Invalid team member role."));
 }
 
 function IdentityMark(props: { value: string; muted?: boolean }) {
