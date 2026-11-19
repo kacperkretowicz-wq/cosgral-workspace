@@ -2391,4 +2391,13 @@ export const pl = {
   Dismiss: "Odrzuć",
   Question: "Pytanie",
   Error: "Błąd",
+  Limit: "Limit",
+  Responded: "Odpowiedziano",
+  "Could not change this agent. Try again from the menu.": "Nie udało się zmienić agenta. Ponów akcję z menu.",
+  "this agent": "ten agent",
+  "Could not mark {name} as read. {message}": "Nie udało się oznaczyć {name} jako przeczytane. {message}",
+  "Usage is unavailable.": "Użycie jest niedostępne.",
+  "Could not open the link.": "Nie udało się otworzyć linku.",
+  "Could not update COSGRAL Workspace.": "Nie udało się zaktualizować COSGRAL Workspace.",
+  "Could not update your avatar.": "Nie udało się zaktualizować awatara.",
 } as const;

@@ -2393,4 +2393,13 @@ export const en = {
   Dismiss: "Dismiss",
   Question: "Question",
   Error: "Error",
+  Limit: "Limit",
+  Responded: "Responded",
+  "Could not change this agent. Try again from the menu.": "Could not change this agent. Try again from the menu.",
+  "this agent": "this agent",
+  "Could not mark {name} as read. {message}": "Could not mark {name} as read. {message}",
+  "Usage is unavailable.": "Usage is unavailable.",
+  "Could not open the link.": "Could not open the link.",
+  "Could not update COSGRAL Workspace.": "Could not update COSGRAL Workspace.",
+  "Could not update your avatar.": "Could not update your avatar.",
 } as const;
