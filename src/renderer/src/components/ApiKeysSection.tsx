@@ -1,5 +1,6 @@
 import type { ApiKeyEntry, ApiKeyProvider, ApiKeysDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { emptyApiKeys, providerLabel, statusLabel, statusTone } from "./api-keys-view";
 import { Badge, Button, Card, Field, Heading, Input, Text } from "./ui";
 
@@ -18,7 +19,7 @@ function ApiKeyCard(props: {
     <Card
       class="api-key-card"
       role="group"
-      aria-label={`${label()} key`}
+      aria-label={t("{name} key", { name: label() })}
       data-status={props.record.status}
       data-has-key={hasKey() ? "true" : "false"}
     >
@@ -36,12 +37,12 @@ function ApiKeyCard(props: {
         when={hasKey()}
         fallback={
           <Text as="p" tone="muted">
-            No key saved
+            {t("No key saved")}
           </Text>
         }
       >
         <Text as="p" role="status">
-          Saved key: {props.record.maskedKey}
+          {t("Saved key: {key}", { key: props.record.maskedKey ?? "" })}
         </Text>
       </Show>
       <Show when={props.record.message}>
@@ -49,7 +50,7 @@ function ApiKeyCard(props: {
           {props.record.message}
         </Text>
       </Show>
-      <Field label={`${label()} API key`}>
+      <Field label={t("{name} API key", { name: label() })}>
         <Input
           type="password"
           autocomplete="off"
@@ -61,7 +62,7 @@ function ApiKeyCard(props: {
         />
       </Field>
       <Text as="p" tone="muted" id={`api-key-hint-${props.record.provider}`}>
-        The key is never shown again after you save it. Paste it only into this password field.
+        {t("The key is never shown again after you save it. Paste it only into this password field.")}
       </Text>
       <div class="api-key-card-actions">
         <Button
@@ -74,17 +75,17 @@ function ApiKeyCard(props: {
             void props.onSet(props.record.provider, key);
           }}
         >
-          Save key
+          {t("Save key")}
         </Button>
         <Button
           type="button"
           variant="secondary"
           disabled={props.busy || !hasKey() || props.checking}
           loading={props.checking}
-          loadingLabel="Checking connection"
+          loadingLabel={t("Checking connection")}
           onClick={() => void props.onCheck(props.record.provider)}
         >
-          Check connection
+          {t("Check connection")}
         </Button>
         <Button
           type="button"
@@ -95,7 +96,7 @@ function ApiKeyCard(props: {
             void props.onRemove(props.record.provider);
           }}
         >
-          Remove key
+          {t("Remove key")}
         </Button>
       </div>
     </Card>
@@ -115,7 +116,7 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
   async function refresh() {
     const serial = ++loadGeneration;
     try {
-      if (!client) throw new Error("API keys are unavailable in this version.");
+      if (!client) throw new Error(t("API keys are unavailable in this version."));
       const next = await client.list();
       if (serial !== loadGeneration) return;
       // Keep the same array reference when nothing changed so open password drafts survive the first load.
@@ -123,7 +124,7 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
       setError("");
     } catch (e) {
       if (serial !== loadGeneration) return;
-      setError(e instanceof Error ? e.message : "Could not load API keys.");
+      setError(e instanceof Error ? e.message : t("Could not load API keys."));
     }
   }
 
@@ -140,22 +141,23 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
     try {
       await work();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The API key action failed.");
+      setError(e instanceof Error ? e.message : t("The API key action failed."));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Card class="providers-section api-keys-section" role="region" aria-label="API keys">
+    <Card class="providers-section api-keys-section" role="region" aria-label={t("API keys")}>
       <div class="providers-heading">
         <Heading as="h2" size="md">
-          API keys
+          {t("API keys")}
         </Heading>
       </div>
       <Text as="p" tone="secondary">
-        One API key per provider, stored encrypted. A saved key is always used, even when rejected, until you remove it
-        to return to subscription login. Changes apply when the provider process next starts.
+        {t(
+          "One API key per provider, stored encrypted. A saved key is always used, even when rejected, until you remove it to return to subscription login. Changes apply when the provider process next starts.",
+        )}
       </Text>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
@@ -171,14 +173,14 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
               checking={checking() === record.provider}
               onSet={async (provider, key) => {
                 await run(async () => {
-                  if (!client) throw new Error("API keys are unavailable.");
+                  if (!client) throw new Error(t("API keys are unavailable."));
                   const next = await client.set({ provider, key });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 });
               }}
               onRemove={async (provider) => {
                 await run(async () => {
-                  if (!client) throw new Error("API keys are unavailable.");
+                  if (!client) throw new Error(t("API keys are unavailable."));
                   const next = await client.remove({ provider });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 });
@@ -189,11 +191,11 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
                 setChecking(provider);
                 setError("");
                 try {
-                  if (!client) throw new Error("API keys are unavailable.");
+                  if (!client) throw new Error(t("API keys are unavailable."));
                   const next = await client.check({ provider });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 } catch (e) {
-                  setError(e instanceof Error ? e.message : "Could not check the connection.");
+                  setError(e instanceof Error ? e.message : t("Could not check the connection."));
                 } finally {
                   setChecking(null);
                 }
