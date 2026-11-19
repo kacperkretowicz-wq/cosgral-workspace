@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createSignal, For, onSettled, Show } from "solid-js";
+import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { PageId } from "./PageRail";
 import { PageIcon } from "./PageRail";
 
@@ -57,7 +57,8 @@ export function WorkPageSections<Id extends string>(props: {
   sections: ReadonlyArray<WorkPageSection<Id>>;
   initial?: Id;
 }) {
-  const storageKey = `cosgral.work-page.${props.page}.section`;
+  // The page and the first section are read once, when the page opens (untracked on purpose).
+  const storageKey = untrack(() => `cosgral.work-page.${props.page}.section`);
   const known = (value: string | null | undefined): Id | undefined =>
     props.sections.find((section) => section.id === value)?.id;
   const stored = () => {
@@ -68,7 +69,7 @@ export function WorkPageSections<Id extends string>(props: {
     }
   };
   const [active, setActive] = createSignal<string | undefined>(
-    known(stored()) ?? props.initial ?? props.sections[0]?.id,
+    untrack(() => known(stored()) ?? props.initial ?? props.sections[0]?.id),
   );
   const select = (id: Id) => {
     setActive(() => id);
@@ -149,7 +150,7 @@ export function WorkPageAnchors(props: {
   anchors: ReadonlyArray<WorkPageAnchor>;
   children: JSX.Element;
 }) {
-  const [active, setActive] = createSignal(props.anchors[0]?.id ?? "");
+  const [active, setActive] = createSignal(untrack(() => props.anchors[0]?.id ?? ""));
   let content: HTMLDivElement | undefined;
   const target = (id: string) => content?.querySelector<HTMLElement>(`[data-anchor="${id}"]`) ?? null;
   onSettled(() => {

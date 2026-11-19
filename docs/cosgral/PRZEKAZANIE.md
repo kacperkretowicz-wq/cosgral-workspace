@@ -1,6 +1,6 @@
 # Przekazanie projektu (najnowsze): sesja 19.11.2026, kontynuacja PR #24
 
-**Dla następnego agenta. Lista tego, co zostało w UI (P1/P2/P3): `docs/cosgral/AUDYT-UI-2026-11-19.md`.**
+**Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (UI i reszta: P0–P3, pliki, jak sprawdzać).**
 Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem
 rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.
 

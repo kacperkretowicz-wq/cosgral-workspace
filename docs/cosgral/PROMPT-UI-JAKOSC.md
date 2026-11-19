@@ -81,7 +81,7 @@ Kolory stworków (rumieniec, kropla potu) są wewnątrz generowanego awatara, wi
 
 ## Następne sekcje (kolejność)
 
-Pełna lista z audytu (P1/P2/P3, pliki, ryzyka): `docs/cosgral/AUDYT-UI-2026-11-19.md`.
+Pełna lista (UI i reszta, P0–P3): `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md`.
 
 1. Okno nowego/edycji kanału (`ChannelEditor`) i tworzenie agenta: ten sam poziom co widok kanału.
 2. Dostawcy: wnętrza sekcji (konta, CLI, klucze) jako wiersze z ikonami i stanem zamiast stosów pól.
