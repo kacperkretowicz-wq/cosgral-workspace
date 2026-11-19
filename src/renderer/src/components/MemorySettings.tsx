@@ -1,5 +1,6 @@
 import type { AgentMemory, AgentMemorySettings, ChannelMemory } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { MemoryPanel } from "./MemoryPanel";
 
 export function AgentMemorySettingsView(props: { botId: string }) {
@@ -11,7 +12,7 @@ export function AgentMemorySettingsView(props: { botId: string }) {
   async function refresh() {
     const api = window.openbot.memory;
     if (!api) {
-      setError("Memory is unavailable in this build.");
+      setError(t("Memory is unavailable in this build."));
       return;
     }
     const serial = ++request;
@@ -28,7 +29,7 @@ export function AgentMemorySettingsView(props: { botId: string }) {
         setError("");
       }
     } catch (e) {
-      if (serial === request) setError(e instanceof Error ? e.message : "Could not load memory.");
+      if (serial === request) setError(e instanceof Error ? e.message : t("Could not load memory."));
     }
   }
   onSettled(() => {
@@ -56,19 +57,19 @@ export function AgentMemorySettingsView(props: { botId: string }) {
         }}
         onSave={async (text, inclusion, memoryId) => {
           const api = window.openbot.memory;
-          if (!api) throw new Error("Memory unavailable");
+          if (!api) throw new Error(t("Memory unavailable"));
           await api.saveAgentMemory({ botId: props.botId, text, inclusion, memoryId });
           await refresh();
         }}
         onDelete={async (memoryId) => {
           const api = window.openbot.memory;
-          if (!api) throw new Error("Memory unavailable");
+          if (!api) throw new Error(t("Memory unavailable"));
           await api.deleteAgentMemory({ botId: props.botId, memoryId });
           await refresh();
         }}
         onLimit={async (maxMemories) => {
           const api = window.openbot.memory;
-          if (!api) throw new Error("Memory unavailable");
+          if (!api) throw new Error(t("Memory unavailable"));
           await api.setAgentLimit({ botId: props.botId, maxMemories });
           await refresh();
         }}
@@ -84,7 +85,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
   async function refresh() {
     const list = window.openbot.channels?.listMemories;
     if (!list) {
-      setError("Channel memory is unavailable in this build.");
+      setError(t("Channel memory is unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -95,7 +96,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
         setError("");
       }
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : "Could not load channel memory.");
+      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load channel memory."));
     }
   }
   onSettled(() => {
@@ -119,13 +120,13 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
         entries={items()}
         onSave={async (text, _inclusion, memoryId) => {
           const save = window.openbot.channels?.saveMemory;
-          if (!save) throw new Error("Channel memory unavailable");
+          if (!save) throw new Error(t("Channel memory unavailable"));
           await save({ channelId: props.channelId, text, memoryId });
           await refresh();
         }}
         onDelete={async (memoryId) => {
           const remove = window.openbot.channels?.deleteMemory;
-          if (!remove) throw new Error("Channel memory unavailable");
+          if (!remove) throw new Error(t("Channel memory unavailable"));
           await remove({ channelId: props.channelId, memoryId });
           await refresh();
         }}

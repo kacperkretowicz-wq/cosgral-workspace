@@ -69,6 +69,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 16. [zrobione: ab2c7394d] Aria/i18n: `ProviderModelPicker` (wybór modelu / statusy dostawcy).
 17. [zrobione: a192f6f8f] Aria/i18n: rozdziel `View`→`Show` (kolizja z KK) + `TablesPanel` / `VaultRequestCard`.
 18. [zrobione: da0d5edac] Aria/i18n: `ActionCard` + `ApiKeysSection` + `ComingSoon` + `ChatTasksSwitch`.
+19. [zrobione: PENDING] Aria/i18n: `ChannelEditor` + `JoinServerDialog` + `MemorySettings`.
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
