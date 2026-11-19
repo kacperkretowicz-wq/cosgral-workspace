@@ -760,3 +760,206 @@
   padding: var(--openbot-space-3) var(--openbot-space-4);
   color: var(--openbot-text-secondary);
 }
+
+/* Usage report in the work-page frame: stat cards, the chart and this computer side by side, tables as cards. */
+
+.work-page .usage-report {
+  gap: var(--openbot-space-6);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.work-page .usage-totals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--openbot-space-3);
+  padding: 0;
+}
+
+.work-page .usage-totals > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: 2px;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.usage-stat-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  grid-row: 1 / span 3;
+  align-self: start;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.work-page .usage-totals dt {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.work-page .usage-totals dd {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-2xl);
+  font-weight: var(--openbot-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--openbot-leading-2xl);
+}
+
+.work-page .usage-totals dd.usage-stat-detail {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-regular);
+  line-height: var(--openbot-leading-sm);
+}
+
+.usage-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--openbot-space-3);
+}
+
+.work-page .usage-chart,
+.usage-machine {
+  display: grid;
+  align-content: start;
+  gap: var(--openbot-space-3);
+  margin: 0;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.usage-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .usage-card-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.usage-card-header > span {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-chart-plot {
+  position: relative;
+  height: 160px;
+}
+
+.work-page .usage-chart-plot svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Three quiet guide lines behind the bars. */
+.usage-chart-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.usage-chart-grid i {
+  display: block;
+  border-top: 1px dashed var(--openbot-border-strong);
+}
+
+.work-page .usage-bar {
+  fill: var(--openbot-accent-strong);
+  transition: fill var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page .usage-bar[data-last="true"],
+.work-page .usage-bar:hover {
+  fill: var(--openbot-accent);
+}
+
+.work-page .usage-chart figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-machine .usage-rings {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--openbot-space-4);
+}
+
+.work-page .usage-table {
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--openbot-bg-surface);
+}
+
+.work-page .usage-table caption {
+  padding: 0 0 var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  text-align: left;
+}
+
+.work-page .usage-table :is(th, td) {
+  padding: var(--openbot-space-2) var(--openbot-space-4);
+  vertical-align: middle;
+}
+
+.work-page .usage-table tbody tr:hover {
+  background: var(--openbot-hover);
+}
+
+.usage-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .usage-table .usage-agent-avatar {
+  width: 26px;
+  height: 26px;
+}
+
+.work-page .usage-split {
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+@container (max-width: 860px) {
+  .usage-overview,
+  .work-page .usage-totals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

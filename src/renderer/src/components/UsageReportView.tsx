@@ -4,7 +4,10 @@ import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-j
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
+import type { BotProfile } from "../data";
+import { AgentAvatar } from "./AgentAvatar";
 import { Button } from "./ui";
+import { Coins, Cpu, MessageCircle, Wallet } from "./ui/icons";
 
 const BAR_AREA = { width: 600, height: 120 } as const;
 
@@ -63,7 +66,8 @@ function Ring(props: { label: string; percent: number | null }) {
  * The usage report (window.openbot.usageReport): tokens per day for 7 to 365 days, totals, the load of this computer,
  * and the table of agents. A figure the program does not collect is listed with its reason instead of invented.
  */
-export function UsageReportView() {
+export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
+  const botOf = (botId: string) => props.bots?.find((bot) => bot.id === botId);
   const api = untrack(() => window.openbot?.usageReport);
   const [period, setPeriod] = createSignal<UsagePeriod>(30);
   const [report, setReport] = createSignal<UsageReport | null>(null);
@@ -98,9 +102,25 @@ export function UsageReportView() {
     const slot = BAR_AREA.width / Math.max(1, current.days.length);
     return current.days.map((day, index) => {
       const height = (day.tokens / peak) * (BAR_AREA.height - 4);
-      return { day, x: index * slot, width: Math.max(1, slot - (slot > 4 ? 2 : 0)), height };
+      const gap = slot > 6 ? Math.min(6, slot * 0.28) : slot > 3 ? 1 : 0;
+      return {
+        day,
+        x: index * slot + gap / 2,
+        width: Math.max(1, slot - gap),
+        height,
+        last: index === current.days.length - 1,
+      };
     });
   });
+  const peak = createMemo(() => Math.max(0, ...(report()?.days.map((day) => day.tokens) ?? [0])));
+  const perDay = () => {
+    const current = report();
+    return current && current.days.length > 0 ? current.totals.tokens / current.days.length : 0;
+  };
+  const perTurn = () => {
+    const current = report();
+    return current && current.totals.turns > 0 ? current.totals.tokens / current.totals.turns : 0;
+  };
 
   return (
     <section class="usage-report" aria-label={t("Usage report")}>
@@ -146,25 +166,38 @@ export function UsageReportView() {
             <>
               <dl class="usage-totals">
                 <div>
+                  <span class="usage-stat-icon" aria-hidden="true">
+                    <Coins size={18} stroke-width={1.5} />
+                  </span>
                   <dt>{t("Tokens")}</dt>
                   <dd>{compact(current().totals.tokens)}</dd>
+                  <dd class="usage-stat-detail">{t("≈ {value} per day", { value: compact(perDay()) })}</dd>
                 </div>
                 <div>
+                  <span class="usage-stat-icon" aria-hidden="true">
+                    <MessageCircle size={18} stroke-width={1.5} />
+                  </span>
                   <dt>{t("Turns")}</dt>
                   <dd>{current().totals.turns}</dd>
+                  <dd class="usage-stat-detail">{t("≈ {value} tokens per turn", { value: compact(perTurn()) })}</dd>
                 </div>
                 <div>
+                  <span class="usage-stat-icon" aria-hidden="true">
+                    <Wallet size={18} stroke-width={1.5} />
+                  </span>
                   <dt>{t("Cost reported by providers")}</dt>
                   <dd>
                     {current().totals.pricedTurns === 0
                       ? "—"
                       : dollars(current().totals.costUsd, current().totals.costComplete)}
                   </dd>
+                  <dd class="usage-stat-detail">
+                    {current().totals.pricedTurns === 0
+                      ? t("No provider reported a price.")
+                      : t("{count} priced turns", { count: current().totals.pricedTurns })}
+                  </dd>
                 </div>
               </dl>
-              <Show when={current().collectingSince}>
-                {(since) => <p class="usage-note">{t("Counted since {day}.", { day: since() })}</p>}
-              </Show>
               <Show when={!current().collectingSince}>
                 <CosgralPanelState
                   kind="empty"
@@ -173,36 +206,61 @@ export function UsageReportView() {
                 />
               </Show>
 
-              <figure class="usage-chart">
-                <svg
-                  viewBox={`0 0 ${BAR_AREA.width} ${BAR_AREA.height}`}
-                  preserveAspectRatio="none"
-                  role="img"
-                  aria-label={t("Tokens per day, {from} to {to}", { from: current().from, to: current().to })}
-                >
-                  <For each={bars()}>
-                    {(bar) => (
-                      <rect
-                        class="usage-bar"
-                        x={bar.x}
-                        y={BAR_AREA.height - bar.height}
-                        width={bar.width}
-                        height={bar.height}
-                      >
-                        <title>{`${bar.day.day}: ${compact(bar.day.tokens)}`}</title>
-                      </rect>
-                    )}
-                  </For>
-                </svg>
-                <figcaption>
-                  <span>{current().from}</span>
-                  <span>{current().to}</span>
-                </figcaption>
-              </figure>
+              <div class="usage-overview">
+                <figure class="usage-chart">
+                  <header class="usage-card-header">
+                    <h3>{t("Tokens per day")}</h3>
+                    <span>{t("Peak {value}", { value: compact(peak()) })}</span>
+                  </header>
+                  <div class="usage-chart-plot">
+                    <span class="usage-chart-grid" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <svg
+                      viewBox={`0 0 ${BAR_AREA.width} ${BAR_AREA.height}`}
+                      preserveAspectRatio="none"
+                      role="img"
+                      aria-label={t("Tokens per day, {from} to {to}", { from: current().from, to: current().to })}
+                    >
+                      <For each={bars()}>
+                        {(bar) => (
+                          <rect
+                            class="usage-bar"
+                            data-last={bar.last ? "true" : undefined}
+                            x={bar.x}
+                            y={BAR_AREA.height - bar.height}
+                            width={bar.width}
+                            height={bar.height}
+                          >
+                            <title>{`${bar.day.day}: ${compact(bar.day.tokens)}`}</title>
+                          </rect>
+                        )}
+                      </For>
+                    </svg>
+                  </div>
+                  <figcaption>
+                    <span>{current().from}</span>
+                    <Show when={current().collectingSince}>
+                      {(since) => <span class="usage-note">{t("Counted since {day}.", { day: since() })}</span>}
+                    </Show>
+                    <span>{current().to}</span>
+                  </figcaption>
+                </figure>
 
-              <div class="usage-rings">
-                <Ring label={t("Processor")} percent={current().machine.cpuPercent} />
-                <Ring label={t("Memory")} percent={current().machine.memoryPercent} />
+                <section class="usage-machine" aria-label={t("This computer")}>
+                  <header class="usage-card-header">
+                    <h3>
+                      <Cpu size={15} stroke-width={1.5} aria-hidden="true" />
+                      {t("This computer")}
+                    </h3>
+                  </header>
+                  <div class="usage-rings">
+                    <Ring label={t("Processor")} percent={current().machine.cpuPercent} />
+                    <Ring label={t("Memory")} percent={current().machine.memoryPercent} />
+                  </div>
+                </section>
               </div>
 
               <Show when={current().byAgent.length > 0}>
@@ -220,7 +278,14 @@ export function UsageReportView() {
                     <For each={current().byAgent}>
                       {(row) => (
                         <tr>
-                          <th scope="row">{row.name ?? t("Removed agent")}</th>
+                          <th scope="row">
+                            <span class="usage-agent">
+                              <Show when={botOf(row.botId)}>
+                                {(bot) => <AgentAvatar bot={bot()} class="usage-agent-avatar" />}
+                              </Show>
+                              <span>{row.name ?? t("Removed agent")}</span>
+                            </span>
+                          </th>
                           <td>{compact(row.tokens)}</td>
                           <td>
                             <span class="usage-share">

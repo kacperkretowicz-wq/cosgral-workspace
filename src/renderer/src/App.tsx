@@ -2204,7 +2204,7 @@ export function App() {
                 })()}
               </Show>
               <Show when={activePage() === "usage"}>
-                <UsagePage />
+                <UsagePage bots={botList()} />
               </Show>
               <Show when={activePage() === "server-settings"}>
                 <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />

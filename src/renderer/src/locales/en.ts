@@ -2624,4 +2624,10 @@ export const en = {
   "Let someone see this computer, or connect to another one.":
     "Let someone see this computer, or connect to another one.",
   "File sources": "File sources",
+  "≈ {value} per day": "≈ {value} per day",
+  "≈ {value} tokens per turn": "≈ {value} tokens per turn",
+  "No provider reported a price.": "No provider reported a price.",
+  "{count} priced turns": "{count} priced turns",
+  "Tokens per day": "Tokens per day",
+  "Peak {value}": "Peak {value}",
 } as const;

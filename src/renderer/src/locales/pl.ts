@@ -2625,4 +2625,10 @@ export const pl = {
   "Let someone see this computer, or connect to another one.":
     "Pozwól komuś zobaczyć ten komputer albo połącz się z innym.",
   "File sources": "Źródła plików",
+  "≈ {value} per day": "≈ {value} dziennie",
+  "≈ {value} tokens per turn": "≈ {value} tokenów na turę",
+  "No provider reported a price.": "Żaden dostawca nie podał ceny.",
+  "{count} priced turns": "Tury z ceną: {count}",
+  "Tokens per day": "Tokeny dziennie",
+  "Peak {value}": "Szczyt {value}",
 } as const;

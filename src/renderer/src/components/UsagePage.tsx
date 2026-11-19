@@ -1,5 +1,6 @@
 import type { AcpAgentConfig, ProviderUsage } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { ProviderUsageList } from "./ProvidersPage";
 import { UsageReportView } from "./UsageReportView";
@@ -11,7 +12,7 @@ import { WorkPage } from "./WorkPage";
  * (`providers.listUsage`, `provider-usage-changed`): state ok | limited | unavailable, used percent, reason and
  * reset time per provider and per ACP agent. Per-agent token counts are not in any contract yet.
  */
-export function UsagePage() {
+export function UsagePage(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
   const [usage, setUsage] = createSignal<ProviderUsage[]>([]);
   const [acpAgents, setAcpAgents] = createSignal<AcpAgentConfig[]>([]);
   const [loaded, setLoaded] = createSignal(false);
@@ -73,7 +74,7 @@ export function UsagePage() {
         </Text>
       </Show>
       <Show when={window.openbot?.usageReport}>
-        <UsageReportView />
+        <UsageReportView bots={props.bots} />
       </Show>
       <Show when={window.openbot.providers && loaded()}>
         <ProviderUsageList
