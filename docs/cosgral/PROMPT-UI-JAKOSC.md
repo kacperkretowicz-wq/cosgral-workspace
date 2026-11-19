@@ -59,6 +59,11 @@ Wkład produktowy: `PRODUCT.md` (użytkownicy, zasady, ograniczenia). Ten plik m
 | 19.11 (3) | Przepływy | Układ edytora: zapisane przepływy po lewej, po prawej nazwa jako tytuł, „Szkic”, usuń jako ikona, „Zapisz” z ikoną. Paleta i karty kroków z ikoną typu. Pusty stan płótna „Zacznij od wyzwalacza”. Połączenia w jednym wierszu, ścieżki jako kolorowe etykiety. Historia uruchomień: status, czas, kroki jako łańcuch etykiet w kolorze stanu | `app--playground` → Przepływy |
 | 19.11 (3) | Harmonogram | Sekcje Plan i Rutyny. Plan jako oś czasu: Dziś/Jutro/Wczoraj, kropka na osi, stworek agenta (mina „pracuje” przy trwającym uruchomieniu), status. Rutyny: wiersze ze stworkiem, „Aktywne/Wstrzymane”, akcje na najechanie; formularz jako karta w dwóch kolumnach | `app--playground` → Więcej → Harmonogram |
 | 19.11 (3) | Dostawcy, Zużycie, Telefon, Zdalny pulpit | Ten sam nagłówek; Dostawcy ze spisem 8 sekcji z ikonami (wszystkie sekcje zostają na stronie dla skryptów akceptacyjnych) | `app--playground` |
+| 19.11 (4) | Kolory | Nowy CSS tej gałęzi przepięty na paletę `--openbot-*` z `styles.css` (zasada z AGENTS.md); nowy token `--openbot-bg-inset`; kolory kroków przepływu z `--openbot-file-*` | — |
+| 19.11 (4) | Zużycie | Karty liczb z ikoną i wyliczoną linią (dziennie, na turę, tury z ceną); wykres w karcie ze szczytem, przerywaną siatką i dzisiejszym słupkiem w akcencie; „Ten komputer” obok; tabela agentów ze stworkami; bez zewnętrznej karty | `app--playground` → Zużycie |
+| 19.11 (4) | Kanały na liście | Sekcja „Kanały” nad „Agentami”: stos do 3 stworków członków (prowadzący z przodu), tytuł, liczba członków, „#nazwa · prowadzi X”; wyszukiwarka filtruje też kanały | `app--playground` |
+| 19.11 (4) | Widok kanału | Nagłówek ze stworkami i „Edytuj kanał”; pasek Czat/Zadania + pigułki (Instrukcje, Pamięć, Rutyny, Historia) otwierające kartę; wiadomości ze stworkiem autora, etykietą rodzaju i czasem, cytat odpowiedzi, „Odpowiedz” jako ikona; pole wiadomości jak w rozmowie (Enter wysyła); zadania ze stworkiem i stanem; lista kanałów w środku chowa się, gdy kanał otwarto z paska | `app--playground` → kanał Project |
+| 19.11 (4) | Kroki agenta | „N kroków” jako oś czasu: ikona rodzaju kroku (czytanie, szukanie, uruchomienie, pisanie, sieć, myślenie), bieżący krok w akcencie; blok kroków nie zależy już od animacji wejścia | `conversation-agentactivityindicator--thinking-details` |
 
 ## Runda 3 (19.11, kontynuacja): cel i zasady
 
@@ -76,9 +81,8 @@ Kolory stworków (rumieniec, kropla potu) są wewnątrz generowanego awatara, wi
 
 ## Następne sekcje (kolejność)
 
-1. Katalog dodatków i Ustawienia serwera: mają własny układ z nawigacją; dociągnąć do `WorkPage` (nagłówek z ikoną) bez łamania ich nawigacji.
-2. Zużycie: wykres słupkowy (dziś pełne niebieskie bloki) na spokojniejszy, karty liczb z ikonami, tabela agentów ze stworkami.
-3. Dostawcy: wnętrza sekcji (konta, CLI, klucze) jako wiersze `w2-item` z ikonami zamiast stosów pól.
-4. Kanały na liście agentów jako wiersze ze stosem stworków członków; sekcje „Nieprzeczytane / Przypięte / reszta”.
-5. Rozmowa: kroki agenta jako zwijana oś czasu z ikonami narzędzi.
-6. Ustawienia i okna dialogowe.
+1. Okno nowego/edycji kanału (`ChannelEditor`) i tworzenie agenta: ten sam poziom co widok kanału.
+2. Dostawcy: wnętrza sekcji (konta, CLI, klucze) jako wiersze z ikonami i stanem zamiast stosów pól.
+3. Katalog dodatków i Ustawienia serwera: nagłówek `WorkPage` bez łamania ich nawigacji.
+4. Ustawienia (okno) i pozostałe okna dialogowe.
+5. Drobiazgi: „Online now/Offline” i etykiety dostępności w wierszach osób po polsku, ostrzeżenie Biome w `cosgral.css:2812`.

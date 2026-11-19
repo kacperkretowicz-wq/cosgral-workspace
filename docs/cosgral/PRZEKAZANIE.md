@@ -40,12 +40,25 @@ rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cos
 10. **Dostawcy, Zużycie, Telefon, Zdalny pulpit:** ten sam nagłówek; Dostawcy ze spisem sekcji.
 11. Atrapa Storybooka (`mock-openbot.ts`) przypina 5 domyślnych stron jak nowa instalacja (wcześniej pusta lista).
 
+12. **Kolory (runda 4):** CSS tej gałęzi używa tylko palety `--openbot-*` ze `styles.css` (nowa zasada AGENTS.md);
+    dodany token `--openbot-bg-inset` (studnie edytorów, np. płótno przepływu).
+13. **Zużycie** (`UsageReportView.tsx`): karty liczb z ikonami, wykres w karcie, „Ten komputer” obok, agenci ze stworkami.
+14. **Kanały na liście agentów** (`Sidebar.tsx` `channels`/`onOpenChannel`, `App.tsx` ładuje listę i słucha
+    `channels-changed`): wiersz ze stosem stworków członków. Test: `Sidebar.channels.test.tsx`.
+15. **Widok kanału** (`ChannelView.tsx`, `ChannelWorkspace.tsx`, `styles/channel-view.css`): wygląda jak rozmowa z agentem
+    (nagłówek, pigułki ustawień z kartą, wiadomości ze stworkami, pole wiadomości, Enter wysyła). Nazwy dostępne dla testów
+    i skryptów e2e bez zmian („Edit channel”, „Send”, „New message to channel lead”, „Reply to …”).
+16. **Kroki agenta** (`conversation/AgentActivity.tsx`): oś czasu z ikoną rodzaju kroku. Test: `AgentActivity.steps.test.tsx`.
+17. Usunięte 2 zrzuty, które jeden z commitów przez pomyłkę dodał do katalogu głównego (`shots/`).
+
 ## C. Stan sprawdzenia
 
 | Sprawdzenie | Wynik (kontener Linux) |
 |---|---|
 | `bun run lint` | zielone (1 ostrzeżenie w `cosgral.css:2812`, było już przed tą sesją) |
 | `bun run typecheck` (6 projektów) | zielone |
+| `bun run test` (runda 4) | 3391 zielonych, 18 pominiętych, te same 3 znane czerwone (2 windowsowe `acp-presets`, niestabilny `agent-service-context-threads`). |
+| `bun run test:storybook` (runda 4) | 370/370 po poprawce: test dostępności wyłapał za słaby kontrast „#nazwa” w wierszu kanału (`text-dim`, 3,2:1), teraz kolor linii podglądu. |
 | `bun run test` (po stronach, runda 2) | 3386 zielonych, 18 pominiętych, 3 czerwone: te same 2 windowsowe w `acp-presets.test.ts` oraz niestabilny `agent-service-context-threads.test.ts` („compacts a thread that is not on screen…”) — na czystym PR #24 też pada mniej więcej 2 razy na 3, backendu nie ruszałem. |
 | `bun run test:storybook` (runda 2) | 370/370 (+3 nowe historyjki `COSGRAL/Work pages`: Biblioteka, Przepływy, Harmonogram, z testem dostępności; wyłapały zdublowaną nazwę nawigacji „Library sections”, poprawione na „Źródła plików”). |
 | `bun run test` (runda 1) | 3387 zielonych, 18 pominiętych, **2 czerwone** w `src/backend/acp-presets.test.ts` (testy zakładają Windows: wielkość liter i rozszerzenia `.cmd/.exe` w PATH). Na czystym PR #24 w tym kontenerze padają te same 2, więc to nie skutek zmian UI; na Windows powinny przejść. |

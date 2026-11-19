@@ -549,6 +549,7 @@
   text-align: center;
 }
 
+/* Same colour as the preview line: the dim shade fails AA contrast on the sidebar. */
 .channel-row-name {
-  color: var(--openbot-text-dim);
+  color: inherit;
 }
