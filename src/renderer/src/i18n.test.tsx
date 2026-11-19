@@ -79,8 +79,22 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "BrowserProfileSettings",
     "BudgetSettings",
     "ChannelWorkspace",
+    "RoutinePanel",
+    "VaultPanel",
+    "MemoryPanel",
+    "ApprovalRulesSettings",
+    "AccountLogin",
+    "MessageHistoryActions",
+    "AlwaysAllowPanel",
+    "ComposerEditor",
   ];
-  const extra = ["conversation/AgentActivity"];
+  const extra = [
+    "conversation/AgentActivity",
+    "conversation/MessageRendering",
+    "conversation/ChatSearch",
+    "conversation/QueuePanel",
+    "conversation/SelectionActions",
+  ];
   for (const file of [...files, ...extra]) {
     const source = readFileSync(resolve(`src/renderer/src/components/${file}.tsx`), "utf8");
     for (const match of source.matchAll(/\bt\("([^"\n]+)"(?:\s*,|\s*\))/g)) {
