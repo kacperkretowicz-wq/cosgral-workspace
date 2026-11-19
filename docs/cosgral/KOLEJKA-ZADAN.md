@@ -77,7 +77,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 24. [zrobione: f6cfbdd] Aria/i18n: `SidebarFolders` + `Spaces`.
 25. [zrobione: 18cf33d] Aria/i18n: `ConversationPrompts` + `StickyDecision` + aria tabel/obrazów.
 26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
-27. [zrobione: SHA_AK] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
+27. [zrobione: 79a742675] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
 28. [w toku: KAPI, 06:20] Aria/i18n: `App.tsx` Library / Schedule / Loading + `HostPanel` / resztki aria.
 
 ## Tester
