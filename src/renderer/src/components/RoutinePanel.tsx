@@ -199,15 +199,22 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
             <strong>{routine.name}</strong>
             <p>
               {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} ·{" "}
-              {routine.paused ? "Paused" : "Active"} · {routine.timezone}
+              {routine.paused ? t("Paused") : t("Active")} · {routine.timezone}
             </p>
             <p>
               {routine.nextRunAt
-                ? `Next: ${new Date(routine.nextRunAt).toLocaleString(undefined, { timeZone: routine.timezone })} (${routine.timezone})`
-                : "No scheduled run"}
+                ? t("Next: {when} ({timezone})", {
+                    when: new Date(routine.nextRunAt).toLocaleString(undefined, {
+                      timeZone: routine.timezone,
+                    }),
+                    timezone: routine.timezone,
+                  })
+                : t("No scheduled run")}
             </p>
             <Show when={routine.webhook}>
-              <p>Webhook: {routine.webhook?.url}</p>
+              <p>
+                {t("Webhook")}: {routine.webhook?.url}
+              </p>
               <Button
                 unstyled
                 type="button"

@@ -120,7 +120,7 @@ export function TasksPage(props: {
       upsert(await api.actOnTask({ taskId: task.id, action }));
       setError("");
     } catch (e) {
-      fail(e, `Could not ${ACTION_LABELS[action].toLowerCase()} the task.`);
+      fail(e, t("Could not change the task."));
     } finally {
       setBusy(null);
     }
@@ -129,7 +129,7 @@ export function TasksPage(props: {
   onSettled(() => {
     const api = window.openbot.channels;
     if (!api) {
-      setError("Channels are not available in this build.");
+      setError(t("Channels are not available in this build."));
       setLoaded(true);
       return;
     }
@@ -140,7 +140,7 @@ export function TasksPage(props: {
         return load(list);
       })
       .catch((e) => {
-        fail(e, "Could not load channels.");
+        fail(e, t("Could not load channels."));
         setLoaded(true);
       });
     return window.openbot.agent.onEvent((event) => {
@@ -163,14 +163,14 @@ export function TasksPage(props: {
     <main class="w2-library tasks-page">
       <header>
         <Heading as="h1" size="lg">
-          Tasks
+          {t("Tasks")}
         </Heading>
         <Text as="p" tone="secondary">
-          Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.
+          {t("Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.")}
         </Text>
       </header>
       <fieldset class="tasks-filter">
-        <legend class="sr-only">Show tasks</legend>
+        <legend class="sr-only">{t("Show tasks")}</legend>
         <For each={FILTERS}>
           {(item) => (
             <Button
@@ -180,7 +180,7 @@ export function TasksPage(props: {
               aria-pressed={filter() === item.id ? "true" : "false"}
               onClick={() => setFilter(item.id)}
             >
-              {item.label}
+              {t(item.label)}
             </Button>
           )}
         </For>
@@ -204,7 +204,7 @@ export function TasksPage(props: {
             when={visible().length}
             fallback={
               <Text as="p" tone="muted" class="tasks-empty">
-                {tasks().length ? "No task matches this filter." : "No tasks here yet."}
+                {tasks().length ? t("No task matches this filter.") : t("No tasks here yet.")}
               </Text>
             }
           >
@@ -223,7 +223,7 @@ export function TasksPage(props: {
                       </Text>
                     </div>
                     <Badge tone={STATE_VIEW[task.state].tone} dot>
-                      {STATE_VIEW[task.state].label}
+                      {t(STATE_VIEW[task.state].label)}
                     </Badge>
                     <div class="tasks-actions">
                       <Show when={props.onOpenChannel}>
@@ -245,7 +245,7 @@ export function TasksPage(props: {
                             disabled={busy() !== null}
                             onClick={() => void act(task, action)}
                           >
-                            {ACTION_LABELS[action]}
+                            {t(ACTION_LABELS[action])}
                           </Button>
                         )}
                       </For>
@@ -261,7 +261,7 @@ export function TasksPage(props: {
                               <li data-state={step.state}>
                                 <span>{step.title}</span>
                                 <Badge tone={STATE_VIEW[step.state].tone} dot>
-                                  {STATE_VIEW[step.state].label}
+                                  {t(STATE_VIEW[step.state].label)}
                                 </Badge>
                                 <small>{ownerName(step.ownerBotId)}</small>
                               </li>

@@ -2476,13 +2476,13 @@ function toBotMessage(message: ConversationMessage): BotMessage {
     status: message.exchange
       ? undefined
       : message.delivery?.status === "queued"
-        ? `Queued #${message.delivery.position}`
+        ? t("Queued #{n}", { n: message.delivery.position ?? 0 })
         : message.delivery?.status === "cancelled"
-          ? "Cancelled"
+          ? t("Cancelled")
           : message.status === "failed"
-            ? "Failed"
+            ? t("Failed")
             : message.status === "interrupted"
-              ? "Stopped"
+              ? t("Stopped")
               : undefined,
   };
 }

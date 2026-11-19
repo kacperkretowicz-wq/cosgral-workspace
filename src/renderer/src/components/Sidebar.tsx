@@ -919,8 +919,9 @@ export function Sidebar(props: SidebarProps) {
                           <Show when={props.activities?.[bot.id]?.workingThread}>
                             {(thread) => (
                               <span class="bot-row-preview">
-                                {thread().background ? "Working in background: " : "Working in: "}
-                                {thread().title}
+                                {thread().background
+                                  ? t("Working in background: {title}", { title: thread().title })
+                                  : t("Working in: {title}", { title: thread().title })}
                               </span>
                             )}
                           </Show>
