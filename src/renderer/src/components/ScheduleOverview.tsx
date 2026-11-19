@@ -1,6 +1,8 @@
 import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
+import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
 import { Button } from "./ui";
@@ -12,6 +14,18 @@ type WindowDays = (typeof WINDOWS)[number];
 
 function dayKey(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** "Today" and "Tomorrow" read faster than a date; other days keep the weekday and date. */
+function dayLabel(iso: string, now: Date = new Date()): { label: string; relative: boolean } {
+  const date = new Date(iso);
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const diff = Math.floor((date.getTime() - start.getTime()) / DAY);
+  if (diff === 0) return { label: t("Today"), relative: true };
+  if (diff === 1) return { label: t("Tomorrow"), relative: true };
+  if (diff === -1) return { label: t("Yesterday"), relative: true };
+  return { label: dayKey(iso), relative: false };
 }
 
 function timeOf(iso: string): string {
@@ -41,7 +55,8 @@ function statusLabel(entry: ScheduleEntry): string {
  * The schedule overview (window.openbot.schedule): what the routines will start in the next days, what already ran,
  * the routines that wait for a message from outside or are paused, and a feed of the latest runs.
  */
-export function ScheduleOverview() {
+export function ScheduleOverview(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
+  const botOf = (botId: string) => props.bots?.find((bot) => bot.id === botId);
   const api = untrack(() => window.openbot?.schedule);
   const [days, setDays] = createSignal<WindowDays>(14);
   const [view, setView] = createSignal<ScheduleView | null>(null);
@@ -145,27 +160,53 @@ export function ScheduleOverview() {
                 />
               </Show>
               <For each={groups()}>
-                {([day, entries]) => (
-                  <section class="schedule-day">
-                    <h3>{day}</h3>
-                    <ul>
-                      <For each={entries}>
-                        {(entry) => (
-                          <li class="schedule-entry" data-kind={entry.kind}>
-                            <time datetime={entry.at}>{timeOf(entry.at)}</time>
-                            <strong>{entry.routineName}</strong>
-                            <span class="schedule-status" data-status={entry.kind === "ran" ? entry.status : "planned"}>
-                              {statusLabel(entry)}
-                            </span>
-                            <Show when={entry.kind === "ran" && entry.reason}>
-                              <small>{entry.kind === "ran" ? entry.reason : ""}</small>
-                            </Show>
-                          </li>
-                        )}
-                      </For>
-                    </ul>
-                  </section>
-                )}
+                {([day, entries]) => {
+                  const heading = () => dayLabel(entries[0]?.at ?? new Date().toISOString());
+                  return (
+                    <section class="schedule-day" data-relative={heading().relative ? "true" : undefined}>
+                      <h3>
+                        <span>{heading().label}</span>
+                        <Show when={heading().relative}>
+                          <small>{day}</small>
+                        </Show>
+                      </h3>
+                      <ul>
+                        <For each={entries}>
+                          {(entry) => (
+                            <li class="schedule-entry" data-kind={entry.kind}>
+                              <time datetime={entry.at}>{timeOf(entry.at)}</time>
+                              <span class="schedule-dot" aria-hidden="true" />
+                              <Show when={botOf(entry.botId)}>
+                                {(bot) => (
+                                  <AgentAvatar
+                                    bot={bot()}
+                                    class="schedule-avatar"
+                                    mood={entry.kind === "ran" && entry.status === "running" ? "working" : "idle"}
+                                  />
+                                )}
+                              </Show>
+                              <span class="schedule-entry-copy">
+                                <strong>{entry.routineName}</strong>
+                                <Show when={botOf(entry.botId)?.name ?? (entry.kind === "ran" ? entry.reason : null)}>
+                                  <small>
+                                    {botOf(entry.botId)?.name}
+                                    {entry.kind === "ran" && entry.reason ? ` · ${entry.reason}` : ""}
+                                  </small>
+                                </Show>
+                              </span>
+                              <span
+                                class="schedule-status"
+                                data-status={entry.kind === "ran" ? entry.status : "planned"}
+                              >
+                                {statusLabel(entry)}
+                              </span>
+                            </li>
+                          )}
+                        </For>
+                      </ul>
+                    </section>
+                  );
+                }}
               </For>
               <Show when={current().truncated}>
                 <p class="schedule-note">{t("The list is cut; narrow the window to see everything.")}</p>
@@ -200,15 +241,20 @@ export function ScheduleOverview() {
             <ul>
               <For each={feed()}>
                 {(item) => (
-                  <li class="schedule-entry" data-kind="ran">
-                    <time datetime={item.run.startedAt}>
-                      {dayKey(item.run.startedAt)} {timeOf(item.run.startedAt)}
-                    </time>
-                    <strong>{item.routineName}</strong>
+                  <li class="schedule-entry schedule-feed-entry" data-kind="ran">
+                    <Show when={botOf(item.run.botId)} fallback={<span class="schedule-dot" aria-hidden="true" />}>
+                      {(bot) => <AgentAvatar bot={bot()} class="schedule-avatar" />}
+                    </Show>
+                    <span class="schedule-entry-copy">
+                      <strong>{item.routineName}</strong>
+                      <small>
+                        {item.agentName ?? t("Removed agent")} · {dayLabel(item.run.startedAt).label}{" "}
+                        <time datetime={item.run.startedAt}>{timeOf(item.run.startedAt)}</time>
+                      </small>
+                    </span>
                     <span class="schedule-status" data-status={item.run.status}>
                       {runStatusLabel(item.run.status)}
                     </span>
-                    <small>{item.agentName ?? t("Removed agent")}</small>
                   </li>
                 )}
               </For>

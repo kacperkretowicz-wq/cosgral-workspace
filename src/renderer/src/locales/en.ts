@@ -2609,4 +2609,14 @@ export const en = {
     "A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.",
   "Waiting for approval": "Waiting for approval",
   Denied: "Denied",
+  "What your agents will do and when, and what already ran.":
+    "What your agents will do and when, and what already ran.",
+  "Schedule sections": "Schedule sections",
+  Plan: "Plan",
+  "Planned and finished routine runs, day by day.": "Planned and finished routine runs, day by day.",
+  "Repeating work: what an agent does, how often, and where it reports.":
+    "Repeating work: what an agent does, how often, and where it reports.",
+  Today: "Today",
+  Tomorrow: "Tomorrow",
+  Yesterday: "Yesterday",
 } as const;

@@ -62,8 +62,7 @@ import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
-import { RoutinePanel } from "./components/RoutinePanel";
-import { ScheduleOverview } from "./components/ScheduleOverview";
+import { SchedulePage } from "./components/SchedulePage";
 import { ServerRail } from "./components/ServerRail";
 import { ServerSettingsPage } from "./components/ServerSettingsPage";
 import { Sidebar } from "./components/Sidebar";
@@ -2169,13 +2168,7 @@ export function App() {
                 <LibraryPage />
               </Show>
               <Show when={activePage() === "schedule"}>
-                <main class="w2-library">
-                  <h1>{t("Schedule")}</h1>
-                  <Show when={window.openbot?.schedule}>
-                    <ScheduleOverview />
-                  </Show>
-                  <RoutinePanel bots={botList()} />
-                </main>
+                <SchedulePage bots={botList()} />
               </Show>
               <Show when={activePage() === "marketplace"}>
                 <MarketplacePage bots={botList()} />

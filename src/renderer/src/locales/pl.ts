@@ -2611,4 +2611,13 @@ export const pl = {
     "Wyzwalacz uruchamia przepływ ręcznie albo z rutyny. Potem dodaj agentów, akceptacje i wyjścia.",
   "Waiting for approval": "Czeka na akceptację",
   Denied: "Odrzucone",
+  "What your agents will do and when, and what already ran.": "Co i kiedy zrobią Twoi agenci, i co już się wykonało.",
+  "Schedule sections": "Sekcje harmonogramu",
+  Plan: "Plan",
+  "Planned and finished routine runs, day by day.": "Zaplanowane i zakończone uruchomienia rutyn, dzień po dniu.",
+  "Repeating work: what an agent does, how often, and where it reports.":
+    "Powtarzalna praca: co agent robi, jak często i gdzie zgłasza wynik.",
+  Today: "Dziś",
+  Tomorrow: "Jutro",
+  Yesterday: "Wczoraj",
 } as const;

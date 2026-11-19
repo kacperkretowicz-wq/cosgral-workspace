@@ -524,3 +524,216 @@
     opacity: 1;
   }
 }
+
+/* Schedule › Plan: a timeline. Day headings, then rows: time, a dot on the line, the agent, the routine, status. */
+
+.work-page .schedule-overview {
+  gap: var(--openbot-space-6);
+}
+
+.work-page .schedule-windows {
+  gap: var(--openbot-space-1);
+}
+
+.work-page .schedule-day {
+  display: grid;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .schedule-day h3,
+.work-page .schedule-feed h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+  margin: 0 0 var(--openbot-space-1);
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.work-page .schedule-day h3::first-letter {
+  text-transform: uppercase;
+}
+
+.work-page .schedule-day h3 small {
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-md);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.work-page .schedule-day[data-relative="true"] h3 > span {
+  color: var(--cosgral-accent-text);
+}
+
+.work-page .schedule-day ul {
+  position: relative;
+}
+
+/* The line the dots sit on. */
+.work-page .schedule-day ul::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 84px;
+  width: 1px;
+  background: var(--cosgral-border-strong);
+  content: "";
+}
+
+.work-page .schedule-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px 14px 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-2) 10px;
+  border: 0;
+  border-radius: var(--cosgral-radius-md);
+  padding: var(--openbot-space-1-5) var(--openbot-space-2) var(--openbot-space-1-5) 0;
+  transition: background-color var(--cosgral-duration-fast) var(--cosgral-ease);
+}
+
+.work-page .schedule-entry:hover {
+  background: var(--cosgral-hover);
+}
+
+.work-page .schedule-entry:not(:has(.schedule-avatar)) {
+  grid-template-columns: 68px 14px minmax(0, 1fr) auto;
+}
+
+.work-page .schedule-entry time {
+  min-width: 0;
+  color: var(--cosgral-text-secondary);
+  font-size: var(--cosgral-text-md);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.work-page .schedule-dot {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  justify-self: center;
+  border: 2px solid var(--cosgral-accent);
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-bg-canvas);
+}
+
+.work-page .schedule-entry[data-kind="ran"] .schedule-dot {
+  border-color: var(--cosgral-text-dim);
+  background: var(--cosgral-text-dim);
+}
+
+.work-page .schedule-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.work-page .schedule-entry-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.work-page .schedule-entry-copy strong {
+  overflow: hidden;
+  color: var(--cosgral-text-primary);
+  font-size: var(--cosgral-text-lg);
+  font-weight: var(--openbot-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .schedule-entry-copy small {
+  overflow: hidden;
+  color: var(--cosgral-text-muted);
+  font-size: var(--cosgral-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .schedule-status {
+  padding: 2px 9px;
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page .schedule-status[data-status="planned"] {
+  background: var(--cosgral-accent-soft);
+}
+
+.work-page .schedule-status[data-status="done"] {
+  background: color-mix(in srgb, var(--cosgral-success) 14%, transparent);
+}
+
+.work-page .schedule-status[data-status="failed"] {
+  background: color-mix(in srgb, var(--cosgral-danger) 14%, transparent);
+  color: var(--cosgral-danger-text);
+}
+
+.work-page .schedule-feed {
+  border-top: 1px solid var(--cosgral-border-strong);
+  padding-top: var(--openbot-space-4);
+}
+
+.work-page .schedule-feed-entry,
+.work-page .schedule-feed-entry:not(:has(.schedule-avatar)) {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  padding-left: var(--openbot-space-2);
+}
+
+.work-page .schedule-aside {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border: 0;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-bg-surface);
+  padding: var(--openbot-space-3);
+}
+
+/* Schedule › Routines: the agent's creature leads each routine row; a paused routine fades. */
+.work-page .routine-item .w2-item-icon {
+  background: transparent;
+  box-shadow: none;
+}
+
+.work-page .routine-item .w2-item-icon .bot-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.work-page .routine-item[data-paused="true"] > :not(.w2-item-actions) {
+  opacity: 0.6;
+}
+
+.work-page .w2-item-tag[data-state="active"] {
+  background: color-mix(in srgb, var(--cosgral-success) 14%, transparent);
+  color: var(--cosgral-success);
+}
+
+.work-page .routine-item > p {
+  white-space: nowrap;
+}
+
+/* "Create routine" as a card: short fields side by side, instructions across the full width. */
+.work-page .routine-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--openbot-space-3) var(--openbot-space-4);
+  margin-top: var(--openbot-space-4);
+  border: 1px solid var(--cosgral-border-strong);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .routine-form > :is(h3, [role="alert"], .ui-button, button) {
+  grid-column: 1 / -1;
+}
+
+.work-page .routine-form > label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.work-page .routine-form > :is(.ui-button, button) {
+  justify-self: start;
+}
