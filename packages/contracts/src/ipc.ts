@@ -28,6 +28,7 @@ export * from "./ipc-instance-transfer";
 export * from "./ipc-integrations";
 export * from "./ipc-isolation";
 export * from "./ipc-library";
+export * from "./ipc-machine-files";
 export * from "./ipc-marketplace";
 export * from "./ipc-marketplace-screen";
 export * from "./ipc-mcp";
