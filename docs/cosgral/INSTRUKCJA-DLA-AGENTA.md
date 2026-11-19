@@ -104,16 +104,21 @@ zawierał całość), czy scalać po kolei. Nie scalać bez zielonego checku z 3
 
 ## 5. P2: średnie (UI i kod)
 
-1. **Reaktywność Solid 2:** pełny przebieg Storybooka wypisuje **1384 ostrzeżenia `STRICT_READ_UNTRACKED`**
-   („wartość reaktywna czytana poza śledzeniem, nie zaktualizuje się”):
-   - 1017 „in an effect callback”;
-   - 161 `ButtonRoot`, po 76 `PopperRoot` i `Menu`, 17 `FormControlLabel`, 13 `TabsRoot`: biblioteka Kobalte 2 alpha na
-     Solid 2 RC, sprawdzić aktualizację Kobalte;
-   - pojedyncze w naszym kodzie: `Field`, `Input`, `CardIcon`, `NewAgentPage`, `ComboboxBase`.
+1. **Reaktywność Solid 2:** **3319 ostrzeżeń `STRICT_READ_UNTRACKED` w 172 z 370 historyjek** („wartość reaktywna czytana
+   poza śledzeniem, nie zaktualizuje się”). Pomiar z 19.11: każda historyjka otwarta w Chromium i zliczona konsola.
+   - 1763 „in an effect callback”;
+   - Kobalte 2 alpha na Solid 2 RC: `ButtonRoot` 465, `Menu` 265, `PopperRoot` 265, `FormControlLabel` 154, `TabsRoot` 16.
+     Sprawdzić aktualizację Kobalte.
+   - Nasze komponenty: `Field` 242 (`components/ui/form.tsx`), `Scene` 80 (opakowanie historyjek), `For` 31,
+     `ChannelEditor` 25, `ComboboxBase` 5, `CardIcon` 4, `Input` 2, `NewAgentPage` 1, `WorkflowsPage` 1.
+   - Najwięcej w historyjkach `conversation-conversation--unread-messages` i `--scroll-to-latest` (po 175).
 
-   To potencjalne błędy, gdy widok nie odświeża się po zmianie. Jak znaleźć: `bun run test:storybook 2>&1 | grep -B2
-   STRICT_READ_UNTRACKED`. Wzór poprawki: `untrack()` dla odczytu jednorazowego albo przeniesienie odczytu do JSX lub
-   memo (zrobione w `WorkPage.tsx`).
+   To potencjalne błędy: widok nie odświeża się po zmianie. **Pułapka:** `bun run test:storybook` wypisuje konsolę tylko
+   dla plików z porażkami, więc przy 370/370 nic nie widać. Licz skryptem Playwright (otwórz każdą historyjkę z
+   `http://localhost:6006/index.json`, zbieraj `page.on("console")`). Wzór poprawki: `untrack()` dla odczytu
+   jednorazowego albo przeniesienie odczytu do JSX lub memo (zrobione w `WorkPage.tsx`).
+   W konsoli są też 2× „Failed to resolve module specifier '[object Object]'” w funkcji `play` jednej z historyjek;
+   ustalić której i poprawić import.
 2. **Stworki dalej:**
    - mimika w nagłówku kanału i przy wiadomościach członków (`avatarMoodFor` w `row-activity.ts`);
    - mrugnięcie przy najechaniu;
@@ -218,7 +223,7 @@ generowanych stworków (`blobatar.ts`) są dozwolone, bo to granica integracji.
 | Ucięte napisy | Szukaj elementów z `scrollWidth > clientWidth` i `overflow: hidden` lub `text-overflow: ellipsis`. Pomiń podglądy wiadomości i `.sr-only`. |
 | Atrapa | `stories/mock-openbot.ts` przypina 5 domyślnych stron jak nowa instalacja. |
 | Pełny check | `bun run lint`, `bun run typecheck`, `bun run test` (ok. 7 min na Linuksie), `bun run test:storybook`, `bun run build`, `bun audit`. |
-| Wyniki na koniec tej sesji | lint i typecheck przechodzą (1 stare ostrzeżenie); `bun run test` 3391 przechodzi + 3 znane porażki (pkt 5.8); Storybook 370/370; build OK. |
+| Wyniki końcowe (`dfee751`, po audycie) | lint zielone (1 stare ostrzeżenie); typecheck 6/6; build zielone; `bun run test` 3391 zielonych, 18 pominiętych, 3 znane czerwone (pkt 5.8), 476 s; `bun run test:storybook` 370/370; ostrzeżenia reaktywności 3319 w 172 historyjkach (pkt 5.1). Nie uruchomione: testy wizualne, e2e, `.exe` (Windows). |
 
 ## 8. Decyzje właściciela, które blokują część pracy
 
