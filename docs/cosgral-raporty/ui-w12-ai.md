@@ -1,48 +1,51 @@
-# UI-AI — chat chrome launcher, Agent settings Brain/Knows, Tasks hero
+# UI-AI — chat chrome launcher, Agent settings Brain/Knows, Tasks hero (+ kontynuacja kolejki 1–15)
 
 **Gałąź:** `team/ui/w12-ai`  
-**Baza:** `206fdc9b0` (integracja po UI-AH / T-AF)  
-**Data:** 18.11.2026
+**Tip gałęzi:** `7c087bbd0`  
+**Baza startu UI-AI:** `206fdc9b0`  
+**Integracja (tip):** `2dfb55f09` (już w gałęzi)  
+**Data oddania (wznowienie):** 19.11.2026
 
-## Wynik
+## Wynik (UI-AI + późniejsza kolejka)
 
-1. **Chat chrome (P0, zrzut 052):** prawy launcher `ChatSidePanelLauncher` (Browser / Files / Agent settings / Voice) gdy panel zamknięty; w otwartym panelu pasek zakładek `ChatRightPanelTabs`. Panele Files (karta plików agenta) i Voice (nagrywanie do composera).
-2. **Agent settings (P1, zrzut 059):** identity (avatar, name, title, description) na górze panelu; karty w grupach **Brain / Knows / More** z chevronem; nagłówek „Agent settings”.
-3. **Tasks (P1, zrzut 078):** hero „Hand off the work… answer.” + kolumny Needs you / Working / Waiting na Active bez filtra; lista jak wcześniej przy Archived / chipach / wyszukiwaniu.
+**UI-AI (pierwsze 2–3 ekrany):**
+1. **Chat chrome (P0):** launcher prawego panelu + zakładki Browser / Files / Agent settings / Voice.
+2. **Agent settings (P1):** identity + grupy Brain / Knows / More.
+3. **Tasks (P1):** hero + kolumny Active.
 
-Bez zmian w `SettingsModal` i `ChannelView`.
+**Potem kolejka KOLEJKA UI 1–15 (zrobione na tej samej gałęzi):** Knows/Brain karty, Marketplace Apps, sidebar pin/Więcej, Appearance, skeleton Loading, Unread first, PWA kanały, FLIP unread-first, a11y po T-AJ. Ostatni marker: UI-15 @ `b27b2b107` / docs `7c087bbd0`.
 
-## Zgodność P0/P1 (uczciwie, z vs-071 17-11-h + kolejka-ui)
+Bez zmian w `SettingsModal` i `ChannelView` (KK).
 
-Źródła: `Shared\cosgral-docs\zrzuty-cosgral-17-11-h\vs-071.txt`, `openbot-0.71-kolejka-ui.md` (7 pozycji P0+P1).
+## Zgodność P0/P1 (uczciwie)
 
-| Priorytet | Ekran | vs-071 / stan przed UI-AI | Po UI-AI |
-|---|---|---|---|
-| P0 | Sidebar + rail | OK (densify, kafle) | zgodny |
-| P0 | New agent | OK (12 maskotek) | zgodny |
-| P0 | Chat chrome | częściowo (menu + było MISS na tipie 4ddcbb; UI-AH już w 206fdc9b0; brak launchera 052) | **bliżej** (launcher + tabs + Files/Voice) |
-| P1 | Agent settings | karty widoczne, układ ≠ 059 | **bliżej** (Brain/Knows, identity na górze) |
-| P1 | Server settings | OK sekcje | zgodny |
-| P1 | Marketplace 3 tabs | OK Agents/Skills | zgodny (Apps było wcześniej) |
-| P1 | Tasks ↔ chat | OK open-as-chat/steps | **bliżej** (hero + board; funkcje bez zmian) |
+Źródło: `Shared\cosgral-docs\zrzuty-cosgral-17-11-j\vs-071-p0p1.txt` (T-AJ @ `2dfb55f09`):
 
-**Liczby:** z 7 pozycji P0+P1 w kolejce: **4 zgodne** (Sidebar, New agent, Server settings, Marketplace), **3 bliżej / częściowo** (Chat chrome, Agent settings, Tasks). Żadna nie jest już „brak”.
+| Priorytet | Ekran | Stan T-AJ |
+|---|---|---|
+| P0 | Sidebar + rail | zgodny |
+| P0 | New agent | zgodny |
+| P0 | Chat chrome | częściowo (steps/@/slash; Teach/Voice off) |
+| P1 | Agent settings | częściowo (Brain/Knows; nie pełny 059–074) |
+| P1 | Server settings | zgodny |
+| P1 | Marketplace | zgodny |
+| P1 | Tasks ↔ chat | częściowo (board Failed/Stopped; hero ≠ 078–086) |
 
-## Testy
+**Liczby:** **4 zgodne / 3 częściowo / 0 brak** (7 pozycji P0+P1).
+
+## Testy (ostatnie przebiegi na gałęzi)
 
 | Co | Stan |
 |---|---|
-| `ChatSidePanelLauncher.test` | 3/3 |
-| `AgentCardsSection.test` | 7/7 |
-| `TasksViewScreen.test` | 4/4 |
-| `i18n.test` | 9/9 |
-| Biome (zmienione) | OK |
-| `typecheck:renderer` | OK |
+| UI-AI: launcher / AgentCards / TasksView | przechodziły przy oddaniu |
+| UI-15: `ui-recent-a11y.test` | 2/2 |
+| Biome / `typecheck:renderer` | OK na zmianach UI |
+| Storybook / Electron | nie (brak GO-ui) |
 
 ## Luki
 
-- Teach a task / Voice w menu „+” nadal bez silnika (UI-AH).
-- Voice w prawym panelu = nagrywanie do pola; pełne modele głosu w Settings → Voice.
-- Karty Knows (instructions/memories/skills) nadal otwierają istniejące sekcje niżej / detail tylko dla DETAIL_CARD_IDS.
-- Tasks board nie pokazuje failed/cancelled w kolumnach (są w filtrach).
-- Nie ruszane: SettingsModal, ChannelView (KK).
+- Teach / Voice w menu „+”: brak silnika.
+- `byServer` / `useRestoreWorkspace`: w `merge-preview`, **nie** w tipie `2dfb55f09`.
+- Agent settings: nie pełny zakres zrzutów 059–074.
+- Tasks hero ≠ 078–086; Unread first w tipie dopiero po scaleniu UI.
+- Kolejka UI 1–15 pusta — dalsze ekrany po tipie/liderze.
