@@ -1,19 +1,19 @@
 # Parytet z OpenBotem 0.71 (funkcje)
 
-Stan: 18.11.2026, integracja `codex/cosgral-desktop` @ `2dfb55f09` plus odbiór Testera T-AI i T-AJ (procenty po T-AJ bez zmian) (Electron, GO; raport `tester-w12-ti.md`, w momencie liczenia jeszcze niezacommitowany w jego worktree: liczby z jego tekstu). Poprzednia wersja tabeli: `206fdc9b0`, 79,2% kod / 51,3% w oknie / 59,7% ostrożnie (77 funkcji). **Ta wersja zmienia dwa wiersze: 76 (przywracanie miejsca: wątek wraca, w oknie potwierdzone) i 75 (linki: ustawienie sprawdzone w oknie).** „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
+Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 61,5 z 77 funkcji = 79,9% (jest = 1, częściowo = ½). Z tego skontraktowane ~92,9%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 60,4%.**
+**Wynik w jednej linii: 63,0 z 77 funkcji = 81,8% (jest = 1, częściowo = ½). Z tego skontraktowane ~94,2%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,0%.**
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **79,9%** (61,5 z 77) | 51 jest, 21 częściowo, 5 brak |
-| Skontraktowane | **~92,9%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~92,2%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~86,4%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Parytet (kod) | **81,8%** (63,0 z 77) | 53 jest, 20 częściowo, 4 brak |
+| Skontraktowane | **~94,2%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~93,5%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~88,3%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **52,6%** | 22 wiersze w pełni (tak), 37 częściowo, 18 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
-| Ostrożny parytet | **60,4%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Ostrożny parytet | **61,0%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 61,5 z 83 = 74,1%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 63,0 z 83 = 75,9%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -30,7 +30,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 15 | 10 | 4 | 1 | 80% |
+| A. Ustawienia aplikacji i powłoka | 15 | 11 | 3 | 1 | 83% |
 | B. Czat, Needs you, wątki | 12 | 10 | 2 | 0 | 92% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
 | D. Agenci | 11 | 10 | 1 | 0 | 95% |
@@ -39,7 +39,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 3 | 0 | 75% |
 | I. Komunikatory | 4 | 2 | 0 | 2 | 50% |
-| J. Serwer, zespół, zdalny pulpit, telefon | 7 | 1 | 5 | 1 | 50% |
+| J. Serwer, zespół, zdalny pulpit, telefon | 7 | 2 | 5 | 0 | 64% |
 
 ## Tabela funkcji
 
@@ -48,7 +48,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
-| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **częściowo** | tak | tak | tak | część | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran ma 6 z 7 kontrolek** (na tipie `2dfb55f09`, sekcja „Appearance” ekranu „Settings”): Theme, Interface scale, Font, Accent, „Send message with” i „Agent steps”. **Brakuje przełącznika „Unread first”** (UI-AT jest na `team/ui/w12-ai`, nie w integracji; silnik i pasek są, BE-AC). Skrót wysyłania i kroki agenta działają w polu i w rozmowie (BE-Z2, testy jednego pliku). W oknie (T-AJ, sondy `ui-probes`): skrót wysyłania zapisuje się i zmienia zachowanie pola (`enter` / `mod-enter`), „unread first” zapisuje się (przez IPC i dataset, nie kliknięciem przełącznika). Samo kliknięcie kontrolek na ekranie w oknie nie było oglądane. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
+| 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **jest** | tak | tak | tak | tak | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran ma wszystkie 7 kontrolek** (sekcja „Appearance” ekranu „Settings”, integracja `7d5fd871c`): Theme, Interface scale, Font, Accent, „Send message with”, „Unread first” (UI-AT, silnik i pasek BE-AC, animacja przeskoku wiersza) i „Agent steps”. Skrót wysyłania i kroki agenta działają w polu i w rozmowie (BE-Z2, testy jednego pliku). W oknie (T-AJ, sondy `ui-probes`): skrót wysyłania zapisuje się i zmienia zachowanie pola (`enter` / `mod-enter`), „unread first” zapisuje się (przez IPC i dataset, nie kliknięciem przełącznika). Samo kliknięcie kontrolek na ekranie w oknie nie było oglądane. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
 | 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. 17-11-h: nagłówek Voice i uprawnienie mikrofonu widoczne w oknie na ekranie „Settings” (T-AF). Nagrywanie nadal nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac, tester-w12-te |
 | 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
@@ -167,7 +167,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 68 | Zdalny pulpit Windows (host, klient, zgoda, tryby, „pytaj przy każdej sesji”) | **jest** | tak | tak | tak | tak | część | Silnik z testem na hoście i kliencie; strona ma panel „Who may come in”: plakietka (gotowe/wyłączone/niedostępne), sesje i karty czekające, przełącznik „Ask on this computer every time” (`setAskEverySession`), „Unattended access: niedostępne” z powodem. Panel nie oglądany w oknie; obraz i sterowanie w oknie nie sprawdzane; bez trybu bez nadzoru z założenia. | ipc-remote-desktop, kk-w12-vault-voice |
 | 69 | Telefon: czat i odpowiedzi na decyzje (PWA) | **częściowo** | tak | tak | tak | tak | część | W oknie z atrapą; przełącznik powiadomień i test są w panelu telefonów (nie oglądane w oknie); brak prawdziwego telefonu. | kk-w3-acceptance, mobile-app |
 | 70 | Telefon: tworzenie i edycja agentów | **częściowo** | tak | tak | tak | tak | część | Tworzenie widać na komputerze; edycja i awatar nie. | kk-w3-acceptance |
-| 71 | Telefon: kanały w PWA | **częściowo** | tak | tak | tak | nie | nie | API BE-AB OK (Tester T-AK: unit 7+1). Ekran PWA (UI-13 `1682b267a`) jest na `team/ui/w12-ai`, **nie** w tipie integracji; bez GO nie w telefonie/Electronie. Strumień `/v1/events` bez zmian kanałów. | ipc-mobile-channels, ui-w12-au, tester-w12-tak |
+| 71 | Telefon: kanały w PWA | **jest** | tak | tak | tak | tak | nie | API BE-AB (lista, wiadomości ze stronicowaniem, wysłanie, zadania, Stop/Pauza/Wznów, szczegół zadania z BE-AD) i ekran PWA z zakładką „Channels” (UI-13 `1682b267a`: lista, czat, zadania) są w integracji `7d5fd871c`. Testy: API 11/11 i host, `app.test` 9/9. **Luki:** ekran nie odświeża kanałów z `/v1/events` (zdarzenia kanałów są w API od BE-AD, klient ich jeszcze nie używa); tworzenie, zmiana i kasowanie kanału tylko na komputerze (zamierzone). W oknie i na prawdziwym telefonie nie sprawdzone (T-AK: tylko testy, bez GO). | ipc-mobile-channels, ui-w12-au, tester-w12-tak |
 | 72 | Skróty klawiszowe (Ctrl+K, Ctrl+F, Alt+↑, zakładki) | **częściowo** | część | część | część | część | część | Wybrane skróty działają; pełnej mapy 0.71 nie ma. | kk-w3-acceptance |
 
 ## Poza zakresem (nie liczone)
@@ -180,6 +180,24 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | WhatsApp (QR, grupy, dozwoleni nadawcy) | Decyzja lidera: nie (nieoficjalne API, ryzyko). |
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
+
+## Zmiany od wersji @ `2dfb55f09` (79,9% kod / 52,6% w oknie / 60,4% ostrożnie): po scaleniu `7d5fd871c`
+
+Lider scalił podgląd (UI-AT, UI-13, UI-14/15, BE-AD, KAPI-AK..AT). Okno bez nowego odbioru (brak GO), więc **„w oknie” zostaje 52,6%**. Kod rośnie, a liczby liczę skryptem z tabeli (wcześniejszy nagłówek miał 5 „brak”, a tabela 4: Backend zmienił wiersz 71 z „brak” na „częściowo” przy BE-AB i nagłówek nie nadążył).
+
+| Miara | Było | Jest |
+|---|---|---|
+| Parytet (kod) | 79,9% (61,5 z 77) | **81,8%** (63,0 z 77): 53 jest, 20 częściowo, 4 brak |
+| Skontraktowane / Silnik / Ekran | ~92,9% / ~92,2% / ~86,4% | **~94,2% / ~93,5% / ~88,3%** |
+| W oknie sprawdzone | 52,6% | **52,6%** |
+| Ostrożny | 60,4% | **61,0%** |
+
+| Wiersz | Zmiana | Dowód |
+|---|---|---|
+| 2 Wygląd | częściowo → **jest**; E część → tak (O zostaje „część”) | `AppearanceSettings.tsx` ma „Unread first” (UI-AT) obok Theme, Interface scale, Font, Accent, „Send message with”, „Agent steps” |
+| 71 Telefon: kanały w PWA | częściowo → **jest**; E nie → tak (O zostaje „nie”) | `src/mobile-app/app.ts` ma ekran „Channels” (UI-13), API kanałów i szczegół zadania (BE-AB/AD) |
+
+**Luki wiersza 71:** ekran nie odświeża kanałów ze strumienia `/v1/events`; tworzenie, zmiana i kasowanie kanału tylko na komputerze. **Nie sprawdzone w oknie:** kliknięcie przełącznika „Unread first”, ekran PWA na telefonie.
 
 ## Zmiany od wersji @ `8e6600948` (79,9% kod / 52,6% w oknie / 60,4% ostrożnie): odbiór T-AJ
 
