@@ -1,5 +1,6 @@
 import type { SharedTable, TableRow, TableValues, TableWriteResult } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, Input, NativeSelect } from "./ui";
 export function RowEditor(props: {
   table: SharedTable;
@@ -26,12 +27,12 @@ export function RowEditor(props: {
       if (result?.status === "conflict") setConflict(result.current);
       else props.onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save row.");
+      setError(e instanceof Error ? e.message : t("Could not save row."));
     }
   }
   return (
-    <section class="w2-panel" aria-label="Row editor">
-      <h3>{props.row ? "Edit row" : "New row"}</h3>
+    <section class="w2-panel" aria-label={t("Row editor")}>
+      <h3>{props.row ? t("Edit row") : t("New row")}</h3>
       <For each={props.table.columns}>
         {(column) => (
           <label>
@@ -69,9 +70,9 @@ export function RowEditor(props: {
                   }))
                 }
               >
-                <option value="">Empty</option>
-                <option value="true">True</option>
-                <option value="false">False</option>
+                <option value="">{t("Empty")}</option>
+                <option value="true">{t("True")}</option>
+                <option value="false">{t("False")}</option>
               </NativeSelect>
             </Show>
           </label>
@@ -83,22 +84,22 @@ export function RowEditor(props: {
       <Show when={conflict()}>
         {(current) => (
           <div role="alert">
-            <p>This row changed since you opened it. Current version {current().version}:</p>
+            <p>{t("This row changed since you opened it. Current version {n}:", { n: current().version })}</p>
             <pre class="channel-prewrap">{JSON.stringify(current().values, null, 2)}</pre>
             <Button unstyled type="button" onClick={() => void save(current().version)}>
-              Apply my changes
+              {t("Apply my changes")}
             </Button>
             <Button unstyled type="button" onClick={props.onDone}>
-              Keep current
+              {t("Keep current")}
             </Button>
           </div>
         )}
       </Show>
       <Button unstyled type="button" onClick={() => void save()}>
-        Save row
+        {t("Save row")}
       </Button>
       <Button unstyled type="button" onClick={props.onDone}>
-        Cancel
+        {t("Cancel")}
       </Button>
     </section>
   );
@@ -116,13 +117,13 @@ export function TablesPanel() {
   async function loadTables() {
     const api = window.openbot.tables;
     if (!api) {
-      setError("Tables are unavailable in this build.");
+      setError(t("Tables are unavailable in this build."));
       return;
     }
     try {
       setTables(await api.list());
     } catch {
-      setError("Could not load tables.");
+      setError(t("Could not load tables."));
     }
   }
   async function loadRows(tableId = selected()) {
@@ -140,7 +141,7 @@ export function TablesPanel() {
       });
       if (n === seq) setRows(page.rows);
     } catch (e) {
-      if (n === seq) setError(e instanceof Error ? e.message : "Could not load rows.");
+      if (n === seq) setError(e instanceof Error ? e.message : t("Could not load rows."));
     }
   }
   onSettled(() => {
@@ -169,17 +170,17 @@ export function TablesPanel() {
         await loadRows();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete row.");
+      setError(e instanceof Error ? e.message : t("Could not delete row."));
     }
   }
   return (
-    <section class="w2-panel" aria-label="Shared tables">
-      <h2>Shared tables</h2>
+    <section class="w2-panel" aria-label={t("Shared tables")}>
+      <h2>{t("Shared tables")}</h2>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
       <label>
-        Table
+        {t("Table")}
         <NativeSelect
           unstyled
           value={selected()}
@@ -190,7 +191,7 @@ export function TablesPanel() {
             void loadRows(e.currentTarget.value);
           }}
         >
-          <option value="">Select a table</option>
+          <option value="">{t("Select a table")}</option>
           <For each={tables()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
         </NativeSelect>
       </label>
@@ -198,32 +199,32 @@ export function TablesPanel() {
         {(current) => (
           <>
             <label>
-              Filter first text column
+              {t("Filter first text column")}
               <Input unstyled value={filter()} onInput={(e) => setFilter(e.currentTarget.value)} />
             </label>
             <Button unstyled type="button" onClick={() => void loadRows()}>
-              Search rows
+              {t("Search rows")}
             </Button>
             <Button unstyled type="button" onClick={() => setEditing("new")}>
-              Add row
+              {t("Add row")}
             </Button>
             <For each={rows()}>
               {(row) => (
                 <article class="w2-item">
-                  <strong>Version {row.version}</strong>
+                  <strong>{t("Version {n}", { n: row.version })}</strong>
                   <pre class="channel-prewrap">{JSON.stringify(row.values, null, 2)}</pre>
                   <div>
                     <Button unstyled type="button" onClick={() => setEditing(row)}>
-                      Edit
+                      {t("Edit")}
                     </Button>{" "}
                     <Button
                       unstyled
                       type="button"
                       onClick={() => {
-                        if (window.confirm("Delete this row?")) void remove(row);
+                        if (window.confirm(t("Delete this row?"))) void remove(row);
                       }}
                     >
-                      Delete
+                      {t("Delete")}
                     </Button>
                   </div>
                 </article>
@@ -240,7 +241,7 @@ export function TablesPanel() {
                   }}
                   onSave={async (values, version) => {
                     const api = window.openbot.tables;
-                    if (!api) throw new Error("Tables unavailable");
+                    if (!api) throw new Error(t("Tables unavailable"));
                     if (item === "new") {
                       await api.insertRows({ tableId: current().id, rows: [values] });
                       return;
@@ -258,13 +259,13 @@ export function TablesPanel() {
             <Show when={conflict()}>
               {(row) => (
                 <div role="alert">
-                  <p>Row changed since you opened it. Current version {row().version}:</p>
+                  <p>{t("Row changed since you opened it. Current version {n}:", { n: row().version })}</p>
                   <pre>{JSON.stringify(row().values, null, 2)}</pre>
                   <Button unstyled type="button" onClick={() => void remove(row())}>
-                    Delete current version
+                    {t("Delete current version")}
                   </Button>
                   <Button unstyled type="button" onClick={() => setConflict(undefined)}>
-                    Keep current
+                    {t("Keep current")}
                   </Button>
                 </div>
               )}

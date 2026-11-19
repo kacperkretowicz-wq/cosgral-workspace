@@ -136,7 +136,7 @@ export function SkillsSettings(props: { botId?: string }) {
                 <div>
                   {t("Version {n}", { n: version.version })}{" "}
                   <Button unstyled type="button" onClick={() => void inspect(item().skill.id, version.version)}>
-                    {t("View")}
+                    {t("Show")}
                   </Button>{" "}
                   <Button
                     unstyled

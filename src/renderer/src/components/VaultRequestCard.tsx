@@ -1,5 +1,6 @@
 import type { VaultItemSummary, VaultRequest } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button } from "./ui";
 import { VaultForm } from "./VaultPanel";
 export function VaultRequestCard(props: { request: VaultRequest }) {
@@ -11,12 +12,12 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
     void window.openbot.vault
       ?.list()
       .then(setItems)
-      .catch(() => setError("Could not load Vault items."));
+      .catch(() => setError(t("Could not load Vault items.")));
   });
   async function respond(itemId?: string, decline = false) {
     const api = window.openbot.vault;
     if (!api) {
-      setError("Vault unavailable.");
+      setError(t("Vault unavailable."));
       return;
     }
     setBusy(true);
@@ -28,14 +29,16 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
         ...(decline ? { decline: true } : {}),
       });
     } catch {
-      setError("Could not answer this request. Try again.");
+      setError(t("Could not answer this request. Try again."));
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section class="w2-panel" aria-label="Vault request">
-      <strong>Vault · {props.request.kind}</strong>
+    <section class="w2-panel" aria-label={t("Vault request")}>
+      <strong>
+        {t("Vault")} · {props.request.kind}
+      </strong>
       <p>{props.request.reason}</p>
       <Show when={props.request.origin}>
         <p>{props.request.origin}</p>
@@ -49,7 +52,7 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
           )}
         </For>
         <Show when={!items().some((item) => props.request.candidateIds.includes(item.id))}>
-          <p>No matching items are available.</p>
+          <p>{t("No matching items are available.")}</p>
         </Show>
       </Show>
       <Show when={props.request.mode === "add"}>
@@ -57,7 +60,7 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
           when={!savedId()}
           fallback={
             <Button unstyled type="button" disabled={busy()} onClick={() => void respond(savedId())}>
-              Use saved item
+              {t("Use saved item")}
             </Button>
           }
         >
@@ -65,7 +68,7 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
             kind={props.request.kind}
             onSave={async (input) => {
               const api = window.openbot.vault;
-              if (!api) throw new Error("Vault unavailable");
+              if (!api) throw new Error(t("Vault unavailable"));
               const item = await api.save(input);
               setSavedId(item.id);
               await respond(item.id);
@@ -74,7 +77,7 @@ export function VaultRequestCard(props: { request: VaultRequest }) {
         </Show>
       </Show>
       <Button unstyled type="button" disabled={busy()} onClick={() => void respond(undefined, true)}>
-        Decline
+        {t("Decline")}
       </Button>
       <Show when={error()}>
         <p role="alert">{error()}</p>
