@@ -42,9 +42,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 9. [zamknięte bez kodu KK: kontrakt i test BE-AB e0b9d2e3c, ekran PWA UI-13 1682b267a na team/ui/w12-ai, czeka na scalenie] Ekran kanałów w kliencie telefonu (PWA) razem z UI: kontrakt `ipc-mobile-channels.ts`, test na atrapie.
 10. [zrobione: 13433a337 (UI-AT i UI-13 w integracji)] Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
 11. [zrobione: 3cb782b80, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
-13. [zrobione: 13433a337] Parytet i PRZEWODNIK po scaleniu `7d5fd871c` (wiersze 2 i 71 → „jest”, liczby ze skryptu z tabeli, „Unread first” i kanały w PWA opisane).
 12. [zrobione: 38566682e] `ChannelWorkspace`: lista kanałów, przyciski i komunikaty dostępności przez `t()` (luka wskazana przez KAPI), klucze wstawione w środku katalogów, żeby nie kolidowały z dopiskami KAPI.
-13. Parytet: przelicz `parytet-0.71.md` na tipie po scaleniu lidera (wiersze 2, 71, 36, 72) i zaktualizuj procenty z dowodem.
+13. [zrobione: 13433a337, wiersze 2 i 71 → jest, 36 i 72 opis bez zmiany stanu; lista kanałów i PWA w PRZEWODNIKU] Parytet: przelicz `parytet-0.71.md` na tipie po scaleniu lidera (wiersze 2, 71, 36, 72) i zaktualizuj procenty z dowodem.
 14. Ustawienia kanału (wiersz 27): kompakt, kasowanie historii, przeglądarka w kanale — kontrakt + atrapa + ekran, lekkie.
 15. Onboarding (wiersz 11): wybór hosta lokalny/zdalny w kontrakcie i ekranie (bez darmowych modeli), testy jednego pliku.
 16. Computer Use: ekran uprawnień jak 0.71 (wiersz 8), tylko kontrakt + ekran + test na atrapie.

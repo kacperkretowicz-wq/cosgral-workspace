@@ -101,7 +101,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 33 | Import agenta z paczki i transfer instancji (zip, podgląd, nowi agenci, rutyny wstrzymane) | **jest** | tak | tak | tak | tak | nie | Działy „Import” i „Transfer” ustawień serwera: trzy karty importu, trzy kroki transferu, eksport wybranych agentów, wybór pliku z podglądem (nic się nie zmienia do potwierdzenia, zajęte imię = kopia z numerem), wynik z ostrzeżeniami, lista „czego nie przenosimy”. Nie oglądane w oknie. | kk-w12-g2, kk-w12-screens |
 | 34 | Subagenci i pytanie poboczne | **jest** | tak | tak | tak | tak | nie | Wykonawca pytania pobocznego podpięty; panel podagentów w panelu wątków (stan, podgląd, odpowiedź, Stop, wskazanie karty w Needs you). Nie oglądany w oknie. | backend-w12-side-question |
 | 35 | Foldery agentów w pasku bocznym | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
-| 36 | Pasek boczny, szyna stron i szyna serwerów | **częściowo** | tak | tak | tak | tak | część | Brak „Więcej”/przypinania stron, serwera zdalnego nie dało się sprawdzić. | kk-w3-acceptance, ui-w4-ui4 |
+| 36 | Pasek boczny, szyna stron i szyna serwerów | **częściowo** | tak | tak | tak | tak | część | „Więcej” (menu stron, gdy okno jest wąskie) i przypinanie stron są w kodzie (PageRail, UI); T-AJ: e2e sprawdza przepełnienie „More” w oknie (0 FAIL). Nadal nie sprawdzony serwer zdalny na szynie serwerów, więc wiersz zostaje „częściowo”. | kk-w3-acceptance, ui-w4-ui4 |
 | 37 | Uprawnienia, reguły „zawsze zezwalaj”, budżety | **jest** | tak | tak | tak | tak | część | „Zawsze zezwalaj” w oknie; budżety i poziom dostępu bez odbioru okna. | ipc-access, ipc-budgets, ipc-approval-rules |
 | 77 | Zmiana nazwy agenta (ustawienia agenta, menu „Rename”, pole na wierszu paska) | **jest** | tak | tak | tak | tak | tak | Pole „Agent name” w ustawieniach agenta, pozycja „Rename” w menu agenta i edycja na wierszu (UI-AD, UI-AF); nazwa zmienia się na pasku bocznym i w nagłówku (testy `App.test`). W oknie: nie potwierdzone (probe Rename Testera czeka na odbiór T-AF). T-AF w oknie: probe Rename (menu → pole na wierszu → pasek boczny i nagłówek) OK. | ui-w12-ad, ui-w12-af, tester-w12-te |
 
@@ -168,7 +168,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 69 | Telefon: czat i odpowiedzi na decyzje (PWA) | **częściowo** | tak | tak | tak | tak | część | W oknie z atrapą; przełącznik powiadomień i test są w panelu telefonów (nie oglądane w oknie); brak prawdziwego telefonu. | kk-w3-acceptance, mobile-app |
 | 70 | Telefon: tworzenie i edycja agentów | **częściowo** | tak | tak | tak | tak | część | Tworzenie widać na komputerze; edycja i awatar nie. | kk-w3-acceptance |
 | 71 | Telefon: kanały w PWA | **jest** | tak | tak | tak | tak | nie | API BE-AB (lista, wiadomości ze stronicowaniem, wysłanie, zadania, Stop/Pauza/Wznów, szczegół zadania z BE-AD) i ekran PWA z zakładką „Channels” (UI-13 `1682b267a`: lista, czat, zadania) są w integracji `7d5fd871c`. Testy: API 11/11 i host, `app.test` 9/9. **Luki:** ekran nie odświeża kanałów z `/v1/events` (zdarzenia kanałów są w API od BE-AD, klient ich jeszcze nie używa); tworzenie, zmiana i kasowanie kanału tylko na komputerze (zamierzone). W oknie i na prawdziwym telefonie nie sprawdzone (T-AK: tylko testy, bez GO). | ipc-mobile-channels, ui-w12-au, tester-w12-tak |
-| 72 | Skróty klawiszowe (Ctrl+K, Ctrl+F, Alt+↑, zakładki) | **częściowo** | część | część | część | część | część | Wybrane skróty działają; pełnej mapy 0.71 nie ma. | kk-w3-acceptance |
+| 72 | Skróty klawiszowe (Ctrl+K, Ctrl+F, Alt+↑, zakładki) | **częściowo** | część | część | część | część | część | Wybrane skróty działają; pełnej mapy 0.71 nie ma. Bez zmiany: nowszego dowodu niż odbiór W3 nie ma (T-AJ nie sprawdzał skrótów). | kk-w3-acceptance |
 
 ## Poza zakresem (nie liczone)
 
@@ -196,6 +196,7 @@ Lider scalił podgląd (UI-AT, UI-13, UI-14/15, BE-AD, KAPI-AK..AT). Okno bez no
 |---|---|---|
 | 2 Wygląd | częściowo → **jest**; E część → tak (O zostaje „część”) | `AppearanceSettings.tsx` ma „Unread first” (UI-AT) obok Theme, Interface scale, Font, Accent, „Send message with”, „Agent steps” |
 | 71 Telefon: kanały w PWA | częściowo → **jest**; E nie → tak (O zostaje „nie”) | `src/mobile-app/app.ts` ma ekran „Channels” (UI-13), API kanałów i szczegół zadania (BE-AB/AD) |
+| 36 Pasek boczny i szyny | **bez zmiany stanu** (częściowo), poprawiony opis | „Więcej” i przypinanie stron są w kodzie, e2e T-AJ sprawdza przepełnienie „More” (0 FAIL); serwer zdalny na szynie serwerów nadal niesprawdzony || 72 Skróty klawiszowe | **bez zmiany** (częściowo) | Brak nowszego dowodu niż odbiór W3; T-AJ skrótów nie sprawdzał |
 
 **Luki wiersza 71:** ekran nie odświeża kanałów ze strumienia `/v1/events`; tworzenie, zmiana i kasowanie kanału tylko na komputerze. **Nie sprawdzone w oknie:** kliknięcie przełącznika „Unread first”, ekran PWA na telefonie.
 
