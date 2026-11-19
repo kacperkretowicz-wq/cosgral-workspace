@@ -1,5 +1,6 @@
 import type { AgentProviderId, AgentProviderState } from "@openbot/contracts/ipc";
 import { createEffect, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Badge, Input } from "./ui";
 
 export interface ProviderPickerOption {
@@ -112,13 +113,11 @@ function providerStatusTone(state: AgentProviderState): "success" | "warning" | 
   return "neutral";
 }
 
-function providerStatusLabel(
-  state: AgentProviderState,
-): "Available" | "Sign in required" | "Not installed" | "Update required" | "Unavailable" | "Checking" {
-  if (state === "available") return "Available";
-  if (state === "sign-in-required") return "Sign in required";
-  if (state === "not-installed") return "Not installed";
-  if (state === "outdated") return "Update required";
-  if (state === "error") return "Unavailable";
-  return "Checking";
+function providerStatusLabel(state: AgentProviderState): string {
+  if (state === "available") return t("Available");
+  if (state === "sign-in-required") return t("Sign in required");
+  if (state === "not-installed") return t("Not installed");
+  if (state === "outdated") return t("Update required");
+  if (state === "error") return t("Unavailable");
+  return t("Checking");
 }
