@@ -14,9 +14,24 @@ import {
   workflowOperatorNeedsValue,
   workflowProblems,
 } from "@openbot/contracts/ipc";
+import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
+import {
+  Bot,
+  Check,
+  FileText,
+  GitBranch,
+  MessageCircle,
+  Play,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  Workflow as WorkflowIcon,
+  Zap,
+} from "./ui/icons";
+import { WorkPage } from "./WorkPage";
 import "../styles/workflow-editor.css";
 import { WorkflowPreviewCanvas } from "./WorkflowPreviewCanvas";
 import { WorkflowVersionsPanel } from "./WorkflowVersionsPanel";
@@ -37,6 +52,48 @@ const PATH_LABELS: Record<WorkflowEdgeKind, string> = {
   yes: "Yes",
   no: "No",
 };
+
+type StepIcon = (props: { size: number; "stroke-width": number; "aria-hidden": "true" }) => JSX.Element;
+
+/** One icon per step type, the same in the palette, on the step card and in the run history. */
+const STEP_ICONS: Record<WorkflowNodeType, StepIcon> = {
+  trigger: Zap,
+  agent: Bot,
+  approval: ShieldCheck,
+  "channel-output": MessageCircle,
+  prompt: FileText,
+  condition: GitBranch,
+};
+
+function StepGlyph(props: { type: WorkflowNodeType; size?: number }) {
+  const Icon = STEP_ICONS[props.type];
+  return <Icon size={props.size ?? 15} stroke-width={1.75} aria-hidden="true" />;
+}
+
+const RUN_STATUS_LABELS: Record<WorkflowRun["status"], string> = {
+  running: "Running",
+  waiting: "Waiting for approval",
+  done: "Done",
+  failed: "Failed",
+  denied: "Denied",
+  cancelled: "Cancelled",
+};
+
+const STEP_STATUS_LABELS: Record<WorkflowRun["steps"][number]["status"], string> = {
+  pending: "Pending",
+  running: "Running",
+  waiting: "Waiting",
+  done: "Done",
+  failed: "Failed",
+  denied: "Denied",
+  skipped: "Skipped",
+};
+
+function formatRunTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
 
 const NODE_WIDTH = 260;
 const PORT_Y = 28;
@@ -196,12 +253,25 @@ export function WorkflowCanvas(
         <For each={PALETTE}>
           {(item) => (
             <Button type="button" class="workflow-palette-button" data-step={item.type} onClick={() => add(item.type)}>
+              <StepGlyph type={item.type} />
               {t(item.label)}
             </Button>
           )}
         </For>
       </div>
       <section ref={canvas} class="workflow-canvas" aria-label={t("Workflow canvas")}>
+        <Show when={props.nodes.length === 0}>
+          <div class="workflow-canvas-empty">
+            <span class="workflow-canvas-empty-icon" aria-hidden="true">
+              <Zap size={22} stroke-width={1.5} />
+            </span>
+            <strong>{t("Start with a trigger")}</strong>
+            <p>{t("A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.")}</p>
+            <Button type="button" variant="primary" onClick={() => add("trigger")}>
+              {t("Start with a trigger")}
+            </Button>
+          </div>
+        </Show>
         <svg class="workflow-connections" aria-hidden="true">
           <defs>
             <marker
@@ -274,7 +344,10 @@ export function WorkflowCanvas(
                 aria-label={`Move ${node.title}; use X and Y fields with a keyboard`}
                 onPointerDown={(event) => startDrag(event, node)}
               >
-                <span class="workflow-node-type">{t(NODE_TYPE_LABELS[node.type])}</span>
+                <span class="workflow-node-type">
+                  <StepGlyph type={node.type} size={14} />
+                  {t(NODE_TYPE_LABELS[node.type])}
+                </span>
                 <span class="workflow-node-move">{t("Move")}</span>
               </Button>
               <Button
@@ -509,7 +582,7 @@ export function WorkflowCanvas(
           )}
         </For>
       </section>
-      <fieldset>
+      <fieldset class="workflow-connections-editor">
         <legend>{t("Connections")}</legend>
         <label>
           {t("From")}{" "}
@@ -549,12 +622,15 @@ export function WorkflowCanvas(
         >
           {t("Connect")}
         </Button>
-        <ul>
+        <ul class="workflow-edge-list">
           <For each={props.edges}>
             {(edge) => (
-              <li>
-                {props.nodes.find((n) => n.id === edge.from)?.title} →{" "}
-                {props.nodes.find((n) => n.id === edge.to)?.title} ({t(PATH_LABELS[edge.on])}){" "}
+              <li data-edge={edge.on}>
+                <span class="workflow-edge-text">
+                  {props.nodes.find((n) => n.id === edge.from)?.title} →{" "}
+                  {props.nodes.find((n) => n.id === edge.to)?.title}{" "}
+                  <span class="workflow-edge-kind">{t(PATH_LABELS[edge.on])}</span>
+                </span>{" "}
                 <Button
                   type="button"
                   onClick={() =>
@@ -586,7 +662,7 @@ export function WorkflowsPage() {
   const [channels, setChannels] = createSignal<ResourceOption[]>([]);
   const [routines, setRoutines] = createSignal<ResourceOption[]>([]);
   const [selected, setSelected] = createSignal<string>("");
-  const [name, setName] = createSignal("New workflow");
+  const [name, setName] = createSignal(t("New workflow"));
   const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
   const [preview, setPreview] = createSignal<{ number: number; graph: WorkflowGraph } | null>(null);
   const [runs, setRuns] = createSignal<WorkflowRun[]>([]);
@@ -657,141 +733,217 @@ export function WorkflowsPage() {
     });
     return off;
   });
+  const startNew = () => {
+    setSelected("");
+    setName(t("New workflow"));
+    setGraph({ nodes: [], edges: [] });
+    setRuns([]);
+    setPreview(null);
+  };
+  const problems = () => workflowProblems(graph());
+  const stepCount = (item: Workflow) => item.nodes.length;
   return (
-    <main class="w2-library">
-      <h1>{t("Workflows")}</h1>
-      <Show when={error()}>
-        <p role="alert">{error()}</p>
-      </Show>
-      <Button
-        type="button"
-        onClick={() => {
-          setSelected("");
-          setName("New workflow");
-          setGraph({ nodes: [], edges: [] });
-          setRuns([]);
-        }}
-      >
-        {t("New workflow")}
-      </Button>
-      <ul class="workflow-list">
-        <For each={items()}>
-          {(item) => (
-            <li>
+    <WorkPage
+      page="workflows"
+      title={t("Workflows")}
+      description={t("Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.")}
+      class="workflows-page"
+      actions={
+        <Button type="button" variant="primary" class="work-page-primary" onClick={startNew}>
+          <Plus size={16} stroke-width={1.75} aria-hidden="true" />
+          {t("New workflow")}
+        </Button>
+      }
+    >
+      <div class="workflows-layout">
+        <aside class="workflows-list" aria-label={t("Your workflows")}>
+          <h2>{t("Your workflows")}</h2>
+          <Show
+            when={items().length > 0}
+            fallback={
+              <p class="workflows-list-empty">
+                {t("No saved workflows yet. The editor holds a draft until you save it.")}
+              </p>
+            }
+          >
+            <ul class="workflow-list">
+              <For each={items()}>
+                {(item) => (
+                  <li>
+                    <Button
+                      type="button"
+                      unstyled
+                      class="workflow-list-item"
+                      aria-current={selected() === item.id ? "true" : undefined}
+                      onClick={() => choose(item)}
+                    >
+                      <span class="workflow-list-icon" aria-hidden="true">
+                        <WorkflowIcon size={16} stroke-width={1.5} />
+                      </span>
+                      <span class="workflow-list-copy">
+                        <strong>{item.name}</strong>
+                        <small>{t("{count} steps", { count: stepCount(item) })}</small>
+                      </span>
+                    </Button>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
+        </aside>
+        <section class="workflows-editor" aria-label={t("Workflow")}>
+          <Show when={error()}>
+            <p role="alert" class="workflows-alert">
+              {error()}
+            </p>
+          </Show>
+          <div class="workflows-editor-bar">
+            <label class="workflows-name">
+              <span class="sr-only">{t("Name")}</span>
+              <Input value={name()} aria-label={t("Name")} onInput={(e) => setName(e.currentTarget.value)} />
+            </label>
+            <Show when={!selected()}>
+              <span class="workflows-draft">{t("Draft")}</span>
+            </Show>
+            <div class="workflows-editor-actions">
+              <Show when={selected()}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  class="workflows-delete"
+                  aria-label={t("Delete workflow")}
+                  title={t("Delete workflow")}
+                  onClick={() => {
+                    if (window.confirm(t("Delete this workflow and its history?")))
+                      void window.openbot.workflows
+                        ?.delete({ workflowId: selected() })
+                        .then(() => {
+                          setSelected("");
+                          setGraph({ nodes: [], edges: [] });
+                          setRuns([]);
+                          return refresh();
+                        })
+                        .catch((e) => setError(String(e)));
+                  }}
+                >
+                  <Trash2 size={16} stroke-width={1.5} aria-hidden="true" />
+                </Button>
+              </Show>
               <Button
                 type="button"
-                aria-current={selected() === item.id ? "true" : undefined}
-                onClick={() => choose(item)}
+                variant="primary"
+                disabled={!name().trim() || problems().length > 0}
+                title={problems()[0] ?? undefined}
+                onClick={() => void save()}
               >
-                {item.name}
+                <Check size={16} stroke-width={1.75} aria-hidden="true" />
+                {t("Save workflow")}
               </Button>
-            </li>
-          )}
-        </For>
-      </ul>
-      <label>
-        {t("Name")} <Input value={name()} onInput={(e) => setName(e.currentTarget.value)} />
-      </label>
-      <WorkflowCanvas
-        nodes={graph().nodes}
-        edges={graph().edges}
-        onChange={setGraph}
-        bots={bots()}
-        channels={channels()}
-        routines={routines()}
-      />
-      <Button
-        type="button"
-        disabled={!name().trim() || workflowProblems(graph()).length > 0}
-        onClick={() => void save()}
-      >
-        {t("Save workflow")}
-      </Button>
-      <Show when={selected()}>
-        <Button
-          type="button"
-          onClick={() => {
-            if (window.confirm(t("Delete this workflow and its history?")))
-              void window.openbot.workflows
-                ?.delete({ workflowId: selected() })
-                .then(() => {
-                  setSelected("");
-                  setGraph({ nodes: [], edges: [] });
-                  setRuns([]);
-                  return refresh();
-                })
-                .catch((e) => setError(String(e)));
-          }}
-        >
-          {t("Delete workflow")}
-        </Button>
-        <label>
-          {t("Run input")} <Textarea value={input()} onInput={(e) => setInput(e.currentTarget.value)} />
-        </label>
-        <Button
-          type="button"
-          onClick={() =>
-            void window.openbot.workflows
-              ?.run({ workflowId: selected(), input: input() })
-              .then(refresh)
-              .catch((e) => setError(String(e)))
-          }
-        >
-          {t("Run now")}
-        </Button>
-        <Show when={preview()}>
-          {(shown) => (
-            <WorkflowPreviewCanvas
-              graph={shown().graph}
-              label={t("Preview of version {number}", { number: shown().number })}
-            />
-          )}
-        </Show>
-        <WorkflowVersionsPanel
-          workflowId={selected()}
-          previewNumber={preview()?.number}
-          onPreview={setPreview}
-          onRestored={(workflow) => {
-            setPreview(null);
-            setGraph({ nodes: workflow.nodes, edges: workflow.edges });
-          }}
-        />
-        <h2>{t("Run history")}</h2>
-        <ul>
-          <For each={runs()}>
-            {(run) => (
-              <li>
-                {run.status} · {run.startedAt}{" "}
-                <Show when={run.status === "running" || run.status === "waiting"}>
-                  <Button
-                    type="button"
-                    onClick={() =>
-                      void window.openbot.workflows
-                        ?.cancelRun({ runId: run.id })
-                        .then(refresh)
-                        .catch((e) => setError(String(e)))
-                    }
-                  >
-                    {t("Cancel run")}
-                  </Button>
+            </div>
+          </div>
+          <WorkflowCanvas
+            nodes={graph().nodes}
+            edges={graph().edges}
+            onChange={setGraph}
+            bots={bots()}
+            channels={channels()}
+            routines={routines()}
+          />
+          <Show when={selected()}>
+            <div class="workflows-panels">
+              <section class="workflows-run" aria-label={t("Run now")}>
+                <h3>{t("Run now")}</h3>
+                <label>
+                  {t("Run input")} <Textarea value={input()} onInput={(e) => setInput(e.currentTarget.value)} />
+                </label>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() =>
+                    void window.openbot.workflows
+                      ?.run({ workflowId: selected(), input: input() })
+                      .then(refresh)
+                      .catch((e) => setError(String(e)))
+                  }
+                >
+                  <Play size={15} stroke-width={1.75} aria-hidden="true" />
+                  {t("Run now")}
+                </Button>
+              </section>
+              <section class="workflows-history" aria-label={t("Run history")}>
+                <h3>{t("Run history")}</h3>
+                <Show
+                  when={runs().length > 0}
+                  fallback={
+                    <p class="workflows-list-empty">{t("No runs yet. Run the workflow to see each step here.")}</p>
+                  }
+                >
+                  <ul class="workflow-runs">
+                    <For each={runs()}>
+                      {(run) => (
+                        <li class="workflow-run" data-status={run.status}>
+                          <div class="workflow-run-head">
+                            <span class="workflow-run-status" data-status={run.status}>
+                              {t(RUN_STATUS_LABELS[run.status])}
+                            </span>
+                            <time datetime={run.startedAt}>{formatRunTime(run.startedAt)}</time>
+                            <Show when={run.status === "running" || run.status === "waiting"}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                class="workflow-run-cancel"
+                                onClick={() =>
+                                  void window.openbot.workflows
+                                    ?.cancelRun({ runId: run.id })
+                                    .then(refresh)
+                                    .catch((e) => setError(String(e)))
+                                }
+                              >
+                                {t("Cancel run")}
+                              </Button>
+                            </Show>
+                          </div>
+                          <Show when={run.error}>
+                            <p class="workflow-run-error">{run.error}</p>
+                          </Show>
+                          <ol class="workflow-run-steps">
+                            <For each={run.steps}>
+                              {(step) => (
+                                <li data-status={step.status} title={t(STEP_STATUS_LABELS[step.status])}>
+                                  <StepGlyph type={step.type} size={13} />
+                                  <span>{step.title}</span>
+                                  <span class="sr-only">: {t(STEP_STATUS_LABELS[step.status])}</span>
+                                </li>
+                              )}
+                            </For>
+                          </ol>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
                 </Show>
-                <Show when={run.error}>
-                  <p>{run.error}</p>
-                </Show>
-                <ul>
-                  <For each={run.steps}>
-                    {(step) => (
-                      <li>
-                        {step.title}: {step.status}
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </li>
-            )}
-          </For>
-        </ul>
-      </Show>
-    </main>
+              </section>
+              <Show when={preview()}>
+                {(shown) => (
+                  <WorkflowPreviewCanvas
+                    graph={shown().graph}
+                    label={t("Preview of version {number}", { number: shown().number })}
+                  />
+                )}
+              </Show>
+              <WorkflowVersionsPanel
+                workflowId={selected()}
+                previewNumber={preview()?.number}
+                onPreview={setPreview}
+                onRestored={(workflow) => {
+                  setPreview(null);
+                  setGraph({ nodes: workflow.nodes, edges: workflow.edges });
+                }}
+              />
+            </div>
+          </Show>
+        </section>
+      </div>
+    </WorkPage>
   );
 }

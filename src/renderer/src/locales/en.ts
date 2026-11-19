@@ -2596,4 +2596,17 @@ export const en = {
     "Accounts agents can work in, such as mail and calendars.",
   "Tool servers every agent can call.": "Tool servers every agent can call.",
   "Files, skills, tables and access your agents work with.": "Files, skills, tables and access your agents work with.",
+  "Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.":
+    "Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.",
+  "Your workflows": "Your workflows",
+  "No saved workflows yet. The editor holds a draft until you save it.":
+    "No saved workflows yet. The editor holds a draft until you save it.",
+  Workflow: "Workflow",
+  Draft: "Draft",
+  "No runs yet. Run the workflow to see each step here.": "No runs yet. Run the workflow to see each step here.",
+  "Start with a trigger": "Start with a trigger",
+  "A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.":
+    "A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.",
+  "Waiting for approval": "Waiting for approval",
+  Denied: "Denied",
 } as const;

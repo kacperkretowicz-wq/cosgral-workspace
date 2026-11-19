@@ -2597,4 +2597,18 @@ export const pl = {
   "Tool servers every agent can call.": "Serwery narzędzi, z których może korzystać każdy agent.",
   "Files, skills, tables and access your agents work with.":
     "Pliki, umiejętności, tabele i dostępy, z których korzystają Twoi agenci.",
+  "Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.":
+    "Łańcuchy kroków: wyzwalacz, agenci, akceptacje, warunki i wiadomość do kanału.",
+  "Your workflows": "Twoje przepływy",
+  "No saved workflows yet. The editor holds a draft until you save it.":
+    "Nie ma jeszcze zapisanych przepływów. Edytor trzyma szkic, dopóki go nie zapiszesz.",
+  Workflow: "Przepływ",
+  Draft: "Szkic",
+  "No runs yet. Run the workflow to see each step here.":
+    "Jeszcze nie było uruchomień. Uruchom przepływ, a tu zobaczysz każdy krok.",
+  "Start with a trigger": "Zacznij od wyzwalacza",
+  "A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.":
+    "Wyzwalacz uruchamia przepływ ręcznie albo z rutyny. Potem dodaj agentów, akceptacje i wyjścia.",
+  "Waiting for approval": "Czeka na akceptację",
+  Denied: "Odrzucone",
 } as const;
