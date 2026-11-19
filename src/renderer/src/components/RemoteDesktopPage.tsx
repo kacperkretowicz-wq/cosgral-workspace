@@ -15,7 +15,7 @@ import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
 
 function modeLabel(mode: string): string {
-  return mode === "control" ? t("Control") : t("View");
+  return mode === "control" ? t("Control") : t("Screen view");
 }
 function phaseLabel(phase: string): string {
   switch (phase) {
@@ -387,7 +387,7 @@ export function RemoteDesktopPage() {
               value={mode()}
               onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}
             >
-              <option value="view">{t("View")}</option>
+              <option value="view">{t("Screen view")}</option>
               <option value="control">{t("Control")}</option>
             </NativeSelect>
           </label>
