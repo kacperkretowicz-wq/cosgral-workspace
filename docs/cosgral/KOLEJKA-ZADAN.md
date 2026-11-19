@@ -23,6 +23,12 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 13. [zrobione: 1682b267a] Klient telefonu (PWA): ekran kanałów, wiadomości i zadań na API z `ipc-mobile-channels.ts` (Backend BE-AB); współpraca z KK.
 14. [zrobione: 9a5a7ed95] Pasek boczny: animacja przesunięcia wiersza przy „unread first” (tylko transform, z reduced-motion).
 15. [zrobione: b27b2b107] Poprawki dostępności z sondy Testera (fokus, kontrast, reduced motion), gdy wynik będzie.
+16. Ekran „Komunikatory” (Telegram/Slack): podepnij `window.openbot.messengers` w rendererze (lista, połączenie, token tylko do zapisu, stan, test połączenia); `luki-silnika-071.md` §1.4; testy jednego pliku + historyjka.
+17. Agent settings pełny 059–074 (P1 „częściowo”): uzupełnij brakujące sekcje ekranu agenta wg `vs-071-p0p1.txt` i `openbot-0.71-kolejka-ui.md` (poza repo); własny kod, bez przepisywania.
+18. Tasks↔chat: hero zadania jak 078–086 (nagłówek, status, akcje Stop/Continue/Reassign) — wiersz „częściowo” z P0/P1.
+19. Chat chrome: Teach/Voice (przyciski w polu wiadomości, stany wyłączone z powodem), `@` i `/` złapane w teście komponentu (wiersz 16).
+20. Pasek boczny: „Więcej”/przypinanie stron (wiersz 36) + skróty klawiszowe Ctrl+K/Ctrl+F/Alt+↑ (wiersz 72), test jednego pliku.
+21. Marketplace: strona używa `ipc-marketplace-screen` (Featured, kategorie, Verified/Public) — wiersz 48.
 
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
@@ -38,6 +44,11 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 11. [zrobione: 3cb782b80, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
 13. [zrobione: 13433a337] Parytet i PRZEWODNIK po scaleniu `7d5fd871c` (wiersze 2 i 71 → „jest”, liczby ze skryptu z tabeli, „Unread first” i kanały w PWA opisane).
 12. [zrobione: 38566682e] `ChannelWorkspace`: lista kanałów, przyciski i komunikaty dostępności przez `t()` (luka wskazana przez KAPI), klucze wstawione w środku katalogów, żeby nie kolidowały z dopiskami KAPI.
+13. Parytet: przelicz `parytet-0.71.md` na tipie po scaleniu lidera (wiersze 2, 71, 36, 72) i zaktualizuj procenty z dowodem.
+14. Ustawienia kanału (wiersz 27): kompakt, kasowanie historii, przeglądarka w kanale — kontrakt + atrapa + ekran, lekkie.
+15. Onboarding (wiersz 11): wybór hosta lokalny/zdalny w kontrakcie i ekranie (bez darmowych modeli), testy jednego pliku.
+16. Computer Use: ekran uprawnień jak 0.71 (wiersz 8), tylko kontrakt + ekran + test na atrapie.
+17. Ustawienia serwera: Członkowie i Strony „niedostępne” (wiersz 66) — ekran i kontrakt z jasnym powodem, bez udawania danych.
 
 ## Backend Expert
 1. [zrobione: 41e810e1b] `historyWindow` kanału (kontrakt, silnik, atrapa, testy).
@@ -51,6 +62,11 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 9. [zrobione: 9d79bedfc] Przywracanie miejsca osobno na serwer (luka BE-X: dziś jedno miejsce).
 10. [zrobione: 9d766313a — szczegół zadania kanału w API telefonu; push dla zadań kanału: luka] Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
 11. Kolejne luki z `parytet-0.71.md`, jeśli tabela „ROBIĆ” znów się wypełni po odbiorze Testera.
+12. Biblioteka: „pliki maszyny” (wiersz 45): bezpieczny odczyt wybranego folderu, limit rozmiaru, tylko za zgodą; kontrakt + testy jednego pliku.
+13. Rutyny kanału: edycja nazwy/instrukcji/harmonogramu + dni tygodnia (wiersz 58) — kontrakt, silnik, testy.
+14. Discord: deskryptor + atrapa sterownika na interfejsie komunikatorów (`luki-silnika-071.md` §1.4), testy na fałszywej bramce, bez prawdziwego tokenu.
+15. Marketplace: instalacja skilla z linku GitHub z kartą zgody (limit 200 plików/10 MB, bez uruchamiania skryptów), silnik + testy na fałszywym serwerze.
+16. Przeglądarka agenta: kontrakt podglądu na żywo i „teach” (wiersz 46), atrapa + testy.
 
 ## KAPI
 1. [zrobione: 401bafe8f] Dalsze sztywne EN w TSX przez `t()` (klucze PL/EN równe, `i18n.test`).
@@ -89,6 +105,9 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 34. [zrobione: 8ddab6ca4] Aria/i18n: VaultPanel confirm Delete + skan window.confirm / resztki EN.
 35. [zrobione: e160e1366] Aria/i18n: App.tsx publish fallback + skan throw/Error EN w UI (poza Remote).
 36. [zrobione: 0c9d7f356] Lekkie: odśwież `i18n-inwentarz.md` + sprawdzenie równości kluczy PL/EN (`i18n.test`).
+37. Skan prywatności całego repo (nazwa profilu, e-mail, ścieżki użytkownika, klucze) + raport; popraw znaleziska w dokumentach.
+38. Wersje przepływów: przywracanie/różnice — test jednego pliku na atrapie i luki do raportu (wiersz 61).
+39. Skróty klawiszowe: pełna mapa 0.71 (wiersz 72) w kontrakcie `ipc-shortcuts` + testy; ekran zostawia UI.
 
 ## Tester
 1. [zrobione: 5d86c5b60] T-AJ GO Electron @ `2dfb55f09` — e2e 0 FAIL, W5 33/33, zrzuty 17-11-j, sondy; raport `tester-w12-tj.md`.
@@ -101,7 +120,16 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 8. [zrobione: 5d86c5b60] Sonda w oknie: sendShortcut + unreadFirst (IPC/dataset) + Tasks board 5 kolumn — `sandbox-ui-probes.ts`.
 9. [zrobione: a9f93e728] Odbiór kanałów PWA — docs/skrypty (API unit 7+1, checklista GO, fix zrzutów 16/19); żywy telefon **czeka na GO** + tip z UI-13. Raport `tester-w12-tak.md`.
 10. [zrobione: 5d86c5b60] P0/P1 po 17-11-j: **4 zgodne / 3 częściowo / 0 brak** — `tester-w12-tj.md` + `vs-071-p0p1.txt` (poza repo).
+11. T-AL GO Electron @ tip po scaleniu lidera (`be82091cb`+): e2e 0 FAIL, W5 33/33, PWA kanały (UI-13), przełącznik „Unread first” kliknięty w oknie; zrzuty 17-11-k; raport `tester-w12-tl.md`.
+12. Przelicz tabelę P0/P1 (7 pozycji) po T-AL i podaj, co UI ma jeszcze zrobić.
+13. Sonda w oknie: Marketplace, Harmonogram, Biblioteka z danymi testowymi (wiersze 45, 48, 57) — kliknięcia, nie tylko zrzuty.
+14. Odbiór PL: cały program po polsku w oknie (wiersz 1), lista brakujących napisów dla KAPI/UI.
 
 ## Lider (Okiestrator)
 Scalanie, lint / typecheck / Storybook / visual, skan prywatności, push (fast-forward), odświeżenie podglądu, pełny `bun run check`,
 raporty o 14:00, 18:00, 22:00 i 8:00, uzupełnianie tej kolejki.
+
+## Zasada pustej kolejki (od 19.11)
+Gdy Twoja sekcja nie ma nieoznaczonej pozycji: NIE pisz „Cisza” ani „brak pozycji”. Weź pierwszą nieoznaczoną pozycję ze źródeł
+(`parytet-0.71.md`: wiersze „częściowo” i „brak” ze swojego obszaru), dopisz ją na końcu swojej sekcji z `[w toku]` i rób.
+Lider i tak uzupełnia kolejkę po każdym scaleniu; nic nie czeka na lidera.
