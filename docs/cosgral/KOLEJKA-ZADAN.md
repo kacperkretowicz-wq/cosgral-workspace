@@ -79,7 +79,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 26. [zrobione: fa9ca434c] Aria/i18n: `ThreadPanel` + `DirectConversation`.
 27. [zrobione: 79a742675] Aria/i18n: `MessageHistoryActions` + `AlwaysAllowPanel` + resztki rozmowy (`MessageRendering`, `QueuePanel`, `SelectionActions`).
 28. [zrobione: 91e02bee2] Aria/i18n: `App.tsx` Library / Schedule / Loading + `HostPanel` / resztki aria.
-29. [zrobione: SHA_AM] Aria/i18n: `AccountLogin` placeholder + skan pozostałych TSX poza Remote/Mobile.
+29. [zrobione: 5cb0d5c46] Aria/i18n: `AccountLogin` placeholder + skan pozostałych TSX poza Remote/Mobile.
 30. [w toku: KAPI, 07:18] Aria/i18n: Sidebar SVG titles Limit/Error/Responded + drobne resztki poza Remote/Mobile.
 
 ## Tester
