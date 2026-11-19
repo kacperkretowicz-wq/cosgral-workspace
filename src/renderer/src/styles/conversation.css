@@ -2303,8 +2303,8 @@
 }
 
 .thinking-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0, so the steps never wait for an animation that reduced motion may switch off. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .thinking-disclosure {
@@ -6129,4 +6129,85 @@
 .voice-button:active,
 .voice-button-active:active {
   transform: scale(0.97);
+}
+
+/*
+ * Agent steps as a timeline (AgentActivity.tsx): each step has a small icon on a line (read, search, run, write, web,
+ * think), the step being worked on is in the accent colour. The step text stays as the agent wrote it.
+ */
+.thinking-steps {
+  position: relative;
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: var(--openbot-space-1) 0 var(--openbot-space-1) 6px;
+  border-left: 0;
+  padding: var(--openbot-space-1) 0;
+  list-style: none;
+}
+
+.thinking-steps::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 10px;
+  width: 1px;
+  background: var(--openbot-border-strong);
+  content: "";
+}
+
+.thinking-steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-2);
+}
+
+.thinking-step-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-canvas);
+  color: var(--openbot-text-muted);
+}
+
+.thinking-steps li p {
+  padding-top: 2px;
+  color: var(--openbot-text-secondary);
+}
+
+.thinking-steps li + li {
+  margin-top: 0;
+}
+
+.thinking-steps li[data-step="search"] .thinking-step-icon,
+.thinking-steps li[data-step="web"] .thinking-step-icon {
+  color: var(--openbot-file-teal);
+}
+
+.thinking-steps li[data-step="run"] .thinking-step-icon {
+  color: var(--openbot-file-orange);
+}
+
+.thinking-steps li[data-step="write"] .thinking-step-icon {
+  color: var(--openbot-file-green);
+}
+
+.thinking-steps li[data-step="read"] .thinking-step-icon {
+  color: var(--openbot-file-blue);
+}
+
+.thinking-steps li[data-live="true"] .thinking-step-icon {
+  border-color: var(--openbot-accent-strong);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.thinking-steps li[data-live="true"] p {
+  color: var(--openbot-text-primary);
 }
