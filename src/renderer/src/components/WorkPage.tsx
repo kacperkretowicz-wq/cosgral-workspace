@@ -153,7 +153,7 @@ export function WorkPageAnchors(props: {
   let content: HTMLDivElement | undefined;
   const target = (id: string) => content?.querySelector<HTMLElement>(`[data-anchor="${id}"]`) ?? null;
   onSettled(() => {
-    if (!content || typeof IntersectionObserver === "undefined") return;
+    if (!content || !("IntersectionObserver" in window)) return;
     const root = content.closest<HTMLElement>(".work-page");
     const seen = new Map<string, boolean>();
     const observer = new IntersectionObserver(
