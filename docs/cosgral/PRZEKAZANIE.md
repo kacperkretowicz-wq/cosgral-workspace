@@ -44,6 +44,9 @@
     dzienniku `PROMPT-UI-JAKOSC.md` (wiersz 19.11 (6)). Storybook 370/370 (axe), testy renderera 1119/1119.
     Druga runda (prawie 1:1 z inspiracjami): kafle podświetlone od dołu, ikony z siatką gradientów, pigułki stanów,
     błyszczące pigułki akcji, połysk stworków także u osób (wiersz 19.11 (7) w dzienniku).
+    Trzecia runda: szklane tło okna z plamami światła, pasek stron jako dok z kolorowymi kafelkami, większe ikony,
+    szklane pola, pigułki, menu i podpowiedzi (wiersz 19.11 (8)). `backdrop-filter` na dużych panelach: sprawdzić
+    płynność przewijania na słabszym komputerze z Windows.
     **Do obejrzenia na Windows:** testy wizualne zmienią się na każdym ekranie (inna paleta) — wzorce aktualizować
     dopiero po obejrzeniu różnic.
 

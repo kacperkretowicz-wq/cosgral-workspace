@@ -210,6 +210,20 @@
   --cosgral-status-amber: #fbbf24;
   --cosgral-status-red: #ff5c7a;
   --cosgral-status-violet: #b794ff;
+  /* The window behind the panels: soft coloured light that the frosted panels blur (owner: "całe tło lekko szklane"). */
+  --cosgral-backdrop:
+    radial-gradient(42% 55% at 6% 0%, rgba(0, 99, 142, 0.6) 0%, rgba(0, 99, 142, 0) 72%),
+    radial-gradient(38% 48% at 100% 22%, rgba(25, 81, 252, 0.38) 0%, rgba(25, 81, 252, 0) 72%),
+    radial-gradient(34% 42% at 28% 100%, rgba(255, 45, 85, 0.2) 0%, rgba(255, 45, 85, 0) 72%),
+    radial-gradient(40% 40% at 88% 100%, rgba(140, 185, 204, 0.16) 0%, rgba(140, 185, 204, 0) 72%),
+    linear-gradient(180deg, #04060b 0%, #020308 100%);
+  --cosgral-panel-glass: rgba(8, 11, 17, 0.7);
+  --cosgral-panel-edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(140, 185, 204, 0.09),
+    0 24px 60px -30px rgba(0, 0, 0, 0.85);
+  --cosgral-field-glass: rgba(255, 255, 255, 0.035);
+  --cosgral-field-edge: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(140, 185, 204, 0.14);
+  --cosgral-popover-glass: rgba(12, 16, 24, 0.82);
 }
 
 :root[data-theme="light"],
@@ -287,6 +301,19 @@
   --cosgral-status-amber: #8a5a00;
   --cosgral-status-red: #a80b2f;
   --cosgral-status-violet: #5b2bb5;
+  --cosgral-backdrop:
+    radial-gradient(42% 55% at 6% 0%, rgba(0, 99, 142, 0.22) 0%, rgba(0, 99, 142, 0) 72%),
+    radial-gradient(38% 48% at 100% 22%, rgba(55, 129, 252, 0.16) 0%, rgba(55, 129, 252, 0) 72%),
+    radial-gradient(34% 42% at 28% 100%, rgba(224, 21, 67, 0.08) 0%, rgba(224, 21, 67, 0) 72%),
+    radial-gradient(40% 40% at 88% 100%, rgba(140, 185, 204, 0.3) 0%, rgba(140, 185, 204, 0) 72%),
+    linear-gradient(180deg, #eaf0f5 0%, #e2e9ef 100%);
+  --cosgral-panel-glass: rgba(250, 252, 254, 0.78);
+  --cosgral-panel-edge:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(0, 74, 107, 0.1),
+    0 20px 50px -32px rgba(0, 40, 60, 0.4);
+  --cosgral-field-glass: rgba(255, 255, 255, 0.7);
+  --cosgral-field-edge: inset 0 1px 2px rgba(0, 40, 60, 0.08), inset 0 0 0 1px rgba(0, 74, 107, 0.22);
+  --cosgral-popover-glass: rgba(252, 253, 255, 0.9);
   --cosgral-grain-opacity: 0.035;
   --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);

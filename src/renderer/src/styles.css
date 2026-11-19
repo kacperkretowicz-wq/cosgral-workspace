@@ -44,6 +44,12 @@
   --openbot-azure-light: var(--cosgral-azure-300);
   --openbot-electric: var(--cosgral-electric-500);
   --openbot-red-neon: var(--cosgral-red-neon);
+  --openbot-backdrop: var(--cosgral-backdrop);
+  --openbot-panel-glass: var(--cosgral-panel-glass);
+  --openbot-panel-edge: var(--cosgral-panel-edge);
+  --openbot-field-glass: var(--cosgral-field-glass);
+  --openbot-field-edge: var(--cosgral-field-edge);
+  --openbot-popover-glass: var(--cosgral-popover-glass);
   --openbot-tile-base: var(--cosgral-tile-base);
   --openbot-tile-edge: var(--cosgral-tile-edge);
   --openbot-tile-blue: var(--cosgral-tile-blue);
