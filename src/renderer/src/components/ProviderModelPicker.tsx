@@ -7,6 +7,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { isClaudeModel } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { t } from "../i18n";
 import { Listbox, Popover, Tabs } from "./ui";
 
 interface ProviderModelPickerProps {
@@ -84,7 +85,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
         <Popover.Trigger
           type="button"
           class={["provider-model-trigger", { "provider-model-trigger-field": field() }]}
-          aria-label={`${props.ariaLabel ?? "Agent model"}: ${triggerModelName()}`}
+          aria-label={`${props.ariaLabel ?? t("Agent model")}: ${triggerModelName()}`}
           disabled={props.disabled}
           title={props.disabled ? props.disabledReason : `${providerName(activeProvider())} · ${triggerModelName()}`}
           onKeyDown={(event) => {
@@ -94,7 +95,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
           }}
         >
           <Show when={field()}>
-            <span class="provider-model-field-label">{props.label ?? "Model"}</span>
+            <span class="provider-model-field-label">{props.label ?? t("Model")}</span>
           </Show>
           <span class="provider-model-trigger-value">
             <ProviderMark provider={activeProvider()} />
@@ -110,7 +111,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
             if (event.key === "Escape") setOpen(false);
           }}
         >
-          <Popover.Title class="sr-only">Choose agent model</Popover.Title>
+          <Popover.Title class="sr-only">{t("Choose agent model")}</Popover.Title>
           <Tabs.Root
             value={railProvider()}
             onChange={(value) => {
@@ -121,7 +122,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
             activationMode="automatic"
             class="provider-model-layout"
           >
-            <Tabs.List class="provider-model-rail" aria-label="Model providers">
+            <Tabs.List class="provider-model-rail" aria-label={t("Model providers")}>
               <For each={PROVIDERS}>
                 {(provider) => {
                   const status = () => providerAvailability(props.agentStatus, props.modelOptions, provider);
@@ -167,7 +168,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
                   <Tabs.Content
                     value={provider}
                     class="provider-model-panel"
-                    aria-label={`${providerName(provider)} models`}
+                    aria-label={t("{provider} models", { provider: providerName(provider) })}
                   >
                     <div class="provider-model-heading">
                       <strong>{providerName(provider)}</strong>
@@ -175,7 +176,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
                     </div>
                     <Listbox.Root
                       class="provider-model-list"
-                      aria-label={`${providerName(provider)} models`}
+                      aria-label={t("{provider} models", { provider: providerName(provider) })}
                       options={models()}
                       optionValue="id"
                       optionTextValue={(model) => displayModelName(model.name, model.id)}
@@ -194,7 +195,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
                             type="button"
                             class={["provider-model-option", { "provider-model-option-selected": selected() }]}
                             aria-label={`${displayModelName(model.name, model.id)}${
-                              model.id === DEFAULT_MODELS[provider] ? ", default" : ""
+                              model.id === DEFAULT_MODELS[provider] ? t(", default") : ""
                             }`}
                             disabled={!available()}
                             onClick={() => selectModel(model.id, provider)}
@@ -202,7 +203,7 @@ export function ProviderModelPicker(props: ProviderModelPickerProps) {
                             <span class="provider-model-option-name">
                               <span>{displayModelName(model.name, model.id)}</span>
                               <Show when={model.id === DEFAULT_MODELS[provider]}>
-                                <small>default</small>
+                                <small>{t("default")}</small>
                               </Show>
                             </span>
                             <Show when={selected()}>
@@ -238,31 +239,28 @@ function providerAvailability(
     id: provider,
     state: available ? "available" : "error",
     version: null,
-    message: available ? null : `${providerName(provider)} is unavailable.`,
+    message: available ? null : t("{provider} is unavailable.", { provider: providerName(provider) }),
   };
 }
 
 function providerSummary(provider: AgentProviderId, status: AgentProviderStatus): string {
   if (status.state === "available") {
-    return status.version
-      ? `${status.version} (${provider === "claude" ? "Claude Code" : "Codex CLI"})`
-      : `${provider === "claude" ? "Claude Code" : "Codex CLI"} ready`;
+    const tool = provider === "claude" ? t("Claude Code") : t("Codex CLI");
+    return status.version ? `${status.version} (${tool})` : t("{tool} ready", { tool });
   }
   return status.message ?? providerStatusLabel(status.state);
 }
 
-function providerStatusLabel(
-  state: AgentProviderStatus["state"],
-): "Sign in required" | "Not installed" | "Update required" | "Unavailable" | "Checking" {
-  if (state === "sign-in-required") return "Sign in required";
-  if (state === "not-installed") return "Not installed";
-  if (state === "outdated") return "Update required";
-  if (state === "error") return "Unavailable";
-  return "Checking";
+function providerStatusLabel(state: AgentProviderStatus["state"]): string {
+  if (state === "sign-in-required") return t("Sign in required");
+  if (state === "not-installed") return t("Not installed");
+  if (state === "outdated") return t("Update required");
+  if (state === "error") return t("Unavailable");
+  return t("Checking");
 }
 
-function providerName(provider: AgentProviderId): "Claude" | "Codex" {
-  return provider === "claude" ? "Claude" : "Codex";
+function providerName(provider: AgentProviderId): string {
+  return provider === "claude" ? t("Claude") : t("Codex");
 }
 
 function providerForModel(model: AgentModelId): AgentProviderId {

@@ -1,16 +1,17 @@
 import type { LocalSkill, SkillContent, SkillInstall, SkillVersion } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 import { SkillsPanel } from "./SkillsPanel";
 import { Button } from "./ui";
 export function SkillsSettings(props: { botId?: string }) {
   function skillsApi() {
     const api = window.openbot.skills;
-    if (!api) throw new Error("Skills are unavailable in this build.");
+    if (!api) throw new Error(t("Skills are unavailable in this build."));
     return api;
   }
   function agentBotId(): string {
     const botId = props.botId;
-    if (!botId) throw new Error("No agent selected.");
+    if (!botId) throw new Error(t("No agent selected."));
     return botId;
   }
   const [skills, setSkills] = createSignal<LocalSkill[]>([]);
@@ -22,7 +23,7 @@ export function SkillsSettings(props: { botId?: string }) {
   async function refresh() {
     const api = window.openbot.skills;
     if (!api) {
-      setError("Skills are unavailable in this build.");
+      setError(t("Skills are unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -46,7 +47,7 @@ export function SkillsSettings(props: { botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Skill action failed.");
+      setError(e instanceof Error ? e.message : t("Skill action failed."));
     }
   }
   async function inspect(skillId: string, version?: number) {
@@ -80,7 +81,7 @@ export function SkillsSettings(props: { botId?: string }) {
         when={props.botId}
         fallback={
           <section class="w2-panel">
-            <h2>Skill library</h2>
+            <h2>{t("Skill library")}</h2>
             <For each={skills()}>
               {(skill) => (
                 <article class="w2-item">
@@ -89,21 +90,21 @@ export function SkillsSettings(props: { botId?: string }) {
                   </strong>
                   <p>{skill.description}</p>
                   <Button unstyled type="button" onClick={() => void inspect(skill.id)}>
-                    View versions
+                    {t("View versions")}
                   </Button>
                   <Button
                     unstyled
                     type="button"
                     onClick={() => {
-                      if (window.confirm("Delete this skill and uninstall it from all agents?")) {
+                      if (window.confirm(t("Delete this skill and uninstall it from all agents?"))) {
                         const force = window.confirm(
-                          "Also remove installed copies with local changes? Choose Cancel to preserve them.",
+                          t("Also remove installed copies with local changes? Choose Cancel to preserve them."),
                         );
                         void run(() => skillsApi().delete({ skillId: skill.id, force }));
                       }
                     }}
                   >
-                    Delete
+                    {t("Delete")}
                   </Button>
                 </article>
               )}
@@ -124,36 +125,36 @@ export function SkillsSettings(props: { botId?: string }) {
       </Show>
       <Show when={content()}>
         {(item) => (
-          <section class="w2-panel" aria-label="Skill details">
+          <section class="w2-panel" aria-label={t("Skill details")}>
             <h3>
               {item().skill.name} · v{item().version}
             </h3>
             <pre class="channel-prewrap">{item().skillMd}</pre>
-            <h4>Versions</h4>
+            <h4>{t("Versions")}</h4>
             <For each={versions()}>
               {(version) => (
                 <div>
-                  Version {version.version}{" "}
+                  {t("Version {n}", { n: version.version })}{" "}
                   <Button unstyled type="button" onClick={() => void inspect(item().skill.id, version.version)}>
-                    View
+                    {t("View")}
                   </Button>{" "}
                   <Button
                     unstyled
                     type="button"
                     onClick={() => {
-                      if (window.confirm(`Restore version ${version.version} as a new library version?`))
+                      if (window.confirm(t("Restore version {n} as a new library version?", { n: version.version })))
                         void run(() =>
                           skillsApi().restoreVersion({ skillId: item().skill.id, version: version.version }),
                         );
                     }}
                   >
-                    Restore
+                    {t("Restore")}
                   </Button>
                 </div>
               )}
             </For>
             <Button unstyled type="button" onClick={() => setContent(undefined)}>
-              Close
+              {t("Close")}
             </Button>
           </section>
         )}
