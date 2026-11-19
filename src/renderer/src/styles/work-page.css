@@ -246,6 +246,11 @@
     scrollbar-width: none;
   }
 
+  /* As tabs, each section keeps its full width; the row scrolls instead of squeezing labels over each other. */
+  .work-page-nav-item {
+    flex: 0 0 auto;
+  }
+
   .work-page > :not(.work-page-header, .work-page-body) {
     width: calc(100% - 48px);
   }

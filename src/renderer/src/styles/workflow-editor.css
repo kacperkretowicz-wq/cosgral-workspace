@@ -437,6 +437,7 @@
 /* The editor section and the canvas frame. */
 .workflows-editor > section[aria-label] {
   display: grid;
+  min-width: 0;
   gap: var(--openbot-space-3);
   border: 0;
   background: transparent;
@@ -444,6 +445,7 @@
 }
 
 .workflows-page .workflow-palette {
+  min-width: 0;
   margin: 0;
   gap: 6px;
 }

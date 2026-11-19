@@ -1,6 +1,7 @@
 # Przekazanie projektu (najnowsze): sesja 19.11.2026, kontynuacja PR #24
 
-**Dla następnego agenta.** Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem
+**Dla następnego agenta. Lista tego, co zostało w UI (P1/P2/P3): `docs/cosgral/AUDYT-UI-2026-11-19.md`.**
+Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem
 rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.
 
 ## A. Gdzie jest praca
