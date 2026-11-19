@@ -3,6 +3,7 @@ import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openb
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
+import { PageIcon } from "./PageRail";
 import { Badge, Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
 
 /** "4:59" from milliseconds; never negative. */
@@ -45,15 +46,18 @@ export function MobileConnectView(props: MobileConnectViewProps) {
   const remaining = () => (props.ticket ? new Date(props.ticket.expiresAt).getTime() - props.now : 0);
   return (
     <>
-      <header>
-        <Heading as="h1" size="lg">
-          {t("Phone")}
-        </Heading>
-        <Text as="p" tone="secondary">
-          {t(
-            "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.",
-          )}
-        </Text>
+      <header class="work-page-header">
+        <span class="work-page-icon" aria-hidden="true">
+          <PageIcon page="phone" />
+        </span>
+        <div class="work-page-heading">
+          <h1>{t("Phone")}</h1>
+          <p>
+            {t(
+              "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.",
+            )}
+          </p>
+        </div>
       </header>
 
       <aside
@@ -348,7 +352,7 @@ export function MobileConnectPage() {
     };
   });
   return (
-    <main class="w2-library mobile-connect-page">
+    <main class="w2-library work-page mobile-connect-page" data-page="phone">
       <MobileConnectView
         state={state()}
         ticket={ticket()}

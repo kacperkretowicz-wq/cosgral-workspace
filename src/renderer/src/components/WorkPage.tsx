@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 import type { PageId } from "./PageRail";
 import { PageIcon } from "./PageRail";
 
@@ -129,6 +129,73 @@ export function WorkPageSections<Id extends string>(props: {
           )}
         </Show>
       </section>
+    </div>
+  );
+}
+
+export interface WorkPageAnchor {
+  id: string;
+  label: string;
+  icon: (props: { "aria-hidden": "true"; size: number; "stroke-width": number }) => JSX.Element;
+}
+
+/**
+ * A long page that keeps every section on screen (settings people scan, scripts that expect every region), with a
+ * list of its sections on the left that scrolls to one and follows the scroll. Sections are marked in the content
+ * with `data-anchor="<id>"`.
+ */
+export function WorkPageAnchors(props: {
+  label: string;
+  anchors: ReadonlyArray<WorkPageAnchor>;
+  children: JSX.Element;
+}) {
+  const [active, setActive] = createSignal(props.anchors[0]?.id ?? "");
+  let content: HTMLDivElement | undefined;
+  const target = (id: string) => content?.querySelector<HTMLElement>(`[data-anchor="${id}"]`) ?? null;
+  onSettled(() => {
+    if (!content || typeof IntersectionObserver === "undefined") return;
+    const root = content.closest<HTMLElement>(".work-page");
+    const seen = new Map<string, boolean>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.getAttribute("data-anchor");
+          if (id) seen.set(id, entry.isIntersecting);
+        }
+        const first = props.anchors.find((anchor) => seen.get(anchor.id));
+        if (first) setActive(first.id);
+      },
+      { root, rootMargin: "0px 0px -60% 0px" },
+    );
+    for (const anchor of props.anchors) {
+      const element = target(anchor.id);
+      if (element) observer.observe(element);
+    }
+    return () => observer.disconnect();
+  });
+  return (
+    <div class="work-page-body">
+      <nav class="work-page-nav" aria-label={props.label}>
+        <For each={props.anchors}>
+          {(anchor) => (
+            <button
+              type="button"
+              class="work-page-nav-item"
+              aria-current={active() === anchor.id ? "true" : undefined}
+              onClick={() => {
+                setActive(anchor.id);
+                target(anchor.id)?.scrollIntoView({ block: "start" });
+              }}
+            >
+              {anchor.icon({ "aria-hidden": "true", size: 16, "stroke-width": 1.5 })}
+              <span>{anchor.label}</span>
+            </button>
+          )}
+        </For>
+      </nav>
+      <div ref={(element) => (content = element)} class="work-page-section work-page-anchored">
+        {props.children}
+      </div>
     </div>
   );
 }

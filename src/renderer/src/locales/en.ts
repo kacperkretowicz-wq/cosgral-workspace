@@ -2619,4 +2619,7 @@ export const en = {
   Today: "Today",
   Tomorrow: "Tomorrow",
   Yesterday: "Yesterday",
+  "Provider sections": "Provider sections",
+  "Agent CLIs": "Agent CLIs",
+  "Let someone see this computer, or connect to another one.": "Let someone see this computer, or connect to another one.",
 } as const;

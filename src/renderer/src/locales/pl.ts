@@ -2620,4 +2620,7 @@ export const pl = {
   Today: "Dziś",
   Tomorrow: "Jutro",
   Yesterday: "Wczoraj",
+  "Provider sections": "Sekcje dostawców",
+  "Agent CLIs": "CLI agentów",
+  "Let someone see this computer, or connect to another one.": "Pozwól komuś zobaczyć ten komputer albo połącz się z innym.",
 } as const;

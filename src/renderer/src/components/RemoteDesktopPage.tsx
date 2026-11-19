@@ -13,6 +13,7 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
+import { WorkPage } from "./WorkPage";
 
 function modeLabel(mode: string): string {
   return mode === "control" ? t("Control") : t("Screen view");
@@ -208,9 +209,13 @@ export function RemoteDesktopPage() {
     };
   });
   return (
-    <main class="w2-library remote-desktop-page">
-      <h1>{t("Remote desktop")}</h1>
-      <p role="note">
+    <WorkPage
+      page="remote-desktop"
+      title={t("Remote desktop")}
+      description={t("Let someone see this computer, or connect to another one.")}
+      class="remote-desktop-page"
+    >
+      <p role="note" class="work-page-note">
         {t(
           "Traffic is not encrypted outside a secure tunnel such as a VPN. Do not expose this service directly to the internet.",
         )}
@@ -467,6 +472,6 @@ export function RemoteDesktopPage() {
           }}
         />
       </section>
-    </main>
+    </WorkPage>
   );
 }
