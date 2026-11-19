@@ -121,12 +121,12 @@ export function AcpPresetCard(props: { preset: AcpPresetInfo; onAdded: () => voi
     <div class="providers-form">
       <Text as="strong">{props.preset.name}</Text>
       <Show when={!props.preset.detectedCommand}>
-        <Text as="p">Command not found. Install it from the official page or provide its command.</Text>
+        <Text as="p">{t("Command not found. Install it from the official page or provide its command.")}</Text>
       </Show>
       <Button onClick={() => void window.openbot.openUrl(props.preset.installUrl)}>
-        Official installation instructions
+        {t("Official installation instructions")}
       </Button>
-      <Field label={`${props.preset.name} command`}>
+      <Field label={t("{name} command", { name: props.preset.name })}>
         <Input
           value={command()}
           maxlength={520}
@@ -153,17 +153,17 @@ export function AcpPresetCard(props: { preset: AcpPresetInfo; onAdded: () => voi
                 });
                 props.onAdded();
               } catch {
-                setError("Could not add this command. Check its path and try again.");
+                setError(t("Could not add this command. Check its path and try again."));
               } finally {
                 setBusy(false);
               }
             }}
           >
-            Add {props.preset.name}
+            {t("Add {name}", { name: props.preset.name })}
           </Button>
         }
       >
-        <Badge>Added</Badge>
+        <Badge>{t("Added")}</Badge>
       </Show>
     </div>
   );
@@ -187,7 +187,7 @@ export function AcpPresets() {
     <Show when={presets().length}>
       <Card class="providers-section">
         <Heading as="h2" size="md">
-          Quick add ACP agents
+          {t("Quick add ACP agents")}
         </Heading>
         <For each={presets()}>{(preset) => <AcpPresetCard preset={preset} onAdded={refresh} />}</For>
       </Card>

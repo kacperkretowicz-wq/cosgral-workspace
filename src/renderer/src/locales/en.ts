@@ -2141,4 +2141,13 @@ export const en = {
   "Authorization code": "Authorization code",
   "Paste the code from the sign-in page. It is not saved.": "Paste the code from the sign-in page. It is not saved.",
   "Log in": "Log in",
+  "Command not found. Install it from the official page or provide its command.":
+    "Command not found. Install it from the official page or provide its command.",
+  "Official installation instructions": "Official installation instructions",
+  "{name} command": "{name} command",
+  "Could not add this command. Check its path and try again.":
+    "Could not add this command. Check its path and try again.",
+  "Add {name}": "Add {name}",
+  Added: "Added",
+  "Quick add ACP agents": "Quick add ACP agents",
 } as const;

@@ -2142,4 +2142,13 @@ export const pl = {
   "Authorization code": "Kod autoryzacji",
   "Paste the code from the sign-in page. It is not saved.": "Wklej kod ze strony logowania. Nie jest zapisywany.",
   "Log in": "Zaloguj",
+  "Command not found. Install it from the official page or provide its command.":
+    "Nie znaleziono polecenia. Zainstaluj ze strony oficjalnej albo podaj komendę.",
+  "Official installation instructions": "Oficjalna instrukcja instalacji",
+  "{name} command": "Polecenie {name}",
+  "Could not add this command. Check its path and try again.":
+    "Nie udało się dodać polecenia. Sprawdź ścieżkę i spróbuj ponownie.",
+  "Add {name}": "Dodaj {name}",
+  Added: "Dodano",
+  "Quick add ACP agents": "Szybkie dodawanie agentów ACP",
 } as const;
