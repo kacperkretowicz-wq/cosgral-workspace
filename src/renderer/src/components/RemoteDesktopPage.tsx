@@ -11,8 +11,10 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
+import { PanelHeading } from "./PanelHeading";
 import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
+import { Cast, MonitorUp } from "./ui/icons";
 import { WorkPage } from "./WorkPage";
 
 function modeLabel(mode: string): string {
@@ -38,7 +40,7 @@ export function RemoteDesktopSafetyBanner(props: { count: number; onStop: () => 
     <Show when={props.count > 0}>
       <aside class="remote-desktop-safety" aria-label={t("Remote desktop sharing")}>
         <span>{t("Remote viewer connected")}</span>{" "}
-        <Button unstyled type="button" class="remote-desktop-stop" onClick={props.onStop}>
+        <Button type="button" size="sm" variant="danger" class="remote-desktop-stop" onClick={props.onStop}>
           {t("Stop all remote sessions")}
         </Button>
       </aside>
@@ -89,8 +91,8 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
       <p>{t("This token is shown only once. Anyone with it can request access; share it privately.")}</p>
       <code>{props.token}</code>{" "}
       <Button
-        unstyled
         type="button"
+        size="sm"
         onClick={() =>
           void navigator.clipboard
             .writeText(props.token)
@@ -103,7 +105,7 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
       <Show when={message()}>
         <p role="status">{message()}</p>
       </Show>
-      <Button unstyled type="button" onClick={props.onClose}>
+      <Button type="button" size="sm" onClick={props.onClose}>
         {t("I saved the token")}
       </Button>
     </section>
@@ -225,7 +227,9 @@ export function RemoteDesktopPage() {
       </Show>
       <RemoteDesktopAccessPanel />
       <section>
-        <h2>{t("Share this computer")}</h2>
+        <PanelHeading icon={MonitorUp} tint="blue">
+          {t("Share this computer")}
+        </PanelHeading>
         <Show when={!host().available}>
           <p>{host().unavailableReason ?? t("Sharing is unavailable.")}</p>
         </Show>
@@ -233,7 +237,6 @@ export function RemoteDesktopPage() {
           <label>
             {t("Exposure")}{" "}
             <NativeSelect
-              unstyled
               value={exposure()}
               disabled={host().enabled}
               onChange={(e) => setExposure(e.currentTarget.value === "lan" ? "lan" : "loopback")}
@@ -245,7 +248,6 @@ export function RemoteDesktopPage() {
           <label>
             {t("Port")}{" "}
             <Input
-              unstyled
               type="number"
               min="0"
               max="65535"
@@ -261,7 +263,7 @@ export function RemoteDesktopPage() {
             fallback={
               <>
                 <Button
-                  unstyled
+                  size="sm"
                   type="button"
                   onClick={() => {
                     setToken("");
@@ -271,8 +273,8 @@ export function RemoteDesktopPage() {
                   {t("Disable sharing")}
                 </Button>{" "}
                 <Button
-                  unstyled
                   type="button"
+                  size="sm"
                   onClick={() => {
                     if (api) void tokenAction(() => api.host.regenerateToken());
                   }}
@@ -283,8 +285,9 @@ export function RemoteDesktopPage() {
             }
           >
             <Button
-              unstyled
               type="button"
+              size="sm"
+              variant="primary"
               disabled={!host().available}
               onClick={() => {
                 if (api) void tokenAction(() => api.host.enable({ exposure: exposure(), port: port() }));
@@ -298,8 +301,9 @@ export function RemoteDesktopPage() {
         <For each={host().listening?.urls ?? []}>{(url) => <p>{url}</p>}</For>
         <p>{t("Requests awaiting approval: {count}", { count: host().consentPending })}</p>
         <Button
-          unstyled
           type="button"
+          size="sm"
+          variant="danger"
           class="remote-desktop-stop"
           disabled={!api}
           onClick={() => {
@@ -308,7 +312,7 @@ export function RemoteDesktopPage() {
         >
           {t("Stop all remote sessions")}
         </Button>
-        <h3>{t("Connected viewers")}</h3>
+        <h3 class="remote-desktop-subtitle">{t("Connected viewers")}</h3>
         <Show when={host().sessions.length} fallback={<p>{t("No viewers connected.")}</p>}>
           <ul>
             <For each={host().sessions}>
@@ -318,8 +322,8 @@ export function RemoteDesktopPage() {
                   <Show when={session.paused}> · {t("paused: {reason}", { reason: session.paused ?? "" })}</Show>{" "}
                   <Show when={session.mode === "control"}>
                     <Button
-                      unstyled
                       type="button"
+                      size="sm"
                       onClick={() => {
                         if (api)
                           void hostAction(() => api.host.setSessionMode({ sessionId: session.id, mode: "view" }));
@@ -333,7 +337,7 @@ export function RemoteDesktopPage() {
             </For>
           </ul>
         </Show>
-        <h3>{t("Known viewers")}</h3>
+        <h3 class="remote-desktop-subtitle">{t("Known viewers")}</h3>
         <ul>
           <For each={host().peers}>
             {(peer) => (
@@ -342,7 +346,6 @@ export function RemoteDesktopPage() {
                 <label>
                   {t("Policy")}{" "}
                   <NativeSelect
-                    unstyled
                     value={peer.policy}
                     onChange={(e) => {
                       const policy = e.currentTarget.value;
@@ -356,8 +359,8 @@ export function RemoteDesktopPage() {
                   </NativeSelect>
                 </label>{" "}
                 <Button
-                  unstyled
                   type="button"
+                  size="sm"
                   onClick={() => {
                     if (api) void hostAction(() => api.host.removePeer({ peerId: peer.id }));
                   }}
@@ -370,15 +373,16 @@ export function RemoteDesktopPage() {
         </ul>
       </section>
       <section>
-        <h2>{t("Connect to another computer")}</h2>
+        <PanelHeading icon={Cast} tint="cyan">
+          {t("Connect to another computer")}
+        </PanelHeading>
         <div class="remote-desktop-fields">
           <label>
-            {t("Address")} <Input unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
+            {t("Address")} <Input value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
           </label>
           <label>
             {t("Token")}{" "}
             <Input
-              unstyled
               type="password"
               value={clientToken()}
               onInput={(e) => setClientToken(e.currentTarget.value)}
@@ -388,7 +392,6 @@ export function RemoteDesktopPage() {
           <label>
             {t("Mode")}{" "}
             <NativeSelect
-              unstyled
               value={mode()}
               onChange={(e) => setMode(e.currentTarget.value === "control" ? "control" : "view")}
             >
@@ -399,8 +402,9 @@ export function RemoteDesktopPage() {
         </div>
         <div class="remote-desktop-actions">
           <Button
-            unstyled
             type="button"
+            size="sm"
+            variant="primary"
             disabled={!api || !address().trim() || !clientToken() || client().phase === "connecting"}
             onClick={() => {
               if (!api) return;
@@ -412,8 +416,8 @@ export function RemoteDesktopPage() {
             {t("Connect")}
           </Button>
           <Button
-            unstyled
             type="button"
+            size="sm"
             disabled={!api || client().phase === "idle"}
             onClick={() => {
               if (api) void clientAction(() => api.client.disconnect());

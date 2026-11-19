@@ -53,6 +53,15 @@
 13. **Kontynuacja według schematu (P1 → P2 → P3):** wnętrza Dostawców (CLI, Klucze API, Endpointy), pasek kanału w wąskim
     oknie, nagłówek wiadomości bezpośredniej, jasne historyjki, leniwe ładowanie czterech stron, błąd kontekstu `Field`,
     ostatnie angielskie napisy (wiersz 19.11 (9) w dzienniku).
+14. **Kolejne strony w Azure Glass (wiersz 19.11 (10)):** Zadania na ramie `WorkPage` ze szklaną tablicą; Przepływy
+    (kroki jako szklane kafelki, kolory kroków z tokenów); Biblioteka, karty agenta i panel ustawień agenta (kafelki
+    z siatką gradientu, strzałki na prawej krawędzi, sekcje zaawansowane jako karty); `PanelHeading` (kafelek z ikoną
+    + tytuł) na Telefonie, Zdalnym pulpicie i w sekcjach panelu agenta; ekrany logowania i konfiguracji na szkle;
+    **Modele zapasowe:** błąd pionowego tekstu („acp:removed” łamany po literze) naprawiony, wiersze z akcjami zawijają
+    się, listy jako wstawki szkła; formularze dodawania (Dostawcy, ACP, rutyna) jako wstawka szkła zamiast ramki
+    kreskowanej; podświetlenie sekcji w `WorkPageAnchors` ignoruje pustą sekcję. **Stworki:** mina członka w nagłówku
+    kanału wg jego zadań (`channelMemberMood`), mina wiadomości wg rodzaju (`channelMessageMood`), mrugnięcie przy
+    najechaniu (`shell.css`, tylko bez „reduce motion”). Jasny motyw min sprawdzony: kropla i rumieniec czytelne.
 
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 

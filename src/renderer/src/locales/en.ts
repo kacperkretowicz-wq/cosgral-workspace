@@ -2769,4 +2769,5 @@ export const en = {
   "1 new message": "1 new message",
   "{count} new messages": "{count} new messages",
   "Jump to {label}": "Jump to {label}",
+  "Hand off the work. Come back to an answer.": "Hand off the work. Come back to an answer.",
 } as const;

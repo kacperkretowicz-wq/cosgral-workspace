@@ -7,8 +7,10 @@ import type {
 } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
+import type { AvatarMood } from "../blobatar";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
+import { channelMemberMood, channelMessageMood } from "../row-activity";
 import { AgentAvatar } from "./AgentAvatar";
 import { ChannelHistoryClear } from "./ChannelHistoryClear";
 import { ChannelHistoryWindowSetting } from "./ChannelHistoryWindow";
@@ -46,7 +48,7 @@ function messageTime(iso: string): string {
 }
 
 /** A creature for an agent; a plain initial tile for the person (and for an agent that is gone). */
-function Author(props: { person: Person | undefined; human: boolean }) {
+function Author(props: { person: Person | undefined; human: boolean; mood?: AvatarMood }) {
   return (
     <Show
       when={!props.human && props.person?.avatarSeed ? props.person : undefined}
@@ -59,6 +61,7 @@ function Author(props: { person: Person | undefined; human: boolean }) {
       {(bot) => (
         <AgentAvatar
           class="channel-author-avatar"
+          mood={props.mood}
           bot={{
             avatarSeed: bot().avatarSeed ?? bot().id,
             avatarHue: bot().avatarHue ?? null,
@@ -141,6 +144,7 @@ export function ChannelView(props: {
               {(bot) => (
                 <AgentAvatar
                   class="channel-view-member"
+                  mood={channelMemberMood(props.tasks, bot.id)}
                   bot={{
                     avatarSeed: bot.avatarSeed ?? bot.id,
                     avatarHue: bot.avatarHue ?? null,
@@ -249,7 +253,11 @@ export function ChannelView(props: {
                     data-state={task.state}
                     aria-current={openedTask() === task.id ? "true" : undefined}
                   >
-                    <Author person={person(task.ownerBotId)} human={false} />
+                    <Author
+                      person={person(task.ownerBotId)}
+                      human={false}
+                      mood={channelMemberMood([task], task.ownerBotId)}
+                    />
                     <strong>{task.title}</strong>
                     <p>
                       {name(task.ownerBotId)} ·{" "}
@@ -302,7 +310,11 @@ export function ChannelView(props: {
                     data-kind={message.kind}
                     data-human={message.authorBotId === null ? "true" : undefined}
                   >
-                    <Author person={person(message.authorBotId)} human={message.authorBotId === null} />
+                    <Author
+                      person={person(message.authorBotId)}
+                      human={message.authorBotId === null}
+                      mood={channelMessageMood(message.kind)}
+                    />
                     <div class="channel-message-body">
                       <div class="channel-message-meta">
                         <strong>{name(message.authorBotId)}</strong>{" "}

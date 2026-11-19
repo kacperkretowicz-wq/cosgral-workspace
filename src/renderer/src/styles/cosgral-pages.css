@@ -16,7 +16,7 @@
   line-height: var(--openbot-leading-md);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(h1, h2, h3, h4) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(h1, h2, h3, h4) {
   margin: 0;
   color: var(--openbot-text-primary);
   font-weight: var(--openbot-weight-semibold);
@@ -28,23 +28,23 @@
   line-height: var(--openbot-leading-2xl);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(h2) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(h2) {
   font-size: var(--openbot-text-xl);
   line-height: var(--openbot-leading-xl);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(h3, h4) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(h3, h4) {
   font-size: var(--openbot-text-lg);
   line-height: var(--openbot-leading-lg);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(p) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(p) {
   max-width: 72ch;
   margin: 0;
   color: var(--openbot-text-secondary);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where([role="alert"]) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where([role="alert"]) {
   color: var(--openbot-danger);
 }
 
@@ -63,7 +63,7 @@
   padding: var(--openbot-space-4);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(section section, section form) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(section section, section form) {
   display: grid;
   gap: var(--openbot-space-3);
   min-width: 0;
@@ -71,7 +71,7 @@
 
 /* Form controls -------------------------------------------------------------------------------------------- */
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(label) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(label) {
   display: grid;
   gap: var(--openbot-space-1-5);
   min-width: 0;
@@ -81,7 +81,8 @@
   line-height: var(--openbot-leading-sm);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(label:has(> input[type="checkbox"], > input[type="radio"])) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(label:has(> input[type="checkbox"], > input[type="radio"])) {
   display: flex;
   align-items: center;
   gap: var(--openbot-space-2);
@@ -90,7 +91,7 @@
   font-weight: var(--openbot-weight-regular);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block)
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content, .cosgral-settings-block)
   :where(
     input:not(.ui-input, [type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]),
     select:not(.ui-native-select),
@@ -114,25 +115,26 @@
     box-shadow var(--openbot-duration-normal) ease;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(textarea:not(.ui-textarea)) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(textarea:not(.ui-textarea)) {
   height: auto;
   min-height: 76px;
   resize: vertical;
   padding-block: var(--openbot-space-2);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block)
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content, .cosgral-settings-block)
   :where(input:not([type="checkbox"], [type="radio"]), select, textarea):focus-visible {
   border-color: var(--openbot-border-focus);
   box-shadow: var(--openbot-focus-ring);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block) :where(input, select, textarea):disabled {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content, .cosgral-settings-block)
+  :where(input, select, textarea):disabled {
   cursor: not-allowed;
   opacity: 0.42;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block, .composer-wrap)
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content, .cosgral-settings-block, .composer-wrap)
   :where(input[type="checkbox"], input[type="radio"]) {
   width: 15px;
   height: 15px;
@@ -141,12 +143,13 @@
   accent-color: var(--openbot-accent);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(input::placeholder, textarea::placeholder) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(input::placeholder, textarea::placeholder) {
   color: var(--openbot-text-placeholder);
 }
 
 /* Buttons: plain buttons look like the secondary ui-button. */
-:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(button:not(.ui-button)) {
   min-width: 0;
   height: var(--openbot-control-md);
   display: inline-flex;
@@ -171,59 +174,65 @@
     transform var(--openbot-duration-fast) var(--openbot-ease-out);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):hover:not(:disabled) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(button:not(.ui-button)):hover:not(:disabled) {
   background: var(--openbot-bg-control-hover);
   color: var(--openbot-text-primary);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):focus-visible {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(button:not(.ui-button)):focus-visible {
   outline: 0;
   box-shadow: var(--openbot-focus-ring);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):active:not(:disabled) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(button:not(.ui-button)):active:not(:disabled) {
   transform: scale(0.97);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(button:not(.ui-button)):disabled {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(button:not(.ui-button)):disabled {
   cursor: default;
   opacity: 0.42;
 }
 
 /* A primitive button inside a grid card keeps its own width instead of stretching across the card. */
-:where(.w2-library, .w2-panel, .cosgral-form, .cosgral-settings-block) :where(.ui-button:not(.ui-button-full)) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content, .cosgral-settings-block)
+:where(.ui-button:not(.ui-button-full)) {
   justify-self: start;
 }
 
 /* A row of controls (a div that holds only buttons, or label + controls side by side). */
-:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> button)) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(div:not([class]):has(> button)) {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: var(--openbot-space-2);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> label + label)) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(div:not([class]):has(> label + label)) {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: var(--openbot-space-3);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(div:not([class]):has(> label + label) > label) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(div:not([class]):has(> label + label) > label) {
   flex: 1 1 180px;
 }
 
 /* Lists and tables ----------------------------------------------------------------------------------------- */
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(ul:not([class]), ol:not([class])) {
   display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) > :where(li) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(ul:not([class]), ol:not([class]))
+  > :where(li) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -236,18 +245,20 @@
   overflow-wrap: anywhere;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]), ol:not([class])) > :where(li:first-child) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+  :where(ul:not([class]), ol:not([class]))
+  > :where(li:first-child) {
   border-top: 0;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(table),
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(table),
 .cosgral-settings-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--openbot-text-md);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(caption),
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(caption),
 .cosgral-settings-table caption {
   padding-bottom: var(--openbot-space-2);
   color: var(--openbot-text-primary);
@@ -256,7 +267,7 @@
   text-align: left;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(th, td),
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(th, td),
 .cosgral-settings-table :where(th, td) {
   padding: var(--openbot-space-2) var(--openbot-space-3) var(--openbot-space-2) 0;
   border-top: 1px solid var(--openbot-border);
@@ -264,7 +275,7 @@
   vertical-align: middle;
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(thead th),
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(thead th),
 .cosgral-settings-table :where(thead th) {
   border-top: 0;
   color: var(--openbot-text-muted);
@@ -272,7 +283,7 @@
   font-weight: var(--openbot-weight-medium);
 }
 
-:where(.w2-library, .w2-panel, .cosgral-form) :where(tbody th),
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(tbody th),
 .cosgral-settings-table :where(tbody th) {
   color: var(--openbot-text-primary);
   font-weight: var(--openbot-weight-regular);
@@ -579,7 +590,8 @@
 }
 
 /* A list row that starts with a choice (radio or checkbox label) keeps its buttons together on the right. */
-:where(.w2-library, .w2-panel, .cosgral-form) :where(ul:not([class]) > li > label:first-child) {
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content)
+:where(ul:not([class]) > li > label:first-child) {
   flex: 1 1 auto;
 }
 

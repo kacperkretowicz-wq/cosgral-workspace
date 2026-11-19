@@ -7,7 +7,6 @@
 }
 
 .workflow-palette-button {
-  --step-hue: 245;
   height: 32px;
   gap: 8px;
   border-radius: var(--cosgral-radius-pill);
@@ -20,65 +19,42 @@
   color: var(--step-color, var(--openbot-accent-text));
 }
 
-/* Step colours of the palette from the palette tokens (one per step type). */
-.workflow-palette-button[data-step="trigger"] {
+/* Step colours from the palette tokens (one set per step type): the colour, its soft tint and the mesh gradient of the
+ * type tile. Palette buttons and step cards share them. */
+:is([data-step="trigger"], .workflow-node[data-type="trigger"]) {
   --step-color: var(--openbot-file-green);
   --step-soft: var(--openbot-file-green-soft);
+  --step-mesh: var(--openbot-mesh-green);
 }
 
-.workflow-palette-button[data-step="agent"] {
+:is([data-step="agent"], .workflow-node[data-type="agent"]) {
   --step-color: var(--openbot-file-blue);
   --step-soft: var(--openbot-file-blue-soft);
+  --step-mesh: var(--openbot-mesh-blue);
 }
 
-.workflow-palette-button[data-step="approval"] {
+:is([data-step="approval"], .workflow-node[data-type="approval"]) {
   --step-color: var(--openbot-file-yellow);
   --step-soft: var(--openbot-file-yellow-soft);
+  --step-mesh: var(--openbot-mesh-lime);
 }
 
-.workflow-palette-button[data-step="channel-output"] {
+:is([data-step="channel-output"], .workflow-node[data-type="channel-output"]) {
   --step-color: var(--openbot-file-pink);
   --step-soft: var(--openbot-file-pink-soft);
+  --step-mesh: var(--openbot-mesh-pink);
 }
 
-.workflow-palette-button[data-step="prompt"] {
+:is([data-step="prompt"], .workflow-node[data-type="prompt"]) {
   --step-color: var(--openbot-file-teal);
   --step-soft: var(--openbot-file-teal-soft);
+  --step-mesh: var(--openbot-mesh-cyan);
 }
 
-.workflow-palette-button[data-step="condition"] {
+:is([data-step="condition"], .workflow-node[data-type="condition"]) {
   --step-color: var(--openbot-file-orange);
   --step-soft: var(--openbot-file-orange-soft);
-}
-
-[data-step="trigger"],
-.workflow-node[data-type="trigger"] {
-  --step-hue: 150;
-}
-
-[data-step="agent"],
-.workflow-node[data-type="agent"] {
-  --step-hue: 245;
-}
-
-[data-step="approval"],
-.workflow-node[data-type="approval"] {
-  --step-hue: 70;
-}
-
-[data-step="channel-output"],
-.workflow-node[data-type="channel-output"] {
-  --step-hue: 320;
-}
-
-[data-step="prompt"],
-.workflow-node[data-type="prompt"] {
-  --step-hue: 200;
-}
-
-[data-step="condition"],
-.workflow-node[data-type="condition"] {
-  --step-hue: 30;
+  --step-mesh: var(--openbot-mesh-orange);
 }
 
 .workflow-canvas {
@@ -101,8 +77,7 @@
 
 .workflow-canvas .workflow-node[data-type="prompt"],
 .workflow-canvas .workflow-node[data-type="condition"] {
-  border-color: oklch(0.62 0.12 var(--step-hue) / 0.55);
-  box-shadow: inset 3px 0 0 oklch(0.72 0.14 var(--step-hue));
+  box-shadow: inset 3px 0 0 var(--step-color);
 }
 
 .workflow-node-preview {
@@ -138,9 +113,9 @@
   border: 0;
   border-bottom: 1px solid var(--cosgral-border);
   border-radius: var(--cosgral-radius-lg) var(--cosgral-radius-lg) 0 0;
-  background: oklch(0.5 0.1 var(--step-hue) / 0.18);
+  background: var(--step-soft);
   padding: 0 12px;
-  color: oklch(0.84 0.1 var(--step-hue));
+  color: var(--step-color);
   font-size: var(--cosgral-text-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -159,7 +134,7 @@
   right: -7px;
   width: 14px;
   height: 14px;
-  border: 2px solid oklch(0.72 0.14 var(--step-hue));
+  border: 2px solid var(--step-color);
   border-radius: var(--cosgral-radius-pill);
   background: var(--cosgral-bg-canvas);
   padding: 0;
@@ -169,7 +144,7 @@
 }
 
 .workflow-canvas .workflow-port:hover {
-  background: oklch(0.72 0.14 var(--step-hue));
+  background: var(--step-color);
 }
 
 .workflow-canvas .workflow-node label {
@@ -234,17 +209,7 @@
   }
 }
 
-/* Light theme: the type label on the tinted header must stay readable (dark shade of the step colour, 4.5:1+). */
-:root[data-theme="light"] .workflow-canvas .workflow-drag,
-[data-story-theme="light"] .workflow-canvas .workflow-drag {
-  background: oklch(0.9 0.05 var(--step-hue));
-  color: oklch(0.34 0.09 var(--step-hue));
-}
-
-:root[data-theme="light"] .workflow-canvas .workflow-port,
-[data-story-theme="light"] .workflow-canvas .workflow-port {
-  border-color: oklch(0.5 0.14 var(--step-hue));
-}
+/* Light theme: the step colours are the light palette's own (dark shades), so the type label on the tint keeps 4.5:1. */
 
 /* Workflows page (WorkflowsPage.tsx): saved workflows on the left, the editor on the right. ------------------ */
 

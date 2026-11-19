@@ -629,7 +629,11 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
               </For>
             </ul>
           </Show>
-          <fieldset aria-label={t("Agent fallback settings")} style="border: 0; padding: 0; margin: 0; min-width: 0">
+          <fieldset
+            class="providers-agent-fallback"
+            aria-label={t("Agent fallback settings")}
+            style="border: 0; padding: 0; margin: 0; min-width: 0"
+          >
             <Field label={t("Agent")}>
               <NativeSelect
                 value={botId()}

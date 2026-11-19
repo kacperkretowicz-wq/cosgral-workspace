@@ -4,7 +4,9 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
 import { PageIcon } from "./PageRail";
-import { Badge, Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
+import { PanelHeading } from "./PanelHeading";
+import { Badge, Button, Card, Field, NativeSelect, Text } from "./ui";
+import { QrCode, ShieldCheck, Smartphone, Wifi } from "./ui/icons";
 
 /** "4:59" from milliseconds; never negative. */
 export function formatMobileCountdown(ms: number): string {
@@ -91,9 +93,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       </Show>
 
       <Card class="mobile-section">
-        <Heading as="h2" size="md">
+        <PanelHeading icon={Wifi} tint="blue">
           {t("Connection")}
-        </Heading>
+        </PanelHeading>
         <Field
           label={t("Who can reach this computer")}
           description={
@@ -133,9 +135,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       <Show when={props.ticket}>
         {(ticket) => (
           <Card class="mobile-section" role="region" aria-label={t("Pair a phone")}>
-            <Heading as="h2" size="md">
+            <PanelHeading icon={QrCode} tint="green">
               {t("Pair a phone")}
-            </Heading>
+            </PanelHeading>
             <Text as="p" tone="secondary">
               {t("Scan this code with the phone camera, or open the link on the phone.")}
             </Text>
@@ -192,9 +194,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       </Show>
 
       <Card class="mobile-section">
-        <Heading as="h2" size="md">
+        <PanelHeading icon={Smartphone} tint="cyan">
           {t("Paired phones")}
-        </Heading>
+        </PanelHeading>
         <Show
           when={props.state.devices.length}
           fallback={
@@ -239,9 +241,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
 
       <Show when={props.state.transport === "tls"}>
         <Card class="mobile-section">
-          <Heading as="h2" size="md">
+          <PanelHeading icon={ShieldCheck} tint="orange">
             {t("Certificate")}
-          </Heading>
+          </PanelHeading>
           <Text as="p" tone="secondary">
             {t(
               "A new certificate has a new fingerprint. Every phone pinned the old one, so rotating removes all paired phones and each must pair again.",

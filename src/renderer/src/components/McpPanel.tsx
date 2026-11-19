@@ -2,8 +2,9 @@ import type { AddMcpServerInput, AgentMcpServerSetting, McpServer } from "@openb
 import { isOneOf } from "@openbot/contracts/runtime-values";
 import { createSignal, For, Show } from "solid-js";
 import { t } from "../i18n";
+import { PanelHeading } from "./PanelHeading";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
-import { Server } from "./ui/icons";
+import { Plug, Server } from "./ui/icons";
 
 const MCP_TRANSPORTS = ["stdio", "http"] as const;
 
@@ -26,7 +27,9 @@ export function McpPanel(props: {
   const [secrets, setSecrets] = createSignal<Record<string, string>>({});
   return (
     <section class="w2-panel" aria-label={props.agent ? t("Agent MCP servers") : t("MCP servers")}>
-      <h3>{props.agent ? t("Agent MCP servers") : t("MCP servers")}</h3>
+      <PanelHeading level="h3" icon={Plug} tint="pink">
+        {props.agent ? t("Agent MCP servers") : t("MCP servers")}
+      </PanelHeading>
       <For each={props.servers}>
         {(server) => (
           <article class="w2-item">

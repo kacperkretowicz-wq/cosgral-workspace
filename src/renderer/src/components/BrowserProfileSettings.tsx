@@ -4,7 +4,9 @@ import { createSignal, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { PanelHeading } from "./PanelHeading";
 import { Button, Field, Heading, Text, Textarea } from "./ui";
+import { Globe } from "./ui/icons";
 export function BrowserProfileSettings(props: {
   botId: string;
   api?: BrowserProfilesDesktopApi;
@@ -78,9 +80,9 @@ export function BrowserProfileSettings(props: {
   }
   return (
     <section class="providers-form" aria-label={t("Agent browser profile")}>
-      <Heading as="h3" size="sm">
+      <PanelHeading level="h3" icon={Globe} tint="cyan">
         {t("Browser profile")}
-      </Heading>
+      </PanelHeading>
       <Text>
         {t(
           "This agent starts signed out in its own profile. Cookies, storage, cache and history are separate from other agents.",

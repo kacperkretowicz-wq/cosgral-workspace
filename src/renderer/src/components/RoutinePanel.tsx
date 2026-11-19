@@ -3,6 +3,7 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
+import { PanelHeading } from "./PanelHeading";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 import { RefreshCw } from "./ui/icons";
 
@@ -192,7 +193,9 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
   });
   return (
     <section class="w2-panel" aria-label={t("Routines")}>
-      <h2>{t("Routines")}</h2>
+      <PanelHeading icon={RefreshCw} tint="red">
+        {t("Routines")}
+      </PanelHeading>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>

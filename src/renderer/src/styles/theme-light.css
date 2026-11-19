@@ -99,6 +99,47 @@
   --accent: var(--openbot-accent);
   --danger: var(--openbot-danger);
   --openbot-vnc-background: var(--openbot-bg-canvas);
+  /* The glass and tile aliases follow the frame's own tokens (they are resolved on :root, so a frame has to repeat them). */
+  --openbot-gradient-electric: var(--cosgral-gradient-electric);
+  --openbot-gradient-red: var(--cosgral-gradient-red);
+  --openbot-glass: var(--cosgral-glass);
+  --openbot-glass-edge: var(--cosgral-glass-edge);
+  --openbot-glass-glow: var(--cosgral-glass-glow);
+  --openbot-glass-glow-red: var(--cosgral-glass-glow-red);
+  --openbot-glow-accent: var(--cosgral-glow-accent);
+  --openbot-glow-red: var(--cosgral-glow-red);
+  --openbot-glass-glow-green: var(--cosgral-glass-glow-green);
+  --openbot-glow-green: var(--cosgral-glow-green);
+  --openbot-ambient: var(--cosgral-ambient);
+  --openbot-grain-opacity: var(--cosgral-grain-opacity);
+  --openbot-backdrop: var(--cosgral-backdrop);
+  --openbot-backdrop-hero: var(--cosgral-backdrop-hero);
+  --openbot-panel-glass: var(--cosgral-panel-glass);
+  --openbot-panel-edge: var(--cosgral-panel-edge);
+  --openbot-field-glass: var(--cosgral-field-glass);
+  --openbot-field-edge: var(--cosgral-field-edge);
+  --openbot-popover-glass: var(--cosgral-popover-glass);
+  --openbot-tile-base: var(--cosgral-tile-base);
+  --openbot-tile-edge: var(--cosgral-tile-edge);
+  --openbot-tile-blue: var(--cosgral-tile-blue);
+  --openbot-tile-blue-shadow: var(--cosgral-tile-blue-shadow);
+  --openbot-tile-red: var(--cosgral-tile-red);
+  --openbot-tile-red-shadow: var(--cosgral-tile-red-shadow);
+  --openbot-tile-green: var(--cosgral-tile-green);
+  --openbot-tile-green-shadow: var(--cosgral-tile-green-shadow);
+  --openbot-tile-quiet: var(--cosgral-tile-quiet);
+  --openbot-tile-quiet-shadow: var(--cosgral-tile-quiet-shadow);
+  --openbot-mesh-edge: var(--cosgral-mesh-edge);
+  --openbot-pill-glossy: var(--cosgral-pill-glossy);
+  --openbot-pill-glossy-red: var(--cosgral-pill-glossy-red);
+  --openbot-pill-glossy-shadow: var(--cosgral-pill-glossy-shadow);
+  --openbot-pill-glossy-red-shadow: var(--cosgral-pill-glossy-red-shadow);
+  --openbot-status-blue: var(--cosgral-status-blue);
+  --openbot-status-green: var(--cosgral-status-green);
+  --openbot-status-amber: var(--cosgral-status-amber);
+  --openbot-status-red: var(--cosgral-status-red);
+  --openbot-status-violet: var(--cosgral-status-violet);
+  --openbot-bg-inset: var(--cosgral-bg-frame);
 }
 [data-story-theme="light"] .approval-button-primary,
 :root[data-theme="light"] .approval-button-primary {

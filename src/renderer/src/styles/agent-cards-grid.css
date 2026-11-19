@@ -66,8 +66,8 @@
   height: 36px;
   place-items: center;
   border-radius: var(--cosgral-radius-md);
-  background: oklch(0.5 0.1 var(--card-hue) / 0.22);
-  color: oklch(0.84 0.1 var(--card-hue));
+  background: var(--openbot-mesh-blue);
+  color: var(--openbot-contrast-white);
 }
 
 .agent-card-row[data-card="chat-color"] {
@@ -245,11 +245,4 @@
 .agent-card-detail-actions {
   display: flex;
   gap: 8px;
-}
-
-/* Light theme: dark shade of the group colour on a light tint (4.5:1+). */
-:root[data-theme="light"] .agent-card-icon,
-[data-story-theme="light"] .agent-card-icon {
-  background: oklch(0.9 0.05 var(--card-hue));
-  color: oklch(0.34 0.09 var(--card-hue));
 }

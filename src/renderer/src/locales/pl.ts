@@ -2772,4 +2772,5 @@ export const pl = {
   "1 new message": "1 nowa wiadomość",
   "{count} new messages": "Nowe wiadomości: {count}",
   "Jump to {label}": "Przejdź do: {label}",
+  "Hand off the work. Come back to an answer.": "Oddaj pracę. Wróć po odpowiedź.",
 } as const;

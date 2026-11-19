@@ -3,7 +3,9 @@ import { ACCESS_LEVEL_INFO, ACCESS_LEVELS, accessFolderProblem } from "@openbot/
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
-import { Button, Field, Heading, NativeSelect, Text, Textarea } from "./ui";
+import { PanelHeading } from "./PanelHeading";
+import { Button, Field, NativeSelect, Text, Textarea } from "./ui";
+import { ShieldCheck } from "./ui/icons";
 export type SettingsEvents = (listener: (event: AgentEvent) => void) => () => void;
 export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; onEvent?: SettingsEvents }) {
   const api = untrack(() => props.api ?? window.openbot?.access);
@@ -74,9 +76,9 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
       .filter(Boolean);
   return (
     <section class="providers-form" aria-label={t("Agent access")}>
-      <Heading as="h3" size="sm">
+      <PanelHeading level="h3" icon={ShieldCheck} tint="orange">
         {t("Access level")}
-      </Heading>
+      </PanelHeading>
       <Text as="p">
         {t(
           "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.",

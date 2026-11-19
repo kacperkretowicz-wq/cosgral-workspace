@@ -224,6 +224,13 @@
   --cosgral-field-glass: rgba(255, 255, 255, 0.035);
   --cosgral-field-edge: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(140, 185, 204, 0.14);
   --cosgral-popover-glass: rgba(12, 16, 24, 0.82);
+  /* First screens (sign-in, setup): stronger coloured light than the window, so the frosted card in front has something to blur. */
+  --cosgral-backdrop-hero:
+    radial-gradient(48% 62% at 12% 8%, rgba(0, 99, 142, 0.7) 0%, rgba(0, 99, 142, 0) 72%),
+    radial-gradient(44% 56% at 92% 14%, rgba(25, 81, 252, 0.5) 0%, rgba(25, 81, 252, 0) 72%),
+    radial-gradient(46% 52% at 78% 100%, rgba(255, 45, 85, 0.34) 0%, rgba(255, 45, 85, 0) 72%),
+    radial-gradient(40% 46% at 6% 96%, rgba(140, 185, 204, 0.22) 0%, rgba(140, 185, 204, 0) 72%),
+    linear-gradient(180deg, #04060b 0%, #020308 100%);
 }
 
 :root[data-theme="light"],
@@ -314,6 +321,12 @@
   --cosgral-field-glass: rgba(255, 255, 255, 0.7);
   --cosgral-field-edge: inset 0 1px 2px rgba(0, 40, 60, 0.08), inset 0 0 0 1px rgba(0, 74, 107, 0.22);
   --cosgral-popover-glass: rgba(252, 253, 255, 0.9);
+  --cosgral-backdrop-hero:
+    radial-gradient(48% 62% at 12% 8%, rgba(0, 99, 142, 0.3) 0%, rgba(0, 99, 142, 0) 72%),
+    radial-gradient(44% 56% at 92% 14%, rgba(55, 129, 252, 0.26) 0%, rgba(55, 129, 252, 0) 72%),
+    radial-gradient(46% 52% at 78% 100%, rgba(224, 21, 67, 0.12) 0%, rgba(224, 21, 67, 0) 72%),
+    radial-gradient(40% 46% at 6% 96%, rgba(140, 185, 204, 0.4) 0%, rgba(140, 185, 204, 0) 72%),
+    linear-gradient(180deg, #eef3f7 0%, #e3ebf1 100%);
   --cosgral-grain-opacity: 0.035;
   --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);

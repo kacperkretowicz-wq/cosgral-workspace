@@ -396,6 +396,30 @@
   }
 }
 
+/* A creature blinks once when the pointer arrives; a smiling or dozing one keeps its eyes as they are. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  :is(
+      .bot-avatar-motion-hover:hover,
+      button:hover .bot-avatar-motion-hover,
+      [role="button"]:hover .bot-avatar-motion-hover
+    )
+    .mo-root:not([data-mood="happy"], [data-mood="limited"])
+    .mo-eye {
+    animation: mo-blink 0.36s var(--openbot-ease-in-out) 1;
+  }
+}
+
+@keyframes mo-blink {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  45%,
+  55% {
+    transform: scaleY(0.1);
+  }
+}
+
 @keyframes mo-mood-look {
   0%,
   100% {

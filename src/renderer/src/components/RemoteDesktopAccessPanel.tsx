@@ -2,7 +2,9 @@ import { type RemoteDesktopBadge, type RemoteDesktopHostState, remoteDesktopSumm
 import { createMemo, createSignal, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
-import { Badge, type BadgeTone, Button, Card, Heading, Switch, Text } from "./ui";
+import { PanelHeading } from "./PanelHeading";
+import { Badge, type BadgeTone, Button, Card, Switch, Text } from "./ui";
+import { Users } from "./ui/icons";
 
 const BADGE_VIEW: Record<RemoteDesktopBadge, { label: string; tone: BadgeTone }> = {
   ready: { label: "Ready", tone: "success" },
@@ -75,9 +77,9 @@ export function RemoteDesktopAccessPanel() {
   return (
     <Show when={api}>
       <section class="settings-modal-group remote-access" aria-labelledby="remote-access-title">
-        <Heading id="remote-access-title" as="h2" size="md">
+        <PanelHeading id="remote-access-title" icon={Users} tint="green">
           {t("Who may come in")}
-        </Heading>
+        </PanelHeading>
         <Show when={error()}>
           <p class="updates-panel-error" role="alert">
             {error()}

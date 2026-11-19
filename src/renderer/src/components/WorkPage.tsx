@@ -163,7 +163,8 @@ export function WorkPageAnchors(props: {
       (entries) => {
         for (const entry of entries) {
           const id = entry.target.getAttribute("data-anchor");
-          if (id) seen.set(id, entry.isIntersecting);
+          // A section with nothing in it (no height) touches the edge of the view; it must not hold the highlight.
+          if (id) seen.set(id, entry.isIntersecting && entry.boundingClientRect.height > 0);
         }
         const first = props.anchors.find((anchor) => seen.get(anchor.id));
         if (first) setActive(first.id);

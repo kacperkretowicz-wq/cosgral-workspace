@@ -27,7 +27,8 @@ Szczegóły: górny rozdział `PRZEKAZANIE.md`. W skrócie, względem list niże
 | P2 5.4 pasek kanału | **Zrobione** (pigułki do ikon w wąskim oknie). |
 | P2 5.5 wiadomość bezpośrednia | **Zrobione** (akcja „Oznacz rozmowę jako przeczytaną”, nagłówek jak u agenta). |
 | P2 5.6 wydajność | **Częściowo:** cztery strony leniwie (główny JS 3,17 → 2,94 MB). Zostały Zdalny pulpit (współdzieli plik z `RemoteDesktopSafety`) i duże pliki do podziału. `theme-init.js` bez `type="module"` jest celowe (blokuje, żeby nie było błysku motywu). |
-| P2 pozostałe (mimika w kanale, mrugnięcie, duże pliki) | Bez zmian. |
+| P2 5.2 stworki | **Zrobione:** mina w nagłówku kanału i przy wiadomościach, mrugnięcie przy najechaniu, jasny motyw sprawdzony. |
+| P2 duże pliki | Bez zmian. |
 | P3 6.1 napisy | **Całość z tabeli:** zrobione m.in. `VaultPanel`, `RemoteMacPanel`, `Sidebar`, `MessageRendering`, `QueuePanel`, `MemoryPanel`, karty kont, `Conversation`, wątki, głos. Dołożone: `ChannelView`, `WorkflowsPage`, `AttachmentCards`, `UnreadMessages`, `RoutinePanel`, `SelectionActions`, `RichMessageText`. Nowy skan angielskich napisów po całym kodzie nie był robiony. |
 | P3 6.3 ostrzeżenie Biome | **Zrobione.** |
 

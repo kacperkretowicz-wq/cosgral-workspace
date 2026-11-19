@@ -828,3 +828,756 @@ body [role="tooltip"] {
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-xs);
 }
+
+/* First screens: sign-in and setup ------------------------------------------------------------------------------- *
+ * Coloured light fills the window; one frosted card sits in front of it. The logo glows, the fields are glass wells,
+ * the code boxes are glass cells, the setup choices are lit tiles with mesh icons.
+ */
+
+.account-login-screen,
+.initial-setup-screen:not(.settings-dialog-backdrop) {
+  background: var(--openbot-backdrop-hero);
+}
+
+.account-login-shell {
+  width: min(100%, 420px);
+  border-radius: 28px;
+  background: var(--openbot-tile-quiet), var(--openbot-panel-glass);
+  box-shadow:
+    var(--openbot-panel-edge),
+    0 50px 120px -50px var(--openbot-shadow-dialog);
+  padding: var(--openbot-space-8) var(--openbot-space-8) var(--openbot-space-6);
+  backdrop-filter: blur(30px) saturate(1.5);
+}
+
+.account-login-brand-lockup {
+  margin-bottom: var(--openbot-space-6);
+}
+
+.account-login-logo {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 10px 24px var(--openbot-electric));
+}
+
+.account-login-wordmark {
+  font-size: var(--openbot-text-2xl);
+  letter-spacing: -0.02em;
+}
+
+.account-login-form input:not(.otp-input-native) {
+  height: 48px;
+  border-color: transparent;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.account-login-form input:not(.otp-input-native):focus,
+.account-login-form input:not(.otp-input-native):hover:not(:focus) {
+  border-color: transparent;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-accent);
+}
+
+.account-login-form input:not(.otp-input-native)[aria-invalid="true"] {
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-red);
+}
+
+.account-login-primary {
+  height: 48px;
+  border-radius: var(--openbot-radius-pill);
+  font-size: var(--openbot-text-md);
+}
+
+.otp-input-slot {
+  border-color: transparent;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.otp-input[data-status="error"] .otp-input-slot {
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-red);
+}
+
+.otp-input[data-status="success"] .otp-input-slot {
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-green);
+}
+
+/* Setup: the content sits on one frosted card, the two ways to run are lit tiles. */
+.initial-setup-screen:not(.settings-dialog-backdrop) .initial-setup {
+  width: min(100%, 640px);
+  border-radius: 28px;
+  background: var(--openbot-tile-quiet), var(--openbot-panel-glass);
+  box-shadow:
+    var(--openbot-panel-edge),
+    0 50px 120px -50px var(--openbot-shadow-dialog);
+  padding: var(--openbot-space-8);
+  backdrop-filter: blur(30px) saturate(1.5);
+}
+
+.initial-setup-screen .setup-route-button {
+  min-height: 104px;
+  border-color: transparent;
+  border-radius: 20px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  color: var(--openbot-text-primary);
+}
+
+.initial-setup-screen .setup-route-button:hover,
+.initial-setup-screen .setup-route-button:focus-visible {
+  background: var(--openbot-tile-blue), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-blue-shadow);
+  outline: 0;
+}
+
+.initial-setup-screen .setup-route-icon {
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 28%;
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.initial-setup-screen .setup-route-icon-local {
+  background: var(--openbot-mesh-green);
+}
+
+.initial-setup-screen .setup-route-icon svg {
+  width: 26px;
+  stroke-width: 1.6;
+}
+
+.initial-setup-screen .setup-route-icon i {
+  border-color: var(--openbot-bg-canvas);
+}
+
+.initial-setup-screen .provider-picker-list {
+  border-color: transparent;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.initial-setup-screen .provider-picker-option-selected {
+  background: var(--openbot-tile-quiet), var(--openbot-bg-control-active);
+  box-shadow: inset 3px 0 0 var(--openbot-accent);
+}
+
+.initial-setup-screen .setup-remote-form :is(input, textarea) {
+  border-color: transparent;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.initial-setup-screen .setup-remote-form :is(input, textarea):focus {
+  border-color: transparent;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge), var(--openbot-glow-accent);
+}
+
+/* Workflows: step cards are glass tiles, each type has its mesh-gradient tile; palette buttons are glass pills. ----- */
+
+.workflow-canvas {
+  border-radius: 20px;
+  background-color: var(--openbot-bg-inset);
+  background-image: radial-gradient(var(--openbot-border-strong) 1px, transparent 1px), var(--openbot-ambient);
+  background-size:
+    22px 22px,
+    auto;
+  box-shadow: var(--openbot-field-edge);
+}
+
+.workflow-canvas .workflow-node {
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-bg-surface);
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    0 22px 40px -28px var(--step-color);
+}
+
+.workflows-page .workflow-canvas .workflow-node {
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    0 22px 40px -28px var(--step-color);
+}
+
+.workflow-canvas .workflow-node .workflow-drag {
+  border-bottom-color: var(--openbot-border);
+  border-radius: 18px 18px 0 0;
+  background: linear-gradient(180deg, var(--step-soft), transparent);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--openbot-text-md);
+}
+
+.workflow-node-type > svg {
+  box-sizing: content-box;
+  width: 14px;
+  height: 14px;
+  padding: 5px;
+  border-radius: 30%;
+  background: var(--step-mesh);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.workflow-canvas .workflow-port {
+  box-shadow: 0 0 10px -1px var(--step-color);
+}
+
+.workflow-palette-button {
+  height: 34px;
+  gap: var(--openbot-space-2);
+  border-color: transparent;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.workflow-palette-button:hover:not(:disabled) {
+  box-shadow:
+    var(--openbot-field-edge),
+    0 0 14px -4px var(--step-color);
+}
+
+.workflow-palette-button > svg {
+  box-sizing: content-box;
+  width: 14px;
+  height: 14px;
+  padding: 5px;
+  margin-left: -11px;
+  border-radius: 30%;
+  background: var(--step-mesh);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.workflow-list-item[aria-current="true"] {
+  background: linear-gradient(90deg, var(--openbot-accent-soft), transparent 92%);
+  box-shadow: inset 2px 0 0 var(--openbot-accent);
+}
+
+.workflow-list-icon {
+  border-radius: 30%;
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.workflow-list-item[aria-current="true"] .workflow-list-icon {
+  background: var(--openbot-mesh-blue);
+  color: var(--openbot-contrast-white);
+}
+
+.workflow-canvas-empty-icon {
+  background: var(--openbot-mesh-green);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+/* Library: the file type tile is a mesh-gradient tile per kind (document, image, table, PDF, code), a bit larger. --- */
+
+.library-type {
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
+  border-radius: 28%;
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.library-type[data-type="image"] {
+  background: var(--openbot-mesh-cyan);
+  color: var(--openbot-contrast-white);
+}
+
+.library-type[data-type="table"] {
+  background: var(--openbot-mesh-green);
+  color: var(--openbot-contrast-white);
+}
+
+.library-type[data-type="pdf"] {
+  background: var(--openbot-mesh-red);
+}
+
+.library-type[data-type="md"],
+.library-type[data-type="txt"],
+.library-type[data-type="doc"],
+.library-type[data-type="docx"] {
+  background: var(--openbot-mesh-blue);
+}
+
+.library-type[data-type="html"],
+.library-type[data-type="json"],
+.library-type[data-type="ts"],
+.library-type[data-type="js"] {
+  background: var(--openbot-mesh-orange);
+}
+
+.library-type small {
+  color: var(--openbot-contrast-white);
+  text-shadow: 0 1px 2px var(--openbot-shadow-dialog);
+}
+
+.library-type:has(img) {
+  box-shadow: var(--openbot-mesh-edge);
+}
+
+.library-type svg {
+  filter: drop-shadow(0 1px 2px var(--openbot-shadow-dialog));
+}
+
+/* Agent cards (the agent settings panel): the same mesh tiles, one colour per group; the card is a glass tile. ---- */
+
+.agent-cards .agent-card-row {
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+}
+
+.agent-cards .agent-card-row:hover {
+  border: 0;
+  box-shadow: var(--openbot-tile-quiet-shadow), var(--openbot-glow-accent);
+}
+
+.agent-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 28%;
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.agent-card-row[data-card="chat-color"] .agent-card-icon {
+  background: var(--openbot-mesh-pink);
+}
+
+.agent-card-row[data-card="instructions"] .agent-card-icon,
+.agent-card-row[data-card="skills"] .agent-card-icon {
+  background: var(--openbot-mesh-cyan);
+}
+
+.agent-card-row[data-card="memory"] .agent-card-icon,
+.agent-card-row[data-card="tables"] .agent-card-icon {
+  background: var(--openbot-mesh-lime);
+}
+
+.agent-card-row[data-card="files"] .agent-card-icon,
+.agent-card-row[data-card="folders"] .agent-card-icon {
+  background: var(--openbot-mesh-orange);
+}
+
+.agent-card-row[data-card="routines"] .agent-card-icon,
+.agent-card-row[data-card="notifications"] .agent-card-icon {
+  background: var(--openbot-mesh-red);
+}
+
+.agent-card-row[data-card="usage"] .agent-card-icon,
+.agent-card-row[data-card="publish"] .agent-card-icon {
+  background: var(--openbot-mesh-green);
+}
+
+.agent-card-icon svg {
+  filter: drop-shadow(0 1px 2px var(--openbot-shadow-dialog));
+}
+
+.agent-cards .agent-card-open[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1.5px var(--openbot-accent);
+}
+
+.agent-card-detail {
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+}
+
+/* Agent settings panel: the creature stands on a small glass stage lit in blue; the header is quiet glass. -------- */
+
+.agent-settings-panel .agent-settings-content {
+  padding-top: var(--openbot-space-4);
+}
+
+.agent-settings-panel .agent-settings-avatar-picker {
+  width: 100%;
+  height: 132px;
+  margin: 0 0 var(--openbot-space-6);
+  border-radius: 20px;
+  background: var(--openbot-tile-blue), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-blue-shadow);
+}
+
+.agent-settings-panel .agent-settings-avatar {
+  width: 84px;
+  height: 84px;
+}
+
+.agent-settings-panel .agent-settings-avatar .bot-avatar {
+  width: 84px;
+  height: 84px;
+  filter: drop-shadow(0 8px 18px var(--mo-head));
+}
+
+.agent-settings-panel .agent-settings-avatar:hover {
+  filter: none;
+}
+
+.agent-settings-panel .agent-settings-avatar:hover .bot-avatar {
+  transform: translateY(-2px);
+}
+
+.agent-settings-header {
+  border-bottom-color: var(--openbot-border);
+}
+
+.agent-settings-panel .agent-settings-field input,
+.agent-settings-panel .agent-settings-field textarea {
+  border-color: transparent;
+  background-color: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+/* Fallback models: every list is an inset glass group; a row is a number tile, the model and its actions. ---------- */
+
+.providers-fallback-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: start;
+  gap: var(--openbot-space-3);
+}
+
+.providers-fallback-lists > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.providers-fallback-lists > section,
+.providers-agent-fallback > .providers-fallback {
+  display: grid;
+  gap: var(--openbot-space-3);
+  border-radius: 16px;
+  background: var(--openbot-bg-inset);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.providers-fallback > p {
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.providers-order-item {
+  flex-wrap: wrap;
+  gap: var(--openbot-space-2) var(--openbot-space-3);
+  border: 0;
+  border-radius: 14px;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-2) var(--openbot-space-3);
+}
+
+.providers-order-number {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-inset);
+  box-shadow: var(--openbot-field-edge);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.providers-order-name {
+  flex: 1 1 9rem;
+  overflow-wrap: break-word;
+  color: var(--openbot-text-primary);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.providers-order-actions {
+  display: flex;
+  gap: var(--openbot-space-1);
+  margin-left: auto;
+}
+
+.providers-agent-fallback {
+  display: grid;
+  gap: var(--openbot-space-3);
+  margin-top: var(--openbot-space-4);
+  border-top: 1px solid var(--openbot-border);
+  padding-top: var(--openbot-space-4);
+}
+
+.providers-chain {
+  display: grid;
+  gap: var(--openbot-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.providers-chain > li {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  border-radius: 12px;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-2) var(--openbot-space-3);
+}
+
+/* Cards on pages (Phone, Remote desktop): the title opens with a mesh tile; notes are glass; rows are rows. --------- */
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.panel-heading-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 30%;
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.panel-heading-icon svg {
+  filter: drop-shadow(0 1px 2px var(--openbot-shadow-dialog));
+}
+
+.panel-heading-icon[data-tint="red"] {
+  background: var(--openbot-mesh-red);
+}
+
+.panel-heading-icon[data-tint="green"] {
+  background: var(--openbot-mesh-green);
+}
+
+.panel-heading-icon[data-tint="orange"] {
+  background: var(--openbot-mesh-orange);
+}
+
+.panel-heading-icon[data-tint="pink"] {
+  background: var(--openbot-mesh-pink);
+}
+
+.panel-heading-icon[data-tint="cyan"] {
+  background: var(--openbot-mesh-cyan);
+}
+
+.panel-heading-icon[data-tint="lime"] {
+  background: var(--openbot-mesh-lime);
+}
+
+.panel-heading h2 {
+  margin: 0;
+}
+
+/* A long note keeps the quiet tile and a coloured rim on its left; the lit pool is for short content (numbers). */
+.work-page .mobile-warning {
+  --note-rim: var(--openbot-success);
+
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    inset 3px 0 0 var(--note-rim);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .mobile-warning[data-transport="plain"] {
+  --note-rim: var(--openbot-danger-strong);
+}
+
+/* Messages of a page (unavailable, error, saved) are notes, not loose text in the middle of the column. */
+.work-page > .ui-text[role="status"],
+.work-page > .ui-text[role="alert"] {
+  display: block;
+  width: min(100% - 80px, 980px);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+  text-align: left;
+}
+
+.work-page .mobile-code {
+  border: 0;
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+}
+
+.work-page .mobile-qr {
+  border-radius: 18px;
+  box-shadow: var(--openbot-glow-accent);
+}
+
+.work-page .mobile-device,
+.work-page .providers-row {
+  border-top-color: var(--openbot-border);
+}
+
+.remote-desktop-page > section {
+  display: grid;
+  gap: var(--openbot-space-4);
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  padding: var(--openbot-space-4);
+}
+
+.remote-desktop-page > section > h3,
+.remote-desktop-page .remote-desktop-subtitle {
+  margin: var(--openbot-space-2) 0 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.remote-desktop-page > section > ul {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.remote-desktop-page > section > ul > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-3);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-2) var(--openbot-space-3);
+}
+
+.remote-desktop-page > section > p {
+  margin: 0;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+}
+
+.remote-desktop-page .remote-desktop-canvas {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  border-radius: 18px;
+  background: var(--openbot-bg-inset);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+}
+
+/* Agent settings panel, the rest of it: one type scale for the legacy sections, chevrons at the right edge of the
+ * card tiles, the preferences as glass rows. ----------------------------------------------------------------------- */
+
+.agent-settings-panel .agent-settings-content {
+  font-size: var(--openbot-text-md);
+  line-height: var(--openbot-leading-md);
+}
+
+.agent-cards .agent-cards-list .agent-card-row {
+  padding-right: var(--openbot-space-8);
+}
+
+.agent-cards .agent-cards-list .agent-card-row > .agent-card-open {
+  justify-content: end;
+  align-items: center;
+  padding-right: var(--openbot-space-3);
+  color: var(--openbot-text-muted);
+}
+
+.agent-cards .agent-cards-list .agent-card-row > .agent-card-count {
+  margin-right: var(--openbot-space-1);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: 1px var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-cards-prefs {
+  display: grid;
+  gap: 0;
+  margin-top: var(--openbot-space-4);
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  padding: var(--openbot-space-1) var(--openbot-space-4);
+}
+
+.agent-cards-prefs > * + * {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.agent-cards-prefs > * {
+  padding-block: var(--openbot-space-3);
+}
+
+/* The advanced block of the panel: each of its sections is a glass card with its own titled tile. ------------------ */
+
+.agent-settings-content > section[aria-label] > section.providers-form,
+.agent-settings-content > section.w2-panel {
+  gap: var(--openbot-space-3);
+  margin-top: var(--openbot-space-3);
+  border: 0;
+  border-radius: 18px;
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  padding: var(--openbot-space-4);
+}
+
+.agent-settings-panel .panel-heading-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.agent-settings-panel .panel-heading-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.agent-settings-content > section[aria-label] > h3 {
+  margin-top: var(--openbot-space-6);
+  font-size: var(--openbot-text-lg);
+}
+
+/* A form that sits inside a card (create routine inside Routines): an inset group, not a second card. ------------- */
+
+.w2-panel > .w2-panel,
+.work-page .w2-panel > .routine-form {
+  border: 0;
+  border-radius: 16px;
+  background: var(--openbot-bg-inset);
+  box-shadow: var(--openbot-field-edge);
+  padding: var(--openbot-space-4);
+}
+
+/* Add / edit forms on the provider pages: an inset glass group instead of a dashed outline. ----------------------- */
+
+.work-page .providers-form,
+.provider-account-add {
+  border: 0;
+  border-radius: 16px;
+  background: var(--openbot-bg-inset);
+  box-shadow: var(--openbot-field-edge);
+}

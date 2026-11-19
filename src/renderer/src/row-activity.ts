@@ -5,7 +5,7 @@
 // "Responded" and unread; local signals (open cards, a running turn) fill in before the
 // backend has reported.
 
-import type { AgentActivity } from "@openbot/contracts/ipc";
+import type { AgentActivity, ChannelMessage, ChannelTask } from "@openbot/contracts/ipc";
 import type { AvatarMood } from "./blobatar";
 import { language, t } from "./i18n";
 
@@ -114,4 +114,24 @@ export function avatarMoodFor(state: SidebarAgentState | undefined): AvatarMood 
     default:
       return "idle";
   }
+}
+
+/** A channel member's face: what its open tasks in the channel say (a question for you, work, a failure). */
+export function channelMemberMood(
+  tasks: ReadonlyArray<Pick<ChannelTask, "ownerBotId" | "state" | "archivedAt" | "waitingForTaskIds">>,
+  botId: string,
+): AvatarMood {
+  let mood: AvatarMood = "idle";
+  for (const task of tasks) {
+    if (task.ownerBotId !== botId || task.archivedAt) continue;
+    if (task.state === "waiting" && !task.waitingForTaskIds?.length) return "needs-you";
+    if (task.state === "running") mood = "working";
+    else if (task.state === "failed" && mood === "idle") mood = "error";
+  }
+  return mood;
+}
+
+/** The face an agent's message carries: a question raises its brows, a result smiles. */
+export function channelMessageMood(kind: ChannelMessage["kind"]): AvatarMood {
+  return kind === "question" ? "needs-you" : kind === "result" ? "happy" : "idle";
 }
