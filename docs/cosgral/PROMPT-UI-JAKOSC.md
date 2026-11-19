@@ -60,6 +60,20 @@ Wkład produktowy: `PRODUCT.md` (użytkownicy, zasady, ograniczenia). Ten plik m
 | 19.11 (3) | Harmonogram | Sekcje Plan i Rutyny. Plan jako oś czasu: Dziś/Jutro/Wczoraj, kropka na osi, stworek agenta (mina „pracuje” przy trwającym uruchomieniu), status. Rutyny: wiersze ze stworkiem, „Aktywne/Wstrzymane”, akcje na najechanie; formularz jako karta w dwóch kolumnach | `app--playground` → Więcej → Harmonogram |
 | 19.11 (3) | Dostawcy, Zużycie, Telefon, Zdalny pulpit | Ten sam nagłówek; Dostawcy ze spisem 8 sekcji z ikonami (wszystkie sekcje zostają na stronie dla skryptów akceptacyjnych) | `app--playground` |
 
+## Runda 3 (19.11, kontynuacja): cel i zasady
+
+**Cel:** kolejne duże skoki tam, gdzie właściciel patrzy najczęściej, drobiazgi na koniec.
+
+1. **Zużycie:** karty liczb z ikonami, spokojny wykres (słupki z palety, siatka, podpisy), tabela agentów ze stworkami.
+2. **Kanały na liście agentów:** wiersz kanału ze stosem stworków członków zamiast pojedynczej ikony.
+3. **Rozmowa:** kroki agenta („N kroków”) jako zwijana oś czasu z ikonami narzędzi.
+4. **Dostawcy (wnętrza sekcji):** konta i CLI jako wiersze z ikonami i stanem zamiast stosów pól.
+
+**Zasady tej rundy (AGENTS.md):** kolory tylko z palety `:root` w `src/renderer/src/styles.css` (`var(--openbot-*)`),
+bez nowych `#hex`, `rgb()`, `color-mix()` w regułach; nowa rola koloru najpierw w `:root`. Sprawdzanie tylko w Storybooku
+(komponenty) albo w aplikacji dev (całość). Najpierw szukaj istniejącego komponentu/stylu do ponownego użycia.
+Kolory stworków (rumieniec, kropla potu) są wewnątrz generowanego awatara, więc zostają przy nim (`blobatar.ts`).
+
 ## Następne sekcje (kolejność)
 
 1. Katalog dodatków i Ustawienia serwera: mają własny układ z nawigacją; dociągnąć do `WorkPage` (nagłówek z ikoną) bez łamania ich nawigacji.

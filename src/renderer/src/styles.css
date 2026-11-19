@@ -24,6 +24,8 @@
   --openbot-contrast-white: #fff;
   --openbot-bg-remote-canvas: #17171b;
   --openbot-bg-canvas: var(--cosgral-bg-canvas);
+  /* Below the canvas: editor wells such as the workflow canvas (the window frame shade). */
+  --openbot-bg-inset: var(--cosgral-bg-frame);
   --openbot-bg-sidebar: var(--cosgral-bg-sidebar);
   --openbot-bg-surface: var(--cosgral-bg-surface);
   --openbot-bg-surface-clear: rgba(33, 33, 33, 0);

@@ -384,11 +384,11 @@
  */
 @media (prefers-reduced-motion: no-preference) {
   .mo-root[data-mood="working"] .mo-eyes {
-    animation: mo-mood-look 2.6s var(--cosgral-ease-loop) infinite;
+    animation: mo-mood-look 2.6s var(--openbot-ease-in-out) infinite;
   }
 
   .mo-root[data-mood="needs-you"] .mo-mood {
-    animation: mo-mood-hop 2.4s var(--cosgral-ease) infinite;
+    animation: mo-mood-hop 2.4s var(--openbot-ease-out) infinite;
   }
 
   .mo-root[data-mood="limited"] [data-shade="zz"] {
@@ -434,7 +434,7 @@
 
 /* The line under the name while a thread runs: same place as the preview, the accent says "in progress". */
 .sidebar .bot-row-working {
-  color: var(--cosgral-text-secondary);
+  color: var(--openbot-text-secondary);
 }
 
 /*

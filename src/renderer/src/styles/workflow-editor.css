@@ -17,7 +17,38 @@
 
 .workflow-palette-button svg {
   flex: 0 0 auto;
-  color: oklch(0.76 0.13 var(--step-hue));
+  color: var(--step-color, var(--openbot-accent-text));
+}
+
+/* Step colours of the palette from the palette tokens (one per step type). */
+.workflow-palette-button[data-step="trigger"] {
+  --step-color: var(--openbot-file-green);
+  --step-soft: var(--openbot-file-green-soft);
+}
+
+.workflow-palette-button[data-step="agent"] {
+  --step-color: var(--openbot-file-blue);
+  --step-soft: var(--openbot-file-blue-soft);
+}
+
+.workflow-palette-button[data-step="approval"] {
+  --step-color: var(--openbot-file-yellow);
+  --step-soft: var(--openbot-file-yellow-soft);
+}
+
+.workflow-palette-button[data-step="channel-output"] {
+  --step-color: var(--openbot-file-pink);
+  --step-soft: var(--openbot-file-pink-soft);
+}
+
+.workflow-palette-button[data-step="prompt"] {
+  --step-color: var(--openbot-file-teal);
+  --step-soft: var(--openbot-file-teal-soft);
+}
+
+.workflow-palette-button[data-step="condition"] {
+  --step-color: var(--openbot-file-orange);
+  --step-soft: var(--openbot-file-orange-soft);
 }
 
 [data-step="trigger"],
@@ -238,8 +269,8 @@
 .workflows-page .workflows-list h2,
 .workflows-page .workflows-panels h3 {
   margin: 0;
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
   font-weight: var(--openbot-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -247,8 +278,8 @@
 
 .workflows-page .workflows-list-empty {
   margin: 0;
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-md);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
 }
 
 .workflow-list {
@@ -266,27 +297,27 @@
   align-items: center;
   gap: 10px;
   border: 0;
-  border-radius: var(--cosgral-radius-md);
+  border-radius: var(--openbot-radius-md);
   background: transparent;
   padding: 7px 8px;
-  color: var(--cosgral-text-secondary);
+  color: var(--openbot-text-secondary);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--cosgral-duration-fast) var(--cosgral-ease);
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
 }
 
 .workflow-list-item:hover {
-  background: var(--cosgral-hover);
+  background: var(--openbot-hover);
 }
 
 .workflow-list-item:focus-visible {
-  outline: 2px solid var(--cosgral-accent);
+  outline: 2px solid var(--openbot-accent);
   outline-offset: -2px;
 }
 
 .workflow-list-item[aria-current="true"] {
-  background: var(--cosgral-selected);
-  color: var(--cosgral-text-primary);
+  background: var(--openbot-active);
+  color: var(--openbot-text-primary);
 }
 
 .workflow-list-icon {
@@ -295,14 +326,14 @@
   height: 30px;
   flex: 0 0 30px;
   place-items: center;
-  border-radius: var(--cosgral-radius-sm);
-  background: var(--cosgral-bg-control);
-  color: var(--cosgral-text-muted);
+  border-radius: var(--openbot-radius-sm);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-muted);
 }
 
 .workflow-list-item[aria-current="true"] .workflow-list-icon {
-  background: var(--cosgral-accent-soft);
-  color: var(--cosgral-accent-text);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
 }
 
 .workflow-list-copy {
@@ -312,15 +343,15 @@
 
 .workflow-list-copy strong {
   overflow: hidden;
-  font-size: var(--cosgral-text-md);
+  font-size: var(--openbot-text-md);
   font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .workflow-list-copy small {
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
 }
 
 .workflows-editor {
@@ -331,10 +362,10 @@
 
 .workflows-page .workflows-alert {
   margin: 0;
-  border-radius: var(--cosgral-radius-md);
-  background: color-mix(in srgb, var(--cosgral-danger) 12%, transparent);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-danger-soft);
   padding: var(--openbot-space-2) var(--openbot-space-3);
-  color: var(--cosgral-danger-text);
+  color: var(--openbot-danger);
 }
 
 .workflows-editor-bar {
@@ -356,8 +387,8 @@
   border-color: transparent;
   background: transparent;
   padding-inline: var(--openbot-space-2);
-  color: var(--cosgral-text-primary);
-  font-size: var(--cosgral-text-xl);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
   font-weight: var(--openbot-weight-semibold);
 }
 
@@ -365,16 +396,16 @@
 .workflows-page .workflows-name input:hover,
 .workflows-page .workflows-name .ui-input:focus,
 .workflows-page .workflows-name input:focus {
-  border-color: var(--cosgral-border-strong);
-  background: var(--cosgral-bg-control);
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-bg-control);
 }
 
 .workflows-draft {
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-bg-control-hover);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
   padding: 2px 8px;
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
   font-weight: var(--openbot-weight-medium);
 }
 
@@ -396,11 +427,11 @@
   width: var(--openbot-control-md);
   padding: 0;
   justify-content: center;
-  color: var(--cosgral-text-muted);
+  color: var(--openbot-text-muted);
 }
 
 .workflows-delete:hover {
-  color: var(--cosgral-danger-text);
+  color: var(--openbot-danger);
 }
 
 /* The editor section and the canvas frame. */
@@ -419,25 +450,25 @@
 
 .workflows-page .workflow-palette-button {
   height: 30px;
-  border: 1px solid var(--cosgral-border-strong);
-  background: var(--cosgral-bg-control);
+  border: 1px solid var(--openbot-border-strong);
+  background: var(--openbot-bg-control);
   padding: 0 12px 0 10px;
-  color: var(--cosgral-text-secondary);
+  color: var(--openbot-text-secondary);
 }
 
 .workflows-page .workflow-palette-button:hover {
-  border-color: oklch(0.62 0.12 var(--step-hue) / 0.6);
-  background: oklch(0.5 0.1 var(--step-hue) / 0.16);
-  color: var(--cosgral-text-primary);
+  border-color: var(--step-color, var(--openbot-border-strong));
+  background: var(--step-soft, var(--openbot-hover));
+  color: var(--openbot-text-primary);
 }
 
 .workflows-page .workflow-canvas {
   position: relative;
   min-height: 460px;
   overflow: auto;
-  border: 1px solid var(--cosgral-border-strong);
-  background-color: var(--cosgral-bg-frame);
-  background-image: radial-gradient(var(--cosgral-border-strong) 1px, transparent 1px);
+  border: 1px solid var(--openbot-border-strong);
+  background-color: var(--openbot-bg-inset);
+  background-image: radial-gradient(var(--openbot-border-strong) 1px, transparent 1px);
 }
 
 .workflow-canvas-empty {
@@ -457,14 +488,14 @@
   height: 48px;
   place-items: center;
   margin-bottom: var(--openbot-space-1);
-  border-radius: var(--cosgral-radius-lg);
-  background: oklch(0.5 0.1 150 / 0.18);
-  color: oklch(0.8 0.12 150);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
 }
 
 .workflow-canvas-empty strong {
-  color: var(--cosgral-text-primary);
-  font-size: var(--cosgral-text-xl);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
 }
 
 .workflow-canvas-empty .ui-button {
@@ -474,7 +505,7 @@
 .workflows-page .workflow-canvas-empty p {
   max-width: 44ch;
   margin: 0 0 var(--openbot-space-2);
-  color: var(--cosgral-text-muted);
+  color: var(--openbot-text-muted);
 }
 
 .workflow-node-type {
@@ -484,7 +515,7 @@
 }
 
 .workflows-page .workflow-canvas .workflow-node {
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.28);
+  box-shadow: var(--openbot-shadow-raised);
 }
 
 /* Run, history and versions under the editor. */
@@ -494,7 +525,7 @@
   align-items: start;
   gap: var(--openbot-space-6);
   margin-top: var(--openbot-space-2);
-  border-top: 1px solid var(--cosgral-border-strong);
+  border-top: 1px solid var(--openbot-border-strong);
   padding-top: var(--openbot-space-6);
 }
 
@@ -527,9 +558,9 @@
 .workflow-run {
   display: grid;
   gap: var(--openbot-space-2);
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-md);
-  background: var(--cosgral-bg-surface);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
   padding: var(--openbot-space-3);
 }
 
@@ -537,34 +568,34 @@
   display: flex;
   align-items: center;
   gap: var(--openbot-space-2);
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-md);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
 }
 
 .workflow-run-status {
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-bg-control-hover);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
   padding: 2px 8px;
-  color: var(--cosgral-text-secondary);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
   font-weight: var(--openbot-weight-semibold);
 }
 
 .workflow-run-status[data-status="done"] {
-  background: color-mix(in srgb, var(--cosgral-success) 16%, transparent);
-  color: var(--cosgral-success);
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
 }
 
 .workflow-run-status[data-status="failed"],
 .workflow-run-status[data-status="denied"] {
-  background: color-mix(in srgb, var(--cosgral-danger) 16%, transparent);
-  color: var(--cosgral-danger-text);
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
 }
 
 .workflow-run-status[data-status="running"],
 .workflow-run-status[data-status="waiting"] {
-  background: var(--cosgral-accent-soft);
-  color: var(--cosgral-accent-text);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
 }
 
 .workflow-run-cancel {
@@ -573,8 +604,8 @@
 
 .workflows-page .workflow-run-error {
   margin: 0;
-  color: var(--cosgral-danger-text);
-  font-size: var(--cosgral-text-md);
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-md);
 }
 
 /* The steps of a run as a row of chips, joined like the path they took. */
@@ -592,38 +623,38 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-pill);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
   padding: 2px 9px 2px 7px;
-  color: var(--cosgral-text-secondary);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
 }
 
 .workflow-run-steps li + li::before {
   margin: 0 3px 0 -9px;
-  color: var(--cosgral-text-dim);
+  color: var(--openbot-text-dim);
   content: "›";
 }
 
 .workflow-run-steps li[data-status="done"] {
-  border-color: color-mix(in srgb, var(--cosgral-success) 45%, transparent);
-  color: var(--cosgral-text-primary);
+  border-color: var(--openbot-success);
+  color: var(--openbot-text-primary);
 }
 
 .workflow-run-steps li[data-status="done"] svg {
-  color: var(--cosgral-success);
+  color: var(--openbot-success);
 }
 
 .workflow-run-steps li[data-status="failed"],
 .workflow-run-steps li[data-status="denied"] {
-  border-color: color-mix(in srgb, var(--cosgral-danger) 55%, transparent);
-  color: var(--cosgral-danger-text);
+  border-color: var(--openbot-danger);
+  color: var(--openbot-danger);
 }
 
 .workflow-run-steps li[data-status="running"],
 .workflow-run-steps li[data-status="waiting"] {
-  border-color: var(--cosgral-accent-strong);
-  color: var(--cosgral-accent-text);
+  border-color: var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
 }
 
 .workflow-run-steps li[data-status="skipped"],
@@ -653,9 +684,9 @@
   align-items: end;
   gap: var(--openbot-space-2) var(--openbot-space-3);
   margin: 0;
-  border: 1px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-lg);
-  background: var(--cosgral-bg-surface);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
   padding: var(--openbot-space-4);
 }
 
@@ -664,8 +695,8 @@
   grid-column: 1 / -1;
   width: 100%;
   margin-bottom: var(--openbot-space-1);
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
   font-weight: var(--openbot-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -689,42 +720,42 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--openbot-space-3);
-  border-radius: var(--cosgral-radius-md);
+  border-radius: var(--openbot-radius-md);
   padding: var(--openbot-space-1) var(--openbot-space-1) var(--openbot-space-1) var(--openbot-space-2);
-  color: var(--cosgral-text-secondary);
-  font-size: var(--cosgral-text-md);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
 }
 
 .workflow-edge-list li:hover {
-  background: var(--cosgral-hover);
+  background: var(--openbot-hover);
 }
 
 .workflow-edge-kind {
   margin-left: var(--openbot-space-1);
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-bg-control-hover);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
   padding: 1px 7px;
-  color: var(--cosgral-text-muted);
-  font-size: var(--cosgral-text-sm);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
 }
 
 .workflow-edge-list li[data-edge="yes"] .workflow-edge-kind,
 .workflow-edge-list li[data-edge="allow"] .workflow-edge-kind {
-  background: color-mix(in srgb, var(--cosgral-success) 16%, transparent);
-  color: var(--cosgral-success);
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
 }
 
 .workflow-edge-list li[data-edge="no"] .workflow-edge-kind,
 .workflow-edge-list li[data-edge="deny"] .workflow-edge-kind {
-  background: color-mix(in srgb, var(--cosgral-danger) 14%, transparent);
-  color: var(--cosgral-danger-text);
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
 }
 
 .workflow-edge-list .ui-button {
   height: var(--openbot-control-sm);
   border-color: transparent;
   background: transparent;
-  color: var(--cosgral-text-muted);
+  color: var(--openbot-text-muted);
 }
 
 @media (hover: hover) and (pointer: fine) {
