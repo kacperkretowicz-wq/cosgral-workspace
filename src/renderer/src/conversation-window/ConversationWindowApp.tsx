@@ -12,6 +12,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, flush, onSettled, Show } from "solid-js";
 import { Button, Textarea } from "../components/ui";
+import { t } from "../i18n";
 
 export function ConversationWindowApp(props: { target: ConversationWindowInput }) {
   const api = window.openbot;
@@ -62,19 +63,19 @@ export function ConversationWindowApp(props: { target: ConversationWindowInput }
   return (
     <div class="conversation-window" data-testid="conversation-window">
       <header class="conversation-window-header">
-        <strong>{info()?.title ?? "Conversation"}</strong>
+        <strong>{info()?.title ?? t("Conversation")}</strong>
       </header>
       <Show when={info() && !info()?.live}>
         <p class="conversation-window-note" role="status">
-          This agent shows another thread in the main window. Switch back to this thread there to follow it here.
+          {t("This agent shows another thread in the main window. Switch back to this thread there to follow it here.")}
         </p>
       </Show>
       <Show when={info() === null}>
         <p class="conversation-window-note" role="status">
-          This window is no longer linked to a conversation. Close it and open the conversation again.
+          {t("This window is no longer linked to a conversation. Close it and open the conversation again.")}
         </p>
       </Show>
-      <ol class="conversation-window-messages" aria-label="Messages">
+      <ol class="conversation-window-messages" aria-label={t("Messages")}>
         <For each={messages()}>
           {(message) => (
             <li class="conversation-window-message" data-author={message.author}>
@@ -97,14 +98,14 @@ export function ConversationWindowApp(props: { target: ConversationWindowInput }
         }}
       >
         <Textarea
-          aria-label="Message"
+          aria-label={t("Message")}
           rows={3}
           value={draft()}
           disabled={!info()?.live}
           onInput={(event) => setDraft(event.currentTarget.value)}
         />
         <Button type="submit" disabled={!info()?.live || draft().trim() === ""}>
-          Send
+          {t("Send")}
         </Button>
       </form>
     </div>

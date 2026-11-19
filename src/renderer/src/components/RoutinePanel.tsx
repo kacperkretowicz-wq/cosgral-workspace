@@ -266,19 +266,19 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
       <Show when={secret()}>
         {(value) => (
           <div role="alert">
-            <strong>Copy this secret now. It will not be shown again.</strong>
+            <strong>{t("Copy this secret now. It will not be shown again.")}</strong>
             <code>{value()}</code>
             <Button
               unstyled
               type="button"
               onClick={() =>
-                void navigator.clipboard.writeText(value()).catch(() => setError("Could not copy secret."))
+                void navigator.clipboard.writeText(value()).catch(() => setError(t("Could not copy secret.")))
               }
             >
-              Copy secret
+              {t("Copy secret")}
             </Button>
             <Button unstyled type="button" onClick={() => setSecret("")}>
-              Done
+              {t("Done")}
             </Button>
           </div>
         )}

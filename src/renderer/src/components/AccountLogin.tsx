@@ -339,7 +339,7 @@ export function AccountLogin(props: AccountLoginProps) {
                     autocapitalize="none"
                     inputmode="email"
                     spellcheck={false}
-                    placeholder="you@example.com"
+                    placeholder={t("you@example.com")}
                     maxlength={INPUT_LIMITS.email}
                     value={email()}
                     aria-invalid={displayedEmailError() ? "true" : undefined}

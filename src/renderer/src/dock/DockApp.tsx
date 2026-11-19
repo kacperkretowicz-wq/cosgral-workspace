@@ -12,6 +12,7 @@ import {
   defaultDockState,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, flush, onSettled, Show } from "solid-js";
+import { t } from "../i18n";
 
 const CHAT_MESSAGES = 6;
 
@@ -95,7 +96,7 @@ export function DockApp() {
   return (
     <div class="dock-window" data-testid="dock-window">
       <header class="dock-header">
-        <strong>Dock</strong>
+        <strong>{t("Dock")}</strong>
         <div class="dock-header-actions">
           <For each={DOCK_SIZES}>
             {(size) => (
@@ -110,13 +111,13 @@ export function DockApp() {
             )}
           </For>
           <Button unstyled type="button" class="dock-chip" onClick={() => void api.dock?.showMainWindow()}>
-            Open COSGRAL
+            {t("Open COSGRAL")}
           </Button>
           <Button
             unstyled
             type="button"
             class="dock-chip"
-            title="Hide the dock"
+            title={t("Hide the dock")}
             onClick={() => void run(() => api.dock?.setVisible({ visible: false }) ?? Promise.resolve(undefined))}
           >
             ×
@@ -125,12 +126,12 @@ export function DockApp() {
       </header>
 
       <Show when={!dock().mainWindowOpen}>
-        <p class="dock-note">The main window is closed. Agents keep working here.</p>
+        <p class="dock-note">{t("The main window is closed. Agents keep working here.")}</p>
       </Show>
 
       <Show when={unpinned().length > 0}>
         <label class="dock-pin">
-          <span>Pin an agent</span>
+          <span>{t("Pin an agent")}</span>
           <NativeSelect
             unstyled
             onChange={(event) => {
@@ -139,7 +140,7 @@ export function DockApp() {
               if (botId) void run(() => api.dock?.pin({ botId }) ?? Promise.resolve(undefined));
             }}
           >
-            <option value="">Choose…</option>
+            <option value="">{t("Choose…")}</option>
             <For each={unpinned()}>{(bot) => <option value={bot.id}>{bot.name}</option>}</For>
           </NativeSelect>
         </label>
@@ -165,17 +166,29 @@ export function DockApp() {
                   <span class={`dock-dot is-${activity()[pin.botId] ?? "idle"}`} />
                   {name(pin.botId)}
                 </Button>
-                <Button unstyled type="button" class="dock-icon" title="Move up" onClick={() => move(pin.botId, -1)}>
+                <Button
+                  unstyled
+                  type="button"
+                  class="dock-icon"
+                  title={t("Move up")}
+                  onClick={() => move(pin.botId, -1)}
+                >
                   ↑
                 </Button>
-                <Button unstyled type="button" class="dock-icon" title="Move down" onClick={() => move(pin.botId, 1)}>
+                <Button
+                  unstyled
+                  type="button"
+                  class="dock-icon"
+                  title={t("Move down")}
+                  onClick={() => move(pin.botId, 1)}
+                >
                   ↓
                 </Button>
                 <Button
                   unstyled
                   type="button"
                   class="dock-icon"
-                  title="Hide"
+                  title={t("Hide")}
                   onClick={() =>
                     void run(
                       () => api.dock?.setPinHidden({ botId: pin.botId, hidden: true }) ?? Promise.resolve(undefined),
@@ -188,7 +201,7 @@ export function DockApp() {
                   unstyled
                   type="button"
                   class="dock-icon"
-                  title="Unpin"
+                  title={t("Unpin")}
                   onClick={() => void run(() => api.dock?.unpin({ botId: pin.botId }) ?? Promise.resolve(undefined))}
                 >
                   ×
@@ -211,11 +224,11 @@ export function DockApp() {
                     <Input
                       unstyled
                       value={draft()}
-                      placeholder={`Message ${name(pin.botId)}`}
+                      placeholder={t("Message {name}", { name: name(pin.botId) })}
                       onInput={(event) => setDraft(event.currentTarget.value)}
                     />
                     <Button unstyled type="submit" class="dock-chip">
-                      Send
+                      {t("Send")}
                     </Button>
                   </form>
                 </div>
@@ -227,7 +240,7 @@ export function DockApp() {
 
       <Show when={hidden().length > 0}>
         <div class="dock-hidden">
-          <span>Hidden</span>
+          <span>{t("Hidden")}</span>
           <For each={hidden()}>
             {(pin) => (
               <Button

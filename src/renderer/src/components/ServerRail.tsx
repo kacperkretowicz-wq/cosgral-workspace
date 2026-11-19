@@ -1,5 +1,6 @@
 import type { ServerSummary } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
+import { t } from "../i18n";
 import { Button, ContextMenu } from "./ui";
 
 interface ServerRailProps {
@@ -14,7 +15,7 @@ interface ServerRailProps {
 export function ServerRail(props: ServerRailProps) {
   const activeRemote = () => props.servers.find((server) => server.active && server.kind === "remote");
   return (
-    <aside class="server-rail panel-edge" aria-label="Servers">
+    <aside class="server-rail panel-edge" aria-label={t("Servers")}>
       <div class="server-rail-list">
         <For each={props.servers}>
           {(server) => (
@@ -24,7 +25,11 @@ export function ServerRail(props: ServerRailProps) {
                 <Button
                   type="button"
                   class={["server-rail-button", { "server-rail-button-active": server.active }]}
-                  aria-label={`${server.name} server${server.state === "online" ? "" : `, ${server.state}`}`}
+                  aria-label={
+                    server.state === "online"
+                      ? t("{name} server", { name: server.name })
+                      : t("{name} server, {state}", { name: server.name, state: server.state })
+                  }
                   aria-pressed={server.active ? "true" : "false"}
                   title={server.name}
                   onClick={() => props.onSelect(server.id)}
@@ -40,7 +45,11 @@ export function ServerRail(props: ServerRailProps) {
                   as={Button}
                   type="button"
                   class={["server-rail-button", { "server-rail-button-active": server.active }]}
-                  aria-label={`${server.name} server${server.state === "online" ? "" : `, ${server.state}`}`}
+                  aria-label={
+                    server.state === "online"
+                      ? t("{name} server", { name: server.name })
+                      : t("{name} server, {state}", { name: server.name, state: server.state })
+                  }
                   aria-pressed={server.active ? "true" : "false"}
                   title={server.name}
                   onClick={() => props.onSelect(server.id)}
@@ -50,7 +59,7 @@ export function ServerRail(props: ServerRailProps) {
                   <span class={`server-rail-state server-rail-state-${server.state}`} />
                 </ContextMenu.Trigger>
                 <ContextMenu.Portal>
-                  <ContextMenu.Content class="bot-context-menu" aria-label="Server actions">
+                  <ContextMenu.Content class="bot-context-menu" aria-label={t("Server actions")}>
                     <ContextMenu.Item onSelect={props.onOpenHost}>
                       <svg
                         aria-hidden="true"
@@ -65,7 +74,7 @@ export function ServerRail(props: ServerRailProps) {
                         <circle cx="6" cy="5.5" r=".8" />
                         <circle cx="6" cy="14.5" r=".8" />
                       </svg>
-                      <span>Publish this COSGRAL Workspace</span>
+                      <span>{t("Publish this COSGRAL Workspace")}</span>
                     </ContextMenu.Item>
                   </ContextMenu.Content>
                 </ContextMenu.Portal>
@@ -76,8 +85,8 @@ export function ServerRail(props: ServerRailProps) {
         <Button
           type="button"
           class="server-rail-button server-rail-action"
-          aria-label="Add remote server"
-          title="Add remote server"
+          aria-label={t("Add remote server")}
+          title={t("Add remote server")}
           onClick={props.onAdd}
         >
           <span class="server-rail-monogram">+</span>
@@ -88,8 +97,8 @@ export function ServerRail(props: ServerRailProps) {
           <Button
             type="button"
             class="server-rail-button server-rail-action"
-            aria-label="Open Remote Mac"
-            title="Remote Mac"
+            aria-label={t("Open Remote Mac")}
+            title={t("Remote Mac")}
             onClick={props.onOpenRemoteMac}
           >
             <svg aria-hidden="true" viewBox="0 0 20 20">
