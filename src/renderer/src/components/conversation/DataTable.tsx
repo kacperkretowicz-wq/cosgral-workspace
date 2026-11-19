@@ -1,4 +1,5 @@
 import { For } from "solid-js";
+import { t } from "../../i18n";
 
 export type DataTableAlignment = "left" | "center" | "right";
 
@@ -24,7 +25,7 @@ export type MessageContentBlock = ComparisonTableBlock | DataTableBlock | Messag
 
 export function DataTable(props: { table: DataTableBlock }) {
   return (
-    <section class="message-data-table-scroll" aria-label="Data table" tabindex="0">
+    <section class="message-data-table-scroll" aria-label={t("Data table")} tabindex="0">
       <table class="message-data-table" style={`--message-data-table-columns: ${props.table.headers.length}`}>
         <thead>
           <tr>
