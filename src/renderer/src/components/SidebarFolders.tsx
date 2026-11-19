@@ -3,6 +3,7 @@
 import type { SidebarLayout } from "@openbot/contracts/ipc";
 import { SIDEBAR_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { t } from "../i18n";
 import { canCreateSubfolder, type MoveTarget, type SidebarFolderRow } from "../sidebar-tree";
 import { AlertDialog, Button, ContextMenu, Dialog, Input } from "./ui";
 
@@ -89,7 +90,9 @@ export function FolderRow(props: {
 }) {
   const label = () => {
     const count = props.row.agentCount;
-    return `${props.row.folder.name}, folder, ${count} ${count === 1 ? "agent" : "agents"}`;
+    return count === 1
+      ? t("{name}, folder, 1 agent", { name: props.row.folder.name })
+      : t("{name}, folder, {count} agents", { name: props.row.folder.name, count });
   };
   return (
     <ContextMenu.Root modal={false}>
@@ -113,25 +116,25 @@ export function FolderRow(props: {
       </ContextMenu.Trigger>
       <Show when={props.editable}>
         <ContextMenu.Portal>
-          <ContextMenu.Content class="bot-context-menu" aria-label="Folder actions">
+          <ContextMenu.Content class="bot-context-menu" aria-label={t("Folder actions")}>
             <ContextMenu.Item
               disabled={!canCreateSubfolder(props.layout, props.row.folder.id)}
               onSelect={props.onNewSubfolder}
             >
-              <span>New subfolder</span>
+              <span>{t("New subfolder")}</span>
             </ContextMenu.Item>
             <ContextMenu.Item onSelect={props.onRename}>
-              <span>Rename</span>
+              <span>{t("Rename")}</span>
             </ContextMenu.Item>
             <ContextMenu.Item onSelect={props.onDuplicate}>
-              <span>Duplicate</span>
+              <span>{t("Duplicate")}</span>
             </ContextMenu.Item>
             <ContextMenu.Item onSelect={props.onMove}>
-              <span>Move to…</span>
+              <span>{t("Move to…")}</span>
             </ContextMenu.Item>
             <ContextMenu.Separator class="bot-context-separator" />
             <ContextMenu.Item class="bot-context-danger" onSelect={props.onDelete}>
-              <span>Delete folder</span>
+              <span>{t("Delete folder")}</span>
             </ContextMenu.Item>
           </ContextMenu.Content>
         </ContextMenu.Portal>
@@ -177,13 +180,13 @@ export function FolderNameDialog(props: {
       <Dialog.Portal>
         <Dialog.Overlay class="bot-delete-backdrop">
           <Dialog.Content class="bot-delete-dialog folder-dialog">
-            <Dialog.Title>{props.mode === "create" ? "New folder" : "Rename folder"}</Dialog.Title>
+            <Dialog.Title>{props.mode === "create" ? t("New folder") : t("Rename folder")}</Dialog.Title>
             <Dialog.Description>
               {props.mode === "create"
                 ? props.parentName
-                  ? `Inside ${props.parentName}.`
-                  : "At the top of the agent list."
-                : "Agents inside keep their place."}
+                  ? t("Inside {name}.", { name: props.parentName })
+                  : t("At the top of the agent list.")
+                : t("Agents inside keep their place.")}
             </Dialog.Description>
             <form
               class="folder-dialog-form"
@@ -196,8 +199,8 @@ export function FolderNameDialog(props: {
                 type="text"
                 value={name()}
                 onInput={(event) => setName(event.currentTarget.value)}
-                aria-label="Folder name"
-                placeholder="Folder name"
+                aria-label={t("Folder name")}
+                placeholder={t("Folder name")}
                 maxlength={SIDEBAR_LIMITS.folderName}
                 autofocus
               />
@@ -210,10 +213,10 @@ export function FolderNameDialog(props: {
               </Show>
               <div class="bot-delete-actions">
                 <Button type="button" disabled={busy()} onClick={props.onClose}>
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button type="submit" class="folder-dialog-primary" disabled={busy() || name().trim().length === 0}>
-                  {busy() ? "Saving…" : props.mode === "create" ? "Create" : "Save"}
+                  {busy() ? t("Saving…") : props.mode === "create" ? t("Create") : t("Save")}
                 </Button>
               </div>
             </form>
@@ -258,9 +261,9 @@ export function MoveToDialog(props: {
         <Dialog.Overlay class="bot-delete-backdrop">
           <Dialog.Content class="bot-delete-dialog folder-dialog">
             <Dialog.Title>{props.title}</Dialog.Title>
-            <Dialog.Description class="sr-only">Pick a place.</Dialog.Description>
+            <Dialog.Description class="sr-only">{t("Pick a place.")}</Dialog.Description>
             <fieldset class="folder-targets">
-              <legend class="sr-only">Places</legend>
+              <legend class="sr-only">{t("Places")}</legend>
               <For each={props.targets}>
                 {(target) => (
                   <Button
@@ -273,10 +276,10 @@ export function MoveToDialog(props: {
                   >
                     <span class="folder-target-name">{target.label}</span>
                     <Show when={target.current}>
-                      <span class="folder-target-note">Current</span>
+                      <span class="folder-target-note">{t("Current")}</span>
                     </Show>
                     <Show when={target.disabled && !target.current}>
-                      <span class="folder-target-note">Too deep</span>
+                      <span class="folder-target-note">{t("Too deep")}</span>
                     </Show>
                   </Button>
                 )}
@@ -291,7 +294,7 @@ export function MoveToDialog(props: {
             </Show>
             <div class="bot-delete-actions folder-dialog-single">
               <Button type="button" disabled={busy()} onClick={props.onClose}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </Dialog.Content>
@@ -328,9 +331,9 @@ export function FolderDeleteDialog(props: { name: string; onConfirm: () => Promi
       <AlertDialog.Portal>
         <AlertDialog.Overlay class="bot-delete-backdrop">
           <AlertDialog.Content class="bot-delete-dialog folder-dialog">
-            <AlertDialog.Title>Delete {props.name}?</AlertDialog.Title>
+            <AlertDialog.Title>{t("Delete {name}?", { name: props.name })}</AlertDialog.Title>
             <AlertDialog.Description>
-              Only the folder is removed. Its agents and subfolders move up one level.
+              {t("Only the folder is removed. Its agents and subfolders move up one level.")}
             </AlertDialog.Description>
             <Show when={error()}>
               {(message) => (
@@ -341,7 +344,7 @@ export function FolderDeleteDialog(props: { name: string; onConfirm: () => Promi
             </Show>
             <div class="bot-delete-actions">
               <Button type="button" disabled={busy()} onClick={props.onClose}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 type="button"
@@ -350,7 +353,7 @@ export function FolderDeleteDialog(props: { name: string; onConfirm: () => Promi
                 disabled={busy()}
                 onClick={() => void confirm()}
               >
-                {busy() ? "Deleting…" : "Delete folder"}
+                {busy() ? t("Deleting…") : t("Delete folder")}
               </Button>
             </div>
           </AlertDialog.Content>

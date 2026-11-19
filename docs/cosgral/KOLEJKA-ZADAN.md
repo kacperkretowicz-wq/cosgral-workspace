@@ -74,6 +74,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 21. [zrobione: 6f522b834] Aria/i18n: `ProviderPicker` + `DataWipeSection` + `AcpLogin` (karta).
 22. [zrobione: 531a936] Aria/i18n: `AcpPresetCard` + `AcpPresets`.
 23. [zrobione: 980f578] Aria/i18n: `AccountLogin` + `OtpInput`.
+24. [w toku: KAPI, 04:46] Aria/i18n: `SidebarFolders` + `Spaces`.
 
 ## Tester
 1. [zrobione: team/tester/w12-ti T-AI GO] Odbiór Electron @ `4f21fbfe7`: e2e 0 FAIL, W5 33/33, zrzuty 17-11-i, sondy next/rename/behavior; MaxListeners 0. Raport `docs/cosgral-raporty/tester-w12-ti.md`.
