@@ -27,15 +27,16 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 ## KK Fullstack
 1. [zrobione: 28f240e08 (Clear history)] [zrobione: da3ad22fd (okno historii)] Przycisk „Clear history” w widoku kanału, lista „okno historii” (po Backendzie BE-Z).
 2. [zrobione: 28f240e08] Usunięcie martwego `SettingsModal`.
-3. [zrobione: 8e6600948 (po T-AI; powtórz po następnym odbiorze)] Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
-4. [zrobione: 8f6ce332a (po b2f7189aa; powtarzaj po scaleniach)] `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
+3. [zrobione: 13433a337 (po scaleniu 7d5fd871c; powtórz po następnym odbiorze Testera)] Przeliczenie `parytet-0.71.md` po każdym odbiorze Testera (kod / ostrożnie / w oknie).
+4. [zrobione: 13433a337 (po 7d5fd871c; powtarzaj po scaleniach)] `PRZEWODNIK.md`: kroki „jak zobaczyć” dla każdej nowej funkcji.
 5. [zrobione: b136b22a2] Luki z `pytania-do-wlasciciela.md`, które da się domknąć bez decyzji właściciela.
 6. [zrobione: 78f6ebbb9] Historyjka Storybook dla listy „okno historii” (Dark/Light) i sprawdzenie kontrastu.
 7. [zrobione: 3cb782b80] Odbiór własnych paneli (Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje, Podagenci) po zrzutach Testera 17-11-i.
 8. [zrobione: 2c034c134] Przegląd `i18n-inwentarz.md`: co zostało po angielsku w moich panelach, tłumaczenie przez `t()`.
 9. [zamknięte bez kodu KK: kontrakt i test BE-AB e0b9d2e3c, ekran PWA UI-13 1682b267a na team/ui/w12-ai, czeka na scalenie] Ekran kanałów w kliencie telefonu (PWA) razem z UI: kontrakt `ipc-mobile-channels.ts`, test na atrapie.
-10. [zrobione: c28af4dde (po T-AJ; powtórz po UI-AT i UI-13)] Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
+10. [zrobione: 13433a337 (UI-AT i UI-13 w integracji)] Przelicz parytet po następnym odbiorze Testera (wiersze 71, 73–77) i dopisz do PRZEWODNIKA.
 11. [zrobione: 3cb782b80, razem z 7] Odbiór paneli Aktualizacje, Mobile Connect, Głos, Komunikatory, Integracje po zrzutach 17-11-i (jeśli jeszcze nie zrobiony).
+13. [zrobione: 13433a337] Parytet i PRZEWODNIK po scaleniu `7d5fd871c` (wiersze 2 i 71 → „jest”, liczby ze skryptu z tabeli, „Unread first” i kanały w PWA opisane).
 12. [zrobione: 38566682e] `ChannelWorkspace`: lista kanałów, przyciski i komunikaty dostępności przez `t()` (luka wskazana przez KAPI), klucze wstawione w środku katalogów, żeby nie kolidowały z dopiskami KAPI.
 
 ## Backend Expert
