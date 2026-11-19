@@ -54,11 +54,17 @@ Wkład produktowy: `PRODUCT.md` (użytkownicy, zasady, ograniczenia). Ten plik m
 | 19.11 (2) | Pasek kart wątków | Przy jednym wątku nie rysuje się wcale (jedna karta nic nie mówi); od dwóch wątków jak dotąd | — |
 | 19.11 (2) | Wiadomości | Odpowiedź agenta bez dymka (czysty tekst na tle, wiersz 22px, max 720px), dymek tylko dla wiadomości człowieka (jak w OpenBocie) | `app--playground` |
 | 19.11 (2) | Po polsku | Stany w wierszu („Limit · wznowi o…”, „Błąd · …”, „Myśli”, liczba odpowiedzi), „Steruje komputerem / Zatrzymaj”, „Oznacz jako przeczytane”, etykiety dostępności wiersza | — |
+| 19.11 (3) | Szkielet stron | `WorkPage`: każda strona z paska ma ten sam nagłówek (ikona strony w kafelku, tytuł, jedno zdanie, akcje po prawej). `WorkPageSections`: lista sekcji z ikonami po lewej (na wąskim oknie zakładki), wybrana sekcja płasko na stronie, zapamiętana. `WorkPageAnchors`: spis sekcji, który przewija i podąża za przewijaniem (gdy wszystkie sekcje muszą zostać na stronie) | `app--playground` → każda strona |
+| 19.11 (3) | Biblioteka | Zamiast 8 kart jedna pod drugą: sekcje Pliki, Umiejętności, Tabele, Sejf, Menedżery haseł, Komunikatory, Integracje, Serwery MCP. Pliki: jeden pasek narzędzi (szukaj z ikoną, typ, sortowanie, „Dodaj pliki”), kafelek typu pliku (miniatura obrazu, dokument, tabela), akcje wiersza na najechanie. Wiersze umiejętności, sejfu i MCP: ikona, nazwa z wersją, opis, akcje po prawej | `app--playground` → Biblioteka |
+| 19.11 (3) | Przepływy | Układ edytora: zapisane przepływy po lewej, po prawej nazwa jako tytuł, „Szkic”, usuń jako ikona, „Zapisz” z ikoną. Paleta i karty kroków z ikoną typu. Pusty stan płótna „Zacznij od wyzwalacza”. Połączenia w jednym wierszu, ścieżki jako kolorowe etykiety. Historia uruchomień: status, czas, kroki jako łańcuch etykiet w kolorze stanu | `app--playground` → Przepływy |
+| 19.11 (3) | Harmonogram | Sekcje Plan i Rutyny. Plan jako oś czasu: Dziś/Jutro/Wczoraj, kropka na osi, stworek agenta (mina „pracuje” przy trwającym uruchomieniu), status. Rutyny: wiersze ze stworkiem, „Aktywne/Wstrzymane”, akcje na najechanie; formularz jako karta w dwóch kolumnach | `app--playground` → Więcej → Harmonogram |
+| 19.11 (3) | Dostawcy, Zużycie, Telefon, Zdalny pulpit | Ten sam nagłówek; Dostawcy ze spisem 8 sekcji z ikonami (wszystkie sekcje zostają na stronie dla skryptów akceptacyjnych) | `app--playground` |
 
 ## Następne sekcje (kolejność)
 
-1. Stworki dalej: mimika także w kanałach i w wiadomościach (awatar przy odpowiedzi), edytor stworka (kształt + kolor z podglądem min).
-2. Wiersz agenta: kanały jako wiersze ze stosem awatarów członków; sekcje „Nieprzeczytane / Przypięte / reszta”.
-3. Rozmowa: kroki agenta jako zwijana oś czasu z ikonami narzędzi; pole wiadomości (wybór agenta przy kanałach).
-4. Strony: Przepływy, Zużycie, Biblioteka, Katalog dodatków, Dostawcy (Zadania: właściciel mówi, że na razie niepotrzebne).
-5. Ustawienia i okna dialogowe.
+1. Katalog dodatków i Ustawienia serwera: mają własny układ z nawigacją; dociągnąć do `WorkPage` (nagłówek z ikoną) bez łamania ich nawigacji.
+2. Zużycie: wykres słupkowy (dziś pełne niebieskie bloki) na spokojniejszy, karty liczb z ikonami, tabela agentów ze stworkami.
+3. Dostawcy: wnętrza sekcji (konta, CLI, klucze) jako wiersze `w2-item` z ikonami zamiast stosów pól.
+4. Kanały na liście agentów jako wiersze ze stosem stworków członków; sekcje „Nieprzeczytane / Przypięte / reszta”.
+5. Rozmowa: kroki agenta jako zwijana oś czasu z ikonami narzędzi.
+6. Ustawienia i okna dialogowe.

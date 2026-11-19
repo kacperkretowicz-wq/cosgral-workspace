@@ -27,13 +27,28 @@ rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cos
 5. **Po polsku:** stany w wierszu („Limit · wznowi o …”, „Błąd · …”, „Myśli”, liczba odpowiedzi, dni tygodnia po polsku),
    „Steruje komputerem / Zatrzymaj”, „Oznacz jako przeczytane”, etykiety dostępności wiersza (`Ukryty`, model zapasowy).
 
+6. **Szkielet stron** (`WorkPage.tsx`, `styles/work-page.css`): jeden nagłówek na każdej stronie z paska (ikona strony,
+   tytuł, zdanie, akcje), `WorkPageSections` (sekcje z ikonami, zapamiętane) i `WorkPageAnchors` (spis sekcji, który
+   przewija; używany tam, gdzie testy i skrypty akceptacyjne oczekują wszystkich sekcji naraz, np. Dostawcy).
+7. **Biblioteka** (`LibraryPage.tsx`): 8 sekcji zamiast 8 kart w stosie; Pliki z jednym paskiem narzędzi, kafelkami typu
+   pliku i akcjami na najechanie; wiersze umiejętności, sejfu i MCP z ikonami.
+8. **Przepływy** (`WorkflowsPage.tsx`, `workflow-editor.css`): układ edytora (lista po lewej, pasek z nazwą i akcjami,
+   paleta i karty z ikonami typu kroku, pusty stan płótna, połączenia w jednym wierszu, historia uruchomień z łańcuchem
+   kroków). Logika bez zmian.
+9. **Harmonogram** (`SchedulePage.tsx`, `ScheduleOverview.tsx`, `RoutinePanel.tsx`): Plan jako oś czasu ze stworkami
+   agentów, Rutyny jako wiersze ze stworkami; „Pause/Resume/Run now/History” przetłumaczone.
+10. **Dostawcy, Zużycie, Telefon, Zdalny pulpit:** ten sam nagłówek; Dostawcy ze spisem sekcji.
+11. Atrapa Storybooka (`mock-openbot.ts`) przypina 5 domyślnych stron jak nowa instalacja (wcześniej pusta lista).
+
 ## C. Stan sprawdzenia
 
 | Sprawdzenie | Wynik (kontener Linux) |
 |---|---|
 | `bun run lint` | zielone (1 ostrzeżenie w `cosgral.css:2812`, było już przed tą sesją) |
 | `bun run typecheck` (6 projektów) | zielone |
-| `bun run test` | 3387 zielonych, 18 pominiętych, **2 czerwone** w `src/backend/acp-presets.test.ts` (testy zakładają Windows: wielkość liter i rozszerzenia `.cmd/.exe` w PATH). Na czystym PR #24 w tym kontenerze padają te same 2, więc to nie skutek zmian UI; na Windows powinny przejść. |
+| `bun run test` (po stronach, runda 2) | 3386 zielonych, 18 pominiętych, 3 czerwone: te same 2 windowsowe w `acp-presets.test.ts` oraz niestabilny `agent-service-context-threads.test.ts` („compacts a thread that is not on screen…”) — na czystym PR #24 też pada mniej więcej 2 razy na 3, backendu nie ruszałem. |
+| `bun run test:storybook` (runda 2) | 370/370 (+3 nowe historyjki `COSGRAL/Work pages`: Biblioteka, Przepływy, Harmonogram, z testem dostępności; wyłapały zdublowaną nazwę nawigacji „Library sections”, poprawione na „Źródła plików”). |
+| `bun run test` (runda 1) | 3387 zielonych, 18 pominiętych, **2 czerwone** w `src/backend/acp-presets.test.ts` (testy zakładają Windows: wielkość liter i rozszerzenia `.cmd/.exe` w PATH). Na czystym PR #24 w tym kontenerze padają te same 2, więc to nie skutek zmian UI; na Windows powinny przejść. |
 | `bun run test:storybook` | 367/367 zielonych. Dwie historyjki z PR #24 miały stare asercje (`Sidebar › Agent Tiles`: wiersz 68px/stworek 44px → 60/42 po spłaszczeniu wierszy; `Sidebar › Channels`: pierścień fokusu to teraz `outline`, nie `box-shadow`); poprawione pod nowy wygląd. W kontenerze uruchamiane z lokalną kopią configu wskazującą na zainstalowany Chromium (nie w repo). |
 | `bun run test:visual` | nie uruchomione: wzorce są `*-chromium-win32.png`, na Linuksie nie da się ich porównać. Do zrobienia na Windows. |
 | e2e / W5 w Electronie, `.exe` | nie uruchomione (brak Windows w kontenerze). |

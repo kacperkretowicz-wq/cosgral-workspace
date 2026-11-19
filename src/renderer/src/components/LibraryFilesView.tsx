@@ -197,7 +197,7 @@ export function LibraryFilesView() {
           <CosgralPanelState kind="unavailable" title={t("The file library is not available in this version.")} />
         }
       >
-        <nav class="library-origins" aria-label={t("Library sections")}>
+        <nav class="library-origins" aria-label={t("File sources")}>
           <For each={ORIGINS}>
             {(item) => (
               <Button

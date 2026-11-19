@@ -2623,4 +2623,5 @@ export const en = {
   "Agent CLIs": "Agent CLIs",
   "Let someone see this computer, or connect to another one.":
     "Let someone see this computer, or connect to another one.",
+  "File sources": "File sources",
 } as const;
