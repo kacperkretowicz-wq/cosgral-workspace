@@ -1087,7 +1087,10 @@ async function main(): Promise<void> {
         if (await direct.count()) await direct.click();
         else {
           await rail.getByRole("button", { name: /^More( |$|\()/ }).click();
-          await page.getByRole("menu", { name: /^More$/ }).getByRole("menuitem", { name, exact: true }).click();
+          await page
+            .getByRole("menu", { name: /^More$/ })
+            .getByRole("menuitem", { name, exact: true })
+            .click();
         }
         await page.waitForTimeout(2_000);
         const label = `page-${String(index + 1).padStart(2, "0")}-${name.toLowerCase().replace(/\s+/g, "-")}`;
