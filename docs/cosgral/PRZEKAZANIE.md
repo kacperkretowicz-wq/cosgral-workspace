@@ -70,6 +70,19 @@
 17. **Przegląd całości (wiersz 20.11 (3)):** skany (historyjki, układ w wąskich oknach, napisy na sztywno), poprawki
     nawigacji ustawień, notatek stron, pigułek i przycisków drugorzędnych; 17 literałów przeniesionych do `t()`.
     Skrypty audytu: patrz `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (sekcja „Audyt”).
+18. **Krój i grubość pisma (wiersze 20.11 (11)–(13)):** Jost Variable, domyślne wagi 420 / 490 / 590; w Ustawieniach →
+    Wygląd jest „Grubość pisma” (lżejsza / zwykła / mocniejsza, `appearance.fontWeight`). `body` bierze
+    `--openbot-weight-regular`, więc ustawienie działa na cały tekst. **Nie sprawdzone w prawdziwym oknie** (Electron
+    jako root w kontenerze daje puste okno): to ocena właściciela na Windowsie lub Macu.
+19. **Tłumaczenia (po sesji 20.11):** `untranslated-jsx.test.ts` pilnuje, żeby w komponentach nie było gołych napisów
+    (wyjątki: marka, nazwy języków, protokoły, jednostki); `contract-messages.test.ts` i `workflow-problems.test.ts`
+    pilnują polskich tekstów z kontraktów (powody akcji, problemy przepływów). Backendowych komunikatów, które
+    przechodzą przez `tData()`, jest więcej niż przetłumaczonych; brak tłumaczenia nic nie psuje (zostaje angielski).
+20. **Rozbicie dużych plików:** plan i stan w `docs/cosgral/PLAN-ROZBICIE-PLIKOW.md` (`Conversation.tsx` 3133 → 2669,
+    `Sidebar.tsx` 1468 → 1256, `App.tsx` 2657 → 2382 linii; każdy krok z testami, Storybook a11y 373, `test:visual` 7).
+21. **Do zrobienia poza kontenerem Linux:** `bun run test:visual -u` na Windowsie i Macu (wzorce tylko dla Linuksa),
+    ocena grubości pisma na prawdziwym oknie, nowy `.exe`. W kontenerze testy Storybooka i wizualne wymagają
+    lokalnej kopii konfiguracji z `executablePath: "/opt/pw-browsers/chromium"` (nie commitować).
 
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 
