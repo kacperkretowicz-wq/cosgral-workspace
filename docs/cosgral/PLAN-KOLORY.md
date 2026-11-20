@@ -3,8 +3,12 @@
 Cel właściciela (19.11): kolory spójne, przejrzyste, proste, w naszym stylu; mniej „napakowanego”. Ten plik to plan
 pracy na kolejny dzień.
 
-**Stan 20.11:** kroki 2–4 i 6 zrobione w stylu nowych inspiracji (żetony, sekcje, pigułki; wiersz 20.11 (1) w
-`PROMPT-UI-JAKOSC.md`). Zostały: krok 1 (skrypt pomiarowy), 5 (poświaty) i przegląd pozostałych ekranów.
+**Stan 20.11 (koniec dnia):** wszystkie kroki wykonane. Kroki 2–4 i 6 (żetony, sekcje, pigułki, wiersz 20.11 (1)),
+krok 1 (pomiar: `tools/measure-hues.py` na zrzutach z `set.cjs`: odcienie nasycone w obszarze treści, próg 0,4% pola)
+i krok 5 (poświaty). Pomiar: **przed** średnio 1,29 odcienia na ekran (Zużycie 3: niebieski, czerwony, zielony),
+**po** 1,14 (Zużycie 2: niebieski i głęboki Azure), pozostałe ekrany 1 (niebieski) w ciemnym; w jasnym średnio 0,71.
+Decyzje: dok zostaje kolorowy, stworki w pełnych kolorach, kafle Zużycia Azure / głęboki Azure / Azure, przyciski
+drugorzędne jako szklane pigułki.
 
 ## 1. Stan wyjściowy (zmierzone 19.11)
 

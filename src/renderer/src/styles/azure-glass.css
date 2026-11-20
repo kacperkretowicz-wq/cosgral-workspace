@@ -237,22 +237,14 @@ body::after {
   padding-bottom: var(--openbot-space-8);
 }
 
+/* Usage totals: Azure, deep Azure, Azure (one family; red and green are for state). */
 .work-page .usage-totals > div:nth-child(2) {
-  background: var(--openbot-tile-red), var(--openbot-tile-base);
-  box-shadow: var(--openbot-tile-red-shadow);
-}
-
-.work-page .usage-totals > div:nth-child(3) {
-  background: var(--openbot-tile-green), var(--openbot-tile-base);
-  box-shadow: var(--openbot-tile-green-shadow);
+  background: var(--openbot-tile-deep), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-deep-shadow);
 }
 
 .work-page .usage-totals > div:nth-child(2) .usage-stat-icon {
-  background: var(--openbot-mesh-red);
-}
-
-.work-page .usage-totals > div:nth-child(3) .usage-stat-icon {
-  background: var(--openbot-mesh-green);
+  background: var(--openbot-mesh-deep);
 }
 
 /* Chart: bars fade from electric blue into the dark, today's glows; the grid is a faint blue. */

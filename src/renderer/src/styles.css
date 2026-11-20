@@ -59,6 +59,8 @@
   --openbot-tile-red-shadow: var(--cosgral-tile-red-shadow);
   --openbot-tile-green: var(--cosgral-tile-green);
   --openbot-tile-green-shadow: var(--cosgral-tile-green-shadow);
+  --openbot-tile-deep: var(--cosgral-tile-deep);
+  --openbot-tile-deep-shadow: var(--cosgral-tile-deep-shadow);
   --openbot-tile-quiet: var(--cosgral-tile-quiet);
   --openbot-tile-quiet-shadow: var(--cosgral-tile-quiet-shadow);
   --openbot-mesh-blue: var(--cosgral-mesh-blue);

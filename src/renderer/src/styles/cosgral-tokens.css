@@ -152,12 +152,25 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(130, 255, 180, 0.12),
     inset 0 -2px 0 rgba(190, 255, 210, 0.95), inset 0 -18px 26px -16px rgba(60, 230, 120, 0.9),
     0 22px 46px -24px rgba(34, 197, 94, 0.75);
+  --cosgral-tile-deep:
+    radial-gradient(
+      70% 42% at 50% 106%,
+      rgba(191, 216, 227, 0.95) 0%,
+      rgba(0, 120, 168, 0.65) 45%,
+      rgba(0, 99, 142, 0) 100%
+    ),
+    linear-gradient(180deg, rgba(0, 24, 38, 0) 34%, rgba(0, 74, 107, 0.45) 66%, rgba(0, 99, 142, 0.88) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
+  --cosgral-tile-deep-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(140, 185, 204, 0.14),
+    inset 0 -2px 0 rgba(191, 216, 227, 0.95), inset 0 -18px 26px -16px rgba(0, 130, 180, 0.9),
+    0 22px 46px -24px rgba(0, 99, 142, 0.8);
   --cosgral-tile-quiet:
-    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.32) 0%, rgba(55, 129, 252, 0) 70%),
+    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.14) 0%, rgba(55, 129, 252, 0) 70%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 40%);
   --cosgral-tile-quiet-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(120, 170, 255, 0.14),
-    inset 0 -1px 0 rgba(150, 195, 255, 0.55), inset 0 -16px 26px -20px rgba(55, 129, 252, 0.6);
+    inset 0 -1px 0 rgba(150, 195, 255, 0.5);
   /*
    * Icon chips (owner, 20.11: "ikony jak w inspiracji"): dark glass lit from below, a bright rim; the colour is only the
    * light. Five lights: Azure, deep Azure, cool red, green, orange. lime / cyan / pink are kept as names and fall back
@@ -321,6 +334,12 @@
   --cosgral-tile-green-shadow:
     inset 0 0 0 1px rgba(0, 74, 107, 0.12), inset 0 -2px 0 rgba(22, 163, 74, 0.55),
     0 16px 30px -22px rgba(22, 163, 74, 0.5);
+  --cosgral-tile-deep:
+    radial-gradient(85% 55% at 50% 118%, rgba(0, 99, 142, 0.34) 0%, rgba(0, 99, 142, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-deep-shadow:
+    inset 0 0 0 1px rgba(0, 74, 107, 0.16), inset 0 -2px 0 rgba(0, 99, 142, 0.55),
+    0 18px 36px -24px rgba(0, 74, 107, 0.45);
   --cosgral-tile-quiet:
     radial-gradient(90% 45% at 50% 115%, rgba(0, 99, 142, 0.12) 0%, rgba(0, 99, 142, 0) 70%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 40%);
