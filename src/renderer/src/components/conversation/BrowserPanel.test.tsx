@@ -1,9 +1,27 @@
+import type { BrowserControlSession, BrowserTab } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { expect, it, vi } from "vitest";
 import { BrowserPanel } from "./BrowserPanel";
 
-const tab = (id: string, title: string, extra: Record<string, unknown> = {}) =>
-  ({ id, title, url: `https://example.com/${id}`, loading: false, ...extra }) as never;
+const tab = (id: string, title: string): BrowserTab => ({
+  id,
+  title,
+  url: `https://example.com/${id}`,
+  loading: false,
+  ownerThreadId: null,
+  ownerBotId: null,
+});
+
+const actingSession: BrowserControlSession = {
+  id: "session-1",
+  threadId: "thread-1",
+  turnId: "turn-1",
+  callId: "call-1",
+  tabId: "a",
+  action: "click",
+  phase: "acting",
+  startedAt: "2026-11-20T10:00:00.000Z",
+};
 
 function setup(overrides: Partial<Parameters<typeof BrowserPanel>[0]> = {}) {
   const handlers = {
@@ -45,7 +63,9 @@ it("shows the tabs and reports a new tab, a reload and a submitted address", () 
   expect(handlers.onReload).toHaveBeenCalledOnce();
   fireEvent.input(screen.getByLabelText("Browser address"), { target: { value: "https://example.org" } });
   expect(handlers.onAddressInput).toHaveBeenCalledWith("https://example.org");
-  fireEvent.submit(screen.getByLabelText("Browser address").closest("form") as HTMLFormElement);
+  const form = screen.getByLabelText("Browser address").closest("form");
+  if (!form) throw new Error("The address bar is not inside a form.");
+  fireEvent.submit(form);
   expect(handlers.onAddressSubmit).toHaveBeenCalledOnce();
 });
 
@@ -62,7 +82,7 @@ it("says so when no page is open and names the agent that controls a tab", () =>
 
 it("marks a tab controlled by an agent in its name", () => {
   setup({
-    controlForTab: (item) => (item.id === "a" ? ({ phase: "acting", action: "click" } as never) : undefined),
+    controlForTab: (item) => (item.id === "a" ? actingSession : undefined),
     controllerNameForTab: () => "Chief",
     controlled: true,
   });
