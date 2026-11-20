@@ -50,6 +50,7 @@ import { ContextIndicator } from "./ContextIndicator";
 import { ChoiceCard } from "./ConversationPrompts";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
+import { AgentRecipientPicker } from "./conversation/AgentRecipientPicker";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
 import { AvatarEditor } from "./conversation/AvatarEditor";
 import { BrowserPanel } from "./conversation/BrowserPanel";
@@ -121,7 +122,6 @@ import { NewThreadButton, ThreadTabs } from "./ThreadTabs";
 import {
   AudioLines,
   Button,
-  Combobox,
   Crosshair,
   Dialog,
   Input,
@@ -139,8 +139,6 @@ import {
 import { VaultRequestCard } from "./VaultRequestCard";
 import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
 import { VoiceRecorder } from "./VoiceRecorder";
-
-type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
 
 interface ConversationProps {
   onThreadsChanged?: (list: ThreadList) => void;
@@ -321,10 +319,6 @@ export function Conversation(props: ConversationProps) {
     const id = currentDraft().replyToMessageId;
     return id ? props.messages.find((message) => message.id === id) : undefined;
   });
-  const agentPickerOptions = createMemo<AgentPickerOption[]>(() => [
-    { kind: "create" },
-    ...props.bots.map((bot) => ({ kind: "bot" as const, bot })),
-  ]);
   const activeRightPanel = createMemo<RightPanelMode>(() => {
     if (props.agentPickerOpen) return "none";
     const botId = props.bot?.id;
@@ -1671,75 +1665,15 @@ export function Conversation(props: ConversationProps) {
             </>
           }
         >
-          <div class="agent-picker-root no-drag">
-            <Combobox.Root<AgentPickerOption>
-              options={agentPickerOptions()}
-              open={true}
-              modal={false}
-              triggerMode="input"
-              closeOnSelection={false}
-              shouldFocusWrap={true}
-              defaultFilter={(option, inputValue) =>
-                option.kind === "create" ||
-                `${option.bot.name} ${option.bot.role}`.toLocaleLowerCase().includes(inputValue.toLocaleLowerCase())
-              }
-              optionValue={(option) => (option.kind === "create" ? "create" : option.bot.id)}
-              optionTextValue={(option) =>
-                option.kind === "create" ? t("Create new agent") : `${option.bot.name} ${option.bot.role}`
-              }
-              optionLabel={(option) => (option.kind === "create" ? t("Create new agent") : option.bot.name)}
-              optionDisabled={(option) => option.kind === "create" && props.creatingAgent}
-              onChange={(option) => {
-                if (!option) return;
-                if (option.kind === "create") props.onCreateAgent();
-                else props.onSelectAgent(option.bot.id);
-              }}
-              itemComponent={(itemProps) => {
-                const option = itemProps.item.rawValue;
-                return (
-                  <Combobox.Item
-                    item={itemProps.item}
-                    class={["agent-picker-option", { "agent-picker-create": option.kind === "create" }]}
-                  >
-                    <Show
-                      when={option.kind === "bot" ? option.bot : undefined}
-                      fallback={
-                        <span class="agent-picker-plus">
-                          <PlusIcon />
-                        </span>
-                      }
-                    >
-                      {(bot) => <AgentAvatar bot={bot()} />}
-                    </Show>
-                    <Combobox.ItemLabel>
-                      {option.kind === "create"
-                        ? props.creatingAgent
-                          ? t("Creating agent…")
-                          : t("Create new agent")
-                        : option.bot.name}
-                    </Combobox.ItemLabel>
-                  </Combobox.Item>
-                );
-              }}
-            >
-              <Combobox.Control class="agent-recipient-field">
-                <Combobox.Label>{t("To:")}</Combobox.Label>
-                <Combobox.Input
-                  as={Input}
-                  ref={(element) => (pickerInput = element)}
-                  aria-label={t("To:")}
-                  placeholder={t("Search or create agents")}
-                  maxlength={INPUT_LIMITS.agentName}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") props.onCloseAgentPicker();
-                  }}
-                />
-              </Combobox.Control>
-              <Combobox.Content class="agent-picker-menu" aria-hidden={props.agentPickerOpen ? undefined : "true"}>
-                <Combobox.Listbox />
-              </Combobox.Content>
-            </Combobox.Root>
-          </div>
+          <AgentRecipientPicker
+            bots={props.bots}
+            open={props.agentPickerOpen}
+            creating={props.creatingAgent}
+            onCreate={props.onCreateAgent}
+            onSelect={props.onSelectAgent}
+            onClose={props.onCloseAgentPicker}
+            inputRef={(element) => (pickerInput = element)}
+          />
         </Show>
       </header>
 
