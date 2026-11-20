@@ -26,6 +26,7 @@
   --openbot-danger: #a80b2f;
   --openbot-danger-soft: rgba(200, 16, 46, 0.1);
   --openbot-danger-strong: #8a0b2a;
+  --openbot-danger-hover: #70091f;
   /* #1a6e39 had 4.34:1 on the hover/focus row (#d0d8d8); this keeps 4.5:1 there and 7:1 on white. */
   --openbot-success: #17663a;
   --openbot-unread-surface: #1f5fbf;

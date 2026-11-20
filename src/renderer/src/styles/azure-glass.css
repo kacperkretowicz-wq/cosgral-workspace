@@ -316,12 +316,20 @@ body::after {
   }
 
   :where(.ui-button)[data-variant="danger"]:hover:not(:disabled),
-  .ui-button[data-variant="danger-solid"]:hover:not(:disabled) {
-    background-color: var(--openbot-danger-strong);
+  .ui-button[data-variant="danger-solid"]:hover:not(:disabled),
+  .bot-delete-actions button.ui-button[data-variant="danger-solid"]:hover:not(:disabled) {
+    background-color: var(--openbot-danger-hover);
     background-image: var(--openbot-pill-glossy-red);
     box-shadow: var(--openbot-pill-glossy-red-shadow);
     color: var(--openbot-contrast-white);
   }
+}
+
+/* Pressed: the hover colour, still white text (the base rule turns the label dark). */
+.ui-button[data-variant="danger-solid"]:active:not(:disabled) {
+  background-color: var(--openbot-danger-hover);
+  background-image: var(--openbot-pill-glossy-red);
+  color: var(--openbot-contrast-white);
 }
 
 :where(.ui-button)[data-variant="primary"]:disabled {

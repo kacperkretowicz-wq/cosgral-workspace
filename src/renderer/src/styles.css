@@ -149,6 +149,7 @@
   --openbot-danger: var(--cosgral-danger-text);
   --openbot-danger-soft: rgba(228, 125, 117, 0.13);
   --openbot-danger-strong: var(--cosgral-danger);
+  --openbot-danger-hover: var(--cosgral-danger-hover);
   --openbot-file-blue: #74b9ff;
   --openbot-file-blue-soft: rgba(116, 185, 255, 0.14);
   --openbot-file-yellow: var(--openbot-warning);

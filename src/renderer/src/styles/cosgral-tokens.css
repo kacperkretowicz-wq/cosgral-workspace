@@ -35,6 +35,7 @@
   --cosgral-accent-soft: rgba(26, 92, 240, 0.18);
   --cosgral-accent-strong: rgba(55, 129, 252, 0.42);
   --cosgral-danger: #e01543;
+  --cosgral-danger-hover: #bd0f38; /* hovered solid danger: darker, white text 6.4:1 */
   --cosgral-danger-text: #ff6f88; /* cool red text: 5.3:1 on the lightest dark control */
   --cosgral-warning: #ff9412;
   --cosgral-success: #31cf76;
