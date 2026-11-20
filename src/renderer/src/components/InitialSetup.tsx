@@ -228,9 +228,7 @@ export function InitialSetup(props: InitialSetupProps) {
 
   const description = () => {
     if (props.reviewing) {
-      return props.platform === "darwin"
-        ? t("Choose the default provider for local agents and review macOS permissions.")
-        : t("Default provider for local agents, language, notifications and voice.");
+      return t("Language, notifications, providers, appearance, voice and privacy.");
     }
     if (route() === "local") {
       return t("Agents, conversations, and files stay on this computer.");

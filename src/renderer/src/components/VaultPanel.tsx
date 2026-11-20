@@ -236,7 +236,7 @@ export function VaultForm(props: {
       </Show>
       <Show when={kind() === "apiKey" || kind() === "totp"}>
         <label>
-          {kind() === "apiKey" ? "Variable name" : "Issuer"}
+          {kind() === "apiKey" ? t("Variable name") : t("Issuer")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <Show when={kind() === "totp"}>

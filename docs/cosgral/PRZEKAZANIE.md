@@ -67,6 +67,9 @@
     `docs/cosgral/PLAN-KOLORY.md` i strona-podgląd (artefakt „Paleta Azure Glass”).
 16. **Typografia i napisy (wiersz 20.11 (2)):** skala, trzy grubości, etykiety bez wersalików, daty w języku
     aplikacji (`appLocale()`), polska odmiana liczebników (`tn()`), dotłumaczone podsumowania kart i powody akcji.
+17. **Przegląd całości (wiersz 20.11 (3)):** skany (historyjki, układ w wąskich oknach, napisy na sztywno), poprawki
+    nawigacji ustawień, notatek stron, pigułek i przycisków drugorzędnych; 17 literałów przeniesionych do `t()`.
+    Skrypty audytu: patrz `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (sekcja „Audyt”).
 
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 

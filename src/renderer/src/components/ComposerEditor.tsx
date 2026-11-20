@@ -537,9 +537,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     </strong>
                     <span>
                       {option.type === "bot"
-                        ? "Agent"
+                        ? t("Agent")
                         : option.type === "attachment"
-                          ? "File"
+                          ? t("File")
                           : option.candidate.detail || (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
                     </span>
                   </Listbox.Item>

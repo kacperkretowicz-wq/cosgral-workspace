@@ -1873,8 +1873,8 @@ export function Conversation(props: ConversationProps) {
               <div>
                 <strong>
                   {props.agentStatus.phase === "starting" || props.agentStatus.phase === "restarting"
-                    ? "Connecting to agent CLIs…"
-                    : "Agent CLI setup required"}
+                    ? t("Connecting to agent CLIs…")
+                    : t("Agent CLI setup required")}
                 </strong>
                 <p>
                   {props.agentStatus.message ??

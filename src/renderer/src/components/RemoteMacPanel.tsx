@@ -212,7 +212,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
         <div class="remote-desktop-heading">
           <span class={`remote-desktop-status remote-desktop-status-${viewerState()}`} aria-hidden="true" />
           <div>
-            <strong>Remote desktop</strong>
+            <strong>{t("Remote desktop")}</strong>
             <span>{props.server?.name ?? t("No remote host")}</span>
           </div>
         </div>
@@ -248,7 +248,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
 
       <div class="remote-desktop-shared-note">
         <SharedIcon />
-        <span>Shared by all agents on this host</span>
+        <span>{t("Shared by all agents on this host")}</span>
       </div>
 
       <div class="remote-desktop-stage">
@@ -270,12 +270,12 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
           <div class="remote-desktop-overlay" role="status">
             <span class="remote-desktop-spinner" />
             <strong>{props.session?.message ?? t("Connecting to the Mac…")}</strong>
-            <span>The secure tunnel can take a few seconds.</span>
+            <span>{t("The secure tunnel can take a few seconds.")}</span>
           </div>
         </Show>
         <Show when={props.session?.errorCode || viewerState() === "error"}>
           <div class="remote-desktop-overlay remote-desktop-error" role="alert">
-            <strong>Could not open the desktop</strong>
+            <strong>{t("Could not open the desktop")}</strong>
             <span>{viewerError() ?? props.session?.message}</span>
             <Button type="button" onClick={() => void retry()}>
               Try again
@@ -289,8 +289,8 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             <span class="remote-desktop-empty-mark">
               <MonitorIcon />
             </span>
-            <strong>Desktop disconnected</strong>
-            <span>Reconnect when you want to view or control this Mac again.</span>
+            <strong>{t("Desktop disconnected")}</strong>
+            <span>{t("Reconnect when you want to view or control this Mac again.")}</span>
             <Button type="button" onClick={() => void connect(props.server, props.onConnect, true)}>
               Connect
             </Button>

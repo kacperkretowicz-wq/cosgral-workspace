@@ -1296,7 +1296,7 @@ export function App() {
       }));
     } catch (error) {
       if (request !== directConversationRequest) return;
-      setDirectConversationError(error instanceof Error ? error.message : "The messages could not load.");
+      setDirectConversationError(error instanceof Error ? error.message : t("The messages could not load."));
     } finally {
       if (request === directConversationRequest) setDirectConversationLoading(false);
     }

@@ -14,7 +14,7 @@ export function AttachmentCards(props: {
   const [tooltip, setTooltip] = createSignal<{ anchor: HTMLElement; content: string } | null>(null);
 
   const openTooltip = (anchor: HTMLElement) => {
-    setTooltip({ anchor, content: "Open file" });
+    setTooltip({ anchor, content: t("Open file") });
   };
   const closeTooltip = (anchor: HTMLElement) => {
     if (tooltip()?.anchor === anchor) setTooltip(null);

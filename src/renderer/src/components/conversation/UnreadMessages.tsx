@@ -20,7 +20,7 @@ export function UnreadMessagesBanner(props: {
         {label()}
       </Button>
       <Button class="unread-messages-mark-read" type="button" disabled={props.busy} onClick={props.onMarkRead}>
-        {props.busy ? "Marking…" : "Mark as read"}
+        {props.busy ? t("Marking…") : t("Mark as read")}
       </Button>
     </div>
   );

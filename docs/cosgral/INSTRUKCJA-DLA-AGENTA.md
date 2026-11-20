@@ -258,3 +258,17 @@ generowanych stworków (`blobatar.ts`) są dozwolone, bo to granica integracji.
 2. Maszyna z czystym Windows do próby instalatora.
 3. Scalenie tej gałęzi (3.3).
 4. Klucze API i limity; Discord, instalacja skilla z linku GitHub, węzły LLM i Asset w przepływach (rada: na razie nie).
+
+## Audyt interfejsu (jak powtórzyć)
+
+Storybook musi działać (`bun run storybook --ci`). Trzy kontrole, które znalazły realne błędy 20.11:
+
+1. **Brakujące tłumaczenia i błędy:** otwórz każdą historyjkę z `http://localhost:6006/index.json` w Playwright, ustaw
+   `setLanguage("pl")` (import `i18n.ts` z zasobów strony) i zbieraj `console` (`[i18n] Missing UI translation`, błędy)
+   oraz `document.documentElement.scrollWidth > innerWidth`.
+2. **Napisy na sztywno (nie wpadają w kontrolę 1, bo nie przechodzą przez `t()`):** przeszukaj `.tsx` wyrażeniem na
+   tekst JSX/atrybuty/ternarki z wielką literą bez `t(`; sprawdź w kontekście, czy mapy etykiet są tłumaczone przy użyciu.
+3. **Układ w wąskich oknach:** ekrany aplikacji (`app--playground`) przy 1100 i 900 px; szukaj elementów poza
+   widokiem bez przewijanego rodzica i tekstu ściętego bez wielokropka (pomiń `.sr-only`).
+
+Uwaga: `sbtest.log` z poprzedniego przebiegu potrafi oszukać monitor „czekaj na `sb exit`”; sprawdzaj czas pliku.

@@ -176,7 +176,7 @@ export function ChannelWorkspace(props: {
         : await api.actOnTask({ taskId, action: "resume" });
       if (task.channelId === selected()) applyTask(task);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Task action failed");
+      setError(e instanceof Error ? e.message : t("Task action failed"));
     }
   }
   return (

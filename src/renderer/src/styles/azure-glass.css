@@ -1396,6 +1396,8 @@ body [role="tooltip"] {
 .work-page > .ui-text[role="alert"] {
   display: block;
   width: min(100% - 80px, 980px);
+  max-width: 980px;
+  margin-inline: auto;
   border-radius: var(--openbot-radius-lg);
   background: var(--openbot-field-glass);
   box-shadow: var(--openbot-field-edge);
@@ -1625,4 +1627,55 @@ body [role="tooltip"] {
   border-radius: var(--openbot-radius-pill);
   background: radial-gradient(circle, currentColor 0 28%, transparent 34%);
   content: "";
+}
+
+/* Settings navigation: the chip and the label are two columns with a gap (they used to touch). ------------------- */
+
+.settings-dialog-nav-item {
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: var(--openbot-space-3);
+}
+
+/* A warning on a page is a pill-family note: dark glass, a faint amber fill and a thin ring, not a bright outline. */
+
+.work-page .work-page-note {
+  border-radius: 18px;
+  background: var(--openbot-status-amber-fill);
+  box-shadow:
+    inset 0 0 0 1px var(--openbot-status-amber-ring),
+    inset 0 1px 0 var(--openbot-shadow-ring);
+}
+
+/* "Unavailable" next to a section in a section list is a small neutral pill. */
+
+.work-page-nav-item small {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-status-neutral-fill);
+  box-shadow: inset 0 0 0 1px var(--openbot-status-neutral-ring);
+  padding: 0 var(--openbot-space-2);
+  font-size: var(--openbot-text-xs);
+  line-height: 18px;
+}
+
+/* Secondary buttons are glass pills like the glossy ones (reference: "Color gradient" pills), only quiet. -------- */
+
+:where(.ui-button)[data-variant="secondary"]:not(.approval-button-primary),
+.w2-library button:not(.ui-button, [class]),
+.w2-panel button:not(.ui-button, [class]),
+.agent-settings-content button:not(.ui-button, [class]),
+.cosgral-form button:not(.ui-button, [class]) {
+  border-color: transparent;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow:
+    inset 0 0 0 1px var(--openbot-border-strong),
+    inset 0 1px 0 var(--openbot-shadow-ring);
+}
+
+:where(.ui-button)[data-variant="secondary"]:not(.approval-button-primary):hover:not(:disabled),
+.w2-library button:not(.ui-button, [class]):hover:not(:disabled),
+.w2-panel button:not(.ui-button, [class]):hover:not(:disabled),
+.agent-settings-content button:not(.ui-button, [class]):hover:not(:disabled),
+.cosgral-form button:not(.ui-button, [class]):hover:not(:disabled) {
+  background: var(--openbot-bg-control-hover);
 }

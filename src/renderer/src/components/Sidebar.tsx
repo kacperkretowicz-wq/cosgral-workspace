@@ -888,18 +888,18 @@ export function Sidebar(props: SidebarProps) {
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
                           {item.kind === "plan"
-                            ? "Plan"
+                            ? t("Plan")
                             : item.kind === "question"
-                              ? "Question"
+                              ? t("Question")
                               : item.kind === "takeover"
-                                ? "Browser"
+                                ? t("Browser")
                                 : item.kind === "vault"
-                                  ? "Vault"
-                                  : "Approval"}
+                                  ? t("Vault")
+                                  : t("Approval")}
                         </Badge>
                       </span>
                       <Show when={item.threadTitle}>
-                        <span class="bot-row-preview">Thread: {item.threadTitle}</span>
+                        <span class="bot-row-preview">{t("Thread: {title}", { title: item.threadTitle ?? "" })}</span>
                       </Show>
                       <span class="bot-row-preview">{item.summary}</span>
                     </span>

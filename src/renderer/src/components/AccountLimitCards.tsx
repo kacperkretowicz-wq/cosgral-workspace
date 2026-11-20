@@ -55,7 +55,7 @@ export function AccountLimitReachedCard(props: {
       </Show>
       <Show when={reset()}>
         <Text as="p" tone="secondary">
-          {props.view.resetsAtAssumed ? "Assumed reset at" : "Resets at"} {reset()}
+          {props.view.resetsAtAssumed ? t("Assumed reset at") : t("Resets at")} {reset()}
         </Text>
       </Show>
       <Show when={!reset()}>

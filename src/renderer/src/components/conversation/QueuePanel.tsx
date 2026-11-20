@@ -129,10 +129,13 @@ export function QueuePanel(props: QueuePanelProps) {
     props.onReorder(ids);
   }
 
-  const steerTooltip = () => (props.steerReason ? `Steer unavailable: ${props.steerReason}` : "Steer message");
+  const steerTooltip = () =>
+    props.steerReason ? t("Steer unavailable: {reason}", { reason: props.steerReason }) : t("Steer message");
 
   function messagePreview(delivery: QueueDelivery): string {
-    return delivery.text.trim() || delivery.attachments.map((attachment) => attachment.name).join(", ") || "Attachment";
+    return (
+      delivery.text.trim() || delivery.attachments.map((attachment) => attachment.name).join(", ") || t("Attachment")
+    );
   }
 
   function openActionTooltip(anchor: HTMLElement, content: string) {
