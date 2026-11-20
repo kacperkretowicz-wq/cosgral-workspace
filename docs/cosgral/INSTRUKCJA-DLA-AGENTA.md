@@ -280,3 +280,5 @@ Uwaga: `sbtest.log` z poprzedniego przebiegu potrafi oszukać monitor „czekaj 
    Linuksie nie mają z czym porównać, a po przeróbce Azure Glass wszystkie wzorce są nieaktualne. Dla Linuksa wzorce `*-chromium-linux.png` są wygenerowane 20.11 (`vitest --config` z `executablePath: /opt/pw-browsers/chromium`).
    Na Windowsie i macOS: `bun run test:visual -u`, obejrzeć zmiany i zatwierdzić nowe pliki. Test dymny Electrona (`test:browser`) działa na
    Linuksie tylko jako root z `xvfb-run node_modules/.bin/electron --no-sandbox --disable-gpu <bundle>`; przeszedł 20.11.
+6. **Krój:** Jost Variable (`styles/fonts.css`, pliki w `assets/fonts`). Wagi tylko przez `--openbot-weight-*` (380 / 470 / 570),
+   rozmiary przez `--openbot-text-*`. Testy porównujące zrzuty muszą poczekać na krój (`tests/visual/setup.ts`).
