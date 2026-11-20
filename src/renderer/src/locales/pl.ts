@@ -2889,4 +2889,7 @@ export const pl = {
   "Updating usage…": "Aktualizuję zużycie…",
   "Weekly usage": "Zużycie tygodniowe",
   "Signing out…": "Wylogowuję…",
+  "Could not load the pinned pages.": "Nie udało się wczytać przypiętych stron.",
+  "Could not save the pin. Try again from the page menu.":
+    "Nie udało się zapisać przypięcia. Ponów akcję z menu strony.",
 } as const;

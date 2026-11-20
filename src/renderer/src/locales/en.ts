@@ -2886,4 +2886,6 @@ export const en = {
   "Updating usage…": "Updating usage…",
   "Weekly usage": "Weekly usage",
   "Signing out…": "Signing out…",
+  "Could not load the pinned pages.": "Could not load the pinned pages.",
+  "Could not save the pin. Try again from the page menu.": "Could not save the pin. Try again from the page menu.",
 } as const;
