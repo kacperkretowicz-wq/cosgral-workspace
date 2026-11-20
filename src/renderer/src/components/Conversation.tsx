@@ -63,7 +63,6 @@ import {
   BROWSER_PANEL_MAX,
   BROWSER_PANEL_MIN,
   BROWSER_PANEL_STORAGE_KEY,
-  CONVERSATION_PANEL_MIN,
   type ComposerDraft,
   type ConversationProps,
   EMPTY_DRAFT,
@@ -73,11 +72,13 @@ import {
   SETTINGS_PANEL_DEFAULT,
   SETTINGS_PANEL_MAX,
   SETTINGS_PANEL_MIN,
+  SETTINGS_PANEL_SIZES,
   SETTINGS_PANEL_STORAGE_KEY,
 } from "./conversation/model";
 import { QueuePanel } from "./conversation/QueuePanel";
 import { ReasoningSelect } from "./conversation/ReasoningSelect";
 import { MessageSelectionActions } from "./conversation/SelectionActions";
+import { SidePanelResizer } from "./conversation/SidePanelResizer";
 import {
   scrollToUnreadBoundary,
   UnreadMessagesBanner,
@@ -88,7 +89,7 @@ import { EyesBar } from "./EyesIndicator";
 import { FallbackModelBadge } from "./FallbackModelBadge";
 import { LibraryPanel } from "./LibraryPanel";
 import { McpSettings } from "./McpSettings";
-import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
+import { readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { providerError } from "./provider-error";
@@ -2387,23 +2388,11 @@ export function Conversation(props: ConversationProps) {
 
       <Show when={filesOpen() && props.bot}>
         <aside id="files-side-panel" class="chat-files-panel" aria-label={t("Files")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
+          <SidePanelResizer
             controls="files-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
+            width={settingsPanelWidth()}
+            sizes={SETTINGS_PANEL_SIZES}
+            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />
@@ -2425,23 +2414,11 @@ export function Conversation(props: ConversationProps) {
 
       <Show when={voiceOpen() && props.bot}>
         <aside id="voice-side-panel" class="chat-voice-panel" aria-label={t("Voice")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
+          <SidePanelResizer
             controls="voice-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
+            width={settingsPanelWidth()}
+            sizes={SETTINGS_PANEL_SIZES}
+            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />
@@ -2468,23 +2445,11 @@ export function Conversation(props: ConversationProps) {
 
       <Show when={settingsOpen() && props.bot}>
         <aside id="settings-side-panel" class="agent-settings-panel" aria-label={t("Agent settings")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
+          <SidePanelResizer
             controls="settings-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
+            width={settingsPanelWidth()}
+            sizes={SETTINGS_PANEL_SIZES}
+            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />

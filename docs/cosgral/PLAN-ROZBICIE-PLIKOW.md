@@ -33,6 +33,8 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 
 - Interfejsy propsów: `ConversationProps` do `conversation/model.ts`, `SidebarProps` i `NeedsYouSidebarItem` do `sidebar/types.ts` (`Sidebar.tsx` nadal je reeksportuje). `Conversation.tsx` 2750 → 2669, `Sidebar.tsx` 1327 → 1256 linii.
 
+- `conversation/SidePanelResizer.tsx` z testami (5): uchwyt zmiany szerokości bocznych paneli, który był skopiowany cztery razy (przeglądarka, ustawienia, pliki, głos) z tym samym liczeniem maksimum (`Conversation.tsx` 2669 → 2634 linii).
+
 ## Zasady każdego kroku
 
 1. **Jeden obszar na commit**, od najmniej splątanego: Panel ustawień agenta, Panel ekranu, Nagłówek, Pole pisania,

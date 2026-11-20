@@ -3,7 +3,6 @@ import type { BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
 import { t } from "../../i18n";
 import { ChatRightPanelTabs, type ChatSidePanelTarget } from "../ChatSidePanelLauncher";
-import { PanelResizer } from "../PanelResizer";
 import { Button, Input, Tabs } from "../ui";
 import {
   BrowserBackIcon,
@@ -13,13 +12,8 @@ import {
   CloseIcon,
   PlusIcon,
 } from "./ConversationIcons";
-import {
-  BROWSER_PANEL_DEFAULT,
-  BROWSER_PANEL_MAX,
-  BROWSER_PANEL_MIN,
-  browserActionLabel,
-  CONVERSATION_PANEL_MIN,
-} from "./model";
+import { BROWSER_PANEL_SIZES, browserActionLabel } from "./model";
+import { SidePanelResizer } from "./SidePanelResizer";
 
 type BrowserControlSession = BrowserControlState["sessions"][number];
 
@@ -59,17 +53,11 @@ export function BrowserPanel(props: {
       onChange={props.onActivateTab}
       activationMode="automatic"
     >
-      <PanelResizer
-        class="right-panel-resizer"
-        label={t("Resize right panel")}
+      <SidePanelResizer
         controls="browser-side-panel"
-        direction="right"
-        value={props.width}
-        defaultValue={BROWSER_PANEL_DEFAULT}
-        min={BROWSER_PANEL_MIN}
-        max={() =>
-          Math.min(BROWSER_PANEL_MAX, Math.max(BROWSER_PANEL_MIN, props.availableWidth() - CONVERSATION_PANEL_MIN))
-        }
+        width={props.width}
+        sizes={BROWSER_PANEL_SIZES}
+        availableWidth={props.availableWidth}
         onResize={props.onResize}
         onResizeEnd={props.onResizeEnd}
       />

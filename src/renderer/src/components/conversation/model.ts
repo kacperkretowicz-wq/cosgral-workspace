@@ -61,7 +61,21 @@ export const BROWSER_PANEL_STORAGE_KEY = "openbot:browser-panel-width";
 export const BROWSER_PANEL_DEFAULT = 380;
 export const BROWSER_PANEL_MIN = 220;
 export const BROWSER_PANEL_MAX = 1600;
+
+/** The same for the browser side panel. */
+export const BROWSER_PANEL_SIZES = {
+  default: BROWSER_PANEL_DEFAULT,
+  min: BROWSER_PANEL_MIN,
+  max: BROWSER_PANEL_MAX,
+} as const;
 export const CONVERSATION_PANEL_MIN = 96;
+
+/** Default, smallest and largest width of the settings, files and voice side panels. */
+export const SETTINGS_PANEL_SIZES = {
+  default: SETTINGS_PANEL_DEFAULT,
+  min: SETTINGS_PANEL_MIN,
+  max: SETTINGS_PANEL_MAX,
+} as const;
 
 export function browserActionLabel(action: BrowserControlAction): string {
   const labels: Record<BrowserControlAction, string> = {
