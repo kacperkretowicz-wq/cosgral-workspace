@@ -52,13 +52,10 @@ import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
 import { AvatarEditor } from "./conversation/AvatarEditor";
+import { BrowserPanel } from "./conversation/BrowserPanel";
 import { ChatSearch } from "./conversation/ChatSearch";
 import {
   BackIcon,
-  BrowserBackIcon,
-  BrowserControlIcon,
-  BrowserForwardIcon,
-  BrowserReloadIcon,
   CloseIcon,
   ComputerIcon,
   PlusIcon,
@@ -79,7 +76,6 @@ import {
   BROWSER_PANEL_MAX,
   BROWSER_PANEL_MIN,
   BROWSER_PANEL_STORAGE_KEY,
-  browserActionLabel,
   CONVERSATION_PANEL_MIN,
   type ComposerDraft,
   EMPTY_DRAFT,
@@ -137,7 +133,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Switch,
-  Tabs,
   Text,
   Textarea,
 } from "./ui";
@@ -2504,175 +2499,29 @@ export function Conversation(props: ConversationProps) {
       </Dialog.Root>
 
       <Show when={screenOpen()}>
-        <Tabs.Root
-          as="aside"
-          id="browser-side-panel"
-          class={["browser-panel", { "browser-panel-controlled": Boolean(activeBrowserControl()) }]}
-          aria-label={t("Browser")}
-          value={activeBrowserTab()?.id ?? "__empty"}
-          onChange={props.onActivateBrowserTab}
-          activationMode="automatic"
-        >
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
-            controls="browser-side-panel"
-            direction="right"
-            value={browserPanelWidth()}
-            defaultValue={BROWSER_PANEL_DEFAULT}
-            min={BROWSER_PANEL_MIN}
-            max={() =>
-              Math.min(
-                BROWSER_PANEL_MAX,
-                Math.max(
-                  BROWSER_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
-            onResize={setBrowserPanelWidth}
-            onResizeEnd={(value) => savePanelWidth(BROWSER_PANEL_STORAGE_KEY, value)}
-          />
-          <ChatRightPanelTabs active="browser" onSelect={openChatSidePanel} />
-          <header class="browser-panel-header">
-            <div class="browser-tabs">
-              <Tabs.List class="browser-tab-strip" aria-label={t("Browser tabs")}>
-                <For each={browserTabs()}>
-                  {(tab) => {
-                    const control = () => browserControlForTab(tab);
-                    const controller = () => browserControllerForTab(tab);
-                    const title = () => (tab.loading ? t("Loading…") : tab.title || tab.url);
-                    return (
-                      <div
-                        role="presentation"
-                        class={["browser-tab-wrap", { "browser-tab-controlled": Boolean(control()) }]}
-                      >
-                        <Tabs.Trigger
-                          as={Button}
-                          value={tab.id}
-                          aria-label={
-                            control()
-                              ? t("{title}, controlled by {name}", {
-                                  title: title(),
-                                  name: controller()?.name ?? t("Agent"),
-                                })
-                              : title()
-                          }
-                          aria-description={t("Press Delete or Control/Command W to close")}
-                          class="browser-tab"
-                          onPointerDown={(event) => {
-                            if (event.button !== 1) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void closeBrowserTab(tab.id);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key !== "Delete") return;
-                            event.preventDefault();
-                            void closeBrowserTab(tab.id);
-                          }}
-                        >
-                          <Show when={control()}>
-                            {(session) => (
-                              <span
-                                class={[
-                                  "browser-tab-control",
-                                  {
-                                    "browser-tab-control-acting": session().phase === "acting",
-                                  },
-                                ]}
-                                title={`${controller()?.name ?? t("Agent")}: ${browserActionLabel(session().action)}`}
-                              >
-                                <BrowserControlIcon />
-                              </span>
-                            )}
-                          </Show>
-                          <span class="browser-tab-title" data-loading={tab.loading ? "true" : undefined}>
-                            <Show when={tab.loading} fallback={tab.title || tab.url}>
-                              <span class="browser-tab-loading cosgral-skeleton" aria-hidden="true" />
-                              <span class="sr-only">{t("Loading…")}</span>
-                            </Show>
-                          </span>
-                          <span
-                            class="browser-tab-close"
-                            aria-hidden="true"
-                            title={t("Close {title}", { title: tab.title || t("Browser tab") })}
-                            onPointerDown={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              if (event.button === 1) void closeBrowserTab(tab.id);
-                            }}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              void closeBrowserTab(tab.id);
-                            }}
-                          >
-                            <CloseIcon />
-                          </span>
-                        </Tabs.Trigger>
-                      </div>
-                    );
-                  }}
-                </For>
-              </Tabs.List>
-              <Button
-                type="button"
-                class="browser-new-tab"
-                aria-label={t("New browser tab")}
-                onClick={() => {
-                  setBrowserAddress("https://www.google.com");
-                  void openBrowserAddress("https://www.google.com");
-                }}
-              >
-                <PlusIcon />
-              </Button>
-            </div>
-          </header>
-          <Tabs.Content forceMount value={activeBrowserTab()?.id ?? "__empty"} class="browser-tab-panel">
-            <div class="browser-toolbar">
-              <Button type="button" aria-label={t("Go back")} class="browser-toolbar-button" disabled>
-                <BrowserBackIcon />
-              </Button>
-              <Button type="button" aria-label={t("Go forward")} class="browser-toolbar-button" disabled>
-                <BrowserForwardIcon />
-              </Button>
-              <Button
-                type="button"
-                aria-label={t("Reload page")}
-                class="browser-toolbar-button"
-                onClick={() => void openBrowserAddress()}
-              >
-                <BrowserReloadIcon />
-              </Button>
-              <form
-                class="browser-address-bar"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void openBrowserAddress();
-                }}
-              >
-                <Input
-                  value={browserAddress()}
-                  aria-label={t("Browser address")}
-                  maxlength={INPUT_LIMITS.browserUrl}
-                  onInput={(event) => setBrowserAddress(event.currentTarget.value)}
-                />
-              </form>
-              <Button type="button" class="browser-toolbar-button" aria-label={t("Browser menu")}>
-                <span class="browser-menu-dots">•••</span>
-              </Button>
-            </div>
-            <div class="browser-surface" ref={(element) => (browserSurface = element)}>
-              <Show when={browserTabs().length === 0}>
-                <div class="browser-empty-state">
-                  <strong>{t("Open a page")}</strong>
-                  <span>{t("The agent can browse here while it works.")}</span>
-                </div>
-              </Show>
-            </div>
-          </Tabs.Content>
-        </Tabs.Root>
+        <BrowserPanel
+          tabs={browserTabs()}
+          activeTabId={activeBrowserTab()?.id}
+          controlled={Boolean(activeBrowserControl())}
+          controlForTab={browserControlForTab}
+          controllerNameForTab={(tab) => browserControllerForTab(tab)?.name}
+          address={browserAddress()}
+          width={browserPanelWidth()}
+          availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
+          onActivateTab={props.onActivateBrowserTab}
+          onCloseTab={(tabId) => void closeBrowserTab(tabId)}
+          onNewTab={() => {
+            setBrowserAddress("https://www.google.com");
+            void openBrowserAddress("https://www.google.com");
+          }}
+          onReload={() => void openBrowserAddress()}
+          onAddressInput={setBrowserAddress}
+          onAddressSubmit={() => void openBrowserAddress()}
+          onResize={setBrowserPanelWidth}
+          onResizeEnd={(value) => savePanelWidth(BROWSER_PANEL_STORAGE_KEY, value)}
+          onOpenSidePanel={openChatSidePanel}
+          surfaceRef={(element) => (browserSurface = element)}
+        />
       </Show>
 
       <Show when={remoteDesktopOpen()}>
