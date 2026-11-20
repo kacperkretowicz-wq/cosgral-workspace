@@ -25,6 +25,8 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 - `conversation/AgentRecipientPicker.tsx` z testami: pole „Do:” (wybór adresata) z nagłówka rozmowy (2829 → 2763 linii).
 - `conversation/ReasoningSelect.tsx` z testami: wspólny wybór poziomu rozumowania, który był skopiowany w nagłówku i w panelu ustawień (2763 → 2750 linii).
 
+- `sidebar/SidebarIcons.tsx` i `sidebar/SidebarAgentIndicator.tsx` (z testami wskaźnika): ikony i znak stanu agenta z `Sidebar.tsx` (1468 → 1327 linii).
+
 ## Zasady każdego kroku
 
 1. **Jeden obszar na commit**, od najmniej splątanego: Panel ustawień agenta, Panel ekranu, Nagłówek, Pole pisania,

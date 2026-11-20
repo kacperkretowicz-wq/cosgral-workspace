@@ -44,8 +44,22 @@ import {
   type SidebarFolderActions,
 } from "./SidebarFolders";
 import { SpacesRail } from "./Spaces";
+import { SidebarAgentIndicator } from "./sidebar/SidebarAgentIndicator";
+import {
+  DeleteIcon,
+  EditIcon,
+  FeedbackIcon,
+  FilterIcon,
+  LogoutIcon,
+  MessageIcon,
+  PermissionsIcon,
+  PlusIcon,
+  SearchIcon,
+  SidebarToggleIcon,
+  UpdateIcon,
+  UsageIcon,
+} from "./sidebar/SidebarIcons";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
-import { TypingDots } from "./TypingDots";
 import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Text } from "./ui";
 
 export interface NeedsYouSidebarItem {
@@ -115,163 +129,8 @@ interface SidebarProps {
 
 export type { SidebarAgentState };
 
-function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
-  const unreadCount = () => (props.state.kind === "unread" ? props.state.count : 0);
-  return (
-    <span class={`bot-row-agent-status bot-row-agent-status-${props.state.kind}`} aria-hidden="true">
-      <Show when={props.state.kind === "working"}>
-        <TypingDots class="bot-row-thinking-dots" />
-      </Show>
-      <Show when={props.state.kind === "limited"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Limit")}</title>
-          <circle cx="6" cy="6" r="3.8" />
-          <path d="M6 4.1V6l1.3.8" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "error"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Error")}</title>
-          <path d="M6 3.2v3.4M6 8.6v.2" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "responded"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Responded")}</title>
-          <path d="m3 6.2 1.8 1.8L9 3.8" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "needs-you"}>
-        <span class="bot-row-needs-you-dot" title={t("Needs you")} />
-      </Show>
-      <Show when={props.state.kind === "unread"}>
-        <span>{unreadCount()}</span>
-      </Show>
-    </span>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current">
-      <circle cx="8.5" cy="8.5" r="5.5" stroke-width="1.6" />
-      <path d="m12.7 12.7 3.6 3.6" stroke-width="1.6" stroke-linecap="round" />
-    </svg>
-  );
-}
-
 /** The preview the bot store gives an agent before its first message. */
 const NO_MESSAGES_PREVIEW = "No messages yet";
-
-function FilterIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current">
-      <path d="M3.5 5.5h13M6 10h8M8.5 14.5h3" stroke-width="1.6" stroke-linecap="round" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-[18px] fill-none stroke-current">
-      <path d="M10 4v12M4 10h12" stroke-width="1.5" stroke-linecap="round" />
-    </svg>
-  );
-}
-
-export function SidebarToggleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="sidebar-toggle-icon">
-      <rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2.25" />
-      <path d="M7.25 3.75v12.5" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="bot-context-icon size-4 fill-none stroke-current">
-      <path d="m12.6 4.2 3.2 3.2-8.7 8.7-3.8.6.6-3.8 8.7-8.7Z" stroke-width="1.4" />
-      <path d="m10.9 5.9 3.2 3.2" stroke-width="1.4" />
-    </svg>
-  );
-}
-
-function DeleteIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      class="bot-context-icon bot-context-danger-icon size-4 fill-none stroke-current"
-    >
-      <path
-        d="M4.5 6.2h11M8 3.8h4M6.2 6.2l.7 9.3h6.2l.7-9.3M8.4 8.7v4.5M11.6 8.7v4.5"
-        stroke-width="1.35"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UsageIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M4.2 13.9a6.5 6.5 0 1 1 11.6 0" />
-      <path d="m10 10 3.1-2.3" />
-      <circle cx="10" cy="10" r="1" class="account-menu-icon-fill" />
-    </svg>
-  );
-}
-
-function FeedbackIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M4 5.2h12v8.6H9l-3.5 2.4v-2.4H4V5.2Z" />
-      <path d="M7 8.2h6M7 10.8h4" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M3.8 4.8h12.4v10.4H3.8V4.8Z" />
-      <path d="m4.5 5.6 5.5 4.2 5.5-4.2" />
-    </svg>
-  );
-}
-
-function UpdateIcon(props: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      class={["account-menu-icon", { "account-menu-icon-spinning": props.active }]}
-    >
-      <path d="M15.4 6.8A6 6 0 1 0 16 10" />
-      <path d="M15.4 3.8v3h-3" />
-    </svg>
-  );
-}
-
-function PermissionsIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M10 2.9 15.5 5v4.6c0 3.6-2.2 6.3-5.5 7.5-3.3-1.2-5.5-3.9-5.5-7.5V5L10 2.9Z" />
-      <path d="m7.6 9.9 1.5 1.5 3.3-3.4" />
-    </svg>
-  );
-}
-
-function LogoutIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M8.2 4.2H5.5v11.6h2.7" />
-      <path d="M11.6 6.6 15 10l-3.4 3.4M7.8 10H15" />
-    </svg>
-  );
-}
 
 export function Sidebar(props: SidebarProps) {
   const [showHidden, setShowHidden] = createSignal(false);
