@@ -1705,8 +1705,10 @@ body [role="tooltip"] {
   line-height: 18px;
 }
 
-/* Secondary buttons are glass pills like the glossy ones (reference: "Color gradient" pills), only quiet. -------- */
+/* Secondary buttons on pages and in dialogs are glass pills like the glossy ones (reference: "Color gradient" pills),
+ * only quiet. Rows, rails and the sidebar keep their own shapes. ------------------------------------------------- */
 
+:is(.work-page, .settings-modal, .remote-dialog, .agent-settings-content, .channel-view, .w2-panel, .cosgral-form)
 :where(.ui-button)[data-variant="secondary"]:not(.approval-button-primary),
 .w2-library button:not(.ui-button, [class]),
 .w2-panel button:not(.ui-button, [class]),
@@ -1720,7 +1722,8 @@ body [role="tooltip"] {
     inset 0 1px 0 var(--openbot-shadow-ring);
 }
 
-:where(.ui-button)[data-variant="secondary"]:not(.approval-button-primary):hover:not(:disabled),
+:is(.work-page, .settings-modal, .remote-dialog, .agent-settings-content, .channel-view, .w2-panel, .cosgral-form)
+  :where(.ui-button)[data-variant="secondary"]:not(.approval-button-primary):hover:not(:disabled),
 .w2-library button:not(.ui-button, [class]):hover:not(:disabled),
 .w2-panel button:not(.ui-button, [class]):hover:not(:disabled),
 .agent-settings-content button:not(.ui-button, [class]):hover:not(:disabled),
