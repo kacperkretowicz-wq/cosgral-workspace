@@ -245,14 +245,14 @@
   --cosgral-status-red: #ff5c7a;
   --cosgral-status-violet: #b794ff;
   /* Status pills (reference: dark pill, a faint fill and a thin ring in the colour, the icon in the colour). */
-  --cosgral-status-blue-fill: rgba(111, 168, 255, 0.13);
-  --cosgral-status-blue-ring: rgba(111, 168, 255, 0.42);
-  --cosgral-status-green-fill: rgba(74, 222, 128, 0.12);
-  --cosgral-status-green-ring: rgba(74, 222, 128, 0.4);
-  --cosgral-status-amber-fill: rgba(251, 191, 36, 0.12);
-  --cosgral-status-amber-ring: rgba(251, 191, 36, 0.4);
-  --cosgral-status-red-fill: rgba(255, 92, 122, 0.13);
-  --cosgral-status-red-ring: rgba(255, 92, 122, 0.42);
+  --cosgral-status-blue-fill: rgba(111, 168, 255, 0.2);
+  --cosgral-status-blue-ring: rgba(111, 168, 255, 0.55);
+  --cosgral-status-green-fill: rgba(74, 222, 128, 0.2);
+  --cosgral-status-green-ring: rgba(74, 222, 128, 0.55);
+  --cosgral-status-amber-fill: rgba(251, 191, 36, 0.2);
+  --cosgral-status-amber-ring: rgba(251, 191, 36, 0.55);
+  --cosgral-status-red-fill: rgba(255, 92, 122, 0.2);
+  --cosgral-status-red-ring: rgba(255, 92, 122, 0.55);
   --cosgral-status-neutral-fill: rgba(255, 255, 255, 0.05);
   --cosgral-status-neutral-ring: rgba(140, 185, 204, 0.24);
   /* The window behind the panels: soft coloured light that the frosted panels blur (owner: "całe tło lekko szklane"). */

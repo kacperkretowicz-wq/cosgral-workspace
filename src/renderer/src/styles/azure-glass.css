@@ -335,10 +335,10 @@ body::after {
 :where(.ui-badge)[data-tone] {
   --pill-fill: var(--openbot-status-neutral-fill);
   --pill-ring: var(--openbot-status-neutral-ring);
-  gap: 5px;
+  gap: 6px;
   border: 0;
   border-radius: var(--openbot-radius-pill);
-  background: var(--pill-fill);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 60%), var(--pill-fill);
   box-shadow:
     inset 0 0 0 1px var(--pill-ring),
     inset 0 1px 0 var(--openbot-shadow-ring);
@@ -371,14 +371,21 @@ body::after {
   color: var(--openbot-status-red);
 }
 
+:where(.ui-badge)[data-tone][data-size="md"] {
+  min-height: 26px;
+  padding-inline: var(--openbot-space-3);
+  font-size: var(--openbot-text-sm);
+}
+
 :where(.ui-badge)[data-tone][data-size="sm"] {
-  padding-inline: var(--openbot-space-1-5);
+  min-height: 20px;
+  padding-inline: var(--openbot-space-2);
 }
 
 /* The dot is a small ring with a core, like the reference's status icons. */
 .ui-badge-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border: 1.5px solid currentColor;
   background: radial-gradient(circle, currentColor 0 28%, transparent 34%);
 }
