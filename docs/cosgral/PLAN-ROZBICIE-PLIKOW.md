@@ -27,6 +27,8 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 
 - `sidebar/SidebarIcons.tsx` i `sidebar/SidebarAgentIndicator.tsx` (z testami wskaźnika): ikony i znak stanu agenta z `Sidebar.tsx` (1468 → 1327 linii).
 
+- `bot-mapping.ts` z testami (7): czyste funkcje z dołu `App.tsx` (mapowanie botów i wiadomości, porównania, stan przeczytania) (2657 → 2473 linii).
+
 ## Zasady każdego kroku
 
 1. **Jeden obszar na commit**, od najmniej splątanego: Panel ustawień agenta, Panel ekranu, Nagłówek, Pole pisania,
