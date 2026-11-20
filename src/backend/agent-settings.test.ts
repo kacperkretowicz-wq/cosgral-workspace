@@ -245,6 +245,7 @@ describe("AgentSettingsService", () => {
     expect(service.appSettings().appearance).toEqual({
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "collapse",
@@ -256,6 +257,7 @@ describe("AgentSettingsService", () => {
       uiScale: 125,
       sendShortcut: "mod-enter",
       font: "inter",
+      fontWeight: "normal",
       chatAccent: "blue",
     });
     expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
@@ -265,6 +267,7 @@ describe("AgentSettingsService", () => {
     expect(second.appearance).toEqual({
       uiScale: 125,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "mod-enter",
       chatAccent: "violet",
       agentSteps: "collapse",

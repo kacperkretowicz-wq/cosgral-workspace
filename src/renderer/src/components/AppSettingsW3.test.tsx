@@ -23,6 +23,7 @@ function settings(): AppSettings {
     appearance: {
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "show",

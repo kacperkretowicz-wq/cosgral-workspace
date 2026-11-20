@@ -16,6 +16,7 @@ it("accepts only the three theme values and defaults unknown input to dark", () 
     appearance: {
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "show",

@@ -2852,4 +2852,9 @@ export const pl = {
   "Mercury models with an Inception API key": "Modele Mercury z kluczem API Inception",
   "Mistral models with a Mistral account": "Modele Mistral z kontem Mistral",
   "Nous Portal plan or your Hermes setup": "Plan Nous Portal lub Twoja konfiguracja Hermes",
+  "Text weight": "Grubość pisma",
+  "How heavy the text looks. Applies at once.": "Jak grube jest pismo. Działa od razu.",
+  Normal: "Zwykła",
+  Stronger: "Mocniejsza",
+  Lighter: "Lżejsza",
 } as const;

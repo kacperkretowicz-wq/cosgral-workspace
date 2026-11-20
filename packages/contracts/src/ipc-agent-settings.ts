@@ -249,6 +249,19 @@ export type AppUiScale = (typeof APP_UI_SCALES)[number];
 export const APP_FONTS = ["inter", "system", "mono"] as const;
 export type AppFont = (typeof APP_FONTS)[number];
 
+/**
+ * How heavy the text is (owner, 20.11: the face is light, so the weight is the person's choice). The window turns each into
+ * three numbers for the variable font: regular, medium and semibold (see `APP_FONT_WEIGHT_VALUES`).
+ */
+export const APP_FONT_WEIGHTS = ["light", "normal", "strong"] as const;
+export type AppFontWeight = (typeof APP_FONT_WEIGHTS)[number];
+
+export const APP_FONT_WEIGHT_VALUES: Record<AppFontWeight, { regular: number; medium: number; semibold: number }> = {
+  light: { regular: 330, medium: 420, semibold: 520 },
+  normal: { regular: 380, medium: 470, semibold: 570 },
+  strong: { regular: 440, medium: 530, semibold: 630 },
+};
+
 /** enter = Enter sends and Shift+Enter breaks the line; mod-enter = Ctrl+Enter sends and Enter breaks the line. */
 export const APP_SEND_SHORTCUTS = ["enter", "mod-enter"] as const;
 export type AppSendShortcut = (typeof APP_SEND_SHORTCUTS)[number];
@@ -264,6 +277,7 @@ export type AppAgentSteps = (typeof APP_AGENT_STEPS)[number];
 export interface AppAppearanceSettings {
   uiScale: AppUiScale;
   font: AppFont;
+  fontWeight: AppFontWeight;
   sendShortcut: AppSendShortcut;
   chatAccent: AppChatAccent;
   agentSteps: AppAgentSteps;
@@ -275,19 +289,29 @@ export interface AppAppearanceSettings {
 export const DEFAULT_APP_APPEARANCE: AppAppearanceSettings = {
   uiScale: 100,
   font: "inter",
+  fontWeight: "normal",
   sendShortcut: "enter",
   chatAccent: "blue",
   agentSteps: "collapse",
   unreadFirst: false,
 };
 
-const APPEARANCE_KEYS = ["uiScale", "font", "sendShortcut", "chatAccent", "agentSteps", "unreadFirst"] as const;
+const APPEARANCE_KEYS = [
+  "uiScale",
+  "font",
+  "fontWeight",
+  "sendShortcut",
+  "chatAccent",
+  "agentSteps",
+  "unreadFirst",
+] as const;
 
 export function isAppAppearance(value: unknown): value is AppAppearanceSettings {
   return (
     isDynamicRecord(value) &&
     isOneOf(APP_UI_SCALES, value.uiScale) &&
     isOneOf(APP_FONTS, value.font) &&
+    isOneOf(APP_FONT_WEIGHTS, value.fontWeight) &&
     isOneOf(APP_SEND_SHORTCUTS, value.sendShortcut) &&
     isOneOf(APP_CHAT_ACCENTS, value.chatAccent) &&
     isOneOf(APP_AGENT_STEPS, value.agentSteps) &&
@@ -302,6 +326,7 @@ export function normalizeAppAppearance(value: unknown): AppAppearanceSettings {
   return {
     uiScale: isOneOf(APP_UI_SCALES, stored.uiScale) ? stored.uiScale : defaults.uiScale,
     font: isOneOf(APP_FONTS, stored.font) ? stored.font : defaults.font,
+    fontWeight: isOneOf(APP_FONT_WEIGHTS, stored.fontWeight) ? stored.fontWeight : defaults.fontWeight,
     sendShortcut: isOneOf(APP_SEND_SHORTCUTS, stored.sendShortcut) ? stored.sendShortcut : defaults.sendShortcut,
     chatAccent: isOneOf(APP_CHAT_ACCENTS, stored.chatAccent) ? stored.chatAccent : defaults.chatAccent,
     agentSteps: isOneOf(APP_AGENT_STEPS, stored.agentSteps) ? stored.agentSteps : defaults.agentSteps,
@@ -326,6 +351,12 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
   if (value.font !== undefined) {
     if (!isOneOf(APP_FONTS, value.font)) throw new Error(`font is one of ${APP_FONTS.join(", ")}.`);
     patch.font = value.font;
+  }
+  if (value.fontWeight !== undefined) {
+    if (!isOneOf(APP_FONT_WEIGHTS, value.fontWeight)) {
+      throw new Error(`fontWeight is one of ${APP_FONT_WEIGHTS.join(", ")}.`);
+    }
+    patch.fontWeight = value.fontWeight;
   }
   if (value.sendShortcut !== undefined) {
     if (!isOneOf(APP_SEND_SHORTCUTS, value.sendShortcut)) {
@@ -360,6 +391,11 @@ export function parseAppearancePatch(value: unknown): Partial<AppAppearanceSetti
 export interface AppearanceDomTokens {
   uiScale: string;
   font: AppFont;
+  fontWeight: AppFontWeight;
+  /** The three weights of the variable font, as numbers in text. */
+  weightRegular: string;
+  weightMedium: string;
+  weightSemibold: string;
   chatAccent: AppChatAccent;
   sendShortcut: AppSendShortcut;
   agentSteps: AppAgentSteps;
@@ -388,6 +424,10 @@ export function appearanceDomTokens(value: unknown): AppearanceDomTokens {
   return {
     uiScale: String(appearance.uiScale),
     font: appearance.font,
+    fontWeight: appearance.fontWeight,
+    weightRegular: String(APP_FONT_WEIGHT_VALUES[appearance.fontWeight].regular),
+    weightMedium: String(APP_FONT_WEIGHT_VALUES[appearance.fontWeight].medium),
+    weightSemibold: String(APP_FONT_WEIGHT_VALUES[appearance.fontWeight].semibold),
     chatAccent: appearance.chatAccent,
     sendShortcut: appearance.sendShortcut,
     agentSteps: appearance.agentSteps,

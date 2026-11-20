@@ -28,6 +28,8 @@ it("saves interface scale and send shortcut through appearance", async () => {
   await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.unreadFirst).toBe(true));
   fireEvent.change(screen.getByLabelText("Agent steps"), { target: { value: "collapse" } });
   await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.agentSteps).toBe("collapse"));
+  fireEvent.change(screen.getByLabelText("Text weight"), { target: { value: "strong" } });
+  await waitFor(async () => expect((await mock.api.appSettings?.get())?.appearance.fontWeight).toBe("strong"));
   mock.dispose();
 });
 
