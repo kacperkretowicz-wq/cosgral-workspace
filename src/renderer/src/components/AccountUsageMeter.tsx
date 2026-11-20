@@ -56,7 +56,7 @@ export function UsageWindowMeter(props: { window: AccountUsageWindowView; nowMs:
       </Show>
       <Show when={percent() !== null}>
         <Text as="p" tone="secondary">
-          {Math.round(percent() ?? 0)}% used
+          {t("{percent}% used", { percent: Math.round(percent() ?? 0) })}
         </Text>
       </Show>
       <Show when={percent() === null}>
@@ -66,7 +66,7 @@ export function UsageWindowMeter(props: { window: AccountUsageWindowView; nowMs:
       </Show>
       <Show when={reset()}>
         <Text as="p" tone="secondary">
-          Resets at {reset()}
+          {t("Resets at")} {reset()}
         </Text>
       </Show>
       <Show when={!reset() && props.window.state !== "ok"}>

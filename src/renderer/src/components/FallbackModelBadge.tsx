@@ -1,6 +1,7 @@
 ﻿import type { AgentModelOption } from "@openbot/contracts/ipc";
 import { Show } from "solid-js";
 import type { BotProfile } from "../data";
+import { t } from "../i18n";
 import { Badge } from "./ui";
 export function FallbackModelBadge(props: {
   bot: Pick<BotProfile, "model" | "activeModel">;
@@ -12,7 +13,7 @@ export function FallbackModelBadge(props: {
     <Show when={model()}>
       {(active) => (
         <Badge class="fallback-model-badge" size="sm" role="status">
-          model zapasowy: {props.models?.find((item) => item.id === active())?.name ?? active()}
+          {t("fallback model: {name}", { name: props.models?.find((item) => item.id === active())?.name ?? active() })}
         </Badge>
       )}
     </Show>

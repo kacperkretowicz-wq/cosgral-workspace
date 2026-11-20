@@ -260,8 +260,9 @@ export function VaultForm(props: {
         <small>{t("Leave secret fields empty to keep their existing values.")}</small>
         <Show when={kind() === "contact" || kind() === "totp"}>
           <p>
-            Existing contact fields or account cannot be read back. Enter all values to retain them; blank values
-            replace the old ones.
+            {t(
+              "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.",
+            )}
           </p>
         </Show>
       </Show>
@@ -269,11 +270,11 @@ export function VaultForm(props: {
         <p role="alert">{error()}</p>
       </Show>
       <Button unstyled type="button" disabled={busy()} onClick={() => void save()}>
-        Save item
+        {t("Save item")}
       </Button>
       <Show when={props.onCancel}>
         <Button unstyled type="button" onClick={() => props.onCancel?.()}>
-          Cancel
+          {t("Cancel")}
         </Button>
       </Show>
     </section>

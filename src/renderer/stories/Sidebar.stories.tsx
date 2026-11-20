@@ -262,7 +262,7 @@ export const FallbackModel: Story = {
     bots: STORY_BOTS.map((bot, index) => (index === 0 ? { ...bot, activeModel: "gpt-5.6-terra" } : bot)),
   },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText(/^model zapasowy:/)).toBeVisible();
+    await expect(within(canvasElement).getByText(/^fallback model:/)).toBeVisible();
   },
 };
 export const CopyWarning: Story = {

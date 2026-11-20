@@ -36,11 +36,14 @@ export function MemoryPanel(props: {
         {(s) => (
           <>
             <p>
-              {s().essentialCount + s().searchableCount} / {s().maxMemories} memories · {s().essentialPromptBytes} /
-              8192 bytes in always-on prompt
+              {t("{used} / {max} memories · {bytes} / 8192 bytes in always-on prompt", {
+                used: s().essentialCount + s().searchableCount,
+                max: s().maxMemories,
+                bytes: s().essentialPromptBytes,
+              })}
             </p>
             <label>
-              Memory limit{" "}
+              {t("Memory limit")}{" "}
               <Input
                 unstyled
                 type="number"
@@ -59,7 +62,8 @@ export function MemoryPanel(props: {
       </Show>
       <Show when={props.onSearch}>
         <label>
-          Search memories <Input unstyled type="search" onInput={(e) => props.onSearch?.(e.currentTarget.value)} />
+          {t("Search memories")}{" "}
+          <Input unstyled type="search" onInput={(e) => props.onSearch?.(e.currentTarget.value)} />
         </label>
       </Show>
       <For each={props.entries}>
@@ -79,7 +83,7 @@ export function MemoryPanel(props: {
                   setEditing(entry.id);
                 }}
               >
-                Edit
+                {t("Edit")}
               </Button>{" "}
               <Button
                 unstyled
@@ -88,7 +92,7 @@ export function MemoryPanel(props: {
                   if (window.confirm(t("Delete this memory?"))) void run(() => props.onDelete(entry.id));
                 }}
               >
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </article>

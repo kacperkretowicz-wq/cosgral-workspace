@@ -278,7 +278,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             <strong>{t("Could not open the desktop")}</strong>
             <span>{viewerError() ?? props.session?.message}</span>
             <Button type="button" onClick={() => void retry()}>
-              Try again
+              {t("Try again")}
             </Button>
           </div>
         </Show>
@@ -292,7 +292,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
             <strong>{t("Desktop disconnected")}</strong>
             <span>{t("Reconnect when you want to view or control this Mac again.")}</span>
             <Button type="button" onClick={() => void connect(props.server, props.onConnect, true)}>
-              Connect
+              {t("Connect")}
             </Button>
           </div>
         </Show>
@@ -303,7 +303,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
         <Show when={props.session?.phase === "connected" ? props.session : undefined}>
           {(session) => (
             <Button type="button" onClick={() => void props.onDisconnect(session().id)}>
-              Disconnect
+              {t("Disconnect")}
             </Button>
           )}
         </Show>

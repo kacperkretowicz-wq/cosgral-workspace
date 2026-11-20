@@ -2854,4 +2854,36 @@ export const en = {
   Normal: "Normal",
   Stronger: "Stronger",
   Lighter: "Lighter",
+  "Network error on {account}. Your account stayed selected.":
+    "Network error on {account}. Your account stayed selected.",
+  "Check your connection and send the message again when you are ready.":
+    "Check your connection and send the message again when you are ready.",
+  "Account: {account}": "Account: {account}",
+  "Switched to account {label} for this turn.": "Switched to account {label} for this turn.",
+  "The agent goes back to its first account by itself once the limit has passed.":
+    "The agent goes back to its first account by itself once the limit has passed.",
+  "A card in Needs you asks whether to continue on {label}.":
+    "A card in Needs you asks whether to continue on {label}.",
+  "Every account in the pool is exhausted. Wait for a reset before continuing.":
+    "Every account in the pool is exhausted. Wait for a reset before continuing.",
+  "Previous account: {account}": "Previous account: {account}",
+  "fallback model: {name}": "fallback model: {name}",
+  "Always allowed": "Always allowed",
+  "Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.":
+    "Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.",
+  "These rules never cover {list}.": "These rules never cover {list}.",
+  "{used} / {max} memories · {bytes} / 8192 bytes in always-on prompt":
+    "{used} / {max} memories · {bytes} / 8192 bytes in always-on prompt",
+  "Memory limit": "Memory limit",
+  "Search memories": "Search memories",
+  "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.":
+    "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.",
+  "Save item": "Save item",
+  NEW: "NEW",
+  "{count} unread direct message": "{count} unread direct message",
+  "{count} unread direct messages": "{count} unread direct messages",
+  "Version {version} · {platform}": "Version {version} · {platform}",
+  "Updating usage…": "Updating usage…",
+  "Weekly usage": "Weekly usage",
+  "Signing out…": "Signing out…",
 } as const;

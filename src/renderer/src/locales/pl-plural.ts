@@ -7,4 +7,5 @@ export const plMany: Readonly<Record<string, string>> = {
   "{count} routines": "{count} rutyn",
   "{count} backup models": "{count} modeli zapasowych",
   "{count} folders": "{count} folderów",
+  "{count} unread direct messages": "{count} nieprzeczytanych wiadomości bezpośrednich",
 };

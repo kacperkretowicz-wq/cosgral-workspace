@@ -20,7 +20,7 @@ import { createEffect, createMemo, createSignal, For, onSettled, Show } from "so
 import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tn } from "../i18n";
 import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
@@ -714,7 +714,13 @@ export function Sidebar(props: SidebarProps) {
                         </span>
                       </span>
                       <Show when={(thread()?.unreadCount ?? 0) > 0}>
-                        <span class="sr-only">{thread()?.unreadCount} unread direct messages</span>
+                        <span class="sr-only">
+                          {tn(
+                            thread()?.unreadCount ?? 0,
+                            "{count} unread direct message",
+                            "{count} unread direct messages",
+                          )}
+                        </span>
                       </Show>
                     </Button>
                   );
@@ -1088,7 +1094,7 @@ export function Sidebar(props: SidebarProps) {
               <Show when={props.appInfo}>
                 {(info) => (
                   <span class="sr-only" data-testid="app-version">
-                    Version {info().version} · {info().platform}
+                    {t("Version {version} · {platform}", { version: info().version, platform: info().platform })}
                   </span>
                 )}
               </Show>
@@ -1133,7 +1139,7 @@ export function Sidebar(props: SidebarProps) {
                         onClick={() => void updateAccountAvatar(null)}
                         disabled={avatarUploadBusy()}
                       >
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </Show>
                   </div>
@@ -1160,7 +1166,7 @@ export function Sidebar(props: SidebarProps) {
                 disabled={usageLoading() || props.agentStatus.phase !== "ready"}
               >
                 <UsageIcon />
-                <span>{usageLoading() ? "Updating usage…" : "Weekly usage"}</span>
+                <span>{usageLoading() ? t("Updating usage…") : t("Weekly usage")}</span>
                 <small>{weeklyUsageRemaining() === null ? "—" : `${weeklyUsageRemaining()}%`}</small>
               </Button>
               <div class="account-menu-separator" />
@@ -1193,7 +1199,7 @@ export function Sidebar(props: SidebarProps) {
                   disabled={loggingOut()}
                 >
                   <LogoutIcon />
-                  <span>{loggingOut() ? "Signing out…" : "Sign out"}</span>
+                  <span>{loggingOut() ? t("Signing out…") : t("Sign out")}</span>
                 </Button>
               </Show>
               <Show when={popoverError()}>{(message) => <p class="account-popover-error">{message()}</p>}</Show>

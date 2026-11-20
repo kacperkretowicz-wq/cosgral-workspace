@@ -13,9 +13,11 @@ export function AccountErrorCard(props: { view: AccountError; onDismiss: () => v
       <Heading as="h3" size="sm">
         {t("Connection problem")}
       </Heading>
-      <Text as="p">Network error on {props.view.accountLabel}. Your account stayed selected.</Text>
+      <Text as="p">
+        {t("Network error on {account}. Your account stayed selected.", { account: props.view.accountLabel })}
+      </Text>
       <Text as="p" tone="secondary">
-        Check your connection and send the message again when you are ready.
+        {t("Check your connection and send the message again when you are ready.")}
       </Text>
       <Button variant="ghost" type="button" onClick={props.onDismiss}>
         {t("Dismiss")}

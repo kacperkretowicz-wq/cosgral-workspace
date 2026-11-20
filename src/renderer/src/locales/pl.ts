@@ -2857,4 +2857,36 @@ export const pl = {
   Normal: "Zwykła",
   Stronger: "Mocniejsza",
   Lighter: "Lżejsza",
+  "Network error on {account}. Your account stayed selected.":
+    "Błąd sieci przy koncie {account}. Konto pozostało wybrane.",
+  "Check your connection and send the message again when you are ready.":
+    "Sprawdź połączenie i wyślij wiadomość jeszcze raz, gdy będziesz gotowy.",
+  "Account: {account}": "Konto: {account}",
+  "Switched to account {label} for this turn.": "W tej turze przełączono na konto {label}.",
+  "The agent goes back to its first account by itself once the limit has passed.":
+    "Agent sam wróci do pierwszego konta, gdy limit minie.",
+  "A card in Needs you asks whether to continue on {label}.":
+    "Karta w „Wymaga Ciebie” pyta, czy kontynuować na koncie {label}.",
+  "Every account in the pool is exhausted. Wait for a reset before continuing.":
+    "Wszystkie konta w puli są wyczerpane. Poczekaj na odnowienie limitu, zanim ruszysz dalej.",
+  "Previous account: {account}": "Poprzednie konto: {account}",
+  "fallback model: {name}": "model zapasowy: {name}",
+  "Always allowed": "Zawsze dozwolone",
+  "Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.":
+    "Nic nie jest dozwolone na stałe. Wybierz „Zawsze zezwalaj…” na karcie zgody, aby dodać regułę.",
+  "These rules never cover {list}.": "Te reguły nigdy nie obejmują: {list}.",
+  "{used} / {max} memories · {bytes} / 8192 bytes in always-on prompt":
+    "{used} / {max} wspomnień · {bytes} / 8192 bajtów w stałym poleceniu",
+  "Memory limit": "Limit pamięci",
+  "Search memories": "Szukaj we wspomnieniach",
+  "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.":
+    "Zapisanych pól kontaktu lub konta nie da się odczytać z powrotem. Wpisz wszystkie wartości, aby je zachować; puste wartości zastąpią stare.",
+  "Save item": "Zapisz pozycję",
+  NEW: "NOWE",
+  "{count} unread direct message": "{count} nieprzeczytana wiadomość bezpośrednia",
+  "{count} unread direct messages": "{count} nieprzeczytane wiadomości bezpośrednie",
+  "Version {version} · {platform}": "Wersja {version} · {platform}",
+  "Updating usage…": "Aktualizuję zużycie…",
+  "Weekly usage": "Zużycie tygodniowe",
+  "Signing out…": "Wylogowuję…",
 } as const;

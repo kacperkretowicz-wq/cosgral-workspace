@@ -27,16 +27,16 @@ export function AccountLimitReachedCard(props: {
         {props.view.reason}
       </Text>
       <Text as="p" tone="secondary">
-        Account: {props.view.exhaustedAccountLabel}
+        {t("Account: {account}", { account: props.view.exhaustedAccountLabel })}
       </Text>
       <Show when={props.view.outcome === "switched" && props.view.nextAccountLabel}>
         {(label) => (
           <>
             <Text as="p" role="status">
-              Switched to account {label()} for this turn.
+              {t("Switched to account {label} for this turn.", { label: label() })}
             </Text>
             <Text as="p" tone="muted">
-              The agent goes back to its first account by itself once the limit has passed.
+              {t("The agent goes back to its first account by itself once the limit has passed.")}
             </Text>
           </>
         )}
@@ -44,13 +44,13 @@ export function AccountLimitReachedCard(props: {
       <Show when={props.view.outcome === "asks" && props.view.nextAccountLabel}>
         {(label) => (
           <Text as="p" tone="warning" role="status">
-            A card in Needs you asks whether to continue on {label()}.
+            {t("A card in Needs you asks whether to continue on {label}.", { label: label() })}
           </Text>
         )}
       </Show>
       <Show when={props.view.outcome === "exhausted"}>
         <Text as="p" tone="warning" role="status">
-          Every account in the pool is exhausted. Wait for a reset before continuing.
+          {t("Every account in the pool is exhausted. Wait for a reset before continuing.")}
         </Text>
       </Show>
       <Show when={reset()}>
@@ -90,7 +90,7 @@ export function AccountSwitchedCard(props: { view: AccountSwitchedView; onDismis
       </Heading>
       <Show when={props.view.fromAccountLabel}>
         <Text as="p" tone="secondary">
-          Previous account: {props.view.fromAccountLabel}
+          {t("Previous account: {account}", { account: props.view.fromAccountLabel ?? "" })}
         </Text>
       </Show>
       <Show when={props.view.reason}>

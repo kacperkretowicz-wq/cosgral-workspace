@@ -138,7 +138,7 @@ export const ActiveFallback: Story = {
   ),
   play: async ({ canvas }) => {
     await canvas.findByRole("heading", { name: "Chief" });
-    await expect(canvas.getAllByText(/^model zapasowy:/)).toHaveLength(2);
+    await expect(canvas.getAllByText(/^fallback model:/)).toHaveLength(2);
   },
 };
 

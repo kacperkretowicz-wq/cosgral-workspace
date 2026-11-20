@@ -3576,9 +3576,9 @@ describe("COSGRAL Workspace connected desktop shell", () => {
       toModel: "gpt-5.6-terra",
       reason: "Limit",
     });
-    await waitFor(() => expect(screen.getAllByText(/^model zapasowy:/)).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText(/^fallback model:/)).toHaveLength(2));
     emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
-    await waitFor(() => expect(screen.queryByText(/^model zapasowy:/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/^fallback model:/)).toBeNull());
   });
   it("shows and dismisses an account network error only for the open agent", async () => {
     render(() => <App />);
