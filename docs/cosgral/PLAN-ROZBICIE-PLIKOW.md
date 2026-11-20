@@ -17,6 +17,11 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 | Panel ekranu (przeglądarka / pulpit) | 2537–2709 | panel boczny przeglądarki i pulpitu | `conversation/ScreenPanel.tsx` |
 | Panel ustawień agenta | 2804–3128 | opis, avatar, onboarding agenta | `conversation/AgentSettingsPanel.tsx` |
 
+## Zrobione
+
+- `conversation/model.ts`: typy, stałe, `browserActionLabel`, `reasoningLabel` (3133 → 3097 linii).
+- `conversation/AvatarEditor.tsx` z testami: okno wyboru awatara z panelu ustawień agenta (3097 → 2980 linii).
+
 ## Zasady każdego kroku
 
 1. **Jeden obszar na commit**, od najmniej splątanego: Panel ustawień agenta, Panel ekranu, Nagłówek, Pole pisania,

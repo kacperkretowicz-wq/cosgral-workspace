@@ -31,7 +31,7 @@ import type {
 import { isClaudeModel } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
-import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
+import { avatarCandidateSeeds } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
 import { t, tData } from "../i18n";
 import type { PendingCard } from "../pending-cards";
@@ -51,6 +51,7 @@ import { ChoiceCard } from "./ConversationPrompts";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
+import { AvatarEditor } from "./conversation/AvatarEditor";
 import { ChatSearch } from "./conversation/ChatSearch";
 import {
   BackIcon,
@@ -2812,160 +2813,43 @@ export function Conversation(props: ConversationProps) {
             </Button>
           </header>
           <div class="agent-settings-content">
-            <div ref={(element) => (avatarPickerRoot = element)} class="agent-settings-avatar-picker">
-              <Popover.Root
-                open={avatarPickerOpen()}
-                placement="bottom"
-                gutter={11}
-                onOpenChange={(open) => {
-                  if (open) {
-                    setAvatarCandidateSeed(avatarSeed());
-                    setAvatarBatch(0);
-                  }
-                  setAvatarPickerOpen(open);
-                }}
-              >
-                <Popover.Trigger class="agent-settings-avatar" aria-label={t("Edit agent avatar")}>
-                  <AgentAvatar seed={avatarSeed()} hue={avatarHue()} url={avatarUrl()} motion="always" />
-                </Popover.Trigger>
-                <Popover.Content class="avatar-editor" aria-hidden={avatarPickerOpen() ? undefined : "true"}>
-                  <Popover.Title class="sr-only">{t("Avatar editor")}</Popover.Title>
-                  <Input
-                    ref={(element) => (avatarFileInput = element)}
-                    class="sr-only"
-                    type="file"
-                    aria-label={t("Attach files")}
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(event) => void uploadAgentAvatar(event.currentTarget.files?.[0])}
-                  />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Image")}</span>
-                    <div class="avatar-editor-actions">
-                      <Show when={avatarUrl()}>
-                        <Button type="button" disabled={avatarUploadBusy()} onClick={() => void setCustomAvatar(null)}>
-                          {t("Remove")}
-                        </Button>
-                      </Show>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    class={["avatar-image-upload", { "avatar-image-upload-active": Boolean(avatarUrl()) }]}
-                    disabled={avatarUploadBusy()}
-                    onClick={() => avatarFileInput?.click()}
-                  >
-                    <span class="avatar-image-upload-preview">
-                      <Show
-                        when={avatarUrl()}
-                        fallback={
-                          <svg aria-hidden="true" viewBox="0 0 24 24">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
-                        }
-                      >
-                        <AgentAvatar seed={avatarSeed()} hue={avatarHue()} url={avatarUrl()} />
-                      </Show>
-                    </span>
-                    <span>
-                      <strong>{avatarUrl() ? t("Replace image") : t("Upload image")}</strong>
-                      <small>{t("PNG, JPEG or WebP · square crop")}</small>
-                    </span>
-                  </Button>
-                  <div class="avatar-editor-divider" />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Generated face")}</span>
-                    <div class="avatar-editor-actions">
-                      <Show when={props.bot?.id && avatarSeed() !== props.bot?.id}>
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const botId = props.bot?.id;
-                            if (!botId) return;
-                            setAvatarCandidateSeed(botId);
-                            setAvatarBatch(0);
-                            void selectGeneratedAvatar(botId);
-                          }}
-                        >
-                          {t("Reset to ID")}
-                        </Button>
-                      </Show>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setAvatarCandidateSeed(avatarSeed());
-                          setAvatarBatch((batch) => batch + 1);
-                        }}
-                      >
-                        {t("New set")}
-                      </Button>
-                    </div>
-                  </div>
-                  <fieldset class="avatar-face-grid" aria-label={t("Generated avatar faces")}>
-                    <For each={avatarCandidates()}>
-                      {(seed, index) => (
-                        <Button
-                          type="button"
-                          class={[
-                            "avatar-face-choice",
-                            {
-                              "avatar-choice-selected": !avatarUrl() && avatarSeed() === seed,
-                            },
-                          ]}
-                          aria-label={
-                            !avatarUrl() && avatarSeed() === seed
-                              ? t("Selected avatar")
-                              : t("Avatar option {n}", { n: index() + 1 })
-                          }
-                          aria-pressed={!avatarUrl() && avatarSeed() === seed ? "true" : "false"}
-                          onClick={() => void selectGeneratedAvatar(seed)}
-                        >
-                          <AgentAvatar seed={seed} hue={avatarHue()} />
-                        </Button>
-                      )}
-                    </For>
-                  </fieldset>
-                  <div class="avatar-editor-divider" />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Color")}</span>
-                  </div>
-                  <fieldset class="avatar-color-grid" aria-label={t("Avatar color")}>
-                    <Button
-                      type="button"
-                      class={["avatar-color-choice", { "avatar-choice-selected": avatarHue() === null }]}
-                      aria-label={t("Automatic avatar color")}
-                      aria-pressed={avatarHue() === null ? "true" : "false"}
-                      onClick={() => {
-                        setAvatarHue(null);
-                        void saveBotPatch({ avatarHue: null });
-                      }}
-                    >
-                      <span class="avatar-color-swatch avatar-color-swatch-auto">A</span>
-                    </Button>
-                    <For each={AVATAR_HUE_OPTIONS}>
-                      {(option) => (
-                        <Button
-                          type="button"
-                          class={[
-                            "avatar-color-choice",
-                            {
-                              "avatar-choice-selected": avatarHue() === option.hue,
-                            },
-                          ]}
-                          aria-label={t("{label} avatar color", { label: option.label })}
-                          aria-pressed={avatarHue() === option.hue ? "true" : "false"}
-                          onClick={() => {
-                            setAvatarHue(option.hue);
-                            void saveBotPatch({ avatarHue: option.hue });
-                          }}
-                        >
-                          <span class="avatar-color-swatch" style={{ background: avatarHueSwatch(option.hue) }} />
-                        </Button>
-                      )}
-                    </For>
-                  </fieldset>
-                </Popover.Content>
-              </Popover.Root>
-            </div>
+            <AvatarEditor
+              open={avatarPickerOpen()}
+              onOpenChange={(open) => {
+                if (open) {
+                  setAvatarCandidateSeed(avatarSeed());
+                  setAvatarBatch(0);
+                }
+                setAvatarPickerOpen(open);
+              }}
+              rootRef={(element) => (avatarPickerRoot = element)}
+              fileInputRef={(element) => (avatarFileInput = element)}
+              botId={props.bot?.id}
+              seed={avatarSeed()}
+              hue={avatarHue()}
+              url={avatarUrl()}
+              uploadBusy={avatarUploadBusy()}
+              candidates={avatarCandidates()}
+              onUploadFile={(file) => void uploadAgentAvatar(file)}
+              onPickImage={() => avatarFileInput?.click()}
+              onRemoveImage={() => void setCustomAvatar(null)}
+              onResetToId={() => {
+                const botId = props.bot?.id;
+                if (!botId) return;
+                setAvatarCandidateSeed(botId);
+                setAvatarBatch(0);
+                void selectGeneratedAvatar(botId);
+              }}
+              onNewSet={() => {
+                setAvatarCandidateSeed(avatarSeed());
+                setAvatarBatch((batch) => batch + 1);
+              }}
+              onSelectFace={(seed) => void selectGeneratedAvatar(seed)}
+              onSelectHue={(hue) => {
+                setAvatarHue(hue);
+                void saveBotPatch({ avatarHue: hue });
+              }}
+            />
             <label class="agent-settings-field">
               <span>{t("Name")}</span>
               <Input
