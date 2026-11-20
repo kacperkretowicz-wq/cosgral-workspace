@@ -62,6 +62,9 @@
     kreskowanej; podświetlenie sekcji w `WorkPageAnchors` ignoruje pustą sekcję. **Stworki:** mina członka w nagłówku
     kanału wg jego zadań (`channelMemberMood`), mina wiadomości wg rodzaju (`channelMessageMood`), mrugnięcie przy
     najechaniu (`shell.css`, tylko bez „reduce motion”). Jasny motyw min sprawdzony: kropla i rumieniec czytelne.
+15. **Ikony, sekcje, znaczniki wg inspiracji 20.11 (wiersz 20.11 (1)):** podświetlane szklane żetony zamiast neonowych
+    siatek, karty jako granatowe szkło ze świecącą dolną krawędzią, jedna rodzina pigułek stanu. Propozycja palety:
+    `docs/cosgral/PLAN-KOLORY.md` i strona-podgląd (artefakt „Paleta Azure Glass”).
 
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 

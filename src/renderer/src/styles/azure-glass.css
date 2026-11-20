@@ -337,39 +337,58 @@ body::after {
   filter: saturate(0.35) brightness(0.8);
 }
 
-/* Status pills: tinted dark fill, a bright rim, the text and icon in the colour, a soft glow. -------------------- */
+/* Status pills (reference: "In progress / Done / Blocked"): a dark pill, a faint fill and a thin ring in the colour,
+ * the icon in the colour. One family for every marker; the neutral one is plain glass. ------------------------------ */
 
-:where(.ui-badge)[data-tone="accent"],
-:where(.ui-badge)[data-tone="success"],
-:where(.ui-badge)[data-tone="warning"],
-:where(.ui-badge)[data-tone="danger"] {
+:where(.ui-badge)[data-tone] {
+  --pill-fill: var(--openbot-status-neutral-fill);
+  --pill-ring: var(--openbot-status-neutral-ring);
+  gap: 5px;
   border: 0;
   border-radius: var(--openbot-radius-pill);
-  padding-inline: var(--openbot-space-2);
+  background: var(--pill-fill);
   box-shadow:
-    inset 0 0 0 1.5px currentColor,
-    inset 0 1px 0 var(--openbot-shadow-ring),
-    0 0 16px -6px currentColor;
+    inset 0 0 0 1px var(--pill-ring),
+    inset 0 1px 0 var(--openbot-shadow-ring);
+  padding-inline: var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-weight: var(--openbot-weight-medium);
 }
 
 :where(.ui-badge)[data-tone="accent"] {
-  background: linear-gradient(180deg, var(--openbot-accent-strong), var(--openbot-accent-soft));
+  --pill-fill: var(--openbot-status-blue-fill);
+  --pill-ring: var(--openbot-status-blue-ring);
   color: var(--openbot-status-blue);
 }
 
 :where(.ui-badge)[data-tone="success"] {
-  background: linear-gradient(180deg, var(--openbot-success-soft), transparent);
+  --pill-fill: var(--openbot-status-green-fill);
+  --pill-ring: var(--openbot-status-green-ring);
   color: var(--openbot-status-green);
 }
 
 :where(.ui-badge)[data-tone="warning"] {
-  background: linear-gradient(180deg, var(--openbot-warning-soft), transparent);
+  --pill-fill: var(--openbot-status-amber-fill);
+  --pill-ring: var(--openbot-status-amber-ring);
   color: var(--openbot-status-amber);
 }
 
 :where(.ui-badge)[data-tone="danger"] {
-  background: linear-gradient(180deg, var(--openbot-danger-soft), transparent);
+  --pill-fill: var(--openbot-status-red-fill);
+  --pill-ring: var(--openbot-status-red-ring);
   color: var(--openbot-status-red);
+}
+
+:where(.ui-badge)[data-tone][data-size="sm"] {
+  padding-inline: var(--openbot-space-1-5);
+}
+
+/* The dot is a small ring with a core, like the reference's status icons. */
+.ui-badge-dot {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  background: radial-gradient(circle, currentColor 0 28%, transparent 34%);
 }
 
 /* Switches: a glossy electric pill when on. */
@@ -569,7 +588,7 @@ body::after {
   grid-template-columns: 46px minmax(0, 1fr);
 }
 
-/* Section lists: each section has its own small mesh tile, like a settings app; colours cycle through the set. */
+/* Section lists: each section has its own small lit glass chip, like a settings app. */
 .work-page-nav-item > svg,
 .settings-dialog-nav-item > svg {
   width: 26px;
@@ -583,34 +602,10 @@ body::after {
   stroke-width: 2;
 }
 
-.work-page-nav-item:nth-child(7n + 2) > svg,
-.settings-dialog-nav-item:nth-child(7n + 2) > svg {
-  background: var(--openbot-mesh-red);
-}
-
-.work-page-nav-item:nth-child(7n + 3) > svg,
-.settings-dialog-nav-item:nth-child(7n + 3) > svg {
-  background: var(--openbot-mesh-green);
-}
-
-.work-page-nav-item:nth-child(7n + 4) > svg,
-.settings-dialog-nav-item:nth-child(7n + 4) > svg {
-  background: var(--openbot-mesh-orange);
-}
-
-.work-page-nav-item:nth-child(7n + 5) > svg,
-.settings-dialog-nav-item:nth-child(7n + 5) > svg {
-  background: var(--openbot-mesh-pink);
-}
-
-.work-page-nav-item:nth-child(7n + 6) > svg,
-.settings-dialog-nav-item:nth-child(7n + 6) > svg {
-  background: var(--openbot-mesh-cyan);
-}
-
-.work-page-nav-item:nth-child(7n + 7) > svg,
-.settings-dialog-nav-item:nth-child(7n + 7) > svg {
-  background: var(--openbot-mesh-lime);
+/* Every second section takes the deep Azure light: a calm rhythm instead of a rainbow. */
+.work-page-nav-item:nth-child(even) > svg,
+.settings-dialog-nav-item:nth-child(even) > svg {
+  background: var(--openbot-mesh-deep);
 }
 
 .work-page-nav-item,
@@ -965,7 +960,9 @@ body [role="tooltip"] {
 
 .initial-setup-screen .provider-picker-option-selected {
   background: var(--openbot-tile-quiet), var(--openbot-bg-control-active);
-  box-shadow: inset 3px 0 0 var(--openbot-accent);
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    inset 0 -2px 0 var(--openbot-accent);
 }
 
 .initial-setup-screen .setup-remote-form :is(input, textarea) {
@@ -1157,32 +1154,21 @@ body [role="tooltip"] {
   color: var(--openbot-contrast-white);
 }
 
-.agent-card-row[data-card="chat-color"] .agent-card-icon {
-  background: var(--openbot-mesh-pink);
+/* One light per group (owner, 20.11: spójnie, bez napakowania): Brain Azure, Knows deep Azure, More green. */
+.agent-card-row:is([data-card="instructions"], [data-card="skills"], [data-card="memory"], [data-card="files"])
+.agent-card-icon {
+  background: var(--openbot-mesh-deep);
 }
 
-.agent-card-row[data-card="instructions"] .agent-card-icon,
-.agent-card-row[data-card="skills"] .agent-card-icon {
-  background: var(--openbot-mesh-cyan);
-}
-
-.agent-card-row[data-card="memory"] .agent-card-icon,
-.agent-card-row[data-card="tables"] .agent-card-icon {
-  background: var(--openbot-mesh-lime);
-}
-
-.agent-card-row[data-card="files"] .agent-card-icon,
-.agent-card-row[data-card="folders"] .agent-card-icon {
-  background: var(--openbot-mesh-orange);
-}
-
-.agent-card-row[data-card="routines"] .agent-card-icon,
-.agent-card-row[data-card="notifications"] .agent-card-icon {
-  background: var(--openbot-mesh-red);
-}
-
-.agent-card-row[data-card="usage"] .agent-card-icon,
-.agent-card-row[data-card="publish"] .agent-card-icon {
+.agent-card-row:is(
+    [data-card="tables"],
+    [data-card="routines"],
+    [data-card="usage"],
+    [data-card="publish"],
+    [data-card="folders"],
+    [data-card="notifications"]
+  )
+  .agent-card-icon {
   background: var(--openbot-mesh-green);
 }
 
@@ -1388,7 +1374,7 @@ body [role="tooltip"] {
   margin: 0;
 }
 
-/* A long note keeps the quiet tile and a coloured rim on its left; the lit pool is for short content (numbers). */
+/* A long note keeps the quiet tile and a coloured rim along its bottom edge; the lit pool is for short content (numbers). */
 .work-page .mobile-warning {
   --note-rim: var(--openbot-success);
 
@@ -1397,7 +1383,7 @@ body [role="tooltip"] {
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow:
     var(--openbot-tile-quiet-shadow),
-    inset 3px 0 0 var(--note-rim);
+    inset 0 -2px 0 var(--note-rim);
   padding: var(--openbot-space-4);
 }
 
@@ -1580,4 +1566,63 @@ body [role="tooltip"] {
   border-radius: 16px;
   background: var(--openbot-bg-inset);
   box-shadow: var(--openbot-field-edge);
+}
+
+/* The other markers (routine state, schedule run, workflow run) join the same pill family. ------------------------- */
+
+.work-page :is(.w2-item-tag, .schedule-status, .workflow-run-status),
+.schedule-status {
+  --pill-fill: var(--openbot-status-neutral-fill);
+  --pill-ring: var(--openbot-status-neutral-ring);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--pill-fill);
+  box-shadow:
+    inset 0 0 0 1px var(--pill-ring),
+    inset 0 1px 0 var(--openbot-shadow-ring);
+  padding: 0 var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-medium);
+  line-height: 20px;
+}
+
+.work-page .w2-item-tag[data-state="active"],
+.work-page .workflow-run-status[data-status="done"],
+.schedule-status[data-status="done"] {
+  --pill-fill: var(--openbot-status-green-fill);
+  --pill-ring: var(--openbot-status-green-ring);
+  color: var(--openbot-status-green);
+}
+
+.work-page .w2-item-tag[data-state="paused"] {
+  --pill-fill: var(--openbot-status-amber-fill);
+  --pill-ring: var(--openbot-status-amber-ring);
+  color: var(--openbot-status-amber);
+}
+
+.work-page .workflow-run-status:is([data-status="failed"], [data-status="denied"]),
+.schedule-status[data-status="failed"] {
+  --pill-fill: var(--openbot-status-red-fill);
+  --pill-ring: var(--openbot-status-red-ring);
+  color: var(--openbot-status-red);
+}
+
+.work-page .workflow-run-status:is([data-status="running"], [data-status="waiting"]),
+.schedule-status[data-status="planned"] {
+  --pill-fill: var(--openbot-status-blue-fill);
+  --pill-ring: var(--openbot-status-blue-ring);
+  color: var(--openbot-status-blue);
+}
+
+:is(.w2-item-tag[data-state], .schedule-status[data-status], .workflow-run-status[data-status])::before {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border: 1.5px solid currentColor;
+  border-radius: var(--openbot-radius-pill);
+  background: radial-gradient(circle, currentColor 0 28%, transparent 34%);
+  content: "";
 }

@@ -78,6 +78,17 @@
   --openbot-status-amber: var(--cosgral-status-amber);
   --openbot-status-red: var(--cosgral-status-red);
   --openbot-status-violet: var(--cosgral-status-violet);
+  --openbot-status-blue-fill: var(--cosgral-status-blue-fill);
+  --openbot-status-blue-ring: var(--cosgral-status-blue-ring);
+  --openbot-status-green-fill: var(--cosgral-status-green-fill);
+  --openbot-status-green-ring: var(--cosgral-status-green-ring);
+  --openbot-status-amber-fill: var(--cosgral-status-amber-fill);
+  --openbot-status-amber-ring: var(--cosgral-status-amber-ring);
+  --openbot-status-red-fill: var(--cosgral-status-red-fill);
+  --openbot-status-red-ring: var(--cosgral-status-red-ring);
+  --openbot-status-neutral-fill: var(--cosgral-status-neutral-fill);
+  --openbot-status-neutral-ring: var(--cosgral-status-neutral-ring);
+  --openbot-mesh-deep: var(--cosgral-mesh-deep);
   --openbot-bg-remote-canvas: #17171b;
   --openbot-bg-canvas: var(--cosgral-bg-canvas);
   /* Below the canvas: editor wells such as the workflow canvas (the window frame shade). */

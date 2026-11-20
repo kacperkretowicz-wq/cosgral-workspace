@@ -164,19 +164,16 @@
 }
 
 .tasks-board-column[data-column="needs-you"] .tasks-board-icon {
-  background: var(--openbot-mesh-red);
-}
-
-.tasks-board-column[data-column="paused"] .tasks-board-icon {
   background: var(--openbot-mesh-orange);
 }
 
-.tasks-board-column[data-column="failed"] .tasks-board-icon {
-  background: var(--openbot-mesh-pink);
+.tasks-board-column[data-column="paused"] .tasks-board-icon,
+.tasks-board-column[data-column="cancelled"] .tasks-board-icon {
+  background: var(--openbot-mesh-deep);
 }
 
-.tasks-board-column[data-column="cancelled"] .tasks-board-icon {
-  background: var(--openbot-mesh-cyan);
+.tasks-board-column[data-column="failed"] .tasks-board-icon {
+  background: var(--openbot-mesh-red);
 }
 
 .tasks-board-title {
@@ -211,9 +208,10 @@
   border: 0;
   border-radius: var(--openbot-radius-lg);
   background: var(--openbot-bg-control);
+  /* The state lights the bottom edge (reference: glass lit from below), not a stripe down the side. */
   box-shadow:
     var(--openbot-tile-quiet-shadow),
-    inset 3px 0 0 var(--task-rim);
+    inset 0 -2px 0 var(--task-rim);
 }
 
 .tasks-screen-list > li[data-state="running"] {
@@ -237,7 +235,7 @@
   background: var(--openbot-tile-quiet), var(--openbot-bg-control-hover);
   box-shadow:
     var(--openbot-tile-quiet-shadow),
-    inset 3px 0 0 var(--task-rim),
+    inset 0 -2px 0 var(--task-rim),
     var(--openbot-glow-accent);
 }
 

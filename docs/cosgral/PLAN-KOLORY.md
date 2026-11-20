@@ -1,7 +1,10 @@
 # Plan: spójne, proste kolory (Azure Glass bez „napakowania”)
 
 Cel właściciela (19.11): kolory spójne, przejrzyste, proste, w naszym stylu; mniej „napakowanego”. Ten plik to plan
-pracy na kolejny dzień. Nic tu jeszcze nie jest zrobione.
+pracy na kolejny dzień.
+
+**Stan 20.11:** kroki 2–4 i 6 zrobione w stylu nowych inspiracji (żetony, sekcje, pigułki; wiersz 20.11 (1) w
+`PROMPT-UI-JAKOSC.md`). Zostały: krok 1 (skrypt pomiarowy), 5 (poświaty) i przegląd pozostałych ekranów.
 
 ## 1. Stan wyjściowy (zmierzone 19.11)
 
