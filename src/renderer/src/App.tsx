@@ -42,8 +42,33 @@ import type {
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
-import { createEffect, createMemo, createSignal, createStore, flush, Loading, lazy, onSettled, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, flush, Loading, lazy, onSettled, Show } from "solid-js";
 import { markSidebarConversationRead } from "./agent-read-actions";
+import {
+  AUTH_SUCCESS_HOLD_MS,
+  CONVERSATION_MIN_WIDTH,
+  createStoredMessage,
+  createStoredProfile,
+  EMPTY_TEAM_PRESENCE,
+  FALLBACK_HOST_STATUS,
+  FALLBACK_STATUS,
+  FALLBACK_UPDATE_STATUS,
+  LAST_POSITION,
+  LEFT_PANEL_COLLAPSE_THRESHOLD,
+  LEFT_PANEL_COLLAPSED_STORAGE_KEY,
+  LEFT_PANEL_COMPACT,
+  LEFT_PANEL_DEFAULT,
+  LEFT_PANEL_EXPAND_THRESHOLD,
+  LEFT_PANEL_MAX,
+  LEFT_PANEL_MIN,
+  LEFT_PANEL_STORAGE_KEY,
+  MAC_SERVER_RAIL_WIDTH,
+  NARROW_SERVER_RAIL_WIDTH,
+  ONBOARDING_PROFILES,
+  PAGE_RAIL_WIDTH,
+  SERVER_RAIL_WIDTH,
+  updateStored,
+} from "./app-model";
 import {
   botMessagesEqual,
   botProfilesEqual,
@@ -129,122 +154,6 @@ function LazyPage(props: { children: JSX.Element }) {
     </Loading>
   );
 }
-
-const FALLBACK_STATUS: AgentStatus = {
-  phase: "starting",
-  cliVersion: null,
-  auth: { kind: "unknown" },
-  providers: [
-    { id: "codex", state: "not-started", version: null, message: null },
-    { id: "claude", state: "not-started", version: null, message: null },
-  ],
-  capabilities: {
-    chat: "unavailable",
-    browser: "unavailable",
-    computerUse: "unavailable",
-  },
-  message: "Starting local agent CLIs…",
-  fullAccess: true,
-};
-
-const FALLBACK_UPDATE_STATUS: UpdateStatus = {
-  phase: "unsupported",
-  currentVersion: "",
-  availableVersion: null,
-  progress: null,
-  checkedAt: null,
-  message: null,
-};
-
-const FALLBACK_HOST_STATUS: HostStatus = {
-  phase: "unconfigured",
-  configured: false,
-  enabledOnLaunch: false,
-  serverId: null,
-  serverName: null,
-  apiUrl: null,
-  vncHostname: null,
-  apiOnline: false,
-  vncOnline: false,
-  remoteDesktopCredentialConfigured: false,
-  message: null,
-};
-
-const EMPTY_TEAM_PRESENCE: TeamPresenceSnapshot = {
-  serverId: null,
-  members: [],
-  updatedAt: "",
-};
-
-const LEFT_PANEL_STORAGE_KEY = "openbot:left-panel-width";
-const LEFT_PANEL_COLLAPSED_STORAGE_KEY = "openbot:left-panel-collapsed";
-const LEFT_PANEL_DEFAULT = 280;
-const LEFT_PANEL_MIN = 240;
-const AUTH_SUCCESS_HOLD_MS = 600;
-const LEFT_PANEL_MAX = 400;
-const LEFT_PANEL_COMPACT = 88;
-const LEFT_PANEL_COLLAPSE_THRESHOLD = 210;
-const LEFT_PANEL_EXPAND_THRESHOLD = 220;
-const CONVERSATION_MIN_WIDTH = 424;
-const MAC_SERVER_RAIL_WIDTH = 72;
-const SERVER_RAIL_WIDTH = 64;
-const NARROW_SERVER_RAIL_WIDTH = 56;
-const PAGE_RAIL_WIDTH = 54;
-
-type StoredValue = BotProfile | BotMessage;
-type StoredSetter = (value: StoredValue) => void;
-
-const storeSetters = new WeakMap<object, StoredSetter>();
-
-function isBotProfile(value: StoredValue): value is BotProfile {
-  return "avatarSeed" in value;
-}
-
-function createStoredProfile(value: BotProfile): BotProfile {
-  const initial = Object.assign({}, value);
-  const [store, setStore] = createStore(initial);
-  storeSetters.set(store, (next) => {
-    if (isBotProfile(next)) setStore(() => next);
-  });
-  return store;
-}
-
-function createStoredMessage(value: BotMessage): BotMessage {
-  const initial = Object.assign({}, value);
-  const [store, setStore] = createStore(initial);
-  storeSetters.set(store, (next) => {
-    if (!isBotProfile(next)) setStore(() => next);
-  });
-  return store;
-}
-
-function updateStored(store: StoredValue, value: StoredValue): void {
-  storeSetters.get(store)?.(value);
-}
-
-const ONBOARDING_PROFILES: Record<string, { role: string; description: string; firstMessage: string }> = {
-  "Work & projects": {
-    role: "Work & projects",
-    description:
-      "Helps plan, organize, and execute ongoing work and projects while keeping priorities, next steps, and deliverables clear.",
-    firstMessage: "Focus on my work and projects. Help me plan, organize, and execute them proactively.",
-  },
-  "Research & writing": {
-    role: "Research & writing",
-    description: "Researches topics, synthesizes reliable sources, and helps draft, edit, and refine clear writing.",
-    firstMessage:
-      "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.",
-  },
-  "Sales & outreach": {
-    role: "Sales & outreach",
-    description: "Supports prospect research, sales preparation, personalized outreach, and organized follow-up work.",
-    firstMessage:
-      "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.",
-  },
-};
-
-/** A position past the end: the backend puts the folder or agent last. */
-const LAST_POSITION = 1_000_000;
 
 export function App() {
   const [agentCopyNotice, setAgentCopyNotice] = createSignal("");

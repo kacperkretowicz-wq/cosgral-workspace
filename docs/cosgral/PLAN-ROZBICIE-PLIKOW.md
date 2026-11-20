@@ -29,6 +29,8 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 
 - `bot-mapping.ts` z testami (7): czyste funkcje z dołu `App.tsx` (mapowanie botów i wiadomości, porównania, stan przeczytania) (2657 → 2473 linii).
 
+- `app-model.ts` z testami (4): zapasowe stany, rozmiary układu, magazyny elementów i profile onboardingu z góry `App.tsx` (2473 → 2382 linii).
+
 ## Zasady każdego kroku
 
 1. **Jeden obszar na commit**, od najmniej splątanego: Panel ustawień agenta, Panel ekranu, Nagłówek, Pole pisania,
