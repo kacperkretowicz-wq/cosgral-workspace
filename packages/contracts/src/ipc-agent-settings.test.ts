@@ -252,12 +252,12 @@ describe("W3 agent settings contract", () => {
     });
     expect(appearanceDomTokens({ fontWeight: "light" })).toMatchObject({
       fontWeight: "light",
-      weightRegular: "330",
+      weightRegular: "340",
       weightMedium: "420",
       weightSemibold: "520",
     });
     expect(appearanceDomTokens({ fontWeight: "strong" })).toMatchObject({
-      weightRegular: "440",
+      weightRegular: "460",
       weightSemibold: "630",
     });
     expect(appearanceDomTokens({ uiScale: 125, font: "mono", chatAccent: "violet", unreadFirst: true })).toMatchObject({

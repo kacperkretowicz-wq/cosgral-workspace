@@ -257,9 +257,9 @@ export const APP_FONT_WEIGHTS = ["light", "normal", "strong"] as const;
 export type AppFontWeight = (typeof APP_FONT_WEIGHTS)[number];
 
 export const APP_FONT_WEIGHT_VALUES: Record<AppFontWeight, { regular: number; medium: number; semibold: number }> = {
-  light: { regular: 330, medium: 420, semibold: 520 },
-  normal: { regular: 380, medium: 470, semibold: 570 },
-  strong: { regular: 440, medium: 530, semibold: 630 },
+  light: { regular: 340, medium: 420, semibold: 520 },
+  normal: { regular: 400, medium: 470, semibold: 570 },
+  strong: { regular: 460, medium: 530, semibold: 630 },
 };
 
 /** enter = Enter sends and Shift+Enter breaks the line; mod-enter = Ctrl+Enter sends and Enter breaks the line. */
