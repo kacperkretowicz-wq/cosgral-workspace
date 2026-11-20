@@ -2919,4 +2919,24 @@ export const en = {
   "Isolation is off for this agent. Its access level and excluded folders still apply.":
     "Isolation is off for this agent. Its access level and excluded folders still apply.",
   "The daily budget is used up.": "The daily budget is used up.",
+  "At most {n} steps.": "At most {n} steps.",
+  "At most {n} connections.": "At most {n} connections.",
+  "Two steps have the same id: {id}.": "Two steps have the same id: {id}.",
+  "Two connections have the same id: {id}.": "Two connections have the same id: {id}.",
+  "Connection {id} points to an unknown step.": "Connection {id} points to an unknown step.",
+  'Connection {id} leaves the approval {step}: use "allow" or "deny".':
+    'Connection {id} leaves the approval {step}: use "allow" or "deny".',
+  'Connection {id} leaves the condition {step}: use "yes" or "no".':
+    'Connection {id} leaves the condition {step}: use "yes" or "no".',
+  'Connection {id} leaves {step}: use "next".': 'Connection {id} leaves {step}: use "next".',
+  "The trigger cannot have incoming connections ({id}).": "The trigger cannot have incoming connections ({id}).",
+  "The approval {step} needs an Allow connection.": "The approval {step} needs an Allow connection.",
+  "The approval {step} has more than one way on for a decision.":
+    "The approval {step} has more than one way on for a decision.",
+  "The condition {step} needs a Yes or a No connection.": "The condition {step} needs a Yes or a No connection.",
+  "The condition {step} has more than one way on for an answer.":
+    "The condition {step} has more than one way on for an answer.",
+  "These steps are not reachable from the trigger: {steps}.":
+    "These steps are not reachable from the trigger: {steps}.",
+  "{step} has more than one way on; keep one connection.": "{step} has more than one way on; keep one connection.",
 } as const;

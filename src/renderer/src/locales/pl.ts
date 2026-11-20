@@ -2924,4 +2924,24 @@ export const pl = {
   "Isolation is off for this agent. Its access level and excluded folders still apply.":
     "Izolacja jest wyłączona dla tego agenta. Jego poziom dostępu i wykluczone foldery nadal obowiązują.",
   "The daily budget is used up.": "Dzienny budżet jest wykorzystany.",
+  "At most {n} steps.": "Najwyżej {n} kroków.",
+  "At most {n} connections.": "Najwyżej {n} połączeń.",
+  "Two steps have the same id: {id}.": "Dwa kroki mają ten sam identyfikator: {id}.",
+  "Two connections have the same id: {id}.": "Dwa połączenia mają ten sam identyfikator: {id}.",
+  "Connection {id} points to an unknown step.": "Połączenie {id} wskazuje nieznany krok.",
+  'Connection {id} leaves the approval {step}: use "allow" or "deny".':
+    "Połączenie {id} wychodzi ze zgody {step}: użyj „allow” albo „deny”.",
+  'Connection {id} leaves the condition {step}: use "yes" or "no".':
+    "Połączenie {id} wychodzi z warunku {step}: użyj „yes” albo „no”.",
+  'Connection {id} leaves {step}: use "next".': "Połączenie {id} wychodzi z kroku {step}: użyj „next”.",
+  "The trigger cannot have incoming connections ({id}).": "Wyzwalacz nie może mieć połączeń przychodzących ({id}).",
+  "The approval {step} needs an Allow connection.": "Zgoda {step} potrzebuje połączenia „Zezwól”.",
+  "The approval {step} has more than one way on for a decision.":
+    "Zgoda {step} ma więcej niż jedną drogę dalej dla jednej decyzji.",
+  "The condition {step} needs a Yes or a No connection.": "Warunek {step} potrzebuje połączenia „Tak” lub „Nie”.",
+  "The condition {step} has more than one way on for an answer.":
+    "Warunek {step} ma więcej niż jedną drogę dalej dla jednej odpowiedzi.",
+  "These steps are not reachable from the trigger: {steps}.": "Tych kroków nie da się osiągnąć z wyzwalacza: {steps}.",
+  "{step} has more than one way on; keep one connection.":
+    "{step} ma więcej niż jedną drogę dalej; zostaw jedno połączenie.",
 } as const;
