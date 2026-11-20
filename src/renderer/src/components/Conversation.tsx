@@ -15,7 +15,6 @@ import type {
   AttachmentSummary,
   AvatarImageInput,
   BotAvatarHue,
-  BrowserControlAction,
   BrowserControlState,
   BrowserTab,
   DraftAttachment,
@@ -74,6 +73,24 @@ import {
 } from "./conversation/chat-search";
 import { ScrollToLatestButton, scrollToLatestMessage } from "./conversation/MessageNavigation";
 import { ExchangeSystemRow, MessageActions, MessageBody } from "./conversation/MessageRendering";
+import {
+  BROWSER_PANEL_DEFAULT,
+  BROWSER_PANEL_MAX,
+  BROWSER_PANEL_MIN,
+  BROWSER_PANEL_STORAGE_KEY,
+  browserActionLabel,
+  CONVERSATION_PANEL_MIN,
+  type ComposerDraft,
+  EMPTY_DRAFT,
+  type MediaPreview,
+  ONBOARDING_CHOICE_KEYS,
+  type RightPanelMode,
+  reasoningLabel,
+  SETTINGS_PANEL_DEFAULT,
+  SETTINGS_PANEL_MAX,
+  SETTINGS_PANEL_MIN,
+  SETTINGS_PANEL_STORAGE_KEY,
+} from "./conversation/model";
 import { QueuePanel } from "./conversation/QueuePanel";
 import { MessageSelectionActions } from "./conversation/SelectionActions";
 import {
@@ -196,55 +213,6 @@ interface ConversationProps {
   onDisconnectRemoteMac: (sessionId: string) => Promise<void>;
   onOpenAgentSetup: () => Promise<void>;
   onStop: () => void;
-}
-
-interface ComposerDraft {
-  text: string;
-  attachments: DraftAttachment[];
-  replyToMessageId: string | null;
-}
-
-interface MediaPreview {
-  attachment: AttachmentSummary;
-  text: string | null;
-  loading: boolean;
-  error: string | null;
-}
-
-type RightPanelMode = "none" | "browser" | "desktop" | "settings" | "files" | "voice";
-
-const EMPTY_DRAFT: ComposerDraft = {
-  text: "",
-  attachments: [],
-  replyToMessageId: null,
-};
-const ONBOARDING_CHOICE_KEYS = ["Work & projects", "Research & writing", "Sales & outreach", "Something else"] as const;
-const SETTINGS_PANEL_STORAGE_KEY = "openbot:settings-panel-width";
-const SETTINGS_PANEL_DEFAULT = 296;
-const SETTINGS_PANEL_MIN = 180;
-const SETTINGS_PANEL_MAX = 1600;
-const BROWSER_PANEL_STORAGE_KEY = "openbot:browser-panel-width";
-const BROWSER_PANEL_DEFAULT = 380;
-const BROWSER_PANEL_MIN = 220;
-const BROWSER_PANEL_MAX = 1600;
-const CONVERSATION_PANEL_MIN = 96;
-
-function browserActionLabel(action: BrowserControlAction): string {
-  const labels: Record<BrowserControlAction, string> = {
-    open: t("Opening a page…"),
-    "list-tabs": t("Checking tabs…"),
-    snapshot: t("Reading the page…"),
-    click: t("Clicking…"),
-    type: t("Typing…"),
-    key: t("Using the keyboard…"),
-    scroll: t("Scrolling…"),
-    back: t("Going back…"),
-    forward: t("Going forward…"),
-    reload: t("Reloading…"),
-    screenshot: t("Taking a screenshot…"),
-    "close-tab": t("Closing a tab…"),
-  };
-  return labels[action];
 }
 
 export function Conversation(props: ConversationProps) {
@@ -3125,9 +3093,4 @@ export function Conversation(props: ConversationProps) {
       </Show>
     </main>
   );
-}
-
-function reasoningLabel(effort: AgentReasoningEffort): string {
-  if (effort === "xhigh") return t("Extra high");
-  return t(`${effort.slice(0, 1).toUpperCase()}${effort.slice(1)}`);
 }
