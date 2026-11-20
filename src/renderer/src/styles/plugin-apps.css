@@ -23,7 +23,7 @@
 .marketplace-nav h1 {
   margin: 0 0 8px;
   font-size: var(--cosgral-text-xl);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .marketplace-nav-list {
@@ -38,7 +38,7 @@
   border-radius: var(--cosgral-radius-md);
   padding: 8px 12px;
   color: var(--cosgral-text-secondary);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   text-align: left;
 }
 
@@ -62,7 +62,7 @@
 .plugin-apps-hero h2 {
   margin: 0;
   font-size: var(--cosgral-text-2xl);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-apps-hero p {
@@ -157,14 +157,14 @@
 .plugin-section-head h3 {
   margin: 0;
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-section-count {
   margin-left: 8px;
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .plugin-rows {
@@ -229,7 +229,7 @@
   background: var(--cosgral-bg-control);
   color: var(--cosgral-text-secondary);
   font-size: var(--cosgral-text-sm);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-row-copy {
@@ -242,7 +242,7 @@
   overflow: hidden;
   color: var(--cosgral-text-primary);
   font-size: var(--cosgral-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

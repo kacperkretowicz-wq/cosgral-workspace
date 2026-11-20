@@ -65,6 +65,8 @@
 15. **Ikony, sekcje, znaczniki wg inspiracji 20.11 (wiersz 20.11 (1)):** podświetlane szklane żetony zamiast neonowych
     siatek, karty jako granatowe szkło ze świecącą dolną krawędzią, jedna rodzina pigułek stanu. Propozycja palety:
     `docs/cosgral/PLAN-KOLORY.md` i strona-podgląd (artefakt „Paleta Azure Glass”).
+16. **Typografia i napisy (wiersz 20.11 (2)):** skala, trzy grubości, etykiety bez wersalików, daty w języku
+    aplikacji (`appLocale()`), polska odmiana liczebników (`tn()`), dotłumaczone podsumowania kart i powody akcji.
 
 **Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
 

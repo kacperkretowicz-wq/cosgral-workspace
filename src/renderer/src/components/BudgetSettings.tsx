@@ -8,7 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { PanelHeading } from "./PanelHeading";
@@ -36,7 +36,7 @@ export function BudgetCounter(props: { status: BudgetStatus }) {
       </div>
       <Text as="p">
         {t("{tokens} tokens · {turns} turns", {
-          tokens: view().usage.tokens.toLocaleString(),
+          tokens: view().usage.tokens.toLocaleString(appLocale()),
           turns: view().usage.turns,
         })}
       </Text>

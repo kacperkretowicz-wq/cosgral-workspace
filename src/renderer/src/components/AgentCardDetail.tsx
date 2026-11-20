@@ -1,6 +1,6 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button } from "./ui";
@@ -14,7 +14,7 @@ const ACCESS_LABELS: Record<string, string> = {
 function when(iso: string | null): string {
   if (!iso) return "";
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(appLocale());
 }
 
 /**
@@ -109,7 +109,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
         return (
           <dl class="agent-card-detail-facts">
             <dt>{t("Tokens")}</dt>
-            <dd>{d.status.usage.tokens.toLocaleString()}</dd>
+            <dd>{d.status.usage.tokens.toLocaleString(appLocale())}</dd>
             <dt>{t("Turns")}</dt>
             <dd>{d.status.usage.turns}</dd>
             <dt>{t("Cost")}</dt>

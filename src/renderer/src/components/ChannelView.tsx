@@ -9,7 +9,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import type { AvatarMood } from "../blobatar";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { channelMemberMood, channelMessageMood } from "../row-activity";
 import { AgentAvatar } from "./AgentAvatar";
 import { ChannelHistoryClear } from "./ChannelHistoryClear";
@@ -44,7 +44,9 @@ const TASK_STATE_LABELS: Record<ChannelTask["state"], string> = {
 
 function messageTime(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 /** A creature for an agent; a plain initial tile for the person (and for an agent that is gone). */

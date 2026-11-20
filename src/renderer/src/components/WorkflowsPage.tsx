@@ -16,7 +16,7 @@ import {
 } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
 import {
   Bot,
@@ -92,7 +92,7 @@ const STEP_STATUS_LABELS: Record<WorkflowRun["steps"][number]["status"], string>
 function formatRunTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return date.toLocaleString(appLocale(), { dateStyle: "medium", timeStyle: "short" });
 }
 
 const NODE_WIDTH = 260;

@@ -10,7 +10,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { AGENT_BUSY_MESSAGE_MODES, AGENT_DETAIL_CARD_IDS, AGENT_NOTIFICATION_LEVELS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { AgentCardDetail } from "./AgentCardDetail";
 import { AgentCardPage, type AgentPageCardId, isAgentPageCard } from "./AgentCardPage";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
@@ -100,11 +100,41 @@ const SUMMARY_LABELS: Record<string, string> = {
   mentions: "Only when I am needed",
   none: "Nothing",
   "working-folder": "Working folder",
+  "ask-first": "Ask first",
+  full: "Full access",
 };
 
-function summaryText(summary: string): string {
-  const key = SUMMARY_LABELS[summary];
-  return key ? t(key) : summary;
+/** Counted cards: the noun for one, for more, and the line for none (Polish gets its own plural forms through tn). */
+const COUNT_NOUNS: Partial<Record<string, readonly [string, string, string]>> = {
+  memory: ["{count} memory", "{count} memories", "No memories"],
+  skills: ["{count} skill", "{count} skills", "No skills"],
+  files: ["{count} file", "{count} files", "No files"],
+  tables: ["{count} table", "{count} tables", "No tables"],
+  routines: ["{count} routine", "{count} routines", "No routines"],
+  "backup-models": ["{count} backup model", "{count} backup models", "None"],
+};
+
+/** Fixed lines the service sends in English; they are shown in the app language. */
+const KNOWN_SUMMARIES = new Set([
+  "Working folder only",
+  "Not saved as a template",
+  "Not available in this build",
+  "No limit",
+  "None",
+]);
+
+function summaryText(card: { id: string; count: number | null; summary: string }): string {
+  const noun = COUNT_NOUNS[card.id];
+  if (noun && card.count !== null) return card.count === 0 ? t(noun[2]) : tn(card.count, noun[0], noun[1]);
+  const key = SUMMARY_LABELS[card.summary];
+  if (key) return t(key);
+  if (KNOWN_SUMMARIES.has(card.summary)) return t(card.summary);
+  const saved = /^Saved as a template: (.+)$/.exec(card.summary);
+  if (saved?.[1]) return t("Saved as a template: {name}", { name: saved[1] });
+  const folders = /^(\d+) added, (\d+) excluded$/.exec(card.summary);
+  if (folders)
+    return t("{added} added, {excluded} excluded", { added: folders[1] ?? "0", excluded: folders[2] ?? "0" });
+  return card.summary;
 }
 
 function detailId(id: string): AgentDetailCardId | null {
@@ -285,7 +315,7 @@ export function AgentCardsSection(props: { botId: string }) {
                                 <strong>{t(CARD_LABELS[card.id])}</strong>
                                 <span class="agent-card-summary">
                                   {card.available
-                                    ? summaryText(card.summary)
+                                    ? summaryText(card)
                                     : `${t("Unavailable in this version")}${card.summary ? `: ${card.summary}` : ""}`}
                                 </span>
                                 <Show when={card.available && card.count !== null}>

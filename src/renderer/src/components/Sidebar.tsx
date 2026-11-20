@@ -20,7 +20,7 @@ import { createEffect, createMemo, createSignal, For, onSettled, Show } from "so
 import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
@@ -1456,12 +1456,12 @@ function sidebarMessageTime(value: string): string {
   const date = new Date(value);
   const now = new Date();
   if (date.toDateString() === now.toDateString()) {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(appLocale(), {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
   }
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     month: "short",
     day: "numeric",
   }).format(date);

@@ -6,12 +6,12 @@ import {
   type WorkflowVersionSummary,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Badge, Button } from "./ui";
 
 function savedLabel(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString(appLocale());
 }
 
 function reasonLabel(version: WorkflowVersionSummary): string {

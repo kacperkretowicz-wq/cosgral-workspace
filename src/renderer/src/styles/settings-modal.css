@@ -101,8 +101,7 @@
 .settings-modal-nav-status {
   font-size: var(--openbot-text-2xs);
   line-height: var(--openbot-leading-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--openbot-tracking-wide);
+  letter-spacing: 0;
 }
 
 .settings-modal-main {

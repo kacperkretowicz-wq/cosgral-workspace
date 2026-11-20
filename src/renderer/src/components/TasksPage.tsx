@@ -1,6 +1,6 @@
 import type { ChannelTask, ChannelTaskAction, ChannelTaskState, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Badge, type BadgeTone, Button, Card, Heading, Input, Text } from "./ui";
 import { WorkPage } from "./WorkPage";
 
@@ -56,8 +56,8 @@ function matches(task: ChannelTask, filter: TaskFilter): boolean {
 function formatUpdated(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString()} ${time}`;
+  const time = date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString(appLocale())} ${time}`;
 }
 
 /**

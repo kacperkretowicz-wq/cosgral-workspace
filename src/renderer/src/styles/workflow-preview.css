@@ -61,8 +61,7 @@
 .workflow-preview-type {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .workflow-preview-node strong {

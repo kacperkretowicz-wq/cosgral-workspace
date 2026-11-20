@@ -87,9 +87,9 @@ export const AgentTiles: Story = {
     await expect(tile.getBoundingClientRect().height).toBe(60);
     await expect(avatar.getBoundingClientRect().width).toBe(42);
     await expect(time.scrollWidth).toBeLessThanOrEqual(time.clientWidth);
-    await expect(getComputedStyle(title).fontSize).toBe("14px");
-    await expect(getComputedStyle(preview).fontSize).toBe("13px");
-    await expect(getComputedStyle(time).fontSize).toBe("12px");
+    await expect(getComputedStyle(title).fontSize).toBe("15px");
+    await expect(getComputedStyle(preview).fontSize).toBe("14px");
+    await expect(getComputedStyle(time).fontSize).toBe("13px");
   },
 };
 
@@ -117,12 +117,12 @@ export const AgentContextMenu: Story = {
     await waitFor(() => expect(menu.getBoundingClientRect().width).toBe(200));
     await expect(menuStyle.padding).toBe("4px");
     await expect(menuStyle.outlineStyle).toBe("none");
-    await expect(items[0].getBoundingClientRect().height).toBe(26);
+    await expect(items[0].getBoundingClientRect().height).toBe(28);
     await expect(itemStyle.padding).toBe("4px 8px");
     await expect(itemStyle.gap).toBe("8px");
     await expect(itemStyle.borderRadius).toBe("4px");
-    await expect(itemStyle.fontSize).toBe("13px");
-    await expect(itemStyle.lineHeight).toBe("18px");
+    await expect(itemStyle.fontSize).toBe("14px");
+    await expect(itemStyle.lineHeight).toBe("20px");
   },
 };
 

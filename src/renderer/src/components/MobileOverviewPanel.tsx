@@ -5,7 +5,7 @@ import type {
   PhoneTailscaleGuide,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Card, Heading, Switch, Text } from "./ui";
 
@@ -19,7 +19,7 @@ const REACH_LABELS: Record<PhoneReach, string> = {
 function when(value: string | null): string {
   if (!value) return t("never");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(appLocale());
 }
 
 function PhoneRow(props: {

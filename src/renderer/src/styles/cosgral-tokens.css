@@ -46,14 +46,14 @@
   --cosgral-radius-lg: 12px;
   --cosgral-radius-pill: 999px;
 
-  /* Type: 12 / 13 / 14 (body) / 16 */
+  /* Type (owner, 20.11: "jak w Groku"): 13 / 14 (body) / 15 / 16 / 24; weights 400, 500, 600 only. */
   --cosgral-font-sans:
     "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --cosgral-text-sm: 12px;
-  --cosgral-text-md: 13px;
-  --cosgral-text-lg: 14px;
+  --cosgral-text-sm: 13px;
+  --cosgral-text-md: 14px;
+  --cosgral-text-lg: 15px;
   --cosgral-text-xl: 16px;
-  --cosgral-text-2xl: 22px;
+  --cosgral-text-2xl: 24px;
 
   /* Motion */
   --cosgral-duration-fast: 120ms;

@@ -6,7 +6,7 @@ import {
   type SetAccountPoolInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { accountError, useAccounts } from "./account-state";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, IconButton, Input, Switch, Text } from "./ui";
@@ -210,7 +210,9 @@ export function ProviderAccountCard(props: {
       <div class="provider-account-details">
         <Show when={props.account.limitedUntil && new Date(props.account.limitedUntil).getTime() > Date.now()}>
           <Text as="p" tone="warning">
-            {t("Limited until {time}", { time: new Date(props.account.limitedUntil ?? "").toLocaleString() })}
+            {t("Limited until {time}", {
+              time: new Date(props.account.limitedUntil ?? "").toLocaleString(appLocale()),
+            })}
           </Text>
         </Show>
         <Text as="p" role="status" aria-live="polite" class="provider-account-phase">

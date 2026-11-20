@@ -129,7 +129,7 @@
   margin: 0;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-2xl);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .coming-soon-body p {
@@ -365,7 +365,7 @@
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -533,7 +533,7 @@
 
 .eyes-bar-copy strong {
   color: var(--openbot-text-primary);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .eyes-bar-target {
@@ -1061,7 +1061,7 @@
   margin: 0;
   padding-block: 0;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 .fallback-model-badge {
   max-width: 100%;
@@ -1409,7 +1409,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 }
 
 .thread-tab[data-unread="true"] .thread-tab-label {
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .thread-tab-close,
@@ -1601,7 +1601,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .agent-card-row strong {
   min-width: 0;
   flex: 0 0 38%;
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .agent-card-summary {
@@ -2046,7 +2046,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 
 .library-name strong {
   overflow: hidden;
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2135,7 +2135,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .usage-totals dd {
   margin: 4px 0 0;
   font-size: var(--cosgral-text-2xl);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .usage-chart {
@@ -2231,7 +2231,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   border-bottom: 1px solid var(--cosgral-border);
   padding: 8px 6px;
   text-align: left;
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
 }
 
 .usage-table thead th {
@@ -2601,7 +2601,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 }
 
 .tasks-screen-title {
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .tasks-screen-meta,
@@ -2640,7 +2640,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 .tasks-detail h3 {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .tasks-detail-text {

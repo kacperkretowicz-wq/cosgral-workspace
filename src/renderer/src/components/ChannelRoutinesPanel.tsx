@@ -10,7 +10,7 @@ import {
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type FormKind = "interval" | "daily" | "cron";
@@ -95,7 +95,7 @@ export function problemText(message: string): string {
 
 function when(iso: string, timezone?: string): string {
   try {
-    return new Date(iso).toLocaleString(undefined, timezone ? { timeZone: timezone } : undefined);
+    return new Date(iso).toLocaleString(appLocale(), timezone ? { timeZone: timezone } : undefined);
   } catch {
     return iso;
   }

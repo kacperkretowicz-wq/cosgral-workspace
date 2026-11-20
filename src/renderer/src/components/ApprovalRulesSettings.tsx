@@ -1,12 +1,12 @@
 import { APPROVAL_RULES_NEVER_COVER, type ApprovalRule, describeApprovalRule } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Button, Heading, Text } from "./ui";
 
 function whenUsed(rule: ApprovalRule): string {
   if (!rule.uses || !rule.lastUsedAt) return "Not used yet";
   const date = new Date(rule.lastUsedAt);
-  const last = Number.isNaN(date.getTime()) ? rule.lastUsedAt : date.toLocaleString();
+  const last = Number.isNaN(date.getTime()) ? rule.lastUsedAt : date.toLocaleString(appLocale());
   return `Used ${rule.uses} ${rule.uses === 1 ? "time" : "times"}, last ${last}`;
 }
 

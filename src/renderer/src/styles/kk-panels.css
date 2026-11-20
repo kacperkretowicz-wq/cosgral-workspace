@@ -70,7 +70,7 @@
   margin: 8px 0 0;
   color: var(--cosgral-text-secondary);
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .messenger-steps {
@@ -304,7 +304,7 @@
 .cosgral-panel-state-title {
   margin: 0;
   font-size: var(--cosgral-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   color: inherit;
 }
 

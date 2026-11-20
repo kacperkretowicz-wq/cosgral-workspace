@@ -24,7 +24,7 @@ import {
   PROVIDER_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -98,8 +98,10 @@ export function providerLabel(usage: Pick<ProviderUsage, "provider" | "model">, 
 export function formatResetTime(resetsAt: number | null, nowMs: number): string {
   if (resetsAt === null) return "";
   const date = new Date(resetsAt * 1000);
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toDateString() === new Date(nowMs).toDateString() ? time : `${date.toLocaleDateString()} ${time}`;
+  const time = date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date(nowMs).toDateString()
+    ? time
+    : `${date.toLocaleDateString(appLocale())} ${time}`;
 }
 
 const STATE_VIEW = {

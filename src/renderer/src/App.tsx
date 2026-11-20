@@ -71,7 +71,7 @@ import { TasksPage } from "./components/TasksPage";
 import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
 import type { BotMessage, BotProfile } from "./data";
-import { t } from "./i18n";
+import { appLocale, t } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import {
   addCard,
@@ -2644,7 +2644,7 @@ function retainThinkingMessages(previous: BotMessage[], next: BotMessage[]): Bot
 function formatTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "now";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);

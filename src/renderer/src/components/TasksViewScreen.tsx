@@ -10,7 +10,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { CHANNEL_TASK_STATES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import "../styles/tasks-detail.css";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
@@ -63,8 +63,8 @@ function actionLabel(action: TaskDetailAction): string {
 function formatTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString()} ${time}`;
+  const time = date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString(appLocale())} ${time}`;
 }
 
 /**
@@ -72,6 +72,20 @@ function formatTime(iso: string): string {
  * tasksView.board when Active has no chip and no search; otherwise one list. Scope tabs, state chips, search, detail
  * panel with request/result/steps/log and engine actions. "Open as chat" shows the channel at the task's message.
  */
+/** Why an action is off, as the service says it; the known lines are shown in the app language. */
+const KNOWN_REASONS = new Set([
+  "Only a paused or stopped task can be resumed.",
+  "This task is not archived.",
+  "This task is finished.",
+  "This task is already finished.",
+  "This task cannot start now.",
+  "Only a human can resume a task.",
+]);
+
+function reasonText(reason: string): string {
+  return KNOWN_REASONS.has(reason) ? t(reason) : reason;
+}
+
 export function TasksViewScreen(props: {
   bots: Array<{ id: string; name: string }>;
   onOpenChannel?: (channelId: string, anchorMessageId?: string) => void;
@@ -399,7 +413,7 @@ export function TasksViewScreen(props: {
                           type="button"
                           variant={item.action === "stop" ? "danger" : "secondary"}
                           disabled={!item.enabled || busy()}
-                          title={item.reason ?? undefined}
+                          title={item.reason ? reasonText(item.reason) : undefined}
                           onClick={() => void act(item.action)}
                         >
                           {actionLabel(item.action)}
@@ -410,7 +424,7 @@ export function TasksViewScreen(props: {
                   <For each={task().actions.filter((item) => !item.enabled && item.reason)}>
                     {(item) => (
                       <p class="tasks-screen-note">
-                        {actionLabel(item.action)}: {item.reason}
+                        {actionLabel(item.action)}: {reasonText(item.reason ?? "")}
                       </p>
                     )}
                   </For>

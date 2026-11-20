@@ -55,7 +55,7 @@
   margin: 0 0 10px;
   color: var(--cosgral-text-primary);
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .mk-grid {
@@ -147,7 +147,7 @@
   background: oklch(0.5 0.1 var(--mk-hue) / 0.3);
   color: oklch(0.84 0.1 var(--mk-hue));
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: 0.02em;
 }
 
@@ -160,7 +160,7 @@
 .mk-card-copy strong {
   color: var(--cosgral-text-primary);
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .mk-card-copy small {

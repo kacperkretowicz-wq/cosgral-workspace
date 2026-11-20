@@ -9,7 +9,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { LIBRARY_KINDS, LIBRARY_SORTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
 import { formatFileSize } from "./conversation/AttachmentCards";
@@ -344,7 +344,7 @@ export function LibraryFilesView() {
                         <strong>{entry.name}</strong>
                         <small>
                           {formatFileSize(entry.size)} · {entry.agentName ?? t("You")} ·{" "}
-                          {new Date(entry.createdAt).toLocaleDateString()}
+                          {new Date(entry.createdAt).toLocaleDateString(appLocale())}
                         </small>
                       </span>
                       <span class="library-actions">

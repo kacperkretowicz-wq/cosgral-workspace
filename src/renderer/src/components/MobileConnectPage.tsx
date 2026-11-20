@@ -1,7 +1,7 @@
 import type { MobileExposure, MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
 import { PageIcon } from "./PageRail";
 import { PanelHeading } from "./PanelHeading";
@@ -17,7 +17,7 @@ export function formatMobileCountdown(ms: number): string {
 function formatWhen(value: string | null): string {
   if (!value) return t("never");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(appLocale());
 }
 
 export interface MobileConnectViewProps {

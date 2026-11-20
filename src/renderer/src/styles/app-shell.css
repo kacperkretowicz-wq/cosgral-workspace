@@ -338,7 +338,7 @@
   background: var(--openbot-bg-surface);
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-sm);
-  font-weight: 740;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: -0.02em;
   transition:
     border-radius var(--openbot-duration-normal) ease,
@@ -408,7 +408,7 @@
   background: transparent;
   color: var(--openbot-accent-text);
   font-size: var(--openbot-text-2xl);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
 }
 
 .server-rail-action svg {
@@ -493,9 +493,8 @@
 .remote-dialog-eyebrow {
   color: var(--openbot-accent-text);
   font-size: var(--openbot-text-2xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .remote-field {
@@ -504,7 +503,7 @@
   margin: 14px 0;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-sm);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-field input,
@@ -518,7 +517,7 @@
   background: var(--openbot-bg-surface);
   color: var(--openbot-text-primary);
   font: inherit;
-  font-weight: 450;
+  font-weight: var(--openbot-weight-regular);
 }
 
 .remote-field input:focus,
@@ -529,7 +528,7 @@
 .remote-field small {
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-xs);
-  font-weight: 450;
+  font-weight: var(--openbot-weight-regular);
 }
 
 .remote-account-chip {
@@ -551,7 +550,7 @@
   background: var(--openbot-hover);
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 700;
+  font-weight: var(--openbot-weight-semibold);
 }
 .remote-account-chip > div {
   display: grid;
@@ -585,7 +584,7 @@
   border-radius: var(--openbot-radius-md);
   padding: 0 13px;
   font-size: var(--openbot-text-sm);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
   cursor: pointer;
 }
 
@@ -638,9 +637,8 @@
   background: var(--openbot-warning-soft);
   color: var(--openbot-warning);
   font-size: var(--openbot-text-2xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .remote-desktop-access-state.ready {
@@ -660,7 +658,7 @@
 .remote-desktop-access-instructions > span {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-2xs);
-  font-weight: 700;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-desktop-access-instructions p {
@@ -692,9 +690,8 @@
   gap: 4px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 .remote-section-heading select {
   border: 1px solid var(--openbot-border);
@@ -721,7 +718,7 @@
   background: transparent;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-xs);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
   cursor: pointer;
 }
 .remote-invite-tabs button.active {
@@ -892,7 +889,7 @@
   gap: 9px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-sm);
-  font-weight: 570;
+  font-weight: var(--openbot-weight-medium);
   text-align: left;
   transition:
     background-color var(--openbot-duration-fast) ease,
@@ -989,7 +986,7 @@
   margin-top: 3px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-2xl);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: -0.025em;
 }
 
@@ -1003,9 +1000,8 @@
 .remote-admin-kicker {
   color: var(--openbot-success);
   font-size: var(--openbot-text-2xs);
-  font-weight: 720;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .remote-admin-status-pill {
@@ -1016,9 +1012,8 @@
   background: var(--openbot-hover);
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 680;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .remote-admin-status-pill.online {
@@ -1052,7 +1047,7 @@
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xl);
   font-variant-numeric: tabular-nums;
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-admin-metrics span {
@@ -1138,7 +1133,7 @@
   padding: 6px 8px;
   color: var(--openbot-success);
   font-size: var(--openbot-text-2xs);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-admin-list {
@@ -1156,7 +1151,7 @@
 .remote-admin-list > header h3 {
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-xs);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-admin-list > header span {
@@ -1193,7 +1188,7 @@
   background: var(--openbot-success-soft);
   color: var(--openbot-success);
   font-size: var(--openbot-text-2xs);
-  font-weight: 720;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-identity-mark.muted {
@@ -1218,7 +1213,7 @@
 .remote-access-copy strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xs);
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .remote-access-copy span {
@@ -1273,7 +1268,7 @@
   background: transparent;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 590;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-text-button {
@@ -1336,7 +1331,7 @@
   padding: 6px 8px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-remove-confirmation button.danger {
@@ -1742,18 +1737,17 @@ textarea {
   margin: 0;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
   line-height: 14px;
 }
 
 .sidebar-chat-group > header h2 {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
 }
 
 .sidebar-chat-group > header span {
   font-size: var(--openbot-text-2xs);
-  font-weight: 450;
+  font-weight: var(--openbot-weight-regular);
   text-transform: none;
 }
 
@@ -1767,7 +1761,7 @@ textarea {
   border-radius: var(--openbot-radius-md);
   color: var(--openbot-success);
   font-size: var(--openbot-text-2xs);
-  font-weight: 680;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: 0.02em;
 }
 
@@ -1826,7 +1820,7 @@ textarea {
   padding: 0 3px;
   color: var(--openbot-bg-sidebar);
   font-size: var(--openbot-text-2xs);
-  font-weight: 680;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .bot-row {
@@ -1954,7 +1948,7 @@ textarea {
   padding: 0 3px;
   color: var(--openbot-bg-sidebar);
   font-size: var(--openbot-text-2xs);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 12px;
   animation: sidebar-reply-in var(--openbot-duration-overlay) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -2117,7 +2111,7 @@ textarea {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-2xl);
   line-height: 25px;
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: -0.25px;
 }
 
@@ -2153,7 +2147,7 @@ textarea {
   background: var(--openbot-hover);
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-md);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   transition:
     background var(--openbot-duration-fast) ease,
     opacity var(--openbot-duration-fast) ease;
@@ -2291,9 +2285,8 @@ textarea {
   padding: 7px 10px 3px 13px;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-xs);
-  font-weight: 590;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .avatar-editor-actions {
@@ -2310,7 +2303,7 @@ textarea {
   padding: 0 9px;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-xs);
-  font-weight: 540;
+  font-weight: var(--openbot-weight-medium);
   transition-property: scale, background-color, color;
   transition-duration: var(--openbot-duration-normal);
   transition-timing-function: ease-out;
@@ -2394,7 +2387,7 @@ textarea {
 .avatar-image-upload strong {
   margin-bottom: 3px;
   font-size: var(--openbot-text-sm);
-  font-weight: 580;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .avatar-image-upload small {
@@ -2485,7 +2478,7 @@ textarea {
   box-shadow: none;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-2xs);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .conversation-title .bot-avatar {
@@ -2526,7 +2519,7 @@ textarea {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
   line-height: 20px;
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2541,7 +2534,7 @@ textarea {
   padding: 2px 4px;
   color: var(--openbot-text-readable);
   font-size: var(--openbot-text-xs);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2753,7 +2746,7 @@ textarea {
   font-size: var(--openbot-text-md);
   line-height: 18px;
   letter-spacing: -0.08px;
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .sidebar-update-pill {
@@ -2765,7 +2758,7 @@ textarea {
   font-size: var(--openbot-text-2xs);
   line-height: 16px;
   letter-spacing: 0.01em;
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   opacity: 1;
   transform: translateX(0);
   transition:
@@ -2820,7 +2813,7 @@ textarea {
   box-shadow: inset 0 0 0 1px var(--openbot-border-strong);
   color: var(--openbot-success);
   font-size: var(--openbot-text-md);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .account-profile-avatar > img {
@@ -2845,7 +2838,7 @@ textarea {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
   letter-spacing: -0.01em;
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .account-profile-copy > span {
@@ -2868,7 +2861,7 @@ textarea {
   color: var(--openbot-success);
   font-size: var(--openbot-text-xs);
   line-height: 14px;
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .account-profile-actions button:hover:not(:disabled) {

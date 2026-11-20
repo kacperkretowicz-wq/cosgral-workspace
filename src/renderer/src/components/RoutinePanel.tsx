@@ -1,7 +1,7 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { PanelHeading } from "./PanelHeading";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
@@ -230,7 +230,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
             <p>
               {routine.nextRunAt
                 ? t("Next: {when} ({timezone})", {
-                    when: new Date(routine.nextRunAt).toLocaleString(undefined, {
+                    when: new Date(routine.nextRunAt).toLocaleString(appLocale(), {
                       timeZone: routine.timezone,
                     }),
                     timezone: routine.timezone,

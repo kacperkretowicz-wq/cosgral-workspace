@@ -123,14 +123,14 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
                 }}
               >
                 <For each={ACCESS_LEVELS}>
-                  {(level) => <option value={level}>{ACCESS_LEVEL_INFO[level].name}</option>}
+                  {(level) => <option value={level}>{t(ACCESS_LEVEL_INFO[level].name)}</option>}
                 </For>
               </NativeSelect>
             </Field>
             <Text as="p" tone="secondary">
               {t("Current: {name}. {summary}", {
-                name: ACCESS_LEVEL_INFO[current().level].name,
-                summary: ACCESS_LEVEL_INFO[current().level].summary,
+                name: t(ACCESS_LEVEL_INFO[current().level].name),
+                summary: t(ACCESS_LEVEL_INFO[current().level].summary),
               })}
             </Text>
             <Show when={current().raisedAt}>

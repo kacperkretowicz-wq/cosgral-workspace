@@ -1,6 +1,6 @@
 import { MCP_OAUTH_LIMITS, type McpOAuthState, type McpOAuthStatus } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button } from "./ui";
 
@@ -18,7 +18,7 @@ function expiry(status: McpOAuthStatus): string {
   const date = new Date(status.tokenExpiresAt);
   return Number.isNaN(date.getTime())
     ? ""
-    : t("The sign-in is renewed by itself; it runs out {date}.", { date: date.toLocaleString() });
+    : t("The sign-in is renewed by itself; it runs out {date}.", { date: date.toLocaleString(appLocale()) });
 }
 
 /**

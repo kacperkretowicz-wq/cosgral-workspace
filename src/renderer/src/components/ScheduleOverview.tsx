@@ -1,7 +1,7 @@
 import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
@@ -13,7 +13,7 @@ const WINDOWS = [7, 14, 30] as const;
 type WindowDays = (typeof WINDOWS)[number];
 
 function dayKey(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+  return new Date(iso).toLocaleDateString(appLocale(), { weekday: "long", day: "numeric", month: "long" });
 }
 
 /** "Today" and "Tomorrow" read faster than a date; other days keep the weekday and date. */
@@ -29,7 +29,7 @@ function dayLabel(iso: string, now: Date = new Date()): { label: string; relativ
 }
 
 function timeOf(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
 function runStatusLabel(status: ScheduleFeedItem["run"]["status"]): string {
