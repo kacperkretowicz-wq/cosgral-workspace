@@ -237,14 +237,23 @@ body::after {
   padding-bottom: var(--openbot-space-8);
 }
 
-/* Usage totals: Azure, deep Azure, Azure (one family; red and green are for state). */
+/* Usage totals: the three lit tiles of the reference (blue, cool red, green). */
 .work-page .usage-totals > div:nth-child(2) {
-  background: var(--openbot-tile-deep), var(--openbot-tile-base);
-  box-shadow: var(--openbot-tile-deep-shadow);
+  background: var(--openbot-tile-red), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-red-shadow);
+}
+
+.work-page .usage-totals > div:nth-child(3) {
+  background: var(--openbot-tile-green), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-green-shadow);
 }
 
 .work-page .usage-totals > div:nth-child(2) .usage-stat-icon {
-  background: var(--openbot-mesh-deep);
+  background: var(--openbot-mesh-red);
+}
+
+.work-page .usage-totals > div:nth-child(3) .usage-stat-icon {
+  background: var(--openbot-mesh-green);
 }
 
 /* Chart: bars fade from electric blue into the dark, today's glows; the grid is a faint blue. */
@@ -609,10 +618,35 @@ body::after {
   stroke-width: 2;
 }
 
-/* Every second section takes the deep Azure light: a calm rhythm instead of a rainbow. */
-.work-page-nav-item:nth-child(even) > svg,
-.settings-dialog-nav-item:nth-child(even) > svg {
-  background: var(--openbot-mesh-deep);
+/* Section chips cycle through the lights: blue, red, green, orange, pink, cyan, lime. */
+.work-page-nav-item:nth-child(7n + 2) > svg,
+.settings-dialog-nav-item:nth-child(7n + 2) > svg {
+  background: var(--openbot-mesh-red);
+}
+
+.work-page-nav-item:nth-child(7n + 3) > svg,
+.settings-dialog-nav-item:nth-child(7n + 3) > svg {
+  background: var(--openbot-mesh-green);
+}
+
+.work-page-nav-item:nth-child(7n + 4) > svg,
+.settings-dialog-nav-item:nth-child(7n + 4) > svg {
+  background: var(--openbot-mesh-orange);
+}
+
+.work-page-nav-item:nth-child(7n + 5) > svg,
+.settings-dialog-nav-item:nth-child(7n + 5) > svg {
+  background: var(--openbot-mesh-pink);
+}
+
+.work-page-nav-item:nth-child(7n + 6) > svg,
+.settings-dialog-nav-item:nth-child(7n + 6) > svg {
+  background: var(--openbot-mesh-cyan);
+}
+
+.work-page-nav-item:nth-child(7n + 7) > svg,
+.settings-dialog-nav-item:nth-child(7n + 7) > svg {
+  background: var(--openbot-mesh-lime);
 }
 
 .work-page-nav-item,
@@ -1161,21 +1195,28 @@ body [role="tooltip"] {
   color: var(--openbot-contrast-white);
 }
 
-/* One light per group (owner, 20.11: spójnie, bez napakowania): Brain Azure, Knows deep Azure, More green. */
-.agent-card-row:is([data-card="instructions"], [data-card="skills"], [data-card="memory"], [data-card="files"])
-.agent-card-icon {
-  background: var(--openbot-mesh-deep);
+/* Each kind of card has its own light (owner, 20.11: more colour, as in the icon reference). */
+.agent-card-row[data-card="chat-color"] .agent-card-icon {
+  background: var(--openbot-mesh-pink);
 }
 
-.agent-card-row:is(
-    [data-card="tables"],
-    [data-card="routines"],
-    [data-card="usage"],
-    [data-card="publish"],
-    [data-card="folders"],
-    [data-card="notifications"]
-  )
-  .agent-card-icon {
+.agent-card-row:is([data-card="instructions"], [data-card="skills"]) .agent-card-icon {
+  background: var(--openbot-mesh-cyan);
+}
+
+.agent-card-row:is([data-card="memory"], [data-card="tables"]) .agent-card-icon {
+  background: var(--openbot-mesh-lime);
+}
+
+.agent-card-row:is([data-card="files"], [data-card="folders"]) .agent-card-icon {
+  background: var(--openbot-mesh-orange);
+}
+
+.agent-card-row:is([data-card="routines"], [data-card="notifications"]) .agent-card-icon {
+  background: var(--openbot-mesh-red);
+}
+
+.agent-card-row:is([data-card="usage"], [data-card="publish"]) .agent-card-icon {
   background: var(--openbot-mesh-green);
 }
 

@@ -175,15 +175,15 @@
     inset 0 -2px 0 rgba(191, 216, 227, 0.95), inset 0 -18px 26px -16px rgba(0, 130, 180, 0.9),
     0 22px 46px -24px rgba(0, 99, 142, 0.8);
   --cosgral-tile-quiet:
-    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.14) 0%, rgba(55, 129, 252, 0) 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 40%);
+    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.34) 0%, rgba(55, 129, 252, 0) 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 40%);
   --cosgral-tile-quiet-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(120, 170, 255, 0.14),
-    inset 0 -1px 0 rgba(150, 195, 255, 0.5);
+    inset 0 -1px 0 rgba(150, 195, 255, 0.55), inset 0 -18px 28px -20px rgba(55, 129, 252, 0.7);
   /*
    * Icon chips (owner, 20.11: "ikony jak w inspiracji"): dark glass lit from below, a bright rim; the colour is only the
-   * light. Five lights: Azure, deep Azure, cool red, green, orange. lime / cyan / pink are kept as names and fall back
-   * to green / deep Azure / Azure, so no screen paints more than these.
+   * light. Five lights: Azure, deep Azure, cool red, green, orange. pink, cyan and lime have their own lights again
+   * (owner, 20.11: "za mało szkła i koloru"); every chip is still dark glass lit from below.
    */
   --cosgral-mesh-blue:
     radial-gradient(
@@ -230,9 +230,33 @@
     ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
     linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-lime: var(--cosgral-mesh-green);
-  --cosgral-mesh-cyan: var(--cosgral-mesh-deep);
-  --cosgral-mesh-pink: var(--cosgral-mesh-blue);
+  --cosgral-mesh-lime:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(240, 255, 190, 0.92) 0%,
+      rgba(163, 230, 53, 0.78) 46%,
+      rgba(163, 230, 53, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-cyan:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(190, 250, 255, 0.92) 0%,
+      rgba(34, 211, 238, 0.78) 46%,
+      rgba(34, 211, 238, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-pink:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(255, 190, 235, 0.92) 0%,
+      rgba(232, 121, 249, 0.8) 46%,
+      rgba(232, 121, 249, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
   --cosgral-mesh-edge:
     inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.12),
     inset 0 -1px 0 rgba(255, 255, 255, 0.38), 0 8px 18px -10px rgba(0, 0, 0, 0.7);
@@ -266,12 +290,12 @@
   --cosgral-status-neutral-ring: rgba(140, 185, 204, 0.24);
   /* The window behind the panels: soft coloured light that the frosted panels blur (owner: "całe tło lekko szklane"). */
   --cosgral-backdrop:
-    radial-gradient(42% 55% at 6% 0%, rgba(0, 99, 142, 0.6) 0%, rgba(0, 99, 142, 0) 72%),
-    radial-gradient(38% 48% at 100% 22%, rgba(25, 81, 252, 0.38) 0%, rgba(25, 81, 252, 0) 72%),
-    radial-gradient(34% 42% at 28% 100%, rgba(255, 45, 85, 0.2) 0%, rgba(255, 45, 85, 0) 72%),
-    radial-gradient(40% 40% at 88% 100%, rgba(140, 185, 204, 0.16) 0%, rgba(140, 185, 204, 0) 72%),
+    radial-gradient(42% 55% at 6% 0%, rgba(0, 99, 142, 0.85) 0%, rgba(0, 99, 142, 0) 72%),
+    radial-gradient(38% 48% at 100% 22%, rgba(25, 81, 252, 0.55) 0%, rgba(25, 81, 252, 0) 72%),
+    radial-gradient(34% 42% at 28% 100%, rgba(255, 45, 85, 0.32) 0%, rgba(255, 45, 85, 0) 72%),
+    radial-gradient(40% 40% at 88% 100%, rgba(140, 185, 204, 0.24) 0%, rgba(140, 185, 204, 0) 72%),
     linear-gradient(180deg, #04060b 0%, #020308 100%);
-  --cosgral-panel-glass: rgba(8, 11, 17, 0.7);
+  --cosgral-panel-glass: rgba(8, 11, 17, 0.56);
   --cosgral-panel-edge:
     inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(140, 185, 204, 0.09),
     0 24px 60px -30px rgba(0, 0, 0, 0.85);

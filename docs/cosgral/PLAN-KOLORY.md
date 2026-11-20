@@ -10,6 +10,12 @@ i krok 5 (poświaty). Pomiar: **przed** średnio 1,29 odcienia na ekran (Zużyci
 Decyzje: dok zostaje kolorowy, stworki w pełnych kolorach, kafle Zużycia Azure / głęboki Azure / Azure, przyciski
 drugorzędne jako szklane pigułki.
 
+**Decyzja właściciela 20.11 (wieczór): „za mało szkła i koloru”.** Plan „spokojniej” został częściowo cofnięty:
+kafle Zużycia znów niebieski / czerwony / zielony, żetony różowy, cyjan i limonka z własnym światłem, karty agenta
+i spisy sekcji w pełnej kolorystyce, tło okna silniejsze (poświata Azure i czerwieni), panele bardziej przezroczyste
+(0,56), karty ciche z powrotem z poświatą od dołu. Zostają: ciemne szkło jako baza każdego żetonu, pigułki stanu,
+trzy grubości pisma. Pomiar odcieni (`tools/measure-hues.py`) pokaże teraz więcej odcieni niż po kroku 5; to zamierzone.
+
 ## 1. Stan wyjściowy (zmierzone 19.11)
 
 - Literały kolorów (`#hex`, `rgb()`, `oklch()`) są tylko w plikach tokenów (`cosgral-tokens.css` 218, `theme-light.css`
