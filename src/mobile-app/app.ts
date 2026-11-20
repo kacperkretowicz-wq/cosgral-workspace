@@ -637,7 +637,7 @@ function mark(): SVGSVGElement {
   svg.setAttribute("class", "mark");
   svg.setAttribute("aria-hidden", "true");
   const square = document.createElementNS(SVG, "rect");
-  for (const [name, value] of Object.entries({ width: "64", height: "64", rx: "14", fill: "#6960f1" })) {
+  for (const [name, value] of Object.entries({ width: "64", height: "64", rx: "14", fill: "#1a5cf0" })) {
     square.setAttribute(name, value);
   }
   const letter = document.createElementNS(SVG, "path");

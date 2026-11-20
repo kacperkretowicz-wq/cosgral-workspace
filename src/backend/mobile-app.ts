@@ -11,6 +11,7 @@ const POLICY = [
   "default-src 'none'",
   "script-src 'self'",
   "style-src 'self'",
+  "font-src 'self'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "manifest-src 'self'",
@@ -64,7 +65,7 @@ export function serveMobileApp(request: IncomingMessage, response: ServerRespons
     response.end();
     return;
   }
-  const body = Buffer.from(file.body, "utf8");
+  const body = Buffer.from(file.body, file.base64 ? "base64" : "utf8");
   response.writeHead(200, {
     "content-type": file.type,
     "content-length": body.length,

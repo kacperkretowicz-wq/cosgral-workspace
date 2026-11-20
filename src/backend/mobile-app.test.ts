@@ -79,6 +79,20 @@ describe("phone web app on the phone server", () => {
     expect(shell.headers.get("x-frame-options")).toBe("DENY");
   });
 
+  it("serves the bundled font files as real woff2 bytes and allows fonts from its own origin only", async () => {
+    const { base } = await server();
+    for (const path of ["/app/jost-latin.woff2", "/app/jost-latin-ext.woff2"]) {
+      const response = await fetch(`${base}${path}`);
+      expect(response.status, path).toBe(200);
+      expect(response.headers.get("content-type"), path).toBe("font/woff2");
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      expect(String.fromCharCode(...bytes.slice(0, 4)), path).toBe("wOF2");
+      expect(Number(response.headers.get("content-length")), path).toBe(bytes.length);
+    }
+    const policy = (await fetch(`${base}/app/`)).headers.get("content-security-policy") ?? "";
+    expect(policy).toContain("font-src 'self'");
+  });
+
   it("answers 304 for an unchanged file, redirects /app and /, and refuses other methods and unknown files", async () => {
     const { base } = await server();
     const first = await fetch(`${base}/app/app.js`);
