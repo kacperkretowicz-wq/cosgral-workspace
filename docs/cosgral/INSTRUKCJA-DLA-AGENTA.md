@@ -276,3 +276,7 @@ Uwaga: `sbtest.log` z poprzedniego przebiegu potrafi oszukać monitor „czekaj 
 4. **Bramka projektu:** `bun run check:ui` musi przechodzić (natywne kontrolki tylko w `components/ui`, kolory, radius,
    font-size i czasy przejść tylko z tokenów). Nowy radius: dodaj token w `cosgral-tokens.css` i alias w `styles.css`
    (istniejący `--openbot-radius-card` to 10 px; karty szkła używają `--openbot-radius-tile` 18 px).
+5. **Wzorce wizualne (`bun run test:visual`):** są tylko dla `win32` i `darwin` (`tests/visual/__screenshots__`), więc na
+   Linuksie nie mają z czym porównać, a po przeróbce Azure Glass wszystkie wzorce są nieaktualne. Na Windowsie:
+   `bun run test:visual -u`, obejrzeć zmiany i zatwierdzić nowe pliki. Test dymny Electrona (`test:browser`) działa na
+   Linuksie tylko jako root z `xvfb-run node_modules/.bin/electron --no-sandbox --disable-gpu <bundle>`; przeszedł 20.11.
