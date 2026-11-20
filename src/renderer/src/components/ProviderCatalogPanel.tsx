@@ -1,6 +1,6 @@
 import type { ProviderCatalogItem, ProviderSupportLevel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
 
@@ -138,7 +138,7 @@ export function ProviderCatalogPanel() {
                       {supportView(item.support).label}
                     </Badge>
                   </header>
-                  <p class="provider-catalog-note">{item.description}</p>
+                  <p class="provider-catalog-note">{tData(item.description)}</p>
                   <p class="provider-catalog-meta">
                     {signInLabel(item.signIn)} · {item.cliName}
                     <Show when={item.state.commandDetected}> · {t("program found")}</Show>

@@ -34,6 +34,11 @@ export function t(key: string, values: Record<string, string | number> = {}): st
   return key;
 }
 
+/** A line that comes from the program's data (model or provider descriptions): translated when we know it, as is otherwise. */
+export function tData(text: string): string {
+  return language() === "pl" ? (polish.get(text) ?? text) : text;
+}
+
 /**
  * A count with its noun: `one` for 1, `other` otherwise in English; Polish also has the "many" form (5 plików), kept
  * beside the translations in `plMany` under the same key as `other`.

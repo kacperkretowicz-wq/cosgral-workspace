@@ -34,7 +34,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show
 import { normalizeAvatarFile } from "../avatar-image";
 import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
 import type { BotMessage, BotProfile } from "../data";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import type { PendingCard } from "../pending-cards";
 import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
@@ -3065,7 +3065,7 @@ export function Conversation(props: ConversationProps) {
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
                   <Show when={selectedModel()} keyed>
-                    {(model) => <p class="agent-settings-model-description">{model.description}</p>}
+                    {(model) => <p class="agent-settings-model-description">{tData(model.description)}</p>}
                   </Show>
                 </div>
                 <label class="agent-settings-model-row agent-settings-thinking-row">
