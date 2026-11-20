@@ -5,36 +5,23 @@ import {
 } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
-  AgentEvent,
-  AgentEyesState,
   AgentModelId,
-  AgentModelOption,
   AgentReasoningEffort,
-  AgentStatus,
-  ApprovalRuleScope,
   AttachmentSummary,
   AvatarImageInput,
   BotAvatarHue,
-  BrowserControlState,
   BrowserTab,
   DraftAttachment,
   MessageReaction,
   QueueDelivery,
-  QueueSnapshot,
-  RemoteMacSession,
-  ServerSummary,
-  StopAgentEyesInput,
-  TeamPresenceSnapshot,
-  ThreadList,
   UpdateBotInput,
 } from "@openbot/contracts/ipc";
 import { isClaudeModel } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
 import { avatarCandidateSeeds } from "../blobatar";
-import type { BotMessage, BotProfile } from "../data";
+import type { BotMessage } from "../data";
 import { t, tData } from "../i18n";
-import type { PendingCard } from "../pending-cards";
 import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
@@ -43,7 +30,6 @@ import { AgentCardDetail } from "./AgentCardDetail";
 import { AgentCardsSection } from "./AgentCardsSection";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
-import type { AccountNotice } from "./account-usage-view";
 import { ChatRightPanelTabs, ChatSidePanelLauncher, type ChatSidePanelTarget } from "./ChatSidePanelLauncher";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ContextIndicator } from "./ContextIndicator";
@@ -79,6 +65,7 @@ import {
   BROWSER_PANEL_STORAGE_KEY,
   CONVERSATION_PANEL_MIN,
   type ComposerDraft,
+  type ConversationProps,
   EMPTY_DRAFT,
   type MediaPreview,
   ONBOARDING_CHOICE_KEYS,
@@ -138,75 +125,6 @@ import {
 import { VaultRequestCard } from "./VaultRequestCard";
 import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
 import { VoiceRecorder } from "./VoiceRecorder";
-
-interface ConversationProps {
-  onThreadsChanged?: (list: ThreadList) => void;
-  agentStatus: AgentStatus;
-  bot: BotProfile | undefined;
-  bots: BotProfile[];
-  modelOptions: AgentModelOption[];
-  messages: BotMessage[];
-  unreadCount: number;
-  firstUnreadMessageId: string | null;
-  loaded: boolean;
-  activeTurnId: string | null | undefined;
-  agentPickerOpen: boolean;
-  globalOverlayOpen: boolean;
-  creatingAgent: boolean;
-  settingsRequest: { botId: string; nonce: number; focus?: "name" } | null;
-  onboardingRequest: { botId: string; nonce: number } | null;
-  messageFocusRequest: { botId: string; messageId: string; nonce: number } | null;
-  queue: QueueSnapshot | undefined;
-  onOpenBudget?: () => void;
-  browserTabs: BrowserTab[];
-  activeBrowserTabId: string | null;
-  browserControlState: BrowserControlState;
-  server: ServerSummary | undefined;
-  presence: TeamPresenceSnapshot;
-  currentUserEmail: string;
-  remoteMacSession: RemoteMacSession | undefined;
-  remoteDesktopRequest: number;
-  prompt: Extract<AgentEvent, { type: "prompt" }> | undefined;
-  approval: Extract<AgentEvent, { type: "approval" }>["approval"] | undefined;
-  actionCard?: PendingCard;
-  /** COSGRAL: agents that are looking at a window, screen or camera right now. */
-  eyes?: AgentEyesState;
-  onStopEyes?: (input: StopAgentEyesInput) => void;
-  /** COSGRAL W5-K1: account limit and switch cards of this agent. */
-  accountNotices?: AccountNotice[];
-  onDismissAccountNotice?: (id: string) => void;
-  onCloseAgentPicker: () => void;
-  onCreateAgent: () => void;
-  onSelectAgent: (botId: string) => void;
-  onUpdateBot: (botId: string, updates: Omit<UpdateBotInput, "botId">) => Promise<void>;
-  onSetAgentAvatar: (botId: string, image: AvatarImageInput | null) => Promise<void>;
-  onSendMessage: (body: string, attachmentDraftIds: string[], replyToMessageId: string | null) => Promise<boolean>;
-  onMarkRead: () => Promise<void>;
-  onTypingChange: (botId: string, typing: boolean) => void;
-  onCompleteOnboarding: (
-    answer: string,
-    model: AgentModelId,
-    reasoningEffort: AgentReasoningEffort,
-  ) => Promise<boolean>;
-  onAnswerPrompt: (answers: Record<string, string[]>) => Promise<boolean>;
-  onRespondToApproval: (decision: "accept" | "decline", always?: ApprovalRuleScope) => Promise<boolean>;
-  onCancelQueuedMessage: (deliveryId: string) => void;
-  onSteerQueuedMessage: (deliveryId: string) => void;
-  onUpdateQueuedMessage: (
-    deliveryId: string,
-    text: string,
-    keepAttachmentIds: string[],
-    attachmentDraftIds: string[],
-  ) => Promise<boolean>;
-  onReorderQueue: (deliveryIds: string[]) => void;
-  onResumeQueue: () => void;
-  onActivateBrowserTab: (tabId: string) => void;
-  onCloseBrowserTab: (tabId: string) => void | Promise<void>;
-  onConnectRemoteMac: (hostname: string, serverId: string | null) => Promise<void>;
-  onDisconnectRemoteMac: (sessionId: string) => Promise<void>;
-  onOpenAgentSetup: () => Promise<void>;
-  onStop: () => void;
-}
 
 export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
