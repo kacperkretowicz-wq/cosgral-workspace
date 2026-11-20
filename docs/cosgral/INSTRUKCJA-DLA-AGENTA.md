@@ -272,3 +272,7 @@ Storybook musi działać (`bun run storybook --ci`). Trzy kontrole, które znala
    widokiem bez przewijanego rodzica i tekstu ściętego bez wielokropka (pomiń `.sr-only`).
 
 Uwaga: `sbtest.log` z poprzedniego przebiegu potrafi oszukać monitor „czekaj na `sb exit`”; sprawdzaj czas pliku.
+
+4. **Bramka projektu:** `bun run check:ui` musi przechodzić (natywne kontrolki tylko w `components/ui`, kolory, radius,
+   font-size i czasy przejść tylko z tokenów). Nowy radius: dodaj token w `cosgral-tokens.css` i alias w `styles.css`
+   (istniejący `--openbot-radius-card` to 10 px; karty szkła używają `--openbot-radius-tile` 18 px).

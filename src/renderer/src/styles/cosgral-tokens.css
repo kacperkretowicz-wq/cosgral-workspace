@@ -44,6 +44,12 @@
   --cosgral-radius-sm: 6px;
   --cosgral-radius-md: 8px;
   --cosgral-radius-lg: 12px;
+  --cosgral-radius-field: 14px;
+  --cosgral-radius-panel: 16px;
+  --cosgral-radius-card: 18px;
+  --cosgral-radius-xl: 20px;
+  --cosgral-radius-pane: 28px;
+  --cosgral-radius-chip: 30%;
   --cosgral-radius-pill: 999px;
 
   /* Type (owner, 20.11: "jak w Groku"): 13 / 14 (body) / 15 / 16 / 24; weights 400, 500, 600 only. */
@@ -111,6 +117,8 @@
    * Reference recipes, close to 1:1 (owner, 19.11): glass tiles that pool their colour at the bottom with a lit rim,
    * mesh-gradient icon tiles, glossy pills. Illustrations: their colours are fixed and only used through these tokens.
    */
+  --cosgral-sheen: rgba(255, 255, 255, 0.07);
+  --cosgral-creature-shadow: drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.32)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
   --cosgral-tile-base: linear-gradient(180deg, #0d1729 0%, #070b15 100%);
   --cosgral-tile-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --cosgral-tile-blue:
@@ -314,6 +322,7 @@
   --cosgral-ambient:
     radial-gradient(70% 55% at 0% 0%, rgba(0, 99, 142, 0.1), rgba(0, 99, 142, 0) 70%),
     radial-gradient(55% 45% at 100% 0%, rgba(140, 185, 204, 0.18), rgba(140, 185, 204, 0) 70%);
+  --cosgral-sheen: rgba(255, 255, 255, 0.6);
   --cosgral-tile-base: #ffffff;
   --cosgral-tile-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(0, 74, 107, 0.12);
   --cosgral-tile-blue:

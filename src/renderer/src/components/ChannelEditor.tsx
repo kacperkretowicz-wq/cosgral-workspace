@@ -162,7 +162,8 @@ export function ChannelEditor(props: {
                         const leads = () => picked() && lead() === bot.id;
                         return (
                           <li class="channel-member-row" data-picked={picked() ? "" : undefined}>
-                            <button
+                            <Button
+                              unstyled
                               type="button"
                               class="channel-member-toggle"
                               aria-pressed={picked() ? "true" : "false"}
@@ -182,19 +183,20 @@ export function ChannelEditor(props: {
                                 class="channel-member-avatar"
                               />
                               <span class="channel-member-name">{bot.name}</span>
-                            </button>
+                            </Button>
                             <Show
                               when={leads()}
                               fallback={
                                 <Show when={picked()}>
-                                  <button
+                                  <Button
+                                    unstyled
                                     type="button"
                                     class="channel-member-make-lead"
                                     aria-label={t("Make {name} the lead", { name: bot.name })}
                                     onClick={() => setLead(bot.id)}
                                   >
                                     {t("Make lead")}
-                                  </button>
+                                  </Button>
                                 </Show>
                               }
                             >

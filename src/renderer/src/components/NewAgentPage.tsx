@@ -134,7 +134,8 @@ export function NewAgentPage(props: NewAgentPageProps) {
               <For each={MOODS}>
                 {(entry) => (
                   <label class="new-agent-mood" title={t(entry.label)}>
-                    <input
+                    <Input
+                      unstyled
                       type="radio"
                       class="sr-only"
                       name="new-agent-mood"

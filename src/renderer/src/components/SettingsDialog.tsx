@@ -76,7 +76,8 @@ export function SettingsDialog(props: {
             <nav class="settings-modal-nav" aria-label={t("Settings sections")}>
               <For each={props.sections}>
                 {(section) => (
-                  <button
+                  <Button
+                    unstyled
                     type="button"
                     class="settings-modal-nav-item settings-dialog-nav-item"
                     aria-current={active() === section.id ? "true" : undefined}
@@ -87,7 +88,7 @@ export function SettingsDialog(props: {
                   >
                     {section.icon({ "aria-hidden": "true", size: 16, "stroke-width": 1.75 })}
                     <span>{section.label}</span>
-                  </button>
+                  </Button>
                 )}
               </For>
             </nav>

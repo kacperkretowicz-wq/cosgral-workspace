@@ -2,6 +2,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { PageId } from "./PageRail";
 import { PageIcon } from "./PageRail";
+import { Button } from "./ui";
 
 /**
  * One frame for every work page on the rail (Library, Schedule, Workflows, Usage, ...): the page's own rail icon,
@@ -102,7 +103,8 @@ export function WorkPageSections<Id extends string>(props: {
       <nav class="work-page-nav" aria-label={props.label}>
         <For each={props.sections}>
           {(section, index) => (
-            <button
+            <Button
+              unstyled
               type="button"
               class="work-page-nav-item"
               data-section={section.id}
@@ -113,7 +115,7 @@ export function WorkPageSections<Id extends string>(props: {
             >
               {section.icon({ "aria-hidden": "true", size: 16, "stroke-width": 1.5 })}
               <span>{section.label}</span>
-            </button>
+            </Button>
           )}
         </For>
       </nav>
@@ -182,7 +184,8 @@ export function WorkPageAnchors(props: {
       <nav class="work-page-nav" aria-label={props.label}>
         <For each={props.anchors}>
           {(anchor) => (
-            <button
+            <Button
+              unstyled
               type="button"
               class="work-page-nav-item"
               aria-current={active() === anchor.id ? "true" : undefined}
@@ -193,7 +196,7 @@ export function WorkPageAnchors(props: {
             >
               {anchor.icon({ "aria-hidden": "true", size: 16, "stroke-width": 1.5 })}
               <span>{anchor.label}</span>
-            </button>
+            </Button>
           )}
         </For>
       </nav>

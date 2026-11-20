@@ -2200,7 +2200,7 @@ textarea {
   height: 113%;
   overflow: visible;
   /* The creature sits on the surface instead of being printed on it. */
-  filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.32)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.18));
+  filter: var(--openbot-creature-shadow);
 }
 
 .bot-avatar-custom {

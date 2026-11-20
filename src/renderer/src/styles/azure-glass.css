@@ -83,7 +83,7 @@ body::after {
 .settings-dialog-icon,
 .usage-stat-icon,
 .marketplace-shell .plugin-row-icon {
-  border-radius: 28%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -224,7 +224,7 @@ body::after {
 .work-page .usage-chart,
 .new-agent-stage {
   border-color: transparent;
-  border-radius: 20px;
+  border-radius: var(--openbot-radius-xl);
   background: var(--openbot-tile-blue), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-blue-shadow);
 }
@@ -232,7 +232,7 @@ body::after {
 /* The numbers sit in the dark top half; the light pools below them. */
 .work-page .usage-totals > div {
   min-height: 150px;
-  border-radius: 20px;
+  border-radius: var(--openbot-radius-xl);
   align-content: start;
   padding-bottom: var(--openbot-space-8);
 }
@@ -338,7 +338,7 @@ body::after {
   gap: 6px;
   border: 0;
   border-radius: var(--openbot-radius-pill);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 60%), var(--pill-fill);
+  background: linear-gradient(180deg, var(--openbot-sheen) 0%, transparent 60%), var(--pill-fill);
   box-shadow:
     inset 0 0 0 1px var(--pill-ring),
     inset 0 1px 0 var(--openbot-shadow-ring);
@@ -456,7 +456,7 @@ body::after {
   height: 34px;
   flex-basis: 34px;
   margin-inline: auto;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   /* Each page sets its own tile (below); the rule also covers hover, which the older rail rules recolour. */
   background: var(--rail-mesh, var(--openbot-mesh-blue));
   box-shadow: var(--openbot-mesh-edge);
@@ -594,7 +594,7 @@ body::after {
   height: 26px;
   flex: 0 0 26px;
   padding: 5px;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -835,7 +835,7 @@ body [role="tooltip"] {
 
 .account-login-shell {
   width: min(100%, 420px);
-  border-radius: 28px;
+  border-radius: var(--openbot-radius-pane);
   background: var(--openbot-tile-quiet), var(--openbot-panel-glass);
   box-shadow:
     var(--openbot-panel-edge),
@@ -902,7 +902,7 @@ body [role="tooltip"] {
 /* Setup: the content sits on one frosted card, the two ways to run are lit tiles. */
 .initial-setup-screen:not(.settings-dialog-backdrop) .initial-setup {
   width: min(100%, 640px);
-  border-radius: 28px;
+  border-radius: var(--openbot-radius-pane);
   background: var(--openbot-tile-quiet), var(--openbot-panel-glass);
   box-shadow:
     var(--openbot-panel-edge),
@@ -914,7 +914,7 @@ body [role="tooltip"] {
 .initial-setup-screen .setup-route-button {
   min-height: 104px;
   border-color: transparent;
-  border-radius: 20px;
+  border-radius: var(--openbot-radius-xl);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   color: var(--openbot-text-primary);
@@ -931,7 +931,7 @@ body [role="tooltip"] {
   width: 52px;
   height: 52px;
   border: 0;
-  border-radius: 28%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -980,7 +980,7 @@ body [role="tooltip"] {
 /* Workflows: step cards are glass tiles, each type has its mesh-gradient tile; palette buttons are glass pills. ----- */
 
 .workflow-canvas {
-  border-radius: 20px;
+  border-radius: var(--openbot-radius-xl);
   background-color: var(--openbot-bg-inset);
   background-image: radial-gradient(var(--openbot-border-strong) 1px, transparent 1px), var(--openbot-ambient);
   background-size:
@@ -991,7 +991,7 @@ body [role="tooltip"] {
 
 .workflow-canvas .workflow-node {
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-bg-surface);
   box-shadow:
     var(--openbot-tile-quiet-shadow),
@@ -1006,7 +1006,7 @@ body [role="tooltip"] {
 
 .workflow-canvas .workflow-node .workflow-drag {
   border-bottom-color: var(--openbot-border);
-  border-radius: 18px 18px 0 0;
+  border-radius: var(--openbot-radius-tile) var(--openbot-radius-tile) 0 0;
   background: linear-gradient(180deg, var(--step-soft), transparent);
   text-transform: none;
   letter-spacing: 0;
@@ -1018,7 +1018,7 @@ body [role="tooltip"] {
   width: 14px;
   height: 14px;
   padding: 5px;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--step-mesh);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1048,7 +1048,7 @@ body [role="tooltip"] {
   height: 14px;
   padding: 5px;
   margin-left: -11px;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--step-mesh);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1060,7 +1060,7 @@ body [role="tooltip"] {
 }
 
 .workflow-list-icon {
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1083,7 +1083,7 @@ body [role="tooltip"] {
   width: 46px;
   height: 46px;
   flex-basis: 46px;
-  border-radius: 28%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1134,7 +1134,7 @@ body [role="tooltip"] {
 
 .agent-cards .agent-card-row {
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
 }
@@ -1147,7 +1147,7 @@ body [role="tooltip"] {
 .agent-card-icon {
   width: 40px;
   height: 40px;
-  border-radius: 28%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1181,7 +1181,7 @@ body [role="tooltip"] {
 
 .agent-card-detail {
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
 }
@@ -1196,7 +1196,7 @@ body [role="tooltip"] {
   width: 100%;
   height: 132px;
   margin: 0 0 var(--openbot-space-6);
-  border-radius: 20px;
+  border-radius: var(--openbot-radius-xl);
   background: var(--openbot-tile-blue), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-blue-shadow);
 }
@@ -1249,7 +1249,7 @@ body [role="tooltip"] {
 .providers-agent-fallback > .providers-fallback {
   display: grid;
   gap: var(--openbot-space-3);
-  border-radius: 16px;
+  border-radius: var(--openbot-radius-panel);
   background: var(--openbot-bg-inset);
   box-shadow: var(--openbot-field-edge);
   padding: var(--openbot-space-3) var(--openbot-space-4);
@@ -1264,7 +1264,7 @@ body [role="tooltip"] {
   flex-wrap: wrap;
   gap: var(--openbot-space-2) var(--openbot-space-3);
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--openbot-radius-field);
   background: var(--openbot-field-glass);
   box-shadow: var(--openbot-field-edge);
   padding: var(--openbot-space-2) var(--openbot-space-3);
@@ -1315,7 +1315,7 @@ body [role="tooltip"] {
   display: flex;
   align-items: center;
   gap: var(--openbot-space-2);
-  border-radius: 12px;
+  border-radius: var(--openbot-radius-lg);
   background: var(--openbot-field-glass);
   box-shadow: var(--openbot-field-edge);
   padding: var(--openbot-space-2) var(--openbot-space-3);
@@ -1335,7 +1335,7 @@ body [role="tooltip"] {
   height: 36px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -1378,7 +1378,7 @@ body [role="tooltip"] {
   --note-rim: var(--openbot-success);
 
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow:
     var(--openbot-tile-quiet-shadow),
@@ -1411,7 +1411,7 @@ body [role="tooltip"] {
 }
 
 .work-page .mobile-qr {
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   box-shadow: var(--openbot-glow-accent);
 }
 
@@ -1424,7 +1424,7 @@ body [role="tooltip"] {
   display: grid;
   gap: var(--openbot-space-4);
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   padding: var(--openbot-space-4);
@@ -1467,7 +1467,7 @@ body [role="tooltip"] {
   width: 100%;
   max-width: 720px;
   height: auto;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-bg-inset);
   box-shadow: var(--openbot-tile-quiet-shadow);
 }
@@ -1506,7 +1506,7 @@ body [role="tooltip"] {
   display: grid;
   gap: 0;
   margin-top: var(--openbot-space-4);
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   padding: var(--openbot-space-1) var(--openbot-space-4);
@@ -1527,7 +1527,7 @@ body [role="tooltip"] {
   gap: var(--openbot-space-3);
   margin-top: var(--openbot-space-3);
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   padding: var(--openbot-space-4);
@@ -1553,7 +1553,7 @@ body [role="tooltip"] {
 .w2-panel > .w2-panel,
 .work-page .w2-panel > .routine-form {
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--openbot-radius-panel);
   background: var(--openbot-bg-inset);
   box-shadow: var(--openbot-field-edge);
   padding: var(--openbot-space-4);
@@ -1564,7 +1564,7 @@ body [role="tooltip"] {
 .work-page .providers-form,
 .provider-account-add {
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--openbot-radius-panel);
   background: var(--openbot-bg-inset);
   box-shadow: var(--openbot-field-edge);
 }
@@ -1638,7 +1638,7 @@ body [role="tooltip"] {
 /* A warning on a page is a pill-family note: dark glass, a faint amber fill and a thin ring, not a bright outline. */
 
 .work-page .work-page-note {
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-status-amber-fill);
   box-shadow:
     inset 0 0 0 1px var(--openbot-status-amber-ring),

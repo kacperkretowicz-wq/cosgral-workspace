@@ -1333,7 +1333,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 [data-checked] > .sidebar-filter-check {
   border-color: var(--openbot-accent);
   background: var(--openbot-accent);
-  color: var(--openbot-text-on-accent, #fff);
+  color: var(--openbot-text-on-accent, var(--openbot-contrast-white));
 }
 
 /* First run: the empty list is a first step, not a grey sentence. */

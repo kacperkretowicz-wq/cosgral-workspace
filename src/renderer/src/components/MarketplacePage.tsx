@@ -203,7 +203,8 @@ export function MarketplacePage(props: { bots: Person[] }) {
               }
             >
               {([id, label, Icon]) => (
-                <button
+                <Button
+                  unstyled
                   type="button"
                   class="work-page-nav-item"
                   aria-current={tab() === id ? "page" : undefined}
@@ -211,7 +212,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
                 >
                   <Icon aria-hidden="true" size={16} stroke-width={1.5} />
                   <span>{t(label)}</span>
-                </button>
+                </Button>
               )}
             </For>
           </nav>

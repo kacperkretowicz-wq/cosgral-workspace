@@ -233,7 +233,8 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
           <nav class="work-page-nav server-settings-nav" aria-label={t("Sections")}>
             <For each={sections()}>
               {(section) => (
-                <button
+                <Button
+                  unstyled
                   type="button"
                   class="work-page-nav-item server-settings-nav-item"
                   aria-current={section.id === active() ? "page" : undefined}
@@ -248,7 +249,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
                   <Show when={section.source.kind === "unavailable"}>
                     <small>{t("Unavailable")}</small>
                   </Show>
-                </button>
+                </Button>
               )}
             </For>
           </nav>

@@ -59,6 +59,8 @@
   --openbot-tile-red-shadow: var(--cosgral-tile-red-shadow);
   --openbot-tile-green: var(--cosgral-tile-green);
   --openbot-tile-green-shadow: var(--cosgral-tile-green-shadow);
+  --openbot-sheen: var(--cosgral-sheen);
+  --openbot-creature-shadow: var(--cosgral-creature-shadow);
   --openbot-tile-deep: var(--cosgral-tile-deep);
   --openbot-tile-deep-shadow: var(--cosgral-tile-deep-shadow);
   --openbot-tile-quiet: var(--cosgral-tile-quiet);
@@ -247,6 +249,12 @@
   --openbot-radius-sm: var(--cosgral-radius-sm);
   --openbot-radius-md: var(--cosgral-radius-md);
   --openbot-radius-lg: var(--cosgral-radius-lg);
+  --openbot-radius-field: var(--cosgral-radius-field);
+  --openbot-radius-panel: var(--cosgral-radius-panel);
+  --openbot-radius-tile: var(--cosgral-radius-card);
+  --openbot-radius-xl: var(--cosgral-radius-xl);
+  --openbot-radius-pane: var(--cosgral-radius-pane);
+  --openbot-radius-chip: var(--cosgral-radius-chip);
   --openbot-radius-pill: var(--cosgral-radius-pill);
   --openbot-radius-logo: 20%;
   --openbot-control-xs: 24px;

@@ -132,6 +132,7 @@
   --openbot-tile-quiet: var(--cosgral-tile-quiet);
   --openbot-tile-quiet-shadow: var(--cosgral-tile-quiet-shadow);
   --openbot-mesh-edge: var(--cosgral-mesh-edge);
+  --openbot-sheen: var(--cosgral-sheen);
   --openbot-status-blue-fill: var(--cosgral-status-blue-fill);
   --openbot-status-blue-ring: var(--cosgral-status-blue-ring);
   --openbot-status-green-fill: var(--cosgral-status-green-fill);

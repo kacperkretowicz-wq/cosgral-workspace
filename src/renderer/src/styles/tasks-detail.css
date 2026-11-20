@@ -134,7 +134,7 @@
   min-height: 168px;
   align-content: start;
   gap: var(--openbot-space-3);
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   padding: var(--openbot-space-3);
@@ -157,7 +157,7 @@
   height: 28px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 30%;
+  border-radius: var(--openbot-radius-chip);
   background: var(--openbot-mesh-blue);
   box-shadow: var(--openbot-mesh-edge);
   color: var(--openbot-contrast-white);
@@ -304,7 +304,7 @@
   display: grid;
   gap: var(--openbot-space-3);
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--openbot-radius-tile);
   background: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   padding: var(--openbot-space-4);
