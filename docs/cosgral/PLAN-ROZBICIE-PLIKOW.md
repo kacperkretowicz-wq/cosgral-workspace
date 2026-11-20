@@ -23,6 +23,7 @@ Wokół są tylko drobne typy i stałe (130–248). W JSX widać pięć dużych,
 - `conversation/AvatarEditor.tsx` z testami: okno wyboru awatara z panelu ustawień agenta (3097 → 2980 linii).
 - `conversation/BrowserPanel.tsx` z testami: panel boczny przeglądarki (2980 → 2829 linii). Po każdym kroku: Storybook a11y 373, `test:visual` 7, testy renderera 1131.
 - `conversation/AgentRecipientPicker.tsx` z testami: pole „Do:” (wybór adresata) z nagłówka rozmowy (2829 → 2763 linii).
+- `conversation/ReasoningSelect.tsx` z testami: wspólny wybór poziomu rozumowania, który był skopiowany w nagłówku i w panelu ustawień (2763 → 2750 linii).
 
 ## Zasady każdego kroku
 

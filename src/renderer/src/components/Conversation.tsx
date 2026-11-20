@@ -83,13 +83,13 @@ import {
   type MediaPreview,
   ONBOARDING_CHOICE_KEYS,
   type RightPanelMode,
-  reasoningLabel,
   SETTINGS_PANEL_DEFAULT,
   SETTINGS_PANEL_MAX,
   SETTINGS_PANEL_MIN,
   SETTINGS_PANEL_STORAGE_KEY,
 } from "./conversation/model";
 import { QueuePanel } from "./conversation/QueuePanel";
+import { ReasoningSelect } from "./conversation/ReasoningSelect";
 import { MessageSelectionActions } from "./conversation/SelectionActions";
 import {
   scrollToUnreadBoundary,
@@ -127,7 +127,6 @@ import {
   Input,
   LibraryBig,
   MessageCircleQuestion,
-  NativeSelect,
   Paperclip,
   Popover,
   SlidersHorizontal,
@@ -540,6 +539,10 @@ export function Conversation(props: ConversationProps) {
     }, 0);
   }
 
+  function changeReasoning(reasoningEffort: AgentReasoningEffort): void {
+    setSettingsReasoning(reasoningEffort);
+    saveBotPatch({ reasoningEffort });
+  }
   function saveSettingsDescription(): void {
     const botId = props.bot?.id;
     if (!botId) return;
@@ -1596,22 +1599,14 @@ export function Conversation(props: ConversationProps) {
                   />
                 </Show>
                 <Show when={props.bot && reasoningOptions().length > 1}>
-                  <NativeSelect
+                  <ReasoningSelect
                     class="header-effort"
                     value={settingsReasoning()}
-                    aria-label={t("Effort")}
+                    options={reasoningOptions()}
+                    ariaLabel={t("Effort")}
                     disabled={!agentReady() || agentActivity() === "Working"}
-                    onChange={(event) => {
-                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
-                      if (!reasoningEffort) return;
-                      setSettingsReasoning(reasoningEffort);
-                      saveBotPatch({ reasoningEffort });
-                    }}
-                  >
-                    <For each={reasoningOptions()}>
-                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
-                    </For>
-                  </NativeSelect>
+                    onChange={changeReasoning}
+                  />
                 </Show>
                 <Show when={props.bot && singleThread() ? props.bot : undefined}>
                   {(bot) => <NewThreadButton botId={bot().id} onChanged={props.onThreadsChanged} />}
@@ -2703,22 +2698,15 @@ export function Conversation(props: ConversationProps) {
                     {(model) => <p class="agent-settings-model-description">{tData(model.description)}</p>}
                   </Show>
                 </div>
-                <label class="agent-settings-model-row agent-settings-thinking-row">
+                <label for="agent-settings-reasoning" class="agent-settings-model-row agent-settings-thinking-row">
                   <span>{t("Reasoning")}</span>
-                  <NativeSelect
+                  <ReasoningSelect
+                    id="agent-settings-reasoning"
                     value={settingsReasoning()}
-                    aria-label={t("Agent reasoning level")}
-                    onChange={(event) => {
-                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
-                      if (!reasoningEffort) return;
-                      setSettingsReasoning(reasoningEffort);
-                      saveBotPatch({ reasoningEffort });
-                    }}
-                  >
-                    <For each={reasoningOptions()}>
-                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
-                    </For>
-                  </NativeSelect>
+                    options={reasoningOptions()}
+                    ariaLabel={t("Agent reasoning level")}
+                    onChange={changeReasoning}
+                  />
                 </label>
               </div>
             </section>
