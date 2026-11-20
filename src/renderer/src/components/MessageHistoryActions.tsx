@@ -10,7 +10,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show, untrack } from "solid-js";
 import type { BotMessage } from "../data";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { MoreIcon } from "./conversation/ConversationIcons";
 import { Button, Dialog, DropdownMenu, Field, Text, Textarea } from "./ui";
 import "../styles/thread-work.css";
@@ -53,7 +53,7 @@ export function MessageHistoryActions(
   const menuAction = (id: MessageMenuActionId) => menu()?.actions.find((action) => action.id === id);
   const menuProblem = (id: MessageMenuActionId): string | null => {
     const action = menuAction(id);
-    return action && !action.enabled ? action.reason : null;
+    return action && !action.enabled && action.reason ? tData(action.reason) : null;
   };
   let generation = 0;
   createEffect(
@@ -73,8 +73,9 @@ export function MessageHistoryActions(
   );
   function problem(action: MessageAction): string | null {
     if (!api) return t("Message actions are unavailable on this computer.");
-    return (
-      menuProblem(action) ??
+    const fromMenu = menuProblem(action);
+    if (fromMenu) return fromMenu;
+    const fromContract =
       messageActionProblem(
         action,
         props.message.actionSubject ?? {
@@ -85,8 +86,8 @@ export function MessageHistoryActions(
       ) ??
       (action === "pin"
         ? null
-        : threadBusyProblem({ turnRunning: props.turnRunning, busyMessages: props.busyMessages }))
-    );
+        : threadBusyProblem({ turnRunning: props.turnRunning, busyMessages: props.busyMessages }));
+    return fromContract ? tData(fromContract) : null;
   }
   function open(kind: "edit" | "delete") {
     if (problem(kind)) return;

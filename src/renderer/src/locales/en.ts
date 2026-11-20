@@ -2888,4 +2888,35 @@ export const en = {
   "Signing out…": "Signing out…",
   "Could not load the pinned pages.": "Could not load the pinned pages.",
   "Could not save the pin. Try again from the page menu.": "Could not save the pin. Try again from the page menu.",
+  "Thread: {title}; {running} running, {waiting} waiting": "Thread: {title}; {running} running, {waiting} waiting",
+  Cache: "Cache",
+  "A workflow has exactly one trigger.": "A workflow has exactly one trigger.",
+  "A workflow needs at least one step after the trigger.": "A workflow needs at least one step after the trigger.",
+  "The connections form a loop; a run must always move forward.":
+    "The connections form a loop; a run must always move forward.",
+  "A workflow keeps its latest saved state and the last 100 runs; there is no version history.":
+    "A workflow keeps its latest saved state and the last 100 runs; there is no version history.",
+  "Files are not passed between steps in this version.": "Files are not passed between steps in this version.",
+  "No turn of this period was kept with its cache and input/output split yet.":
+    "No turn of this period was kept with its cache and input/output split yet.",
+  "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":
+    "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.",
+  "Start with a trigger.": "Start with a trigger.",
+  "The counter does not tell which skill a turn used.": "The counter does not tell which skill a turn used.",
+  "This workflow is already running.": "This workflow is already running.",
+  "This workflow is paused.": "This workflow is paused.",
+  "Use an Agent step: it runs the instruction with that agent's model.":
+    "Use an Agent step: it runs the instruction with that agent's model.",
+  "This row is not a message.": "This row is not a message.",
+  "Wait until the answer has finished.": "Wait until the answer has finished.",
+  "This message is still in the queue. Change it from the queue.":
+    "This message is still in the queue. Change it from the queue.",
+  "Only your own messages can be edited.": "Only your own messages can be edited.",
+  "Only your messages and the agent's answers can be asked again.":
+    "Only your messages and the agent's answers can be asked again.",
+  "This thread is busy. Stop the agent or wait for it to finish before changing the history.":
+    "This thread is busy. Stop the agent or wait for it to finish before changing the history.",
+  "Isolation is off for this agent. Its access level and excluded folders still apply.":
+    "Isolation is off for this agent. Its access level and excluded folders still apply.",
+  "The daily budget is used up.": "The daily budget is used up.",
 } as const;

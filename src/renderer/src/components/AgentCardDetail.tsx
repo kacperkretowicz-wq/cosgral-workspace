@@ -1,6 +1,6 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button } from "./ui";
@@ -128,7 +128,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
             </dd>
             <Show when={d.status.reason}>
               <dt>{t("Note")}</dt>
-              <dd>{d.status.reason}</dd>
+              <dd>{tData(d.status.reason ?? "")}</dd>
             </Show>
           </dl>
         );

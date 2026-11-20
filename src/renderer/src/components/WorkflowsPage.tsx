@@ -16,7 +16,7 @@ import {
 } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
 import {
   Bot,
@@ -835,7 +835,7 @@ export function WorkflowsPage() {
                 type="button"
                 variant="primary"
                 disabled={!name().trim() || problems().length > 0}
-                title={problems()[0] ?? undefined}
+                title={problems()[0] ? tData(problems()[0] ?? "") : undefined}
                 onClick={() => void save()}
               >
                 <Check size={16} stroke-width={1.75} aria-hidden="true" />

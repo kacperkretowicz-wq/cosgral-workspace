@@ -2429,7 +2429,7 @@ export const pl = {
   "Loading threads...": "Ładowanie wątków…",
   "Working in background": "Praca w tle",
   "{unread} unread; {queued} queued; {needsYou} Needs you. Updated {when}":
-    "{unread} nieprzeczytane; {queued} w kolejce; {needsYou} Needs you. Zaktualizowano {when}",
+    "{unread} nieprzeczytane; {queued} w kolejce; {needsYou} do reakcji. Zaktualizowano {when}",
   "From thread: {title}": "Z wątku: {title}",
   "Open {name}": "Otwórz {name}",
   "Thread title": "Tytuł wątku",
@@ -2892,4 +2892,36 @@ export const pl = {
   "Could not load the pinned pages.": "Nie udało się wczytać przypiętych stron.",
   "Could not save the pin. Try again from the page menu.":
     "Nie udało się zapisać przypięcia. Ponów akcję z menu strony.",
+  "Thread: {title}; {running} running, {waiting} waiting": "Wątek: {title}; w toku: {running}, czeka: {waiting}",
+  Cache: "Pamięć podręczna",
+  "A workflow has exactly one trigger.": "Przepływ ma dokładnie jeden wyzwalacz.",
+  "A workflow needs at least one step after the trigger.":
+    "Przepływ potrzebuje co najmniej jednego kroku po wyzwalaczu.",
+  "The connections form a loop; a run must always move forward.":
+    "Połączenia tworzą pętlę; przebieg musi zawsze iść do przodu.",
+  "A workflow keeps its latest saved state and the last 100 runs; there is no version history.":
+    "Przepływ zachowuje ostatni zapisany stan i 100 ostatnich przebiegów; nie ma historii wersji.",
+  "Files are not passed between steps in this version.": "W tej wersji pliki nie są przekazywane między krokami.",
+  "No turn of this period was kept with its cache and input/output split yet.":
+    "Żadna tura z tego okresu nie została jeszcze zapisana z podziałem na pamięć podręczną oraz wejście i wyjście.",
+  "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":
+    "Z przepływem zapisują się tylko kroki i połączenia; oznaczenia narysowane na płótnie przepadłyby.",
+  "Start with a trigger.": "Zacznij od wyzwalacza.",
+  "The counter does not tell which skill a turn used.": "Licznik nie podaje, której umiejętności użyła tura.",
+  "This workflow is already running.": "Ten przepływ już działa.",
+  "This workflow is paused.": "Ten przepływ jest wstrzymany.",
+  "Use an Agent step: it runs the instruction with that agent's model.":
+    "Użyj kroku Agent: wykonuje polecenie modelem tego agenta.",
+  "This row is not a message.": "Ten wiersz nie jest wiadomością.",
+  "Wait until the answer has finished.": "Poczekaj, aż odpowiedź się skończy.",
+  "This message is still in the queue. Change it from the queue.":
+    "Ta wiadomość jest jeszcze w kolejce. Zmień ją w kolejce.",
+  "Only your own messages can be edited.": "Edytować można tylko własne wiadomości.",
+  "Only your messages and the agent's answers can be asked again.":
+    "Ponowić można tylko Twoje wiadomości i odpowiedzi agenta.",
+  "This thread is busy. Stop the agent or wait for it to finish before changing the history.":
+    "Ten wątek jest zajęty. Zatrzymaj agenta albo poczekaj, aż skończy, zanim zmienisz historię.",
+  "Isolation is off for this agent. Its access level and excluded folders still apply.":
+    "Izolacja jest wyłączona dla tego agenta. Jego poziom dostępu i wykluczone foldery nadal obowiązują.",
+  "The daily budget is used up.": "Dzienny budżet jest wykorzystany.",
 } as const;

@@ -1,8 +1,8 @@
-import type { UsagePeriod, UsageReport, UsageTokenSplit } from "@openbot/contracts/ipc";
+import type { UsagePeriod, UsageReport, UsageTokenSplit, UsageUnavailable } from "@openbot/contracts/ipc";
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
@@ -66,6 +66,12 @@ function Ring(props: { label: string; percent: number | null }) {
  * The usage report (window.openbot.usageReport): tokens per day for 7 to 365 days, totals, the load of this computer,
  * and the table of agents. A figure the program does not collect is listed with its reason instead of invented.
  */
+function breakdownLabel(breakdown: UsageUnavailable["breakdown"]): string {
+  if (breakdown === "model") return t("Model");
+  if (breakdown === "skill") return t("Skill");
+  return t("Cache");
+}
+
 export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
   const botOf = (botId: string) => props.bots?.find((bot) => bot.id === botId);
   const api = untrack(() => window.openbot?.usageReport);
@@ -387,7 +393,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
                     <For each={current().unavailable}>
                       {(item) => (
                         <li>
-                          <strong>{item.breakdown}</strong>: {item.reason}
+                          <strong>{breakdownLabel(item.breakdown)}</strong>: {tData(item.reason)}
                         </li>
                       )}
                     </For>

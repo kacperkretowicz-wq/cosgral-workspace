@@ -1,4 +1,5 @@
 import type { BotSummary, ThreadList } from "@openbot/contracts/ipc";
+import { t } from "./i18n";
 import { needsYouItemsFromCards } from "./needs-you";
 import type { PendingCard } from "./pending-cards";
 import { cardKey } from "./pending-cards";
@@ -36,5 +37,9 @@ export function threadAttentionItems(
 
 export function threadRowLabel(list: ThreadList) {
   const active = list.threads.find((thread) => thread.id === list.activeThreadId);
-  return `Thread: ${active?.title ?? "None"}; ${list.threads.filter((thread) => thread.state === "running").length} running, ${list.threads.filter((thread) => thread.state === "waiting").length} waiting`;
+  return t("Thread: {title}; {running} running, {waiting} waiting", {
+    title: active?.title ?? t("None"),
+    running: list.threads.filter((thread) => thread.state === "running").length,
+    waiting: list.threads.filter((thread) => thread.state === "waiting").length,
+  });
 }
