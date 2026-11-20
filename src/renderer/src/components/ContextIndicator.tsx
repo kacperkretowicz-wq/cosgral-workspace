@@ -52,7 +52,7 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
           max={100}
           value={props.state.percent ?? undefined}
           aria-label={t("Context used")}
-          style={{ "accent-color": warning() ? "var(--openbot-warning)" : "var(--openbot-accent)" }}
+          data-warning={warning() ? "true" : undefined}
         />
         <Show when={props.state.stale}>
           <Text as="p" tone="secondary">

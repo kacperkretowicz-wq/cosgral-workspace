@@ -1730,3 +1730,47 @@ body [role="tooltip"] {
 .cosgral-form button:not(.ui-button, [class]):hover:not(:disabled) {
   background: var(--openbot-bg-control-hover);
 }
+
+/* The last opaque cards of the side panels are glass tiles as well. -------------------------------------------- */
+
+section.context-panel,
+.chat-tools-body {
+  border: 0;
+  border-radius: var(--openbot-radius-panel);
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+}
+
+/* The context meter: a glass track with a lit fill (amber when the context is filling up). ---------------------- */
+
+.context-meter {
+  height: 8px;
+  border: 0;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  overflow: hidden;
+  appearance: none;
+}
+
+.context-meter::-webkit-progress-bar {
+  background: transparent;
+}
+
+.context-meter::-webkit-progress-value {
+  border-radius: var(--openbot-radius-pill);
+  background: linear-gradient(90deg, var(--openbot-accent), var(--openbot-accent-text));
+}
+
+.context-meter[data-warning]::-webkit-progress-value {
+  background: linear-gradient(90deg, var(--openbot-warning), var(--openbot-status-amber));
+}
+
+.context-meter::-moz-progress-bar {
+  border-radius: var(--openbot-radius-pill);
+  background: linear-gradient(90deg, var(--openbot-accent), var(--openbot-accent-text));
+}
+
+.context-meter[data-warning]::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--openbot-warning), var(--openbot-status-amber));
+}
