@@ -244,4 +244,88 @@ describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)",
     mock.tick(31);
     await waitFor(() => expect(screen.getByText(/Last:/)).toBeInTheDocument());
   });
+
+  const daily = { ...base, schedule: { type: "daily", time: "09:00" } } as const;
+
+  it("edits a routine: name, instruction, time and weekdays are saved through update, and the list shows them", async () => {
+    const created = await mock.create(daily);
+    const update = vi.spyOn(mock, "update");
+    render(() => <ChannelRoutinesPanel channel={panelChannel} />);
+    await fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    const form = within(await screen.findByRole("region", { name: "Edit routine" }));
+    // The form starts with what the routine has.
+    expect(form.getByLabelText("Routine name")).toHaveValue("Review");
+    expect(form.getByLabelText("What the lead does on each run")).toHaveValue("Summarise.");
+    expect(form.getByLabelText("Time")).toHaveValue("09:00");
+    expect(form.getByLabelText("Mon")).not.toBeChecked();
+    await fireEvent.input(form.getByLabelText("Routine name"), { target: { value: "Monday and Wednesday review" } });
+    await fireEvent.input(form.getByLabelText("What the lead does on each run"), {
+      target: { value: "Check the plan." },
+    });
+    await fireEvent.input(form.getByLabelText("Time"), { target: { value: "08:30" } });
+    await fireEvent.click(form.getByLabelText("Mon"));
+    await fireEvent.click(form.getByLabelText("Wed"));
+    await fireEvent.click(form.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({
+        routineId: created.id,
+        name: "Monday and Wednesday review",
+        prompt: "Check the plan.",
+        schedule: { type: "daily", time: "08:30", weekdays: [1, 3] },
+        timezone: expect.any(String),
+      }),
+    );
+    // The form closes and the list says what changed, in the week order of the contract (Sunday 0).
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Edit routine" })).not.toBeInTheDocument());
+    expect(screen.getByText("Monday and Wednesday review")).toBeInTheDocument();
+    expect(screen.getByText(/Daily at 08:30 on Mon, Wed/)).toBeInTheDocument();
+    expect((await mock.list({ channelId: "c1" }))[0]).toMatchObject({
+      name: "Monday and Wednesday review",
+      schedule: { type: "daily", time: "08:30", weekdays: [1, 3] },
+    });
+  });
+
+  it("unticking every weekday means every day again, and Sunday (0) is listed last but saved as 0", async () => {
+    await mock.create({ ...base, schedule: { type: "daily", time: "09:00", weekdays: [0, 5] } });
+    render(() => <ChannelRoutinesPanel channel={panelChannel} />);
+    expect(await screen.findByText(/Daily at 09:00 on Sun, Fri/)).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const form = within(await screen.findByRole("region", { name: "Edit routine" }));
+    const labels = form
+      .getAllByLabelText(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/)
+      .map((box) => box.parentElement?.textContent);
+    expect(labels).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+    expect(form.getByLabelText("Sun")).toBeChecked();
+    expect(form.getByLabelText("Fri")).toBeChecked();
+    await fireEvent.click(form.getByLabelText("Sun"));
+    await fireEvent.click(form.getByLabelText("Fri"));
+    await fireEvent.click(form.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(screen.queryByText(/on Sun, Fri/)).not.toBeInTheDocument());
+    expect(screen.getByText(/Daily at 09:00/)).toBeInTheDocument();
+    expect((await mock.list({ channelId: "c1" }))[0]?.schedule).toEqual({ type: "daily", time: "09:00" });
+  });
+
+  it("an edit that breaks a rule says why, sends nothing and keeps the routine; Cancel closes the form", async () => {
+    await mock.create(daily);
+    const update = vi.spyOn(mock, "update");
+    render(() => <ChannelRoutinesPanel channel={panelChannel} />);
+    await fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    let form = within(await screen.findByRole("region", { name: "Edit routine" }));
+    await fireEvent.input(form.getByLabelText("Routine name"), { target: { value: "   " } });
+    await fireEvent.click(form.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Give the routine a name."));
+    expect(update).not.toHaveBeenCalled();
+    expect((await mock.list({ channelId: "c1" }))[0]?.name).toBe("Review");
+    await fireEvent.click(form.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Edit routine" })).not.toBeInTheDocument());
+    expect(screen.getByText("Review")).toBeInTheDocument();
+    // A cron with the wrong number of fields is refused the same way.
+    await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    form = within(await screen.findByRole("region", { name: "Edit routine" }));
+    await fireEvent.change(form.getByLabelText("Repeats"), { target: { value: "cron" } });
+    await fireEvent.input(form.getByLabelText("Cron expression"), { target: { value: "* *" } });
+    await fireEvent.click(form.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("five fields"));
+    expect(update).not.toHaveBeenCalled();
+  });
 });
