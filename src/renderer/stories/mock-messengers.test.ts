@@ -24,7 +24,7 @@ describe("mock messengers (W10-KK2)", () => {
     const { api } = setup();
     const list = await api.list();
     expect(isMessengerList(list)).toBe(true);
-    expect(list.messengers.map((entry) => entry.kind)).toEqual(["telegram", "slack"]);
+    expect(list.messengers.map((entry) => entry.kind)).toEqual(["telegram", "slack", "discord"]);
     expect(list.messengers[0]).toMatchObject({
       kind: "telegram",
       phase: "disconnected",

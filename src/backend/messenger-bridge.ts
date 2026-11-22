@@ -30,6 +30,7 @@ import {
   type UnknownChat,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import { createDiscordDriver } from "./discord-driver";
 import {
   type InboundMessage,
   type MessengerDriver,
@@ -147,6 +148,8 @@ export interface MessengerBridgeOptions {
   drivers?: Partial<Record<MessengerKind, MessengerDriverFactory>>;
   /** Tests: a mock Slack on 127.0.0.1. */
   slackApiBase?: string;
+  /** Tests: a mock Discord on 127.0.0.1. */
+  discordApiBase?: string;
   /** Long polling wait in seconds (Telegram holds the request that long). */
   pollSeconds?: number;
   /** The pause after a failed request; doubles up to `maxRetryMs`. */
@@ -590,6 +593,13 @@ export class MessengerBridge {
         appToken: tokens.appToken,
         fetchImpl: this.#options.fetchImpl,
         apiBase: this.#options.slackApiBase,
+      });
+    }
+    if (kind === "discord") {
+      return createDiscordDriver({
+        botToken: secret,
+        fetchImpl: this.#options.fetchImpl,
+        apiBase: this.#options.discordApiBase,
       });
     }
     return createTelegramDriver({ token: secret, fetchImpl: this.#options.fetchImpl, apiBase: this.#options.apiBase });

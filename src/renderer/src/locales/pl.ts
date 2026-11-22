@@ -798,8 +798,8 @@ export const pl = {
   "Could not load the messengers.": "Nie udało się wczytać komunikatorów.",
   "Could not allow the conversation.": "Nie udało się dopuścić rozmowy.",
   Messengers: "Komunikatory",
-  "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.":
-    "Rozmawiaj z agentem z Telegrama lub Slacka. Odpowiedzi dostają tylko rozmowy prywatne, a nikt nie ma dostępu, dopóki go nie dodasz.",
+  "Talk to an agent from Telegram, Slack or Discord. Only private conversations are answered, and nobody is allowed until you add them.":
+    "Rozmawiaj z agentem z Telegrama, Slacka lub Discorda. Odpowiedzi dostają tylko rozmowy prywatne, a nikt nie ma dostępu, dopóki go nie dodasz.",
   "Messengers are not available in this version.": "Komunikatory nie są dostępne w tej wersji.",
   "Connected as {name}.": "Połączony jako {name}.",
   "Connected.": "Połączony.",
@@ -852,6 +852,20 @@ export const pl = {
     "Slack nie przyjmuje tokenów (mogły zostać unieważnione albo aplikacji brakuje uprawnienia). Utwórz nowe i połącz ponownie.",
   "Slack cannot be reached right now. The program tries again by itself.":
     "Nie można teraz połączyć się ze Slackiem. Program spróbuje sam ponownie.",
+  "From the Bot page of your Discord application (Reset Token). Three parts separated by dots.":
+    "Z zakładki Bot Twojej aplikacji Discord (Reset Token). Trzy części oddzielone kropkami.",
+  "A number of 17 to 20 digits (a direct-message channel id). Write to the bot once: the settings then show who wrote, and you can allow them. Servers are not allowed.":
+    "Liczba o 17–20 cyfrach (numer kanału wiadomości prywatnej). Napisz raz do bota: ustawienia pokażą, kto napisał, i będziesz mógł go dopuścić. Serwery nie są dopuszczane.",
+  "Make an application in the Discord Developer Portal and add a bot to it.":
+    "Utwórz aplikację w Discord Developer Portal i dodaj do niej bota.",
+  "Copy the bot token from the Bot page (Reset Token) and paste it here. No special intents are needed for direct messages.":
+    "Skopiuj token bota z zakładki Bot (Reset Token) i wklej go tutaj. Do wiadomości prywatnych nie są potrzebne żadne specjalne uprawnienia (intents).",
+  "Open the bot's profile in Discord (install it to your account) and write a direct message to it. It appears under the conversations that wrote.":
+    "Otwórz profil bota w Discordzie (zainstaluj go na swoim koncie) i napisz do niego wiadomość prywatną. Pojawi się wśród rozmów, które napisały.",
+  "Discord does not accept the token (it may have been reset). Reset it on the Bot page of your application and connect again.":
+    "Discord nie przyjmuje tokenu (mógł zostać zresetowany). Zresetuj go na zakładce Bot swojej aplikacji i połącz ponownie.",
+  "Discord cannot be reached right now. The program tries again by itself.":
+    "Nie można teraz połączyć się z Discordem. Program spróbuje sam ponownie.",
   "Could not load the transfer page.": "Nie udało się wczytać strony transferu.",
   "Could not export the agents.": "Nie udało się wyeksportować agentów.",
   "Could not read the file.": "Nie udało się odczytać pliku.",
@@ -2589,8 +2603,8 @@ export const pl = {
     "Loginy i sekrety, których agenci mogą używać, nie widząc ich.",
   "Let agents use logins from 1Password or Bitwarden; you stay in control.":
     "Agenci mogą używać loginów z 1Password lub Bitwarden; kontrola zostaje u Ciebie.",
-  "Talk to your agents from Telegram, Slack and other messengers.":
-    "Rozmawiaj z agentami z Telegrama, Slacka i innych komunikatorów.",
+  "Talk to your agents from Telegram, Slack, Discord and other messengers.":
+    "Rozmawiaj z agentami z Telegrama, Slacka, Discorda i innych komunikatorów.",
   Integrations: "Integracje",
   "Accounts agents can work in, such as mail and calendars.":
     "Konta, na których agenci mogą pracować, np. poczta i kalendarze.",

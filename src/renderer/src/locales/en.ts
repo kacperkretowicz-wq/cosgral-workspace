@@ -799,8 +799,8 @@ export const en = {
   "Could not load the messengers.": "Could not load the messengers.",
   "Could not allow the conversation.": "Could not allow the conversation.",
   Messengers: "Messengers",
-  "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.":
-    "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.",
+  "Talk to an agent from Telegram, Slack or Discord. Only private conversations are answered, and nobody is allowed until you add them.":
+    "Talk to an agent from Telegram, Slack or Discord. Only private conversations are answered, and nobody is allowed until you add them.",
   "Messengers are not available in this version.": "Messengers are not available in this version.",
   "Connected as {name}.": "Connected as {name}.",
   "Connected.": "Connected.",
@@ -853,6 +853,20 @@ export const en = {
     "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.",
   "Slack cannot be reached right now. The program tries again by itself.":
     "Slack cannot be reached right now. The program tries again by itself.",
+  "From the Bot page of your Discord application (Reset Token). Three parts separated by dots.":
+    "From the Bot page of your Discord application (Reset Token). Three parts separated by dots.",
+  "A number of 17 to 20 digits (a direct-message channel id). Write to the bot once: the settings then show who wrote, and you can allow them. Servers are not allowed.":
+    "A number of 17 to 20 digits (a direct-message channel id). Write to the bot once: the settings then show who wrote, and you can allow them. Servers are not allowed.",
+  "Make an application in the Discord Developer Portal and add a bot to it.":
+    "Make an application in the Discord Developer Portal and add a bot to it.",
+  "Copy the bot token from the Bot page (Reset Token) and paste it here. No special intents are needed for direct messages.":
+    "Copy the bot token from the Bot page (Reset Token) and paste it here. No special intents are needed for direct messages.",
+  "Open the bot's profile in Discord (install it to your account) and write a direct message to it. It appears under the conversations that wrote.":
+    "Open the bot's profile in Discord (install it to your account) and write a direct message to it. It appears under the conversations that wrote.",
+  "Discord does not accept the token (it may have been reset). Reset it on the Bot page of your application and connect again.":
+    "Discord does not accept the token (it may have been reset). Reset it on the Bot page of your application and connect again.",
+  "Discord cannot be reached right now. The program tries again by itself.":
+    "Discord cannot be reached right now. The program tries again by itself.",
   "Could not load the transfer page.": "Could not load the transfer page.",
   "Could not export the agents.": "Could not export the agents.",
   "Could not read the file.": "Could not read the file.",
@@ -2589,8 +2603,8 @@ export const en = {
   "Logins and secrets agents may use without seeing them.": "Logins and secrets agents may use without seeing them.",
   "Let agents use logins from 1Password or Bitwarden; you stay in control.":
     "Let agents use logins from 1Password or Bitwarden; you stay in control.",
-  "Talk to your agents from Telegram, Slack and other messengers.":
-    "Talk to your agents from Telegram, Slack and other messengers.",
+  "Talk to your agents from Telegram, Slack, Discord and other messengers.":
+    "Talk to your agents from Telegram, Slack, Discord and other messengers.",
   Integrations: "Integrations",
   "Accounts agents can work in, such as mail and calendars.":
     "Accounts agents can work in, such as mail and calendars.",

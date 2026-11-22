@@ -70,7 +70,7 @@ export function LibraryPage() {
     {
       id: "messengers",
       label: t("Messengers"),
-      description: t("Talk to your agents from Telegram, Slack and other messengers."),
+      description: t("Talk to your agents from Telegram, Slack, Discord and other messengers."),
       icon: MessageCircle,
       render: () => <MessengersPanel />,
     },
