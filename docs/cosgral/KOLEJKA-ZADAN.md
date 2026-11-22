@@ -23,7 +23,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 13. [zrobione: 1682b267a] Klient telefonu (PWA): ekran kanałów, wiadomości i zadań na API z `ipc-mobile-channels.ts` (Backend BE-AB); współpraca z KK.
 14. [zrobione: 9a5a7ed95] Pasek boczny: animacja przesunięcia wiersza przy „unread first” (tylko transform, z reduced-motion).
 15. [zrobione: b27b2b107] Poprawki dostępności z sondy Testera (fokus, kontrast, reduced motion), gdy wynik będzie.
-16. Ekran „Komunikatory” (Telegram/Slack): podepnij `window.openbot.messengers` w rendererze (lista, połączenie, token tylko do zapisu, stan, test połączenia); `luki-silnika-071.md` §1.4; testy jednego pliku + historyjka.
+16. [zrobione: istniejący `MessengersPanel` (Telegram, Slack, od 22.11 także Discord); pozycja była nieaktualna] Ekran „Komunikatory” (Telegram/Slack): podepnij `window.openbot.messengers` w rendererze (lista, połączenie, token tylko do zapisu, stan, test połączenia); `luki-silnika-071.md` §1.4; testy jednego pliku + historyjka.
 17. Agent settings pełny 059–074 (P1 „częściowo”): uzupełnij brakujące sekcje ekranu agenta wg `vs-071-p0p1.txt` i `openbot-0.71-kolejka-ui.md` (poza repo); własny kod, bez przepisywania.
 18. Tasks↔chat: hero zadania jak 078–086 (nagłówek, status, akcje Stop/Continue/Reassign) — wiersz „częściowo” z P0/P1.
 19. Chat chrome: Teach/Voice (przyciski w polu wiadomości, stany wyłączone z powodem), `@` i `/` złapane w teście komponentu (wiersz 16).
@@ -62,8 +62,8 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 10. [zrobione: 9d766313a — szczegół zadania kanału w API telefonu; push dla zadań kanału: luka] Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
 11. Kolejne luki z `parytet-0.71.md`, jeśli tabela „ROBIĆ” znów się wypełni po odbiorze Testera.
 12. [zrobione: 65a79fad1 — kontrakt+silnik+testy; kanały IPC i okno wyboru folderu: luka, raport backend-w12-ae.md] Biblioteka: „pliki maszyny” (wiersz 45): bezpieczny odczyt wybranego folderu, limit rozmiaru, tylko za zgodą; kontrakt + testy jednego pliku.
-13. Rutyny kanału: edycja nazwy/instrukcji/harmonogramu + dni tygodnia (wiersz 58) — kontrakt, silnik, testy.
-14. Discord: deskryptor + atrapa sterownika na interfejsie komunikatorów (`luki-silnika-071.md` §1.4), testy na fałszywej bramce, bez prawdziwego tokenu.
+13. [zrobione: kontrakt i silnik `update` + `weekdays` już w BE-R, ekran w UI-AC 62b327094; 22.11 dopisane testy panelu edycji i dni tygodnia; zostaje webhook rutyny kanału] Rutyny kanału: edycja nazwy/instrukcji/harmonogramu + dni tygodnia (wiersz 58) — kontrakt, silnik, testy.
+14. [zrobione: 32b99cb14 — pełny sterownik (Gateway + REST), nie tylko deskryptor; 18 testów na atrapie, bez prawdziwego tokenu; prawdziwy test czeka na token bota właściciela] Discord: deskryptor + atrapa sterownika na interfejsie komunikatorów (`luki-silnika-071.md` §1.4), testy na fałszywej bramce, bez prawdziwego tokenu.
 15. Marketplace: instalacja skilla z linku GitHub z kartą zgody (limit 200 plików/10 MB, bez uruchamiania skryptów), silnik + testy na fałszywym serwerze.
 16. Przeglądarka agenta: kontrakt podglądu na żywo i „teach” (wiersz 46), atrapa + testy.
 

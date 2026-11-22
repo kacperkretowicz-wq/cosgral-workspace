@@ -2,18 +2,20 @@
 
 Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 63,0 z 77 funkcji = 81,8% (jest = 1, częściowo = ½). Z tego skontraktowane ~94,2%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,0%.**
+**Wynik w jednej linii: 64,0 z 77 funkcji = 83,1% (jest = 1, częściowo = ½). Z tego skontraktowane ~95,5%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,7%.**
+
+**Aktualizacja 22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **81,8%** (63,0 z 77) | 53 jest, 20 częściowo, 4 brak |
-| Skontraktowane | **~94,2%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~93,5%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~88,3%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Parytet (kod) | **83,1%** (64,0 z 77) | 54 jest, 20 częściowo, 3 brak |
+| Skontraktowane | **~95,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~94,8%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~89,6%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **52,6%** | 22 wiersze w pełni (tak), 37 częściowo, 18 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
-| Ostrożny parytet | **61,0%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Ostrożny parytet | **61,7%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 63,0 z 83 = 75,9%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 64,0 z 83 = 77,1%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -38,7 +40,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 3 | 0 | 75% |
-| I. Komunikatory | 4 | 2 | 0 | 2 | 50% |
+| I. Komunikatory | 4 | 3 | 0 | 1 | 75% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 2 | 5 | 0 | 64% |
 
 ## Tabela funkcji
@@ -144,7 +146,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|---|---|---|---|
 | 56 | Rutyny agenta (harmonogram, webhook, historia, uruchom teraz) | **jest** | tak | tak | tak | tak | część | W oknie: tworzenie, następny start, Run now, minutowa sama; daily/cron/webhook nie. | kk-w3-acceptance, ipc-routines |
 | 57 | Harmonogram: zaplanowane i wykonane przebiegi rutyn, feed ostatnich uruchomień | **jest** | tak | tak | tak | tak | część | Ekran Harmonogram: najbliższe dni po dniach (status, godzina), rutyny z zewnątrz i wstrzymane, feed. W oknie: zrzut T-M (pusta strona bez danych). Brak siatki miesięcznego kalendarza i notatek przy przebiegu. | backend-w12-library, tester-w12-tm |
-| 58 | Rutyny kanału | **częściowo** | tak | tak | tak | część | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Luki: bez edycji nazwy, instrukcji i harmonogramu istniejącej rutyny, bez wyboru dni tygodnia, bez webhooka, bez skoku do zadania. Nie oglądane w oknie. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
+| 58 | Rutyny kanału | **częściowo** | tak | tak | tak | część | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Edycja istniejącej rutyny (nazwa, instrukcja, harmonogram, strefa czasu), wybór dni tygodnia i skok do zadania z historii są od UI-AC (62b327094); 22.11 dopisano testy panelu pokrywające edycję, dni tygodnia (niedziela = 0, lista od poniedziałku, brak zaznaczonych = codziennie) i odrzucanie błędnej edycji (3 nowe, razem 36 w trzech plikach rutyn kanału). Luka: bez webhooka. Nie oglądane w oknie. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
 | 59 | Przepływy: graf, wyzwalacz, agent, zgoda, wyjście, uruchomienia | **jest** | tak | tak | tak | tak | część | Wyzwalacz + agent w oknie; krok zgody nie. | kk-w3-acceptance, workflow-manager.test |
 | 60 | Edytor przepływów jak 0.71 (paleta węzłów z Prompt i Condition, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | tak | część | nie | Kontrakt, atrapa i silnik mają Prompt i Condition oraz funkcje edytora; stary edytor dostał tylko most (przyciski „Add prompt/condition”), od UI-V (92709aa62) jest nowy edytor w kartach kroków z portami i zakrzywionymi połączeniami; w oknie go nie oglądano, więc cofnij/ponów i plakietki błędów nie sprawdzone. | kk-w12-flows, kk-w12-workflows-marketplace, ui-v |
 | 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | część | część | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L) oraz panel `WorkflowVersionsPanel` na stronie przepływów (36c3f1e06; nie oglądany w oknie). Katalog GitHub i kredyty mediów: brak. W oknie: sekcja „Versions” z listą wersji po wyborze przepływu (zrzut 15, T-AC/T-AF); przywracanie i różnice nie oglądane ręcznie. | kk-w12-flows, ui-w12, tester-w12-te |
@@ -155,7 +157,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|---|---|---|---|
 | 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **jest** | tak | tak | tak | tak | część | Panel „Messengers” na stronie Library: stan, token tylko do zapisu (pole czyszczone), lista dopuszczonych i nieznanych rozmów (bez treści), dopuszczanie z agentem, kroki konfiguracji. Nie oglądany w oknie; prawdziwego bota nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w10-kk2, kk-w12-screens |
 | 63 | Slack (Socket Mode, tylko DM) | **jest** | tak | tak | tak | tak | część | Ten sam panel: dwa tokeny (bota i aplikacji), tylko wiadomości prywatne (numer D…). Nie oglądany w oknie; prawdziwego Slacka nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w12-komunikatory, kk-w12-screens |
-| 64 | Discord | **brak** | nie | nie | nie | nie | nie | Wstrzymany decyzją lidera. | - |
+| 64 | Discord (Gateway, tylko DM) | **jest** | tak | tak | tak | tak | nie | Trzeci komunikator na wspólnym moście i w tym samym panelu: jeden token bota, tylko wiadomości prywatne (numer kanału 17–20 cyfr), brama wychodząca (nic nie nasłuchuje), jedyny „intent” to DIRECT_MESSAGES, wznawianie sesji po krótkim zerwaniu, odcięcie milczącego połączenia, wiadomości dzielone na części do 2000 znaków, bez wzmianek i podglądów linków. 18 testów na atrapie Discorda na 127.0.0.1 (sterownik i most) + testy panelu i atrapy Storybooka. Nie oglądany w oknie; prawdziwej aplikacji Discord nie sprawdzano (potrzebny token bota właściciela). | discord-driver, kk-w12-komunikatory |
 | 65 | Łącznik GitHub (repozytoria, kod urządzenia) | **brak** | nie | nie | nie | nie | nie | Brak. | - |
 
 ### J. Serwer, zespół, zdalny pulpit, telefon
