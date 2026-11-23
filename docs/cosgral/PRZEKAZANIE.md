@@ -48,8 +48,15 @@ Chrome, inaczej trzyma pliki piaskownicy.
    wystawał o 12 px i w panelu ustawień był zgnieciony do paska (karta „Ustawienia”, nazwa dostępna „Ustawienia
    agenta”); wyszukiwarka Ctrl+K zamyka się jednym Esc i pokazuje „Ctrl”, nie „⌘”, na Windows.
 7. Sonda okna sprawdza też: wystawanie poza pojemnik, panele Pliki i Ustawienia agenta, Ctrl+K, Ctrl+/, Nowy kanał;
-   rozmiar przez `COSGRAL_PROBE_SIZE=960x640`. Historyjka Storybooka „App / Command Search” raz padła w pełnym
-   przebiegu pod obciążeniem, sama i w kolejnym pełnym przebiegu przechodzi: obserwować.
+   rozmiar przez `COSGRAL_PROBE_SIZE=960x640`; do tego menu wiadomości, menu agenta, potwierdzenie usunięcia
+   (otwierane i anulowane), strona Nowy agent i edycja kanału.
+8. Menu wiadomości było zbudowane na 2 pozycje (116 px, wiersze 32 px), a ma 6 z powodami: pozycje nachodziły na
+   siebie; teraz szerokość wg treści, powód w osobnej linii. Menu agenta: ikony przy Ukryj/Duplikuj, szerokość wg
+   treści. Anulowanie „Nowego kanału” z menu „+” wraca do poprzedniego widoku (było: goła lista kanałów); pusty widok
+   kanałów ma stan pusty.
+9. **Storybook na tym komputerze:** domyślna liczba przeglądarek naraz dawała losowe porażki funkcji `play` (co drugi
+   pełny przebieg, osobno zawsze zielone). `vitest.storybook.config.ts` ma domyślnie 2 (`COSGRAL_STORYBOOK_WORKERS`
+   zmienia): trzy pełne przebiegi z rzędu 376/376, szybciej. „Command Search” czeka dłużej (5 s).
 
 **Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
 bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
