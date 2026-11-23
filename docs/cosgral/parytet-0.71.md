@@ -2,20 +2,20 @@
 
 Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 64,5 z 77 funkcji = 83,8% (jest = 1, częściowo = ½). Z tego skontraktowane ~95,5%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,7%.**
+**Wynik w jednej linii: 65,0 z 77 funkcji = 84,4% (jest = 1, częściowo = ½). Z tego skontraktowane ~96,8%, ale w prawdziwym oknie sprawdzone tylko 53,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 62,3%.**
 
-**Aktualizacja 23.11.2026:** wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
+**Aktualizacja 23.11.2026:** wiersz 65 (GitHub) brak → częściowo (ocena była nieaktualna, integracja istnieje od W10); wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **83,8%** (64,5 z 77) | 55 jest, 19 częściowo, 3 brak |
-| Skontraktowane | **~95,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~94,8%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~90,3%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **52,6%** | 22 wiersze w pełni (tak), 37 częściowo, 18 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
-| Ostrożny parytet | **61,7%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Parytet (kod) | **84,4%** (65,0 z 77) | 55 jest, 20 częściowo, 2 brak |
+| Skontraktowane | **~96,8%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~96,1%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~91,6%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| W oknie sprawdzone | **53,2%** | 22 wiersze w pełni (tak), 38 częściowo, 17 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
+| Ostrożny parytet | **62,3%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 64,5 z 83 = 77,7%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 65,0 z 83 = 78,3%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -40,7 +40,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 4 | 2 | 0 | 83% |
-| I. Komunikatory | 4 | 3 | 0 | 1 | 75% |
+| I. Komunikatory | 4 | 3 | 1 | 0 | 88% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 2 | 5 | 0 | 64% |
 
 ## Tabela funkcji
@@ -158,7 +158,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 62 | Telegram (long polling, tylko dozwoleni, tylko rozmowy prywatne) | **jest** | tak | tak | tak | tak | część | Panel „Messengers” na stronie Library: stan, token tylko do zapisu (pole czyszczone), lista dopuszczonych i nieznanych rozmów (bez treści), dopuszczanie z agentem, kroki konfiguracji. Nie oglądany w oknie; prawdziwego bota nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w10-kk2, kk-w12-screens |
 | 63 | Slack (Socket Mode, tylko DM) | **jest** | tak | tak | tak | tak | część | Ten sam panel: dwa tokeny (bota i aplikacji), tylko wiadomości prywatne (numer D…). Nie oglądany w oknie; prawdziwego Slacka nie sprawdzano. W prawdziwym oknie: panel widoczny na zrzucie 17-11-f (dane testowe, bez prawdziwego konta). | kk-w12-komunikatory, kk-w12-screens |
 | 64 | Discord (Gateway, tylko DM) | **jest** | tak | tak | tak | tak | nie | Trzeci komunikator na wspólnym moście i w tym samym panelu: jeden token bota, tylko wiadomości prywatne (numer kanału 17–20 cyfr), brama wychodząca (nic nie nasłuchuje), jedyny „intent” to DIRECT_MESSAGES, wznawianie sesji po krótkim zerwaniu, odcięcie milczącego połączenia, wiadomości dzielone na części do 2000 znaków, bez wzmianek i podglądów linków. 18 testów na atrapie Discorda na 127.0.0.1 (sterownik i most) + testy panelu i atrapy Storybooka. Nie oglądany w oknie; prawdziwej aplikacji Discord nie sprawdzano (potrzebny token bota właściciela). | discord-driver, kk-w12-komunikatory |
-| 65 | Łącznik GitHub (repozytoria, kod urządzenia) | **brak** | nie | nie | nie | nie | nie | Brak. | - |
+| 65 | Łącznik GitHub (repozytoria, kod urządzenia) | **częściowo** | tak | tak | tak | tak | część | Ocena „brak” była nieaktualna (sprawdzone 23.11): integracja GitHub istnieje od W10-KK1 (`ipc-integrations.ts`, `integration-manager.ts`, 32 testy, `IntegrationsPanel` w Bibliotece → Integracje): logowanie w przeglądarce systemowej (OAuth z PKCE, powrót na loopback), token szyfrowany, połączenie tworzy wpis MCP GitHuba z narzędziami repozytoriów. Zakładka widoczna w oknie Linux w kontenerze. Brak: logowania **kodem urządzenia** (inna droga niż w 0.71); prawdziwe połączenie wymaga aplikacji GitHub zarejestrowanej przez właściciela (Client ID). | kk-w10-integrations, claude-okno-linux-2026-11-23 |
 
 ### J. Serwer, zespół, zdalny pulpit, telefon
 
