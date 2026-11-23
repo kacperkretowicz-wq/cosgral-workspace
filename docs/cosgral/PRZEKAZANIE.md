@@ -42,6 +42,15 @@ Chrome, inaczej trzyma pliki piaskownicy.
    motywach; zgłasza brakujące tłumaczenia, angielskie słowa słownika widoczne na polskim ekranie, tekst ucięty bez
    wielokropka i błędy konsoli.
 
+6. Małe okno (960×640) i dialogi: edytor przepływu i jego płótno wychodziły 149 px za stronę (siatki bez kolumn,
+   płótno z `min-width: 680px`); pasek plików Biblioteki i opis konta u Dostawców wystawały; panele boczne rozmowy
+   w oknie programu poniżej 1180 px nasuwają się jak szuflada zamiast ściskać rozmowę do ~240 px; pasek kart panelu
+   wystawał o 12 px i w panelu ustawień był zgnieciony do paska (karta „Ustawienia”, nazwa dostępna „Ustawienia
+   agenta”); wyszukiwarka Ctrl+K zamyka się jednym Esc i pokazuje „Ctrl”, nie „⌘”, na Windows.
+7. Sonda okna sprawdza też: wystawanie poza pojemnik, panele Pliki i Ustawienia agenta, Ctrl+K, Ctrl+/, Nowy kanał;
+   rozmiar przez `COSGRAL_PROBE_SIZE=960x640`. Historyjka Storybooka „App / Command Search” raz padła w pełnym
+   przebiegu pod obciążeniem, sama i w kolejnym pełnym przebiegu przechodzi: obserwować.
+
 **Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
 bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
 
