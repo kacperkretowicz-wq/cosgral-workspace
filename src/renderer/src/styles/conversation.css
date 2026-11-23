@@ -5282,6 +5282,32 @@
   max-width: calc(100% - var(--settings-panel-width, 296px) - 32px);
 }
 
+/* A small window: the settings and files panels slide over the chat like a drawer instead of squeezing it (at
+   960 px the chat was ~240 px wide, its header overlapped and messages broke after two words). */
+@container (max-width: 1180px) {
+  .conversation-panel:has(.agent-settings-panel) .conversation-header,
+  .conversation-panel:has(.agent-settings-panel) .conversation-scroll,
+  .conversation-panel:has(.agent-settings-panel) .composer-wrap,
+  .conversation-panel:has(.chat-files-panel) .conversation-header,
+  .conversation-panel:has(.chat-files-panel) .conversation-scroll,
+  .conversation-panel:has(.chat-files-panel) .composer-wrap {
+    width: 100%;
+  }
+
+  .conversation-panel:has(.agent-settings-panel) .chat-search {
+    right: 16px;
+    max-width: calc(100% - 32px);
+  }
+
+  .agent-settings-panel,
+  .chat-files-panel {
+    max-width: calc(100% - 48px);
+    box-shadow:
+      -12px 0 32px var(--openbot-shadow-popover-key),
+      0 0 0 1px var(--openbot-shadow-popover-ambient);
+  }
+}
+
 .conversation-panel:has(.browser-panel) .chat-search {
   right: calc(var(--browser-panel-width, 380px) + 16px);
   max-width: calc(100% - var(--browser-panel-width, 380px) - 32px);

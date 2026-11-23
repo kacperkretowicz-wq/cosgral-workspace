@@ -757,7 +757,11 @@ body [role="tooltip"] {
 .app-frame .chat-right-panel-tabs {
   width: fit-content;
   margin: var(--openbot-space-2) var(--openbot-space-3) 0;
-  max-width: 100%;
+  /* 100% plus the side margins went 12 px past the panel. */
+  max-width: calc(100% - 2 * var(--openbot-space-3));
+  /* A flex item of the panel's column with overflow: its minimum height is 0, so the long settings content squeezed
+     the strip to a sliver under the panel header. */
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
@@ -769,7 +773,11 @@ body [role="tooltip"] {
 }
 
 .app-frame .chat-right-panel-tabs .chat-right-panel-tab {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-color: transparent;
   border-radius: var(--openbot-radius-pill);
   background: transparent;

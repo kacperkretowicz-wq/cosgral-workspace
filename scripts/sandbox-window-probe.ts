@@ -255,6 +255,54 @@ try {
     await page.keyboard.press("Backspace");
   }
 
+  // Side panels of the conversation and the dialogs a person opens most: each is inspected while open.
+  async function openAndInspect(name: string, open: () => Promise<unknown>, visible: string): Promise<void> {
+    screen = name;
+    try {
+      await open();
+      await page.waitForTimeout(900);
+      if (
+        !(await page
+          .locator(visible)
+          .first()
+          .isVisible()
+          .catch(() => false))
+      )
+        findings.push(`${name}: did not open (${visible} not visible)`);
+      await inspect(`${name} (pl, dark)`);
+      await page.screenshot({ path: join(out, `${name}-pl-dark.png`) });
+    } catch (error) {
+      findings.push(`${name}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    }
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await page.waitForTimeout(400);
+  }
+  await openAndInspect(
+    "panel-files",
+    () => page.getByRole("button", { name: "Otwórz pliki" }).first().click(),
+    "#files-side-panel",
+  );
+  await openAndInspect(
+    "panel-agent-settings",
+    () => page.getByRole("button", { name: "Otwórz ustawienia agenta" }).first().click(),
+    "#settings-side-panel",
+  );
+  await page
+    .locator("[contenteditable='true']")
+    .first()
+    .click()
+    .catch(() => undefined);
+  await openAndInspect("search", () => page.keyboard.press("Control+k"), "[role=dialog]");
+  await openAndInspect("shortcuts", () => page.keyboard.press("Control+/"), "[role=dialog]");
+  await openAndInspect(
+    "new-channel",
+    async () => {
+      await page.getByRole("button", { name: "Utwórz", exact: true }).first().click();
+      await page.getByRole("menuitem", { name: "Nowy kanał" }).first().click();
+    },
+    "[role=dialog]",
+  );
+
   // Settings: every section of the Settings window.
   const gear = page.locator('nav[aria-label="Strony"]').getByRole("button", { name: "Ustawienia", exact: true });
   if (await gear.count()) {

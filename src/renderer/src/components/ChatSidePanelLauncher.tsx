@@ -54,10 +54,12 @@ export function ChatRightPanelTabs(props: {
   active: ChatSidePanelTarget;
   onSelect: (target: ChatSidePanelTarget) => void;
 }) {
-  const tabs: Array<{ id: ChatSidePanelTarget; label: string }> = [
+  // `short`: the visible word in the narrow panel ("Agent settings" did not fit beside Browser and Files); the
+  // accessible name stays the full label and contains the visible word.
+  const tabs: Array<{ id: ChatSidePanelTarget; label: string; short?: string }> = [
     { id: "browser", label: "Browser" },
     { id: "files", label: "Files" },
-    { id: "settings", label: "Agent settings" },
+    { id: "settings", label: "Agent settings", short: "Settings" },
   ];
   return (
     <nav class="chat-right-panel-tabs" aria-label={t("Panel sections")}>
@@ -67,9 +69,10 @@ export function ChatRightPanelTabs(props: {
           class="chat-right-panel-tab"
           aria-current={props.active === tab.id ? "page" : undefined}
           aria-label={t(tab.label)}
+          title={tab.short ? t(tab.label) : undefined}
           onClick={() => props.onSelect(tab.id)}
         >
-          {t(tab.label)}
+          {t(tab.short ?? tab.label)}
         </Button>
       ))}
     </nav>

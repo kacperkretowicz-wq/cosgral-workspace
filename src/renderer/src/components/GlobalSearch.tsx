@@ -2,6 +2,7 @@ import type { SearchHit, SearchKind } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import type { BotMessage, BotProfile } from "../data";
 import { t } from "../i18n";
+import { modKeyLabel } from "../keyboard-shortcuts";
 import { AgentAvatar } from "./AgentAvatar";
 import { Combobox, Dialog, Input, Kbd, Search, Tabs } from "./ui";
 
@@ -91,6 +92,8 @@ function resultKindLabel(result: GlobalSearchResult): string {
 }
 
 export function GlobalSearch(props: GlobalSearchProps) {
+  /** "Ctrl" on Windows and Linux, "⌘" on macOS (the result hints always showed ⌘). */
+  const modKey = modKeyLabel();
   const [tab, setTab] = createSignal<SearchTab>("all");
   const [query, setQuery] = createSignal("");
   const [remoteHits, setRemoteHits] = createSignal<SearchHit[]>([]);
@@ -212,7 +215,7 @@ export function GlobalSearch(props: GlobalSearchProps) {
                   </span>
                   <span class="global-search-result-shortcut" aria-hidden="true">
                     <Show when={index() >= 0 && index() < 9} fallback={<span>{resultKindLabel(result)}</span>}>
-                      <Kbd>⌘</Kbd>
+                      <Kbd>{modKey}</Kbd>
                       <Kbd>{index() + 1}</Kbd>
                     </Show>
                   </span>
@@ -232,6 +235,14 @@ export function GlobalSearch(props: GlobalSearchProps) {
                 autocapitalize="none"
                 spellcheck={false}
                 onKeyDown={(event) => {
+                  // The result list is part of the search window: one Escape closes the window (the combobox only
+                  // closed its list, so the window needed a second Escape).
+                  if (event.key === "Escape" && !event.isComposing) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    props.onOpenChange(false);
+                    return;
+                  }
                   if (event.key === "Enter" && !event.isComposing && !input?.getAttribute("aria-activedescendant")) {
                     const firstResult = results()[0];
                     if (!firstResult) return;
