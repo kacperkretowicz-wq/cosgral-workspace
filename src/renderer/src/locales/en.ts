@@ -1139,6 +1139,16 @@ export const en = {
   "Remote desktop works on Windows in this version.": "Remote desktop works on Windows in this version.",
   "Codex (this computer)": "Codex (this computer)",
   "Claude (this computer)": "Claude (this computer)",
+  "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.":
+    "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.",
+  "Codex CLI was not found. Install Codex, run `codex login`, then choose Try again.":
+    "Codex CLI was not found. Install Codex, run `codex login`, then choose Try again.",
+  "Process isolation is only for Windows.": "Process isolation is only for Windows.",
+  "This computer cannot isolate processes.": "This computer cannot isolate processes.",
+  "Disk tools of this agent are refused below Full access.": "Disk tools of this agent are refused below Full access.",
+  "Reading aloud uses Windows voices; it works on Windows in this version.":
+    "Reading aloud uses Windows voices; it works on Windows in this version.",
+  "Updates are available in installed desktop builds.": "Updates are available in installed desktop builds.",
   "New teammate": "New teammate",
   Writing: "Writing",
   Communication: "Communication",

@@ -1140,6 +1140,17 @@ export const pl = {
   "Remote desktop works on Windows in this version.": "Zdalny pulpit działa w tej wersji tylko na Windows.",
   "Codex (this computer)": "Codex (ten komputer)",
   "Claude (this computer)": "Claude (ten komputer)",
+  "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.":
+    "Nie znaleziono Claude CLI. Zainstaluj Claude Code, uruchom `claude auth login`, a potem wybierz „Spróbuj ponownie”.",
+  "Codex CLI was not found. Install Codex, run `codex login`, then choose Try again.":
+    "Nie znaleziono Codex CLI. Zainstaluj Codex, uruchom `codex login`, a potem wybierz „Spróbuj ponownie”.",
+  "Process isolation is only for Windows.": "Izolacja procesów działa tylko na Windows.",
+  "This computer cannot isolate processes.": "Ten komputer nie może izolować procesów.",
+  "Disk tools of this agent are refused below Full access.":
+    "Narzędzia dyskowe tego agenta są blokowane poniżej pełnego dostępu.",
+  "Reading aloud uses Windows voices; it works on Windows in this version.":
+    "Czytanie na głos używa głosów Windows; w tej wersji działa tylko na Windows.",
+  "Updates are available in installed desktop builds.": "Aktualizacje są dostępne w zainstalowanych wersjach programu.",
   "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",

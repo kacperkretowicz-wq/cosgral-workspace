@@ -24,7 +24,7 @@ import {
   PROVIDER_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tDataParts } from "../i18n";
 import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -151,7 +151,7 @@ export function ProviderUsageList(props: {
                     <Text as="strong">{providerLabel(item, props.acpAgents)}</Text>
                     <Show when={item.reason}>
                       <Text as="p" tone="muted">
-                        {item.reason}
+                        {tDataParts(item.reason ?? "")}
                       </Text>
                     </Show>
                     <Show when={item.state !== "ok" && reset()}>

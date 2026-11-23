@@ -1,6 +1,6 @@
 import { UPDATE_TRACKS, type UpdateStatus, type UpdatesOverview, updateTrackChange } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Card, Heading, NativeSelect, Switch, Text } from "./ui";
 
@@ -99,7 +99,7 @@ export function UpdatesPanel() {
     if (status.phase === "ready" && status.availableVersion) {
       return t("Version {version} is downloaded and ready.", { version: status.availableVersion });
     }
-    return status.message ?? "";
+    return tData(status.message ?? "");
   }
 
   return (

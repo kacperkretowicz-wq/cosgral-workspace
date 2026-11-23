@@ -40,6 +40,21 @@ export function tData(text: string): string {
 }
 
 /**
+ * A sentence the engine composed from fixed parts, like "Not installed: <reason>" or several sentences in a row: translated part by part
+ * when the whole is not in the dictionary. A part that is not known stays as it is (as with tData()).
+ */
+export function tDataParts(text: string): string {
+  if (language() !== "pl") return text;
+  const whole = polish.get(text);
+  if (whole !== undefined) return whole;
+  const colon = text.indexOf(": ");
+  if (colon > 0 && colon <= 40) return `${tData(text.slice(0, colon))}: ${tDataParts(text.slice(colon + 2))}`;
+  const sentences = text.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g);
+  if (sentences && sentences.length > 1) return sentences.map((sentence) => tData(sentence.trim())).join(" ");
+  return text;
+}
+
+/**
  * A count with its noun: `one` for 1, `other` otherwise in English; Polish also has the "many" form (5 plików), kept
  * beside the translations in `plMany` under the same key as `other`.
  */

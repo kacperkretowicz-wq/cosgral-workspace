@@ -8,7 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { fallbackModelsProblem, isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { AccessSettings } from "./AccessSettings";
 import { AgentAccountPicker } from "./AgentAccountPicker";
 import { type SaveStage, saveAgentSettingsStages } from "./agent-settings-save";
@@ -327,7 +327,7 @@ export function AgentSettingsW3(props: { botId: string }) {
         <For each={templates()}>
           {(item) => (
             <li>
-              {item.name} — {item.summary}{" "}
+              {tData(item.name)} — {tData(item.summary)}{" "}
               <Show when={item.origin === "saved"}>
                 <Button
                   unstyled
