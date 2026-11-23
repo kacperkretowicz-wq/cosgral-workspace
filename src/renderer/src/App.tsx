@@ -99,6 +99,7 @@ import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
 import { SchedulePage } from "./components/SchedulePage";
 import { ServerRail } from "./components/ServerRail";
+import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import { TasksPage } from "./components/TasksPage";
@@ -107,6 +108,7 @@ import { UsagePage } from "./components/UsagePage";
 import type { BotMessage, BotProfile } from "./data";
 import { t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
+import { isShortcutListKey } from "./keyboard-shortcuts";
 import {
   addCard,
   approvalCard,
@@ -256,6 +258,7 @@ export function App() {
   const [pendingInviteUrl, setPendingInviteUrl] = createSignal("");
   const [hostOpen, setHostOpen] = createSignal(false);
   const [globalSearchOpen, setGlobalSearchOpen] = createSignal(false);
+  const [shortcutsOpen, setShortcutsOpen] = createSignal(false);
   const [messageFocusRequest, setMessageFocusRequest] = createSignal<{
     botId: string;
     messageId: string;
@@ -432,6 +435,13 @@ export function App() {
       setGlobalSearchVisibility(!globalSearchOpen());
     };
     window.addEventListener("keydown", handleGlobalSearchShortcut);
+    // Ctrl+/ or Cmd+/: the list of keyboard shortcuts (also from a text field: the key has no meaning there).
+    const handleShortcutList = (event: KeyboardEvent) => {
+      if (!isShortcutListKey(event) || setupState()?.completed !== true) return;
+      event.preventDefault();
+      setShortcutsOpen(!shortcutsOpen());
+    };
+    window.addEventListener("keydown", handleShortcutList);
     const cleanup = () => {
       unsubscribe();
       unsubscribeUpdate();
@@ -444,6 +454,7 @@ export function App() {
       unsubscribeHost();
       unsubscribeRemoteMac();
       window.removeEventListener("keydown", handleGlobalSearchShortcut);
+      window.removeEventListener("keydown", handleShortcutList);
       if (conversationFrame !== undefined) cancelAnimationFrame(conversationFrame);
       for (const timer of recentReplyTimers.values()) clearTimeout(timer);
       recentReplyTimers.clear();
@@ -2374,6 +2385,9 @@ export function App() {
                   onRevokeInvite={revokeHostInvite}
                   onCopyAddressUpdate={copyHostAddressUpdate}
                 />
+              </Show>
+              <Show when={shortcutsOpen()}>
+                <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />
               </Show>
               <Show when={globalSearchOpen()}>
                 <GlobalSearch

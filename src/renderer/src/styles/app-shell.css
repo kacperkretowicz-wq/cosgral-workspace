@@ -3156,3 +3156,27 @@ textarea {
   height: var(--openbot-icon-md);
   flex: 0 0 auto;
 }
+
+/* Keyboard shortcuts dialog (Ctrl+/ or Cmd+/): keys on the left, what they do on the right. */
+.shortcuts-list {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: 0;
+}
+
+.shortcuts-row {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.shortcuts-row dt {
+  display: flex;
+  gap: var(--openbot-space-1);
+}
+
+.shortcuts-row dd {
+  margin: 0;
+  color: var(--openbot-text-secondary);
+}

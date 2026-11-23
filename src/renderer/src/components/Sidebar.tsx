@@ -6,6 +6,7 @@ import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
 import { appLocale, t, tData, tn } from "../i18n";
+import { agentStep, isTypingTarget, neighbourAgent } from "../keyboard-shortcuts";
 import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
@@ -332,8 +333,20 @@ export function Sidebar(props: SidebarProps) {
     const resizeObserver = new ResizeObserver(updateScrollFade);
     if (botList) resizeObserver.observe(botList);
     requestAnimationFrame(updateScrollFade);
+    // Alt+Up/Down: the agent before or after the active one, in the order the list shows (folders, unread first, search).
+    const stepAgent = (event: KeyboardEvent) => {
+      const step = agentStep(event);
+      if (step === null || event.defaultPrevented || isTypingTarget(event.target)) return;
+      const ids = listRows().flatMap((row) => (row.type === "agent" ? [row.bot.id] : []));
+      const next = neighbourAgent(ids, props.activeBotId, step);
+      if (!next || next === props.activeBotId) return;
+      event.preventDefault();
+      props.onSelectBot(next);
+    };
+    window.addEventListener("keydown", stepAgent);
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener("keydown", stepAgent);
     };
   });
 
@@ -719,7 +732,7 @@ export function Sidebar(props: SidebarProps) {
                       type="button"
                       class={["bot-row channel-row", { "bot-row-active": props.activeChannelId === channel.id }]}
                       aria-pressed={props.activeChannelId === channel.id ? "true" : "false"}
-                      aria-label={`${t("Channel")} ${title()}. ${t("{count} members", { count: channel.memberBotIds.length })}`}
+                      aria-label={`${t("Channel")} ${title()}. ${tn(channel.memberBotIds.length, "{count} member", "{count} members")}`}
                       data-channel-id={channel.id}
                       onClick={() => props.onOpenChannel?.(channel.id)}
                     >
@@ -747,7 +760,7 @@ export function Sidebar(props: SidebarProps) {
                           <span class="bot-row-meta">
                             <span
                               class="channel-row-count"
-                              title={t("{count} members", { count: channel.memberBotIds.length })}
+                              title={tn(channel.memberBotIds.length, "{count} member", "{count} members")}
                             >
                               {/* A people icon, so the number reads as members and not as unread messages. */}
                               <Users size={11} stroke-width={2} aria-hidden="true" />

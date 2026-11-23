@@ -27,7 +27,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 17. Agent settings pełny 059–074 (P1 „częściowo”): uzupełnij brakujące sekcje ekranu agenta wg `vs-071-p0p1.txt` i `openbot-0.71-kolejka-ui.md` (poza repo); własny kod, bez przepisywania.
 18. Tasks↔chat: hero zadania jak 078–086 (nagłówek, status, akcje Stop/Continue/Reassign) — wiersz „częściowo” z P0/P1.
 19. Chat chrome: Teach/Voice (przyciski w polu wiadomości, stany wyłączone z powodem), `@` i `/` złapane w teście komponentu (wiersz 16).
-20. Pasek boczny: „Więcej”/przypinanie stron (wiersz 36) + skróty klawiszowe Ctrl+K/Ctrl+F/Alt+↑ (wiersz 72), test jednego pliku.
+20. [zrobione częściowo 23.11: Alt+↑/↓ między agentami (poza polem tekstowym) i okno skrótów Ctrl/Cmd+/; „Więcej” i przypinanie były wcześniej] Pasek boczny: „Więcej”/przypinanie stron (wiersz 36) + skróty klawiszowe Ctrl+K/Ctrl+F/Alt+↑ (wiersz 72), test jednego pliku.
 21. Marketplace: strona używa `ipc-marketplace-screen` (Featured, kategorie, Verified/Public) — wiersz 48.
 
 ## KK Fullstack

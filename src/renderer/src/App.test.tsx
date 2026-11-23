@@ -710,6 +710,16 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
   });
 
+  it("opens the list of keyboard shortcuts with Ctrl+/ and closes it with Escape", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await fireEvent.keyDown(window, { key: "/", ctrlKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(within(dialog).getByText("Previous agent in the list (outside a text field)")).toBeInTheDocument();
+    await fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument());
+  });
+
   it("keeps agents disabled when setup persistence fails", async () => {
     vi.mocked(window.openbot.getSetupState).mockResolvedValueOnce({
       completed: false,
