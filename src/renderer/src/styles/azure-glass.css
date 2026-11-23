@@ -806,10 +806,13 @@ body [role="tooltip"] {
   border-radius: var(--openbot-radius-pill);
 }
 
-.chat-tasks-switch .chat-tasks-switch-tab-active {
+/* [data-variant] lifts this above the secondary-button glass of the channel view and work pages (specificity 0,3,0), which made
+   the active tab lose its accent and, in the light theme, show white text on white. */
+.chat-tasks-switch .chat-tasks-switch-tab.chat-tasks-switch-tab-active[data-variant] {
   background-color: var(--openbot-accent);
   background-image: var(--openbot-pill-glossy);
   box-shadow: var(--openbot-pill-glossy-shadow);
+  color: var(--openbot-contrast-white);
 }
 
 .channel-view-settings > details > summary {

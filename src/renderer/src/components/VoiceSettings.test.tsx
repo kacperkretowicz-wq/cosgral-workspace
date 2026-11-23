@@ -52,4 +52,15 @@ describe("voice settings", () => {
     answer([{ id: "zira", name: "Zira", culture: "en-US", gender: "female" }]);
     expect(await screen.findByRole("option", { name: "Zira (en-US)" })).toBeInTheDocument();
   });
+
+  it("names the state of a download in words, not the contract's code (seen as 'absent' in the real window)", async () => {
+    vi.stubGlobal("openbot", {
+      voice: { getState: vi.fn().mockResolvedValue(state()), listVoices: vi.fn().mockResolvedValue([]) },
+      agent: { onEvent: () => () => undefined },
+    });
+    render(() => <VoiceSettings />);
+    await screen.findByRole("region", { name: "Voice settings" });
+    expect((await screen.findAllByText(/Not downloaded/)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/· absent/)).not.toBeInTheDocument();
+  });
 });

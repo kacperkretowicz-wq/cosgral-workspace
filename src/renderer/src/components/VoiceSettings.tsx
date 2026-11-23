@@ -1,4 +1,10 @@
-import type { UpdateVoiceSettingsInput, VoiceInfo, VoiceModelId, VoiceState } from "@openbot/contracts/ipc";
+import type {
+  UpdateVoiceSettingsInput,
+  VoiceAssetState,
+  VoiceInfo,
+  VoiceModelId,
+  VoiceState,
+} from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { Button, Input, NativeSelect } from "./ui";
@@ -85,7 +91,7 @@ export function VoiceSettingsView(props: {
         </NativeSelect>
       </label>
       <p>
-        {t("Runtime:")} {props.state.transcription.runtime.state} ·{" "}
+        {t("Runtime:")} {assetStateLabel(props.state.transcription.runtime.state)} ·{" "}
         {(props.state.transcription.runtime.sizeBytes / 1048576).toFixed(1)} MB
         <Show when={props.state.transcription.runtime.progress}>
           {(progress) => (
@@ -113,7 +119,7 @@ export function VoiceSettingsView(props: {
                   checked={settings().modelId === model.id}
                   onChange={() => props.update({ modelId: model.id })}
                 />{" "}
-                {model.label} · {(model.sizeBytes / 1048576).toFixed(1)} MB · {model.state}
+                {model.label} · {(model.sizeBytes / 1048576).toFixed(1)} MB · {assetStateLabel(model.state)}
               </label>
               <Show when={model.progress}>
                 {(progress) => (
@@ -235,4 +241,16 @@ export function VoiceSettings() {
       </Show>
     </>
   );
+}
+
+/** The state of a voice download in words (the contract's "absent" and so on were shown as they are). */
+const ASSET_STATE_LABELS: Record<VoiceAssetState, string> = {
+  absent: "Not downloaded",
+  downloading: "Downloading",
+  ready: "Ready",
+  error: "Error",
+};
+
+function assetStateLabel(state: VoiceAssetState): string {
+  return t(ASSET_STATE_LABELS[state]);
 }

@@ -1164,6 +1164,7 @@ export const pl = {
   "{count} condition": "{count} warunek",
   "{count} conditions": "{count} warunki",
   "No steps": "Brak kroków",
+  "Not downloaded": "Nie pobrano",
   "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",

@@ -479,7 +479,9 @@
   transform: scale(0.97);
 }
 
-.ui-switch[data-disabled] {
+/* Only the control and its label are dimmed: the description often says why the switch is off and must stay readable (AA). */
+.ui-switch[data-disabled] .ui-switch-control,
+.ui-switch[data-disabled] .ui-switch-label {
   opacity: 0.42;
 }
 

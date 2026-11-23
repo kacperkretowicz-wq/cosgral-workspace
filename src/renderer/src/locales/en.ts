@@ -1162,6 +1162,7 @@ export const en = {
   "{count} condition": "{count} condition",
   "{count} conditions": "{count} conditions",
   "No steps": "No steps",
+  "Not downloaded": "Not downloaded",
   "New teammate": "New teammate",
   Writing: "Writing",
   Communication: "Communication",
