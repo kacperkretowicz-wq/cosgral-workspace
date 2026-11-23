@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDynamicRecord } from "@openbot/contracts/runtime-values";
 import { _electron as electron, type Page } from "playwright";
 import { cleanEnvironment } from "./sandbox-env.ts";
 
@@ -143,15 +144,17 @@ async function readAxeSource(): Promise<string> {
 async function axeCheck(name: string): Promise<void> {
   if (!AXE) return;
   if (!(await page.evaluate("typeof window.axe !== 'undefined'"))) await page.evaluate(axeSource);
-  const result = (await page.evaluate(`(async () => {
+  const result = await page.evaluate(`(async () => {
     const r = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }, resultTypes: ["violations"] });
     return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, targets: v.nodes.slice(0, 3).map((n) => String(n.target[0])).join(" | "), count: v.nodes.length }));
-  })()`)) as Array<{ id: string; impact: string; help: string; targets: string; count: number }>;
-  for (const v of result) {
-    const key = `${v.id}:${v.targets}`;
+  })()`);
+  for (const v of Array.isArray(result) ? result.filter(isDynamicRecord) : []) {
+    const key = `${String(v.id)}:${String(v.targets)}`;
     if (axeSeen.has(key)) continue;
     axeSeen.add(key);
-    findings.push(`${name}: axe ${v.impact} ${v.id} (${v.count}) ${v.help}\n    ${v.targets}`);
+    findings.push(
+      `${name}: axe ${String(v.impact)} ${String(v.id)} (${String(v.count)}) ${String(v.help)}\n    ${String(v.targets)}`,
+    );
   }
 }
 
@@ -471,7 +474,7 @@ try {
     const invisible = new Set<string>();
     for (let index = 0; index < 60; index += 1) {
       await page.keyboard.press("Tab");
-      const seen = (await page.evaluate(`(() => {
+      const seen = await page.evaluate(`(() => {
         const el = document.activeElement;
         if (!el || el === document.body) return null;
         // The ring may be drawn by the element or by its wrapper (a search field shows focus with :focus-within).
@@ -484,8 +487,8 @@ try {
         const name = el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.textContent?.trim().slice(0, 40) || el.tagName;
         const where = el.parentElement ? " in ." + [...el.parentElement.classList].join(".") : "";
         return { ring, what: el.tagName.toLowerCase() + "." + [...el.classList].join(".") + ' "' + name + '"' + where };
-      })()`)) as { ring: boolean; what: string } | null;
-      if (seen && !seen.ring) invisible.add(seen.what);
+      })()`);
+      if (isDynamicRecord(seen) && seen.ring !== true) invisible.add(String(seen.what));
     }
     if (invisible.size)
       findings.push(`keyboard: focus not visible on:\n    ${[...invisible].slice(0, 20).join("\n    ")}`);
