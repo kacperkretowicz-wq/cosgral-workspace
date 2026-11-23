@@ -77,9 +77,13 @@ export function ThreadTabs(props: ThreadTabsProps) {
   const activeId = () => list()?.activeThreadId ?? null;
   /** Known only once the list arrived; until then the strip stays hidden and the header keeps its usual buttons. */
   const single = createMemo(() => (list() ? activeThreads().length <= 1 : null));
-  createEffect(single, (value) => {
-    if (value !== null) props.onSingleThreadChange?.(value);
-  });
+  // The compute is wrapped: a bare signal or memo getter passed here was not tracked (seen with the language signal).
+  createEffect(
+    () => single(),
+    (value) => {
+      if (value !== null) props.onSingleThreadChange?.(value);
+    },
+  );
 
   async function guarded<T>(work: () => Promise<T>): Promise<T | undefined> {
     setError("");

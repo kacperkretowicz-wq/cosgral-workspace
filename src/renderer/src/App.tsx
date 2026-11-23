@@ -42,7 +42,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
-import { createEffect, createMemo, createSignal, flush, Loading, lazy, onSettled, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, flush, Loading, lazy, onSettled, Show, untrack } from "solid-js";
 import { markSidebarConversationRead } from "./agent-read-actions";
 import {
   AUTH_SUCCESS_HOLD_MS,
@@ -106,7 +106,7 @@ import { TasksPage } from "./components/TasksPage";
 import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
 import type { BotMessage, BotProfile } from "./data";
-import { t, tData } from "./i18n";
+import { language, t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import { isShortcutListKey } from "./keyboard-shortcuts";
 import {
@@ -572,6 +572,34 @@ export function App() {
           scheduleConversation(snapshot);
         })
         .catch((error) => appendUiError(botId, error, "Load failed"));
+    },
+  );
+
+  // Row times and message times/statuses are formatted when the data is mapped (bot-mapping.ts). When the language
+  // changes, map the agents and the loaded conversations again, so "02:32 PM" becomes "14:32" without a restart.
+  let mappedLanguage: string | undefined;
+  createEffect(
+    () => language(),
+    (current) => {
+      const previous = mappedLanguage;
+      mappedLanguage = current;
+      if (previous === undefined || previous === current) return;
+      void window.openbot.agent
+        .listBots()
+        .then(applyStoredBots)
+        .catch(() => undefined);
+      const open = untrack(() => [
+        activeBotId(),
+        ...Object.entries(conversationLoaded())
+          .filter(([, loaded]) => loaded)
+          .map(([botId]) => botId),
+      ]);
+      for (const botId of new Set(open.filter(Boolean))) {
+        void window.openbot.agent
+          .readConversation(botId)
+          .then((snapshot) => scheduleConversation(snapshot))
+          .catch(() => undefined);
+      }
     },
   );
 

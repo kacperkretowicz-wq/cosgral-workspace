@@ -2783,6 +2783,20 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     setLanguage("en");
   });
 
+  it("maps the agents and the open conversation again when the language changes, so times follow it", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await waitFor(() => expect(window.openbot.agent.readConversation).toHaveBeenCalled());
+    const bots = vi.mocked(window.openbot.agent.listBots).mock.calls.length;
+    const conversations = vi.mocked(window.openbot.agent.readConversation).mock.calls.length;
+    setLanguage("pl");
+    await waitFor(() => expect(vi.mocked(window.openbot.agent.listBots).mock.calls.length).toBeGreaterThan(bots));
+    await waitFor(() =>
+      expect(vi.mocked(window.openbot.agent.readConversation).mock.calls.length).toBeGreaterThan(conversations),
+    );
+    setLanguage("en");
+  });
+
   it("uses a custom onboarding answer as the persistent agent remit", async () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });

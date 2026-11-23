@@ -2,6 +2,7 @@ import type {
   AgentEvent,
   PendingThreadDelete,
   ThreadList,
+  ThreadState,
   ThreadSummary,
   ThreadsDesktopApi,
   ThreadUndoDesktopApi,
@@ -16,6 +17,15 @@ import { threadTitle } from "./ThreadTabs";
 import { ThreadUndoBar } from "./ThreadUndoBar";
 import { Badge, Button, Field, Heading, Input, Switch, Text } from "./ui";
 import "../styles/threads.css";
+
+/** The engine's thread state as a word in the window language (the raw "idle" showed on Polish screens). */
+const THREAD_STATE_LABEL: Record<ThreadState, string> = {
+  running: "Running",
+  waiting: "Waiting",
+  idle: "Idle",
+  archived: "Archived",
+};
+
 export function ThreadPanel(props: {
   botId: string;
   api?: ThreadsDesktopApi;
@@ -203,7 +213,9 @@ export function ThreadPanel(props: {
                         {threadTitle(thread.title)}
                       </Heading>
                       <Badge tone={thread.state === "waiting" ? "warning" : "neutral"}>
-                        {thread.state === "running" && !thread.active ? t("Working in background") : thread.state}
+                        {thread.state === "running" && !thread.active
+                          ? t("Working in background")
+                          : t(THREAD_STATE_LABEL[thread.state])}
                       </Badge>
                       <Show when={thread.active}>
                         <Badge>{t("Current")}</Badge>

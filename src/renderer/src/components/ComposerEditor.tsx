@@ -5,7 +5,7 @@ import { Portal } from "@solidjs/web";
 import { createEffect, createMemo, createSignal, createUniqueId, For, Show, untrack } from "solid-js";
 import { buildAnimatedAvatarSvg } from "../blobatar";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { currentSendShortcut, enterAction } from "../send-shortcut";
 import { AgentAvatar } from "./AgentAvatar";
 import { AnchoredTooltip } from "./conversation/AnchoredTooltip";
@@ -540,7 +540,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
                         ? t("Agent")
                         : option.type === "attachment"
                           ? t("File")
-                          : option.candidate.detail || (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
+                          : // The engine sends "Channel" / "Library" (or an agent's own description): through the dictionary.
+                            tData(option.candidate.detail) ||
+                            (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
                     </span>
                   </Listbox.Item>
                 </>
