@@ -2,6 +2,7 @@ import type { AgentEvent } from "@openbot/contracts/ipc";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createMockProviderCatalog } from "../../stories/mock-provider-catalog";
+import { SHOW_API_KEYS } from "../api-keys-visibility";
 import { ProviderCatalogPanel } from "./ProviderCatalogPanel";
 
 let mock = createMockProviderCatalog(() => undefined);
@@ -34,7 +35,14 @@ it("lists the providers of the catalog", async () => {
   expect(await screen.findAllByRole("listitem")).not.toHaveLength(0);
 });
 
-it("adds a key to a provider that takes keys and never shows it again", async () => {
+it.skipIf(SHOW_API_KEYS)("offers no API key field while API keys are hidden (decision of the owner)", async () => {
+  render(() => <ProviderCatalogPanel />);
+  await card("Grok");
+  expect(screen.queryByLabelText(/API key/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Add key" })).not.toBeInTheDocument();
+});
+
+it.runIf(SHOW_API_KEYS)("adds a key to a provider that takes keys and never shows it again", async () => {
   const add = vi.spyOn(mock, "addKey");
   render(() => <ProviderCatalogPanel />);
   const grok = await card("Grok");

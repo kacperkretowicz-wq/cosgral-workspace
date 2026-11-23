@@ -1,5 +1,6 @@
 import type { ProviderCatalogItem, ProviderSupportLevel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { SHOW_API_KEYS } from "../api-keys-visibility";
 import { appLocale, t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
@@ -37,9 +38,9 @@ function untilLabel(iso: string): string {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString(appLocale());
 }
 
-/** Codex and Claude use the accounts of this page as their pool; the others may have several API keys. */
+/** Codex and Claude use the accounts of this page as their pool; the others may have several API keys (hidden for now). */
 function takesPool(item: ProviderCatalogItem): boolean {
-  return item.key !== null && item.id !== "codex" && item.id !== "claude";
+  return SHOW_API_KEYS && item.key !== null && item.id !== "codex" && item.id !== "claude";
 }
 
 /**

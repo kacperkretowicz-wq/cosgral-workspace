@@ -307,6 +307,14 @@ export function TasksViewScreen(props: {
                             <span class="tasks-board-title">{t(group.title)}</span>
                             <span class="tasks-count">{group.total}</span>
                           </h2>
+                          <Show when={group.id === "needs-you"}>
+                            {/* Finished tasks wait here with their result until the person archives them. */}
+                            <p class="tasks-board-hint">
+                              {t(
+                                "Questions from agents and finished results. Archive a task when you are done with it.",
+                              )}
+                            </p>
+                          </Show>
                           <ul class="tasks-screen-list">
                             <Show when={group.items.length === 0}>
                               <li class="tasks-screen-note">{t("No tasks here yet.")}</li>

@@ -99,7 +99,7 @@ export const pl = {
   Unpin: "Odepnij",
   "Page menu": "Menu strony",
   Current: "Bieżąca",
-  "Needs you": "Potrzebujesz zareagować",
+  "Needs you": "Czeka na Ciebie",
   Search: "Szukaj",
   "Search chats": "Szukaj rozmów",
   "Expand sidebar and search chats": "Rozwiń panel i szukaj rozmów",
@@ -277,7 +277,7 @@ export const pl = {
   "Use a skill": "Użyj skilla",
   "Teach a task": "Naucz zadania",
   "Teach a task needs browser teach — not in this build yet.":
-    "Nauczanie zadania wymaga teach w przeglądarce — jeszcze nie w tej wersji.",
+    "Uczenie zadania wymaga trybu nauki w przeglądarce, którego ta wersja jeszcze nie ma.",
   "Skills are not available in this version.": "Skille nie są dostępne w tej wersji.",
   "Could not load skills.": "Nie udało się wczytać skilli.",
   "Loading skills…": "Wczytywanie skilli…",
@@ -416,7 +416,7 @@ export const pl = {
   Transfer: "Przeniesienie",
   "Browser profiles": "Profile przeglądarki",
   Apps: "Aplikacje",
-  "Marketplace sections": "Sekcje Marketplace",
+  "Marketplace sections": "Sekcje katalogu dodatków",
   "Could not load the catalog.": "Nie udało się wczytać katalogu.",
   "Could not load the plugin.": "Nie udało się wczytać aplikacji.",
   "Apps are not available in this version.": "Aplikacje nie są dostępne w tej wersji.",
@@ -443,6 +443,10 @@ export const pl = {
   "This app cannot run on this computer.": "Ta aplikacja nie działa na tym komputerze.",
   "Finish signing in on the service's page, then come back.": "Dokończ logowanie na stronie usługi, potem wróć.",
   "This app has a problem.": "Ta aplikacja ma problem.",
+  "A server of this plugin was removed. Remove the plugin and install it again.":
+    "Usunięto serwer tej aplikacji. Usuń aplikację i zainstaluj ją ponownie.",
+  "Sign in on the service's page to finish.": "Dokończ logowanie na stronie usługi.",
+  "The plugin's server does not answer. Try again.": "Serwer aplikacji nie odpowiada. Spróbuj ponownie.",
   Install: "Zainstaluj",
   Update: "Aktualizuj",
   Uninstall: "Odinstaluj",
@@ -475,7 +479,7 @@ export const pl = {
   Downloaded: "Pobrane",
   Ready: "Gotowe",
   "Checking version": "Sprawdzanie wersji",
-  "Waiting for approval in Needs you": "Czeka na zgodę w Needs you",
+  "Waiting for approval in Needs you": "Czeka na Twoją zgodę",
   Downloading: "Pobieranie",
   "Verifying SHA-256": "Sprawdzanie SHA-256",
   Installing: "Instalowanie",
@@ -909,7 +913,8 @@ export const pl = {
   Blocked: "Zablokowany",
   Unknown: "Nieznany",
   "Not available in this version": "Niedostępne w tej wersji",
-  "Phones cannot connect: Mobile Connect is off.": "Telefony nie mogą się połączyć: Mobile Connect jest wyłączony.",
+  "Phones cannot connect: Mobile Connect is off.":
+    "Telefony nie mogą się połączyć: łączenie z telefonem jest wyłączone.",
   "Only a browser on this computer can open the phone page.":
     "Stronę telefonu może otworzyć tylko przeglądarka na tym komputerze.",
   "Phones on your home network can connect.": "Mogą się łączyć telefony z Twojej sieci domowej.",
@@ -931,7 +936,7 @@ export const pl = {
   "Notifications from this computer are on.": "Powiadomienia z tego komputera są włączone.",
   "Notifications from this computer are off.": "Powiadomienia z tego komputera są wyłączone.",
   "No phones yet. Use “Pair another phone” above to add one.":
-    "Brak telefonów. Dodaj pierwszy przyciskiem „Pair another phone” wyżej.",
+    "Brak telefonów. Dodaj pierwszy przyciskiem „Sparuj kolejny telefon” wyżej.",
   "This computer only": "Tylko ten komputer",
   "Local network": "Sieć lokalna",
   "Local network and Tailscale": "Sieć lokalna i Tailscale",
@@ -1019,7 +1024,8 @@ export const pl = {
   "Subagents: {working} working of {total}": "Podagenci: pracuje {working} z {total}",
   "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.":
     "Podagenta uruchamia tylko agent. Możesz go zatrzymać w każdej chwili. Naraz pracują co najwyżej {max}.",
-  "It asks you something: answer the card in Needs you.": "Pyta Cię o coś: odpowiedz na karcie w „Needs you”.",
+  "It asks you something: answer the card in Needs you.":
+    "Pyta Cię o coś: odpowiedz na karcie w sekcji „Czeka na Ciebie”.",
   "Its answer": "Jego odpowiedź",
   "Stop {title}": "Zatrzymaj: {title}",
   "Stopped by the user.": "Zatrzymany przez użytkownika.",
@@ -1039,7 +1045,7 @@ export const pl = {
   "Install Tailscale on this computer and on your phone and sign in with the same account on both.":
     "Zainstaluj Tailscale na tym komputerze i na telefonie i zaloguj się na to samo konto na obu.",
   "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.":
-    "Włącz „Local network” w Mobile Connect. Komputer odpowiada wtedy także pod adresem Tailscale.",
+    "Włącz „Sieć lokalna” na stronie Telefon. Komputer odpowiada wtedy także pod adresem Tailscale.",
   "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.":
     "Zacznij parowanie. Jeśli na liście adresów jest adres Tailscale, zeskanuj kod QR aparatem telefonu.",
   "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.":
@@ -1173,9 +1179,10 @@ export const pl = {
   "Prompt text": "Tekst polecenia",
   "Fixed text passed to the next step. No model call.":
     "Stały tekst przekazywany do następnego kroku. Bez wywołania modelu.",
-  "Empty prompt — type the fixed text for the next step.": "Puste polecenie — wpisz stały tekst dla następnego kroku.",
+  "Empty prompt — type the fixed text for the next step.": "Puste polecenie: wpisz stały tekst dla następnego kroku.",
   "Subject (text to test)": "Temat (tekst do sprawdzenia)",
-  "Usually {{previous}} — the output of the step before this one.": "Zwykle {{previous}} — wynik kroku przed tym.",
+  "Usually {{previous}} — the output of the step before this one.":
+    "Zwykle {{previous}}, czyli wynik poprzedniego kroku.",
   Operator: "Operator",
   "Compare with": "Porównaj z",
   "Match case": "Uwzględniaj wielkość liter",
@@ -1611,7 +1618,7 @@ export const pl = {
   "Awaiting approval": "Czeka na zatwierdzenie",
   Approved: "Zatwierdzony",
   Rejected: "Odrzucony",
-  "Expired — not approved": "Wygasł — niezatwierdzony",
+  "Expired — not approved": "Wygasł bez zgody",
   Completed: "Ukończony",
   Pending: "Oczekuje",
   "In progress": "W toku",
@@ -1798,7 +1805,7 @@ export const pl = {
   "Could not load isolation. Reopen settings to retry.":
     "Nie udało się wczytać izolacji. Otwórz ustawienia ponownie, żeby spróbować.",
   "Approval requested in Needs you. Isolation stays on until you approve.":
-    "Prośba o zgodę w Needs you. Izolacja zostaje włączona, aż zatwierdzisz.",
+    "Prośba o zgodę czeka w sekcji „Czeka na Ciebie”. Izolacja zostaje włączona, aż zatwierdzisz.",
   "Isolation enabled.": "Izolacja włączona.",
   "Could not change isolation.": "Nie udało się zmienić izolacji.",
   "Agent isolation": "Izolacja agenta",
@@ -1832,7 +1839,7 @@ export const pl = {
   "Access settings are unavailable on this connection.": "Ustawienia dostępu są niedostępne na tym połączeniu.",
   "Loading access settings…": "Wczytywanie ustawień dostępu…",
   "Approval requested in Needs you. The current level stays unchanged until you approve.":
-    "Prośba o zgodę w Needs you. Obecny poziom zostaje bez zmian, aż zatwierdzisz.",
+    "Prośba o zgodę czeka w sekcji „Czeka na Ciebie”. Obecny poziom zostaje bez zmian, aż zatwierdzisz.",
   "Access level updated.": "Poziom dostępu zaktualizowany.",
   "Current: {name}. {summary}": "Obecnie: {name}. {summary}",
   "Last approved increase: {at}": "Ostatnie zatwierdzone podniesienie: {at}",
@@ -1931,14 +1938,14 @@ export const pl = {
   "The account choice saves immediately. Default uses the provider settings.":
     "Wybór konta zapisuje się od razu. Domyślne korzysta z ustawień dostawcy.",
   "Assigned account from another provider or removed — pick again":
-    "Przypisane konto innego dostawcy lub usunięte — wybierz ponownie",
+    "Przypisane konto należy do innego dostawcy albo zostało usunięte: wybierz ponownie",
   " (system)": " (systemowe)",
   " — signed out": " — wylogowane",
   " — disabled": " — wyłączone",
   "Answering with account: {label}": "Teraz odpowiada kontem: {label}",
   "Account picking is unavailable in this version.": "Wybór kont niedostępny w tej wersji.",
   "Reload accounts": "Ponów wczytanie kont",
-  "Needs you by thread": "Needs you wg wątku",
+  "Needs you by thread": "„Czeka na Ciebie” według wątku",
   "New messages": "Nowe wiadomości",
   "Custom answer": "Własna odpowiedź",
   "Previous question": "Poprzednie pytanie",
@@ -2066,7 +2073,7 @@ export const pl = {
   "Code valid for {time}": "Kod ważny jeszcze {time}",
   "This code has expired.": "Ten kod wygasł.",
   "A phone is asking to pair. Approve or decline on the confirm card in Needs you.":
-    "Telefon prosi o sparowanie. Zatwierdź albo odrzuć na karcie potwierdzenia w Needs you.",
+    "Telefon prosi o sparowanie. Zatwierdź albo odrzuć na karcie potwierdzenia w sekcji „Czeka na Ciebie”.",
   "Waiting for a phone. Wrong tries left: {count}.": "Czekam na telefon. Pozostało błędnych prób: {count}.",
   "Pairing link": "Link do parowania",
   "Valid for one phone and a few minutes. Do not share it.":
@@ -2090,7 +2097,7 @@ export const pl = {
   "Rotate and remove all phones": "Wymień i usuń wszystkie telefony",
   "Keep the current certificate": "Zostaw obecny certyfikat",
   "Something went wrong.": "Coś poszło nie tak.",
-  "Mobile Connect is unavailable.": "Mobile Connect jest niedostępny.",
+  "Mobile Connect is unavailable.": "Łączenie z telefonem jest niedostępne.",
   "{name} is paired.": "Sparowano: {name}.",
   "The certificate was replaced. Every phone must pair again.":
     "Certyfikat został wymieniony. Każdy telefon musi się sparować od nowa.",
@@ -2456,7 +2463,7 @@ export const pl = {
   "Loading...": "Ładowanie…",
   "Agent threads": "Wątki agenta",
   "Running turns finish in their own thread. History, queued messages and Needs you stay with that thread. Memory is shared by this agent.":
-    "Trwające tury kończą się we własnym wątku. Historia, kolejka i Needs you zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
+    "Trwające tury kończą się we własnym wątku. Historia, kolejka i karty „Czeka na Ciebie” zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
   "Reload threads": "Odśwież wątki",
   "Show archived threads": "Pokaż zarchiwizowane wątki",
   "Loading threads...": "Ładowanie wątków…",
@@ -2472,9 +2479,9 @@ export const pl = {
   "Delete {name}? You can bring it back for {minutes} minutes.":
     "Usunąć {name}? Możesz przywrócić przez {minutes} min.",
   "Permanently delete {name}, its history, queued messages and Needs you cards? This cannot be undone.":
-    "Trwale usunąć {name}, historię, kolejkę i karty Needs you? Tego nie da się cofnąć.",
+    "Trwale usunąć {name}, historię, kolejkę i karty „Czeka na Ciebie”? Tego nie da się cofnąć.",
   "Keep thread": "Zachowaj wątek",
-  "{title}: {count} Needs you": "{title}: {count} Needs you",
+  "{title}: {count} Needs you": "{title}: czeka na Ciebie ({count})",
   "The message was not sent.": "Wiadomość nie została wysłana.",
   "Could not mark messages as read.": "Nie udało się oznaczyć wiadomości jako przeczytane.",
   "Direct conversation with {name}": "Rozmowa bezpośrednia z {name}",
@@ -3106,4 +3113,13 @@ export const pl = {
     "Dba o porządek w tabelach i wydatkach i raportuje każdą zmianę.",
   "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.":
     "Agent do tabel i liczb: usuwa duplikaty, poprawia formaty, prowadzi tabelę wydatków i raportuje każdą zmianę. Wszystko, co byłoby zgadywaniem, trafia do Ciebie. Zaczyna ze skillami Porządkowanie danych i Rejestr wydatków.",
+  "on schedule": "według harmonogramu",
+  "started by hand": "uruchomiona ręcznie",
+  "from a webhook": "z webhooka",
+  "Webhook data": "Dane z webhooka",
+  "Routine “{name}”": "Rutyna „{name}”",
+  "Routine “{name}” · {cause}, {when}": "Rutyna „{name}” · {cause}, {when}",
+  "Workflow “{name}” · step “{step}”": "Przepływ „{name}” · krok „{step}”",
+  "Questions from agents and finished results. Archive a task when you are done with it.":
+    "Pytania agentów i gotowe wyniki. Gdy skończysz z zadaniem, zarchiwizuj je.",
 } as const;

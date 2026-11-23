@@ -338,12 +338,12 @@ export function PluginAppsPanel() {
               </Show>
               <Show when={value().summary.state === "needs-sign-in"}>
                 <p class="plugin-note" role="status">
-                  {value().summary.error ?? t("Finish signing in on the service's page, then come back.")}
+                  {t(value().summary.error ?? "Finish signing in on the service's page, then come back.")}
                 </p>
               </Show>
               <Show when={value().summary.state === "error"}>
                 <p class="plugin-error" role="alert">
-                  {value().summary.error ?? t("This app has a problem.")}
+                  {t(value().summary.error ?? "This app has a problem.")}
                 </p>
               </Show>
               <For each={value().apps.flatMap((app) => app.auth)}>

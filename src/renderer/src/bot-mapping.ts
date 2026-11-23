@@ -1,4 +1,5 @@
 import type { BotSummary, ConversationMessage, ConversationReadState } from "@openbot/contracts/ipc";
+import { engineRunSummary } from "./components/conversation/engine-run";
 import type { BotMessage, BotProfile } from "./data";
 import { appLocale, t } from "./i18n";
 
@@ -117,7 +118,7 @@ export function readStateForMessages(
 }
 
 export function cleanPreview(preview: string): string {
-  const cleaned = preview
+  const cleaned = (engineRunSummary(preview) ?? preview)
     .replace(/\binbox\s+at\s+zero\b[:,]?\s*/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();

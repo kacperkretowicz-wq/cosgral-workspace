@@ -174,6 +174,16 @@ export function GlobalSearch(props: GlobalSearchProps) {
     else props.onSelectMessage(result.bot.id, result.message.id);
   }
 
+  // Escape with the focus outside the field (e.g. on the filter tabs) reached only the always-open result list, which
+  // cannot close, so the window stayed open. Kobalte passes onEscapeKeyDown of the list on to its dismissable layer;
+  // its types (2.0.0-alpha) do not list it, hence the spread.
+  const escapeClosesWindow = {
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      event.preventDefault();
+      props.onOpenChange(false);
+    },
+  };
+
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
@@ -273,7 +283,7 @@ export function GlobalSearch(props: GlobalSearchProps) {
               </Tabs.List>
             </Tabs.Root>
 
-            <Combobox.Content class="global-search-results">
+            <Combobox.Content class="global-search-results" {...escapeClosesWindow}>
               <Combobox.Listbox aria-label={t("Results")} />
               <Show when={results().length === 0}>
                 <div class="global-search-empty">{t("Nothing found")}</div>

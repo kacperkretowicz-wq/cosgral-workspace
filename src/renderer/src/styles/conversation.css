@@ -1267,6 +1267,11 @@
   text-align-last: right;
 }
 
+.agent-settings-model-row select:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: -2px;
+}
+
 .agent-settings-model-row select option {
   background: var(--openbot-bg-control);
   color: var(--openbot-white);
@@ -2359,6 +2364,12 @@
   outline: none;
 }
 
+/* The background alone was too faint for the keyboard: a ring as on the other controls. */
+.thinking-disclosure summary:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: 1px;
+}
+
 .thinking-mark,
 .thinking-chevron {
   display: grid;
@@ -3377,6 +3388,42 @@
   line-height: 17px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+/* A turn started by a routine or a workflow step: who started it, above the task text. */
+.engine-run-header {
+  margin: 0 0 4px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  line-height: 17px;
+  overflow-wrap: anywhere;
+}
+
+.engine-run-webhook {
+  margin-top: 6px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+}
+
+.engine-run-webhook summary {
+  cursor: pointer;
+  border-radius: var(--openbot-radius-sm);
+}
+
+.engine-run-webhook summary:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: 2px;
+}
+
+.engine-run-webhook pre {
+  max-height: 180px;
+  overflow: auto;
+  margin: 4px 0 0;
+  border-radius: var(--openbot-radius-sm);
+  background: var(--openbot-bg-control);
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (hover: hover) and (pointer: fine) {

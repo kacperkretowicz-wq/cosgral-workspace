@@ -75,3 +75,22 @@ it("closes the whole search window with one Escape, even while the results are l
   await fireEvent.keyDown(input, { key: "Escape" });
   expect(onOpenChange).toHaveBeenCalledWith(false);
 });
+
+it("closes with Escape while the focus is on a filter tab (Tab from the field; seen in the real window)", async () => {
+  const onOpenChange = vi.fn();
+  render(() => (
+    <GlobalSearch
+      open={true}
+      bots={[]}
+      messagesByBot={{}}
+      onOpenChange={onOpenChange}
+      onSelectBot={vi.fn()}
+      onSelectMessage={vi.fn()}
+      onSelectHit={vi.fn()}
+    />
+  ));
+  const tab = screen.getByRole("tab", { name: "All" });
+  tab.focus();
+  await fireEvent.keyDown(tab, { key: "Escape" });
+  await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+});

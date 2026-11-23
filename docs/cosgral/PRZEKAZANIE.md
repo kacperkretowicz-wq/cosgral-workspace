@@ -1,48 +1,79 @@
-# START TUTAJ: dla następnego agenta (23.11.2026 wieczór)
+# START TUTAJ: dla następnego agenta (23.11.2026 noc)
 
 **Stan:** program jest w pełni działający. Na Windows właściciela przechodzą: lint, typecheck (6), `bun run test`
-(480 plików, 3459 testów), `test:visual` 7/7, `test:storybook` 376/376 (patrz uwaga o Vite niżej), `sandbox:e2e` w
-prawdziwym oknie, odbiór zainstalowanego `.exe` (`sandbox-installed.ts`). Instalator `dist:win` jest zbudowany,
-zweryfikowany i zainstalowany na komputerze właściciela (per user). Gałąź: `claude/festive-pasteur-5oh1yh` (bez PR;
-`main` to stary Paperclip, desktop żyje na `codex/cosgral-desktop`; PR i scalenie tylko za zgodą właściciela).
+(481 plików, 3466 testów, 1 pominięty: stary test pola klucza API, włącza go `SHOW_API_KEYS`), `test:visual` 7/7, `test:storybook` 376/376 (patrz uwaga o Vite niżej), sonda okna z axe i przejściami Tab
+(0 uwag, patrz niżej). Instalator `dist:win` zbudowany z tej wersji i zainstalowany na komputerze właściciela (per user).
+Gałąź: `claude/festive-pasteur-5oh1yh` (bez PR; `main` to stary Paperclip, desktop żyje na `codex/cosgral-desktop`; PR
+i scalenie tylko za zgodą właściciela).
 
-**Zostały tylko poprawki: teksty, UI, testy.** Nie ma znanego błędu działania. Kolejność wg wagi:
+**Zostały tylko drobne poprawki.** Nie ma znanego błędu działania. Kolejność wg wagi:
 
-1. **Domknąć rundę dostępności** (zaczętą na końcu sesji): `COSGRAL_PROBE_AXE=1` w `scripts/sandbox-window-probe.ts`
-   uruchamia axe-core (WCAG 2.1 A/AA) na każdym ekranie i chodzi 60× Tab sprawdzając widoczny fokus. Naprawione:
-   lista podpowiedzi `@` (`tabindex=0`, axe scrollable-region-focusable) i pole wiadomości kanału (poświata fokusu jak
-   w rozmowie z agentem). Ostatniego przebiegu po tej drugiej poprawce nie obejrzano: puścić go i domknąć resztę.
-   Przejście Tab robi tylko strona Agenci: rozszerzyć na inne strony i dialogi.
-2. **Decyzja produktowa do zadania właścicielowi:** właściciel powiedział, że kluczy API nie będzie (agenci przez CLI
-   i subskrypcje). Dostawcy nadal mają działy „Klucze API” i „Endpointy”, Ustawienia serwera dział „Dostawcy”:
-   zapytać, czy je ukryć. Bez zgody nie usuwać.
-3. **Teksty:** zakładka „Aplikacje” w Katalogu (wtyczki z `pluginCatalog`) nie była sprawdzona pod kątem polskich
-   opisów (katalog agentów i skilli już jest po polsku, patrz pkt 10 niżej). Treść wiadomości systemowych z silnika
-   (np. „[COSGRAL routine run] …”) zostaje angielska celowo (czyta ją agent), ale warto ocenić, czy człowiek ma ją
-   widzieć w rozmowie w tej formie.
-4. **UI do oceny:** kolumna „Potrzebujesz zareagować” na stronie Zadań pokazuje zakończone zadania (wynik do
-   przeczytania): sprawdzić, czy to zamierzone, i ewentualnie dodać podpis. Logo w lewym górnym rogu czasem pokazuje
-   inny kształt (biały pasek zamiast „C”) na zrzutach podczas menu: wyjaśnić, czy to animacja.
-5. **Testy:** Storybook czasem zgłasza „Failed to run the test” / „Failed to fetch dynamically imported module”
-   (Vite w trybie przeglądarki gubi moduł, nie asercja; zwykle w okresach dużego obciążenia). Domyślnie 2 przeglądarki
+1. **Testy:** Storybook czasem zgłasza „Failed to run the test” / „Failed to fetch dynamically imported module”
+   (Vite w trybie przeglądarki gubi moduł, nie asercja; zwykle przy dużym obciążeniu). Domyślnie 2 przeglądarki
    naraz i 5 s czekania już ustawione. Jeśli wróci często: `optimizeDeps.include` / rozgrzewka w
    `vitest.storybook.config.ts`. Ostrzeżenia `STRICT_READ_UNTRACKED` (głównie Kobalte) bez zmian.
-6. **Kod (przy okazji, nie hurtem):** duże pliki (`Conversation.tsx`, `App.tsx`, `agent-service.ts`), JS renderera
+2. **Klawiatura w wyszukiwarce Ctrl+K:** Tab nie zawija się na krańcach okna (z pola idzie do karty „Wszystko” i tam
+   zostaje; Shift+Tab wraca). Fokus nie ucieka z okna i Esc zamyka je z każdego miejsca, więc to nie błąd dostępności,
+   tylko zachowanie pułapki fokusu Kobalte 2.0.0-alpha. Do poprawy, jeśli Kobalte to zmieni.
+3. **Kod (przy okazji, nie hurtem):** duże pliki (`Conversation.tsx`, `App.tsx`, `agent-service.ts`), JS renderera
    ~2,9 MB, wiersze „częściowo” w `parytet-0.71.md`.
-7. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
+4. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
    aplikacji OAuth), komunikatory (tokeny botów). Decyzja: zostają w kodzie, nieaktywne.
+
+**Decyzja właściciela 23.11 (noc): klucze API ukryte.** Jedna stała `SHOW_API_KEYS = false` w
+`src/renderer/src/api-keys-visibility.ts` chowa działy „Klucze API” i „Endpointy” strony Dostawcy oraz pulę kluczy
+w Katalogu dostawców; dział „Dostawcy” w Ustawieniach serwera (tylko odsyłał do strony Dostawcy) jest odfiltrowany
+w `ServerSettingsPage.tsx`. Kod, testy i historyjki zostają. Wiersze W5 w `scripts/sandbox-acceptance.ts` o kluczach
+i endpointach (E01…, klucz OpenAI) wymagają `true`; przy `false` nie przejdą i tak ma być.
 
 **Jak sprawdzać okno:** po `bun run build` i jednym `sandbox-shots-w12.ts` (tworzy piaskownicę z danymi demo):
 `COSGRAL_SANDBOX_ROOT=<ta piaskownica> COSGRAL_PROBE_OUT=<folder> [COSGRAL_PROBE_SIZE=960x640]
-[COSGRAL_PROBE_LANG=en] [COSGRAL_PROBE_AXE=1] node scripts/sandbox-window-probe.ts`. Raport w `report.txt`; zrzuty
-oglądać na oko (sonda nie widzi nakładania się elementów).
+[COSGRAL_PROBE_LANG=en] [COSGRAL_PROBE_AXE=1] [COSGRAL_PROBE_SKIP_PAGES=1] node scripts/sandbox-window-probe.ts`.
+Raport w `report.txt`; zrzuty oglądać na oko (sonda nie widzi nakładania się elementów). Z `COSGRAL_PROBE_AXE=1` sonda
+chodzi Tabem po każdej stronie i dziale (`main`), po panelach Pliki i Ustawienia agenta, po każdym dialogu (tam też
+sprawdza, czy fokus nie wychodzi z okna) i po oknie Ustawień. `COSGRAL_PROBE_SKIP_PAGES=1` pomija strony (szybki
+przebieg rozmowy i dialogów). Przy błędzie kroku sonda zapisuje zrzut `<krok>-<język>-failed.png`.
 
-**Pułapki z tej sesji:** w Solid 2 `createEffect(signal, fn)` z gołym getterem nie śledzi zmian (owijać w
-`() => signal()`); zapis sygnału działa po `flush()` (w testach odczyt zaraz po `setLanguage` daje stary język);
-teksty formatowane przy mapowaniu danych trzeba mapować ponownie po zmianie języka (`App.tsx`). Krok I10
-`sandbox-installed.ts` otwiera prawdziwe okno logowania w Chrome z profilem piaskownicy: zamknąć je po przebiegu.
+**Pułapki:** w Solid 2 `createEffect(signal, fn)` z gołym getterem nie śledzi zmian (owijać w `() => signal()`);
+zapis sygnału działa po `flush()` (w testach odczyt zaraz po `setLanguage` daje stary język); teksty formatowane przy
+mapowaniu danych trzeba mapować ponownie po zmianie języka (`App.tsx`). Krok I10 `sandbox-installed.ts` otwiera
+prawdziwe okno logowania w Chrome z profilem piaskownicy: zamknąć je po przebiegu. Kobalte `Combobox.Content`
+przyjmuje `onEscapeKeyDown` (idzie do warstwy), ale typy alpha go nie znają: w `GlobalSearch.tsx` przez rozwinięcie
+obiektu.
 
 ---
+
+# Przekazanie: 23.11.2026 noc, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Cel od właściciela: dokończyć program, poprawki UI, bez tekstu „AI slop”, wszystko dopracowane. Domknięte wszystkie
+punkty poprzedniego START TUTAJ (dostępność, decyzja o kluczach, teksty, UI do oceny).
+
+1. **Dostępność w prawdziwym oknie:** przejście Tab rozszerzone ze strony Agenci na wszystkie strony i działy, panele
+   boczne rozmowy, dialogi i okno Ustawień. Znalezione i naprawione:
+   - **Wyszukiwarka Ctrl+K nie zamykała się Esc**, gdy fokus był na kartach filtrów (Tab z pola): Esc trafiał tylko
+     do zawsze otwartej listy wyników, okno zostawało, a Ctrl+/ otwierało drugie okno na nim. Teraz jeden Esc zamyka
+     okno z każdego miejsca (test w `GlobalSearch.test.tsx`, czerwony przed poprawką).
+   - Brak widocznego fokusu: „Pokaż szczegóły myślenia” w rozmowie i lista „Poziom rozumowania agenta” w panelu
+     ustawień agenta (sama zmiana tła). Teraz pierścień jak przy innych kontrolkach.
+   - Sonda: obszar przejścia to ostatni WIDOCZNY element pasujący do selektora (wcześniej pierwszy, czasem ukryty);
+     pierścień fokusu szukany do 4 poziomów w górę (`:focus-within` np. kompozytora).
+   Wynik: pełny przebieg PL 1440×900 z axe: 0 uwag, 0 brakujących tłumaczeń, 0 błędów konsoli. To samo w oknie 960×640 i po angielsku (oba z axe): 0 uwag.
+2. **Klucze API ukryte** (decyzja właściciela, szczegóły wyżej w START TUTAJ).
+3. **Wiadomości silnika w rozmowie:** tura uruchomiona przez rutynę albo krok przepływu pokazywała człowiekowi tekst dla
+   agenta („[COSGRAL routine run] … This turn was started by a routine…”). Teraz u góry dymka jest jedna linia
+   „Rutyna „Raport” · według harmonogramu, 09:00 Europe/Warsaw” albo „Przepływ „X” · krok „Y””, pod nią samo
+   polecenie; dane webhooka w zwijanym „Dane z webhooka”; znaczniki `<workflow_data>` znikają. Agent dostaje dalej pełny
+   tekst. Ten sam skrót w podglądzie na liście i w cytacie odpowiedzi (`components/conversation/engine-run.ts`).
+4. **Teksty:** zakładka „Aplikacje” Katalogu: jej napisy są po polsku, a opisy wtyczek pochodzą z folderu katalogu
+   wybranego przez użytkownika (dane, nie tłumaczymy). Trzy stałe komunikaty błędów wtyczek z silnika szły na ekran po
+   angielsku: teraz przez słownik. Polskie zdania, które nazywały części okna po angielsku: „Needs you” (9 miejsc),
+   „Mobile Connect”, „Marketplace”, „Pair another phone”, „Local network”: teraz polskie nazwy z okna. Sekcja „Needs
+   you” po polsku to „Czeka na Ciebie” (było „Potrzebujesz zareagować”). Cytat odpowiedzi na załącznik mówił
+   „Attachment” bez tłumaczenia.
+5. **UI do oceny:** kolumna „Czeka na Ciebie” na stronie Zadań celowo zbiera pytania agentów i zakończone zadania
+   (wynik do przeczytania, `TASKS_BOARD_COLUMNS` w kontrakcie); dostała podpis „Pytania agentów i gotowe wyniki. Gdy
+   skończysz z zadaniem, zarchiwizuj je.” Logo: biały pasek zamiast „C” to zamierzona animacja mrugnięcia
+   (`app-logo-blink`, co 4,8 s `scaleY(0.08)`), wyłączona przy ograniczeniu ruchu; nie błąd.
 
 # Przekazanie: 23.11.2026 po południu, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
 

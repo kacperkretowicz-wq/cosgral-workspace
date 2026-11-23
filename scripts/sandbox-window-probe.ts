@@ -9,7 +9,7 @@
 //   - any other console error or warning.
 //
 //   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_PROBE_OUT=<folder for screenshots> [COSGRAL_PROBE_SIZE=960x640]
-//     node scripts/sandbox-window-probe.ts
+//     [COSGRAL_PROBE_LANG=en] [COSGRAL_PROBE_AXE=1] [COSGRAL_PROBE_SKIP_PAGES=1] node scripts/sandbox-window-probe.ts
 //
 // Run `bun run build` first. It changes the sandbox's language and theme and sets them back to English / system.
 
@@ -229,6 +229,59 @@ async function inspect(name: string): Promise<void> {
   if (layout.overflow) findings.push(`${name}: the page is wider than the window`);
 }
 
+// With COSGRAL_PROBE_AXE=1 also a Tab walk inside one region (a page's <main>, a dialog, a side panel): every element
+// the Tab key reaches must show where the focus is, and in a modal dialog the focus must stay inside the dialog.
+const FOCUSABLE =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+// The open region: the last VISIBLE match (an earlier hidden element may share the role, e.g. a closed panel).
+const findRegion = (scope: string) =>
+  `[...document.querySelectorAll(${JSON.stringify(scope)})].filter((node) => node.getClientRects().length > 0).pop()`;
+const focusState = (scope: string) => `(() => {
+  const region = ${findRegion(scope)};
+  const el = document.activeElement;
+  if (!region || !el || el === document.body) return { inside: false, ring: true, what: "" };
+  const shows = (node) => {
+    if (!node) return false;
+    const s = getComputedStyle(node);
+    return (s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== "none";
+  };
+  // The ring may be drawn by a wrapper a few levels up (a composer or a search field shows focus with :focus-within).
+  let ring = shows(el);
+  for (let up = el.parentElement, level = 0; !ring && up && level < 4; up = up.parentElement, level += 1)
+    ring = up.matches(":focus-within") && shows(up);
+  const name = el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.textContent?.trim().slice(0, 40) || el.tagName;
+  const where = el.parentElement ? " in ." + [...el.parentElement.classList].join(".") : "";
+  return { inside: region.contains(el), ring, what: el.tagName.toLowerCase() + "." + [...el.classList].join(".") + ' "' + name + '"' + where };
+})()`;
+async function tabWalk(name: string, scope: string, modal: boolean, steps = 40): Promise<void> {
+  if (!AXE) return;
+  const started = await page.evaluate(`(() => {
+    const region = ${findRegion(scope)};
+    const first = region?.querySelector(${JSON.stringify(FOCUSABLE)});
+    if (!first) return false;
+    first.focus();
+    return true;
+  })()`);
+  if (started !== true) return;
+  const invisible = new Set<string>();
+  let first = "";
+  for (let index = 0; index < steps; index += 1) {
+    await page.keyboard.press("Tab");
+    const seen = await page.evaluate(focusState(scope));
+    if (!isDynamicRecord(seen)) break;
+    const what = String(seen.what);
+    if (seen.inside !== true) {
+      if (modal) findings.push(`${name}: Tab moved the focus out of the dialog (to ${what || "the page"})`);
+      break;
+    }
+    if (index === 0) first = what;
+    else if (what === first) break;
+    if (seen.ring !== true) invisible.add(what);
+  }
+  if (invisible.size)
+    findings.push(`${name}: focus not visible on:\n    ${[...invisible].slice(0, 12).join("\n    ")}`);
+}
+
 async function shoot(name: string): Promise<void> {
   screen = name;
   await page.waitForTimeout(900);
@@ -267,13 +320,15 @@ try {
   await setSettings({ language: LANG, theme: "dark" });
   await page.waitForTimeout(1500);
 
-  for (const [id, polishLabel] of PAGES) {
+  // COSGRAL_PROBE_SKIP_PAGES=1 skips the page rail walk (the conversation, its panels and the dialogs only).
+  for (const [id, polishLabel] of process.env.COSGRAL_PROBE_SKIP_PAGES === "1" ? [] : PAGES) {
     const pageLabel = label(polishLabel);
     if (!(await openPage(pageLabel).catch(() => false))) {
       findings.push(`${id}: no page rail entry named "${pageLabel}"`);
       continue;
     }
     await shoot(id);
+    await tabWalk(`${id} (keyboard)`, "main", false);
     // Pages with a section list (Library, Providers, Server settings, Schedule…): every section after the first.
     const sections = page.locator("nav.work-page-nav button");
     const count = await sections.count();
@@ -286,6 +341,7 @@ try {
         .replace(/^-|-$/g, "");
       await section.click().catch((e: Error) => findings.push(`${id}/${name}: ${e.message.split("\n")[0]}`));
       await shoot(`${id}--${name || index}`);
+      await tabWalk(`${id}--${name || index} (keyboard)`, "main", false);
     }
   }
 
@@ -336,7 +392,14 @@ try {
   }
 
   // Side panels of the conversation and the dialogs a person opens most: each is inspected while open.
-  async function openAndInspect(name: string, open: () => Promise<unknown>, visible: string): Promise<void> {
+  // `walk`: a Tab walk inside the open element ("modal" also checks that the focus stays in it; menus are skipped,
+  // because Tab closes a menu).
+  async function openAndInspect(
+    name: string,
+    open: () => Promise<unknown>,
+    visible: string,
+    walk: "modal" | "region" | "none" = "modal",
+  ): Promise<void> {
     screen = name;
     try {
       await open();
@@ -351,6 +414,7 @@ try {
         findings.push(`${name}: did not open (${visible} not visible)`);
       await inspect(`${name} (${LANG}, dark)`);
       await page.screenshot({ path: join(out, `${name}-${LANG}-dark.png`) });
+      if (walk !== "none") await tabWalk(`${name} (keyboard)`, visible, walk === "modal");
       // The same open dialog or menu in the light theme.
       await setSettings({ theme: "light" });
       await page.waitForTimeout(700);
@@ -360,6 +424,7 @@ try {
       await page.waitForTimeout(300);
     } catch (error) {
       findings.push(`${name}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+      await page.screenshot({ path: join(out, `${name}-${LANG}-failed.png`) }).catch(() => undefined);
     }
     await page.keyboard.press("Escape").catch(() => undefined);
     await page.waitForTimeout(400);
@@ -372,6 +437,7 @@ try {
         .first()
         .click(),
     "#files-side-panel",
+    "region",
   );
   await openAndInspect(
     "panel-agent-settings",
@@ -381,6 +447,7 @@ try {
         .first()
         .click(),
     "#settings-side-panel",
+    "region",
   );
   await page
     .locator("[contenteditable='true']")
@@ -418,11 +485,13 @@ try {
         .click();
     },
     "[role=menu]",
+    "none",
   );
   await openAndInspect(
     "agent-row-menu",
     () => page.locator(".bot-row-copy").last().click({ button: "right" }),
     "[role=menu]",
+    "none",
   );
   await openAndInspect(
     "agent-delete-confirm",
@@ -501,6 +570,7 @@ try {
   if (await gear.count()) {
     await gear.first().click();
     await page.waitForTimeout(1500);
+    await tabWalk("settings (keyboard)", "[role=dialog]", true, 120);
     const sections = await page.evaluate(() =>
       [...document.querySelectorAll(".settings-dialog-section[data-anchor]")].map(
         (el) => el.getAttribute("data-anchor") ?? "",

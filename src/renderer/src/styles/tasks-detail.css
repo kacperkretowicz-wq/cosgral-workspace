@@ -151,6 +151,13 @@
   line-height: var(--openbot-leading-lg);
 }
 
+.work-page .tasks-board-hint {
+  margin: calc(var(--openbot-space-1) * -1) 0 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: 17px;
+}
+
 .tasks-board-icon {
   display: grid;
   width: 28px;

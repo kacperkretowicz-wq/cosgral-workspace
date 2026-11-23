@@ -444,6 +444,10 @@ export const en = {
   "Finish signing in on the service's page, then come back.":
     "Finish signing in on the service's page, then come back.",
   "This app has a problem.": "This app has a problem.",
+  "A server of this plugin was removed. Remove the plugin and install it again.":
+    "A server of this app was removed. Remove the app and install it again.",
+  "Sign in on the service's page to finish.": "Sign in on the service's page to finish.",
+  "The plugin's server does not answer. Try again.": "The app's server does not answer. Try again.",
   Install: "Install",
   Update: "Update",
   Uninstall: "Uninstall",
@@ -3102,4 +3106,13 @@ export const en = {
     "Keeps your tables clean and your expenses in order, and reports every change.",
   "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.":
     "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.",
+  "on schedule": "on schedule",
+  "started by hand": "started by hand",
+  "from a webhook": "from a webhook",
+  "Webhook data": "Webhook data",
+  "Routine “{name}”": "Routine “{name}”",
+  "Routine “{name}” · {cause}, {when}": "Routine “{name}” · {cause}, {when}",
+  "Workflow “{name}” · step “{step}”": "Workflow “{name}” · step “{step}”",
+  "Questions from agents and finished results. Archive a task when you are done with it.":
+    "Questions from agents and finished results. Archive a task when you are done with it.",
 } as const;

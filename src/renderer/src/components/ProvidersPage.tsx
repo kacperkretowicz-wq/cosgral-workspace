@@ -24,6 +24,7 @@ import {
   PROVIDER_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { SHOW_API_KEYS } from "../api-keys-visibility";
 import { appLocale, t, tDataParts } from "../i18n";
 import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
@@ -547,8 +548,12 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
           { id: "accounts", label: t("Accounts"), icon: KeyRound },
           { id: "cli", label: t("Agent CLIs"), icon: Monitor },
           { id: "catalog", label: t("Catalog"), icon: Layers },
-          { id: "api-keys", label: t("API keys"), icon: Lock },
-          { id: "endpoints", label: t("Endpoints"), icon: Server },
+          ...(SHOW_API_KEYS
+            ? [
+                { id: "api-keys", label: t("API keys"), icon: Lock },
+                { id: "endpoints", label: t("Endpoints"), icon: Server },
+              ]
+            : []),
           { id: "usage", label: t("Usage"), icon: Gauge },
           { id: "acp", label: t("ACP agents"), icon: Bot },
           { id: "fallback", label: t("Fallback models"), icon: Shuffle },
@@ -568,12 +573,14 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
         <div data-anchor="catalog">
           <ProviderCatalogPanel />
         </div>
-        <div data-anchor="api-keys">
-          <ApiKeysSection />
-        </div>
-        <div data-anchor="endpoints">
-          <EndpointsSection />
-        </div>
+        <Show when={SHOW_API_KEYS}>
+          <div data-anchor="api-keys">
+            <ApiKeysSection />
+          </div>
+          <div data-anchor="endpoints">
+            <EndpointsSection />
+          </div>
+        </Show>
         <div data-anchor="usage">
           <ProviderUsageList
             usage={usage()}

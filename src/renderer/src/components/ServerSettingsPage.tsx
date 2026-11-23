@@ -92,6 +92,8 @@ function SectionIcon(props: { id: ServerSettingsSectionId }) {
   return <Icon aria-hidden="true" size={16} stroke-width={1.5} />;
 }
 
+const HIDDEN_SECTIONS: ReadonlySet<ServerSettingsSectionId> = new Set(["providers"]);
+
 const PAGE_OF_SECTION: Partial<Record<ServerSettingsSectionId, PageId>> = {
   "remote-desktop": "remote-desktop",
   providers: "providers",
@@ -166,7 +168,9 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
     if (!api) return;
     try {
       const [list, settings] = await Promise.all([api.sections(), api.get()]);
-      setSections(list);
+      // "Providers" only pointed to the Providers page (accounts, keys and models), which has its own place on the
+      // page rail; with the API keys hidden there it said nothing new.
+      setSections(list.filter((section) => !HIDDEN_SECTIONS.has(section.id)));
       setSaved(settings);
       setDraft(settings);
       setError("");
