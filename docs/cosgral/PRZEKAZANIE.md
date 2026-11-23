@@ -1,3 +1,22 @@
+# Przekazanie (najnowsze): 22–23.11.2026, gałąź `claude/festive-pasteur-5oh1yh`
+
+Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do scalenia razem z tamtą.
+
+1. **Discord** jako trzeci komunikator (sterownik Gateway + REST, tylko DM, wznawianie sesji, atrapa, 18 testów, panel, historyjka
+   Storybooka „COSGRAL/Messengers”). Wiersz 64 parytetu: jest (bez prawdziwej aplikacji Discord). Fałszywe tokeny w testach są
+   składane z kawałków: GitHub blokuje push z całym tokenem w kształcie Discorda, także fałszywym.
+2. **Rutyny kanału:** edycja i dni tygodnia istniały od UI-AC; dopisane testy. Kolejka i wiersz 58 poprawione.
+3. **Prawdziwe okno programu w kontenerze** (nie Storybook): da się, patrz `docs/cosgral-raporty/claude-okno-linux-2026-11-23.md`
+   (uprząż poza repo, która wyłącza sandbox Chromium tylko tam). Zdanie niżej o „pustym oknie” jest już nieaktualne. Przejście
+   po wszystkich stronach znalazło i naprawiło 5 grup błędów (kreator → „Nowy agent”, polski wybór specjalności, „3 kroków”,
+   angielskie napisy z silnika, znacznik liczby członków kanału).
+4. Nie zrobione (decyzja właściciela albo Windows): skróty klawiszowe (Alt+strzałki kolidują z macOS), webhook rutyn kanału,
+   głos (Parakeet), łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
+
+Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (488 plików, 3470 testów), `bun run build`.
+
+---
+
 # Przekazanie projektu (najnowsze): sesja 19.11.2026 wieczór, ekrany P1 i reszta
 
 **Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md`, punkt „Stan po sesji 19.11 wieczór”.**
