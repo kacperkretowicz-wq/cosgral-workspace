@@ -14,7 +14,7 @@
 // Run `bun run build` first. It changes the sandbox's language and theme and sets them back to English / system.
 
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron as electron, type Page } from "playwright";
@@ -129,7 +129,34 @@ const setSettings = (input: Record<string, string>) =>
 const keys = await englishKeys();
 const findings: string[] = [];
 
+// COSGRAL_PROBE_AXE=1: every screen also goes through axe-core (WCAG 2.1 A and AA) in the real window. The source is
+// evaluated over the DevTools protocol, which the window's content security policy does not block.
+const AXE = process.env.COSGRAL_PROBE_AXE === "1";
+const axeSource = AXE ? await readAxeSource() : "";
+const axeSeen = new Set<string>();
+async function readAxeSource(): Promise<string> {
+  const store = join(repo, "node_modules", ".bun");
+  const dir = (await readdir(store)).find((name) => name.startsWith("axe-core@"));
+  assert(dir, "axe-core is not installed (node_modules/.bun/axe-core@*)");
+  return readFile(join(store, dir, "node_modules", "axe-core", "axe.min.js"), "utf8");
+}
+async function axeCheck(name: string): Promise<void> {
+  if (!AXE) return;
+  if (!(await page.evaluate("typeof window.axe !== 'undefined'"))) await page.evaluate(axeSource);
+  const result = (await page.evaluate(`(async () => {
+    const r = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }, resultTypes: ["violations"] });
+    return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, targets: v.nodes.slice(0, 3).map((n) => String(n.target[0])).join(" | "), count: v.nodes.length }));
+  })()`)) as Array<{ id: string; impact: string; help: string; targets: string; count: number }>;
+  for (const v of result) {
+    const key = `${v.id}:${v.targets}`;
+    if (axeSeen.has(key)) continue;
+    axeSeen.add(key);
+    findings.push(`${name}: axe ${v.impact} ${v.id} (${v.count}) ${v.help}\n    ${v.targets}`);
+  }
+}
+
 async function inspect(name: string): Promise<void> {
+  await axeCheck(name);
   const english = await page.evaluate((list) => {
     const set = new Set(list);
     const hits = new Set<string>();
@@ -434,6 +461,35 @@ try {
         .click(),
     "[role=dialog]",
   );
+
+  // Keyboard: Tab through the main window and check that every focused element shows where the focus is (an outline
+  // or a box shadow that differs from its look without focus).
+  if (AXE) {
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await openPage(label("Agenci"));
+    await page.mouse.click(5, 5);
+    const invisible = new Set<string>();
+    for (let index = 0; index < 60; index += 1) {
+      await page.keyboard.press("Tab");
+      const seen = (await page.evaluate(`(() => {
+        const el = document.activeElement;
+        if (!el || el === document.body) return null;
+        // The ring may be drawn by the element or by its wrapper (a search field shows focus with :focus-within).
+        const shows = (node) => {
+          if (!node) return false;
+          const s = getComputedStyle(node);
+          return (s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== "none";
+        };
+        const ring = shows(el) || (el.parentElement?.matches(":focus-within") && shows(el.parentElement));
+        const name = el.getAttribute("aria-label") || el.getAttribute("placeholder") || el.textContent?.trim().slice(0, 40) || el.tagName;
+        const where = el.parentElement ? " in ." + [...el.parentElement.classList].join(".") : "";
+        return { ring, what: el.tagName.toLowerCase() + "." + [...el.classList].join(".") + ' "' + name + '"' + where };
+      })()`)) as { ring: boolean; what: string } | null;
+      if (seen && !seen.ring) invisible.add(seen.what);
+    }
+    if (invisible.size)
+      findings.push(`keyboard: focus not visible on:\n    ${[...invisible].slice(0, 20).join("\n    ")}`);
+  }
 
   // Settings: every section of the Settings window.
   const gear = page

@@ -473,6 +473,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
             as="div"
             class="mention-picker"
             aria-label={t("Insert mention")}
+            // The list scrolls. The arrows of the message field drive it (virtual focus); Tab can also reach the list
+            // itself, so its scrolling has a keyboard of its own (axe scrollable-region-focusable, real window).
+            tabindex={0}
             options={matchingOptions()}
             optionValue={pickerOptionKey}
             optionTextValue={pickerOptionText}

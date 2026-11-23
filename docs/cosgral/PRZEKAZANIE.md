@@ -1,4 +1,50 @@
-# Przekazanie (najnowsze): 23.11.2026 po południu, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+# START TUTAJ: dla następnego agenta (23.11.2026 wieczór)
+
+**Stan:** program jest w pełni działający. Na Windows właściciela przechodzą: lint, typecheck (6), `bun run test`
+(480 plików, 3459 testów), `test:visual` 7/7, `test:storybook` 376/376 (patrz uwaga o Vite niżej), `sandbox:e2e` w
+prawdziwym oknie, odbiór zainstalowanego `.exe` (`sandbox-installed.ts`). Instalator `dist:win` jest zbudowany,
+zweryfikowany i zainstalowany na komputerze właściciela (per user). Gałąź: `claude/festive-pasteur-5oh1yh` (bez PR;
+`main` to stary Paperclip, desktop żyje na `codex/cosgral-desktop`; PR i scalenie tylko za zgodą właściciela).
+
+**Zostały tylko poprawki: teksty, UI, testy.** Nie ma znanego błędu działania. Kolejność wg wagi:
+
+1. **Domknąć rundę dostępności** (zaczętą na końcu sesji): `COSGRAL_PROBE_AXE=1` w `scripts/sandbox-window-probe.ts`
+   uruchamia axe-core (WCAG 2.1 A/AA) na każdym ekranie i chodzi 60× Tab sprawdzając widoczny fokus. Naprawione:
+   lista podpowiedzi `@` (`tabindex=0`, axe scrollable-region-focusable) i pole wiadomości kanału (poświata fokusu jak
+   w rozmowie z agentem). Ostatniego przebiegu po tej drugiej poprawce nie obejrzano: puścić go i domknąć resztę.
+   Przejście Tab robi tylko strona Agenci: rozszerzyć na inne strony i dialogi.
+2. **Decyzja produktowa do zadania właścicielowi:** właściciel powiedział, że kluczy API nie będzie (agenci przez CLI
+   i subskrypcje). Dostawcy nadal mają działy „Klucze API” i „Endpointy”, Ustawienia serwera dział „Dostawcy”:
+   zapytać, czy je ukryć. Bez zgody nie usuwać.
+3. **Teksty:** zakładka „Aplikacje” w Katalogu (wtyczki z `pluginCatalog`) nie była sprawdzona pod kątem polskich
+   opisów (katalog agentów i skilli już jest po polsku, patrz pkt 10 niżej). Treść wiadomości systemowych z silnika
+   (np. „[COSGRAL routine run] …”) zostaje angielska celowo (czyta ją agent), ale warto ocenić, czy człowiek ma ją
+   widzieć w rozmowie w tej formie.
+4. **UI do oceny:** kolumna „Potrzebujesz zareagować” na stronie Zadań pokazuje zakończone zadania (wynik do
+   przeczytania): sprawdzić, czy to zamierzone, i ewentualnie dodać podpis. Logo w lewym górnym rogu czasem pokazuje
+   inny kształt (biały pasek zamiast „C”) na zrzutach podczas menu: wyjaśnić, czy to animacja.
+5. **Testy:** Storybook czasem zgłasza „Failed to run the test” / „Failed to fetch dynamically imported module”
+   (Vite w trybie przeglądarki gubi moduł, nie asercja; zwykle w okresach dużego obciążenia). Domyślnie 2 przeglądarki
+   naraz i 5 s czekania już ustawione. Jeśli wróci często: `optimizeDeps.include` / rozgrzewka w
+   `vitest.storybook.config.ts`. Ostrzeżenia `STRICT_READ_UNTRACKED` (głównie Kobalte) bez zmian.
+6. **Kod (przy okazji, nie hurtem):** duże pliki (`Conversation.tsx`, `App.tsx`, `agent-service.ts`), JS renderera
+   ~2,9 MB, wiersze „częściowo” w `parytet-0.71.md`.
+7. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
+   aplikacji OAuth), komunikatory (tokeny botów). Decyzja: zostają w kodzie, nieaktywne.
+
+**Jak sprawdzać okno:** po `bun run build` i jednym `sandbox-shots-w12.ts` (tworzy piaskownicę z danymi demo):
+`COSGRAL_SANDBOX_ROOT=<ta piaskownica> COSGRAL_PROBE_OUT=<folder> [COSGRAL_PROBE_SIZE=960x640]
+[COSGRAL_PROBE_LANG=en] [COSGRAL_PROBE_AXE=1] node scripts/sandbox-window-probe.ts`. Raport w `report.txt`; zrzuty
+oglądać na oko (sonda nie widzi nakładania się elementów).
+
+**Pułapki z tej sesji:** w Solid 2 `createEffect(signal, fn)` z gołym getterem nie śledzi zmian (owijać w
+`() => signal()`); zapis sygnału działa po `flush()` (w testach odczyt zaraz po `setLanguage` daje stary język);
+teksty formatowane przy mapowaniu danych trzeba mapować ponownie po zmianie języka (`App.tsx`). Krok I10
+`sandbox-installed.ts` otwiera prawdziwe okno logowania w Chrome z profilem piaskownicy: zamknąć je po przebiegu.
+
+---
+
+# Przekazanie: 23.11.2026 po południu, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
 
 Pierwsza sesja na komputerze właściciela (Windows 10, 4 rdzenie, mało wolnej pamięci: pełny `bun run test` trwa ok.
 25 min, pliki idą po kolei). Cel od właściciela: gotowy, działający program bez błędów, dopracowany.

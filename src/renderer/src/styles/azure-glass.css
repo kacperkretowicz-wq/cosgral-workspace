@@ -175,6 +175,7 @@ body::after {
 .channel-member-list,
 .w2-panel,
 .composer,
+.channel-composer-field,
 .work-page .usage-table,
 .work-page .usage-split,
 .usage-machine,
@@ -184,7 +185,9 @@ body::after {
   box-shadow: var(--openbot-tile-quiet-shadow);
 }
 
-.composer:focus-within {
+/* The channel's field too: it only changed a thin border colour, hard to see when it got focus with Tab. */
+.composer:focus-within,
+.channel-composer-field:focus-within {
   box-shadow: var(--openbot-tile-quiet-shadow), var(--openbot-glow-accent);
 }
 
