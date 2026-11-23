@@ -692,7 +692,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     render(() => <App />);
     expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
 
-    emitAgentEvent?.({ type: "bots-changed", bots: [BOTS[0]] } as AgentEvent);
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS.slice(0, 1) });
 
     expect(await screen.findByRole("heading", { name: "Chief" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "New agent", level: 1 })).not.toBeInTheDocument();
@@ -704,7 +704,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await createNew("New agent");
     expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
 
-    emitAgentEvent?.({ type: "bots-changed", bots: BOTS } as AgentEvent);
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.getByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
