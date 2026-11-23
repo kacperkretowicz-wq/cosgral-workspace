@@ -216,7 +216,10 @@ export function QueuePanel(props: QueuePanelProps) {
                     }
                   }}
                   tabindex={delivery.status === "queued" ? 0 : -1}
-                  aria-label={`Queued message ${delivery.position ?? ""}: ${messagePreview(delivery)}`}
+                  aria-label={t("Queued message {position}: {preview}", {
+                    position: String(delivery.position ?? ""),
+                    preview: messagePreview(delivery),
+                  })}
                 >
                   <span class="agent-queue-icon" aria-hidden="true">
                     <QueueIcon />

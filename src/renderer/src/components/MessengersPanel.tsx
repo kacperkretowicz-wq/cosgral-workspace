@@ -13,7 +13,7 @@ import {
   type UnknownChat,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
@@ -349,7 +349,7 @@ export function MessengersPanel() {
                             <li>
                               <span>{chat.label || chat.chatId}</span>
                               <small>
-                                {t("{count} messages", { count: chat.count })} · {chat.chatId}
+                                {tn(chat.count, "{count} message", "{count} messages")} · {chat.chatId}
                               </small>
                               <Button
                                 type="button"

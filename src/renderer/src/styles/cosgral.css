@@ -1396,8 +1396,11 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 }
 
 .thread-tab-label {
+  /* A button centres its content: a long title would overflow on both sides (cut on the left, no ellipsis). */
+  display: block;
   min-width: 0;
   overflow: hidden;
+  text-align: start;
   border: 0;
   background: transparent;
   padding: 5px 4px 5px 10px;

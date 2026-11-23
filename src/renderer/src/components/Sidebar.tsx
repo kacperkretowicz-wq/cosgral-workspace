@@ -1192,7 +1192,7 @@ export function Sidebar(props: SidebarProps) {
           if (state.kind === "move-folder") {
             return (
               <MoveToDialog
-                title={`Move ${folderById(state.folderId)?.name ?? "folder"} to…`}
+                title={t("Move {name} to…", { name: folderById(state.folderId)?.name ?? t("folder") })}
                 targets={folderMoveTargets(layout, state.folderId)}
                 onMove={(parentId) => actions.moveFolder(state.folderId, parentId)}
                 onClose={close}
@@ -1201,7 +1201,9 @@ export function Sidebar(props: SidebarProps) {
           }
           return (
             <MoveToDialog
-              title={`Move ${props.bots.find((bot) => bot.id === state.botId)?.name ?? "agent"} to…`}
+              title={t("Move {name} to…", {
+                name: props.bots.find((bot) => bot.id === state.botId)?.name ?? t("this agent"),
+              })}
               targets={agentMoveTargets(layout, state.botId)}
               onMove={(folderId) => actions.moveAgent(state.botId, folderId)}
               onClose={close}

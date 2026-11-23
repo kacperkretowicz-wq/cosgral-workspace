@@ -1,6 +1,6 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t, tData } from "../i18n";
+import { appLocale, t, tData, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button } from "./ui";
@@ -71,7 +71,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
       case "files":
         return (
           <>
-            <p class="agent-cards-note">{t("{count} files", { count: d.total })}</p>
+            <p class="agent-cards-note">{tn(d.total, "{count} file", "{count} files")}</p>
             <Show when={d.items.length === 0}>
               <p class="agent-cards-note">{t("This agent has not saved any files.")}</p>
             </Show>

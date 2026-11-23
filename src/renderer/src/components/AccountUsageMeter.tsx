@@ -85,7 +85,7 @@ export function AccountUsageMeter(props: { usage: AccountUsageView; nowMs: numbe
     <Card
       class="account-usage-meter"
       role="region"
-      aria-label={`Usage for ${props.usage.accountLabel}`}
+      aria-label={t("Usage for {name}", { name: props.usage.accountLabel })}
       data-state={props.usage.state}
       tabindex={0}
     >

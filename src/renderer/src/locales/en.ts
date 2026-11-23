@@ -2966,4 +2966,15 @@ export const en = {
   "These steps are not reachable from the trigger: {steps}.":
     "These steps are not reachable from the trigger: {steps}.",
   "{step} has more than one way on; keep one connection.": "{step} has more than one way on; keep one connection.",
+  "Usage for {name}": "Usage for {name}",
+  "{count} account": "{count} account",
+  "{count} message": "{count} message",
+  "{count} item": "{count} item",
+  "{count} agent": "{count} agent",
+  "{count} agent, show list": "{count} agent, show list",
+  "{count} login agents may use": "{count} login agents may use",
+  "{count} file, {size} would be removed.": "{count} file, {size} would be removed.",
+  "Move {name} to…": "Move {name} to…",
+  folder: "folder",
+  "Queued message {position}: {preview}": "Queued message {position}: {preview}",
 } as const;

@@ -7,7 +7,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { isString } from "@openbot/contracts/runtime-values";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 import { Contact, CreditCard, KeyRound, Lock, ShieldCheck } from "./ui/icons";
 
@@ -326,7 +326,7 @@ export function VaultPanel() {
             {s().encryptionAvailable
               ? t("System encryption available")
               : t("System encryption unavailable — saving is disabled")}{" "}
-            · {t("{count} items", { count: s().items })}
+            · {tn(s().items, "{count} item", "{count} items")}
           </p>
         )}
       </Show>

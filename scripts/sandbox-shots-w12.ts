@@ -237,6 +237,11 @@ async function unlockComposer(page: Page): Promise<void> {
   await page.waitForTimeout(400);
 }
 
+/** An entry of the composer's + popover: its items are buttons (Conversation.tsx), older builds used menuitems. */
+function menuEntry(page: Page, name: RegExp): Locator {
+  return page.getByRole("menuitem", { name }).or(page.getByRole("button", { name }));
+}
+
 async function clickRail(page: Page, labels: string[]): Promise<void> {
   await dismissOverlays(page);
   await page.keyboard.press("Escape").catch(() => undefined);
@@ -252,7 +257,7 @@ async function clickRail(page: Page, labels: string[]): Promise<void> {
     await page.waitForTimeout(600);
     return;
   }
-  const more = nav.getByRole("button", { name: /More pages|Więcej stron/i });
+  const more = nav.getByRole("button", { name: /^(More|Więcej|More pages|Więcej stron)( \(.*\))?$/i });
   if (await more.count()) {
     await more.first().click();
     await page.waitForTimeout(300);
@@ -264,7 +269,7 @@ async function clickRail(page: Page, labels: string[]): Promise<void> {
     }
   }
   const hit = await page.evaluate(`((labels) => {
-    const navEl = document.querySelector('[role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]');
+    const navEl = document.querySelector('nav[aria-label="Pages"], nav[aria-label="Strony"], [role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]');
     if (!navEl) return "no-nav title=" + document.title + " body=" + (document.body?.innerText || "").slice(0, 80);
     const buttons = [...navEl.querySelectorAll("button")];
     const match = buttons.find((b) => labels.some((l) => (b.getAttribute("aria-label") || "").trim() === l));
@@ -633,10 +638,10 @@ async function main(): Promise<void> {
       await p.waitForTimeout(400);
       // UI-AH: Attach / Use a skill / Teach (off) / Side question — menuitem or button.
       const checklist = await visibleChecklist([
-        { id: "attach", find: () => p.getByRole("menuitem", { name: /Attach files|Załącz pliki/i }) },
-        { id: "skill", find: () => p.getByRole("menuitem", { name: /Use a skill|Użyj skilla/i }) },
-        { id: "teach", find: () => p.getByRole("menuitem", { name: /Teach a task|Naucz zadania/i }) },
-        { id: "side", find: () => p.getByRole("menuitem", { name: /Side question|Pytanie boczne/i }) },
+        { id: "attach", find: () => menuEntry(p, /Attach files|Załącz pliki|Dołącz pliki/i) },
+        { id: "skill", find: () => menuEntry(p, /Use a skill|Użyj skilla/i) },
+        { id: "teach", find: () => menuEntry(p, /Teach a task|Naucz zadania/i) },
+        { id: "side", find: () => menuEntry(p, /Side question|Pytanie boczne/i) },
       ]);
       const items = p
         .getByRole("menuitem")

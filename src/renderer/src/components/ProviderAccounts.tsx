@@ -6,7 +6,7 @@ import {
   type SetAccountPoolInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { appLocale, t, tData } from "../i18n";
+import { appLocale, t, tData, tn } from "../i18n";
 import { accountError, useAccounts } from "./account-state";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, IconButton, Input, Switch, Text } from "./ui";
@@ -464,7 +464,7 @@ export function ProviderAccounts() {
                         {provider === "codex" ? "Codex" : "Claude"}
                       </Heading>
                       <Text as="span" tone="muted">
-                        {t("{count} accounts", { count: String(accounts().length) })}
+                        {tn(accounts().length, "{count} account", "{count} accounts")}
                       </Text>
                     </div>
                     <Show

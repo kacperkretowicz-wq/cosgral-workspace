@@ -9,7 +9,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { LIBRARY_KINDS, LIBRARY_SORTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
 import { formatFileSize } from "./conversation/AttachmentCards";
@@ -315,7 +315,7 @@ export function LibraryFilesView() {
           {(current) => (
             <>
               <p class="library-note">
-                {t("{count} files", { count: current().total })} · {formatFileSize(current().bytes)}
+                {tn(current().total, "{count} file", "{count} files")} · {formatFileSize(current().bytes)}
               </p>
               <Show when={current().items.length === 0}>
                 <CosgralPanelState
@@ -397,10 +397,14 @@ export function LibraryFilesView() {
           <Show when={preview()}>
             {(result) => (
               <p class="library-note" role="status">
-                {t("{count} files, {size} would be removed.", {
-                  count: result().files,
-                  size: formatFileSize(result().bytes),
-                })}{" "}
+                {tn(
+                  result().files,
+                  "{count} file, {size} would be removed.",
+                  "{count} files, {size} would be removed.",
+                  {
+                    size: formatFileSize(result().bytes),
+                  },
+                )}{" "}
                 <Show when={result().files > 0}>
                   <Button type="button" variant="primary" disabled={busy()} onClick={() => void confirmClean()}>
                     {t("Remove them")}

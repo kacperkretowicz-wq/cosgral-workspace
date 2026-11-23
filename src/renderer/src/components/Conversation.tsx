@@ -2026,7 +2026,7 @@ export function Conversation(props: ConversationProps) {
                 </span>
                 <Button
                   type="button"
-                  aria-label={`Remove ${attachment.name}`}
+                  aria-label={t("Remove {name}", { name: attachment.name })}
                   onClick={() => removeAttachment(attachment.id)}
                 >
                   <CloseIcon />

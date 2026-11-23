@@ -4,7 +4,7 @@ import { MESSAGE_REACTIONS, MORE_MESSAGE_REACTIONS } from "@openbot/contracts/ip
 import { createMemo, For, Show } from "solid-js";
 import { avatarHeadColor } from "../../blobatar";
 import type { BotMessage, BotProfile } from "../../data";
-import { t } from "../../i18n";
+import { t, tn } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { type HistoryActionContext, MessageHistoryActions } from "../MessageHistoryActions";
 import { Button, DropdownMenu } from "../ui";
@@ -49,7 +49,7 @@ export function ExchangeSystemRow(props: {
     const recipientId = recipients()[0];
     return recipientId ? props.bots.find((bot) => bot.id === recipientId) : undefined;
   };
-  const agentCountLabel = () => t("{count} agents", { count: recipients().length });
+  const agentCountLabel = () => tn(recipients().length, "{count} agent", "{count} agents");
 
   return (
     <div class="exchange-system-row">
@@ -87,7 +87,7 @@ export function ExchangeSystemRow(props: {
                   style={exchangeAgentsStyle(
                     recipients().map((recipientId) => props.bots.find((bot) => bot.id === recipientId)),
                   )}
-                  aria-label={t("{count} agents, show list", { count: recipients().length })}
+                  aria-label={tn(recipients().length, "{count} agent, show list", "{count} agents, show list")}
                 >
                   <span class="exchange-avatar-stack" aria-hidden="true">
                     <For each={recipients().slice(0, 3)}>
