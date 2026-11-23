@@ -64,6 +64,12 @@ Chrome, inaczej trzyma pliki piaskownicy.
     skilli dla agenta zostaje angielska. Nowa pozycja katalogu = dopisać jej trzy teksty do `en.ts` i `pl.ts`.
     Działy stron w wąskim oknie zawijają się (wcześniej poziomy pasek z ukrytym suwakiem, nieosiągalny kółkiem).
     Sonda przechodzi każdy dział każdej strony (115 ekranów na rozmiar).
+11. Lokalny profil: Ustawienia i ekran pierwszej konfiguracji nie pokazują już wygenerowanego adresu
+    „owner-…@cosgral.local” ani „Wyloguj” (jak pasek boczny; `localProfile` z `App`). Pierwsze uruchomienie: bez
+    pustego wiersza nad tytułem, stan karty CLI wcięty jak na stronach. Sonda: `COSGRAL_PROBE_LANG=en`, dialogi także
+    w jasnym motywie; ekrany pierwszego uruchomienia przejrzane w świeżej piaskownicy. Storybook: po 5 s czekaniu
+    zostają sporadyczne „Failed to run the test” / „Failed to fetch dynamically imported module” (Vite, nie test);
+    kolejne trzy przebiegi 376/376.
 
 **Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
 bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
