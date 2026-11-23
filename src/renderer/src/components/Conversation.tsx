@@ -1761,7 +1761,9 @@ export function Conversation(props: ConversationProps) {
                       if (submitting()) return false;
                       setSubmitting(true);
                       setComposerError(null);
-                      const completed = await props.onCompleteOnboarding(answer, settingsModel(), settingsReasoning());
+                      // The choices are shown in the window language; the prepared profiles are found by their English key.
+                      const key = ONBOARDING_CHOICE_KEYS.find((choice) => t(choice) === answer) ?? answer;
+                      const completed = await props.onCompleteOnboarding(key, settingsModel(), settingsReasoning());
                       if (completed) {
                         const botId = props.bot?.id;
                         if (botId) finishOnboarding(botId);

@@ -6,7 +6,7 @@ import {
   type SetAccountPoolInput,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import { accountError, useAccounts } from "./account-state";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Field, Heading, IconButton, Input, Switch, Text } from "./ui";
@@ -77,7 +77,7 @@ export function ProviderAccountCard(props: {
             ? "ready"
             : "signed-out";
   return (
-    <fieldset class="provider-account-row" aria-label={props.account.label} data-status={status()}>
+    <fieldset class="provider-account-row" aria-label={tData(props.account.label)} data-status={status()}>
       <div class="provider-account-main">
         <span class="provider-account-icon" aria-hidden="true">
           <Show when={props.account.inPool} fallback={<KeyRound size={16} stroke-width={1.75} />}>
@@ -87,7 +87,7 @@ export function ProviderAccountCard(props: {
         <div class="provider-account-copy">
           <div class="provider-account-title">
             <Heading as="h4" size="sm">
-              {props.account.label}
+              {tData(props.account.label)}
             </Heading>
             <Show when={props.account.system}>
               <Badge>{t("System")}</Badge>
@@ -126,7 +126,7 @@ export function ProviderAccountCard(props: {
           <Show when={props.account.inPool}>
             <IconButton
               variant="ghost"
-              label={t("Move {name} up", { name: props.account.label })}
+              label={t("Move {name} up", { name: tData(props.account.label) })}
               disabled={props.busy || props.position === 0}
               onClick={() => pool({ poolOrder: props.account.poolOrder - 1 })}
             >
@@ -134,7 +134,7 @@ export function ProviderAccountCard(props: {
             </IconButton>
             <IconButton
               variant="ghost"
-              label={t("Move {name} down", { name: props.account.label })}
+              label={t("Move {name} down", { name: tData(props.account.label) })}
               disabled={props.busy || props.position === props.count - 1}
               onClick={() => pool({ poolOrder: props.account.poolOrder + 1 })}
             >
@@ -287,7 +287,7 @@ export function ProviderAccountCard(props: {
               {confirm() === "pool"
                 ? t(ACCOUNT_POOL_WARNING)
                 : t('Remove account "{name}" and its sign-in data? Agents on it go back to the default account.', {
-                    name: props.account.label,
+                    name: tData(props.account.label),
                   })}
             </Text>
             <div class="managed-cli-actions">

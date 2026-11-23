@@ -562,6 +562,9 @@
 }
 
 .sidebar .channel-row-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1);
   min-width: 18px;
   border-radius: var(--openbot-radius-pill);
   background: var(--openbot-bg-control);

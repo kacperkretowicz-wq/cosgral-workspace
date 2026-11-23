@@ -1136,6 +1136,9 @@ export const en = {
   "Windows apps": "Windows apps",
   "Uses Windows apps with the mouse and keyboard after you allow it.":
     "Uses Windows apps with the mouse and keyboard after you allow it.",
+  "Remote desktop works on Windows in this version.": "Remote desktop works on Windows in this version.",
+  "Codex (this computer)": "Codex (this computer)",
+  "Claude (this computer)": "Claude (this computer)",
   "New teammate": "New teammate",
   Writing: "Writing",
   Communication: "Communication",
@@ -1622,6 +1625,14 @@ export const en = {
   "Work & projects": "Work & projects",
   "Research & writing": "Research & writing",
   "Sales & outreach": "Sales & outreach",
+  "Focus on my work and projects. Help me plan, organize, and execute them proactively.":
+    "Focus on my work and projects. Help me plan, organize, and execute them proactively.",
+  "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.":
+    "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.",
+  "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.":
+    "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.",
+  "My main focus for you is: {topic}. Treat this as your ongoing specialty.":
+    "My main focus for you is: {topic}. Treat this as your ongoing specialty.",
   "Something else": "Something else",
   "Opening a page…": "Opening a page…",
   "Checking tabs…": "Checking tabs…",
@@ -2938,6 +2949,8 @@ export const en = {
   "A workflow keeps its latest saved state and the last 100 runs; there is no version history.":
     "A workflow keeps its latest saved state and the last 100 runs; there is no version history.",
   "Files are not passed between steps in this version.": "Files are not passed between steps in this version.",
+  "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).":
+    "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).",
   "No turn of this period was kept with its cache and input/output split yet.":
     "No turn of this period was kept with its cache and input/output split yet.",
   "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":

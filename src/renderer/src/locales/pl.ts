@@ -1137,6 +1137,9 @@ export const pl = {
   "Windows apps": "Aplikacje Windows",
   "Uses Windows apps with the mouse and keyboard after you allow it.":
     "Obsługuje aplikacje Windows myszą i klawiaturą, gdy na to pozwolisz.",
+  "Remote desktop works on Windows in this version.": "Zdalny pulpit działa w tej wersji tylko na Windows.",
+  "Codex (this computer)": "Codex (ten komputer)",
+  "Claude (this computer)": "Claude (ten komputer)",
   "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",
@@ -1624,6 +1627,14 @@ export const pl = {
   "Work & projects": "Praca i projekty",
   "Research & writing": "Badania i pisanie",
   "Sales & outreach": "Sprzedaż i outreach",
+  "Focus on my work and projects. Help me plan, organize, and execute them proactively.":
+    "Skup się na mojej pracy i projektach. Pomagaj mi je planować, porządkować i prowadzić z własnej inicjatywy.",
+  "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.":
+    "Skup się na badaniach i pisaniu. Pomagaj mi zgłębiać tematy i zamieniać wnioski w jasne, przydatne teksty.",
+  "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.":
+    "Skup się na sprzedaży i docieraniu do klientów. Pomagaj mi poznawać potencjalnych klientów, przygotowywać spersonalizowane wiadomości i pilnować dalszych kontaktów.",
+  "My main focus for you is: {topic}. Treat this as your ongoing specialty.":
+    "Moja główna prośba do Ciebie: {topic}. Traktuj to jako swoją stałą specjalność.",
   "Something else": "Coś innego",
   "Opening a page…": "Otwieranie strony…",
   "Checking tabs…": "Sprawdzanie kart…",
@@ -2943,6 +2954,8 @@ export const pl = {
   "A workflow keeps its latest saved state and the last 100 runs; there is no version history.":
     "Przepływ zachowuje ostatni zapisany stan i 100 ostatnich przebiegów; nie ma historii wersji.",
   "Files are not passed between steps in this version.": "W tej wersji pliki nie są przekazywane między krokami.",
+  "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).":
+    "Żadna tura z tego okresu nie ma jeszcze zapisanego modelu (licznik zapisuje go od dnia, w którym dostawca po raz pierwszy podał te dane).",
   "No turn of this period was kept with its cache and input/output split yet.":
     "Żadna tura z tego okresu nie została jeszcze zapisana z podziałem na pamięć podręczną oraz wejście i wyjście.",
   "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":

@@ -1,4 +1,5 @@
 import {
+  aggregateUsage,
   MESSAGE_ACTIONS,
   type MessageActionSubject,
   messageActionProblem,
@@ -52,4 +53,22 @@ it("translates what is wrong with an empty or unconnected workflow", () => {
   });
   expect(empty.length + lonely.length).toBeGreaterThan(0);
   inPolish([...empty, ...lonely]);
+});
+
+it("translates why a part of the usage report is unavailable (seen in English on the Usage page of the real window)", () => {
+  const now = new Date("2026-11-23T09:00:00.000Z");
+  const report = aggregateUsage({
+    rows: [],
+    period: 30,
+    botId: null,
+    today: now,
+    names: () => null,
+    providers: [],
+    machine: { cpuPercent: null, memoryPercent: null },
+    firstDay: null,
+    now,
+  });
+  const reasons = report.unavailable.map((item) => item.reason);
+  expect(reasons.length).toBeGreaterThanOrEqual(3);
+  inPolish(reasons);
 });

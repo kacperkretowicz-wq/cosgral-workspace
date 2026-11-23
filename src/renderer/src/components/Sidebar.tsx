@@ -47,6 +47,7 @@ import {
 import type { NeedsYouSidebarItem, SidebarProps } from "./sidebar/types";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Text } from "./ui";
+import { Users } from "./ui/icons";
 
 export type { SidebarAgentState };
 
@@ -744,7 +745,14 @@ export function Sidebar(props: SidebarProps) {
                             <strong>{title()}</strong>
                           </span>
                           <span class="bot-row-meta">
-                            <span class="channel-row-count">{channel.memberBotIds.length}</span>
+                            <span
+                              class="channel-row-count"
+                              title={t("{count} members", { count: channel.memberBotIds.length })}
+                            >
+                              {/* A people icon, so the number reads as members and not as unread messages. */}
+                              <Users size={11} stroke-width={2} aria-hidden="true" />
+                              {channel.memberBotIds.length}
+                            </span>
                           </span>
                         </span>
                         <span class="bot-row-preview">

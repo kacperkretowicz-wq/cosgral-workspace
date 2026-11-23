@@ -13,6 +13,7 @@ import type {
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { setLanguage } from "./i18n";
 import { createNew, toggleShowHidden } from "./sidebar-test-utils";
 
 let emitAgentEvent: ((event: AgentEvent) => void) | undefined;
@@ -2749,6 +2750,27 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(vi.mocked(window.openbot.agent.updateBot).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(window.openbot.agent.sendMessage).mock.invocationCallOrder[0] ?? Number.MAX_VALUE,
     );
+  });
+
+  it("in Polish, a listed focus still uses its prepared profile and sends the first message in Polish (seen in the real window)", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await confirmOnboardingModel();
+    setLanguage("pl");
+    await fireEvent.click(await screen.findByRole("radio", { name: /Praca i projekty/ }));
+    await waitFor(() =>
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith(
+        expect.objectContaining({ botId: "chief", role: "Work & projects" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(window.openbot.agent.sendMessage).toHaveBeenCalledWith({
+        botId: "chief",
+        text: "Skup się na mojej pracy i projektach. Pomagaj mi je planować, porządkować i prowadzić z własnej inicjatywy.",
+        attachmentDraftIds: [],
+      }),
+    );
+    setLanguage("en");
   });
 
   it("uses a custom onboarding answer as the persistent agent remit", async () => {

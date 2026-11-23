@@ -1,5 +1,5 @@
 ﻿import { For, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { useAccounts } from "./account-state";
 import { Button, Field, NativeSelect, Text } from "./ui";
 
@@ -7,7 +7,7 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
   const state = useAccounts();
   const accounts = () => state.snapshot()?.accounts.filter((a) => a.provider === props.provider) ?? [];
   const assigned = () => state.snapshot()?.assignments.find((a) => a.botId === props.botId)?.accountId ?? "";
-  const answeringWith = () => state.snapshot()?.active?.find((item) => item.botId === props.botId)?.label ?? "";
+  const answeringWith = () => tData(state.snapshot()?.active?.find((item) => item.botId === props.botId)?.label ?? "");
   return (
     <section aria-label={t("Agent account")}>
       <Show
@@ -46,7 +46,7 @@ export function AgentAccountPicker(props: { botId: string; provider: string; dis
             <For each={accounts()}>
               {(account) => (
                 <option value={account.id}>
-                  {account.label}
+                  {tData(account.label)}
                   {account.system ? t(" (system)") : ""}
                   {!account.loggedIn ? t(" — signed out") : ""}
                   {!account.enabled ? t(" — disabled") : ""}

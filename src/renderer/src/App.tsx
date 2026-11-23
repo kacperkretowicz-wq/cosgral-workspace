@@ -105,7 +105,7 @@ import { TasksPage } from "./components/TasksPage";
 import { TasksViewScreen } from "./components/TasksViewScreen";
 import { UsagePage } from "./components/UsagePage";
 import type { BotMessage, BotProfile } from "./data";
-import { t } from "./i18n";
+import { t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import {
   addCard,
@@ -1537,7 +1537,7 @@ export function App() {
     const profile = predefined ?? {
       role: topic.length <= 60 ? topic : "Custom focus",
       description: `Primary focus: ${topic.slice(0, 1_900)}.`,
-      firstMessage: `My main focus for you is: ${topic}. Treat this as your ongoing specialty.`,
+      firstMessage: t("My main focus for you is: {topic}. Treat this as your ongoing specialty.", { topic }),
     };
     try {
       await updateBot(bot.id, {
@@ -1549,7 +1549,8 @@ export function App() {
     } catch {
       return false;
     }
-    return sendMessageToBot(bot.id, profile.firstMessage, []);
+    // The first message is written as the person, so it is in the window language (the prepared ones through tData()).
+    return sendMessageToBot(bot.id, predefined ? tData(profile.firstMessage) : profile.firstMessage, []);
   }
 
   async function answerPrompt(answers: Record<string, string[]>): Promise<boolean> {

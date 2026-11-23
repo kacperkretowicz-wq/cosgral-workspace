@@ -10,7 +10,7 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { PanelHeading } from "./PanelHeading";
 import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
@@ -231,7 +231,7 @@ export function RemoteDesktopPage() {
           {t("Share this computer")}
         </PanelHeading>
         <Show when={!host().available}>
-          <p>{host().unavailableReason ?? t("Sharing is unavailable.")}</p>
+          <p>{host().unavailableReason ? tData(host().unavailableReason ?? "") : t("Sharing is unavailable.")}</p>
         </Show>
         <div class="remote-desktop-fields">
           <label>
