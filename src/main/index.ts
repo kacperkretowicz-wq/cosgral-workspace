@@ -54,7 +54,7 @@ import { BrowserProfileStore, createBrowserProfilePort } from "../backend/browse
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { BudgetMeter } from "../backend/budget-meter";
 import { ChannelEngine } from "../backend/channel-engine";
-import { type ChannelRoutineService, createChannelRoutineService } from "../backend/channel-routines";
+import { type ChannelRoutineService, createChannelRoutineService, routeWebhook } from "../backend/channel-routines";
 import { ChannelStore } from "../backend/channel-store";
 import { ComposerService } from "../backend/composer-service";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
@@ -1818,7 +1818,9 @@ if (!hasSingleInstanceLock) {
       // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
       const routineStore = new RoutineStore(store.database, electronSecretBox());
       const webhookReceiver: WebhookReceiver = new WebhookReceiver({
-        handle: (routineId, headers, body): Promise<WebhookAnswer> => routines.handleWebhook(routineId, headers, body),
+        // A routine of a channel answers first (null = no such id there), then the routines of agents.
+        handle: (routineId, headers, body): Promise<WebhookAnswer> =>
+          routeWebhook(() => channelRoutinesService, routines)(routineId, headers, body),
       });
       const routines: RoutineManager = new RoutineManager({
         store: routineStore,
@@ -1983,6 +1985,8 @@ if (!hasSingleInstanceLock) {
           // COSGRAL W12 (BE-R): routines of a channel: at the planned time the prompt goes to the channel as a message of the person.
           channelRoutinesService = createChannelRoutineService({
             database: store.database,
+            box: electronSecretBox(),
+            webhookBase: () => webhookReceiverService?.url() ?? null,
             channels: channelStore,
             engine,
             emit: (event) => forwardAgentEvent("local", event),

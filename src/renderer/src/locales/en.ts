@@ -1175,6 +1175,23 @@ export const en = {
   "Close the open panel, menu or dialog": "Close the open panel, menu or dialog",
   "Show these keyboard shortcuts": "Show these keyboard shortcuts",
   "{count} member": "{count} member",
+  "The webhook receiver is not running. Turn on webhooks in the server settings first.":
+    "The webhook receiver is not running. Turn on webhooks in the server settings first.",
+  "The webhook secret cannot be stored safely on this computer: system encryption is not available.":
+    "The webhook secret cannot be stored safely on this computer: system encryption is not available.",
+  "The routine is paused.": "The routine is paused.",
+  "Webhook on: a signed POST to this computer also starts the routine.":
+    "Webhook on: a signed POST to this computer also starts the routine.",
+  "Webhook off.": "Webhook off.",
+  "New webhook secret": "New webhook secret",
+  "Turn on webhook": "Turn on webhook",
+  "Turn off webhook": "Turn off webhook",
+  "Copy these now: the secret is not shown again.": "Copy these now: the secret is not shown again.",
+  "Webhook address": "Webhook address",
+  "Signing secret": "Signing secret",
+  "Webhook signing secret": "Webhook signing secret",
+  "The address works on this computer only (127.0.0.1). Reach it from another place only through a tunnel you trust. Requests are signed the Standard Webhooks way.":
+    "The address works on this computer only (127.0.0.1). Reach it from another place only through a tunnel you trust. Requests are signed the Standard Webhooks way.",
   "New teammate": "New teammate",
   Writing: "Writing",
   Communication: "Communication",

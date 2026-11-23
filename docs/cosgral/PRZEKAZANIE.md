@@ -10,10 +10,13 @@ Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do 
    (uprząż poza repo, która wyłącza sandbox Chromium tylko tam). Zdanie niżej o „pustym oknie” jest już nieaktualne. Przejście
    po wszystkich stronach znalazło i naprawiło 5 grup błędów (kreator → „Nowy agent”, polski wybór specjalności, „3 kroków”,
    angielskie napisy z silnika, znacznik liczby członków kanału), a druga runda kolejne (przepływy, jasny motyw, kontrast; axe w oknie 26/26).
-4. Nie zrobione (decyzja właściciela albo Windows): skróty klawiszowe (Alt+strzałki kolidują z macOS), webhook rutyn kanału,
-   głos (Parakeet), łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
+4. **Skróty klawiszowe:** Alt+↑/↓ między agentami (tylko poza polem tekstowym, więc Option+strzałki na macOS działają jak zwykle)
+   i Ctrl/Cmd+/ z listą skrótów (`keyboard-shortcuts.ts`). **Webhook rutyn kanału:** podpisany POST na lokalny odbiornik (ten sam
+   co rutyny agentów), sekret szyfrowany i pokazany raz; `routeWebhook` kieruje dostawę najpierw do rutyn kanału. W kontenerze
+   włączenie webhooka jest słusznie odrzucane (brak szyfrowania systemowego); na Windows/Mac sprawdzić włączenie i jedną dostawę.
+5. Nie zrobione (Windows albo duże osobne prace): głos (Parakeet), łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
 
-Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (488 plików, 3470 testów), `bun run build`, `test:visual` (7), `test:storybook` (378).
+Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (490 plików, 3489 testów), `bun run build`, `test:visual` (7), `test:storybook` (378).
 
 ---
 

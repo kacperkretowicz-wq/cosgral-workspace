@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockChannelRoutines, type MockChannelRoutines } from "../../stories/mock-channel-routines";
 import { createMockOpenBot } from "../../stories/mock-openbot";
 import { setLanguage } from "../i18n";
-import { ChannelRoutinesPanel, describeSchedule } from "./ChannelRoutinesPanel";
+import { ChannelRoutinesPanel, describeSchedule, problemText } from "./ChannelRoutinesPanel";
 
 const channel = { id: "demo-channel", archived: false, leadBotId: "chief" };
 
@@ -92,6 +92,24 @@ describe("ChannelRoutinesPanel", () => {
 });
 
 // KK-Y: the cases of the earlier KK panel, moved onto this panel and run against the mock of the routines of a channel.
+describe("problemText", () => {
+  it("finds the program's sentence behind Electron's IPC prefix (seen untranslated in the real window)", async () => {
+    setLanguage("pl");
+    await waitFor(() =>
+      expect(
+        problemText("Error invoking remote method 'channel-routines:run-now': Error: The previous run is still going."),
+      ).not.toContain("Error invoking"),
+    );
+    expect(
+      problemText(
+        "Error invoking remote method 'channel-routines:enable-webhook': Error: The webhook secret cannot be stored safely on this computer: system encryption is not available.",
+      ),
+    ).toBe(
+      "Sekretu webhooka nie da się bezpiecznie zapisać na tym komputerze: szyfrowanie systemowe jest niedostępne.",
+    );
+  });
+});
+
 describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)", () => {
   const fullChannel = (patch: Partial<WorkspaceChannel> = {}): WorkspaceChannel => ({
     id: "c1",
@@ -243,6 +261,32 @@ describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)",
     expect(screen.queryByText(/Last:/)).not.toBeInTheDocument();
     mock.tick(31);
     await waitFor(() => expect(screen.getByText(/Last:/)).toBeInTheDocument());
+  });
+
+  it("turns the webhook on, shows the address and the secret once, makes a new secret and turns it off", async () => {
+    const created = await mock.create(base);
+    render(() => <ChannelRoutinesPanel channel={panelChannel} />);
+    expect(await screen.findByText("Webhook off.")).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Turn on webhook" }));
+    const address = await screen.findByRole("textbox", { name: "Webhook address" });
+    expect(address).toHaveValue(`http://127.0.0.1:8787/webhooks/${created.id}`);
+    const secretField = screen.getByRole("textbox", { name: "Webhook signing secret" });
+    if (!(secretField instanceof HTMLInputElement)) throw new Error("no secret field");
+    const firstSecret = secretField.value;
+    expect(firstSecret.startsWith("whsec_")).toBe(true);
+    expect(screen.getByText("Copy these now: the secret is not shown again.")).toBeInTheDocument();
+    // The row is drawn again after the refresh: wait for the new one instead of holding the old element.
+    await waitFor(() => expect(screen.getByText(/Webhook on:/)).toBeInTheDocument());
+    // Hidden, it does not come back by itself.
+    await fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+    expect(screen.queryByRole("textbox", { name: "Webhook signing secret" })).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "New webhook secret" }));
+    const renewed = await screen.findByRole("textbox", { name: "Webhook signing secret" });
+    expect(renewed).not.toHaveValue(firstSecret);
+    await fireEvent.click(screen.getByRole("button", { name: "Turn off webhook" }));
+    await waitFor(() => expect(screen.getByText("Webhook off.")).toBeInTheDocument());
+    expect(screen.queryByRole("textbox", { name: "Webhook signing secret" })).not.toBeInTheDocument();
+    expect((await mock.list({ channelId: "c1" }))[0]?.webhookEnabled).toBe(false);
   });
 
   const daily = { ...base, schedule: { type: "daily", time: "09:00" } } as const;

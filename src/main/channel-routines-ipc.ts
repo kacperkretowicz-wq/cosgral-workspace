@@ -21,4 +21,6 @@ export function registerChannelRoutinesIpc(service: () => ChannelRoutineService 
   handle(IPC_CHANNELS.channelRoutinesDelete, (engine, payload) => engine.delete(payload));
   handle(IPC_CHANNELS.channelRoutinesRunNow, (engine, payload) => engine.runNow(payload));
   handle(IPC_CHANNELS.channelRoutinesListRuns, (engine, payload) => engine.listRuns(payload));
+  handle(IPC_CHANNELS.channelRoutinesEnableWebhook, (engine, payload) => engine.enableWebhook(payload));
+  handle(IPC_CHANNELS.channelRoutinesDisableWebhook, (engine, payload) => engine.disableWebhook(payload));
 }

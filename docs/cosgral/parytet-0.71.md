@@ -2,20 +2,20 @@
 
 Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 64,0 z 77 funkcji = 83,1% (jest = 1, częściowo = ½). Z tego skontraktowane ~95,5%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,7%.**
+**Wynik w jednej linii: 64,5 z 77 funkcji = 83,8% (jest = 1, częściowo = ½). Z tego skontraktowane ~95,5%, ale w prawdziwym oknie sprawdzone tylko 52,6%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 61,7%.**
 
-**Aktualizacja 22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
+**Aktualizacja 23.11.2026:** wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **83,1%** (64,0 z 77) | 54 jest, 20 częściowo, 3 brak |
+| Parytet (kod) | **83,8%** (64,5 z 77) | 55 jest, 19 częściowo, 3 brak |
 | Skontraktowane | **~95,5%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | **~94,8%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~89,6%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| Ekran w kodzie | **~90,3%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
 | W oknie sprawdzone | **52,6%** | 22 wiersze w pełni (tak), 37 częściowo, 18 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
 | Ostrożny parytet | **61,7%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 64,0 z 83 = 77,1%.
+Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 64,5 z 83 = 77,7%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -39,7 +39,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 6 | 2 | 1 | 78% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
-| H. Automatyzacje (rutyny, przepływy) | 6 | 3 | 3 | 0 | 75% |
+| H. Automatyzacje (rutyny, przepływy) | 6 | 4 | 2 | 0 | 83% |
 | I. Komunikatory | 4 | 3 | 0 | 1 | 75% |
 | J. Serwer, zespół, zdalny pulpit, telefon | 7 | 2 | 5 | 0 | 64% |
 
@@ -146,7 +146,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|---|---|---|---|
 | 56 | Rutyny agenta (harmonogram, webhook, historia, uruchom teraz) | **jest** | tak | tak | tak | tak | część | W oknie: tworzenie, następny start, Run now, minutowa sama; daily/cron/webhook nie. | kk-w3-acceptance, ipc-routines |
 | 57 | Harmonogram: zaplanowane i wykonane przebiegi rutyn, feed ostatnich uruchomień | **jest** | tak | tak | tak | tak | część | Ekran Harmonogram: najbliższe dni po dniach (status, godzina), rutyny z zewnątrz i wstrzymane, feed. W oknie: zrzut T-M (pusta strona bez danych). Brak siatki miesięcznego kalendarza i notatek przy przebiegu. | backend-w12-library, tester-w12-tm |
-| 58 | Rutyny kanału | **częściowo** | tak | tak | tak | część | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Edycja istniejącej rutyny (nazwa, instrukcja, harmonogram, strefa czasu), wybór dni tygodnia i skok do zadania z historii są od UI-AC (62b327094); 22.11 dopisano testy panelu pokrywające edycję, dni tygodnia (niedziela = 0, lista od poniedziałku, brak zaznaczonych = codziennie) i odrzucanie błędnej edycji (3 nowe, razem 36 w trzech plikach rutyn kanału). Luka: bez webhooka. Nie oglądane w oknie. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
+| 58 | Rutyny kanału | **jest** | tak | tak | tak | tak | nie | Od BE-R (08a06ba56, e09dcb177): kontrakt, sklep SQLite, silnik (o planowanej porze wiadomość „Scheduled: <nazwa>” do kanału, lider dostaje zadanie; jeden bieg naraz, pominięcia z powodem, bez nadrabiania), IPC `window.openbot.channelRoutines` (lista, tworzenie, edycja, usuwanie, „Run now”, historia z żywym stanem zadania), atrapa i testy (9 + 11 + 3 + 6). Ekran: `ChannelRoutinesPanel` w widoku kanału, w sekcji „Routines” (KK-Y): lista, tworzenie (interwał, codziennie, cron, strefa czasu), wstrzymaj/wznów, „Run now”, historia z żywym stanem zadania, usuwanie z potwierdzeniem, zdania błędów silnika bez zmian; test `ChannelRoutinesPanel` 9/9. Edycja istniejącej rutyny (nazwa, instrukcja, harmonogram, strefa czasu), wybór dni tygodnia i skok do zadania z historii są od UI-AC (62b327094); 22.11 dopisano testy panelu pokrywające edycję, dni tygodnia (niedziela = 0, lista od poniedziałku, brak zaznaczonych = codziennie) i odrzucanie błędnej edycji (3 nowe, razem 36 w trzech plikach rutyn kanału). Od 23.11 także webhook (podpisany POST w standardzie Standard Webhooks na lokalny odbiornik 127.0.0.1, ten sam co rutyny agentów; sekret szyfrowany i pokazany raz, „Nowy sekret”, „Wyłącz webhook”, powtórzona dostawa odrzucana, wstrzymana rutyna zapisuje pominięcie, początek treści trafia do lidera; testy silnika, panelu i prawdziwego żądania HTTP przez odbiornik). Panel rutyn oglądany w oknie Linux w kontenerze; samego webhooka w oknie nie, bo w kontenerze brak szyfrowania systemowego i program słusznie odmawia zapisania sekretu. | backend-w12-channel-routines, kk-w12-channel-routines-ui |
 | 59 | Przepływy: graf, wyzwalacz, agent, zgoda, wyjście, uruchomienia | **jest** | tak | tak | tak | tak | część | Wyzwalacz + agent w oknie; krok zgody nie. | kk-w3-acceptance, workflow-manager.test |
 | 60 | Edytor przepływów jak 0.71 (paleta węzłów z Prompt i Condition, karta triggera, cofnij/ponów, plakietki błędów) | **częściowo** | tak | tak | tak | część | nie | Kontrakt, atrapa i silnik mają Prompt i Condition oraz funkcje edytora; stary edytor dostał tylko most (przyciski „Add prompt/condition”), od UI-V (92709aa62) jest nowy edytor w kartach kroków z portami i zakrzywionymi połączeniami; w oknie go nie oglądano, więc cofnij/ponów i plakietki błędów nie sprawdzone. | kk-w12-flows, kk-w12-workflows-marketplace, ui-v |
 | 61 | Przepływy: wersje i przywracanie; katalog GitHub, kredyty mediów | **częściowo** | tak | tak | tak | część | część | Wersje (lista, podgląd, przywracanie, różnice) mają kontrakt, silnik i testy (KK-L) oraz panel `WorkflowVersionsPanel` na stronie przepływów (36c3f1e06; nie oglądany w oknie). Katalog GitHub i kredyty mediów: brak. W oknie: sekcja „Versions” z listą wersji po wyborze przepływu (zrzut 15, T-AC/T-AF); przywracanie i różnice nie oglądane ręcznie. | kk-w12-flows, ui-w12, tester-w12-te |

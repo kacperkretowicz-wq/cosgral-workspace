@@ -375,6 +375,8 @@ export const IPC_CHANNELS = {
   channelRoutinesDelete: "channel-routines:delete",
   channelRoutinesRunNow: "channel-routines:run-now",
   channelRoutinesListRuns: "channel-routines:list-runs",
+  channelRoutinesEnableWebhook: "channel-routines:enable-webhook",
+  channelRoutinesDisableWebhook: "channel-routines:disable-webhook",
   appDataDescribeWipe: "app-data:describe-wipe",
   appDataRequestWipe: "app-data:request-wipe",
   approvalRulesList: "approval-rules:list",

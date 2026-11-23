@@ -13,8 +13,10 @@ import {
   isChannelRoutineRun,
 } from "@openbot/contracts/ipc";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ChannelRoutineService, ChannelRoutineStore } from "./channel-routines";
+import { ChannelRoutineService, ChannelRoutineStore, routeWebhook } from "./channel-routines";
 import { closeTestDatabases, testDatabase } from "./testing/databases";
+import { WebhookReceiver } from "./webhook-receiver";
+import { signWebhook } from "./webhook-signature";
 
 let root: string;
 beforeEach(async () => {
@@ -290,5 +292,198 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     const reopened = new ChannelRoutineStore(again);
     expect(reopened.list().map((item) => item.id)).toEqual([routine.id]);
     expect(reopened.runs(routine.id)).toHaveLength(CHANNEL_ROUTINE_LIMITS.runsKept);
+  });
+});
+
+describe("webhook of a channel routine", () => {
+  const box = {
+    canEncrypt: () => true,
+    encrypt: (plain: string) => `box:${Buffer.from(plain, "utf8").toString("base64")}`,
+    decrypt: (cipher: string) => Buffer.from(cipher.slice(4), "base64").toString("utf8"),
+  };
+
+  async function webhookSetup(withBox = true) {
+    const base = await setup();
+    const store = new ChannelRoutineStore(base.database, withBox ? box : null);
+    let now = new Date("2026-11-18T10:00:00.000Z");
+    const service = new ChannelRoutineService({
+      store,
+      channel: (channelId) => base.channels.get(channelId) ?? null,
+      send: (channelId, text) => {
+        base.sent.push({ channelId, text });
+        const id = `t${base.sent.length}`;
+        base.states.set(id, "queued");
+        return { messageId: `m${base.sent.length}`, taskId: id };
+      },
+      taskState: (taskId) => base.states.get(taskId) ?? null,
+      emit: (event) => base.events.push(event),
+      now: () => now,
+      timeZone: () => "Europe/Warsaw",
+      after: () => () => undefined,
+      webhookBase: () => "http://127.0.0.1:8787",
+    });
+    const routine = service.create({
+      channelId: "c1",
+      name: "Deploy report",
+      prompt: "Summarise the deploy.",
+      schedule: { type: "interval", everyMinutes: 60 },
+    });
+    const deliver = (secret: string, id: string, body: string) => {
+      const seconds = Math.floor(now.getTime() / 1000);
+      const raw = Buffer.from(body, "utf8");
+      return service.handleWebhook(
+        routine.id,
+        { id, timestamp: String(seconds), signature: signWebhook(secret, id, seconds, raw) },
+        raw,
+      );
+    };
+    return { ...base, store, service, routine, deliver, setNow: (iso: string) => (now = new Date(iso)) };
+  }
+
+  it("is off by default, answers 404 while off, and an unknown id is left to the routines of agents (null)", async () => {
+    const { service, routine } = await webhookSetup();
+    expect(routine.webhookEnabled).toBeUndefined();
+    const empty = Buffer.from("{}");
+    expect(service.handleWebhook(routine.id, { id: "d1", timestamp: "1", signature: "v1,x" }, empty)).toEqual({
+      status: 404,
+      body: { error: "unknown routine" },
+    });
+    expect(
+      service.handleWebhook("not-a-channel-routine", { id: "d1", timestamp: "1", signature: "v1,x" }, empty),
+    ).toBeNull();
+  });
+
+  it("turning it on gives the address and a secret once, kept encrypted; a signed delivery starts the routine with the body", async () => {
+    const { service, routine, deliver, sent, database } = await webhookSetup();
+    const on = service.enableWebhook({ routineId: routine.id });
+    expect(on.url).toBe(`http://127.0.0.1:8787/webhooks/${routine.id}`);
+    expect(on.secret.startsWith("whsec_")).toBe(true);
+    expect(on.routine.webhookEnabled).toBe(true);
+    expect(isChannelRoutine(on.routine)).toBe(true);
+    const stored = database.connection.prepare("SELECT secret_encrypted FROM projection_channel_routine_secrets").all();
+    expect(JSON.stringify(stored)).not.toContain(on.secret);
+    expect(JSON.stringify(service.list())).not.toContain(on.secret);
+
+    const answer = deliver(on.secret, "msg_1", '{"event":"deploy.finished","env":"prod"}');
+    expect(answer).toMatchObject({ status: 202, body: { status: "accepted" } });
+    expect(sent.at(-1)?.text).toContain("Scheduled: Deploy report");
+    expect(sent.at(-1)?.text).toContain('Webhook:\n{"event":"deploy.finished","env":"prod"}');
+    const runs = service.listRuns({ routineId: routine.id });
+    expect(runs[0]).toMatchObject({ cause: "webhook", outcome: "started" });
+    expect(runs.every(isChannelRoutineRun)).toBe(true);
+  });
+
+  it("refuses a wrong signature, an old timestamp and a repeat, and writes a paused routine's delivery down as skipped", async () => {
+    const { service, routine, deliver, sent, setNow } = await webhookSetup();
+    const { secret } = service.enableWebhook({ routineId: routine.id });
+    expect(deliver("whsec_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "a", "{}")?.status).toBe(401);
+    expect(deliver(secret, "b", "{}")?.status).toBe(202);
+    expect(deliver(secret, "b", "{}")).toEqual({ status: 200, body: { status: "duplicate" } });
+    expect(sent).toHaveLength(1);
+    // A delivery signed for another time is refused (the timestamp tolerance of Standard Webhooks).
+    const seconds = Math.floor(Date.parse("2026-11-18T09:00:00.000Z") / 1000);
+    const raw = Buffer.from("{}");
+    expect(
+      service.handleWebhook(
+        routine.id,
+        { id: "c", timestamp: String(seconds), signature: signWebhook(secret, "c", seconds, raw) },
+        raw,
+      )?.status,
+    ).toBe(401);
+    service.update({ routineId: routine.id, paused: true });
+    setNow("2026-11-18T10:05:00.000Z");
+    expect(deliver(secret, "d", "{}")).toMatchObject({ status: 202, body: { status: "ignored" } });
+    expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({
+      cause: "webhook",
+      outcome: "skipped",
+      reason: "The routine is paused.",
+    });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("a new secret replaces the old one; turning it off forgets the secret; deleting the routine removes it", async () => {
+    const { service, routine, deliver, database } = await webhookSetup();
+    const first = service.enableWebhook({ routineId: routine.id });
+    const second = service.enableWebhook({ routineId: routine.id });
+    expect(second.secret).not.toBe(first.secret);
+    expect(deliver(first.secret, "x1", "{}")?.status).toBe(401);
+    expect(deliver(second.secret, "x2", "{}")?.status).toBe(202);
+    expect(service.disableWebhook({ routineId: routine.id }).webhookEnabled).toBe(false);
+    expect(deliver(second.secret, "x3", "{}")?.status).toBe(404);
+    service.enableWebhook({ routineId: routine.id });
+    service.delete({ routineId: routine.id });
+    const left = database.connection.prepare("SELECT COUNT(*) AS n FROM projection_channel_routine_secrets").get();
+    expect(left).toEqual({ n: 0 });
+  });
+
+  it("without system encryption or a running receiver the webhook is not turned on, with a sentence", async () => {
+    const noBox = await webhookSetup(false);
+    expect(() => noBox.service.enableWebhook({ routineId: noBox.routine.id })).toThrow(/cannot be stored safely/);
+    expect(noBox.service.list()[0]?.webhookEnabled).toBeUndefined();
+  });
+});
+
+describe("the local receiver routes a real signed POST", () => {
+  it("to the routine of a channel first and to the routines of agents for other ids", async () => {
+    const base = await setup();
+    const box = {
+      canEncrypt: () => true,
+      encrypt: (plain: string) => `box:${Buffer.from(plain, "utf8").toString("base64")}`,
+      decrypt: (cipher: string) => Buffer.from(cipher.slice(4), "base64").toString("utf8"),
+    };
+    let receiverUrl: string | null = null;
+    const service = new ChannelRoutineService({
+      store: new ChannelRoutineStore(base.database, box),
+      channel: (channelId) => base.channels.get(channelId) ?? null,
+      send: (channelId, text) => {
+        base.sent.push({ channelId, text });
+        return { messageId: "m1", taskId: "t1" };
+      },
+      taskState: () => "queued",
+      emit: () => undefined,
+      timeZone: () => "Europe/Warsaw",
+      after: () => () => undefined,
+      webhookBase: () => receiverUrl,
+    });
+    const agentCalls: string[] = [];
+    const receiver = new WebhookReceiver({
+      handle: routeWebhook(() => service, {
+        handleWebhook: async (routineId) => {
+          agentCalls.push(routineId);
+          return { status: 404, body: { error: "unknown routine" } };
+        },
+      }),
+    });
+    receiverUrl = await receiver.start(0);
+    try {
+      const routine = service.create({
+        channelId: "c1",
+        name: "Deploy report",
+        prompt: "Summarise the deploy.",
+        schedule: { type: "interval", everyMinutes: 60 },
+      });
+      const { url, secret } = service.enableWebhook({ routineId: routine.id });
+      expect(url.startsWith("http://127.0.0.1:")).toBe(true);
+      const body = '{"event":"deploy.finished"}';
+      const seconds = Math.floor(Date.now() / 1000);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "webhook-id": "msg_live_1",
+          "webhook-timestamp": String(seconds),
+          "webhook-signature": signWebhook(secret, "msg_live_1", seconds, Buffer.from(body)),
+        },
+        body,
+      });
+      expect(response.status).toBe(202);
+      expect(base.sent.at(-1)?.text).toContain('Webhook:\n{"event":"deploy.finished"}');
+      expect(agentCalls).toEqual([]);
+      const other = await fetch(`${receiverUrl}/webhooks/agent-routine-1`, { method: "POST", body: "{}" });
+      expect(other.status).toBe(404);
+      expect(agentCalls).toEqual(["agent-routine-1"]);
+    } finally {
+      await receiver.stop();
+    }
   });
 });

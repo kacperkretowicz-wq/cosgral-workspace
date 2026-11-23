@@ -62,7 +62,7 @@ Zasady jak w kanale: gałąź `team/<rola>/<temat>`, bez push, bez `--force`, le
 10. [zrobione: 9d766313a — szczegół zadania kanału w API telefonu; push dla zadań kanału: luka] Wiersz 71 parytetu (telefon): kolejne brakujące funkcje klienta telefonu po stronie API.
 11. Kolejne luki z `parytet-0.71.md`, jeśli tabela „ROBIĆ” znów się wypełni po odbiorze Testera.
 12. [zrobione: 65a79fad1 — kontrakt+silnik+testy; kanały IPC i okno wyboru folderu: luka, raport backend-w12-ae.md] Biblioteka: „pliki maszyny” (wiersz 45): bezpieczny odczyt wybranego folderu, limit rozmiaru, tylko za zgodą; kontrakt + testy jednego pliku.
-13. [zrobione: kontrakt i silnik `update` + `weekdays` już w BE-R, ekran w UI-AC 62b327094; 22.11 dopisane testy panelu edycji i dni tygodnia; zostaje webhook rutyny kanału] Rutyny kanału: edycja nazwy/instrukcji/harmonogramu + dni tygodnia (wiersz 58) — kontrakt, silnik, testy.
+13. [zrobione: kontrakt i silnik `update` + `weekdays` już w BE-R, ekran w UI-AC 62b327094; 22.11 dopisane testy panelu edycji i dni tygodnia; webhook rutyny kanału zrobiony 23.11] Rutyny kanału: edycja nazwy/instrukcji/harmonogramu + dni tygodnia (wiersz 58) — kontrakt, silnik, testy.
 14. [zrobione: 32b99cb14 — pełny sterownik (Gateway + REST), nie tylko deskryptor; 18 testów na atrapie, bez prawdziwego tokenu; prawdziwy test czeka na token bota właściciela] Discord: deskryptor + atrapa sterownika na interfejsie komunikatorów (`luki-silnika-071.md` §1.4), testy na fałszywej bramce, bez prawdziwego tokenu.
 15. Marketplace: instalacja skilla z linku GitHub z kartą zgody (limit 200 plików/10 MB, bez uruchamiania skryptów), silnik + testy na fałszywym serwerze.
 16. Przeglądarka agenta: kontrakt podglądu na żywo i „teach” (wiersz 46), atrapa + testy.

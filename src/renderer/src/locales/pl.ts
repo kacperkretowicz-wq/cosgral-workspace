@@ -1178,6 +1178,23 @@ export const pl = {
   "Close the open panel, menu or dialog": "Zamknij otwarty panel, menu albo okno",
   "Show these keyboard shortcuts": "Pokaż te skróty klawiszowe",
   "{count} member": "Członkowie: {count}",
+  "The webhook receiver is not running. Turn on webhooks in the server settings first.":
+    "Odbiornik webhooków nie działa. Najpierw włącz webhooki w ustawieniach serwera.",
+  "The webhook secret cannot be stored safely on this computer: system encryption is not available.":
+    "Sekretu webhooka nie da się bezpiecznie zapisać na tym komputerze: szyfrowanie systemowe jest niedostępne.",
+  "The routine is paused.": "Rutyna jest wstrzymana.",
+  "Webhook on: a signed POST to this computer also starts the routine.":
+    "Webhook włączony: podpisane żądanie POST na ten komputer też uruchamia rutynę.",
+  "Webhook off.": "Webhook wyłączony.",
+  "New webhook secret": "Nowy sekret webhooka",
+  "Turn on webhook": "Włącz webhook",
+  "Turn off webhook": "Wyłącz webhook",
+  "Copy these now: the secret is not shown again.": "Skopiuj je teraz: sekret nie zostanie pokazany ponownie.",
+  "Webhook address": "Adres webhooka",
+  "Signing secret": "Sekret podpisu",
+  "Webhook signing secret": "Sekret podpisu webhooka",
+  "The address works on this computer only (127.0.0.1). Reach it from another place only through a tunnel you trust. Requests are signed the Standard Webhooks way.":
+    "Adres działa tylko na tym komputerze (127.0.0.1). Z innego miejsca łącz się z nim wyłącznie przez zaufany tunel. Żądania są podpisywane według Standard Webhooks.",
   "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",

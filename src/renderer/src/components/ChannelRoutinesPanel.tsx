@@ -2,6 +2,7 @@ import {
   CHANNEL_ROUTINE_LIMITS,
   type ChannelRoutine,
   type ChannelRoutineRun,
+  type ChannelRoutineWebhook,
   type ChannelTaskState,
   channelRoutineProblem,
   type RoutineSchedule,
@@ -11,6 +12,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { appLocale, t } from "../i18n";
+import { withoutIpcPrefix } from "./provider-error";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
 type FormKind = "interval" | "daily" | "cron";
@@ -50,6 +52,11 @@ function dayName(day: number): string {
 
 // The contract and the engine write their reasons in English; the screen says them in the chosen language.
 const PROBLEMS: Record<string, string> = {
+  "The webhook receiver is not running. Turn on webhooks in the server settings first.":
+    "The webhook receiver is not running. Turn on webhooks in the server settings first.",
+  "The webhook secret cannot be stored safely on this computer: system encryption is not available.":
+    "The webhook secret cannot be stored safely on this computer: system encryption is not available.",
+  "The routine is paused.": "The routine is paused.",
   "Choose a channel.": "Choose a channel.",
   "Choose a routine.": "Choose a routine.",
   "This channel no longer exists.": "This channel no longer exists.",
@@ -79,7 +86,9 @@ const COUNTED: Array<[RegExp, string]> = [
   [/^The instruction has at most (\d+) characters\.$/, "The instruction has at most {limit} characters."],
   [/^A channel has at most (\d+) routines\.$/, "A channel has at most {limit} routines."],
 ];
-export function problemText(message: string): string {
+export function problemText(raw: string): string {
+  // In the program the sentence comes through IPC with Electron's prefix; without removing it no sentence would be found below.
+  const message = withoutIpcPrefix(raw);
   const known = PROBLEMS[message];
   if (known) return t(known);
   for (const [pattern, key] of COUNTED) {
@@ -315,6 +324,12 @@ export function ChannelRoutinesPanel(props: {
   const [routines, setRoutines] = createSignal<ChannelRoutine[]>([]);
   const [runs, setRuns] = createSignal<ChannelRoutineRun[]>([]);
   const [history, setHistory] = createSignal("");
+  /** The address and secret of a webhook just turned on (or renewed): shown this once, never read back. */
+  const [shownWebhook, setShownWebhook] = createSignal<ChannelRoutineWebhook | null>(null);
+  const webhookApi = () => {
+    const api = window.openbot.channelRoutines;
+    return api?.enableWebhook && api.disableWebhook ? api : null;
+  };
   const [editing, setEditing] = createSignal("");
   const [error, setError] = createSignal("");
   const [loaded, setLoaded] = createSignal(false);
@@ -466,11 +481,83 @@ export function ChannelRoutinesPanel(props: {
                     {t("Delete")}
                   </Button>
                 </div>
+                <Show when={webhookApi()}>
+                  {(api) => (
+                    <div class="channel-routine-webhook">
+                      <p>
+                        {routine.webhookEnabled
+                          ? t("Webhook on: a signed POST to this computer also starts the routine.")
+                          : t("Webhook off.")}
+                      </p>
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() =>
+                          void act(async () => {
+                            const answer = await api().enableWebhook?.({ routineId: routine.id });
+                            if (answer) setShownWebhook(answer);
+                          }, routine.id)
+                        }
+                      >
+                        {routine.webhookEnabled ? t("New webhook secret") : t("Turn on webhook")}
+                      </Button>
+                      <Show when={routine.webhookEnabled}>
+                        {" "}
+                        <Button
+                          unstyled
+                          type="button"
+                          onClick={() =>
+                            void act(async () => {
+                              await api().disableWebhook?.({ routineId: routine.id });
+                              if (shownWebhook()?.routine.id === routine.id) setShownWebhook(null);
+                            }, routine.id)
+                          }
+                        >
+                          {t("Turn off webhook")}
+                        </Button>
+                      </Show>
+                      <Show when={shownWebhook()?.routine.id === routine.id ? shownWebhook() : null}>
+                        {(shown) => (
+                          <div class="channel-routine-webhook-secret" role="status">
+                            <p>{t("Copy these now: the secret is not shown again.")}</p>
+                            <label>
+                              {t("Address")}
+                              <Input unstyled readonly value={shown().url} aria-label={t("Webhook address")} />
+                            </label>
+                            <label>
+                              {t("Signing secret")}
+                              <Input
+                                unstyled
+                                readonly
+                                value={shown().secret}
+                                aria-label={t("Webhook signing secret")}
+                              />
+                            </label>
+                            <p>
+                              {t(
+                                "The address works on this computer only (127.0.0.1). Reach it from another place only through a tunnel you trust. Requests are signed the Standard Webhooks way.",
+                              )}
+                            </p>
+                            <Button unstyled type="button" onClick={() => setShownWebhook(null)}>
+                              {t("Hide")}
+                            </Button>
+                          </div>
+                        )}
+                      </Show>
+                    </div>
+                  )}
+                </Show>
                 <Show when={history() === routine.id}>
                   <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
                     {(run) => (
                       <p>
-                        {when(run.at)} · {run.cause === "manual" ? t("Run now") : t("Scheduled")} ·{" "}
+                        {when(run.at)} ·{" "}
+                        {run.cause === "manual"
+                          ? t("Run now")
+                          : run.cause === "webhook"
+                            ? t("Webhook")
+                            : t("Scheduled")}{" "}
+                        ·{" "}
                         {run.outcome === "started"
                           ? run.taskState
                             ? stateLabel(run.taskState)

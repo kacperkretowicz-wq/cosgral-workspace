@@ -156,6 +156,26 @@ export function createMockChannelRoutines(options: {
       const routine = find(parseChannelRoutineIdInput(raw).routineId);
       return structuredClone((runs.get(routine.id) ?? []).map(withState));
     },
+    // Demo secret and address: the program makes a random secret and uses the port of its local receiver.
+    enableWebhook: async (raw) => {
+      const routine = find(parseChannelRoutineIdInput(raw).routineId);
+      counter += 1;
+      routine.webhookEnabled = true;
+      routine.updatedAt = iso(clock);
+      announce(routine.channelId);
+      return {
+        routine: structuredClone(routine),
+        url: `http://127.0.0.1:8787/webhooks/${routine.id}`,
+        secret: `whsec_demo${counter}${"A".repeat(40)}`,
+      };
+    },
+    disableWebhook: async (raw) => {
+      const routine = find(parseChannelRoutineIdInput(raw).routineId);
+      routine.webhookEnabled = false;
+      routine.updatedAt = iso(clock);
+      announce(routine.channelId);
+      return structuredClone(routine);
+    },
     tick: (minutes) => {
       clock += minutes * 60_000;
       for (const routine of [...routines]) {
