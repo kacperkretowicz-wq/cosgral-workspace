@@ -1309,18 +1309,20 @@
 
 .work-page .provider-cli-meta,
 .work-page .provider-key-copy p,
-.work-page .provider-cli-phase {
+.provider-cli .provider-cli-phase {
   margin: 0;
   font-size: var(--openbot-text-sm);
 }
 
-.work-page .provider-cli-phase,
+/* Under the name, not under the icon: also in the first-run setup window, which is not a work page ("Gotowe" sat left
+   of the card's text there). */
+.provider-cli .provider-cli-phase,
 .provider-cli > [role="progressbar"],
 .provider-cli > [role="alert"] {
   margin-left: 48px;
 }
 
-.work-page .provider-cli-phase {
+.provider-cli .provider-cli-phase {
   color: var(--openbot-text-muted);
 }
 

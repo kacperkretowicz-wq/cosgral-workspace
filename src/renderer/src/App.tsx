@@ -2048,6 +2048,7 @@ export function App() {
                 agentStatus={agentStatus()}
                 platform={appInfo()?.platform ?? "darwin"}
                 accountEmail={account().email}
+                localProfile={localProfile()}
                 onSave={saveSetup}
                 onJoinRemote={joinRemoteDuringSetup}
                 onLogout={logoutCentralAccount}
@@ -2376,6 +2377,7 @@ export function App() {
                   agentStatus={agentStatus()}
                   platform={appInfo()?.platform ?? "darwin"}
                   accountEmail={account().email}
+                  localProfile={localProfile()}
                   onSave={saveSetup}
                   onJoinRemote={joinRemoteDuringSetup}
                   onLogout={logoutCentralAccount}

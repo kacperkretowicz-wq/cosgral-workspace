@@ -679,6 +679,11 @@
   margin-bottom: 28px;
 }
 
+/* The local profile shows no account and the first screen no Back: the empty row left a gap above the title. */
+.initial-setup-account-row:not(:has(*)) {
+  display: none;
+}
+
 .initial-setup-account {
   min-width: 0;
   display: flex;

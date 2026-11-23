@@ -21,6 +21,8 @@ export function SettingsDialog(props: {
   title: string;
   description: string;
   accountEmail: string;
+  /** The local owner profile: no technical address and no Sign out (as in the sidebar). */
+  localProfile?: boolean;
   sections: ReadonlyArray<SettingsDialogSection>;
   footer: JSX.Element;
   onLogout: () => void;
@@ -92,15 +94,17 @@ export function SettingsDialog(props: {
                 )}
               </For>
             </nav>
-            <div class="settings-dialog-account">
-              <span class="initial-setup-account">
-                <i aria-hidden="true" />
-                <span>{props.accountEmail}</span>
-              </span>
-              <Button type="button" variant="ghost" size="sm" onClick={() => props.onLogout()}>
-                {t("Sign out")}
-              </Button>
-            </div>
+            <Show when={!props.localProfile}>
+              <div class="settings-dialog-account">
+                <span class="initial-setup-account">
+                  <i aria-hidden="true" />
+                  <span>{props.accountEmail}</span>
+                </span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => props.onLogout()}>
+                  {t("Sign out")}
+                </Button>
+              </div>
+            </Show>
           </aside>
           <div class="settings-modal-main settings-dialog-main">
             <div class="settings-modal-header">

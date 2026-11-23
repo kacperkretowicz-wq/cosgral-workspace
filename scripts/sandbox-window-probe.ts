@@ -41,6 +41,39 @@ const PAGES: Array<[id: string, polishLabel: string]> = [
   ["server-settings", "Ustawienia serwera"],
 ];
 
+// COSGRAL_PROBE_LANG=en walks the English window instead (the checks for English words on a Polish screen are off).
+const LANG = process.env.COSGRAL_PROBE_LANG === "en" ? "en" : "pl";
+const ENGLISH_LABELS: Record<string, string> = {
+  Agenci: "Agents",
+  Harmonogram: "Schedule",
+  Zadania: "Tasks",
+  Przepływy: "Workflows",
+  Zużycie: "Usage",
+  Biblioteka: "Library",
+  "Katalog dodatków": "Marketplace",
+  "Zdalny pulpit": "Remote desktop",
+  Dostawcy: "Providers",
+  Telefon: "Phone",
+  "Ustawienia serwera": "Server settings",
+  Strony: "Pages",
+  Więcej: "More",
+  "Dołącz plik": "Attach a file",
+  "Otwórz pliki": "Open Files",
+  "Otwórz ustawienia agenta": "Open Agent settings",
+  Utwórz: "Create new",
+  "Nowy kanał": "New channel",
+  "Nowy agent": "New agent",
+  "Więcej działań wiadomości": "More message actions",
+  "Usuń agenta": "Delete agent",
+  Anuluj: "Cancel",
+  "Edytuj kanał": "Edit channel",
+  Ustawienia: "Settings",
+};
+/** A label of the window in the probe's language (the probe is written with the Polish labels). */
+function label(polish: string): string {
+  return LANG === "en" ? (ENGLISH_LABELS[polish] ?? polish) : polish;
+}
+
 /** English keys whose Polish text differs: seeing one on a Polish screen means it skipped the dictionary. */
 async function englishKeys(): Promise<string[]> {
   const source = await readFile(join(repo, "src/renderer/src/locales/pl.ts"), "utf8");
@@ -111,7 +144,7 @@ async function inspect(name: string): Promise<void> {
     }
     return [...hits];
   }, keys);
-  if (english.length) findings.push(`${name}: English on a Polish screen: ${english.join(" | ")}`);
+  if (LANG === "pl" && english.length) findings.push(`${name}: English on a Polish screen: ${english.join(" | ")}`);
   const layout = await page.evaluate(() => {
     const cut: string[] = [];
     for (const el of document.querySelectorAll("body *")) {
@@ -169,29 +202,29 @@ async function inspect(name: string): Promise<void> {
 async function shoot(name: string): Promise<void> {
   screen = name;
   await page.waitForTimeout(900);
-  await inspect(`${name} (pl, dark)`);
-  await page.screenshot({ path: join(out, `${name}-pl-dark.png`) });
+  await inspect(`${name} (${LANG}, dark)`);
+  await page.screenshot({ path: join(out, `${name}-${LANG}-dark.png`) });
   await setSettings({ theme: "light" });
   await page.waitForTimeout(700);
-  await inspect(`${name} (pl, light)`);
-  await page.screenshot({ path: join(out, `${name}-pl-light.png`) });
+  await inspect(`${name} (${LANG}, light)`);
+  await page.screenshot({ path: join(out, `${name}-${LANG}-light.png`) });
   await setSettings({ theme: "dark" });
   await page.waitForTimeout(400);
 }
 
-async function openPage(label: string): Promise<boolean> {
+async function openPage(text: string): Promise<boolean> {
   await page.keyboard.press("Escape").catch(() => undefined);
-  const nav = page.locator('nav[aria-label="Strony"]');
-  const direct = nav.getByRole("button", { name: label, exact: true });
+  const nav = page.locator(`nav[aria-label="${label("Strony")}"]`);
+  const direct = nav.getByRole("button", { name: text, exact: true });
   if (await direct.count()) {
     await direct.first().click();
     return true;
   }
-  const more = nav.getByRole("button", { name: /^Więcej/ });
+  const more = nav.getByRole("button", { name: new RegExp(`^${label("Więcej")}`) });
   if (!(await more.count())) return false;
   await more.first().click();
   await page.waitForTimeout(300);
-  const item = page.getByRole("menuitem", { name: label, exact: true });
+  const item = page.getByRole("menuitem", { name: text, exact: true });
   if (!(await item.count())) {
     await page.keyboard.press("Escape");
     return false;
@@ -201,12 +234,13 @@ async function openPage(label: string): Promise<boolean> {
 }
 
 try {
-  await setSettings({ language: "pl", theme: "dark" });
+  await setSettings({ language: LANG, theme: "dark" });
   await page.waitForTimeout(1500);
 
-  for (const [id, label] of PAGES) {
-    if (!(await openPage(label).catch(() => false))) {
-      findings.push(`${id}: no page rail entry named "${label}"`);
+  for (const [id, polishLabel] of PAGES) {
+    const pageLabel = label(polishLabel);
+    if (!(await openPage(pageLabel).catch(() => false))) {
+      findings.push(`${id}: no page rail entry named "${pageLabel}"`);
       continue;
     }
     await shoot(id);
@@ -226,7 +260,7 @@ try {
   }
 
   // The conversation of the first agent in the sidebar, its + popover and the @ picker.
-  await openPage("Agenci");
+  await openPage(label("Agenci"));
   await page.waitForTimeout(600);
   // Agents are listed after the channels, so the last row is an agent.
   const agentRow = page.locator(".bot-row-copy");
@@ -236,7 +270,7 @@ try {
       .click()
       .catch(() => undefined);
   await shoot("chat");
-  const plus = page.getByRole("button", { name: "Dołącz plik" }).first();
+  const plus = page.getByRole("button", { name: label("Dołącz plik") }).first();
   if (await plus.count()) {
     await plus.click().catch((e: Error) => findings.push(`plus: ${e.message}`));
     await page.waitForTimeout(700);
@@ -248,8 +282,8 @@ try {
         .catch(() => false))
     )
       findings.push("plus-menu: the + popover is not visible after a click");
-    await inspect("plus-menu (pl, dark)");
-    await page.screenshot({ path: join(out, "plus-menu-pl-dark.png") });
+    await inspect(`plus-menu (${LANG}, dark)`);
+    await page.screenshot({ path: join(out, `plus-menu-${LANG}-dark.png`) });
     await page.keyboard.press("Escape");
   } else findings.push("plus-menu: no attach button (is an agent conversation open?)");
   const editor = page.locator("[contenteditable='true']").first();
@@ -265,8 +299,8 @@ try {
         .catch(() => false))
     )
       findings.push("mention: the @ picker is not visible after typing @");
-    await inspect("mention (pl, dark)");
-    await page.screenshot({ path: join(out, "mention-pl-dark.png") });
+    await inspect(`mention (${LANG}, dark)`);
+    await page.screenshot({ path: join(out, `mention-${LANG}-dark.png`) });
     await page.keyboard.press("Escape");
     await page.keyboard.press("Backspace");
   }
@@ -285,8 +319,15 @@ try {
           .catch(() => false))
       )
         findings.push(`${name}: did not open (${visible} not visible)`);
-      await inspect(`${name} (pl, dark)`);
-      await page.screenshot({ path: join(out, `${name}-pl-dark.png`) });
+      await inspect(`${name} (${LANG}, dark)`);
+      await page.screenshot({ path: join(out, `${name}-${LANG}-dark.png`) });
+      // The same open dialog or menu in the light theme.
+      await setSettings({ theme: "light" });
+      await page.waitForTimeout(700);
+      await inspect(`${name} (${LANG}, light)`);
+      await page.screenshot({ path: join(out, `${name}-${LANG}-light.png`) });
+      await setSettings({ theme: "dark" });
+      await page.waitForTimeout(300);
     } catch (error) {
       findings.push(`${name}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
     }
@@ -295,12 +336,20 @@ try {
   }
   await openAndInspect(
     "panel-files",
-    () => page.getByRole("button", { name: "Otwórz pliki" }).first().click(),
+    () =>
+      page
+        .getByRole("button", { name: label("Otwórz pliki") })
+        .first()
+        .click(),
     "#files-side-panel",
   );
   await openAndInspect(
     "panel-agent-settings",
-    () => page.getByRole("button", { name: "Otwórz ustawienia agenta" }).first().click(),
+    () =>
+      page
+        .getByRole("button", { name: label("Otwórz ustawienia agenta") })
+        .first()
+        .click(),
     "#settings-side-panel",
   );
   await page
@@ -313,8 +362,14 @@ try {
   await openAndInspect(
     "new-channel",
     async () => {
-      await page.getByRole("button", { name: "Utwórz", exact: true }).first().click();
-      await page.getByRole("menuitem", { name: "Nowy kanał" }).first().click();
+      await page
+        .getByRole("button", { name: label("Utwórz"), exact: true })
+        .first()
+        .click();
+      await page
+        .getByRole("menuitem", { name: label("Nowy kanał") })
+        .first()
+        .click();
     },
     "[role=dialog]",
   );
@@ -327,7 +382,10 @@ try {
       const reply = page.locator(".message-entry-bot .message-shell").last();
       await reply.scrollIntoViewIfNeeded();
       await reply.hover();
-      await page.getByRole("button", { name: "Więcej działań wiadomości" }).last().click();
+      await page
+        .getByRole("button", { name: label("Więcej działań wiadomości") })
+        .last()
+        .click();
     },
     "[role=menu]",
   );
@@ -340,32 +398,47 @@ try {
     "agent-delete-confirm",
     async () => {
       await page.locator(".bot-row-copy").last().click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Usuń agenta" }).first().click();
+      await page
+        .getByRole("menuitem", { name: label("Usuń agenta") })
+        .first()
+        .click();
     },
     "[role=alertdialog], [role=dialog]",
   );
   // The confirmation is cancelled by Escape in openAndInspect; make sure, with the Cancel button if it stayed.
-  const cancel = page.getByRole("button", { name: "Anuluj", exact: true });
+  const cancel = page.getByRole("button", { name: label("Anuluj"), exact: true });
   if (await cancel.count())
     await cancel
       .first()
       .click()
       .catch(() => undefined);
   screen = "new-agent";
-  await page.getByRole("button", { name: "Utwórz", exact: true }).first().click();
-  await page.getByRole("menuitem", { name: "Nowy agent" }).first().click();
+  await page
+    .getByRole("button", { name: label("Utwórz"), exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("menuitem", { name: label("Nowy agent") })
+    .first()
+    .click();
   await shoot("new-agent");
-  await openPage("Agenci");
+  await openPage(label("Agenci"));
   await page.locator(".bot-row-copy").first().click();
   await page.waitForTimeout(800);
   await openAndInspect(
     "channel-edit",
-    () => page.getByRole("button", { name: "Edytuj kanał" }).first().click(),
+    () =>
+      page
+        .getByRole("button", { name: label("Edytuj kanał") })
+        .first()
+        .click(),
     "[role=dialog]",
   );
 
   // Settings: every section of the Settings window.
-  const gear = page.locator('nav[aria-label="Strony"]').getByRole("button", { name: "Ustawienia", exact: true });
+  const gear = page
+    .locator(`nav[aria-label="${label("Strony")}"]`)
+    .getByRole("button", { name: label("Ustawienia"), exact: true });
   if (await gear.count()) {
     await gear.first().click();
     await page.waitForTimeout(1500);

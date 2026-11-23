@@ -77,3 +77,28 @@ it("shows App behavior (launch at login, keep running in the background) on the 
   expect(await screen.findByRole("switch", { name: "Launch COSGRAL Workspace at login" })).toBeInTheDocument();
   expect(screen.getByRole("switch", { name: "Keep COSGRAL Workspace running in the background" })).toBeInTheDocument();
 });
+
+it("shows the account and Sign out for a signed-in account, and neither for the local profile of this computer", async () => {
+  const view = renderSettings();
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(screen.getByText("person@example.com")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+  view.unmount();
+  render(() => (
+    <InitialSetup
+      reviewing
+      localProfile
+      state={{ completed: true, preferredProvider: "codex" }}
+      agentStatus={STATUS}
+      platform="win32"
+      accountEmail="owner-3093652b@cosgral.local"
+      onSave={vi.fn().mockResolvedValue(undefined)}
+      onJoinRemote={vi.fn()}
+      onLogout={vi.fn()}
+      onClose={vi.fn()}
+    />
+  ));
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(screen.queryByText("owner-3093652b@cosgral.local")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+});

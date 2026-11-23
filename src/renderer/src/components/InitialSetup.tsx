@@ -42,6 +42,11 @@ interface InitialSetupProps {
   agentStatus: AgentStatus;
   platform: DesktopPlatform;
   accountEmail: string;
+  /**
+   * The local owner profile of this computer (no sign-in): like the sidebar, no technical address
+   * ("owner-…@cosgral.local") and no Sign out.
+   */
+  localProfile?: boolean;
   /** `onboarding` is set on the first run when the program has onboarding (language and first agent). */
   onSave: (provider: AgentProviderId, onboarding?: OnboardingChoice) => Promise<void>;
   onJoinRemote: (input: JoinServerInput, provider: AgentProviderId) => Promise<void>;
@@ -297,6 +302,7 @@ export function InitialSetup(props: InitialSetupProps) {
         title={t("Settings")}
         description={description()}
         accountEmail={props.accountEmail}
+        localProfile={props.localProfile}
         sections={sections()}
         onLogout={() => void props.onLogout()}
         onClose={props.onClose}
@@ -403,13 +409,15 @@ export function InitialSetup(props: InitialSetupProps) {
                   </svg>
                 </Button>
               </Show>
-              <span class="initial-setup-account">
-                <i aria-hidden="true" />
-                {props.accountEmail}
-              </span>
-              <Button type="button" class="initial-setup-signout" onClick={() => void props.onLogout()}>
-                {t("Sign out")}
-              </Button>
+              <Show when={!props.localProfile}>
+                <span class="initial-setup-account">
+                  <i aria-hidden="true" />
+                  {props.accountEmail}
+                </span>
+                <Button type="button" class="initial-setup-signout" onClick={() => void props.onLogout()}>
+                  {t("Sign out")}
+                </Button>
+              </Show>
             </div>
             <p class="initial-setup-eyebrow">{t("COSGRAL setup")}</p>
             <Dialog.Title as="h1" id="initial-setup-title">
