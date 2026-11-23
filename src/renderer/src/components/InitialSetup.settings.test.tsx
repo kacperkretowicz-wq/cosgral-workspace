@@ -44,7 +44,7 @@ function renderSettings() {
 }
 
 // KK-AC: the gear of the page rail opens THIS screen (not the old dialog of app settings, which nothing opens),
-// so Updates and the microphone must be on it.
+// so Updates must be on it.
 it("shows the Updates section with its heading on the Settings screen", async () => {
   const view = renderSettings();
   expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
@@ -55,13 +55,12 @@ it("shows the Updates section with its heading on the Settings screen", async ()
   );
 });
 
-it("shows the Voice section with its heading and the microphone on the Settings screen", async () => {
+it("has no Voice section on the Settings screen", async () => {
   const view = renderSettings();
   await screen.findByRole("heading", { name: "Settings" });
-  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-voice")).not.toBeNull());
-  expect(view.container.ownerDocument.getElementById("settings-voice")?.textContent).toBe("Voice");
-  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-voice-microphone")).not.toBeNull());
-  expect(view.container.ownerDocument.getElementById("settings-voice-microphone")?.textContent).toBe("Microphone");
+  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-updates")).not.toBeNull());
+  expect(view.container.ownerDocument.getElementById("settings-voice")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
 });
 
 it("lets the person change the theme on the Settings screen", async () => {

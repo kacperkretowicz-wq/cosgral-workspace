@@ -53,7 +53,7 @@ export function SettingsDialog(props: {
       },
       { root: content, rootMargin: "0px 0px -65% 0px" },
     );
-    // Sections that load their data later (voice, updates) appear after the first paint: observe what is there now.
+    // Sections that load their data later (e.g. updates) appear after the first paint: observe what is there now.
     for (const section of props.sections) {
       const element = target(section.id);
       if (element) observer.observe(element);
@@ -141,7 +141,7 @@ export function SettingsSection(props: {
   id: string;
   title: string;
   description?: string;
-  /** Set when the content brings its own (hidden) heading with this name, e.g. the voice panel's `h2`. */
+  /** Set when the content brings its own (hidden) heading with this name, e.g. the updates panel's `h2`. */
   class?: string;
   children: JSX.Element;
 }) {

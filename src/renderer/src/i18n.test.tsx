@@ -64,7 +64,6 @@ it("has a catalog entry for every literal translation used by migrated surfaces"
     "IntegrationsPanel",
     "RemoteDesktopAccessPanel",
     "MobileOverviewPanel",
-    "VoiceOverviewPanel",
     "InstanceTransferPanel",
     "MessengersPanel",
     "UpdatesPanel",

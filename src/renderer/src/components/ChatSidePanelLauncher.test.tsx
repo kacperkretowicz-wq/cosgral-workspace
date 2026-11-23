@@ -4,35 +4,22 @@ import { ChatRightPanelTabs, ChatSidePanelLauncher } from "./ChatSidePanelLaunch
 
 afterEach(cleanup);
 
-it("offers Browser, Files, Agent settings and Voice openers", async () => {
+it("offers Browser, Files and Agent settings openers, and no Voice", async () => {
   const onOpen = vi.fn();
   render(() => <ChatSidePanelLauncher onOpen={onOpen} />);
   expect(screen.getByRole("navigation", { name: "Chat side panels" })).toBeInTheDocument();
   await fireEvent.click(screen.getByRole("button", { name: "Open Browser" }));
   await fireEvent.click(screen.getByRole("button", { name: "Open Files" }));
   await fireEvent.click(screen.getByRole("button", { name: "Open Agent settings" }));
-  await fireEvent.click(screen.getByRole("button", { name: "Open Voice" }));
-  expect(onOpen.mock.calls.map((call) => call[0])).toEqual(["browser", "files", "settings", "voice"]);
+  expect(screen.queryByRole("button", { name: "Open Voice" })).toBeNull();
+  expect(onOpen.mock.calls.map((call) => call[0])).toEqual(["browser", "files", "settings"]);
 });
 
-it("disables Voice when a reason is given", async () => {
-  const onOpen = vi.fn();
-  render(() => (
-    <ChatSidePanelLauncher
-      onOpen={onOpen}
-      voiceDisabledReason="Voice side panel needs engine support — not in this build yet."
-    />
-  ));
-  const voice = screen.getByRole("button", { name: "Open Voice" });
-  expect(voice).toBeDisabled();
-  await fireEvent.click(voice);
-  expect(onOpen).not.toHaveBeenCalled();
-});
-
-it("marks the active panel tab", async () => {
+it("marks the active panel tab and has no Voice tab", async () => {
   const onSelect = vi.fn();
   render(() => <ChatRightPanelTabs active="settings" onSelect={onSelect} />);
   expect(screen.getByRole("button", { name: "Agent settings" })).toHaveAttribute("aria-current", "page");
+  expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
   await fireEvent.click(screen.getByRole("button", { name: "Files" }));
   expect(onSelect).toHaveBeenCalledWith("files");
 });
@@ -45,7 +32,7 @@ it("keeps launcher openers keyboard-focusable", () => {
   expect(browser.tabIndex).toBeGreaterThanOrEqual(0);
 });
 
-it("in the header shows compact icon buttons for Files, Agent settings and Voice (Browser has its own header button)", async () => {
+it("in the header shows compact icon buttons for Files and Agent settings (Browser has its own header button)", async () => {
   const onOpen = vi.fn();
   render(() => <ChatSidePanelLauncher variant="header" onOpen={onOpen} />);
   const nav = screen.getByRole("navigation", { name: "Chat side panels" });
@@ -56,6 +43,5 @@ it("in the header shows compact icon buttons for Files, Agent settings and Voice
   expect(files.textContent?.trim()).toBe("");
   await fireEvent.click(files);
   await fireEvent.click(screen.getByRole("button", { name: "Open Agent settings" }));
-  await fireEvent.click(screen.getByRole("button", { name: "Open Voice" }));
-  expect(onOpen.mock.calls.map((call) => call[0])).toEqual(["files", "settings", "voice"]);
+  expect(onOpen.mock.calls.map((call) => call[0])).toEqual(["files", "settings"]);
 });

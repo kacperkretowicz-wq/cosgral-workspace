@@ -1,13 +1,12 @@
-// COSGRAL W3: downloads for the voice feature. Every address and every redirect must be HTTPS to a listed host; the
-// file is written as `.part`, hashed while it streams, and becomes the real file only when its size and SHA-256 match
-// the pinned values. Anything else leaves nothing behind.
+// COSGRAL: verified downloads (used by the managed agent CLIs). Every address and every redirect must pass the
+// feature's own allowed-address check; the file is written as `.part`, hashed while it streams, and becomes the real
+// file only when its size and SHA-256 match the pinned values. Anything else leaves nothing behind.
 
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { get } from "node:https";
 import { dirname } from "node:path";
-import { VOICE_DOWNLOAD_HOST_SUFFIXES, VOICE_DOWNLOAD_HOSTS } from "./voice-catalog";
 
 export interface DownloadResponse {
   /** Content-Length, when the server sent one. */
@@ -19,23 +18,6 @@ export interface DownloadSource {
   open: (url: string, signal: AbortSignal) => Promise<DownloadResponse>;
 }
 
-/** The address as a URL when it is HTTPS to an allowed host (port 443, no user or password); throws otherwise. */
-export function checkDownloadUrl(value: string): URL {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("The download address is not allowed.");
-  }
-  const host = url.hostname.toLowerCase();
-  const allowedHost =
-    VOICE_DOWNLOAD_HOSTS.has(host) || VOICE_DOWNLOAD_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
-  if (url.protocol !== "https:" || !allowedHost || url.username || url.password || (url.port && url.port !== "443")) {
-    throw new Error(`The download address is not allowed (${url.protocol}//${host}).`);
-  }
-  return url;
-}
-
 /** Node's HTTPS client with redirects checked one by one. */
 export class HttpsDownloadSource implements DownloadSource {
   readonly #maxRedirects: number;
@@ -43,11 +25,11 @@ export class HttpsDownloadSource implements DownloadSource {
 
   readonly #checkUrl: (value: string) => URL;
 
-  /** COSGRAL W5-BE1: `checkUrl` lets another feature (managed CLIs) use its own list of official hosts. */
-  constructor(options: { maxRedirects?: number; idleTimeoutMs?: number; checkUrl?: (value: string) => URL } = {}) {
+  /** `checkUrl` is the feature's own list of official hosts (managed CLIs: `checkCliDownloadUrl`). */
+  constructor(options: { maxRedirects?: number; idleTimeoutMs?: number; checkUrl: (value: string) => URL }) {
     this.#maxRedirects = options.maxRedirects ?? 5;
     this.#idleTimeoutMs = options.idleTimeoutMs ?? 60_000;
-    this.#checkUrl = options.checkUrl ?? checkDownloadUrl;
+    this.#checkUrl = options.checkUrl;
   }
 
   async open(address: string, signal: AbortSignal): Promise<DownloadResponse> {
@@ -89,12 +71,12 @@ export interface VerifiedDownloadInput {
   destination: string;
   signal: AbortSignal;
   onProgress?: (receivedBytes: number) => void;
-  /** COSGRAL W5-BE1: the allowed-address check of the feature (default: the voice hosts). */
-  checkUrl?: (value: string) => URL;
+  /** The allowed-address check of the feature; throws for an address that is not allowed. */
+  checkUrl: (value: string) => URL;
 }
 
 export async function downloadVerified(input: VerifiedDownloadInput): Promise<void> {
-  (input.checkUrl ?? checkDownloadUrl)(input.url);
+  input.checkUrl(input.url);
   const partial = `${input.destination}.part`;
   await mkdir(dirname(input.destination), { recursive: true });
   const output = createWriteStream(partial);

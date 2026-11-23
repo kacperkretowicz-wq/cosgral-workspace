@@ -185,7 +185,7 @@ describe("AgentSettingsService", () => {
     expect(initial).toMatchObject({ language: "en", languageChosen: false });
     expect(initial.notifications.matrix["needs-input"]).toEqual({ desktop: true, sound: true });
     expect(initial.tabs.find((tab) => tab.id === "computer-use")?.available).toBe(false);
-    expect(initial.tabs.find((tab) => tab.id === "voice")?.available).toBe(false);
+    expect(initial.tabs.map((tab): string => tab.id)).not.toContain("voice");
 
     const updated = await service.updateAppSettings({
       language: "pl",
@@ -395,8 +395,8 @@ describe("AgentSettingsService", () => {
     expect(events).toHaveLength(before);
   });
 
-  it("marks the tabs of the features built into the program as available (voice needs Windows speech)", () => {
-    expect(builtInTabFeatures("win32")).toEqual({ voice: true, mobile: true, dock: true, island: true });
-    expect(builtInTabFeatures("linux")).toEqual({ voice: false, mobile: true, dock: true, island: true });
+  it("marks the tabs of the features built into the program as available on every platform", () => {
+    expect(builtInTabFeatures("win32")).toEqual({ mobile: true, dock: true, island: true });
+    expect(builtInTabFeatures("linux")).toEqual({ mobile: true, dock: true, island: true });
   });
 });

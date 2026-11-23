@@ -2,20 +2,22 @@
 
 Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 65,0 z 77 funkcji = 84,4% (jest = 1, częściowo = ½). Z tego skontraktowane ~96,8%, ale w prawdziwym oknie sprawdzone tylko 53,2%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 62,3%.**
+**Wynik w jednej linii: 64,0 z 75 funkcji = 85,3% (jest = 1, częściowo = ½). Z tego skontraktowane ~97,3%, ale w prawdziwym oknie sprawdzone tylko 54,0%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 63,3%.**
+
+**Aktualizacja 23.11.2026 (głos):** decyzją właściciela głos jest usunięty z programu; wiersze 4 i 5 przeszły do „Poza zakresem”, więc mianownik to 75. Przed tą zmianą: 65,0 z 77 = 84,4% / w oknie 53,2% / ostrożnie 62,3%. Przy okazji wiersz 25 miał w nazwie niezaescapowane „|”, które rozbijało tabelę (liczby się nie zmieniły).
 
 **Aktualizacja 23.11.2026:** wiersz 65 (GitHub) brak → częściowo (ocena była nieaktualna, integracja istnieje od W10); wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **84,4%** (65,0 z 77) | 55 jest, 20 częściowo, 2 brak |
-| Skontraktowane | **~96,8%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
-| Silnik | **~96,1%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
-| Ekran w kodzie | **~91,6%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
-| W oknie sprawdzone | **53,2%** | 22 wiersze w pełni (tak), 38 częściowo, 17 nie; liczone z 77 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
-| Ostrożny parytet | **62,3%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
+| Parytet (kod) | **85,3%** (64,0 z 75) | 54 jest, 20 częściowo, 1 brak |
+| Skontraktowane | **~97,3%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
+| Silnik | **~97,3%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
+| Ekran w kodzie | **~92,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
+| W oknie sprawdzone | **54,0%** | 22 wiersze w pełni (tak), 37 częściowo, 16 nie; liczone z 75 funkcji, dowody: odbiór Testera T-AC, T-AF i T-AI |
+| Ostrożny parytet | **63,3%** | jest bez dowodu w oknie liczy się ½, częściowo ½, brak 0 |
 
-Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 65,0 z 83 = 78,3%.
+Poza zakresem (nie wchodzą do mianownika): 8 pozycji, lista na końcu. Gdyby je policzyć jako brak, parytet kodowy = 64,0 z 83 = 77,1%.
 
 ## Czym to różni się od parytet-0.68.md
 
@@ -32,7 +34,7 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 
 | Obszar | Wierszy | Jest | Częściowo | Brak | Parytet |
 |---|---|---|---|---|---|
-| A. Ustawienia aplikacji i powłoka | 15 | 11 | 3 | 1 | 83% |
+| A. Ustawienia aplikacji i powłoka | 13 | 10 | 3 | 0 | 88% |
 | B. Czat, Needs you, wątki | 12 | 10 | 2 | 0 | 92% |
 | C. Kanały | 4 | 3 | 1 | 0 | 88% |
 | D. Agenci | 11 | 10 | 1 | 0 | 95% |
@@ -52,8 +54,6 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 1 | Język PL/EN i napisy | **częściowo** | tak | tak | tak | tak | część | Wybór języka działa bez restartu; panel Narzędzia CLI jest już przez słownik (scalone po W5 29/29 w oknie, krok CLI zielony); w oknie po polsku nie sprawdzono całego programu. | kk-w3-acceptance, ui-w7-ui2, tester-w12-w5 |
 | 2 | Wygląd i ustawienia ogólne (motyw, czcionki, kolory czatu, skrót wysyłania, kolejność nieprzeczytanych, kroki agenta) | **jest** | tak | tak | tak | tak | część | Kontrakt i silnik mają motyw, rozmiar UI (90–140%), czcionkę, skrót wysyłania, akcent czatu, kroki agenta i kolejność nieprzeczytanych (BE-U, zapis i restart w testach). **Ekran ma wszystkie 7 kontrolek** (sekcja „Appearance” ekranu „Settings”, integracja `7d5fd871c`): Theme, Interface scale, Font, Accent, „Send message with”, „Unread first” (UI-AT, silnik i pasek BE-AC, animacja przeskoku wiersza) i „Agent steps”. Skrót wysyłania i kroki agenta działają w polu i w rozmowie (BE-Z2, testy jednego pliku). W oknie (T-AJ, sondy `ui-probes`): skrót wysyłania zapisuje się i zmienia zachowanie pola (`enter` / `mod-enter`), „unread first” zapisuje się (przez IPC i dataset, nie kliknięciem przełącznika). Samo kliknięcie kontrolek na ekranie w oknie nie było oglądane. | backend-w12-uwygląd (BE-U), kk-w12-ac, ui-w7-ui1 |
 | 3 | Powiadomienia (macierz zdarzeń, dźwięk, test) | **jest** | tak | tak | tak | tak | część | Macierz 6 zdarzeń zapisuje się w oknie; toast systemowy nie sprawdzony. | kk-w3-acceptance |
-| 4 | Głos: modele dyktowania, czytanie na głos, głosy Windows | **jest** | tak | tak | tak | tak | część | whisper.cpp (3 modele, pobranie za zgodą), głosy Windows; dział „Voice” w oknie ustawień czyta `voice.getOverview`: uprawnienie mikrofonu z przyciskiem do ustawień systemu i lista „niedostępne w tej wersji” z powodem. **Do KK-AC panel był nieosiągalny** (siedział w oknie ustawień, którego nic w programie nie otwierało); od KK-AC jest na ekranie „Settings” (zębatka). W oknie nie oglądany; nagrywanie nie sprawdzone. 17-11-h: nagłówek Voice i uprawnienie mikrofonu widoczne w oknie na ekranie „Settings” (T-AF). Nagrywanie nadal nie sprawdzone. | ipc-voice, voice-overview.test, kk-w12-vault-voice, kk-w12-ac, tester-w12-te |
-| 5 | Głos: model Parakeet, neuronowe czytanie, tryb na żywo | **brak** | część | nie | nie | nie | nie | W kontrakcie tylko lista „niedostępne w tej wersji” z powodem. | kk-w12-vault-voice |
 | 6 | Dok agentów (przypięcie, kolejność, rozmiar, mini-czat) | **jest** | tak | tak | tak | tak | tak | Podstawy w oknie (W3-T3); ustawienia położenia i ekranów jak w 0.71 nie sprawdzone. | kk-w3-acceptance, ipc-dock |
 | 7 | Dynamic Island (stan, nazwa agenta, klik otwiera kartę) | **jest** | tak | tak | tak | tak | tak | Sprawdzone w oknie (W3-T3); haptyka i wybór ekranów poza zakresem. | kk-w3-acceptance, ipc-dock |
 | 8 | Computer Use na Windows (stan, zgoda, Stop) | **częściowo** | tak | tak | tak | część | część | Sterownik i zgody są; ekran ustawień uprawnień jak w 0.71 i sterowanie prawdziwym pulpitem w oknie nie sprawdzone. | ipc-computer-use, computer-driver-windows, kk-w3-acceptance |
@@ -80,14 +80,14 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | 20 | Wstrzymania wątku (limit użycia, restart agenta, serwer zajęty, limit wątków) | **jest** | tak | tak | tak | tak | część | `heldKind` (budget / agent-restart / server-busy / thread-limit) + `QueueHoldNotice` w czacie; w oknie nie sprawdzone. W5 `W12-heldKind`: kroki A1–A2 twarde zielone w oknie (T-AC); pozostałe przypadki tylko testy jednostkowe. | ipc-queue-holds, backend-w12-holds, tester-w12-tac |
 | 21 | Cofnij usunięcie wątku, etykieta „zaczął agent” | **jest** | tak | tak | tak | tak | tak | `window.openbot.threadUndo` + `ThreadUndoBar`; w oknie nie sprawdzone. W oknie: pasek „Cofnij” z odliczaniem (zrzut 22) i kroki W5 `W12-threadUndo` A1–A7 zielone (T-AC, T-AF). | ipc-thread-undo, backend-w12-undo, tester-w12-tac, tester-w12-te |
 | 22 | Kontekst (wskaźnik, kompaktowanie) i plan (karty planu) | **jest** | tak | tak | tak | tak | nie | Bez odbioru okna. | ipc-context, ipc-plan |
-| 23 | Panel boczny czatu (przeglądarka, pliki, ustawienia agenta, głos) | **częściowo** | tak | tak | tak | część | część | Przeglądarka i ustawienia agenta w oknie; panel podagentów jest w kodzie, panel głosu w czacie nie. | kk-w3-acceptance |
+| 23 | Panel boczny czatu (przeglądarka, pliki, ustawienia agenta) | **częściowo** | tak | tak | tak | część | część | Przeglądarka i ustawienia agenta w oknie; panel podagentów jest w kodzie, w oknie nie. Panel głosu usunięty decyzją właściciela 23.11. | kk-w3-acceptance |
 
 ### C. Kanały
 
 | Nr | Funkcja 0.71 (własnymi słowami) | Stan | K | S | T | E | O | Dowód i luka | Źródło |
 |---|---|---|---|---|---|---|---|---|---|
 | 24 | Kanały: tworzenie, lider, członkowie, edycja | **jest** | tak | tak | tak | tak | tak | Odbiór W4-T2 38/38. | kk-w4-g1 |
-| 25 | Zadania w kanale (Chat|Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Ekran Zadań czyta teraz `tasksView.board` (BE-AA, UI-AS): pięć kolumn Needs you / Working / Paused / Failed / Stopped z licznikami; w oknie T-AJ sonda `tasks-board` potwierdziła pięć kolumn z nagłówkami i licznikiem. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
+| 25 | Zadania w kanale (Chat/Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Ekran Zadań czyta teraz `tasksView.board` (BE-AA, UI-AS): pięć kolumn Needs you / Working / Paused / Failed / Stopped z licznikami; w oknie T-AJ sonda `tasks-board` potwierdziła pięć kolumn z nagłówkami i licznikiem. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
 | 26 | Odpowiedź na wiadomość kanału | **jest** | tak | tak | tak | tak | tak | Krok e2e. | ipc-workspace-channels, ui-w4-ui1 |
 | 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **częściowo** | część | część | część | część | część | Jest pamięć kanału i lider; reszta jak w 0.71 brak. | ipc-memory, ipc-isolation |
 
@@ -182,6 +182,8 @@ Poza zakresem (nie wchodzą do mianownika): 6 pozycji, lista na końcu. Gdyby je
 | WhatsApp (QR, grupy, dozwoleni nadawcy) | Decyzja lidera: nie (nieoficjalne API, ryzyko). |
 | Mobile: stały link i trasa przez chmurę | Poza zakresem (stały link wpuszcza każdego, kto go znajdzie; chmura = dane poza komputerem). Zapisane w kontrakcie jako „niedostępne”. |
 | Skille wbudowane OpenBota (3) i wygląd graficzny 0.71 | Własne zasoby; wygląd to bramka UI Testera, nie parytet funkcji. |
+| Głos: modele dyktowania, czytanie na głos, głosy Windows (dawny wiersz 4) | Decyzja właściciela 23.11.2026: głos usunięty z programu w całości (silnik, IPC, ustawienia, mikrofon i panel w rozmowie). |
+| Głos: model Parakeet, neuronowe czytanie, tryb na żywo (dawny wiersz 5) | Jak wyżej. |
 
 ## Zmiany od wersji @ `2dfb55f09` (79,9% kod / 52,6% w oknie / 60,4% ostrożnie): po scaleniu `7d5fd871c`
 

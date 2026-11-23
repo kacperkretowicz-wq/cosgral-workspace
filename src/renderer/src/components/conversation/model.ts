@@ -40,7 +40,7 @@ export interface MediaPreview {
   error: string | null;
 }
 
-export type RightPanelMode = "none" | "browser" | "desktop" | "settings" | "files" | "voice";
+export type RightPanelMode = "none" | "browser" | "desktop" | "settings" | "files";
 
 export const EMPTY_DRAFT: ComposerDraft = {
   text: "",
@@ -70,7 +70,7 @@ export const BROWSER_PANEL_SIZES = {
 } as const;
 export const CONVERSATION_PANEL_MIN = 96;
 
-/** Default, smallest and largest width of the settings, files and voice side panels. */
+/** Default, smallest and largest width of the settings and files side panels. */
 export const SETTINGS_PANEL_SIZES = {
   default: SETTINGS_PANEL_DEFAULT,
   min: SETTINGS_PANEL_MIN,

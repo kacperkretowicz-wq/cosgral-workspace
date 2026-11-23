@@ -28,7 +28,6 @@ import {
   Download,
   Lock,
   MessageCircle,
-  Mic,
   Monitor,
   Palette,
   Server,
@@ -36,7 +35,6 @@ import {
   SlidersHorizontal,
   Wallet,
 } from "./ui/icons";
-import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
 
 interface InitialSetupProps {
   reviewing?: boolean;
@@ -228,7 +226,7 @@ export function InitialSetup(props: InitialSetupProps) {
 
   const description = () => {
     if (props.reviewing) {
-      return t("Language, notifications, providers, appearance, voice and privacy.");
+      return t("Language, notifications, providers, appearance and privacy.");
     }
     if (route() === "local") {
       return t("Agents, conversations, and files stay on this computer.");
@@ -291,7 +289,6 @@ export function InitialSetup(props: InitialSetupProps) {
       { id: "appearance", label: t("Appearance"), icon: Palette },
       { id: "conversations", label: t("Conversations"), icon: MessageCircle },
       { id: "budget", label: t("Budget"), icon: Wallet },
-      { id: "voice", label: t("Voice"), icon: Mic },
       { id: "updates", label: t("Updates"), icon: Download },
       { id: "data", label: t("Data and privacy"), icon: Lock },
     ];
@@ -357,9 +354,6 @@ export function InitialSetup(props: InitialSetupProps) {
         </SettingsSection>
         <SettingsSection id="budget" title={t("Budget")}>
           <BudgetSettings />
-        </SettingsSection>
-        <SettingsSection id="voice" title={t("Voice")} class="settings-dialog-section-flat">
-          <VoiceOverviewPanel />
         </SettingsSection>
         <SettingsSection id="updates" title={t("Updates")} class="settings-dialog-section-flat">
           <UpdatesPanel />

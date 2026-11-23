@@ -198,7 +198,6 @@ export const SETTINGS_TABS = [
   "general",
   "agents",
   "notifications",
-  "voice",
   "computer-use",
   "profile",
   "mobile",

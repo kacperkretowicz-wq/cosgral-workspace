@@ -12,7 +12,7 @@
 
 import type { ManagedCliId } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
-import type { DownloadSource } from "./voice-download";
+import type { DownloadSource } from "./download-verified";
 
 export const CLI_DOWNLOAD_HOSTS = new Set([
   "api.github.com",

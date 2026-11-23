@@ -31,9 +31,9 @@ import {
 } from "../backend/cli";
 import { checkCliDownloadUrl, OfficialCliCatalog } from "../backend/cli-catalog";
 import { checkLoopbackUrl, isLoopbackAddress, LoopbackDownloadSource } from "../backend/cli-loopback-source";
+import { HttpsDownloadSource } from "../backend/download-verified";
 import { ManagedCliManager } from "../backend/managed-cli";
 import { ProviderAccounts } from "../backend/provider-accounts";
-import { HttpsDownloadSource } from "../backend/voice-download";
 import { parseAgentRequest } from "./ipc/agent-inputs";
 import { handleTrusted } from "./trusted-ipc";
 

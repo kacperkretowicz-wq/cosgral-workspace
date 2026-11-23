@@ -95,7 +95,6 @@ import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-r
 import { ConnectorStore } from "../backend/vault-connectors/common";
 import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
 import { VaultSecretsService } from "../backend/vault-connectors/vault-secrets-service";
-import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
@@ -268,7 +267,6 @@ import { isTrustedRendererUrl } from "./trusted-renderer";
 import { registerUpdatePreferencesIpc } from "./update-preferences-ipc";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
 import { registerVaultConnectorsIpc } from "./vault-connectors-ipc";
-import { createVoice, registerVoiceIpc } from "./voice-ipc";
 import { registerWindowsIpc } from "./windows-ipc";
 import { registerWorkflowIpc } from "./workflow-ipc";
 
@@ -375,7 +373,6 @@ let apiKeyStore: ApiKeyStore | null = null;
 // COSGRAL W5-K2: the person's own model endpoints.
 let endpointStore: EndpointStore | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
-let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
 let phoneAccess: PhoneAccess | null = null;
 // COSGRAL W11 (U3-U6): search, the message box (slash, @, side question) and the tabs of threads.
@@ -983,16 +980,6 @@ function registerIpcHandlers(
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
-  registerVoiceIpc(() => voiceService, {
-    platform: process.platform,
-    microphoneStatus: () => systemPreferences.getMediaAccessStatus("microphone"),
-    openMicrophoneSettings: async () => {
-      if (process.platform === "win32") await shell.openExternal("ms-settings:privacy-microphone");
-      else if (process.platform === "darwin") {
-        await shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone");
-      }
-    },
-  });
   registerSubscriptionsIpc(() => managedCli);
   registerApiKeysIpc(() => apiKeyStore);
   registerEndpointsIpc(() => endpointStore);
@@ -1736,12 +1723,6 @@ if (!hasSingleInstanceLock) {
           if (mainWindow && !mainWindow.isDestroyed())
             mainWindow.webContents.send(IPC_CHANNELS.remoteDesktopFrame, frame);
         },
-      });
-      // COSGRAL W3: voice on this computer (Windows voices; whisper.cpp only after the person approves it on a card).
-      voiceService = createVoice({
-        userDataPath: app.getPath("userData"),
-        confirm: (request) => service.confirmForPerson(null, request),
-        emit: (event) => forwardAgentEvent("local", event),
       });
       // COSGRAL W5-BE1: managed agent CLIs (official sources, SHA-256, card before the first download). Before
       // service.initialize(), so the first CLI lookup already knows the custom and downloaded CLI.
@@ -2500,7 +2481,6 @@ async function prepareForShutdown(): Promise<void> {
   dockWindows?.destroy();
   conversationWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
-  await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   managedCli?.close();
   phoneAccess?.close();
   composerService?.close();

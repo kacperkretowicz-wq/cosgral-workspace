@@ -108,7 +108,6 @@ import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
 import { NewThreadButton, ThreadTabs } from "./ThreadTabs";
 import {
-  AudioLines,
   Button,
   Crosshair,
   Dialog,
@@ -124,26 +123,11 @@ import {
   Textarea,
 } from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
-import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
-import { VoiceRecorder } from "./VoiceRecorder";
 
 export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
   const imageGenerationUnavailable = () => Boolean(props.bot && isClaudeModel(props.bot.model));
   const [drafts, setDrafts] = createSignal<Record<string, ComposerDraft>>({});
-  const [voicePlaybackEnabled, setVoicePlaybackEnabled] = createSignal(false);
-  onSettled(() => {
-    const api = window.openbot.voice;
-    if (!api) return;
-    void api
-      .getState()
-      .then((state) => setVoicePlaybackEnabled(state.settings.enabled && state.speech.available))
-      .catch(() => setVoicePlaybackEnabled(false));
-    return window.openbot.agent.onEvent((event) => {
-      if (event.type === "voice-changed")
-        setVoicePlaybackEnabled(event.state.settings.enabled && event.state.speech.available);
-    });
-  });
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
@@ -246,7 +230,6 @@ export function Conversation(props: ConversationProps) {
   const remoteDesktopOpen = () => activeRightPanel() === "desktop";
   const settingsOpen = () => activeRightPanel() === "settings";
   const filesOpen = () => activeRightPanel() === "files";
-  const voiceOpen = () => activeRightPanel() === "voice";
   function openChatSidePanel(target: ChatSidePanelTarget) {
     setActiveRightPanel(target);
   }
@@ -1453,7 +1436,7 @@ export function Conversation(props: ConversationProps) {
           "conversation-drop-active": dropActive(),
           "browser-panel-active": screenOpen(),
           "remote-desktop-panel-active": remoteDesktopOpen(),
-          "chat-side-panel-active": filesOpen() || voiceOpen() || settingsOpen(),
+          "chat-side-panel-active": filesOpen() || settingsOpen(),
         },
       ]}
       style={`--settings-panel-width: ${settingsPanelWidth()}px; --browser-panel-width: ${browserPanelWidth()}px; --remote-desktop-panel-width: ${remoteDesktopPanelWidth()}px`}
@@ -1776,9 +1759,6 @@ export function Conversation(props: ConversationProps) {
               </Show>
             </article>
           </Show>
-          <Show when={props.bot?.id} keyed>
-            {(botId) => <VoiceAutoRead botId={botId} messages={props.messages} />}
-          </Show>
           <For each={props.messages}>
             {(message) => {
               const animateEntrance = untrack(() => message.animate === true && markMessageSeen(message.id));
@@ -1831,13 +1811,6 @@ export function Conversation(props: ConversationProps) {
                                   onDownload={(attachment) => attachmentAction(attachment, "download")}
                                 />
                               </div>
-                              <Show when={message.author === "bot" && !message.streaming && message.body.trim()}>
-                                <VoicePlayback
-                                  messageId={message.id}
-                                  text={message.body}
-                                  enabled={voicePlaybackEnabled()}
-                                />
-                              </Show>
                               <MessageActions
                                 message={message}
                                 history={
@@ -2123,18 +2096,6 @@ export function Conversation(props: ConversationProps) {
             {(bot) => <SideQuestionPanel botId={bot.id} onClose={() => setSideQuestionOpen(false)} />}
           </Show>
           <div class="composer">
-            <Show when={props.bot?.id} keyed>
-              {(botId) => (
-                <VoiceRecorder
-                  onTranscript={(text) =>
-                    setDrafts((current) => {
-                      const draft = current[botId] ?? EMPTY_DRAFT;
-                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
-                    })
-                  }
-                />
-              )}
-            </Show>
             <Popover.Root
               open={showAttachments()}
               placement="top-start"
@@ -2215,15 +2176,6 @@ export function Conversation(props: ConversationProps) {
                     >
                       <MessageCircleQuestion aria-hidden="true" />
                       {t("Side question")}
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled
-                      title={t("Voice side panel needs engine support — not in this build yet.")}
-                      aria-label={t("Voice")}
-                    >
-                      <AudioLines aria-hidden="true" />
-                      {t("Voice")}
                     </Button>
                   </Show>
                 </Popover.Content>
@@ -2407,37 +2359,6 @@ export function Conversation(props: ConversationProps) {
                   card="files"
                   title={t("Files")}
                   onClose={() => setActiveRightPanel("none")}
-                />
-              )}
-            </Show>
-          </div>
-        </aside>
-      </Show>
-
-      <Show when={voiceOpen() && props.bot}>
-        <aside id="voice-side-panel" class="chat-voice-panel" aria-label={t("Voice")}>
-          <SidePanelResizer
-            controls="voice-side-panel"
-            width={settingsPanelWidth()}
-            sizes={SETTINGS_PANEL_SIZES}
-            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
-            onResize={setSettingsPanelWidth}
-            onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
-          />
-          <ChatRightPanelTabs active="voice" onSelect={openChatSidePanel} />
-          <div class="chat-voice-panel-body">
-            <p class="chat-voice-panel-note">
-              {t("Record a short voice note for this agent. Full voice models stay in Settings → Voice.")}
-            </p>
-            <Show when={props.bot?.id} keyed>
-              {(botId) => (
-                <VoiceRecorder
-                  onTranscript={(text) =>
-                    setDrafts((current) => {
-                      const draft = current[botId] ?? EMPTY_DRAFT;
-                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
-                    })
-                  }
                 />
               )}
             </Show>

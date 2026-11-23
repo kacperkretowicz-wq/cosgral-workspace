@@ -85,8 +85,7 @@
   background: var(--cosgral-bg-control-hover);
 }
 
-.chat-files-panel,
-.chat-voice-panel {
+.chat-files-panel {
   position: absolute;
   top: 0;
   right: 0;
@@ -99,18 +98,10 @@
   background: var(--cosgral-bg-raised);
 }
 
-.chat-files-panel-body,
-.chat-voice-panel-body {
+.chat-files-panel-body {
   flex: 1;
   overflow: auto;
   padding: 12px;
-}
-
-.chat-voice-panel-note {
-  margin: 0 0 12px;
-  color: var(--cosgral-fg-muted);
-  font-size: var(--cosgral-text-md);
-  line-height: 1.45;
 }
 
 @media (prefers-reduced-motion: reduce) {

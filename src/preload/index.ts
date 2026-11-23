@@ -124,7 +124,6 @@ import { createTasksViewApi } from "./tasks-view-api";
 import { createThreadUndoApi } from "./thread-undo-api";
 import { createThreadsApi } from "./threads-api";
 import { createVaultConnectorsApi, createVaultSecretsApi } from "./vault-connectors-api";
-import { createVoiceApi } from "./voice-api";
 import { createWindowsApi } from "./windows-api";
 
 /** `ipcRenderer.invoke` that fails with the program's own sentence, without Electron's prefix (see ipc-errors.ts). */
@@ -852,7 +851,6 @@ const openbotApi: OpenBotDesktopApi = {
   appSettings: createAppSettingsApi(invokeAgent),
   onboarding: createOnboardingApi(invokeAgent),
   marketplace: createMarketplaceApi(invokeAgent, decodeBot),
-  voice: createVoiceApi(invokeAgent),
   mobile: createMobileApi(invokeAgent),
   approvalRules: createApprovalRulesApi(invokeAgent),
   appData: createAppDataApi(invokeAgent),

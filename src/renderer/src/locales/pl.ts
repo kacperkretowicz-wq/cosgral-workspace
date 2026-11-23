@@ -189,8 +189,6 @@ export const pl = {
   "Where will COSGRAL Workspace run?": "Gdzie ma działać COSGRAL Workspace?",
   "Choose the default provider for local agents and review macOS permissions.":
     "Wybierz domyślnego dostawcę dla lokalnych agentów i sprawdź uprawnienia macOS.",
-  "Default provider for local agents, language, notifications and voice.":
-    "Domyślny dostawca lokalnych agentów, język, powiadomienia i głos.",
   "Agents, conversations, and files stay on this computer.": "Agenci, rozmowy i pliki zostają na tym komputerze.",
   "Use an invitation from the person who runs your COSGRAL host.":
     "Użyj zaproszenia od osoby, która prowadzi Twój host COSGRAL.",
@@ -280,8 +278,6 @@ export const pl = {
   "Teach a task": "Naucz zadania",
   "Teach a task needs browser teach — not in this build yet.":
     "Nauczanie zadania wymaga teach w przeglądarce — jeszcze nie w tej wersji.",
-  "Voice side panel needs engine support — not in this build yet.":
-    "Panel głosu w menu + wymaga silnika — jeszcze nie w tej wersji.",
   "Skills are not available in this version.": "Skille nie są dostępne w tej wersji.",
   "Could not load skills.": "Nie udało się wczytać skilli.",
   "Loading skills…": "Wczytywanie skilli…",
@@ -339,13 +335,10 @@ export const pl = {
   "Open Browser": "Otwórz przeglądarkę",
   "Open Files": "Otwórz pliki",
   "Open Agent settings": "Otwórz ustawienia agenta",
-  "Open Voice": "Otwórz głos",
   "Panel sections": "Sekcje panelu",
   "Agent settings": "Ustawienia agenta",
   "Back to details": "Wróć do szczegółów",
   "Close details": "Zamknij szczegóły",
-  "Record a short voice note for this agent. Full voice models stay in Settings → Voice.":
-    "Nagraj krótką notatkę głosową dla tego agenta. Pełne modele głosu zostają w Ustawienia → Głos.",
   "Hand off the work. Come back to an": "Oddaj pracę. Wróć po",
   "answer.": "odpowiedź.",
   "Your agents work on tasks side by side. Each answer waits here for you.":
@@ -913,40 +906,9 @@ export const pl = {
   "Files of the Library": "Pliki Biblioteki",
   "Preferences of the program": "Preferencje programu",
   "Files of the Library are not moved by this version.": "Pliki Biblioteki nie są przenoszone w tej wersji.",
-  Voice: "Głos",
   Blocked: "Zablokowany",
-  "Not asked yet": "Jeszcze nie pytano",
-  "Forbidden here": "Zabroniony na tym komputerze",
   Unknown: "Nieznany",
-  "The program may use the microphone for dictation.": "Program może używać mikrofonu do dyktowania.",
-  "The microphone is switched off for this program. Allow it in the system settings.":
-    "Mikrofon jest wyłączony dla tego programu. Zezwól na niego w ustawieniach systemu.",
-  "The system has not asked yet. It asks the first time you dictate.":
-    "System jeszcze nie pytał. Zapyta przy pierwszym dyktowaniu.",
-  "A policy on this computer forbids the microphone.": "Zasady na tym komputerze zabraniają używania mikrofonu.",
-  "This system does not say. Recording is simply tried.":
-    "Ten system tego nie mówi. Nagrywanie jest po prostu próbowane.",
-  Dictation: "Dyktowanie",
-  "Spoken replies": "Czytanie odpowiedzi na głos",
-  "Live voice": "Rozmowa głosowa na żywo",
-  "Could not load the voice overview.": "Nie udało się wczytać przeglądu głosu.",
-  "Could not open the microphone settings.": "Nie udało się otworzyć ustawień mikrofonu.",
-  Microphone: "Mikrofon",
-  "Microphone permission": "Uprawnienie do mikrofonu",
-  "Open microphone settings": "Otwórz ustawienia mikrofonu",
   "Not available in this version": "Niedostępne w tej wersji",
-  "Parakeet dictation model": "Model dyktowania Parakeet",
-  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.":
-    "Wymaga innego silnika mowy niż ten, który ma ta wersja (whisper.cpp). Użyj zamiast tego modelu Whisper.",
-  "Cloud dictation (Cohere, ElevenLabs)": "Dyktowanie w chmurze (Cohere, ElevenLabs)",
-  "It would send your voice to a service. This version keeps audio on this computer.":
-    "Wysyłałoby Twój głos do usługi. Ta wersja trzyma dźwięk na tym komputerze.",
-  "Neural reading model (Supertonic)": "Neuronowy model czytania (Supertonic)",
-  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.":
-    "Wymaga ciężkiego środowiska mowy, którego ta wersja nie ma. Odpowiedzi są czytane głosami zainstalowanymi w Windows.",
-  "Live voice conversations": "Rozmowy głosowe na żywo",
-  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.":
-    "Wysyłają Twój głos i odpowiedzi agenta do usługi w chmurze. Ta wersja trzyma dźwięk na tym komputerze.",
   "Phones cannot connect: Mobile Connect is off.": "Telefony nie mogą się połączyć: Mobile Connect jest wyłączony.",
   "Only a browser on this computer can open the phone page.":
     "Stronę telefonu może otworzyć tylko przeglądarka na tym komputerze.",
@@ -1148,8 +1110,6 @@ export const pl = {
   "This computer cannot isolate processes.": "Ten komputer nie może izolować procesów.",
   "Disk tools of this agent are refused below Full access.":
     "Narzędzia dyskowe tego agenta są blokowane poniżej pełnego dostępu.",
-  "Reading aloud uses Windows voices; it works on Windows in this version.":
-    "Czytanie na głos używa głosów Windows; w tej wersji działa tylko na Windows.",
   "Updates are available in installed desktop builds.": "Aktualizacje są dostępne w zainstalowanych wersjach programu.",
   "{count} trigger": "{count} wyzwalacz",
   "{count} triggers": "{count} wyzwalacze",
@@ -1164,7 +1124,6 @@ export const pl = {
   "{count} condition": "{count} warunek",
   "{count} conditions": "{count} warunki",
   "No steps": "Brak kroków",
-  "Not downloaded": "Nie pobrano",
   "Keyboard shortcuts": "Skróty klawiszowe",
   "Keys that work anywhere in the window.": "Klawisze, które działają w całym oknie.",
   "Search conversations, agents and pages": "Szukaj rozmów, agentów i stron",
@@ -2324,41 +2283,8 @@ export const pl = {
   "Channel memory is unavailable in this build.": "Pamięć kanału jest niedostępna w tej wersji.",
   "Could not load channel memory.": "Nie udało się wczytać pamięci kanału.",
   "Channel memory unavailable": "Pamięć kanału niedostępna",
-  "Stop reading": "Zatrzymaj czytanie",
-  "Read aloud": "Czytaj na głos",
-  "Voice is unavailable.": "Głos niedostępny.",
-  "Transcription failed.": "Transkrypcja nieudana.",
-  "Microphone unavailable: {message}": "Mikrofon niedostępny: {message}",
-  "Microphone permission was denied or unavailable.": "Brak zgody na mikrofon albo mikrofon niedostępny.",
-  "Stop recording": "Zatrzymaj nagrywanie",
-  "Transcribing…": "Transkrypcja…",
-  "Record voice": "Nagraj głos",
-  "Voice settings": "Ustawienia głosu",
-  "Audio stays on this computer. The first download requires approval on a Needs you card.":
-    "Dźwięk zostaje na tym komputerze. Pierwsze pobranie wymaga zgody na karcie Needs you.",
-  "Enable voice": "Włącz głos",
-  "System speech available.": "Mowa systemowa dostępna.",
-  "System speech unavailable.": "Mowa systemowa niedostępna.",
-  "System default": "Domyślny systemowy",
-  Speed: "Prędkość",
-  "Read new replies automatically": "Czytaj nowe odpowiedzi automatycznie",
-  "Recording language": "Język nagrywania",
-  Automatic: "Automatyczny",
   English: "English",
   Polski: "Polski",
-  "Runtime:": "Środowisko:",
-  "Transcription ready.": "Transkrypcja gotowa.",
-  "Cancel download": "Anuluj pobieranie",
-  "Delete model": "Usuń model",
-  "Delete runtime and revoke consent": "Usuń środowisko i cofnij zgodę",
-  "Voice is unavailable in this build.": "Głos jest niedostępny w tej wersji.",
-  "Could not load voice.": "Nie udało się wczytać głosu.",
-  "Voice action failed.": "Akcja głosu nieudana.",
-  "Download was declined.": "Pobieranie odrzucone.",
-  "Model is ready.": "Model jest gotowy.",
-  "Download started.": "Pobieranie rozpoczęte.",
-  "Delete this downloaded model?": "Usunąć ten pobrany model?",
-  "Delete the runtime and revoke consent?": "Usunąć środowisko i cofnąć zgodę?",
   "Could not prepare the deletion.": "Nie udało się przygotować usuwania.",
   "Could not delete the data.": "Nie udało się usunąć danych.",
   "Delete my data": "Usuń moje dane",
@@ -2801,14 +2727,6 @@ export const pl = {
   "Move this server to another computer.": "Przenieś ten serwer na inny komputer.",
   "Work that runs on a schedule.": "Praca uruchamiana według harmonogramu.",
   "Separate browser sign-ins for agents.": "Osobne logowania w przeglądarce dla agentów.",
-  "Download a speech-to-text model first; the program asks before it downloads anything.":
-    "Najpierw pobierz model zamiany mowy na tekst; program zapyta, zanim cokolwiek pobierze.",
-  "Download a model first (it asks you before anything is downloaded).":
-    "Najpierw pobierz model (program zapyta, zanim cokolwiek pobierze).",
-  "Voice is switched off in Settings → Voice.": "Głos jest wyłączony w Ustawienia → Głos.",
-  "whisper.cpp is not downloaded yet; download a model.": "whisper.cpp nie jest jeszcze pobrany; pobierz model.",
-  "Speech to text works on Windows (x64) in this version.":
-    "W tej wersji zamiana mowy na tekst działa na Windows (x64).",
   "Expand sidebar": "Rozwiń pasek boczny",
   "Collapse sidebar": "Zwiń pasek boczny",
   "Online now": "Teraz online",
@@ -2916,8 +2834,7 @@ export const pl = {
   "This task is already finished.": "To zadanie jest już zakończone.",
   "This task cannot start now.": "To zadanie nie może teraz wystartować.",
   "Only a human can resume a task.": "Tylko człowiek może wznowić zadanie.",
-  "Language, notifications, providers, appearance, voice and privacy.":
-    "Język, powiadomienia, dostawcy, wygląd, głos i prywatność.",
+  "Language, notifications, providers, appearance and privacy.": "Język, powiadomienia, dostawcy, wygląd i prywatność.",
   "Marking…": "Oznaczanie…",
   "Thread: {title}": "Wątek: {title}",
   "Assumed reset at": "Przewidywane odnowienie o",

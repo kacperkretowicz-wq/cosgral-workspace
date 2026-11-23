@@ -201,9 +201,7 @@ async function probeFocus(page: Page): Promise<ProbeResult> {
   await page.waitForTimeout(400);
 
   // Prefer side-panel launcher; fall back to Pages rail.
-  const launcher = page
-    .getByRole("button", { name: /Browser|Files|Agent settings|Voice|Ustawienia agenta|Głos/i })
-    .first();
+  const launcher = page.getByRole("button", { name: /Browser|Files|Agent settings|Ustawienia agenta/i }).first();
   const target =
     (await launcher.count()) > 0
       ? launcher

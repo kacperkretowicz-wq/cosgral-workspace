@@ -105,7 +105,7 @@ describe("W3 agent settings contract", () => {
       theme: "system",
       languageChosen: true,
       notifications,
-      tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "voice" })),
+      tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "computer-use" })),
       navigation: { pinnedPageIds: ["library", "agents"] },
       appearance: {
         uiScale: 100,

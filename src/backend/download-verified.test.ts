@@ -5,8 +5,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { VOICE_CATALOG } from "./voice-catalog";
-import { checkDownloadUrl, type DownloadSource, downloadVerified } from "./voice-download";
+import { checkCliDownloadUrl } from "./cli-catalog";
+import { type DownloadSource, downloadVerified } from "./download-verified";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -14,7 +14,7 @@ afterEach(async () => {
 });
 
 async function folder() {
-  const dir = await mkdtemp(join(tmpdir(), "voice-download-"));
+  const dir = await mkdtemp(join(tmpdir(), "verified-download-"));
   roots.push(dir);
   return dir;
 }
@@ -40,39 +40,7 @@ function source(chunks: Buffer[], totalBytes: number | null = null): DownloadSou
 }
 
 const sha = (data: Buffer) => createHash("sha256").update(data).digest("hex");
-const URL_OK = "https://huggingface.co/ggerganov/whisper.cpp/resolve/abc/ggml-base-q5_1.bin";
-
-describe("voice download sources", () => {
-  it("pins every download to HTTPS, an allowed host, a size and a SHA-256", () => {
-    const assets = [VOICE_CATALOG.runtime, ...VOICE_CATALOG.models];
-    for (const asset of assets) {
-      expect(() => checkDownloadUrl(asset.url)).not.toThrow();
-      expect(asset.sha256).toMatch(/^[0-9a-f]{64}$/);
-      expect(asset.sizeBytes).toBeGreaterThan(1_000_000);
-    }
-    expect(VOICE_CATALOG.models.map((model) => model.id)).toEqual(["tiny", "base", "small"]);
-    expect(VOICE_CATALOG.models.filter((model) => model.recommended).map((model) => model.id)).toEqual(["base"]);
-  });
-
-  it("allows only HTTPS to the listed hosts, without credentials or other ports", () => {
-    expect(checkDownloadUrl("https://us.aws.cdn.hf.co/xet/abc").hostname).toBe("us.aws.cdn.hf.co");
-    expect(checkDownloadUrl("https://release-assets.githubusercontent.com/x").hostname).toBe(
-      "release-assets.githubusercontent.com",
-    );
-    for (const url of [
-      "http://huggingface.co/x",
-      "https://example.com/x",
-      "https://huggingface.co.evil.test/x",
-      "https://evilhf.co/x",
-      "https://user:pass@huggingface.co/x",
-      "https://huggingface.co:8443/x",
-      "file:///C:/Windows/notepad.exe",
-      "not a url",
-    ]) {
-      expect(() => checkDownloadUrl(url), url).toThrow();
-    }
-  });
-});
+const URL_OK = "https://github.com/openai/codex/releases/download/v1/codex.exe";
 
 describe("verified download", () => {
   it("writes the file only after the size and SHA-256 match, with progress", async () => {
@@ -86,6 +54,7 @@ describe("verified download", () => {
       sizeBytes: data.length,
       destination: join(dir, "model.bin"),
       signal: new AbortController().signal,
+      checkUrl: checkCliDownloadUrl,
       onProgress: (received) => progress.push(received),
     });
     expect((await readFile(join(dir, "model.bin"))).equals(data)).toBe(true);
@@ -104,6 +73,7 @@ describe("verified download", () => {
         sizeBytes: input.size ?? data.length,
         destination: join(dir, "model.bin"),
         signal: new AbortController().signal,
+        checkUrl: checkCliDownloadUrl,
       });
     await expect(run({ chunks: [data], sha: "0".repeat(64) })).rejects.toThrow("SHA-256");
     await expect(run({ chunks: [data, data] })).rejects.toThrow("larger than expected");
@@ -117,6 +87,7 @@ describe("verified download", () => {
         sizeBytes: data.length,
         destination: join(dir, "model.bin"),
         signal: new AbortController().signal,
+        checkUrl: checkCliDownloadUrl,
       }),
     ).rejects.toThrow("not allowed");
     expect(existsSync(join(dir, "model.bin"))).toBe(false);
@@ -135,6 +106,7 @@ describe("verified download", () => {
       sizeBytes: all.length,
       destination: join(dir, "model.bin"),
       signal: controller.signal,
+      checkUrl: checkCliDownloadUrl,
       onProgress: (received) => {
         if (received >= 1_000) controller.abort();
       },

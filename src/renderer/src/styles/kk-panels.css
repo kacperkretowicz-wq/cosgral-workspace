@@ -1,4 +1,4 @@
-/* KK-N: Updates, MCP sign-in, Messengers, Import/Transfer and the Voice overview. They reuse the .vault-connector-* look (cards, lists,
+/* KK-N: Updates, MCP sign-in, Messengers and Import/Transfer. They reuse the .vault-connector-* look (cards, lists,
    actions) and the settings-modal rows; this file only adds what those do not have. Tokens only; nothing here moves. */
 
 .updates-panel-actions {
@@ -24,16 +24,6 @@
 }
 
 .updates-panel-unavailable .settings-modal-row-title {
-  color: var(--cosgral-text-muted);
-}
-
-.voice-overview {
-  display: grid;
-  gap: 16px;
-}
-
-.voice-unavailable-section {
-  min-height: 40px;
   color: var(--cosgral-text-muted);
 }
 

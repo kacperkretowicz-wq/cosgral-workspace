@@ -2636,7 +2636,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     );
   });
 
-  it("lists Teach a task and Voice in the composer + menu, disabled until the engine is there", async () => {
+  it("lists Teach a task (disabled) and no Voice in the composer + menu", async () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
     await confirmOnboardingModel();
@@ -2645,7 +2645,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("button", { name: "Use a skill" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Teach a task" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Side question" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Voice" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
   });
 
   it("adds pathless pasted images reported by preload", async () => {

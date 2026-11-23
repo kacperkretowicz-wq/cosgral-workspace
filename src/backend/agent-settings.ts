@@ -97,15 +97,14 @@ const LANGUAGE_NAMES: Record<AppLanguage, string> = { en: "English", pl: "Polish
 /** Tabs that need a feature this program does not have yet. */
 const TAB_FEATURES: Partial<Record<SettingsTabId, "computer" | "missing">> = {
   "computer-use": "computer",
-  voice: "missing",
   mobile: "missing",
   dock: "missing",
   island: "missing",
 };
 
-/** The tabs of the features that are part of the program now (COSGRAL W3-BE8); voice needs the Windows speech engine. */
-export function builtInTabFeatures(platform: string): Partial<Record<SettingsTabId, boolean>> {
-  return { voice: platform === "win32", mobile: true, dock: true, island: true };
+/** The tabs of the features that are part of the program now (COSGRAL W3-BE8), on every platform. */
+export function builtInTabFeatures(_platform: string): Partial<Record<SettingsTabId, boolean>> {
+  return { mobile: true, dock: true, island: true };
 }
 
 export interface AgentSettingsDeps {

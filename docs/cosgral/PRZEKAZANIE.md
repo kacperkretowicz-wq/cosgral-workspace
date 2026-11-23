@@ -14,7 +14,15 @@ Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do 
    i Ctrl/Cmd+/ z listą skrótów (`keyboard-shortcuts.ts`). **Webhook rutyn kanału:** podpisany POST na lokalny odbiornik (ten sam
    co rutyny agentów), sekret szyfrowany i pokazany raz; `routeWebhook` kieruje dostawę najpierw do rutyn kanału. W kontenerze
    włączenie webhooka jest słusznie odrzucane (brak szyfrowania systemowego); na Windows/Mac sprawdzić włączenie i jedną dostawę.
-5. Nie zrobione (Windows albo duże osobne prace): głos (Parakeet), łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
+5. Nie zrobione (Windows albo duże osobne prace): łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
+6. **Głos usunięty (decyzja właściciela 23.11):** silnik (`voice-*`), IPC i preload, kontrakt `ipc-voice`, dział „Głos” w
+   Ustawieniach, mikrofon i „Czytaj na głos” w rozmowie, panel boczny „Głos”, zakładka głosu w ustawieniach agenta,
+   napisy PL/EN, historyjka i atrapa. Wspólne pobieranie z SHA-256 (używane przez zarządzane CLI) przeniesione do
+   `src/backend/download-verified.ts`; adres sprawdza zawsze lista hostów danej funkcji. Parytet: wiersze 4–5 poza
+   zakresem, 85,3% z 75. Klasa `voice-button` to przycisk Wyślij/Zatrzymaj, nie głos: zostaje.
+7. **Decyzje właściciela 23.11:** testy i `.exe` na Windows właściciela (ten komputer); bez kluczy API w programie
+   (agenci przez CLI i subskrypcje); repo zostaje publiczne; Discord/Telegram/Slack i GitHub zostają w kodzie,
+   nieaktywne bez tokenu/Client ID.
 
 Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (490 plików, 3489 testów), `bun run build`, `test:visual` (7), `test:storybook` (378).
 

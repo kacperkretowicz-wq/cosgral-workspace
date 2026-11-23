@@ -64,7 +64,6 @@ export * from "./ipc-thread-undo";
 export * from "./ipc-threads";
 export * from "./ipc-vault";
 export * from "./ipc-vault-connectors";
-export * from "./ipc-voice";
 export * from "./ipc-windows";
 export * from "./ipc-workflow-editor";
 export * from "./ipc-workflow-versions";

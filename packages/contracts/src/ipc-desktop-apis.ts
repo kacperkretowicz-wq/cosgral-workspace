@@ -242,7 +242,6 @@ import type {
   VaultStatus,
 } from "./ipc-vault";
 import type { VaultConnectorsDesktopApi, VaultSecretsDesktopApi } from "./ipc-vault-connectors";
-import type { VoiceDesktopApi } from "./ipc-voice";
 import type { WindowsDesktopApi } from "./ipc-windows";
 import type { WorkflowVersionDetails, WorkflowVersionInput, WorkflowVersionSummary } from "./ipc-workflow-versions";
 import type {
@@ -685,8 +684,6 @@ export interface OpenBotDesktopApi {
   remoteDesktop?: RemoteDesktopDesktopApi;
   /** COSGRAL W3 local Marketplace (this computer only). Optional until every renderer mock implements it. */
   marketplace?: MarketplaceDesktopApi;
-  /** COSGRAL W3 local voice (this computer only). Optional until every renderer mock implements it. */
-  voice?: VoiceDesktopApi;
   /** COSGRAL W3 Mobile Connect (this computer only). Optional until every renderer mock implements it. */
   mobile?: MobileDesktopApi;
   /** COSGRAL W3-KK3 "always allow" rules of approval cards (this computer only). Optional until every mock has it. */
