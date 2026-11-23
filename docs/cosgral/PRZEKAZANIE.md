@@ -56,7 +56,14 @@ Chrome, inaczej trzyma pliki piaskownicy.
    kanałów ma stan pusty.
 9. **Storybook na tym komputerze:** domyślna liczba przeglądarek naraz dawała losowe porażki funkcji `play` (co drugi
    pełny przebieg, osobno zawsze zielone). `vitest.storybook.config.ts` ma domyślnie 2 (`COSGRAL_STORYBOOK_WORKERS`
-   zmienia): trzy pełne przebiegi z rzędu 376/376, szybciej. „Command Search” czeka dłużej (5 s).
+   zmienia): trzy pełne przebiegi z rzędu 376/376, szybciej. „Command Search” czeka dłużej (5 s). Do tego
+   `configure({ asyncUtilTimeout: 5_000 })` w `.storybook/preview.tsx` dla wszystkich funkcji `play`. Zostaje znane
+   „Failed to fetch dynamically imported module” (zimny cache Vite, raz na kilka przebiegów; ponowić).
+10. Katalog dodatków po polsku: 69 tekstów (tytuł, krótki i pełny opis 23 pozycji) w słowniku, pokazywane przez
+    `tData`; wyszukiwanie po polsku filtruje w oknie po obu językach bez ogonków (`matchesBothLanguages`). Treść
+    skilli dla agenta zostaje angielska. Nowa pozycja katalogu = dopisać jej trzy teksty do `en.ts` i `pl.ts`.
+    Działy stron w wąskim oknie zawijają się (wcześniej poziomy pasek z ukrytym suwakiem, nieosiągalny kółkiem).
+    Sonda przechodzi każdy dział każdej strony (115 ekranów na rozmiar).
 
 **Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
 bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
