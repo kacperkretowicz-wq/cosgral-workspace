@@ -6,7 +6,7 @@ import {
   type WorkflowVersionSummary,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tn } from "../i18n";
 import { Badge, Button } from "./ui";
 
 function savedLabel(iso: string): string {
@@ -150,7 +150,7 @@ export function WorkflowVersionsPanel(props: {
                     {savedLabel(version.savedAt)} · {reasonLabel(version)}
                   </small>
                 </header>
-                <p class="workflow-versions-note">{version.summary}</p>
+                <p class="workflow-versions-note">{graphSummaryText(version.summary)}</p>
                 <Show when={!version.current && changes()[version.number]}>
                   <p class="workflow-versions-note">
                     {t("Against the current one")}: {changes()[version.number]}
@@ -179,4 +179,27 @@ export function WorkflowVersionsPanel(props: {
       </Show>
     </section>
   );
+}
+
+/** The engine's version summary ("1 trigger, 2 agent steps"; see workflowGraphSummary) with the counts in the window language. */
+const SUMMARY_PARTS: ReadonlyArray<readonly [string, string]> = [
+  ["{count} trigger", "{count} triggers"],
+  ["{count} agent step", "{count} agent steps"],
+  ["{count} approval", "{count} approvals"],
+  ["{count} output", "{count} outputs"],
+  ["{count} prompt", "{count} prompts"],
+  ["{count} condition", "{count} conditions"],
+];
+
+export function graphSummaryText(summary: string): string {
+  if (summary === "empty") return t("No steps");
+  const parts = summary.split(", ").map((part) => {
+    const match = /^(\d+) (.+)$/.exec(part);
+    if (!match) return part;
+    const count = Number(match[1]);
+    const words = match[2];
+    const forms = SUMMARY_PARTS.find(([one, other]) => one.slice(8) === words || other.slice(8) === words);
+    return forms ? tn(count, forms[0], forms[1]) : part;
+  });
+  return parts.join(", ");
 }

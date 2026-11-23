@@ -29,3 +29,19 @@ describe("tn: Polish plural forms", () => {
     expect([1, 3].map((count) => tn(count, "{count} step", "{count} steps"))).toEqual(["1 step", "3 steps"]);
   });
 });
+
+describe("workflow version summary in the window language", () => {
+  afterEach(() => setLanguage("en"));
+
+  it("rebuilds the engine's summary with Polish counts", async () => {
+    const { graphSummaryText } = await import("./components/WorkflowVersionsPanel");
+    setLanguage("pl");
+    await waitFor(() => expect(language()).toBe("pl"));
+    expect(graphSummaryText("1 trigger, 1 agent step")).toBe("1 wyzwalacz, 1 krok agenta");
+    expect(graphSummaryText("1 trigger, 3 agent steps, 5 approvals")).toBe("1 wyzwalacz, 3 kroki agenta, 5 zgód");
+    expect(graphSummaryText("empty")).toBe("Brak kroków");
+    setLanguage("en");
+    await waitFor(() => expect(language()).toBe("en"));
+    expect(graphSummaryText("1 trigger, 2 agent steps")).toBe("1 trigger, 2 agent steps");
+  });
+});

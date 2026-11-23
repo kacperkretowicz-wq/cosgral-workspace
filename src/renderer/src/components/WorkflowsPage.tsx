@@ -230,8 +230,10 @@ export function WorkflowCanvas(
   function add(type: WorkflowNodeType) {
     const base = {
       id: `step-${Date.now()}`,
-      title: type,
-      x: 24 + (props.nodes.length % 3) * 250,
+      // The title is the person's own text; it starts as the step kind in the window language.
+      title: t(NODE_TYPE_LABELS[type]),
+      // A step card is 260 px wide (workflow-editor.css): 280 px apart leaves a gap, so new steps never cover each other.
+      x: 24 + (props.nodes.length % 3) * 280,
       y: 24 + Math.floor(props.nodes.length / 3) * 320,
     };
     const node: WorkflowNode =
