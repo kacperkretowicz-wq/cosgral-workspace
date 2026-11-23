@@ -1,6 +1,46 @@
 /*
+ * Satoshi (Indian Type Foundry, free via Fontshare): the COSGRAL Hub typeface, now the app's typeface too.
+ * Bundled with the app, never loaded from the network. Five static weights, Latin + Central European.
+ */
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300;
+  src: url("../assets/fonts/satoshi-300.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../assets/fonts/satoshi-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 600;
+  src: url("../assets/fonts/satoshi-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700 800;
+  src: url("../assets/fonts/satoshi-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  src: url("../assets/fonts/satoshi-900.woff2") format("woff2");
+}
+
+/*
  * Inter Variable (SIL Open Font License 1.1, see ../assets/fonts/Inter-OFL-LICENSE.txt).
- * Bundled with the app, never loaded from the network. Latin plus Latin Extended (Polish letters).
+ * Bundled with the app, never loaded from the network. Kept as the fallback for glyphs Satoshi does not have.
  */
 @font-face {
   font-family: "Inter Variable";

@@ -1,54 +1,55 @@
 /*
  * COSGRAL design tokens. One source of truth for surfaces, text, accent,
  * radii, type, motion. Existing --openbot-* variables (styles.css, theme-light.css)
- * resolve to these, so every screen follows. Values are our own scale, tuned for a
- * calm dark workspace; light theme keeps WCAG AA (see theme-palette.test.ts).
+ * resolve to these, so every screen follows. The dark values are the COSGRAL Hub palette
+ * (23.11: graphite glass, Satoshi, the Hub's pale-blue accent and its motion curve);
+ * light theme keeps WCAG AA (see theme-palette.test.ts).
  */
 :root {
   /* Surfaces: frame < canvas < surface < control < raised */
-  --cosgral-bg-frame: #05070a;
-  --cosgral-bg-canvas: #0a0d12;
-  --cosgral-bg-sidebar: #0c1016;
-  --cosgral-bg-surface: #11161e;
-  --cosgral-bg-control: #151b24;
-  --cosgral-bg-control-hover: #1b2330;
-  --cosgral-bg-control-active: #222c3a;
-  --cosgral-bg-raised: #18202b;
-  --cosgral-hover: rgba(140, 185, 204, 0.07);
-  --cosgral-selected: rgba(140, 185, 204, 0.1);
+  --cosgral-bg-frame: #080a0f;
+  --cosgral-bg-canvas: #0b0c0f;
+  --cosgral-bg-sidebar: #111212;
+  --cosgral-bg-surface: #17191d;
+  --cosgral-bg-control: #1d1f24;
+  --cosgral-bg-control-hover: #232528;
+  --cosgral-bg-control-active: #2b2d31;
+  --cosgral-bg-raised: #1b1d21;
+  --cosgral-hover: rgba(245, 247, 252, 0.06);
+  --cosgral-selected: rgba(245, 247, 252, 0.09);
 
   /* Text */
-  --cosgral-text-primary: #f3f6fa;
-  --cosgral-text-secondary: #d2dae3;
-  --cosgral-text-muted: #9ba8b6;
-  --cosgral-text-dim: #6b7886;
-  --cosgral-text-placeholder: #7d8a98;
+  --cosgral-text-primary: #f5f7fc;
+  --cosgral-text-secondary: #d4dae5;
+  --cosgral-text-muted: #aeb8c9;
+  --cosgral-text-dim: #8a93a3;
+  --cosgral-text-placeholder: #8f99aa;
 
   /* Lines */
-  --cosgral-border: rgba(140, 185, 204, 0.08);
-  --cosgral-border-strong: rgba(140, 185, 204, 0.17);
+  --cosgral-border: rgba(245, 247, 252, 0.09);
+  --cosgral-border-strong: rgba(245, 247, 252, 0.2);
 
   /* Accent and status */
-  --cosgral-accent: #1a5cf0;
-  --cosgral-accent-hover: #2f6ff5;
-  --cosgral-accent-text: #7ab6ff;
-  --cosgral-accent-soft: rgba(26, 92, 240, 0.18);
-  --cosgral-accent-strong: rgba(55, 129, 252, 0.42);
+  --cosgral-accent: #b9d4ff;
+  --cosgral-accent-hover: #d0e2ff;
+  --cosgral-accent-text: #b9d4ff;
+  --cosgral-accent-soft: rgba(185, 212, 255, 0.13);
+  --cosgral-accent-strong: rgba(185, 212, 255, 0.38);
   --cosgral-danger: #e01543;
-  --cosgral-danger-text: #ff6f88; /* cool red text: 5.3:1 on the lightest dark control */
+  --cosgral-danger-text: #ffb5bd; /* cool red text: 5.3:1 on the lightest dark control */
   --cosgral-warning: #ff9412;
   --cosgral-success: #31cf76;
 
   /* Shape: 4 / 6 / 8 / 12 / pill */
   --cosgral-radius-xs: 4px;
-  --cosgral-radius-sm: 6px;
-  --cosgral-radius-md: 8px;
-  --cosgral-radius-lg: 12px;
+  --cosgral-radius-sm: 10px;
+  --cosgral-radius-md: 14px;
+  --cosgral-radius-lg: 18px;
   --cosgral-radius-pill: 999px;
 
   /* Type: 12 / 13 / 14 (body) / 16 */
   --cosgral-font-sans:
-    "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    "Satoshi", "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --cosgral-text-sm: 12px;
   --cosgral-text-md: 13px;
   --cosgral-text-lg: 14px;
@@ -56,19 +57,20 @@
   --cosgral-text-2xl: 22px;
 
   /* Motion */
-  --cosgral-duration-fast: 120ms;
-  --cosgral-duration-normal: 150ms;
-  --cosgral-duration-slow: 250ms;
-  --cosgral-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --cosgral-ease-arrive: cubic-bezier(0.23, 1, 0.32, 1);
+  --cosgral-duration-fast: 160ms;
+  --cosgral-duration-normal: 320ms;
+  --cosgral-duration-slow: 560ms;
+  --cosgral-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --cosgral-ease-arrive: cubic-bezier(0.22, 0.61, 0.36, 1);
   --cosgral-ease-loop: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* Depth */
   --cosgral-shadow-popover:
-    0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.45);
-  --cosgral-shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 12px 32px rgba(0, 0, 0, 0.48);
+    inset 0 1px 1px rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(245, 247, 252, 0.12), 0 16px 48px rgba(0, 0, 0, 0.42);
+  --cosgral-shadow-dialog:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 0 0 1px rgba(245, 247, 252, 0.13), 0 24px 64px rgba(0, 0, 0, 0.44);
   --cosgral-shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --cosgral-focus-ring: 0 0 0 2px rgba(55, 129, 252, 0.55);
+  --cosgral-focus-ring: 0 0 0 2px rgba(185, 212, 255, 0.6);
   /*
    * Azure Glass (19.11, owner's references): deep blue-black, Dark Azure ramp, electric blue, a cool red, glass
    * surfaces lit from below and a film grain. Gradients and glows are tokens like colours.
@@ -101,10 +103,8 @@
     rgba(49, 207, 118, 0) 62%
   );
   --cosgral-glow-green: 0 0 0 1px rgba(49, 207, 118, 0.4), 0 6px 24px -6px rgba(49, 207, 118, 0.5);
-  --cosgral-ambient:
-    radial-gradient(70% 55% at 0% 0%, rgba(0, 99, 142, 0.28), rgba(0, 99, 142, 0) 70%),
-    radial-gradient(55% 45% at 100% 0%, rgba(25, 81, 252, 0.12), rgba(25, 81, 252, 0) 70%);
-  --cosgral-grain-opacity: 0.09;
+  --cosgral-ambient: radial-gradient(at 12% 0%, rgba(32, 37, 54, 0.55), rgba(0, 0, 0, 0) 66%);
+  --cosgral-grain-opacity: 0.018;
   --cosgral-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
   /*
@@ -205,11 +205,11 @@
   --cosgral-pill-glossy-red-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 45, 85, 0.55),
     0 8px 22px -8px rgba(255, 45, 85, 0.85);
-  --cosgral-status-blue: #6fa8ff;
-  --cosgral-status-green: #4ade80;
-  --cosgral-status-amber: #fbbf24;
-  --cosgral-status-red: #ff5c7a;
-  --cosgral-status-violet: #b794ff;
+  --cosgral-status-blue: #b9d4ff;
+  --cosgral-status-green: #a9dfcf;
+  --cosgral-status-amber: #efd2a3;
+  --cosgral-status-red: #ffb5bd;
+  --cosgral-status-violet: #d0c2f4;
 }
 
 :root[data-theme="light"],

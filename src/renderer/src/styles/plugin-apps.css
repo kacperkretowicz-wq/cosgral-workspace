@@ -384,7 +384,7 @@
   white-space: normal;
 }
 
-/* The icon tile itself (mesh gradient per category) is drawn in azure-glass.css. */
+/* The icon tile itself (mesh gradient per category) is drawn in hub-look.css. */
 .marketplace-shell .plugin-row-icon {
   width: 40px;
   height: 40px;

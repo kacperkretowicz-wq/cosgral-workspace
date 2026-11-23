@@ -2,6 +2,7 @@ import { parseConversationWindowHash } from "@openbot/contracts/ipc";
 import { render } from "@solidjs/web";
 import "blobatar/motion.css";
 import { App } from "./App";
+import { HubAmbient } from "./components/HubAmbient";
 import { ConversationWindowApp } from "./conversation-window/ConversationWindowApp";
 import { DockApp } from "./dock/DockApp";
 import { IslandApp } from "./dock/IslandApp";
@@ -30,13 +31,20 @@ const conversation = parseConversationWindowHash(view);
 render(
   () =>
     conversation ? (
-      <ConversationWindowApp target={conversation} />
+      <>
+        <HubAmbient />
+        <ConversationWindowApp target={conversation} />
+      </>
     ) : view === "#dock" ? (
       <DockApp />
     ) : view === "#island" ? (
       <IslandApp />
     ) : (
-      <App />
+      // The Hub wave wallpaper sits behind the main window (sign-in, setup and the workspace itself).
+      <>
+        <HubAmbient />
+        <App />
+      </>
     ),
   root,
 );
