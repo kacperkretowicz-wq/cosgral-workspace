@@ -54,6 +54,22 @@ Okno steruje się przez CDP (`playwright` `chromium.connectOverCDP("http://127.0
    zdania sklejane przez silnik część po części. Testy: `contract-messages` (powody zużycia), `i18n-parts`.
 5. Liczba członków kanału wyglądała jak znacznik nieprzeczytanych: ikona osób przy liczbie.
 
+## Druga runda (ten sam dzień)
+
+| Ścieżka | Wynik |
+|---|---|
+| Przepływ: nowy, wyzwalacz + agent, połączenie, zapis, „Uruchom teraz”, historia (oba kroki „Zakończone”), wersja 1 | działa |
+| Zadanie z kanału na tablicy Zadań (kolumna do przejrzenia, #projekt) | działa |
+| Jasny motyw na wszystkich widokach | po poprawce niżej czytelny |
+| axe w prawdziwym oknie (`color-contrast`, `button-name`, `label`, `aria-allowed-attr`, `nested-interactive`): 13 widoków × 2 motywy | 26/26 bez naruszeń |
+| `test:visual` (7) i `test:storybook` (378, z axe) z lokalną konfiguracją Chromium | zielone |
+
+Naprawione w tej rundzie: nowe kroki przepływu nachodziły na siebie (karty 260 px, odstęp 250 px) i miały tytuły „trigger”/„agent”;
+podsumowanie wersji przepływu po angielsku („1 trigger, 1 agent step”, teraz „1 wyzwalacz, 1 krok agenta” z odmianą); aktywna
+zakładka „Rozmowa” w kanale traciła kolor akcentu, a w jasnym motywie była biała na białym (przegrywała z ogólną regułą przycisków
+drugorzędnych); opis wyłączonego przełącznika miał kontrast 1,8–2,3 (przygaszony razem z przełącznikiem); stany pobierania głosu
+(„absent”) jako słowa.
+
 ## Czego to nie sprawdza
 
 Windows (`.exe`, zdalny pulpit, izolacja procesów, głosy, Computer Use), prawdziwe modele i konta, komunikatory na żywo, telefon,

@@ -9,11 +9,11 @@ Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do 
 3. **Prawdziwe okno programu w kontenerze** (nie Storybook): da się, patrz `docs/cosgral-raporty/claude-okno-linux-2026-11-23.md`
    (uprząż poza repo, która wyłącza sandbox Chromium tylko tam). Zdanie niżej o „pustym oknie” jest już nieaktualne. Przejście
    po wszystkich stronach znalazło i naprawiło 5 grup błędów (kreator → „Nowy agent”, polski wybór specjalności, „3 kroków”,
-   angielskie napisy z silnika, znacznik liczby członków kanału).
+   angielskie napisy z silnika, znacznik liczby członków kanału), a druga runda kolejne (przepływy, jasny motyw, kontrast; axe w oknie 26/26).
 4. Nie zrobione (decyzja właściciela albo Windows): skróty klawiszowe (Alt+strzałki kolidują z macOS), webhook rutyn kanału,
    głos (Parakeet), łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
 
-Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (488 plików, 3470 testów), `bun run build`.
+Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (488 plików, 3470 testów), `bun run build`, `test:visual` (7), `test:storybook` (378).
 
 ---
 
