@@ -902,6 +902,9 @@ export function App() {
     }
   }
 
+  /** True while the New agent page is open only because the agent list was empty (not because the person asked for it). */
+  let newAgentOpenedForEmptyList = false;
+
   function applyStoredBots(storedBots: BotSummary[]) {
     const currentById = new Map(botList().map((bot) => [bot.id, bot]));
     const profiles = storedBots.map((stored) => {
@@ -913,7 +916,15 @@ export function App() {
     });
     setBotList(profiles);
     setActiveBotId((current) => (profiles.some((bot) => bot.id === current) ? current : (profiles[0]?.id ?? "")));
-    if (profiles.length === 0) setNewAgentOpen(true);
+    if (profiles.length === 0) {
+      newAgentOpenedForEmptyList = true;
+      setNewAgentOpen(true);
+    } else if (newAgentOpenedForEmptyList) {
+      // The page was opened by the program only because there was no agent (e.g. before setup made the first one from a template):
+      // now that an agent exists, show it. A New agent page the person opened stays open.
+      newAgentOpenedForEmptyList = false;
+      setNewAgentOpen(false);
+    }
   }
 
   function applyConversationReads(reads: Record<string, ConversationReadState>): void {
@@ -1093,6 +1104,7 @@ export function App() {
     setDirectConversationError(null);
     setChannelsOpen(false);
     setAgentPickerOpen(false);
+    newAgentOpenedForEmptyList = false;
     setNewAgentOpen(true);
   }
 

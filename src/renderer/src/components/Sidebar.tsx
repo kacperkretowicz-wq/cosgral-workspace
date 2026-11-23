@@ -5,7 +5,7 @@ import { createEffect, createMemo, createSignal, For, onSettled, Show } from "so
 import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
-import { appLocale, t, tn } from "../i18n";
+import { appLocale, t, tData, tn } from "../i18n";
 import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
@@ -662,7 +662,7 @@ export function Sidebar(props: SidebarProps) {
                   <Button
                     type="button"
                     class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
-                    aria-label={`${item.botName}, ${t("Needs you")}. ${item.summary}${item.threadTitle ? `, Thread ${item.threadTitle}` : ""}`}
+                    aria-label={`${item.botName}, ${t("Needs you")}. ${item.summary}${item.threadTitle ? `, ${t("Thread: {title}", { title: item.threadTitle })}` : ""}`}
                     onClick={() =>
                       props.onSelectNeedsYou
                         ? item.threadId
@@ -797,7 +797,7 @@ export function Sidebar(props: SidebarProps) {
                   const bot = row.bot;
                   const depth = row.depth;
                   // The store's default role ("New teammate") is shown in the window language; a role the person typed is not.
-                  const role = () => (bot.role.trim() === "New teammate" ? t("New teammate") : bot.role.trim());
+                  const role = () => tData(bot.role.trim());
                   const state = () => props.agentStates[bot.id];
                   const note = () => sidebarAgentStateNote(state());
                   const stateLabel = () => {

@@ -290,7 +290,7 @@ export const pl = {
   "Attach files": "Dołącz pliki",
   "Channels and files": "Kanały i pliki",
   "{count} step": "{count} krok",
-  "{count} steps": "{count} kroków",
+  "{count} steps": "{count} kroki",
   Thinking: "Myślenie",
   "Chat color": "Kolor czatu",
   Instructions: "Instrukcje",
@@ -1110,6 +1110,33 @@ export const pl = {
   "Reply…": "Odpowiedz…",
   agent: "agenta",
   "No messages yet": "Brak wiadomości",
+  // Agent templates (src/backend/agent-templates.ts): names, roles and summaries shown through tData().
+  Assistant: "Asystent",
+  "General assistant": "Asystent ogólny",
+  "Everyday help: questions, plans, web research and drafts.":
+    "Codzienna pomoc: pytania, plany, wyszukiwanie w sieci i szkice.",
+  Researcher: "Badacz",
+  "Research and sources": "Badania i źródła",
+  "Finds, compares and sums up information with sources.": "Szuka, porównuje i podsumowuje informacje ze źródłami.",
+  Writer: "Autor tekstów",
+  "Writing and editing": "Pisanie i redakcja",
+  "Drafts e-mails, posts and documents in your style.": "Pisze e-maile, posty i dokumenty w Twoim stylu.",
+  Developer: "Programista",
+  "Code and automation": "Kod i automatyzacja",
+  "Writes and fixes code in its workspace and runs the tests.":
+    "Pisze i poprawia kod w swoim folderze roboczym i uruchamia testy.",
+  "Inbox manager": "Opiekun skrzynki",
+  "E-mail and calendar": "Poczta i kalendarz",
+  "Sorts mail in the browser and prepares replies for your approval.":
+    "Porządkuje pocztę w przeglądarce i przygotowuje odpowiedzi do Twojej akceptacji.",
+  "Data analyst": "Analityk danych",
+  "Tables and reports": "Tabele i raporty",
+  "Keeps shared tables and files in order and writes short reports.":
+    "Dba o porządek we wspólnych tabelach i plikach oraz pisze krótkie raporty.",
+  "Desktop operator": "Operator pulpitu",
+  "Windows apps": "Aplikacje Windows",
+  "Uses Windows apps with the mouse and keyboard after you allow it.":
+    "Obsługuje aplikacje Windows myszą i klawiaturą, gdy na to pozwolisz.",
   "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",

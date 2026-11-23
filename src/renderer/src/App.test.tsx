@@ -686,6 +686,29 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("button", { name: "Create agent" })).toBeDisabled();
   });
 
+  it("leaves the New agent page by itself when the first agent arrives (setup made it), and opens that agent", async () => {
+    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([]);
+    render(() => <App />);
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+
+    emitAgentEvent?.({ type: "bots-changed", bots: [BOTS[0]] } as AgentEvent);
+
+    expect(await screen.findByRole("heading", { name: "Chief" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "New agent", level: 1 })).not.toBeInTheDocument();
+  });
+
+  it("keeps the New agent page the person opened when the agent list changes", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await createNew("New agent");
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS } as AgentEvent);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+  });
+
   it("keeps agents disabled when setup persistence fails", async () => {
     vi.mocked(window.openbot.getSetupState).mockResolvedValueOnce({
       completed: false,

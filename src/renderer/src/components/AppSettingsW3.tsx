@@ -8,7 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { language, setLanguage, t } from "../i18n";
+import { language, setLanguage, t, tData } from "../i18n";
 import { SettingsSection } from "./SettingsDialog";
 import { Button, Card, Field, NativeSelect, Switch, Text } from "./ui";
 
@@ -218,7 +218,7 @@ export function OnboardingFields(props: {
           <For each={props.state.proposals}>
             {(proposal) => (
               <option value={proposal.id}>
-                {proposal.name}: {proposal.summary}
+                {tData(proposal.name)}: {tData(proposal.summary)}
               </option>
             )}
           </For>

@@ -1109,6 +1109,33 @@ export const en = {
   "Reply…": "Reply…",
   agent: "agent",
   "No messages yet": "No messages yet",
+  // Agent templates (src/backend/agent-templates.ts): names, roles and summaries shown through tData().
+  Assistant: "Assistant",
+  "General assistant": "General assistant",
+  "Everyday help: questions, plans, web research and drafts.":
+    "Everyday help: questions, plans, web research and drafts.",
+  Researcher: "Researcher",
+  "Research and sources": "Research and sources",
+  "Finds, compares and sums up information with sources.": "Finds, compares and sums up information with sources.",
+  Writer: "Writer",
+  "Writing and editing": "Writing and editing",
+  "Drafts e-mails, posts and documents in your style.": "Drafts e-mails, posts and documents in your style.",
+  Developer: "Developer",
+  "Code and automation": "Code and automation",
+  "Writes and fixes code in its workspace and runs the tests.":
+    "Writes and fixes code in its workspace and runs the tests.",
+  "Inbox manager": "Inbox manager",
+  "E-mail and calendar": "E-mail and calendar",
+  "Sorts mail in the browser and prepares replies for your approval.":
+    "Sorts mail in the browser and prepares replies for your approval.",
+  "Data analyst": "Data analyst",
+  "Tables and reports": "Tables and reports",
+  "Keeps shared tables and files in order and writes short reports.":
+    "Keeps shared tables and files in order and writes short reports.",
+  "Desktop operator": "Desktop operator",
+  "Windows apps": "Windows apps",
+  "Uses Windows apps with the mouse and keyboard after you allow it.":
+    "Uses Windows apps with the mouse and keyboard after you allow it.",
   "New teammate": "New teammate",
   Writing: "Writing",
   Communication: "Communication",

@@ -1,7 +1,7 @@
 import { For, Show } from "solid-js";
 import { agentStepsOpen } from "../../appearance";
 import type { BotMessage, BotProfile } from "../../data";
-import { t } from "../../i18n";
+import { t, tn } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { Brain, FileText, Globe, Pencil, Search, Terminal } from "../ui/icons";
 import { ChevronIcon, ThinkingIcon } from "./ConversationIcons";
@@ -68,11 +68,7 @@ export function ThinkingDisclosure(props: { message: BotMessage }) {
           <span class="thinking-mark" aria-hidden="true">
             <ThinkingIcon />
           </span>
-          <span>
-            {finished()
-              ? t(stepCount() === 1 ? "{count} step" : "{count} steps", { count: stepCount() })
-              : t("Thinking")}
-          </span>
+          <span>{finished() ? tn(stepCount(), "{count} step", "{count} steps") : t("Thinking")}</span>
           <Show when={props.message.streaming}>
             <span class="thinking-live-dots" aria-hidden="true">
               <i />

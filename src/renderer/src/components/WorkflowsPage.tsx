@@ -16,7 +16,7 @@ import {
 } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tn } from "../i18n";
 import { workflowProblemText } from "../workflow-problems";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
 import {
@@ -785,7 +785,7 @@ export function WorkflowsPage() {
                       </span>
                       <span class="workflow-list-copy">
                         <strong>{item.name}</strong>
-                        <small>{t("{count} steps", { count: stepCount(item) })}</small>
+                        <small>{tn(stepCount(item), "{count} step", "{count} steps")}</small>
                       </span>
                     </Button>
                   </li>

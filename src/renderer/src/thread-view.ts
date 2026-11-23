@@ -1,4 +1,4 @@
-import type { BotSummary, ThreadList } from "@openbot/contracts/ipc";
+import { type BotSummary, NEW_THREAD_TITLE, type ThreadList } from "@openbot/contracts/ipc";
 import { t } from "./i18n";
 import { needsYouItemsFromCards } from "./needs-you";
 import type { PendingCard } from "./pending-cards";
@@ -31,15 +31,20 @@ export function threadAttentionItems(
   return needsYouItemsFromCards({ bots, cards }).map((item) => {
     const threadId = threadIds.get(item.orderKey);
     const thread = lists[item.botId]?.threads.find((thread) => thread.id === threadId);
-    return { ...item, threadId, threadTitle: thread?.title ?? threadId };
+    return { ...item, threadId, threadTitle: thread ? defaultThreadTitle(thread.title) : threadId };
   });
 }
 
 export function threadRowLabel(list: ThreadList) {
   const active = list.threads.find((thread) => thread.id === list.activeThreadId);
   return t("Thread: {title}; {running} running, {waiting} waiting", {
-    title: active?.title ?? t("None"),
+    title: active ? defaultThreadTitle(active.title) : t("None"),
     running: list.threads.filter((thread) => thread.state === "running").length,
     waiting: list.threads.filter((thread) => thread.state === "waiting").length,
   });
+}
+
+/** The store's default title ("New thread") in the window language; a title the person gave stays as it is. */
+function defaultThreadTitle(title: string): string {
+  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
 }

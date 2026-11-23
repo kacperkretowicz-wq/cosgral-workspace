@@ -3,6 +3,7 @@ export const plMany: Readonly<Record<string, string>> = {
   "{count} memories": "{count} wspomnień",
   "{count} skills": "{count} skilli",
   "{count} files": "{count} plików",
+  "{count} steps": "{count} kroków",
   "{count} tables": "{count} tabel",
   "{count} routines": "{count} rutyn",
   "{count} backup models": "{count} modeli zapasowych",

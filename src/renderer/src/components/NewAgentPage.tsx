@@ -9,7 +9,7 @@ import type {
 import { AGENT_REASONING_EFFORTS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { AVATAR_HUE_OPTIONS, type AvatarMood, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { Button, Input, NativeSelect, Shuffle, Textarea } from "./ui";
@@ -111,7 +111,7 @@ export function NewAgentPage(props: NewAgentPageProps) {
   }
 
   function useSuggestion(template: AgentTemplate) {
-    setName(template.name);
+    setName(tData(template.name));
     setDescription(template.description);
     if (template.model) setModel(template.model);
     if (template.reasoningEffort) setEffort(template.reasoningEffort);
@@ -298,8 +298,8 @@ export function NewAgentPage(props: NewAgentPageProps) {
                     >
                       <AgentAvatar seed={`template:${template.id}`} hue={hueOf(template.avatarHue)} />
                       <span>
-                        <strong>{template.name}</strong>
-                        <small>{template.summary}</small>
+                        <strong>{tData(template.name)}</strong>
+                        <small>{tData(template.summary)}</small>
                       </span>
                     </Button>
                   )}

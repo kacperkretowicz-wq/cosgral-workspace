@@ -64,7 +64,7 @@ describe("Sidebar Needs you", () => {
     expect(onSelectNeedsYou).toHaveBeenCalledWith("research");
     setItems([{ ...items()[0], threadId: "thread-research", threadTitle: "Planning" }]);
     const threaded = await screen.findByRole("button", {
-      name: "Research, Needs you. Which variant?, Thread Planning",
+      name: "Research, Needs you. Which variant?, Thread: Planning",
     });
     await fireEvent.click(threaded);
     expect(onSelectNeedsYou).toHaveBeenLastCalledWith("research", "thread-research");
