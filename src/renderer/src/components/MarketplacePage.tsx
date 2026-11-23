@@ -5,8 +5,8 @@ import type {
   MarketplaceItemKind,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
-import { MarketplaceGallery } from "./MarketplaceGallery";
+import { language, t, tData } from "../i18n";
+import { CATEGORY_LABELS, MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
 import { Button, NativeSelect } from "./ui";
 import { Bot, Plug, Sparkles } from "./ui/icons";
@@ -25,10 +25,10 @@ export function MarketplaceDetail(props: {
   const item = () => props.details.item;
   return (
     <section class="marketplace-detail" aria-label={t("Item details")}>
-      <h2>{item().title}</h2>
-      <p>{item().description}</p>
+      <h2>{tData(item().title)}</h2>
+      <p>{tData(item().description)}</p>
       <p>
-        {item().category} · {t("version {number}", { number: item().version })}
+        {t(CATEGORY_LABELS[item().category])} · {t("version {number}", { number: item().version })}
       </p>
       <Show when={props.details.skillMd}>
         <details>
@@ -86,6 +86,24 @@ export function MarketplaceDetail(props: {
   );
 }
 
+/** Lower case without accents, like the engine's own search ("spotkan" finds "spotkań"). */
+function folded(value: string): string {
+  return value.toLocaleLowerCase("pl-PL").normalize("NFD").replace(/\p{M}/gu, "").replace(/ł/g, "l");
+}
+
+/** Every word of the query appears in the item's Polish or English title, summary, description, tags or category. */
+export function matchesBothLanguages(item: MarketplaceItem, query: string): boolean {
+  const haystack = folded(
+    [item.title, item.summary, item.description, ...item.tags, CATEGORY_LABELS[item.category]]
+      .flatMap((value) => [value, tData(value)])
+      .join(" "),
+  );
+  return folded(query)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => haystack.includes(word));
+}
+
 export function MarketplacePage(props: { bots: Person[] }) {
   const [items, setItems] = createSignal<MarketplaceItem[]>([]);
   const [details, setDetails] = createSignal<MarketplaceItemDetails>();
@@ -124,13 +142,17 @@ export function MarketplacePage(props: { bots: Person[] }) {
     try {
       const chosenKind = patch.kind ?? kind();
       const chosenCategory = patch.category ?? category();
+      const text = (patch.query ?? query()).trim();
+      // The engine searches its English texts. In Polish the window asks for everything and filters on both the
+      // Polish and the English words, so "notatki" finds "Meeting notes".
+      const polish = language() === "pl" && text !== "";
       const list = await api.list({
-        query: patch.query ?? query(),
+        query: polish ? "" : text,
         ...(chosenKind ? { kind: chosenKind } : {}),
         ...(chosenCategory ? { category: chosenCategory } : {}),
       });
       if (n !== serial) return;
-      setItems(list);
+      setItems(polish ? list.filter((item) => matchesBothLanguages(item, text)) : list);
       setError("");
       const current = details();
       if (current) setDetails(await api.get({ itemId: current.item.id }));

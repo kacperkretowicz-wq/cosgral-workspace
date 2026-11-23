@@ -2990,4 +2990,120 @@ export const pl = {
   "Move {name} to…": "Przenieś {name} do…",
   folder: "folder",
   "Queued message {position}: {preview}": "Wiadomość w kolejce {position}: {preview}",
+  // Marketplace catalog (src/backend/marketplace-catalog*.ts): title, summary and description as shown.
+  "Meeting notes": "Notatki ze spotkań",
+  "Turns raw meeting notes into decisions, action items, owners and dates.":
+    "Zamienia surowe notatki ze spotkania na decyzje, zadania, osoby odpowiedzialne i terminy.",
+  "Reads notes or a transcript of a meeting and writes a short summary: what was decided, who does what by when, and open questions. It asks before it sends the summary to anyone.":
+    "Czyta notatki albo zapis spotkania i pisze krótkie podsumowanie: co ustalono, kto co robi i do kiedy oraz jakie pytania zostały otwarte. Pyta, zanim komukolwiek wyśle podsumowanie.",
+  "Weekly status report": "Tygodniowy raport",
+  "Writes a short weekly status from tasks, tables and notes: done, next, blocked.":
+    "Pisze krótki tygodniowy status z zadań, tabel i notatek: zrobione, dalej, zablokowane.",
+  "Collects what happened this week from shared tables, files and the conversation, and writes a status with three parts: done, next week, blocked. Numbers come from the data, not from memory.":
+    "Zbiera, co wydarzyło się w tym tygodniu, ze wspólnych tabel, plików i rozmowy i pisze status z trzech części: zrobione, w przyszłym tygodniu, zablokowane. Liczby pochodzą z danych, nie z pamięci.",
+  "Research brief": "Notatka badawcza",
+  "Finds sources on the web and writes a one-page brief with a link for every fact.":
+    "Szuka źródeł w sieci i pisze jednostronicową notatkę z linkiem przy każdym fakcie.",
+  "Searches the web, reads several sources, compares them and writes a short brief. Every fact has a link; disagreements and gaps are named instead of smoothed over.":
+    "Przeszukuje sieć, czyta kilka źródeł, porównuje je i pisze krótką notatkę. Każdy fakt ma link; rozbieżności i luki są nazwane, a nie wygładzone.",
+  "Inbox triage": "Porządek w skrzynce",
+  "Sorts new mail into reply, read later and archive, and drafts the replies.":
+    "Dzieli nową pocztę na: odpowiedzieć, przeczytać później i zarchiwizować, i szkicuje odpowiedzi.",
+  "Goes through new messages in the built-in browser, sorts them by what they need, and prepares short reply drafts. Nothing is sent, archived or deleted without the person's approval on a card.":
+    "Przegląda nowe wiadomości we wbudowanej przeglądarce, sortuje je według tego, czego wymagają, i przygotowuje krótkie szkice odpowiedzi. Nic nie zostaje wysłane, zarchiwizowane ani usunięte bez Twojej zgody na karcie.",
+  "Code review checklist": "Lista kontrolna przeglądu kodu",
+  "Reviews a change for bugs, tests and clarity, and reports findings by severity.":
+    "Przegląda zmianę pod kątem błędów, testów i czytelności i podaje uwagi według wagi.",
+  "Reads a diff or a set of files, checks it against a short checklist (correctness, tests, security, readability) and reports findings from most to least important, with file and line.":
+    "Czyta diff albo zestaw plików, sprawdza je według krótkiej listy (poprawność, testy, bezpieczeństwo, czytelność) i podaje uwagi od najważniejszych, z plikiem i linią.",
+  "Trip planner": "Planer podróży",
+  "Plans a trip: routes, places to stay and a day-by-day plan within a budget.":
+    "Planuje podróż: trasy, noclegi i plan dzień po dniu w ramach budżetu.",
+  "Asks for dates, budget and preferences, compares transport and places to stay in the browser, and writes a day-by-day plan with prices and links. Bookings and payments only after the person approves them.":
+    "Pyta o daty, budżet i preferencje, porównuje w przeglądarce dojazdy i noclegi i pisze plan dzień po dniu z cenami i linkami. Rezerwacje i płatności tylko po Twojej zgodzie.",
+  "Expense log": "Rejestr wydatków",
+  "Keeps expenses in a shared table and sums them up by month and category.":
+    "Prowadzi wydatki we wspólnej tabeli i sumuje je według miesięcy i kategorii.",
+  "Adds expenses the person mentions or sends as receipts to a shared table, and reports totals by month and category. It reads rows before it changes them.":
+    "Dopisuje do wspólnej tabeli wydatki, o których wspominasz albo które przysyłasz jako paragony, i podaje sumy według miesięcy i kategorii. Zanim zmieni wiersze, najpierw je czyta.",
+  "Post drafts": "Szkice postów",
+  "Drafts short posts and articles in the person's voice, ready for approval.":
+    "Szkicuje krótkie posty i artykuły Twoim stylem, gotowe do zatwierdzenia.",
+  "Writes drafts of posts, newsletters or short articles from a topic or notes. It keeps the person's style, offers two variants and shows each as a draft card; nothing is published without approval.":
+    "Pisze szkice postów, newsletterów albo krótkich artykułów z tematu lub notatek. Zachowuje Twój styl, daje dwa warianty i pokazuje każdy jako kartę szkicu; nic nie jest publikowane bez zgody.",
+  "Project coordinator": "Koordynator projektów",
+  "Keeps projects moving: meeting notes, owners, deadlines and a weekly status.":
+    "Pilnuje projektów: notatki ze spotkań, osoby odpowiedzialne, terminy i tygodniowy status.",
+  "An agent for running projects: it turns meetings into action items, follows up on deadlines and writes the weekly status. It starts with the Meeting notes and Weekly status report skills.":
+    "Agent do prowadzenia projektów: zamienia spotkania na zadania, przypomina o terminach i pisze tygodniowy status. Zaczyna ze skillami Notatki ze spotkań i Tygodniowy raport.",
+  "Research analyst": "Analityk",
+  "Researches questions on the web and answers with a brief and sources.":
+    "Bada pytania w sieci i odpowiada notatką ze źródłami.",
+  "An agent for research: it reads several sources, compares them and writes a one-page brief with a link for every fact. It starts with the Research brief skill.":
+    "Agent do badań: czyta kilka źródeł, porównuje je i pisze jednostronicową notatkę z linkiem przy każdym fakcie. Zaczyna ze skillem Notatka badawcza.",
+  "Inbox assistant": "Asystent poczty",
+  "Sorts your mail every day and prepares replies for your approval.":
+    "Codziennie porządkuje Twoją pocztę i przygotowuje odpowiedzi do zatwierdzenia.",
+  "An agent for e-mail in the built-in browser: it sorts new messages, drafts replies and archives only what you approve. It starts with the Inbox triage and Post drafts skills.":
+    "Agent do poczty we wbudowanej przeglądarce: sortuje nowe wiadomości, szkicuje odpowiedzi i archiwizuje tylko to, co zatwierdzisz. Zaczyna ze skillami Porządek w skrzynce i Szkice postów.",
+  "Code reviewer": "Recenzent kodu",
+  "Reviews code changes in its workspace and reports findings by severity.":
+    "Przegląda zmiany w kodzie w swoim folderze roboczym i podaje uwagi według wagi.",
+  "An agent for code review: it reads a change, runs the tests it can, and reports findings from must-fix to nice-to-have with file and line. It starts with the Code review checklist skill.":
+    "Agent do przeglądu kodu: czyta zmianę, uruchamia testy, które może, i podaje uwagi od koniecznych do mile widzianych, z plikiem i linią. Zaczyna ze skillem Lista kontrolna przeglądu kodu.",
+  "Travel planner": "Organizator podróży",
+  "Plans trips within your budget and books only what you approve.":
+    "Planuje podróże w Twoim budżecie i rezerwuje tylko to, co zatwierdzisz.",
+  "An agent for trips: it compares routes and places to stay, writes a day-by-day plan with a budget, and books nothing without your approval. It starts with the Trip planner and Expense log skills.":
+    "Agent do podróży: porównuje trasy i noclegi, pisze plan dzień po dniu z budżetem i niczego nie rezerwuje bez Twojej zgody. Zaczyna ze skillami Planer podróży i Rejestr wydatków.",
+  "Daily brief": "Poranny przegląd",
+  "Writes a one-screen morning brief: what is on today, what needs a decision, what is late.":
+    "Pisze poranny przegląd na jeden ekran: co dziś, co czeka na decyzję, co jest spóźnione.",
+  "Collects today's plan from the shared tables, the files you point it to and the conversation, and writes a brief that fits on one screen: schedule, decisions waiting for you, and things that are late. It never sends the brief anywhere without asking.":
+    "Zbiera dzisiejszy plan ze wspólnych tabel, wskazanych plików i rozmowy i pisze przegląd mieszczący się na jednym ekranie: harmonogram, decyzje czekające na Ciebie i rzeczy spóźnione. Nigdzie go nie wysyła bez pytania.",
+  "Decision log": "Rejestr decyzji",
+  "Keeps a log of decisions with the reason, the alternatives and who decided.":
+    "Prowadzi rejestr decyzji z powodem, odrzuconymi opcjami i tym, kto zdecydował.",
+  "Records each decision in a shared table: what was decided, why, which options were dropped, who decided and when it should be looked at again. Later it answers 'why did we do it this way'.":
+    "Zapisuje każdą decyzję we wspólnej tabeli: co postanowiono, dlaczego, które opcje odrzucono, kto zdecydował i kiedy do niej wrócić. Później odpowiada na pytanie „dlaczego zrobiliśmy to w ten sposób”.",
+  "Source check": "Sprawdzanie źródeł",
+  "Checks a claim against its sources and says what holds up and what does not.":
+    "Sprawdza twierdzenie w źródłach i mówi, co się broni, a co nie.",
+  "Takes a claim, finds where it comes from, checks it against independent sources and reports one of four verdicts: confirmed, partly true, not supported, or cannot be checked. Every verdict has its links.":
+    "Bierze twierdzenie, szuka, skąd pochodzi, sprawdza je w niezależnych źródłach i wydaje jeden z czterech werdyktów: potwierdzone, częściowo prawdziwe, niepoparte albo nie do sprawdzenia. Każdy werdykt ma linki.",
+  "Copy edit": "Redakcja tekstu",
+  "Edits a draft for clarity and keeps your voice, and shows what it changed.":
+    "Poprawia szkic, żeby był jaśniejszy, zachowuje Twój styl i pokazuje, co zmienił.",
+  "Edits a draft sentence by sentence: cuts filler, fixes grammar and unclear lines, keeps your voice and meaning. It returns the clean text and a short list of the changes that mattered, so you can reject any of them.":
+    "Redaguje szkic zdanie po zdaniu: wycina zbędne słowa, poprawia gramatykę i niejasne miejsca, zachowuje Twój styl i sens. Oddaje czysty tekst i krótką listę ważnych zmian, żeby każdą można było odrzucić.",
+  "Support reply": "Odpowiedź dla klienta",
+  "Drafts a customer reply that says what is known, what is not, and what happens next.":
+    "Szkicuje odpowiedź dla klienta: co wiadomo, czego jeszcze nie wiadomo i co dalej.",
+  "Writes a reply to a customer message in three honest parts: what we know, what we do not know yet, and the next step with a time. It matches the customer's tone and never promises what is not decided. It shows the draft and sends nothing by itself.":
+    "Pisze odpowiedź na wiadomość klienta w trzech uczciwych częściach: co wiemy, czego jeszcze nie wiemy i jaki jest następny krok z terminem. Dopasowuje się do tonu klienta i nie obiecuje tego, co nie jest ustalone. Pokazuje szkic i sam niczego nie wysyła.",
+  "Data cleanup": "Porządkowanie danych",
+  "Cleans a table: duplicates, formats and empty cells, and reports what it changed.":
+    "Porządkuje tabelę: duplikaty, formaty i puste komórki, i raportuje zmiany.",
+  "Looks through a shared table, finds duplicate rows, mixed formats (dates, phone numbers, spelling of names) and empty cells, and fixes what is safe. Anything that is a guess goes to a list for you to decide. It keeps a report of every change.":
+    "Przegląda wspólną tabelę, znajduje powtórzone wiersze, różne formaty (daty, numery telefonów, pisownia nazw) i puste komórki i poprawia to, co bezpieczne. Wszystko, co byłoby zgadywaniem, trafia na listę do Twojej decyzji. Zapisuje raport z każdej zmiany.",
+  "Chief of staff": "Szef sztabu",
+  "Runs your day: a morning brief, a decision log and notes from every meeting.":
+    "Prowadzi Twój dzień: poranny przegląd, rejestr decyzji i notatki z każdego spotkania.",
+  "An agent for the person who has too much on the plate: it writes the daily brief, keeps the log of decisions, turns meetings into action items and tells you what is late. It starts with the Daily brief, Decision log and Meeting notes skills.":
+    "Agent dla osoby, która ma za dużo na głowie: pisze poranny przegląd, prowadzi rejestr decyzji, zamienia spotkania na zadania i mówi, co jest spóźnione. Zaczyna ze skillami Poranny przegląd, Rejestr decyzji i Notatki ze spotkań.",
+  "Copy editor": "Redaktor",
+  "Edits your drafts in your own voice and drafts posts from an idea.":
+    "Redaguje Twoje szkice Twoim stylem i pisze posty z pomysłu.",
+  "An agent for writing: it edits what you wrote without changing your voice, and turns a rough idea into a few draft versions. It shows what it changed and publishes nothing. It starts with the Copy edit and Post drafts skills.":
+    "Agent do pisania: poprawia Twoje teksty, nie zmieniając Twojego stylu, i zamienia luźny pomysł w kilka wersji szkicu. Pokazuje, co zmienił, i niczego nie publikuje. Zaczyna ze skillami Redakcja tekstu i Szkice postów.",
+  "Support desk": "Obsługa klienta",
+  "Sorts the support inbox and drafts honest replies for you to approve.":
+    "Porządkuje skrzynkę obsługi i szkicuje uczciwe odpowiedzi do zatwierdzenia.",
+  "An agent for customer messages: it sorts what came in, drafts replies that say what is known and what is not, and sends nothing without your approval. It starts with the Inbox triage and Support reply skills.":
+    "Agent do wiadomości od klientów: sortuje to, co przyszło, szkicuje odpowiedzi mówiące, co wiadomo, a czego nie, i niczego nie wysyła bez Twojej zgody. Zaczyna ze skillami Porządek w skrzynce i Odpowiedź dla klienta.",
+  "Data steward": "Opiekun danych",
+  "Keeps your tables clean and your expenses in order, and reports every change.":
+    "Dba o porządek w tabelach i wydatkach i raportuje każdą zmianę.",
+  "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.":
+    "Agent do tabel i liczb: usuwa duplikaty, poprawia formaty, prowadzi tabelę wydatków i raportuje każdą zmianę. Wszystko, co byłoby zgadywaniem, trafia do Ciebie. Zaczyna ze skillami Porządkowanie danych i Rejestr wydatków.",
 } as const;

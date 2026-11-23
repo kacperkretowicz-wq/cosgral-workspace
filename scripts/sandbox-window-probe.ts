@@ -205,8 +205,24 @@ try {
   await page.waitForTimeout(1500);
 
   for (const [id, label] of PAGES) {
-    if (await openPage(label).catch(() => false)) await shoot(id);
-    else findings.push(`${id}: no page rail entry named "${label}"`);
+    if (!(await openPage(label).catch(() => false))) {
+      findings.push(`${id}: no page rail entry named "${label}"`);
+      continue;
+    }
+    await shoot(id);
+    // Pages with a section list (Library, Providers, Server settings, Schedule…): every section after the first.
+    const sections = page.locator("nav.work-page-nav button");
+    const count = await sections.count();
+    for (let index = 1; index < count; index += 1) {
+      const section = sections.nth(index);
+      const name = ((await section.textContent()) ?? `${index}`)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9ąćęłńóśźż]+/g, "-")
+        .replace(/^-|-$/g, "");
+      await section.click().catch((e: Error) => findings.push(`${id}/${name}: ${e.message.split("\n")[0]}`));
+      await shoot(`${id}--${name || index}`);
+    }
   }
 
   // The conversation of the first agent in the sidebar, its + popover and the @ picker.

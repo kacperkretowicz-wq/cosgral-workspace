@@ -2986,4 +2986,120 @@ export const en = {
   "Move {name} to…": "Move {name} to…",
   folder: "folder",
   "Queued message {position}: {preview}": "Queued message {position}: {preview}",
+  // Marketplace catalog (src/backend/marketplace-catalog*.ts): title, summary and description as shown.
+  "Meeting notes": "Meeting notes",
+  "Turns raw meeting notes into decisions, action items, owners and dates.":
+    "Turns raw meeting notes into decisions, action items, owners and dates.",
+  "Reads notes or a transcript of a meeting and writes a short summary: what was decided, who does what by when, and open questions. It asks before it sends the summary to anyone.":
+    "Reads notes or a transcript of a meeting and writes a short summary: what was decided, who does what by when, and open questions. It asks before it sends the summary to anyone.",
+  "Weekly status report": "Weekly status report",
+  "Writes a short weekly status from tasks, tables and notes: done, next, blocked.":
+    "Writes a short weekly status from tasks, tables and notes: done, next, blocked.",
+  "Collects what happened this week from shared tables, files and the conversation, and writes a status with three parts: done, next week, blocked. Numbers come from the data, not from memory.":
+    "Collects what happened this week from shared tables, files and the conversation, and writes a status with three parts: done, next week, blocked. Numbers come from the data, not from memory.",
+  "Research brief": "Research brief",
+  "Finds sources on the web and writes a one-page brief with a link for every fact.":
+    "Finds sources on the web and writes a one-page brief with a link for every fact.",
+  "Searches the web, reads several sources, compares them and writes a short brief. Every fact has a link; disagreements and gaps are named instead of smoothed over.":
+    "Searches the web, reads several sources, compares them and writes a short brief. Every fact has a link; disagreements and gaps are named instead of smoothed over.",
+  "Inbox triage": "Inbox triage",
+  "Sorts new mail into reply, read later and archive, and drafts the replies.":
+    "Sorts new mail into reply, read later and archive, and drafts the replies.",
+  "Goes through new messages in the built-in browser, sorts them by what they need, and prepares short reply drafts. Nothing is sent, archived or deleted without the person's approval on a card.":
+    "Goes through new messages in the built-in browser, sorts them by what they need, and prepares short reply drafts. Nothing is sent, archived or deleted without the person's approval on a card.",
+  "Code review checklist": "Code review checklist",
+  "Reviews a change for bugs, tests and clarity, and reports findings by severity.":
+    "Reviews a change for bugs, tests and clarity, and reports findings by severity.",
+  "Reads a diff or a set of files, checks it against a short checklist (correctness, tests, security, readability) and reports findings from most to least important, with file and line.":
+    "Reads a diff or a set of files, checks it against a short checklist (correctness, tests, security, readability) and reports findings from most to least important, with file and line.",
+  "Trip planner": "Trip planner",
+  "Plans a trip: routes, places to stay and a day-by-day plan within a budget.":
+    "Plans a trip: routes, places to stay and a day-by-day plan within a budget.",
+  "Asks for dates, budget and preferences, compares transport and places to stay in the browser, and writes a day-by-day plan with prices and links. Bookings and payments only after the person approves them.":
+    "Asks for dates, budget and preferences, compares transport and places to stay in the browser, and writes a day-by-day plan with prices and links. Bookings and payments only after the person approves them.",
+  "Expense log": "Expense log",
+  "Keeps expenses in a shared table and sums them up by month and category.":
+    "Keeps expenses in a shared table and sums them up by month and category.",
+  "Adds expenses the person mentions or sends as receipts to a shared table, and reports totals by month and category. It reads rows before it changes them.":
+    "Adds expenses the person mentions or sends as receipts to a shared table, and reports totals by month and category. It reads rows before it changes them.",
+  "Post drafts": "Post drafts",
+  "Drafts short posts and articles in the person's voice, ready for approval.":
+    "Drafts short posts and articles in the person's voice, ready for approval.",
+  "Writes drafts of posts, newsletters or short articles from a topic or notes. It keeps the person's style, offers two variants and shows each as a draft card; nothing is published without approval.":
+    "Writes drafts of posts, newsletters or short articles from a topic or notes. It keeps the person's style, offers two variants and shows each as a draft card; nothing is published without approval.",
+  "Project coordinator": "Project coordinator",
+  "Keeps projects moving: meeting notes, owners, deadlines and a weekly status.":
+    "Keeps projects moving: meeting notes, owners, deadlines and a weekly status.",
+  "An agent for running projects: it turns meetings into action items, follows up on deadlines and writes the weekly status. It starts with the Meeting notes and Weekly status report skills.":
+    "An agent for running projects: it turns meetings into action items, follows up on deadlines and writes the weekly status. It starts with the Meeting notes and Weekly status report skills.",
+  "Research analyst": "Research analyst",
+  "Researches questions on the web and answers with a brief and sources.":
+    "Researches questions on the web and answers with a brief and sources.",
+  "An agent for research: it reads several sources, compares them and writes a one-page brief with a link for every fact. It starts with the Research brief skill.":
+    "An agent for research: it reads several sources, compares them and writes a one-page brief with a link for every fact. It starts with the Research brief skill.",
+  "Inbox assistant": "Inbox assistant",
+  "Sorts your mail every day and prepares replies for your approval.":
+    "Sorts your mail every day and prepares replies for your approval.",
+  "An agent for e-mail in the built-in browser: it sorts new messages, drafts replies and archives only what you approve. It starts with the Inbox triage and Post drafts skills.":
+    "An agent for e-mail in the built-in browser: it sorts new messages, drafts replies and archives only what you approve. It starts with the Inbox triage and Post drafts skills.",
+  "Code reviewer": "Code reviewer",
+  "Reviews code changes in its workspace and reports findings by severity.":
+    "Reviews code changes in its workspace and reports findings by severity.",
+  "An agent for code review: it reads a change, runs the tests it can, and reports findings from must-fix to nice-to-have with file and line. It starts with the Code review checklist skill.":
+    "An agent for code review: it reads a change, runs the tests it can, and reports findings from must-fix to nice-to-have with file and line. It starts with the Code review checklist skill.",
+  "Travel planner": "Travel planner",
+  "Plans trips within your budget and books only what you approve.":
+    "Plans trips within your budget and books only what you approve.",
+  "An agent for trips: it compares routes and places to stay, writes a day-by-day plan with a budget, and books nothing without your approval. It starts with the Trip planner and Expense log skills.":
+    "An agent for trips: it compares routes and places to stay, writes a day-by-day plan with a budget, and books nothing without your approval. It starts with the Trip planner and Expense log skills.",
+  "Daily brief": "Daily brief",
+  "Writes a one-screen morning brief: what is on today, what needs a decision, what is late.":
+    "Writes a one-screen morning brief: what is on today, what needs a decision, what is late.",
+  "Collects today's plan from the shared tables, the files you point it to and the conversation, and writes a brief that fits on one screen: schedule, decisions waiting for you, and things that are late. It never sends the brief anywhere without asking.":
+    "Collects today's plan from the shared tables, the files you point it to and the conversation, and writes a brief that fits on one screen: schedule, decisions waiting for you, and things that are late. It never sends the brief anywhere without asking.",
+  "Decision log": "Decision log",
+  "Keeps a log of decisions with the reason, the alternatives and who decided.":
+    "Keeps a log of decisions with the reason, the alternatives and who decided.",
+  "Records each decision in a shared table: what was decided, why, which options were dropped, who decided and when it should be looked at again. Later it answers 'why did we do it this way'.":
+    "Records each decision in a shared table: what was decided, why, which options were dropped, who decided and when it should be looked at again. Later it answers 'why did we do it this way'.",
+  "Source check": "Source check",
+  "Checks a claim against its sources and says what holds up and what does not.":
+    "Checks a claim against its sources and says what holds up and what does not.",
+  "Takes a claim, finds where it comes from, checks it against independent sources and reports one of four verdicts: confirmed, partly true, not supported, or cannot be checked. Every verdict has its links.":
+    "Takes a claim, finds where it comes from, checks it against independent sources and reports one of four verdicts: confirmed, partly true, not supported, or cannot be checked. Every verdict has its links.",
+  "Copy edit": "Copy edit",
+  "Edits a draft for clarity and keeps your voice, and shows what it changed.":
+    "Edits a draft for clarity and keeps your voice, and shows what it changed.",
+  "Edits a draft sentence by sentence: cuts filler, fixes grammar and unclear lines, keeps your voice and meaning. It returns the clean text and a short list of the changes that mattered, so you can reject any of them.":
+    "Edits a draft sentence by sentence: cuts filler, fixes grammar and unclear lines, keeps your voice and meaning. It returns the clean text and a short list of the changes that mattered, so you can reject any of them.",
+  "Support reply": "Support reply",
+  "Drafts a customer reply that says what is known, what is not, and what happens next.":
+    "Drafts a customer reply that says what is known, what is not, and what happens next.",
+  "Writes a reply to a customer message in three honest parts: what we know, what we do not know yet, and the next step with a time. It matches the customer's tone and never promises what is not decided. It shows the draft and sends nothing by itself.":
+    "Writes a reply to a customer message in three honest parts: what we know, what we do not know yet, and the next step with a time. It matches the customer's tone and never promises what is not decided. It shows the draft and sends nothing by itself.",
+  "Data cleanup": "Data cleanup",
+  "Cleans a table: duplicates, formats and empty cells, and reports what it changed.":
+    "Cleans a table: duplicates, formats and empty cells, and reports what it changed.",
+  "Looks through a shared table, finds duplicate rows, mixed formats (dates, phone numbers, spelling of names) and empty cells, and fixes what is safe. Anything that is a guess goes to a list for you to decide. It keeps a report of every change.":
+    "Looks through a shared table, finds duplicate rows, mixed formats (dates, phone numbers, spelling of names) and empty cells, and fixes what is safe. Anything that is a guess goes to a list for you to decide. It keeps a report of every change.",
+  "Chief of staff": "Chief of staff",
+  "Runs your day: a morning brief, a decision log and notes from every meeting.":
+    "Runs your day: a morning brief, a decision log and notes from every meeting.",
+  "An agent for the person who has too much on the plate: it writes the daily brief, keeps the log of decisions, turns meetings into action items and tells you what is late. It starts with the Daily brief, Decision log and Meeting notes skills.":
+    "An agent for the person who has too much on the plate: it writes the daily brief, keeps the log of decisions, turns meetings into action items and tells you what is late. It starts with the Daily brief, Decision log and Meeting notes skills.",
+  "Copy editor": "Copy editor",
+  "Edits your drafts in your own voice and drafts posts from an idea.":
+    "Edits your drafts in your own voice and drafts posts from an idea.",
+  "An agent for writing: it edits what you wrote without changing your voice, and turns a rough idea into a few draft versions. It shows what it changed and publishes nothing. It starts with the Copy edit and Post drafts skills.":
+    "An agent for writing: it edits what you wrote without changing your voice, and turns a rough idea into a few draft versions. It shows what it changed and publishes nothing. It starts with the Copy edit and Post drafts skills.",
+  "Support desk": "Support desk",
+  "Sorts the support inbox and drafts honest replies for you to approve.":
+    "Sorts the support inbox and drafts honest replies for you to approve.",
+  "An agent for customer messages: it sorts what came in, drafts replies that say what is known and what is not, and sends nothing without your approval. It starts with the Inbox triage and Support reply skills.":
+    "An agent for customer messages: it sorts what came in, drafts replies that say what is known and what is not, and sends nothing without your approval. It starts with the Inbox triage and Support reply skills.",
+  "Data steward": "Data steward",
+  "Keeps your tables clean and your expenses in order, and reports every change.":
+    "Keeps your tables clean and your expenses in order, and reports every change.",
+  "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.":
+    "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.",
 } as const;

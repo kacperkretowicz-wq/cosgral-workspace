@@ -239,14 +239,15 @@
     padding-inline: var(--openbot-space-6);
   }
 
+  /* As tabs, the sections wrap onto more rows. They used to scroll sideways with the scrollbar hidden: a mouse wheel
+     does not scroll sideways on Windows, so the sections past the edge ("Sejf", "Serwery MCP"…) could not be reached. */
   .work-page-nav {
     position: static;
     flex-direction: row;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
   }
 
-  /* As tabs, each section keeps its full width; the row scrolls instead of squeezing labels over each other. */
+  /* Each section keeps its full width, so labels never squeeze over each other. */
   .work-page-nav-item {
     flex: 0 0 auto;
   }
