@@ -6,7 +6,7 @@ import { ChannelEditor } from "./ChannelEditor";
 import { ChannelView } from "./ChannelView";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button } from "./ui";
-import { Plus, Settings } from "./ui/icons";
+import { Hash, Plus, Settings } from "./ui/icons";
 
 export function ChannelWorkspace(props: {
   bots: ({ id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>)[];
@@ -19,7 +19,14 @@ export function ChannelWorkspace(props: {
   onOpenHandled?: () => void;
   /** The channel was opened from the sidebar list, which already lists the channels: no second list here. */
   hideList?: boolean;
+  /**
+   * "New channel" from the sidebar's + menu was cancelled before a channel was chosen: the window goes back to where
+   * the person was, instead of staying on the empty channel list behind the closed dialog.
+   */
+  onCreateCancelled?: () => void;
 }) {
+  /** The editor was opened by createRequested (the + menu), not by the "New channel" button of this view. */
+  let editorFromRequest = false;
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [selected, setSelected] = createSignal("");
   const [messages, setMessages] = createSignal<ChannelMessage[]>([]);
@@ -31,6 +38,7 @@ export function ChannelWorkspace(props: {
     () => props.createRequested,
     (requested) => {
       if (requested) {
+        editorFromRequest = true;
         setEditor("new");
         props.onCreateHandled?.();
       }
@@ -210,7 +218,21 @@ export function ChannelWorkspace(props: {
           <CosgralLoadingSkeleton label={t("Loading channel…")} />
         </Show>
         {/* Keyed by the id: saving a setting of the channel replaces its object, and the open sections and their notes must stay. */}
-        <Show when={channel()?.id} fallback={<p>{t("Select a channel.")}</p>} keyed>
+        <Show
+          when={channel()?.id}
+          fallback={
+            <Show when={!loading()}>
+              <div class="channel-workspace-empty">
+                <span class="channel-workspace-empty-icon" aria-hidden="true">
+                  <Hash size={22} stroke-width={1.5} />
+                </span>
+                <h2>{t("Select a channel.")}</h2>
+                <p>{t("Choose a channel on the left, or create one for a team of agents.")}</p>
+              </div>
+            </Show>
+          }
+          keyed
+        >
           {(_id) => (
             <Show when={channel()}>
               {(item) => (
@@ -246,7 +268,12 @@ export function ChannelWorkspace(props: {
           <ChannelEditor
             bots={props.bots}
             channel={editing === "new" ? undefined : editing}
-            onClose={() => setEditor(undefined)}
+            onClose={() => {
+              const cancelledFromMenu = editorFromRequest && !selected();
+              editorFromRequest = false;
+              setEditor(undefined);
+              if (cancelledFromMenu) props.onCreateCancelled?.();
+            }}
             onSave={async (input) => {
               const api = window.openbot.channels;
               if (!api) throw new Error(t("Channels are unavailable."));
@@ -267,6 +294,8 @@ export function ChannelWorkspace(props: {
                 });
               }
               rememberChannel(saved);
+              // A saved channel is chosen below, so closing the editor afterwards stays here.
+              editorFromRequest = false;
               await choose(saved.id);
             }}
           />

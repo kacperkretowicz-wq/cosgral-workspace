@@ -2973,6 +2973,8 @@ export const pl = {
   "Usage for {name}": "Zużycie: {name}",
   "{count} account": "Konta: {count}",
   Idle: "Bezczynny",
+  "Choose a channel on the left, or create one for a team of agents.":
+    "Wybierz kanał po lewej albo utwórz nowy dla zespołu agentów.",
   "This task is not running.": "To zadanie teraz nie działa.",
   "This task is stopped.": "To zadanie jest zatrzymane.",
   "This task no longer exists.": "To zadanie już nie istnieje.",

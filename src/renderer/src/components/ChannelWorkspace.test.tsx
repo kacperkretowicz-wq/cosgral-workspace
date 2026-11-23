@@ -200,4 +200,31 @@ describe("channel workspace", () => {
       setLanguage("en");
     }
   });
+
+  it("goes back when New channel from the + menu is cancelled, and stays after a save (seen in the real window)", async () => {
+    Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
+    const onCreateCancelled = vi.fn();
+    render(() => (
+      <ChannelWorkspace
+        bots={[{ id: "chief", name: "Chief" }]}
+        createRequested={true}
+        onCreateCancelled={onCreateCancelled}
+      />
+    ));
+    const dialog = await screen.findByRole("dialog");
+    await fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(onCreateCancelled).toHaveBeenCalledTimes(1));
+  });
+
+  it("stays on the channel list when its own New channel button is cancelled", async () => {
+    Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
+    const onCreateCancelled = vi.fn();
+    render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} onCreateCancelled={onCreateCancelled} />);
+    await fireEvent.click(await screen.findByRole("button", { name: "New channel" }));
+    const dialog = await screen.findByRole("dialog");
+    await fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(onCreateCancelled).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Select a channel." })).toBeInTheDocument();
+  });
 });

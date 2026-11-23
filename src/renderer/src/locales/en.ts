@@ -2969,6 +2969,8 @@ export const en = {
   "Usage for {name}": "Usage for {name}",
   "{count} account": "{count} account",
   Idle: "Idle",
+  "Choose a channel on the left, or create one for a team of agents.":
+    "Choose a channel on the left, or create one for a team of agents.",
   "This task is not running.": "This task is not running.",
   "This task is stopped.": "This task is stopped.",
   "This task no longer exists.": "This task no longer exists.",

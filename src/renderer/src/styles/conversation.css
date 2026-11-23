@@ -2231,23 +2231,41 @@
   height: 15px;
 }
 
+/* The menu grew from Branch + Copy to six actions, some with a sentence why they are off: a fixed 116 px width and
+   32 px rows made the items overlap and the sentences spill out of the menu. */
 .message-more-menu {
-  width: 116px;
+  width: max-content;
+  min-width: 160px;
+  max-width: 260px;
 }
 
 .message-more-menu [role="menuitem"] {
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
-  height: 32px;
+  min-height: 32px;
   align-items: center;
-  gap: 8px;
+  gap: 2px 8px;
   border: 0;
   border-radius: var(--openbot-radius-sm);
   background: transparent;
-  padding: 0 9px;
+  padding: 6px 9px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-sm);
   text-align: left;
+}
+
+.message-more-menu [role="menuitem"][data-disabled] {
+  color: var(--openbot-text-muted);
+  cursor: default;
+}
+
+/* Why an action is off: its own line under the action, inside the menu. */
+.message-more-menu .thread-work-action-note {
+  flex-basis: 100%;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  line-height: 1.35;
 }
 
 .message-more-menu [role="menuitem"]:hover,

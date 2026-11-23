@@ -48,7 +48,7 @@ import {
 import type { NeedsYouSidebarItem, SidebarProps } from "./sidebar/types";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Text } from "./ui";
-import { Users } from "./ui/icons";
+import { Copy, Eye, EyeOff, Users } from "./ui/icons";
 
 export type { SidebarAgentState };
 
@@ -979,7 +979,12 @@ export function Sidebar(props: SidebarProps) {
                                 afterAgentMenu(() => props.onSetBotHidden?.(bot.id, !bot.hidden) ?? Promise.resolve())
                               }
                             >
-                              {bot.hidden ? t("Show") : t("Hide")}
+                              {bot.hidden ? (
+                                <Eye class="bot-context-icon" aria-hidden="true" />
+                              ) : (
+                                <EyeOff class="bot-context-icon" aria-hidden="true" />
+                              )}
+                              <span>{bot.hidden ? t("Show") : t("Hide")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.onDuplicateBot}>
@@ -987,7 +992,8 @@ export function Sidebar(props: SidebarProps) {
                               disabled={agentActionBusy()}
                               onSelect={() => afterAgentMenu(() => props.onDuplicateBot?.(bot.id) ?? Promise.resolve())}
                             >
-                              {t("Duplicate")}
+                              <Copy class="bot-context-icon" aria-hidden="true" />
+                              <span>{t("Duplicate")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <ContextMenu.Separator class="bot-context-separator" />

@@ -303,6 +303,51 @@ try {
     "[role=dialog]",
   );
 
+  // The message menu of the last reply, the agent's row menu and its delete confirmation (opened, then cancelled:
+  // nothing is deleted), the New agent page and the channel editor.
+  await openAndInspect(
+    "message-menu",
+    async () => {
+      const reply = page.locator(".message-entry-bot .message-shell").last();
+      await reply.scrollIntoViewIfNeeded();
+      await reply.hover();
+      await page.getByRole("button", { name: "Więcej działań wiadomości" }).last().click();
+    },
+    "[role=menu]",
+  );
+  await openAndInspect(
+    "agent-row-menu",
+    () => page.locator(".bot-row-copy").last().click({ button: "right" }),
+    "[role=menu]",
+  );
+  await openAndInspect(
+    "agent-delete-confirm",
+    async () => {
+      await page.locator(".bot-row-copy").last().click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Usuń agenta" }).first().click();
+    },
+    "[role=alertdialog], [role=dialog]",
+  );
+  // The confirmation is cancelled by Escape in openAndInspect; make sure, with the Cancel button if it stayed.
+  const cancel = page.getByRole("button", { name: "Anuluj", exact: true });
+  if (await cancel.count())
+    await cancel
+      .first()
+      .click()
+      .catch(() => undefined);
+  screen = "new-agent";
+  await page.getByRole("button", { name: "Utwórz", exact: true }).first().click();
+  await page.getByRole("menuitem", { name: "Nowy agent" }).first().click();
+  await shoot("new-agent");
+  await openPage("Agenci");
+  await page.locator(".bot-row-copy").first().click();
+  await page.waitForTimeout(800);
+  await openAndInspect(
+    "channel-edit",
+    () => page.getByRole("button", { name: "Edytuj kanał" }).first().click(),
+    "[role=dialog]",
+  );
+
   // Settings: every section of the Settings window.
   const gear = page.locator('nav[aria-label="Strony"]').getByRole("button", { name: "Ustawienia", exact: true });
   if (await gear.count()) {

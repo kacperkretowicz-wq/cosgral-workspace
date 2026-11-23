@@ -79,22 +79,25 @@ export const SettingsTyping: Story = {
 export const CommandSearch: Story = {
   render: () => <MockedApp />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByRole("heading", { name: "Chief" });
+    // Longer waits than the 1 s default: on a busy computer (a full Storybook run on 4 cores) the story failed about
+    // one run in two while the search worked; alone it always passed.
+    const wait = { timeout: 5_000 };
+    await canvas.findByRole("heading", { name: "Chief" }, wait);
     await fireEvent.keyDown(window, { key: "k", metaKey: true });
     const page = within(canvasElement.ownerDocument.body);
-    const dialog = await page.findByRole("dialog", { name: "Search COSGRAL" });
+    const dialog = await page.findByRole("dialog", { name: "Search COSGRAL" }, wait);
     const input = page.getByRole("combobox", { name: "Search COSGRAL" });
-    await waitFor(() => expect(dialog).toBeVisible());
-    await expect(input).toHaveFocus();
+    await waitFor(() => expect(dialog).toBeVisible(), wait);
+    await waitFor(() => expect(input).toHaveFocus(), wait);
 
     await userEvent.click(page.getByRole("tab", { name: "Messages" }));
     await userEvent.type(input, "milestone");
-    await expect(page.findByRole("option", { name: /launch milestones/i })).resolves.toBeInTheDocument();
+    await expect(page.findByRole("option", { name: /launch milestones/i }, wait)).resolves.toBeInTheDocument();
 
     await userEvent.clear(input);
     await userEvent.click(page.getByRole("tab", { name: "Agents" }));
     await userEvent.type(input, "research");
-    await expect(page.findByRole("option", { name: /Research/ })).resolves.toBeInTheDocument();
+    await expect(page.findByRole("option", { name: /Research/ }, wait)).resolves.toBeInTheDocument();
 
     await userEvent.clear(input);
     await userEvent.click(page.getByRole("tab", { name: "All" }));
