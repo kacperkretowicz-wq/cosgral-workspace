@@ -156,21 +156,23 @@ export function WorkflowVersionsPanel(props: {
                     {t("Against the current one")}: {changes()[version.number]}
                   </p>
                 </Show>
-                <Show when={!version.current && props.onPreview}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    aria-pressed={props.previewNumber === version.number ? "true" : "false"}
-                    onClick={() => void preview(version)}
-                  >
-                    {props.previewNumber === version.number ? t("Close preview") : t("Preview on canvas")}
-                  </Button>
-                </Show>
                 <Show when={!version.current}>
-                  <Button type="button" size="sm" disabled={busy()} onClick={() => void restore(version)}>
-                    {t("Restore this version")}
-                  </Button>
+                  <div class="workflow-version-actions">
+                    <Show when={props.onPreview}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        aria-pressed={props.previewNumber === version.number ? "true" : "false"}
+                        onClick={() => void preview(version)}
+                      >
+                        {props.previewNumber === version.number ? t("Close preview") : t("Preview on canvas")}
+                      </Button>
+                    </Show>
+                    <Button type="button" size="sm" disabled={busy()} onClick={() => void restore(version)}>
+                      {t("Restore this version")}
+                    </Button>
+                  </div>
                 </Show>
               </li>
             )}

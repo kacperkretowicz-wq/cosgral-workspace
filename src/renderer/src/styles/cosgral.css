@@ -2838,6 +2838,15 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
 }
+
+/* The row is a column: without this the buttons stretched to the full width of the card. */
+.workflow-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
 .channel-routine-days {
   display: flex;
   flex-wrap: wrap;

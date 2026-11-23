@@ -10,7 +10,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { CHANNEL_TASK_STATES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import "../styles/tasks-detail.css";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
@@ -72,19 +72,24 @@ function formatTime(iso: string): string {
  * tasksView.board when Active has no chip and no search; otherwise one list. Scope tabs, state chips, search, detail
  * panel with request/result/steps/log and engine actions. "Open as chat" shows the channel at the task's message.
  */
-/** Why an action is off, as the service says it; the known lines are shown in the app language. */
-const KNOWN_REASONS = new Set([
+/** Why an action is off, as the service says it, in the app language when the dictionary knows the sentence. */
+function reasonText(reason: string): string {
+  return tData(reason);
+}
+
+/**
+ * Reasons that only repeat the task's state (Stop on a finished task, Restore on one that is not archived): the action
+ * is simply not offered. Any other reason (the task cannot start now, only a human may resume it) is said under the
+ * buttons, because the person would expect the action to work.
+ */
+const STATE_REASONS = new Set([
   "Only a paused or stopped task can be resumed.",
   "This task is not archived.",
   "This task is finished.",
   "This task is already finished.",
-  "This task cannot start now.",
-  "Only a human can resume a task.",
+  "This task is not running.",
+  "This task is stopped.",
 ]);
-
-function reasonText(reason: string): string {
-  return KNOWN_REASONS.has(reason) ? t(reason) : reason;
-}
 
 export function TasksViewScreen(props: {
   bots: Array<{ id: string; name: string }>;
@@ -407,7 +412,13 @@ export function TasksViewScreen(props: {
                         {t("Open as chat")}
                       </Button>
                     </Show>
-                    <For each={task().actions.filter((item) => item.action !== "reassign")}>
+                    <For
+                      each={task().actions.filter(
+                        (item) =>
+                          item.action !== "reassign" &&
+                          (item.enabled || !item.reason || !STATE_REASONS.has(item.reason)),
+                      )}
+                    >
                       {(item) => (
                         <Button
                           type="button"
@@ -421,7 +432,11 @@ export function TasksViewScreen(props: {
                       )}
                     </For>
                   </div>
-                  <For each={task().actions.filter((item) => !item.enabled && item.reason)}>
+                  <For
+                    each={task().actions.filter(
+                      (item) => !item.enabled && item.reason && !STATE_REASONS.has(item.reason),
+                    )}
+                  >
                     {(item) => (
                       <p class="tasks-screen-note">
                         {actionLabel(item.action)}: {reasonText(item.reason ?? "")}
