@@ -1,4 +1,53 @@
-# Przekazanie (najnowsze): 22–23.11.2026, gałąź `claude/festive-pasteur-5oh1yh`
+# Przekazanie (najnowsze): 23.11.2026 po południu, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Pierwsza sesja na komputerze właściciela (Windows 10, 4 rdzenie, mało wolnej pamięci: pełny `bun run test` trwa ok.
+25 min, pliki idą po kolei). Cel od właściciela: gotowy, działający program bez błędów, dopracowany.
+
+**Jak pracować na tym komputerze:** Bun nie był zainstalowany: `npm i -g bun@1.3.11`, a w PowerShellu
+`$env:Path = "$env:APPDATA\npm;$env:Path"`. Repo: `Documents\GitHub\cosgral-workspace`. Vitest przekierowany do pliku
+nic nie pisze do końca przebiegu (to nie zawieszenie). Commity jako `Claude <noreply@anthropic.com>` (repo publiczne,
+bez e-maila właściciela); wiadomość commita z pliku (`git commit -F`), bo PowerShell 5.1 psuje cudzysłowy w `-m`.
+
+| Sprawdzenie na Windows | Wynik |
+|---|---|
+| `bun run lint`, `bun run typecheck` (6) | zielone |
+| `bun run test` (po usunięciu głosu) | 480 plików, 3453 testy, 0 czerwonych (przed: 492 / 3510, też 0) |
+| `bun run sandbox:e2e` (prawdziwe okno Electron) | wszystkie kroki ok, 0 uwag w konsoli |
+| `bun run test:visual` | 4 z 7 różniły się od starych wzorców (nowy wygląd, brak Głosu); obejrzane, wzorce odświeżone, 7/7 |
+| `bun run test:storybook` (axe w każdej historyjce) | 376/376 |
+| `bun run dist:win` | `dist\COSGRAL Workspace-0.2.0-x64.exe`, 108 MB; `verify-windows-package.ts` zielony |
+| `scripts/sandbox-window-probe.ts` (nowy, patrz niżej) | 0 uwag po poprawkach |
+| `sandbox-installed.ts` (zainstalowany `.exe`, G2 bez czystego konta) | instalacja per user bez UAC; prawdziwe pobranie Codex 0.171.0 i Claude Code 2.1.330 z SHA-256; przypięcie 0.168.0 i powrót; start logowania obu kont; dane we własnym profilu; 0 błędów konsoli. I03: zachowanie dobre, padało tylko sprawdzenie słowa „Brak” (program po angielsku pisze „None”), poprawione |
+
+**Uwaga do `sandbox-installed.ts`:** program podąża za językiem systemu, a kroki szukają angielskich napisów; na polskim
+Windows wszystko czekało do limitu. Skrypt uruchamia teraz program z `--lang=en-US` i z `cleanEnvironment()` (wcześniej
+przekazywał całe środowisko, z ewentualnymi zmiennymi logowania właściciela) oraz jednym, oczyszczonym `PATH`. Krok I10
+otwiera prawdziwą stronę logowania w przeglądarce systemowej z profilem piaskownicy: po przebiegu trzeba zamknąć to okno
+Chrome, inaczej trzyma pliki piaskownicy.
+
+**Zrobione w tej sesji:**
+1. Głos usunięty w całości (decyzja właściciela), szczegóły w punkcie 6 rozdziału niżej.
+2. Język: po zmianie języka czasy na liście i statusy wiadomości zostawały w starym języku do restartu (są formatowane
+   przy mapowaniu danych); `App.tsx` mapuje agentów i otwarte rozmowy ponownie. **Pułapka Solid 2:** goły getter
+   sygnału jako `compute` w `createEffect(signal, fn)` nie był śledzony; zawsze `createEffect(() => signal(), fn)`
+   (poprawione też w `ThreadTabs`).
+3. Surowe słowa silnika na polskim ekranie: stan wątku („idle”), stan budżetu („ok/warning/exhausted”), „Channel /
+   Library” w podpowiedzi `@`, powody akcji zadań. Liczba mnoga przez `tn()` w 8 miejscach („1 accounts”, „1 files”…).
+   5 etykiet poza `t()` (kolejka, „Przenieś … do…”, zużycie konta, usuń załącznik).
+4. Wygląd: tytuł karty wątku ucięty z lewej (przycisk centruje treść), przyciski wersji przepływu na całą szerokość,
+   panel zadania pokazywał 5 wyłączonych akcji z 5 zdaniami powodów (teraz tylko akcje, które mają sens).
+5. Skrypty piaskownicy: `sandbox-shots-w12.ts` szukał paska stron po `role="navigation"` i przycisku „More pages”
+   (dziś `<nav>` i „More”); poprawione. Nowy `sandbox-window-probe.ts`: na istniejącej piaskownicy (np. po
+   `sandbox-shots-w12.ts`) przechodzi wszystkie strony, rozmowę, menu „+”, `@` i każdy dział Ustawień po polsku w obu
+   motywach; zgłasza brakujące tłumaczenia, angielskie słowa słownika widoczne na polskim ekranie, tekst ucięty bez
+   wielokropka i błędy konsoli.
+
+**Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
+bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
+
+---
+
+# Przekazanie: 22–23.11.2026 (kontener Linux), gałąź `claude/festive-pasteur-5oh1yh`
 
 Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do scalenia razem z tamtą.
 

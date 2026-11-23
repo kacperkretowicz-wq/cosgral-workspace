@@ -6,6 +6,13 @@ Zgłoszenie na GitHubie: **#25**. Gałąź z pracą: **`claude/friendly-noether-
 
 ---
 
+## Stan po sesji 23.11 na Windows właściciela (gałąź `claude/festive-pasteur-5oh1yh`)
+
+P0 3.2 jest zrobione na Windows: `sandbox:e2e` zielone w prawdziwym oknie, `test:visual` 7/7 (wzorce odświeżone po
+obejrzeniu różnic), `dist:win` + `verify-windows-package.ts` zielone. Głos usunięty z programu (decyzja właściciela).
+Do przeglądu okna służy `scripts/sandbox-window-probe.ts`. Szczegóły i pułapki (Bun przez npm, Solid 2 `createEffect`):
+górny rozdział `PRZEKAZANIE.md`.
+
 ## Stan po sesji 19.11 wieczór (gałąź `claude/charming-euler-ag7ese`)
 
 Szczegóły: górny rozdział `PRZEKAZANIE.md`. W skrócie, względem list niżej:

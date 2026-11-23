@@ -17,6 +17,7 @@ import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { chromium, type Page } from "playwright";
+import { cleanEnvironment } from "./sandbox-env.ts";
 
 interface Result {
   row: string;
@@ -96,9 +97,17 @@ async function main(): Promise<void> {
     .filter((part) => !/[\\/]\.local[\\/]bin|codex|claude/i.test(part))
     .join(";");
   const port = 9340 + Math.floor(Math.random() * 100);
-  const child = spawn(exe, [`--remote-debugging-port=${port}`], {
+  // English like sandbox-e2e.ts: the program follows the system language, and the steps below look for English labels
+  // (on a Polish Windows every step timed out). The owner's sign-in variables never reach the sandbox.
+  // Windows keeps "Path"; drop every spelling so the cleaned PATH below is the only one.
+  const inherited = Object.fromEntries(
+    Object.entries(cleanEnvironment()).filter(([name]) => name.toUpperCase() !== "PATH"),
+  );
+  const child = spawn(exe, [`--remote-debugging-port=${port}`, "--lang=en-US"], {
     env: {
-      ...process.env,
+      ...inherited,
+      LANG: "en-US",
+      LC_ALL: "en-US",
       PATH: cleanPath,
       USERPROFILE: home,
       HOME: home,
@@ -168,7 +177,8 @@ async function main(): Promise<void> {
           "Continue is blocked without a CLI",
         );
         const text = await card.innerText();
-        assert(/Brak/.test(text), `the card says there is no CLI: ${text.slice(0, 100)}`);
+        // "None" since the program runs in English here (--lang=en-US); "Brak" on a Polish run.
+        assert(/\b(None|Brak)\b/.test(text), `the card says there is no CLI: ${text.slice(0, 100)}`);
         const state = asRecord(
           list(await ev("window.openbot.subscriptions.listCli()")).find((item) => item.id === "codex"),
         );
@@ -177,7 +187,7 @@ async function main(): Promise<void> {
           `no CLI of any kind: ${String(state.source)}`,
         );
         await window_.screenshot({ path: join(evidence, "installed-i03-no-cli.png") });
-        return "Continue disabled, the card says 'Brak', Codex has no system, custom or downloaded copy";
+        return "Continue disabled, the card says there is none, Codex has no system, custom or downloaded copy";
       },
     );
 
