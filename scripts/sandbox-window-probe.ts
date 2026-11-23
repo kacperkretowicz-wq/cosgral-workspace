@@ -8,7 +8,8 @@
 //   - text cut without an ellipsis (overflow hidden, no text-overflow), and a page wider than the window;
 //   - any other console error or warning.
 //
-//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_PROBE_OUT=<folder for screenshots> node scripts/sandbox-window-probe.ts
+//   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_PROBE_OUT=<folder for screenshots> [COSGRAL_PROBE_SIZE=960x640]
+//     node scripts/sandbox-window-probe.ts
 //
 // Run `bun run build` first. It changes the sandbox's language and theme and sets them back to English / system.
 
@@ -83,7 +84,9 @@ page.on("console", (m) => {
 });
 page.on("pageerror", (e) => consoleLines.push(`[${screen}] pageerror: ${e.message}`));
 await page.waitForLoadState("domcontentloaded");
-await page.setViewportSize({ width: 1440, height: 900 });
+// COSGRAL_PROBE_SIZE=960x640 checks a small window (default 1440x900).
+const [probeWidth, probeHeight] = (process.env.COSGRAL_PROBE_SIZE ?? "1440x900").split("x").map(Number);
+await page.setViewportSize({ width: probeWidth || 1440, height: probeHeight || 900 });
 await page.waitForTimeout(4000);
 
 // A string, like the other sandbox scripts: the Node typecheck does not know the window's `openbot`.
@@ -126,9 +129,40 @@ async function inspect(name: string): Promise<void> {
           `${el.tagName.toLowerCase()}.${[...el.classList].join(".")}: "${el.textContent?.trim().slice(0, 60)}"`,
         );
     }
-    return { cut: [...new Set(cut)].slice(0, 15), overflow: document.documentElement.scrollWidth > innerWidth + 1 };
+    // Spills: an element reaching past the right edge of the nearest ancestor that clips it (overflow hidden/clip, or
+    // auto/scroll vertically only), unless that ancestor scrolls sideways on purpose. Only the outermost one per clipper.
+    const spills: string[] = [];
+    const reported = new Set<Element>();
+    for (const el of document.querySelectorAll("body *")) {
+      if (!(el instanceof HTMLElement) || el.closest(".sr-only, [aria-hidden='true'], svg")) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 8 || rect.height < 4 || rect.bottom < 0 || rect.top > innerHeight) continue;
+      let clipper = el.parentElement;
+      while (clipper && clipper !== document.body) {
+        const cs = getComputedStyle(clipper);
+        if (cs.overflowX !== "visible") break;
+        clipper = clipper.parentElement;
+      }
+      if (!clipper || clipper === document.body) continue;
+      const ccs = getComputedStyle(clipper);
+      if ((ccs.overflowX === "auto" || ccs.overflowX === "scroll") && clipper.scrollWidth > clipper.clientWidth + 1)
+        continue;
+      const edge = clipper.getBoundingClientRect().right - (Number.parseFloat(ccs.borderRightWidth) || 0);
+      if (rect.right > edge + 2 && !reported.has(clipper) && !el.closest("[data-spill-ok]")) {
+        reported.add(clipper);
+        spills.push(
+          `${el.tagName.toLowerCase()}.${[...el.classList].join(".")} by ${Math.round(rect.right - edge)}px in .${[...clipper.classList].join(".")}`,
+        );
+      }
+    }
+    return {
+      cut: [...new Set(cut)].slice(0, 15),
+      spills: spills.slice(0, 10),
+      overflow: document.documentElement.scrollWidth > innerWidth + 1,
+    };
   });
   if (layout.cut.length) findings.push(`${name}: cut without an ellipsis:\n    ${layout.cut.join("\n    ")}`);
+  if (layout.spills.length) findings.push(`${name}: reaches past its container:\n    ${layout.spills.join("\n    ")}`);
   if (layout.overflow) findings.push(`${name}: the page is wider than the window`);
 }
 

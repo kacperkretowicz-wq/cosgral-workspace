@@ -276,9 +276,26 @@
 
 .work-page .library-filters > input[type="search"],
 .work-page .library-filters > .ui-input {
-  min-width: 160px;
+  min-width: 120px;
   flex: 1 1 auto;
   padding-left: 34px;
+}
+
+/* In a narrow page the row overflowed by ~60 px: the search takes its own line and the filters go under it, whole. */
+@container (max-width: 680px) {
+  .work-page .library-view > .library-filters {
+    flex-wrap: wrap;
+  }
+
+  .work-page .library-filters > input[type="search"],
+  .work-page .library-filters > .ui-input {
+    flex-basis: 100%;
+  }
+
+  /* The icon sits on the search line, not in the middle of the two lines. */
+  .work-page .library-filters > .library-search-icon {
+    top: calc(var(--openbot-control-md) / 2);
+  }
 }
 
 .library-search-icon {
@@ -1086,16 +1103,15 @@
   white-space: nowrap;
 }
 
+/* Wraps instead of cutting: an ellipsis does not work on a flex row, so "Pool order" was cut off in a narrow window. */
 .work-page .provider-account-meta {
   display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   align-items: center;
-  gap: var(--openbot-space-1-5);
+  gap: 0 var(--openbot-space-1-5);
   margin: 0;
-  overflow: hidden;
   font-size: var(--openbot-text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .provider-account-dot {

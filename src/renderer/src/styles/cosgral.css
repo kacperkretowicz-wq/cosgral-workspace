@@ -228,7 +228,8 @@
 
 .workflow-canvas {
   position: relative;
-  min-width: 680px;
+  /* The canvas scrolls its nodes itself; a fixed 680 px minimum pushed it past the page in a narrow window. */
+  min-width: 0;
   height: 520px;
   overflow: auto;
   background: var(--openbot-bg-surface);

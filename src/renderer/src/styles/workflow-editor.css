@@ -319,6 +319,8 @@
 
 .workflows-editor {
   display: grid;
+  /* One column that may shrink: without it the column grew to the palette's one-line width (past the page edge). */
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: var(--openbot-space-4);
 }
@@ -400,6 +402,7 @@
 /* The editor section and the canvas frame. */
 .workflows-editor > section[aria-label] {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: var(--openbot-space-3);
   border: 0;
