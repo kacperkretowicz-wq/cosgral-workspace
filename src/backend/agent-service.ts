@@ -3159,7 +3159,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       }
       case "error":
       case "warning": {
-        const message = getString(params, "message") ?? notification.method;
+        const message = notificationMessage(params) ?? notification.method;
         if (notification.method === "warning" && isNonActionableCodexWarning(message)) return;
         // COSGRAL W3: remember why a turn failed; a usage limit or unavailability may move it to a fallback model.
         const failedTurn = getString(params, "turnId");
@@ -5244,6 +5244,16 @@ function accountProviderOf(provider: AgentProvider): AccountProvider | null {
 const ACP_CLI: CodexCliInfo = { executable: "acp", version: "acp" };
 /** COSGRAL W5-K2: a model endpoint is an address, not a CLI. */
 const ENDPOINT_CLI: CodexCliInfo = { executable: "endpoint", version: "endpoint" };
+
+/**
+ * The text of an `error` or `warning` notification. Codex's app server nests it (`{ error: { message, codexErrorInfo },
+ * willRetry, threadId, turnId }`); ACP and older sources put `message` at the top. Without this the chat said only "error".
+ */
+function notificationMessage(params: unknown): string | undefined {
+  const top = getString(params, "message");
+  if (top) return top;
+  return (isRecord(params) && isRecord(params.error) ? getString(params.error, "message") : null) ?? undefined;
+}
 
 /** COSGRAL W3: whether a failed turn's error is a usage limit or unavailability (ACP gives errorKind; Codex and Claude only text). */
 function turnFailure(
