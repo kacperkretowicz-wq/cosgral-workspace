@@ -61,6 +61,19 @@ it("shows why a run was skipped in the language of the window", async () => {
           reason: "COSGRAL Workspace was not running at the planned time; missed runs are not made up.",
           finishedAt: input.from,
         },
+        {
+          // Saved before 24.11.2026: the time was inside the sentence.
+          kind: "ran",
+          routineId: "r-1",
+          botId: "chief",
+          routineName: "Raport",
+          at: input.from,
+          runId: "run-skipped-old",
+          status: "skipped",
+          cause: "schedule",
+          reason: "COSGRAL Workspace was not running at 23/11/2026, 16:06; missed runs are not made up.",
+          finishedAt: input.from,
+        },
       ],
       truncated: false,
       webhooks: [],
@@ -68,8 +81,8 @@ it("shows why a run was skipped in the language of the window", async () => {
     }));
     render(() => <ScheduleOverview />);
     expect(
-      await screen.findByText(/nie był uruchomiony o zaplanowanej porze; pominiętych uruchomień nie nadrabia/),
-    ).toBeInTheDocument();
+      await screen.findAllByText(/nie był uruchomiony o zaplanowanej porze; pominiętych uruchomień nie nadrabia/),
+    ).toHaveLength(2);
     expect(screen.queryByText(/was not running/)).not.toBeInTheDocument();
   } finally {
     setLanguage("en");

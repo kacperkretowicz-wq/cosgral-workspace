@@ -32,6 +32,19 @@ function timeOf(iso: string): string {
   return new Date(iso).toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
+const MISSED_RUN = "COSGRAL Workspace was not running at the planned time; missed runs are not made up.";
+
+/**
+ * Why a run was skipped or ended, in the language of the window. Runs saved before 24.11.2026 have the time inside the
+ * missed-run sentence ("was not running at 23/11/2026, 16:06; …"); the row shows the time anyway, so they read the same.
+ */
+export function runReasonText(reason: string): string {
+  const fixed = /^COSGRAL Workspace was not running at .+; missed runs are not made up\.$/.test(reason)
+    ? MISSED_RUN
+    : reason;
+  return tDataParts(fixed);
+}
+
 /** The status of a routine run in the language of the window. */
 export function runStatusLabel(status: ScheduleFeedItem["run"]["status"]): string {
   switch (status) {
@@ -191,7 +204,7 @@ export function ScheduleOverview(props: { bots?: ReadonlyArray<BotProfile> } = {
                                 <Show when={botOf(entry.botId)?.name ?? (entry.kind === "ran" ? entry.reason : null)}>
                                   <small>
                                     {botOf(entry.botId)?.name}
-                                    {entry.kind === "ran" && entry.reason ? ` · ${tDataParts(entry.reason)}` : ""}
+                                    {entry.kind === "ran" && entry.reason ? ` · ${runReasonText(entry.reason)}` : ""}
                                   </small>
                                 </Show>
                               </span>

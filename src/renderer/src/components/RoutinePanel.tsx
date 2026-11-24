@@ -1,10 +1,10 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
-import { appLocale, t, tDataParts } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { PanelHeading } from "./PanelHeading";
-import { runStatusLabel } from "./ScheduleOverview";
+import { runReasonText, runStatusLabel } from "./ScheduleOverview";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 import { RefreshCw } from "./ui/icons";
 
@@ -291,7 +291,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 {(entry) => (
                   <p>
                     {runStatusLabel(entry.status)} · {new Date(entry.startedAt).toLocaleString(appLocale())}
-                    {entry.reason ? ` · ${tDataParts(entry.reason)}` : ""}
+                    {entry.reason ? ` · ${runReasonText(entry.reason)}` : ""}
                   </p>
                 )}
               </For>
