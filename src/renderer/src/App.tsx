@@ -91,20 +91,15 @@ import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
 import { JoinServerDialog } from "./components/JoinServerDialog";
-import { LibraryPage } from "./components/LibraryPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
-import { SchedulePage } from "./components/SchedulePage";
 import { ServerRail } from "./components/ServerRail";
 import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
-import { TasksPage } from "./components/TasksPage";
-import { TasksViewScreen } from "./components/TasksViewScreen";
-import { UsagePage } from "./components/UsagePage";
 import type { BotMessage, BotProfile } from "./data";
 import { language, t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
@@ -129,7 +124,7 @@ import { rowStateFor, type SidebarAgentState } from "./row-activity";
 import { cardsInThread, pendingCardThreadId, threadAttentionItems } from "./thread-view";
 import { useRestoreWorkspace } from "./useRestoreWorkspace";
 
-// Pages that are rarely open load on first use, so the first window paints sooner (one 3 MB bundle before).
+// Pages other than Agents load on first use, so the first window paints sooner (one 3 MB bundle before).
 const WorkflowsPage = lazy(() =>
   import("./components/WorkflowsPage").then((module) => ({ default: module.WorkflowsPage })),
 );
@@ -142,6 +137,15 @@ const MobileConnectPage = lazy(() =>
 const ServerSettingsPage = lazy(() =>
   import("./components/ServerSettingsPage").then((module) => ({ default: module.ServerSettingsPage })),
 );
+const LibraryPage = lazy(() => import("./components/LibraryPage").then((module) => ({ default: module.LibraryPage })));
+const SchedulePage = lazy(() =>
+  import("./components/SchedulePage").then((module) => ({ default: module.SchedulePage })),
+);
+const UsagePage = lazy(() => import("./components/UsagePage").then((module) => ({ default: module.UsagePage })));
+const TasksViewScreen = lazy(() =>
+  import("./components/TasksViewScreen").then((module) => ({ default: module.TasksViewScreen })),
+);
+const TasksPage = lazy(() => import("./components/TasksPage").then((module) => ({ default: module.TasksPage })));
 
 function LazyPage(props: { children: JSX.Element }) {
   return (
@@ -2191,10 +2195,14 @@ export function App() {
                 }}
               />
               <Show when={activePage() === "library"}>
-                <LibraryPage />
+                <LazyPage>
+                  <LibraryPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "schedule"}>
-                <SchedulePage bots={botList()} />
+                <LazyPage>
+                  <SchedulePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "marketplace"}>
                 <LazyPage>
@@ -2228,15 +2236,21 @@ export function App() {
                     setChannelsOpen(true);
                     setActivePage("agents");
                   };
-                  return window.openbot?.tasksView ? (
-                    <TasksViewScreen bots={botList()} onOpenChannel={openChannel} />
-                  ) : (
-                    <TasksPage bots={botList()} onOpenChannel={openChannel} />
+                  return (
+                    <LazyPage>
+                      {window.openbot?.tasksView ? (
+                        <TasksViewScreen bots={botList()} onOpenChannel={openChannel} />
+                      ) : (
+                        <TasksPage bots={botList()} onOpenChannel={openChannel} />
+                      )}
+                    </LazyPage>
                   );
                 })()}
               </Show>
               <Show when={activePage() === "usage"}>
-                <UsagePage bots={botList()} />
+                <LazyPage>
+                  <UsagePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "server-settings"}>
                 <LazyPage>
