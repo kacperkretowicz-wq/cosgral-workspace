@@ -65,10 +65,11 @@ it("lists the four services; none can connect before its app is set up", async (
   expect(card("GitHub").getByRole("button", { name: "Connect account" })).toBeDisabled();
 });
 
-it("shows the owner's steps and the callback address, and asks for a secret only where the service needs one", async () => {
+it("shows the owner's steps and the callback address, and asks for a secret where the service needs one", async () => {
   render(() => <IntegrationsPanel />);
   await screen.findByText("GitHub", { selector: "strong" });
-  expect(card("GitHub").queryByLabelText("Client secret (GitHub)")).not.toBeInTheDocument();
+  // GitHub's token exchange needs the client secret even with PKCE.
+  expect(card("GitHub").getByLabelText("Client secret (GitHub)")).toHaveAttribute("type", "password");
   expect(card("Google Workspace").getByLabelText("Client secret (Google Workspace)")).toHaveAttribute(
     "type",
     "password",
