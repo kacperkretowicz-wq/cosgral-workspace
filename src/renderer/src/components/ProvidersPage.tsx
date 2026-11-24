@@ -24,7 +24,8 @@ import {
   PROVIDER_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { SHOW_API_KEYS } from "../api-keys-visibility";
+import { appLocale, t, tDataParts } from "../i18n";
 import { ApiKeysSection } from "./ApiKeysSection";
 import { EndpointsSection } from "./EndpointsSection";
 import { ManagedCliSection } from "./ManagedCliSection";
@@ -32,6 +33,8 @@ import { ProviderAccounts } from "./ProviderAccounts";
 import { ProviderCatalogPanel } from "./ProviderCatalogPanel";
 import { FallbackChainView, ProviderFallbackLists } from "./ProviderFallbackLists";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Text, Textarea } from "./ui";
+import { Bot, Gauge, KeyRound, Layers, Lock, Monitor, Server, Shuffle } from "./ui/icons";
+import { WorkPage, WorkPageAnchors } from "./WorkPage";
 
 // ---------------------------------------------------------------------------------------------------------------
 // Pure helpers (tested without a window)
@@ -96,8 +99,10 @@ export function providerLabel(usage: Pick<ProviderUsage, "provider" | "model">, 
 export function formatResetTime(resetsAt: number | null, nowMs: number): string {
   if (resetsAt === null) return "";
   const date = new Date(resetsAt * 1000);
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toDateString() === new Date(nowMs).toDateString() ? time : `${date.toLocaleDateString()} ${time}`;
+  const time = date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date(nowMs).toDateString()
+    ? time
+    : `${date.toLocaleDateString(appLocale())} ${time}`;
 }
 
 const STATE_VIEW = {
@@ -147,7 +152,7 @@ export function ProviderUsageList(props: {
                     <Text as="strong">{providerLabel(item, props.acpAgents)}</Text>
                     <Show when={item.reason}>
                       <Text as="p" tone="muted">
-                        {item.reason}
+                        {tDataParts(item.reason ?? "")}
                       </Text>
                     </Show>
                     <Show when={item.state !== "ok" && reset()}>
@@ -529,146 +534,183 @@ export function ProvidersPage(props: { fallbackNotices?: string[] } = {}) {
     };
   });
   return (
-    <main class="w2-library providers-page">
-      <header>
-        <Heading as="h1" size="lg">
-          {t("Providers")}
-        </Heading>
-        <Text as="p" tone="secondary">
-          {t("See which providers are available, add your own ACP agents, and choose what an agent falls back to.")}
-        </Text>
-      </header>
-      <Show when={error()}>
-        <Text as="p" tone="danger" role="alert">
-          {error()}
-        </Text>
-      </Show>
-      <ProviderAccounts />
-      <ManagedCliSection />
-      <ProviderCatalogPanel />
-      <ApiKeysSection />
-      <EndpointsSection />
-      <ProviderUsageList
-        usage={usage()}
-        acpAgents={acpAgents()}
-        now={now()}
-        refreshing={refreshing()}
-        onRefresh={() => void refreshUsage()}
-      />
-      <AcpPresets />
-      <AcpAgentsSection
-        agents={acpAgents()}
-        onSave={async (input) => {
-          const api = window.openbot.providers;
-          if (!api) throw new Error(t("Providers are unavailable."));
-          await api.saveAcpAgent(input);
-          setAcpAgents(await api.listAcpAgents());
-        }}
-        onRemove={async (id) => {
-          const api = window.openbot.providers;
-          if (!api) throw new Error(t("Providers are unavailable."));
-          await api.removeAcpAgent({ id });
-          setAcpAgents(await api.listAcpAgents());
-        }}
-      />
-      <Card class="providers-section" role="region" aria-label={t("Fallback models")}>
-        <Heading as="h2" size="md">
-          {t("Fallback models")}
-        </Heading>
-        <ProviderFallbackLists
-          groups={groups()}
-          options={modelOptions()}
-          onSaved={() => {
-            const id = botId();
-            if (!id) return;
-            void window.openbot.providers
-              ?.getFallbackInfo?.(id)
-              .then((detail) => {
-                if (botId() === id) setInfo(detail);
-              })
-              .catch((e) => fail(e, t("Could not refresh the chain.")));
-          }}
-        />
-        <FallbackInUse bots={bots()} options={modelOptions()} />
-        <Show when={props.fallbackNotices?.length}>
-          <ul class="providers-list" aria-label={t("Recent switches")}>
-            <For each={props.fallbackNotices ?? []}>
-              {(line) => (
-                <li class="providers-row">
-                  <Text tone="secondary">{line}</Text>
-                </li>
-              )}
-            </For>
-          </ul>
+    <WorkPage
+      page="providers"
+      title={t("Providers")}
+      description={t(
+        "See which providers are available, add your own ACP agents, and choose what an agent falls back to.",
+      )}
+      class="providers-page"
+    >
+      <WorkPageAnchors
+        label={t("Provider sections")}
+        anchors={[
+          { id: "accounts", label: t("Accounts"), icon: KeyRound },
+          { id: "cli", label: t("Agent CLIs"), icon: Monitor },
+          { id: "catalog", label: t("Catalog"), icon: Layers },
+          ...(SHOW_API_KEYS
+            ? [
+                { id: "api-keys", label: t("API keys"), icon: Lock },
+                { id: "endpoints", label: t("Endpoints"), icon: Server },
+              ]
+            : []),
+          { id: "usage", label: t("Usage"), icon: Gauge },
+          { id: "acp", label: t("ACP agents"), icon: Bot },
+          { id: "fallback", label: t("Fallback models"), icon: Shuffle },
+        ]}
+      >
+        <Show when={error()}>
+          <Text as="p" tone="danger" role="alert">
+            {error()}
+          </Text>
         </Show>
-        <fieldset aria-label={t("Agent fallback settings")} style="border: 0; padding: 0; margin: 0; min-width: 0">
-          <Field label={t("Agent")}>
-            <NativeSelect
-              value={botId()}
-              disabled={saving()}
-              onChange={(event) => chooseBot(event.currentTarget.value)}
-            >
-              <For each={bots()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
-            </NativeSelect>
-          </Field>
-          <Show when={bot()}>
-            {(current) => (
-              <FallbackOrder
-                botName={current().name}
-                ownModel={current().model}
-                unavailable={info()?.unavailable}
-                items={items()}
-                options={modelOptions()}
-                dirty={dirty()}
-                saving={saving() || loadingFallbacks()}
-                onChange={(next) => {
-                  const problem = fallbackModelsProblem(next);
-                  if (problem) setError(problem);
-                  else {
-                    setItems(next);
-                    setError("");
-                  }
-                }}
-                onSave={() => void saveOrder()}
-              />
-            )}
+        <div data-anchor="accounts">
+          <ProviderAccounts />
+        </div>
+        <div data-anchor="cli">
+          <ManagedCliSection />
+        </div>
+        <div data-anchor="catalog">
+          <ProviderCatalogPanel />
+        </div>
+        <Show when={SHOW_API_KEYS}>
+          <div data-anchor="api-keys">
+            <ApiKeysSection />
+          </div>
+          <div data-anchor="endpoints">
+            <EndpointsSection />
+          </div>
+        </Show>
+        <div data-anchor="usage">
+          <ProviderUsageList
+            usage={usage()}
+            acpAgents={acpAgents()}
+            now={now()}
+            refreshing={refreshing()}
+            onRefresh={() => void refreshUsage()}
+          />
+        </div>
+        <div data-anchor="acp">
+          <AcpPresets />
+          <AcpAgentsSection
+            agents={acpAgents()}
+            onSave={async (input) => {
+              const api = window.openbot.providers;
+              if (!api) throw new Error(t("Providers are unavailable."));
+              await api.saveAcpAgent(input);
+              setAcpAgents(await api.listAcpAgents());
+            }}
+            onRemove={async (id) => {
+              const api = window.openbot.providers;
+              if (!api) throw new Error(t("Providers are unavailable."));
+              await api.removeAcpAgent({ id });
+              setAcpAgents(await api.listAcpAgents());
+            }}
+          />
+        </div>
+        <Card class="providers-section" role="region" aria-label={t("Fallback models")} data-anchor="fallback">
+          <Heading as="h2" size="md">
+            {t("Fallback models")}
+          </Heading>
+          <ProviderFallbackLists
+            groups={groups()}
+            options={modelOptions()}
+            onSaved={() => {
+              const id = botId();
+              if (!id) return;
+              void window.openbot.providers
+                ?.getFallbackInfo?.(id)
+                .then((detail) => {
+                  if (botId() === id) setInfo(detail);
+                })
+                .catch((e) => fail(e, t("Could not refresh the chain.")));
+            }}
+          />
+          <FallbackInUse bots={bots()} options={modelOptions()} />
+          <Show when={props.fallbackNotices?.length}>
+            <ul class="providers-list" aria-label={t("Recent switches")}>
+              <For each={props.fallbackNotices ?? []}>
+                {(line) => (
+                  <li class="providers-row">
+                    <Text tone="secondary">{line}</Text>
+                  </li>
+                )}
+              </For>
+            </ul>
           </Show>
-          <Show when={bot()}>
-            <Text as="p" role="status">
-              {info()?.own === null ? t("Using provider and all-provider lists") : t("Agent's own list")}
-            </Text>
-            <Show when={window.openbot.providers?.resetFallbackModels}>
-              <Button
-                disabled={saving() || loadingFallbacks() || info()?.own === null}
-                onClick={async () => {
-                  const api = window.openbot.providers;
-                  if (!api?.resetFallbackModels) return;
-                  setSaving(true);
-                  try {
-                    await api.resetFallbackModels(botId());
-                    await loadFallbacks(botId());
-                    setError("");
-                  } catch (e) {
-                    fail(e, t("Could not reset the list."));
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
+          <fieldset
+            class="providers-agent-fallback"
+            aria-label={t("Agent fallback settings")}
+            style="border: 0; padding: 0; margin: 0; min-width: 0"
+          >
+            <Field label={t("Agent")}>
+              <NativeSelect
+                value={botId()}
+                disabled={saving()}
+                onChange={(event) => chooseBot(event.currentTarget.value)}
               >
-                {t("Reset to provider list")}
-              </Button>
+                <For each={bots()}>{(item) => <option value={item.id}>{item.name}</option>}</For>
+              </NativeSelect>
+            </Field>
+            <Show when={bot()}>
+              {(current) => (
+                <FallbackOrder
+                  botName={current().name}
+                  ownModel={current().model}
+                  unavailable={info()?.unavailable}
+                  items={items()}
+                  options={modelOptions()}
+                  dirty={dirty()}
+                  saving={saving() || loadingFallbacks()}
+                  onChange={(next) => {
+                    const problem = fallbackModelsProblem(next);
+                    if (problem) setError(problem);
+                    else {
+                      setItems(next);
+                      setError("");
+                    }
+                  }}
+                  onSave={() => void saveOrder()}
+                />
+              )}
             </Show>
-          </Show>
-          <Show when={bot()}>
-            <FallbackChainView info={info()} options={modelOptions()} />
-          </Show>
-          <Show when={notice()}>
-            <Text as="p" tone="success" role="status">
-              {notice()}
-            </Text>
-          </Show>
-        </fieldset>
-      </Card>
-    </main>
+            <Show when={bot()}>
+              <Text as="p" role="status">
+                {info()?.own === null ? t("Using provider and all-provider lists") : t("Agent's own list")}
+              </Text>
+              <Show when={window.openbot.providers?.resetFallbackModels}>
+                <Button
+                  disabled={saving() || loadingFallbacks() || info()?.own === null}
+                  onClick={async () => {
+                    const api = window.openbot.providers;
+                    if (!api?.resetFallbackModels) return;
+                    setSaving(true);
+                    try {
+                      await api.resetFallbackModels(botId());
+                      await loadFallbacks(botId());
+                      setError("");
+                    } catch (e) {
+                      fail(e, t("Could not reset the list."));
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  {t("Reset to provider list")}
+                </Button>
+              </Show>
+            </Show>
+            <Show when={bot()}>
+              <FallbackChainView info={info()} options={modelOptions()} />
+            </Show>
+            <Show when={notice()}>
+              <Text as="p" tone="success" role="status">
+                {notice()}
+              </Text>
+            </Show>
+          </fieldset>
+        </Card>
+      </WorkPageAnchors>
+    </WorkPage>
   );
 }

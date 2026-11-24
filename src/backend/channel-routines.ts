@@ -12,6 +12,7 @@ import {
   CHANNEL_ROUTINE_LIMITS,
   type ChannelRoutine,
   type ChannelRoutineRun,
+  type ChannelRoutineWebhook,
   type ChannelTaskState,
   channelRoutineChannelProblem,
   channelRoutineMessage,
@@ -22,11 +23,15 @@ import {
   parseCreateChannelRoutineInput,
   parseListChannelRoutinesInput,
   parseUpdateChannelRoutineInput,
+  ROUTINE_LIMITS,
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
+import type { SecretBox } from "./mcp-store";
 import type { OpenBotDatabase } from "./openbot-database";
+import type { WebhookAnswer } from "./routine-manager";
 import { checkSchedule, isTimeZone, nextRunAfter } from "./routine-schedule";
+import { newWebhookSecret, verifyWebhook } from "./webhook-signature";
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS projection_channel_routines (
@@ -43,7 +48,22 @@ const SCHEMA = `
     data_json TEXT NOT NULL CHECK(json_valid(data_json))
   );
   CREATE INDEX IF NOT EXISTS channel_routine_runs_routine ON projection_channel_routine_runs(routine_id, at);
+  CREATE TABLE IF NOT EXISTS projection_channel_routine_secrets (
+    routine_id TEXT PRIMARY KEY,
+    secret_encrypted TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS projection_channel_routine_deliveries (
+    routine_id TEXT NOT NULL,
+    delivery_id TEXT NOT NULL,
+    at TEXT NOT NULL,
+    PRIMARY KEY (routine_id, delivery_id)
+  );
 `;
+
+/** Characters of a delivery's body passed on to the lead with the routine's prompt (the receiver takes at most ROUTINE_LIMITS.webhookBody). */
+const WEBHOOK_TEXT_LIMIT = 2_000;
+/** Delivery ids kept per routine to refuse a repeat. */
+const DELIVERIES_KEPT = 200;
 
 function parseRow<T>(row: unknown, guard: (value: unknown) => value is T): T {
   if (!isDynamicRecord(row) || !isString(row.data_json)) throw new Error("Invalid routine row.");
@@ -54,10 +74,66 @@ function parseRow<T>(row: unknown, guard: (value: unknown) => value is T): T {
 
 export class ChannelRoutineStore {
   readonly #database: OpenBotDatabase;
+  readonly #box: SecretBox | null;
   #ready = false;
 
-  constructor(database: OpenBotDatabase) {
+  /** `box` encrypts the webhook secrets (Electron safeStorage in the program); without one a webhook cannot be turned on. */
+  constructor(database: OpenBotDatabase, box: SecretBox | null = null) {
     this.#database = database;
+    this.#box = box;
+  }
+
+  /** Saves (or with null forgets) the signing secret of a routine, encrypted. */
+  setSecret(routineId: string, secret: string | null): void {
+    const db = this.#db();
+    if (secret === null) {
+      db.prepare("DELETE FROM projection_channel_routine_secrets WHERE routine_id = ?").run(routineId);
+      return;
+    }
+    if (!this.#box?.canEncrypt()) {
+      throw new Error(
+        "The webhook secret cannot be stored safely on this computer: system encryption is not available.",
+      );
+    }
+    db.prepare(
+      `INSERT INTO projection_channel_routine_secrets (routine_id, secret_encrypted) VALUES (?, ?)
+       ON CONFLICT(routine_id) DO UPDATE SET secret_encrypted = excluded.secret_encrypted`,
+    ).run(routineId, this.#box.encrypt(secret));
+  }
+
+  getSecret(routineId: string): string | null {
+    const row = this.#db()
+      .prepare("SELECT secret_encrypted FROM projection_channel_routine_secrets WHERE routine_id = ?")
+      .get(routineId);
+    if (!isDynamicRecord(row) || !isString(row.secret_encrypted) || !this.#box) return null;
+    try {
+      return this.#box.decrypt(row.secret_encrypted);
+    } catch {
+      return null;
+    }
+  }
+
+  /** True the first time a delivery id is seen for a routine (a repeat is answered without a second run). */
+  rememberDelivery(routineId: string, deliveryId: string, at: Date): boolean {
+    const db = this.#db();
+    const added = db
+      .prepare(
+        "INSERT OR IGNORE INTO projection_channel_routine_deliveries (routine_id, delivery_id, at) VALUES (?, ?, ?)",
+      )
+      .run(routineId, deliveryId, at.toISOString());
+    db.prepare(
+      `DELETE FROM projection_channel_routine_deliveries WHERE routine_id = ? AND delivery_id NOT IN (
+         SELECT delivery_id FROM projection_channel_routine_deliveries WHERE routine_id = ? ORDER BY at DESC LIMIT ?)`,
+    ).run(routineId, routineId, DELIVERIES_KEPT);
+    return Number(added.changes) > 0;
+  }
+
+  /** The routine, or null when there is none with this id (the receiver then asks the routines of agents). */
+  find(routineId: string): ChannelRoutine | null {
+    const row = this.#db()
+      .prepare("SELECT data_json FROM projection_channel_routines WHERE routine_id = ?")
+      .get(routineId);
+    return row ? parseRow(row, isChannelRoutine) : null;
   }
 
   #db() {
@@ -110,6 +186,8 @@ export class ChannelRoutineStore {
   remove(routineId: string): void {
     const db = this.#db();
     db.prepare("DELETE FROM projection_channel_routine_runs WHERE routine_id = ?").run(routineId);
+    db.prepare("DELETE FROM projection_channel_routine_secrets WHERE routine_id = ?").run(routineId);
+    db.prepare("DELETE FROM projection_channel_routine_deliveries WHERE routine_id = ?").run(routineId);
     db.prepare("DELETE FROM projection_channel_routines WHERE routine_id = ?").run(routineId);
   }
 
@@ -152,6 +230,8 @@ export interface ChannelRoutineOptions {
   after?: (ms: number, run: () => void) => () => void;
   /** How often the planned starts are looked at (default 30 s). */
   tickMs?: number;
+  /** The base address of the local webhook receiver (`http://127.0.0.1:<port>`), or null while it is not listening. */
+  webhookBase?: () => string | null;
 }
 
 /** A start missed by more than this (the program was off) is written down as skipped, not made up. */
@@ -248,6 +328,70 @@ export class ChannelRoutineService {
     return run;
   }
 
+  /** Turns the webhook on, or gives a new secret when it is on (the old secret stops working at once). The secret is shown this once. */
+  enableWebhook(raw: unknown): ChannelRoutineWebhook {
+    const routine = this.#o.store.get(parseChannelRoutineIdInput(raw).routineId);
+    const base = this.#o.webhookBase?.() ?? null;
+    if (!base) throw new Error("The webhook receiver is not running. Turn on webhooks in the server settings first.");
+    const secret = newWebhookSecret();
+    this.#o.store.setSecret(routine.id, secret);
+    const enabled: ChannelRoutine = { ...routine, webhookEnabled: true, updatedAt: this.#now().toISOString() };
+    this.#o.store.save(enabled);
+    this.#announce(enabled.channelId);
+    return { routine: enabled, url: `${base}/webhooks/${enabled.id}`, secret };
+  }
+
+  /** Turns the webhook off and forgets its secret. */
+  disableWebhook(raw: unknown): ChannelRoutine {
+    const routine = this.#o.store.get(parseChannelRoutineIdInput(raw).routineId);
+    this.#o.store.setSecret(routine.id, null);
+    const disabled: ChannelRoutine = { ...routine, webhookEnabled: false, updatedAt: this.#now().toISOString() };
+    this.#o.store.save(disabled);
+    this.#announce(disabled.channelId);
+    return disabled;
+  }
+
+  /**
+   * A delivery from the local receiver (Standard Webhooks headers). null = no routine of a channel has this id (the receiver then asks the
+   * routines of agents). A started run sends the prompt to the channel with the start of the body, so the lead knows what came in.
+   */
+  handleWebhook(
+    routineId: string,
+    headers: { id: string; timestamp: string; signature: string },
+    body: Buffer,
+  ): WebhookAnswer | null {
+    const routine = this.#o.store.find(routineId);
+    if (!routine) return null;
+    if (routine.webhookEnabled !== true) return { status: 404, body: { error: "unknown routine" } };
+    if (body.length > ROUTINE_LIMITS.webhookBody) return { status: 413, body: { error: "body too large" } };
+    const secret = this.#o.store.getSecret(routine.id);
+    if (!secret) return { status: 401, body: { error: "no signing secret yet" } };
+    const verified = verifyWebhook(secret, headers, body, this.#now().getTime());
+    if (!verified.ok) return { status: 401, body: { error: verified.reason } };
+    if (!this.#o.store.rememberDelivery(routine.id, headers.id, this.#now())) {
+      return { status: 200, body: { status: "duplicate" } };
+    }
+    if (routine.paused) {
+      const run = this.#record(
+        routine,
+        "webhook",
+        "skipped",
+        "The routine is paused.",
+        null,
+        this.#now().toISOString(),
+      );
+      this.#announce(routine.channelId);
+      return { status: 202, body: { status: "ignored", runId: run.id } };
+    }
+    const text = body.toString("utf8").trim();
+    const run = this.#fire(
+      routine,
+      "webhook",
+      text.length > WEBHOOK_TEXT_LIMIT ? `${text.slice(0, WEBHOOK_TEXT_LIMIT)}…` : text,
+    );
+    return { status: 202, body: { status: run.outcome === "started" ? "accepted" : "skipped", runId: run.id } };
+  }
+
   listRuns(raw: unknown): ChannelRoutineRun[] {
     const routine = this.#o.store.get(parseChannelRoutineIdInput(raw).routineId);
     return this.#o.store.runs(routine.id).map((run) => this.#withState(run));
@@ -301,14 +445,15 @@ export class ChannelRoutineService {
   }
 
   /** Starts one run (or writes down why not), moves the plan and tells the window. */
-  #fire(routine: ChannelRoutine, cause: "schedule" | "manual"): ChannelRoutineRun {
+  #fire(routine: ChannelRoutine, cause: ChannelRoutineRun["cause"], delivery = ""): ChannelRoutineRun {
     const at = this.#now().toISOString();
     let reason: string | null = channelRoutineChannelProblem(this.#o.channel(routine.channelId));
     if (!reason && this.#stillGoing(routine.id)) reason = "The previous run is still going.";
     let sent: { messageId: string; taskId: string } | null = null;
     if (!reason) {
       try {
-        sent = this.#o.send(routine.channelId, channelRoutineMessage(routine.name, routine.prompt));
+        const message = channelRoutineMessage(routine.name, routine.prompt);
+        sent = this.#o.send(routine.channelId, delivery ? `${message}\n\nWebhook:\n${delivery}` : message);
       } catch (error) {
         reason = error instanceof Error ? error.message : "The channel did not take the message.";
       }
@@ -330,7 +475,7 @@ export class ChannelRoutineService {
 
   #record(
     routine: ChannelRoutine,
-    cause: "schedule" | "manual",
+    cause: ChannelRoutineRun["cause"],
     outcome: "started" | "skipped",
     reason: string | null,
     sent: { messageId: string; taskId: string } | null,
@@ -388,6 +533,9 @@ export class ChannelRoutineService {
 /** What the program has: the channel store, the channel engine and the database. Builds the service so `main` needs one expression. */
 export function createChannelRoutineService(deps: {
   database: OpenBotDatabase;
+  /** Encrypts webhook secrets; without it a webhook cannot be turned on. */
+  box?: SecretBox | null;
+  webhookBase?: () => string | null;
   channels: { list: () => WorkspaceChannel[]; getTask: (taskId: string) => { state: ChannelTaskState } };
   engine: {
     sendMessage: (input: { channelId: string; text: string }) => { message: { id: string }; task: { id: string } };
@@ -395,7 +543,8 @@ export function createChannelRoutineService(deps: {
   emit: (event: AgentEvent) => void;
 }): ChannelRoutineService {
   return new ChannelRoutineService({
-    store: new ChannelRoutineStore(deps.database),
+    store: new ChannelRoutineStore(deps.database, deps.box ?? null),
+    webhookBase: deps.webhookBase,
     channel: (channelId) => deps.channels.list().find((channel) => channel.id === channelId) ?? null,
     send: (channelId, text) => {
       const sent = deps.engine.sendMessage({ channelId, text });
@@ -410,4 +559,26 @@ export function createChannelRoutineService(deps: {
     },
     emit: deps.emit,
   });
+}
+
+/**
+ * The handler of the local webhook receiver: a routine of a channel answers first (null = it has no routine with this id), then the
+ * routines of agents. `channels` is read at each delivery, because the channel service starts after the receiver.
+ */
+export function routeWebhook(
+  channels: () => Pick<ChannelRoutineService, "handleWebhook"> | null,
+  agents: {
+    handleWebhook: (
+      routineId: string,
+      headers: { id: string; timestamp: string; signature: string },
+      body: Buffer,
+    ) => Promise<WebhookAnswer>;
+  },
+): (
+  routineId: string,
+  headers: { id: string; timestamp: string; signature: string },
+  body: Buffer,
+) => Promise<WebhookAnswer> {
+  return async (routineId, headers, body) =>
+    channels()?.handleWebhook(routineId, headers, body) ?? agents.handleWebhook(routineId, headers, body);
 }

@@ -185,7 +185,7 @@ describe("AgentSettingsService", () => {
     expect(initial).toMatchObject({ language: "en", languageChosen: false });
     expect(initial.notifications.matrix["needs-input"]).toEqual({ desktop: true, sound: true });
     expect(initial.tabs.find((tab) => tab.id === "computer-use")?.available).toBe(false);
-    expect(initial.tabs.find((tab) => tab.id === "voice")?.available).toBe(false);
+    expect(initial.tabs.map((tab): string => tab.id)).not.toContain("voice");
 
     const updated = await service.updateAppSettings({
       language: "pl",
@@ -205,9 +205,12 @@ describe("AgentSettingsService", () => {
     expect(reopened.service.appSettings().notifications.matrix.finished.desktop).toBe(false);
   });
 
-  it("pins pages to the rail: every page pinned by default, kept in the chosen order, replaced as a whole, survives a restart", async () => {
+  it("pins pages to the rail: the five main pages by default (like OpenBot), kept in the chosen order, replaced as a whole, survives a restart", async () => {
     const { dir, database, service, events } = await open();
-    expect(service.appSettings().navigation).toEqual({ pinnedPageIds: [...APP_PAGE_IDS] });
+    expect(service.appSettings().navigation).toEqual({
+      pinnedPageIds: ["agents", "workflows", "tasks", "usage", "library"],
+    });
+    expect(APP_PAGE_IDS).toEqual(expect.arrayContaining(service.appSettings().navigation.pinnedPageIds));
 
     const pinned = await service.updateAppSettings({ navigation: { pinnedPageIds: ["library", "agents", "phone"] } });
     expect(pinned.navigation).toEqual({ pinnedPageIds: ["library", "agents", "phone"] });
@@ -242,6 +245,7 @@ describe("AgentSettingsService", () => {
     expect(service.appSettings().appearance).toEqual({
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "collapse",
@@ -253,6 +257,7 @@ describe("AgentSettingsService", () => {
       uiScale: 125,
       sendShortcut: "mod-enter",
       font: "inter",
+      fontWeight: "normal",
       chatAccent: "blue",
     });
     expect(events.at(-1)).toEqual({ type: "app-settings-changed", settings: changed });
@@ -262,6 +267,7 @@ describe("AgentSettingsService", () => {
     expect(second.appearance).toEqual({
       uiScale: 125,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "mod-enter",
       chatAccent: "violet",
       agentSteps: "collapse",
@@ -389,8 +395,8 @@ describe("AgentSettingsService", () => {
     expect(events).toHaveLength(before);
   });
 
-  it("marks the tabs of the features built into the program as available (voice needs Windows speech)", () => {
-    expect(builtInTabFeatures("win32")).toEqual({ voice: true, mobile: true, dock: true, island: true });
-    expect(builtInTabFeatures("linux")).toEqual({ voice: false, mobile: true, dock: true, island: true });
+  it("marks the tabs of the features built into the program as available on every platform", () => {
+    expect(builtInTabFeatures("win32")).toEqual({ mobile: true, dock: true, island: true });
+    expect(builtInTabFeatures("linux")).toEqual({ mobile: true, dock: true, island: true });
   });
 });

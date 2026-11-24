@@ -1,7 +1,15 @@
 // COSGRAL phone app worker: keeps the app files so the app opens without the computer answering. It never touches
 // /v1/ (the phone API), so no message, card or token is ever stored here. The version changes with every build.
 const CACHE = "cosgral-app-__VERSION__";
-const FILES = ["/app/", "/app/app.js", "/app/app.css", "/app/manifest.webmanifest", "/app/icon.svg"];
+const FILES = [
+  "/app/",
+  "/app/app.js",
+  "/app/app.css",
+  "/app/manifest.webmanifest",
+  "/app/icon.svg",
+  "/app/jost-latin.woff2",
+  "/app/jost-latin-ext.woff2",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

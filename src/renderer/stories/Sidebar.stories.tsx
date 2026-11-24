@@ -83,11 +83,13 @@ export const AgentTiles: Story = {
     const preview = tile.querySelector<HTMLElement>(".bot-row-preview");
     const time = tile.querySelector<HTMLElement>(".bot-row-time");
     if (!avatar || !title || !preview || !time) throw new Error("Agent tile anatomy is incomplete.");
-    await expect(tile.getBoundingClientRect().height).toBe(68);
-    await expect(avatar.getBoundingClientRect().width).toBe(44);
-    await expect(getComputedStyle(title).fontSize).toBe("14px");
-    await expect(getComputedStyle(preview).fontSize).toBe("13px");
-    await expect(getComputedStyle(time).fontSize).toBe("12px");
+    // Flat OpenBot rows (PR #24): 60px row, 42px creature; the time is never cut.
+    await expect(tile.getBoundingClientRect().height).toBe(60);
+    await expect(avatar.getBoundingClientRect().width).toBe(42);
+    await expect(time.scrollWidth).toBeLessThanOrEqual(time.clientWidth);
+    await expect(getComputedStyle(title).fontSize).toBe("16px");
+    await expect(getComputedStyle(preview).fontSize).toBe("15px");
+    await expect(getComputedStyle(time).fontSize).toBe("14px");
   },
 };
 
@@ -115,12 +117,12 @@ export const AgentContextMenu: Story = {
     await waitFor(() => expect(menu.getBoundingClientRect().width).toBe(200));
     await expect(menuStyle.padding).toBe("4px");
     await expect(menuStyle.outlineStyle).toBe("none");
-    await expect(items[0].getBoundingClientRect().height).toBe(26);
+    await expect(items[0].getBoundingClientRect().height).toBe(30);
     await expect(itemStyle.padding).toBe("4px 8px");
     await expect(itemStyle.gap).toBe("8px");
     await expect(itemStyle.borderRadius).toBe("4px");
-    await expect(itemStyle.fontSize).toBe("13px");
-    await expect(itemStyle.lineHeight).toBe("18px");
+    await expect(itemStyle.fontSize).toBe("15px");
+    await expect(itemStyle.lineHeight).toBe("22px");
   },
 };
 
@@ -167,20 +169,19 @@ export const Channels: Story = {
   args: { onSelectChannels: fn() },
   decorators: [(Story) => <div style={{ width: "280px", height: "100vh" }}>{Story()}</div>],
   play: async ({ canvas, args, userEvent }) => {
-    const browse = canvas.getByRole("button", { name: "Browse channels" });
-    const create = canvas.getByRole("button", { name: "New channel" });
-    await expect(browse.querySelector("svg")).not.toBeNull();
-    await expect(create.querySelector("svg")).not.toBeNull();
-    // UI-I: the channel actions are quiet rows (no fill at rest; the hover fill comes from --cosgral-hover).
-    await expect(getComputedStyle(browse).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    browse.focus();
-    await expect(browse).toHaveFocus();
-    await expect(getComputedStyle(browse).boxShadow).not.toBe("none");
-    await userEvent.keyboard("{Enter}");
+    // Channels are opened from the Create new menu (like OpenBot), not from a block above the list.
+    await expect(canvas.queryByRole("button", { name: "Browse channels" })).toBeNull();
+    const createNew = canvas.getByRole("button", { name: "Create new" });
+    createNew.focus();
+    // The keyboard focus ring is an outline or a shadow; either way it must be there.
+    const focusStyle = getComputedStyle(createNew);
+    await expect(focusStyle.outlineStyle !== "none" || focusStyle.boxShadow !== "none").toBe(true);
+    await userEvent.click(createNew);
+    const body = within(document.body);
+    await userEvent.click(await body.findByRole("menuitem", { name: "Browse channels" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith();
-    await userEvent.tab();
-    await expect(create).toHaveFocus();
-    await userEvent.keyboard("{Enter}");
+    await userEvent.click(createNew);
+    await userEvent.click(await body.findByRole("menuitem", { name: "New channel" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith(true);
   },
 };
@@ -246,11 +247,12 @@ export const HiddenAgents: Story = {
     onSetBotHidden: fn(),
     onDuplicateBot: fn(),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const c = within(canvasElement);
     await expect(c.queryByRole("button", { name: /^Research,/ })).not.toBeInTheDocument();
-    await fireEvent.click(c.getByRole("switch", { name: "Show hidden" }));
-    await expect(c.getByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
+    await userEvent.click(c.getByRole("button", { name: "Filter" }));
+    await userEvent.click(await within(document.body).findByRole("menuitemcheckbox", { name: "Show hidden" }));
+    await expect(await c.findByRole("button", { name: /^Research,/ })).toHaveClass("bot-row-hidden");
   },
 };
 export const FallbackModel: Story = {
@@ -260,7 +262,7 @@ export const FallbackModel: Story = {
     bots: STORY_BOTS.map((bot, index) => (index === 0 ? { ...bot, activeModel: "gpt-5.6-terra" } : bot)),
   },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText(/^model zapasowy:/)).toBeVisible();
+    await expect(within(canvasElement).getByText(/^fallback model:/)).toBeVisible();
   },
 };
 export const CopyWarning: Story = {

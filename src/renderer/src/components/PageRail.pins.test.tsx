@@ -89,6 +89,7 @@ it("uses a newer settings event instead of a late load response", async () => {
       appearance: {
         uiScale: 100,
         font: "inter",
+        fontWeight: "normal",
         sendShortcut: "enter",
         chatAccent: "blue",
         agentSteps: "show",

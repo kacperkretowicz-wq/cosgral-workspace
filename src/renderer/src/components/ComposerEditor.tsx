@@ -2,10 +2,10 @@ import { attachmentReferenceIds, serializeAttachmentReference } from "@openbot/c
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { DraftAttachment, MentionCandidate, SlashCommand } from "@openbot/contracts/ipc";
 import { Portal } from "@solidjs/web";
-import { createEffect, createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, Show, untrack } from "solid-js";
 import { buildAnimatedAvatarSvg } from "../blobatar";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { currentSendShortcut, enterAction } from "../send-shortcut";
 import { AgentAvatar } from "./AgentAvatar";
 import { AnchoredTooltip } from "./conversation/AnchoredTooltip";
@@ -156,16 +156,20 @@ export function ComposerEditor(props: ComposerEditorProps) {
       value: props.value,
       bots: props.bots,
       attachments: props.attachments ?? [],
+      // Read here, in the tracking scope, so a renamed agent or file redraws the tokens.
+      names: `${props.bots.map((bot) => bot.name).join("|")}#${(props.attachments ?? []).map((a) => a.name).join("|")}`,
     }),
     ({ botId, value, bots, attachments }) => {
-      if (!editor) return;
+      const node = editor;
+      if (!node) return;
       const attachmentKey = attachments.map((attachment) => `${attachment.id}:${attachment.name}`).join("|");
       if (botId === lastBotId && value === lastEmittedValue && attachmentKey === lastAttachmentKey) return;
       lastBotId = botId;
       lastAttachmentKey = attachmentKey;
       lastEmittedValue = value;
       setAttachmentTooltip(null);
-      renderEditorValue(editor, value, bots, attachments, attachmentTokenActions);
+      // The values were read in the compute function above; drawing them is a one-off.
+      untrack(() => renderEditorValue(node, value, bots, attachments, attachmentTokenActions));
       setMention(null);
     },
   );
@@ -469,6 +473,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
             as="div"
             class="mention-picker"
             aria-label={t("Insert mention")}
+            // The list scrolls. The arrows of the message field drive it (virtual focus); Tab can also reach the list
+            // itself, so its scrolling has a keyboard of its own (axe scrollable-region-focusable, real window).
+            tabindex={0}
             options={matchingOptions()}
             optionValue={pickerOptionKey}
             optionTextValue={pickerOptionText}
@@ -533,10 +540,12 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     </strong>
                     <span>
                       {option.type === "bot"
-                        ? "Agent"
+                        ? t("Agent")
                         : option.type === "attachment"
-                          ? "File"
-                          : option.candidate.detail || (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
+                          ? t("File")
+                          : // The engine sends "Channel" / "Library" (or an agent's own description): through the dictionary.
+                            tData(option.candidate.detail) ||
+                            (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
                     </span>
                   </Listbox.Item>
                 </>

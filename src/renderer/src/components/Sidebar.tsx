@@ -1,26 +1,13 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type {
-  AccountUsage,
-  AgentActivity,
-  AgentModelOption,
-  AgentStatus,
-  AppInfo,
-  AvatarImageInput,
-  CentralAuthUser,
-  DirectThreadSummary,
-  ExternalDestination,
-  SidebarLayout,
-  TeamPresenceMember,
-  ThreadList,
-  UpdateStatus,
-} from "@openbot/contracts/ipc";
+import type { AvatarImageInput, ExternalDestination } from "@openbot/contracts/ipc";
 import { emptySidebarLayout } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
-import { t } from "../i18n";
-import { type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
+import { appLocale, t, tData, tn } from "../i18n";
+import { agentStep, isTypingTarget, neighbourAgent } from "../keyboard-shortcuts";
+import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
 import { captureAgentRowTops, playAgentRowFlip } from "../sidebar-row-flip";
 import {
   agentMoveTargets,
@@ -43,219 +30,32 @@ import {
   type SidebarFolderActions,
 } from "./SidebarFolders";
 import { SpacesRail } from "./Spaces";
+import { SidebarAgentIndicator } from "./sidebar/SidebarAgentIndicator";
+import {
+  DeleteIcon,
+  EditIcon,
+  FeedbackIcon,
+  FilterIcon,
+  LogoutIcon,
+  MessageIcon,
+  PermissionsIcon,
+  PlusIcon,
+  SearchIcon,
+  SidebarToggleIcon,
+  UpdateIcon,
+  UsageIcon,
+} from "./sidebar/SidebarIcons";
+import type { NeedsYouSidebarItem, SidebarProps } from "./sidebar/types";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
-import { TypingDots } from "./TypingDots";
-import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Switch, Text } from "./ui";
-
-export interface NeedsYouSidebarItem {
-  threadId?: string;
-  threadTitle?: string;
-  botId: string;
-  botName: string;
-  kind: "question" | "approval" | "takeover" | "vault" | "plan";
-  summary: string;
-}
-
-interface SidebarProps {
-  serverName: string;
-  bots: BotProfile[];
-  activeBotId: string;
-  people: TeamPresenceMember[];
-  directThreads: DirectThreadSummary[];
-  activeDirectMemberId: string | null;
-  account: CentralAuthUser;
-  appInfo: AppInfo | null;
-  agentStatus: AgentStatus;
-  accountUsage: AccountUsage | null;
-  updateStatus: UpdateStatus;
-  agentStates: Record<string, SidebarAgentState>;
-  needsYouItems?: NeedsYouSidebarItem[];
-  threadLists?: Record<string, ThreadList>;
-  activities?: Record<string, AgentActivity>;
-  /** COSGRAL: agents that are looking at a window, screen or camera right now. */
-  lookingBotIds?: string[];
-  computerUsingBotIds?: string[];
-  onStopComputerUse?: (botId: string) => void;
-  /** COSGRAL: local owner profile: no account service, so no email and no sign out. */
-  localProfile?: boolean;
-  /** COSGRAL W1: user folders. Without a layout the agent list stays flat. */
-  layout?: SidebarLayout;
-  /** COSGRAL W1: folder changes. Without them the folders can be read but not changed. */
-  folderActions?: SidebarFolderActions;
-  onSelectBot: (botId: string) => void;
-  onSetBotHidden?: (botId: string, hidden: boolean) => Promise<void>;
-  onDuplicateBot?: (botId: string) => Promise<void>;
-  copyNotice?: string;
-  onDismissCopyNotice?: () => void;
-  modelOptions?: AgentModelOption[];
-  onMarkBotRead?: (botId: string) => Promise<void>;
-  onSelectChannels?: (create?: boolean) => void;
-  onSelectNeedsYou?: (botId: string, threadId?: string) => void;
-  onSelectPerson: (memberId: string) => void;
-  onCreateBot: () => void;
-  onEditBot: (botId: string, focus?: "name") => void;
-  /** Inline rename on the sidebar row (UI-AF); settings Rename path stays via onEditBot(..., "name") if needed. */
-  onRenameBot?: (botId: string, name: string) => Promise<void>;
-  onDeleteBot: (botId: string) => Promise<void>;
-  onRefreshUsage: () => Promise<AccountUsage>;
-  onUpdateAction: () => Promise<void>;
-  onUpdateAccountAvatar: (image: AvatarImageInput | null) => Promise<void>;
-  onLogout: () => Promise<void>;
-  onOpenExternal: (destination: ExternalDestination) => Promise<void>;
-  onOpenPermissions: () => void;
-  compact: boolean;
-  onCollapse: () => void;
-  onExpand: () => void;
-}
+import { AlertDialog, Badge, Button, Check, ContextMenu, DropdownMenu, Input, Popover, Text } from "./ui";
+import { Copy, Eye, EyeOff, Users } from "./ui/icons";
 
 export type { SidebarAgentState };
 
-function SidebarAgentIndicator(props: { state: SidebarAgentState }) {
-  const unreadCount = () => (props.state.kind === "unread" ? props.state.count : 0);
-  return (
-    <span class={`bot-row-agent-status bot-row-agent-status-${props.state.kind}`} aria-hidden="true">
-      <Show when={props.state.kind === "working"}>
-        <TypingDots class="bot-row-thinking-dots" />
-      </Show>
-      <Show when={props.state.kind === "limited"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Limit")}</title>
-          <circle cx="6" cy="6" r="3.8" />
-          <path d="M6 4.1V6l1.3.8" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "error"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Error")}</title>
-          <path d="M6 3.2v3.4M6 8.6v.2" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "responded"}>
-        <svg viewBox="0 0 12 12">
-          <title>{t("Responded")}</title>
-          <path d="m3 6.2 1.8 1.8L9 3.8" />
-        </svg>
-      </Show>
-      <Show when={props.state.kind === "needs-you"}>
-        <span class="bot-row-needs-you-dot" title={t("Needs you")} />
-      </Show>
-      <Show when={props.state.kind === "unread"}>
-        <span>{unreadCount()}</span>
-      </Show>
-    </span>
-  );
-}
+/** The preview the bot store gives an agent before its first message. */
+const NO_MESSAGES_PREVIEW = "No messages yet";
 
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-4 fill-none stroke-current">
-      <circle cx="8.5" cy="8.5" r="5.5" stroke-width="1.6" />
-      <path d="m12.7 12.7 3.6 3.6" stroke-width="1.6" stroke-linecap="round" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="size-[18px] fill-none stroke-current">
-      <path d="M10 4v12M4 10h12" stroke-width="1.5" stroke-linecap="round" />
-    </svg>
-  );
-}
-
-export function SidebarToggleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="sidebar-toggle-icon">
-      <rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2.25" />
-      <path d="M7.25 3.75v12.5" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="bot-context-icon size-4 fill-none stroke-current">
-      <path d="m12.6 4.2 3.2 3.2-8.7 8.7-3.8.6.6-3.8 8.7-8.7Z" stroke-width="1.4" />
-      <path d="m10.9 5.9 3.2 3.2" stroke-width="1.4" />
-    </svg>
-  );
-}
-
-function DeleteIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      class="bot-context-icon bot-context-danger-icon size-4 fill-none stroke-current"
-    >
-      <path
-        d="M4.5 6.2h11M8 3.8h4M6.2 6.2l.7 9.3h6.2l.7-9.3M8.4 8.7v4.5M11.6 8.7v4.5"
-        stroke-width="1.35"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UsageIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M4.2 13.9a6.5 6.5 0 1 1 11.6 0" />
-      <path d="m10 10 3.1-2.3" />
-      <circle cx="10" cy="10" r="1" class="account-menu-icon-fill" />
-    </svg>
-  );
-}
-
-function FeedbackIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M4 5.2h12v8.6H9l-3.5 2.4v-2.4H4V5.2Z" />
-      <path d="M7 8.2h6M7 10.8h4" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M3.8 4.8h12.4v10.4H3.8V4.8Z" />
-      <path d="m4.5 5.6 5.5 4.2 5.5-4.2" />
-    </svg>
-  );
-}
-
-function UpdateIcon(props: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      class={["account-menu-icon", { "account-menu-icon-spinning": props.active }]}
-    >
-      <path d="M15.4 6.8A6 6 0 1 0 16 10" />
-      <path d="M15.4 3.8v3h-3" />
-    </svg>
-  );
-}
-
-function PermissionsIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M10 2.9 15.5 5v4.6c0 3.6-2.2 6.3-5.5 7.5-3.3-1.2-5.5-3.9-5.5-7.5V5L10 2.9Z" />
-      <path d="m7.6 9.9 1.5 1.5 3.3-3.4" />
-    </svg>
-  );
-}
-
-function LogoutIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" class="account-menu-icon">
-      <path d="M8.2 4.2H5.5v11.6h2.7" />
-      <path d="M11.6 6.6 15 10l-3.4 3.4M7.8 10H15" />
-    </svg>
-  );
-}
+export type { NeedsYouSidebarItem };
 
 export function Sidebar(props: SidebarProps) {
   const [showHidden, setShowHidden] = createSignal(false);
@@ -407,6 +207,16 @@ export function Sidebar(props: SidebarProps) {
   const directThreadByMember = createMemo(
     () => new Map(props.directThreads.map((thread) => [thread.otherMemberId, thread])),
   );
+  const filteredChannels = createMemo(() => {
+    const normalizedQuery = query().trim().toLowerCase();
+    return (props.channels ?? []).filter(
+      (channel) =>
+        !channel.archived &&
+        (!normalizedQuery || `${channel.title} ${channel.name}`.toLowerCase().includes(normalizedQuery)),
+    );
+  });
+  const showChannels = () => Boolean(props.onOpenChannel) && filteredChannels().length > 0;
+  const botById = createMemo(() => new Map(props.bots.map((bot) => [bot.id, bot])));
   const filteredPeople = createMemo(() => {
     const normalizedQuery = query().trim().toLowerCase();
     return [...props.people]
@@ -523,8 +333,20 @@ export function Sidebar(props: SidebarProps) {
     const resizeObserver = new ResizeObserver(updateScrollFade);
     if (botList) resizeObserver.observe(botList);
     requestAnimationFrame(updateScrollFade);
+    // Alt+Up/Down: the agent before or after the active one, in the order the list shows (folders, unread first, search).
+    const stepAgent = (event: KeyboardEvent) => {
+      const step = agentStep(event);
+      if (step === null || event.defaultPrevented || isTypingTarget(event.target)) return;
+      const ids = listRows().flatMap((row) => (row.type === "agent" ? [row.bot.id] : []));
+      const next = neighbourAgent(ids, props.activeBotId, step);
+      if (!next || next === props.activeBotId) return;
+      event.preventDefault();
+      props.onSelectBot(next);
+    };
+    window.addEventListener("keydown", stepAgent);
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener("keydown", stepAgent);
     };
   });
 
@@ -645,10 +467,10 @@ export function Sidebar(props: SidebarProps) {
             type="button"
             class="sidebar-icon-button sidebar-toggle-button no-drag"
             onClick={() => (props.compact ? props.onExpand() : props.onCollapse())}
-            aria-label={props.compact ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={props.compact ? t("Expand sidebar") : t("Collapse sidebar")}
             aria-controls="bot-sidebar"
             aria-expanded={props.compact ? "false" : "true"}
-            title={props.compact ? "Expand sidebar" : "Collapse sidebar"}
+            title={props.compact ? t("Expand sidebar") : t("Collapse sidebar")}
           >
             <SidebarToggleIcon />
           </Button>
@@ -672,6 +494,35 @@ export function Sidebar(props: SidebarProps) {
               maxlength={INPUT_LIMITS.agentName}
             />
           </label>
+          <Show when={!props.compact && props.onSetBotHidden}>
+            <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
+              <DropdownMenu.Trigger
+                as={Button}
+                type="button"
+                class={["sidebar-icon-button sidebar-filter-button no-drag", { "is-active": showHidden() }]}
+                aria-label={showHidden() ? t("Filter, hidden agents shown") : t("Filter")}
+                title={t("Filter")}
+              >
+                <FilterIcon />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content class="bot-context-menu sidebar-filter-menu" aria-label={t("Filter")}>
+                  <DropdownMenu.CheckboxItem
+                    class="sidebar-filter-item"
+                    checked={showHidden()}
+                    onChange={setShowHidden}
+                  >
+                    <span class="sidebar-filter-check" aria-hidden="true">
+                      <Show when={showHidden()}>
+                        <Check size={14} />
+                      </Show>
+                    </span>
+                    <span>{t("Show hidden")}</span>
+                  </DropdownMenu.CheckboxItem>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </Show>
           <Show when={!props.compact}>
             <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
               <DropdownMenu.Trigger
@@ -691,6 +542,9 @@ export function Sidebar(props: SidebarProps) {
                   <Show when={props.onSelectChannels}>
                     <DropdownMenu.Item onSelect={() => props.onSelectChannels?.(true)}>
                       <span>{t("New channel")}</span>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item onSelect={() => props.onSelectChannels?.()}>
+                      <span>{t("Browse channels")}</span>
                     </DropdownMenu.Item>
                   </Show>
                   <Show when={props.layout && props.folderActions}>
@@ -723,14 +577,6 @@ export function Sidebar(props: SidebarProps) {
           </Button>
         </Text>
       </Show>
-      <Show when={!props.compact && props.onSetBotHidden}>
-        <Switch
-          class="sidebar-hidden-switch"
-          label={t("Show hidden")}
-          checked={showHidden()}
-          onChange={setShowHidden}
-        />
-      </Show>
       <Show when={rowActionError()}>
         <p role="alert" class="sidebar-row-action-error">
           {rowActionError()}
@@ -748,27 +594,22 @@ export function Sidebar(props: SidebarProps) {
         ]}
         onScroll={() => updateScrollFade()}
       >
-        <Show when={props.onSelectChannels && !props.compact}>
-          <section class="sidebar-chat-group">
-            <header>
-              <h2>{t("Channels")}</h2>
-            </header>
-            <div class="sidebar-channel-actions">
-              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.()}>
-                <SearchIcon /> {t("Browse channels")}
-              </Button>
-              <Button type="button" variant="secondary" size="lg" onClick={() => props.onSelectChannels?.(true)}>
-                <PlusIcon /> {t("New channel")}
-              </Button>
-            </div>
-          </section>
-        </Show>
         <Show
           when={filteredBots().length > 0 || filteredPeople().length > 0}
           fallback={
-            <p class="empty-search">
-              {query().trim() ? "No matches" : props.bots.length ? "No matches" : "No agents yet"}
-            </p>
+            <Show
+              when={!query().trim() && props.bots.length === 0}
+              fallback={<p class="empty-search">{t("No matches")}</p>}
+            >
+              <div class="sidebar-empty">
+                <p class="sidebar-empty-title">{t("No agents yet")}</p>
+                <p class="sidebar-empty-hint">{t("An agent is a teammate with its own skills, memory and chats.")}</p>
+                <Button type="button" size="sm" variant="primary" onClick={() => props.onCreateBot()}>
+                  <PlusIcon />
+                  {t("New agent")}
+                </Button>
+              </div>
+            </Show>
           }
         >
           <Show when={filteredPeople().length > 0}>
@@ -788,7 +629,7 @@ export function Sidebar(props: SidebarProps) {
                           "bot-row-active": props.activeDirectMemberId === member.id,
                         },
                       ]}
-                      aria-label={`${teamMemberName(member)}. ${thread()?.lastMessage.text ?? (member.online ? "Online now" : "Offline")}`}
+                      aria-label={`${teamMemberName(member)}. ${thread()?.lastMessage.text ?? (member.online ? t("Online now") : t("Offline"))}`}
                       aria-pressed={props.activeDirectMemberId === member.id ? "true" : "false"}
                       onClick={() => props.onSelectPerson(member.id)}
                     >
@@ -806,11 +647,17 @@ export function Sidebar(props: SidebarProps) {
                           <span>{thread() ? sidebarMessageTime(thread()?.updatedAt ?? "") : ""}</span>
                         </span>
                         <span class="bot-row-preview">
-                          {thread()?.lastMessage.text ?? (member.online ? "Online now" : "Offline")}
+                          {thread()?.lastMessage.text ?? (member.online ? t("Online now") : t("Offline"))}
                         </span>
                       </span>
                       <Show when={(thread()?.unreadCount ?? 0) > 0}>
-                        <span class="sr-only">{thread()?.unreadCount} unread direct messages</span>
+                        <span class="sr-only">
+                          {tn(
+                            thread()?.unreadCount ?? 0,
+                            "{count} unread direct message",
+                            "{count} unread direct messages",
+                          )}
+                        </span>
                       </Show>
                     </Button>
                   );
@@ -829,7 +676,7 @@ export function Sidebar(props: SidebarProps) {
                   <Button
                     type="button"
                     class={["bot-row needs-you-row", { "bot-row-active": props.activeBotId === item.botId }]}
-                    aria-label={`${item.botName}, ${t("Needs you")}. ${item.summary}${item.threadTitle ? `, Thread ${item.threadTitle}` : ""}`}
+                    aria-label={`${item.botName}, ${t("Needs you")}. ${item.summary}${item.threadTitle ? `, ${t("Thread: {title}", { title: item.threadTitle })}` : ""}`}
                     onClick={() =>
                       props.onSelectNeedsYou
                         ? item.threadId
@@ -843,18 +690,18 @@ export function Sidebar(props: SidebarProps) {
                         <strong>{item.botName}</strong>
                         <Badge tone="warning" size="sm">
                           {item.kind === "plan"
-                            ? "Plan"
+                            ? t("Plan")
                             : item.kind === "question"
-                              ? "Question"
+                              ? t("Question")
                               : item.kind === "takeover"
-                                ? "Browser"
+                                ? t("Browser")
                                 : item.kind === "vault"
-                                  ? "Vault"
-                                  : "Approval"}
+                                  ? t("Vault")
+                                  : t("Approval")}
                         </Badge>
                       </span>
                       <Show when={item.threadTitle}>
-                        <span class="bot-row-preview">Thread: {item.threadTitle}</span>
+                        <span class="bot-row-preview">{t("Thread: {title}", { title: item.threadTitle ?? "" })}</span>
                       </Show>
                       <span class="bot-row-preview">{item.summary}</span>
                     </span>
@@ -863,13 +710,82 @@ export function Sidebar(props: SidebarProps) {
               </For>
             </section>
           </Show>
+          <Show when={showChannels()}>
+            <section class="sidebar-chat-group" aria-labelledby="sidebar-channels-heading">
+              <header>
+                <h2 id="sidebar-channels-heading">{t("Channels")}</h2>
+              </header>
+              <For each={filteredChannels()}>
+                {(channel) => {
+                  const members = () =>
+                    [
+                      ...(channel.leadBotId ? [channel.leadBotId] : []),
+                      ...channel.memberBotIds.filter((id) => id !== channel.leadBotId),
+                    ].flatMap((id) => {
+                      const bot = botById().get(id);
+                      return bot ? [bot] : [];
+                    });
+                  const lead = () => (channel.leadBotId ? botById().get(channel.leadBotId) : undefined);
+                  const title = () => channel.title.trim() || channel.name;
+                  return (
+                    <Button
+                      type="button"
+                      class={["bot-row channel-row", { "bot-row-active": props.activeChannelId === channel.id }]}
+                      aria-pressed={props.activeChannelId === channel.id ? "true" : "false"}
+                      aria-label={`${t("Channel")} ${title()}. ${tn(channel.memberBotIds.length, "{count} member", "{count} members")}`}
+                      data-channel-id={channel.id}
+                      onClick={() => props.onOpenChannel?.(channel.id)}
+                    >
+                      <span class="bot-row-avatar channel-row-stack" data-count={Math.min(3, members().length)}>
+                        <For each={members().slice(0, 3)}>
+                          {(bot, index) => (
+                            <AgentAvatar
+                              bot={bot}
+                              class="channel-row-member"
+                              style={{ "--stack-index": String(index()) }}
+                            />
+                          )}
+                        </For>
+                        <Show when={members().length === 0}>
+                          <span class="channel-row-hash" aria-hidden="true">
+                            #
+                          </span>
+                        </Show>
+                      </span>
+                      <span class="bot-row-copy">
+                        <span class="bot-row-heading">
+                          <span class="bot-row-title">
+                            <strong>{title()}</strong>
+                          </span>
+                          <span class="bot-row-meta">
+                            <span
+                              class="channel-row-count"
+                              title={tn(channel.memberBotIds.length, "{count} member", "{count} members")}
+                            >
+                              {/* A people icon, so the number reads as members and not as unread messages. */}
+                              <Users size={11} stroke-width={2} aria-hidden="true" />
+                              {channel.memberBotIds.length}
+                            </span>
+                          </span>
+                        </span>
+                        <span class="bot-row-preview">
+                          <span class="channel-row-name">#{channel.name}</span>
+                          <Show when={lead()}>{(bot) => <> · {t("led by {name}", { name: bot().name })}</>}</Show>
+                        </span>
+                      </span>
+                    </Button>
+                  );
+                }}
+              </For>
+            </section>
+          </Show>
           <Show when={listRows().length > 0}>
             <section
               class="sidebar-chat-group"
-              aria-label={filteredPeople().length > 0 ? undefined : "Agents"}
-              aria-labelledby={filteredPeople().length > 0 ? "sidebar-agents-heading" : undefined}
+              aria-label={filteredPeople().length > 0 || showChannels() ? undefined : "Agents"}
+              aria-labelledby={filteredPeople().length > 0 || showChannels() ? "sidebar-agents-heading" : undefined}
             >
-              <Show when={filteredPeople().length > 0}>
+              <Show when={filteredPeople().length > 0 || showChannels()}>
                 <header>
                   <h2 id="sidebar-agents-heading">{t("Agents")}</h2>
                 </header>
@@ -901,7 +817,8 @@ export function Sidebar(props: SidebarProps) {
                   }
                   const bot = row.bot;
                   const depth = row.depth;
-                  const role = () => bot.role.trim();
+                  // The store's default role ("New teammate") is shown in the window language; a role the person typed is not.
+                  const role = () => tData(bot.role.trim());
                   const state = () => props.agentStates[bot.id];
                   const note = () => sidebarAgentStateNote(state());
                   const stateLabel = () => {
@@ -909,6 +826,11 @@ export function Sidebar(props: SidebarProps) {
                     return current ? sidebarAgentStateLabel(current) : "";
                   };
                   const looking = () => props.lookingBotIds?.includes(bot.id) ?? false;
+                  // A new agent has no messages yet: its role says more than "No messages yet", and keeps the name whole.
+                  const preview = () =>
+                    !bot.preview.trim() || bot.preview === NO_MESSAGES_PREVIEW || bot.preview === t(NO_MESSAGES_PREVIEW)
+                      ? role() || t("No messages yet")
+                      : bot.preview;
                   return (
                     <ContextMenu.Root modal={false}>
                       <ContextMenu.Trigger
@@ -922,26 +844,17 @@ export function Sidebar(props: SidebarProps) {
                             "bot-row-hidden": bot.hidden === true,
                           },
                         ]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? "Ukryty. " : ""}${bot.activeModel && bot.activeModel !== bot.model ? `Model zapasowy: ${bot.activeModel}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? "Looking. " : ""}${bot.preview}`}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? `${t("Hidden")}. ` : ""}${bot.activeModel && bot.activeModel !== bot.model ? `${t("Fallback model: {model}", { model: bot.activeModel })}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? `${t("Looking")}. ` : ""}${bot.preview}`}
                         style={depth > 0 ? { "--folder-level": String(depth - 1) } : undefined}
                         data-agent-id={bot.id}
                         data-in-folder={depth > 0 ? "true" : undefined}
                         aria-pressed={props.activeBotId === bot.id ? "true" : "false"}
                         onClick={() => props.onSelectBot(bot.id)}
                       >
-                        <span class="bot-row-avatar">
-                          <AgentAvatar bot={bot} />
+                        <span class="bot-row-avatar" data-mood={avatarMoodFor(state())}>
+                          <AgentAvatar bot={bot} mood={avatarMoodFor(state())} />
                           <Show when={props.threadLists?.[bot.id]}>
                             {(list) => <span class="sr-only">{threadRowLabel(list())}</span>}
-                          </Show>
-                          <Show when={props.activities?.[bot.id]?.workingThread}>
-                            {(thread) => (
-                              <span class="bot-row-preview">
-                                {thread().background
-                                  ? t("Working in background: {title}", { title: thread().title })
-                                  : t("Working in: {title}", { title: thread().title })}
-                              </span>
-                            )}
                           </Show>
                           <Show when={props.agentStates[bot.id]}>
                             {(state) => <SidebarAgentIndicator state={state()} />}
@@ -977,13 +890,6 @@ export function Sidebar(props: SidebarProps) {
                                   onBlur={() => void commitInlineRename(bot.id)}
                                 />
                               </Show>
-                              <Show when={renamingBotId() !== bot.id && role()}>
-                                {(label) => (
-                                  <Badge class="bot-role-badge" size="sm" title={label()}>
-                                    {label()}
-                                  </Badge>
-                                )}
-                              </Show>
                             </span>
                             <span class="bot-row-meta">
                               <Show when={looking()}>
@@ -992,12 +898,25 @@ export function Sidebar(props: SidebarProps) {
                               <span class="bot-row-time">{bot.time}</span>
                             </span>
                           </span>
-                          <span
-                            class={["bot-row-preview", { "bot-row-note": note() !== null }]}
-                            data-activity={state()?.kind}
+                          <Show
+                            when={props.activities?.[bot.id]?.workingThread}
+                            fallback={
+                              <span
+                                class={["bot-row-preview", { "bot-row-note": note() !== null }]}
+                                data-activity={state()?.kind}
+                              >
+                                {note() ?? preview()}
+                              </span>
+                            }
                           >
-                            {note() ?? bot.preview}
-                          </span>
+                            {(thread) => (
+                              <span class="bot-row-preview bot-row-working" data-activity="working">
+                                {thread().background
+                                  ? t("Working in background: {title}", { title: thread().title })
+                                  : t("Working in: {title}", { title: thread().title })}
+                              </span>
+                            )}
+                          </Show>
                         </span>
                         <Show when={props.agentStates[bot.id]}>
                           {(state) => <span class="sr-only">{sidebarAgentStateLabel(state())}</span>}
@@ -1005,14 +924,14 @@ export function Sidebar(props: SidebarProps) {
                       </ContextMenu.Trigger>
                       <Show when={props.computerUsingBotIds?.includes(bot.id)}>
                         <div class="computer-use-row" role="status">
-                          <span>Controlling computer</span>{" "}
+                          <span>{t("Controlling computer")}</span>{" "}
                           <Button
                             unstyled
                             type="button"
-                            aria-label={`Stop computer control for ${bot.name}`}
+                            aria-label={t("Stop computer control for {name}", { name: bot.name })}
                             onClick={() => props.onStopComputerUse?.(bot.id)}
                           >
-                            Stop
+                            {t("Stop")}
                           </Button>
                         </div>
                       </Show>
@@ -1044,7 +963,7 @@ export function Sidebar(props: SidebarProps) {
                           <Show when={props.onMarkBotRead}>
                             <ContextMenu.Item disabled={readBusy()} onSelect={() => void markRead(bot.id)}>
                               <Check class="bot-context-icon" aria-hidden="true" />
-                              <span>{readBusy() ? "Marking as read…" : "Mark as read"}</span>
+                              <span>{readBusy() ? t("Marking as read…") : t("Mark as read")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.layout && props.folderActions}>
@@ -1060,7 +979,12 @@ export function Sidebar(props: SidebarProps) {
                                 afterAgentMenu(() => props.onSetBotHidden?.(bot.id, !bot.hidden) ?? Promise.resolve())
                               }
                             >
-                              {bot.hidden ? t("Show") : t("Hide")}
+                              {bot.hidden ? (
+                                <Eye class="bot-context-icon" aria-hidden="true" />
+                              ) : (
+                                <EyeOff class="bot-context-icon" aria-hidden="true" />
+                              )}
+                              <span>{bot.hidden ? t("Show") : t("Hide")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <Show when={props.onDuplicateBot}>
@@ -1068,7 +992,8 @@ export function Sidebar(props: SidebarProps) {
                               disabled={agentActionBusy()}
                               onSelect={() => afterAgentMenu(() => props.onDuplicateBot?.(bot.id) ?? Promise.resolve())}
                             >
-                              {t("Duplicate")}
+                              <Copy class="bot-context-icon" aria-hidden="true" />
+                              <span>{t("Duplicate")}</span>
                             </ContextMenu.Item>
                           </Show>
                           <ContextMenu.Separator class="bot-context-separator" />
@@ -1119,14 +1044,14 @@ export function Sidebar(props: SidebarProps) {
               <Show when={props.appInfo}>
                 {(info) => (
                   <span class="sr-only" data-testid="app-version">
-                    Version {info().version} · {info().platform}
+                    {t("Version {version} · {platform}", { version: info().version, platform: info().platform })}
                   </span>
                 )}
               </Show>
             </span>
             <Show when={updateAvailable()}>
               <Badge class="sidebar-update-pill" tone="accent" shape="pill">
-                Update
+                {t("Update")}
               </Badge>
               <span class="sr-only">{t("COSGRAL Workspace update available")}</span>
             </Show>
@@ -1151,7 +1076,11 @@ export function Sidebar(props: SidebarProps) {
                   </Show>
                   <div class="account-profile-actions">
                     <Button type="button" onClick={() => accountAvatarInput?.click()} disabled={avatarUploadBusy()}>
-                      {avatarUploadBusy() ? "Saving…" : props.account.avatarUrl ? "Replace photo" : "Upload photo"}
+                      {avatarUploadBusy()
+                        ? t("Saving…")
+                        : props.account.avatarUrl
+                          ? t("Replace photo")
+                          : t("Upload photo")}
                     </Button>
                     <Show when={props.account.avatarUrl}>
                       <Button
@@ -1160,7 +1089,7 @@ export function Sidebar(props: SidebarProps) {
                         onClick={() => void updateAccountAvatar(null)}
                         disabled={avatarUploadBusy()}
                       >
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </Show>
                   </div>
@@ -1187,7 +1116,7 @@ export function Sidebar(props: SidebarProps) {
                 disabled={usageLoading() || props.agentStatus.phase !== "ready"}
               >
                 <UsageIcon />
-                <span>{usageLoading() ? "Updating usage…" : "Weekly usage"}</span>
+                <span>{usageLoading() ? t("Updating usage…") : t("Weekly usage")}</span>
                 <small>{weeklyUsageRemaining() === null ? "—" : `${weeklyUsageRemaining()}%`}</small>
               </Button>
               <div class="account-menu-separator" />
@@ -1220,7 +1149,7 @@ export function Sidebar(props: SidebarProps) {
                   disabled={loggingOut()}
                 >
                   <LogoutIcon />
-                  <span>{loggingOut() ? "Signing out…" : "Sign out"}</span>
+                  <span>{loggingOut() ? t("Signing out…") : t("Sign out")}</span>
                 </Button>
               </Show>
               <Show when={popoverError()}>{(message) => <p class="account-popover-error">{message()}</p>}</Show>
@@ -1269,7 +1198,7 @@ export function Sidebar(props: SidebarProps) {
           if (state.kind === "move-folder") {
             return (
               <MoveToDialog
-                title={`Move ${folderById(state.folderId)?.name ?? "folder"} to…`}
+                title={t("Move {name} to…", { name: folderById(state.folderId)?.name ?? t("folder") })}
                 targets={folderMoveTargets(layout, state.folderId)}
                 onMove={(parentId) => actions.moveFolder(state.folderId, parentId)}
                 onClose={close}
@@ -1278,7 +1207,9 @@ export function Sidebar(props: SidebarProps) {
           }
           return (
             <MoveToDialog
-              title={`Move ${props.bots.find((bot) => bot.id === state.botId)?.name ?? "agent"} to…`}
+              title={t("Move {name} to…", {
+                name: props.bots.find((bot) => bot.id === state.botId)?.name ?? t("this agent"),
+              })}
               targets={agentMoveTargets(layout, state.botId)}
               onMove={(folderId) => actions.moveAgent(state.botId, folderId)}
               onClose={close}
@@ -1342,12 +1273,12 @@ function sidebarMessageTime(value: string): string {
   const date = new Date(value);
   const now = new Date();
   if (date.toDateString() === now.toDateString()) {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(appLocale(), {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
   }
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(appLocale(), {
     month: "short",
     day: "numeric",
   }).format(date);

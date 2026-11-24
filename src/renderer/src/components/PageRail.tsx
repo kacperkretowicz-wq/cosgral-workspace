@@ -43,7 +43,7 @@ interface PageRailProps {
   onOpenSettings: () => void;
 }
 
-function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
+export function PageIcon(props: { page: PageId | "settings" }): JSX.Element {
   switch (props.page) {
     case "remote-desktop":
       return (
@@ -202,6 +202,7 @@ export function PageRail(props: PageRailProps) {
                 type="button"
                 variant="ghost"
                 class={["page-rail-button", { "page-rail-button-active": props.active === item.id }]}
+                data-page={item.id}
                 aria-label={t(item.label)}
                 aria-current={props.active === item.id ? "page" : undefined}
                 title={`${t(item.label)}${pinned(item.id) ? ` · ${t("Pinned")}` : ""}`}
@@ -230,6 +231,7 @@ export function PageRail(props: PageRailProps) {
               type="button"
               variant="ghost"
               class={["page-rail-button", { "page-rail-button-active": !!hiddenActive() }]}
+              data-page="more"
               aria-label={
                 hiddenActive()
                   ? `${t("More")} (${t("Current").toLowerCase()}: ${t(hiddenActive()?.label ?? "")})`
@@ -292,6 +294,7 @@ export function PageRail(props: PageRailProps) {
           type="button"
           variant="ghost"
           class="page-rail-button"
+          data-page="settings"
           aria-label={t("Settings")}
           title={t("Settings")}
           onClick={props.onOpenSettings}

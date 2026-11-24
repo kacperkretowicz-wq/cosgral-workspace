@@ -21,7 +21,7 @@ export function FallbackChainView(props: { info: FallbackModelsInfo | null; opti
           "After the main model: Agent, then Provider, then All. Each model is tried once. Save edits to update this chain.",
         )}
       </Text>
-      <ol>
+      <ol class="providers-chain">
         <For each={props.info?.chain ?? []}>
           {(entry) => (
             <li>
@@ -154,7 +154,7 @@ export function ProviderFallbackLists(props: {
   return (
     <Show when={api}>
       {(client) => (
-        <div class="providers-form">
+        <div class="providers-fallback-lists">
           <Text as="p" tone="secondary">
             {t("Each list allows up to {n} models from any provider. Provider lists run before All providers.", {
               n: PROVIDER_LIMITS.fallbackModels,

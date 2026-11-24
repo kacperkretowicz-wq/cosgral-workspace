@@ -8,7 +8,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(168px, 40vw);
+  /* As wide as the longest label (Polish ones are longer), so "Otwórz przeglądarkę" is not cut to "Otwórz przegląd...". */
+  width: max-content;
+  max-width: min(240px, 40vw);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -47,7 +49,7 @@
 .chat-side-panel-launcher-item span {
   overflow: hidden;
   font-size: var(--cosgral-text-md);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 1.2;
   text-align: left;
   text-overflow: ellipsis;
@@ -69,7 +71,7 @@
   background: transparent;
   color: var(--cosgral-fg-muted);
   font-size: var(--cosgral-text-md);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .chat-right-panel-tab[aria-current="page"] {
@@ -83,8 +85,7 @@
   background: var(--cosgral-bg-control-hover);
 }
 
-.chat-files-panel,
-.chat-voice-panel {
+.chat-files-panel {
   position: absolute;
   top: 0;
   right: 0;
@@ -97,22 +98,34 @@
   background: var(--cosgral-bg-raised);
 }
 
-.chat-files-panel-body,
-.chat-voice-panel-body {
+.chat-files-panel-body {
   flex: 1;
   overflow: auto;
   padding: 12px;
-}
-
-.chat-voice-panel-note {
-  margin: 0 0 12px;
-  color: var(--cosgral-fg-muted);
-  font-size: var(--cosgral-text-md);
-  line-height: 1.45;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chat-side-panel-launcher-item {
     transition: none;
   }
+}
+
+/* Header variant: the panel openers sit with the header's own icon buttons, like OpenBot's header. */
+.chat-header-panels {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-header-panels .header-panel-toggle {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+
+/* "New thread" in the header when the agent has one thread (no tab strip); same size as the panel icons. */
+.new-thread-button {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
 }

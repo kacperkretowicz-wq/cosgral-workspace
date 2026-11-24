@@ -129,10 +129,13 @@ export function QueuePanel(props: QueuePanelProps) {
     props.onReorder(ids);
   }
 
-  const steerTooltip = () => (props.steerReason ? `Steer unavailable: ${props.steerReason}` : "Steer message");
+  const steerTooltip = () =>
+    props.steerReason ? t("Steer unavailable: {reason}", { reason: props.steerReason }) : t("Steer message");
 
   function messagePreview(delivery: QueueDelivery): string {
-    return delivery.text.trim() || delivery.attachments.map((attachment) => attachment.name).join(", ") || "Attachment";
+    return (
+      delivery.text.trim() || delivery.attachments.map((attachment) => attachment.name).join(", ") || t("Attachment")
+    );
   }
 
   function openActionTooltip(anchor: HTMLElement, content: string) {
@@ -213,7 +216,10 @@ export function QueuePanel(props: QueuePanelProps) {
                     }
                   }}
                   tabindex={delivery.status === "queued" ? 0 : -1}
-                  aria-label={`Queued message ${delivery.position ?? ""}: ${messagePreview(delivery)}`}
+                  aria-label={t("Queued message {position}: {preview}", {
+                    position: String(delivery.position ?? ""),
+                    preview: messagePreview(delivery),
+                  })}
                 >
                   <span class="agent-queue-icon" aria-hidden="true">
                     <QueueIcon />
@@ -239,7 +245,7 @@ export function QueuePanel(props: QueuePanelProps) {
                       class="agent-queue-steer"
                       disabled={!props.canSteer || delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Steer queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Steer queued message {position}", { position: delivery.position ?? "" })}
                       title={props.steerReason ?? undefined}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, steerTooltip())}
@@ -254,14 +260,14 @@ export function QueuePanel(props: QueuePanelProps) {
                       }}
                     >
                       <SteerIcon />
-                      <span>{delivery.status === "starting" ? "Steering" : "Steer"}</span>
+                      <span>{delivery.status === "starting" ? t("Steering") : t("Steer")}</span>
                     </Button>
                     <Button
                       type="button"
                       class="agent-queue-icon-button agent-queue-delete"
                       disabled={delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Delete queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Delete queued message {position}", { position: delivery.position ?? "" })}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, "Delete message")}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, "Delete message")}
                       onPointerLeave={(event) => closeActionTooltip(event.currentTarget)}
@@ -281,7 +287,7 @@ export function QueuePanel(props: QueuePanelProps) {
                       class="agent-queue-icon-button agent-queue-edit"
                       disabled={delivery.status !== "queued"}
                       aria-describedby={actionTooltipId}
-                      aria-label={`Edit queued message ${delivery.position ?? ""}`}
+                      aria-label={t("Edit queued message {position}", { position: delivery.position ?? "" })}
                       onPointerEnter={(event) => openActionTooltip(event.currentTarget, "Edit message")}
                       onMouseEnter={(event) => openActionTooltip(event.currentTarget, "Edit message")}
                       onPointerLeave={(event) => closeActionTooltip(event.currentTarget)}

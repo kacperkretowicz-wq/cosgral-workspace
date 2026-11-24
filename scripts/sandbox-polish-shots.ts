@@ -190,8 +190,7 @@ async function main(): Promise<void> {
     await page.getByRole("button", { name: "Send message" }).click({ timeout: 90_000 });
     await page.getByText("Stub: received").first().waitFor({ timeout: 45_000 });
     await both(page, out, "01-chat");
-    // Voice on (sandbox only), so "Read aloud" shows; message actions appear on hover like in normal use.
-    await page.evaluate("window.openbot.voice?.updateSettings({ enabled: true })").catch(() => undefined);
+    // Message actions appear on hover like in normal use.
     await page.waitForTimeout(800);
     await page.getByText("Stub: received").last().hover();
     await both(page, out, "01-chat-hover");
@@ -234,7 +233,7 @@ async function main(): Promise<void> {
     await rail.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByRole("dialog").first().waitFor({ timeout: 10_000 });
     await page
-      .getByRole("region", { name: "Voice settings" })
+      .locator("#settings-updates")
       .waitFor({ timeout: 15_000 })
       .catch(() => undefined);
     await scrolled(page, out, "20-settings", ".initial-setup-screen");

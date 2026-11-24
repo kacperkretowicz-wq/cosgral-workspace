@@ -1,6 +1,13 @@
-import type { AgentActivity } from "@openbot/contracts/ipc";
+import type { AgentActivity, ChannelTask } from "@openbot/contracts/ipc";
 import { describe, expect, it } from "vitest";
-import { formatLimitResume, rowStateFor, sidebarAgentStateLabel } from "./row-activity";
+import {
+  avatarMoodFor,
+  channelMemberMood,
+  channelMessageMood,
+  formatLimitResume,
+  rowStateFor,
+  sidebarAgentStateLabel,
+} from "./row-activity";
 
 function activity(overrides: Partial<AgentActivity> = {}): AgentActivity {
   return {
@@ -134,5 +141,43 @@ describe("sidebarAgentStateLabel", () => {
     expect(
       sidebarAgentStateLabel({ kind: "limited", resetsAt: localSeconds(15, 40) }, new Date(2026, 10, 12, 14)),
     ).toBe("Limit · resumes 15:40");
+  });
+});
+
+describe("avatarMoodFor", () => {
+  it("gives each row state its own face", () => {
+    expect(avatarMoodFor(undefined)).toBe("idle");
+    expect(avatarMoodFor({ kind: "working" })).toBe("working");
+    expect(avatarMoodFor({ kind: "needs-you" })).toBe("needs-you");
+    expect(avatarMoodFor({ kind: "unread", count: 2 })).toBe("happy");
+    expect(avatarMoodFor({ kind: "responded" })).toBe("happy");
+    expect(avatarMoodFor({ kind: "error", message: "x" })).toBe("error");
+    expect(avatarMoodFor({ kind: "limited", resetsAt: null })).toBe("limited");
+  });
+});
+
+describe("channel creature faces", () => {
+  const task = (ownerBotId: string, state: ChannelTask["state"], extra: Partial<ChannelTask> = {}) => ({
+    ownerBotId,
+    state,
+    archivedAt: null,
+    ...extra,
+  });
+  it("shows what the member's open tasks say", () => {
+    expect(channelMemberMood([], "a")).toBe("idle");
+    expect(channelMemberMood([task("a", "running")], "a")).toBe("working");
+    expect(channelMemberMood([task("a", "running"), task("a", "waiting")], "a")).toBe("needs-you");
+    expect(channelMemberMood([task("a", "failed")], "a")).toBe("error");
+    expect(channelMemberMood([task("a", "failed"), task("a", "running")], "a")).toBe("working");
+  });
+  it("ignores other members, archived tasks and tasks that wait for tasks", () => {
+    expect(channelMemberMood([task("b", "running")], "a")).toBe("idle");
+    expect(channelMemberMood([task("a", "running", { archivedAt: "2026-11-19T10:00:00Z" })], "a")).toBe("idle");
+    expect(channelMemberMood([task("a", "waiting", { waitingForTaskIds: ["x"] })], "a")).toBe("idle");
+  });
+  it("gives a question raised brows and a result a smile", () => {
+    expect(channelMessageMood("question")).toBe("needs-you");
+    expect(channelMessageMood("result")).toBe("happy");
+    expect(channelMessageMood("reply")).toBe("idle");
   });
 });

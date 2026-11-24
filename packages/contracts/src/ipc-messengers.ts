@@ -16,10 +16,12 @@
 
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "./runtime-values";
 
+// COSGRAL W12-KK (3): Discord joins them (the Gateway: the program connects OUT to Discord with a WebSocket, nothing listens, no web
+// address). Direct messages only, one bot token, same rules as the others.
 // COSGRAL W12-KK (2): Slack joins Telegram (Socket Mode: the program connects OUT to Slack, nothing listens, no web address). Same rules
 // for every messenger: nobody is allowed by default, only private conversations (a Telegram private chat, a Slack direct message),
 // plain text only, tokens write-only and encrypted, an agent gets no tool and can only answer where the message came from.
-export const MESSENGER_KINDS = ["telegram", "slack"] as const;
+export const MESSENGER_KINDS = ["telegram", "slack", "discord"] as const;
 export type MessengerKind = (typeof MESSENGER_KINDS)[number];
 
 /**
@@ -127,6 +129,7 @@ export interface MessengersChanged extends MessengerList {}
 export const MESSENGER_LABELS: ReadonlyArray<readonly [MessengerKind, string]> = [
   ["telegram", "Telegram"],
   ["slack", "Slack"],
+  ["discord", "Discord"],
 ];
 
 /** The secrets a messenger asks for, so the window can draw the fields (the values are write-only and never come back). */
@@ -140,6 +143,15 @@ export function messengerSecretFields(
         id: "appToken",
         label: "App-level token",
         hint: "Starts with xapp-. From Basic Information, with the connections:write scope.",
+      },
+    ];
+  }
+  if (kind === "discord") {
+    return [
+      {
+        id: "token",
+        label: "Bot token",
+        hint: "From the Bot page of your Discord application (Reset Token). Three parts separated by dots.",
       },
     ];
   }
@@ -187,6 +199,16 @@ const DESCRIPTORS: Readonly<
       "Allow that conversation and choose the agent that answers it.",
     ],
   },
+  discord: {
+    conversationIdHint:
+      "A number of 17 to 20 digits (a direct-message channel id). Write to the bot once: the settings then show who wrote, and you can allow them. Servers are not allowed.",
+    setupSteps: [
+      "Make an application in the Discord Developer Portal and add a bot to it.",
+      "Copy the bot token from the Bot page (Reset Token) and paste it here. No special intents are needed for direct messages.",
+      "Open the bot's profile in Discord (install it to your account) and write a direct message to it. It appears under the conversations that wrote.",
+      "Allow that conversation and choose the agent that answers it.",
+    ],
+  },
 };
 
 /** The fixed description of a messenger for the settings window. */
@@ -211,6 +233,11 @@ export const MESSENGER_FAILURE_SENTENCES: Readonly<Record<MessengerKind, { token
     tokenRefused:
       "Slack does not accept the tokens (they may have been revoked or the app lacks a scope). Make new ones and connect again.",
     network: "Slack cannot be reached right now. The program tries again by itself.",
+  },
+  discord: {
+    tokenRefused:
+      "Discord does not accept the token (it may have been reset). Reset it on the Bot page of your application and connect again.",
+    network: "Discord cannot be reached right now. The program tries again by itself.",
   },
 };
 
@@ -238,6 +265,16 @@ export function isSlackAppToken(value: string): boolean {
   return /^xapp-[A-Za-z0-9-]{20,300}$/.test(value);
 }
 
+/** The shape of a Discord bot token: three parts separated by dots (the bot's id, a time, a secret). Only the shape; Discord decides if it is real. */
+export function isDiscordBotToken(value: string): boolean {
+  return /^[A-Za-z0-9_-]{16,40}\.[A-Za-z0-9_-]{4,12}\.[A-Za-z0-9_-]{20,80}$/.test(value);
+}
+
+/** A Discord direct-message channel id: a snowflake, 17 to 20 digits. */
+export function isDiscordChannelId(value: string): boolean {
+  return /^\d{17,20}$/.test(value);
+}
+
 /** A Slack direct-message conversation id: a capital D and capital letters and digits. Channels (C…, G…) are not allowed on purpose. */
 export function isSlackConversationId(value: string): boolean {
   return /^D[A-Z0-9]{8,14}$/.test(value);
@@ -245,13 +282,16 @@ export function isSlackConversationId(value: string): boolean {
 
 /** The id of a private conversation of this messenger. */
 export function isConversationIdFor(kind: MessengerKind, value: string): boolean {
-  return kind === "slack" ? isSlackConversationId(value) : isChatId(value);
+  if (kind === "slack") return isSlackConversationId(value);
+  if (kind === "discord") return isDiscordChannelId(value);
+  return isChatId(value);
 }
 
 function conversationIdSentence(kind: MessengerKind) {
-  return kind === "slack"
-    ? "A Slack conversation id looks like D01ABC23DEF (a direct message with the bot)."
-    : "A chat number is digits only (a private chat).";
+  if (kind === "slack") return "A Slack conversation id looks like D01ABC23DEF (a direct message with the bot).";
+  if (kind === "discord")
+    return "A Discord conversation id is a number of 17 to 20 digits (a direct message with the bot).";
+  return "A chat number is digits only (a private chat).";
 }
 
 /** A label made tidy: one line, no control characters, shortened. */
@@ -382,6 +422,14 @@ export function parseConnectMessengerInput(input: unknown): ConnectMessengerInpu
     return { kind, token, appToken };
   }
   if (input.appToken !== undefined) throw new Error("This messenger takes one token only.");
+  if (kind === "discord") {
+    if (!isDiscordBotToken(token)) {
+      throw new Error(
+        "That does not look like a Discord bot token. It has three parts separated by dots (the Bot page of your application, Reset Token).",
+      );
+    }
+    return { kind, token };
+  }
   if (!isTelegramToken(token)) {
     throw new Error(
       "That does not look like a Telegram bot token. BotFather gives one like 123456789:AA… (digits, a colon, letters and digits).",

@@ -11,7 +11,7 @@ import type {
   OnboardingState,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AppSettingsW3, type OnboardingChoice, OnboardingFields } from "./AppSettingsW3";
@@ -20,9 +20,21 @@ import { ContextSettingsSection } from "./ContextSettingsSection";
 import { DataWipeSection } from "./DataWipeSection";
 import { ManagedCliSection } from "./ManagedCliSection";
 import { ProviderPicker, type ProviderPickerOption } from "./ProviderPicker";
+import { SettingsDialog, SettingsSection } from "./SettingsDialog";
 import { UpdatesPanel } from "./UpdatesPanel";
 import { Button, Dialog, Textarea } from "./ui";
-import { VoiceOverviewPanel } from "./VoiceOverviewPanel";
+import {
+  Bell,
+  Download,
+  Lock,
+  MessageCircle,
+  Monitor,
+  Palette,
+  Server,
+  ShieldCheck,
+  SlidersHorizontal,
+  Wallet,
+} from "./ui/icons";
 
 interface InitialSetupProps {
   reviewing?: boolean;
@@ -30,6 +42,11 @@ interface InitialSetupProps {
   agentStatus: AgentStatus;
   platform: DesktopPlatform;
   accountEmail: string;
+  /**
+   * The local owner profile of this computer (no sign-in): like the sidebar, no technical address
+   * ("owner-…@cosgral.local") and no Sign out.
+   */
+  localProfile?: boolean;
   /** `onboarding` is set on the first run when the program has onboarding (language and first agent). */
   onSave: (provider: AgentProviderId, onboarding?: OnboardingChoice) => Promise<void>;
   onJoinRemote: (input: JoinServerInput, provider: AgentProviderId) => Promise<void>;
@@ -77,7 +94,11 @@ export function InitialSetup(props: InitialSetupProps) {
   const [error, setError] = createSignal("");
   const [inviteUrl, setInviteUrl] = createSignal("");
   const [onboarding, setOnboarding] = createSignal<OnboardingState>();
-  const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({ language: "en", firstAgent: null });
+  // Start on the language the window already shows (system language until one is chosen), not on a fixed "en".
+  const [onboardingChoice, setOnboardingChoice] = createSignal<OnboardingChoice>({
+    language: untrack(language),
+    firstAgent: null,
+  });
   const [cliReady, setCliReady] = createSignal<Record<string, boolean>>({});
   let permissionRevision = 0;
 
@@ -210,9 +231,7 @@ export function InitialSetup(props: InitialSetupProps) {
 
   const description = () => {
     if (props.reviewing) {
-      return props.platform === "darwin"
-        ? t("Choose the default provider for local agents and review macOS permissions.")
-        : t("Default provider for local agents, language, notifications and voice.");
+      return t("Language, notifications, providers, appearance and privacy.");
     }
     if (route() === "local") {
       return t("Agents, conversations, and files stay on this computer.");
@@ -223,10 +242,156 @@ export function InitialSetup(props: InitialSetupProps) {
     return t("Use this computer, or connect to a COSGRAL host that runs somewhere else.");
   };
 
+  const permissionsSection = () => (
+    <section class="mac-permissions" aria-labelledby="mac-permissions-title">
+      <div class="mac-permissions-heading">
+        <div>
+          <h2 id="mac-permissions-title">{t("Mac permissions")}</h2>
+          <p>{t("Optional. Computer Use needs both permissions.")}</p>
+        </div>
+      </div>
+      <div class="mac-permission-list">
+        <For each={PERMISSIONS}>
+          {(permission) => {
+            const state = () => permissionState(permissions(), permission.id);
+            return (
+              <div class="mac-permission-row">
+                <span class="mac-permission-copy">
+                  <strong>{t(permission.title)}</strong>
+                  <small>{t(permission.description)}</small>
+                </span>
+                <Button
+                  type="button"
+                  class={["mac-permission-action", { "mac-permission-allowed": state() === "granted" }]}
+                  disabled={permissionBusy() !== null || state() === "granted" || state() === "restricted"}
+                  onClick={() => void requestPermission(permission.id)}
+                >
+                  {permissionBusy() === permission.id ? t("Checking…") : t(permissionLabel(state()))}
+                </Button>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+    </section>
+  );
+
+  // Settings (gear on the page rail, account menu): its own window with sections, not the first-run wizard.
+  if (untrack(() => props.reviewing)) {
+    let saveAppSettings: (() => Promise<boolean>) | undefined;
+    const saveAll = async () => {
+      if (saving()) return;
+      // Language and notifications first: when they fail, the window stays open with the reason.
+      if (saveAppSettings && !(await saveAppSettings())) return;
+      await saveLocal();
+    };
+    const sections = () => [
+      { id: "general", label: t("General"), icon: SlidersHorizontal },
+      { id: "notifications", label: t("Notifications"), icon: Bell },
+      { id: "behavior", label: t("App behavior"), icon: Monitor },
+      { id: "providers", label: t("Providers"), icon: Server },
+      ...(props.platform === "darwin" ? [{ id: "permissions", label: t("Permissions"), icon: ShieldCheck }] : []),
+      { id: "appearance", label: t("Appearance"), icon: Palette },
+      { id: "conversations", label: t("Conversations"), icon: MessageCircle },
+      { id: "budget", label: t("Budget"), icon: Wallet },
+      { id: "updates", label: t("Updates"), icon: Download },
+      { id: "data", label: t("Data and privacy"), icon: Lock },
+    ];
+    return (
+      <SettingsDialog
+        title={t("Settings")}
+        description={description()}
+        accountEmail={props.accountEmail}
+        localProfile={props.localProfile}
+        sections={sections()}
+        onLogout={() => void props.onLogout()}
+        onClose={props.onClose}
+        footer={
+          <>
+            <Show when={error()}>
+              <p class="initial-setup-error" role="alert">
+                {error()}
+              </p>
+            </Show>
+            <Button type="button" variant="ghost" onClick={props.onClose}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={saving() || !selectedProvider()}
+              onClick={() => void saveAll()}
+            >
+              {saving() ? t("Saving…") : t("Save changes")}
+            </Button>
+          </>
+        }
+      >
+        <AppSettingsW3 onRegisterSave={(save) => (saveAppSettings = save)} />
+        <SettingsSection id="behavior" title={t("App behavior")} class="settings-dialog-section-flat">
+          <AppBehaviorSection />
+        </SettingsSection>
+        <SettingsSection
+          id="providers"
+          title={t("Providers")}
+          description={t("Accounts, keys and fallback models live on the Providers page.")}
+        >
+          <ProviderPicker
+            value={selectedProvider()}
+            options={providerOptions()}
+            ariaLabel={t("Default provider")}
+            label={t("Default provider")}
+            hint={t("Used for new local agents. You can change it for each agent later.")}
+            disabled={saving()}
+            allowUnavailableSelection
+            onChange={setSelectedProvider}
+          />
+        </SettingsSection>
+        <Show when={props.platform === "darwin"}>
+          <SettingsSection id="permissions" title={t("Permissions")} class="settings-dialog-section-flat">
+            {permissionsSection()}
+          </SettingsSection>
+        </Show>
+        <SettingsSection id="appearance" title={t("Appearance")}>
+          <AppearanceSettings />
+        </SettingsSection>
+        <SettingsSection id="conversations" title={t("Conversations")}>
+          <ContextSettingsSection />
+        </SettingsSection>
+        <SettingsSection id="budget" title={t("Budget")}>
+          <BudgetSettings />
+        </SettingsSection>
+        <SettingsSection id="updates" title={t("Updates")} class="settings-dialog-section-flat">
+          <UpdatesPanel />
+        </SettingsSection>
+        <SettingsSection
+          id="data"
+          title={t("Data and privacy")}
+          description={t("Agents, conversations, and files stay on this computer.")}
+        >
+          <DataWipeSection />
+        </SettingsSection>
+      </SettingsDialog>
+    );
+  }
+
   return (
     <Dialog.Root open onOpenChange={(open) => !open && props.onClose?.()}>
       <main class="initial-setup-screen">
-        <Dialog.Content as="section" class="initial-setup">
+        <Dialog.Content
+          as="section"
+          class="initial-setup"
+          onOpenAutoFocus={(event: Event) => {
+            // The dialog would focus its first button, "Sign out", so Enter would sign out. Focus the first choice.
+            const container = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+            const first = container?.querySelector<HTMLElement>(
+              ".setup-route-button, .setup-local-content input, .setup-local-content button",
+            );
+            if (!first) return;
+            event.preventDefault();
+            first.focus();
+          }}
+        >
           <header class="initial-setup-header">
             <div class="initial-setup-account-row">
               <Show when={!props.reviewing && route()}>
@@ -244,13 +409,15 @@ export function InitialSetup(props: InitialSetupProps) {
                   </svg>
                 </Button>
               </Show>
-              <span class="initial-setup-account">
-                <i aria-hidden="true" />
-                {props.accountEmail}
-              </span>
-              <Button type="button" class="initial-setup-signout" onClick={() => void props.onLogout()}>
-                {t("Sign out")}
-              </Button>
+              <Show when={!props.localProfile}>
+                <span class="initial-setup-account">
+                  <i aria-hidden="true" />
+                  {props.accountEmail}
+                </span>
+                <Button type="button" class="initial-setup-signout" onClick={() => void props.onLogout()}>
+                  {t("Sign out")}
+                </Button>
+              </Show>
             </div>
             <p class="initial-setup-eyebrow">{t("COSGRAL setup")}</p>
             <Dialog.Title as="h1" id="initial-setup-title">
@@ -335,50 +502,7 @@ export function InitialSetup(props: InitialSetupProps) {
                 )}
               </Show>
 
-              <Show when={props.platform === "darwin"}>
-                <section class="mac-permissions" aria-labelledby="mac-permissions-title">
-                  <div class="mac-permissions-heading">
-                    <div>
-                      <h2 id="mac-permissions-title">{t("Mac permissions")}</h2>
-                      <p>{t("Optional. Computer Use needs both permissions.")}</p>
-                    </div>
-                  </div>
-                  <div class="mac-permission-list">
-                    <For each={PERMISSIONS}>
-                      {(permission) => {
-                        const state = () => permissionState(permissions(), permission.id);
-                        return (
-                          <div class="mac-permission-row">
-                            <span class="mac-permission-copy">
-                              <strong>{t(permission.title)}</strong>
-                              <small>{t(permission.description)}</small>
-                            </span>
-                            <Button
-                              type="button"
-                              class={["mac-permission-action", { "mac-permission-allowed": state() === "granted" }]}
-                              disabled={permissionBusy() !== null || state() === "granted" || state() === "restricted"}
-                              onClick={() => void requestPermission(permission.id)}
-                            >
-                              {permissionBusy() === permission.id ? t("Checking…") : t(permissionLabel(state()))}
-                            </Button>
-                          </div>
-                        );
-                      }}
-                    </For>
-                  </div>
-                </section>
-              </Show>
-              <Show when={props.reviewing}>
-                <AppSettingsW3 />
-                {/* KK-AC: the dialog of app settings was never opened from the program, so Updates and the microphone were out of reach. */}
-                <AppBehaviorSection />
-                <AppearanceSettings />
-                <ContextSettingsSection />
-                <BudgetSettings />
-                <UpdatesPanel />
-                <VoiceOverviewPanel />
-                <DataWipeSection />
-              </Show>
+              <Show when={props.platform === "darwin"}>{permissionsSection()}</Show>
             </div>
           </Show>
 

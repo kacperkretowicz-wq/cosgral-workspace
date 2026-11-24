@@ -97,15 +97,14 @@ const LANGUAGE_NAMES: Record<AppLanguage, string> = { en: "English", pl: "Polish
 /** Tabs that need a feature this program does not have yet. */
 const TAB_FEATURES: Partial<Record<SettingsTabId, "computer" | "missing">> = {
   "computer-use": "computer",
-  voice: "missing",
   mobile: "missing",
   dock: "missing",
   island: "missing",
 };
 
-/** The tabs of the features that are part of the program now (COSGRAL W3-BE8); voice needs the Windows speech engine. */
-export function builtInTabFeatures(platform: string): Partial<Record<SettingsTabId, boolean>> {
-  return { voice: platform === "win32", mobile: true, dock: true, island: true };
+/** The tabs of the features that are part of the program now (COSGRAL W3-BE8), on every platform. */
+export function builtInTabFeatures(_platform: string): Partial<Record<SettingsTabId, boolean>> {
+  return { mobile: true, dock: true, island: true };
 }
 
 export interface AgentSettingsDeps {
@@ -140,6 +139,12 @@ interface NamedTool {
   name: string;
   tools?: ReadonlyArray<{ name: string }>;
 }
+
+/**
+ * The rail shows the five main pages by default, like OpenBot; the others are under "More" and can be pinned.
+ * All eleven pinned made a crowded rail with a "pinned" dot on every icon.
+ */
+const DEFAULT_PINNED_PAGE_IDS: readonly AppPageId[] = ["agents", "workflows", "tasks", "usage", "library"];
 
 export class AgentSettingsService {
   readonly #deps: AgentSettingsDeps;
@@ -371,7 +376,7 @@ export class AgentSettingsService {
       theme: "dark",
       language: null,
       notifications: defaultNotificationPreferences(),
-      pinnedPageIds: [...APP_PAGE_IDS],
+      pinnedPageIds: [...DEFAULT_PINNED_PAGE_IDS],
       appearance: { ...DEFAULT_APP_APPEARANCE },
       behavior: { ...DEFAULT_APP_BEHAVIOR },
       workspace: { ...DEFAULT_APP_WORKSPACE },

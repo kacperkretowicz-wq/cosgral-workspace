@@ -1,16 +1,18 @@
 import type { AcpAgentConfig, ProviderUsage } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { ProviderUsageList } from "./ProvidersPage";
 import { UsageReportView } from "./UsageReportView";
-import { Heading, Text } from "./ui";
+import { Text } from "./ui";
+import { WorkPage } from "./WorkPage";
 
 /**
  * COSGRAL W3-BE9: the Usage page of the page rail. It reads the providers contract only
  * (`providers.listUsage`, `provider-usage-changed`): state ok | limited | unavailable, used percent, reason and
  * reset time per provider and per ACP agent. Per-agent token counts are not in any contract yet.
  */
-export function UsagePage() {
+export function UsagePage(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
   const [usage, setUsage] = createSignal<ProviderUsage[]>([]);
   const [acpAgents, setAcpAgents] = createSignal<AcpAgentConfig[]>([]);
   const [loaded, setLoaded] = createSignal(false);
@@ -60,22 +62,19 @@ export function UsagePage() {
   });
 
   return (
-    <main class="w2-library usage-page">
-      <header>
-        <Heading as="h1" size="lg">
-          {t("Usage")}
-        </Heading>
-        <Text as="p" tone="secondary">
-          {t("How much of each provider's limit is used, and when a limit resets.")}
-        </Text>
-      </header>
+    <WorkPage
+      page="usage"
+      title={t("Usage")}
+      description={t("How much of each provider's limit is used, and when a limit resets.")}
+      class="usage-page"
+    >
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
           {error()}
         </Text>
       </Show>
       <Show when={window.openbot?.usageReport}>
-        <UsageReportView />
+        <UsageReportView bots={props.bots} />
       </Show>
       <Show when={window.openbot.providers && loaded()}>
         <ProviderUsageList
@@ -86,6 +85,6 @@ export function UsagePage() {
           onRefresh={() => void refresh()}
         />
       </Show>
-    </main>
+    </WorkPage>
   );
 }

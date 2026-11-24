@@ -1,13 +1,55 @@
-import type { AgentEvent, ThreadList, ThreadSummary, ThreadTabCloseMode } from "@openbot/contracts/ipc";
+import {
+  type AgentEvent,
+  NEW_THREAD_TITLE,
+  type ThreadList,
+  type ThreadSummary,
+  type ThreadTabCloseMode,
+} from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
 import { Button, ContextMenu, DropdownMenu } from "./ui";
-import { ChevronDown, Plus, X } from "./ui/icons";
+import { ChevronDown, MessageSquarePlus, Plus, X } from "./ui/icons";
 
 interface ThreadTabsProps {
   botId: string;
   /** Called after the visible thread list changed, so the rest of the window follows (same as ThreadPanel). */
   onChanged?: (list: ThreadList) => void;
+  /**
+   * Told whether the agent has a single thread. Then the strip draws nothing (one tab says nothing the header does
+   * not) and the window shows `NewThreadButton` in the header instead.
+   */
+  onSingleThreadChange?: (single: boolean) => void;
+}
+
+/** "New thread" as a header icon, for an agent with one thread (no tab strip). */
+export function NewThreadButton(props: { botId: string; onChanged?: (list: ThreadList) => void }) {
+  const threadsApi = untrack(() => window.openbot?.threads);
+  const [busy, setBusy] = createSignal(false);
+  async function create() {
+    if (!threadsApi || busy()) return;
+    setBusy(true);
+    try {
+      const next = await threadsApi.create({ botId: props.botId });
+      if (next.botId === props.botId) props.onChanged?.(next);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Show when={threadsApi}>
+      <Button
+        type="button"
+        unstyled
+        class="header-panel-toggle new-thread-button"
+        aria-label={t("New thread")}
+        title={t("New thread")}
+        disabled={busy()}
+        onClick={() => void create()}
+      >
+        <MessageSquarePlus size={16} stroke-width={1.5} aria-hidden="true" />
+      </Button>
+    </Show>
+  );
 }
 
 /**
@@ -33,6 +75,15 @@ export function ThreadTabs(props: ThreadTabsProps) {
   );
   const closedThreads = createMemo(() => activeThreads().filter((thread) => !open().includes(thread.id)));
   const activeId = () => list()?.activeThreadId ?? null;
+  /** Known only once the list arrived; until then the strip stays hidden and the header keeps its usual buttons. */
+  const single = createMemo(() => (list() ? activeThreads().length <= 1 : null));
+  // The compute is wrapped: a bare signal or memo getter passed here was not tracked (seen with the language signal).
+  createEffect(
+    () => single(),
+    (value) => {
+      if (value !== null) props.onSingleThreadChange?.(value);
+    },
+  );
 
   async function guarded<T>(work: () => Promise<T>): Promise<T | undefined> {
     setError("");
@@ -143,7 +194,7 @@ export function ThreadTabs(props: ThreadTabsProps) {
   }
 
   return (
-    <Show when={tabsApi && threadsApi && tabs().length > 0}>
+    <Show when={tabsApi && threadsApi && tabs().length > 0 && single() === false}>
       <div class="thread-tabs">
         <nav class="thread-tabs-list" aria-label={t("Threads")}>
           <For each={tabs()}>
@@ -160,17 +211,17 @@ export function ThreadTabs(props: ThreadTabsProps) {
                     class="thread-tab-label"
                     aria-current={thread.id === activeId() ? "true" : undefined}
                     tabindex={thread.id === activeId() ? 0 : -1}
-                    title={thread.title}
+                    title={threadTitle(thread.title)}
                     onClick={() => void select(thread)}
                     onKeyDown={(event) => onTabKeyDown(event, index())}
                   >
-                    {thread.title}
+                    {threadTitle(thread.title)}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     class="thread-tab-close"
-                    aria-label={`${t("Close tab")}: ${thread.title}`}
+                    aria-label={`${t("Close tab")}: ${threadTitle(thread.title)}`}
                     onClick={() => void close(thread, "this")}
                   >
                     <X aria-hidden="true" />
@@ -221,7 +272,7 @@ export function ThreadTabs(props: ThreadTabsProps) {
                 <For each={closedThreads()}>
                   {(thread) => (
                     <DropdownMenu.Item onSelect={() => void openFromList(thread)}>
-                      <span>{thread.title}</span>
+                      <span>{threadTitle(thread.title)}</span>
                     </DropdownMenu.Item>
                   )}
                 </For>
@@ -237,4 +288,9 @@ export function ThreadTabs(props: ThreadTabsProps) {
       </Show>
     </Show>
   );
+}
+
+/** The default title from the store ("New thread") is shown in the window language; a title the person gave is not. */
+export function threadTitle(title: string): string {
+  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
 }

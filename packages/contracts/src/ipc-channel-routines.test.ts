@@ -161,7 +161,11 @@ describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
     expect(isChannelRoutineRun(run)).toBe(true);
     expect(isChannelRoutineRun({ ...run, outcome: "failed" })).toBe(false);
     expect(isChannelRoutineRun({ ...run, taskState: "sleeping" })).toBe(false);
-    expect(isChannelRoutineRun({ ...run, cause: "webhook" })).toBe(false);
+    // A signed webhook delivery is a cause of its own since 23.11; an unknown cause is still refused.
+    expect(isChannelRoutineRun({ ...run, cause: "webhook" })).toBe(true);
+    expect(isChannelRoutineRun({ ...run, cause: "email" })).toBe(false);
+    expect(isChannelRoutine({ ...routine, webhookEnabled: true })).toBe(true);
+    expect(isChannelRoutine({ ...routine, webhookEnabled: "yes" })).toBe(false);
     expect(isChannelRoutinesChanged({ type: "channel-routines-changed", channelId: "c-1", routines: [routine] })).toBe(
       true,
     );

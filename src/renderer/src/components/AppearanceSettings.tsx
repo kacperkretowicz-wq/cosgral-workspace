@@ -1,12 +1,14 @@
 import {
   APP_AGENT_STEPS,
   APP_CHAT_ACCENTS,
+  APP_FONT_WEIGHTS,
   APP_FONTS,
   APP_SEND_SHORTCUTS,
   APP_UI_SCALES,
   type AppAgentSteps,
   type AppChatAccent,
   type AppFont,
+  type AppFontWeight,
   type AppSendShortcut,
   type AppTheme,
   type AppUiScale,
@@ -21,6 +23,12 @@ const FONT_LABELS: Record<AppFont, string> = {
   inter: "Program font",
   system: "System font",
   mono: "Fixed-width",
+};
+
+const WEIGHT_LABELS: Record<AppFontWeight, string> = {
+  light: "Lighter",
+  normal: "Normal",
+  strong: "Stronger",
 };
 
 const SEND_LABELS: Record<AppSendShortcut, string> = {
@@ -51,6 +59,10 @@ function pickFont(value: string): AppFont {
   return APP_FONTS.find((font) => font === value) ?? DEFAULT_APP_APPEARANCE.font;
 }
 
+function pickWeight(value: string): AppFontWeight {
+  return APP_FONT_WEIGHTS.find((weight) => weight === value) ?? DEFAULT_APP_APPEARANCE.fontWeight;
+}
+
 function pickSend(value: string): AppSendShortcut {
   return APP_SEND_SHORTCUTS.find((shortcut) => shortcut === value) ?? DEFAULT_APP_APPEARANCE.sendShortcut;
 }
@@ -71,6 +83,7 @@ export function AppearanceSettings() {
   const [theme, setTheme] = createSignal<AppTheme>("dark");
   const [uiScale, setUiScale] = createSignal<AppUiScale>(DEFAULT_APP_APPEARANCE.uiScale);
   const [font, setFont] = createSignal<AppFont>(DEFAULT_APP_APPEARANCE.font);
+  const [fontWeight, setFontWeight] = createSignal<AppFontWeight>(DEFAULT_APP_APPEARANCE.fontWeight);
   const [sendShortcut, setSendShortcut] = createSignal<AppSendShortcut>(DEFAULT_APP_APPEARANCE.sendShortcut);
   const [unreadFirst, setUnreadFirst] = createSignal(DEFAULT_APP_APPEARANCE.unreadFirst);
   const [chatAccent, setChatAccent] = createSignal<AppChatAccent>(DEFAULT_APP_APPEARANCE.chatAccent);
@@ -84,6 +97,7 @@ export function AppearanceSettings() {
     appearance: {
       uiScale: AppUiScale;
       font: AppFont;
+      fontWeight: AppFontWeight;
       sendShortcut: AppSendShortcut;
       unreadFirst: boolean;
       chatAccent: AppChatAccent;
@@ -93,6 +107,7 @@ export function AppearanceSettings() {
     setTheme(s.theme);
     setUiScale(s.appearance.uiScale);
     setFont(s.appearance.font);
+    setFontWeight(s.appearance.fontWeight);
     setSendShortcut(s.appearance.sendShortcut);
     setUnreadFirst(s.appearance.unreadFirst);
     setChatAccent(s.appearance.chatAccent);
@@ -167,6 +182,17 @@ export function AppearanceSettings() {
           onChange={(e) => void save({ appearance: { font: pickFont(e.currentTarget.value) } })}
         >
           <For each={APP_FONTS}>{(item) => <option value={item}>{t(FONT_LABELS[item])}</option>}</For>
+        </NativeSelect>
+      </Field>
+
+      <Field label={t("Text weight")} description={t("How heavy the text looks. Applies at once.")}>
+        <NativeSelect
+          value={fontWeight()}
+          disabled={disabled()}
+          aria-label={t("Text weight")}
+          onChange={(e) => void save({ appearance: { fontWeight: pickWeight(e.currentTarget.value) } })}
+        >
+          <For each={APP_FONT_WEIGHTS}>{(item) => <option value={item}>{t(WEIGHT_LABELS[item])}</option>}</For>
         </NativeSelect>
       </Field>
 

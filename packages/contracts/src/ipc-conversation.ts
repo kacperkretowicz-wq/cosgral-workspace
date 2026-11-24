@@ -94,7 +94,6 @@ import {
   type VaultRequestResolution,
 } from "./ipc-vault";
 import { isVaultConnectorsChanged, type VaultConnectorsChanged } from "./ipc-vault-connectors";
-import { isVoiceState, type VoiceState } from "./ipc-voice";
 import { type ConversationWindowsChanged, isConversationWindowsChanged } from "./ipc-windows";
 import { isWorkflow, isWorkflowRun, type Workflow, type WorkflowRun } from "./ipc-workflows";
 import {
@@ -695,8 +694,6 @@ export type AgentEvent =
   | { type: "workflow-run-changed"; run: WorkflowRun }
   /** COSGRAL W3: the Marketplace catalog or an install state changed; replace the whole list. */
   | { type: "marketplace-changed"; items: MarketplaceItem[] }
-  /** COSGRAL W3: voice state changed (speaking, a download's progress, a model, the settings); replace it. */
-  | { type: "voice-changed"; state: VoiceState }
   /** COSGRAL W3: Mobile Connect changed (server, pairing, devices); replace the whole state. */
   | { type: "mobile-changed"; state: MobileState }
   /** COSGRAL W3: a phone was paired after the person approved it. */
@@ -895,8 +892,6 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return isWorkflowRun(value.run);
     case "marketplace-changed":
       return Array.isArray(value.items) && value.items.every(isMarketplaceItem);
-    case "voice-changed":
-      return isVoiceState(value.state);
     case "mobile-changed":
       return isMobileState(value.state);
     case "mobile-pairing-completed":

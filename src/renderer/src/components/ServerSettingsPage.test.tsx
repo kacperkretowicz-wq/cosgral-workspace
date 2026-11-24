@@ -11,10 +11,11 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-it("lists the 14 sections and marks the ones that need an online service", async () => {
+it("lists the sections (Providers hidden: the page rail has it) and marks the ones that need an online service", async () => {
   render(() => <ServerSettingsPage />);
   const nav = await screen.findByRole("navigation", { name: "Sections" });
-  await waitFor(() => expect(nav.querySelectorAll("button")).toHaveLength(14));
+  await waitFor(() => expect(nav.querySelectorAll("button")).toHaveLength(13));
+  expect(screen.queryByRole("button", { name: "Providers" })).not.toBeInTheDocument();
   await fireEvent.click(screen.getByRole("button", { name: /Members/ }));
   expect(await screen.findByText(/Not available on this computer/)).toBeInTheDocument();
 });
@@ -48,9 +49,9 @@ it("shows the storage report, measures again and clears logs only after a confir
 it("sends a section with its own screen to that screen", async () => {
   const onOpenPage = vi.fn();
   render(() => <ServerSettingsPage onOpenPage={onOpenPage} />);
-  await fireEvent.click(await screen.findByRole("button", { name: "Providers" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Remote desktop" }));
   await fireEvent.click(screen.getByRole("button", { name: "Open" }));
-  expect(onOpenPage).toHaveBeenCalledWith("providers");
+  expect(onOpenPage).toHaveBeenCalledWith("remote-desktop");
 });
 
 it("shows an error with Retry when the settings cannot be read", async () => {

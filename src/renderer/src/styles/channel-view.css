@@ -1,0 +1,912 @@
+/*
+ * Channel view (ChannelView.tsx, ChannelWorkspace.tsx), COSGRAL round 3: the channel reads like an agent conversation.
+ * A header with the member creatures and Edit channel, a toolbar with Chat/Tasks and the settings as pills that open a
+ * card, messages with the author's creature, and the composer of the conversation. Palette tokens only.
+ */
+
+/* Channel list inside the workspace (shown when the channel was not opened from the sidebar list). */
+.channel-workspace > aside {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 220px;
+  padding: var(--openbot-space-4) var(--openbot-space-3);
+}
+
+.channel-workspace > aside[hidden] {
+  display: none;
+}
+
+.channel-workspace > aside h2 {
+  margin: 0 0 var(--openbot-space-2);
+  padding: 0 var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
+}
+
+.channel-workspace > aside .channel-workspace-new {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin-bottom: var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+}
+
+.channel-workspace > aside .channel-workspace-item {
+  border-radius: var(--openbot-radius-md);
+  padding: 7px var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+}
+
+.channel-workspace > aside .channel-workspace-item:hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.channel-workspace > aside .channel-workspace-item[aria-pressed="true"] {
+  background: var(--openbot-active);
+  color: var(--openbot-text-primary);
+}
+
+/* Header ------------------------------------------------------------------------------------------------- */
+
+.channel-workspace .channel-view-header {
+  display: grid;
+  gap: var(--openbot-space-3);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding: var(--openbot-space-4) var(--openbot-space-6) 0;
+}
+
+.channel-view-title {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.channel-view-stack {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.channel-view-stack .channel-view-member {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-canvas);
+  box-shadow: 0 0 0 2px var(--openbot-bg-canvas);
+}
+
+.channel-view-stack .channel-view-member + .channel-view-member {
+  margin-left: -10px;
+}
+
+.channel-view-heading {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.channel-workspace .channel-view-header h1 {
+  overflow: hidden;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channel-workspace .channel-view-heading p {
+  overflow: hidden;
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channel-view-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.channel-workspace .channel-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  color: var(--openbot-text-secondary);
+}
+
+/* Toolbar: Chat/Tasks on the left, settings pills on the right; a pill opens its card under the toolbar. */
+.channel-view-toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-3);
+  padding-bottom: var(--openbot-space-2);
+}
+
+.channel-view-settings {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--openbot-space-1);
+}
+
+.channel-view-settings > details > summary {
+  display: inline-flex;
+  height: var(--openbot-control-sm);
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  padding: 0 var(--openbot-space-3);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--openbot-duration-fast) var(--openbot-ease-out),
+    color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.channel-view-settings > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.channel-view-settings > details > summary:hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.channel-view-settings > details > summary:focus-visible {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: 1px;
+}
+
+.channel-view-settings > details[open] > summary {
+  border-color: var(--openbot-accent-strong);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.channel-view-card {
+  position: absolute;
+  z-index: var(--openbot-layer-popover);
+  top: calc(100% - var(--openbot-space-1));
+  right: 0;
+  display: grid;
+  width: min(480px, 100%);
+  max-height: 60vh;
+  gap: var(--openbot-space-3);
+  overflow: auto;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface-raised);
+  box-shadow: var(--openbot-shadow-raised);
+  padding: var(--openbot-space-4);
+}
+
+.channel-workspace .channel-view-card p {
+  margin: 0;
+}
+
+/* Messages ---------------------------------------------------------------------------------------------- */
+
+.channel-workspace .channel-view-content {
+  padding: var(--openbot-space-4) var(--openbot-space-6);
+}
+
+.channel-workspace .channel-item.channel-message,
+.channel-workspace .channel-item.channel-task {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--openbot-space-3);
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-1);
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.channel-workspace .channel-item.channel-message + .channel-message {
+  margin-top: var(--openbot-space-1);
+}
+
+.channel-workspace .channel-item.channel-message:hover {
+  background: var(--openbot-hover);
+}
+
+.channel-author-avatar,
+.channel-author-initial {
+  width: 32px;
+  height: 32px;
+}
+
+.channel-author-initial {
+  display: grid;
+  place-items: center;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.channel-author-initial[data-human="true"] {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.channel-message-body {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-1);
+}
+
+.channel-message-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+}
+
+.channel-message-meta strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.channel-workspace .channel-message-meta small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.channel-kind {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  padding: 1px 7px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.channel-kind[data-kind="result"] {
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.channel-kind[data-kind="question"] {
+  background: var(--openbot-warning-soft);
+  color: var(--openbot-warning);
+}
+
+.channel-kind[data-kind="assignment"] {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.channel-workspace .channel-message p {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  line-height: 22px;
+}
+
+.channel-workspace .channel-message[data-kind="system"] p {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.channel-workspace .channel-item .channel-reply-quote {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  justify-self: start;
+  gap: var(--openbot-space-1-5);
+  overflow: hidden;
+  border: 0;
+  border-left: 2px solid var(--openbot-border-strong);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 0 var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.channel-workspace .channel-item .channel-reply-quote:hover {
+  border-left-color: var(--openbot-accent);
+  color: var(--openbot-text-secondary);
+}
+
+.channel-workspace .channel-item .channel-reply-button {
+  display: grid;
+  width: var(--openbot-control-sm);
+  height: var(--openbot-control-sm);
+  place-items: center;
+  border: 0;
+  border-radius: var(--openbot-radius-sm);
+  background: transparent;
+  padding: 0;
+  color: var(--openbot-text-muted);
+  cursor: pointer;
+}
+
+.channel-workspace .channel-item .channel-reply-button:hover {
+  background: var(--openbot-bg-control-hover);
+  color: var(--openbot-text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .channel-workspace .channel-item .channel-reply-button {
+    opacity: 0;
+  }
+
+  .channel-workspace .channel-item:hover .channel-reply-button,
+  .channel-workspace .channel-item:focus-within .channel-reply-button {
+    opacity: 1;
+  }
+}
+
+.channel-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--openbot-space-1);
+  margin: 15vh auto 0;
+  color: var(--openbot-text-muted);
+  text-align: center;
+}
+
+.channel-empty strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+}
+
+/* Tasks tab: a task row with its owner's creature and a state pill. */
+.channel-workspace .channel-item.channel-task {
+  border: 1px solid var(--openbot-border-strong);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-3);
+}
+
+.channel-workspace .channel-item.channel-task + .channel-task {
+  margin-top: var(--openbot-space-2);
+}
+
+.channel-workspace .channel-item.channel-task > :not(.channel-author-avatar, .channel-author-initial) {
+  grid-column: 2;
+}
+
+.channel-task strong {
+  font-size: var(--openbot-text-lg);
+}
+
+.channel-task-state {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  padding: 1px 8px;
+  font-size: var(--openbot-text-sm);
+}
+
+.channel-task-state[data-state="running"],
+.channel-task-state[data-state="queued"] {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.channel-task-state[data-state="done"] {
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.channel-task-state[data-state="failed"] {
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+}
+
+.channel-task-state[data-state="paused"],
+.channel-task-state[data-state="waiting"] {
+  background: var(--openbot-warning-soft);
+  color: var(--openbot-warning);
+}
+
+/* Composer: the conversation's field — rounded, grows with the text, send as a round icon on the right. */
+.channel-workspace .channel-composer {
+  display: grid;
+  gap: var(--openbot-space-2);
+  border: 0;
+  padding: var(--openbot-space-3) var(--openbot-space-6) var(--openbot-space-4);
+}
+
+.channel-composer-field {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--openbot-space-2);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-4);
+  transition: border-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.channel-composer-field:focus-within {
+  border-color: var(--openbot-border-focus);
+}
+
+.channel-workspace .channel-composer-field textarea {
+  min-height: 24px;
+  max-height: 200px;
+  flex: 1;
+  field-sizing: content;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 3px 0;
+  color: var(--openbot-text-primary);
+  font: inherit;
+  font-size: var(--openbot-text-lg);
+  line-height: 20px;
+  box-shadow: none;
+}
+
+.channel-workspace .channel-composer .channel-send {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-text-primary);
+  padding: 0;
+  color: var(--openbot-bg-canvas);
+  cursor: pointer;
+  transition: opacity var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.channel-workspace .channel-composer .channel-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.channel-composer-reply {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  border-left: 2px solid var(--openbot-accent);
+  padding-left: var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+}
+
+.channel-composer-reply span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channel-workspace .channel-composer .channel-composer-reply button {
+  display: grid;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: var(--openbot-text-muted);
+  cursor: pointer;
+}
+
+/* Task details: owner and state on one line, Resume and Reassign side by side and only as wide as their text. */
+.channel-workspace .channel-item.channel-task {
+  row-gap: var(--openbot-space-1);
+}
+
+.channel-workspace .channel-item.channel-task > :is(.channel-author-avatar, .channel-author-initial) {
+  grid-row: 1 / span 4;
+}
+
+.channel-workspace .channel-item.channel-task p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.channel-workspace .channel-item.channel-task > button {
+  justify-self: start;
+  width: auto;
+  height: var(--openbot-control-sm);
+  margin-top: var(--openbot-space-1);
+  padding: 0 var(--openbot-space-3);
+  font-size: var(--openbot-text-md);
+}
+
+.channel-workspace .channel-item.channel-task > label {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--openbot-space-2);
+  margin-top: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.channel-workspace .channel-item.channel-task > label select {
+  width: auto;
+  min-width: 140px;
+  height: var(--openbot-control-sm);
+  padding: 0 var(--openbot-space-2);
+  font-size: var(--openbot-text-md);
+}
+
+/* New / Edit channel (ChannelEditor.tsx) ------------------------------------------------------------------- */
+
+.remote-dialog.channel-editor {
+  width: min(600px, 100%);
+  padding: 0;
+}
+
+.remote-dialog > .channel-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  text-align: left;
+  gap: var(--openbot-space-4);
+  border-bottom: 1px solid var(--openbot-border);
+  padding: var(--openbot-space-6) var(--openbot-space-6) var(--openbot-space-4);
+}
+
+.channel-editor-heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-1);
+}
+
+.channel-editor .channel-editor-heading h2 {
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.remote-dialog.channel-editor .channel-editor-heading p {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+/* The channel as it will look on the sidebar: lead in front, up to three creatures. */
+.channel-editor-stack {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+}
+
+.channel-editor-stack-empty {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px dashed var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  color: var(--openbot-text-muted);
+}
+
+.channel-editor-stack .channel-editor-stack-member {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-surface);
+  box-shadow: 0 0 0 2px var(--openbot-bg-surface);
+}
+
+.channel-editor-stack[data-count="1"] .channel-editor-stack-member {
+  inset: 2px;
+  width: 44px;
+  height: 44px;
+}
+
+.channel-editor-stack[data-count="2"] .channel-editor-stack-member:nth-child(1),
+.channel-editor-stack[data-count="3"] .channel-editor-stack-member:nth-child(1) {
+  z-index: 3;
+  bottom: 0;
+  left: 0;
+}
+
+.channel-editor-stack[data-count="2"] .channel-editor-stack-member:nth-child(2) {
+  z-index: 2;
+  top: 0;
+  right: 0;
+}
+
+.channel-editor-stack[data-count="3"] .channel-editor-stack-member:nth-child(2) {
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+}
+
+.channel-editor-stack[data-count="3"] .channel-editor-stack-member:nth-child(3) {
+  z-index: 1;
+  top: 0;
+  left: 9px;
+}
+
+.channel-editor form {
+  display: grid;
+  gap: 0;
+}
+
+.channel-editor .channel-editor-fields {
+  gap: var(--openbot-space-4);
+  padding: var(--openbot-space-4) var(--openbot-space-6) 0;
+}
+
+.channel-editor .remote-field {
+  margin: 0;
+}
+
+.channel-editor-names {
+  display: grid;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--openbot-space-4);
+}
+
+.channel-editor-name-input {
+  position: relative;
+  display: block;
+}
+
+.channel-editor-name-input svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  color: var(--openbot-text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.channel-editor .channel-editor-name-input input {
+  padding-left: 30px;
+}
+
+.channel-editor .channel-editor-hint {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-regular);
+  line-height: var(--openbot-leading-xs);
+}
+
+.channel-editor-members {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.channel-editor-members legend {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--openbot-space-2);
+  padding: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.channel-editor .channel-editor-members legend small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.channel-member-list {
+  display: grid;
+  max-height: 232px;
+  margin: 0;
+  overflow-y: auto;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  padding: var(--openbot-space-1);
+  list-style: none;
+}
+
+.channel-member-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  border-radius: var(--openbot-radius-md);
+  padding-right: var(--openbot-space-2);
+}
+
+.channel-member-row:hover {
+  background: var(--openbot-hover);
+}
+
+.channel-member-row[data-picked] {
+  background: var(--openbot-accent-soft);
+}
+
+.channel-member-toggle {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--openbot-space-3);
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: var(--openbot-space-1) var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.channel-member-toggle:focus-visible,
+.channel-member-make-lead:focus-visible {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: -2px;
+}
+
+.channel-member-toggle:disabled {
+  color: var(--openbot-text-dim);
+  cursor: default;
+}
+
+.channel-member-check {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-sm);
+  color: var(--openbot-contrast-white);
+}
+
+.channel-member-row[data-picked] .channel-member-check {
+  border-color: var(--openbot-accent);
+  background: var(--openbot-accent);
+}
+
+.channel-member-toggle .channel-member-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+}
+
+.channel-member-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channel-member-lead {
+  flex: 0 0 auto;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-accent-strong);
+  padding: var(--openbot-space-0-5) var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.channel-member-make-lead {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--openbot-radius-pill);
+  background: transparent;
+  padding: var(--openbot-space-0-5) var(--openbot-space-2);
+  color: var(--openbot-accent-text);
+  font: inherit;
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-medium);
+  cursor: pointer;
+}
+
+.channel-member-make-lead:hover {
+  background: var(--openbot-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .channel-member-make-lead {
+    opacity: 0;
+  }
+
+  .channel-member-row:hover .channel-member-make-lead,
+  .channel-member-make-lead:focus-visible {
+    opacity: 1;
+  }
+}
+
+.channel-editor .channel-editor-error {
+  margin: var(--openbot-space-3) var(--openbot-space-6) 0;
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-sm);
+}
+
+.channel-editor .channel-editor-footer {
+  margin-top: var(--openbot-space-6);
+  border-top: 1px solid var(--openbot-border);
+  padding: var(--openbot-space-4) var(--openbot-space-6);
+}
+
+@media (max-width: 560px) {
+  .channel-editor-names {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.channel-editor-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-1-5);
+}
+
+/* Narrow conversation (owner's audit 5.4): "# name" stays on one line and the pills of the channel (Instructions,
+ * Memory, Routines, History) shrink to their icons, each with a tooltip, instead of dropping to a second row. */
+.channel-workspace .channel-view-header {
+  container: channel-header / inline-size;
+}
+
+.chat-tasks-switch,
+.chat-tasks-switch-context {
+  white-space: nowrap;
+}
+
+.channel-view-toolbar {
+  flex-wrap: nowrap;
+}
+
+.channel-view-settings {
+  flex-wrap: nowrap;
+}
+
+@container channel-header (max-width: 640px) {
+  .channel-pill-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .channel-view-settings > details > summary {
+    width: var(--openbot-control-sm);
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@container channel-header (max-width: 460px) {
+  .chat-tasks-switch-context {
+    display: none;
+  }
+}

@@ -34,6 +34,7 @@ async function setup(options: { failAgent?: boolean } = {}) {
     appearance: {
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "show",

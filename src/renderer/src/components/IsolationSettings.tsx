@@ -1,9 +1,11 @@
 import type { AgentIsolation, IsolationDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tDataParts } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
-import { Heading, Switch, Text } from "./ui";
+import { PanelHeading } from "./PanelHeading";
+import { Switch, Text } from "./ui";
+import { Lock } from "./ui/icons";
 export function IsolationSettings(props: { botId: string; api?: IsolationDesktopApi; onEvent?: SettingsEvents }) {
   const api = untrack(() => props.api ?? window.openbot?.isolation);
   const [state, setState] = createSignal<AgentIsolation>();
@@ -55,9 +57,9 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
   }
   return (
     <section class="providers-form" aria-label={t("Agent isolation")}>
-      <Heading as="h3" size="sm">
+      <PanelHeading level="h3" icon={Lock} tint="red">
         {t("Process isolation")}
-      </Heading>
+      </PanelHeading>
       <Show when={error()}>
         <Text role="alert" tone="danger">
           {error()}
@@ -81,7 +83,7 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
               <Text>{t("Codex: one shared process, not isolated per agent")}</Text>
             </Show>
             <Show when={current().reason}>
-              <Text>{current().reason}</Text>
+              <Text>{tDataParts(current().reason ?? "")}</Text>
             </Show>
             <Show when={current().state === "active"}>
               <Text>{t("Process limits are active. This does not provide an AppContainer disk boundary.")}</Text>

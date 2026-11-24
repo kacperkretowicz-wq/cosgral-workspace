@@ -99,7 +99,7 @@ export const pl = {
   Unpin: "Odepnij",
   "Page menu": "Menu strony",
   Current: "Bieżąca",
-  "Needs you": "Potrzebujesz zareagować",
+  "Needs you": "Czeka na Ciebie",
   Search: "Szukaj",
   "Search chats": "Szukaj rozmów",
   "Expand sidebar and search chats": "Rozwiń panel i szukaj rozmów",
@@ -189,8 +189,6 @@ export const pl = {
   "Where will COSGRAL Workspace run?": "Gdzie ma działać COSGRAL Workspace?",
   "Choose the default provider for local agents and review macOS permissions.":
     "Wybierz domyślnego dostawcę dla lokalnych agentów i sprawdź uprawnienia macOS.",
-  "Default provider for local agents, language, notifications and voice.":
-    "Domyślny dostawca lokalnych agentów, język, powiadomienia i głos.",
   "Agents, conversations, and files stay on this computer.": "Agenci, rozmowy i pliki zostają na tym komputerze.",
   "Use an invitation from the person who runs your COSGRAL host.":
     "Użyj zaproszenia od osoby, która prowadzi Twój host COSGRAL.",
@@ -279,9 +277,7 @@ export const pl = {
   "Use a skill": "Użyj skilla",
   "Teach a task": "Naucz zadania",
   "Teach a task needs browser teach — not in this build yet.":
-    "Nauczanie zadania wymaga teach w przeglądarce — jeszcze nie w tej wersji.",
-  "Voice side panel needs engine support — not in this build yet.":
-    "Panel głosu w menu + wymaga silnika — jeszcze nie w tej wersji.",
+    "Uczenie zadania wymaga trybu nauki w przeglądarce, którego ta wersja jeszcze nie ma.",
   "Skills are not available in this version.": "Skille nie są dostępne w tej wersji.",
   "Could not load skills.": "Nie udało się wczytać skilli.",
   "Loading skills…": "Wczytywanie skilli…",
@@ -290,7 +286,7 @@ export const pl = {
   "Attach files": "Dołącz pliki",
   "Channels and files": "Kanały i pliki",
   "{count} step": "{count} krok",
-  "{count} steps": "{count} kroków",
+  "{count} steps": "{count} kroki",
   Thinking: "Myślenie",
   "Chat color": "Kolor czatu",
   Instructions: "Instrukcje",
@@ -339,13 +335,10 @@ export const pl = {
   "Open Browser": "Otwórz przeglądarkę",
   "Open Files": "Otwórz pliki",
   "Open Agent settings": "Otwórz ustawienia agenta",
-  "Open Voice": "Otwórz głos",
   "Panel sections": "Sekcje panelu",
   "Agent settings": "Ustawienia agenta",
   "Back to details": "Wróć do szczegółów",
   "Close details": "Zamknij szczegóły",
-  "Record a short voice note for this agent. Full voice models stay in Settings → Voice.":
-    "Nagraj krótką notatkę głosową dla tego agenta. Pełne modele głosu zostają w Ustawienia → Głos.",
   "Hand off the work. Come back to an": "Oddaj pracę. Wróć po",
   "answer.": "odpowiedź.",
   "Your agents work on tasks side by side. Each answer waits here for you.":
@@ -423,7 +416,7 @@ export const pl = {
   Transfer: "Przeniesienie",
   "Browser profiles": "Profile przeglądarki",
   Apps: "Aplikacje",
-  "Marketplace sections": "Sekcje Marketplace",
+  "Marketplace sections": "Sekcje katalogu dodatków",
   "Could not load the catalog.": "Nie udało się wczytać katalogu.",
   "Could not load the plugin.": "Nie udało się wczytać aplikacji.",
   "Apps are not available in this version.": "Aplikacje nie są dostępne w tej wersji.",
@@ -450,6 +443,10 @@ export const pl = {
   "This app cannot run on this computer.": "Ta aplikacja nie działa na tym komputerze.",
   "Finish signing in on the service's page, then come back.": "Dokończ logowanie na stronie usługi, potem wróć.",
   "This app has a problem.": "Ta aplikacja ma problem.",
+  "A server of this plugin was removed. Remove the plugin and install it again.":
+    "Usunięto serwer tej aplikacji. Usuń aplikację i zainstaluj ją ponownie.",
+  "Sign in on the service's page to finish.": "Dokończ logowanie na stronie usługi.",
+  "The plugin's server does not answer. Try again.": "Serwer aplikacji nie odpowiada. Spróbuj ponownie.",
   Install: "Zainstaluj",
   Update: "Aktualizuj",
   Uninstall: "Odinstaluj",
@@ -482,7 +479,7 @@ export const pl = {
   Downloaded: "Pobrane",
   Ready: "Gotowe",
   "Checking version": "Sprawdzanie wersji",
-  "Waiting for approval in Needs you": "Czeka na zgodę w Needs you",
+  "Waiting for approval in Needs you": "Czeka na Twoją zgodę",
   Downloading: "Pobieranie",
   "Verifying SHA-256": "Sprawdzanie SHA-256",
   Installing: "Instalowanie",
@@ -539,7 +536,7 @@ export const pl = {
   "Delete selected": "Usuń zaznaczone",
   "Clear selection": "Wyczyść zaznaczenie",
   "Loading files…": "Wczytywanie plików…",
-  "{count} files": "Plików: {count}",
+  "{count} files": "{count} pliki",
   "No files found.": "Nie znaleziono plików.",
   "Add files or clear filters to see items here.": "Dodaj pliki albo wyczyść filtry, żeby zobaczyć listę.",
   "Token and turn totals appear here after agents run.": "Sumy tokenów i tur pojawią się tu po pracy agentów.",
@@ -552,7 +549,7 @@ export const pl = {
   "Which files": "Które pliki",
   "Older than (days)": "Starsze niż (dni)",
   "Check what would go": "Sprawdź, co zostanie usunięte",
-  "{count} files, {size} would be removed.": "Do usunięcia: {count} plików, {size}.",
+  "{count} files, {size} would be removed.": "Do usunięcia: {count} pliki, {size}.",
   "Remove them": "Usuń je",
   "Not available": "Niedostępne",
   "Could not load the usage report.": "Nie udało się wczytać raportu użycia.",
@@ -798,8 +795,8 @@ export const pl = {
   "Could not load the messengers.": "Nie udało się wczytać komunikatorów.",
   "Could not allow the conversation.": "Nie udało się dopuścić rozmowy.",
   Messengers: "Komunikatory",
-  "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.":
-    "Rozmawiaj z agentem z Telegrama lub Slacka. Odpowiedzi dostają tylko rozmowy prywatne, a nikt nie ma dostępu, dopóki go nie dodasz.",
+  "Talk to an agent from Telegram, Slack or Discord. Only private conversations are answered, and nobody is allowed until you add them.":
+    "Rozmawiaj z agentem z Telegrama, Slacka lub Discorda. Odpowiedzi dostają tylko rozmowy prywatne, a nikt nie ma dostępu, dopóki go nie dodasz.",
   "Messengers are not available in this version.": "Komunikatory nie są dostępne w tej wersji.",
   "Connected as {name}.": "Połączony jako {name}.",
   "Connected.": "Połączony.",
@@ -852,6 +849,20 @@ export const pl = {
     "Slack nie przyjmuje tokenów (mogły zostać unieważnione albo aplikacji brakuje uprawnienia). Utwórz nowe i połącz ponownie.",
   "Slack cannot be reached right now. The program tries again by itself.":
     "Nie można teraz połączyć się ze Slackiem. Program spróbuje sam ponownie.",
+  "From the Bot page of your Discord application (Reset Token). Three parts separated by dots.":
+    "Z zakładki Bot Twojej aplikacji Discord (Reset Token). Trzy części oddzielone kropkami.",
+  "A number of 17 to 20 digits (a direct-message channel id). Write to the bot once: the settings then show who wrote, and you can allow them. Servers are not allowed.":
+    "Liczba o 17–20 cyfrach (numer kanału wiadomości prywatnej). Napisz raz do bota: ustawienia pokażą, kto napisał, i będziesz mógł go dopuścić. Serwery nie są dopuszczane.",
+  "Make an application in the Discord Developer Portal and add a bot to it.":
+    "Utwórz aplikację w Discord Developer Portal i dodaj do niej bota.",
+  "Copy the bot token from the Bot page (Reset Token) and paste it here. No special intents are needed for direct messages.":
+    "Skopiuj token bota z zakładki Bot (Reset Token) i wklej go tutaj. Do wiadomości prywatnych nie są potrzebne żadne specjalne uprawnienia (intents).",
+  "Open the bot's profile in Discord (install it to your account) and write a direct message to it. It appears under the conversations that wrote.":
+    "Otwórz profil bota w Discordzie (zainstaluj go na swoim koncie) i napisz do niego wiadomość prywatną. Pojawi się wśród rozmów, które napisały.",
+  "Discord does not accept the token (it may have been reset). Reset it on the Bot page of your application and connect again.":
+    "Discord nie przyjmuje tokenu (mógł zostać zresetowany). Zresetuj go na zakładce Bot swojej aplikacji i połącz ponownie.",
+  "Discord cannot be reached right now. The program tries again by itself.":
+    "Nie można teraz połączyć się z Discordem. Program spróbuje sam ponownie.",
   "Could not load the transfer page.": "Nie udało się wczytać strony transferu.",
   "Could not export the agents.": "Nie udało się wyeksportować agentów.",
   "Could not read the file.": "Nie udało się odczytać pliku.",
@@ -899,41 +910,11 @@ export const pl = {
   "Files of the Library": "Pliki Biblioteki",
   "Preferences of the program": "Preferencje programu",
   "Files of the Library are not moved by this version.": "Pliki Biblioteki nie są przenoszone w tej wersji.",
-  Voice: "Głos",
   Blocked: "Zablokowany",
-  "Not asked yet": "Jeszcze nie pytano",
-  "Forbidden here": "Zabroniony na tym komputerze",
   Unknown: "Nieznany",
-  "The program may use the microphone for dictation.": "Program może używać mikrofonu do dyktowania.",
-  "The microphone is switched off for this program. Allow it in the system settings.":
-    "Mikrofon jest wyłączony dla tego programu. Zezwól na niego w ustawieniach systemu.",
-  "The system has not asked yet. It asks the first time you dictate.":
-    "System jeszcze nie pytał. Zapyta przy pierwszym dyktowaniu.",
-  "A policy on this computer forbids the microphone.": "Zasady na tym komputerze zabraniają używania mikrofonu.",
-  "This system does not say. Recording is simply tried.":
-    "Ten system tego nie mówi. Nagrywanie jest po prostu próbowane.",
-  Dictation: "Dyktowanie",
-  "Spoken replies": "Czytanie odpowiedzi na głos",
-  "Live voice": "Rozmowa głosowa na żywo",
-  "Could not load the voice overview.": "Nie udało się wczytać przeglądu głosu.",
-  "Could not open the microphone settings.": "Nie udało się otworzyć ustawień mikrofonu.",
-  Microphone: "Mikrofon",
-  "Microphone permission": "Uprawnienie do mikrofonu",
-  "Open microphone settings": "Otwórz ustawienia mikrofonu",
   "Not available in this version": "Niedostępne w tej wersji",
-  "Parakeet dictation model": "Model dyktowania Parakeet",
-  "It needs a different speech engine than the one this version carries (whisper.cpp). Use a Whisper model instead.":
-    "Wymaga innego silnika mowy niż ten, który ma ta wersja (whisper.cpp). Użyj zamiast tego modelu Whisper.",
-  "Cloud dictation (Cohere, ElevenLabs)": "Dyktowanie w chmurze (Cohere, ElevenLabs)",
-  "It would send your voice to a service. This version keeps audio on this computer.":
-    "Wysyłałoby Twój głos do usługi. Ta wersja trzyma dźwięk na tym komputerze.",
-  "Neural reading model (Supertonic)": "Neuronowy model czytania (Supertonic)",
-  "It needs a heavy speech runtime that this version does not carry. Replies are read with the voices installed in Windows.":
-    "Wymaga ciężkiego środowiska mowy, którego ta wersja nie ma. Odpowiedzi są czytane głosami zainstalowanymi w Windows.",
-  "Live voice conversations": "Rozmowy głosowe na żywo",
-  "They send your voice and the agent's replies to a cloud service. This version keeps audio on this computer.":
-    "Wysyłają Twój głos i odpowiedzi agenta do usługi w chmurze. Ta wersja trzyma dźwięk na tym komputerze.",
-  "Phones cannot connect: Mobile Connect is off.": "Telefony nie mogą się połączyć: Mobile Connect jest wyłączony.",
+  "Phones cannot connect: Mobile Connect is off.":
+    "Telefony nie mogą się połączyć: łączenie z telefonem jest wyłączone.",
   "Only a browser on this computer can open the phone page.":
     "Stronę telefonu może otworzyć tylko przeglądarka na tym komputerze.",
   "Phones on your home network can connect.": "Mogą się łączyć telefony z Twojej sieci domowej.",
@@ -955,7 +936,7 @@ export const pl = {
   "Notifications from this computer are on.": "Powiadomienia z tego komputera są włączone.",
   "Notifications from this computer are off.": "Powiadomienia z tego komputera są wyłączone.",
   "No phones yet. Use “Pair another phone” above to add one.":
-    "Brak telefonów. Dodaj pierwszy przyciskiem „Pair another phone” wyżej.",
+    "Brak telefonów. Dodaj pierwszy przyciskiem „Sparuj kolejny telefon” wyżej.",
   "This computer only": "Tylko ten komputer",
   "Local network": "Sieć lokalna",
   "Local network and Tailscale": "Sieć lokalna i Tailscale",
@@ -1043,7 +1024,8 @@ export const pl = {
   "Subagents: {working} working of {total}": "Podagenci: pracuje {working} z {total}",
   "Only the agent starts a subagent. You can stop one at any time. At most {max} work at once.":
     "Podagenta uruchamia tylko agent. Możesz go zatrzymać w każdej chwili. Naraz pracują co najwyżej {max}.",
-  "It asks you something: answer the card in Needs you.": "Pyta Cię o coś: odpowiedz na karcie w „Needs you”.",
+  "It asks you something: answer the card in Needs you.":
+    "Pyta Cię o coś: odpowiedz na karcie w sekcji „Czeka na Ciebie”.",
   "Its answer": "Jego odpowiedź",
   "Stop {title}": "Zatrzymaj: {title}",
   "Stopped by the user.": "Zatrzymany przez użytkownika.",
@@ -1063,7 +1045,7 @@ export const pl = {
   "Install Tailscale on this computer and on your phone and sign in with the same account on both.":
     "Zainstaluj Tailscale na tym komputerze i na telefonie i zaloguj się na to samo konto na obu.",
   "Turn on 'Local network' in Mobile Connect. The computer then also answers on its Tailscale address.":
-    "Włącz „Local network” w Mobile Connect. Komputer odpowiada wtedy także pod adresem Tailscale.",
+    "Włącz „Sieć lokalna” na stronie Telefon. Komputer odpowiada wtedy także pod adresem Tailscale.",
   "Start pairing. If a Tailscale address is listed with the other addresses, scan the QR code with the phone's camera.":
     "Zacznij parowanie. Jeśli na liście adresów jest adres Tailscale, zeskanuj kod QR aparatem telefonu.",
   "If the phone opens a different address, open this one instead: the computer's Tailscale name (MagicDNS, ends in .ts.net) or its 100.x address, shown in the Tailscale app.":
@@ -1085,6 +1067,100 @@ export const pl = {
   "Search the catalog": "Szukaj w katalogu",
   Catalog: "Katalog",
   "No matching items.": "Brak pasujących pozycji.",
+  "No matches": "Brak wyników",
+  "No agents yet": "Nie masz jeszcze agentów",
+  Filter: "Filtruj",
+  "Filter, hidden agents shown": "Filtruj, widać ukrytych agentów",
+  "An agent is a teammate with its own skills, memory and chats.":
+    "Agent to członek zespołu z własnymi umiejętnościami, pamięcią i rozmowami.",
+  "Complete agent CLI setup to start": "Dokończ konfigurację CLI agenta, żeby zacząć",
+  "Choose a model to continue": "Wybierz model, żeby kontynuować",
+  "Reply…": "Odpowiedz…",
+  agent: "agenta",
+  "No messages yet": "Brak wiadomości",
+  // Agent templates (src/backend/agent-templates.ts): names, roles and summaries shown through tData().
+  Assistant: "Asystent",
+  "General assistant": "Asystent ogólny",
+  "Everyday help: questions, plans, web research and drafts.":
+    "Codzienna pomoc: pytania, plany, wyszukiwanie w sieci i szkice.",
+  Researcher: "Badacz",
+  "Research and sources": "Badania i źródła",
+  "Finds, compares and sums up information with sources.": "Szuka, porównuje i podsumowuje informacje ze źródłami.",
+  Writer: "Autor tekstów",
+  "Writing and editing": "Pisanie i redakcja",
+  "Drafts e-mails, posts and documents in your style.": "Pisze e-maile, posty i dokumenty w Twoim stylu.",
+  Developer: "Programista",
+  "Code and automation": "Kod i automatyzacja",
+  "Writes and fixes code in its workspace and runs the tests.":
+    "Pisze i poprawia kod w swoim folderze roboczym i uruchamia testy.",
+  "Inbox manager": "Opiekun skrzynki",
+  "E-mail and calendar": "Poczta i kalendarz",
+  "Sorts mail in the browser and prepares replies for your approval.":
+    "Porządkuje pocztę w przeglądarce i przygotowuje odpowiedzi do Twojej akceptacji.",
+  "Data analyst": "Analityk danych",
+  "Tables and reports": "Tabele i raporty",
+  "Keeps shared tables and files in order and writes short reports.":
+    "Dba o porządek we wspólnych tabelach i plikach oraz pisze krótkie raporty.",
+  "Desktop operator": "Operator pulpitu",
+  "Windows apps": "Aplikacje Windows",
+  "Uses Windows apps with the mouse and keyboard after you allow it.":
+    "Obsługuje aplikacje Windows myszą i klawiaturą, gdy na to pozwolisz.",
+  "Remote desktop works on Windows in this version.": "Zdalny pulpit działa w tej wersji tylko na Windows.",
+  "Codex (this computer)": "Codex (ten komputer)",
+  "Claude (this computer)": "Claude (ten komputer)",
+  "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.":
+    "Nie znaleziono Claude CLI. Zainstaluj Claude Code, uruchom `claude auth login`, a potem wybierz „Spróbuj ponownie”.",
+  "Codex CLI was not found. Install Codex, run `codex login`, then choose Try again.":
+    "Nie znaleziono Codex CLI. Zainstaluj Codex, uruchom `codex login`, a potem wybierz „Spróbuj ponownie”.",
+  "Process isolation is only for Windows.": "Izolacja procesów działa tylko na Windows.",
+  "This computer cannot isolate processes.": "Ten komputer nie może izolować procesów.",
+  "Disk tools of this agent are refused below Full access.":
+    "Narzędzia dyskowe tego agenta są blokowane poniżej pełnego dostępu.",
+  "Updates are available in installed desktop builds.": "Aktualizacje są dostępne w zainstalowanych wersjach programu.",
+  "{count} trigger": "{count} wyzwalacz",
+  "{count} triggers": "{count} wyzwalacze",
+  "{count} agent step": "{count} krok agenta",
+  "{count} agent steps": "{count} kroki agenta",
+  "{count} approval": "{count} zgoda",
+  "{count} approvals": "{count} zgody",
+  "{count} output": "{count} wyjście",
+  "{count} outputs": "{count} wyjścia",
+  "{count} prompt": "{count} polecenie",
+  "{count} prompts": "{count} polecenia",
+  "{count} condition": "{count} warunek",
+  "{count} conditions": "{count} warunki",
+  "No steps": "Brak kroków",
+  "Keyboard shortcuts": "Skróty klawiszowe",
+  "Keys that work anywhere in the window.": "Klawisze, które działają w całym oknie.",
+  "Search conversations, agents and pages": "Szukaj rozmów, agentów i stron",
+  "Find in this conversation": "Szukaj w tej rozmowie",
+  "Previous agent in the list (outside a text field)": "Poprzedni agent na liście (poza polem tekstowym)",
+  "Next agent in the list (outside a text field)": "Następny agent na liście (poza polem tekstowym)",
+  "Send the message (or Ctrl+Enter, as set in Appearance)":
+    "Wyślij wiadomość (albo Ctrl+Enter, zależnie od ustawienia w Wyglądzie)",
+  "New line in the message": "Nowa linia w wiadomości",
+  "Close the browser tab of the agent": "Zamknij kartę przeglądarki agenta",
+  "Close the open panel, menu or dialog": "Zamknij otwarty panel, menu albo okno",
+  "Show these keyboard shortcuts": "Pokaż te skróty klawiszowe",
+  "{count} member": "Członkowie: {count}",
+  "The webhook receiver is not running. Turn on webhooks in the server settings first.":
+    "Odbiornik webhooków nie działa. Najpierw włącz webhooki w ustawieniach serwera.",
+  "The webhook secret cannot be stored safely on this computer: system encryption is not available.":
+    "Sekretu webhooka nie da się bezpiecznie zapisać na tym komputerze: szyfrowanie systemowe jest niedostępne.",
+  "The routine is paused.": "Rutyna jest wstrzymana.",
+  "Webhook on: a signed POST to this computer also starts the routine.":
+    "Webhook włączony: podpisane żądanie POST na ten komputer też uruchamia rutynę.",
+  "Webhook off.": "Webhook wyłączony.",
+  "New webhook secret": "Nowy sekret webhooka",
+  "Turn on webhook": "Włącz webhook",
+  "Turn off webhook": "Wyłącz webhook",
+  "Copy these now: the secret is not shown again.": "Skopiuj je teraz: sekret nie zostanie pokazany ponownie.",
+  "Webhook address": "Adres webhooka",
+  "Signing secret": "Sekret podpisu",
+  "Webhook signing secret": "Sekret podpisu webhooka",
+  "The address works on this computer only (127.0.0.1). Reach it from another place only through a tunnel you trust. Requests are signed the Standard Webhooks way.":
+    "Adres działa tylko na tym komputerze (127.0.0.1). Z innego miejsca łącz się z nim wyłącznie przez zaufany tunel. Żądania są podpisywane według Standard Webhooks.",
+  "New teammate": "Nowy",
   Writing: "Pisanie",
   Communication: "Komunikacja",
   Development: "Programowanie",
@@ -1103,9 +1179,10 @@ export const pl = {
   "Prompt text": "Tekst polecenia",
   "Fixed text passed to the next step. No model call.":
     "Stały tekst przekazywany do następnego kroku. Bez wywołania modelu.",
-  "Empty prompt — type the fixed text for the next step.": "Puste polecenie — wpisz stały tekst dla następnego kroku.",
+  "Empty prompt — type the fixed text for the next step.": "Puste polecenie: wpisz stały tekst dla następnego kroku.",
   "Subject (text to test)": "Temat (tekst do sprawdzenia)",
-  "Usually {{previous}} — the output of the step before this one.": "Zwykle {{previous}} — wynik kroku przed tym.",
+  "Usually {{previous}} — the output of the step before this one.":
+    "Zwykle {{previous}}, czyli wynik poprzedniego kroku.",
   Operator: "Operator",
   "Compare with": "Porównaj z",
   "Match case": "Uwzględniaj wielkość liter",
@@ -1541,7 +1618,7 @@ export const pl = {
   "Awaiting approval": "Czeka na zatwierdzenie",
   Approved: "Zatwierdzony",
   Rejected: "Odrzucony",
-  "Expired — not approved": "Wygasł — niezatwierdzony",
+  "Expired — not approved": "Wygasł bez zgody",
   Completed: "Ukończony",
   Pending: "Oczekuje",
   "In progress": "W toku",
@@ -1571,6 +1648,14 @@ export const pl = {
   "Work & projects": "Praca i projekty",
   "Research & writing": "Badania i pisanie",
   "Sales & outreach": "Sprzedaż i outreach",
+  "Focus on my work and projects. Help me plan, organize, and execute them proactively.":
+    "Skup się na mojej pracy i projektach. Pomagaj mi je planować, porządkować i prowadzić z własnej inicjatywy.",
+  "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.":
+    "Skup się na badaniach i pisaniu. Pomagaj mi zgłębiać tematy i zamieniać wnioski w jasne, przydatne teksty.",
+  "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.":
+    "Skup się na sprzedaży i docieraniu do klientów. Pomagaj mi poznawać potencjalnych klientów, przygotowywać spersonalizowane wiadomości i pilnować dalszych kontaktów.",
+  "My main focus for you is: {topic}. Treat this as your ongoing specialty.":
+    "Moja główna prośba do Ciebie: {topic}. Traktuj to jako swoją stałą specjalność.",
   "Something else": "Coś innego",
   "Opening a page…": "Otwieranie strony…",
   "Checking tabs…": "Sprawdzanie kart…",
@@ -1720,7 +1805,7 @@ export const pl = {
   "Could not load isolation. Reopen settings to retry.":
     "Nie udało się wczytać izolacji. Otwórz ustawienia ponownie, żeby spróbować.",
   "Approval requested in Needs you. Isolation stays on until you approve.":
-    "Prośba o zgodę w Needs you. Izolacja zostaje włączona, aż zatwierdzisz.",
+    "Prośba o zgodę czeka w sekcji „Czeka na Ciebie”. Izolacja zostaje włączona, aż zatwierdzisz.",
   "Isolation enabled.": "Izolacja włączona.",
   "Could not change isolation.": "Nie udało się zmienić izolacji.",
   "Agent isolation": "Izolacja agenta",
@@ -1754,7 +1839,7 @@ export const pl = {
   "Access settings are unavailable on this connection.": "Ustawienia dostępu są niedostępne na tym połączeniu.",
   "Loading access settings…": "Wczytywanie ustawień dostępu…",
   "Approval requested in Needs you. The current level stays unchanged until you approve.":
-    "Prośba o zgodę w Needs you. Obecny poziom zostaje bez zmian, aż zatwierdzisz.",
+    "Prośba o zgodę czeka w sekcji „Czeka na Ciebie”. Obecny poziom zostaje bez zmian, aż zatwierdzisz.",
   "Access level updated.": "Poziom dostępu zaktualizowany.",
   "Current: {name}. {summary}": "Obecnie: {name}. {summary}",
   "Last approved increase: {at}": "Ostatnie zatwierdzone podniesienie: {at}",
@@ -1853,14 +1938,14 @@ export const pl = {
   "The account choice saves immediately. Default uses the provider settings.":
     "Wybór konta zapisuje się od razu. Domyślne korzysta z ustawień dostawcy.",
   "Assigned account from another provider or removed — pick again":
-    "Przypisane konto innego dostawcy lub usunięte — wybierz ponownie",
+    "Przypisane konto należy do innego dostawcy albo zostało usunięte: wybierz ponownie",
   " (system)": " (systemowe)",
   " — signed out": " — wylogowane",
   " — disabled": " — wyłączone",
   "Answering with account: {label}": "Teraz odpowiada kontem: {label}",
   "Account picking is unavailable in this version.": "Wybór kont niedostępny w tej wersji.",
   "Reload accounts": "Ponów wczytanie kont",
-  "Needs you by thread": "Needs you wg wątku",
+  "Needs you by thread": "„Czeka na Ciebie” według wątku",
   "New messages": "Nowe wiadomości",
   "Custom answer": "Własna odpowiedź",
   "Previous question": "Poprzednie pytanie",
@@ -1988,7 +2073,7 @@ export const pl = {
   "Code valid for {time}": "Kod ważny jeszcze {time}",
   "This code has expired.": "Ten kod wygasł.",
   "A phone is asking to pair. Approve or decline on the confirm card in Needs you.":
-    "Telefon prosi o sparowanie. Zatwierdź albo odrzuć na karcie potwierdzenia w Needs you.",
+    "Telefon prosi o sparowanie. Zatwierdź albo odrzuć na karcie potwierdzenia w sekcji „Czeka na Ciebie”.",
   "Waiting for a phone. Wrong tries left: {count}.": "Czekam na telefon. Pozostało błędnych prób: {count}.",
   "Pairing link": "Link do parowania",
   "Valid for one phone and a few minutes. Do not share it.":
@@ -2012,7 +2097,7 @@ export const pl = {
   "Rotate and remove all phones": "Wymień i usuń wszystkie telefony",
   "Keep the current certificate": "Zostaw obecny certyfikat",
   "Something went wrong.": "Coś poszło nie tak.",
-  "Mobile Connect is unavailable.": "Mobile Connect jest niedostępny.",
+  "Mobile Connect is unavailable.": "Łączenie z telefonem jest niedostępne.",
   "{name} is paired.": "Sparowano: {name}.",
   "The certificate was replaced. Every phone must pair again.":
     "Certyfikat został wymieniony. Każdy telefon musi się sparować od nowa.",
@@ -2205,41 +2290,8 @@ export const pl = {
   "Channel memory is unavailable in this build.": "Pamięć kanału jest niedostępna w tej wersji.",
   "Could not load channel memory.": "Nie udało się wczytać pamięci kanału.",
   "Channel memory unavailable": "Pamięć kanału niedostępna",
-  "Stop reading": "Zatrzymaj czytanie",
-  "Read aloud": "Czytaj na głos",
-  "Voice is unavailable.": "Głos niedostępny.",
-  "Transcription failed.": "Transkrypcja nieudana.",
-  "Microphone unavailable: {message}": "Mikrofon niedostępny: {message}",
-  "Microphone permission was denied or unavailable.": "Brak zgody na mikrofon albo mikrofon niedostępny.",
-  "Stop recording": "Zatrzymaj nagrywanie",
-  "Transcribing…": "Transkrypcja…",
-  "Record voice": "Nagraj głos",
-  "Voice settings": "Ustawienia głosu",
-  "Audio stays on this computer. The first download requires approval on a Needs you card.":
-    "Dźwięk zostaje na tym komputerze. Pierwsze pobranie wymaga zgody na karcie Needs you.",
-  "Enable voice": "Włącz głos",
-  "System speech available.": "Mowa systemowa dostępna.",
-  "System speech unavailable.": "Mowa systemowa niedostępna.",
-  "System default": "Domyślny systemowy",
-  Speed: "Prędkość",
-  "Read new replies automatically": "Czytaj nowe odpowiedzi automatycznie",
-  "Recording language": "Język nagrywania",
-  Automatic: "Automatyczny",
   English: "English",
   Polski: "Polski",
-  "Runtime:": "Środowisko:",
-  "Transcription ready.": "Transkrypcja gotowa.",
-  "Cancel download": "Anuluj pobieranie",
-  "Delete model": "Usuń model",
-  "Delete runtime and revoke consent": "Usuń środowisko i cofnij zgodę",
-  "Voice is unavailable in this build.": "Głos jest niedostępny w tej wersji.",
-  "Could not load voice.": "Nie udało się wczytać głosu.",
-  "Voice action failed.": "Akcja głosu nieudana.",
-  "Download was declined.": "Pobieranie odrzucone.",
-  "Model is ready.": "Model jest gotowy.",
-  "Download started.": "Pobieranie rozpoczęte.",
-  "Delete this downloaded model?": "Usunąć ten pobrany model?",
-  "Delete the runtime and revoke consent?": "Usunąć środowisko i cofnąć zgodę?",
   "Could not prepare the deletion.": "Nie udało się przygotować usuwania.",
   "Could not delete the data.": "Nie udało się usunąć danych.",
   "Delete my data": "Usuń moje dane",
@@ -2411,13 +2463,13 @@ export const pl = {
   "Loading...": "Ładowanie…",
   "Agent threads": "Wątki agenta",
   "Running turns finish in their own thread. History, queued messages and Needs you stay with that thread. Memory is shared by this agent.":
-    "Trwające tury kończą się we własnym wątku. Historia, kolejka i Needs you zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
+    "Trwające tury kończą się we własnym wątku. Historia, kolejka i karty „Czeka na Ciebie” zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
   "Reload threads": "Odśwież wątki",
   "Show archived threads": "Pokaż zarchiwizowane wątki",
   "Loading threads...": "Ładowanie wątków…",
   "Working in background": "Praca w tle",
   "{unread} unread; {queued} queued; {needsYou} Needs you. Updated {when}":
-    "{unread} nieprzeczytane; {queued} w kolejce; {needsYou} Needs you. Zaktualizowano {when}",
+    "{unread} nieprzeczytane; {queued} w kolejce; {needsYou} do reakcji. Zaktualizowano {when}",
   "From thread: {title}": "Z wątku: {title}",
   "Open {name}": "Otwórz {name}",
   "Thread title": "Tytuł wątku",
@@ -2427,9 +2479,9 @@ export const pl = {
   "Delete {name}? You can bring it back for {minutes} minutes.":
     "Usunąć {name}? Możesz przywrócić przez {minutes} min.",
   "Permanently delete {name}, its history, queued messages and Needs you cards? This cannot be undone.":
-    "Trwale usunąć {name}, historię, kolejkę i karty Needs you? Tego nie da się cofnąć.",
+    "Trwale usunąć {name}, historię, kolejkę i karty „Czeka na Ciebie”? Tego nie da się cofnąć.",
   "Keep thread": "Zachowaj wątek",
-  "{title}: {count} Needs you": "{title}: {count} Needs you",
+  "{title}: {count} Needs you": "{title}: czeka na Ciebie ({count})",
   "The message was not sent.": "Wiadomość nie została wysłana.",
   "Could not mark messages as read.": "Nie udało się oznaczyć wiadomości jako przeczytane.",
   "Direct conversation with {name}": "Rozmowa bezpośrednia z {name}",
@@ -2557,4 +2609,567 @@ export const pl = {
   "Browser takeover is unavailable in this build.": "Przejęcie przeglądarki nie jest dostępne w tej wersji.",
   "Preview is unavailable.": "Podgląd jest niedostępny.",
   "Invalid team member role.": "Nieprawidłowa rola członka zespołu.",
+  "Limit · resuming": "Limit · wznawia pracę",
+  "Limit · resumes {time}": "Limit · wznowi o {time}",
+  "Limit · resumes {day} {time}": "Limit · wznowi {day} o {time}",
+  "Error · {message}": "Błąd · {message}",
+  "{count} new reply": "{count} nowa odpowiedź",
+  "{count} new replies": "Nowe odpowiedzi: {count}",
+  "Controlling computer": "Steruje komputerem",
+  "Stop computer control for {name}": "Zatrzymaj sterowanie komputerem przez: {name}",
+  "Mark as read": "Oznacz jako przeczytane",
+  "Marking as read…": "Oznaczanie jako przeczytane…",
+  "Fallback model: {model}": "Model zapasowy: {model}",
+  "Files your agents made or received. Open, download or clean up.":
+    "Pliki, które agenci zrobili lub dostali. Otwórz, pobierz albo posprzątaj.",
+  "Reusable instructions agents can install. Each change keeps a version.":
+    "Instrukcje wielokrotnego użytku, które agenci mogą zainstalować. Każda zmiana zostaje jako wersja.",
+  "Tables agents and people fill in together.": "Tabele, które agenci i ludzie wypełniają razem.",
+  "Logins and secrets agents may use without seeing them.":
+    "Loginy i sekrety, których agenci mogą używać, nie widząc ich.",
+  "Let agents use logins from 1Password or Bitwarden; you stay in control.":
+    "Agenci mogą używać loginów z 1Password lub Bitwarden; kontrola zostaje u Ciebie.",
+  "Talk to your agents from Telegram, Slack, Discord and other messengers.":
+    "Rozmawiaj z agentami z Telegrama, Slacka, Discorda i innych komunikatorów.",
+  Integrations: "Integracje",
+  "Accounts agents can work in, such as mail and calendars.":
+    "Konta, na których agenci mogą pracować, np. poczta i kalendarze.",
+  "Tool servers every agent can call.": "Serwery narzędzi, z których może korzystać każdy agent.",
+  "Files, skills, tables and access your agents work with.":
+    "Pliki, umiejętności, tabele i dostępy, z których korzystają Twoi agenci.",
+  "Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.":
+    "Łańcuchy kroków: wyzwalacz, agenci, akceptacje, warunki i wiadomość do kanału.",
+  "Your workflows": "Twoje przepływy",
+  "No saved workflows yet. The editor holds a draft until you save it.":
+    "Nie ma jeszcze zapisanych przepływów. Edytor trzyma szkic, dopóki go nie zapiszesz.",
+  Workflow: "Przepływ",
+  Draft: "Szkic",
+  "No runs yet. Run the workflow to see each step here.":
+    "Jeszcze nie było uruchomień. Uruchom przepływ, a tu zobaczysz każdy krok.",
+  "Start with a trigger": "Zacznij od wyzwalacza",
+  "A trigger starts the workflow by hand or on a routine. Then add agents, approvals and outputs.":
+    "Wyzwalacz uruchamia przepływ ręcznie albo z rutyny. Potem dodaj agentów, akceptacje i wyjścia.",
+  "Waiting for approval": "Czeka na akceptację",
+  Denied: "Odrzucone",
+  "What your agents will do and when, and what already ran.": "Co i kiedy zrobią Twoi agenci, i co już się wykonało.",
+  "Schedule sections": "Sekcje harmonogramu",
+  Plan: "Plan",
+  "Planned and finished routine runs, day by day.": "Zaplanowane i zakończone uruchomienia rutyn, dzień po dniu.",
+  "Repeating work: what an agent does, how often, and where it reports.":
+    "Powtarzalna praca: co agent robi, jak często i gdzie zgłasza wynik.",
+  Today: "Dziś",
+  Tomorrow: "Jutro",
+  Yesterday: "Wczoraj",
+  "Provider sections": "Sekcje dostawców",
+  "Agent CLIs": "CLI agentów",
+  "Let someone see this computer, or connect to another one.":
+    "Pozwól komuś zobaczyć ten komputer albo połącz się z innym.",
+  "File sources": "Źródła plików",
+  "≈ {value} per day": "≈ {value} dziennie",
+  "≈ {value} tokens per turn": "≈ {value} tokenów na turę",
+  "No provider reported a price.": "Żaden dostawca nie podał ceny.",
+  "{count} priced turns": "Tury z ceną: {count}",
+  "Tokens per day": "Tokeny dziennie",
+  "Peak {value}": "Szczyt {value}",
+  "{count} members": "Członkowie: {count}",
+  "led by {name}": "prowadzi {name}",
+  Task: "Zadanie",
+  "Write to the lead below; the lead hands tasks to the members.":
+    "Napisz poniżej do prowadzącego; on rozdziela zadania członkom.",
+  "Message {lead}, the channel lead": "Napisz do {lead}, prowadzącego kanał",
+  "Settings sections": "Sekcje ustawień",
+  "Close settings": "Zamknij ustawienia",
+  Conversations: "Rozmowy",
+  "The language of menus, buttons and messages.": "Język menu, przycisków i komunikatów.",
+  "Applied after you save.": "Zmienia się po zapisaniu.",
+  "Choose what reaches you while you work in another window.":
+    "Wybierz, co ma do Ciebie docierać, gdy pracujesz w innym oknie.",
+  "No banners or sounds while you are looking at the window.":
+    "Bez powiadomień i dźwięków, gdy patrzysz na okno programu.",
+  "Accounts, keys and fallback models live on the Providers page.":
+    "Konta, klucze i modele zapasowe są na stronie Dostawcy.",
+  "Lowercase letters, digits and dashes.": "Małe litery, cyfry i myślniki.",
+  "Launch team": "Zespół startowy",
+  "{count} of {max} selected": "Wybrano {count} z {max}",
+  "Make {name} the lead": "Ustaw {name} jako prowadzącego",
+  "Make lead": "Ustaw jako prowadzącego",
+  Lead: "Prowadzi",
+  "The lead reads your messages and hands tasks to the members.":
+    "Prowadzący czyta Twoje wiadomości i rozdziela zadania członkom.",
+  "What the team works on and how it should answer.": "Nad czym pracuje zespół i jak ma odpowiadać.",
+  "Give the agent a face, a name and a job. Everything else can change later.":
+    "Nadaj agentowi twarz, imię i zadanie. Resztę zmienisz później.",
+  Creature: "Stworek",
+  "Preview a mood": "Podgląd miny",
+  Resting: "Odpoczywa",
+  Replied: "Odpowiedział",
+  Shape: "Kształt",
+  Shuffle: "Losuj",
+  "Its own color": "Własny kolor",
+  Details: "Szczegóły",
+  "e.g. Research": "np. Research",
+  "e.g. Finds sources, compares them and writes a short summary.":
+    "np. Szuka źródeł, porównuje je i pisze krótkie podsumowanie.",
+  "Model and effort": "Model i wysiłek",
+  "Give the agent a name to create it.": "Nadaj agentowi imię, żeby go utworzyć.",
+  "Start from a suggestion": "Zacznij od propozycji",
+  "Waits for you": "Czeka na Ciebie",
+  "{count} accounts": "Konta: {count}",
+  "e.g. Work": "np. Praca",
+  "Apps, agents and skills for your team. Connect or install them in one click.":
+    "Aplikacje, agenci i umiejętności dla zespołu. Połącz albo zainstaluj jednym kliknięciem.",
+  "How this COSGRAL server runs: its name, agents, members, storage and connections.":
+    "Jak działa ten serwer COSGRAL: nazwa, agenci, członkowie, miejsce na dysku i połączenia.",
+  "Name, time zone and how much runs at once.": "Nazwa, strefa czasowa i ile pracy może trwać naraz.",
+  "How agents talk and behave on this server.": "Jak agenci mówią i zachowują się na tym serwerze.",
+  "Defaults for every agent on this server.": "Ustawienia domyślne każdego agenta na tym serwerze.",
+  "Secrets agents can use without seeing them.": "Sekrety, których agenci używają, nie widząc ich.",
+  "People who can use this server.": "Osoby, które mogą korzystać z tego serwera.",
+  "Control of this computer from another one.": "Sterowanie tym komputerem z innego.",
+  "Tool servers the agents can call.": "Serwery narzędzi, z których mogą korzystać agenci.",
+  "What takes space on this computer.": "Co zajmuje miejsce na tym komputerze.",
+  "Web pages published by agents.": "Strony internetowe opublikowane przez agentów.",
+  "Accounts, keys and models.": "Konta, klucze i modele.",
+  "Bring agents and data from another computer.": "Przenieś agentów i dane z innego komputera.",
+  "Move this server to another computer.": "Przenieś ten serwer na inny komputer.",
+  "Work that runs on a schedule.": "Praca uruchamiana według harmonogramu.",
+  "Separate browser sign-ins for agents.": "Osobne logowania w przeglądarce dla agentów.",
+  "Expand sidebar": "Rozwiń pasek boczny",
+  "Collapse sidebar": "Zwiń pasek boczny",
+  "Online now": "Teraz online",
+  "Replace photo": "Zmień zdjęcie",
+  "Upload photo": "Dodaj zdjęcie",
+  "User message actions": "Akcje wiadomości użytkownika",
+  "Agent message actions": "Akcje wiadomości agenta",
+  "Reply to User message": "Odpowiedz na wiadomość użytkownika",
+  "Reply to Agent message": "Odpowiedz na wiadomość agenta",
+  "React with {emoji}": "Zareaguj: {emoji}",
+  "Show in Explorer": "Pokaż w Eksploratorze",
+  "Show in Finder": "Pokaż w Finderze",
+  "Steer queued message {position}": "Pokieruj wiadomością z kolejki {position}",
+  Steering: "Kierowanie",
+  Steer: "Pokieruj",
+  "Delete queued message {position}": "Usuń wiadomość z kolejki {position}",
+  "Edit queued message {position}": "Edytuj wiadomość z kolejki {position}",
+  "Save memory": "Zapisz wspomnienie",
+  "Cancel edit": "Anuluj edycję",
+  "No reset time was given": "Nie podano czasu odnowienia",
+  "Network error for {account}": "Błąd sieci dla {account}",
+  "Connection problem": "Problem z połączeniem",
+  "Usage not reported": "Zużycie nie zostało podane",
+  "No usage windows for this account yet.": "To konto nie ma jeszcze okien zużycia.",
+  "Site URL": "Adres strony",
+  Username: "Nazwa użytkownika",
+  "Two-step key": "Klucz weryfikacji dwuetapowej",
+  Cardholder: "Posiadacz karty",
+  "Card number": "Numer karty",
+  "Expiry month": "Miesiąc ważności",
+  "Expiry year": "Rok ważności",
+  "Security code": "Kod zabezpieczający",
+  Secret: "Sekret",
+  "Leave secret fields empty to keep their existing values.":
+    "Zostaw pola sekretów puste, żeby zachować obecne wartości.",
+  "System encryption available": "Szyfrowanie systemowe dostępne",
+  "System encryption unavailable — saving is disabled": "Szyfrowanie systemowe niedostępne — zapisywanie wyłączone",
+  "{count} items": "{count} pozycje",
+  "Close remote desktop": "Zamknij zdalny pulpit",
+  "Connecting to the Mac…": "Łączenie z Makiem…",
+  "Could not connect to this Mac.": "Nie udało się połączyć z tym Makiem.",
+  "Enable remote control": "Włącz zdalne sterowanie",
+  "Enter remote desktop full screen": "Zdalny pulpit na pełnym ekranie",
+  "Host is offline": "Host jest offline",
+  "Keyboard and pointer control enabled": "Sterowanie klawiaturą i wskaźnikiem włączone",
+  "No remote host": "Brak zdalnego hosta",
+  "Reconnect to the host before you open its desktop.": "Połącz się ponownie z hostem, zanim otworzysz jego pulpit.",
+  "Remote desktop is available for agents that run on a remote Mac.":
+    "Zdalny pulpit jest dostępny dla agentów działających na zdalnym Macu.",
+  "Resize remote desktop panel": "Zmień rozmiar panelu zdalnego pulpitu",
+  "Select a remote host": "Wybierz zdalnego hosta",
+  "The Remote Desktop session is unavailable.": "Sesja zdalnego pulpitu jest niedostępna.",
+  "The host owner must configure Remote Desktop access.":
+    "Właściciel hosta musi skonfigurować dostęp do zdalnego pulpitu.",
+  "The remote desktop connection ended unexpectedly.": "Połączenie ze zdalnym pulpitem nieoczekiwanie się zakończyło.",
+  "Use view-only mode": "Tryb tylko podglądu",
+  "Mark conversation as read": "Oznacz rozmowę jako przeczytaną",
+  "Reassign {title}": "Przypisz ponownie: {title}",
+  "Reply to {text}": "Odpowiedz na: {text}",
+  "Move {title}; use X and Y fields with a keyboard": "Przesuń: {title}; z klawiatury użyj pól X i Y",
+  "Drag connection from {title}; use Connections controls for keyboard":
+    "Przeciągnij połączenie z: {title}; z klawiatury użyj sekcji Połączenia",
+  "Preview {name}": "Podgląd: {name}",
+  "Open attached file {name}": "Otwórz załączony plik {name}",
+  "Open agent {name}": "Otwórz agenta {name}",
+  "Open citation {number}: {label}": "Otwórz cytat {number}: {label}",
+  "Open source {number}: {label}": "Otwórz źródło {number}: {label}",
+  "1 new message": "1 nowa wiadomość",
+  "{count} new messages": "Nowe wiadomości: {count}",
+  "Jump to {label}": "Przejdź do: {label}",
+  "Hand off the work. Come back to an answer.": "Oddaj pracę. Wróć po odpowiedź.",
+  "{count} memory": "{count} wspomnienie",
+  "{count} skill": "{count} skill",
+  "{count} file": "{count} plik",
+  "{count} table": "{count} tabela",
+  "{count} routine": "{count} rutyna",
+  "{count} backup model": "{count} model zapasowy",
+  "{count} folder": "{count} folder",
+  "No memories": "Brak wspomnień",
+  "No skills": "Brak skilli",
+  "No files": "Brak plików",
+  "No tables": "Brak tabel",
+  "No routines": "Brak rutyn",
+  "Not saved as a template": "Nie zapisano jako szablon",
+  "Saved as a template: {name}": "Zapisano jako szablon: {name}",
+  "Not available in this build": "Niedostępne w tej wersji",
+  "No limit": "Bez limitu",
+  "{added} added, {excluded} excluded": "Dodane: {added}, wykluczone: {excluded}",
+  "The agent works only in its folder and the folders you add. A write anywhere else is refused.":
+    "Agent pracuje tylko w swoim folderze i w folderach, które dodasz. Zapis w innym miejscu jest odrzucany.",
+  "The agent asks you before it goes outside those folders: a card waits in Needs you.":
+    "Agent pyta Cię, zanim wyjdzie poza te foldery: karta czeka w „Potrzebujesz zareagować”.",
+  "The agent may work anywhere on this computer except the folders you excluded. It does not include Computer Use or the camera: they ask separately.":
+    "Agent może pracować w dowolnym miejscu na tym komputerze poza wykluczonymi folderami. Nie obejmuje to Computer Use ani kamery: one pytają osobno.",
+  "No usage has been reported for this thread yet.": "Ten wątek nie zgłosił jeszcze zużycia.",
+  "{count} memories": "{count} wspomnienia",
+  "{count} skills": "{count} skille",
+  "{count} tables": "{count} tabele",
+  "{count} routines": "{count} rutyny",
+  "{count} backup models": "{count} modele zapasowe",
+  "{count} folders": "{count} foldery",
+  "Only a paused or stopped task can be resumed.": "Wznowić można tylko wstrzymane albo zatrzymane zadanie.",
+  "This task is not archived.": "To zadanie nie jest zarchiwizowane.",
+  "This task is finished.": "To zadanie jest zakończone.",
+  "This task is already finished.": "To zadanie jest już zakończone.",
+  "This task cannot start now.": "To zadanie nie może teraz wystartować.",
+  "Only a human can resume a task.": "Tylko człowiek może wznowić zadanie.",
+  "Language, notifications, providers, appearance and privacy.": "Język, powiadomienia, dostawcy, wygląd i prywatność.",
+  "Marking…": "Oznaczanie…",
+  "Thread: {title}": "Wątek: {title}",
+  "Assumed reset at": "Przewidywane odnowienie o",
+  "Steer unavailable: {reason}": "Pokierowanie niedostępne: {reason}",
+  "Steer message": "Pokieruj wiadomością",
+  "Open file": "Otwórz plik",
+  "Shared by all agents on this host": "Wspólny dla wszystkich agentów na tym hoście",
+  "The secure tunnel can take a few seconds.": "Bezpieczny tunel może potrzebować kilku sekund.",
+  "Could not open the desktop": "Nie udało się otworzyć pulpitu",
+  "Desktop disconnected": "Pulpit rozłączony",
+  "Reconnect when you want to view or control this Mac again.":
+    "Połącz ponownie, gdy chcesz znów zobaczyć lub sterować tym Makiem.",
+  "Connecting to agent CLIs…": "Łączenie z CLI agentów…",
+  "Agent CLI setup required": "Wymagana konfiguracja CLI agentów",
+  "Variable name": "Nazwa zmiennej",
+  Issuer: "Wystawca",
+  "Task action failed": "Akcja na zadaniu nie powiodła się",
+  "Animate COSGRAL logo": "Animuj logo COSGRAL",
+  "Fast and efficient for everyday agent work.": "Szybki i oszczędny do codziennej pracy agentów.",
+  "Balanced speed and capability for involved tasks.": "Równowaga szybkości i możliwości do złożonych zadań.",
+  "Most capable for complex, long-running work.": "Najbardziej zaawansowany do złożonej, długiej pracy.",
+  "Fast Claude model for everyday agent work.": "Szybki model Claude do codziennej pracy agentów.",
+  "Most capable Claude model for complex work.": "Najbardziej zaawansowany model Claude do złożonej pracy.",
+  "Balanced Claude model for general agent work.": "Zrównoważony model Claude do ogólnej pracy agentów.",
+  "A model on your own endpoint. Conversation only: it gets no program tools.":
+    "Model na Twoim własnym endpoincie. Tylko rozmowa: nie dostaje narzędzi programu.",
+  "Included with COSGRAL Workspace": "W zestawie z COSGRAL Workspace",
+  "Grok models": "Modele Grok",
+  "Free models, no account needed": "Darmowe modele, bez konta",
+  "Google AI Pro or Ultra plan": "Plan Google AI Pro lub Ultra",
+  "Cursor plan or API key": "Plan Cursor lub klucz API",
+  "An agent you run by command": "Agent uruchamiany poleceniem",
+  "DeepSeek models with a DeepSeek API key": "Modele DeepSeek z kluczem API DeepSeek",
+  "Free models with a Cline account": "Darmowe modele z kontem Cline",
+  "Kimi models with a Kimi Code account": "Modele Kimi z kontem Kimi Code",
+  "Many models with a Copilot plan": "Wiele modeli z planem Copilot",
+  "Many models with a Devin account": "Wiele modeli z kontem Devin",
+  "Many models with an OpenRouter API key": "Wiele modeli z kluczem API OpenRouter",
+  "Mercury models with an Inception API key": "Modele Mercury z kluczem API Inception",
+  "Mistral models with a Mistral account": "Modele Mistral z kontem Mistral",
+  "Nous Portal plan or your Hermes setup": "Plan Nous Portal lub Twoja konfiguracja Hermes",
+  "Text weight": "Grubość pisma",
+  "How heavy the text looks. Applies at once.": "Jak grube jest pismo. Działa od razu.",
+  Normal: "Zwykła",
+  Stronger: "Mocniejsza",
+  Lighter: "Lżejsza",
+  "Network error on {account}. Your account stayed selected.":
+    "Błąd sieci przy koncie {account}. Konto pozostało wybrane.",
+  "Check your connection and send the message again when you are ready.":
+    "Sprawdź połączenie i wyślij wiadomość jeszcze raz, gdy będziesz gotowy.",
+  "Account: {account}": "Konto: {account}",
+  "Switched to account {label} for this turn.": "W tej turze przełączono na konto {label}.",
+  "The agent goes back to its first account by itself once the limit has passed.":
+    "Agent sam wróci do pierwszego konta, gdy limit minie.",
+  "A card in Needs you asks whether to continue on {label}.":
+    "Karta w „Wymaga Ciebie” pyta, czy kontynuować na koncie {label}.",
+  "Every account in the pool is exhausted. Wait for a reset before continuing.":
+    "Wszystkie konta w puli są wyczerpane. Poczekaj na odnowienie limitu, zanim ruszysz dalej.",
+  "Previous account: {account}": "Poprzednie konto: {account}",
+  "fallback model: {name}": "model zapasowy: {name}",
+  "Always allowed": "Zawsze dozwolone",
+  "Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.":
+    "Nic nie jest dozwolone na stałe. Wybierz „Zawsze zezwalaj…” na karcie zgody, aby dodać regułę.",
+  "These rules never cover {list}.": "Te reguły nigdy nie obejmują: {list}.",
+  "{used} / {max} memories · {bytes} / 8192 bytes in always-on prompt":
+    "{used} / {max} wspomnień · {bytes} / 8192 bajtów w stałym poleceniu",
+  "Memory limit": "Limit pamięci",
+  "Search memories": "Szukaj we wspomnieniach",
+  "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.":
+    "Zapisanych pól kontaktu lub konta nie da się odczytać z powrotem. Wpisz wszystkie wartości, aby je zachować; puste wartości zastąpią stare.",
+  "Save item": "Zapisz pozycję",
+  NEW: "NOWE",
+  "{count} unread direct message": "{count} nieprzeczytana wiadomość bezpośrednia",
+  "{count} unread direct messages": "{count} nieprzeczytane wiadomości bezpośrednie",
+  "Version {version} · {platform}": "Wersja {version} · {platform}",
+  "Updating usage…": "Aktualizuję zużycie…",
+  "Weekly usage": "Zużycie tygodniowe",
+  "Signing out…": "Wylogowuję…",
+  "Could not load the pinned pages.": "Nie udało się wczytać przypiętych stron.",
+  "Could not save the pin. Try again from the page menu.":
+    "Nie udało się zapisać przypięcia. Ponów akcję z menu strony.",
+  "Thread: {title}; {running} running, {waiting} waiting": "Wątek: {title}; w toku: {running}, czeka: {waiting}",
+  Cache: "Pamięć podręczna",
+  "A workflow has exactly one trigger.": "Przepływ ma dokładnie jeden wyzwalacz.",
+  "A workflow needs at least one step after the trigger.":
+    "Przepływ potrzebuje co najmniej jednego kroku po wyzwalaczu.",
+  "The connections form a loop; a run must always move forward.":
+    "Połączenia tworzą pętlę; przebieg musi zawsze iść do przodu.",
+  "A workflow keeps its latest saved state and the last 100 runs; there is no version history.":
+    "Przepływ zachowuje ostatni zapisany stan i 100 ostatnich przebiegów; nie ma historii wersji.",
+  "Files are not passed between steps in this version.": "W tej wersji pliki nie są przekazywane między krokami.",
+  "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).":
+    "Żadna tura z tego okresu nie ma jeszcze zapisanego modelu (licznik zapisuje go od dnia, w którym dostawca po raz pierwszy podał te dane).",
+  "No turn of this period was kept with its cache and input/output split yet.":
+    "Żadna tura z tego okresu nie została jeszcze zapisana z podziałem na pamięć podręczną oraz wejście i wyjście.",
+  "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":
+    "Z przepływem zapisują się tylko kroki i połączenia; oznaczenia narysowane na płótnie przepadłyby.",
+  "Start with a trigger.": "Zacznij od wyzwalacza.",
+  "The counter does not tell which skill a turn used.": "Licznik nie podaje, której umiejętności użyła tura.",
+  "This workflow is already running.": "Ten przepływ już działa.",
+  "This workflow is paused.": "Ten przepływ jest wstrzymany.",
+  "Use an Agent step: it runs the instruction with that agent's model.":
+    "Użyj kroku Agent: wykonuje polecenie modelem tego agenta.",
+  "This row is not a message.": "Ten wiersz nie jest wiadomością.",
+  "Wait until the answer has finished.": "Poczekaj, aż odpowiedź się skończy.",
+  "This message is still in the queue. Change it from the queue.":
+    "Ta wiadomość jest jeszcze w kolejce. Zmień ją w kolejce.",
+  "Only your own messages can be edited.": "Edytować można tylko własne wiadomości.",
+  "Only your messages and the agent's answers can be asked again.":
+    "Ponowić można tylko Twoje wiadomości i odpowiedzi agenta.",
+  "This thread is busy. Stop the agent or wait for it to finish before changing the history.":
+    "Ten wątek jest zajęty. Zatrzymaj agenta albo poczekaj, aż skończy, zanim zmienisz historię.",
+  "Isolation is off for this agent. Its access level and excluded folders still apply.":
+    "Izolacja jest wyłączona dla tego agenta. Jego poziom dostępu i wykluczone foldery nadal obowiązują.",
+  "The daily budget is used up.": "Dzienny budżet jest wykorzystany.",
+  "At most {n} steps.": "Najwyżej {n} kroków.",
+  "At most {n} connections.": "Najwyżej {n} połączeń.",
+  "Two steps have the same id: {id}.": "Dwa kroki mają ten sam identyfikator: {id}.",
+  "Two connections have the same id: {id}.": "Dwa połączenia mają ten sam identyfikator: {id}.",
+  "Connection {id} points to an unknown step.": "Połączenie {id} wskazuje nieznany krok.",
+  'Connection {id} leaves the approval {step}: use "allow" or "deny".':
+    "Połączenie {id} wychodzi ze zgody {step}: użyj „allow” albo „deny”.",
+  'Connection {id} leaves the condition {step}: use "yes" or "no".':
+    "Połączenie {id} wychodzi z warunku {step}: użyj „yes” albo „no”.",
+  'Connection {id} leaves {step}: use "next".': "Połączenie {id} wychodzi z kroku {step}: użyj „next”.",
+  "The trigger cannot have incoming connections ({id}).": "Wyzwalacz nie może mieć połączeń przychodzących ({id}).",
+  "The approval {step} needs an Allow connection.": "Zgoda {step} potrzebuje połączenia „Zezwól”.",
+  "The approval {step} has more than one way on for a decision.":
+    "Zgoda {step} ma więcej niż jedną drogę dalej dla jednej decyzji.",
+  "The condition {step} needs a Yes or a No connection.": "Warunek {step} potrzebuje połączenia „Tak” lub „Nie”.",
+  "The condition {step} has more than one way on for an answer.":
+    "Warunek {step} ma więcej niż jedną drogę dalej dla jednej odpowiedzi.",
+  "These steps are not reachable from the trigger: {steps}.": "Tych kroków nie da się osiągnąć z wyzwalacza: {steps}.",
+  "{step} has more than one way on; keep one connection.":
+    "{step} ma więcej niż jedną drogę dalej; zostaw jedno połączenie.",
+  "Usage for {name}": "Zużycie: {name}",
+  "{count} account": "Konta: {count}",
+  Idle: "Bezczynny",
+  "Choose a channel on the left, or create one for a team of agents.":
+    "Wybierz kanał po lewej albo utwórz nowy dla zespołu agentów.",
+  "This task is not running.": "To zadanie teraz nie działa.",
+  "This task is stopped.": "To zadanie jest zatrzymane.",
+  "This task no longer exists.": "To zadanie już nie istnieje.",
+  "Only a member of the channel can own its tasks.": "Właścicielem zadań kanału może być tylko jego członek.",
+  "Within budget": "W budżecie",
+  "Near the limit": "Blisko limitu",
+  "{count} message": "{count} wiadomość",
+  "{count} item": "{count} pozycja",
+  "{count} agent": "{count} agent",
+  "{count} agent, show list": "{count} agent, pokaż listę",
+  "{count} login agents may use": "Loginów dostępnych dla agentów: {count}",
+  "{count} file, {size} would be removed.": "Do usunięcia: {count} plik, {size}.",
+  "Move {name} to…": "Przenieś {name} do…",
+  folder: "folder",
+  "Queued message {position}: {preview}": "Wiadomość w kolejce {position}: {preview}",
+  // Marketplace catalog (src/backend/marketplace-catalog*.ts): title, summary and description as shown.
+  "Meeting notes": "Notatki ze spotkań",
+  "Turns raw meeting notes into decisions, action items, owners and dates.":
+    "Zamienia surowe notatki ze spotkania na decyzje, zadania, osoby odpowiedzialne i terminy.",
+  "Reads notes or a transcript of a meeting and writes a short summary: what was decided, who does what by when, and open questions. It asks before it sends the summary to anyone.":
+    "Czyta notatki albo zapis spotkania i pisze krótkie podsumowanie: co ustalono, kto co robi i do kiedy oraz jakie pytania zostały otwarte. Pyta, zanim komukolwiek wyśle podsumowanie.",
+  "Weekly status report": "Tygodniowy raport",
+  "Writes a short weekly status from tasks, tables and notes: done, next, blocked.":
+    "Pisze krótki tygodniowy status z zadań, tabel i notatek: zrobione, dalej, zablokowane.",
+  "Collects what happened this week from shared tables, files and the conversation, and writes a status with three parts: done, next week, blocked. Numbers come from the data, not from memory.":
+    "Zbiera, co wydarzyło się w tym tygodniu, ze wspólnych tabel, plików i rozmowy i pisze status z trzech części: zrobione, w przyszłym tygodniu, zablokowane. Liczby pochodzą z danych, nie z pamięci.",
+  "Research brief": "Notatka badawcza",
+  "Finds sources on the web and writes a one-page brief with a link for every fact.":
+    "Szuka źródeł w sieci i pisze jednostronicową notatkę z linkiem przy każdym fakcie.",
+  "Searches the web, reads several sources, compares them and writes a short brief. Every fact has a link; disagreements and gaps are named instead of smoothed over.":
+    "Przeszukuje sieć, czyta kilka źródeł, porównuje je i pisze krótką notatkę. Każdy fakt ma link; rozbieżności i luki są nazwane, a nie wygładzone.",
+  "Inbox triage": "Porządek w skrzynce",
+  "Sorts new mail into reply, read later and archive, and drafts the replies.":
+    "Dzieli nową pocztę na: odpowiedzieć, przeczytać później i zarchiwizować, i szkicuje odpowiedzi.",
+  "Goes through new messages in the built-in browser, sorts them by what they need, and prepares short reply drafts. Nothing is sent, archived or deleted without the person's approval on a card.":
+    "Przegląda nowe wiadomości we wbudowanej przeglądarce, sortuje je według tego, czego wymagają, i przygotowuje krótkie szkice odpowiedzi. Nic nie zostaje wysłane, zarchiwizowane ani usunięte bez Twojej zgody na karcie.",
+  "Code review checklist": "Lista kontrolna przeglądu kodu",
+  "Reviews a change for bugs, tests and clarity, and reports findings by severity.":
+    "Przegląda zmianę pod kątem błędów, testów i czytelności i podaje uwagi według wagi.",
+  "Reads a diff or a set of files, checks it against a short checklist (correctness, tests, security, readability) and reports findings from most to least important, with file and line.":
+    "Czyta diff albo zestaw plików, sprawdza je według krótkiej listy (poprawność, testy, bezpieczeństwo, czytelność) i podaje uwagi od najważniejszych, z plikiem i linią.",
+  "Trip planner": "Planer podróży",
+  "Plans a trip: routes, places to stay and a day-by-day plan within a budget.":
+    "Planuje podróż: trasy, noclegi i plan dzień po dniu w ramach budżetu.",
+  "Asks for dates, budget and preferences, compares transport and places to stay in the browser, and writes a day-by-day plan with prices and links. Bookings and payments only after the person approves them.":
+    "Pyta o daty, budżet i preferencje, porównuje w przeglądarce dojazdy i noclegi i pisze plan dzień po dniu z cenami i linkami. Rezerwacje i płatności tylko po Twojej zgodzie.",
+  "Expense log": "Rejestr wydatków",
+  "Keeps expenses in a shared table and sums them up by month and category.":
+    "Prowadzi wydatki we wspólnej tabeli i sumuje je według miesięcy i kategorii.",
+  "Adds expenses the person mentions or sends as receipts to a shared table, and reports totals by month and category. It reads rows before it changes them.":
+    "Dopisuje do wspólnej tabeli wydatki, o których wspominasz albo które przysyłasz jako paragony, i podaje sumy według miesięcy i kategorii. Zanim zmieni wiersze, najpierw je czyta.",
+  "Post drafts": "Szkice postów",
+  "Drafts short posts and articles in the person's voice, ready for approval.":
+    "Szkicuje krótkie posty i artykuły Twoim stylem, gotowe do zatwierdzenia.",
+  "Writes drafts of posts, newsletters or short articles from a topic or notes. It keeps the person's style, offers two variants and shows each as a draft card; nothing is published without approval.":
+    "Pisze szkice postów, newsletterów albo krótkich artykułów z tematu lub notatek. Zachowuje Twój styl, daje dwa warianty i pokazuje każdy jako kartę szkicu; nic nie jest publikowane bez zgody.",
+  "Project coordinator": "Koordynator projektów",
+  "Keeps projects moving: meeting notes, owners, deadlines and a weekly status.":
+    "Pilnuje projektów: notatki ze spotkań, osoby odpowiedzialne, terminy i tygodniowy status.",
+  "An agent for running projects: it turns meetings into action items, follows up on deadlines and writes the weekly status. It starts with the Meeting notes and Weekly status report skills.":
+    "Agent do prowadzenia projektów: zamienia spotkania na zadania, przypomina o terminach i pisze tygodniowy status. Zaczyna ze skillami Notatki ze spotkań i Tygodniowy raport.",
+  "Research analyst": "Analityk",
+  "Researches questions on the web and answers with a brief and sources.":
+    "Bada pytania w sieci i odpowiada notatką ze źródłami.",
+  "An agent for research: it reads several sources, compares them and writes a one-page brief with a link for every fact. It starts with the Research brief skill.":
+    "Agent do badań: czyta kilka źródeł, porównuje je i pisze jednostronicową notatkę z linkiem przy każdym fakcie. Zaczyna ze skillem Notatka badawcza.",
+  "Inbox assistant": "Asystent poczty",
+  "Sorts your mail every day and prepares replies for your approval.":
+    "Codziennie porządkuje Twoją pocztę i przygotowuje odpowiedzi do zatwierdzenia.",
+  "An agent for e-mail in the built-in browser: it sorts new messages, drafts replies and archives only what you approve. It starts with the Inbox triage and Post drafts skills.":
+    "Agent do poczty we wbudowanej przeglądarce: sortuje nowe wiadomości, szkicuje odpowiedzi i archiwizuje tylko to, co zatwierdzisz. Zaczyna ze skillami Porządek w skrzynce i Szkice postów.",
+  "Code reviewer": "Recenzent kodu",
+  "Reviews code changes in its workspace and reports findings by severity.":
+    "Przegląda zmiany w kodzie w swoim folderze roboczym i podaje uwagi według wagi.",
+  "An agent for code review: it reads a change, runs the tests it can, and reports findings from must-fix to nice-to-have with file and line. It starts with the Code review checklist skill.":
+    "Agent do przeglądu kodu: czyta zmianę, uruchamia testy, które może, i podaje uwagi od koniecznych do mile widzianych, z plikiem i linią. Zaczyna ze skillem Lista kontrolna przeglądu kodu.",
+  "Travel planner": "Organizator podróży",
+  "Plans trips within your budget and books only what you approve.":
+    "Planuje podróże w Twoim budżecie i rezerwuje tylko to, co zatwierdzisz.",
+  "An agent for trips: it compares routes and places to stay, writes a day-by-day plan with a budget, and books nothing without your approval. It starts with the Trip planner and Expense log skills.":
+    "Agent do podróży: porównuje trasy i noclegi, pisze plan dzień po dniu z budżetem i niczego nie rezerwuje bez Twojej zgody. Zaczyna ze skillami Planer podróży i Rejestr wydatków.",
+  "Daily brief": "Poranny przegląd",
+  "Writes a one-screen morning brief: what is on today, what needs a decision, what is late.":
+    "Pisze poranny przegląd na jeden ekran: co dziś, co czeka na decyzję, co jest spóźnione.",
+  "Collects today's plan from the shared tables, the files you point it to and the conversation, and writes a brief that fits on one screen: schedule, decisions waiting for you, and things that are late. It never sends the brief anywhere without asking.":
+    "Zbiera dzisiejszy plan ze wspólnych tabel, wskazanych plików i rozmowy i pisze przegląd mieszczący się na jednym ekranie: harmonogram, decyzje czekające na Ciebie i rzeczy spóźnione. Nigdzie go nie wysyła bez pytania.",
+  "Decision log": "Rejestr decyzji",
+  "Keeps a log of decisions with the reason, the alternatives and who decided.":
+    "Prowadzi rejestr decyzji z powodem, odrzuconymi opcjami i tym, kto zdecydował.",
+  "Records each decision in a shared table: what was decided, why, which options were dropped, who decided and when it should be looked at again. Later it answers 'why did we do it this way'.":
+    "Zapisuje każdą decyzję we wspólnej tabeli: co postanowiono, dlaczego, które opcje odrzucono, kto zdecydował i kiedy do niej wrócić. Później odpowiada na pytanie „dlaczego zrobiliśmy to w ten sposób”.",
+  "Source check": "Sprawdzanie źródeł",
+  "Checks a claim against its sources and says what holds up and what does not.":
+    "Sprawdza twierdzenie w źródłach i mówi, co się broni, a co nie.",
+  "Takes a claim, finds where it comes from, checks it against independent sources and reports one of four verdicts: confirmed, partly true, not supported, or cannot be checked. Every verdict has its links.":
+    "Bierze twierdzenie, szuka, skąd pochodzi, sprawdza je w niezależnych źródłach i wydaje jeden z czterech werdyktów: potwierdzone, częściowo prawdziwe, niepoparte albo nie do sprawdzenia. Każdy werdykt ma linki.",
+  "Copy edit": "Redakcja tekstu",
+  "Edits a draft for clarity and keeps your voice, and shows what it changed.":
+    "Poprawia szkic, żeby był jaśniejszy, zachowuje Twój styl i pokazuje, co zmienił.",
+  "Edits a draft sentence by sentence: cuts filler, fixes grammar and unclear lines, keeps your voice and meaning. It returns the clean text and a short list of the changes that mattered, so you can reject any of them.":
+    "Redaguje szkic zdanie po zdaniu: wycina zbędne słowa, poprawia gramatykę i niejasne miejsca, zachowuje Twój styl i sens. Oddaje czysty tekst i krótką listę ważnych zmian, żeby każdą można było odrzucić.",
+  "Support reply": "Odpowiedź dla klienta",
+  "Drafts a customer reply that says what is known, what is not, and what happens next.":
+    "Szkicuje odpowiedź dla klienta: co wiadomo, czego jeszcze nie wiadomo i co dalej.",
+  "Writes a reply to a customer message in three honest parts: what we know, what we do not know yet, and the next step with a time. It matches the customer's tone and never promises what is not decided. It shows the draft and sends nothing by itself.":
+    "Pisze odpowiedź na wiadomość klienta w trzech uczciwych częściach: co wiemy, czego jeszcze nie wiemy i jaki jest następny krok z terminem. Dopasowuje się do tonu klienta i nie obiecuje tego, co nie jest ustalone. Pokazuje szkic i sam niczego nie wysyła.",
+  "Data cleanup": "Porządkowanie danych",
+  "Cleans a table: duplicates, formats and empty cells, and reports what it changed.":
+    "Porządkuje tabelę: duplikaty, formaty i puste komórki, i raportuje zmiany.",
+  "Looks through a shared table, finds duplicate rows, mixed formats (dates, phone numbers, spelling of names) and empty cells, and fixes what is safe. Anything that is a guess goes to a list for you to decide. It keeps a report of every change.":
+    "Przegląda wspólną tabelę, znajduje powtórzone wiersze, różne formaty (daty, numery telefonów, pisownia nazw) i puste komórki i poprawia to, co bezpieczne. Wszystko, co byłoby zgadywaniem, trafia na listę do Twojej decyzji. Zapisuje raport z każdej zmiany.",
+  "Chief of staff": "Szef sztabu",
+  "Runs your day: a morning brief, a decision log and notes from every meeting.":
+    "Prowadzi Twój dzień: poranny przegląd, rejestr decyzji i notatki z każdego spotkania.",
+  "An agent for the person who has too much on the plate: it writes the daily brief, keeps the log of decisions, turns meetings into action items and tells you what is late. It starts with the Daily brief, Decision log and Meeting notes skills.":
+    "Agent dla osoby, która ma za dużo na głowie: pisze poranny przegląd, prowadzi rejestr decyzji, zamienia spotkania na zadania i mówi, co jest spóźnione. Zaczyna ze skillami Poranny przegląd, Rejestr decyzji i Notatki ze spotkań.",
+  "Copy editor": "Redaktor",
+  "Edits your drafts in your own voice and drafts posts from an idea.":
+    "Redaguje Twoje szkice Twoim stylem i pisze posty z pomysłu.",
+  "An agent for writing: it edits what you wrote without changing your voice, and turns a rough idea into a few draft versions. It shows what it changed and publishes nothing. It starts with the Copy edit and Post drafts skills.":
+    "Agent do pisania: poprawia Twoje teksty, nie zmieniając Twojego stylu, i zamienia luźny pomysł w kilka wersji szkicu. Pokazuje, co zmienił, i niczego nie publikuje. Zaczyna ze skillami Redakcja tekstu i Szkice postów.",
+  "Support desk": "Obsługa klienta",
+  "Sorts the support inbox and drafts honest replies for you to approve.":
+    "Porządkuje skrzynkę obsługi i szkicuje uczciwe odpowiedzi do zatwierdzenia.",
+  "An agent for customer messages: it sorts what came in, drafts replies that say what is known and what is not, and sends nothing without your approval. It starts with the Inbox triage and Support reply skills.":
+    "Agent do wiadomości od klientów: sortuje to, co przyszło, szkicuje odpowiedzi mówiące, co wiadomo, a czego nie, i niczego nie wysyła bez Twojej zgody. Zaczyna ze skillami Porządek w skrzynce i Odpowiedź dla klienta.",
+  "Data steward": "Opiekun danych",
+  "Keeps your tables clean and your expenses in order, and reports every change.":
+    "Dba o porządek w tabelach i wydatkach i raportuje każdą zmianę.",
+  "An agent for tables and numbers: it cleans duplicates and formats, keeps the expense table up to date and reports every change it made. Anything that is a guess goes to you. It starts with the Data cleanup and Expense log skills.":
+    "Agent do tabel i liczb: usuwa duplikaty, poprawia formaty, prowadzi tabelę wydatków i raportuje każdą zmianę. Wszystko, co byłoby zgadywaniem, trafia do Ciebie. Zaczyna ze skillami Porządkowanie danych i Rejestr wydatków.",
+  "on schedule": "według harmonogramu",
+  "started by hand": "uruchomiona ręcznie",
+  "from a webhook": "z webhooka",
+  "Webhook data": "Dane z webhooka",
+  "Routine “{name}”": "Rutyna „{name}”",
+  "Routine “{name}” · {cause}, {when}": "Rutyna „{name}” · {cause}, {when}",
+  "Workflow “{name}” · step “{step}”": "Przepływ „{name}” · krok „{step}”",
+  "Questions from agents and finished results. Archive a task when you are done with it.":
+    "Pytania agentów i gotowe wyniki. Gdy skończysz z zadaniem, zarchiwizuj je.",
+  "Inviting people needs an online service. This program runs on this computer only.":
+    "Zapraszanie ludzi wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
+  "Hosting sites needs an online service. This program runs on this computer only.":
+    "Udostępnianie stron wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
+  // Library › Files › This computer.
+  "Files on this computer": "Pliki na tym komputerze",
+  "Files on this computer are not available here.": "Pliki tego komputera nie są tu dostępne.",
+  "Shared folder": "Udostępniony folder",
+  "Share a folder": "Udostępnij folder",
+  "Stop sharing": "Przestań udostępniać",
+  "Could not open the folder.": "Nie udało się otworzyć folderu.",
+  "Could not load the shared folders.": "Nie udało się wczytać udostępnionych folderów.",
+  "Could not share the folder.": "Nie udało się udostępnić folderu.",
+  "Could not stop sharing the folder.": "Nie udało się przestać udostępniać folderu.",
+  "Could not copy the files.": "Nie udało się skopiować plików.",
+  "{count} file copied to the library.": "{count} plik skopiowany do biblioteki.",
+  "{count} files copied to the library.": "{count} pliki skopiowane do biblioteki.",
+  "Loading folders…": "Wczytywanie folderów…",
+  "No shared folders.": "Brak udostępnionych folderów.",
+  "Share a folder to browse it here and copy files to the library. The program remembers it until you close it; files with keys or passwords stay hidden.":
+    "Udostępnij folder, żeby przeglądać go tutaj i kopiować pliki do biblioteki. Program pamięta go do zamknięcia; pliki z kluczami i hasłami zostają ukryte.",
+  "Folder path": "Ścieżka folderu",
+  "Copy to library": "Kopiuj do biblioteki",
+  "Up one folder": "Folder wyżej",
+  "This folder is empty.": "Ten folder jest pusty.",
+  "Only the first {count} items are shown.": "Widać tylko pierwsze {count} pozycji.",
+  Folder: "Folder",
+  "Open folder": "Otwórz folder",
+  "This folder is no longer shared. Add it again.": "Ten folder nie jest już udostępniony. Dodaj go ponownie.",
+  "This folder is not shared with this agent.": "Ten folder nie jest udostępniony temu agentowi.",
+  "That path is outside the shared folder.": "Ta ścieżka jest poza udostępnionym folderem.",
+  "This file looks like a secret (a key or a password store), so it stays hidden.":
+    "Ten plik wygląda na sekret (klucz albo magazyn haseł), więc zostaje ukryty.",
+  "The file or folder is gone.": "Tego pliku albo folderu już nie ma.",
+  "That is a file, not a folder.": "To jest plik, nie folder.",
+  "That is a folder, not a file.": "To jest folder, nie plik.",
+  "The file is larger than the library allows.": "Plik jest większy, niż pozwala biblioteka.",
+  "Choose a folder, not a file.": "Wybierz folder, nie plik.",
+  "That folder is too broad. Choose a folder inside it.": "Ten folder jest zbyt ogólny. Wybierz folder w jego wnętrzu.",
+  "That folder is not allowed: it holds system data or secrets.":
+    "Tego folderu nie można udostępnić: są w nim dane systemu albo sekrety.",
+  "You can share at most 10 folders. Stop sharing one first.":
+    "Możesz udostępnić najwyżej 10 folderów. Najpierw przestań udostępniać jeden z nich.",
+  // Routine runs: why a run was skipped or ended (from the engine).
+  "COSGRAL Workspace was not running at the planned time; missed runs are not made up.":
+    "COSGRAL Workspace nie był uruchomiony o zaplanowanej porze; pominiętych uruchomień nie nadrabia.",
+  "The program stopped during this run.": "Program zatrzymał się w trakcie tego uruchomienia.",
+  "The previous run of this routine is still running.": "Poprzednie uruchomienie tej rutyny jeszcze trwa.",
+  "The turn is gone.": "Tej tury już nie ma.",
+  "The turn ended": "Tura zakończyła się",
 } as const;

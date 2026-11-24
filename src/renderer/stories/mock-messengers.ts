@@ -41,7 +41,8 @@ export interface MockMessengers extends Required<MessengersDesktopApi> {
 }
 
 /** The public name the demo bot of each messenger shows. */
-function demoBotName(kind: MessengerKind): "@cosgral_demo" | "@demo_helper_bot" {
+function demoBotName(kind: MessengerKind): "@cosgral_demo" | "@demo_helper_bot" | "@cosgral_discord" {
+  if (kind === "discord") return "@cosgral_discord";
   return kind === "slack" ? "@cosgral_demo" : "@demo_helper_bot";
 }
 

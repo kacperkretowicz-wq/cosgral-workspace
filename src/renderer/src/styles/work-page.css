@@ -1,0 +1,1472 @@
+/*
+ * Work pages (WorkPage.tsx): one frame for Library, Schedule, Workflows, Usage and the other rail pages.
+ * A header with the page's rail icon, title, one sentence and the main actions; below, the content or a section
+ * list with icons beside the chosen section. Tokens only.
+ */
+
+.app-frame-with-page-rail .work-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  container-type: inline-size;
+  scrollbar-gutter: stable;
+}
+
+/* Header -------------------------------------------------------------------------------------------------- */
+
+.work-page-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-4);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding: var(--openbot-space-8) 40px var(--openbot-space-6);
+}
+
+.work-page-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
+}
+
+.work-page-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.work-page-icon svg circle {
+  fill: currentColor;
+}
+
+.work-page-heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .work-page-heading h1 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-2xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-2xl);
+  letter-spacing: -0.01em;
+}
+
+.work-page .work-page-heading p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-lg);
+  line-height: var(--openbot-leading-lg);
+}
+
+.work-page-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+/* Content without sections: one centred column under the header. */
+.work-page > :not(.work-page-header, .work-page-body) {
+  width: min(100% - 80px, 980px);
+  margin-inline: auto;
+}
+
+.work-page > .work-page-header + :not(.work-page-body) {
+  margin-top: var(--openbot-space-6);
+}
+
+.work-page > :last-child:not(.work-page-header) {
+  margin-bottom: 56px;
+}
+
+.work-page > :not(.work-page-header, .work-page-body) + :not(.work-page-body) {
+  margin-top: var(--openbot-space-4);
+}
+
+/* Sections: list with icons on the left, chosen section on the right ---------------------------------------- */
+
+.work-page-body {
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-8);
+  width: min(100%, 1200px);
+  padding: var(--openbot-space-6) 40px 56px;
+}
+
+.work-page-nav {
+  position: sticky;
+  top: var(--openbot-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--openbot-space-0-5);
+}
+
+.work-page-nav-item {
+  justify-content: flex-start;
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: 0 10px;
+  color: var(--openbot-text-muted);
+  font: inherit;
+  font-size: var(--openbot-text-md);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--openbot-duration-fast) var(--openbot-ease-out),
+    color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page-nav-item svg {
+  flex: 0 0 auto;
+}
+
+.work-page-nav-item:hover {
+  background: var(--openbot-hover);
+  color: var(--openbot-text-primary);
+}
+
+.work-page-nav-item:focus-visible {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: -2px;
+}
+
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]) {
+  background: var(--openbot-active);
+  color: var(--openbot-text-primary);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]) svg {
+  color: var(--openbot-accent-text);
+}
+
+.work-page-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+.work-page-section-header {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.work-page .work-page-section-header h2 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.work-page .work-page-section-header p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.work-page-section-content {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+/*
+ * A panel shown as a section sits flat on the page: the section header above already frames it, so no card around
+ * it and no second copy of its title.
+ */
+.work-page-section-content > :is(section, .w2-panel, .ui-card) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.work-page-section-content > section > :is(h2, h3):first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* List items of the panels: rows with a hover surface instead of bare separators. */
+.work-page-section-content .w2-item {
+  border-top: 1px solid var(--openbot-border-strong);
+  padding: var(--openbot-space-3) var(--openbot-space-1);
+  white-space: normal;
+}
+
+.work-page-section-content .w2-item:first-of-type {
+  border-top: 0;
+}
+
+/* Narrow window: the section list becomes a row of tabs above the section. */
+@container (max-width: 760px) {
+  .work-page-header {
+    padding-inline: var(--openbot-space-6);
+  }
+
+  .work-page-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--openbot-space-4);
+    padding-inline: var(--openbot-space-6);
+  }
+
+  /* As tabs, the sections wrap onto more rows. They used to scroll sideways with the scrollbar hidden: a mouse wheel
+     does not scroll sideways on Windows, so the sections past the edge ("Sejf", "Serwery MCP"…) could not be reached. */
+  .work-page-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  /* Each section keeps its full width, so labels never squeeze over each other. */
+  .work-page-nav-item {
+    flex: 0 0 auto;
+  }
+
+  .work-page > :not(.work-page-header, .work-page-body) {
+    width: calc(100% - 48px);
+  }
+}
+
+/* Library › Files ------------------------------------------------------------------------------------------- */
+
+.work-page .library-view {
+  gap: var(--openbot-space-4);
+}
+
+/* One toolbar row: search grows, filters keep their size, "Add files" on the right. */
+.work-page .library-view > .library-filters {
+  position: relative;
+  flex-wrap: nowrap;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .library-filters > * {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.work-page .library-filters > input[type="search"],
+.work-page .library-filters > .ui-input {
+  min-width: 120px;
+  flex: 1 1 auto;
+  padding-left: 34px;
+}
+
+/* In a narrow page the row overflowed by ~60 px: the search takes its own line and the filters go under it, whole. */
+@container (max-width: 680px) {
+  .work-page .library-view > .library-filters {
+    flex-wrap: wrap;
+  }
+
+  .work-page .library-filters > input[type="search"],
+  .work-page .library-filters > .ui-input {
+    flex-basis: 100%;
+  }
+
+  /* The icon sits on the search line, not in the middle of the two lines. */
+  .work-page .library-filters > .library-search-icon {
+    top: calc(var(--openbot-control-md) / 2);
+  }
+}
+
+.library-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  display: grid;
+  color: var(--openbot-text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* Enter searches; the button stays for the mouse but does not compete with "Add files". */
+.work-page .library-search-submit {
+  display: none;
+}
+
+.work-page .library-filters > .ui-button[data-variant="primary"],
+.work-page .library-filters > button:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin-left: var(--openbot-space-2);
+}
+
+.work-page .library-origins {
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.work-page .library-list {
+  gap: 2px;
+}
+
+.work-page .library-row {
+  gap: var(--openbot-space-3);
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-1);
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page .library-row:hover {
+  background: var(--openbot-hover);
+}
+
+.library-type {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  box-shadow: inset 0 0 0 1px var(--openbot-border-strong);
+  color: var(--openbot-text-secondary);
+}
+
+.library-type img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.library-type small {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-2xs);
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.library-type:has(small) svg {
+  margin-top: -6px;
+}
+
+.library-type[data-type="image"] {
+  color: var(--openbot-accent-text);
+}
+
+.library-type[data-type="table"] {
+  color: var(--openbot-success);
+}
+
+.library-type[data-type="folder"] {
+  color: var(--openbot-accent-text);
+}
+
+/* Library › Files › This computer: the shared folder, the path inside it and its files. */
+.library-machine {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--openbot-space-3);
+}
+
+.library-crumbs {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+}
+
+.library-crumbs button[aria-current="page"] {
+  color: var(--openbot-text-primary);
+}
+
+.library-machine > .library-note[title] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .library-name {
+  gap: 2px;
+}
+
+.work-page .library-name strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+}
+
+/* Row actions appear on hover or keyboard focus, so a long list reads as files, not as buttons. */
+@media (hover: hover) and (pointer: fine) {
+  .work-page .library-actions {
+    opacity: 0;
+    transition: opacity var(--openbot-duration-fast) var(--openbot-ease-out);
+  }
+
+  .work-page .library-row:hover .library-actions,
+  .work-page .library-row:focus-within .library-actions {
+    opacity: 1;
+  }
+}
+
+.work-page .library-cleanup {
+  margin-top: var(--openbot-space-4);
+  border-top: 1px solid var(--openbot-border-strong);
+  padding-top: var(--openbot-space-4);
+}
+
+/*
+ * List rows of the work-page panels (skills, vault items, MCP servers, routines...): an icon tile, the name and
+ * one or two lines of detail, and the row's actions on the right. Rows without an icon keep two columns.
+ */
+.work-page .w2-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: 2px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-1);
+  white-space: normal;
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page .w2-item:has(> .w2-item-icon) {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+}
+
+.work-page .w2-item:hover {
+  background: var(--openbot-hover);
+}
+
+.work-page .w2-item + .w2-item {
+  margin-top: 2px;
+}
+
+.work-page .w2-item > * {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.work-page .w2-item:has(> .w2-item-icon) > * {
+  grid-column: 2;
+}
+
+.work-page .w2-item > .w2-item-icon {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  align-self: start;
+}
+
+.work-page .w2-item > .w2-item-actions {
+  grid-column: -2;
+  grid-row: 1 / span 4;
+  align-self: center;
+}
+
+.work-page .w2-item > strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page .w2-item > :is(p, span, small) {
+  overflow: hidden;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+  text-overflow: ellipsis;
+}
+
+.work-page .w2-item > .w2-item-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  box-shadow: inset 0 0 0 1px var(--openbot-border-strong);
+  color: var(--openbot-accent-text);
+}
+
+.work-page .w2-item-icon[data-status="error"],
+.work-page .w2-item-icon[data-status="failed"] {
+  color: var(--openbot-danger);
+}
+
+.work-page .w2-item-icon[data-status="connected"],
+.work-page .w2-item-icon[data-status="available"],
+.work-page .w2-item-icon[data-status="ready"] {
+  color: var(--openbot-success);
+}
+
+.w2-item-tag {
+  display: inline-block;
+  margin-left: var(--openbot-space-1);
+  border-radius: var(--openbot-radius-xs);
+  background: var(--openbot-bg-control-hover);
+  padding: 0 5px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+  line-height: 18px;
+  vertical-align: 1px;
+}
+
+.work-page .w2-item .w2-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .w2-item-actions > :is(button, .ui-button) {
+  height: var(--openbot-control-sm);
+  border: 0;
+  border-radius: var(--openbot-radius-sm);
+  background: transparent;
+  padding: 0 var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+  cursor: pointer;
+}
+
+.work-page .w2-item-actions > :is(button, .ui-button):hover {
+  background: var(--openbot-bg-control-hover);
+  color: var(--openbot-text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-page .w2-item > .w2-item-actions {
+    opacity: 0;
+    transition: opacity var(--openbot-duration-fast) var(--openbot-ease-out);
+  }
+
+  .work-page .w2-item:hover > .w2-item-actions,
+  .work-page .w2-item:focus-within > .w2-item-actions {
+    opacity: 1;
+  }
+}
+
+/* Schedule › Plan: a timeline. Day headings, then rows: time, a dot on the line, the agent, the routine, status. */
+
+.work-page .schedule-overview {
+  gap: var(--openbot-space-6);
+}
+
+.work-page .schedule-windows {
+  gap: var(--openbot-space-1);
+}
+
+.work-page .schedule-day {
+  display: grid;
+  gap: var(--openbot-space-1);
+}
+
+.work-page .schedule-day h3,
+.work-page .schedule-feed h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+  margin: 0 0 var(--openbot-space-1);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.work-page .schedule-day h3::first-letter {
+  text-transform: uppercase;
+}
+
+.work-page .schedule-day h3 small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.work-page .schedule-day[data-relative="true"] h3 > span {
+  color: var(--openbot-accent-text);
+}
+
+.work-page .schedule-day ul {
+  position: relative;
+}
+
+/* The line the dots sit on. */
+.work-page .schedule-day ul::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 84px;
+  width: 1px;
+  background: var(--openbot-border-strong);
+  content: "";
+}
+
+.work-page .schedule-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px 14px 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-2) 10px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1-5) var(--openbot-space-2) var(--openbot-space-1-5) 0;
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page .schedule-entry:hover {
+  background: var(--openbot-hover);
+}
+
+.work-page .schedule-entry:not(:has(.schedule-avatar)) {
+  grid-template-columns: 68px 14px minmax(0, 1fr) auto;
+}
+
+.work-page .schedule-entry time {
+  min-width: 0;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.work-page .schedule-dot {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  justify-self: center;
+  border: 2px solid var(--openbot-accent);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-canvas);
+}
+
+.work-page .schedule-entry[data-kind="ran"] .schedule-dot {
+  border-color: var(--openbot-text-dim);
+  background: var(--openbot-text-dim);
+}
+
+.work-page .schedule-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.work-page .schedule-entry-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.work-page .schedule-entry-copy strong {
+  overflow: hidden;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .schedule-entry-copy small {
+  overflow: hidden;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-page .schedule-status {
+  padding: 2px 9px;
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page .schedule-status[data-status="planned"] {
+  background: var(--openbot-accent-soft);
+}
+
+.work-page .schedule-status[data-status="done"] {
+  background: var(--openbot-success-soft);
+}
+
+.work-page .schedule-status[data-status="failed"] {
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+}
+
+.work-page .schedule-feed {
+  border-top: 1px solid var(--openbot-border-strong);
+  padding-top: var(--openbot-space-4);
+}
+
+.work-page .schedule-feed-entry,
+.work-page .schedule-feed-entry:not(:has(.schedule-avatar)) {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  padding-left: var(--openbot-space-2);
+}
+
+.work-page .schedule-aside {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-3);
+}
+
+/* Schedule › Routines: the agent's creature leads each routine row; a paused routine fades. */
+.work-page .routine-item .w2-item-icon {
+  background: transparent;
+  box-shadow: none;
+}
+
+.work-page .routine-item .w2-item-icon .bot-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.work-page .routine-item[data-paused="true"] > :not(.w2-item-actions) {
+  opacity: 0.6;
+}
+
+.work-page .w2-item-tag[data-state="active"] {
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.work-page .routine-item > p {
+  white-space: nowrap;
+}
+
+/* "Create routine" as a card: short fields side by side, instructions across the full width. */
+.work-page .routine-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--openbot-space-3) var(--openbot-space-4);
+  margin-top: var(--openbot-space-4);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .routine-form > :is(h3, [role="alert"], .ui-button, button) {
+  grid-column: 1 / -1;
+}
+
+.work-page .routine-form > label:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.work-page .routine-form > :is(.ui-button, button) {
+  justify-self: start;
+}
+
+/* Long pages with a section list (WorkPageAnchors): every section stays, the list scrolls to one. */
+.work-page-anchored {
+  gap: var(--openbot-space-6);
+}
+
+.work-page-anchored > [data-anchor] {
+  scroll-margin-top: var(--openbot-space-6);
+}
+
+.work-page-anchored > div[data-anchor] {
+  display: grid;
+  gap: var(--openbot-space-4);
+}
+
+.work-page .work-page-note {
+  max-width: none;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-warning-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-warning);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+  color: var(--openbot-text-secondary);
+}
+
+/* Usage report in the work-page frame: stat cards, the chart and this computer side by side, tables as cards. */
+
+.work-page .usage-report {
+  gap: var(--openbot-space-6);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.work-page .usage-totals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--openbot-space-3);
+  padding: 0;
+}
+
+.work-page .usage-totals > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: 2px;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.usage-stat-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  grid-row: 1 / span 3;
+  align-self: start;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.work-page .usage-totals dt {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.work-page .usage-totals dd {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-2xl);
+  font-weight: var(--openbot-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--openbot-leading-2xl);
+}
+
+.work-page .usage-totals dd.usage-stat-detail {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-regular);
+  line-height: var(--openbot-leading-sm);
+}
+
+.usage-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--openbot-space-3);
+}
+
+.work-page .usage-chart,
+.usage-machine {
+  display: grid;
+  align-content: start;
+  gap: var(--openbot-space-3);
+  margin: 0;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .usage-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .usage-card-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.work-page .usage-peak {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-chart-plot {
+  position: relative;
+  height: 160px;
+}
+
+.work-page .usage-chart-plot svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Three quiet guide lines behind the bars. */
+.usage-chart-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.usage-chart-grid i {
+  display: block;
+  border-top: 1px dashed var(--openbot-border-strong);
+}
+
+.work-page .usage-bar {
+  fill: var(--openbot-accent-strong);
+  transition: fill var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.work-page .usage-bar[data-last="true"],
+.work-page .usage-bar:hover {
+  fill: var(--openbot-accent);
+}
+
+.work-page .usage-chart figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-machine .usage-rings {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--openbot-space-4);
+}
+
+.work-page .usage-table {
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--openbot-bg-surface);
+}
+
+.work-page .usage-table caption {
+  padding: 0 0 var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  text-align: left;
+}
+
+.work-page .usage-table :is(th, td) {
+  padding: var(--openbot-space-2) var(--openbot-space-4);
+  vertical-align: middle;
+}
+
+.work-page .usage-table tbody tr:hover {
+  background: var(--openbot-hover);
+}
+
+.usage-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .usage-table .usage-agent-avatar {
+  width: 26px;
+  height: 26px;
+}
+
+.work-page .usage-split {
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+@container (max-width: 860px) {
+  .usage-overview,
+  .work-page .usage-totals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Providers › Accounts and pool (ProviderAccounts.tsx): accounts as rows, pool settings and "Add account" inline -- */
+
+.provider-account-settings {
+  display: grid;
+  gap: var(--openbot-space-3);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-control);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.provider-account-settings > .ui-switch {
+  width: 100%;
+  justify-content: space-between;
+  border-top: 1px solid var(--openbot-border);
+  padding-top: var(--openbot-space-3);
+}
+
+.provider-account-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--openbot-space-3);
+}
+
+.provider-account-inline > .ui-field {
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
+.provider-account-inline > .ui-text {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+.provider-account-provider {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+  margin-top: var(--openbot-space-2);
+}
+
+.provider-account-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+}
+
+.provider-account-row {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  gap: var(--openbot-space-2);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.provider-account-row + .provider-account-row {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-account-row:hover {
+  background: var(--openbot-hover);
+}
+
+.provider-account-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--openbot-space-3);
+  row-gap: var(--openbot-space-2);
+}
+
+.provider-account-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--openbot-border);
+  color: var(--openbot-text-muted);
+}
+
+.provider-account-order {
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.provider-account-row[data-status="ready"] .provider-account-icon {
+  background: var(--openbot-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
+}
+
+.provider-account-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-account-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+}
+
+.work-page .provider-account-title h4 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--openbot-text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Wraps instead of cutting: an ellipsis does not work on a flex row, so "Pool order" was cut off in a narrow window. */
+.work-page .provider-account-meta {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: center;
+  gap: 0 var(--openbot-space-1-5);
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.provider-account-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-text-dim);
+}
+
+.provider-account-row[data-status="ready"] .provider-account-dot {
+  background: var(--openbot-success);
+}
+
+.provider-account-row[data-status="pending"] .provider-account-dot {
+  background: var(--openbot-warning);
+}
+
+.provider-account-row[data-status="error"] .provider-account-dot {
+  background: var(--openbot-danger);
+}
+
+/* The switches sit under the name, so a long account name keeps its room. */
+.provider-account-switches {
+  display: flex;
+  grid-column: 2 / -1;
+  grid-row: 2;
+  align-items: center;
+  gap: var(--openbot-space-6);
+}
+
+.provider-account-switches .ui-switch {
+  flex-direction: row-reverse;
+  gap: var(--openbot-space-2);
+}
+
+.provider-account-switches .ui-switch-label {
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-regular);
+}
+
+.provider-account-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-account-actions .provider-account-remove:hover:not(:disabled) {
+  color: var(--openbot-danger);
+}
+
+.provider-account-details {
+  display: grid;
+  gap: var(--openbot-space-2);
+  padding-left: 44px;
+}
+
+.provider-account-details:not(:has(> :not(.provider-account-phase:empty))) {
+  display: none;
+}
+
+.work-page .provider-account-details > .ui-text,
+.work-page .provider-account-phase {
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.provider-account-phase:empty {
+  display: none;
+}
+
+.provider-account-confirm {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  gap: var(--openbot-space-2);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  padding: var(--openbot-space-3);
+}
+
+.provider-account-confirm .managed-cli-actions {
+  justify-content: flex-end;
+}
+
+.provider-account-add {
+  display: grid;
+  gap: var(--openbot-space-2);
+  border: 1px dashed var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.work-page .provider-account-note {
+  margin: 0;
+  font-size: var(--openbot-text-xs);
+}
+
+.provider-account-switches .ui-switch[data-checked] .ui-switch-control,
+.provider-account-settings .ui-switch[data-checked] .ui-switch-control {
+  border-color: var(--openbot-accent-hover);
+  background: var(--openbot-accent);
+}
+
+/* Providers › CLI tools, API keys, Own endpoints: rows with an icon and a state, settings as a list, forms as ---- */
+/* a card in two columns (ManagedCliSection, ApiKeysSection, EndpointsSection). ------------------------------------ */
+
+.provider-cli-list,
+.api-keys-list,
+.work-page .providers-list {
+  display: grid;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.provider-cli,
+.provider-key-row {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-3);
+  margin: 0;
+  border: 0;
+  padding: var(--openbot-space-4);
+}
+
+.provider-cli + .provider-cli,
+.provider-key-row + .provider-key-row,
+.work-page .providers-list > .providers-row + .providers-row {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-cli-head,
+.provider-key-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.provider-cli-icon,
+.provider-key-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: var(--openbot-radius-chip);
+  background: var(--openbot-mesh-cyan);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.provider-key-icon {
+  background: var(--openbot-mesh-orange);
+}
+
+.endpoint-row .provider-key-icon {
+  background: var(--openbot-mesh-green);
+}
+
+.provider-cli[data-status="error"] .provider-cli-icon {
+  background: var(--openbot-mesh-red);
+}
+
+.provider-cli[data-status="off"] .provider-cli-icon {
+  filter: saturate(0.5) brightness(0.8);
+}
+
+.provider-cli-copy,
+.provider-key-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--openbot-space-0-5);
+}
+
+.provider-cli-title,
+.api-key-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .provider-cli-title h3,
+.work-page .api-key-card-head h3 {
+  margin: 0;
+  font-size: var(--openbot-text-md);
+}
+
+.work-page .provider-cli-meta,
+.work-page .provider-key-copy p,
+.provider-cli .provider-cli-phase {
+  margin: 0;
+  font-size: var(--openbot-text-sm);
+}
+
+/* Under the name, not under the icon: also in the first-run setup window, which is not a work page ("Gotowe" sat left
+   of the card's text there). */
+.provider-cli .provider-cli-phase,
+.provider-cli > [role="progressbar"],
+.provider-cli > [role="alert"] {
+  margin-left: 48px;
+}
+
+.provider-cli .provider-cli-phase {
+  color: var(--openbot-text-muted);
+}
+
+.provider-cli-actions,
+.api-key-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--openbot-space-1-5);
+}
+
+.provider-cli-settings {
+  display: grid;
+  margin-left: 48px;
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-cli-settings > .ui-switch {
+  width: 100%;
+  min-height: 44px;
+  justify-content: space-between;
+}
+
+.work-page .provider-cli-settings > .provider-cli-note {
+  margin: 0;
+  border-bottom: 1px solid var(--openbot-border);
+  padding-bottom: var(--openbot-space-3);
+  font-size: var(--openbot-text-xs);
+}
+
+.provider-cli-setting,
+.provider-key-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: var(--openbot-space-2);
+  padding-block: var(--openbot-space-3);
+}
+
+.provider-cli-setting + .provider-cli-setting {
+  border-top: 1px solid var(--openbot-border);
+}
+
+.provider-key-form-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-left: 48px;
+  padding-block: 0;
+}
+
+.work-page .provider-key-hint {
+  margin: 0 0 0 48px;
+  font-size: var(--openbot-text-xs);
+}
+
+.endpoint-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--openbot-space-3);
+  padding: var(--openbot-space-3) var(--openbot-space-4);
+}
+
+.work-page .endpoint-row-copy p {
+  margin: var(--openbot-space-0-5) 0 0;
+  font-size: var(--openbot-text-sm);
+}
+
+.work-page .endpoint-row .providers-confirm {
+  grid-column: 2 / -1;
+  max-width: none;
+  justify-content: flex-start;
+}
+
+/* The add / edit form is a card: fields in two columns, presets, hints and the actions across both. */
+.work-page .providers-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--openbot-space-3) var(--openbot-space-4);
+  border: 1px dashed var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  padding: var(--openbot-space-4);
+}
+
+.work-page .providers-form > :is(h3, fieldset, p, .providers-actions, .ui-switch, [role="note"]),
+.work-page .providers-form > .ui-field:has(input[type="password"], input[inputmode="url"]) {
+  grid-column: 1 / -1;
+}
+
+@container (max-width: 760px) {
+  .work-page .providers-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .provider-cli-settings,
+  .provider-key-form-row,
+  .work-page .provider-key-hint {
+    margin-left: 0;
+  }
+
+  .provider-cli-head,
+  .provider-key-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .provider-cli-actions,
+  .api-key-card-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* A field's label with the "required" star stays on one line (the generic label rule made it a grid). */
+.work-page .ui-field > label.ui-label {
+  display: block;
+}

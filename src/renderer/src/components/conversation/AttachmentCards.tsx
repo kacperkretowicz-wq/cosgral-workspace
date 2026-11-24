@@ -1,5 +1,6 @@
 import type { AttachmentSummary } from "@openbot/contracts/ipc";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
+import { t } from "../../i18n";
 import { Button } from "../ui";
 import { AnchoredTooltip } from "./AnchoredTooltip";
 import { attachmentReferenceTone } from "./AttachmentReference";
@@ -13,7 +14,7 @@ export function AttachmentCards(props: {
   const [tooltip, setTooltip] = createSignal<{ anchor: HTMLElement; content: string } | null>(null);
 
   const openTooltip = (anchor: HTMLElement) => {
-    setTooltip({ anchor, content: "Open file" });
+    setTooltip({ anchor, content: t("Open file") });
   };
   const closeTooltip = (anchor: HTMLElement) => {
     if (tooltip()?.anchor === anchor) setTooltip(null);
@@ -32,7 +33,7 @@ export function AttachmentCards(props: {
                 type="button"
                 class="attachment-preview-button"
                 disabled={attachment.previewKind === "none"}
-                aria-label={`Preview ${attachment.name}`}
+                aria-label={t("Preview {name}", { name: attachment.name })}
                 onClick={() => props.onPreview(attachment)}
               >
                 <Show
@@ -62,7 +63,7 @@ export function AttachmentCards(props: {
               <Button
                 type="button"
                 class="attachment-open-button"
-                aria-label={`Open ${attachment.name}`}
+                aria-label={t("Open {name}", { name: attachment.name })}
                 aria-describedby={tooltipId}
                 onPointerEnter={(event) => openTooltip(event.currentTarget)}
                 onMouseEnter={(event) => openTooltip(event.currentTarget)}

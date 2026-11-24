@@ -2,16 +2,19 @@ import type {
   BudgetCsv,
   BudgetOverview,
   BudgetScope,
+  BudgetState,
   BudgetStatus,
   BudgetsDesktopApi,
   SetBudgetInput,
 } from "@openbot/contracts/ipc";
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
+import { PanelHeading } from "./PanelHeading";
 import { Badge, Button, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
+import { Wallet } from "./ui/icons";
 export function downloadBudgetCsv(file: BudgetCsv) {
   const url = URL.createObjectURL(new Blob([file.csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
@@ -20,6 +23,13 @@ export function downloadBudgetCsv(file: BudgetCsv) {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+/** The budget state as words (the badge showed the raw "ok" / "warning" / "exhausted"). */
+const BUDGET_STATE_LABEL: Record<BudgetState, string> = {
+  ok: "Within budget",
+  warning: "Near the limit",
+  exhausted: "Limit reached",
+};
+
 export function BudgetCounter(props: { status: BudgetStatus }) {
   const view = () => props.status;
   return (
@@ -29,12 +39,12 @@ export function BudgetCounter(props: { status: BudgetStatus }) {
           {t("Usage this period")}
         </Heading>
         <Badge tone={view().state === "exhausted" ? "danger" : view().state === "warning" ? "warning" : "success"}>
-          {view().state}
+          {t(BUDGET_STATE_LABEL[view().state])}
         </Badge>
       </div>
       <Text as="p">
         {t("{tokens} tokens · {turns} turns", {
-          tokens: view().usage.tokens.toLocaleString(),
+          tokens: view().usage.tokens.toLocaleString(appLocale()),
           turns: view().usage.turns,
         })}
       </Text>
@@ -68,7 +78,7 @@ export function BudgetCounter(props: { status: BudgetStatus }) {
       </Show>
       <Show when={view().reason}>
         <Text as="p" role="status" tone={view().state === "exhausted" ? "danger" : "secondary"}>
-          {view().reason}
+          {tData(view().reason ?? "")}
         </Text>
       </Show>
       <Show when={view().blocked}>
@@ -125,9 +135,9 @@ export function BudgetPanel(props: {
       class="providers-form"
       aria-label={props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
     >
-      <Heading as="h3" size="sm">
+      <PanelHeading level="h3" icon={Wallet} tint="green">
         {props.status.scope.kind === "space" ? t("Space budget") : t("Agent budget")}
-      </Heading>
+      </PanelHeading>
       <Text as="p">
         {t(
           "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.",

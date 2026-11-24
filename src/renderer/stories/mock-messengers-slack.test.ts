@@ -20,6 +20,8 @@ import { createMockMessengers } from "./mock-messengers";
 
 const BOT = `xoxb-${"1234567890-".repeat(3)}abcDEF`;
 const APP = `xapp-1-A01-${"9876543210-".repeat(3)}abcDEF`;
+// Built from pieces on purpose: a whole token-shaped text in the source is refused by secret scanning, fake or not.
+const DISCORD = `${"MTIzNDU2Nzg5"}${"MDEyMzQ1Njc4"}.GabcDE.${"abcdefghijklmnopqrstuvwxyz"}0123456789ABC`;
 
 const setup = () => {
   const events: AgentEvent[] = [];
@@ -147,6 +149,7 @@ describe("the descriptor the settings window draws from (W12-KK)", () => {
     const { api, events } = setup();
     await api.connect({ kind: "telegram", token: `123456789:${"A".repeat(35)}` });
     await api.connect({ kind: "slack", token: BOT, appToken: APP });
+    await api.connect({ kind: "discord", token: DISCORD });
     const list = await api.list();
     expect(list.messengers.map((entry) => entry.kind)).toEqual([...MESSENGER_KINDS]);
     expect(list.messengers.every((entry) => entry.tokenSaved && entry.phase === "connected")).toBe(true);
@@ -154,5 +157,7 @@ describe("the descriptor the settings window draws from (W12-KK)", () => {
     expect(everything).not.toContain(BOT);
     expect(everything).not.toContain(APP);
     expect(everything).not.toContain("A".repeat(35));
+    expect(everything).not.toContain(DISCORD);
+    expect(list.messengers.find((entry) => entry.kind === "discord")?.botUsername).toBe("@cosgral_discord");
   });
 });

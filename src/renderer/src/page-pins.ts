@@ -1,5 +1,6 @@
 import type { AppPageId } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
+import { t } from "./i18n";
 export function usePagePins() {
   const [pins, setPins] = createSignal<AppPageId[]>();
   const [error, setError] = createSignal("");
@@ -11,7 +12,7 @@ export function usePagePins() {
       const settings = await window.openbot?.appSettings?.get();
       if (settings && serial === revision) setPins(settings.navigation.pinnedPageIds);
     } catch {
-      setError("Nie udało się wczytać przypiętych stron.");
+      setError(t("Could not load the pinned pages."));
     }
   }
   onSettled(() => {
@@ -41,7 +42,7 @@ export function usePagePins() {
       const saved = await api.update({ navigation: { pinnedPageIds: next } });
       setPins(saved.navigation.pinnedPageIds);
     } catch {
-      setError("Nie udało się zapisać przypięcia. Ponów akcję z menu strony.");
+      setError(t("Could not save the pin. Try again from the page menu."));
     } finally {
       setBusy(false);
     }

@@ -116,6 +116,7 @@ import { createMockLibraryView, createMockSchedule, createMockUsageReport } from
 import { createMockInstanceTransfer } from "./mock-instance-transfer";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
+import { createMockMachineFiles } from "./mock-machine-files";
 import { createMockMarketplace } from "./mock-marketplace";
 import { createMockMcpOAuth } from "./mock-mcp-oauth";
 import { createMockMessageActions } from "./mock-message-actions";
@@ -133,7 +134,6 @@ import { createMockSubagents } from "./mock-subagents";
 import { createMockTasksView } from "./mock-tasks-view";
 import { createMockThreads } from "./mock-threads";
 import { createMockVaultConnectors } from "./mock-vault-connectors";
-import { createMockVoice } from "./mock-voice";
 import { createMockW2 } from "./mock-w2";
 import { createMockW2Ui2 } from "./mock-w2-ui2";
 import { createMockWindows } from "./mock-windows";
@@ -235,7 +235,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),
-    navigation: { pinnedPageIds: [] },
+    navigation: { pinnedPageIds: ["agents", "workflows", "tasks", "usage", "library"] },
     appearance: { ...DEFAULT_APP_APPEARANCE },
     behavior: { launchAtLogin: false, keepBackground: false, externalLinks: "browser" },
     workspace: { ...DEFAULT_APP_WORKSPACE },
@@ -1508,6 +1508,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     serverSettings: createMockServerSettings((event) => emitAgentEvent(event)),
     providerCatalog: createMockProviderCatalog((event) => emitAgentEvent(event)),
     libraryView: createMockLibraryView(),
+    machineFiles: createMockMachineFiles(),
     usageReport: createMockUsageReport(),
     schedule: createMockSchedule(),
     // COSGRAL W12 (BE-J): the Tasks view over the same channels, tasks and messages as `channels` above.
@@ -1531,8 +1532,6 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     pluginCatalog: createMockPluginCatalog((event) => emitAgentEvent(event)),
     // COSGRAL W12-KK (1): sign-in (OAuth) to MCP servers (demo; no browser opens).
     mcpOAuth: createMockMcpOAuth((event) => emitAgentEvent(event)),
-    // COSGRAL W12-KK: local voice (demo; nothing is downloaded, recorded or spoken).
-    voice: createMockVoice((event) => emitAgentEvent(event)),
     // COSGRAL W12-KK (g2): Transfer/Import of agents and the update preferences (demo; no file is touched).
     instanceTransfer: mockInstanceTransfer.transfer,
     updatePreferences: mockInstanceTransfer.updates,

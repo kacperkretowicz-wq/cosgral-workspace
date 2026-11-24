@@ -343,3 +343,30 @@ describe("ImageGeneration", () => {
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
 });
+
+describe("MessageBody of a turn a routine started", () => {
+  it("shows who started it and the task, not the sentence written for the agent", () => {
+    render(() => (
+      <MessageBody
+        message={{
+          id: "message-routine",
+          author: "you",
+          body: [
+            '[COSGRAL routine run] "Morning report" (schedule, 09:00 Europe/Warsaw)',
+            "This turn was started by a routine, not typed by the person now. Do what the routine asks:",
+            "Summarise yesterday's tickets.",
+          ].join("\n"),
+          time: "09:00",
+        }}
+        bots={bots}
+        onSelectAgent={vi.fn()}
+        onOpenLink={vi.fn()}
+        onPreview={vi.fn()}
+        onAttachmentAction={vi.fn()}
+      />
+    ));
+    expect(screen.getByText("Routine “Morning report” · on schedule, 09:00 Europe/Warsaw")).toBeInTheDocument();
+    expect(screen.getByText("Summarise yesterday's tickets.")).toBeInTheDocument();
+    expect(screen.queryByText(/COSGRAL routine run|started by a routine/)).not.toBeInTheDocument();
+  });
+});

@@ -1,3 +1,564 @@
+# START TUTAJ: dla następnego agenta (24.11.2026, po południu)
+
+**Stan:** program gotowy do użytku na tym komputerze. PR [#28](https://github.com/kacperkretowicz-wq/cosgral-workspace/pull/28)
+z `claude/festive-pasteur-5oh1yh` do `codex/cosgral-desktop` (właściciel zgodził się 24.11 na PR i scalenie).
+Na Windows właściciela przechodzą: lint, typecheck (6), `bun run test` (483 pliki, 3482 testy, 1 pominięty: stary
+test pola klucza API), `test:visual` 7/7, `test:storybook` 377/377 (w pierwszym pełnym przebiegu 2 niestabilne
+historyjki: „Search conversation” i „Custom Instruction”, osobno 2× zielone, drugi pełny przebieg 377/377),
+`sandbox:e2e` (0 uwag), sonda okna z axe po polsku (0 uwag, 0 brakujących tłumaczeń, 0 błędów konsoli).
+Instalator `dist:win` zbudowany z tej wersji.
+
+**Ta sesja (24.11 po południu):**
+
+1. **Łącznik GitHub prosi o „Client secret”.** GitHub przy wymianie kodu na token wymaga `client_secret` także z PKCE
+   (dokumentacja GitHuba: „client_secret: Required”; bez sekretu działa tylko logowanie kodem urządzenia). Pole było
+   ukryte (`needsClientSecret: false`), więc logowanie nie mogło się skończyć. Teraz karta GitHub w Biblioteka →
+   Integracje ma pole sekretu, a „Połącz” mówi, czego brakuje. Odnawianie tokenu (8 h, `refreshDue`) i odpowiedź
+   GitHuba w formacie formularza były już obsłużone. **Do zrobienia przez właściciela:** zarejestrować GitHub App
+   (callback `http://127.0.0.1:<port>/callback`, najlepiej stały port wpisany w karcie), wkleić w karcie Client ID i
+   Client secret (sekretu nie wpisuje agent), kliknąć „Połącz konto”.
+2. **Biblioteka › Pliki › „Ten komputer”** (parytet 45, „pliki maszyny”). Silnik `machine-files.ts` (BE-AE) istniał bez
+   IPC i ekranu. Teraz: udostępnienie folderu systemowym oknem wyboru (pamiętane do zamknięcia programu), podfoldery,
+   ścieżka, „Otwórz” (aplikacja systemu), „Pokaż w folderze”, zaznaczanie i „Kopiuj do biblioteki” (do 50 naraz).
+   Każde wywołanie idzie jako człowiek (`actor: null`); ścieżki poza folderem, linki na zewnątrz i pliki wyglądające na
+   sekrety odrzuca silnik. Nowe `MachineFiles.locate` otwiera pliki dowolnej wielkości (limit biblioteki dotyczy tylko
+   kopiowania). Pliki: `src/main/machine-files-ipc.ts`, `src/preload/machine-files-api.ts`,
+   `components/MachineFilesView.tsx`, atrapa `stories/mock-machine-files.ts`; sonda okna przechodzi kartę.
+3. **Parytet:** wiersz 27 (ustawienia kanału) był nieaktualny: izolacja, kompakt (okno historii), czyszczenie historii,
+   przeglądarka w turze kanału i rutyny są w kodzie → „jest”. Wiersz 45 → „jest” (miniatury obrazów były). 86,7%.
+4. **Szybkość:** renderer był budowany bez minifikacji (spadek po bazie OpenBota): główny JS 3,0 MB → 1,5 MB, CSS
+   567 → 492 KB (`electron.vite.config.ts`, `keepNames` dla nazw w stosach błędów). Biblioteka, Harmonogram, Zużycie i
+   Zadania ładują się przy pierwszym otwarciu (`lazy` w `App.tsx`), jak wcześniej Przepływy, Katalog, Telefon i
+   Ustawienia serwera.
+   Główny JS po obu zmianach: 1,42 MB (rano 3,0 MB).
+   Rozbicie dużych plików (`Conversation.tsx`, `App.tsx`, `agent-service.ts`) nie przyspiesza startu, więc zostaje
+   „przy okazji” (plan: `PLAN-ROZBICIE-PLIKOW.md`).
+5. **Sonda okna** pomijała pierwszy dział strony, a strona otwiera się na ostatnio używanym dziale: w tej piaskownicy
+   Biblioteka › Pliki nie była sprawdzana. Teraz przechodzi wszystkie działy i kartę „Ten komputer”. Przy okazji
+   znalazła **angielskie zdanie silnika na polskim Harmonogramie** („COSGRAL Workspace was not running at <czas>;
+   missed runs are not made up.”, pojawia się po pominiętych uruchomieniach rutyn). Teraz stałe zdanie (wiersz ma
+   swoją godzinę) tłumaczone razem z innymi powodami uruchomień (`runReasonText` w `ScheduleOverview.tsx`; stare
+   zapisane uruchomienia z godziną w zdaniu też). Historia rutyny w `RoutinePanel` pokazywała surowy stan („skipped”)
+   i datę ISO: teraz przetłumaczony stan i data lokalna.
+
+**Zostaje (tylko właściciel):** Client ID i sekret aplikacji GitHub (wyżej), tokeny komunikatorów, G2 na czystym koncie
+Windows. Check „commitperclip PR Review” na PR pada, bo workflow z gałęzi domyślnej pobiera nieistniejącą gałąź `master`
+(nie dotyczy kodu programu; do naprawy albo wyłączenia w `.github/workflows/commitperclip-review.yml` na gałęzi
+domyślnej, za zgodą właściciela).
+
+---
+
+# Przekazanie: 24.11.2026 rano (poprzedni START TUTAJ)
+
+**Stan:** program jest skończony w zakresie, który da się zrobić bez właściciela. Na Windows właściciela przechodzą:
+lint, typecheck (6), `bun run test` (481 plików, 3467 testów, 1 pominięty: stary test pola klucza API, włącza go `SHOW_API_KEYS`), `test:visual` 7/7, `test:storybook` 376/376 (dwa
+przebiegi 24.11: z ciepłą i z wyczyszczoną pamięcią Vite), sonda okna z axe, przejściami Tab i wykrywaniem angielskich
+zdań (0 uwag). Instalator `dist:win` zbudowany z tej wersji i zainstalowany na komputerze właściciela (per user).
+Gałąź: `claude/festive-pasteur-5oh1yh` (bez PR; `main` to stary Paperclip, desktop żyje na `codex/cosgral-desktop`; PR
+i scalenie tylko za zgodą właściciela).
+
+**Nie ma znanego błędu działania ani otwartej pozycji, którą można zrobić samemu.** Zostaje:
+
+1. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
+   aplikacji OAuth), komunikatory (tokeny botów). Decyzja: zostają w kodzie, nieaktywne. PR i scalenie gałęzi: tylko
+   za zgodą właściciela.
+2. **Storybook:** wcześniej co kilka przebiegów „Failed to fetch dynamically imported module” (Vite). 24.11 nie dało się
+   go wywołać: przebieg z ciepłą i z wyczyszczoną pamięcią Vite (`node_modules/.cache/storybook/…/sb-vitest/deps`)
+   376/376, bez przeładowania zależności. Pojawiał się, gdy obok chodziły inne ciężkie zadania (pełne testy, sonda,
+   build); nie puszczać ich równolegle. Ponawiania testów (`retry`) celowo nie ma: ukryłoby też prawdziwe błędy.
+3. **Kod (przy okazji, nie hurtem):** duże pliki (`Conversation.tsx`, `App.tsx`, `agent-service.ts`), JS renderera
+   ~2,9 MB. Wiersze „częściowo” w `parytet-0.71.md` to głównie brak dowodu w oknie albo funkcje 0.71, których nie
+   robimy (nauka w przeglądarce, PiP, katalog GitHub przepływów, kredyty mediów, darmowe modele w onboardingu).
+4. **Kolejka `KOLEJKA-ZADAN.md`:** otwarte pozycje są nieaktualne albo poza zakresem: testy `@` i `/` są
+   (`ComposerEditor.test.tsx`), galeria Katalogu ma polecane, kategorie i szukanie (filtr „Zweryfikowane/Publiczne”
+   nie ma sensu przy jednym katalogu), Członkowie i Strony w Ustawieniach serwera mówią po polsku, czemu są niedostępne.
+
+**Decyzja właściciela 23.11 (noc): klucze API ukryte.** Jedna stała `SHOW_API_KEYS = false` w
+`src/renderer/src/api-keys-visibility.ts` chowa działy „Klucze API” i „Endpointy” strony Dostawcy oraz pulę kluczy
+w Katalogu dostawców; dział „Dostawcy” w Ustawieniach serwera (tylko odsyłał do strony Dostawcy) jest odfiltrowany
+w `ServerSettingsPage.tsx`. Kod, testy i historyjki zostają. Wiersze W5 w `scripts/sandbox-acceptance.ts` o kluczach
+i endpointach (E01–E06, P09, K01–K04) są przy `false` zgłaszane jako „skip” i liczone osobno (nie jako zaliczone).
+
+**Jak sprawdzać okno:** po `bun run build` i jednym `sandbox-shots-w12.ts` (tworzy piaskownicę z danymi demo):
+`COSGRAL_SANDBOX_ROOT=<ta piaskownica> COSGRAL_PROBE_OUT=<folder> [COSGRAL_PROBE_SIZE=960x640]
+[COSGRAL_PROBE_LANG=en] [COSGRAL_PROBE_AXE=1] [COSGRAL_PROBE_SKIP_PAGES=1] node scripts/sandbox-window-probe.ts`.
+Raport w `report.txt`; zrzuty oglądać na oko (sonda nie widzi nakładania się elementów). Z `COSGRAL_PROBE_AXE=1` sonda
+chodzi Tabem po każdej stronie i dziale (`main`), po panelach Pliki i Ustawienia agenta, po każdym dialogu (tam też
+sprawdza, czy fokus nie wychodzi z okna) i po oknie Ustawień. `COSGRAL_PROBE_SKIP_PAGES=1` pomija strony (szybki
+przebieg rozmowy i dialogów). Przy błędzie kroku sonda zapisuje zrzut `<krok>-<język>-failed.png`. Po polsku sonda
+szuka też angielskich zdań spoza słownika (tekst bez polskich liter z co najmniej dwoma angielskimi słowami
+funkcyjnymi, poza treścią użytkownika i danymi demo: `SKIP_CONTENT`); na starcie sprawdza się na własnej próbce.
+
+**Pułapki:** w Solid 2 `createEffect(signal, fn)` z gołym getterem nie śledzi zmian (owijać w `() => signal()`);
+zapis sygnału działa po `flush()` (w testach odczyt zaraz po `setLanguage` daje stary język); teksty formatowane przy
+mapowaniu danych trzeba mapować ponownie po zmianie języka (`App.tsx`). Krok I10 `sandbox-installed.ts` otwiera
+prawdziwe okno logowania w Chrome z profilem piaskownicy: zamknąć je po przebiegu. Kobalte `Combobox.Content`
+przyjmuje `onEscapeKeyDown` (idzie do warstwy), ale typy alpha go nie znają: w `GlobalSearch.tsx` przez rozwinięcie
+obiektu. Lista kart Kobalte (`Tabs.List`) na Tab przestawia fokus na swoją ostatnią kartę, nawet gdy pułapka fokusu
+dialogu już go przeniosła; w wyszukiwarce karta przechwytuje Tab (`stopPropagation`) i oddaje fokus polu. Bash w tym
+środowisku zamienia podwójny ukośnik wsteczny w heredocu na pojedynczy: edycje z ukośnikami robić narzędziem Edit.
+
+---
+
+# Przekazanie: 24.11.2026, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Cel od właściciela: „ukończ całkowicie apkę”, najważniejsze rzeczy, działać.
+
+1. **Angielskie zdania spoza słownika:** sonda łapała tylko angielskie teksty, które są kluczami słownika. Zdanie
+   wysłane przez silnik i pokazane wprost przechodziło: działy „Członkowie” i „Strony” w Ustawieniach serwera mówiły
+   po polsku „Niedostępne na tym komputerze: Inviting people needs an online service…”. Teraz przez `tData` z polskim
+   tłumaczeniem, a sonda szuka angielskich zdań także spoza słownika (ze sprawdzeniem na własnej próbce). Pełny
+   przebieg PL: 0 takich zdań.
+2. **Wyszukiwarka Ctrl+K:** Tab z karty filtrów wraca do pola (wcześniej zostawał na karcie, patrz pułapki wyżej).
+   Test w `GlobalSearch.test.tsx`.
+3. **Odbiór W5:** wiersze kluczy API i endpointów zgłaszane jako „skip” przy ukrytych kluczach, podsumowanie liczy je
+   osobno.
+4. **Storybook:** dwa przebiegi (ciepła i wyczyszczona pamięć Vite) 376/376 bez przeładowania; bez zmian w konfiguracji
+   (szczegóły w START TUTAJ pkt 2).
+
+---
+
+# Przekazanie: 23.11.2026 noc, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Cel od właściciela: dokończyć program, poprawki UI, bez tekstu „AI slop”, wszystko dopracowane. Domknięte wszystkie
+punkty poprzedniego START TUTAJ (dostępność, decyzja o kluczach, teksty, UI do oceny).
+
+1. **Dostępność w prawdziwym oknie:** przejście Tab rozszerzone ze strony Agenci na wszystkie strony i działy, panele
+   boczne rozmowy, dialogi i okno Ustawień. Znalezione i naprawione:
+   - **Wyszukiwarka Ctrl+K nie zamykała się Esc**, gdy fokus był na kartach filtrów (Tab z pola): Esc trafiał tylko
+     do zawsze otwartej listy wyników, okno zostawało, a Ctrl+/ otwierało drugie okno na nim. Teraz jeden Esc zamyka
+     okno z każdego miejsca (test w `GlobalSearch.test.tsx`, czerwony przed poprawką).
+   - Brak widocznego fokusu: „Pokaż szczegóły myślenia” w rozmowie i lista „Poziom rozumowania agenta” w panelu
+     ustawień agenta (sama zmiana tła). Teraz pierścień jak przy innych kontrolkach.
+   - Sonda: obszar przejścia to ostatni WIDOCZNY element pasujący do selektora (wcześniej pierwszy, czasem ukryty);
+     pierścień fokusu szukany do 4 poziomów w górę (`:focus-within` np. kompozytora).
+   Wynik: pełny przebieg PL 1440×900 z axe: 0 uwag, 0 brakujących tłumaczeń, 0 błędów konsoli. To samo w oknie 960×640 i po angielsku (oba z axe): 0 uwag.
+2. **Klucze API ukryte** (decyzja właściciela, szczegóły wyżej w START TUTAJ).
+3. **Wiadomości silnika w rozmowie:** tura uruchomiona przez rutynę albo krok przepływu pokazywała człowiekowi tekst dla
+   agenta („[COSGRAL routine run] … This turn was started by a routine…”). Teraz u góry dymka jest jedna linia
+   „Rutyna „Raport” · według harmonogramu, 09:00 Europe/Warsaw” albo „Przepływ „X” · krok „Y””, pod nią samo
+   polecenie; dane webhooka w zwijanym „Dane z webhooka”; znaczniki `<workflow_data>` znikają. Agent dostaje dalej pełny
+   tekst. Ten sam skrót w podglądzie na liście i w cytacie odpowiedzi (`components/conversation/engine-run.ts`).
+4. **Teksty:** zakładka „Aplikacje” Katalogu: jej napisy są po polsku, a opisy wtyczek pochodzą z folderu katalogu
+   wybranego przez użytkownika (dane, nie tłumaczymy). Trzy stałe komunikaty błędów wtyczek z silnika szły na ekran po
+   angielsku: teraz przez słownik. Polskie zdania, które nazywały części okna po angielsku: „Needs you” (9 miejsc),
+   „Mobile Connect”, „Marketplace”, „Pair another phone”, „Local network”: teraz polskie nazwy z okna. Sekcja „Needs
+   you” po polsku to „Czeka na Ciebie” (było „Potrzebujesz zareagować”). Cytat odpowiedzi na załącznik mówił
+   „Attachment” bez tłumaczenia.
+5. **UI do oceny:** kolumna „Czeka na Ciebie” na stronie Zadań celowo zbiera pytania agentów i zakończone zadania
+   (wynik do przeczytania, `TASKS_BOARD_COLUMNS` w kontrakcie); dostała podpis „Pytania agentów i gotowe wyniki. Gdy
+   skończysz z zadaniem, zarchiwizuj je.” Logo: biały pasek zamiast „C” to zamierzona animacja mrugnięcia
+   (`app-logo-blink`, co 4,8 s `scaleY(0.08)`), wyłączona przy ograniczeniu ruchu; nie błąd.
+
+# Przekazanie: 23.11.2026 po południu, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Pierwsza sesja na komputerze właściciela (Windows 10, 4 rdzenie, mało wolnej pamięci: pełny `bun run test` trwa ok.
+25 min, pliki idą po kolei). Cel od właściciela: gotowy, działający program bez błędów, dopracowany.
+
+**Jak pracować na tym komputerze:** Bun nie był zainstalowany: `npm i -g bun@1.3.11`, a w PowerShellu
+`$env:Path = "$env:APPDATA\npm;$env:Path"`. Repo: `Documents\GitHub\cosgral-workspace`. Vitest przekierowany do pliku
+nic nie pisze do końca przebiegu (to nie zawieszenie). Commity jako `Claude <noreply@anthropic.com>` (repo publiczne,
+bez e-maila właściciela); wiadomość commita z pliku (`git commit -F`), bo PowerShell 5.1 psuje cudzysłowy w `-m`.
+
+| Sprawdzenie na Windows | Wynik |
+|---|---|
+| `bun run lint`, `bun run typecheck` (6) | zielone |
+| `bun run test` (po usunięciu głosu) | 480 plików, 3453 testy, 0 czerwonych (przed: 492 / 3510, też 0) |
+| `bun run sandbox:e2e` (prawdziwe okno Electron) | wszystkie kroki ok, 0 uwag w konsoli |
+| `bun run test:visual` | 4 z 7 różniły się od starych wzorców (nowy wygląd, brak Głosu); obejrzane, wzorce odświeżone, 7/7 |
+| `bun run test:storybook` (axe w każdej historyjce) | 376/376 |
+| `bun run dist:win` | `dist\COSGRAL Workspace-0.2.0-x64.exe`, 108 MB; `verify-windows-package.ts` zielony |
+| `scripts/sandbox-window-probe.ts` (nowy, patrz niżej) | 0 uwag po poprawkach |
+| `sandbox-installed.ts` (zainstalowany `.exe`, G2 bez czystego konta) | instalacja per user bez UAC; prawdziwe pobranie Codex 0.171.0 i Claude Code 2.1.330 z SHA-256; przypięcie 0.168.0 i powrót; start logowania obu kont; dane we własnym profilu; 0 błędów konsoli. I03: zachowanie dobre, padało tylko sprawdzenie słowa „Brak” (program po angielsku pisze „None”), poprawione |
+
+**Uwaga do `sandbox-installed.ts`:** program podąża za językiem systemu, a kroki szukają angielskich napisów; na polskim
+Windows wszystko czekało do limitu. Skrypt uruchamia teraz program z `--lang=en-US` i z `cleanEnvironment()` (wcześniej
+przekazywał całe środowisko, z ewentualnymi zmiennymi logowania właściciela) oraz jednym, oczyszczonym `PATH`. Krok I10
+otwiera prawdziwą stronę logowania w przeglądarce systemowej z profilem piaskownicy: po przebiegu trzeba zamknąć to okno
+Chrome, inaczej trzyma pliki piaskownicy.
+
+**Zrobione w tej sesji:**
+1. Głos usunięty w całości (decyzja właściciela), szczegóły w punkcie 6 rozdziału niżej.
+2. Język: po zmianie języka czasy na liście i statusy wiadomości zostawały w starym języku do restartu (są formatowane
+   przy mapowaniu danych); `App.tsx` mapuje agentów i otwarte rozmowy ponownie. **Pułapka Solid 2:** goły getter
+   sygnału jako `compute` w `createEffect(signal, fn)` nie był śledzony; zawsze `createEffect(() => signal(), fn)`
+   (poprawione też w `ThreadTabs`).
+3. Surowe słowa silnika na polskim ekranie: stan wątku („idle”), stan budżetu („ok/warning/exhausted”), „Channel /
+   Library” w podpowiedzi `@`, powody akcji zadań. Liczba mnoga przez `tn()` w 8 miejscach („1 accounts”, „1 files”…).
+   5 etykiet poza `t()` (kolejka, „Przenieś … do…”, zużycie konta, usuń załącznik).
+4. Wygląd: tytuł karty wątku ucięty z lewej (przycisk centruje treść), przyciski wersji przepływu na całą szerokość,
+   panel zadania pokazywał 5 wyłączonych akcji z 5 zdaniami powodów (teraz tylko akcje, które mają sens).
+5. Skrypty piaskownicy: `sandbox-shots-w12.ts` szukał paska stron po `role="navigation"` i przycisku „More pages”
+   (dziś `<nav>` i „More”); poprawione. Nowy `sandbox-window-probe.ts`: na istniejącej piaskownicy (np. po
+   `sandbox-shots-w12.ts`) przechodzi wszystkie strony, rozmowę, menu „+”, `@` i każdy dział Ustawień po polsku w obu
+   motywach; zgłasza brakujące tłumaczenia, angielskie słowa słownika widoczne na polskim ekranie, tekst ucięty bez
+   wielokropka i błędy konsoli.
+
+6. Małe okno (960×640) i dialogi: edytor przepływu i jego płótno wychodziły 149 px za stronę (siatki bez kolumn,
+   płótno z `min-width: 680px`); pasek plików Biblioteki i opis konta u Dostawców wystawały; panele boczne rozmowy
+   w oknie programu poniżej 1180 px nasuwają się jak szuflada zamiast ściskać rozmowę do ~240 px; pasek kart panelu
+   wystawał o 12 px i w panelu ustawień był zgnieciony do paska (karta „Ustawienia”, nazwa dostępna „Ustawienia
+   agenta”); wyszukiwarka Ctrl+K zamyka się jednym Esc i pokazuje „Ctrl”, nie „⌘”, na Windows.
+7. Sonda okna sprawdza też: wystawanie poza pojemnik, panele Pliki i Ustawienia agenta, Ctrl+K, Ctrl+/, Nowy kanał;
+   rozmiar przez `COSGRAL_PROBE_SIZE=960x640`; do tego menu wiadomości, menu agenta, potwierdzenie usunięcia
+   (otwierane i anulowane), strona Nowy agent i edycja kanału.
+8. Menu wiadomości było zbudowane na 2 pozycje (116 px, wiersze 32 px), a ma 6 z powodami: pozycje nachodziły na
+   siebie; teraz szerokość wg treści, powód w osobnej linii. Menu agenta: ikony przy Ukryj/Duplikuj, szerokość wg
+   treści. Anulowanie „Nowego kanału” z menu „+” wraca do poprzedniego widoku (było: goła lista kanałów); pusty widok
+   kanałów ma stan pusty.
+9. **Storybook na tym komputerze:** domyślna liczba przeglądarek naraz dawała losowe porażki funkcji `play` (co drugi
+   pełny przebieg, osobno zawsze zielone). `vitest.storybook.config.ts` ma domyślnie 2 (`COSGRAL_STORYBOOK_WORKERS`
+   zmienia): trzy pełne przebiegi z rzędu 376/376, szybciej. „Command Search” czeka dłużej (5 s). Do tego
+   `configure({ asyncUtilTimeout: 5_000 })` w `.storybook/preview.tsx` dla wszystkich funkcji `play`. Zostaje znane
+   „Failed to fetch dynamically imported module” (zimny cache Vite, raz na kilka przebiegów; ponowić).
+10. Katalog dodatków po polsku: 69 tekstów (tytuł, krótki i pełny opis 23 pozycji) w słowniku, pokazywane przez
+    `tData`; wyszukiwanie po polsku filtruje w oknie po obu językach bez ogonków (`matchesBothLanguages`). Treść
+    skilli dla agenta zostaje angielska. Nowa pozycja katalogu = dopisać jej trzy teksty do `en.ts` i `pl.ts`.
+    Działy stron w wąskim oknie zawijają się (wcześniej poziomy pasek z ukrytym suwakiem, nieosiągalny kółkiem).
+    Sonda przechodzi każdy dział każdej strony (115 ekranów na rozmiar).
+11. Lokalny profil: Ustawienia i ekran pierwszej konfiguracji nie pokazują już wygenerowanego adresu
+    „owner-…@cosgral.local” ani „Wyloguj” (jak pasek boczny; `localProfile` z `App`). Pierwsze uruchomienie: bez
+    pustego wiersza nad tytułem, stan karty CLI wcięty jak na stronach. Sonda: `COSGRAL_PROBE_LANG=en`, dialogi także
+    w jasnym motywie; ekrany pierwszego uruchomienia przejrzane w świeżej piaskownicy. Storybook: po 5 s czekaniu
+    zostają sporadyczne „Failed to run the test” / „Failed to fetch dynamically imported module” (Vite, nie test);
+    kolejne trzy przebiegi 376/376.
+
+**Zostaje:** łącznik GitHub i komunikatory czekają na Client ID / tokeny właściciela (decyzja: zostają, nieaktywne);
+bramka G2 na czystym koncie Windows (konto zakłada właściciel); wiersze „częściowo” parytetu.
+
+---
+
+# Przekazanie: 22–23.11.2026 (kontener Linux), gałąź `claude/festive-pasteur-5oh1yh`
+
+Gałąź = `claude/charming-euler-ag7ese` + commity tej sesji (wypchnięte). Do scalenia razem z tamtą.
+
+1. **Discord** jako trzeci komunikator (sterownik Gateway + REST, tylko DM, wznawianie sesji, atrapa, 18 testów, panel, historyjka
+   Storybooka „COSGRAL/Messengers”). Wiersz 64 parytetu: jest (bez prawdziwej aplikacji Discord). Fałszywe tokeny w testach są
+   składane z kawałków: GitHub blokuje push z całym tokenem w kształcie Discorda, także fałszywym.
+2. **Rutyny kanału:** edycja i dni tygodnia istniały od UI-AC; dopisane testy. Kolejka i wiersz 58 poprawione.
+3. **Prawdziwe okno programu w kontenerze** (nie Storybook): da się, patrz `docs/cosgral-raporty/claude-okno-linux-2026-11-23.md`
+   (uprząż poza repo, która wyłącza sandbox Chromium tylko tam). Zdanie niżej o „pustym oknie” jest już nieaktualne. Przejście
+   po wszystkich stronach znalazło i naprawiło 5 grup błędów (kreator → „Nowy agent”, polski wybór specjalności, „3 kroków”,
+   angielskie napisy z silnika, znacznik liczby członków kanału), a druga runda kolejne (przepływy, jasny motyw, kontrast; axe w oknie 26/26).
+4. **Skróty klawiszowe:** Alt+↑/↓ między agentami (tylko poza polem tekstowym, więc Option+strzałki na macOS działają jak zwykle)
+   i Ctrl/Cmd+/ z listą skrótów (`keyboard-shortcuts.ts`). **Webhook rutyn kanału:** podpisany POST na lokalny odbiornik (ten sam
+   co rutyny agentów), sekret szyfrowany i pokazany raz; `routeWebhook` kieruje dostawę najpierw do rutyn kanału. W kontenerze
+   włączenie webhooka jest słusznie odrzucane (brak szyfrowania systemowego); na Windows/Mac sprawdzić włączenie i jedną dostawę.
+5. Nie zrobione (Windows albo duże osobne prace): łącznik GitHub, `.exe` i wzorce testów wizualnych na Windows.
+6. **Głos usunięty (decyzja właściciela 23.11):** silnik (`voice-*`), IPC i preload, kontrakt `ipc-voice`, dział „Głos” w
+   Ustawieniach, mikrofon i „Czytaj na głos” w rozmowie, panel boczny „Głos”, zakładka głosu w ustawieniach agenta,
+   napisy PL/EN, historyjka i atrapa. Wspólne pobieranie z SHA-256 (używane przez zarządzane CLI) przeniesione do
+   `src/backend/download-verified.ts`; adres sprawdza zawsze lista hostów danej funkcji. Parytet: wiersze 4–5 poza
+   zakresem, 85,3% z 75. Klasa `voice-button` to przycisk Wyślij/Zatrzymaj, nie głos: zostaje.
+7. **Decyzje właściciela 23.11:** testy i `.exe` na Windows właściciela (ten komputer); bez kluczy API w programie
+   (agenci przez CLI i subskrypcje); repo zostaje publiczne; Discord/Telegram/Slack i GitHub zostają w kodzie,
+   nieaktywne bez tokenu/Client ID.
+
+Pełne sprawdzenie na końcu: `bun run lint`, `bun run typecheck` (6 projektów), `bun run test` (490 plików, 3489 testów), `bun run build`, `test:visual` (7), `test:storybook` (378).
+
+---
+
+# Przekazanie projektu (najnowsze): sesja 19.11.2026 wieczór, ekrany P1 i reszta
+
+**Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md`, punkt „Stan po sesji 19.11 wieczór”.**
+
+## W. Ta sesja (gałąź `claude/charming-euler-ag7ese`)
+
+| Co | Gdzie |
+|---|---|
+| Gałąź | `claude/charming-euler-ag7ese` = `claude/friendly-noether-jpw1if` (@ `5f0d878`) + commity tej sesji |
+| Do scalenia | razem z `claude/friendly-noether-jpw1if` do `team/lider/poprawki-po-exe` (PR #24), potem do `codex/cosgral-desktop` |
+
+**Zrobione (każdy ekran obejrzany w Storybooku przed i po, po polsku i po angielsku, z testami):**
+
+1. **Ustawienia** (ikona na dole paska stron, menu konta): własne okno `SettingsDialog.tsx` zamiast kreatora w trybie
+   przeglądu. Spis sekcji z ikonami (Ogólne, Powiadomienia, Działanie aplikacji, Dostawcy, Uprawnienia na macOS, Wygląd,
+   Rozmowy, Budżet, Głos, Aktualizacje, Dane i prywatność), który przewija i podąża za przewijaniem; wszystkie sekcje
+   zostają na stronie (testy i skrypty ich szukają). Jedna stopka: „Zapisz zmiany” zapisuje dostawcę, język i
+   powiadomienia. Powiadomienia jako przełączniki. Pierwsze uruchomienie zostaje kreatorem.
+2. **Okno kanału** (`ChannelEditor.tsx`): podgląd stosu stworków, członkowie jako lista ze stworkami, prowadzący
+   oznaczony na liście, podpowiedzi pod polami. Nazwy pól dla testów i e2e bez zmian.
+3. **Nowy agent** (`NewAgentPage.tsx`, `new-agent.css` na `--openbot-*`): nagłówek `WorkPage`, pracownia stworka
+   (scena, podgląd min, kształt, kolor; próbki kolorów były niewidoczne), powód przy wyłączonym przycisku.
+4. **Dostawcy › Konta** (`ProviderAccounts.tsx`): wiersze z kolejnością w puli, stanem i akcjami jako ikony.
+   **Nie zrobione:** CLI agentów, Klucze API, Punkty końcowe (dalej stosy pól).
+5. **Katalog dodatków** (`MarketplacePage.tsx`, `PluginAppsPanel.tsx`): nagłówek `WorkPage`, ikony kategorii, opisy
+   w dwóch liniach (po polsku nie są ucinane).
+6. **Ustawienia serwera** (`ServerSettingsPage.tsx`): nagłówek `WorkPage`, 14 sekcji z ikonami i opisem, pola jako wiersze.
+7. **Bezpieczeństwo (P0 3.1):** `electron` 43.4.0 → 43.8.12, `@modelcontextprotocol/sdk` 1.30.0 → 1.32.2,
+   `zod` 4.4.3 → 4.6.7. `bun audit` nie pokazuje już tych paczek. `undici` zostaje tylko w narzędziach (jsdom,
+   pobieranie Electrona, miniflare), nie w programie. **`.exe` trzeba przebudować na Windows.**
+8. **e2e (P0 3.2.4):** `sandbox-e2e.ts` i `sandbox-acceptance.ts` otwierają „Nowy kanał” z menu „+”; wiersz 39
+   akceptacji używa przełączników i stopki okna Ustawień.
+9. **Testy (P2 5.8):** `acp-presets.test.ts` działa na każdym systemie (pliki szukane jak na Windows przez podany
+   `isFile`, pełna ścieżka z korzenia bieżącego systemu); niestabilny test kompaktowania wątku poprawiony (przy 95 %
+   program sam kompaktował wątek po turze i wyścig decydował o 1 albo 2 kompaktowaniach; test działa teraz poniżej
+   progu; 6/6 przebiegów zielonych).
+10. **Po polsku (P3 6.1, część):** lista osób, pasek, wątki („New thread”), akcje wiadomości, kolejka, pamięć, karty
+    kont i limitów, załączniki, komunikaty głosu, Sejf, Zdalny pulpit. Zostały drobne z wiersza „pozostałe” tabeli 6.1.
+11. **Biome:** stare ostrzeżenie w `cosgral.css` usunięte, `bun run lint` bez ostrzeżeń.
+
+12. **Azure Glass (styl z inspiracji właściciela, 19.11 wieczór):** nowa paleta (granatowa czerń, Dark Azure,
+    elektryczny błękit, chłodna czerwień), szkło podświetlone od dołu, przejścia kolorów, ziarno, świecące pigułki,
+    mocniejsze stworki. Tokeny w `cosgral-tokens.css` i `styles.css`, reguły w `styles/azure-glass.css`, opis w
+    dzienniku `PROMPT-UI-JAKOSC.md` (wiersz 19.11 (6)). Storybook 370/370 (axe), testy renderera 1119/1119.
+    Druga runda (prawie 1:1 z inspiracjami): kafle podświetlone od dołu, ikony z siatką gradientów, pigułki stanów,
+    błyszczące pigułki akcji, połysk stworków także u osób (wiersz 19.11 (7) w dzienniku).
+    Trzecia runda: szklane tło okna z plamami światła, pasek stron jako dok z kolorowymi kafelkami, większe ikony,
+    szklane pola, pigułki, menu i podpowiedzi (wiersz 19.11 (8)). `backdrop-filter` na dużych panelach: sprawdzić
+    płynność przewijania na słabszym komputerze z Windows.
+    **Do obejrzenia na Windows:** testy wizualne zmienią się na każdym ekranie (inna paleta) — wzorce aktualizować
+    dopiero po obejrzeniu różnic.
+
+13. **Kontynuacja według schematu (P1 → P2 → P3):** wnętrza Dostawców (CLI, Klucze API, Endpointy), pasek kanału w wąskim
+    oknie, nagłówek wiadomości bezpośredniej, jasne historyjki, leniwe ładowanie czterech stron, błąd kontekstu `Field`,
+    ostatnie angielskie napisy (wiersz 19.11 (9) w dzienniku).
+14. **Kolejne strony w Azure Glass (wiersz 19.11 (10)):** Zadania na ramie `WorkPage` ze szklaną tablicą; Przepływy
+    (kroki jako szklane kafelki, kolory kroków z tokenów); Biblioteka, karty agenta i panel ustawień agenta (kafelki
+    z siatką gradientu, strzałki na prawej krawędzi, sekcje zaawansowane jako karty); `PanelHeading` (kafelek z ikoną
+    + tytuł) na Telefonie, Zdalnym pulpicie i w sekcjach panelu agenta; ekrany logowania i konfiguracji na szkle;
+    **Modele zapasowe:** błąd pionowego tekstu („acp:removed” łamany po literze) naprawiony, wiersze z akcjami zawijają
+    się, listy jako wstawki szkła; formularze dodawania (Dostawcy, ACP, rutyna) jako wstawka szkła zamiast ramki
+    kreskowanej; podświetlenie sekcji w `WorkPageAnchors` ignoruje pustą sekcję. **Stworki:** mina członka w nagłówku
+    kanału wg jego zadań (`channelMemberMood`), mina wiadomości wg rodzaju (`channelMessageMood`), mrugnięcie przy
+    najechaniu (`shell.css`, tylko bez „reduce motion”). Jasny motyw min sprawdzony: kropla i rumieniec czytelne.
+15. **Ikony, sekcje, znaczniki wg inspiracji 20.11 (wiersz 20.11 (1)):** podświetlane szklane żetony zamiast neonowych
+    siatek, karty jako granatowe szkło ze świecącą dolną krawędzią, jedna rodzina pigułek stanu. Propozycja palety:
+    `docs/cosgral/PLAN-KOLORY.md` i strona-podgląd (artefakt „Paleta Azure Glass”).
+16. **Typografia i napisy (wiersz 20.11 (2)):** skala, trzy grubości, etykiety bez wersalików, daty w języku
+    aplikacji (`appLocale()`), polska odmiana liczebników (`tn()`), dotłumaczone podsumowania kart i powody akcji.
+17. **Przegląd całości (wiersz 20.11 (3)):** skany (historyjki, układ w wąskich oknach, napisy na sztywno), poprawki
+    nawigacji ustawień, notatek stron, pigułek i przycisków drugorzędnych; 17 literałów przeniesionych do `t()`.
+    Skrypty audytu: patrz `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (sekcja „Audyt”).
+18. **Krój i grubość pisma (wiersze 20.11 (11)–(13)):** Jost Variable, domyślne wagi 420 / 490 / 590; w Ustawieniach →
+    Wygląd jest „Grubość pisma” (lżejsza / zwykła / mocniejsza, `appearance.fontWeight`). `body` bierze
+    `--openbot-weight-regular`, więc ustawienie działa na cały tekst. **Nie sprawdzone w prawdziwym oknie** (Electron
+    jako root w kontenerze daje puste okno): to ocena właściciela na Windowsie lub Macu.
+19. **Tłumaczenia (po sesji 20.11):** `untranslated-jsx.test.ts` pilnuje, żeby w komponentach nie było gołych napisów
+    (wyjątki: marka, nazwy języków, protokoły, jednostki); `contract-messages.test.ts` i `workflow-problems.test.ts`
+    pilnują polskich tekstów z kontraktów (powody akcji, problemy przepływów). Backendowych komunikatów, które
+    przechodzą przez `tData()`, jest więcej niż przetłumaczonych; brak tłumaczenia nic nie psuje (zostaje angielski).
+20. **Rozbicie dużych plików:** plan i stan w `docs/cosgral/PLAN-ROZBICIE-PLIKOW.md` (`Conversation.tsx` 3133 → 2669,
+    `Sidebar.tsx` 1468 → 1256, `App.tsx` 2657 → 2382 linii; każdy krok z testami, Storybook a11y 373, `test:visual` 7).
+21. **Do zrobienia poza kontenerem Linux:** `bun run test:visual -u` na Windowsie i Macu (wzorce tylko dla Linuksa),
+    ocena grubości pisma na prawdziwym oknie, nowy `.exe`. W kontenerze testy Storybooka i wizualne wymagają
+    lokalnej kopii konfiguracji z `executablePath: "/opt/pw-browsers/chromium"` (nie commitować).
+
+**Wynik pełnego sprawdzenia:** patrz `INSTRUKCJA-DLA-AGENTA.md` § 7 (wiersz „Wyniki końcowe, sesja wieczór”).
+
+---
+
+# Przekazanie (poprzednie): sesja 19.11.2026, kontynuacja PR #24
+
+**Dla następnego agenta. Zacznij od `docs/cosgral/INSTRUKCJA-DLA-AGENTA.md` (UI i reszta: P0–P3, pliki, jak sprawdzać).**
+Ta sesja kontynuuje gałąź `team/lider/poprawki-po-exe` (PR #24). Najpierw ten rozdział, potem
+rozdział niżej („sesja 19.11.2026 po południu”), `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.
+
+## A. Gdzie jest praca
+
+| Co | Gdzie |
+|---|---|
+| Gałąź tej sesji | `claude/friendly-noether-jpw1if` = `team/lider/poprawki-po-exe` (@ `159250b`) + commity tej sesji |
+| Do scalenia | najpierw do `team/lider/poprawki-po-exe` (PR #24), potem razem do `codex/cosgral-desktop` |
+| Środowisko | kontener Linux (nie komputer właściciela): Bun 1.4, Node 22, Chromium Playwrighta; Storybook jako okno do oglądania |
+
+## B. Co zrobiono (każda zmiana obejrzana w Storybooku, z testami)
+
+1. **Mimika stworków** (`blobatar.ts`, `AgentAvatar` prop `mood`, `row-activity.ts` `avatarMoodFor`): twarz mówi stan agenta.
+   Pracuje = oczy na dwóch wysokościach (`thinking`), potrzebuje Cię = szerokie oczy + uniesione brwi (`surprised`),
+   nowa wiadomość / odpowiedział = „^ ^” + rumieńce (`happy`), błąd = smutne oczy + kropla potu (`sad`), limit = przymknięte
+   oczy + „zz” (`sleepy`). Pozy pochodzą z `blobatar/expression` i są **zapieczone w geometrii**, więc działają bez ruchu
+   („ogranicz animacje” u właściciela). Ruch tylko dodaje (`shell.css`: rozglądanie się, podskok, migające „zz”).
+   Kształty i kolory stworków bez zmian (test geometrii nadal pilnuje pozy spoczynkowej). Galeria: `Identity/AgentAvatar › Moods`.
+2. **Wiersze agentów:** godzina nie jest już ucinana („Yesterd…”, „10:00 …”); „Pracuje w: …” trafiło do linii podglądu
+   (wcześniej siedziało w kółku stworka); stworek w wierszu ma minę stanu.
+3. **Nagłówek rozmowy:** stworek 24px, nazwa pogrubiona, stworek „myśli”, gdy agent pracuje. Przy jednym wątku pasek kart
+   znika, a „Nowy wątek” jest ikoną w nagłówku (`NewThreadButton` w `ThreadTabs.tsx`, `onSingleThreadChange`).
+4. **Wiadomości:** odpowiedź agenta bez dymka (czysty tekst, wiersz 22px, max 720px); dymek tylko dla człowieka.
+5. **Po polsku:** stany w wierszu („Limit · wznowi o …”, „Błąd · …”, „Myśli”, liczba odpowiedzi, dni tygodnia po polsku),
+   „Steruje komputerem / Zatrzymaj”, „Oznacz jako przeczytane”, etykiety dostępności wiersza (`Ukryty`, model zapasowy).
+
+6. **Szkielet stron** (`WorkPage.tsx`, `styles/work-page.css`): jeden nagłówek na każdej stronie z paska (ikona strony,
+   tytuł, zdanie, akcje), `WorkPageSections` (sekcje z ikonami, zapamiętane) i `WorkPageAnchors` (spis sekcji, który
+   przewija; używany tam, gdzie testy i skrypty akceptacyjne oczekują wszystkich sekcji naraz, np. Dostawcy).
+7. **Biblioteka** (`LibraryPage.tsx`): 8 sekcji zamiast 8 kart w stosie; Pliki z jednym paskiem narzędzi, kafelkami typu
+   pliku i akcjami na najechanie; wiersze umiejętności, sejfu i MCP z ikonami.
+8. **Przepływy** (`WorkflowsPage.tsx`, `workflow-editor.css`): układ edytora (lista po lewej, pasek z nazwą i akcjami,
+   paleta i karty z ikonami typu kroku, pusty stan płótna, połączenia w jednym wierszu, historia uruchomień z łańcuchem
+   kroków). Logika bez zmian.
+9. **Harmonogram** (`SchedulePage.tsx`, `ScheduleOverview.tsx`, `RoutinePanel.tsx`): Plan jako oś czasu ze stworkami
+   agentów, Rutyny jako wiersze ze stworkami; „Pause/Resume/Run now/History” przetłumaczone.
+10. **Dostawcy, Zużycie, Telefon, Zdalny pulpit:** ten sam nagłówek; Dostawcy ze spisem sekcji.
+11. Atrapa Storybooka (`mock-openbot.ts`) przypina 5 domyślnych stron jak nowa instalacja (wcześniej pusta lista).
+
+12. **Kolory (runda 4):** CSS tej gałęzi używa tylko palety `--openbot-*` ze `styles.css` (nowa zasada AGENTS.md);
+    dodany token `--openbot-bg-inset` (studnie edytorów, np. płótno przepływu).
+13. **Zużycie** (`UsageReportView.tsx`): karty liczb z ikonami, wykres w karcie, „Ten komputer” obok, agenci ze stworkami.
+14. **Kanały na liście agentów** (`Sidebar.tsx` `channels`/`onOpenChannel`, `App.tsx` ładuje listę i słucha
+    `channels-changed`): wiersz ze stosem stworków członków. Test: `Sidebar.channels.test.tsx`.
+15. **Widok kanału** (`ChannelView.tsx`, `ChannelWorkspace.tsx`, `styles/channel-view.css`): wygląda jak rozmowa z agentem
+    (nagłówek, pigułki ustawień z kartą, wiadomości ze stworkami, pole wiadomości, Enter wysyła). Nazwy dostępne dla testów
+    i skryptów e2e bez zmian („Edit channel”, „Send”, „New message to channel lead”, „Reply to …”).
+16. **Kroki agenta** (`conversation/AgentActivity.tsx`): oś czasu z ikoną rodzaju kroku. Test: `AgentActivity.steps.test.tsx`.
+17. Usunięte 2 zrzuty, które jeden z commitów przez pomyłkę dodał do katalogu głównego (`shots/`).
+
+## C. Stan sprawdzenia
+
+| Sprawdzenie | Wynik (kontener Linux) |
+|---|---|
+| `bun run lint` | zielone (1 ostrzeżenie w `cosgral.css:2812`, było już przed tą sesją) |
+| `bun run typecheck` (6 projektów) | zielone |
+| **Końcowy pełny przebieg** (`dfee751`, po audycie) | `bun run lint` zielone (1 stare ostrzeżenie `cosgral.css:2812`); `bun run typecheck` 6/6 zielone; `bun run build` zielone (renderer JS 3,1 MB, CSS 488 KB); `bun run test` **3391 zielonych**, 18 pominiętych, 3 znane czerwone (2 windowsowe `acp-presets`, niestabilny `agent-service-context-threads`), 475 plików, 476 s; `bun run test:storybook` **370/370** (71 plików). |
+| Ostrzeżenia reaktywności (pomiar osobny) | **3319 `STRICT_READ_UNTRACKED` w 172 z 370 historyjek** (każda historyjka otwarta w Chromium, konsola zliczona): effect callback 1763, Kobalte `ButtonRoot` 465, `Menu` 265, `PopperRoot` 265, `FormControlLabel` 154, `TabsRoot` 16; nasze: `Field` 242, `Scene` 80, `For` 31, `ChannelEditor` 25, `ComboboxBase` 5, `CardIcon` 4, `Input` 2, `NewAgentPage` 1, `WorkflowsPage` 1. Najwięcej: `conversation--unread-messages` i `--scroll-to-latest` (po 175). Uwaga: `test:storybook` pokazuje konsolę tylko dla plików z porażkami, więc przy 370/370 nic nie wypisuje (wcześniejsze „1384” pochodziło z 5 padających plików). Błędy konsoli: 2× „Failed to resolve module specifier '[object Object]'” w funkcji `play` jednej z historyjek, 1× `ERR_UNKNOWN_URL_SCHEME` (celowo zepsuty adres w `custom-image-fallback`). |
+| Nie uruchomione | `bun run test:visual`, `bun run sandbox:e2e`, `bun run dist:win` (wymagają Windows; patrz instrukcja P0). |
+| `bun run test` (runda 4) | 3391 zielonych, 18 pominiętych, te same 3 znane czerwone (2 windowsowe `acp-presets`, niestabilny `agent-service-context-threads`). |
+| `bun run test:storybook` (runda 4) | 370/370 po poprawce: test dostępności wyłapał za słaby kontrast „#nazwa” w wierszu kanału (`text-dim`, 3,2:1), teraz kolor linii podglądu. |
+| `bun run test` (po stronach, runda 2) | 3386 zielonych, 18 pominiętych, 3 czerwone: te same 2 windowsowe w `acp-presets.test.ts` oraz niestabilny `agent-service-context-threads.test.ts` („compacts a thread that is not on screen…”) — na czystym PR #24 też pada mniej więcej 2 razy na 3, backendu nie ruszałem. |
+| `bun run test:storybook` (runda 2) | 370/370 (+3 nowe historyjki `COSGRAL/Work pages`: Biblioteka, Przepływy, Harmonogram, z testem dostępności; wyłapały zdublowaną nazwę nawigacji „Library sections”, poprawione na „Źródła plików”). |
+| `bun run test` (runda 1) | 3387 zielonych, 18 pominiętych, **2 czerwone** w `src/backend/acp-presets.test.ts` (testy zakładają Windows: wielkość liter i rozszerzenia `.cmd/.exe` w PATH). Na czystym PR #24 w tym kontenerze padają te same 2, więc to nie skutek zmian UI; na Windows powinny przejść. |
+| `bun run test:storybook` | 367/367 zielonych. Dwie historyjki z PR #24 miały stare asercje (`Sidebar › Agent Tiles`: wiersz 68px/stworek 44px → 60/42 po spłaszczeniu wierszy; `Sidebar › Channels`: pierścień fokusu to teraz `outline`, nie `box-shadow`); poprawione pod nowy wygląd. W kontenerze uruchamiane z lokalną kopią configu wskazującą na zainstalowany Chromium (nie w repo). |
+| `bun run test:visual` | nie uruchomione: wzorce są `*-chromium-win32.png`, na Linuksie nie da się ich porównać. Do zrobienia na Windows. |
+| e2e / W5 w Electronie, `.exe` | nie uruchomione (brak Windows w kontenerze). |
+
+## D. Co dalej
+
+1. Obejrzeć zmiany w prawdziwym oknie na Windows (`bun run build`, piaskownica, zrzut CDP) i przebudować `.exe`.
+2. `bun run test:visual` na Windows: wzorce są `*-chromium-win32.png`, na Linuksie nie da się ich porównać.
+3. Dalsze sekcje: `docs/cosgral/PROMPT-UI-JAKOSC.md` → „Następne sekcje”.
+
+---
+
+# Przekazanie projektu (aktualne): sesja 19.11.2026 po południu
+
+**Dla następnego agenta. Najpierw ten rozdział, potem `PRODUCT.md` i `docs/cosgral/PROMPT-UI-JAKOSC.md`.**
+Starsze przekazanie (zespół OpenBota, rano 19.11) jest niżej, pod kreską. Jego fakty o rutynach i decyzjach właściciela nadal obowiązują.
+
+## 0. Na czym zależy właścicielowi (najważniejsze)
+
+1. **Duże, widoczne skoki jakości UI w każdej sekcji.** Układ jak w OpenBocie (pasek stron, lista agentów, rozmowa), ale wykonanie
+   co najmniej na poziomie OpenBota, najlepiej lepsze: ikony z jednej rodziny, porządne sekcje, stany puste, brak uciętych napisów.
+   Kosmetyka się nie liczy: zrzut przed i po ma pokazywać wyraźną różnicę. Kolory są mniej ważne niż struktura i wykończenie.
+2. **Stworki (awatary agentów) to serce produktu:** dopracowane, z mimiką i ruchem, zawsze też w wersji bez animacji.
+   Właściciel pozwala użyć ChatGPT albo Gemini w przeglądarce do generowania grafik, jeśli kod nie wystarczy.
+3. **Program po polsku**, bez angielskich resztek.
+4. Logo „C”, ciemny motyw domyślny i stworki zostają (zobowiązania marki, `PRODUCT.md`).
+5. Właściciel uruchamia Gemini CLI do oceny UI i podobieństwa do OpenBota. Jego uwagi traktuj jak recenzję.
+6. Użytkownicy: właściciel i jego kolega. Obaj znają OpenBota.
+7. **Strona Zadań nie jest teraz potrzebna** (właściciel, 19.11). Przerabiałem ją, ale cofnąłem; nie wracaj do niej bez prośby.
+
+## 1. Gdzie jest praca
+
+| Co | Gdzie |
+|---|---|
+| Gałąź z tą pracą | `team/lider/poprawki-po-exe` na GitHubie (odbita od `codex/cosgral-desktop` @ `cdc9c29`) |
+| Scalenie do integracji | **Nie zrobione.** `codex/cosgral-desktop` nie ma tych zmian. Scal po zielonym checku i przeglądzie. |
+| Lokalny klon u właściciela | `Projekty\cosgral-workspace` w profilu właściciela. Folderu `Shared\...` z porannego przekazania na tym komputerze nie ma. |
+| Instalator | `dist\COSGRAL Workspace-0.2.0-x64.exe` zbudowany z `cdc9c29`, **przed** poprawkami z tej gałęzi. Do przebudowania: `bun run dist:win` (~10 min). |
+| Zasady jakości UI i dziennik sekcji | `docs/cosgral/PROMPT-UI-JAKOSC.md` |
+| Prawda o produkcie | `PRODUCT.md` (wywiad z właścicielem, 19.11) |
+
+## 2. Co zrobiono w tej sesji (wszystko sprawdzone w oknie programu albo w Storybooku)
+
+**Błędy znalezione w zbudowanym `.exe` i naprawione (z testami):**
+
+1. **Niewidoczne wiadomości przy „ogranicz animacje”** (komputer właściciela ma to włączone): `.message-entry-animated` miało stałe
+   `opacity: 0`, a przy reduced motion animacja była wyłączona. Teraz `animation-fill-mode: both` (`conversation.css`).
+2. Konfiguracja startowa wysyłała język „English”, choć okno było po polsku → program przechodził na angielski (`InitialSetup.tsx`).
+3. Pierwszy fokus konfiguracji był na „Wyloguj” (Enter wylogowywał). Teraz na pierwszym wyborze (`InitialSetup.tsx`).
+4. Karta CLI pokazywała „Brak” przy dostawcy „Dostępny”, gdy CLI szło ze zmiennej `OPENBOT_CODEX_PATH` (`backend/cli.ts`, `findSystemCli`).
+5. Przyciski `md` miały 16px zamiast 13px (`primitives.css`: rozmiar czcionki dla `data-size="md"`).
+6. Przyciski renderowane przez Kobalte (`as={Button}`) wrzucały do DOM atrybuty `as`/`component` z całym kodem funkcji (~16 KB).
+   Poprawka w `ui/button.tsx`. **Uwaga:** takie przyciski celowo nie dostają klasy `ui-button` (ich wygląd należy do własnej klasy);
+   pierwsza wersja poprawki to zmieniła i wiersze agentów zrobiły się kartami, więc to cofnąłem.
+7. Brakujące tłumaczenia: rola „New teammate”, „New thread”, poziom wysiłku w nagłówku, podpowiedzi pola wiadomości, „No agents yet”.
+8. Szary poziomy pasek przewijania pod ikonami paska stron (`cosgral.css`, `.page-rail-list { overflow-x: hidden }`).
+9. Kontrast zielonego w jasnym motywie (4,34 → 4,84 na tle wiersza; `theme-light.css`).
+10. Pływająca kolumna „Otwórz…” ucinała polskie etykiety (później i tak przeniesiona do nagłówka, punkt UI-4).
+
+**Zmiany UI (układ OpenBota, wyższa jakość):**
+
+1. **Pasek stron:** domyślnie 5 stron jak w OpenBocie (Agenci, Przepływy, Zadania, Zużycie, Biblioteka) + „Więcej”; bez niebieskiej
+   kropki „przypięta” na każdej ikonie (`agent-settings.ts`, `shell.css`). Istniejące instalacje zachowują swoje przypięcia.
+2. **Lista agentów:** „Pokaż ukryte” przeniesione do menu filtra (ikona obok szukania), „Przeglądaj/Nowy kanał” do menu „+”,
+   pusta lista z jednym zdaniem i przyciskiem „Nowy agent” (`Sidebar.tsx`, `cosgral.css`).
+3. **Wiersze agentów płaskie jak w OpenBocie:** bez karty pod każdym wierszem, bez kolorowego paska z lewej, stworek 42px, rola
+   nie ucina już nazwy (agent bez wiadomości pokazuje rolę w linii podglądu) (`shell.css`, `Sidebar.tsx`).
+4. **Nagłówek rozmowy:** Pliki, Ustawienia agenta i Głos jako ikony w nagłówku (jak w OpenBocie) zamiast pływającej kolumny dużych
+   przycisków nad rozmową (`ChatSidePanelLauncher.tsx` wariant `header`, `Conversation.tsx`).
+5. **Pole wiadomości:** „Wybierz z biblioteki” przeniesione do menu „+”; każda pozycja menu „+” ma ikonę.
+6. **Stworki z objętością:** gradient światła, odblask przycięty do kształtu, błysk w oczach (mruga z okiem), miękki cień
+   (`blobatar.ts`, `app-shell.css`). Kształty zostały z biblioteki `blobatar` (test geometrii pilnuje).
+
+**Testy:** do zmian są testy (TDD). Wzorzec zrzutu `ui-foundation` zaktualizowany po obejrzeniu różnicy (tylko rozmiar przycisków).
+Skrypt e2e `scripts/sandbox-e2e.ts` dostosowany do menu filtra, **ale e2e w Electronie nie był uruchomiony**.
+
+## 3. Co zostało do zrobienia (kolejność)
+
+1. **Przebudować instalator** z tej gałęzi i uruchomić go w piaskownicy (sekcja 4). Pokazać właścicielowi.
+2. **Uruchomić e2e i W5 w Electronie** (`bun run sandbox:e2e`, wymaga Node 24 i zbudowanego programu) na tej gałęzi.
+3. **Stworki dalej:** mimika stanów (pracuje, ma wiadomość, potrzebuje Cię, błąd), mrugnięcie i spojrzenie przy najechaniu,
+   wersja bez ruchu. Rozważyć grafiki z generatora (zgoda właściciela). Plik: `src/renderer/src/blobatar.ts`.
+4. **Licznik nieprzeczytanych na awatarze** w wierszu agenta (OpenBot ma kółko z liczbą na rogu stworka) i kanały na liście
+   jako wiersze ze stosem awatarów członków.
+5. **Pasek kart wątków nad rozmową** (`ThreadTabs`): przy jednym wątku zbędny; uprościć jak w OpenBocie.
+6. **Przegląd pozostałych stron** z porównaniem do OpenBota: Przepływy, Zużycie, Biblioteka, Katalog dodatków, Dostawcy,
+   Ustawienia, okna dialogowe. Każda: zrzut przed/po, wpis w dzienniku w `PROMPT-UI-JAKOSC.md`.
+7. **Resztki angielskiego** w oknie: np. „Controlling computer”/„Stop” w `Sidebar.tsx`, „Show in Finder” (na Windows to Eksplorator),
+   placeholdery przycisków. Skan: `i18n.test` + przejście okna po polsku.
+8. **Scalić gałąź** do `codex/cosgral-desktop` po pełnym checku (bez `--force`, nie na gałąź domyślną).
+9. Decyzje właściciela z porannego przekazania (sekcja 9 niżej) nadal otwarte.
+
+## 3a. Stan sprawdzenia w chwili wypchnięcia (bądź ostrożny)
+
+| Sprawdzenie | Wynik |
+|---|---|
+| `bun run lint` | zielone |
+| `bun run typecheck` (6 projektów) | zielone |
+| Testy jednostkowe całości | **ostatni pełny przebieg 3393/3393 zielony przed zmianami UI** (lista agentów, wiersze, nagłówek, stworki, menu „+”). Po nich puszczone tylko testy dotkniętych obszarów (App, Sidebar, Conversation, ChatSidePanelLauncher, blobatar, ui, agent-settings, i18n: zielone). **Pełnego przebiegu po ostatnich zmianach nie było** (właściciel kazał wypchnąć bez niego). |
+| Storybook | historyjki Sidebar, App i Themes zielone po zmianach listy; pełny przebieg 366 przerwany. |
+| Testy wizualne | 7/7 zielone po zmianie przycisków; po zmianach wierszy/nagłówka nie powtórzone. |
+| e2e / W5 w Electronie | nie uruchomione na tej gałęzi. |
+
+**Pierwsza rzecz dla następnego agenta:** `bun run test`, `bun run test:storybook`, `bun run test:visual`. Jeśli coś padnie, to
+najpewniej asercje o starym wyglądzie (karty wierszy, plakietka roli, pływająca kolumna „Otwórz…”, przełącznik „Show hidden”).
+Popraw test pod nowe zachowanie opisane w sekcji 2, nie cofaj wyglądu.
+
+## 3b. Rozszerzenie działań: pomysły na kolejne duże skoki UI (do oceny z właścicielem)
+
+1. **Stworki jako „żywy zespół”:** stan agenta widoczny na samym stworku (oczy zamknięte = śpi, oczy w ruchu = pracuje, uniesione
+   brwi = potrzebuje Cię, plaster = błąd), w liście, nagłówku i kanałach. To mocniejszy znak niż kropki i plakietki.
+2. **Edytor stworka:** wybór kształtu i koloru z podglądem mimiki; dziś jest tylko losowanie z 12 propozycji.
+3. **Lista agentów:** sekcje „Nieprzeczytane” / „Przypięte” / reszta jak w OpenBocie, licznik na stworku, przeciąganie kolejności.
+4. **Rozmowa:** odpowiedź agenta bez dymka (czysty tekst z markdownem, jak w OpenBocie), dymek tylko dla wiadomości człowieka;
+   kroki agenta („3 kroków”) jako zwijana oś czasu z ikonami narzędzi.
+5. **Pole wiadomości:** jedno pole z „+” po lewej, mikrofon i wyślij po prawej, wybór agenta w polu przy kanałach.
+6. **Strony robocze** (Przepływy, Zużycie, Biblioteka): wspólny szkielet strony (tytuł w nagłówku okna, wyśrodkowana kolumna,
+   jeden pasek narzędzi, płaskie listy, porządne stany puste), zamiast osobnego wyglądu każdej strony.
+7. **Ikony:** jedna rodzina (lucide 1.5px) w całym programie; własne SVG w `PageRail.tsx` i `Sidebar.tsx` wyrównać do niej.
+8. **Gemini CLI jako recenzent:** po każdej sekcji zrzut przed/po do właściciela, uwagi z Gemini wpisać do dziennika w
+   `PROMPT-UI-JAKOSC.md` i zamknąć.
+
+## 4. Jak pracować na komputerze właściciela (sprawdzone)
+
+1. Narzędzia: Bun 1.3.11 zainstalowany globalnie przez `npm i -g bun@1.3.11`; Node 24; Git. `bun install` w repo.
+2. Przeglądarki Playwrighta są w domyślnym folderze (`%LOCALAPPDATA%\ms-playwright`), więc `PLAYWRIGHT_BROWSERS_PATH` nie jest
+   potrzebne. Jeśli testy wizualne/Storybook zgłoszą brak przeglądarki: `bun x playwright install chromium`.
+3. **Uruchamianie programu do oglądania:** zawsze w piaskownicy (osobne `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`,
+   `OPENBOT_CODEX_PATH` na atrapę z `src/backend/testing/channel-codex.cjs`), jak w `start-cosgral-sandbox.cmd`, plus
+   `--remote-debugging-port=<port>`. Zrzuty i klikanie przez CDP (`Page.captureScreenshot`, `Runtime.evaluate`).
+   Pułapka: gdy okno jest zminimalizowane, `document.visibilityState` = `hidden` i zrzut CDP wisi.
+4. **Iteracja UI najszybciej w Storybooku** (`bun run storybook`, http://localhost:6006/iframe.html?id=app--playground):
+   pełna aplikacja na danych testowych, okno się nie minimalizuje. Strony otwierasz przez „Więcej” na pasku.
+5. **Porównanie z OpenBotem:** OpenBot jest zainstalowany u właściciela. Tylko patrz (zrzuty, przełączanie stron);
+   nie pisz w jego rozmowach, nie zmieniaj danych. Kodu i obrazków z OpenBota 0.71 nie kopiujemy do repo (licencja, repo publiczne).
+6. Ten komputer ma włączone **„ogranicz animacje”**: każdy nowy stan musi działać bez ruchu.
+7. Testy menu Kobalte w jsdom: `fireEvent.pointerDown(trigger, { button: 0, pointerType: "mouse" })`, potem `pointerUp` na pozycji
+   (pomocniki `createNew` i `toggleShowHidden` w `src/renderer/src/sidebar-test-utils.ts`).
+8. PowerShell 5.1 `Set-Content -Encoding utf8` dodaje BOM: edytuj pliki narzędziami do edycji albo Pythonem.
+9. Pełny check: `bun run lint`, `bun run typecheck`, `bun run test` (~17 min, 473 pliki), `bun run test:storybook`, `bun run test:visual`.
+
+---
+
 # Przekazanie projektu: co jest, czego nie ma, co dalej (19.11.2026)
 
 **Dla agenta, który zaczyna od zera. Przeczytaj ten plik, potem rób punkty z sekcji „Zacznij tutaj”.**

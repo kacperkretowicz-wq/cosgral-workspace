@@ -1,9 +1,12 @@
 import type { MobileExposure, MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
-import { Badge, Button, Card, Field, Heading, NativeSelect, Text } from "./ui";
+import { PageIcon } from "./PageRail";
+import { PanelHeading } from "./PanelHeading";
+import { Badge, Button, Card, Field, NativeSelect, Text } from "./ui";
+import { QrCode, ShieldCheck, Smartphone, Wifi } from "./ui/icons";
 
 /** "4:59" from milliseconds; never negative. */
 export function formatMobileCountdown(ms: number): string {
@@ -14,7 +17,7 @@ export function formatMobileCountdown(ms: number): string {
 function formatWhen(value: string | null): string {
   if (!value) return t("never");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(appLocale());
 }
 
 export interface MobileConnectViewProps {
@@ -45,15 +48,18 @@ export function MobileConnectView(props: MobileConnectViewProps) {
   const remaining = () => (props.ticket ? new Date(props.ticket.expiresAt).getTime() - props.now : 0);
   return (
     <>
-      <header>
-        <Heading as="h1" size="lg">
-          {t("Phone")}
-        </Heading>
-        <Text as="p" tone="secondary">
-          {t(
-            "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.",
-          )}
-        </Text>
+      <header class="work-page-header">
+        <span class="work-page-icon" aria-hidden="true">
+          <PageIcon page="phone" />
+        </span>
+        <div class="work-page-heading">
+          <h1>{t("Phone")}</h1>
+          <p>
+            {t(
+              "Pair a phone to read and answer your agents from it. Everything a phone may not do stays on this computer.",
+            )}
+          </p>
+        </div>
       </header>
 
       <aside
@@ -87,9 +93,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       </Show>
 
       <Card class="mobile-section">
-        <Heading as="h2" size="md">
+        <PanelHeading icon={Wifi} tint="blue">
           {t("Connection")}
-        </Heading>
+        </PanelHeading>
         <Field
           label={t("Who can reach this computer")}
           description={
@@ -129,9 +135,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       <Show when={props.ticket}>
         {(ticket) => (
           <Card class="mobile-section" role="region" aria-label={t("Pair a phone")}>
-            <Heading as="h2" size="md">
+            <PanelHeading icon={QrCode} tint="green">
               {t("Pair a phone")}
-            </Heading>
+            </PanelHeading>
             <Text as="p" tone="secondary">
               {t("Scan this code with the phone camera, or open the link on the phone.")}
             </Text>
@@ -188,9 +194,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
       </Show>
 
       <Card class="mobile-section">
-        <Heading as="h2" size="md">
+        <PanelHeading icon={Smartphone} tint="cyan">
           {t("Paired phones")}
-        </Heading>
+        </PanelHeading>
         <Show
           when={props.state.devices.length}
           fallback={
@@ -235,9 +241,9 @@ export function MobileConnectView(props: MobileConnectViewProps) {
 
       <Show when={props.state.transport === "tls"}>
         <Card class="mobile-section">
-          <Heading as="h2" size="md">
+          <PanelHeading icon={ShieldCheck} tint="orange">
             {t("Certificate")}
-          </Heading>
+          </PanelHeading>
           <Text as="p" tone="secondary">
             {t(
               "A new certificate has a new fingerprint. Every phone pinned the old one, so rotating removes all paired phones and each must pair again.",
@@ -348,7 +354,7 @@ export function MobileConnectPage() {
     };
   });
   return (
-    <main class="w2-library mobile-connect-page">
+    <main class="w2-library work-page mobile-connect-page" data-page="phone">
       <MobileConnectView
         state={state()}
         ticket={ticket()}

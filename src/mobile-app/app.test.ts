@@ -25,6 +25,7 @@ import { MOBILE_APP_FILES } from "../backend/mobile-app-assets";
 import { MobileConnect, mobileAgents, mobileNeedsYou } from "../backend/mobile-connect";
 import { MobilePhoneApi, type MobilePhoneChannels, type MobilePhoneHost } from "../backend/mobile-phone-api";
 import { MobileStore } from "../backend/mobile-store";
+import { suiteTimeout } from "../backend/testing/timeouts";
 
 const CHANNEL_AT = "2026-11-18T20:00:00.000Z";
 
@@ -219,7 +220,9 @@ const DRAFT: PendingAgentRequest = {
 };
 
 async function until(check: () => boolean, what: string): Promise<void> {
-  const end = Date.now() + 4_000;
+  // 10 s, not 4: under the full parallel run the channel screen sometimes needed longer (timed out about once in five full runs).
+  // The loop returns as soon as the check holds, so a passing test is not slower.
+  const end = Date.now() + 10_000;
   while (!check() && Date.now() < end) await new Promise((resolve) => setTimeout(resolve, 10));
   if (!check()) throw new Error(`Timed out waiting for ${what}.\n${document.body.innerHTML.slice(0, 1_500)}`);
 }
@@ -366,7 +369,8 @@ async function pairThroughTheApp() {
   return { ...fixture, hash };
 }
 
-describe("phone web app", () => {
+// The app is driven through a real local server; a test waits for several screens in a row, so it gets more than the 5 s default.
+describe("phone web app", { timeout: suiteTimeout(30_000, 30_000) }, () => {
   it("pairs with the link from the QR code and lists the agents", async () => {
     const { ticket, state } = await pairThroughTheApp();
     expect(ticket.fingerprint).toBeNull();

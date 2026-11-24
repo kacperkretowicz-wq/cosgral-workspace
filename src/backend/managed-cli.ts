@@ -21,7 +21,7 @@ import type {
 import { MANAGED_CLI_IDS } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { CliCatalog, CliRelease } from "./cli-catalog";
-import { type DownloadSource, downloadVerified } from "./voice-download";
+import { type DownloadSource, downloadVerified } from "./download-verified";
 
 interface StoredCli {
   autoUpdate: boolean;

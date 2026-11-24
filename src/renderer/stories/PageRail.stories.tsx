@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import { expect, fn, within } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { App } from "../src/App";
 import { ComingSoon } from "../src/components/ComingSoon";
@@ -105,7 +105,8 @@ export const Overflow: Story = {
     const menu = await within(canvasElement.ownerDocument.body).findByRole("menu", { name: "More" });
     await expect(within(menu).getByRole("menuitem", { name: "Phone" })).toHaveAttribute("aria-current", "page");
     await userEvent.click(within(menu).getByRole("menuitem", { name: "Library" }));
-    await expect(canvas.getByRole("heading", { name: "Library" })).toBeVisible();
+    // The page is drawn after the menu closes; wait for it instead of checking the first frame.
+    await waitFor(() => expect(canvas.getByRole("heading", { name: "Library" })).toBeVisible());
   },
 };
 export const OverflowLight: Story = {

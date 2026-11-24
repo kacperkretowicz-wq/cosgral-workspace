@@ -44,10 +44,10 @@ describe("Budget UI", () => {
     await screen.findByLabelText("Token limit");
     await api.set({ scope: { kind: "space" }, period: "day", tokenLimit: 100, costLimitUsd: null, hardStop: true });
     api.simulate.record("demo", 85, null);
-    await screen.findByText("warning");
+    await screen.findByText("Near the limit");
     expect(screen.getByText(/Cost unavailable/)).toBeTruthy();
     api.simulate.record("demo", 15, null);
-    await screen.findByText("exhausted");
+    await screen.findByText("Limit reached");
     expect(screen.getByText(/New turns are blocked/)).toBeTruthy();
   });
   it("marks a price-only limit as not enforceable", async () => {

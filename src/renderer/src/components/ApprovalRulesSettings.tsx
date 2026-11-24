@@ -1,12 +1,12 @@
 import { APPROVAL_RULES_NEVER_COVER, type ApprovalRule, describeApprovalRule } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Button, Heading, Text } from "./ui";
 
 function whenUsed(rule: ApprovalRule): string {
   if (!rule.uses || !rule.lastUsedAt) return "Not used yet";
   const date = new Date(rule.lastUsedAt);
-  const last = Number.isNaN(date.getTime()) ? rule.lastUsedAt : date.toLocaleString();
+  const last = Number.isNaN(date.getTime()) ? rule.lastUsedAt : date.toLocaleString(appLocale());
   return `Used ${rule.uses} ${rule.uses === 1 ? "time" : "times"}, last ${last}`;
 }
 
@@ -20,7 +20,7 @@ export function ApprovalRulesList(props: {
   return (
     <section class="approval-rules" aria-label={t("Always-allow rules")}>
       <Heading as="h4" size="sm">
-        Always allowed
+        {t("Always allowed")}
       </Heading>
       <Show when={props.error}>
         <Text as="p" tone="danger" role="alert">
@@ -31,7 +31,7 @@ export function ApprovalRulesList(props: {
         when={props.rules.length}
         fallback={
           <Text as="p" tone="muted">
-            Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.
+            {t("Nothing is allowed for good. Choose “Always allow…” on an approval card to add a rule.")}
           </Text>
         }
       >
@@ -53,7 +53,7 @@ export function ApprovalRulesList(props: {
                   aria-label={t("Remove rule: {rule}", { rule: describeApprovalRule(rule) })}
                   onClick={() => props.onRevoke(rule.id)}
                 >
-                  Remove
+                  {t("Remove")}
                 </Button>
               </li>
             )}
@@ -61,7 +61,7 @@ export function ApprovalRulesList(props: {
         </ul>
       </Show>
       <Text as="p" tone="muted">
-        These rules never cover {APPROVAL_RULES_NEVER_COVER.join(", ")}.
+        {t("These rules never cover {list}.", { list: APPROVAL_RULES_NEVER_COVER.join(", ") })}
       </Text>
     </section>
   );

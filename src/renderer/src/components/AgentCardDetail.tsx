@@ -1,6 +1,6 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t, tData, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
 import { Button } from "./ui";
@@ -14,7 +14,7 @@ const ACCESS_LABELS: Record<string, string> = {
 function when(iso: string | null): string {
   if (!iso) return "";
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(appLocale());
 }
 
 /**
@@ -71,7 +71,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
       case "files":
         return (
           <>
-            <p class="agent-cards-note">{t("{count} files", { count: d.total })}</p>
+            <p class="agent-cards-note">{tn(d.total, "{count} file", "{count} files")}</p>
             <Show when={d.items.length === 0}>
               <p class="agent-cards-note">{t("This agent has not saved any files.")}</p>
             </Show>
@@ -109,7 +109,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
         return (
           <dl class="agent-card-detail-facts">
             <dt>{t("Tokens")}</dt>
-            <dd>{d.status.usage.tokens.toLocaleString()}</dd>
+            <dd>{d.status.usage.tokens.toLocaleString(appLocale())}</dd>
             <dt>{t("Turns")}</dt>
             <dd>{d.status.usage.turns}</dd>
             <dt>{t("Cost")}</dt>
@@ -128,7 +128,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
             </dd>
             <Show when={d.status.reason}>
               <dt>{t("Note")}</dt>
-              <dd>{d.status.reason}</dd>
+              <dd>{tData(d.status.reason ?? "")}</dd>
             </Show>
           </dl>
         );

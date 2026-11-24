@@ -2,7 +2,9 @@ import type { AddMcpServerInput, AgentMcpServerSetting, McpServer } from "@openb
 import { isOneOf } from "@openbot/contracts/runtime-values";
 import { createSignal, For, Show } from "solid-js";
 import { t } from "../i18n";
+import { PanelHeading } from "./PanelHeading";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { Plug, Server } from "./ui/icons";
 
 const MCP_TRANSPORTS = ["stdio", "http"] as const;
 
@@ -25,10 +27,15 @@ export function McpPanel(props: {
   const [secrets, setSecrets] = createSignal<Record<string, string>>({});
   return (
     <section class="w2-panel" aria-label={props.agent ? t("Agent MCP servers") : t("MCP servers")}>
-      <h3>{props.agent ? t("Agent MCP servers") : t("MCP servers")}</h3>
+      <PanelHeading level="h3" icon={Plug} tint="pink">
+        {props.agent ? t("Agent MCP servers") : t("MCP servers")}
+      </PanelHeading>
       <For each={props.servers}>
         {(server) => (
           <article class="w2-item">
+            <span class="w2-item-icon" data-status={server.status} aria-hidden="true">
+              <Server size={18} stroke-width={1.5} />
+            </span>
             <strong>{server.name}</strong>
             <p>
               {server.status}
@@ -41,7 +48,7 @@ export function McpPanel(props: {
             <Show
               when={props.agent}
               fallback={
-                <div>
+                <div class="w2-item-actions">
                   <Button unstyled type="button" onClick={() => props.onReconnect(server.id)}>
                     {t("Reconnect")}
                   </Button>{" "}

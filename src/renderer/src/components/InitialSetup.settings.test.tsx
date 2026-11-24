@@ -44,7 +44,7 @@ function renderSettings() {
 }
 
 // KK-AC: the gear of the page rail opens THIS screen (not the old dialog of app settings, which nothing opens),
-// so Updates and the microphone must be on it.
+// so Updates must be on it.
 it("shows the Updates section with its heading on the Settings screen", async () => {
   const view = renderSettings();
   expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
@@ -55,13 +55,12 @@ it("shows the Updates section with its heading on the Settings screen", async ()
   );
 });
 
-it("shows the Voice section with its heading and the microphone on the Settings screen", async () => {
+it("has no Voice section on the Settings screen", async () => {
   const view = renderSettings();
   await screen.findByRole("heading", { name: "Settings" });
-  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-voice")).not.toBeNull());
-  expect(view.container.ownerDocument.getElementById("settings-voice")?.textContent).toBe("Voice");
-  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-voice-microphone")).not.toBeNull());
-  expect(view.container.ownerDocument.getElementById("settings-voice-microphone")?.textContent).toBe("Microphone");
+  await waitFor(() => expect(view.container.ownerDocument.getElementById("settings-updates")).not.toBeNull());
+  expect(view.container.ownerDocument.getElementById("settings-voice")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
 });
 
 it("lets the person change the theme on the Settings screen", async () => {
@@ -77,4 +76,29 @@ it("shows App behavior (launch at login, keep running in the background) on the 
   await screen.findByRole("heading", { name: "Settings" });
   expect(await screen.findByRole("switch", { name: "Launch COSGRAL Workspace at login" })).toBeInTheDocument();
   expect(screen.getByRole("switch", { name: "Keep COSGRAL Workspace running in the background" })).toBeInTheDocument();
+});
+
+it("shows the account and Sign out for a signed-in account, and neither for the local profile of this computer", async () => {
+  const view = renderSettings();
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(screen.getByText("person@example.com")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+  view.unmount();
+  render(() => (
+    <InitialSetup
+      reviewing
+      localProfile
+      state={{ completed: true, preferredProvider: "codex" }}
+      agentStatus={STATUS}
+      platform="win32"
+      accountEmail="owner-3093652b@cosgral.local"
+      onSave={vi.fn().mockResolvedValue(undefined)}
+      onJoinRemote={vi.fn()}
+      onLogout={vi.fn()}
+      onClose={vi.fn()}
+    />
+  ));
+  await screen.findByRole("heading", { name: "Settings" });
+  expect(screen.queryByText("owner-3093652b@cosgral.local")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
 });

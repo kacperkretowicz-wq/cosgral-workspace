@@ -210,7 +210,6 @@ async function probeMenuPlus(page: Page): Promise<ProbeResult> {
     { id: "skill", re: /Use a skill|Użyj skilla/i, needEnabled: true },
     { id: "teach", re: /Teach a task|Naucz zadania/i, needEnabled: false },
     { id: "side", re: /Side question|Pytanie boczne/i, needEnabled: true },
-    { id: "voice", re: /^Voice$|^Głos$/i, needEnabled: false },
   ];
   const found: string[] = [];
   for (const item of items) {

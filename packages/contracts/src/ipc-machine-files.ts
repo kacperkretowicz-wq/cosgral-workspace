@@ -148,3 +148,97 @@ export function isMachineListing(value: unknown): value is MachineListing {
     isBoolean(value.truncated)
   );
 }
+
+// The person's window on granted folders (Library › Files › "This computer"). The program adds `actor: null` itself:
+// the window never says who asks, so an agent can never use these calls.
+
+export interface MachineGrantIdInput {
+  grantId: string;
+}
+
+export interface MachineFolderPathInput {
+  grantId: string;
+  /** Empty: the granted folder itself. */
+  relativePath?: string;
+}
+
+export interface OpenMachineFileInput {
+  grantId: string;
+  relativePath: string;
+  /** "open" with the system app; "reveal" in its folder. */
+  action: "open" | "reveal";
+}
+
+export interface CopyMachineFilesInput {
+  grantId: string;
+  relativePaths: string[];
+}
+
+/** How many files went into the library, and which were refused (with the reason). */
+export interface CopyMachineFilesResult {
+  added: number;
+  refused: Array<{ relativePath: string; reason: MachineFileRefusal }>;
+}
+
+/** Files copied into the library in one call. */
+export const MACHINE_FILES_COPY_LIMIT = 50;
+
+/** `window.openbot.machineFiles` (this computer only). */
+export interface MachineFilesDesktopApi {
+  grants: () => Promise<MachineFolderGrant[]>;
+  /** Opens the system folder picker; null when the person cancels. Throws a sentence when the folder is not allowed. */
+  grant: () => Promise<MachineFolderGrant | null>;
+  /** Stops sharing the folder; nothing on disk changes. */
+  revoke: (input: MachineGrantIdInput) => Promise<void>;
+  list: (input: MachineFolderPathInput) => Promise<MachineListing>;
+  open: (input: OpenMachineFileInput) => Promise<void>;
+  copyToLibrary: (input: CopyMachineFilesInput) => Promise<CopyMachineFilesResult>;
+}
+
+function grantId(value: unknown): string {
+  if (!isString(value) || value.length === 0 || value.length > 100) throw new Error("A shared folder is required.");
+  return value;
+}
+
+function relativePathText(value: unknown): string {
+  if (value === undefined) return "";
+  if (!isString(value) || value.length > MACHINE_FILES_LIMITS.relativePath) throw new Error("The path is too long.");
+  return value;
+}
+
+export function parseMachineGrantId(raw: unknown): MachineGrantIdInput {
+  if (!isDynamicRecord(raw)) throw new Error("A shared folder is required.");
+  return { grantId: grantId(raw.grantId) };
+}
+
+export function parseMachineFolderPath(raw: unknown): Required<MachineFolderPathInput> {
+  if (!isDynamicRecord(raw)) throw new Error("A shared folder is required.");
+  return { grantId: grantId(raw.grantId), relativePath: relativePathText(raw.relativePath) };
+}
+
+export function parseOpenMachineFile(raw: unknown): OpenMachineFileInput {
+  if (!isDynamicRecord(raw)) throw new Error("A file is required.");
+  if (raw.action !== "open" && raw.action !== "reveal") throw new Error("Unknown action.");
+  return { grantId: grantId(raw.grantId), relativePath: relativePathText(raw.relativePath), action: raw.action };
+}
+
+export function parseCopyMachineFiles(raw: unknown): CopyMachineFilesInput {
+  if (!isDynamicRecord(raw) || !Array.isArray(raw.relativePaths) || raw.relativePaths.length === 0) {
+    throw new Error("Pick at least one file.");
+  }
+  if (raw.relativePaths.length > MACHINE_FILES_COPY_LIMIT) {
+    throw new Error(`Copy at most ${MACHINE_FILES_COPY_LIMIT} files at once.`);
+  }
+  return { grantId: grantId(raw.grantId), relativePaths: raw.relativePaths.map(relativePathText) };
+}
+
+export function isCopyMachineFilesResult(value: unknown): value is CopyMachineFilesResult {
+  return (
+    isDynamicRecord(value) &&
+    isNumber(value.added) &&
+    Array.isArray(value.refused) &&
+    value.refused.every(
+      (item) => isDynamicRecord(item) && isString(item.relativePath) && isMachineFileRefusal(item.reason),
+    )
+  );
+}

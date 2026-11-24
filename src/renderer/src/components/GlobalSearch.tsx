@@ -2,6 +2,7 @@ import type { SearchHit, SearchKind } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import type { BotMessage, BotProfile } from "../data";
 import { t } from "../i18n";
+import { modKeyLabel } from "../keyboard-shortcuts";
 import { AgentAvatar } from "./AgentAvatar";
 import { Combobox, Dialog, Input, Kbd, Search, Tabs } from "./ui";
 
@@ -91,6 +92,8 @@ function resultKindLabel(result: GlobalSearchResult): string {
 }
 
 export function GlobalSearch(props: GlobalSearchProps) {
+  /** "Ctrl" on Windows and Linux, "⌘" on macOS (the result hints always showed ⌘). */
+  const modKey = modKeyLabel();
   const [tab, setTab] = createSignal<SearchTab>("all");
   const [query, setQuery] = createSignal("");
   const [remoteHits, setRemoteHits] = createSignal<SearchHit[]>([]);
@@ -171,6 +174,16 @@ export function GlobalSearch(props: GlobalSearchProps) {
     else props.onSelectMessage(result.bot.id, result.message.id);
   }
 
+  // Escape with the focus outside the field (e.g. on the filter tabs) reached only the always-open result list, which
+  // cannot close, so the window stayed open. Kobalte passes onEscapeKeyDown of the list on to its dismissable layer;
+  // its types (2.0.0-alpha) do not list it, hence the spread.
+  const escapeClosesWindow = {
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      event.preventDefault();
+      props.onOpenChange(false);
+    },
+  };
+
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
@@ -212,7 +225,7 @@ export function GlobalSearch(props: GlobalSearchProps) {
                   </span>
                   <span class="global-search-result-shortcut" aria-hidden="true">
                     <Show when={index() >= 0 && index() < 9} fallback={<span>{resultKindLabel(result)}</span>}>
-                      <Kbd>⌘</Kbd>
+                      <Kbd>{modKey}</Kbd>
                       <Kbd>{index() + 1}</Kbd>
                     </Show>
                   </span>
@@ -232,6 +245,14 @@ export function GlobalSearch(props: GlobalSearchProps) {
                 autocapitalize="none"
                 spellcheck={false}
                 onKeyDown={(event) => {
+                  // The result list is part of the search window: one Escape closes the window (the combobox only
+                  // closed its list, so the window needed a second Escape).
+                  if (event.key === "Escape" && !event.isComposing) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    props.onOpenChange(false);
+                    return;
+                  }
                   if (event.key === "Enter" && !event.isComposing && !input?.getAttribute("aria-activedescendant")) {
                     const firstResult = results()[0];
                     if (!firstResult) return;
@@ -258,11 +279,28 @@ export function GlobalSearch(props: GlobalSearchProps) {
               class="global-search-tabs"
             >
               <Tabs.List aria-label={t("Filter results")}>
-                <For each={SEARCH_TABS}>{(item) => <Tabs.Trigger value={item.id}>{t(item.label)}</Tabs.Trigger>}</For>
+                <For each={SEARCH_TABS}>
+                  {(item) => (
+                    <Tabs.Trigger
+                      value={item.id}
+                      // The filter tab is the last stop of the window, so Tab goes back to the field. The focus trap
+                      // already moves there, but the tab list then put the focus back on its own tab (Kobalte
+                      // 2.0.0-alpha moves it to the last tab of the list on Tab), so Tab never left the tabs.
+                      onKeyDown={(event: KeyboardEvent) => {
+                        if (event.key !== "Tab" || event.shiftKey) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        input?.focus();
+                      }}
+                    >
+                      {t(item.label)}
+                    </Tabs.Trigger>
+                  )}
+                </For>
               </Tabs.List>
             </Tabs.Root>
 
-            <Combobox.Content class="global-search-results">
+            <Combobox.Content class="global-search-results" {...escapeClosesWindow}>
               <Combobox.Listbox aria-label={t("Results")} />
               <Show when={results().length === 0}>
                 <div class="global-search-empty">{t("Nothing found")}</div>

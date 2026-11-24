@@ -8,7 +8,7 @@ import {
   type TransferPreview,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Switch } from "./ui";
 
@@ -141,7 +141,7 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
               {t("From {app}", { app: staged().sourceApp })}
               <Show when={staged().exportedAt}>
                 {" · "}
-                {new Date(staged().exportedAt ?? "").toLocaleString()}
+                {new Date(staged().exportedAt ?? "").toLocaleString(appLocale())}
               </Show>
               {". "}
               {t("Nothing changes until you import.")}

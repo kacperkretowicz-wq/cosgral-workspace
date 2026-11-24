@@ -20,6 +20,7 @@ import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
+import { SHOW_API_KEYS } from "../src/renderer/src/api-keys-visibility.ts";
 import { cleanEnvironment } from "./sandbox-env.ts";
 import { waitForQuietMachine } from "./sandbox-load.ts";
 
@@ -31,6 +32,8 @@ interface Result {
   ok: boolean;
   detail: string;
   ms: number;
+  /** Not run on purpose (the feature is hidden in this version); counted apart, never as a pass of the feature. */
+  skipped?: boolean;
 }
 
 const results: Result[] = [];
@@ -176,8 +179,21 @@ async function launch(
   return { app, page };
 }
 
+/**
+ * W5 rows that need the API keys and own model endpoints sections. The owner hid them (23.11.2026: agents work through
+ * the CLIs and subscriptions), see src/renderer/src/api-keys-visibility.ts; with SHOW_API_KEYS false these rows are
+ * reported as skipped instead of failing on a section that is not on the page.
+ */
+const ROWS_NEEDING_API_KEYS = new Set(["E01", "E02", "E03", "E04", "E06", "P09", "K01", "K02", "K03", "K04"]);
+
 async function row(id: string, name: string, work: () => Promise<string | undefined>): Promise<void> {
   if (only.length && !only.includes(id)) return;
+  if (!SHOW_API_KEYS && ROWS_NEEDING_API_KEYS.has(id)) {
+    const detail = "API keys and endpoints are hidden in this version (SHOW_API_KEYS = false)";
+    results.push({ row: id, name, ok: true, skipped: true, detail, ms: 0 });
+    console.log(`skip [${id}] ${name}: ${detail}`);
+    return;
+  }
   const started = Date.now();
   try {
     const detail = (await work()) ?? "";
@@ -712,7 +728,9 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
     async () => {
       await d.openAgent("Assistant");
       const channelName = `accept-${Date.now().toString(36)}`;
-      await page.getByRole("button", { name: "New channel", exact: true }).first().click();
+      await page.getByRole("button", { name: "Create new", exact: true }).first().click();
+      // Since PR #24 "New channel" is an item of the sidebar's "+" menu, not a button on the Agents page.
+      await page.getByRole("menuitem", { name: "New channel" }).first().click();
       let dialog = page.getByRole("dialog");
       await dialog.getByLabel("Channel name", { exact: true }).fill(channelName);
       await dialog.getByLabel("Display title").fill("Accept team");
@@ -1514,23 +1532,24 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
     return "island showed the question; click opened Res with its card";
   });
 
-  await row("39", "settings: notification matrix saved; language saved (UI strings stay English)", async () => {
+  await row("39", "settings: notification matrix and language saved from the Settings window footer", async () => {
+    const before = asRecord(await d.ev("window.openbot.appSettings.get()"));
     await d.openPage("Settings");
     const app = page.getByRole("region", { name: "Application settings" });
+    await app.getByRole("switch", { name: "Needs your answer: notification" }).uncheck();
     await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "Polski" });
-    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).uncheck();
-    await app.getByRole("button", { name: "Save application settings" }).click();
+    await page.getByRole("button", { name: "Save changes" }).click();
     await page.waitForTimeout(2_000);
     const saved = asRecord(await d.ev("window.openbot.appSettings.get()"));
     assert.equal(saved.language, "pl");
     assert.equal(asRecord(asRecord(asRecord(saved.notifications).matrix)["needs-input"]).desktop, false);
-    const stillEnglish = await page.getByRole("button", { name: "Save application settings" }).count();
-    await app.getByRole("combobox", { name: "Language" }).selectOption({ label: "English" });
-    await app.getByRole("checkbox", { name: "Needs your answer: notification" }).check();
-    await app.getByRole("button", { name: "Save application settings" }).click();
+    const polish = await page.getByRole("navigation", { name: "Strony" }).count();
+    // Back to English and the old notifications (the window follows the saved language).
+    await d.ev(
+      `window.openbot.appSettings.update(${JSON.stringify({ language: "en", notifications: before.notifications })})`,
+    );
     await page.waitForTimeout(1_500);
-    await page.getByRole("button", { name: "Cancel" }).click();
-    return `saved; the UI strings are English after choosing Polski: ${stillEnglish > 0}`;
+    return `saved; the window switched to Polish after saving: ${polish > 0}`;
   });
 
   await row("42-44", "phone: pairing over TLS, chat and decisions, creating an agent from the phone", async () => {
@@ -4066,8 +4085,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
   }
   await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
   const failed = results.filter((result) => !result.ok);
+  const skipped = results.filter((result) => result.skipped).length;
   console.log(
-    `\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`,
+    `\n${results.length - failed.length - skipped}/${results.length - skipped} steps ok; skipped (hidden features): ${skipped}; console errors: ${consoleFindings.length}`,
   );
   for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 300)}`);
   process.exit(failed.length ? 1 : 0);

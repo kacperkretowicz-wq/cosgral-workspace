@@ -7,11 +7,16 @@ import type {
   OnboardingState,
 } from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
-import { createSignal, For, onSettled, Show } from "solid-js";
-import { language, setLanguage, t } from "../i18n";
-import { Button, Card, Field, Heading, Input, NativeSelect, Text } from "./ui";
+import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { language, setLanguage, t, tData } from "../i18n";
+import { SettingsSection } from "./SettingsDialog";
+import { Button, Card, Field, NativeSelect, Switch, Text } from "./ui";
 
-export function AppSettingsW3() {
+/**
+ * Language and notifications. On its own it has a "Save application settings" button; inside the Settings window
+ * the window's footer saves it together with the rest (`onRegisterSave` hands the save over, the button goes).
+ */
+export function AppSettingsW3(props: { onRegisterSave?: (save: () => Promise<boolean>) => void } = {}) {
   const [settings, setSettings] = createSignal<AppSettings>();
   const [error, setError] = createSignal("");
   onSettled(() => {
@@ -20,9 +25,9 @@ export function AppSettingsW3() {
       .then((value) => setSettings({ ...value, language: value.languageChosen ? value.language : language() }))
       .catch((e) => setError(String(e)));
   });
-  async function save() {
+  async function save(): Promise<boolean> {
     const value = settings();
-    if (!value || !window.openbot.appSettings) return;
+    if (!value || !window.openbot.appSettings) return true;
     try {
       setSettings(
         await window.openbot.appSettings.update({ language: value.language, notifications: value.notifications }),
@@ -32,13 +37,28 @@ export function AppSettingsW3() {
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : t("Could not save settings."));
+      return false;
     }
+    return true;
   }
+  const embedded = untrack(() => !!props.onRegisterSave);
+  untrack(() => props.onRegisterSave?.(save));
+  const setChannel = (event: NotificationEvent, channel: NotificationChannel, checked: boolean) =>
+    setSettings(
+      (s) =>
+        s && {
+          ...s,
+          notifications: {
+            ...s.notifications,
+            matrix: {
+              ...s.notifications.matrix,
+              [event]: { ...s.notifications.matrix[event], [channel]: checked },
+            },
+          },
+        },
+    );
   return (
-    <Card class="cosgral-settings-block" role="region" aria-labelledby="app-settings-title">
-      <Heading as="h2" size="sm" id="app-settings-title">
-        {t("Application settings")}
-      </Heading>
+    <section class="app-settings" aria-label={t("Application settings")}>
       <Show when={error()}>
         <Text as="p" tone="danger" role="alert">
           {error()}
@@ -47,91 +67,93 @@ export function AppSettingsW3() {
       <Show when={settings()}>
         {(value) => (
           <>
-            <Field label={t("Language")} class="cosgral-settings-field">
-              <NativeSelect
-                value={value().language}
-                onChange={(e) => {
-                  const language = e.currentTarget.value;
-                  if (language === "en" || language === "pl") setSettings((s) => s && { ...s, language });
-                }}
-              >
-                <option value="en">English</option>
-                <option value="pl">Polski</option>
-              </NativeSelect>
-            </Field>
-            <table class="cosgral-settings-table">
-              <caption>{t("Notifications")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("Event")}</th>
-                  <For each={NOTIFICATION_CHANNELS}>
-                    {(channel) => <th scope="col">{t(CHANNEL_LABELS[channel])}</th>}
+            <SettingsSection
+              id="general"
+              title={t("General")}
+              description={t("The language of menus, buttons and messages.")}
+            >
+              <Card class="settings-modal-card">
+                <div class="settings-modal-row">
+                  <span class="settings-modal-row-copy">
+                    <span class="settings-modal-row-title">{t("Language")}</span>
+                    <Text as="span" tone="muted">
+                      {t("Applied after you save.")}
+                    </Text>
+                  </span>
+                  <NativeSelect
+                    class="settings-modal-select"
+                    aria-label={t("Language")}
+                    value={value().language}
+                    onChange={(e) => {
+                      const language = e.currentTarget.value;
+                      if (language === "en" || language === "pl") setSettings((s) => s && { ...s, language });
+                    }}
+                  >
+                    <option value="en">English</option>
+                    <option value="pl">Polski</option>
+                  </NativeSelect>
+                </div>
+              </Card>
+            </SettingsSection>
+            <SettingsSection
+              id="notifications"
+              title={t("Notifications")}
+              description={t("Choose what reaches you while you work in another window.")}
+            >
+              <table class="settings-notification-table">
+                <caption class="sr-only">{t("Notifications")}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("Event")}</th>
+                    <For each={NOTIFICATION_CHANNELS}>
+                      {(channel) => <th scope="col">{t(CHANNEL_LABELS[channel])}</th>}
+                    </For>
+                  </tr>
+                </thead>
+                <tbody>
+                  <For each={NOTIFICATION_EVENTS}>
+                    {(event) => (
+                      <tr>
+                        <th scope="row">{t(EVENT_LABELS[event])}</th>
+                        <For each={NOTIFICATION_CHANNELS}>
+                          {(channel) => (
+                            <td>
+                              <Switch
+                                size="sm"
+                                aria-label={`${t(EVENT_LABELS[event])}: ${t(CHANNEL_LABELS[channel])}`}
+                                checked={value().notifications.matrix[event][channel]}
+                                onChange={(checked) => setChannel(event, channel, checked)}
+                              />
+                            </td>
+                          )}
+                        </For>
+                      </tr>
+                    )}
                   </For>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={NOTIFICATION_EVENTS}>
-                  {(event) => (
-                    <tr>
-                      <th scope="row">{t(EVENT_LABELS[event])}</th>
-                      <For each={NOTIFICATION_CHANNELS}>
-                        {(channel) => (
-                          <td>
-                            <Input
-                              unstyled
-                              aria-label={`${t(EVENT_LABELS[event])}: ${t(CHANNEL_LABELS[channel])}`}
-                              type="checkbox"
-                              checked={value().notifications.matrix[event][channel]}
-                              onChange={(e) =>
-                                setSettings(
-                                  (s) =>
-                                    s && {
-                                      ...s,
-                                      notifications: {
-                                        ...s.notifications,
-                                        matrix: {
-                                          ...s.notifications.matrix,
-                                          [event]: {
-                                            ...s.notifications.matrix[event],
-                                            [channel]: e.currentTarget.checked,
-                                          },
-                                        },
-                                      },
-                                    },
-                                )
-                              }
-                            />
-                          </td>
-                        )}
-                      </For>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </table>
-            <label class="cosgral-settings-check">
-              <Input
-                unstyled
-                type="checkbox"
-                checked={value().notifications.onlyWhenUnfocused}
-                onChange={(e) =>
-                  setSettings(
-                    (s) =>
-                      s && { ...s, notifications: { ...s.notifications, onlyWhenUnfocused: e.currentTarget.checked } },
-                  )
-                }
-              />
-              {t("Only notify while COSGRAL is in the background")}
-            </label>
-            <div class="cosgral-settings-actions">
-              <Button type="button" onClick={() => void save()}>
-                {t("Save application settings")}
-              </Button>
-            </div>
+                </tbody>
+              </table>
+              <Card class="settings-modal-card">
+                <Switch
+                  checked={value().notifications.onlyWhenUnfocused}
+                  onChange={(checked) =>
+                    setSettings((s) => s && { ...s, notifications: { ...s.notifications, onlyWhenUnfocused: checked } })
+                  }
+                  label={t("Only notify while COSGRAL is in the background")}
+                  description={t("No banners or sounds while you are looking at the window.")}
+                />
+              </Card>
+              <Show when={!embedded}>
+                <div class="cosgral-settings-actions">
+                  <Button type="button" onClick={() => void save()}>
+                    {t("Save application settings")}
+                  </Button>
+                </div>
+              </Show>
+            </SettingsSection>
           </>
         )}
       </Show>
-    </Card>
+    </section>
   );
 }
 
@@ -196,7 +218,7 @@ export function OnboardingFields(props: {
           <For each={props.state.proposals}>
             {(proposal) => (
               <option value={proposal.id}>
-                {proposal.name}: {proposal.summary}
+                {tData(proposal.name)}: {tData(proposal.summary)}
               </option>
             )}
           </For>

@@ -4,7 +4,7 @@ import { MESSAGE_REACTIONS, MORE_MESSAGE_REACTIONS } from "@openbot/contracts/ip
 import { createMemo, For, Show } from "solid-js";
 import { avatarHeadColor } from "../../blobatar";
 import type { BotMessage, BotProfile } from "../../data";
-import { t } from "../../i18n";
+import { t, tn } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { type HistoryActionContext, MessageHistoryActions } from "../MessageHistoryActions";
 import { Button, DropdownMenu } from "../ui";
@@ -12,6 +12,7 @@ import { AttachmentCards } from "./AttachmentCards";
 import { ComparisonTable } from "./ComparisonTable";
 import { CheckIcon, CopyIcon, MoreIcon, PlusIcon, ReactionIcon, ReplyIcon } from "./ConversationIcons";
 import { DataTable, type MessageContentBlock, messageContentBlocks } from "./DataTable";
+import { type EngineRun, engineRunSummary, parseEngineRun } from "./engine-run";
 import { ImageGeneration } from "./ImageGeneration";
 import { RichMessageText } from "./RichMessageText";
 import { parseSelectionInstruction } from "./SelectionActions";
@@ -49,7 +50,7 @@ export function ExchangeSystemRow(props: {
     const recipientId = recipients()[0];
     return recipientId ? props.bots.find((bot) => bot.id === recipientId) : undefined;
   };
-  const agentCountLabel = () => t("{count} agents", { count: recipients().length });
+  const agentCountLabel = () => tn(recipients().length, "{count} agent", "{count} agents");
 
   return (
     <div class="exchange-system-row">
@@ -87,7 +88,7 @@ export function ExchangeSystemRow(props: {
                   style={exchangeAgentsStyle(
                     recipients().map((recipientId) => props.bots.find((bot) => bot.id === recipientId)),
                   )}
-                  aria-label={t("{count} agents, show list", { count: recipients().length })}
+                  aria-label={tn(recipients().length, "{count} agent, show list", "{count} agents, show list")}
                 >
                   <span class="exchange-avatar-stack" aria-hidden="true">
                     <For each={recipients().slice(0, 3)}>
@@ -139,6 +140,27 @@ export function ExchangeSystemRow(props: {
   );
 }
 
+const ROUTINE_CAUSES = {
+  schedule: "on schedule",
+  manual: "started by hand",
+  webhook: "from a webhook",
+} as const;
+
+/** One line about who started this turn: a routine or a workflow step (the message itself was written for the agent). */
+function EngineRunHeader(props: { run: EngineRun }) {
+  return (
+    <p class="engine-run-header">
+      {props.run.kind === "routine"
+        ? t("Routine “{name}” · {cause}, {when}", {
+            name: props.run.name,
+            cause: t(ROUTINE_CAUSES[props.run.cause]),
+            when: props.run.when,
+          })
+        : t("Workflow “{name}” · step “{step}”", { name: props.run.name, step: props.run.step })}
+    </p>
+  );
+}
+
 export function MessageBody(props: {
   message: BotMessage;
   referencedMessage?: BotMessage;
@@ -161,10 +183,15 @@ export function MessageBody(props: {
       (attachment) => !referencedIds.has(attachment.id) && attachment.id !== generatedAttachmentId,
     );
   });
+  const engineRun = createMemo(() => (props.message.author === "you" ? parseEngineRun(props.message.body) : null));
+  const webhookPayload = createMemo(() => {
+    const run = engineRun();
+    return run?.kind === "routine" ? run.webhook : null;
+  });
   const contentBlocks = createMemo<MessageContentBlock[]>(() =>
     props.message.author === "bot"
       ? messageContentBlocks(props.message.body, props.message.streaming === true)
-      : [{ type: "text", text: selectionInstruction()?.instruction ?? props.message.body }],
+      : [{ type: "text", text: engineRun()?.text ?? selectionInstruction()?.instruction ?? props.message.body }],
   );
   const lastTextBlockIndex = createMemo(() => {
     const blocks = contentBlocks();
@@ -179,11 +206,12 @@ export function MessageBody(props: {
       <Show when={props.referencedMessage}>
         {(referenced) => (
           <div class="message-reply-context">
-            <span>{referenced().author === "you" ? "You" : "Agent"}</span>
-            <p>{referenced().body || "Attachment"}</p>
+            <span>{referenced().author === "you" ? t("You") : t("Agent")}</span>
+            <p>{engineRunSummary(referenced().body) ?? (referenced().body || t("Attachment"))}</p>
           </div>
         )}
       </Show>
+      <Show when={engineRun()}>{(run) => <EngineRunHeader run={run()} />}</Show>
       <Show when={props.message.body}>
         <div class="message-content-blocks">
           <For each={contentBlocks()}>
@@ -217,6 +245,14 @@ export function MessageBody(props: {
           </For>
           <Show when={selectionInstruction()}>
             {(selection) => <blockquote class="message-selection-quote">{selection().quote}</blockquote>}
+          </Show>
+          <Show when={webhookPayload()}>
+            {(payload) => (
+              <details class="engine-run-webhook">
+                <summary>{t("Webhook data")}</summary>
+                <pre>{payload()}</pre>
+              </details>
+            )}
           </Show>
         </div>
       </Show>
@@ -280,7 +316,7 @@ export function MessageActions(props: {
     <div
       class={["message-actions", { "message-actions-open": props.pickerOpen || props.moreOpen }]}
       role="toolbar"
-      aria-label={`${props.message.author === "you" ? "User" : "Agent"} message actions`}
+      aria-label={props.message.author === "you" ? t("User message actions") : t("Agent message actions")}
     >
       <div class="message-action-popover-anchor">
         <DropdownMenu.Root
@@ -303,7 +339,7 @@ export function MessageActions(props: {
                   {(emoji) => (
                     <DropdownMenu.RadioItem
                       value={emoji}
-                      aria-label={`React with ${emoji}`}
+                      aria-label={t("React with {emoji}", { emoji })}
                       onSelect={() => props.onReact(props.message.reaction === emoji ? null : emoji)}
                     >
                       {emoji}
@@ -327,7 +363,7 @@ export function MessageActions(props: {
                     {(emoji) => (
                       <DropdownMenu.RadioItem
                         value={emoji}
-                        aria-label={`React with ${emoji}`}
+                        aria-label={t("React with {emoji}", { emoji })}
                         onSelect={() => props.onReact(props.message.reaction === emoji ? null : emoji)}
                       >
                         {emoji}
@@ -343,7 +379,7 @@ export function MessageActions(props: {
       <Button
         type="button"
         class="message-action-button"
-        aria-label={`Reply to ${props.message.author === "you" ? "User" : "Agent"} message`}
+        aria-label={props.message.author === "you" ? t("Reply to User message") : t("Reply to Agent message")}
         onClick={props.onReply}
       >
         <ReplyIcon />
@@ -358,11 +394,11 @@ export function MessageActions(props: {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content class="message-more-menu" aria-hidden={props.moreOpen ? undefined : "true"}>
                 <Show when={props.onBranch}>
-                  <DropdownMenu.Item onSelect={() => props.onBranch?.()}>Branch from here</DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => props.onBranch?.()}>{t("Branch from here")}</DropdownMenu.Item>
                 </Show>
                 <DropdownMenu.Item onSelect={props.onCopy}>
                   {props.copied ? <CheckIcon /> : <CopyIcon />}
-                  <span>{props.copied ? "Copied" : "Copy"}</span>
+                  <span>{props.copied ? t("Copied") : t("Copy")}</span>
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>

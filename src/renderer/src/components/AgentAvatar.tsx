@@ -1,6 +1,6 @@
 import type { BotAvatarHue } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
-import { type AvatarMotion, buildAnimatedAvatarSvg } from "../blobatar";
+import { type AvatarMood, type AvatarMotion, buildAnimatedAvatarSvg } from "../blobatar";
 import type { BotProfile } from "../data";
 
 interface AgentAvatarProps {
@@ -9,6 +9,8 @@ interface AgentAvatarProps {
   hue?: BotAvatarHue | null;
   url?: string | null;
   motion?: AvatarMotion;
+  /** The face the creature makes for its agent's state; idle when absent. */
+  mood?: AvatarMood;
   class?: string;
   style?: Record<string, string>;
 }
@@ -19,7 +21,7 @@ export function AgentAvatar(props: AgentAvatarProps) {
   const motion = () => props.motion ?? "hover";
   const url = () => (props.url !== undefined ? props.url : (props.bot?.avatarUrl ?? null));
   const [imageFailed, setImageFailed] = createSignal(false);
-  const markup = createMemo(() => buildAnimatedAvatarSvg(seed(), hue(), motion()));
+  const markup = createMemo(() => buildAnimatedAvatarSvg(seed(), hue(), motion(), props.mood ?? "idle"));
   createEffect(
     () => url(),
     () => {

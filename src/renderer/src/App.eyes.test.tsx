@@ -152,7 +152,10 @@ describe("App page rail", () => {
     expect(screen.getByRole("navigation", { name: "Chat list" })).toBe(list);
 
     await openPage("Marketplace");
-    expect(await screen.findByRole("heading", { name: "Marketplace", level: 1 })).toBeInTheDocument();
+    // The Marketplace page is loaded lazily: under a full parallel run the import takes longer than the default 1 s.
+    expect(
+      await screen.findByRole("heading", { name: "Marketplace", level: 1 }, { timeout: 5_000 }),
+    ).toBeInTheDocument();
 
     await fireEvent.click(
       within(screen.getByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Agents" }),

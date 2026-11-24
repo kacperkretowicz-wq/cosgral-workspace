@@ -6,7 +6,8 @@ import type { ManagedCliState, SubscriptionsDesktopApi } from "@openbot/contract
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
-import { Badge, Button, Card, Field, Heading, Input, Switch, Text } from "./ui";
+import { Badge, Button, Field, Heading, Input, Switch, Text } from "./ui";
+import { Download, RefreshCw, Terminal, Trash2 } from "./ui/icons";
 // W5-BE2: the API also has account methods, so the CLI actions are named here (not "everything but listCli").
 export type CliAction = Extract<
   keyof SubscriptionsDesktopApi,
@@ -83,22 +84,58 @@ export function ManagedCliCard(props: {
     props.state.progress?.totalBytes
       ? Math.min(100, Math.max(0, (100 * props.state.progress.receivedBytes) / props.state.progress.totalBytes))
       : undefined;
+  const status = () => (props.state.error ? "error" : props.state.source === "none" ? "off" : "ready");
   return (
-    <Card class="managed-cli-card">
-      <div class="providers-heading">
-        <Heading as="h3" size="md">
-          {props.state.id === "codex" ? "Codex" : "Claude"}
-        </Heading>
-        <Badge>{sourceLabel(props.state.source)}</Badge>
+    <div class="managed-cli-card provider-cli" data-status={status()}>
+      <div class="provider-cli-head">
+        <span class="provider-cli-icon" aria-hidden="true">
+          <Terminal size={18} stroke-width={1.75} />
+        </span>
+        <div class="provider-cli-copy">
+          <div class="provider-cli-title">
+            <Heading as="h3" size="md">
+              {props.state.id === "codex" ? "Codex" : "Claude"}
+            </Heading>
+            <Badge tone={props.state.source === "none" ? "neutral" : "accent"}>{sourceLabel(props.state.source)}</Badge>
+          </div>
+          <Text as="p" tone="muted" class="provider-cli-meta">
+            {t("In use: {version} · Downloaded: {managed} · Latest: {latest}", {
+              version: props.state.version ?? "—",
+              managed: props.state.managedVersion ?? "—",
+              latest: props.state.latestVersion ?? t("not checked yet"),
+            })}
+          </Text>
+        </div>
+        <div class="provider-cli-actions">
+          <Button size="sm" variant="primary" disabled={busy()} onClick={() => send("installCli")}>
+            <Download aria-hidden="true" size={14} stroke-width={1.75} />
+            {props.installLabel ?? t("Download")}
+          </Button>
+          <Button size="sm" disabled={busy()} onClick={() => send("checkCli")}>
+            <RefreshCw aria-hidden="true" size={14} stroke-width={1.75} />
+            {t("Check")}
+          </Button>
+          <Show when={props.state.managedVersion}>
+            <Button size="sm" disabled={busy()} onClick={() => send("updateCli")}>
+              {t("Update")}
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy()} onClick={() => send("removeCli")}>
+              <Trash2 aria-hidden="true" size={14} stroke-width={1.75} />
+              {t("Remove")}
+            </Button>
+          </Show>
+          <Show when={props.state.error}>
+            <Button
+              size="sm"
+              disabled={busy()}
+              onClick={() => send(props.state.managedVersion ? "updateCli" : "installCli")}
+            >
+              {t("Retry")}
+            </Button>
+          </Show>
+        </div>
       </div>
-      <Text as="p">
-        {t("In use: {version} · Downloaded: {managed} · Latest: {latest}", {
-          version: props.state.version ?? "—",
-          managed: props.state.managedVersion ?? "—",
-          latest: props.state.latestVersion ?? t("not checked yet"),
-        })}
-      </Text>
-      <Text as="p" role="status" aria-live="polite">
+      <Text as="p" role="status" aria-live="polite" class="provider-cli-phase">
         {phaseLabel(props.state.phase)}
       </Text>
       <Show when={props.state.progress}>
@@ -127,68 +164,59 @@ export function ManagedCliCard(props: {
           {safeCliError(props.state.error ?? "")}
         </Text>
       </Show>
-      <div class="managed-cli-actions">
-        <Button disabled={busy()} onClick={() => send("installCli")}>
-          {props.installLabel ?? t("Download")}
-        </Button>
-        <Button disabled={busy()} onClick={() => send("checkCli")}>
-          {t("Check")}
-        </Button>
-        <Show when={props.state.managedVersion}>
-          <Button disabled={busy()} onClick={() => send("updateCli")}>
-            {t("Update")}
+      <div class="provider-cli-settings">
+        <Switch
+          label={t("Update automatically")}
+          checked={props.state.autoUpdate}
+          disabled={busy()}
+          onChange={(autoUpdate) => send("setCliSettings", { autoUpdate })}
+        />
+        {/* Outside the switch: a disabled switch is dimmed as a whole, and this note must stay readable. */}
+        <Text as="p" tone="muted" class="provider-cli-note">
+          {t("Pinning a version pauses automatic updates.")}
+        </Text>
+        <div class="provider-cli-setting">
+          <Field label={t("Pinned version")}>
+            <Input value={version()} onInput={(e) => setVersion(e.currentTarget.value)} />
+          </Field>
+          <Button
+            size="sm"
+            disabled={busy() || !/^[0-9A-Za-z.+-]{1,64}$/.test(version())}
+            onClick={() => send("pinCli", { version: version() })}
+          >
+            {t("Pin")}
           </Button>
-          <Button disabled={busy()} onClick={() => send("removeCli")}>
-            {t("Remove")}
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy() || !props.state.pinnedVersion}
+            onClick={() => send("pinCli", { version: null })}
+          >
+            {t("Unpin")}
           </Button>
-        </Show>
-        <Show when={props.state.error}>
-          <Button disabled={busy()} onClick={() => send(props.state.managedVersion ? "updateCli" : "installCli")}>
-            {t("Retry")}
+        </div>
+        <div class="provider-cli-setting">
+          <Field label={t("Custom path to the CLI")} error={cliPathError(path())}>
+            <Input value={path()} onInput={(e) => setPath(e.currentTarget.value)} />
+          </Field>
+          <Button
+            size="sm"
+            disabled={busy() || !path().trim() || !!cliPathError(path())}
+            onClick={() => send("setCliSettings", { customPath: path().trim() })}
+          >
+            {t("Save path")}
           </Button>
-        </Show>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy() || !props.state.customPath}
+            onClick={() => send("setCliSettings", { customPath: null })}
+          >
+            {t("Clear path")}
+          </Button>
+        </div>
       </div>
-      <Switch
-        label={t("Update automatically")}
-        checked={props.state.autoUpdate}
-        disabled={busy()}
-        onChange={(autoUpdate) => send("setCliSettings", { autoUpdate })}
-      />
-      <Text as="p" tone="muted">
-        {t("Pinning a version pauses automatic updates.")}
-      </Text>
-      <Field label={t("Pinned version")}>
-        <Input value={version()} onInput={(e) => setVersion(e.currentTarget.value)} />
-      </Field>
-      <div class="managed-cli-actions">
-        <Button
-          disabled={busy() || !/^[0-9A-Za-z.+-]{1,64}$/.test(version())}
-          onClick={() => send("pinCli", { version: version() })}
-        >
-          {t("Pin")}
-        </Button>
-        <Button disabled={busy() || !props.state.pinnedVersion} onClick={() => send("pinCli", { version: null })}>
-          {t("Unpin")}
-        </Button>
-      </div>
-      <Field label={t("Custom path to the CLI")} error={cliPathError(path())}>
-        <Input value={path()} onInput={(e) => setPath(e.currentTarget.value)} />
-      </Field>
-      <div class="managed-cli-actions">
-        <Button
-          disabled={busy() || !path().trim() || !!cliPathError(path())}
-          onClick={() => send("setCliSettings", { customPath: path().trim() })}
-        >
-          {t("Save path")}
-        </Button>
-        <Button
-          disabled={busy() || !props.state.customPath}
-          onClick={() => send("setCliSettings", { customPath: null })}
-        >
-          {t("Clear path")}
-        </Button>
-      </div>
-    </Card>
+    </div>
   );
 }
 export function ManagedCliSection(props: {
@@ -295,7 +323,7 @@ export function ManagedCliSection(props: {
           </Show>
         }
       >
-        <div class="managed-cli-grid">
+        <div class="provider-cli-list">
           <For each={states().filter((state) => !props.provider || state.id === props.provider)}>
             {(state) => (
               <ManagedCliCard

@@ -789,7 +789,9 @@ async function main(): Promise<void> {
       }
     });
     await step("channel UI: create, edit and reply", async () => {
-      await page.getByRole("button", { name: "New channel", exact: true }).first().click();
+      await page.getByRole("button", { name: "Create new", exact: true }).first().click();
+      // Since PR #24 "New channel" is an item of the sidebar's "+" menu, not a button on the Agents page.
+      await page.getByRole("menuitem", { name: "New channel" }).first().click();
       let dialog = page.getByRole("dialog");
       await dialog.getByLabel("Channel name", { exact: true }).fill(`ui-${Date.now().toString(36)}`);
       await dialog.getByLabel("Display title").fill("UI acceptance");
@@ -1050,14 +1052,16 @@ async function main(): Promise<void> {
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden===true`,
       );
-      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
+      await page.getByRole("button", { name: /^Filter/ }).click();
+      await page.getByRole("menuitemcheckbox", { name: "Show hidden" }).click();
       await row.waitFor();
       await row.click({ button: "right" });
       await page.getByRole("menuitem", { name: "Show", exact: true }).click();
       await page.waitForFunction(
         `async()=> (await window.openbot.agent.listBots()).find(bot=>bot.id===${JSON.stringify(navigationHelperId)})?.hidden!==true`,
       );
-      await page.getByRole("switch", { name: "Show hidden" }).click({ force: true });
+      await page.getByRole("button", { name: /^Filter/ }).click();
+      await page.getByRole("menuitemcheckbox", { name: "Show hidden" }).click();
       await row.waitFor();
       await dump(page, evidence, "navigation-hide-show");
     });

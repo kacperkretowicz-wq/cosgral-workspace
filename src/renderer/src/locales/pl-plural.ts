@@ -1,0 +1,21 @@
+/** Polish "many" forms (5 plików) for `tn()`, under the same key as the English plural. */
+export const plMany: Readonly<Record<string, string>> = {
+  "{count} files copied to the library.": "{count} plików skopiowanych do biblioteki.",
+  "{count} memories": "{count} wspomnień",
+  "{count} skills": "{count} skilli",
+  "{count} files": "{count} plików",
+  "{count} steps": "{count} kroków",
+  "{count} triggers": "{count} wyzwalaczy",
+  "{count} agent steps": "{count} kroków agenta",
+  "{count} approvals": "{count} zgód",
+  "{count} outputs": "{count} wyjść",
+  "{count} prompts": "{count} poleceń",
+  "{count} conditions": "{count} warunków",
+  "{count} tables": "{count} tabel",
+  "{count} routines": "{count} rutyn",
+  "{count} backup models": "{count} modeli zapasowych",
+  "{count} folders": "{count} folderów",
+  "{count} items": "{count} pozycji",
+  "{count} files, {size} would be removed.": "Do usunięcia: {count} plików, {size}.",
+  "{count} unread direct messages": "{count} nieprzeczytanych wiadomości bezpośrednich",
+};

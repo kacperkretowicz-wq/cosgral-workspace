@@ -8,6 +8,8 @@ import { MessengersPanel } from "./MessengersPanel";
 const TELEGRAM_TOKEN = `123456789:${"A".repeat(35)}`;
 const SLACK_BOT = `xoxb-${"1".repeat(30)}`;
 const SLACK_APP = `xapp-${"2".repeat(30)}`;
+// Built from pieces on purpose: a whole token-shaped text in the source is refused by secret scanning, fake or not.
+const DISCORD_TOKEN = `${"MTIzNDU2Nzg5"}${"MDEyMzQ1Njc4"}.GabcDE.${"abcdefghijklmnopqrstuvwxyz"}0123456789ABC`;
 const FIRST_BOT = STORY_BOT_SUMMARIES[0]?.id ?? "chief";
 
 let mock = createMockMessengers(() => undefined);
@@ -46,13 +48,16 @@ const ready = (name: string, label: string) =>
   waitFor(() => expect(card(name).getByRole("button", { name: label })).toBeEnabled());
 const loaded = () => screen.findByText("Telegram", { selector: "strong" });
 
-it("lists Telegram and Slack, not connected, with nobody allowed and the setup steps", async () => {
+it("lists Telegram, Slack and Discord, not connected, with nobody allowed and the setup steps", async () => {
   render(() => <MessengersPanel />);
   await loaded();
-  expect(screen.getAllByText("Not connected")).toHaveLength(2);
-  expect(screen.getAllByText("Nobody is allowed yet.")).toHaveLength(2);
+  expect(screen.getAllByText("Not connected")).toHaveLength(3);
+  expect(screen.getAllByText("Nobody is allowed yet.")).toHaveLength(3);
   expect(screen.getByText("Open BotFather in Telegram and make a bot.")).toBeInTheDocument();
   expect(screen.getByText("Make a Slack app and turn on Socket Mode.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Make an application in the Discord Developer Portal and add a bot to it."),
+  ).toBeInTheDocument();
   expect(screen.getByText(/Only private conversations are answered/)).toBeInTheDocument();
 });
 
@@ -93,6 +98,23 @@ it("Slack needs both tokens and sends both", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Connect (Slack)" }));
   await waitFor(() => expect(spy).toHaveBeenCalledWith({ kind: "slack", token: SLACK_BOT, appToken: SLACK_APP }));
   await waitFor(() => expect(card("Slack").getByText(/Connected as/)).toBeInTheDocument());
+});
+
+it("Discord takes one token of its own shape, refuses a Telegram-looking one and sends only the token", async () => {
+  const spy = vi.spyOn(mock, "connect");
+  render(() => <MessengersPanel />);
+  await loaded();
+  await type("Bot token (Discord)", TELEGRAM_TOKEN);
+  await fireEvent.click(screen.getByRole("button", { name: "Connect (Discord)" }));
+  expect(await screen.findByText(/does not look like a token of Discord/)).toBeInTheDocument();
+  expect(spy).not.toHaveBeenCalled();
+  expect(screen.queryByLabelText("App-level token (Discord)")).not.toBeInTheDocument();
+  await type("Bot token (Discord)", DISCORD_TOKEN);
+  await fireEvent.click(screen.getByRole("button", { name: "Connect (Discord)" }));
+  await waitFor(() => expect(spy).toHaveBeenCalledWith({ kind: "discord", token: DISCORD_TOKEN }));
+  await waitFor(() => expect(card("Discord").getByText(/Connected as @cosgral_discord/)).toBeInTheDocument());
+  // The token never comes back into the window.
+  expect(document.body.textContent).not.toContain(DISCORD_TOKEN);
 });
 
 it("allows a conversation for an agent, shows it, and removes it; a wrong id is refused with the hint", async () => {

@@ -118,11 +118,15 @@ export const StickyDecisionCard: Story = {
         background: "var(--openbot-bg-app)",
       }}
     >
-      <div style={{ flex: 1, overflow: "auto", padding: "16px", color: "var(--openbot-text-secondary)" }}>
+      <section
+        tabindex="0"
+        aria-label="Conversation"
+        style={{ flex: 1, overflow: "auto", padding: "16px", color: "var(--openbot-text-secondary)" }}
+      >
         {Array.from({ length: 24 }, (_, index) => (
           <p>History message #{index + 1} - scroll, the Decision stays.</p>
         ))}
-      </div>
+      </section>
       <StickyDecision
         prompt={prompt}
         approval={undefined}

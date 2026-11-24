@@ -5,7 +5,7 @@ import type {
   VaultConnectorStatus,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
@@ -178,7 +178,7 @@ export function VaultConnectorsPanel() {
                     <p class="vault-connectors-note">
                       {status.loginCount === null
                         ? t("Checking the logins…")
-                        : t("{count} logins agents may use", { count: status.loginCount })}
+                        : tn(status.loginCount, "{count} login agents may use", "{count} logins agents may use")}
                       <Show when={status.vaultNames.length > 0}> · {status.vaultNames.join(", ")}</Show>
                     </p>
                     <div class="vault-connector-actions">

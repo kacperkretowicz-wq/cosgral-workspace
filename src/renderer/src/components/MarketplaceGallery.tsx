@@ -1,12 +1,12 @@
 import type { MarketplaceCategory, MarketplaceItem } from "@openbot/contracts/ipc";
 import { MARKETPLACE_CATEGORIES } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { Button, Input } from "./ui";
 import { Check, Download, Search } from "./ui/icons";
 import "../styles/marketplace-gallery.css";
 
-const CATEGORY_LABELS: Record<MarketplaceCategory, string> = {
+export const CATEGORY_LABELS: Record<MarketplaceCategory, string> = {
   productivity: "Productivity",
   research: "Research",
   writing: "Writing",
@@ -39,6 +39,8 @@ function MarketplaceCard(props: {
 }) {
   const state = () => stateLabel(props.item);
   const canQuickInstall = () => props.item.kind === "agent" && props.item.installedBotIds.length === 0;
+  // The catalog is the engine's (English); its titles and summaries are in the dictionary.
+  const title = () => tData(props.item.title);
   return (
     <li
       class="mk-card"
@@ -50,15 +52,15 @@ function MarketplaceCard(props: {
         type="button"
         variant="ghost"
         class="mk-card-open"
-        aria-label={t("Open {title}", { title: props.item.title })}
+        aria-label={t("Open {title}", { title: title() })}
         onClick={() => props.onOpen(props.item)}
       >
         <span class="mk-tile" aria-hidden="true">
-          {monogram(props.item.title)}
+          {monogram(title())}
         </span>
         <span class="mk-card-copy">
-          <strong>{props.item.title}</strong>
-          <small>{props.item.summary}</small>
+          <strong>{title()}</strong>
+          <small>{tData(props.item.summary)}</small>
           <span class="mk-card-meta">
             <span class="mk-chip">{t(CATEGORY_LABELS[props.item.category])}</span>
             <span class="mk-chip mk-chip-kind">{props.item.kind === "agent" ? t("Agent") : t("Skill")}</span>
@@ -76,7 +78,7 @@ function MarketplaceCard(props: {
         <Button
           type="button"
           class="mk-card-install"
-          aria-label={t("Install {title}", { title: props.item.title })}
+          aria-label={t("Install {title}", { title: title() })}
           onClick={() => props.onInstall(props.item)}
         >
           <Download size={14} stroke-width={1.5} aria-hidden="true" /> {t("Install")}

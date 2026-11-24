@@ -33,7 +33,7 @@ async function visibleChecklist(checks: Array<{ id: string; find: () => Locator 
 }
 
 /**
- * KK T-AJ: Settings sections (Updates/Voice) must be *in the window*, not only in the DOM.
+ * KK T-AJ: Settings sections (e.g. Updates) must be *in the window*, not only in the DOM.
  * Off-screen or zero-size → FAIL in the note (not OK). Shot height for W12 is 900.
  */
 async function inWindowChecklist(checks: Array<{ id: string; find: () => Locator }>): Promise<string> {
@@ -237,6 +237,11 @@ async function unlockComposer(page: Page): Promise<void> {
   await page.waitForTimeout(400);
 }
 
+/** An entry of the composer's + popover: its items are buttons (Conversation.tsx), older builds used menuitems. */
+function menuEntry(page: Page, name: RegExp): Locator {
+  return page.getByRole("menuitem", { name }).or(page.getByRole("button", { name }));
+}
+
 async function clickRail(page: Page, labels: string[]): Promise<void> {
   await dismissOverlays(page);
   await page.keyboard.press("Escape").catch(() => undefined);
@@ -252,7 +257,7 @@ async function clickRail(page: Page, labels: string[]): Promise<void> {
     await page.waitForTimeout(600);
     return;
   }
-  const more = nav.getByRole("button", { name: /More pages|Więcej stron/i });
+  const more = nav.getByRole("button", { name: /^(More|Więcej|More pages|Więcej stron)( \(.*\))?$/i });
   if (await more.count()) {
     await more.first().click();
     await page.waitForTimeout(300);
@@ -264,7 +269,7 @@ async function clickRail(page: Page, labels: string[]): Promise<void> {
     }
   }
   const hit = await page.evaluate(`((labels) => {
-    const navEl = document.querySelector('[role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]');
+    const navEl = document.querySelector('nav[aria-label="Pages"], nav[aria-label="Strony"], [role="navigation"][aria-label="Pages"], [role="navigation"][aria-label="Strony"]');
     if (!navEl) return "no-nav title=" + document.title + " body=" + (document.body?.innerText || "").slice(0, 80);
     const buttons = [...navEl.querySelectorAll("button")];
     const match = buttons.find((b) => labels.some((l) => (b.getAttribute("aria-label") || "").trim() === l));
@@ -350,8 +355,8 @@ async function openAppSettings(page: Page): Promise<void> {
   // KK-AC: gear opens the Settings *page* (InitialSetup), not SettingsModal with .settings-modal-nav.
   // Wait for either the page sections or a legacy modal dialog.
   await page
-    .locator("#settings-updates, #settings-voice, #settings-voice-microphone")
-    .or(page.getByRole("heading", { name: /Updates|Aktualizacje|Voice|Głos|Appearance|Wygląd/i }))
+    .locator("#settings-updates")
+    .or(page.getByRole("heading", { name: /Updates|Aktualizacje|Appearance|Wygląd/i }))
     .or(page.getByRole("dialog"))
     .first()
     .waitFor({ timeout: 8_000 })
@@ -631,13 +636,12 @@ async function main(): Promise<void> {
       if (!(await plus.first().isEnabled())) throw new Error("Attach a file disabled (onboarding model?)");
       await plus.first().click({ timeout: 10_000 });
       await p.waitForTimeout(400);
-      // UI-AH: Attach / Use a skill / Teach (off) / Side question / Voice (off) — menuitem or button.
+      // UI-AH: Attach / Use a skill / Teach (off) / Side question — menuitem or button.
       const checklist = await visibleChecklist([
-        { id: "attach", find: () => p.getByRole("menuitem", { name: /Attach files|Załącz pliki/i }) },
-        { id: "skill", find: () => p.getByRole("menuitem", { name: /Use a skill|Użyj skilla/i }) },
-        { id: "teach", find: () => p.getByRole("menuitem", { name: /Teach a task|Naucz zadania/i }) },
-        { id: "side", find: () => p.getByRole("menuitem", { name: /Side question|Pytanie boczne/i }) },
-        { id: "voice", find: () => p.getByRole("menuitem", { name: /^Voice$|^Głos$/i }) },
+        { id: "attach", find: () => menuEntry(p, /Attach files|Załącz pliki|Dołącz pliki/i) },
+        { id: "skill", find: () => menuEntry(p, /Use a skill|Użyj skilla/i) },
+        { id: "teach", find: () => menuEntry(p, /Teach a task|Naucz zadania/i) },
+        { id: "side", find: () => menuEntry(p, /Side question|Pytanie boczne/i) },
       ]);
       const items = p
         .getByRole("menuitem")
@@ -1120,60 +1124,6 @@ async function main(): Promise<void> {
         { id: "servers", find: () => p.getByText(/server|serwer|Add|Dodaj/i) },
       ]);
       return `MCP OAuth KK + checklist [${checklist}]`;
-    });
-
-    await tryShot(app, pageRef, out, "19-voice", async (p) => {
-      // KK-AC: Voice on Settings page (#settings-voice / #settings-voice-microphone); scroll, no modal nav.
-      await dismissOverlays(p);
-      await openAppSettings(p);
-      const dialog = p.getByRole("dialog");
-      const voiceNav = dialog.locator(".settings-modal-nav").getByRole("button", { name: /Voice|Głos/i });
-      if (await voiceNav.count())
-        await voiceNav
-          .first()
-          .click({ timeout: 8_000 })
-          .catch(() => undefined);
-      const voiceHead = p
-        .locator("#settings-voice, #settings-voice-microphone")
-        .or(p.getByRole("heading", { name: /Voice|Głos|Microphone|Mikrofon/i }))
-        .or(dialog.locator("#settings-voice-microphone"));
-      if (await voiceHead.count())
-        await voiceHead
-          .first()
-          .scrollIntoViewIfNeeded()
-          .catch(() => undefined);
-      await voiceHead
-        .first()
-        .waitFor({ timeout: 8_000 })
-        .catch(() => undefined);
-      await p.waitForTimeout(400);
-      // Scope to Voice section — bare getByText hit MCP/Server settings (false OK in T-AJ).
-      const checklist = await inWindowChecklist([
-        {
-          id: "voice",
-          find: () =>
-            p
-              .locator("#settings-voice, #settings-voice-microphone")
-              .or(p.getByRole("heading", { name: /^Voice$|^Głos$|^Microphone$|^Mikrofon$/i }))
-              .or(dialog.locator(".settings-modal-title").filter({ hasText: /^Voice$|^Głos$/i }))
-              .or(p.locator(".voice-overview")),
-        },
-        {
-          id: "mic",
-          find: () =>
-            p
-              .locator("#settings-voice, #settings-voice-microphone, .voice-overview")
-              .getByText(
-                /Microphone permission|Uprawnienie do mikrofonu|Not available in this version|Niedostępne w tej wersji/i,
-              )
-              .or(
-                dialog
-                  .locator("#settings-voice, #settings-voice-microphone, .voice-overview")
-                  .getByText(/Microphone permission|Uprawnienie do mikrofonu|Not available|Niedostępne/i),
-              ),
-        },
-      ]);
-      return `Głos KK (Settings page → Voice) + checklist [${checklist}]`;
     });
 
     await tryShot(app, pageRef, out, "20-mobile-connect", async (p) => {

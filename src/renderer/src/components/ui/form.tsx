@@ -198,11 +198,21 @@ export function Field(props: FieldProps): JSX.Element {
   const others = omit(props, "class", "children", "label", "description", "error", "required", "htmlFor");
   const descriptionId = `${generatedId}-description`;
   const errorId = `${generatedId}-error`;
+  // Getters, not copies: the label, the control and the error read these inside their own tracking scopes, so an
+  // error that appears later reaches `aria-describedby` and `aria-invalid` (a copy made here never updated).
   const fieldValue: FieldContextValue = {
-    controlId: local.htmlFor ?? `${generatedId}-control`,
-    describedBy: local.error ? errorId : local.description ? descriptionId : undefined,
-    invalid: Boolean(local.error),
-    required: Boolean(local.required),
+    get controlId() {
+      return local.htmlFor ?? `${generatedId}-control`;
+    },
+    get describedBy() {
+      return local.error ? errorId : local.description ? descriptionId : undefined;
+    },
+    get invalid() {
+      return Boolean(local.error);
+    },
+    get required() {
+      return Boolean(local.required);
+    },
   };
   return (
     <FieldContext value={fieldValue}>

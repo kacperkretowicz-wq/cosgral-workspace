@@ -7,8 +7,33 @@ import {
 } from "@openbot/contracts/ipc";
 import { isString } from "@openbot/contracts/runtime-values";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { Contact, CreditCard, KeyRound, Lock, ShieldCheck } from "./ui/icons";
+
+const VAULT_KIND_LABELS: Record<VaultItemKind, string> = {
+  login: "Login",
+  card: "Card",
+  contact: "Contact",
+  apiKey: "API key",
+  totp: "Authenticator",
+};
+
+function VaultKindIcon(props: { kind: VaultItemKind }) {
+  const common = { size: 18, "stroke-width": 1.5 } as const;
+  switch (props.kind) {
+    case "login":
+      return <KeyRound {...common} />;
+    case "card":
+      return <CreditCard {...common} />;
+    case "contact":
+      return <Contact {...common} />;
+    case "totp":
+      return <ShieldCheck {...common} />;
+    default:
+      return <Lock {...common} />;
+  }
+}
 
 export function VaultForm(props: {
   initial?: VaultItemSummary;
@@ -123,20 +148,20 @@ export function VaultForm(props: {
         </NativeSelect>
       </label>
       <label>
-        Label
+        {t("Label")}
         <Input unstyled value={label()} onInput={(e) => setLabel(e.currentTarget.value)} />
       </label>
       <Show when={kind() === "login"}>
         <label>
-          Site URL
+          {t("Site URL")}
           <Input unstyled value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
         </label>
         <label>
-          Username
+          {t("Username")}
           <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
         </label>
         <label>
-          Password
+          {t("Password")}
           <Input
             unstyled
             aria-label={t("Password")}
@@ -147,7 +172,7 @@ export function VaultForm(props: {
           />
         </label>
         <label>
-          Two-step key
+          {t("Two-step key")}
           <Input
             unstyled
             type="password"
@@ -159,11 +184,11 @@ export function VaultForm(props: {
       </Show>
       <Show when={kind() === "card"}>
         <label>
-          Cardholder
+          {t("Cardholder")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
-          Card number
+          {t("Card number")}
           <Input
             unstyled
             type="password"
@@ -173,15 +198,15 @@ export function VaultForm(props: {
           />
         </label>
         <label>
-          Expiry month
+          {t("Expiry month")}
           <Input unstyled type="number" value={month()} onInput={(e) => setMonth(e.currentTarget.value)} />
         </label>
         <label>
-          Expiry year
+          {t("Expiry year")}
           <Input unstyled type="number" value={year()} onInput={(e) => setYear(e.currentTarget.value)} />
         </label>
         <label>
-          Security code
+          {t("Security code")}
           <Input
             unstyled
             type="password"
@@ -193,35 +218,35 @@ export function VaultForm(props: {
       </Show>
       <Show when={kind() === "contact"}>
         <label>
-          Name
+          {t("Name")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <label>
-          Email
+          {t("Email")}
           <Input unstyled value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
         </label>
         <label>
-          Phone
+          {t("Phone")}
           <Input unstyled value={phone()} onInput={(e) => setPhone(e.currentTarget.value)} />
         </label>
         <label>
-          Address
+          {t("Address")}
           <Textarea unstyled value={address()} onInput={(e) => setAddress(e.currentTarget.value)} />
         </label>
       </Show>
       <Show when={kind() === "apiKey" || kind() === "totp"}>
         <label>
-          {kind() === "apiKey" ? "Variable name" : "Issuer"}
+          {kind() === "apiKey" ? t("Variable name") : t("Issuer")}
           <Input unstyled value={name()} onInput={(e) => setName(e.currentTarget.value)} />
         </label>
         <Show when={kind() === "totp"}>
           <label>
-            Account
+            {t("Account")}
             <Input unstyled value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
           </label>
         </Show>
         <label>
-          Secret
+          {t("Secret")}
           <Input
             unstyled
             type="password"
@@ -232,11 +257,12 @@ export function VaultForm(props: {
         </label>
       </Show>
       <Show when={props.initial}>
-        <small>Leave secret fields empty to keep their existing values.</small>
+        <small>{t("Leave secret fields empty to keep their existing values.")}</small>
         <Show when={kind() === "contact" || kind() === "totp"}>
           <p>
-            Existing contact fields or account cannot be read back. Enter all values to retain them; blank values
-            replace the old ones.
+            {t(
+              "Existing contact fields or account cannot be read back. Enter all values to retain them; blank values replace the old ones.",
+            )}
           </p>
         </Show>
       </Show>
@@ -244,11 +270,11 @@ export function VaultForm(props: {
         <p role="alert">{error()}</p>
       </Show>
       <Button unstyled type="button" disabled={busy()} onClick={() => void save()}>
-        Save item
+        {t("Save item")}
       </Button>
       <Show when={props.onCancel}>
         <Button unstyled type="button" onClick={() => props.onCancel?.()}>
-          Cancel
+          {t("Cancel")}
         </Button>
       </Show>
     </section>
@@ -298,9 +324,9 @@ export function VaultPanel() {
         {(s) => (
           <p>
             {s().encryptionAvailable
-              ? "System encryption available"
-              : "System encryption unavailable — saving is disabled"}{" "}
-            · {s().items} items
+              ? t("System encryption available")
+              : t("System encryption unavailable — saving is disabled")}{" "}
+            · {tn(s().items, "{count} item", "{count} items")}
           </p>
         )}
       </Show>
@@ -310,11 +336,17 @@ export function VaultPanel() {
       <For each={items()}>
         {(item) => (
           <article class="w2-item">
+            <span class="w2-item-icon" data-kind={item.kind} aria-hidden="true">
+              <VaultKindIcon kind={item.kind} />
+            </span>
             <strong>{item.label}</strong>
             <span>
-              {item.kind} {item.origin ?? item.name ?? item.cardLast4 ?? ""}
+              {t(VAULT_KIND_LABELS[item.kind] ?? item.kind)}
+              {(item.origin ?? item.name ?? (item.cardLast4 ? `•••• ${item.cardLast4}` : ""))
+                ? ` · ${item.origin ?? item.name ?? `•••• ${item.cardLast4}`}`
+                : ""}
             </span>
-            <div>
+            <div class="w2-item-actions">
               <Button
                 unstyled
                 type="button"

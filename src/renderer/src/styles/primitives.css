@@ -125,6 +125,8 @@
 
 :where(.ui-button)[data-size="md"] {
   height: var(--openbot-control-md);
+  /* Like xs/sm/lg: without its own size the base `button { font: inherit }` won and md buttons took the 16px body size. */
+  font-size: var(--openbot-text-md);
 }
 
 :where(.ui-button)[data-size="lg"] {
@@ -477,7 +479,9 @@
   transform: scale(0.97);
 }
 
-.ui-switch[data-disabled] {
+/* Only the control and its label are dimmed: the description often says why the switch is off and must stay readable (AA). */
+.ui-switch[data-disabled] .ui-switch-control,
+.ui-switch[data-disabled] .ui-switch-label {
   opacity: 0.42;
 }
 

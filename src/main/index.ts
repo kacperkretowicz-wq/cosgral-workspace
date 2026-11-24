@@ -54,7 +54,7 @@ import { BrowserProfileStore, createBrowserProfilePort } from "../backend/browse
 import { isCloseBrowserTabShortcut } from "../backend/browser-shortcuts";
 import { BudgetMeter } from "../backend/budget-meter";
 import { ChannelEngine } from "../backend/channel-engine";
-import { type ChannelRoutineService, createChannelRoutineService } from "../backend/channel-routines";
+import { type ChannelRoutineService, createChannelRoutineService, routeWebhook } from "../backend/channel-routines";
 import { ChannelStore } from "../backend/channel-store";
 import { ComposerService } from "../backend/composer-service";
 import { WindowsComputerDriver } from "../backend/computer-driver-windows";
@@ -64,6 +64,7 @@ import { InstanceTransferService } from "../backend/instance-transfer/transfer-s
 import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
 import { LibraryViewService } from "../backend/library-view";
+import { MachineFiles } from "../backend/machine-files";
 import { MachineLoadSampler } from "../backend/machine-load";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
@@ -95,7 +96,6 @@ import { findManagerCli, runManagerCli } from "../backend/vault-connectors/cli-r
 import { ConnectorStore } from "../backend/vault-connectors/common";
 import { VaultConnectorHub } from "../backend/vault-connectors/vault-connector-hub";
 import { VaultSecretsService } from "../backend/vault-connectors/vault-secrets-service";
-import type { VoiceService } from "../backend/voice-service";
 import { WebhookReceiver } from "../backend/webhook-receiver";
 import { WorkflowManager } from "../backend/workflow-manager";
 import { WorkflowStore } from "../backend/workflow-store";
@@ -219,6 +219,7 @@ import { isObject, requireString } from "./ipc/validation";
 import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
 import { registerIsolationIpc } from "./isolation-ipc";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
+import { registerMachineFilesIpc } from "./machine-files-ipc";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerMcpOAuthIpc } from "./mcp-oauth-ipc";
@@ -268,7 +269,6 @@ import { isTrustedRendererUrl } from "./trusted-renderer";
 import { registerUpdatePreferencesIpc } from "./update-preferences-ipc";
 import { supportsInstalledUpdates, UpdateService } from "./update-service";
 import { registerVaultConnectorsIpc } from "./vault-connectors-ipc";
-import { createVoice, registerVoiceIpc } from "./voice-ipc";
 import { registerWindowsIpc } from "./windows-ipc";
 import { registerWorkflowIpc } from "./workflow-ipc";
 
@@ -375,7 +375,6 @@ let apiKeyStore: ApiKeyStore | null = null;
 // COSGRAL W5-K2: the person's own model endpoints.
 let endpointStore: EndpointStore | null = null;
 let remoteDesktop: RemoteDesktopRuntime | null = null;
-let voiceService: VoiceService | null = null;
 let mobileConnect: MobileConnect | null = null;
 let phoneAccess: PhoneAccess | null = null;
 // COSGRAL W11 (U3-U6): search, the message box (slash, @, side question) and the tabs of threads.
@@ -980,19 +979,15 @@ function registerIpcHandlers(
     window: () => mainWindow,
     prepareDraft: (paths) => service.prepareAttachments(paths),
   });
+  // Library › Files › This computer: folders the person shares for this run of the program (person only).
+  registerMachineFilesIpc({
+    files: new MachineFiles(),
+    library: () => service.sharedData.library,
+    window: () => mainWindow,
+  });
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);
   registerRemoteDesktopIpc(() => remoteDesktop);
-  registerVoiceIpc(() => voiceService, {
-    platform: process.platform,
-    microphoneStatus: () => systemPreferences.getMediaAccessStatus("microphone"),
-    openMicrophoneSettings: async () => {
-      if (process.platform === "win32") await shell.openExternal("ms-settings:privacy-microphone");
-      else if (process.platform === "darwin") {
-        await shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone");
-      }
-    },
-  });
   registerSubscriptionsIpc(() => managedCli);
   registerApiKeysIpc(() => apiKeyStore);
   registerEndpointsIpc(() => endpointStore);
@@ -1737,12 +1732,6 @@ if (!hasSingleInstanceLock) {
             mainWindow.webContents.send(IPC_CHANNELS.remoteDesktopFrame, frame);
         },
       });
-      // COSGRAL W3: voice on this computer (Windows voices; whisper.cpp only after the person approves it on a card).
-      voiceService = createVoice({
-        userDataPath: app.getPath("userData"),
-        confirm: (request) => service.confirmForPerson(null, request),
-        emit: (event) => forwardAgentEvent("local", event),
-      });
       // COSGRAL W5-BE1: managed agent CLIs (official sources, SHA-256, card before the first download). Before
       // service.initialize(), so the first CLI lookup already knows the custom and downloaded CLI.
       managedCli = createManagedCli({
@@ -1818,7 +1807,9 @@ if (!hasSingleInstanceLock) {
       // COSGRAL W2: routines and the loopback webhook receiver; webhook secrets encrypted with safeStorage.
       const routineStore = new RoutineStore(store.database, electronSecretBox());
       const webhookReceiver: WebhookReceiver = new WebhookReceiver({
-        handle: (routineId, headers, body): Promise<WebhookAnswer> => routines.handleWebhook(routineId, headers, body),
+        // A routine of a channel answers first (null = no such id there), then the routines of agents.
+        handle: (routineId, headers, body): Promise<WebhookAnswer> =>
+          routeWebhook(() => channelRoutinesService, routines)(routineId, headers, body),
       });
       const routines: RoutineManager = new RoutineManager({
         store: routineStore,
@@ -1983,6 +1974,8 @@ if (!hasSingleInstanceLock) {
           // COSGRAL W12 (BE-R): routines of a channel: at the planned time the prompt goes to the channel as a message of the person.
           channelRoutinesService = createChannelRoutineService({
             database: store.database,
+            box: electronSecretBox(),
+            webhookBase: () => webhookReceiverService?.url() ?? null,
             channels: channelStore,
             engine,
             emit: (event) => forwardAgentEvent("local", event),
@@ -2496,7 +2489,6 @@ async function prepareForShutdown(): Promise<void> {
   dockWindows?.destroy();
   conversationWindows?.destroy();
   await closeRemoteDesktop(remoteDesktop).catch(() => undefined);
-  await (voiceService?.close() ?? Promise.resolve()).catch(() => undefined);
   managedCli?.close();
   phoneAccess?.close();
   composerService?.close();

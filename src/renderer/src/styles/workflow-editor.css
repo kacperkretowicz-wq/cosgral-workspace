@@ -7,7 +7,6 @@
 }
 
 .workflow-palette-button {
-  --step-hue: 245;
   height: 32px;
   gap: 8px;
   border-radius: var(--cosgral-radius-pill);
@@ -15,43 +14,47 @@
   font-size: var(--cosgral-text-md);
 }
 
-.workflow-palette-button::before {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
-  border-radius: var(--cosgral-radius-pill);
-  background: oklch(0.72 0.14 var(--step-hue));
-  content: "";
+.workflow-palette-button svg {
+  flex: 0 0 auto;
+  color: var(--step-color, var(--openbot-accent-text));
 }
 
-[data-step="trigger"],
-.workflow-node[data-type="trigger"] {
-  --step-hue: 150;
+/* Step colours from the palette tokens (one set per step type): the colour, its soft tint and the mesh gradient of the
+ * type tile. Palette buttons and step cards share them. */
+:is([data-step="trigger"], .workflow-node[data-type="trigger"]) {
+  --step-color: var(--openbot-file-green);
+  --step-soft: var(--openbot-file-green-soft);
+  --step-mesh: var(--openbot-mesh-green);
 }
 
-[data-step="agent"],
-.workflow-node[data-type="agent"] {
-  --step-hue: 245;
+:is([data-step="agent"], .workflow-node[data-type="agent"]) {
+  --step-color: var(--openbot-file-blue);
+  --step-soft: var(--openbot-file-blue-soft);
+  --step-mesh: var(--openbot-mesh-blue);
 }
 
-[data-step="approval"],
-.workflow-node[data-type="approval"] {
-  --step-hue: 70;
+:is([data-step="approval"], .workflow-node[data-type="approval"]) {
+  --step-color: var(--openbot-file-yellow);
+  --step-soft: var(--openbot-file-yellow-soft);
+  --step-mesh: var(--openbot-mesh-lime);
 }
 
-[data-step="channel-output"],
-.workflow-node[data-type="channel-output"] {
-  --step-hue: 320;
+:is([data-step="channel-output"], .workflow-node[data-type="channel-output"]) {
+  --step-color: var(--openbot-file-pink);
+  --step-soft: var(--openbot-file-pink-soft);
+  --step-mesh: var(--openbot-mesh-pink);
 }
 
-[data-step="prompt"],
-.workflow-node[data-type="prompt"] {
-  --step-hue: 200;
+:is([data-step="prompt"], .workflow-node[data-type="prompt"]) {
+  --step-color: var(--openbot-file-teal);
+  --step-soft: var(--openbot-file-teal-soft);
+  --step-mesh: var(--openbot-mesh-cyan);
 }
 
-[data-step="condition"],
-.workflow-node[data-type="condition"] {
-  --step-hue: 30;
+:is([data-step="condition"], .workflow-node[data-type="condition"]) {
+  --step-color: var(--openbot-file-orange);
+  --step-soft: var(--openbot-file-orange-soft);
+  --step-mesh: var(--openbot-mesh-orange);
 }
 
 .workflow-canvas {
@@ -74,8 +77,7 @@
 
 .workflow-canvas .workflow-node[data-type="prompt"],
 .workflow-canvas .workflow-node[data-type="condition"] {
-  border-color: oklch(0.62 0.12 var(--step-hue) / 0.55);
-  box-shadow: inset 3px 0 0 oklch(0.72 0.14 var(--step-hue));
+  box-shadow: inset 0 -2px 0 var(--step-color);
 }
 
 .workflow-node-preview {
@@ -111,18 +113,17 @@
   border: 0;
   border-bottom: 1px solid var(--cosgral-border);
   border-radius: var(--cosgral-radius-lg) var(--cosgral-radius-lg) 0 0;
-  background: oklch(0.5 0.1 var(--step-hue) / 0.18);
+  background: var(--step-soft);
   padding: 0 12px;
-  color: oklch(0.84 0.1 var(--step-hue));
+  color: var(--step-color);
   font-size: var(--cosgral-text-sm);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .workflow-node-move {
   color: var(--cosgral-text-muted);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   text-transform: none;
 }
 
@@ -132,7 +133,7 @@
   right: -7px;
   width: 14px;
   height: 14px;
-  border: 2px solid oklch(0.72 0.14 var(--step-hue));
+  border: 2px solid var(--step-color);
   border-radius: var(--cosgral-radius-pill);
   background: var(--cosgral-bg-canvas);
   padding: 0;
@@ -142,7 +143,7 @@
 }
 
 .workflow-canvas .workflow-port:hover {
-  background: oklch(0.72 0.14 var(--step-hue));
+  background: var(--step-color);
 }
 
 .workflow-canvas .workflow-node label {
@@ -201,35 +202,536 @@
   font-size: var(--cosgral-text-sm);
 }
 
-.workflow-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.workflow-list .ui-button[aria-current="true"] {
-  border-color: var(--cosgral-accent-strong);
-  background: var(--cosgral-accent-soft);
-  color: var(--cosgral-accent-text);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .workflow-canvas .workflow-port {
     transition: none;
   }
 }
 
-/* Light theme: the type label on the tinted header must stay readable (dark shade of the step colour, 4.5:1+). */
-:root[data-theme="light"] .workflow-canvas .workflow-drag,
-[data-story-theme="light"] .workflow-canvas .workflow-drag {
-  background: oklch(0.9 0.05 var(--step-hue));
-  color: oklch(0.34 0.09 var(--step-hue));
+/* Light theme: the step colours are the light palette's own (dark shades), so the type label on the tint keeps 4.5:1. */
+
+/* Workflows page (WorkflowsPage.tsx): saved workflows on the left, the editor on the right. ------------------ */
+
+.workflows-page .workflows-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-6);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--openbot-space-6) 40px 56px;
 }
 
-:root[data-theme="light"] .workflow-canvas .workflow-port,
-[data-story-theme="light"] .workflow-canvas .workflow-port {
-  border-color: oklch(0.5 0.14 var(--step-hue));
+.workflows-list {
+  position: sticky;
+  top: var(--openbot-space-6);
+  display: grid;
+  gap: var(--openbot-space-2);
+}
+
+.workflows-page .workflows-list h2,
+.workflows-page .workflows-panels h3 {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
+}
+
+.workflows-page .workflows-list-empty {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.workflow-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-list-item {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: 7px 8px;
+  color: var(--openbot-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--openbot-duration-fast) var(--openbot-ease-out);
+}
+
+.workflow-list-item:hover {
+  background: var(--openbot-hover);
+}
+
+.workflow-list-item:focus-visible {
+  outline: 2px solid var(--openbot-accent);
+  outline-offset: -2px;
+}
+
+.workflow-list-item[aria-current="true"] {
+  background: var(--openbot-active);
+  color: var(--openbot-text-primary);
+}
+
+.workflow-list-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: var(--openbot-radius-sm);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-muted);
+}
+
+.workflow-list-item[aria-current="true"] .workflow-list-icon {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.workflow-list-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.workflow-list-copy strong {
+  overflow: hidden;
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-list-copy small {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.workflows-editor {
+  display: grid;
+  /* One column that may shrink: without it the column grew to the palette's one-line width (past the page edge). */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: var(--openbot-space-4);
+}
+
+.workflows-page .workflows-alert {
+  margin: 0;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-danger-soft);
+  padding: var(--openbot-space-2) var(--openbot-space-3);
+  color: var(--openbot-danger);
+}
+
+.workflows-editor-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-3);
+}
+
+.workflows-page .workflows-name {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+
+/* The name reads as the editor's title; it shows its field only on hover and focus. */
+.workflows-page .workflows-name .ui-input,
+.workflows-page .workflows-name input {
+  height: 38px;
+  border-color: transparent;
+  background: transparent;
+  padding-inline: var(--openbot-space-2);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.workflows-page .workflows-name .ui-input:hover,
+.workflows-page .workflows-name input:hover,
+.workflows-page .workflows-name .ui-input:focus,
+.workflows-page .workflows-name input:focus {
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-bg-control);
+}
+
+.workflows-draft {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  padding: 2px 8px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.workflows-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.workflows-editor-actions .ui-button,
+.workflows-run .ui-button,
+.work-page-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+}
+
+.workflows-delete {
+  width: var(--openbot-control-md);
+  padding: 0;
+  justify-content: center;
+  color: var(--openbot-text-muted);
+}
+
+.workflows-delete:hover {
+  color: var(--openbot-danger);
+}
+
+/* The editor section and the canvas frame. */
+.workflows-editor > section[aria-label] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: var(--openbot-space-3);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.workflows-page .workflow-palette {
+  min-width: 0;
+  margin: 0;
+  gap: 6px;
+}
+
+.workflows-page .workflow-palette-button {
+  height: 30px;
+  border: 1px solid var(--openbot-border-strong);
+  background: var(--openbot-bg-control);
+  padding: 0 12px 0 10px;
+  color: var(--openbot-text-secondary);
+}
+
+.workflows-page .workflow-palette-button:hover {
+  border-color: var(--step-color, var(--openbot-border-strong));
+  background: var(--step-soft, var(--openbot-hover));
+  color: var(--openbot-text-primary);
+}
+
+.workflows-page .workflow-canvas {
+  position: relative;
+  min-height: 460px;
+  overflow: auto;
+  border: 1px solid var(--openbot-border-strong);
+  background-color: var(--openbot-bg-inset);
+  background-image: radial-gradient(var(--openbot-border-strong) 1px, transparent 1px);
+}
+
+.workflow-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--openbot-space-2);
+  padding: var(--openbot-space-6);
+  text-align: center;
+}
+
+.workflow-canvas-empty-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  margin-bottom: var(--openbot-space-1);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.workflow-canvas-empty strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+}
+
+.workflow-canvas-empty .ui-button {
+  justify-self: center;
+}
+
+.workflows-page .workflow-canvas-empty p {
+  max-width: 44ch;
+  margin: 0 0 var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+}
+
+.workflow-node-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workflows-page .workflow-canvas .workflow-node {
+  box-shadow: var(--openbot-shadow-raised);
+}
+
+/* Run, history and versions under the editor. */
+.workflows-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: start;
+  gap: var(--openbot-space-6);
+  margin-top: var(--openbot-space-2);
+  border-top: 1px solid var(--openbot-border-strong);
+  padding-top: var(--openbot-space-6);
+}
+
+.workflows-panels > :not(.workflows-run, .workflows-history) {
+  grid-column: 1 / -1;
+}
+
+.workflows-page .workflows-run,
+.workflows-page .workflows-history {
+  display: grid;
+  align-content: start;
+  gap: var(--openbot-space-3);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.workflows-run .ui-button {
+  justify-self: start;
+}
+
+.workflow-runs {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-run {
+  display: grid;
+  gap: var(--openbot-space-2);
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-3);
+}
+
+.workflow-run-head {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.workflow-run-status {
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  padding: 2px 8px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.workflow-run-status[data-status="done"] {
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.workflow-run-status[data-status="failed"],
+.workflow-run-status[data-status="denied"] {
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+}
+
+.workflow-run-status[data-status="running"],
+.workflow-run-status[data-status="waiting"] {
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.workflow-run-cancel {
+  margin-left: auto;
+}
+
+.workflows-page .workflow-run-error {
+  margin: 0;
+  color: var(--openbot-danger);
+  font-size: var(--openbot-text-md);
+}
+
+/* The steps of a run as a row of chips, joined like the path they took. */
+.workflow-run-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-run-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  padding: 2px 9px 2px 7px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+}
+
+.workflow-run-steps li + li::before {
+  margin: 0 3px 0 -9px;
+  color: var(--openbot-text-dim);
+  content: "›";
+}
+
+.workflow-run-steps li[data-status="done"] {
+  border-color: var(--openbot-success);
+  color: var(--openbot-text-primary);
+}
+
+.workflow-run-steps li[data-status="done"] svg {
+  color: var(--openbot-success);
+}
+
+.workflow-run-steps li[data-status="failed"],
+.workflow-run-steps li[data-status="denied"] {
+  border-color: var(--openbot-danger);
+  color: var(--openbot-danger);
+}
+
+.workflow-run-steps li[data-status="running"],
+.workflow-run-steps li[data-status="waiting"] {
+  border-color: var(--openbot-accent-strong);
+  color: var(--openbot-accent-text);
+}
+
+.workflow-run-steps li[data-status="skipped"],
+.workflow-run-steps li[data-status="pending"] {
+  opacity: 0.6;
+}
+
+@container (max-width: 860px) {
+  .workflows-page .workflows-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: var(--openbot-space-6);
+  }
+
+  .workflows-list {
+    position: static;
+  }
+
+  .workflows-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Connections under the canvas: one row "From → To · Path · Connect", then the list of connections. */
+.workflows-page .workflow-connections-editor {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: var(--openbot-space-2) var(--openbot-space-3);
+  margin: 0;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-surface);
+  padding: var(--openbot-space-4);
+}
+
+.workflows-page .workflow-connections-editor legend {
+  float: left;
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-bottom: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
+}
+
+.workflows-page .workflow-connections-editor > .ui-button {
+  height: var(--openbot-control-md);
+}
+
+.workflow-edge-list {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 2px;
+  margin: var(--openbot-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-edge-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-3);
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1) var(--openbot-space-1) var(--openbot-space-1) var(--openbot-space-2);
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-md);
+}
+
+.workflow-edge-list li:hover {
+  background: var(--openbot-hover);
+}
+
+.workflow-edge-kind {
+  margin-left: var(--openbot-space-1);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control-hover);
+  padding: 1px 7px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.workflow-edge-list li[data-edge="yes"] .workflow-edge-kind,
+.workflow-edge-list li[data-edge="allow"] .workflow-edge-kind {
+  background: var(--openbot-success-soft);
+  color: var(--openbot-success);
+}
+
+.workflow-edge-list li[data-edge="no"] .workflow-edge-kind,
+.workflow-edge-list li[data-edge="deny"] .workflow-edge-kind {
+  background: var(--openbot-danger-soft);
+  color: var(--openbot-danger);
+}
+
+.workflow-edge-list .ui-button {
+  height: var(--openbot-control-sm);
+  border-color: transparent;
+  background: transparent;
+  color: var(--openbot-text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workflow-edge-list .ui-button {
+    opacity: 0;
+  }
+
+  .workflow-edge-list li:hover .ui-button,
+  .workflow-edge-list li:focus-within .ui-button {
+    opacity: 1;
+  }
 }

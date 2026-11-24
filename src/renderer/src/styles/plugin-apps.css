@@ -23,7 +23,7 @@
 .marketplace-nav h1 {
   margin: 0 0 8px;
   font-size: var(--cosgral-text-xl);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .marketplace-nav-list {
@@ -38,7 +38,7 @@
   border-radius: var(--cosgral-radius-md);
   padding: 8px 12px;
   color: var(--cosgral-text-secondary);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   text-align: left;
 }
 
@@ -62,7 +62,7 @@
 .plugin-apps-hero h2 {
   margin: 0;
   font-size: var(--cosgral-text-2xl);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-apps-hero p {
@@ -157,14 +157,14 @@
 .plugin-section-head h3 {
   margin: 0;
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-section-count {
   margin-left: 8px;
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .plugin-rows {
@@ -229,7 +229,7 @@
   background: var(--cosgral-bg-control);
   color: var(--cosgral-text-secondary);
   font-size: var(--cosgral-text-sm);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .plugin-row-copy {
@@ -242,7 +242,7 @@
   overflow: hidden;
   color: var(--cosgral-text-primary);
   font-size: var(--cosgral-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -321,4 +321,93 @@
   .plugin-row {
     transition: none;
   }
+}
+
+/* Marketplace on the work-page frame (MarketplacePage.tsx): page header, section list with icons, rows of apps with
+ * a category icon and a two-line description (Polish taglines no longer cut at 70 px). Palette tokens only. */
+
+.work-page.marketplace-shell {
+  display: flex;
+  height: auto;
+  grid-template-columns: none;
+}
+
+.marketplace-body[data-single="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.marketplace-shell .marketplace-main {
+  min-width: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.marketplace-shell .plugin-apps-hero {
+  display: grid;
+  gap: var(--openbot-space-1);
+  border-bottom: 1px solid var(--openbot-border-strong);
+  padding-bottom: var(--openbot-space-3);
+}
+
+.marketplace-shell .plugin-apps-hero h2 {
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-xl);
+}
+
+.marketplace-shell .plugin-apps-hero p {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-md);
+}
+
+.marketplace-shell .plugin-rows {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--openbot-space-1) var(--openbot-space-4);
+}
+
+.marketplace-shell .plugin-row {
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-1-5) var(--openbot-space-2) var(--openbot-space-1-5) var(--openbot-space-1);
+}
+
+.marketplace-shell .plugin-row:hover {
+  background: var(--openbot-hover);
+}
+
+.marketplace-shell .plugin-row-open {
+  height: auto;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: var(--openbot-space-3);
+  white-space: normal;
+}
+
+/* The icon tile itself (mesh gradient per category) is drawn in azure-glass.css. */
+.marketplace-shell .plugin-row-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.marketplace-shell .plugin-row-copy strong {
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.marketplace-shell .plugin-row-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+  white-space: normal;
+}
+
+.marketplace-shell .plugin-row-state {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
 }

@@ -139,6 +139,24 @@ export class MachineFiles {
     return { status: "ok", path: target.real, name, size: info.size, root: target.grantRoot };
   }
 
+  /**
+   * The real path of a file or folder inside a granted folder, to open or show it in the system (no size limit: nothing
+   * is read or copied). The same checks as `resolveFile` otherwise.
+   */
+  async locate(
+    input: ResolveMachineFileInput,
+  ): Promise<
+    { status: "ok"; path: string; kind: "file" | "folder" } | { status: "refused"; reason: MachineFileRefusal }
+  > {
+    const target = await this.#resolve(input.grantId, input.relativePath, input.actor);
+    if ("refused" in target) return { status: "refused", reason: target.refused };
+    if (isBlockedMachineName(basename(target.real))) return { status: "refused", reason: "blocked-name" };
+    const info = await stat(target.real);
+    if (info.isDirectory()) return { status: "ok", path: target.real, kind: "folder" };
+    if (info.isFile()) return { status: "ok", path: target.real, kind: "file" };
+    return { status: "refused", reason: "not-found" };
+  }
+
   async #resolve(
     grantId: string,
     relativePath: string,

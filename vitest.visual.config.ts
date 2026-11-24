@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [solidPlugin(), tailwindcss()],
   test: {
     include: ["tests/visual/**/*.visual.test.tsx"],
+    setupFiles: ["tests/visual/setup.ts"],
     browser: {
       enabled: true,
       headless: true,

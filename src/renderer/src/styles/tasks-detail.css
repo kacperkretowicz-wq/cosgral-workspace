@@ -1,125 +1,461 @@
-/* Tasks landing hero + Needs you / Working / Waiting board (0.71 078). */
-.tasks-screen-hero {
-  margin-bottom: 18px;
+/*
+ * Tasks page (TasksViewScreen.tsx) on the work-page frame: scope switch, status chips and search in one toolbar,
+ * the board as glass columns (each with its own mesh icon), tasks as glass cards with a state rim, the detail as a
+ * glass panel with a progress bar and a timeline. Palette tokens only (`--openbot-*`).
+ */
+
+.work-page.tasks-screen > .tasks-body {
+  display: grid;
+  width: min(100% - 80px, 1320px);
+  gap: var(--openbot-space-4);
+  margin-inline: auto;
 }
 
-.tasks-screen-hero h1 {
-  margin: 0 0 8px;
+.work-page.tasks-screen > .tasks-screen-note {
+  margin-inline: auto;
 }
 
-.tasks-screen-hero-lead {
-  margin: 0 0 6px;
-  max-width: 36rem;
-  color: var(--cosgral-fg);
-  font-size: var(--cosgral-text-2xl);
-  font-weight: 500;
-  line-height: 1.35;
+/* Toolbar ----------------------------------------------------------------------------------------------------- */
+
+.tasks-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-3);
 }
 
-.tasks-screen-hero-lead em {
-  font-style: normal;
-  background: linear-gradient(90deg, var(--cosgral-accent-hover), var(--cosgral-accent-text));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.tasks-screen .tasks-scopes {
+  display: inline-flex;
+  width: fit-content;
+  gap: var(--openbot-space-0-5);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: 3px;
 }
+
+.tasks-screen .tasks-scopes .ui-button {
+  border-radius: var(--openbot-radius-pill);
+}
+
+.tasks-screen .tasks-scopes .ui-button[aria-current="page"] {
+  background: var(--openbot-tile-quiet), var(--openbot-bg-control-active);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  color: var(--openbot-text-primary);
+}
+
+.tasks-screen .tasks-search-form {
+  position: relative;
+  min-width: 220px;
+  max-width: 360px;
+  flex: 1 1 260px;
+}
+
+.tasks-search-form > svg {
+  position: absolute;
+  top: 50%;
+  left: var(--openbot-space-3);
+  color: var(--openbot-text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.tasks-screen .tasks-search-form .tasks-search {
+  width: 100%;
+  border-radius: var(--openbot-radius-pill);
+  padding-left: 34px;
+}
+
+/* Status chips: glass pills; the chosen one takes its state colour (rim, text, glow) like the reference pills. */
+.tasks-screen .tasks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--openbot-space-1-5);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.tasks-screen .tasks-chips .ui-button {
+  --chip-color: var(--openbot-text-primary);
+
+  border-color: transparent;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  color: var(--openbot-text-secondary);
+}
+
+.tasks-chips .ui-button[data-state="all"],
+.tasks-chips .ui-button[data-state="running"] {
+  --chip-color: var(--openbot-status-blue);
+}
+
+.tasks-chips .ui-button[data-state="waiting"],
+.tasks-chips .ui-button[data-state="paused"] {
+  --chip-color: var(--openbot-status-amber);
+}
+
+.tasks-chips .ui-button[data-state="done"] {
+  --chip-color: var(--openbot-status-green);
+}
+
+.tasks-chips .ui-button[data-state="failed"] {
+  --chip-color: var(--openbot-status-red);
+}
+
+.tasks-screen .tasks-chips .ui-button[aria-pressed="true"] {
+  background: linear-gradient(180deg, var(--openbot-accent-soft), transparent);
+  box-shadow:
+    inset 0 0 0 1.5px var(--chip-color),
+    0 0 16px -6px var(--chip-color);
+  color: var(--chip-color);
+}
+
+.tasks-screen .tasks-count {
+  margin-left: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Board ------------------------------------------------------------------------------------------------------- */
 
 .tasks-board-columns {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
+  gap: var(--openbot-space-3);
 }
 
-.tasks-board-heading {
+.tasks-board-column {
+  display: grid;
+  min-width: 0;
+  min-height: 168px;
+  align-content: start;
+  gap: var(--openbot-space-3);
+  border-radius: var(--openbot-radius-tile);
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  padding: var(--openbot-space-3);
+}
+
+.work-page .tasks-board-heading {
   display: flex;
-  gap: 8px;
-  align-items: baseline;
-  margin: 0 0 8px;
-  color: var(--cosgral-fg);
-  font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-lg);
 }
 
-.tasks-board-column .tasks-screen-list {
-  min-height: 72px;
+.work-page .tasks-board-hint {
+  margin: calc(var(--openbot-space-1) * -1) 0 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: 17px;
 }
 
-/* Task details: a progress bar for the steps and a timeline marker on each step. */
-.tasks-progress {
-  height: 4px;
+.tasks-board-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--openbot-radius-chip);
+  background: var(--openbot-mesh-blue);
+  box-shadow: var(--openbot-mesh-edge);
+  color: var(--openbot-contrast-white);
+}
+
+.tasks-board-column[data-column="needs-you"] .tasks-board-icon {
+  background: var(--openbot-mesh-orange);
+}
+
+.tasks-board-column[data-column="paused"] .tasks-board-icon,
+.tasks-board-column[data-column="cancelled"] .tasks-board-icon {
+  background: var(--openbot-mesh-deep);
+}
+
+.tasks-board-column[data-column="failed"] .tasks-board-icon {
+  background: var(--openbot-mesh-red);
+}
+
+.tasks-board-title {
+  min-width: 0;
   overflow: hidden;
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks-board-heading .tasks-count {
+  margin-left: auto;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
+  padding: 1px var(--openbot-space-2);
+  font-size: var(--openbot-text-xs);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.work-page .tasks-screen-list {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.work-page .tasks-screen-list > li {
+  --task-rim: var(--openbot-border-strong);
+
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--openbot-radius-lg);
+  background: var(--openbot-bg-control);
+  /* The state lights the bottom edge (reference: glass lit from below), not a stripe down the side. */
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    inset 0 -2px 0 var(--task-rim);
+}
+
+.tasks-screen-list > li[data-state="running"] {
+  --task-rim: var(--openbot-electric);
+}
+
+.tasks-screen-list > li[data-state="waiting"],
+.tasks-screen-list > li[data-state="paused"] {
+  --task-rim: var(--openbot-warning);
+}
+
+.tasks-screen-list > li[data-state="done"] {
+  --task-rim: var(--openbot-success);
+}
+
+.tasks-screen-list > li[data-state="failed"] {
+  --task-rim: var(--openbot-danger-strong);
+}
+
+.work-page .tasks-screen-list > li[data-open="true"] {
+  background: var(--openbot-tile-quiet), var(--openbot-bg-control-hover);
+  box-shadow:
+    var(--openbot-tile-quiet-shadow),
+    inset 0 -2px 0 var(--task-rim),
+    var(--openbot-glow-accent);
+}
+
+.work-page .tasks-screen-list > li.tasks-screen-note {
+  border: 1px dashed var(--openbot-border-strong);
+  background: transparent;
+  box-shadow: none;
+  padding: var(--openbot-space-3);
+  text-align: center;
+}
+
+.tasks-screen .tasks-screen-row {
+  display: grid;
+  width: 100%;
+  height: auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--openbot-space-1) var(--openbot-space-3);
+  border-radius: 0;
+  padding: var(--openbot-space-3) var(--openbot-space-3) var(--openbot-space-3) var(--openbot-space-4);
+  text-align: left;
+  white-space: normal;
+}
+
+.tasks-screen .tasks-screen-title {
+  font-size: var(--openbot-text-md);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: var(--openbot-leading-md);
+}
+
+.tasks-screen .tasks-screen-meta,
+.tasks-screen .tasks-screen-preview {
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+/* In a narrow board column the state pill goes on top, above the title (like a tag on the reference tiles). */
+.tasks-board-column .tasks-screen-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.tasks-board-column .tasks-screen-row > :last-child {
+  order: -1;
+}
+
+/* Detail ------------------------------------------------------------------------------------------------------ */
+
+.tasks-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-4);
+}
+
+@container (min-width: 1000px) {
+  .tasks-split:has(.tasks-detail) {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.55fr);
+  }
+}
+
+.work-page .tasks-detail {
+  position: sticky;
+  top: var(--openbot-space-4);
+  display: grid;
+  gap: var(--openbot-space-3);
+  border: 0;
+  border-radius: var(--openbot-radius-tile);
+  background: var(--openbot-tile-quiet), var(--openbot-tile-base);
+  box-shadow: var(--openbot-tile-quiet-shadow);
+  padding: var(--openbot-space-4);
+}
+
+.tasks-detail > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .tasks-detail h2 {
+  margin: 0;
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.work-page .tasks-detail h3 {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+}
+
+.tasks-screen .tasks-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .tasks-detail-text {
+  margin: var(--openbot-space-1) 0 0;
+  white-space: pre-wrap;
+  font-size: var(--openbot-text-md);
+}
+
+/* Progress: a glass track, a green fill with a glow. */
+.tasks-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-field-glass);
+  box-shadow: var(--openbot-field-edge);
 }
 
 .tasks-progress > span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--cosgral-success);
-  transition: width var(--cosgral-duration-slow) ease;
+  background: linear-gradient(90deg, var(--openbot-success), var(--openbot-status-green));
+  box-shadow: 0 0 10px -1px var(--openbot-success);
+  transition: width var(--openbot-duration-slow) ease;
+}
+
+/* Steps as a timeline with a marker per step. */
+.tasks-detail-steps,
+.tasks-detail-log {
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: var(--openbot-space-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--openbot-text-md);
 }
 
 .tasks-detail-steps {
   position: relative;
-  gap: 10px;
-  margin-top: 10px;
+  gap: var(--openbot-space-3);
 }
 
-.tasks-detail-steps li {
+.work-page .tasks-detail-steps li,
+.work-page .tasks-detail-log li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+}
+
+.work-page .tasks-detail-steps li {
   position: relative;
   align-items: center;
-  padding-left: 24px;
+  padding-left: var(--openbot-space-6);
 }
 
-.tasks-detail-steps li::before {
+.work-page .tasks-detail-steps li::before {
   position: absolute;
   top: 50%;
   left: 3px;
   width: 10px;
   height: 10px;
-  transform: translateY(-50%);
-  border: 2px solid var(--cosgral-border-strong);
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-bg-raised);
+  border: 2px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-surface-raised);
   content: "";
+  transform: translateY(-50%);
 }
 
-.tasks-detail-steps li::after {
+.work-page .tasks-detail-steps li::after {
   position: absolute;
   top: calc(50% + 8px);
   bottom: calc(-50% - 2px);
   left: 7px;
   width: 2px;
-  background: var(--cosgral-border);
+  background: var(--openbot-border-strong);
   content: "";
 }
 
-.tasks-detail-steps li:last-child::after {
+.work-page .tasks-detail-steps li:last-child::after {
   display: none;
 }
 
-.tasks-detail-steps li[data-state="done"]::before {
-  border-color: var(--cosgral-success);
-  background: var(--cosgral-success);
+.work-page .tasks-detail-steps li[data-state="done"]::before {
+  border-color: var(--openbot-success);
+  background: var(--openbot-success);
+  box-shadow: 0 0 8px var(--openbot-success);
 }
 
-.tasks-detail-steps li[data-state="running"]::before {
-  border-color: var(--cosgral-accent);
+.work-page .tasks-detail-steps li[data-state="running"]::before {
+  border-color: var(--openbot-electric);
+  box-shadow: 0 0 8px var(--openbot-electric);
 }
 
-.tasks-detail-steps li[data-state="failed"]::before {
-  border-color: var(--cosgral-danger);
+.work-page .tasks-detail-steps li[data-state="failed"]::before {
+  border-color: var(--openbot-danger-strong);
 }
 
-.tasks-detail-steps li[data-state="waiting"]::before,
-.tasks-detail-steps li[data-state="paused"]::before {
-  border-color: var(--cosgral-warning);
+.work-page .tasks-detail-steps li[data-state="waiting"]::before,
+.work-page .tasks-detail-steps li[data-state="paused"]::before {
+  border-color: var(--openbot-warning);
 }
 
-.tasks-detail-steps li > small {
+.work-page .tasks-detail-steps li > small {
   margin-left: auto;
-  color: var(--cosgral-text-muted);
+  color: var(--openbot-text-muted);
+}
+
+.tasks-detail-log time {
+  min-width: 52px;
+  color: var(--openbot-text-muted);
+}
+
+.work-page .tasks-detail-log li[data-superseded="true"] {
+  opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -21,6 +21,20 @@ describe("workflow editor steps", () => {
     expect(graph().nodes.map((node) => node.type)).toEqual(["prompt", "condition"]);
   });
 
+  it("places new steps side by side without covering each other, titled with their kind (seen overlapping in the real window)", async () => {
+    const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
+    render(() => <WorkflowCanvas nodes={graph().nodes} edges={graph().edges} onChange={setGraph} />);
+    await fireEvent.click(screen.getByRole("button", { name: "Add trigger" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Add agent" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Add approval" }));
+    const nodes = graph().nodes;
+    expect(nodes.map((node) => node.title)).toEqual(["Trigger", "Agent", "Approval"]);
+    // A step card is 260 px wide (workflow-editor.css).
+    for (let index = 1; index < nodes.length; index += 1) {
+      expect((nodes[index]?.x ?? 0) - (nodes[index - 1]?.x ?? 0)).toBeGreaterThanOrEqual(260);
+    }
+  });
+
   it("marks each step card with its type and keeps the Yes and No paths selectable", () => {
     const { container } = render(() => (
       <WorkflowCanvas

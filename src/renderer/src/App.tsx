@@ -16,7 +16,6 @@ import type {
   BrowserControlState,
   BrowserTab,
   CentralAuthState,
-  ConversationMessage,
   ConversationReadState,
   ConversationSnapshot,
   DirectConversationSnapshot,
@@ -39,50 +38,72 @@ import type {
   ThreadList,
   UpdateBotInput,
   UpdateStatus,
+  WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { emptyAgentEyesState } from "@openbot/contracts/ipc";
-import { createEffect, createMemo, createSignal, createStore, flush, onSettled, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { createEffect, createMemo, createSignal, flush, Loading, lazy, onSettled, Show, untrack } from "solid-js";
 import { markSidebarConversationRead } from "./agent-read-actions";
+import {
+  AUTH_SUCCESS_HOLD_MS,
+  CONVERSATION_MIN_WIDTH,
+  createStoredMessage,
+  createStoredProfile,
+  EMPTY_TEAM_PRESENCE,
+  FALLBACK_HOST_STATUS,
+  FALLBACK_STATUS,
+  FALLBACK_UPDATE_STATUS,
+  LAST_POSITION,
+  LEFT_PANEL_COLLAPSE_THRESHOLD,
+  LEFT_PANEL_COLLAPSED_STORAGE_KEY,
+  LEFT_PANEL_COMPACT,
+  LEFT_PANEL_DEFAULT,
+  LEFT_PANEL_EXPAND_THRESHOLD,
+  LEFT_PANEL_MAX,
+  LEFT_PANEL_MIN,
+  LEFT_PANEL_STORAGE_KEY,
+  MAC_SERVER_RAIL_WIDTH,
+  NARROW_SERVER_RAIL_WIDTH,
+  ONBOARDING_PROFILES,
+  PAGE_RAIL_WIDTH,
+  SERVER_RAIL_WIDTH,
+  updateStored,
+} from "./app-model";
+import {
+  botMessagesEqual,
+  botProfilesEqual,
+  formatTime,
+  readStateForMessages,
+  retainThinkingMessages,
+  toBotMessages,
+  toBotProfile,
+  withoutBot,
+} from "./bot-mapping";
 import { AccountLogin } from "./components/AccountLogin";
 import type { OnboardingChoice } from "./components/AppSettingsW3";
 import { type AccountNotice, addAccountNotice } from "./components/account-usage-view";
 import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
+import { CosgralLoadingSkeleton } from "./components/CosgralLoadingSkeleton";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
 import { InitialSetup } from "./components/InitialSetup";
-import { IntegrationsPanel } from "./components/IntegrationsPanel";
 import { JoinServerDialog } from "./components/JoinServerDialog";
-import { LibraryFilesView } from "./components/LibraryFilesView";
-import { LibraryPanel } from "./components/LibraryPanel";
-import { MarketplacePage } from "./components/MarketplacePage";
-import { McpSettings } from "./components/McpSettings";
-import { MessengersPanel } from "./components/MessengersPanel";
-import { MobileConnectPage } from "./components/MobileConnectPage";
 import { type NewAgentInput, NewAgentPage } from "./components/NewAgentPage";
 import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
-import { RoutinePanel } from "./components/RoutinePanel";
-import { ScheduleOverview } from "./components/ScheduleOverview";
 import { ServerRail } from "./components/ServerRail";
-import { ServerSettingsPage } from "./components/ServerSettingsPage";
+import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
-import { SkillsSettings } from "./components/SkillsSettings";
-import { TablesPanel } from "./components/TablesPanel";
-import { TasksPage } from "./components/TasksPage";
-import { TasksViewScreen } from "./components/TasksViewScreen";
-import { UsagePage } from "./components/UsagePage";
-import { VaultConnectorsPanel } from "./components/VaultConnectorsPanel";
-import { VaultPanel } from "./components/VaultPanel";
-import { WorkflowsPage } from "./components/WorkflowsPage";
 import type { BotMessage, BotProfile } from "./data";
-import { t } from "./i18n";
+import { language, t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
+import { isShortcutListKey } from "./keyboard-shortcuts";
 import {
   addCard,
   approvalCard,
@@ -103,121 +124,42 @@ import { rowStateFor, type SidebarAgentState } from "./row-activity";
 import { cardsInThread, pendingCardThreadId, threadAttentionItems } from "./thread-view";
 import { useRestoreWorkspace } from "./useRestoreWorkspace";
 
-const FALLBACK_STATUS: AgentStatus = {
-  phase: "starting",
-  cliVersion: null,
-  auth: { kind: "unknown" },
-  providers: [
-    { id: "codex", state: "not-started", version: null, message: null },
-    { id: "claude", state: "not-started", version: null, message: null },
-  ],
-  capabilities: {
-    chat: "unavailable",
-    browser: "unavailable",
-    computerUse: "unavailable",
-  },
-  message: "Starting local agent CLIs…",
-  fullAccess: true,
-};
+// Pages other than Agents load on first use, so the first window paints sooner (one 3 MB bundle before).
+const WorkflowsPage = lazy(() =>
+  import("./components/WorkflowsPage").then((module) => ({ default: module.WorkflowsPage })),
+);
+const MarketplacePage = lazy(() =>
+  import("./components/MarketplacePage").then((module) => ({ default: module.MarketplacePage })),
+);
+const MobileConnectPage = lazy(() =>
+  import("./components/MobileConnectPage").then((module) => ({ default: module.MobileConnectPage })),
+);
+const ServerSettingsPage = lazy(() =>
+  import("./components/ServerSettingsPage").then((module) => ({ default: module.ServerSettingsPage })),
+);
+const LibraryPage = lazy(() => import("./components/LibraryPage").then((module) => ({ default: module.LibraryPage })));
+const SchedulePage = lazy(() =>
+  import("./components/SchedulePage").then((module) => ({ default: module.SchedulePage })),
+);
+const UsagePage = lazy(() => import("./components/UsagePage").then((module) => ({ default: module.UsagePage })));
+const TasksViewScreen = lazy(() =>
+  import("./components/TasksViewScreen").then((module) => ({ default: module.TasksViewScreen })),
+);
+const TasksPage = lazy(() => import("./components/TasksPage").then((module) => ({ default: module.TasksPage })));
 
-const FALLBACK_UPDATE_STATUS: UpdateStatus = {
-  phase: "unsupported",
-  currentVersion: "",
-  availableVersion: null,
-  progress: null,
-  checkedAt: null,
-  message: null,
-};
-
-const FALLBACK_HOST_STATUS: HostStatus = {
-  phase: "unconfigured",
-  configured: false,
-  enabledOnLaunch: false,
-  serverId: null,
-  serverName: null,
-  apiUrl: null,
-  vncHostname: null,
-  apiOnline: false,
-  vncOnline: false,
-  remoteDesktopCredentialConfigured: false,
-  message: null,
-};
-
-const EMPTY_TEAM_PRESENCE: TeamPresenceSnapshot = {
-  serverId: null,
-  members: [],
-  updatedAt: "",
-};
-
-const LEFT_PANEL_STORAGE_KEY = "openbot:left-panel-width";
-const LEFT_PANEL_COLLAPSED_STORAGE_KEY = "openbot:left-panel-collapsed";
-const LEFT_PANEL_DEFAULT = 280;
-const LEFT_PANEL_MIN = 240;
-const AUTH_SUCCESS_HOLD_MS = 600;
-const LEFT_PANEL_MAX = 400;
-const LEFT_PANEL_COMPACT = 88;
-const LEFT_PANEL_COLLAPSE_THRESHOLD = 210;
-const LEFT_PANEL_EXPAND_THRESHOLD = 220;
-const CONVERSATION_MIN_WIDTH = 424;
-const MAC_SERVER_RAIL_WIDTH = 72;
-const SERVER_RAIL_WIDTH = 64;
-const NARROW_SERVER_RAIL_WIDTH = 56;
-const PAGE_RAIL_WIDTH = 54;
-
-type StoredValue = BotProfile | BotMessage;
-type StoredSetter = (value: StoredValue) => void;
-
-const storeSetters = new WeakMap<object, StoredSetter>();
-
-function isBotProfile(value: StoredValue): value is BotProfile {
-  return "avatarSeed" in value;
+function LazyPage(props: { children: JSX.Element }) {
+  return (
+    <Loading
+      fallback={
+        <main class="w2-library work-page" aria-busy="true">
+          <CosgralLoadingSkeleton label={t("Loading…")} />
+        </main>
+      }
+    >
+      {props.children}
+    </Loading>
+  );
 }
-
-function createStoredProfile(value: BotProfile): BotProfile {
-  const initial = Object.assign({}, value);
-  const [store, setStore] = createStore(initial);
-  storeSetters.set(store, (next) => {
-    if (isBotProfile(next)) setStore(() => next);
-  });
-  return store;
-}
-
-function createStoredMessage(value: BotMessage): BotMessage {
-  const initial = Object.assign({}, value);
-  const [store, setStore] = createStore(initial);
-  storeSetters.set(store, (next) => {
-    if (!isBotProfile(next)) setStore(() => next);
-  });
-  return store;
-}
-
-function updateStored(store: StoredValue, value: StoredValue): void {
-  storeSetters.get(store)?.(value);
-}
-
-const ONBOARDING_PROFILES: Record<string, { role: string; description: string; firstMessage: string }> = {
-  "Work & projects": {
-    role: "Work & projects",
-    description:
-      "Helps plan, organize, and execute ongoing work and projects while keeping priorities, next steps, and deliverables clear.",
-    firstMessage: "Focus on my work and projects. Help me plan, organize, and execute them proactively.",
-  },
-  "Research & writing": {
-    role: "Research & writing",
-    description: "Researches topics, synthesizes reliable sources, and helps draft, edit, and refine clear writing.",
-    firstMessage:
-      "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.",
-  },
-  "Sales & outreach": {
-    role: "Sales & outreach",
-    description: "Supports prospect research, sales preparation, personalized outreach, and organized follow-up work.",
-    firstMessage:
-      "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.",
-  },
-};
-
-/** A position past the end: the backend puts the folder or agent last. */
-const LAST_POSITION = 1_000_000;
 
 export function App() {
   const [agentCopyNotice, setAgentCopyNotice] = createSignal("");
@@ -245,6 +187,9 @@ export function App() {
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
   const [channelsOpen, setChannelsOpen] = createSignal(false);
   const [openChannelId, setOpenChannelId] = createSignal<string | null>(null);
+  /** Channels on the sidebar list, and the one opened from it (cleared when anything else is opened). */
+  const [channelList, setChannelList] = createSignal<WorkspaceChannel[]>([]);
+  const [sidebarChannelId, setSidebarChannelId] = createSignal<string | null>(null);
   const [openAnchorId, setOpenAnchorId] = createSignal<string | null>(null);
   const [createChannel, setCreateChannel] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
@@ -317,6 +262,7 @@ export function App() {
   const [pendingInviteUrl, setPendingInviteUrl] = createSignal("");
   const [hostOpen, setHostOpen] = createSignal(false);
   const [globalSearchOpen, setGlobalSearchOpen] = createSignal(false);
+  const [shortcutsOpen, setShortcutsOpen] = createSignal(false);
   const [messageFocusRequest, setMessageFocusRequest] = createSignal<{
     botId: string;
     messageId: string;
@@ -386,6 +332,14 @@ export function App() {
       setLeftPanelAutoCompact(shouldAutoCompactSidebar(platform, panelWidth));
     },
   );
+
+  onSettled(() => {
+    // Channels for the sidebar list; later changes arrive as "channels-changed".
+    void window.openbot?.channels
+      ?.list()
+      .then(setChannelList)
+      .catch(() => undefined);
+  });
 
   onSettled(() => {
     window.addEventListener("resize", updateResponsiveSidebar);
@@ -485,6 +439,13 @@ export function App() {
       setGlobalSearchVisibility(!globalSearchOpen());
     };
     window.addEventListener("keydown", handleGlobalSearchShortcut);
+    // Ctrl+/ or Cmd+/: the list of keyboard shortcuts (also from a text field: the key has no meaning there).
+    const handleShortcutList = (event: KeyboardEvent) => {
+      if (!isShortcutListKey(event) || setupState()?.completed !== true) return;
+      event.preventDefault();
+      setShortcutsOpen(!shortcutsOpen());
+    };
+    window.addEventListener("keydown", handleShortcutList);
     const cleanup = () => {
       unsubscribe();
       unsubscribeUpdate();
@@ -497,6 +458,7 @@ export function App() {
       unsubscribeHost();
       unsubscribeRemoteMac();
       window.removeEventListener("keydown", handleGlobalSearchShortcut);
+      window.removeEventListener("keydown", handleShortcutList);
       if (conversationFrame !== undefined) cancelAnimationFrame(conversationFrame);
       for (const timer of recentReplyTimers.values()) clearTimeout(timer);
       recentReplyTimers.clear();
@@ -617,6 +579,34 @@ export function App() {
     },
   );
 
+  // Row times and message times/statuses are formatted when the data is mapped (bot-mapping.ts). When the language
+  // changes, map the agents and the loaded conversations again, so "02:32 PM" becomes "14:32" without a restart.
+  let mappedLanguage: string | undefined;
+  createEffect(
+    () => language(),
+    (current) => {
+      const previous = mappedLanguage;
+      mappedLanguage = current;
+      if (previous === undefined || previous === current) return;
+      void window.openbot.agent
+        .listBots()
+        .then(applyStoredBots)
+        .catch(() => undefined);
+      const open = untrack(() => [
+        activeBotId(),
+        ...Object.entries(conversationLoaded())
+          .filter(([, loaded]) => loaded)
+          .map(([botId]) => botId),
+      ]);
+      for (const botId of new Set(open.filter(Boolean))) {
+        void window.openbot.agent
+          .readConversation(botId)
+          .then((snapshot) => scheduleConversation(snapshot))
+          .catch(() => undefined);
+      }
+    },
+  );
+
   function applyThreadList(next: ThreadList) {
     const previous =
       threadLists()[next.botId]?.activeThreadId ?? botList().find((bot) => bot.id === next.botId)?.threadId;
@@ -730,6 +720,9 @@ export function App() {
         return;
       case "bots-changed":
         applyStoredBots(event.bots);
+        return;
+      case "channels-changed":
+        setChannelList(event.channels);
         return;
       case "conversation":
         if (
@@ -952,6 +945,9 @@ export function App() {
     }
   }
 
+  /** True while the New agent page is open only because the agent list was empty (not because the person asked for it). */
+  let newAgentOpenedForEmptyList = false;
+
   function applyStoredBots(storedBots: BotSummary[]) {
     const currentById = new Map(botList().map((bot) => [bot.id, bot]));
     const profiles = storedBots.map((stored) => {
@@ -963,7 +959,15 @@ export function App() {
     });
     setBotList(profiles);
     setActiveBotId((current) => (profiles.some((bot) => bot.id === current) ? current : (profiles[0]?.id ?? "")));
-    if (profiles.length === 0) setNewAgentOpen(true);
+    if (profiles.length === 0) {
+      newAgentOpenedForEmptyList = true;
+      setNewAgentOpen(true);
+    } else if (newAgentOpenedForEmptyList) {
+      // The page was opened by the program only because there was no agent (e.g. before setup made the first one from a template):
+      // now that an agent exists, show it. A New agent page the person opened stays open.
+      newAgentOpenedForEmptyList = false;
+      setNewAgentOpen(false);
+    }
   }
 
   function applyConversationReads(reads: Record<string, ConversationReadState>): void {
@@ -1143,6 +1147,7 @@ export function App() {
     setDirectConversationError(null);
     setChannelsOpen(false);
     setAgentPickerOpen(false);
+    newAgentOpenedForEmptyList = false;
     setNewAgentOpen(true);
   }
 
@@ -1264,7 +1269,7 @@ export function App() {
       }));
     } catch (error) {
       if (request !== directConversationRequest) return;
-      setDirectConversationError(error instanceof Error ? error.message : "The messages could not load.");
+      setDirectConversationError(error instanceof Error ? error.message : t("The messages could not load."));
     } finally {
       if (request === directConversationRequest) setDirectConversationLoading(false);
     }
@@ -1575,7 +1580,7 @@ export function App() {
     const profile = predefined ?? {
       role: topic.length <= 60 ? topic : "Custom focus",
       description: `Primary focus: ${topic.slice(0, 1_900)}.`,
-      firstMessage: `My main focus for you is: ${topic}. Treat this as your ongoing specialty.`,
+      firstMessage: t("My main focus for you is: {topic}. Treat this as your ongoing specialty.", { topic }),
     };
     try {
       await updateBot(bot.id, {
@@ -1587,7 +1592,8 @@ export function App() {
     } catch {
       return false;
     }
-    return sendMessageToBot(bot.id, profile.firstMessage, []);
+    // The first message is written as the person, so it is in the window language (the prepared ones through tData()).
+    return sendMessageToBot(bot.id, predefined ? tData(profile.firstMessage) : profile.firstMessage, []);
   }
 
   async function answerPrompt(answers: Record<string, string[]>): Promise<boolean> {
@@ -2046,6 +2052,7 @@ export function App() {
                 agentStatus={agentStatus()}
                 platform={appInfo()?.platform ?? "darwin"}
                 accountEmail={account().email}
+                localProfile={localProfile()}
                 onSave={saveSetup}
                 onJoinRemote={joinRemoteDuringSetup}
                 onLogout={logoutCentralAccount}
@@ -2114,7 +2121,21 @@ export function App() {
                 copyNotice={agentCopyNotice()}
                 onDismissCopyNotice={() => setAgentCopyNotice("")}
                 modelOptions={modelOptions()}
+                channels={channelList()}
+                activeChannelId={activePage() === "agents" && channelsOpen() ? sidebarChannelId() : null}
+                onOpenChannel={(channelId) => {
+                  setCreateChannel(false);
+                  setNewAgentOpen(false);
+                  setActivePage("agents");
+                  setActiveDirectMemberId(null);
+                  setAgentPickerOpen(false);
+                  setOpenAnchorId(null);
+                  setOpenChannelId(channelId);
+                  setSidebarChannelId(channelId);
+                  setChannelsOpen(true);
+                }}
                 onSelectChannels={(create) => {
+                  setSidebarChannelId(null);
                   setCreateChannel(!!create);
                   setNewAgentOpen(false);
                   setActivePage("agents");
@@ -2174,34 +2195,24 @@ export function App() {
                 }}
               />
               <Show when={activePage() === "library"}>
-                <main class="w2-library">
-                  <h1>{t("Library")}</h1>
-                  <SkillsSettings />
-                  <VaultPanel />
-                  <VaultConnectorsPanel />
-                  <MessengersPanel />
-                  <IntegrationsPanel />
-                  <TablesPanel />
-                  <Show when={window.openbot?.libraryView} fallback={<LibraryPanel />}>
-                    <LibraryFilesView />
-                  </Show>
-                  <McpSettings />
-                </main>
+                <LazyPage>
+                  <LibraryPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "schedule"}>
-                <main class="w2-library">
-                  <h1>{t("Schedule")}</h1>
-                  <Show when={window.openbot?.schedule}>
-                    <ScheduleOverview />
-                  </Show>
-                  <RoutinePanel bots={botList()} />
-                </main>
+                <LazyPage>
+                  <SchedulePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "marketplace"}>
-                <MarketplacePage bots={botList()} />
+                <LazyPage>
+                  <MarketplacePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "workflows"}>
-                <WorkflowsPage />
+                <LazyPage>
+                  <WorkflowsPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "remote-desktop"}>
                 <RemoteDesktopPage />
@@ -2210,7 +2221,9 @@ export function App() {
                 <ProvidersPage fallbackNotices={fallbackNotices()} />
               </Show>
               <Show when={activePage() === "phone"}>
-                <MobileConnectPage />
+                <LazyPage>
+                  <MobileConnectPage />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "tasks"}>
                 {(() => {
@@ -2223,18 +2236,26 @@ export function App() {
                     setChannelsOpen(true);
                     setActivePage("agents");
                   };
-                  return window.openbot?.tasksView ? (
-                    <TasksViewScreen bots={botList()} onOpenChannel={openChannel} />
-                  ) : (
-                    <TasksPage bots={botList()} onOpenChannel={openChannel} />
+                  return (
+                    <LazyPage>
+                      {window.openbot?.tasksView ? (
+                        <TasksViewScreen bots={botList()} onOpenChannel={openChannel} />
+                      ) : (
+                        <TasksPage bots={botList()} onOpenChannel={openChannel} />
+                      )}
+                    </LazyPage>
                   );
                 })()}
               </Show>
               <Show when={activePage() === "usage"}>
-                <UsagePage />
+                <LazyPage>
+                  <UsagePage bots={botList()} />
+                </LazyPage>
               </Show>
               <Show when={activePage() === "server-settings"}>
-                <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />
+                <LazyPage>
+                  <ServerSettingsPage onOpenPage={setActivePage} onOpenSettings={() => setPermissionsOpen(true)} />
+                </LazyPage>
               </Show>
               <Show
                 when={
@@ -2276,6 +2297,8 @@ export function App() {
                   openChannelId={openChannelId()}
                   openAnchorMessageId={openAnchorId()}
                   onOpenHandled={() => setOpenChannelId(null)}
+                  hideList={sidebarChannelId() !== null}
+                  onCreateCancelled={() => setChannelsOpen(false)}
                 />
               </Show>
               <Show when={activePage() === "agents" && newAgentOpen()}>
@@ -2368,6 +2391,7 @@ export function App() {
                   agentStatus={agentStatus()}
                   platform={appInfo()?.platform ?? "darwin"}
                   accountEmail={account().email}
+                  localProfile={localProfile()}
                   onSave={saveSetup}
                   onJoinRemote={joinRemoteDuringSetup}
                   onLogout={logoutCentralAccount}
@@ -2407,6 +2431,9 @@ export function App() {
                   onCopyAddressUpdate={copyHostAddressUpdate}
                 />
               </Show>
+              <Show when={shortcutsOpen()}>
+                <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />
+              </Show>
               <Show when={globalSearchOpen()}>
                 <GlobalSearch
                   open={true}
@@ -2424,197 +2451,4 @@ export function App() {
       </Show>
     </Show>
   );
-}
-
-function toBotProfile(stored: BotSummary): BotProfile {
-  return {
-    id: stored.id,
-    name: stored.name,
-    role: stored.role,
-    description: stored.description,
-    notifications: stored.notifications,
-    hidden: stored.hidden,
-    activeModel: stored.activeModel,
-    model: stored.model,
-    reasoningEffort: stored.reasoningEffort,
-    threadId: stored.threadId,
-    avatarSeed: stored.avatarSeed,
-    avatarHue: stored.avatarHue,
-    avatarUrl: stored.avatarUrl,
-    time: stored.updatedAt ? formatTime(stored.updatedAt) : "now",
-    preview: cleanPreview(stored.preview),
-  };
-}
-
-function toBotMessage(message: ConversationMessage): BotMessage {
-  const exchangeSenderId = message.senderBotId ?? message.exchange?.senderBotId;
-  return {
-    actionSubject: {
-      author: message.author,
-      source: message.source,
-      itemType: message.itemType,
-      status: message.status,
-      delivery: message.delivery,
-    },
-    pinned: message.pinned,
-    edited: message.edited,
-    regeneration: message.regeneration,
-    id: message.id,
-    turnId: message.turnId,
-    author: message.author === "user" ? "you" : "bot",
-    body: message.text,
-    time: formatTime(message.createdAt),
-    streaming: message.status === "streaming",
-    itemType: message.itemType,
-    kind: message.exchange ? "exchange" : "text",
-    senderBotId: exchangeSenderId,
-    replyToMessageId: message.replyToMessageId,
-    attachments: message.attachments,
-    imageGeneration: message.imageGeneration,
-    exchange: message.exchange,
-    reaction: message.reaction,
-    status: message.exchange
-      ? undefined
-      : message.delivery?.status === "queued"
-        ? t("Queued #{n}", { n: message.delivery.position ?? 0 })
-        : message.delivery?.status === "cancelled"
-          ? t("Cancelled")
-          : message.status === "failed"
-            ? t("Failed")
-            : message.status === "interrupted"
-              ? t("Stopped")
-              : undefined,
-  };
-}
-
-function toBotMessages(messages: ConversationMessage[]): BotMessage[] {
-  const result: BotMessage[] = [];
-  const thinkingByTurn = new Map<string, BotMessage>();
-  for (const [index, message] of messages.entries()) {
-    if (message.author !== "assistant" || message.itemType !== "commentary") {
-      result.push({ ...toBotMessage(message), laterMessageCount: messages.length - index - 1 });
-      continue;
-    }
-
-    const key = message.turnId ?? message.id;
-    const existing = thinkingByTurn.get(key);
-    if (existing) {
-      if (message.text.trim()) existing.items = [...(existing.items ?? []), message.text];
-      existing.streaming = existing.streaming || message.status === "streaming";
-      continue;
-    }
-
-    const thinking: BotMessage = {
-      id: `thinking:${key}`,
-      turnId: message.turnId,
-      author: "bot",
-      body: "",
-      time: formatTime(message.createdAt),
-      streaming: message.status === "streaming",
-      itemType: "commentary",
-      kind: "thinking",
-      items: message.text.trim() ? [message.text] : [],
-    };
-    thinkingByTurn.set(key, thinking);
-    result.push(thinking);
-  }
-  return result;
-}
-
-function readStateForMessages(state: ConversationReadState, messages: ConversationMessage[]): ConversationReadState {
-  const throughIndex = state.throughMessageId
-    ? messages.findIndex((message) => message.id === state.throughMessageId)
-    : -1;
-  const unread = messages
-    .slice(throughIndex + 1)
-    .filter((message) => message.author !== "user" && message.itemType !== "commentary");
-  return {
-    ...state,
-    unreadCount: unread.length,
-    firstUnreadMessageId: unread[0]?.id ?? null,
-  };
-}
-
-function cleanPreview(preview: string): string {
-  const cleaned = preview
-    .replace(/\binbox\s+at\s+zero\b[:,]?\s*/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  return cleaned || "No messages yet";
-}
-
-function botProfilesEqual(left: BotProfile, right: BotProfile): boolean {
-  return (
-    left.id === right.id &&
-    left.name === right.name &&
-    left.role === right.role &&
-    left.description === right.description &&
-    left.notifications === right.notifications &&
-    left.model === right.model &&
-    left.activeModel === right.activeModel &&
-    left.hidden === right.hidden &&
-    left.reasoningEffort === right.reasoningEffort &&
-    left.threadId === right.threadId &&
-    left.avatarSeed === right.avatarSeed &&
-    left.avatarHue === right.avatarHue &&
-    left.time === right.time &&
-    left.preview === right.preview
-  );
-}
-
-function botMessagesEqual(left: BotMessage, right: BotMessage): boolean {
-  return (
-    left.pinned === right.pinned &&
-    left.laterMessageCount === right.laterMessageCount &&
-    left.edited === right.edited &&
-    left.regeneration?.ofMessageId === right.regeneration?.ofMessageId &&
-    JSON.stringify(left.actionSubject) === JSON.stringify(right.actionSubject) &&
-    left.id === right.id &&
-    left.turnId === right.turnId &&
-    left.author === right.author &&
-    left.body === right.body &&
-    left.time === right.time &&
-    left.kind === right.kind &&
-    left.streaming === right.streaming &&
-    left.itemType === right.itemType &&
-    left.status === right.status &&
-    left.senderBotId === right.senderBotId &&
-    left.replyToMessageId === right.replyToMessageId &&
-    left.reaction === right.reaction &&
-    JSON.stringify(left.attachments) === JSON.stringify(right.attachments) &&
-    JSON.stringify(left.exchange) === JSON.stringify(right.exchange) &&
-    JSON.stringify(left.items) === JSON.stringify(right.items)
-  );
-}
-
-function retainThinkingMessages(previous: BotMessage[], next: BotMessage[]): BotMessage[] {
-  const result = [...next];
-  const nextIds = new Set(result.map((message) => message.id));
-  for (const thinking of previous) {
-    if (thinking.kind !== "thinking" || nextIds.has(thinking.id) || !thinking.turnId) continue;
-    const sameTurnIndexes = result.flatMap((message, index) => (message.turnId === thinking.turnId ? [index] : []));
-    if (sameTurnIndexes.length === 0) continue;
-    const finalAnswerIndex = result.findIndex(
-      (message) => message.turnId === thinking.turnId && message.author === "bot" && message.kind !== "thinking",
-    );
-    const insertionIndex = finalAnswerIndex >= 0 ? finalAnswerIndex : (sameTurnIndexes.at(-1) ?? result.length - 1) + 1;
-    result.splice(insertionIndex, 0, { ...thinking, streaming: false });
-    nextIds.add(thinking.id);
-  }
-  return result;
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "now";
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function withoutBot<T>(values: Record<string, T>, botId: string): Record<string, T> {
-  const next = { ...values };
-  delete next[botId];
-  return next;
 }

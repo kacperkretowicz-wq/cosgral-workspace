@@ -1,5 +1,6 @@
 import type { AppVariant } from "@openbot/contracts/ipc";
 import { createSignal, flush, onCleanup } from "solid-js";
+import { t } from "../i18n";
 
 export type AppLogoAnimation = "none" | "blink" | "look-around" | "surprised";
 
@@ -93,7 +94,7 @@ export function AppLogo(props: AppLogoProps) {
       data-variant={props.variant}
       viewBox="0 0 240 240"
       aria-hidden={props.interactive ? undefined : "true"}
-      aria-label={props.interactive ? "Animate COSGRAL logo" : undefined}
+      aria-label={props.interactive ? t("Animate COSGRAL logo") : undefined}
       role={props.interactive ? "button" : undefined}
       tabindex={props.interactive ? 0 : undefined}
       onClick={handleClick}

@@ -23,6 +23,7 @@ function settings(): AppSettings {
     appearance: {
       uiScale: 100,
       font: "inter",
+      fontWeight: "normal",
       sendShortcut: "enter",
       chatAccent: "blue",
       agentSteps: "show",
@@ -48,7 +49,7 @@ describe("application settings", () => {
     const update = vi.fn().mockImplementation(async () => settings());
     vi.stubGlobal("openbot", { appSettings: { get: vi.fn().mockResolvedValue(settings()), update } });
     render(() => <AppSettingsW3 />);
-    await fireEvent.click(await screen.findByRole("checkbox", { name: "Channel result: Sound" }));
+    await fireEvent.click(await screen.findByRole("switch", { name: "Channel result: Sound" }));
     await fireEvent.change(screen.getByLabelText("Language"), { target: { value: "pl" } });
     await fireEvent.click(screen.getByRole("button", { name: "Save application settings" }));
     expect(update).toHaveBeenCalledTimes(1);

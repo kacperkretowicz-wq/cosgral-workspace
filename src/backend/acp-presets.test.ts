@@ -3,7 +3,7 @@
 
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, join, parse } from "node:path";
 import type { AgentEvent } from "@openbot/contracts/ipc";
 import { afterEach, describe, expect, it } from "vitest";
 import { AcpPresets, findCommandInPath } from "./acp-presets";
@@ -43,12 +43,20 @@ describe("findCommandInPath", () => {
     const first = await folder("gemini.cmd");
     const second = await folder("gemini.exe", "agy.exe");
     const path = [first.bin, second.bin].join(";");
-    // Windows file names do not care about case; the extension comes as PATHEXT writes it (".CMD").
-    const find = (command: string) => findCommandInPath(command, { path, platform: "win32", pathExt: ".EXE;.CMD" });
+    // Windows file names do not care about case; the extension comes as PATHEXT writes it (".CMD"). The files are
+    // looked up the way Windows does (case-insensitive), so the test also runs on a Linux or macOS file system.
+    const files = new Set(
+      [join(first.bin, "gemini.cmd"), join(second.bin, "gemini.exe"), join(second.bin, "agy.exe")].map((file) =>
+        file.toLowerCase(),
+      ),
+    );
+    const isFile = (candidate: string) => files.has(candidate.toLowerCase());
+    const find = (command: string) =>
+      findCommandInPath(command, { path, platform: "win32", pathExt: ".EXE;.CMD", isFile });
     expect(find("gemini")?.toLowerCase()).toBe(join(first.bin, "gemini.cmd").toLowerCase());
     expect(find("agy")?.toLowerCase()).toBe(join(second.bin, "agy.exe").toLowerCase());
     expect(find("agy.exe")?.toLowerCase()).toBe(join(second.bin, "agy.exe").toLowerCase());
-    expect(findCommandInPath("nope", { path, platform: "win32", pathExt: ".EXE" })).toBeNull();
+    expect(findCommandInPath("nope", { path, platform: "win32", pathExt: ".EXE", isFile })).toBeNull();
   });
 
   it("looks for the plain name elsewhere, and ignores an empty or missing PATH", async () => {
@@ -92,11 +100,13 @@ describe("AcpPresets", () => {
   });
 
   it("takes the command the person gives: a full path that exists, or a name found in PATH; refuses the rest", async () => {
-    const path = join("C:\\", "Tools", "gemini.cmd");
+    // A full path of this system ("C:\\Tools\\gemini.cmd" on Windows, "/Tools/gemini.cmd" elsewhere).
+    const root = parse(process.cwd()).root;
+    const path = join(root, "Tools", "gemini.cmd");
     const { presets, registry } = await setup({ gemini: "C:\\npm\\gemini.cmd" }, [path]);
     expect(presets.add({ presetId: "gemini", command: path }).command).toBe(path);
     expect(presets.add({ presetId: "gemini", command: "gemini" }).command).toBe("C:\\npm\\gemini.cmd");
-    expect(() => presets.add({ presetId: "gemini", command: "C:\\nowhere\\gemini.exe" })).toThrow(
+    expect(() => presets.add({ presetId: "gemini", command: join(root, "nowhere", "gemini.exe") })).toThrow(
       /no program at this path/i,
     );
     expect(() => presets.add({ presetId: "gemini", command: "tools\\gemini.exe" })).toThrow(/full path/);

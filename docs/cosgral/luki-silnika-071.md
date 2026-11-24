@@ -47,7 +47,12 @@ Silnik uruchamia: wyzwalacz (ręczny lub z rutyny), krok agenta, zgodę (Allow/D
 
 W kontrakcie obie są zapisane jako „niedostępne” z powodem, więc ekran nie ma martwego przycisku. **Decyzja do podjęcia:** potwierdzić „nie”.
 
-### 1.4 Discord (wstrzymany)
+### 1.4 Discord (zrobiony w kodzie 22.11.2026, nie sprawdzony na prawdziwej bramce)
+
+**Stan 22.11:** ekran „Komunikatory” istnieje od W12 (Telegram, Slack), więc warunek z poniższego zalecenia jest spełniony. Sterownik `src/backend/discord-driver.ts` (Gateway wychodzące + REST, tylko DM, wznawianie sesji, odcięcie milczącego połączenia, części do 2000 znaków) jest na wspólnym moście, w tym samym panelu i w kontrakcie; 18 testów na atrapie `src/backend/testing/discord-mock.ts`. **Nieznane do czasu prawdziwego tokenu:** zachowanie prawdziwej bramki (limity identyfikacji, dokładne kody zamknięcia, to czy konto bez „intents” w portalu dostaje wiadomości prywatne). Test na żywo: token bota właściciela, jedna wiadomość prywatna do bota, odpowiedź agenta.
+
+_Poniżej oryginalna ocena sprzed wykonania:_
+
 
 | Co | Koszt | Lekkie/ciężkie |
 |---|---|---|

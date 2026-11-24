@@ -137,6 +137,8 @@ describe("account integrations (W10-KK1)", () => {
   it("will not start without what it needs, and says what is missing", async () => {
     const s = await setup();
     await expect(s.manager.connect("github")).rejects.toThrow(/client id first/);
+    s.manager.configure({ service: "github", clientId: "client-1" });
+    await expect(s.manager.connect("github")).rejects.toThrow(/client secret/);
     s.manager.configure({ service: "notion", clientId: "client-1" });
     await expect(s.manager.connect("notion")).rejects.toThrow(/client secret/);
     s.manager.configure({ service: "google", clientId: "client-1", clientSecret: "client-secret-xyz" });

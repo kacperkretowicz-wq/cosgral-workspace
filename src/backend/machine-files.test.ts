@@ -174,3 +174,27 @@ describe("resolving a file", () => {
     });
   });
 });
+
+describe("locating a file or folder to open", () => {
+  it("finds files of any size and folders, with the same refusals as reading", async () => {
+    const grant = await machine.grant(join(root, "docs"));
+    const big = await machine.locate({ grantId: grant.id, relativePath: "big.bin", actor: null });
+    expect(big).toMatchObject({ status: "ok", kind: "file" });
+    expect(await machine.locate({ grantId: grant.id, relativePath: "deep", actor: null })).toMatchObject({
+      status: "ok",
+      kind: "folder",
+    });
+    expect(await machine.locate({ grantId: grant.id, relativePath: ".env", actor: null })).toEqual({
+      status: "refused",
+      reason: "blocked-name",
+    });
+    expect(await machine.locate({ grantId: grant.id, relativePath: "../x", actor: null })).toEqual({
+      status: "refused",
+      reason: "outside-folder",
+    });
+    expect(await machine.locate({ grantId: grant.id, relativePath: "readme.txt", actor: "chief" })).toEqual({
+      status: "refused",
+      reason: "bot-not-allowed",
+    });
+  });
+});

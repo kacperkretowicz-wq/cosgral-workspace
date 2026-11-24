@@ -2,6 +2,7 @@ import {
   type AllowedChat,
   type BotSummary,
   isConversationIdFor,
+  isDiscordBotToken,
   isSlackAppToken,
   isSlackBotToken,
   isTelegramToken,
@@ -12,7 +13,7 @@ import {
   type UnknownChat,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 
@@ -28,11 +29,12 @@ type Secrets = Partial<Record<MessengerKind, { token: string; appToken: string }
 /** The shape check before anything is sent: the service decides if the token is real. */
 function secretsLookRight(kind: MessengerKind, secrets: { token: string; appToken: string }): boolean {
   if (kind === "slack") return isSlackBotToken(secrets.token.trim()) && isSlackAppToken(secrets.appToken.trim());
+  if (kind === "discord") return isDiscordBotToken(secrets.token.trim());
   return isTelegramToken(secrets.token.trim());
 }
 
 /**
- * Messengers (window.openbot.messengers): Telegram and Slack. Each card shows the state, takes the token(s) (write-only: the field is
+ * Messengers (window.openbot.messengers): Telegram, Slack and Discord. Each card shows the state, takes the token(s) (write-only: the field is
  * cleared after sending and a token never comes back), lists the conversations that may talk to an agent and the unknown ones that wrote,
  * and says plainly that only private conversations are answered and nobody is allowed until you add them.
  */
@@ -169,7 +171,7 @@ export function MessengersPanel() {
       <h2>{t("Messengers")}</h2>
       <p class="vault-connectors-note">
         {t(
-          "Talk to an agent from Telegram or Slack. Only private conversations are answered, and nobody is allowed until you add them.",
+          "Talk to an agent from Telegram, Slack or Discord. Only private conversations are answered, and nobody is allowed until you add them.",
         )}
       </p>
       <Show
@@ -347,7 +349,7 @@ export function MessengersPanel() {
                             <li>
                               <span>{chat.label || chat.chatId}</span>
                               <small>
-                                {t("{count} messages", { count: chat.count })} · {chat.chatId}
+                                {tn(chat.count, "{count} message", "{count} messages")} · {chat.chatId}
                               </small>
                               <Button
                                 type="button"

@@ -70,11 +70,13 @@ export const INTEGRATION_INFO: Record<IntegrationService, IntegrationInfo> = {
     service: "github",
     label: "GitHub",
     defaultScopes: [],
-    needsClientSecret: false,
+    // GitHub's token exchange needs the client secret next to PKCE (docs: "client_secret: Required"); only the device
+    // flow goes without it.
+    needsClientSecret: true,
     ownerSteps: [
       "Register a GitHub App (not a personal token) and give it only the read permissions you need.",
       "Add the callback address shown below (a loopback address of this computer) to the app.",
-      "Copy the app's client id here.",
+      "Copy the client id and the client secret here.",
     ],
   },
   google: {

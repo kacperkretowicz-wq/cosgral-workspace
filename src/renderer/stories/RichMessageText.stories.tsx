@@ -95,7 +95,7 @@ export const InlineCitations: Story = {
     });
     await expect(marker.getBoundingClientRect().width).toBe(16);
     await expect(marker.getBoundingClientRect().height).toBe(16);
-    await expect(getComputedStyle(marker).color).toBe("rgb(220, 220, 220)");
+    await expect(getComputedStyle(marker).color).toBe("rgb(210, 218, 227)");
     await userEvent.hover(marker);
     await expect(within(document.body).findByRole("tooltip")).resolves.toBeInTheDocument();
     await userEvent.click(marker);

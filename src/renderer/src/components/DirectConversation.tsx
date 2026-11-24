@@ -12,7 +12,8 @@ import {
 } from "./conversation/UnreadMessages";
 import { TeamPersonAvatar, teamMemberName } from "./TeamPersonAvatar";
 import { TypingDots } from "./TypingDots";
-import { Button, Textarea } from "./ui";
+import { Button, IconButton, Textarea } from "./ui";
+import { CheckCheck } from "./ui/icons";
 
 interface DirectConversationProps {
   member: TeamPresenceMember;
@@ -179,9 +180,22 @@ export function DirectConversation(props: DirectConversationProps) {
             </span>
           </div>
         </div>
-        <span class="direct-private-label no-drag">
-          <LockIcon /> {t("Private")}
-        </span>
+        <div class="direct-conversation-actions no-drag">
+          <Show when={(props.snapshot?.readState?.unreadCount ?? 0) > 0}>
+            <IconButton
+              type="button"
+              variant="ghost"
+              label={t("Mark conversation as read")}
+              disabled={markingRead()}
+              onClick={() => void markUnreadMessages()}
+            >
+              <CheckCheck aria-hidden="true" size={16} stroke-width={1.75} />
+            </IconButton>
+          </Show>
+          <span class="direct-private-label">
+            <LockIcon /> {t("Private")}
+          </span>
+        </div>
       </header>
 
       <Show when={(props.snapshot?.readState?.unreadCount ?? 0) > 0 && !unreadDividerVisible()}>

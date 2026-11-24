@@ -5,37 +5,23 @@ import {
 } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
-  AgentEvent,
-  AgentEyesState,
   AgentModelId,
-  AgentModelOption,
   AgentReasoningEffort,
-  AgentStatus,
-  ApprovalRuleScope,
   AttachmentSummary,
   AvatarImageInput,
   BotAvatarHue,
-  BrowserControlAction,
-  BrowserControlState,
   BrowserTab,
   DraftAttachment,
   MessageReaction,
   QueueDelivery,
-  QueueSnapshot,
-  RemoteMacSession,
-  ServerSummary,
-  StopAgentEyesInput,
-  TeamPresenceSnapshot,
-  ThreadList,
   UpdateBotInput,
 } from "@openbot/contracts/ipc";
 import { isClaudeModel } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show, untrack } from "solid-js";
 import { normalizeAvatarFile } from "../avatar-image";
-import { AVATAR_HUE_OPTIONS, avatarCandidateSeeds, avatarHueSwatch } from "../blobatar";
-import type { BotMessage, BotProfile } from "../data";
-import { t } from "../i18n";
-import type { PendingCard } from "../pending-cards";
+import { avatarCandidateSeeds } from "../blobatar";
+import type { BotMessage } from "../data";
+import { t, tData } from "../i18n";
 import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
 import { ActionCard } from "./ActionCard";
@@ -44,21 +30,19 @@ import { AgentCardDetail } from "./AgentCardDetail";
 import { AgentCardsSection } from "./AgentCardsSection";
 import { AgentSettingsW3 } from "./AgentSettingsW3";
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
-import type { AccountNotice } from "./account-usage-view";
 import { ChatRightPanelTabs, ChatSidePanelLauncher, type ChatSidePanelTarget } from "./ChatSidePanelLauncher";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
 import { ContextIndicator } from "./ContextIndicator";
 import { ChoiceCard } from "./ConversationPrompts";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { AgentActivityIndicator, ThinkingDisclosure } from "./conversation/AgentActivity";
+import { AgentRecipientPicker } from "./conversation/AgentRecipientPicker";
 import { AttachmentCards, fileBadge, formatFileSize } from "./conversation/AttachmentCards";
+import { AvatarEditor } from "./conversation/AvatarEditor";
+import { BrowserPanel } from "./conversation/BrowserPanel";
 import { ChatSearch } from "./conversation/ChatSearch";
 import {
   BackIcon,
-  BrowserBackIcon,
-  BrowserControlIcon,
-  BrowserForwardIcon,
-  BrowserReloadIcon,
   CloseIcon,
   ComputerIcon,
   PlusIcon,
@@ -74,8 +58,27 @@ import {
 } from "./conversation/chat-search";
 import { ScrollToLatestButton, scrollToLatestMessage } from "./conversation/MessageNavigation";
 import { ExchangeSystemRow, MessageActions, MessageBody } from "./conversation/MessageRendering";
+import {
+  BROWSER_PANEL_DEFAULT,
+  BROWSER_PANEL_MAX,
+  BROWSER_PANEL_MIN,
+  BROWSER_PANEL_STORAGE_KEY,
+  type ComposerDraft,
+  type ConversationProps,
+  EMPTY_DRAFT,
+  type MediaPreview,
+  ONBOARDING_CHOICE_KEYS,
+  type RightPanelMode,
+  SETTINGS_PANEL_DEFAULT,
+  SETTINGS_PANEL_MAX,
+  SETTINGS_PANEL_MIN,
+  SETTINGS_PANEL_SIZES,
+  SETTINGS_PANEL_STORAGE_KEY,
+} from "./conversation/model";
 import { QueuePanel } from "./conversation/QueuePanel";
+import { ReasoningSelect } from "./conversation/ReasoningSelect";
 import { MessageSelectionActions } from "./conversation/SelectionActions";
+import { SidePanelResizer } from "./conversation/SidePanelResizer";
 import {
   scrollToUnreadBoundary,
   UnreadMessagesBanner,
@@ -86,7 +89,7 @@ import { EyesBar } from "./EyesIndicator";
 import { FallbackModelBadge } from "./FallbackModelBadge";
 import { LibraryPanel } from "./LibraryPanel";
 import { McpSettings } from "./McpSettings";
-import { PanelResizer, readPanelWidth, savePanelWidth } from "./PanelResizer";
+import { readPanelWidth, savePanelWidth } from "./PanelResizer";
 import { PlanCard, PlanPanel } from "./PlanPanel";
 import { ProviderModelPicker } from "./ProviderModelPicker";
 import { providerError } from "./provider-error";
@@ -103,167 +106,33 @@ import { SideQuestionPanel } from "./SideQuestionPanel";
 import { SkillQuickPick } from "./SkillQuickPick";
 import { StickyDecision } from "./StickyDecision";
 import { ThreadPanel } from "./ThreadPanel";
-import { ThreadTabs } from "./ThreadTabs";
+import { NewThreadButton, ThreadTabs } from "./ThreadTabs";
 import {
-  AudioLines,
   Button,
-  Combobox,
   Crosshair,
   Dialog,
   Input,
-  NativeSelect,
+  LibraryBig,
+  MessageCircleQuestion,
   Paperclip,
   Popover,
   SlidersHorizontal,
+  Sparkles,
   Switch,
-  Tabs,
   Text,
   Textarea,
 } from "./ui";
 import { VaultRequestCard } from "./VaultRequestCard";
-import { VoiceAutoRead, VoicePlayback } from "./VoicePlayback";
-import { VoiceRecorder } from "./VoiceRecorder";
-
-type AgentPickerOption = { kind: "create" } | { kind: "bot"; bot: BotProfile };
-
-interface ConversationProps {
-  onThreadsChanged?: (list: ThreadList) => void;
-  agentStatus: AgentStatus;
-  bot: BotProfile | undefined;
-  bots: BotProfile[];
-  modelOptions: AgentModelOption[];
-  messages: BotMessage[];
-  unreadCount: number;
-  firstUnreadMessageId: string | null;
-  loaded: boolean;
-  activeTurnId: string | null | undefined;
-  agentPickerOpen: boolean;
-  globalOverlayOpen: boolean;
-  creatingAgent: boolean;
-  settingsRequest: { botId: string; nonce: number; focus?: "name" } | null;
-  onboardingRequest: { botId: string; nonce: number } | null;
-  messageFocusRequest: { botId: string; messageId: string; nonce: number } | null;
-  queue: QueueSnapshot | undefined;
-  onOpenBudget?: () => void;
-  browserTabs: BrowserTab[];
-  activeBrowserTabId: string | null;
-  browserControlState: BrowserControlState;
-  server: ServerSummary | undefined;
-  presence: TeamPresenceSnapshot;
-  currentUserEmail: string;
-  remoteMacSession: RemoteMacSession | undefined;
-  remoteDesktopRequest: number;
-  prompt: Extract<AgentEvent, { type: "prompt" }> | undefined;
-  approval: Extract<AgentEvent, { type: "approval" }>["approval"] | undefined;
-  actionCard?: PendingCard;
-  /** COSGRAL: agents that are looking at a window, screen or camera right now. */
-  eyes?: AgentEyesState;
-  onStopEyes?: (input: StopAgentEyesInput) => void;
-  /** COSGRAL W5-K1: account limit and switch cards of this agent. */
-  accountNotices?: AccountNotice[];
-  onDismissAccountNotice?: (id: string) => void;
-  onCloseAgentPicker: () => void;
-  onCreateAgent: () => void;
-  onSelectAgent: (botId: string) => void;
-  onUpdateBot: (botId: string, updates: Omit<UpdateBotInput, "botId">) => Promise<void>;
-  onSetAgentAvatar: (botId: string, image: AvatarImageInput | null) => Promise<void>;
-  onSendMessage: (body: string, attachmentDraftIds: string[], replyToMessageId: string | null) => Promise<boolean>;
-  onMarkRead: () => Promise<void>;
-  onTypingChange: (botId: string, typing: boolean) => void;
-  onCompleteOnboarding: (
-    answer: string,
-    model: AgentModelId,
-    reasoningEffort: AgentReasoningEffort,
-  ) => Promise<boolean>;
-  onAnswerPrompt: (answers: Record<string, string[]>) => Promise<boolean>;
-  onRespondToApproval: (decision: "accept" | "decline", always?: ApprovalRuleScope) => Promise<boolean>;
-  onCancelQueuedMessage: (deliveryId: string) => void;
-  onSteerQueuedMessage: (deliveryId: string) => void;
-  onUpdateQueuedMessage: (
-    deliveryId: string,
-    text: string,
-    keepAttachmentIds: string[],
-    attachmentDraftIds: string[],
-  ) => Promise<boolean>;
-  onReorderQueue: (deliveryIds: string[]) => void;
-  onResumeQueue: () => void;
-  onActivateBrowserTab: (tabId: string) => void;
-  onCloseBrowserTab: (tabId: string) => void | Promise<void>;
-  onConnectRemoteMac: (hostname: string, serverId: string | null) => Promise<void>;
-  onDisconnectRemoteMac: (sessionId: string) => Promise<void>;
-  onOpenAgentSetup: () => Promise<void>;
-  onStop: () => void;
-}
-
-interface ComposerDraft {
-  text: string;
-  attachments: DraftAttachment[];
-  replyToMessageId: string | null;
-}
-
-interface MediaPreview {
-  attachment: AttachmentSummary;
-  text: string | null;
-  loading: boolean;
-  error: string | null;
-}
-
-type RightPanelMode = "none" | "browser" | "desktop" | "settings" | "files" | "voice";
-
-const EMPTY_DRAFT: ComposerDraft = {
-  text: "",
-  attachments: [],
-  replyToMessageId: null,
-};
-const ONBOARDING_CHOICE_KEYS = ["Work & projects", "Research & writing", "Sales & outreach", "Something else"] as const;
-const SETTINGS_PANEL_STORAGE_KEY = "openbot:settings-panel-width";
-const SETTINGS_PANEL_DEFAULT = 296;
-const SETTINGS_PANEL_MIN = 180;
-const SETTINGS_PANEL_MAX = 1600;
-const BROWSER_PANEL_STORAGE_KEY = "openbot:browser-panel-width";
-const BROWSER_PANEL_DEFAULT = 380;
-const BROWSER_PANEL_MIN = 220;
-const BROWSER_PANEL_MAX = 1600;
-const CONVERSATION_PANEL_MIN = 96;
-
-function browserActionLabel(action: BrowserControlAction): string {
-  const labels: Record<BrowserControlAction, string> = {
-    open: t("Opening a page…"),
-    "list-tabs": t("Checking tabs…"),
-    snapshot: t("Reading the page…"),
-    click: t("Clicking…"),
-    type: t("Typing…"),
-    key: t("Using the keyboard…"),
-    scroll: t("Scrolling…"),
-    back: t("Going back…"),
-    forward: t("Going forward…"),
-    reload: t("Reloading…"),
-    screenshot: t("Taking a screenshot…"),
-    "close-tab": t("Closing a tab…"),
-  };
-  return labels[action];
-}
 
 export function Conversation(props: ConversationProps) {
   const agentReady = () => props.agentStatus.phase === "ready";
   const imageGenerationUnavailable = () => Boolean(props.bot && isClaudeModel(props.bot.model));
   const [drafts, setDrafts] = createSignal<Record<string, ComposerDraft>>({});
-  const [voicePlaybackEnabled, setVoicePlaybackEnabled] = createSignal(false);
-  onSettled(() => {
-    const api = window.openbot.voice;
-    if (!api) return;
-    void api
-      .getState()
-      .then((state) => setVoicePlaybackEnabled(state.settings.enabled && state.speech.available))
-      .catch(() => setVoicePlaybackEnabled(false));
-    return window.openbot.agent.onEvent((event) => {
-      if (event.type === "voice-changed")
-        setVoicePlaybackEnabled(event.state.settings.enabled && event.state.speech.available);
-    });
-  });
   const [editingDeliveryId, setEditingDeliveryId] = createSignal<string | null>(null);
   const [editingDraftBackup, setEditingDraftBackup] = createSignal<ComposerDraft | null>(null);
   const [showAttachments, setShowAttachments] = createSignal(false);
+  /** One thread: no tab strip, "New thread" sits in the header (set by ThreadTabs once the list arrived). */
+  const [singleThread, setSingleThread] = createSignal(false);
   const [libraryOpen, setLibraryOpen] = createSignal(false);
   let libraryDetails: HTMLDetailsElement | undefined;
   let libraryOwner: string | undefined;
@@ -352,10 +221,6 @@ export function Conversation(props: ConversationProps) {
     const id = currentDraft().replyToMessageId;
     return id ? props.messages.find((message) => message.id === id) : undefined;
   });
-  const agentPickerOptions = createMemo<AgentPickerOption[]>(() => [
-    { kind: "create" },
-    ...props.bots.map((bot) => ({ kind: "bot" as const, bot })),
-  ]);
   const activeRightPanel = createMemo<RightPanelMode>(() => {
     if (props.agentPickerOpen) return "none";
     const botId = props.bot?.id;
@@ -365,7 +230,6 @@ export function Conversation(props: ConversationProps) {
   const remoteDesktopOpen = () => activeRightPanel() === "desktop";
   const settingsOpen = () => activeRightPanel() === "settings";
   const filesOpen = () => activeRightPanel() === "files";
-  const voiceOpen = () => activeRightPanel() === "voice";
   function openChatSidePanel(target: ChatSidePanelTarget) {
     setActiveRightPanel(target);
   }
@@ -577,6 +441,10 @@ export function Conversation(props: ConversationProps) {
     }, 0);
   }
 
+  function changeReasoning(reasoningEffort: AgentReasoningEffort): void {
+    setSettingsReasoning(reasoningEffort);
+    saveBotPatch({ reasoningEffort });
+  }
   function saveSettingsDescription(): void {
     const botId = props.bot?.id;
     if (!botId) return;
@@ -1568,7 +1436,7 @@ export function Conversation(props: ConversationProps) {
           "conversation-drop-active": dropActive(),
           "browser-panel-active": screenOpen(),
           "remote-desktop-panel-active": remoteDesktopOpen(),
-          "chat-side-panel-active": filesOpen() || voiceOpen() || settingsOpen(),
+          "chat-side-panel-active": filesOpen() || settingsOpen(),
         },
       ]}
       style={`--settings-panel-width: ${settingsPanelWidth()}px; --browser-panel-width: ${browserPanelWidth()}px; --remote-desktop-panel-width: ${remoteDesktopPanelWidth()}px`}
@@ -1610,7 +1478,7 @@ export function Conversation(props: ConversationProps) {
                         setActiveRightPanel("settings");
                       }}
                     >
-                      <AgentAvatar bot={bot()} />
+                      <AgentAvatar bot={bot()} mood={agentActivity() === "Working" ? "working" : "idle"} />
                       <h1>{bot().name}</h1>
                     </Button>
                   )}
@@ -1633,22 +1501,20 @@ export function Conversation(props: ConversationProps) {
                   />
                 </Show>
                 <Show when={props.bot && reasoningOptions().length > 1}>
-                  <NativeSelect
+                  <ReasoningSelect
                     class="header-effort"
                     value={settingsReasoning()}
-                    aria-label={t("Effort")}
+                    options={reasoningOptions()}
+                    ariaLabel={t("Effort")}
                     disabled={!agentReady() || agentActivity() === "Working"}
-                    onChange={(event) => {
-                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
-                      if (!reasoningEffort) return;
-                      setSettingsReasoning(reasoningEffort);
-                      saveBotPatch({ reasoningEffort });
-                    }}
-                  >
-                    <For each={reasoningOptions()}>
-                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
-                    </For>
-                  </NativeSelect>
+                    onChange={changeReasoning}
+                  />
+                </Show>
+                <Show when={props.bot && singleThread() ? props.bot : undefined}>
+                  {(bot) => <NewThreadButton botId={bot().id} onChanged={props.onThreadsChanged} />}
+                </Show>
+                <Show when={props.bot}>
+                  <ChatSidePanelLauncher variant="header" onOpen={openChatSidePanel} />
                 </Show>
                 <Show when={props.server?.kind === "remote"}>
                   <Button
@@ -1696,82 +1562,26 @@ export function Conversation(props: ConversationProps) {
             </>
           }
         >
-          <div class="agent-picker-root no-drag">
-            <Combobox.Root<AgentPickerOption>
-              options={agentPickerOptions()}
-              open={true}
-              modal={false}
-              triggerMode="input"
-              closeOnSelection={false}
-              shouldFocusWrap={true}
-              defaultFilter={(option, inputValue) =>
-                option.kind === "create" ||
-                `${option.bot.name} ${option.bot.role}`.toLocaleLowerCase().includes(inputValue.toLocaleLowerCase())
-              }
-              optionValue={(option) => (option.kind === "create" ? "create" : option.bot.id)}
-              optionTextValue={(option) =>
-                option.kind === "create" ? t("Create new agent") : `${option.bot.name} ${option.bot.role}`
-              }
-              optionLabel={(option) => (option.kind === "create" ? t("Create new agent") : option.bot.name)}
-              optionDisabled={(option) => option.kind === "create" && props.creatingAgent}
-              onChange={(option) => {
-                if (!option) return;
-                if (option.kind === "create") props.onCreateAgent();
-                else props.onSelectAgent(option.bot.id);
-              }}
-              itemComponent={(itemProps) => {
-                const option = itemProps.item.rawValue;
-                return (
-                  <Combobox.Item
-                    item={itemProps.item}
-                    class={["agent-picker-option", { "agent-picker-create": option.kind === "create" }]}
-                  >
-                    <Show
-                      when={option.kind === "bot" ? option.bot : undefined}
-                      fallback={
-                        <span class="agent-picker-plus">
-                          <PlusIcon />
-                        </span>
-                      }
-                    >
-                      {(bot) => <AgentAvatar bot={bot()} />}
-                    </Show>
-                    <Combobox.ItemLabel>
-                      {option.kind === "create"
-                        ? props.creatingAgent
-                          ? t("Creating agent…")
-                          : t("Create new agent")
-                        : option.bot.name}
-                    </Combobox.ItemLabel>
-                  </Combobox.Item>
-                );
-              }}
-            >
-              <Combobox.Control class="agent-recipient-field">
-                <Combobox.Label>{t("To:")}</Combobox.Label>
-                <Combobox.Input
-                  as={Input}
-                  ref={(element) => (pickerInput = element)}
-                  aria-label={t("To:")}
-                  placeholder={t("Search or create agents")}
-                  maxlength={INPUT_LIMITS.agentName}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") props.onCloseAgentPicker();
-                  }}
-                />
-              </Combobox.Control>
-              <Combobox.Content class="agent-picker-menu" aria-hidden={props.agentPickerOpen ? undefined : "true"}>
-                <Combobox.Listbox />
-              </Combobox.Content>
-            </Combobox.Root>
-          </div>
+          <AgentRecipientPicker
+            bots={props.bots}
+            open={props.agentPickerOpen}
+            creating={props.creatingAgent}
+            onCreate={props.onCreateAgent}
+            onSelect={props.onSelectAgent}
+            onClose={props.onCloseAgentPicker}
+            inputRef={(element) => (pickerInput = element)}
+          />
         </Show>
       </header>
 
       <Show when={threadActionError()}>
         <p role="alert">{threadActionError()}</p>
       </Show>
-      <Show when={props.bot}>{(bot) => <ThreadTabs botId={bot().id} onChanged={props.onThreadsChanged} />}</Show>
+      <Show when={props.bot}>
+        {(bot) => (
+          <ThreadTabs botId={bot().id} onChanged={props.onThreadsChanged} onSingleThreadChange={setSingleThread} />
+        )}
+      </Show>
       <Show when={props.bot}>
         {(bot) => (
           <details class="chat-tools">
@@ -1858,8 +1668,8 @@ export function Conversation(props: ConversationProps) {
               <div>
                 <strong>
                   {props.agentStatus.phase === "starting" || props.agentStatus.phase === "restarting"
-                    ? "Connecting to agent CLIs…"
-                    : "Agent CLI setup required"}
+                    ? t("Connecting to agent CLIs…")
+                    : t("Agent CLI setup required")}
                 </strong>
                 <p>
                   {props.agentStatus.message ??
@@ -1934,7 +1744,9 @@ export function Conversation(props: ConversationProps) {
                       if (submitting()) return false;
                       setSubmitting(true);
                       setComposerError(null);
-                      const completed = await props.onCompleteOnboarding(answer, settingsModel(), settingsReasoning());
+                      // The choices are shown in the window language; the prepared profiles are found by their English key.
+                      const key = ONBOARDING_CHOICE_KEYS.find((choice) => t(choice) === answer) ?? answer;
+                      const completed = await props.onCompleteOnboarding(key, settingsModel(), settingsReasoning());
                       if (completed) {
                         const botId = props.bot?.id;
                         if (botId) finishOnboarding(botId);
@@ -1946,9 +1758,6 @@ export function Conversation(props: ConversationProps) {
                 </div>
               </Show>
             </article>
-          </Show>
-          <Show when={props.bot?.id} keyed>
-            {(botId) => <VoiceAutoRead botId={botId} messages={props.messages} />}
           </Show>
           <For each={props.messages}>
             {(message) => {
@@ -2002,13 +1811,6 @@ export function Conversation(props: ConversationProps) {
                                   onDownload={(attachment) => attachmentAction(attachment, "download")}
                                 />
                               </div>
-                              <Show when={message.author === "bot" && !message.streaming && message.body.trim()}>
-                                <VoicePlayback
-                                  messageId={message.id}
-                                  text={message.body}
-                                  enabled={voicePlaybackEnabled()}
-                                />
-                              </Show>
                               <MessageActions
                                 message={message}
                                 history={
@@ -2194,7 +1996,8 @@ export function Conversation(props: ConversationProps) {
               setLibraryOpen(event.currentTarget.open);
             }}
           >
-            <summary>{t("Choose from library")}</summary>
+            {/* Opened from the + menu ("Choose from library"); no separate link above the composer. */}
+            <summary class="sr-only">{t("Choose from library")}</summary>
             <Show when={libraryOpen()}>
               <LibraryPanel
                 onAttach={(draft) => {
@@ -2223,7 +2026,7 @@ export function Conversation(props: ConversationProps) {
                 </span>
                 <Button
                   type="button"
-                  aria-label={`Remove ${attachment.name}`}
+                  aria-label={t("Remove {name}", { name: attachment.name })}
                   onClick={() => removeAttachment(attachment.id)}
                 >
                   <CloseIcon />
@@ -2293,18 +2096,6 @@ export function Conversation(props: ConversationProps) {
             {(bot) => <SideQuestionPanel botId={bot.id} onClose={() => setSideQuestionOpen(false)} />}
           </Show>
           <div class="composer">
-            <Show when={props.bot?.id} keyed>
-              {(botId) => (
-                <VoiceRecorder
-                  onTranscript={(text) =>
-                    setDrafts((current) => {
-                      const draft = current[botId] ?? EMPTY_DRAFT;
-                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
-                    })
-                  }
-                />
-              )}
-            </Show>
             <Popover.Root
               open={showAttachments()}
               placement="top-start"
@@ -2350,7 +2141,21 @@ export function Conversation(props: ConversationProps) {
                       <Paperclip aria-hidden="true" />
                       {attachmentBusy() ? t("Importing…") : t("Attach files")}
                     </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowAttachments(false);
+                        if (!libraryDetails) return;
+                        libraryOwner = props.bot?.id;
+                        libraryDetails.open = true;
+                        setLibraryOpen(true);
+                      }}
+                    >
+                      <LibraryBig aria-hidden="true" />
+                      {t("Choose from library")}
+                    </Button>
                     <Button type="button" onClick={() => setAttachMenuView("skills")}>
+                      <Sparkles aria-hidden="true" />
                       {t("Use a skill")}
                     </Button>
                     <Button
@@ -2369,16 +2174,8 @@ export function Conversation(props: ConversationProps) {
                         setSideQuestionOpen(true);
                       }}
                     >
+                      <MessageCircleQuestion aria-hidden="true" />
                       {t("Side question")}
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled
-                      title={t("Voice side panel needs engine support — not in this build yet.")}
-                      aria-label={t("Voice")}
-                    >
-                      <AudioLines aria-hidden="true" />
-                      {t("Voice")}
                     </Button>
                   </Show>
                 </Popover.Content>
@@ -2399,14 +2196,18 @@ export function Conversation(props: ConversationProps) {
                 }
                 placeholder={
                   !agentReady()
-                    ? "Complete agent CLI setup to start"
+                    ? t("Complete agent CLI setup to start")
                     : onboardingModelRequired()
-                      ? "Choose a model to continue"
+                      ? t("Choose a model to continue")
                       : replyTarget()
-                        ? "Reply…"
-                        : `Message ${props.agentPickerOpen ? "agent" : (props.bot?.name ?? "agent")}`
+                        ? t("Reply…")
+                        : t("Message {name}", {
+                            name: props.agentPickerOpen ? t("agent") : (props.bot?.name ?? t("agent")),
+                          })
                 }
-                ariaLabel={`Message ${props.agentPickerOpen ? "agent" : (props.bot?.name ?? "agent")}`}
+                ariaLabel={t("Message {name}", {
+                  name: props.agentPickerOpen ? t("agent") : (props.bot?.name ?? t("agent")),
+                })}
                 onValueChange={(text) => {
                   updateCurrentDraft({ text });
                   updateTeamTyping(text);
@@ -2483,13 +2284,13 @@ export function Conversation(props: ConversationProps) {
                   <div class="media-caption">
                     <span>{preview().attachment.name}</span>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "open")}>
-                      Open
+                      {t("Open")}
                     </Button>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "download")}>
-                      Download
+                      {t("Download")}
                     </Button>
                     <Button type="button" onClick={() => attachmentAction(preview().attachment, "reveal")}>
-                      Show in Finder
+                      {navigator.userAgent.includes("Windows") ? t("Show in Explorer") : t("Show in Finder")}
                     </Button>
                   </div>
                 </Dialog.Content>
@@ -2499,180 +2300,30 @@ export function Conversation(props: ConversationProps) {
         </Show>
       </Dialog.Root>
 
-      <Show when={props.bot && activeRightPanel() === "none"}>
-        <ChatSidePanelLauncher onOpen={openChatSidePanel} />
-      </Show>
-
       <Show when={screenOpen()}>
-        <Tabs.Root
-          as="aside"
-          id="browser-side-panel"
-          class={["browser-panel", { "browser-panel-controlled": Boolean(activeBrowserControl()) }]}
-          aria-label={t("Browser")}
-          value={activeBrowserTab()?.id ?? "__empty"}
-          onChange={props.onActivateBrowserTab}
-          activationMode="automatic"
-        >
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
-            controls="browser-side-panel"
-            direction="right"
-            value={browserPanelWidth()}
-            defaultValue={BROWSER_PANEL_DEFAULT}
-            min={BROWSER_PANEL_MIN}
-            max={() =>
-              Math.min(
-                BROWSER_PANEL_MAX,
-                Math.max(
-                  BROWSER_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
-            onResize={setBrowserPanelWidth}
-            onResizeEnd={(value) => savePanelWidth(BROWSER_PANEL_STORAGE_KEY, value)}
-          />
-          <ChatRightPanelTabs active="browser" onSelect={openChatSidePanel} />
-          <header class="browser-panel-header">
-            <div class="browser-tabs">
-              <Tabs.List class="browser-tab-strip" aria-label={t("Browser tabs")}>
-                <For each={browserTabs()}>
-                  {(tab) => {
-                    const control = () => browserControlForTab(tab);
-                    const controller = () => browserControllerForTab(tab);
-                    const title = () => (tab.loading ? t("Loading…") : tab.title || tab.url);
-                    return (
-                      <div
-                        role="presentation"
-                        class={["browser-tab-wrap", { "browser-tab-controlled": Boolean(control()) }]}
-                      >
-                        <Tabs.Trigger
-                          as={Button}
-                          value={tab.id}
-                          aria-label={
-                            control()
-                              ? t("{title}, controlled by {name}", {
-                                  title: title(),
-                                  name: controller()?.name ?? t("Agent"),
-                                })
-                              : title()
-                          }
-                          aria-description={t("Press Delete or Control/Command W to close")}
-                          class="browser-tab"
-                          onPointerDown={(event) => {
-                            if (event.button !== 1) return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void closeBrowserTab(tab.id);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key !== "Delete") return;
-                            event.preventDefault();
-                            void closeBrowserTab(tab.id);
-                          }}
-                        >
-                          <Show when={control()}>
-                            {(session) => (
-                              <span
-                                class={[
-                                  "browser-tab-control",
-                                  {
-                                    "browser-tab-control-acting": session().phase === "acting",
-                                  },
-                                ]}
-                                title={`${controller()?.name ?? t("Agent")}: ${browserActionLabel(session().action)}`}
-                              >
-                                <BrowserControlIcon />
-                              </span>
-                            )}
-                          </Show>
-                          <span class="browser-tab-title" data-loading={tab.loading ? "true" : undefined}>
-                            <Show when={tab.loading} fallback={tab.title || tab.url}>
-                              <span class="browser-tab-loading cosgral-skeleton" aria-hidden="true" />
-                              <span class="sr-only">{t("Loading…")}</span>
-                            </Show>
-                          </span>
-                          <span
-                            class="browser-tab-close"
-                            aria-hidden="true"
-                            title={t("Close {title}", { title: tab.title || t("Browser tab") })}
-                            onPointerDown={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              if (event.button === 1) void closeBrowserTab(tab.id);
-                            }}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              void closeBrowserTab(tab.id);
-                            }}
-                          >
-                            <CloseIcon />
-                          </span>
-                        </Tabs.Trigger>
-                      </div>
-                    );
-                  }}
-                </For>
-              </Tabs.List>
-              <Button
-                type="button"
-                class="browser-new-tab"
-                aria-label={t("New browser tab")}
-                onClick={() => {
-                  setBrowserAddress("https://www.google.com");
-                  void openBrowserAddress("https://www.google.com");
-                }}
-              >
-                <PlusIcon />
-              </Button>
-            </div>
-          </header>
-          <Tabs.Content forceMount value={activeBrowserTab()?.id ?? "__empty"} class="browser-tab-panel">
-            <div class="browser-toolbar">
-              <Button type="button" aria-label={t("Go back")} class="browser-toolbar-button" disabled>
-                <BrowserBackIcon />
-              </Button>
-              <Button type="button" aria-label={t("Go forward")} class="browser-toolbar-button" disabled>
-                <BrowserForwardIcon />
-              </Button>
-              <Button
-                type="button"
-                aria-label={t("Reload page")}
-                class="browser-toolbar-button"
-                onClick={() => void openBrowserAddress()}
-              >
-                <BrowserReloadIcon />
-              </Button>
-              <form
-                class="browser-address-bar"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void openBrowserAddress();
-                }}
-              >
-                <Input
-                  value={browserAddress()}
-                  aria-label={t("Browser address")}
-                  maxlength={INPUT_LIMITS.browserUrl}
-                  onInput={(event) => setBrowserAddress(event.currentTarget.value)}
-                />
-              </form>
-              <Button type="button" class="browser-toolbar-button" aria-label={t("Browser menu")}>
-                <span class="browser-menu-dots">•••</span>
-              </Button>
-            </div>
-            <div class="browser-surface" ref={(element) => (browserSurface = element)}>
-              <Show when={browserTabs().length === 0}>
-                <div class="browser-empty-state">
-                  <strong>{t("Open a page")}</strong>
-                  <span>{t("The agent can browse here while it works.")}</span>
-                </div>
-              </Show>
-            </div>
-          </Tabs.Content>
-        </Tabs.Root>
+        <BrowserPanel
+          tabs={browserTabs()}
+          activeTabId={activeBrowserTab()?.id}
+          controlled={Boolean(activeBrowserControl())}
+          controlForTab={browserControlForTab}
+          controllerNameForTab={(tab) => browserControllerForTab(tab)?.name}
+          address={browserAddress()}
+          width={browserPanelWidth()}
+          availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
+          onActivateTab={props.onActivateBrowserTab}
+          onCloseTab={(tabId) => void closeBrowserTab(tabId)}
+          onNewTab={() => {
+            setBrowserAddress("https://www.google.com");
+            void openBrowserAddress("https://www.google.com");
+          }}
+          onReload={() => void openBrowserAddress()}
+          onAddressInput={setBrowserAddress}
+          onAddressSubmit={() => void openBrowserAddress()}
+          onResize={setBrowserPanelWidth}
+          onResizeEnd={(value) => savePanelWidth(BROWSER_PANEL_STORAGE_KEY, value)}
+          onOpenSidePanel={openChatSidePanel}
+          surfaceRef={(element) => (browserSurface = element)}
+        />
       </Show>
 
       <Show when={remoteDesktopOpen()}>
@@ -2691,23 +2342,11 @@ export function Conversation(props: ConversationProps) {
 
       <Show when={filesOpen() && props.bot}>
         <aside id="files-side-panel" class="chat-files-panel" aria-label={t("Files")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
+          <SidePanelResizer
             controls="files-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
+            width={settingsPanelWidth()}
+            sizes={SETTINGS_PANEL_SIZES}
+            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />
@@ -2727,68 +2366,13 @@ export function Conversation(props: ConversationProps) {
         </aside>
       </Show>
 
-      <Show when={voiceOpen() && props.bot}>
-        <aside id="voice-side-panel" class="chat-voice-panel" aria-label={t("Voice")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
-            controls="voice-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
-            onResize={setSettingsPanelWidth}
-            onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
-          />
-          <ChatRightPanelTabs active="voice" onSelect={openChatSidePanel} />
-          <div class="chat-voice-panel-body">
-            <p class="chat-voice-panel-note">
-              {t("Record a short voice note for this agent. Full voice models stay in Settings → Voice.")}
-            </p>
-            <Show when={props.bot?.id} keyed>
-              {(botId) => (
-                <VoiceRecorder
-                  onTranscript={(text) =>
-                    setDrafts((current) => {
-                      const draft = current[botId] ?? EMPTY_DRAFT;
-                      return { ...current, [botId]: { ...draft, text: [draft.text, text].filter(Boolean).join(" ") } };
-                    })
-                  }
-                />
-              )}
-            </Show>
-          </div>
-        </aside>
-      </Show>
-
       <Show when={settingsOpen() && props.bot}>
         <aside id="settings-side-panel" class="agent-settings-panel" aria-label={t("Agent settings")}>
-          <PanelResizer
-            class="right-panel-resizer"
-            label={t("Resize right panel")}
+          <SidePanelResizer
             controls="settings-side-panel"
-            direction="right"
-            value={settingsPanelWidth()}
-            defaultValue={SETTINGS_PANEL_DEFAULT}
-            min={SETTINGS_PANEL_MIN}
-            max={() =>
-              Math.min(
-                SETTINGS_PANEL_MAX,
-                Math.max(
-                  SETTINGS_PANEL_MIN,
-                  (conversationPanel?.clientWidth || window.innerWidth) - CONVERSATION_PANEL_MIN,
-                ),
-              )
-            }
+            width={settingsPanelWidth()}
+            sizes={SETTINGS_PANEL_SIZES}
+            availableWidth={() => conversationPanel?.clientWidth || window.innerWidth}
             onResize={setSettingsPanelWidth}
             onResizeEnd={(value) => savePanelWidth(SETTINGS_PANEL_STORAGE_KEY, value)}
           />
@@ -2813,160 +2397,43 @@ export function Conversation(props: ConversationProps) {
             </Button>
           </header>
           <div class="agent-settings-content">
-            <div ref={(element) => (avatarPickerRoot = element)} class="agent-settings-avatar-picker">
-              <Popover.Root
-                open={avatarPickerOpen()}
-                placement="bottom"
-                gutter={11}
-                onOpenChange={(open) => {
-                  if (open) {
-                    setAvatarCandidateSeed(avatarSeed());
-                    setAvatarBatch(0);
-                  }
-                  setAvatarPickerOpen(open);
-                }}
-              >
-                <Popover.Trigger class="agent-settings-avatar" aria-label={t("Edit agent avatar")}>
-                  <AgentAvatar seed={avatarSeed()} hue={avatarHue()} url={avatarUrl()} motion="always" />
-                </Popover.Trigger>
-                <Popover.Content class="avatar-editor" aria-hidden={avatarPickerOpen() ? undefined : "true"}>
-                  <Popover.Title class="sr-only">{t("Avatar editor")}</Popover.Title>
-                  <Input
-                    ref={(element) => (avatarFileInput = element)}
-                    class="sr-only"
-                    type="file"
-                    aria-label={t("Attach files")}
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(event) => void uploadAgentAvatar(event.currentTarget.files?.[0])}
-                  />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Image")}</span>
-                    <div class="avatar-editor-actions">
-                      <Show when={avatarUrl()}>
-                        <Button type="button" disabled={avatarUploadBusy()} onClick={() => void setCustomAvatar(null)}>
-                          {t("Remove")}
-                        </Button>
-                      </Show>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    class={["avatar-image-upload", { "avatar-image-upload-active": Boolean(avatarUrl()) }]}
-                    disabled={avatarUploadBusy()}
-                    onClick={() => avatarFileInput?.click()}
-                  >
-                    <span class="avatar-image-upload-preview">
-                      <Show
-                        when={avatarUrl()}
-                        fallback={
-                          <svg aria-hidden="true" viewBox="0 0 24 24">
-                            <path d="M12 5v14M5 12h14" />
-                          </svg>
-                        }
-                      >
-                        <AgentAvatar seed={avatarSeed()} hue={avatarHue()} url={avatarUrl()} />
-                      </Show>
-                    </span>
-                    <span>
-                      <strong>{avatarUrl() ? t("Replace image") : t("Upload image")}</strong>
-                      <small>{t("PNG, JPEG or WebP · square crop")}</small>
-                    </span>
-                  </Button>
-                  <div class="avatar-editor-divider" />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Generated face")}</span>
-                    <div class="avatar-editor-actions">
-                      <Show when={props.bot?.id && avatarSeed() !== props.bot?.id}>
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const botId = props.bot?.id;
-                            if (!botId) return;
-                            setAvatarCandidateSeed(botId);
-                            setAvatarBatch(0);
-                            void selectGeneratedAvatar(botId);
-                          }}
-                        >
-                          {t("Reset to ID")}
-                        </Button>
-                      </Show>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          setAvatarCandidateSeed(avatarSeed());
-                          setAvatarBatch((batch) => batch + 1);
-                        }}
-                      >
-                        {t("New set")}
-                      </Button>
-                    </div>
-                  </div>
-                  <fieldset class="avatar-face-grid" aria-label={t("Generated avatar faces")}>
-                    <For each={avatarCandidates()}>
-                      {(seed, index) => (
-                        <Button
-                          type="button"
-                          class={[
-                            "avatar-face-choice",
-                            {
-                              "avatar-choice-selected": !avatarUrl() && avatarSeed() === seed,
-                            },
-                          ]}
-                          aria-label={
-                            !avatarUrl() && avatarSeed() === seed
-                              ? t("Selected avatar")
-                              : t("Avatar option {n}", { n: index() + 1 })
-                          }
-                          aria-pressed={!avatarUrl() && avatarSeed() === seed ? "true" : "false"}
-                          onClick={() => void selectGeneratedAvatar(seed)}
-                        >
-                          <AgentAvatar seed={seed} hue={avatarHue()} />
-                        </Button>
-                      )}
-                    </For>
-                  </fieldset>
-                  <div class="avatar-editor-divider" />
-                  <div class="avatar-editor-heading">
-                    <span>{t("Color")}</span>
-                  </div>
-                  <fieldset class="avatar-color-grid" aria-label={t("Avatar color")}>
-                    <Button
-                      type="button"
-                      class={["avatar-color-choice", { "avatar-choice-selected": avatarHue() === null }]}
-                      aria-label={t("Automatic avatar color")}
-                      aria-pressed={avatarHue() === null ? "true" : "false"}
-                      onClick={() => {
-                        setAvatarHue(null);
-                        void saveBotPatch({ avatarHue: null });
-                      }}
-                    >
-                      <span class="avatar-color-swatch avatar-color-swatch-auto">A</span>
-                    </Button>
-                    <For each={AVATAR_HUE_OPTIONS}>
-                      {(option) => (
-                        <Button
-                          type="button"
-                          class={[
-                            "avatar-color-choice",
-                            {
-                              "avatar-choice-selected": avatarHue() === option.hue,
-                            },
-                          ]}
-                          aria-label={t("{label} avatar color", { label: option.label })}
-                          aria-pressed={avatarHue() === option.hue ? "true" : "false"}
-                          onClick={() => {
-                            setAvatarHue(option.hue);
-                            void saveBotPatch({ avatarHue: option.hue });
-                          }}
-                        >
-                          <span class="avatar-color-swatch" style={{ background: avatarHueSwatch(option.hue) }} />
-                        </Button>
-                      )}
-                    </For>
-                  </fieldset>
-                </Popover.Content>
-              </Popover.Root>
-            </div>
+            <AvatarEditor
+              open={avatarPickerOpen()}
+              onOpenChange={(open) => {
+                if (open) {
+                  setAvatarCandidateSeed(avatarSeed());
+                  setAvatarBatch(0);
+                }
+                setAvatarPickerOpen(open);
+              }}
+              rootRef={(element) => (avatarPickerRoot = element)}
+              fileInputRef={(element) => (avatarFileInput = element)}
+              botId={props.bot?.id}
+              seed={avatarSeed()}
+              hue={avatarHue()}
+              url={avatarUrl()}
+              uploadBusy={avatarUploadBusy()}
+              candidates={avatarCandidates()}
+              onUploadFile={(file) => void uploadAgentAvatar(file)}
+              onPickImage={() => avatarFileInput?.click()}
+              onRemoveImage={() => void setCustomAvatar(null)}
+              onResetToId={() => {
+                const botId = props.bot?.id;
+                if (!botId) return;
+                setAvatarCandidateSeed(botId);
+                setAvatarBatch(0);
+                void selectGeneratedAvatar(botId);
+              }}
+              onNewSet={() => {
+                setAvatarCandidateSeed(avatarSeed());
+                setAvatarBatch((batch) => batch + 1);
+              }}
+              onSelectFace={(seed) => void selectGeneratedAvatar(seed)}
+              onSelectHue={(hue) => {
+                setAvatarHue(hue);
+                void saveBotPatch({ avatarHue: hue });
+              }}
+            />
             <label class="agent-settings-field">
               <span>{t("Name")}</span>
               <Input
@@ -3034,25 +2501,18 @@ export function Conversation(props: ConversationProps) {
                     onChange={(model) => void selectAndConfirmModel(model)}
                   />
                   <Show when={selectedModel()} keyed>
-                    {(model) => <p class="agent-settings-model-description">{model.description}</p>}
+                    {(model) => <p class="agent-settings-model-description">{tData(model.description)}</p>}
                   </Show>
                 </div>
-                <label class="agent-settings-model-row agent-settings-thinking-row">
+                <label for="agent-settings-reasoning" class="agent-settings-model-row agent-settings-thinking-row">
                   <span>{t("Reasoning")}</span>
-                  <NativeSelect
+                  <ReasoningSelect
+                    id="agent-settings-reasoning"
                     value={settingsReasoning()}
-                    aria-label={t("Agent reasoning level")}
-                    onChange={(event) => {
-                      const reasoningEffort = reasoningOptions().find((effort) => effort === event.currentTarget.value);
-                      if (!reasoningEffort) return;
-                      setSettingsReasoning(reasoningEffort);
-                      saveBotPatch({ reasoningEffort });
-                    }}
-                  >
-                    <For each={reasoningOptions()}>
-                      {(effort) => <option value={effort}>{reasoningLabel(effort)}</option>}
-                    </For>
-                  </NativeSelect>
+                    options={reasoningOptions()}
+                    ariaLabel={t("Agent reasoning level")}
+                    onChange={changeReasoning}
+                  />
                 </label>
               </div>
             </section>
@@ -3094,9 +2554,4 @@ export function Conversation(props: ConversationProps) {
       </Show>
     </main>
   );
-}
-
-function reasoningLabel(effort: AgentReasoningEffort): string {
-  if (effort === "xhigh") return t("Extra high");
-  return `${effort.slice(0, 1).toUpperCase()}${effort.slice(1)}`;
 }

@@ -71,6 +71,20 @@ export interface ChannelRoutine {
   lastRunAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * A signed POST to the program's local webhook receiver also starts the routine (besides the schedule). The secret is kept encrypted
+   * on this computer and shown once, when the webhook is turned on or a new secret is made. Missing in rows saved before = off.
+   */
+  webhookEnabled?: boolean;
+}
+
+/** What turning the webhook on (or making a new secret) answers: the address to POST to and the signing secret, shown this once. */
+export interface ChannelRoutineWebhook {
+  routine: ChannelRoutine;
+  /** The local address (127.0.0.1); reach it from outside only through a tunnel you trust. */
+  url: string;
+  /** Standard Webhooks signing secret ("whsec_…"). */
+  secret: string;
 }
 
 export const CHANNEL_ROUTINE_RUN_OUTCOMES = ["started", "skipped"] as const;
@@ -81,8 +95,8 @@ export interface ChannelRoutineRun {
   routineId: string;
   /** When it was planned or asked for (ISO). */
   at: string;
-  /** "schedule" = the planned time; "manual" = "Run now" by a person. */
-  cause: "schedule" | "manual";
+  /** "schedule" = the planned time; "manual" = "Run now" by a person; "webhook" = a signed delivery to the local receiver. */
+  cause: "schedule" | "manual" | "webhook";
   outcome: ChannelRoutineRunOutcome;
   /** Why it was skipped; null when started. */
   reason: string | null;
@@ -109,6 +123,10 @@ export interface ChannelRoutinesDesktopApi {
   runNow: (input: ChannelRoutineIdInput) => Promise<ChannelRoutineRun>;
   /** The history of one routine, newest first. */
   listRuns: (input: ChannelRoutineIdInput) => Promise<ChannelRoutineRun[]>;
+  /** Turns the webhook on, or makes a new secret when it is on (the old one stops working). Optional: older builds lack it. */
+  enableWebhook?: (input: ChannelRoutineIdInput) => Promise<ChannelRoutineWebhook>;
+  /** Turns the webhook off and forgets the secret. */
+  disableWebhook?: (input: ChannelRoutineIdInput) => Promise<ChannelRoutine>;
 }
 
 /** The text sent to the channel on each run: the name first, so the history says why the work started. */
@@ -239,7 +257,18 @@ export function isChannelRoutine(value: unknown): value is ChannelRoutine {
     (value.nextRunAt === null || isString(value.nextRunAt)) &&
     (value.lastRunAt === null || isString(value.lastRunAt)) &&
     isString(value.createdAt) &&
-    isString(value.updatedAt)
+    isString(value.updatedAt) &&
+    (value.webhookEnabled === undefined || isBoolean(value.webhookEnabled))
+  );
+}
+
+export function isChannelRoutineWebhook(value: unknown): value is ChannelRoutineWebhook {
+  return (
+    isDynamicRecord(value) &&
+    isChannelRoutine(value.routine) &&
+    isString(value.url) &&
+    isString(value.secret) &&
+    value.secret.startsWith("whsec_")
   );
 }
 
@@ -249,7 +278,7 @@ export function isChannelRoutineRun(value: unknown): value is ChannelRoutineRun 
     isString(value.id) &&
     isString(value.routineId) &&
     isString(value.at) &&
-    (value.cause === "schedule" || value.cause === "manual") &&
+    (value.cause === "schedule" || value.cause === "manual" || value.cause === "webhook") &&
     isOneOf(CHANNEL_ROUTINE_RUN_OUTCOMES, value.outcome) &&
     (value.reason === null || isString(value.reason)) &&
     (value.messageId === null || isString(value.messageId)) &&

@@ -53,7 +53,7 @@
   margin: 0;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
   line-height: 17px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -122,7 +122,7 @@
   margin: 14px 0 4px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xl);
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .direct-conversation-empty p {
@@ -252,7 +252,7 @@
   background: var(--openbot-success);
   color: var(--openbot-success);
   font-size: var(--openbot-text-xl);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .direct-composer > button:disabled {
@@ -474,7 +474,7 @@
 .remote-desktop-heading strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-sm);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 16px;
 }
 
@@ -619,7 +619,7 @@
   max-width: 330px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-desktop-overlay > span:not(.remote-desktop-spinner):not(.remote-desktop-empty-mark) {
@@ -668,7 +668,7 @@
   background: var(--openbot-border);
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xs);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .remote-desktop-overlay > button:hover {
@@ -985,7 +985,7 @@
 
 .browser-empty-state strong {
   font-size: var(--openbot-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .browser-empty-state span {
@@ -1006,7 +1006,7 @@
   margin: 0;
   color: var(--openbot-white);
   font-size: var(--openbot-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 18px;
   text-align: center;
 }
@@ -1176,7 +1176,7 @@
 .agent-settings-section-heading strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 20px;
   text-wrap: balance;
 }
@@ -1265,6 +1265,11 @@
   line-height: 18px;
   text-align: right;
   text-align-last: right;
+}
+
+.agent-settings-model-row select:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: -2px;
 }
 
 .agent-settings-model-row select option {
@@ -1369,7 +1374,7 @@
 .agent-settings-notifications strong {
   color: var(--openbot-white);
   font-size: var(--openbot-text-md);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 18px;
 }
 
@@ -1530,7 +1535,7 @@
   margin: 0;
   color: var(--openbot-white);
   font-size: var(--openbot-text-md);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   line-height: 18px;
   letter-spacing: 0;
 }
@@ -1602,7 +1607,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--openbot-text-md);
-  font-weight: 470;
+  font-weight: var(--openbot-weight-regular);
   line-height: 18px;
 }
 
@@ -1636,7 +1641,7 @@
   flex: 0 0 auto;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-sm);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   line-height: 17px;
 }
 
@@ -1777,7 +1782,7 @@
 .provider-model-heading strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 20px;
 }
 
@@ -1845,7 +1850,7 @@
   padding: 1px 5px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 15px;
 }
 
@@ -1985,7 +1990,7 @@
   padding: 0 12px;
   color: var(--openbot-unread-text);
   font-size: var(--openbot-text-xs);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 16px;
 }
 
@@ -2002,7 +2007,7 @@
   width: 100%;
   padding: 0 12px;
   font-size: var(--openbot-text-xs);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 16px;
   text-align: left;
 }
@@ -2013,7 +2018,7 @@
   margin-left: auto;
   padding: 3px 6px;
   font-size: var(--openbot-text-2xs);
-  font-weight: 680;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 14px;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -2041,7 +2046,7 @@
   margin: 16px 0 4px;
   color: var(--openbot-unread-divider);
   font-size: var(--openbot-text-2xs);
-  font-weight: 720;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: 0.08em;
   line-height: 12px;
 }
@@ -2078,8 +2083,8 @@
 }
 
 .message-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0. With reduced motion the animation is off, and a fixed 0 hid every new message. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .message-entry-bot {
@@ -2231,23 +2236,41 @@
   height: 15px;
 }
 
+/* The menu grew from Branch + Copy to six actions, some with a sentence why they are off: a fixed 116 px width and
+   32 px rows made the items overlap and the sentences spill out of the menu. */
 .message-more-menu {
-  width: 116px;
+  width: max-content;
+  min-width: 160px;
+  max-width: 260px;
 }
 
 .message-more-menu [role="menuitem"] {
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
-  height: 32px;
+  min-height: 32px;
   align-items: center;
-  gap: 8px;
+  gap: 2px 8px;
   border: 0;
   border-radius: var(--openbot-radius-sm);
   background: transparent;
-  padding: 0 9px;
+  padding: 6px 9px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-sm);
   text-align: left;
+}
+
+.message-more-menu [role="menuitem"][data-disabled] {
+  color: var(--openbot-text-muted);
+  cursor: default;
+}
+
+/* Why an action is off: its own line under the action, inside the menu. */
+.message-more-menu .thread-work-action-note {
+  flex-basis: 100%;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  line-height: 1.35;
 }
 
 .message-more-menu [role="menuitem"]:hover,
@@ -2303,8 +2326,8 @@
 }
 
 .thinking-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0, so the steps never wait for an animation that reduced motion may switch off. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .thinking-disclosure {
@@ -2339,6 +2362,12 @@
   background: var(--openbot-hover);
   color: var(--openbot-text-secondary);
   outline: none;
+}
+
+/* The background alone was too faint for the keyboard: a ring as on the other controls. */
+.thinking-disclosure summary:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: 1px;
 }
 
 .thinking-mark,
@@ -2421,8 +2450,8 @@
 }
 
 .exchange-message-entry-animated {
-  opacity: 0;
-  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  /* `both`, not a fixed opacity: 0. With reduced motion the animation is off, and a fixed 0 hid every new message. */
+  animation: message-in var(--openbot-duration-normal) cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .agent-activity-entry {
@@ -2550,7 +2579,7 @@
   padding: 4px 6px 4px 4px;
   color: var(--openbot-text-muted);
   font-size: inherit;
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   line-height: inherit;
   outline: none;
   text-align: left;
@@ -2757,7 +2786,7 @@
   box-shadow: 0 0 0 5px var(--openbot-danger-soft);
   color: var(--openbot-danger);
   font-size: var(--openbot-text-5xl);
-  font-weight: 350;
+  font-weight: var(--openbot-weight-regular);
   line-height: 1;
 }
 
@@ -2829,7 +2858,7 @@
   background-clip: text;
   color: transparent;
   font-size: var(--openbot-text-lg);
-  font-weight: 550;
+  font-weight: var(--openbot-weight-medium);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: image-generation-shine 2.25s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
@@ -2895,7 +2924,7 @@
   backdrop-filter: blur(12px) saturate(1.15);
   -webkit-backdrop-filter: blur(12px) saturate(1.15);
   font-size: var(--openbot-text-xs);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);
@@ -2941,7 +2970,7 @@
 
 .image-generation-capability-note strong {
   color: var(--openbot-text-secondary);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 @keyframes image-generation-morph {
@@ -3048,7 +3077,7 @@
 .message-copy {
   margin: 0;
   font-size: var(--openbot-text-lg);
-  line-height: 20px;
+  line-height: 26px;
   overflow-wrap: anywhere;
   white-space: pre-line;
 }
@@ -3164,7 +3193,7 @@
   padding: 0 10px 0 11px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xs);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
   line-height: 28px;
   outline: 0;
 }
@@ -3261,7 +3290,7 @@
   padding: 0 9px;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-sm);
-  font-weight: 430;
+  font-weight: var(--openbot-weight-regular);
   white-space: nowrap;
 }
 
@@ -3359,6 +3388,42 @@
   line-height: 17px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+/* A turn started by a routine or a workflow step: who started it, above the task text. */
+.engine-run-header {
+  margin: 0 0 4px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+  line-height: 17px;
+  overflow-wrap: anywhere;
+}
+
+.engine-run-webhook {
+  margin-top: 6px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-sm);
+}
+
+.engine-run-webhook summary {
+  cursor: pointer;
+  border-radius: var(--openbot-radius-sm);
+}
+
+.engine-run-webhook summary:focus-visible {
+  outline: 2px solid var(--openbot-border-focus);
+  outline-offset: 2px;
+}
+
+.engine-run-webhook pre {
+  max-height: 180px;
+  overflow: auto;
+  margin: 4px 0 0;
+  border-radius: var(--openbot-radius-sm);
+  background: var(--openbot-bg-control);
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3483,7 +3548,7 @@
 
 .message-data-table thead {
   color: var(--openbot-data-table-header-text);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
 }
 
 .message-data-table tbody {
@@ -3552,7 +3617,7 @@
 .message-link {
   border-radius: var(--openbot-radius-xs);
   color: inherit;
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
   text-decoration-color: var(--openbot-text-muted);
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
@@ -3619,7 +3684,7 @@
   padding: 0;
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-2xs);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 1;
   text-decoration: none;
   vertical-align: 4px;
@@ -3651,7 +3716,7 @@
   padding: 6px 8px;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xs);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 15px;
   overflow-wrap: anywhere;
   pointer-events: none;
@@ -3702,7 +3767,7 @@
   gap: 6px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-sm);
-  font-weight: 425;
+  font-weight: var(--openbot-weight-regular);
   line-height: 18px;
   text-decoration: none;
 }
@@ -3715,7 +3780,7 @@
 .message-citation-ref-label {
   overflow: hidden;
   color: var(--openbot-text-primary);
-  font-weight: 550;
+  font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3821,7 +3886,7 @@
   display: block;
   margin-bottom: 1px;
   font-size: var(--openbot-text-2xs);
-  font-weight: 550;
+  font-weight: var(--openbot-weight-medium);
   line-height: 14px;
 }
 
@@ -3895,7 +3960,7 @@
   padding: 1px 6px 1px 3px;
   color: var(--file-reference-color);
   font: inherit;
-  font-weight: 550;
+  font-weight: var(--openbot-weight-medium);
   line-height: 20px;
   vertical-align: middle;
   white-space: nowrap;
@@ -3971,7 +4036,7 @@
 
 .attachment-reference-visual > span {
   font-size: var(--openbot-text-tiny);
-  font-weight: 750;
+  font-weight: var(--openbot-weight-semibold);
   letter-spacing: -0.2px;
   line-height: 1;
 }
@@ -4090,7 +4155,7 @@
 .choice-card-heading strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 20px;
 }
 
@@ -4199,9 +4264,8 @@
   margin: 0 4px 6px;
   color: var(--openbot-accent-text);
   font-size: var(--openbot-text-2xs);
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .sticky-decision .approval-card {
@@ -4323,7 +4387,7 @@
   display: block;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 550;
+  font-weight: var(--openbot-weight-medium);
   line-height: 14px;
 }
 
@@ -4562,10 +4626,9 @@
   padding: 5px 9px 3px;
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
   line-height: 14px;
-  text-transform: uppercase;
 }
 
 .mention-picker-file-option .attachment-reference-visual {
@@ -4587,7 +4650,7 @@
   min-width: 0;
   overflow: hidden;
   font-size: var(--openbot-text-lg);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4688,7 +4751,7 @@
 .composer-attachment strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-xs);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 16px;
 }
 
@@ -4854,7 +4917,7 @@
   overflow: hidden;
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 560;
+  font-weight: var(--openbot-weight-medium);
   line-height: 17px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5226,7 +5289,7 @@
   display: block;
   color: var(--openbot-accent-hover);
   font-size: var(--openbot-text-2xs);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 14px;
 }
 
@@ -5275,16 +5338,39 @@
 .conversation-panel:has(.agent-settings-panel) .composer-wrap,
 .conversation-panel:has(.chat-files-panel) .conversation-header,
 .conversation-panel:has(.chat-files-panel) .conversation-scroll,
-.conversation-panel:has(.chat-files-panel) .composer-wrap,
-.conversation-panel:has(.chat-voice-panel) .conversation-header,
-.conversation-panel:has(.chat-voice-panel) .conversation-scroll,
-.conversation-panel:has(.chat-voice-panel) .composer-wrap {
+.conversation-panel:has(.chat-files-panel) .composer-wrap {
   width: calc(100% - var(--settings-panel-width, 296px));
 }
 
 .conversation-panel:has(.agent-settings-panel) .chat-search {
   right: calc(var(--settings-panel-width, 296px) + 16px);
   max-width: calc(100% - var(--settings-panel-width, 296px) - 32px);
+}
+
+/* A small window: the settings and files panels slide over the chat like a drawer instead of squeezing it (at
+   960 px the chat was ~240 px wide, its header overlapped and messages broke after two words). */
+@container (max-width: 1180px) {
+  .conversation-panel:has(.agent-settings-panel) .conversation-header,
+  .conversation-panel:has(.agent-settings-panel) .conversation-scroll,
+  .conversation-panel:has(.agent-settings-panel) .composer-wrap,
+  .conversation-panel:has(.chat-files-panel) .conversation-header,
+  .conversation-panel:has(.chat-files-panel) .conversation-scroll,
+  .conversation-panel:has(.chat-files-panel) .composer-wrap {
+    width: 100%;
+  }
+
+  .conversation-panel:has(.agent-settings-panel) .chat-search {
+    right: 16px;
+    max-width: calc(100% - 32px);
+  }
+
+  .agent-settings-panel,
+  .chat-files-panel {
+    max-width: calc(100% - 48px);
+    box-shadow:
+      -12px 0 32px var(--openbot-shadow-popover-key),
+      0 0 0 1px var(--openbot-shadow-popover-ambient);
+  }
 }
 
 .conversation-panel:has(.browser-panel) .chat-search {
@@ -5448,7 +5534,7 @@
   background: color-mix(in srgb, var(--background) 82%, transparent);
   color: var(--text-primary);
   font-size: var(--openbot-text-lg);
-  font-weight: 650;
+  font-weight: var(--openbot-weight-semibold);
   backdrop-filter: blur(12px);
   pointer-events: none;
 }
@@ -5506,7 +5592,7 @@
 .agent-setup-card strong {
   color: var(--text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .agent-setup-card p {
@@ -5568,7 +5654,7 @@
 
 .approval-card-header strong {
   font-size: var(--openbot-text-md);
-  font-weight: 500;
+  font-weight: var(--openbot-weight-medium);
   line-height: 16.875px;
 }
 
@@ -5623,7 +5709,7 @@
 .approval-question-prompt {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-md);
-  font-weight: 520;
+  font-weight: var(--openbot-weight-medium);
   line-height: 1.35;
   padding-left: 2px;
 }
@@ -5705,7 +5791,7 @@
   color: var(--openbot-text-dim);
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: var(--openbot-text-2xs);
-  font-weight: 620;
+  font-weight: var(--openbot-weight-semibold);
   line-height: 1;
 }
 
@@ -5833,7 +5919,7 @@
   border-radius: var(--openbot-radius-pill);
   padding: 5px 11px;
   font-size: var(--openbot-text-xs);
-  font-weight: 520;
+  font-weight: var(--openbot-weight-medium);
   transition:
     background-color var(--openbot-duration-normal) ease,
     border-color var(--openbot-duration-normal) ease,
@@ -5921,8 +6007,7 @@
 .approval-detail-label {
   color: var(--openbot-text-muted);
   font-size: var(--openbot-text-2xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 
 .approval-detail-row strong {
@@ -5930,7 +6015,7 @@
   color: var(--openbot-text-primary);
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: var(--openbot-text-xs);
-  font-weight: 520;
+  font-weight: var(--openbot-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -6129,4 +6214,91 @@
 .voice-button:active,
 .voice-button-active:active {
   transform: scale(0.97);
+}
+
+/*
+ * Agent steps as a timeline (AgentActivity.tsx): each step has a small icon on a line (read, search, run, write, web,
+ * think), the step being worked on is in the accent colour. The step text stays as the agent wrote it.
+ */
+.thinking-steps {
+  position: relative;
+  display: grid;
+  gap: var(--openbot-space-2);
+  margin: var(--openbot-space-1) 0 var(--openbot-space-1) 6px;
+  border-left: 0;
+  padding: var(--openbot-space-1) 0;
+  list-style: none;
+}
+
+.thinking-steps::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 10px;
+  width: 1px;
+  background: var(--openbot-border-strong);
+  content: "";
+}
+
+.thinking-steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--openbot-space-2);
+}
+
+.thinking-step-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-canvas);
+  color: var(--openbot-text-muted);
+}
+
+.thinking-steps li p {
+  padding-top: 2px;
+  color: var(--openbot-text-secondary);
+}
+
+.thinking-steps li + li {
+  margin-top: 0;
+}
+
+.thinking-steps li[data-step="search"] .thinking-step-icon,
+.thinking-steps li[data-step="web"] .thinking-step-icon {
+  color: var(--openbot-file-teal);
+}
+
+.thinking-steps li[data-step="run"] .thinking-step-icon {
+  color: var(--openbot-file-orange);
+}
+
+.thinking-steps li[data-step="write"] .thinking-step-icon {
+  color: var(--openbot-file-green);
+}
+
+.thinking-steps li[data-step="read"] .thinking-step-icon {
+  color: var(--openbot-file-blue);
+}
+
+.thinking-steps li[data-live="true"] .thinking-step-icon {
+  border-color: var(--openbot-accent-strong);
+  background: var(--openbot-accent-soft);
+  color: var(--openbot-accent-text);
+}
+
+.thinking-steps li[data-live="true"] p {
+  color: var(--openbot-text-primary);
+}
+
+.direct-conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
 }

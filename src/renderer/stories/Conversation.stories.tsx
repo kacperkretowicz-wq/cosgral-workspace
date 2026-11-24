@@ -454,7 +454,8 @@ export const SearchConversation: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Next match" }));
     await expect(canvas.findByText("2/2")).resolves.toBeVisible();
     await userEvent.keyboard("{Escape}");
-    await expect(canvas.queryByRole("search", { name: "Search conversation" })).not.toBeInTheDocument();
+    // Closing is applied on the next update: checked at once, it failed now and then on a busy computer.
+    await waitFor(() => expect(canvas.queryByRole("search", { name: "Search conversation" })).not.toBeInTheDocument());
   },
 };
 

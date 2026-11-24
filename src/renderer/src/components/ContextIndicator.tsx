@@ -1,7 +1,7 @@
 import type { AgentEvent, ContextDesktopApi, ContextState } from "@openbot/contracts/ipc";
 import { CONTEXT_SETTINGS_LIMITS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { providerError } from "./provider-error";
 import { Badge, Button, Heading, Text } from "./ui";
@@ -34,7 +34,9 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
         fallback={
           <Text as="p" tone="secondary">
             {t("Context unavailable.")}{" "}
-            {props.state.unavailableReason ?? t("This provider does not report its context size.")}
+            {props.state.unavailableReason
+              ? t(props.state.unavailableReason)
+              : t("This provider does not report its context size.")}
           </Text>
         }
       >
@@ -50,7 +52,7 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
           max={100}
           value={props.state.percent ?? undefined}
           aria-label={t("Context used")}
-          style={{ "accent-color": warning() ? "var(--openbot-warning)" : "var(--openbot-accent)" }}
+          data-warning={warning() ? "true" : undefined}
         />
         <Show when={props.state.stale}>
           <Text as="p" tone="secondary">
@@ -72,7 +74,7 @@ export function ContextMeter(props: { state: ContextState; pending?: boolean; on
         {t("Compactions: {count}", { count: props.state.compactions })}
         <Show when={props.state.lastCompactedAt}>
           . {t("Last compacted:")}{" "}
-          {props.state.lastCompactedAt ? new Date(props.state.lastCompactedAt).toLocaleString() : ""}
+          {props.state.lastCompactedAt ? new Date(props.state.lastCompactedAt).toLocaleString(appLocale()) : ""}
         </Show>
       </Text>
     </section>

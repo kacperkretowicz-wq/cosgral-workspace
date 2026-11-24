@@ -33,3 +33,21 @@ export const PersonAvatars: AgentStory = {
     </div>
   ),
 };
+
+const MOODS = ["idle", "working", "needs-you", "happy", "error", "limited"] as const;
+
+/** Each agent state as a face. Still poses: the gallery reads the same with reduced motion. */
+export const Moods: AgentStory = {
+  render: () => (
+    <div class="grid gap-4" style={{ "grid-template-columns": `repeat(${MOODS.length}, 72px)` }}>
+      {STORY_BOTS.slice(0, 3).flatMap((bot) =>
+        MOODS.map((mood) => (
+          <div class="grid justify-items-center gap-1 text-xs" data-mood-cell={mood}>
+            <AgentAvatar bot={bot} mood={mood} style={{ width: "56px", height: "56px" }} />
+            <span>{mood}</span>
+          </div>
+        )),
+      )}
+    </div>
+  ),
+};

@@ -1,6 +1,6 @@
 import type { AgentEyesRequest, AgentEyesSession, StopAgentEyesInput } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Button } from "./ui";
 
 /** COSGRAL agent eyes: the small "an agent is looking" UI (sidebar badge, bar above the conversation, card details). */
@@ -39,7 +39,7 @@ export function eyesSessionSummary(session: AgentEyesSession): string {
 function formatEndsAt(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat(appLocale(), { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
 export interface EyesBarProps {

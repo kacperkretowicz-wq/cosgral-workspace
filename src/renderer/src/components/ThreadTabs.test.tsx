@@ -1,7 +1,7 @@
 import type { ThreadList, ThreadSummary, ThreadTabs as ThreadTabsState } from "@openbot/contracts/ipc";
 import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ThreadTabs } from "./ThreadTabs";
+import { NewThreadButton, ThreadTabs } from "./ThreadTabs";
 
 function thread(id: string, title: string, active = false): ThreadSummary {
   return {
@@ -102,4 +102,31 @@ it("draws nothing without the tabs contract", async () => {
   const view = render(() => <ThreadTabs botId="bot" />);
   await Promise.resolve();
   expect(view.container.querySelector(".thread-tabs")).toBeNull();
+});
+
+it("draws no strip for a single thread and says so, so the header can offer New thread", async () => {
+  const single = all.slice(0, 1);
+  threads.list.mockImplementation(async () => ({ botId: "bot", activeThreadId: "a", threads: single }));
+  openTabs = ["a"];
+  const onSingle = vi.fn();
+  render(() => <ThreadTabs botId="bot" onSingleThreadChange={onSingle} />);
+  await waitFor(() => expect(onSingle).toHaveBeenLastCalledWith(true));
+  expect(screen.queryByRole("navigation", { name: "Threads" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Alpha" })).not.toBeInTheDocument();
+  threads.list.mockImplementation(async () => listOf());
+});
+
+it("reports more than one thread and keeps the strip", async () => {
+  const onSingle = vi.fn();
+  render(() => <ThreadTabs botId="bot" onSingleThreadChange={onSingle} />);
+  await screen.findByRole("button", { name: "Alpha" });
+  expect(onSingle).toHaveBeenLastCalledWith(false);
+});
+
+it("creates a thread from the header button", async () => {
+  const onChanged = vi.fn();
+  render(() => <NewThreadButton botId="bot" onChanged={onChanged} />);
+  await fireEvent.click(screen.getByRole("button", { name: "New thread" }));
+  await waitFor(() => expect(threads.create).toHaveBeenCalledWith({ botId: "bot" }));
+  await waitFor(() => expect(onChanged).toHaveBeenCalled());
 });

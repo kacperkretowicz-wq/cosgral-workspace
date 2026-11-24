@@ -5,10 +5,12 @@ import type {
   MarketplaceItemKind,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
-import { MarketplaceGallery } from "./MarketplaceGallery";
+import { language, t, tData } from "../i18n";
+import { CATEGORY_LABELS, MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
 import { Button, NativeSelect } from "./ui";
+import { Bot, Plug, Sparkles } from "./ui/icons";
+import { WorkPage } from "./WorkPage";
 import "../styles/plugin-apps.css";
 
 type Person = { id: string; name: string };
@@ -23,10 +25,10 @@ export function MarketplaceDetail(props: {
   const item = () => props.details.item;
   return (
     <section class="marketplace-detail" aria-label={t("Item details")}>
-      <h2>{item().title}</h2>
-      <p>{item().description}</p>
+      <h2>{tData(item().title)}</h2>
+      <p>{tData(item().description)}</p>
       <p>
-        {item().category} · {t("version {number}", { number: item().version })}
+        {t(CATEGORY_LABELS[item().category])} · {t("version {number}", { number: item().version })}
       </p>
       <Show when={props.details.skillMd}>
         <details>
@@ -84,6 +86,24 @@ export function MarketplaceDetail(props: {
   );
 }
 
+/** Lower case without accents, like the engine's own search ("spotkan" finds "spotkań"). */
+function folded(value: string): string {
+  return value.toLocaleLowerCase("pl-PL").normalize("NFD").replace(/\p{M}/gu, "").replace(/ł/g, "l");
+}
+
+/** Every word of the query appears in the item's Polish or English title, summary, description, tags or category. */
+export function matchesBothLanguages(item: MarketplaceItem, query: string): boolean {
+  const haystack = folded(
+    [item.title, item.summary, item.description, ...item.tags, CATEGORY_LABELS[item.category]]
+      .flatMap((value) => [value, tData(value)])
+      .join(" "),
+  );
+  return folded(query)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => haystack.includes(word));
+}
+
 export function MarketplacePage(props: { bots: Person[] }) {
   const [items, setItems] = createSignal<MarketplaceItem[]>([]);
   const [details, setDetails] = createSignal<MarketplaceItemDetails>();
@@ -122,13 +142,17 @@ export function MarketplacePage(props: { bots: Person[] }) {
     try {
       const chosenKind = patch.kind ?? kind();
       const chosenCategory = patch.category ?? category();
+      const text = (patch.query ?? query()).trim();
+      // The engine searches its English texts. In Polish the window asks for everything and filters on both the
+      // Polish and the English words, so "notatki" finds "Meeting notes".
+      const polish = language() === "pl" && text !== "";
       const list = await api.list({
-        query: patch.query ?? query(),
+        query: polish ? "" : text,
         ...(chosenKind ? { kind: chosenKind } : {}),
         ...(chosenCategory ? { category: chosenCategory } : {}),
       });
       if (n !== serial) return;
-      setItems(list);
+      setItems(polish ? list.filter((item) => matchesBothLanguages(item, text)) : list);
       setError("");
       const current = details();
       if (current) setDetails(await api.get({ itemId: current.item.id }));
@@ -182,80 +206,83 @@ export function MarketplacePage(props: { bots: Person[] }) {
     };
   });
   return (
-    <main class="w2-library marketplace-shell" data-single={hasApps ? "false" : "true"}>
-      <Show when={hasApps}>
-        <aside class="marketplace-nav" aria-label={t("Marketplace")}>
-          <h1>{t("Marketplace")}</h1>
-          <nav class="marketplace-nav-list" aria-label={t("Marketplace sections")}>
+    <WorkPage
+      page="marketplace"
+      class="marketplace-shell"
+      title={t("Marketplace")}
+      description={t("Apps, agents and skills for your team. Connect or install them in one click.")}
+    >
+      <div class="work-page-body marketplace-body" data-single={hasApps ? "false" : "true"}>
+        <Show when={hasApps}>
+          <nav class="work-page-nav marketplace-nav-list" aria-label={t("Marketplace sections")}>
             <For
               each={
                 [
-                  ["apps", "Apps"],
-                  ["agents", "Agents"],
-                  ["skills", "Skills"],
+                  ["apps", "Apps", Plug],
+                  ["agents", "Agents", Bot],
+                  ["skills", "Skills", Sparkles],
                 ] as const
               }
             >
-              {([id, label]) => (
+              {([id, label, Icon]) => (
                 <Button
+                  unstyled
                   type="button"
-                  variant="ghost"
+                  class="work-page-nav-item"
                   aria-current={tab() === id ? "page" : undefined}
                   onClick={() => selectTab(id)}
                 >
-                  {t(label)}
+                  <Icon aria-hidden="true" size={16} stroke-width={1.5} />
+                  <span>{t(label)}</span>
                 </Button>
               )}
             </For>
           </nav>
-        </aside>
-      </Show>
-      <div class="marketplace-main">
-        <Show when={!hasApps}>
-          <h1>{t("Marketplace")}</h1>
         </Show>
-        <Show when={tab() === "apps"}>
-          <PluginAppsPanel />
-        </Show>
-        <Show when={tab() !== "apps"}>
-          <Show when={error()}>
-            <p role="alert">{error()}</p>
+        <div class="marketplace-main">
+          <Show when={tab() === "apps"}>
+            <PluginAppsPanel />
           </Show>
-          <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
-          <MarketplaceGallery
-            items={items()}
-            query={query()}
-            category={category()}
-            selectedId={details()?.item.id ?? ""}
-            onQuery={(value) => {
-              setQuery(value);
-              queueSearch(value);
-            }}
-            onCategory={(value) => {
-              setCategory(value);
-              void refresh({ category: value });
-            }}
-            onSearch={() => void refresh()}
-            onOpen={(item) => void choose(item)}
-            onInstall={(item) => void install(item)}
-          />
-          <Show when={details()}>
-            {(value) => (
-              <MarketplaceDetail
-                details={value()}
-                bots={props.bots}
-                selectedBot={botId()}
-                onSelectBot={(id) => {
-                  setBotId(id);
-                  void refresh();
-                }}
-                onInstall={() => void install()}
-                onUninstall={(id) => void uninstall(id)}
-              />
-            )}
+          <Show when={tab() !== "apps"}>
+            <Show when={error()}>
+              <p role="alert">{error()}</p>
+            </Show>
+            <For each={warnings()}>{(warning) => <p role="alert">{warning}</p>}</For>
+            <MarketplaceGallery
+              items={items()}
+              query={query()}
+              category={category()}
+              selectedId={details()?.item.id ?? ""}
+              onQuery={(value) => {
+                setQuery(value);
+                queueSearch(value);
+              }}
+              onCategory={(value) => {
+                setCategory(value);
+                void refresh({ category: value });
+              }}
+              onSearch={() => void refresh()}
+              onOpen={(item) => void choose(item)}
+              onInstall={(item) => void install(item)}
+            />
+            <Show when={details()}>
+              {(value) => (
+                <MarketplaceDetail
+                  details={value()}
+                  bots={props.bots}
+                  selectedBot={botId()}
+                  onSelectBot={(id) => {
+                    setBotId(id);
+                    void refresh();
+                  }}
+                  onInstall={() => void install()}
+                  onUninstall={(id) => void uninstall(id)}
+                />
+              )}
+            </Show>
           </Show>
-        </Show>
+        </div>
       </div>
-    </main>
+    </WorkPage>
   );
 }

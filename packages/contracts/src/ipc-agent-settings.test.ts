@@ -3,6 +3,7 @@ import {
   AGENT_TOOL_GROUPS,
   APP_AGENT_STEPS,
   APP_CHAT_ACCENTS,
+  APP_FONT_WEIGHTS,
   APP_FONTS,
   APP_SEND_SHORTCUTS,
   APP_UI_SCALES,
@@ -104,11 +105,12 @@ describe("W3 agent settings contract", () => {
       theme: "system",
       languageChosen: true,
       notifications,
-      tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "voice" })),
+      tabs: SETTINGS_TABS.map((id) => ({ id, available: id !== "computer-use" })),
       navigation: { pinnedPageIds: ["library", "agents"] },
       appearance: {
         uiScale: 100,
         font: "inter",
+        fontWeight: "normal",
         sendShortcut: "enter",
         chatAccent: "blue",
         agentSteps: "show",
@@ -156,6 +158,7 @@ describe("W3 agent settings contract", () => {
           appearance: {
             uiScale: 100,
             font: "inter",
+            fontWeight: "normal",
             sendShortcut: "enter",
             chatAccent: "blue",
             agentSteps: "show",
@@ -201,6 +204,7 @@ describe("W3 agent settings contract", () => {
   it("describes the look of the program in short lists, with today's values as defaults (BE-U)", () => {
     expect(APP_UI_SCALES).toEqual([90, 100, 110, 125, 140]);
     expect(APP_FONTS).toEqual(["inter", "system", "mono"]);
+    expect(APP_FONT_WEIGHTS).toEqual(["light", "normal", "strong"]);
     expect(APP_SEND_SHORTCUTS).toEqual(["enter", "mod-enter"]);
     expect(APP_CHAT_ACCENTS).toHaveLength(6);
     expect(APP_AGENT_STEPS).toEqual(["show", "collapse"]);
@@ -229,6 +233,8 @@ describe("W3 agent settings contract", () => {
     expect(() => parseAppearancePatch({ uiScale: "100" })).toThrow(/uiScale is one of 90, 100, 110, 125, 140/);
     expect(() => parseAppearancePatch({ sendShortcut: "tab" })).toThrow(/sendShortcut/);
     expect(() => parseAppearancePatch({ chatAccent: "#fff" })).toThrow(/chatAccent/);
+    expect(parseAppearancePatch({ fontWeight: "strong" })).toEqual({ fontWeight: "strong" });
+    expect(() => parseAppearancePatch({ fontWeight: "bold" })).toThrow(/fontWeight is one of light, normal, strong/);
     expect(() => parseAppearancePatch({ theme: "dark" })).toThrow(/Unknown appearance setting "theme"/);
   });
 
@@ -236,12 +242,23 @@ describe("W3 agent settings contract", () => {
     expect(appearanceDomTokens(undefined)).toMatchObject({
       uiScale: "100",
       font: "inter",
+      fontWeight: "normal",
       chatAccent: "blue",
       sendShortcut: "enter",
       agentSteps: "collapse",
       unreadFirst: "false",
       scaleFactor: "1",
       accentHex: "#3b82f6",
+    });
+    expect(appearanceDomTokens({ fontWeight: "light" })).toMatchObject({
+      fontWeight: "light",
+      weightRegular: "360",
+      weightMedium: "440",
+      weightSemibold: "540",
+    });
+    expect(appearanceDomTokens({ fontWeight: "strong" })).toMatchObject({
+      weightRegular: "480",
+      weightSemibold: "650",
     });
     expect(appearanceDomTokens({ uiScale: 125, font: "mono", chatAccent: "violet", unreadFirst: true })).toMatchObject({
       uiScale: "125",

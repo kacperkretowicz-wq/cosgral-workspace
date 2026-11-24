@@ -8,19 +8,19 @@ export function UnreadMessagesBanner(props: {
   onJumpToUnread: () => void;
   onMarkRead: () => void;
 }) {
-  const label = () => `${props.count} new ${props.count === 1 ? "message" : "messages"}`;
+  const label = () => (props.count === 1 ? t("1 new message") : t("{count} new messages", { count: props.count }));
   return (
     <div class="unread-messages-banner" role="status" aria-label={label()}>
       <Button
         class="unread-messages-jump"
         type="button"
-        aria-label={`Jump to ${label()}`}
+        aria-label={t("Jump to {label}", { label: label() })}
         onClick={props.onJumpToUnread}
       >
         {label()}
       </Button>
       <Button class="unread-messages-mark-read" type="button" disabled={props.busy} onClick={props.onMarkRead}>
-        {props.busy ? "Marking…" : "Mark as read"}
+        {props.busy ? t("Marking…") : t("Mark as read")}
       </Button>
     </div>
   );
@@ -30,7 +30,7 @@ export function UnreadMessagesDivider(props: { elementRef?: (element: HTMLDivEle
   return (
     <div class="unread-messages-divider" ref={props.elementRef}>
       <hr aria-label={t("New messages")} />
-      <span>NEW</span>
+      <span>{t("NEW")}</span>
       <hr />
     </div>
   );

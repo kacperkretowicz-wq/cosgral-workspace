@@ -13,7 +13,8 @@ import type {
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import { createNew } from "./sidebar-test-utils";
+import { setLanguage } from "./i18n";
+import { createNew, toggleShowHidden } from "./sidebar-test-utils";
 
 let emitAgentEvent: ((event: AgentEvent) => void) | undefined;
 const agentEventListeners = new Set<(event: AgentEvent) => void>();
@@ -665,7 +666,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Open account menu" }));
     await fireEvent.click(screen.getByRole("button", { name: "Providers & permissions" }));
 
-    expect(screen.getByRole("dialog", { name: "Providers & permissions" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
     const providers = screen.getByRole("radiogroup", { name: "Default provider" });
     expect(within(providers).getByRole("radio", { name: /Codex.*Available/ })).toBeChecked();
     expect(within(providers).getByText("norbert@example.com")).toBeInTheDocument();
@@ -673,8 +674,8 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     await fireEvent.click(within(providers).getByRole("radio", { name: /Claude.*Available/ }));
     await fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(window.openbot.saveSetup).toHaveBeenLastCalledWith({ preferredProvider: "claude" });
-    expect(screen.queryByRole("dialog", { name: "Providers & permissions" })).not.toBeInTheDocument();
+    await waitFor(() => expect(window.openbot.saveSetup).toHaveBeenLastCalledWith({ preferredProvider: "claude" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument());
   });
 
   it("starts on the New agent page for a new user with no agents", async () => {
@@ -684,6 +685,39 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Agent name" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create agent" })).toBeDisabled();
+  });
+
+  it("leaves the New agent page by itself when the first agent arrives (setup made it), and opens that agent", async () => {
+    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([]);
+    render(() => <App />);
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS.slice(0, 1) });
+
+    expect(await screen.findByRole("heading", { name: "Chief" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "New agent", level: 1 })).not.toBeInTheDocument();
+  });
+
+  it("keeps the New agent page the person opened when the agent list changes", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await createNew("New agent");
+    expect(await screen.findByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+
+    emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByRole("heading", { name: "New agent", level: 1 })).toBeInTheDocument();
+  });
+
+  it("opens the list of keyboard shortcuts with Ctrl+/ and closes it with Escape", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await fireEvent.keyDown(window, { key: "/", ctrlKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(within(dialog).getByText("Previous agent in the list (outside a text field)")).toBeInTheDocument();
+    await fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument());
   });
 
   it("keeps agents disabled when setup persistence fails", async () => {
@@ -1019,13 +1053,17 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("heading", { name: "Sales Outbound" })).toBeInTheDocument();
   });
 
-  it("shows agent role badges without a redundant standalone heading", async () => {
-    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([BOTS[0], { ...BOTS[1], role: "   " }]);
+  it("keeps the role out of the name line (whole names) and shows it while an agent has no messages", async () => {
+    vi.mocked(window.openbot.agent.listBots).mockResolvedValueOnce([
+      { ...BOTS[0], preview: "No messages yet" },
+      { ...BOTS[1], role: "   " },
+    ]);
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
 
-    expect(screen.getByText("Chief of staff")).toHaveClass("bot-role-badge");
-    expect(screen.getByText("Chief of staff")).toHaveAttribute("title", "Chief of staff");
+    expect(document.querySelector(".bot-role-badge")).toBeNull();
+    expect(screen.getByText("Chief of staff")).toHaveClass("bot-row-preview");
+    expect(screen.getByRole("button", { name: /^Chief, Chief of staff/ })).toBeInTheDocument();
     expect(screen.queryByText("Outbound specialist")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Agents" })).not.toBeInTheDocument();
 
@@ -2598,7 +2636,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     );
   });
 
-  it("lists Teach a task and Voice in the composer + menu, disabled until the engine is there", async () => {
+  it("lists Teach a task (disabled) and no Voice in the composer + menu", async () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
     await confirmOnboardingModel();
@@ -2607,7 +2645,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(screen.getByRole("button", { name: "Use a skill" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Teach a task" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Side question" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Voice" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
   });
 
   it("adds pathless pasted images reported by preload", async () => {
@@ -2722,6 +2760,41 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     expect(vi.mocked(window.openbot.agent.updateBot).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(window.openbot.agent.sendMessage).mock.invocationCallOrder[0] ?? Number.MAX_VALUE,
     );
+  });
+
+  it("in Polish, a listed focus still uses its prepared profile and sends the first message in Polish (seen in the real window)", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await confirmOnboardingModel();
+    setLanguage("pl");
+    await fireEvent.click(await screen.findByRole("radio", { name: /Praca i projekty/ }));
+    await waitFor(() =>
+      expect(window.openbot.agent.updateBot).toHaveBeenCalledWith(
+        expect.objectContaining({ botId: "chief", role: "Work & projects" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(window.openbot.agent.sendMessage).toHaveBeenCalledWith({
+        botId: "chief",
+        text: "Skup się na mojej pracy i projektach. Pomagaj mi je planować, porządkować i prowadzić z własnej inicjatywy.",
+        attachmentDraftIds: [],
+      }),
+    );
+    setLanguage("en");
+  });
+
+  it("maps the agents and the open conversation again when the language changes, so times follow it", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await waitFor(() => expect(window.openbot.agent.readConversation).toHaveBeenCalled());
+    const bots = vi.mocked(window.openbot.agent.listBots).mock.calls.length;
+    const conversations = vi.mocked(window.openbot.agent.readConversation).mock.calls.length;
+    setLanguage("pl");
+    await waitFor(() => expect(vi.mocked(window.openbot.agent.listBots).mock.calls.length).toBeGreaterThan(bots));
+    await waitFor(() =>
+      expect(vi.mocked(window.openbot.agent.readConversation).mock.calls.length).toBeGreaterThan(conversations),
+    );
+    setLanguage("en");
   });
 
   it("uses a custom onboarding answer as the persistent agent remit", async () => {
@@ -3572,9 +3645,9 @@ describe("COSGRAL Workspace connected desktop shell", () => {
       toModel: "gpt-5.6-terra",
       reason: "Limit",
     });
-    await waitFor(() => expect(screen.getAllByText(/^model zapasowy:/)).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText(/^fallback model:/)).toHaveLength(2));
     emitAgentEvent?.({ type: "bots-changed", bots: BOTS });
-    await waitFor(() => expect(screen.queryByText(/^model zapasowy:/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/^fallback model:/)).toBeNull());
   });
   it("shows and dismisses an account network error only for the open agent", async () => {
     render(() => <App />);
@@ -3665,7 +3738,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     await fireEvent.contextMenu(list.getByRole("button", { name: /^Sales Outbound/ }));
     await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Hide" }));
     await waitFor(() => expect(list.queryByRole("button", { name: /^Sales Outbound/ })).toBeNull());
-    await fireEvent.click(screen.getByRole("switch", { name: "Show hidden" }));
+    await toggleShowHidden();
     const hidden = await list.findByRole("button", { name: /^Sales Outbound/ });
     expect(hidden).toHaveClass("bot-row-hidden");
     await fireEvent.contextMenu(hidden);

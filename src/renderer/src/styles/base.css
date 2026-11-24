@@ -22,11 +22,13 @@ body {
   background: var(--openbot-bg-canvas);
   color: var(--openbot-white);
   font-family: var(--openbot-font-sans, inherit);
+  font-weight: var(--openbot-weight-regular);
   -webkit-font-smoothing: antialiased;
 }
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }

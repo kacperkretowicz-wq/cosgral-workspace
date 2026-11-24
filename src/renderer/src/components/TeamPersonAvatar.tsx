@@ -1,12 +1,13 @@
 import type { TeamPresenceMember } from "@openbot/contracts/ipc";
-import { blobatar } from "blobatar/blob";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { buildAnimatedAvatarSvg } from "../blobatar";
 
 export function TeamPersonAvatar(props: { member: TeamPresenceMember; large?: boolean }) {
   const avatarUrl = () => props.member.avatarUrl ?? null;
   const [imageFailed, setImageFailed] = createSignal(false);
+  // The same finish as agents' creatures (gloss, rim light, stronger colour), so people and agents sit together.
   const generatedAvatar = createMemo(() =>
-    blobatar(props.member.email ?? props.member.username ?? props.member.id, { background: false }),
+    buildAnimatedAvatarSvg(props.member.email ?? props.member.username ?? props.member.id, null),
   );
   createEffect(
     () => avatarUrl(),

@@ -99,34 +99,36 @@ export function FallbackOrder(props: {
                 <Show when={props.unavailable?.includes(model)}>
                   <Badge tone="warning">{t("Unavailable")}</Badge>
                 </Show>
-                <Button
-                  type="button"
-                  size="xs"
-                  aria-label={t("Move {name} up", { name: nameOf(model) })}
-                  disabled={props.saving || index() === 0}
-                  onClick={() => move(index(), index() - 1)}
-                >
-                  {t("Up")}
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  aria-label={t("Move {name} down", { name: nameOf(model) })}
-                  disabled={props.saving || index() === props.items.length - 1}
-                  onClick={() => move(index(), index() + 1)}
-                >
-                  {t("Down")}
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="danger"
-                  disabled={props.saving}
-                  aria-label={t("Remove {name} from fallbacks", { name: nameOf(model) })}
-                  onClick={() => props.onChange(props.items.filter((_, i) => i !== index()))}
-                >
-                  {t("Remove")}
-                </Button>
+                <span class="providers-order-actions">
+                  <Button
+                    type="button"
+                    size="xs"
+                    aria-label={t("Move {name} up", { name: nameOf(model) })}
+                    disabled={props.saving || index() === 0}
+                    onClick={() => move(index(), index() - 1)}
+                  >
+                    {t("Up")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    aria-label={t("Move {name} down", { name: nameOf(model) })}
+                    disabled={props.saving || index() === props.items.length - 1}
+                    onClick={() => move(index(), index() + 1)}
+                  >
+                    {t("Down")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="danger"
+                    disabled={props.saving}
+                    aria-label={t("Remove {name} from fallbacks", { name: nameOf(model) })}
+                    onClick={() => props.onChange(props.items.filter((_, i) => i !== index()))}
+                  >
+                    {t("Remove")}
+                  </Button>
+                </span>
               </li>
             )}
           </For>

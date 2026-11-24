@@ -1,9 +1,14 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import type { BotProfile } from "../data";
+import { appLocale, t } from "../i18n";
+import { AgentAvatar } from "./AgentAvatar";
+import { PanelHeading } from "./PanelHeading";
+import { runReasonText, runStatusLabel } from "./ScheduleOverview";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
+import { RefreshCw } from "./ui/icons";
 
-type Bot = { id: string; name: string };
+type Bot = { id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>;
 type FormTrigger = "interval" | "daily" | "cron" | "webhook";
 export function RoutineForm(props: {
   bots: Bot[];
@@ -46,7 +51,7 @@ export function RoutineForm(props: {
     }
   }
   return (
-    <section class="w2-panel" aria-label={t("Create routine")}>
+    <section class="w2-panel routine-form" aria-label={t("Create routine")}>
       <h3>{t("Create routine")}</h3>
       <label>
         {t("Agent")}
@@ -128,7 +133,7 @@ export function RoutineForm(props: {
         disabled={!bot() || !name().trim() || !prompt().trim()}
         onClick={() => void create()}
       >
-        Create routine
+        {t("Create routine")}
       </Button>
     </section>
   );
@@ -189,22 +194,44 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
   });
   return (
     <section class="w2-panel" aria-label={t("Routines")}>
-      <h2>{t("Routines")}</h2>
+      <PanelHeading icon={RefreshCw} tint="red">
+        {t("Routines")}
+      </PanelHeading>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>
       <For each={routines()}>
         {(routine) => (
-          <article class="w2-item">
-            <strong>{routine.name}</strong>
+          <article class="w2-item routine-item" data-paused={routine.paused ? "true" : undefined}>
+            <span class="w2-item-icon" aria-hidden="true">
+              <Show
+                when={props.bots.find((bot) => bot.id === routine.botId && bot.avatarSeed)}
+                fallback={<RefreshCw size={18} stroke-width={1.5} />}
+              >
+                {(bot) => (
+                  <AgentAvatar
+                    bot={{
+                      avatarSeed: bot().avatarSeed ?? bot().id,
+                      avatarHue: bot().avatarHue ?? null,
+                      avatarUrl: bot().avatarUrl ?? null,
+                    }}
+                  />
+                )}
+              </Show>
+            </span>
+            <strong>
+              {routine.name}{" "}
+              <span class="w2-item-tag" data-state={routine.paused ? "paused" : "active"}>
+                {routine.paused ? t("Paused") : t("Active")}
+              </span>
+            </strong>
             <p>
-              {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} ·{" "}
-              {routine.paused ? t("Paused") : t("Active")} · {routine.timezone}
+              {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} · {routine.timezone}
             </p>
             <p>
               {routine.nextRunAt
                 ? t("Next: {when} ({timezone})", {
-                    when: new Date(routine.nextRunAt).toLocaleString(undefined, {
+                    when: new Date(routine.nextRunAt).toLocaleString(appLocale(), {
                       timeZone: routine.timezone,
                     }),
                     timezone: routine.timezone,
@@ -231,7 +258,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                 {t("Generate new secret")}
               </Button>
             </Show>
-            <div>
+            <div class="w2-item-actions">
               <Button
                 unstyled
                 type="button"
@@ -241,7 +268,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                   })
                 }
               >
-                {routine.paused ? "Resume" : "Pause"}
+                {routine.paused ? t("Resume") : t("Pause")}
               </Button>{" "}
               <Button
                 unstyled
@@ -253,18 +280,18 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
                   })
                 }
               >
-                Run now
+                {t("Run now")}
               </Button>{" "}
               <Button unstyled type="button" onClick={() => void loadHistory(routine.id)}>
-                History
+                {t("History")}
               </Button>
             </div>
             <Show when={history() === routine.id}>
               <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
                 {(entry) => (
                   <p>
-                    {entry.status} · {entry.startedAt}
-                    {entry.reason ? ` · ${entry.reason}` : ""}
+                    {runStatusLabel(entry.status)} · {new Date(entry.startedAt).toLocaleString(appLocale())}
+                    {entry.reason ? ` · ${runReasonText(entry.reason)}` : ""}
                   </p>
                 )}
               </For>

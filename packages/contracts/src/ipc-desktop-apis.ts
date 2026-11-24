@@ -101,6 +101,7 @@ import type {
   OpenLibraryFileInput,
   SaveChatAttachmentInput,
 } from "./ipc-library";
+import type { MachineFilesDesktopApi } from "./ipc-machine-files";
 import type { MarketplaceDesktopApi } from "./ipc-marketplace";
 import type {
   AddMcpServerInput,
@@ -242,7 +243,6 @@ import type {
   VaultStatus,
 } from "./ipc-vault";
 import type { VaultConnectorsDesktopApi, VaultSecretsDesktopApi } from "./ipc-vault-connectors";
-import type { VoiceDesktopApi } from "./ipc-voice";
 import type { WindowsDesktopApi } from "./ipc-windows";
 import type { WorkflowVersionDetails, WorkflowVersionInput, WorkflowVersionSummary } from "./ipc-workflow-versions";
 import type {
@@ -685,8 +685,6 @@ export interface OpenBotDesktopApi {
   remoteDesktop?: RemoteDesktopDesktopApi;
   /** COSGRAL W3 local Marketplace (this computer only). Optional until every renderer mock implements it. */
   marketplace?: MarketplaceDesktopApi;
-  /** COSGRAL W3 local voice (this computer only). Optional until every renderer mock implements it. */
-  voice?: VoiceDesktopApi;
   /** COSGRAL W3 Mobile Connect (this computer only). Optional until every renderer mock implements it. */
   mobile?: MobileDesktopApi;
   /** COSGRAL W3-KK3 "always allow" rules of approval cards (this computer only). Optional until every mock has it. */
@@ -749,6 +747,8 @@ export interface OpenBotDesktopApi {
   providerCatalog?: ProviderCatalogDesktopApi;
   /** COSGRAL W12 (BE-H): the library page, the usage report and the schedule (screens that read what the program holds). */
   libraryView?: LibraryViewDesktopApi;
+  /** Library › Files › This computer: folders the person shares (person only). Optional until every mock implements it. */
+  machineFiles?: MachineFilesDesktopApi;
   usageReport?: UsageReportDesktopApi;
   schedule?: ScheduleDesktopApi;
   /** COSGRAL W12 (BE-J): the Tasks view (all channels in one list; one task with result, steps and log). */

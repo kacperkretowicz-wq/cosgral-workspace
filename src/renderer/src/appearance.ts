@@ -18,9 +18,25 @@ export function applyAppearanceDom(value: unknown): void {
   root.dataset.agentSteps = tokens.agentSteps;
   root.dataset.unreadFirst = tokens.unreadFirst;
   setUnreadFirst(tokens.unreadFirst === "true");
+  root.dataset.fontWeight = tokens.fontWeight;
   root.style.setProperty("--openbot-ui-scale", tokens.scaleFactor);
-  root.style.setProperty("--openbot-accent", tokens.accentHex);
-  root.style.setProperty("--openbot-accent-soft", tokens.accentSoft);
+  // The default weights and the default (blue) accent are the program's own tokens (the Azure palette per theme);
+  // only a choice the person made is painted over them.
+  if (tokens.fontWeight === "normal") {
+    for (const name of ["regular", "medium", "semibold", "bold"]) root.style.removeProperty(`--openbot-weight-${name}`);
+  } else {
+    root.style.setProperty("--openbot-weight-regular", tokens.weightRegular);
+    root.style.setProperty("--openbot-weight-medium", tokens.weightMedium);
+    root.style.setProperty("--openbot-weight-semibold", tokens.weightSemibold);
+    root.style.setProperty("--openbot-weight-bold", tokens.weightSemibold);
+  }
+  if (tokens.chatAccent === "blue") {
+    root.style.removeProperty("--openbot-accent");
+    root.style.removeProperty("--openbot-accent-soft");
+  } else {
+    root.style.setProperty("--openbot-accent", tokens.accentHex);
+    root.style.setProperty("--openbot-accent-soft", tokens.accentSoft);
+  }
   if (tokens.font === "system") {
     root.style.setProperty("--openbot-font-sans", 'system-ui, "Segoe UI", sans-serif');
   } else if (tokens.font === "mono") {

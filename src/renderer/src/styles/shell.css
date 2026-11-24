@@ -172,17 +172,6 @@
   flex: 0 0 36px;
 }
 
-.page-rail .page-rail-button[data-pinned="true"]::after {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 5px;
-  height: 5px;
-  border-radius: var(--cosgral-radius-pill);
-  background: var(--cosgral-accent);
-  content: "";
-}
-
 .page-rail-overflow-menu .page-rail-more-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -264,7 +253,7 @@
   padding: 0 10px;
   color: var(--cosgral-text-secondary);
   font-size: var(--cosgral-text-md);
-  font-weight: 400;
+  font-weight: var(--openbot-weight-regular);
 }
 
 .sidebar .sidebar-channel-actions .ui-button:hover {
@@ -294,39 +283,49 @@
   opacity: 1;
 }
 
-/* UI-AG: denser sidebar tiles (vs-071: kafle were lighter than 0.71). 68px row, 44px mascot fills the slot. */
+/*
+ * Agent list, OpenBot layout: a flat list. No tile under every row; the hovered and the open row get a surface,
+ * the creature is the row's anchor. 60px row, 42px creature.
+ */
 .sidebar .bot-row {
-  height: 68px;
-  min-height: 68px;
-  gap: 12px;
-  padding: 10px 12px;
-  background: color-mix(in srgb, var(--openbot-hover) 55%, transparent);
+  height: 60px;
+  min-height: 60px;
+  gap: 11px;
+  border-radius: var(--openbot-radius-md);
+  padding: 8px 10px;
+  background: transparent;
+  transition: background-color var(--openbot-duration-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar .bot-row:hover:not(.bot-row-active) {
+    background: color-mix(in srgb, var(--openbot-hover) 70%, transparent);
+  }
 }
 
 .sidebar .bot-row + .bot-row {
-  margin-top: 3px;
+  margin-top: 1px;
 }
 
 .sidebar .bot-row-avatar {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
 }
 
 .sidebar .bot-row .bot-avatar,
 .sidebar .person-row .person-avatar {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
 }
 
 .sidebar .bot-row-title strong,
 .sidebar .person-row .bot-row-heading strong {
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .sidebar .bot-row-active {
   background: var(--cosgral-bg-active, var(--openbot-active));
-  box-shadow: inset 0 0 0 1px var(--openbot-border);
 }
 
 .sidebar .bot-row {
@@ -358,17 +357,6 @@
   position: relative;
 }
 
-.sidebar .bot-row-active::before {
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 0;
-  width: 3px;
-  border-radius: 0 var(--cosgral-radius-sm) var(--cosgral-radius-sm) 0;
-  background: var(--cosgral-accent);
-  content: "";
-}
-
 .sidebar .bot-row-preview {
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-md);
@@ -382,4 +370,213 @@
   color: var(--cosgral-text-muted);
   font-size: var(--cosgral-text-sm);
   font-variant-numeric: tabular-nums;
+}
+
+/* The time is short ("10:00", "Yesterday", "Mon"): it is never cut; the name gives way instead. */
+.sidebar .bot-row-time {
+  max-width: none;
+  overflow: visible;
+}
+
+/*
+ * Creature moods (blobatar.ts `AvatarMood`). The face itself is a still pose, so every mood reads without motion;
+ * with motion allowed a busy creature looks around and one that needs you gives a small hop.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .mo-root[data-mood="working"] .mo-eyes {
+    animation: mo-mood-look 2.6s var(--openbot-ease-in-out) infinite;
+  }
+
+  .mo-root[data-mood="needs-you"] .mo-mood {
+    animation: mo-mood-hop 2.4s var(--openbot-ease-out) infinite;
+  }
+
+  .mo-root[data-mood="limited"] [data-shade="zz"] {
+    animation: mo-mood-doze 3.2s ease-in-out infinite;
+  }
+}
+
+/* A creature blinks once when the pointer arrives; a smiling or dozing one keeps its eyes as they are. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  :is(
+      .bot-avatar-motion-hover:hover,
+      button:hover .bot-avatar-motion-hover,
+      [role="button"]:hover .bot-avatar-motion-hover
+    )
+    .mo-root:not([data-mood="happy"], [data-mood="limited"])
+    .mo-eye {
+    animation: mo-blink 0.36s var(--openbot-ease-in-out) 1;
+  }
+}
+
+@keyframes mo-blink {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  45%,
+  55% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes mo-mood-look {
+  0%,
+  100% {
+    translate: -1.6px 0;
+  }
+  50% {
+    translate: 1.6px 0;
+  }
+}
+
+@keyframes mo-mood-hop {
+  0%,
+  70%,
+  100% {
+    translate: 0 0;
+  }
+  80% {
+    translate: 0 -3.5px;
+  }
+  90% {
+    translate: 0 0.5px;
+  }
+}
+
+@keyframes mo-mood-doze {
+  0%,
+  100% {
+    opacity: 0.45;
+    translate: 0 0.5px;
+  }
+  50% {
+    opacity: 1;
+    translate: 0 -1px;
+  }
+}
+
+/* The line under the name while a thread runs: same place as the preview, the accent says "in progress". */
+.sidebar .bot-row-working {
+  color: var(--openbot-text-secondary);
+}
+
+/*
+ * Conversation, OpenBot layout: the agent answers as plain text on the canvas (easier to read long answers, lists
+ * and code); only the person's own message sits in a bubble on the right.
+ */
+.message-entry-bot .bot-bubble {
+  max-width: min(720px, 100%);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 2px 0;
+  line-height: 22px;
+}
+
+.message-entry-bot .message-copy + .message-copy,
+.message-entry-bot .message-content-blocks > * + * {
+  margin-top: var(--openbot-space-2, 8px);
+}
+
+/* Conversation header: the agent is the subject of the window, so its creature and name read first. */
+.conversation-title {
+  gap: 8px;
+  padding: 2px 8px 2px 4px;
+}
+
+.conversation-header .conversation-title .bot-avatar {
+  width: 24px;
+  height: 24px;
+}
+
+.conversation-title h1 {
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  line-height: 20px;
+}
+
+/*
+ * Channels on the sidebar list: up to three member creatures stacked (lead in front), the title, the member count,
+ * and "#name · led by ..." as the preview. Same row anatomy as an agent row.
+ */
+.sidebar .channel-row-stack {
+  position: relative;
+}
+
+.sidebar .channel-row-stack .channel-row-member {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-sidebar);
+  box-shadow: 0 0 0 2px var(--openbot-bg-sidebar);
+}
+
+/* One member fills the slot; two sit diagonally; three form a small triangle. */
+.sidebar .channel-row-stack[data-count="1"] .channel-row-member {
+  inset: 4px;
+  width: 34px;
+  height: 34px;
+}
+
+.sidebar .channel-row-stack[data-count="2"] .channel-row-member:nth-child(1),
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(1) {
+  z-index: 3;
+  bottom: 0;
+  left: 0;
+}
+
+.sidebar .channel-row-stack[data-count="2"] .channel-row-member:nth-child(2) {
+  z-index: 2;
+  top: 0;
+  right: 0;
+}
+
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(2) {
+  z-index: 2;
+  bottom: 0;
+  right: 0;
+}
+
+.sidebar .channel-row-stack[data-count="3"] .channel-row-member:nth-child(3) {
+  z-index: 1;
+  top: 0;
+  left: 8px;
+}
+
+.sidebar .bot-row-active .channel-row-member {
+  background: var(--openbot-active);
+  box-shadow: 0 0 0 2px var(--openbot-active);
+}
+
+.channel-row-hash {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-control);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xl);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.sidebar .channel-row-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--openbot-space-1);
+  min-width: 18px;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-control);
+  padding: 0 6px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Same colour as the preview line: the dim shade fails AA contrast on the sidebar. */
+.channel-row-name {
+  color: inherit;
 }

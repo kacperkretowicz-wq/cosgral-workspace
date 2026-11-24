@@ -3,7 +3,7 @@
 // picks it only when the app is not packaged and COSGRAL_CLI_TEST_BASE names a loopback address.
 
 import { get, type IncomingMessage } from "node:http";
-import type { DownloadResponse, DownloadSource } from "./voice-download";
+import type { DownloadResponse, DownloadSource } from "./download-verified";
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 

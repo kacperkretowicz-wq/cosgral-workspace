@@ -8,9 +8,8 @@
   margin: 0 0 8px;
   color: var(--cosgral-fg-muted);
   font-size: var(--cosgral-text-sm);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: var(--openbot-weight-semibold);
+  letter-spacing: 0;
 }
 
 .agent-cards .agent-card-open {
@@ -66,8 +65,8 @@
   height: 36px;
   place-items: center;
   border-radius: var(--cosgral-radius-md);
-  background: oklch(0.5 0.1 var(--card-hue) / 0.22);
-  color: oklch(0.84 0.1 var(--card-hue));
+  background: var(--openbot-mesh-blue);
+  color: var(--openbot-contrast-white);
 }
 
 .agent-card-row[data-card="chat-color"] {
@@ -110,7 +109,7 @@
   flex: none;
   color: var(--cosgral-text-primary);
   font-size: var(--cosgral-text-lg);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .agent-cards .agent-card-summary {
@@ -146,7 +145,7 @@
 .agent-card-page-header h4 {
   margin: 0;
   font-size: var(--cosgral-text-xl);
-  font-weight: 600;
+  font-weight: var(--openbot-weight-semibold);
 }
 
 .agent-card-page-back {
@@ -245,11 +244,4 @@
 .agent-card-detail-actions {
   display: flex;
   gap: 8px;
-}
-
-/* Light theme: dark shade of the group colour on a light tint (4.5:1+). */
-:root[data-theme="light"] .agent-card-icon,
-[data-story-theme="light"] .agent-card-icon {
-  background: oklch(0.9 0.05 var(--card-hue));
-  color: oklch(0.34 0.09 var(--card-hue));
 }

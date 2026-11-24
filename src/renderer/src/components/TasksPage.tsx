@@ -1,7 +1,8 @@
 import type { ChannelTask, ChannelTaskAction, ChannelTaskState, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
-import { t } from "../i18n";
+import { appLocale, t } from "../i18n";
 import { Badge, type BadgeTone, Button, Card, Heading, Input, Text } from "./ui";
+import { WorkPage } from "./WorkPage";
 
 /** Filters of the Tasks page. "Archived" shows archived tasks only; every other filter hides them. */
 const FILTERS = [
@@ -55,8 +56,8 @@ function matches(task: ChannelTask, filter: TaskFilter): boolean {
 function formatUpdated(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString()} ${time}`;
+  const time = date.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
+  return date.toDateString() === new Date().toDateString() ? time : `${date.toLocaleDateString(appLocale())} ${time}`;
 }
 
 /**
@@ -160,15 +161,14 @@ export function TasksPage(props: {
   });
 
   return (
-    <main class="w2-library tasks-page">
-      <header>
-        <Heading as="h1" size="lg">
-          {t("Tasks")}
-        </Heading>
-        <Text as="p" tone="secondary">
-          {t("Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.")}
-        </Text>
-      </header>
+    <WorkPage
+      page="tasks"
+      class="tasks-page"
+      title={t("Tasks")}
+      description={t(
+        "Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.",
+      )}
+    >
       <fieldset class="tasks-filter">
         <legend class="sr-only">{t("Show tasks")}</legend>
         <For each={FILTERS}>
@@ -277,6 +277,6 @@ export function TasksPage(props: {
           </Show>
         </Card>
       </Show>
-    </main>
+    </WorkPage>
   );
 }
