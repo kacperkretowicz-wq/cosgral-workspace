@@ -22,6 +22,10 @@ interface StandIn {
   corrupt: boolean;
   /** Cut the next N file downloads half way. */
   interrupt: number;
+  /** Codex helper `codex-code-mode-host` per version (only releases listed here have one). */
+  hosts: Map<string, Buffer>;
+  /** Serve other bytes for the helper than the release says. */
+  corruptHost: boolean;
   fileRequests: number;
   server: Server;
 }
@@ -51,6 +55,8 @@ async function standIn(): Promise<StandIn> {
     corrupt: false,
     interrupt: 0,
     fileRequests: 0,
+    hosts: new Map(),
+    corruptHost: false,
   };
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -67,6 +73,16 @@ async function standIn(): Promise<StandIn> {
             digest: `sha256:${sha(bytes)}`,
             browser_download_url: `${base}/files/codex/${version}`,
           },
+          ...(state.hosts.has(version)
+            ? [
+                {
+                  name: "codex-code-mode-host-x86_64-pc-windows-msvc.exe",
+                  size: state.hosts.get(version)?.length ?? 0,
+                  digest: `sha256:${sha(state.hosts.get(version) ?? Buffer.alloc(0))}`,
+                  browser_download_url: `${base}/files/codex-host/${version}`,
+                },
+              ]
+            : []),
         ],
       };
     };
@@ -90,6 +106,13 @@ async function standIn(): Promise<StandIn> {
           ? { version: manifestVersion, platforms: { "win32-x64": { checksum: sha(bytes), size: bytes.length } } }
           : null,
       );
+    }
+    const hostVersion = pick(/^\/files\/codex-host\/(.+)$/);
+    if (hostVersion) {
+      const bytes = state.hosts.get(hostVersion);
+      if (!bytes) return response.writeHead(404).end();
+      const body = state.corruptHost ? Buffer.from(bytes).fill(0x42) : bytes;
+      return response.writeHead(200, { "content-length": String(body.length) }).end(body);
     }
     const fileVersion = pick(/^\/files\/codex\/(.+)$/) ?? pick(/^\/claude\/([^/]+)\/win32-x64\/claude\.exe$/);
     if (fileVersion) {
@@ -362,5 +385,40 @@ describe("managed CLI engine (W5-BE1)", () => {
     const state = await manager.install("codex", undefined, { automatic: true });
     expect(confirms).toEqual([]);
     expect(state).toMatchObject({ phase: "error", managedVersion: null });
+  });
+
+  it("downloads Codex's code-mode host next to codex.exe and checks it like the executable", async () => {
+    const { manager, server, root } = await setup();
+    const host = Buffer.from("code mode host 0.1.0 ".repeat(512));
+    server.hosts.set("0.1.0", host);
+    const state = await manager.install("codex");
+    expect(state).toMatchObject({ managedVersion: "0.1.0", error: null });
+    const folder = join(root, "cli", "codex", "0.1.0");
+    expect(await readFile(join(folder, "codex-code-mode-host.exe"))).toEqual(host);
+    expect(existsSync(join(folder, "codex.exe"))).toBe(true);
+  });
+
+  it("an install without the helper is repaired by the next automatic update of the same version", async () => {
+    const { manager, server, root } = await setup();
+    await manager.install("codex");
+    const folder = join(root, "cli", "codex", "0.1.0");
+    expect(existsSync(join(folder, "codex-code-mode-host.exe"))).toBe(false);
+    server.hosts.set("0.1.0", Buffer.from("code mode host 0.1.0 ".repeat(512)));
+    await manager.autoUpdate();
+    expect(existsSync(join(folder, "codex-code-mode-host.exe"))).toBe(true);
+    expect(manager.state("codex")).toMatchObject({ managedVersion: "0.1.0", error: null });
+    const requests = server.fileRequests;
+    await manager.autoUpdate();
+    expect(server.fileRequests).toBe(requests);
+  });
+
+  it("a helper that fails its SHA-256 check keeps the release from installing", async () => {
+    const { manager, server, root } = await setup();
+    server.hosts.set("0.1.0", Buffer.from("code mode host 0.1.0 ".repeat(512)));
+    server.corruptHost = true;
+    const state = await manager.install("codex");
+    expect(state).toMatchObject({ phase: "error", managedVersion: null });
+    expect(state.error).toMatch(/SHA-256|unexpected size/);
+    expect(existsSync(join(root, "cli", "codex", "0.1.0"))).toBe(false);
   });
 });
