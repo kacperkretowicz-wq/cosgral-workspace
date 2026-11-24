@@ -9,7 +9,7 @@
 
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
-import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   ManagedCliId,
@@ -58,6 +58,11 @@ export interface ManagedCliDeps {
 const defaultRemove = (path: string): Promise<void> => rm(path, { recursive: true, force: true });
 
 /** SHA-256 of a file, streamed (a CLI is hundreds of MB). */
+/** The executable and its helpers together. */
+function totalBytes(release: CliRelease): number {
+  return release.sizeBytes + (release.companions ?? []).reduce((sum, file) => sum + file.sizeBytes, 0);
+}
+
 async function sha256OfFile(path: string): Promise<string> {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
@@ -266,7 +271,9 @@ export class ManagedCliManager {
       if (!stored.managedVersion || !stored.autoUpdate || stored.pinnedVersion || stored.customPath) continue;
       try {
         const latest = await this.#latest(id);
-        if (latest.version !== stored.managedVersion) await this.install(id, latest.version, { automatic: true });
+        // The same version is installed again when a helper is missing (installed before helpers were downloaded).
+        if (latest.version !== stored.managedVersion || this.#missingCompanion(id, latest))
+          await this.install(id, latest.version, { automatic: true });
       } catch (error) {
         this.#set(id, { phase: "error", error: `Automatic update failed: ${message(error)}` });
       }
@@ -292,7 +299,7 @@ export class ManagedCliManager {
       try {
         allowed = await this.#deps.confirm({
           title: `Download ${LABELS[id]} ${release.version}?`,
-          preview: `COSGRAL Workspace will download ${LABELS[id]} ${release.version} (${Math.round(release.sizeBytes / 1_048_576)} MB) from ${SOURCES[id]}, check its SHA-256 and keep it in its own data folder. No administrator rights are needed. Later updates install without asking unless you switch automatic updates off.`,
+          preview: `COSGRAL Workspace will download ${LABELS[id]} ${release.version} (${Math.round(totalBytes(release) / 1_048_576)} MB) from ${SOURCES[id]}, check its SHA-256 and keep it in its own data folder. No administrator rights are needed. Later updates install without asking unless you switch automatic updates off.`,
         });
       } catch (error) {
         this.#set(id, { phase: "error", error: message(error) });
@@ -313,26 +320,32 @@ export class ManagedCliManager {
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
         await rm(staging, { recursive: true, force: true });
-        this.#set(id, { phase: "downloading", progress: { receivedBytes: 0, totalBytes: release.sizeBytes } });
+        const total = totalBytes(release);
+        this.#set(id, { phase: "downloading", progress: { receivedBytes: 0, totalBytes: total } });
         let lastEmit = 0;
-        await downloadVerified({
-          source: this.#deps.source,
-          url: release.url,
-          sha256: release.sha256,
-          sizeBytes: release.sizeBytes,
-          destination: join(staging, release.fileName),
-          signal: new AbortController().signal,
-          checkUrl: this.#deps.checkUrl,
-          onProgress: (received) => {
-            const nowMs = Date.now();
-            if (nowMs - lastEmit < 250 && received < release.sizeBytes) return;
-            lastEmit = nowMs;
-            this.#set(id, {
-              phase: "downloading",
-              progress: { receivedBytes: received, totalBytes: release.sizeBytes },
-            });
-          },
-        });
+        let done = 0;
+        // The executable first, then the helpers it starts from its own folder; each one checked (size and SHA-256).
+        for (const file of [release, ...(release.companions ?? [])]) {
+          await downloadVerified({
+            source: this.#deps.source,
+            url: file.url,
+            sha256: file.sha256,
+            sizeBytes: file.sizeBytes,
+            destination: join(staging, file.fileName),
+            signal: new AbortController().signal,
+            checkUrl: this.#deps.checkUrl,
+            onProgress: (received) => {
+              const nowMs = Date.now();
+              if (nowMs - lastEmit < 250 && done + received < total) return;
+              lastEmit = nowMs;
+              this.#set(id, {
+                phase: "downloading",
+                progress: { receivedBytes: done + received, totalBytes: total },
+              });
+            },
+          });
+          done += file.sizeBytes;
+        }
         this.#set(id, { phase: "installing", progress: null });
         await this.#deps.probe(join(staging, release.fileName)).catch((error: unknown) => {
           throw new Error(`The downloaded CLI does not start: ${message(error)}`);
@@ -349,6 +362,11 @@ export class ManagedCliManager {
         } else if (existsSync(destination) && (await sha256OfFile(destination)) === release.sha256) {
           // Windows cannot delete a CLI that is still running. An earlier update left this folder behind and the very
           // same, verified file is already in it (COSGRAL W5-G2: switching back to a version after a pin failed here).
+          // Helpers that are missing there (an install from before they were downloaded) are added from this download.
+          for (const file of release.companions ?? []) {
+            const target = join(folder, file.fileName);
+            if (!existsSync(target)) await copyFile(join(staging, file.fileName), target);
+          }
           await rm(staging, { recursive: true, force: true });
         } else {
           throw new Error(
@@ -378,6 +396,12 @@ export class ManagedCliManager {
       }
     }
     return this.state(id);
+  }
+
+  /** True when the installed version folder lacks a helper file this release has. */
+  #missingCompanion(id: ManagedCliId, release: CliRelease): boolean {
+    const folder = join(this.#deps.root, id, release.version);
+    return (release.companions ?? []).some((file) => !existsSync(join(folder, file.fileName)));
   }
 
   async #latest(id: ManagedCliId): Promise<CliRelease> {

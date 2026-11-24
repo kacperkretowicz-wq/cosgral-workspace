@@ -1398,6 +1398,28 @@ describe.sequential("AgentService", { timeout: suiteTimeout(20_000, 5_000) }, ()
     expect(rows().at(-1)).toMatchObject({ pendingRequests: 0, limit: null, error: null });
   });
 
+  it("shows the text of a Codex error that is nested under error.message, not the word error", async () => {
+    const { codex, events, threadId, turnId } = await startManualTurn();
+    const rows = () =>
+      events.flatMap((event) =>
+        event.type === "activity-changed" && event.activity.botId === "chief" ? [event.activity] : [],
+      );
+    await waitFor(() => rows().at(-1)?.kind === "working");
+    // The shape Codex 0.172 sends (seen on the owner's computer on 24.11.2026).
+    codex.emit(
+      "notification",
+      notification("error", {
+        threadId,
+        turnId,
+        willRetry: false,
+        error: { message: "The model is overloaded right now.", codexErrorInfo: "serverOverloaded" },
+      }),
+    );
+    codex.emit("notification", notification("turn/completed", { threadId, turn: { id: turnId, status: "failed" } }));
+    await waitFor(() => rows().at(-1)?.kind === "error");
+    expect(rows().at(-1)?.error).toMatchObject({ code: "agent_error", message: "The model is overloaded right now." });
+  });
+
   it("shows a failed turn without an error message as an error", async () => {
     const { codex, events, threadId, turnId } = await startManualTurn();
     codex.emit("notification", notification("turn/completed", { threadId, turn: { id: turnId, status: "failed" } }));

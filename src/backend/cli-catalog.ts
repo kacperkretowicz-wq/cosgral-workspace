@@ -43,6 +43,15 @@ export function checkCliDownloadUrl(value: string): URL {
   return url;
 }
 
+/** One more file the CLI needs next to its executable (checked like the executable). */
+export interface CliCompanionFile {
+  url: string;
+  sha256: string;
+  sizeBytes: number;
+  /** The file name inside the version folder. */
+  fileName: string;
+}
+
 export interface CliRelease {
   id: ManagedCliId;
   version: string;
@@ -51,7 +60,18 @@ export interface CliRelease {
   sizeBytes: number;
   /** The file name inside the version folder. */
   fileName: string;
+  /**
+   * Helper programs the CLI starts from its own folder. Codex 0.172 and later fail a turn ("Code Mode is unavailable …
+   * host executable was not found") without `codex-code-mode-host.exe` next to `codex.exe`, as the official package
+   * has it. Older releases have no such file, so the list is empty for them.
+   */
+  companions?: CliCompanionFile[];
 }
+
+/** Codex helpers the official Windows package keeps next to `codex.exe`: release file prefix and installed name. */
+const CODEX_COMPANIONS: ReadonlyArray<readonly [string, string]> = [
+  ["codex-code-mode-host", "codex-code-mode-host.exe"],
+];
 
 export interface CliCatalog {
   latest: (id: ManagedCliId, signal: AbortSignal) => Promise<CliRelease>;
@@ -110,6 +130,17 @@ export class OfficialCliCatalog implements CliCatalog {
       throw new Error(`The Codex release ${version} has no ${fileName}.`);
     const digest = isString(asset.digest) ? asset.digest.replace(/^sha256:/, "").toLowerCase() : "";
     if (!SHA256.test(digest)) throw new Error(`The Codex release ${version} gives no SHA-256 for ${fileName}.`);
+    const target = `${this.#arch === "arm64" ? "aarch64" : "x86_64"}-pc-windows-msvc.exe`;
+    const companions: CliCompanionFile[] = [];
+    for (const [prefix, installedName] of CODEX_COMPANIONS) {
+      const name = `${prefix}-${target}`;
+      const item = release.assets.find((entry) => isDynamicRecord(entry) && entry.name === name);
+      if (!isDynamicRecord(item)) continue;
+      const sha = isString(item.digest) ? item.digest.replace(/^sha256:/, "").toLowerCase() : "";
+      if (!isString(item.browser_download_url) || !isNumber(item.size) || !SHA256.test(sha))
+        throw new Error(`The Codex release ${version} gives no SHA-256 for ${name}.`);
+      companions.push({ url: item.browser_download_url, sha256: sha, sizeBytes: item.size, fileName: installedName });
+    }
     return {
       id: "codex",
       version,
@@ -117,6 +148,7 @@ export class OfficialCliCatalog implements CliCatalog {
       sha256: digest,
       sizeBytes: asset.size,
       fileName: "codex.exe",
+      companions,
     };
   }
 
