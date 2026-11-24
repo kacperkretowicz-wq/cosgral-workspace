@@ -51,6 +51,7 @@ const ENGLISH_LABELS: Record<string, string> = {
   Przepływy: "Workflows",
   Zużycie: "Usage",
   Biblioteka: "Library",
+  "Ten komputer": "This computer",
   "Katalog dodatków": "Marketplace",
   "Zdalny pulpit": "Remote desktop",
   Dostawcy: "Providers",
@@ -389,10 +390,11 @@ try {
     }
     await shoot(id);
     await tabWalk(`${id} (keyboard)`, "main", false);
-    // Pages with a section list (Library, Providers, Server settings, Schedule…): every section after the first.
+    // Pages with a section list (Library, Providers, Server settings, Schedule…): every section. A page reopens on the
+    // section used last, so the first one is not necessarily what the page screenshot above shows.
     const sections = page.locator("nav.work-page-nav button");
     const count = await sections.count();
-    for (let index = 1; index < count; index += 1) {
+    for (let index = 0; index < count; index += 1) {
       const section = sections.nth(index);
       const name = ((await section.textContent()) ?? `${index}`)
         .trim()
@@ -402,6 +404,16 @@ try {
       await section.click().catch((e: Error) => findings.push(`${id}/${name}: ${e.message.split("\n")[0]}`));
       await shoot(`${id}--${name || index}`);
       await tabWalk(`${id}--${name || index} (keyboard)`, "main", false);
+      // Library › Files › This computer: the tab with shared folders (none in the sandbox: the empty state).
+      if (id === "library" && index === 0) {
+        const computer = page.getByRole("button", { name: label("Ten komputer") }).first();
+        if (await computer.count()) {
+          await computer.click().catch((e: Error) => findings.push(`library/computer: ${e.message.split("\n")[0]}`));
+          await page.waitForTimeout(300);
+          await shoot("library--this-computer");
+          await tabWalk("library--this-computer (keyboard)", "main", false);
+        } else findings.push(`library: no "${label("Ten komputer")}" tab`);
+      }
     }
   }
 
