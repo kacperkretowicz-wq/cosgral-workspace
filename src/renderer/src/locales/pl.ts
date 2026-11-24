@@ -3126,4 +3126,43 @@ export const pl = {
     "Zapraszanie ludzi wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
   "Hosting sites needs an online service. This program runs on this computer only.":
     "Udostępnianie stron wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
+  // Library › Files › This computer.
+  "Files on this computer": "Pliki na tym komputerze",
+  "Files on this computer are not available here.": "Pliki tego komputera nie są tu dostępne.",
+  "Shared folder": "Udostępniony folder",
+  "Share a folder": "Udostępnij folder",
+  "Stop sharing": "Przestań udostępniać",
+  "Could not open the folder.": "Nie udało się otworzyć folderu.",
+  "Could not load the shared folders.": "Nie udało się wczytać udostępnionych folderów.",
+  "Could not share the folder.": "Nie udało się udostępnić folderu.",
+  "Could not stop sharing the folder.": "Nie udało się przestać udostępniać folderu.",
+  "Could not copy the files.": "Nie udało się skopiować plików.",
+  "{count} file copied to the library.": "{count} plik skopiowany do biblioteki.",
+  "{count} files copied to the library.": "{count} pliki skopiowane do biblioteki.",
+  "Loading folders…": "Wczytywanie folderów…",
+  "No shared folders.": "Brak udostępnionych folderów.",
+  "Share a folder to browse it here and copy files to the library. The program remembers it until you close it; files with keys or passwords stay hidden.":
+    "Udostępnij folder, żeby przeglądać go tutaj i kopiować pliki do biblioteki. Program pamięta go do zamknięcia; pliki z kluczami i hasłami zostają ukryte.",
+  "Folder path": "Ścieżka folderu",
+  "Copy to library": "Kopiuj do biblioteki",
+  "Up one folder": "Folder wyżej",
+  "This folder is empty.": "Ten folder jest pusty.",
+  "Only the first {count} items are shown.": "Widać tylko pierwsze {count} pozycji.",
+  Folder: "Folder",
+  "Open folder": "Otwórz folder",
+  "This folder is no longer shared. Add it again.": "Ten folder nie jest już udostępniony. Dodaj go ponownie.",
+  "This folder is not shared with this agent.": "Ten folder nie jest udostępniony temu agentowi.",
+  "That path is outside the shared folder.": "Ta ścieżka jest poza udostępnionym folderem.",
+  "This file looks like a secret (a key or a password store), so it stays hidden.":
+    "Ten plik wygląda na sekret (klucz albo magazyn haseł), więc zostaje ukryty.",
+  "The file or folder is gone.": "Tego pliku albo folderu już nie ma.",
+  "That is a file, not a folder.": "To jest plik, nie folder.",
+  "That is a folder, not a file.": "To jest folder, nie plik.",
+  "The file is larger than the library allows.": "Plik jest większy, niż pozwala biblioteka.",
+  "Choose a folder, not a file.": "Wybierz folder, nie plik.",
+  "That folder is too broad. Choose a folder inside it.": "Ten folder jest zbyt ogólny. Wybierz folder w jego wnętrzu.",
+  "That folder is not allowed: it holds system data or secrets.":
+    "Tego folderu nie można udostępnić: są w nim dane systemu albo sekrety.",
+  "You can share at most 10 folders. Stop sharing one first.":
+    "Możesz udostępnić najwyżej 10 folderów. Najpierw przestań udostępniać jeden z nich.",
 } as const;

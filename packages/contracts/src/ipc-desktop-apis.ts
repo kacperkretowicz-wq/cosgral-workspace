@@ -101,6 +101,7 @@ import type {
   OpenLibraryFileInput,
   SaveChatAttachmentInput,
 } from "./ipc-library";
+import type { MachineFilesDesktopApi } from "./ipc-machine-files";
 import type { MarketplaceDesktopApi } from "./ipc-marketplace";
 import type {
   AddMcpServerInput,
@@ -746,6 +747,8 @@ export interface OpenBotDesktopApi {
   providerCatalog?: ProviderCatalogDesktopApi;
   /** COSGRAL W12 (BE-H): the library page, the usage report and the schedule (screens that read what the program holds). */
   libraryView?: LibraryViewDesktopApi;
+  /** Library › Files › This computer: folders the person shares (person only). Optional until every mock implements it. */
+  machineFiles?: MachineFilesDesktopApi;
   usageReport?: UsageReportDesktopApi;
   schedule?: ScheduleDesktopApi;
   /** COSGRAL W12 (BE-J): the Tasks view (all channels in one list; one task with result, steps and log). */

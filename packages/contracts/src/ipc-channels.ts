@@ -225,6 +225,13 @@ export const IPC_CHANNELS = {
   libraryViewPage: "library-view:page",
   libraryViewDeleteMany: "library-view:delete-many",
   libraryViewCleanup: "library-view:cleanup",
+  // Library › Files › This computer (parity row 45): folders the person shares, person only.
+  machineFilesGrants: "machine-files:grants",
+  machineFilesGrant: "machine-files:grant",
+  machineFilesRevoke: "machine-files:revoke",
+  machineFilesList: "machine-files:list",
+  machineFilesOpen: "machine-files:open",
+  machineFilesCopy: "machine-files:copy",
   usageReportGet: "usage-report:get",
   scheduleView: "schedule:view",
   scheduleFeed: "schedule:feed",

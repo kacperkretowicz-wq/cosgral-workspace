@@ -1,5 +1,6 @@
 /** Polish "many" forms (5 plików) for `tn()`, under the same key as the English plural. */
 export const plMany: Readonly<Record<string, string>> = {
+  "{count} files copied to the library.": "{count} plików skopiowanych do biblioteki.",
   "{count} memories": "{count} wspomnień",
   "{count} skills": "{count} skilli",
   "{count} files": "{count} plików",

@@ -1,5 +1,5 @@
 import { onCleanup } from "solid-js";
-import { expect } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { LibraryPage } from "../src/components/LibraryPage";
 import { SchedulePage } from "../src/components/SchedulePage";
@@ -34,6 +34,19 @@ export const Library: Story = {
     await expect(canvas.getByRole("heading", { level: 1, name: "Library" })).toBeInTheDocument();
     const sections = canvas.getByRole("navigation", { name: "Library sections" });
     await expect(sections.querySelectorAll("button")).toHaveLength(8);
+  },
+};
+
+/** Library › Files › This computer: a shared folder, a subfolder and the copy bar (mock folders, no disk). */
+export const LibraryThisComputer: Story = {
+  render: () => <Mocked>{() => <LibraryPage />}</Mocked>,
+  play: async ({ canvas }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: /This computer/ }));
+    await expect(await canvas.findByText("notatki.md")).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Select notatki.md" }));
+    await expect(canvas.getByRole("button", { name: /Copy to library/ })).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Open folder Faktury" }));
+    await expect(await canvas.findByText("2026-10.pdf")).toBeInTheDocument();
   },
 };
 

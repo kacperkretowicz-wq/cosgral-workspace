@@ -64,6 +64,7 @@ import { InstanceTransferService } from "../backend/instance-transfer/transfer-s
 import { IntegrationManager } from "../backend/integration-manager";
 import { IsolationStore } from "../backend/isolation-service";
 import { LibraryViewService } from "../backend/library-view";
+import { MachineFiles } from "../backend/machine-files";
 import { MachineLoadSampler } from "../backend/machine-load";
 import { MailboxStore } from "../backend/mailbox-store";
 import { McpManager } from "../backend/mcp-manager";
@@ -218,6 +219,7 @@ import { isObject, requireString } from "./ipc/validation";
 import { parseDeleteVaultItem, parseRespondToVaultRequest, parseSaveVaultItem } from "./ipc/vault-inputs";
 import { registerIsolationIpc } from "./isolation-ipc";
 import { type AccountManager, createAccountManager, LocalOwnerAccount } from "./local-owner-account";
+import { registerMachineFilesIpc } from "./machine-files-ipc";
 import { exportDiagnostics, exportOpenBotData } from "./maintenance-service";
 import { registerMarketplaceIpc } from "./marketplace-ipc";
 import { registerMcpOAuthIpc } from "./mcp-oauth-ipc";
@@ -976,6 +978,12 @@ function registerIpcHandlers(
     data: () => service.sharedData,
     window: () => mainWindow,
     prepareDraft: (paths) => service.prepareAttachments(paths),
+  });
+  // Library › Files › This computer: folders the person shares for this run of the program (person only).
+  registerMachineFilesIpc({
+    files: new MachineFiles(),
+    library: () => service.sharedData.library,
+    window: () => mainWindow,
   });
   registerComputerUseIpc(() => service.computerUse);
   registerDockIpc(() => dockWindows?.controller ?? null);

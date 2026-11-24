@@ -3119,4 +3119,43 @@ export const en = {
     "Inviting people needs an online service. This program runs on this computer only.",
   "Hosting sites needs an online service. This program runs on this computer only.":
     "Hosting sites needs an online service. This program runs on this computer only.",
+  // Library › Files › This computer.
+  "Files on this computer": "Files on this computer",
+  "Files on this computer are not available here.": "Files on this computer are not available here.",
+  "Shared folder": "Shared folder",
+  "Share a folder": "Share a folder",
+  "Stop sharing": "Stop sharing",
+  "Could not open the folder.": "Could not open the folder.",
+  "Could not load the shared folders.": "Could not load the shared folders.",
+  "Could not share the folder.": "Could not share the folder.",
+  "Could not stop sharing the folder.": "Could not stop sharing the folder.",
+  "Could not copy the files.": "Could not copy the files.",
+  "{count} file copied to the library.": "{count} file copied to the library.",
+  "{count} files copied to the library.": "{count} files copied to the library.",
+  "Loading folders…": "Loading folders…",
+  "No shared folders.": "No shared folders.",
+  "Share a folder to browse it here and copy files to the library. The program remembers it until you close it; files with keys or passwords stay hidden.":
+    "Share a folder to browse it here and copy files to the library. The program remembers it until you close it; files with keys or passwords stay hidden.",
+  "Folder path": "Folder path",
+  "Copy to library": "Copy to library",
+  "Up one folder": "Up one folder",
+  "This folder is empty.": "This folder is empty.",
+  "Only the first {count} items are shown.": "Only the first {count} items are shown.",
+  Folder: "Folder",
+  "Open folder": "Open folder",
+  "This folder is no longer shared. Add it again.": "This folder is no longer shared. Add it again.",
+  "This folder is not shared with this agent.": "This folder is not shared with this agent.",
+  "That path is outside the shared folder.": "That path is outside the shared folder.",
+  "This file looks like a secret (a key or a password store), so it stays hidden.":
+    "This file looks like a secret (a key or a password store), so it stays hidden.",
+  "The file or folder is gone.": "The file or folder is gone.",
+  "That is a file, not a folder.": "That is a file, not a folder.",
+  "That is a folder, not a file.": "That is a folder, not a file.",
+  "The file is larger than the library allows.": "The file is larger than the library allows.",
+  "Choose a folder, not a file.": "Choose a folder, not a file.",
+  "That folder is too broad. Choose a folder inside it.": "That folder is too broad. Choose a folder inside it.",
+  "That folder is not allowed: it holds system data or secrets.":
+    "That folder is not allowed: it holds system data or secrets.",
+  "You can share at most 10 folders. Stop sharing one first.":
+    "You can share at most 10 folders. Stop sharing one first.",
 } as const;

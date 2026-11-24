@@ -116,6 +116,7 @@ import { createMockLibraryView, createMockSchedule, createMockUsageReport } from
 import { createMockInstanceTransfer } from "./mock-instance-transfer";
 import { createMockIntegrations } from "./mock-integrations";
 import { createMockIsolation } from "./mock-isolation";
+import { createMockMachineFiles } from "./mock-machine-files";
 import { createMockMarketplace } from "./mock-marketplace";
 import { createMockMcpOAuth } from "./mock-mcp-oauth";
 import { createMockMessageActions } from "./mock-message-actions";
@@ -1507,6 +1508,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     serverSettings: createMockServerSettings((event) => emitAgentEvent(event)),
     providerCatalog: createMockProviderCatalog((event) => emitAgentEvent(event)),
     libraryView: createMockLibraryView(),
+    machineFiles: createMockMachineFiles(),
     usageReport: createMockUsageReport(),
     schedule: createMockSchedule(),
     // COSGRAL W12 (BE-J): the Tasks view over the same channels, tasks and messages as `channels` above.

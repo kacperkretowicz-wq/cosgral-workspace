@@ -387,6 +387,37 @@
   color: var(--openbot-success);
 }
 
+.library-type[data-type="folder"] {
+  color: var(--openbot-accent-text);
+}
+
+/* Library › Files › This computer: the shared folder, the path inside it and its files. */
+.library-machine {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--openbot-space-3);
+}
+
+.library-crumbs {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--openbot-space-1);
+  color: var(--openbot-text-muted);
+}
+
+.library-crumbs button[aria-current="page"] {
+  color: var(--openbot-text-primary);
+}
+
+.library-machine > .library-note[title] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .work-page .library-name {
   gap: 2px;
 }

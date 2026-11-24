@@ -105,6 +105,7 @@ import { createInstanceTransferApi, createUpdatePreferencesApi } from "./instanc
 import { createIntegrationsApi } from "./integrations-api";
 import { invokeClean } from "./ipc-errors";
 import { createIsolationApi } from "./isolation-api";
+import { createMachineFilesApi } from "./machine-files-api";
 import { createMarketplaceApi } from "./marketplace-api";
 import { createMcpOAuthApi } from "./mcp-oauth-api";
 import { createMessageActionsApi, createMessageMenuApi } from "./message-actions-api";
@@ -880,6 +881,7 @@ const openbotApi: OpenBotDesktopApi = {
   serverSettings: createServerSettingsApi(invokeAgent),
   providerCatalog: createProviderCatalogApi(invokeAgent),
   libraryView: createLibraryViewApi(invokeAgent),
+  machineFiles: createMachineFilesApi(invokeAgent),
   usageReport: createUsageReportApi(invokeAgent),
   tasksView: createTasksViewApi(invokeAgent),
   channelRoutines: createChannelRoutinesApi(invokeAgent),
