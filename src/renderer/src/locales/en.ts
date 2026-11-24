@@ -3115,4 +3115,8 @@ export const en = {
   "Workflow “{name}” · step “{step}”": "Workflow “{name}” · step “{step}”",
   "Questions from agents and finished results. Archive a task when you are done with it.":
     "Questions from agents and finished results. Archive a task when you are done with it.",
+  "Inviting people needs an online service. This program runs on this computer only.":
+    "Inviting people needs an online service. This program runs on this computer only.",
+  "Hosting sites needs an online service. This program runs on this computer only.":
+    "Hosting sites needs an online service. This program runs on this computer only.",
 } as const;

@@ -279,7 +279,24 @@ export function GlobalSearch(props: GlobalSearchProps) {
               class="global-search-tabs"
             >
               <Tabs.List aria-label={t("Filter results")}>
-                <For each={SEARCH_TABS}>{(item) => <Tabs.Trigger value={item.id}>{t(item.label)}</Tabs.Trigger>}</For>
+                <For each={SEARCH_TABS}>
+                  {(item) => (
+                    <Tabs.Trigger
+                      value={item.id}
+                      // The filter tab is the last stop of the window, so Tab goes back to the field. The focus trap
+                      // already moves there, but the tab list then put the focus back on its own tab (Kobalte
+                      // 2.0.0-alpha moves it to the last tab of the list on Tab), so Tab never left the tabs.
+                      onKeyDown={(event: KeyboardEvent) => {
+                        if (event.key !== "Tab" || event.shiftKey) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        input?.focus();
+                      }}
+                    >
+                      {t(item.label)}
+                    </Tabs.Trigger>
+                  )}
+                </For>
               </Tabs.List>
             </Tabs.Root>
 

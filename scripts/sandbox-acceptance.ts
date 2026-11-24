@@ -20,6 +20,7 @@ import { connect } from "node:tls";
 import { fileURLToPath } from "node:url";
 import { type DynamicRecord, isBoolean, isDynamicRecord, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { type ElectronApplication, _electron as electron, type Page } from "playwright";
+import { SHOW_API_KEYS } from "../src/renderer/src/api-keys-visibility.ts";
 import { cleanEnvironment } from "./sandbox-env.ts";
 import { waitForQuietMachine } from "./sandbox-load.ts";
 
@@ -31,6 +32,8 @@ interface Result {
   ok: boolean;
   detail: string;
   ms: number;
+  /** Not run on purpose (the feature is hidden in this version); counted apart, never as a pass of the feature. */
+  skipped?: boolean;
 }
 
 const results: Result[] = [];
@@ -176,8 +179,21 @@ async function launch(
   return { app, page };
 }
 
+/**
+ * W5 rows that need the API keys and own model endpoints sections. The owner hid them (23.11.2026: agents work through
+ * the CLIs and subscriptions), see src/renderer/src/api-keys-visibility.ts; with SHOW_API_KEYS false these rows are
+ * reported as skipped instead of failing on a section that is not on the page.
+ */
+const ROWS_NEEDING_API_KEYS = new Set(["E01", "E02", "E03", "E04", "E06", "P09", "K01", "K02", "K03", "K04"]);
+
 async function row(id: string, name: string, work: () => Promise<string | undefined>): Promise<void> {
   if (only.length && !only.includes(id)) return;
+  if (!SHOW_API_KEYS && ROWS_NEEDING_API_KEYS.has(id)) {
+    const detail = "API keys and endpoints are hidden in this version (SHOW_API_KEYS = false)";
+    results.push({ row: id, name, ok: true, skipped: true, detail, ms: 0 });
+    console.log(`skip [${id}] ${name}: ${detail}`);
+    return;
+  }
   const started = Date.now();
   try {
     const detail = (await work()) ?? "";
@@ -4069,8 +4085,9 @@ async function w5Main(root: string, evidence: string): Promise<void> {
   }
   await writeFile(resultsFile, JSON.stringify({ results, console: consoleFindings.slice(0, 40) }, null, 2));
   const failed = results.filter((result) => !result.ok);
+  const skipped = results.filter((result) => result.skipped).length;
   console.log(
-    `\n${results.length - failed.length}/${results.length} steps ok; console errors: ${consoleFindings.length}`,
+    `\n${results.length - failed.length - skipped}/${results.length - skipped} steps ok; skipped (hidden features): ${skipped}; console errors: ${consoleFindings.length}`,
   );
   for (const result of failed) console.log(`  FAIL [${result.row}] ${result.name}: ${result.detail.slice(0, 300)}`);
   process.exit(failed.length ? 1 : 0);

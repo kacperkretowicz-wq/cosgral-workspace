@@ -3122,4 +3122,8 @@ export const pl = {
   "Workflow “{name}” · step “{step}”": "Przepływ „{name}” · krok „{step}”",
   "Questions from agents and finished results. Archive a task when you are done with it.":
     "Pytania agentów i gotowe wyniki. Gdy skończysz z zadaniem, zarchiwizuj je.",
+  "Inviting people needs an online service. This program runs on this computer only.":
+    "Zapraszanie ludzi wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
+  "Hosting sites needs an online service. This program runs on this computer only.":
+    "Udostępnianie stron wymaga usługi w internecie. Ten program działa tylko na tym komputerze.",
 } as const;

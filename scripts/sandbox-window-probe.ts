@@ -158,6 +158,42 @@ async function axeCheck(name: string): Promise<void> {
   }
 }
 
+/** Where the person's own content and the sandbox's demo data are shown (their language is the person's, not the UI's). */
+const SKIP_CONTENT = [
+  ".conversation-scroll",
+  ".message-shell",
+  ".bot-row-copy",
+  ".tasks-screen-title",
+  "[contenteditable='true']",
+  "input",
+  "textarea",
+].join(", ");
+const sentencesSeen = new Set<string>();
+
+/** Visible English sentences outside the person's content and the demo data (see inspect). */
+function englishSentences(): Promise<string[]> {
+  return page.evaluate((skip) => {
+    const words = new Set(
+      "the and is are of this that with for your you not can cannot needs need will be it its yet here from has have was when there their what which only first then than into been does".split(
+        " ",
+      ),
+    );
+    const hits = new Set<string>();
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent?.replace(/\s+/g, " ").trim() ?? "";
+      if (text.length < 12 || /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(text)) continue;
+      const tokens = text.toLowerCase().match(/[a-z']+/g) ?? [];
+      if (tokens.length < 3 || new Set(tokens.filter((word) => words.has(word))).size < 2) continue;
+      const el = node.parentElement;
+      if (!el || el.closest(`.sr-only, [aria-hidden='true'], code, pre, kbd, ${skip}`)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width && r.height && r.bottom > 0 && r.top < innerHeight) hits.add(text.slice(0, 120));
+    }
+    return [...hits];
+  }, SKIP_CONTENT);
+}
+
 async function inspect(name: string): Promise<void> {
   await axeCheck(name);
   const english = await page.evaluate((list) => {
@@ -175,6 +211,15 @@ async function inspect(name: string): Promise<void> {
     return [...hits];
   }, keys);
   if (LANG === "pl" && english.length) findings.push(`${name}: English on a Polish screen: ${english.join(" | ")}`);
+  // English sentences that are not dictionary keys at all (e.g. a reason sent by the engine and shown raw): visible
+  // text without Polish letters and with two or more English function words. The person's own content and the demo
+  // data of the sandbox are skipped (SKIP_CONTENT). Each sentence is reported once, on the first screen that shows it.
+  if (LANG === "pl") {
+    const sentences = await englishSentences();
+    const fresh = sentences.filter((text) => !sentencesSeen.has(text));
+    for (const text of fresh) sentencesSeen.add(text);
+    if (fresh.length) findings.push(`${name}: English sentence, not in the dictionary:\n    ${fresh.join("\n    ")}`);
+  }
   const layout = await page.evaluate(() => {
     const cut: string[] = [];
     for (const el of document.querySelectorAll("body *")) {
@@ -319,6 +364,21 @@ async function openPage(text: string): Promise<boolean> {
 try {
   await setSettings({ language: LANG, theme: "dark" });
   await page.waitForTimeout(1500);
+
+  // The English-sentence check must see a sentence it is meant to catch (a silent check would report 0 forever).
+  if (LANG === "pl") {
+    const sample = "This needs an online service and is not available here.";
+    await page.evaluate((text) => {
+      const el = document.createElement("p");
+      el.id = "probe-english-sample";
+      el.textContent = text;
+      el.style.cssText = "position:fixed;left:8px;top:8px;z-index:99999;margin:0";
+      document.body.append(el);
+    }, sample);
+    const seen = await englishSentences();
+    await page.evaluate(() => document.getElementById("probe-english-sample")?.remove());
+    assert(seen.includes(sample), "the English-sentence check did not catch its own sample");
+  }
 
   // COSGRAL_PROBE_SKIP_PAGES=1 skips the page rail walk (the conversation, its panels and the dialogs only).
   for (const [id, polishLabel] of process.env.COSGRAL_PROBE_SKIP_PAGES === "1" ? [] : PAGES) {

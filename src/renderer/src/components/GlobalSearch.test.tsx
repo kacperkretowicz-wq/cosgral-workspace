@@ -94,3 +94,12 @@ it("closes with Escape while the focus is on a filter tab (Tab from the field; s
   await fireEvent.keyDown(tab, { key: "Escape" });
   await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
 });
+
+it("Tab from the filter tab goes back to the field instead of staying on the tab (seen in the real window)", async () => {
+  mount();
+  const input = screen.getByRole("combobox", { name: "Search COSGRAL" });
+  const tab = screen.getByRole("tab", { name: "All" });
+  tab.focus();
+  await fireEvent.keyDown(tab, { key: "Tab" });
+  await waitFor(() => expect(document.activeElement).toBe(input));
+});

@@ -12,7 +12,7 @@ import {
   SKILL_LEARNING_MODES,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, Match, onSettled, Show, Switch as SolidSwitch, untrack } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { InstanceTransferPanel } from "./InstanceTransferPanel";
 import type { PageId } from "./PageRail";
@@ -280,7 +280,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
                     {(source) => (
                       <p class="server-settings-note">
                         {t("Not available on this computer")}
-                        {source.kind === "unavailable" ? `: ${source.reason}` : ""}
+                        {source.kind === "unavailable" ? `: ${tData(source.reason)}` : ""}
                       </p>
                     )}
                   </Match>

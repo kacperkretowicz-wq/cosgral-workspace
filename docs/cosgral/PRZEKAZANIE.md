@@ -1,30 +1,33 @@
-# START TUTAJ: dla następnego agenta (23.11.2026 noc)
+# START TUTAJ: dla następnego agenta (24.11.2026)
 
-**Stan:** program jest w pełni działający. Na Windows właściciela przechodzą: lint, typecheck (6), `bun run test`
-(481 plików, 3466 testów, 1 pominięty: stary test pola klucza API, włącza go `SHOW_API_KEYS`), `test:visual` 7/7, `test:storybook` 376/376 (patrz uwaga o Vite niżej), sonda okna z axe i przejściami Tab
-(0 uwag, patrz niżej). Instalator `dist:win` zbudowany z tej wersji i zainstalowany na komputerze właściciela (per user).
+**Stan:** program jest skończony w zakresie, który da się zrobić bez właściciela. Na Windows właściciela przechodzą:
+lint, typecheck (6), `bun run test` (481 plików, 3467 testów, 1 pominięty: stary test pola klucza API, włącza go `SHOW_API_KEYS`), `test:visual` 7/7, `test:storybook` 376/376 (dwa
+przebiegi 24.11: z ciepłą i z wyczyszczoną pamięcią Vite), sonda okna z axe, przejściami Tab i wykrywaniem angielskich
+zdań (0 uwag). Instalator `dist:win` zbudowany z tej wersji i zainstalowany na komputerze właściciela (per user).
 Gałąź: `claude/festive-pasteur-5oh1yh` (bez PR; `main` to stary Paperclip, desktop żyje na `codex/cosgral-desktop`; PR
 i scalenie tylko za zgodą właściciela).
 
-**Zostały tylko drobne poprawki.** Nie ma znanego błędu działania. Kolejność wg wagi:
+**Nie ma znanego błędu działania ani otwartej pozycji, którą można zrobić samemu.** Zostaje:
 
-1. **Testy:** Storybook czasem zgłasza „Failed to run the test” / „Failed to fetch dynamically imported module”
-   (Vite w trybie przeglądarki gubi moduł, nie asercja; zwykle przy dużym obciążeniu). Domyślnie 2 przeglądarki
-   naraz i 5 s czekania już ustawione. Jeśli wróci często: `optimizeDeps.include` / rozgrzewka w
-   `vitest.storybook.config.ts`. Ostrzeżenia `STRICT_READ_UNTRACKED` (głównie Kobalte) bez zmian.
-2. **Klawiatura w wyszukiwarce Ctrl+K:** Tab nie zawija się na krańcach okna (z pola idzie do karty „Wszystko” i tam
-   zostaje; Shift+Tab wraca). Fokus nie ucieka z okna i Esc zamyka je z każdego miejsca, więc to nie błąd dostępności,
-   tylko zachowanie pułapki fokusu Kobalte 2.0.0-alpha. Do poprawy, jeśli Kobalte to zmieni.
+1. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
+   aplikacji OAuth), komunikatory (tokeny botów). Decyzja: zostają w kodzie, nieaktywne. PR i scalenie gałęzi: tylko
+   za zgodą właściciela.
+2. **Storybook:** wcześniej co kilka przebiegów „Failed to fetch dynamically imported module” (Vite). 24.11 nie dało się
+   go wywołać: przebieg z ciepłą i z wyczyszczoną pamięcią Vite (`node_modules/.cache/storybook/…/sb-vitest/deps`)
+   376/376, bez przeładowania zależności. Pojawiał się, gdy obok chodziły inne ciężkie zadania (pełne testy, sonda,
+   build); nie puszczać ich równolegle. Ponawiania testów (`retry`) celowo nie ma: ukryłoby też prawdziwe błędy.
 3. **Kod (przy okazji, nie hurtem):** duże pliki (`Conversation.tsx`, `App.tsx`, `agent-service.ts`), JS renderera
-   ~2,9 MB, wiersze „częściowo” w `parytet-0.71.md`.
-4. **Bez właściciela się nie da:** G2 na czystym koncie Windows (konto zakłada właściciel), łącznik GitHub (Client ID
-   aplikacji OAuth), komunikatory (tokeny botów). Decyzja: zostają w kodzie, nieaktywne.
+   ~2,9 MB. Wiersze „częściowo” w `parytet-0.71.md` to głównie brak dowodu w oknie albo funkcje 0.71, których nie
+   robimy (nauka w przeglądarce, PiP, katalog GitHub przepływów, kredyty mediów, darmowe modele w onboardingu).
+4. **Kolejka `KOLEJKA-ZADAN.md`:** otwarte pozycje są nieaktualne albo poza zakresem: testy `@` i `/` są
+   (`ComposerEditor.test.tsx`), galeria Katalogu ma polecane, kategorie i szukanie (filtr „Zweryfikowane/Publiczne”
+   nie ma sensu przy jednym katalogu), Członkowie i Strony w Ustawieniach serwera mówią po polsku, czemu są niedostępne.
 
 **Decyzja właściciela 23.11 (noc): klucze API ukryte.** Jedna stała `SHOW_API_KEYS = false` w
 `src/renderer/src/api-keys-visibility.ts` chowa działy „Klucze API” i „Endpointy” strony Dostawcy oraz pulę kluczy
 w Katalogu dostawców; dział „Dostawcy” w Ustawieniach serwera (tylko odsyłał do strony Dostawcy) jest odfiltrowany
 w `ServerSettingsPage.tsx`. Kod, testy i historyjki zostają. Wiersze W5 w `scripts/sandbox-acceptance.ts` o kluczach
-i endpointach (E01…, klucz OpenAI) wymagają `true`; przy `false` nie przejdą i tak ma być.
+i endpointach (E01–E06, P09, K01–K04) są przy `false` zgłaszane jako „skip” i liczone osobno (nie jako zaliczone).
 
 **Jak sprawdzać okno:** po `bun run build` i jednym `sandbox-shots-w12.ts` (tworzy piaskownicę z danymi demo):
 `COSGRAL_SANDBOX_ROOT=<ta piaskownica> COSGRAL_PROBE_OUT=<folder> [COSGRAL_PROBE_SIZE=960x640]
@@ -32,14 +35,36 @@ i endpointach (E01…, klucz OpenAI) wymagają `true`; przy `false` nie przejdą
 Raport w `report.txt`; zrzuty oglądać na oko (sonda nie widzi nakładania się elementów). Z `COSGRAL_PROBE_AXE=1` sonda
 chodzi Tabem po każdej stronie i dziale (`main`), po panelach Pliki i Ustawienia agenta, po każdym dialogu (tam też
 sprawdza, czy fokus nie wychodzi z okna) i po oknie Ustawień. `COSGRAL_PROBE_SKIP_PAGES=1` pomija strony (szybki
-przebieg rozmowy i dialogów). Przy błędzie kroku sonda zapisuje zrzut `<krok>-<język>-failed.png`.
+przebieg rozmowy i dialogów). Przy błędzie kroku sonda zapisuje zrzut `<krok>-<język>-failed.png`. Po polsku sonda
+szuka też angielskich zdań spoza słownika (tekst bez polskich liter z co najmniej dwoma angielskimi słowami
+funkcyjnymi, poza treścią użytkownika i danymi demo: `SKIP_CONTENT`); na starcie sprawdza się na własnej próbce.
 
 **Pułapki:** w Solid 2 `createEffect(signal, fn)` z gołym getterem nie śledzi zmian (owijać w `() => signal()`);
 zapis sygnału działa po `flush()` (w testach odczyt zaraz po `setLanguage` daje stary język); teksty formatowane przy
 mapowaniu danych trzeba mapować ponownie po zmianie języka (`App.tsx`). Krok I10 `sandbox-installed.ts` otwiera
 prawdziwe okno logowania w Chrome z profilem piaskownicy: zamknąć je po przebiegu. Kobalte `Combobox.Content`
 przyjmuje `onEscapeKeyDown` (idzie do warstwy), ale typy alpha go nie znają: w `GlobalSearch.tsx` przez rozwinięcie
-obiektu.
+obiektu. Lista kart Kobalte (`Tabs.List`) na Tab przestawia fokus na swoją ostatnią kartę, nawet gdy pułapka fokusu
+dialogu już go przeniosła; w wyszukiwarce karta przechwytuje Tab (`stopPropagation`) i oddaje fokus polu. Bash w tym
+środowisku zamienia podwójny ukośnik wsteczny w heredocu na pojedynczy: edycje z ukośnikami robić narzędziem Edit.
+
+---
+
+# Przekazanie: 24.11.2026, Windows właściciela, gałąź `claude/festive-pasteur-5oh1yh`
+
+Cel od właściciela: „ukończ całkowicie apkę”, najważniejsze rzeczy, działać.
+
+1. **Angielskie zdania spoza słownika:** sonda łapała tylko angielskie teksty, które są kluczami słownika. Zdanie
+   wysłane przez silnik i pokazane wprost przechodziło: działy „Członkowie” i „Strony” w Ustawieniach serwera mówiły
+   po polsku „Niedostępne na tym komputerze: Inviting people needs an online service…”. Teraz przez `tData` z polskim
+   tłumaczeniem, a sonda szuka angielskich zdań także spoza słownika (ze sprawdzeniem na własnej próbce). Pełny
+   przebieg PL: 0 takich zdań.
+2. **Wyszukiwarka Ctrl+K:** Tab z karty filtrów wraca do pola (wcześniej zostawał na karcie, patrz pułapki wyżej).
+   Test w `GlobalSearch.test.tsx`.
+3. **Odbiór W5:** wiersze kluczy API i endpointów zgłaszane jako „skip” przy ukrytych kluczach, podsumowanie liczy je
+   osobno.
+4. **Storybook:** dwa przebiegi (ciepła i wyczyszczona pamięć Vite) 376/376 bez przeładowania; bez zmian w konfiguracji
+   (szczegóły w START TUTAJ pkt 2).
 
 ---
 
