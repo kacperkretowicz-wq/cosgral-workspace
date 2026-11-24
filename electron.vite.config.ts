@@ -22,6 +22,10 @@ export default defineConfig({
   renderer: {
     plugins: [solidPlugin(), tailwindcss({ optimize: false })],
     server: rendererPort ? { port: rendererPort, strictPort: true } : undefined,
+    // The window loads this from disk on every start: minified JS and CSS parse faster (the build was unminified,
+    // ~3 MB of JS). `keepNames` keeps function and class names for error messages and stack traces.
+    build: { minify: "esbuild", cssMinify: "esbuild" },
+    esbuild: { keepNames: true },
   },
 });
 
