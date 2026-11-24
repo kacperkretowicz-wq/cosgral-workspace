@@ -3158,4 +3158,11 @@ export const en = {
     "That folder is not allowed: it holds system data or secrets.",
   "You can share at most 10 folders. Stop sharing one first.":
     "You can share at most 10 folders. Stop sharing one first.",
+  // Routine runs: why a run was skipped or ended (from the engine).
+  "COSGRAL Workspace was not running at the planned time; missed runs are not made up.":
+    "COSGRAL Workspace was not running at the planned time; missed runs are not made up.",
+  "The program stopped during this run.": "The program stopped during this run.",
+  "The previous run of this routine is still running.": "The previous run of this routine is still running.",
+  "The turn is gone.": "The turn is gone.",
+  "The turn ended": "The turn ended",
 } as const;

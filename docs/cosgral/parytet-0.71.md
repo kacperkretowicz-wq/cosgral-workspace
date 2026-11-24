@@ -2,15 +2,15 @@
 
 Stan: 19.11.2026, integracja `codex/cosgral-desktop` @ `7d5fd871c` (scalone UI-AT/13/15, BE-AD, KAPI-AK..AT, mój podgląd; poprzednio `2dfb55f09`). Odbiór Testera T-AJ (`2dfb55f09`) bez zmiany procentów „w oknie”. **Ta wersja przelicza kod po scaleniu: wiersze 2 (Wygląd: jest wszystkie 7 kontrolek) i 71 (PWA: ekran kanałów jest) przechodzą na „jest”.** Liczby liczę skryptem wprost z tabeli (jest = 1, częściowo = ½; w oknie: tak = 1, część = ½; ostrożnie: jest z „tak” w oknie = 1, pozostałe poza „brak” = ½). „Ekran w kodzie” nie znaczy „w oknie sprawdzone”.
 
-**Wynik w jednej linii: 64,0 z 75 funkcji = 85,3% (jest = 1, częściowo = ½). Z tego skontraktowane ~97,3%, ale w prawdziwym oknie sprawdzone tylko 54,0%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 63,3%.**
+**Wynik w jednej linii: 65,0 z 75 funkcji = 86,7% (jest = 1, częściowo = ½). Z tego skontraktowane ~97,3%, ale w prawdziwym oknie sprawdzone tylko 54,0%. Ostrożnie (jest liczy się za 1 tylko z dowodem w oknie, jak reguła 0.68): 63,3%.**
 
 **Aktualizacja 23.11.2026 (głos):** decyzją właściciela głos jest usunięty z programu; wiersze 4 i 5 przeszły do „Poza zakresem”, więc mianownik to 75. Przed tą zmianą: 65,0 z 77 = 84,4% / w oknie 53,2% / ostrożnie 62,3%. Przy okazji wiersz 25 miał w nazwie niezaescapowane „|”, które rozbijało tabelę (liczby się nie zmieniły).
 
-**Aktualizacja 23.11.2026:** wiersz 65 (GitHub) brak → częściowo (ocena była nieaktualna, integracja istnieje od W10); wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
+**Aktualizacja 24.11.2026:** wiersz 27 (ustawienia kanału) częściowo → jest (ocena nieaktualna: wszystkie ustawienia są w kodzie); wiersz 45 (biblioteka) częściowo → jest (karta „Ten komputer” podpięta do silnika BE-AE, miniatury obrazów były). Procenty „w oknie” i „ostrożnie” niżej bez przeliczenia. **Aktualizacja 23.11.2026:** wiersz 65 (GitHub) brak → częściowo (ocena była nieaktualna, integracja istnieje od W10); wiersz 58 (rutyny kanału) częściowo → jest (webhook). **22.11.2026:** wiersz 64 (Discord) brak → jest (tylko kod i atrapa, bez prawdziwej aplikacji Discord; „w oknie” bez zmian). Liczby policzone skryptem wprost z tabeli (ten sam wzór dał poprzednie 63,0 / 81,8%).
 
 | Miara | Wynik | Jak liczona |
 |---|---|---|
-| Parytet (kod) | **85,3%** (64,0 z 75) | 54 jest, 20 częściowo, 1 brak |
+| Parytet (kod) | **86,7%** (65,0 z 75) | 56 jest, 18 częściowo, 1 brak |
 | Skontraktowane | **~97,3%** | wiersz ma kontrakt w `packages/contracts` (tak = 1, część = ½) |
 | Silnik | **~97,3%** | kod w `src/backend` albo `src/main` (tak = 1, część = ½) |
 | Ekran w kodzie | **~92,7%** | komponent w `src/renderer` czyta to API (tak = 1, część = ½) |
@@ -36,9 +36,9 @@ Poza zakresem (nie wchodzą do mianownika): 8 pozycji, lista na końcu. Gdyby je
 |---|---|---|---|---|---|
 | A. Ustawienia aplikacji i powłoka | 13 | 10 | 3 | 0 | 88% |
 | B. Czat, Needs you, wątki | 12 | 10 | 2 | 0 | 92% |
-| C. Kanały | 4 | 3 | 1 | 0 | 88% |
+| C. Kanały | 4 | 4 | 0 | 0 | 100% |
 | D. Agenci | 11 | 10 | 1 | 0 | 95% |
-| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 6 | 2 | 1 | 78% |
+| E. Narzędzia i dane (MCP, Vault, tabele, pliki, przeglądarka) | 9 | 7 | 1 | 1 | 83% |
 | F. Marketplace | 3 | 1 | 2 | 0 | 67% |
 | G. Dostawcy i użycie | 6 | 5 | 1 | 0 | 92% |
 | H. Automatyzacje (rutyny, przepływy) | 6 | 4 | 2 | 0 | 83% |
@@ -89,7 +89,7 @@ Poza zakresem (nie wchodzą do mianownika): 8 pozycji, lista na końcu. Gdyby je
 | 24 | Kanały: tworzenie, lider, członkowie, edycja | **jest** | tak | tak | tak | tak | tak | Odbiór W4-T2 38/38. | kk-w4-g1 |
 | 25 | Zadania w kanale (Chat/Zadania, Stop/Wznów/Przydziel, archiwum, otwórz jako czat, kroki) | **jest** | tak | tak | tak | tak | tak | W oknie (W4-T2). Od UI-M: szukanie, „Otwórz jako czat”, rozwijane kroki podzadań (bez zrzutu); Ekran Zadań czyta teraz `tasksView.board` (BE-AA, UI-AS): pięć kolumn Needs you / Working / Paused / Failed / Stopped z licznikami; w oknie T-AJ sonda `tasks-board` potwierdziła pięć kolumn z nagłówkami i licznikiem. Od UI-AA (20833c573): pasek postępu kroków, tekst „Zrobione kroki: X z Y” i oś kroków ze stanami (zrobiony, w toku, czeka, błąd); bez zrzutu. | kk-w4-g1, ui-w12-ui2, backend-w12-actions |
 | 26 | Odpowiedź na wiadomość kanału | **jest** | tak | tak | tak | tak | tak | Krok e2e. | ipc-workspace-channels, ui-w4-ui1 |
-| 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **częściowo** | część | część | część | część | część | Jest pamięć kanału i lider; reszta jak w 0.71 brak. | ipc-memory, ipc-isolation |
+| 27 | Ustawienia kanału (izolowana pamięć, kompakt, kasowanie historii, przeglądarka w kanale, rutyny kanału) | **jest** | tak | tak | tak | tak | część | Ocena „reszta brak” była nieaktualna (sprawdzone 24.11): izolacja kanału (`isolated`), kompakt jako okno historii 20/50/100/200 (`ChannelHistoryWindow`, BE-Z), „Wyczyść historię” (`ChannelHistoryClear`, BE-Y), przeglądarka agenta w turze kanału (`openbot_browser` w `channel-agent-runner.ts`, dzierżawa zasobu `browser` w `channel-engine.ts`), rutyny kanału z webhookiem. W oknie: widok kanału w e2e; nie każde z tych ustawień oglądane osobno. | ipc-workspace-channels, ipc-channel-routines, ipc-memory, ipc-isolation |
 
 ### D. Agenci
 
@@ -118,7 +118,7 @@ Poza zakresem (nie wchodzą do mianownika): 8 pozycji, lista na końcu. Gdyby je
 | 42 | Vault: konektory 1Password, Bitwarden, Proton Pass | **jest** | tak | tak | tak | tak | nie | Panel konektorów (stan, wybór metody, pola tylko do zapisu, lista dozwolonych logowań bez haseł, rozłączanie) jest w integracji (UI-M). W oknie nie oglądany; prawdziwe menedżery wymagają kont właściciela. | kk-w11-vault, ui-w12-ui2 |
 | 43 | Vault-request w Needs you (agent prosi o login) | **jest** | tak | tak | tak | tak | część | Wypełnienie logowania w oknie; karta wyboru/dodania nie osobno. | ipc-vault, kk-w4-rows |
 | 44 | Tabele wspólne agentów | **jest** | tak | tak | tak | tak | tak | W oknie. | kk-w3-acceptance |
-| 45 | Biblioteka plików: dodaj, otwórz, pobierz, załącz; strona z filtrami, zaznaczanie wielu, sprzątanie; pliki maszyny | **częściowo** | tak | tak | tak | tak | część | Nowy widok plików (zakładki pochodzenia, szukanie, filtry, sortowanie, zaznaczanie do 200, sprzątanie z podglądem) jest w integracji. W oknie: zrzut T-M z pustą listą (bez danych testowych); dowód dodawania/otwierania z W4-T5 dotyczył starego panelu. Brak: przeglądania folderów komputera („pliki maszyny”) i miniatur. | backend-w12-library, tester-w12-tm, kk-w4-rows |
+| 45 | Biblioteka plików: dodaj, otwórz, pobierz, załącz; strona z filtrami, zaznaczanie wielu, sprzątanie; pliki maszyny | **jest** | tak | tak | tak | tak | część | Nowy widok plików (zakładki pochodzenia, szukanie, filtry, sortowanie, zaznaczanie do 200, sprzątanie z podglądem) jest w integracji. Miniatury obrazów są w kafelkach plików (`FileTypeTile`). **24.11: „pliki maszyny”** jako karta „Ten komputer”: udostępnienie folderu systemowym oknem wyboru (do zamknięcia programu), wejście w podfoldery, otwarcie i „Pokaż w folderze”, kopiowanie zaznaczonych do biblioteki; ścieżki poza folderem i pliki wyglądające na sekrety odrzuca silnik BE-AE (`machine-files.ts`, IPC `machine-files-ipc.ts`, testy silnika, IPC i widoku, historyjka). W oknie: sonda okna przechodzi kartę (stan pusty, axe). Dla agentów karta niedostępna (tylko człowiek). | backend-w12-library, tester-w12-tm, kk-w4-rows, machine-files-ipc |
 | 46 | Przeglądarka agenta (karty, przejęcie, profile); nauka, podgląd na żywo, PiP | **częściowo** | tak | tak | tak | tak | część | Karty i przejęcie w oknie; nauka, podgląd na żywo, PiP brak. | kk-w3-acceptance, ipc-browser |
 
 ### F. Marketplace

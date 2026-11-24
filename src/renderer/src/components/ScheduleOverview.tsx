@@ -1,7 +1,7 @@
 import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tDataParts } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
@@ -32,7 +32,8 @@ function timeOf(iso: string): string {
   return new Date(iso).toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
-function runStatusLabel(status: ScheduleFeedItem["run"]["status"]): string {
+/** The status of a routine run in the language of the window. */
+export function runStatusLabel(status: ScheduleFeedItem["run"]["status"]): string {
   switch (status) {
     case "running":
       return t("Running");
@@ -190,7 +191,7 @@ export function ScheduleOverview(props: { bots?: ReadonlyArray<BotProfile> } = {
                                 <Show when={botOf(entry.botId)?.name ?? (entry.kind === "ran" ? entry.reason : null)}>
                                   <small>
                                     {botOf(entry.botId)?.name}
-                                    {entry.kind === "ran" && entry.reason ? ` · ${entry.reason}` : ""}
+                                    {entry.kind === "ran" && entry.reason ? ` · ${tDataParts(entry.reason)}` : ""}
                                   </small>
                                 </Show>
                               </span>

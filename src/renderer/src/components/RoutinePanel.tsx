@@ -1,9 +1,10 @@
 import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tDataParts } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { PanelHeading } from "./PanelHeading";
+import { runStatusLabel } from "./ScheduleOverview";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 import { RefreshCw } from "./ui/icons";
 
@@ -289,8 +290,8 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
               <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
                 {(entry) => (
                   <p>
-                    {entry.status} · {entry.startedAt}
-                    {entry.reason ? ` · ${entry.reason}` : ""}
+                    {runStatusLabel(entry.status)} · {new Date(entry.startedAt).toLocaleString(appLocale())}
+                    {entry.reason ? ` · ${tDataParts(entry.reason)}` : ""}
                   </p>
                 )}
               </For>

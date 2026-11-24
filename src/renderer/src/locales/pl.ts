@@ -3165,4 +3165,11 @@ export const pl = {
     "Tego folderu nie można udostępnić: są w nim dane systemu albo sekrety.",
   "You can share at most 10 folders. Stop sharing one first.":
     "Możesz udostępnić najwyżej 10 folderów. Najpierw przestań udostępniać jeden z nich.",
+  // Routine runs: why a run was skipped or ended (from the engine).
+  "COSGRAL Workspace was not running at the planned time; missed runs are not made up.":
+    "COSGRAL Workspace nie był uruchomiony o zaplanowanej porze; pominiętych uruchomień nie nadrabia.",
+  "The program stopped during this run.": "Program zatrzymał się w trakcie tego uruchomienia.",
+  "The previous run of this routine is still running.": "Poprzednie uruchomienie tej rutyny jeszcze trwa.",
+  "The turn is gone.": "Tej tury już nie ma.",
+  "The turn ended": "Tura zakończyła się",
 } as const;

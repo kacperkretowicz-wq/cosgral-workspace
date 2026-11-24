@@ -105,7 +105,8 @@ export class RoutineManager {
       if (routine.nextRunAt && Date.parse(routine.nextRunAt) <= now) {
         this.#saveRun(
           this.#newRun(routine, "schedule", "skipped", routine.nextRunAt, now, {
-            reason: `COSGRAL Workspace was not running at ${this.#localTime(routine, Date.parse(routine.nextRunAt))}; missed runs are not made up.`,
+            // A fixed sentence (the run carries its planned time), so the window can translate it.
+            reason: "COSGRAL Workspace was not running at the planned time; missed runs are not made up.",
           }),
         );
       }
