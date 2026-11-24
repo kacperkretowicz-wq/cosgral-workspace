@@ -1,4 +1,54 @@
-# START TUTAJ: dla następnego agenta (24.11.2026)
+# START TUTAJ: dla następnego agenta (24.11.2026, po południu)
+
+**Stan:** program gotowy do użytku na tym komputerze. PR [#28](https://github.com/kacperkretowicz-wq/cosgral-workspace/pull/28)
+z `claude/festive-pasteur-5oh1yh` do `codex/cosgral-desktop` (właściciel zgodził się 24.11 na PR i scalenie).
+Na Windows właściciela przechodzą: lint, typecheck (6), `bun run test` (483 pliki, 3482 testy, 1 pominięty: stary
+test pola klucza API), `test:visual` 7/7, `test:storybook` 377/377 (w pierwszym pełnym przebiegu 2 niestabilne
+historyjki: „Search conversation” i „Custom Instruction”, osobno 2× zielone, drugi pełny przebieg 377/377),
+`sandbox:e2e` (0 uwag), sonda okna z axe po polsku (0 uwag, 0 brakujących tłumaczeń, 0 błędów konsoli).
+Instalator `dist:win` zbudowany z tej wersji.
+
+**Ta sesja (24.11 po południu):**
+
+1. **Łącznik GitHub prosi o „Client secret”.** GitHub przy wymianie kodu na token wymaga `client_secret` także z PKCE
+   (dokumentacja GitHuba: „client_secret: Required”; bez sekretu działa tylko logowanie kodem urządzenia). Pole było
+   ukryte (`needsClientSecret: false`), więc logowanie nie mogło się skończyć. Teraz karta GitHub w Biblioteka →
+   Integracje ma pole sekretu, a „Połącz” mówi, czego brakuje. Odnawianie tokenu (8 h, `refreshDue`) i odpowiedź
+   GitHuba w formacie formularza były już obsłużone. **Do zrobienia przez właściciela:** zarejestrować GitHub App
+   (callback `http://127.0.0.1:<port>/callback`, najlepiej stały port wpisany w karcie), wkleić w karcie Client ID i
+   Client secret (sekretu nie wpisuje agent), kliknąć „Połącz konto”.
+2. **Biblioteka › Pliki › „Ten komputer”** (parytet 45, „pliki maszyny”). Silnik `machine-files.ts` (BE-AE) istniał bez
+   IPC i ekranu. Teraz: udostępnienie folderu systemowym oknem wyboru (pamiętane do zamknięcia programu), podfoldery,
+   ścieżka, „Otwórz” (aplikacja systemu), „Pokaż w folderze”, zaznaczanie i „Kopiuj do biblioteki” (do 50 naraz).
+   Każde wywołanie idzie jako człowiek (`actor: null`); ścieżki poza folderem, linki na zewnątrz i pliki wyglądające na
+   sekrety odrzuca silnik. Nowe `MachineFiles.locate` otwiera pliki dowolnej wielkości (limit biblioteki dotyczy tylko
+   kopiowania). Pliki: `src/main/machine-files-ipc.ts`, `src/preload/machine-files-api.ts`,
+   `components/MachineFilesView.tsx`, atrapa `stories/mock-machine-files.ts`; sonda okna przechodzi kartę.
+3. **Parytet:** wiersz 27 (ustawienia kanału) był nieaktualny: izolacja, kompakt (okno historii), czyszczenie historii,
+   przeglądarka w turze kanału i rutyny są w kodzie → „jest”. Wiersz 45 → „jest” (miniatury obrazów były). 86,7%.
+4. **Szybkość:** renderer był budowany bez minifikacji (spadek po bazie OpenBota): główny JS 3,0 MB → 1,5 MB, CSS
+   567 → 492 KB (`electron.vite.config.ts`, `keepNames` dla nazw w stosach błędów). Biblioteka, Harmonogram, Zużycie i
+   Zadania ładują się przy pierwszym otwarciu (`lazy` w `App.tsx`), jak wcześniej Przepływy, Katalog, Telefon i
+   Ustawienia serwera.
+   Główny JS po obu zmianach: 1,42 MB (rano 3,0 MB).
+   Rozbicie dużych plików (`Conversation.tsx`, `App.tsx`, `agent-service.ts`) nie przyspiesza startu, więc zostaje
+   „przy okazji” (plan: `PLAN-ROZBICIE-PLIKOW.md`).
+5. **Sonda okna** pomijała pierwszy dział strony, a strona otwiera się na ostatnio używanym dziale: w tej piaskownicy
+   Biblioteka › Pliki nie była sprawdzana. Teraz przechodzi wszystkie działy i kartę „Ten komputer”. Przy okazji
+   znalazła **angielskie zdanie silnika na polskim Harmonogramie** („COSGRAL Workspace was not running at <czas>;
+   missed runs are not made up.”, pojawia się po pominiętych uruchomieniach rutyn). Teraz stałe zdanie (wiersz ma
+   swoją godzinę) tłumaczone razem z innymi powodami uruchomień (`runReasonText` w `ScheduleOverview.tsx`; stare
+   zapisane uruchomienia z godziną w zdaniu też). Historia rutyny w `RoutinePanel` pokazywała surowy stan („skipped”)
+   i datę ISO: teraz przetłumaczony stan i data lokalna.
+
+**Zostaje (tylko właściciel):** Client ID i sekret aplikacji GitHub (wyżej), tokeny komunikatorów, G2 na czystym koncie
+Windows. Check „commitperclip PR Review” na PR pada, bo workflow z gałęzi domyślnej pobiera nieistniejącą gałąź `master`
+(nie dotyczy kodu programu; do naprawy albo wyłączenia w `.github/workflows/commitperclip-review.yml` na gałęzi
+domyślnej, za zgodą właściciela).
+
+---
+
+# Przekazanie: 24.11.2026 rano (poprzedni START TUTAJ)
 
 **Stan:** program jest skończony w zakresie, który da się zrobić bez właściciela. Na Windows właściciela przechodzą:
 lint, typecheck (6), `bun run test` (481 plików, 3467 testów, 1 pominięty: stary test pola klucza API, włącza go `SHOW_API_KEYS`), `test:visual` 7/7, `test:storybook` 376/376 (dwa
