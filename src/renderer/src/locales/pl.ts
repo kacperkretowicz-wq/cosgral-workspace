@@ -209,6 +209,8 @@ export const pl = {
   "Connection type": "Typ połączenia",
   "Back to connection choice": "Wróć do wyboru połączenia",
   "Default provider": "Domyślny dostawca",
+  "No account yet? Free models are planned. For now, sign in to Codex or Claude, or add your own key later on the Providers page.":
+    "Nie masz jeszcze konta? Darmowe modele są w planach. Na razie zaloguj się do Codex albo Claude albo dodaj własny klucz później na stronie Dostawcy.",
   "Used for new local agents. You can change it for each agent later.":
     "Używany dla nowych lokalnych agentów. Później możesz go zmienić dla każdego agenta.",
   "Paste an cosgral:// invitation link": "Wklej link zaproszenia cosgral://",
@@ -503,7 +505,7 @@ export const pl = {
   "CLI tools": "Narzędzia CLI",
   "Connect a provider": "Połącz dostawcę",
   "Custom path → downloaded → system. The first download needs your approval. Connect accounts on the Providers page.":
-    "Własna ścieżka → pobrane → systemowe. Pierwsze pobranie wymaga zgody. Konta połączysz na stronie Dostawcy.",
+    "Aplikacja szuka programu w tej kolejności: Twoja własna ścieżka, program pobrany przez aplikację, program zainstalowany w systemie. Pierwsze pobranie wymaga Twojej zgody. Konta połączysz na stronie Dostawcy.",
   "Retry loading": "Ponów wczytanie",
   "Loading CLI tools…": "Wczytywanie narzędzi CLI…",
   "CLI management is not available in this version.": "Zarządzanie CLI jest niedostępne w tej wersji.",
