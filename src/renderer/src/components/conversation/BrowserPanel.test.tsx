@@ -1,5 +1,5 @@
 import type { BrowserControlSession, BrowserTab } from "@openbot/contracts/ipc";
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { expect, it, vi } from "vitest";
 import { BrowserPanel } from "./BrowserPanel";
 
@@ -28,6 +28,8 @@ function setup(overrides: Partial<Parameters<typeof BrowserPanel>[0]> = {}) {
     onActivateTab: vi.fn(),
     onCloseTab: vi.fn(),
     onNewTab: vi.fn(),
+    onBack: vi.fn(),
+    onForward: vi.fn(),
     onReload: vi.fn(),
     onAddressInput: vi.fn(),
     onAddressSubmit: vi.fn(),
@@ -87,4 +89,17 @@ it("marks a tab controlled by an agent in its name", () => {
     controlled: true,
   });
   expect(screen.getByRole("tab", { name: "Docs, controlled by Chief" })).toBeInTheDocument();
+});
+
+it("keeps Back and Forward off while the tab has no history and reports them once it has", () => {
+  const off = setup();
+  expect(screen.getByRole("button", { name: "Go back" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Go forward" })).toBeDisabled();
+  expect(off.onBack).not.toHaveBeenCalled();
+  cleanup();
+  const on = setup({ tabs: [{ ...tab("a", "Docs"), canGoBack: true, canGoForward: true }, tab("b", "Pricing")] });
+  fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+  fireEvent.click(screen.getByRole("button", { name: "Go forward" }));
+  expect(on.onBack).toHaveBeenCalledOnce();
+  expect(on.onForward).toHaveBeenCalledOnce();
 });

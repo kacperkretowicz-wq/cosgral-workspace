@@ -452,6 +452,7 @@ export const IPC_CHANNELS = {
   browserOpen: "browser:open",
   browserActivate: "browser:activate",
   browserClose: "browser:close",
+  browserNavigate: "browser:navigate",
   browserListTabs: "browser:list-tabs",
   browserGetControlState: "browser:get-control-state",
   browserSetVisible: "browser:set-visible",

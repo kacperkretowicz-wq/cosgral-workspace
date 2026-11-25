@@ -219,6 +219,8 @@ export const en = {
   "{date}: planned {planned}, done {ran}, failed {failed}": "{date}: planned {planned}, done {ran}, failed {failed}",
   "Nothing is planned or has run on this day.": "Nothing is planned or has run on this day.",
   "Pick a day to see its runs.": "Pick a day to see its runs.",
+  "There is no earlier page in this tab.": "There is no earlier page in this tab.",
+  "There is no later page in this tab.": "There is no later page in this tab.",
   "Used for new local agents. You can change it for each agent later.":
     "Used for new local agents. You can change it for each agent later.",
   "Paste an cosgral:// invitation link": "Paste an cosgral:// invitation link",

@@ -946,7 +946,9 @@ export function decodeBrowserTabs(value: unknown): BrowserTab[] {
         isString(tab.url) &&
         isBoolean(tab.loading) &&
         (tab.ownerThreadId === null || isString(tab.ownerThreadId)) &&
-        (tab.ownerBotId === null || isString(tab.ownerBotId)),
+        (tab.ownerBotId === null || isString(tab.ownerBotId)) &&
+        (tab.canGoBack === undefined || isBoolean(tab.canGoBack)) &&
+        (tab.canGoForward === undefined || isBoolean(tab.canGoForward)),
     )
   ) {
     throw new Error("Invalid remote browser tabs.");

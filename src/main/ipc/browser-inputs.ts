@@ -1,5 +1,10 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type { BrowserBounds, BrowserOpenInput, BrowserVisibilityInput } from "@openbot/contracts/ipc";
+import type {
+  BrowserBounds,
+  BrowserNavigateInput,
+  BrowserOpenInput,
+  BrowserVisibilityInput,
+} from "@openbot/contracts/ipc";
 import { isBoolean, isNumber } from "@openbot/contracts/runtime-values";
 import { isObject, requireString } from "./validation";
 
@@ -16,6 +21,13 @@ export function parseBrowserOpen(value: unknown): BrowserOpenInput {
         ? null
         : requireString(value.ownerBotId, "ownerBotId"),
   };
+}
+
+export function parseBrowserNavigate(value: unknown): BrowserNavigateInput {
+  if (!isObject(value) || (value.direction !== "back" && value.direction !== "forward")) {
+    throw new Error("Invalid browser navigation request.");
+  }
+  return { tabId: requireString(value.tabId, "tabId"), direction: value.direction };
 }
 
 export function parseVisibility(value: unknown): BrowserVisibilityInput {

@@ -37,7 +37,13 @@ import type {
 import type { AppDataDesktopApi } from "./ipc-app-data";
 import type { ApprovalRulesDesktopApi } from "./ipc-approval-rules";
 import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
-import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
+import type {
+  BrowserControlState,
+  BrowserNavigateInput,
+  BrowserOpenInput,
+  BrowserTab,
+  BrowserVisibilityInput,
+} from "./ipc-browser";
 import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
 import type { BuiltinSkillsDesktopApi } from "./ipc-builtin-skills";
@@ -568,6 +574,8 @@ export interface BrowserDesktopApi {
   open: (input: BrowserOpenInput) => Promise<BrowserTab>;
   activate: (tabId: string) => Promise<void>;
   close: (tabId: string) => Promise<void>;
+  /** Back or Forward in the history of a tab (the person's own buttons). */
+  navigate: (input: BrowserNavigateInput) => Promise<void>;
   listTabs: () => Promise<BrowserTab[]>;
   getControlState: () => Promise<BrowserControlState>;
   setVisible: (input: BrowserVisibilityInput) => Promise<void>;

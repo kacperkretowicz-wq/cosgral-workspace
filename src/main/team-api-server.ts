@@ -75,7 +75,10 @@ type TeamApiAgents = TeamApiAgentMethods & {
 };
 
 type TeamApiMailbox = Pick<MailboxStore, "resolveAttachment">;
-type TeamApiBrowser = Pick<BrowserHost, "listTabs" | "getControlState" | "open" | "activate" | "close" | "setVisible">;
+type TeamApiBrowser = Pick<
+  BrowserHost,
+  "listTabs" | "getControlState" | "open" | "activate" | "close" | "navigateHistory" | "setVisible"
+>;
 
 interface TeamApiOptions {
   store: TeamStore;
@@ -453,6 +456,14 @@ export class TeamApiServer {
       if (method === "POST" && url.pathname === "/v1/browser/close") {
         const body = await readJson(request);
         await this.#options.browser.close(stringField(body, "tabId"));
+        return this.#empty(response, 204);
+      }
+      if (method === "POST" && url.pathname === "/v1/browser/navigate") {
+        const body = await readJson(request);
+        if (body.direction !== "back" && body.direction !== "forward") {
+          throw new HttpError(400, "direction must be back or forward.");
+        }
+        await this.#options.browser.navigateHistory(stringField(body, "tabId"), body.direction);
         return this.#empty(response, 204);
       }
       if (method === "POST" && url.pathname === "/v1/browser/visible") {

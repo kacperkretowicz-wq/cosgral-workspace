@@ -156,7 +156,7 @@ import {
 } from "./ipc/agent-inputs";
 import { parseMacPermission, parseProvider } from "./ipc/app-inputs";
 import { parseAvatarImage } from "./ipc/avatar-inputs";
-import { parseBrowserOpen, parseVisibility } from "./ipc/browser-inputs";
+import { parseBrowserNavigate, parseBrowserOpen, parseVisibility } from "./ipc/browser-inputs";
 import { parseBrowserTakeoverResponse, parseDeleteDraft, parseDraftPreviewResponse } from "./ipc/card-inputs";
 import {
   parseChannelId,
@@ -1282,6 +1282,12 @@ function registerIpcHandlers(
           decodeVoid,
         ),
   );
+  handleTrusted(IPC_CHANNELS.browserNavigate, (input: unknown) => {
+    const parsed = parseBrowserNavigate(input);
+    return remoteServers.activeServerId === "local"
+      ? browser.navigateHistory(parsed.tabId, parsed.direction)
+      : remoteServers.request("/v1/browser/navigate", { method: "POST", body: parsed }, undefined, decodeVoid);
+  });
   handleTrusted(IPC_CHANNELS.browserListTabs, () =>
     remoteServers.activeServerId === "local"
       ? browser.listTabs()
