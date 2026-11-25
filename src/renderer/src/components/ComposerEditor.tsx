@@ -462,7 +462,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   onClick={() => insertSlash(command)}
                 >
                   <strong>/{command.name}</strong>
-                  <span>{command.hint}</span>
+                  <span>{tData(command.hint)}</span>
                 </Button>
               )}
             </For>

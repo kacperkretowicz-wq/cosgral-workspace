@@ -266,6 +266,9 @@ export const pl = {
   "Could not ask the side question.": "Nie udało się zadać pytania bocznego.",
   "Could not stop the side question.": "Nie udało się zatrzymać pytania bocznego.",
   "Side question": "Pytanie boczne",
+  "Shorten the conversation to free context": "Skróć rozmowę, żeby zwolnić miejsce w pamięci agenta",
+  "Start an empty thread": "Zacznij pusty wątek",
+  "Ask a side question without touching the chat": "Zadaj pytanie boczne, nie ruszając rozmowy",
   "The answer stays here and is not added to the conversation.": "Odpowiedź zostaje tutaj i nie trafia do rozmowy.",
   "Side questions are not available in this version.": "Pytania boczne nie są dostępne w tej wersji.",
   "Ask something quick…": "Zapytaj o coś szybko…",
@@ -983,14 +986,14 @@ export const pl = {
   Saved: "Zapisane",
   "It is kept encrypted and never shown again.":
     "Jest przechowywany zaszyfrowany i nigdy nie jest pokazywany ponownie.",
-  "Callback port (optional)": "Port zwrotny (opcjonalnie)",
+  "Callback port (optional)": "Port powrotu z logowania (opcjonalnie)",
   "Save the app": "Zapisz aplikację",
   "Connect account": "Połącz konto",
   "Also forget the app's client id": "Zapomnij też identyfikator klienta aplikacji",
   "Register a GitHub App (not a personal token) and give it only the read permissions you need.":
     "Zarejestruj aplikację GitHub (nie osobisty token) i nadaj jej tylko potrzebne uprawnienia do odczytu.",
   "Add the callback address shown below (a loopback address of this computer) to the app.":
-    "Dodaj do aplikacji adres zwrotny pokazany niżej (adres pętli zwrotnej tego komputera).",
+    "Dodaj do aplikacji adres powrotu z logowania pokazany niżej. Ten adres działa tylko na tym komputerze.",
   "Copy the app's client id here.": "Wklej tutaj identyfikator klienta aplikacji.",
   "Create an OAuth client of the type Desktop app in a Google Cloud project and turn on the APIs you need.":
     "Utwórz klienta OAuth typu aplikacja na komputer w projekcie Google Cloud i włącz potrzebne interfejsy API.",
@@ -1936,8 +1939,8 @@ export const pl = {
   "Assigned account from another provider or removed — pick again":
     "Przypisane konto należy do innego dostawcy albo zostało usunięte: wybierz ponownie",
   " (system)": " (systemowe)",
-  " — signed out": " — wylogowane",
-  " — disabled": " — wyłączone",
+  " — signed out": ", wylogowane",
+  " — disabled": ", wyłączone",
   "Answering with account: {label}": "Teraz odpowiada kontem: {label}",
   "Account picking is unavailable in this version.": "Wybór kont niedostępny w tej wersji.",
   "Reload accounts": "Ponów wczytanie kont",
@@ -2102,7 +2105,7 @@ export const pl = {
   "Traffic between the phone and this computer is encrypted. The computer proves who it is with the certificate fingerprint from the QR code: an app that pins it cannot be fooled by another device on the network. A web browser cannot pin it, so compare the fingerprint the first time it warns about the certificate. Encryption does not help if the phone or this computer is in someone else's hands: remove a lost phone at once.":
     "Ruch między telefonem a tym komputerem jest szyfrowany. Komputer potwierdza, kim jest, odciskiem certyfikatu z kodu QR: aplikacja, która go zapamięta, nie da się oszukać innym urządzeniem w sieci. Przeglądarka nie potrafi go zapamiętać, więc porównaj odcisk przy pierwszym ostrzeżeniu o certyfikacie. Szyfrowanie nie pomoże, gdy telefon albo ten komputer trafi w cudze ręce: usuń zgubiony telefon od razu.",
   "Traffic between the phone and this computer is not encrypted. It stays on this computer (loopback); use it only through a tunnel you trust, such as a VPN or USB forwarding.":
-    "Ruch między telefonem a tym komputerem nie jest szyfrowany. Zostaje na tym komputerze (loopback); używaj go tylko przez tunel, któremu ufasz, np. VPN albo przekierowanie przez USB.",
+    "Ruch między telefonem a tym komputerem nie jest szyfrowany. Ten adres działa tylko na tym komputerze, więc telefon łącz tylko przez tunel, któremu ufasz, np. VPN albo przekierowanie przez USB.",
   Control: "Sterowanie",
   "Screen view": "Podgląd",
   connecting: "łączenie",
@@ -2255,7 +2258,7 @@ export const pl = {
   "API keys are unavailable.": "Klucze API niedostępne.",
   "Could not check the connection.": "Nie udało się sprawdzić połączenia.",
   "One API key per provider, stored encrypted. A saved key is always used, even when rejected, until you remove it to return to subscription login. Changes apply when the provider process next starts.":
-    "Jeden klucz API na dostawcę, przechowywany zaszyfrowany. Zapisany klucz jest zawsze używany — także gdy odrzucony — dopóki go nie usuniesz, by wrócić do logowania subskrypcji. Zmiany obowiązują przy następnym starcie procesu dostawcy.",
+    "Jeden klucz API na dostawcę, przechowywany zaszyfrowany. Zapisany klucz jest używany zawsze, także wtedy, gdy dostawca go odrzuci. Usuń klucz, żeby wrócić do logowania przez subskrypcję. Zmiany działają od następnego uruchomienia dostawcy.",
   "Checking connection": "Sprawdzanie połączenia",
   Unchecked: "Niesprawdzony",
   OK: "OK",
@@ -2766,7 +2769,8 @@ export const pl = {
   "Leave secret fields empty to keep their existing values.":
     "Zostaw pola sekretów puste, żeby zachować obecne wartości.",
   "System encryption available": "Szyfrowanie systemowe dostępne",
-  "System encryption unavailable — saving is disabled": "Szyfrowanie systemowe niedostępne — zapisywanie wyłączone",
+  "System encryption unavailable — saving is disabled":
+    "Szyfrowanie systemowe jest niedostępne, więc zapisywanie jest wyłączone",
   "{count} items": "{count} pozycje",
   "Close remote desktop": "Zamknij zdalny pulpit",
   "Connecting to the Mac…": "Łączenie z Makiem…",
