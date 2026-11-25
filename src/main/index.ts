@@ -261,6 +261,12 @@ import { registerServerSettingsIpc } from "./server-settings-ipc";
 import { readSetupState, writeSetupState } from "./setup-store";
 import { enforceSingleInstance } from "./single-instance";
 import { registerSpacesIpc } from "./spaces-ipc";
+import {
+  damagedDatabaseText,
+  isDamagedDatabaseError,
+  moveDamagedDatabaseAside,
+  startupLanguage,
+} from "./startup-failure";
 import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
 import { registerTasksViewIpc } from "./tasks-view-ipc";
@@ -2336,9 +2342,34 @@ if (!hasSingleInstanceLock) {
         void loadRenderer(mainWindow);
       });
     })
-    .catch((error) => {
+    .catch(async (error) => {
       const message = error instanceof Error ? error.message : String(error);
       console.error("COSGRAL Workspace failed to start:", error);
+      if (isDamagedDatabaseError(message)) {
+        const text = damagedDatabaseText(startupLanguage(app.getLocale()), message);
+        const { response } = await dialog.showMessageBox({
+          type: "error",
+          title: text.title,
+          message: text.message,
+          detail: text.detail,
+          buttons: [text.startFresh, text.openFolder, text.close],
+          defaultId: 2,
+          cancelId: 2,
+          noLink: true,
+        });
+        if (response === 0) {
+          try {
+            moveDamagedDatabaseAside(app.getPath("userData"));
+            app.relaunch();
+          } catch (moveError) {
+            dialog.showErrorBox(text.title, String(moveError));
+          }
+        } else if (response === 1) {
+          await shell.openPath(app.getPath("userData"));
+        }
+        app.exit(0);
+        return;
+      }
       dialog.showErrorBox(
         "COSGRAL Workspace couldn’t start",
         `${message}\n\nYour local data was not reset or overwritten. See the troubleshooting guide for recovery steps.`,
