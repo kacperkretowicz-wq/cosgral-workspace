@@ -300,7 +300,11 @@ export function MobileOverviewPanel() {
                     {t("Not available in this version")}
                   </Heading>
                   <ul class="mobile-overview-routes">
-                    <For each={view().unavailable}>
+                    <For
+                      each={view().unavailable.filter(
+                        (feature) => !view().routes.some((route) => route.id === feature.id),
+                      )}
+                    >
                       {(feature) => (
                         <li class="mobile-overview-route" aria-disabled="true">
                           <div>

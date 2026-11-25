@@ -2,7 +2,7 @@ import type { UsagePeriod, UsageReport, UsageTokenSplit, UsageUnavailable } from
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
-import { t, tData } from "../i18n";
+import { appLocale, t, tData } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
@@ -10,6 +10,13 @@ import { Button } from "./ui";
 import { Coins, Cpu, MessageCircle, Wallet } from "./ui/icons";
 
 const BAR_AREA = { width: 600, height: 120 } as const;
+
+/** "2026-10-27" as the person reads a date in the window language ("27 paź 2026"); the report's days are UTC dates. */
+function dayLabel(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return day;
+  return date.toLocaleDateString(appLocale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
 
 function compact(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -228,7 +235,10 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
                       viewBox={`0 0 ${BAR_AREA.width} ${BAR_AREA.height}`}
                       preserveAspectRatio="none"
                       role="img"
-                      aria-label={t("Tokens per day, {from} to {to}", { from: current().from, to: current().to })}
+                      aria-label={t("Tokens per day, {from} to {to}", {
+                        from: dayLabel(current().from),
+                        to: dayLabel(current().to),
+                      })}
                     >
                       <defs>
                         {/* Electric fade from the top of a bar into the dark (Azure Glass); colours from the palette. */}
@@ -251,18 +261,20 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
                             width={bar.width}
                             height={bar.height}
                           >
-                            <title>{`${bar.day.day}: ${compact(bar.day.tokens)}`}</title>
+                            <title>{`${dayLabel(bar.day.day)}: ${compact(bar.day.tokens)}`}</title>
                           </rect>
                         )}
                       </For>
                     </svg>
                   </div>
                   <figcaption>
-                    <span>{current().from}</span>
+                    <span>{dayLabel(current().from)}</span>
                     <Show when={current().collectingSince}>
-                      {(since) => <span class="usage-note">{t("Counted since {day}.", { day: since() })}</span>}
+                      {(since) => (
+                        <span class="usage-note">{t("Counted since {day}.", { day: dayLabel(since()) })}</span>
+                      )}
                     </Show>
-                    <span>{current().to}</span>
+                    <span>{dayLabel(current().to)}</span>
                   </figcaption>
                 </figure>
 

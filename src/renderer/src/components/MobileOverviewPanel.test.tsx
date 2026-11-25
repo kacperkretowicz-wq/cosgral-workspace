@@ -73,7 +73,10 @@ it("lists what this version does not offer, each with its reason", async () => {
   expect(
     list.getByText(/A link that never expires would let anyone who finds it into your agents\./),
   ).toBeInTheDocument();
-  expect(list.getAllByText("Not available").length).toBe(2);
+  // The cloud route is already listed with the routes: it is not repeated here (seen twice in the real window).
+  expect(list.queryByText("Through the cloud")).not.toBeInTheDocument();
+  expect(screen.getAllByText("Through the cloud")).toHaveLength(1);
+  expect(list.getAllByText("Not available").length).toBe(1);
 });
 
 it("reads the page again when a phone pairs or the route changes", async () => {

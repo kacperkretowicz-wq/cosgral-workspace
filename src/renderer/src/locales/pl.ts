@@ -1978,7 +1978,11 @@ export const pl = {
   "Remove {name} for all agents?": "Usunąć {name} dla wszystkich agentów?",
   "Enabled for this agent": "Włączone dla tego agenta",
   "Add server": "Dodaj serwer",
-  Transport: "Transport",
+  "Server on the internet (HTTP)": "Serwer w sieci (HTTP)",
+  "The app starts this program on your computer. Type the command, for example npx, and its arguments below.":
+    "Aplikacja uruchomi ten program na Twoim komputerze. Wpisz polecenie, na przykład npx, a niżej jego argumenty.",
+  "The server already runs somewhere else. Type its address.": "Serwer już działa gdzie indziej. Wpisz jego adres.",
+  Transport: "Sposób połączenia",
   "Arguments (one per line)": "Argumenty (jeden w wierszu)",
   "Secret name": "Nazwa sekretu",
   "Secret value": "Wartość sekretu",
