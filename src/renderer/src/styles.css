@@ -19,6 +19,7 @@
 @import "./styles/channel-view.css";
 @import "./styles/azure-glass.css";
 @import "./styles/hub-look.css";
+@import "./styles/hub-feel.css";
 @import "./styles/theme-light.css";
 
 :root {

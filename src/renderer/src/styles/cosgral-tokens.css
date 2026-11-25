@@ -101,15 +101,15 @@
   --cosgral-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(140, 185, 204, 0.09);
   --cosgral-glass-glow: radial-gradient(120% 70% at 50% 120%, rgba(55, 129, 252, 0.34), rgba(55, 129, 252, 0) 62%);
   --cosgral-glass-glow-red: radial-gradient(120% 70% at 50% 120%, rgba(255, 45, 85, 0.32), rgba(255, 45, 85, 0) 62%);
-  --cosgral-glow-accent: 0 0 0 1px rgba(55, 129, 252, 0.45), 0 6px 24px -6px rgba(25, 81, 252, 0.7);
-  --cosgral-glow-red: 0 0 0 1px rgba(255, 45, 85, 0.45), 0 6px 24px -6px rgba(255, 45, 85, 0.6);
+  --cosgral-glow-accent: 0 0 0 1px rgba(185, 212, 255, 0.55), 0 0 0 4px rgba(185, 212, 255, 0.16);
+  --cosgral-glow-red: 0 0 0 1px rgba(255, 181, 189, 0.6), 0 0 0 4px rgba(255, 181, 189, 0.15);
   --cosgral-gradient-green: linear-gradient(180deg, #13a85a 0%, #0a6b3a 100%);
   --cosgral-glass-glow-green: radial-gradient(
     120% 70% at 50% 120%,
     rgba(49, 207, 118, 0.22),
     rgba(49, 207, 118, 0) 62%
   );
-  --cosgral-glow-green: 0 0 0 1px rgba(49, 207, 118, 0.4), 0 6px 24px -6px rgba(49, 207, 118, 0.5);
+  --cosgral-glow-green: 0 0 0 1px rgba(169, 223, 207, 0.55), 0 0 0 4px rgba(169, 223, 207, 0.14);
   --cosgral-ambient: radial-gradient(at 12% 0%, rgba(32, 37, 54, 0.55), rgba(0, 0, 0, 0) 66%);
   --cosgral-grain-opacity: 0.018;
   --cosgral-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -120,146 +120,40 @@
    */
   --cosgral-sheen: rgba(255, 255, 255, 0.07);
   --cosgral-creature-shadow: drop-shadow(0 1.5px 1.5px rgba(0, 0, 0, 0.32)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
-  --cosgral-tile-base: linear-gradient(180deg, #0d1729 0%, #070b15 100%);
-  --cosgral-tile-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --cosgral-tile-blue:
-    radial-gradient(
-      70% 42% at 50% 106%,
-      rgba(190, 222, 255, 0.95) 0%,
-      rgba(55, 129, 252, 0.65) 45%,
-      rgba(55, 129, 252, 0) 100%
-    ),
-    linear-gradient(180deg, rgba(3, 25, 91, 0) 34%, rgba(11, 44, 177, 0.42) 66%, rgba(25, 81, 252, 0.88) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
-  --cosgral-tile-blue-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(120, 170, 255, 0.12),
-    inset 0 -2px 0 rgba(160, 205, 255, 0.95), inset 0 -18px 26px -16px rgba(80, 150, 255, 0.95),
-    0 22px 46px -24px rgba(25, 81, 252, 0.85);
-  --cosgral-tile-red:
-    radial-gradient(
-      70% 42% at 50% 106%,
-      rgba(255, 200, 150, 0.95) 0%,
-      rgba(255, 70, 50, 0.7) 45%,
-      rgba(255, 45, 85, 0) 100%
-    ),
-    linear-gradient(180deg, rgba(60, 4, 18, 0) 34%, rgba(138, 11, 42, 0.5) 66%, rgba(255, 45, 70, 0.9) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
-  --cosgral-tile-red-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 140, 150, 0.12),
-    inset 0 -2px 0 rgba(255, 190, 170, 0.95), inset 0 -18px 26px -16px rgba(255, 70, 70, 0.95),
-    0 22px 46px -24px rgba(255, 45, 85, 0.8);
-  --cosgral-tile-green:
-    radial-gradient(
-      70% 42% at 50% 106%,
-      rgba(200, 255, 215, 0.95) 0%,
-      rgba(60, 230, 120, 0.65) 45%,
-      rgba(34, 197, 94, 0) 100%
-    ),
-    linear-gradient(180deg, rgba(3, 40, 20, 0) 34%, rgba(10, 107, 58, 0.45) 66%, rgba(34, 197, 94, 0.88) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
-  --cosgral-tile-green-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(130, 255, 180, 0.12),
-    inset 0 -2px 0 rgba(190, 255, 210, 0.95), inset 0 -18px 26px -16px rgba(60, 230, 120, 0.9),
-    0 22px 46px -24px rgba(34, 197, 94, 0.75);
-  --cosgral-tile-deep:
-    radial-gradient(
-      70% 42% at 50% 106%,
-      rgba(191, 216, 227, 0.95) 0%,
-      rgba(0, 120, 168, 0.65) 45%,
-      rgba(0, 99, 142, 0) 100%
-    ),
-    linear-gradient(180deg, rgba(0, 24, 38, 0) 34%, rgba(0, 74, 107, 0.45) 66%, rgba(0, 99, 142, 0.88) 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
-  --cosgral-tile-deep-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(140, 185, 204, 0.14),
-    inset 0 -2px 0 rgba(191, 216, 227, 0.95), inset 0 -18px 26px -16px rgba(0, 130, 180, 0.9),
-    0 22px 46px -24px rgba(0, 99, 142, 0.8);
-  --cosgral-tile-quiet:
-    radial-gradient(90% 45% at 50% 115%, rgba(55, 129, 252, 0.34) 0%, rgba(55, 129, 252, 0) 72%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 40%);
-  --cosgral-tile-quiet-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 0 0 1px rgba(120, 170, 255, 0.14),
-    inset 0 -1px 0 rgba(150, 195, 255, 0.55), inset 0 -18px 28px -20px rgba(55, 129, 252, 0.7);
+  --cosgral-tile-base: var(--cosgral-hub-graphite);
+  --cosgral-tile-edge: inset 0 1px 1px rgba(255, 255, 255, 0.17), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --cosgral-tile-blue: var(--cosgral-tile-graphite);
+  --cosgral-tile-blue-shadow: var(--cosgral-hub-tile-rim);
+  --cosgral-tile-red: var(--cosgral-tile-graphite);
+  --cosgral-tile-red-shadow: var(--cosgral-hub-tile-rim);
+  --cosgral-tile-green: var(--cosgral-tile-graphite);
+  --cosgral-tile-green-shadow: var(--cosgral-hub-tile-rim);
+  --cosgral-tile-deep: var(--cosgral-tile-graphite);
+  --cosgral-tile-deep-shadow: var(--cosgral-hub-tile-rim);
+  --cosgral-tile-quiet: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 40%);
+  --cosgral-tile-quiet-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.17), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --cosgral-mesh-graphite:
+    radial-gradient(120% 85% at 50% 128%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 46%), var(--cosgral-hub-graphite);
+  --cosgral-tile-graphite:
+    radial-gradient(90% 140% at 82% 125%, rgba(255, 255, 255, 0.11), rgba(0, 0, 0, 0) 58%),
+    radial-gradient(55% 90% at 58% -20%, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0) 62%);
   /*
    * Icon chips (owner, 20.11: "ikony jak w inspiracji"): dark glass lit from below, a bright rim; the colour is only the
    * light. Five lights: Azure, deep Azure, cool red, green, orange. pink, cyan and lime have their own lights again
    * (owner, 20.11: "za mało szkła i koloru"); every chip is still dark glass lit from below.
    */
-  --cosgral-mesh-blue:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(190, 222, 255, 0.95) 0%,
-      rgba(55, 129, 252, 0.75) 46%,
-      rgba(55, 129, 252, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-deep:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(191, 216, 227, 0.9) 0%,
-      rgba(0, 99, 142, 0.85) 46%,
-      rgba(0, 99, 142, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-red:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(255, 190, 200, 0.9) 0%,
-      rgba(224, 21, 67, 0.8) 46%,
-      rgba(224, 21, 67, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-green:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(200, 255, 215, 0.9) 0%,
-      rgba(49, 207, 118, 0.7) 46%,
-      rgba(49, 207, 118, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-orange:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(255, 214, 170, 0.9) 0%,
-      rgba(255, 122, 47, 0.75) 46%,
-      rgba(255, 122, 47, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-lime:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(240, 255, 190, 0.92) 0%,
-      rgba(163, 230, 53, 0.78) 46%,
-      rgba(163, 230, 53, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-cyan:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(190, 250, 255, 0.92) 0%,
-      rgba(34, 211, 238, 0.78) 46%,
-      rgba(34, 211, 238, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
-  --cosgral-mesh-pink:
-    radial-gradient(
-      120% 85% at 50% 128%,
-      rgba(255, 190, 235, 0.92) 0%,
-      rgba(232, 121, 249, 0.8) 46%,
-      rgba(232, 121, 249, 0) 88%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-blue: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-deep: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-red: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-green: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-orange: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-lime: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-cyan: var(--cosgral-mesh-graphite);
+  --cosgral-mesh-pink: var(--cosgral-mesh-graphite);
   --cosgral-mesh-edge:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.38), 0 8px 18px -10px rgba(0, 0, 0, 0.7);
+    inset 0 1px 1px rgba(255, 255, 255, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 18px -10px rgba(0, 0, 0, 0.7);
   --cosgral-pill-glossy:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0) 55%),
     linear-gradient(180deg, #3781fc 0%, #1951fc 50%, #0b2cb1 100%);
@@ -361,6 +255,8 @@
   --cosgral-hub-ink-08: rgba(245, 247, 252, 0.08);
   --cosgral-hub-ink-10: rgba(245, 247, 252, 0.1);
   --cosgral-hub-rgb-16-17-17-06: rgba(16, 17, 17, 0.06);
+  --cosgral-hub-rgb-16-17-17-10: rgba(16, 17, 17, 0.1);
+  --cosgral-hub-rgb-16-17-17-16: rgba(16, 17, 17, 0.16);
   --cosgral-hub-rgb-169-223-207-13: rgba(169, 223, 207, 0.13);
   --cosgral-hub-rgb-185-212-255-06: rgba(185, 212, 255, 0.06);
   --cosgral-hub-rgb-185-212-255-12: rgba(185, 212, 255, 0.12);
@@ -380,10 +276,120 @@
   --cosgral-hub-white-45: rgba(255, 255, 255, 0.45);
   --cosgral-hub-white-50: rgba(255, 255, 255, 0.5);
   --cosgral-hub-white-70: rgba(255, 255, 255, 0.7);
+
+  /* How controls answer a hover, a press and the keyboard (hub-feel.css). */
+  --cosgral-hub-row-hover: rgba(245, 247, 252, 0.13);
+  --cosgral-hub-row-press: rgba(245, 247, 252, 0.17);
+  --cosgral-hub-hover-rim:
+    inset 0 1px 1px rgba(255, 255, 255, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 10px 24px -14px rgba(0, 0, 0, 0.6);
+  --cosgral-hub-paper-rim-hover: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 12px 28px -12px rgba(0, 0, 0, 0.55);
+  --cosgral-hub-field-rim-hover: inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  --cosgral-hub-field-border-hover: rgba(255, 255, 255, 0.24);
+  --cosgral-hub-focus-ring: 0 0 0 3px rgba(185, 212, 255, 0.45);
+  --cosgral-hub-lift-sm: translateY(-1px);
+  --cosgral-hub-lift: translateY(-3px) scale(1.008);
+  --cosgral-hub-pop: scale(1.08);
+  --cosgral-hub-sink: scale(0.968);
+  --cosgral-hub-sink-soft: scale(0.985);
+  --cosgral-hub-nudge: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --cosgral-hub-lift-sm: none;
+    --cosgral-hub-lift: none;
+    --cosgral-hub-pop: none;
+    --cosgral-hub-sink: none;
+    --cosgral-hub-sink-soft: none;
+    --cosgral-hub-nudge: none;
+  }
 }
 
 :root[data-theme="light"],
 [data-story-theme="light"] {
+  --cosgral-hub-row-hover: rgba(20, 20, 30, 0.07);
+  --cosgral-hub-row-press: rgba(20, 20, 30, 0.13);
+  --cosgral-hub-hover-rim:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(20, 20, 30, 0.16),
+    0 8px 20px -12px rgba(20, 20, 30, 0.35);
+  --cosgral-hub-paper-rim-hover: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 10px 24px -12px rgba(20, 20, 30, 0.4);
+  --cosgral-hub-field-rim-hover: inset 0 1px 2px rgba(20, 20, 30, 0.1), inset 0 0 0 1px rgba(20, 20, 30, 0.1);
+  --cosgral-hub-field-border-hover: rgba(20, 20, 30, 0.3);
+  --cosgral-hub-focus-ring: 0 0 0 3px rgba(0, 99, 142, 0.35);
+  /* The light theme keeps its coloured icon chips (owner: the light theme stays as it is); the dark theme uses graphite chips. */
+  --cosgral-mesh-blue:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(190, 222, 255, 0.95) 0%,
+      rgba(55, 129, 252, 0.75) 46%,
+      rgba(55, 129, 252, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-deep:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(191, 216, 227, 0.9) 0%,
+      rgba(0, 99, 142, 0.85) 46%,
+      rgba(0, 99, 142, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-red:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(255, 190, 200, 0.9) 0%,
+      rgba(224, 21, 67, 0.8) 46%,
+      rgba(224, 21, 67, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-green:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(200, 255, 215, 0.9) 0%,
+      rgba(49, 207, 118, 0.7) 46%,
+      rgba(49, 207, 118, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-orange:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(255, 214, 170, 0.9) 0%,
+      rgba(255, 122, 47, 0.75) 46%,
+      rgba(255, 122, 47, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-lime:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(240, 255, 190, 0.92) 0%,
+      rgba(163, 230, 53, 0.78) 46%,
+      rgba(163, 230, 53, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-cyan:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(190, 250, 255, 0.92) 0%,
+      rgba(34, 211, 238, 0.78) 46%,
+      rgba(34, 211, 238, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
+  --cosgral-mesh-pink:
+    radial-gradient(
+      120% 85% at 50% 128%,
+      rgba(255, 190, 235, 0.92) 0%,
+      rgba(232, 121, 249, 0.8) 46%,
+      rgba(232, 121, 249, 0) 88%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #111a2e 0%, #070b15 100%);
   --cosgral-bg-frame: #e6e6ea;
   --cosgral-bg-surface: #ffffff;
   --cosgral-bg-control: #f1f1f5;

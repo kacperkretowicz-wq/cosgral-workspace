@@ -433,9 +433,17 @@ body::after {
   background: var(--cosgral-hub-black);
 }
 
+/* Catalog tiles: the initials sit on a black tile, not on a tile in the category's hue. */
+.mk-gallery .mk-tile {
+  background: var(--cosgral-hub-black);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-20);
+  color: var(--cosgral-hub-hex-faf9f6);
+}
+
 /* Selection inside pages and Settings: the black pill. ---------------------------------------------------------- */
 
 .work-page-nav-item:is([aria-current="page"], [aria-current="true"]),
+.marketplace-nav-list .work-page-nav-item[aria-current="page"],
 .settings-dialog-nav-item[aria-current="true"] {
   border-radius: var(--cosgral-radius-pill);
   background: var(--cosgral-hub-paper);
@@ -443,8 +451,8 @@ body::after {
   color: var(--cosgral-hub-paper-ink);
 }
 
-.work-page-nav-item:is([aria-current="page"], [aria-current="true"]) svg,
-.settings-dialog-nav-item[aria-current="true"] svg {
+/* The chip inside keeps its light icon (hub-feel.css); the label is ink on the paper pill. */
+.marketplace-nav-list .work-page-nav-item[aria-current="page"] {
   color: var(--cosgral-hub-paper-ink);
 }
 
