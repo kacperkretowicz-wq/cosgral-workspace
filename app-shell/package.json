@@ -15,7 +15,7 @@
     "dist:nsis": "electron-builder --win nsis"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24.11.0"
   },
   "build": {
     "appId": "pl.cosgral.workspace",
