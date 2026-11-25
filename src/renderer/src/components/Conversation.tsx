@@ -1317,6 +1317,27 @@ export function Conversation(props: ConversationProps) {
     }
   }
 
+  async function openActiveBrowserTabExternally() {
+    const tab = activeBrowserTab();
+    if (!tab) return;
+    try {
+      await window.openbot.openUrl(tab.url);
+    } catch {
+      setComposerError(t("Could not open the link."));
+    }
+  }
+
+  async function copyActiveBrowserAddress(): Promise<boolean> {
+    const tab = activeBrowserTab();
+    if (!tab || !navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(tab.url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function goInBrowserHistory(direction: "back" | "forward") {
     const tab = activeBrowserTab();
     if (!tab) return;
@@ -2329,6 +2350,8 @@ export function Conversation(props: ConversationProps) {
           onBack={() => void goInBrowserHistory("back")}
           onForward={() => void goInBrowserHistory("forward")}
           onReload={() => void openBrowserAddress()}
+          onOpenExternal={() => void openActiveBrowserTabExternally()}
+          onCopyAddress={copyActiveBrowserAddress}
           onAddressInput={setBrowserAddress}
           onAddressSubmit={() => void openBrowserAddress()}
           onResize={setBrowserPanelWidth}

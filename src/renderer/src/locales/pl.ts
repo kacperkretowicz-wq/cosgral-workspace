@@ -222,6 +222,10 @@ export const pl = {
   "Pick a day to see its runs.": "Wybierz dzień, żeby zobaczyć jego uruchomienia.",
   "There is no earlier page in this tab.": "W tej karcie nie ma wcześniejszej strony.",
   "There is no later page in this tab.": "W tej karcie nie ma późniejszej strony.",
+  "Address copied.": "Adres skopiowany.",
+  "Could not copy the address.": "Nie udało się skopiować adresu.",
+  "Open in your default browser": "Otwórz w domyślnej przeglądarce",
+  "Copy address": "Skopiuj adres",
   "Used for new local agents. You can change it for each agent later.":
     "Używany dla nowych lokalnych agentów. Później możesz go zmienić dla każdego agenta.",
   "Paste an cosgral:// invitation link": "Wklej link zaproszenia cosgral://",

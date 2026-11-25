@@ -1,9 +1,9 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
-import { For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { t } from "../../i18n";
 import { ChatRightPanelTabs, type ChatSidePanelTarget } from "../ChatSidePanelLauncher";
-import { Button, Input, Tabs } from "../ui";
+import { Button, DropdownMenu, Input, Tabs } from "../ui";
 import {
   BrowserBackIcon,
   BrowserControlIcon,
@@ -38,6 +38,10 @@ export function BrowserPanel(props: {
   onBack: () => void;
   onForward: () => void;
   onReload: () => void;
+  /** Opens the page of the active tab in the default browser of the computer. */
+  onOpenExternal: () => void;
+  /** Copies the address of the active tab; resolves to whether it worked. */
+  onCopyAddress: () => Promise<boolean>;
   onAddressInput: (value: string) => void;
   onAddressSubmit: () => void;
   onResize: (width: number) => void;
@@ -46,6 +50,14 @@ export function BrowserPanel(props: {
   surfaceRef: (element: HTMLDivElement) => void;
 }) {
   const activeTab = () => props.tabs.find((tab) => tab.id === props.activeTabId);
+  const [menuNote, setMenuNote] = createSignal("");
+  let noteTimer: ReturnType<typeof setTimeout> | undefined;
+  async function copyAddress() {
+    const ok = await props.onCopyAddress();
+    setMenuNote(ok ? t("Address copied.") : t("Could not copy the address."));
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => setMenuNote(""), 2500);
+  }
   return (
     <Tabs.Root
       as="aside"
@@ -186,10 +198,34 @@ export function BrowserPanel(props: {
               onInput={(event) => props.onAddressInput(event.currentTarget.value)}
             />
           </form>
-          <Button type="button" class="browser-toolbar-button" aria-label={t("Browser menu")}>
-            <span class="browser-menu-dots">•••</span>
-          </Button>
+          <DropdownMenu.Root placement="bottom-end" gutter={6} modal={false}>
+            <DropdownMenu.Trigger
+              as={Button}
+              type="button"
+              class="browser-toolbar-button"
+              aria-label={t("Browser menu")}
+              title={t("Browser menu")}
+              disabled={!activeTab()}
+            >
+              <span class="browser-menu-dots">•••</span>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content class="bot-context-menu" aria-label={t("Browser menu")}>
+                <DropdownMenu.Item onSelect={() => props.onOpenExternal()}>
+                  <span>{t("Open in your default browser")}</span>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onSelect={() => void copyAddress()}>
+                  <span>{t("Copy address")}</span>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
+        <Show when={menuNote()}>
+          <p class="browser-menu-note" role="status">
+            {menuNote()}
+          </p>
+        </Show>
         <div class="browser-surface" ref={props.surfaceRef}>
           <Show when={props.tabs.length === 0}>
             <div class="browser-empty-state">

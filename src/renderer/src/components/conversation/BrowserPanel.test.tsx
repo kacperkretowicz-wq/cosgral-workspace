@@ -1,5 +1,5 @@
 import type { BrowserControlSession, BrowserTab } from "@openbot/contracts/ipc";
-import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { expect, it, vi } from "vitest";
 import { BrowserPanel } from "./BrowserPanel";
 
@@ -31,6 +31,8 @@ function setup(overrides: Partial<Parameters<typeof BrowserPanel>[0]> = {}) {
     onBack: vi.fn(),
     onForward: vi.fn(),
     onReload: vi.fn(),
+    onOpenExternal: vi.fn(),
+    onCopyAddress: vi.fn().mockResolvedValue(true),
     onAddressInput: vi.fn(),
     onAddressSubmit: vi.fn(),
     onResize: vi.fn(),
@@ -102,4 +104,23 @@ it("keeps Back and Forward off while the tab has no history and reports them onc
   fireEvent.click(screen.getByRole("button", { name: "Go forward" }));
   expect(on.onBack).toHaveBeenCalledOnce();
   expect(on.onForward).toHaveBeenCalledOnce();
+});
+
+it("has a browser menu that opens the page outside and copies its address, and says what happened", async () => {
+  const handlers = setup();
+  await fireEvent.pointerDown(screen.getByRole("button", { name: "Browser menu" }), {
+    button: 0,
+    pointerType: "mouse",
+  });
+  await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Copy address" }), { button: 0 });
+  await waitFor(() => expect(handlers.onCopyAddress).toHaveBeenCalledOnce());
+  expect(await screen.findByText("Address copied.")).toBeInTheDocument();
+  await fireEvent.pointerDown(screen.getByRole("button", { name: "Browser menu" }), {
+    button: 0,
+    pointerType: "mouse",
+  });
+  await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Open in your default browser" }), {
+    button: 0,
+  });
+  await waitFor(() => expect(handlers.onOpenExternal).toHaveBeenCalledOnce());
 });

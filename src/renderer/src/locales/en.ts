@@ -221,6 +221,10 @@ export const en = {
   "Pick a day to see its runs.": "Pick a day to see its runs.",
   "There is no earlier page in this tab.": "There is no earlier page in this tab.",
   "There is no later page in this tab.": "There is no later page in this tab.",
+  "Address copied.": "Address copied.",
+  "Could not copy the address.": "Could not copy the address.",
+  "Open in your default browser": "Open in your default browser",
+  "Copy address": "Copy address",
   "Used for new local agents. You can change it for each agent later.":
     "Used for new local agents. You can change it for each agent later.",
   "Paste an cosgral:// invitation link": "Paste an cosgral:// invitation link",

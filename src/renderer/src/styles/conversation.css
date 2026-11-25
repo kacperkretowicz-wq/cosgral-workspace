@@ -6309,3 +6309,10 @@
   align-items: center;
   gap: var(--openbot-space-2);
 }
+
+.browser-menu-note {
+  margin: 0;
+  padding: 4px 12px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+}
