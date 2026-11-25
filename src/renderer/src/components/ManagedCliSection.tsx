@@ -37,10 +37,11 @@ function sourceLabel(source: ManagedCliState["source"]): string {
       return t("None");
   }
 }
-function phaseLabel(phase: ManagedCliState["phase"]): string {
-  switch (phase) {
+function phaseLabel(state: ManagedCliState): string {
+  switch (state.phase) {
     case "idle":
-      return t("Ready");
+      // Nothing is running; "Ready" under a program that is not there would read as if it were installed.
+      return state.source === "none" ? t("Nothing is running. Download the program to use it.") : t("Ready");
     case "checking":
       return t("Checking version");
     case "awaiting-approval":
@@ -136,7 +137,7 @@ export function ManagedCliCard(props: {
         </div>
       </div>
       <Text as="p" role="status" aria-live="polite" class="provider-cli-phase">
-        {phaseLabel(props.state.phase)}
+        {phaseLabel(props.state)}
       </Text>
       <Show when={props.state.progress}>
         {(progress) => (

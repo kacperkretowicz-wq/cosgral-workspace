@@ -225,6 +225,9 @@ export const en = {
   "Could not copy the address.": "Could not copy the address.",
   "Open in your default browser": "Open in your default browser",
   "Copy address": "Copy address",
+  "Nothing is running. Download the program to use it.": "Nothing is running. Download the program to use it.",
+  "Computer Use is not set up on this computer.": "Computer Use is not set up on this computer.",
+  "Computer Use works on Windows in this version.": "Computer Use works on Windows in this version.",
   "Used for new local agents. You can change it for each agent later.":
     "Used for new local agents. You can change it for each agent later.",
   "Paste an cosgral:// invitation link": "Paste an cosgral:// invitation link",
