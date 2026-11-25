@@ -1,8 +1,11 @@
 name: commitperclip PR Review
 
+# Wyłączone na PR-ach: workflow checkoutował nieistniejącą gałąź `master` i wymaga
+# sekretu COMMITPERCLIP_KEY, którego to repo nie ma. Zostaje do ręcznego uruchomienia.
+# Aby przywrócić, zamień `workflow_dispatch` na `pull_request_target` (types: opened, synchronize, reopened)
+# i ustaw `ref` na `${{ github.event.pull_request.base.sha }}`.
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 # Always runs from base branch context — never executes PR code.
 # pull_request_target gives access to secrets for untrusted fork PRs.
