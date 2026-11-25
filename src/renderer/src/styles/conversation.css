@@ -4608,6 +4608,13 @@
   }
 }
 
+.mention-picker-empty {
+  padding: 12px 14px;
+  color: var(--openbot-text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .mention-picker-option {
   display: flex;
   width: 100%;

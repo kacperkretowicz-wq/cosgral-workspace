@@ -1942,6 +1942,9 @@ export const pl = {
   "Close selected text actions": "Zamknij działania zaznaczenia",
   "Describe edits": "Opisz poprawki",
   "Send edit instruction": "Wyślij instrukcję poprawki",
+  "Nothing matches this name. Esc closes the list.": "Nic nie pasuje do tej nazwy. Esc zamyka listę.",
+  "Nobody to mention yet. Add another agent or attach a file, then type @ again.":
+    "Nie ma jeszcze kogo wskazać. Dodaj drugiego agenta albo dołącz plik, a potem wpisz @ ponownie.",
   "Insert mention": "Wstaw wzmiankę",
   "Agent account": "Konto agenta",
   "COSGRAL accounts are available for Codex and Claude.": "Konta COSGRAL są dostępne dla Codex i Claude.",
