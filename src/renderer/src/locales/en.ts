@@ -742,6 +742,13 @@ export const en = {
   "Without it the program makes no network request about updates by itself.":
     "Without it the program makes no network request about updates by itself.",
   "How often": "How often",
+  "Starts again and again, after the number of minutes you give.":
+    "Starts again and again, after the number of minutes you give.",
+  "Starts every day at the time you choose.": "Starts every day at the time you choose.",
+  "A schedule written as five fields: minute, hour, day of the month, month, day of the week. For example 0 9 * * 1-5 means 9:00 from Monday to Friday.":
+    "A schedule written as five fields: minute, hour, day of the month, month, day of the week. For example 0 9 * * 1-5 means 9:00 from Monday to Friday.",
+  "Starts when another program sends a signal to the address you get after creating the routine. The secret key is shown once.":
+    "Starts when another program sends a signal to the address you get after creating the routine. The secret key is shown once.",
   "Install a downloaded update when the program closes": "Install a downloaded update when the program closes",
   "Otherwise it waits until you restart yourself.": "Otherwise it waits until you restart yourself.",
   "Restart when idle": "Restart when idle",

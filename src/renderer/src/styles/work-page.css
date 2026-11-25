@@ -797,6 +797,14 @@
   grid-column: 1 / -1;
 }
 
+.work-page .routine-form > .routine-hint {
+  grid-column: 1 / -1;
+  margin: calc(var(--openbot-space-1) * -1) 0 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: 1.4;
+}
+
 .work-page .routine-form > label:has(textarea) {
   grid-column: 1 / -1;
 }
