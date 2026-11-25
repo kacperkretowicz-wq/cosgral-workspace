@@ -29,16 +29,16 @@ const SAMPLES: Array<[string, string]> = [
   ["Every step needs a title (1–80 characters).", "80"],
   ['The routine "r1" in the trigger does not exist.', "r1"],
   ['The agent "bot" in step "Ask" does not exist.', "Ask"],
-  ['The channel "general" in step "Post" does not exist.', "Post"],
+  ['The project "general" in step "Post" does not exist.', "Post"],
   ['Step "Ask" needs an agent.', "Ask"],
-  ['Step "Post" needs a channel.', "Post"],
+  ['Step "Post" needs a project.', "Post"],
   ['Step "Ask" needs an instruction.', "Ask"],
   ['Step "Check" needs a text to check.', "Check"],
   ['Step "Check" needs a value to compare with.', "Check"],
   ['Step "Say" needs a text.', "Say"],
   ['Step "Say": the text is longer than 8000 characters.', "8000"],
   ['Step "Check": the value is longer than 500 characters.', "500"],
-  ['This workflow cannot be saved: Step "Post" needs a channel. Step "Check" needs a value to compare with.', "Post"],
+  ['This workflow cannot be saved: Step "Post" needs a project. Step "Check" needs a value to compare with.', "Post"],
 ];
 
 it("leaves the English sentence as it is in English", () => {
@@ -145,13 +145,13 @@ it("translates what a step still needs before the workflow can be saved", () => 
     expect.arrayContaining([
       'Step "Ask" needs an agent.',
       'Step "Check" needs a value to compare with.',
-      'Step "Post" needs a channel.',
+      'Step "Post" needs a project.',
     ]),
   );
   setLanguage("pl");
   flush();
   for (const message of messages) expect(workflowProblemText(message), message).not.toBe(message);
-  expect(workflowProblemText('Step "Post" needs a channel.')).toBe("Krok „Post” wymaga wybrania kanału.");
+  expect(workflowProblemText('Step "Post" needs a project.')).toBe("Krok „Post” wymaga wybrania projektu.");
 });
 
 it("drops Electron's prefix from a refused save", () => {
@@ -159,5 +159,5 @@ it("drops Electron's prefix from a refused save", () => {
   flush();
   expect(
     workflowProblemText("Error invoking remote method 'workflows:create': Error: Step \"Post\" needs a channel."),
-  ).toBe("Krok „Post” wymaga wybrania kanału.");
+  ).toBe("Krok „Post” wymaga wybrania projektu.");
 });

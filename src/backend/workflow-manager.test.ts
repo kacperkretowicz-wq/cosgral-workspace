@@ -157,7 +157,7 @@ describe("WorkflowManager: saving", () => {
     expect(() => manager.create({ name: "Loop", nodes: [trigger, ask], edges: [] })).toThrow(/not reachable/);
     expect(() => manager.create({ name: "  ", nodes: [trigger, ask, post], edges: chain })).toThrow(/name/);
     expect(() => save(manager, [trigger, { ...ask, botId: "ghost" }, post], chain)).toThrow(/agent .*ghost/i);
-    expect(() => save(manager, [trigger, ask, { ...post, channelId: "gone" }], chain)).toThrow(/channel .*gone/i);
+    expect(() => save(manager, [trigger, ask, { ...post, channelId: "gone" }], chain)).toThrow(/project .*gone/i);
     const routineTrigger: WorkflowNode = { ...trigger, trigger: { kind: "routine", routineId: "r9" } };
     expect(() => save(manager, [routineTrigger, ask, post], chain)).toThrow(/routine .*r9/i);
     expect(() => save(manager, [trigger, { ...ask, prompt: "  " }, post], chain)).toThrow(/instruction/i);
@@ -171,7 +171,7 @@ describe("WorkflowManager: saving", () => {
     const { manager } = await build();
     expect(() => save(manager, [trigger, { ...ask, botId: "" }, post], chain)).toThrow('Step "Ask" needs an agent.');
     expect(() => save(manager, [trigger, ask, { ...post, channelId: "" }], chain)).toThrow(
-      'Step "Post" needs a channel.',
+      'Step "Post" needs a project.',
     );
     const approve: WorkflowNode = {
       id: "approve",

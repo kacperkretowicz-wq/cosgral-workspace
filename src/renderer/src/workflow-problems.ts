@@ -94,16 +94,16 @@ const PATTERNS: ReadonlyArray<{ pattern: RegExp; translate: (match: RegExpMatchA
     translate: (m) => t('The agent "{id}" in step "{title}" does not exist.', { id: m[1] ?? "", title: m[2] ?? "" }),
   },
   {
-    pattern: /^The channel "(.*)" in step "(.*)" does not exist\.$/,
-    translate: (m) => t('The channel "{id}" in step "{title}" does not exist.', { id: m[1] ?? "", title: m[2] ?? "" }),
+    pattern: /^The (?:channel|project) "(.*)" in step "(.*)" does not exist\.$/,
+    translate: (m) => t('The project "{id}" in step "{title}" does not exist.', { id: m[1] ?? "", title: m[2] ?? "" }),
   },
   {
     pattern: /^Step "(.*)" needs an agent\.$/,
     translate: (m) => t('Step "{title}" needs an agent.', { title: m[1] ?? "" }),
   },
   {
-    pattern: /^Step "(.*)" needs a channel\.$/,
-    translate: (m) => t('Step "{title}" needs a channel.', { title: m[1] ?? "" }),
+    pattern: /^Step "(.*)" needs a (?:channel|project)\.$/,
+    translate: (m) => t('Step "{title}" needs a project.', { title: m[1] ?? "" }),
   },
   {
     pattern: /^Step "(.*)" needs an instruction\.$/,

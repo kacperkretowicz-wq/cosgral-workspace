@@ -309,7 +309,7 @@ describe("problems shown on the canvas", () => {
       'Step "Agent" needs an agent.',
       'Step "Agent" needs an instruction.',
       'The agent "ghost" in step "Approval" does not exist.',
-      'The channel "nowhere" in step "Output" does not exist.',
+      'The project "nowhere" in step "Output" does not exist.',
       'Step "Output" needs a text.',
     ]);
     expect(checkWorkflowDraft(graph, KNOWN).canSave).toBe(false);

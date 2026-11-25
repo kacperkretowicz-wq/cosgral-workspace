@@ -559,9 +559,9 @@ export class WorkflowManager {
         }
       }
       if (node.type === "channel-output") {
-        if (!node.channelId) throw new Error(`Step "${title}" needs a channel.`);
+        if (!node.channelId) throw new Error(`Step "${title}" needs a project.`);
         if (!channels.exists(node.channelId)) {
-          throw new Error(`The channel "${node.channelId}" in step "${title}" does not exist.`);
+          throw new Error(`The project "${node.channelId}" in step "${title}" does not exist.`);
         }
         if (!node.text.trim()) throw new Error(`Step "${title}" needs a text.`);
         if (node.text.length > WORKFLOW_LIMITS.text) {
