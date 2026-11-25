@@ -289,7 +289,7 @@
   --cosgral-status-neutral-fill: rgba(255, 255, 255, 0.05);
   --cosgral-status-neutral-ring: rgba(245, 247, 252, 0.24);
   /* The window behind the panels: soft coloured light that the frosted panels blur (owner: "całe tło lekko szklane"). */
-  --cosgral-backdrop: linear-gradient(180deg, #0b0c0f 0%, #080a0f 100%);
+  --cosgral-backdrop: transparent; /* the Hub wave wallpaper (HubAmbient) is the window background */
   --cosgral-panel-glass: rgba(30, 32, 38, 0.41);
   --cosgral-panel-edge:
     inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(245, 247, 252, 0.09),
@@ -298,7 +298,7 @@
   --cosgral-field-edge: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(245, 247, 252, 0.14);
   --cosgral-popover-glass: rgba(24, 26, 31, 0.86);
   /* First screens (sign-in, setup): stronger coloured light than the window, so the frosted card in front has something to blur. */
-  --cosgral-backdrop-hero: linear-gradient(180deg, #0b0c0f 0%, #080a0f 100%);
+  --cosgral-backdrop-hero: transparent;
 }
 
 /* COSGRAL Hub look palette (moved here from hub-look.css so the stylesheet itself holds no colour literals). */
