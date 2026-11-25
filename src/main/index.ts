@@ -77,6 +77,7 @@ import type { MobileConnect } from "../backend/mobile-connect";
 import type { MobilePhoneChannels } from "../backend/mobile-phone-api";
 import type { PhoneAccess } from "../backend/phone-access";
 import { PluginCatalogService } from "../backend/plugin-catalog/plugin-catalog-service";
+import { createProjectPlanService, type ProjectPlanService } from "../backend/project-plans";
 import { ProviderCatalogService } from "../backend/provider-catalog";
 import { ProviderRegistry } from "../backend/provider-registry";
 import { RoutineManager, type WebhookAnswer } from "../backend/routine-manager";
@@ -231,6 +232,7 @@ import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobil
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
 import { registerPluginCatalogIpc } from "./plugin-catalog-ipc";
+import { registerProjectPlansIpc } from "./project-plans-ipc";
 import { registerProviderCatalogIpc } from "./provider-catalog-ipc";
 import { registerProviderIpc } from "./provider-ipc";
 import { ElectronFrameSource } from "./remote-desktop-capture";
@@ -391,6 +393,7 @@ let usageReportService: UsageReportService | null = null;
 let scheduleViewService: ScheduleViewService | null = null;
 let tasksViewService: TasksViewService | null = null;
 let channelRoutinesService: ChannelRoutineService | null = null;
+let projectPlansService: ProjectPlanService | null = null;
 let isQuitting = false;
 // COSGRAL W12 (BE-W): "keep running in the background": the tray icon that brings the hidden window back (the setting is applied from the app settings IPC).
 installBackgroundMode(
@@ -1020,6 +1023,7 @@ function registerIpcHandlers(
   });
   registerTasksViewIpc(() => tasksViewService);
   registerChannelRoutinesIpc(() => channelRoutinesService);
+  registerProjectPlansIpc(() => projectPlansService);
   registerApprovalRulesIpc(() => agentService?.approvalRules ?? null);
   // COSGRAL W8-BE1: the access levels of the agents (this computer only).
   registerAccessIpc(() => agentService);
@@ -1994,6 +1998,15 @@ if (!hasSingleInstanceLock) {
             emit: (event) => forwardAgentEvent("local", event),
           });
           channelRoutinesService.start();
+          // COSGRAL: the plan of a project made by its lead; skills and the plugin review only after separate answers of the person.
+          projectPlansService = createProjectPlanService({
+            database: store.database,
+            channels: channelStore,
+            engine,
+            skills: service.skillLibrary,
+            marketplace: service.marketplace,
+            plugins: () => pluginCatalogService,
+          });
           scheduleViewService = new ScheduleViewService({
             routines: () => routineStore.list(),
             runs: (routineId) => routineStore.listRuns(routineId),

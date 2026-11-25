@@ -17,6 +17,7 @@ import { ChannelHistoryWindowSetting } from "./ChannelHistoryWindow";
 import { ChannelRoutinesPanel } from "./ChannelRoutinesPanel";
 import { ChatTasksSwitch } from "./ChatTasksSwitch";
 import { ChannelMemorySettingsView } from "./MemorySettings";
+import { ProjectPlanPill } from "./ProjectPlanPanel";
 import { Button, NativeSelect, Textarea, ViewTabPanel } from "./ui";
 import { ArrowUp, Brain, Clock, CornerUpLeft, FileText, RefreshCw, X } from "./ui/icons";
 
@@ -177,6 +178,9 @@ export function ChannelView(props: {
             channelLabel={`# ${props.channel.name}`}
           />
           <div class="channel-view-settings" ref={(element) => (settings = element)}>
+            <Show when={window.openbot?.projectPlans}>
+              <ProjectPlanPill channel={props.channel} onToggle={onlyOne} />
+            </Show>
             <Show when={props.channel.instructions}>
               <details onToggle={onlyOne}>
                 <summary title={t("Instructions")}>

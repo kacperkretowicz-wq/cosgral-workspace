@@ -125,6 +125,7 @@ import { createMockMessengers } from "./mock-messengers";
 import { createMockMobileConnect } from "./mock-mobile-connect";
 import { createMockPlans } from "./mock-plans";
 import { createMockPluginCatalog } from "./mock-plugin-catalog";
+import { createMockProjectPlans } from "./mock-project-plans";
 import { createMockProviderCatalog } from "./mock-provider-catalog";
 import { createMockRemoteDesktop } from "./mock-remote-desktop";
 import { createMockRoutines } from "./mock-routines";
@@ -1528,6 +1529,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       channels: () => mockChannels,
       emit: (event) => emitAgentEvent(event),
     }),
+    // COSGRAL: the plan of a project (demo; the lead "writes" a canned plan at once).
+    projectPlans: createMockProjectPlans(),
     // COSGRAL W10-KK2: Telegram bridge (demo; nothing is contacted; `simulate` plays a message coming in).
     messengers: createMockMessengers((event) => emitAgentEvent(event)),
     // COSGRAL W11-KK (d): Vault connectors and the person's Vault tools (demo; no manager is touched).

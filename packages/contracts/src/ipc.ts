@@ -44,6 +44,7 @@ export * from "./ipc-mobile-connect";
 export * from "./ipc-phone-access";
 export * from "./ipc-plan";
 export * from "./ipc-plugin-catalog";
+export * from "./ipc-project-plans";
 export * from "./ipc-provider-catalog";
 export * from "./ipc-providers";
 export * from "./ipc-queue-holds";
