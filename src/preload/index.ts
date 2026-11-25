@@ -116,6 +116,7 @@ import { createMobileConnectApi } from "./mobile-connect-api";
 import { createPhoneApi } from "./phone-api";
 import { createPlansApi } from "./plans-api";
 import { createPluginCatalogApi } from "./plugin-catalog-api";
+import { createProjectPlansApi } from "./project-plans-api";
 import { createProviderCatalogApi } from "./provider-catalog-api";
 import { createRemoteDesktopApi } from "./remote-desktop-api";
 import { createServerSettingsApi } from "./server-settings-api";
@@ -887,6 +888,7 @@ const openbotApi: OpenBotDesktopApi = {
   usageReport: createUsageReportApi(invokeAgent),
   tasksView: createTasksViewApi(invokeAgent),
   channelRoutines: createChannelRoutinesApi(invokeAgent),
+  projectPlans: createProjectPlansApi(invokeAgent),
   schedule: createScheduleApi(invokeAgent),
   threadTabs: createThreadTabsApi(invokeAgent),
   messengers: createMessengersApi(invokeAgent),

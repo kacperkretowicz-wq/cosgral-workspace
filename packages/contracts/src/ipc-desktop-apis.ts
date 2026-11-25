@@ -132,6 +132,7 @@ import type { MobileConnectDesktopApi } from "./ipc-mobile-connect";
 import type { PhoneDesktopApi } from "./ipc-phone-access";
 import type { PlansDesktopApi } from "./ipc-plan";
 import type { PluginCatalogDesktopApi } from "./ipc-plugin-catalog";
+import type { ProjectPlansDesktopApi } from "./ipc-project-plans";
 import type { ProviderCatalogDesktopApi } from "./ipc-provider-catalog";
 import type {
   AcpAgentConfig,
@@ -702,6 +703,8 @@ export interface OpenBotDesktopApi {
   threadUndo?: ThreadUndoDesktopApi;
   /** COSGRAL W12 (BE-R): routines of a channel (the lead gets the prompt as a message at the planned time). */
   channelRoutines?: ChannelRoutinesDesktopApi;
+  /** COSGRAL: the plan of a project made by its lead, with separate yes or no for skills and for the plugin review (this computer only). */
+  projectPlans?: ProjectPlansDesktopApi;
   /** COSGRAL W6-BE3: the plan card (this computer only). Optional until every mock implements it. */
   plans?: PlansDesktopApi;
   /** COSGRAL W6-BE4: the subagents of a thread, and Stop (this computer only). Optional until every mock implements it. */
