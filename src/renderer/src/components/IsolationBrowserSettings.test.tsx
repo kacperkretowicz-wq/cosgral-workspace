@@ -1,8 +1,10 @@
 import type { AgentEvent } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { flush } from "solid-js";
 import { describe, expect, it } from "vitest";
 import { createMockBrowserProfiles } from "../../stories/mock-browser-profiles";
 import { createMockIsolation, demoAvailability } from "../../stories/mock-isolation";
+import { setLanguage } from "../i18n";
 import { BrowserProfileSettings } from "./BrowserProfileSettings";
 import { IsolationSettings } from "./IsolationSettings";
 
@@ -36,7 +38,22 @@ describe("W8 isolation and browser settings", () => {
     api.setAvailability({ ...demoAvailability(), jobObject: { ok: false, reason: "Host blocked." } });
     render(() => <IsolationSettings botId="demo" api={api} onEvent={() => () => {}} />);
     await screen.findByText(/Host blocked/);
-    await screen.findByText(/isolation-unavailable: file and shell tools below Full access are refused/);
+    await screen.findByText(/Process isolation is unavailable: file and shell tools below Full access are refused/);
+  });
+  it("names the isolation state in Polish instead of printing the raw state (seen in the real window)", async () => {
+    setLanguage("pl");
+    flush();
+    try {
+      const api = createMockIsolation(() => {});
+      api.setAvailability({ ...demoAvailability(), jobObject: { ok: false, reason: "Host blocked." } });
+      render(() => <IsolationSettings botId="demo" api={api} onEvent={() => () => {}} />);
+      await screen.findByText("Izolacja: niedostępna");
+      await screen.findByText(/Izolacja procesów jest niedostępna/);
+      expect(screen.queryByText(/unavailable|izolacja-niedostępna/)).not.toBeInTheDocument();
+    } finally {
+      setLanguage("en");
+      flush();
+    }
   });
   it("requests approval without switching isolation off", async () => {
     const api = createMockIsolation(() => {}, { demo: { name: "Demo", ownProcesses: true } });

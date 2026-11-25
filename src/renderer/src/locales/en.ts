@@ -1828,12 +1828,15 @@ export const en = {
   "Process isolation": "Process isolation",
   "Isolation is unavailable on this connection.": "Isolation is unavailable on this connection.",
   "Loading isolation…": "Loading isolation…",
-  "Isolation: {state}": "Isolation: {state}",
+  "Isolation: active": "Isolation: active",
+  "Isolation: shared process": "Isolation: shared process",
+  "Isolation: unavailable": "Isolation: unavailable",
+  "Isolation: off": "Isolation: off",
   "Codex: one shared process, not isolated per agent": "Codex: one shared process, not isolated per agent",
   "Process limits are active. This does not provide an AppContainer disk boundary.":
     "Process limits are active. This does not provide an AppContainer disk boundary.",
-  "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.":
-    "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
+  "Process isolation is unavailable: file and shell tools below Full access are refused. Access is not widened automatically.":
+    "Process isolation is unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
   "Enable process isolation": "Enable process isolation",
   "Access level": "Access level",
   "Computer Use and the camera ask for separate permission. Excluded folders remain forbidden at every level, including Full.":

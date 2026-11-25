@@ -78,7 +78,15 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
       >
         {(current) => (
           <>
-            <Text>{t("Isolation: {state}", { state: current().state })}</Text>
+            <Text>
+              {current().state === "active"
+                ? t("Isolation: active")
+                : current().state === "shared-process"
+                  ? t("Isolation: shared process")
+                  : current().state === "unavailable"
+                    ? t("Isolation: unavailable")
+                    : t("Isolation: off")}
+            </Text>
             <Show when={current().state === "shared-process"}>
               <Text>{t("Codex: one shared process, not isolated per agent")}</Text>
             </Show>
@@ -91,7 +99,7 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
             <Show when={current().state === "unavailable"}>
               <Text>
                 {t(
-                  "isolation-unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
+                  "Process isolation is unavailable: file and shell tools below Full access are refused. Access is not widened automatically.",
                 )}
               </Text>
             </Show>
