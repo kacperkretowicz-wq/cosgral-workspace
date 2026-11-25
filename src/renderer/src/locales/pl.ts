@@ -211,6 +211,15 @@ export const pl = {
   "Default provider": "Domyślny dostawca",
   "No account yet? Free models are planned. For now, sign in to Codex or Claude, or add your own key later on the Providers page.":
     "Nie masz jeszcze konta? Darmowe modele są w planach. Na razie zaloguj się do Codex albo Claude albo dodaj własny klucz później na stronie Dostawcy.",
+  View: "Widok",
+  List: "Lista",
+  Month: "Miesiąc",
+  "Previous month": "Poprzedni miesiąc",
+  "Next month": "Następny miesiąc",
+  "{date}: planned {planned}, done {ran}, failed {failed}":
+    "{date}: zaplanowane {planned}, wykonane {ran}, z błędem {failed}",
+  "Nothing is planned or has run on this day.": "Tego dnia nic nie jest zaplanowane i nic się nie uruchomiło.",
+  "Pick a day to see its runs.": "Wybierz dzień, żeby zobaczyć jego uruchomienia.",
   "Used for new local agents. You can change it for each agent later.":
     "Używany dla nowych lokalnych agentów. Później możesz go zmienić dla każdego agenta.",
   "Paste an cosgral:// invitation link": "Wklej link zaproszenia cosgral://",
