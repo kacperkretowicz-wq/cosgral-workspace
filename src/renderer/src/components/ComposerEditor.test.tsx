@@ -2,9 +2,10 @@ import { serializeAttachmentReference } from "@openbot/contracts/attachment-refe
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { DraftAttachment } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
-import { createSignal } from "solid-js";
+import { createSignal, flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BotProfile } from "../data";
+import { setLanguage } from "../i18n";
 import { ComposerEditor } from "./ComposerEditor";
 
 const originalMatchMedia = window.matchMedia;
@@ -104,6 +105,33 @@ describe("ComposerEditor slash commands", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: /compact/ })).not.toBeInTheDocument());
     await fireEvent.keyDown(editor, { key: "Enter" });
     expect(onValueChange).toHaveBeenLastCalledWith("/new-thread ");
+  });
+
+  it("describes the program commands in Polish in a Polish window (seen in English in the real window)", async () => {
+    setLanguage("pl");
+    flush();
+    try {
+      Object.assign(window, {
+        openbot: {
+          composer: {
+            listSlashCommands: async () => [
+              { name: "compact", hint: "Shorten the conversation to free context", kind: "program" as const },
+              { name: "side", hint: "Ask a side question without touching the chat", kind: "program" as const },
+            ],
+          },
+        },
+      });
+      const { editor } = renderComposer();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      editor.textContent = "/";
+      placeCaretAtEnd(editor);
+      await fireEvent.input(editor);
+      expect(await screen.findByText("Skróć rozmowę, żeby zwolnić miejsce w pamięci agenta")).toBeInTheDocument();
+      expect(screen.getByText("Zadaj pytanie boczne, nie ruszając rozmowy")).toBeInTheDocument();
+    } finally {
+      setLanguage("en");
+      flush();
+    }
   });
 
   it("shows no list without the composer contract or when the slash is not at the start", async () => {

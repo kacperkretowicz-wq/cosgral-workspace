@@ -265,6 +265,9 @@ export const en = {
   "Could not ask the side question.": "Could not ask the side question.",
   "Could not stop the side question.": "Could not stop the side question.",
   "Side question": "Side question",
+  "Shorten the conversation to free context": "Shorten the conversation to free context",
+  "Start an empty thread": "Start an empty thread",
+  "Ask a side question without touching the chat": "Ask a side question without touching the chat",
   "The answer stays here and is not added to the conversation.":
     "The answer stays here and is not added to the conversation.",
   "Side questions are not available in this version.": "Side questions are not available in this version.",
