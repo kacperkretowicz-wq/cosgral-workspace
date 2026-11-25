@@ -98,6 +98,8 @@ export interface InstallMarketplaceAgentInput {
   itemId: string;
   /** The new agent's name; the item's title when omitted. */
   name?: string;
+  /** The new agent's role; the item's role when omitted. The window passes both in its own language. */
+  role?: string;
 }
 
 /**

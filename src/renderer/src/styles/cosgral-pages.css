@@ -513,6 +513,28 @@
   transform: none;
 }
 
+/* The details of a catalog card: a panel under the grid, with its own frame, so it reads as the answer to the click. */
+.marketplace-detail {
+  display: grid;
+  gap: var(--openbot-space-3);
+  margin-top: var(--openbot-space-4);
+  border: 1px solid var(--cosgral-border);
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-bg-raised);
+  padding: var(--openbot-space-4);
+  scroll-margin-block: var(--openbot-space-4);
+}
+
+.marketplace-detail > h2,
+.marketplace-detail > p,
+.marketplace-detail ul {
+  margin: 0;
+}
+
+.marketplace-detail:focus {
+  outline: none;
+}
+
 .marketplace-detail pre {
   max-height: 280px;
   overflow: auto;

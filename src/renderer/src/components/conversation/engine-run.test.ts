@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { engineRunSummary, parseEngineRun } from "./engine-run";
+import { flush } from "solid-js";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../i18n";
+import { engineRunSummary, engineRunTitle, parseEngineRun } from "./engine-run";
 
 const routine = [
   '[COSGRAL routine run] "Morning "report"" (schedule, 09:00 Europe/Warsaw)',
@@ -55,5 +57,38 @@ describe("parseEngineRun", () => {
     expect(parseEngineRun("Hello")).toBeNull();
     expect(parseEngineRun("[COSGRAL something else] x")).toBeNull();
     expect(engineRunSummary("Hello")).toBeNull();
+  });
+});
+
+describe("engineRunTitle", () => {
+  afterEach(() => {
+    setLanguage("en");
+    flush();
+  });
+
+  it("turns the header a workflow step puts in a thread title into who started it, in the window language", () => {
+    // The thread title is the first line of the message, cut at 60 characters.
+    const title = '[COSGRAL workflow run] "Nowy przepływ", step "Agent". A wor…';
+    expect(engineRunTitle(title)).toBe("Workflow “Nowy przepływ” · step “Agent”");
+    setLanguage("pl");
+    flush();
+    expect(engineRunTitle(title)).toBe("Przepływ „Nowy przepływ” · krok „Agent”");
+  });
+
+  it("still names the workflow when the cut falls inside the step, and names a routine", () => {
+    setLanguage("pl");
+    flush();
+    expect(engineRunTitle('[COSGRAL workflow run] "Raport tygodniowy", step "Pisanie dłu…')).toBe(
+      "Przepływ „Raport tygodniowy”",
+    );
+    expect(engineRunTitle('[COSGRAL workflow run] "Bardzo długa nazwa przepływu, która się nie mie…')).toBe(
+      "Uruchomienie przepływu",
+    );
+    expect(engineRunTitle('[COSGRAL routine run] "Poranek" (schedule, 09:00 Europe/Warsaw)')).toBe("Rutyna „Poranek”");
+  });
+
+  it("leaves any other title alone", () => {
+    expect(engineRunTitle("Plan the launch")).toBeNull();
+    expect(engineRunTitle("[COSGRAL something else] x")).toBeNull();
   });
 });

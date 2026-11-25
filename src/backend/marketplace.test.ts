@@ -328,6 +328,20 @@ describe("Marketplace agent install", () => {
     expect(named.bot?.name).toBe("Project coordinator");
   });
 
+  it("takes the role the window shows (its language) and falls back to the item's role", async () => {
+    const { marketplace, created } = await setup();
+    await marketplace.installAgent({
+      itemId: "agent:project-coordinator",
+      name: "Koordynator",
+      role: " Projekty i terminy ",
+    });
+    await marketplace.installAgent({ itemId: "agent:project-coordinator", role: "  " });
+    expect(created.map((item) => [item.name, item.role])).toEqual([
+      ["Koordynator", "Projekty i terminy"],
+      ["Project coordinator", "Projects and follow-ups"],
+    ]);
+  });
+
   it("uninstalls an agent item by deleting only an agent created from it", async () => {
     const { marketplace, deleted } = await setup();
     const { botId } = await marketplace.installAgent({ itemId: "agent:project-coordinator" });

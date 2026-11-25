@@ -1,5 +1,4 @@
 import {
-  describeWorkflowDiff,
   diffWorkflowGraphs,
   type Workflow,
   type WorkflowGraph,
@@ -7,6 +6,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { appLocale, t, tn } from "../i18n";
+import { workflowDiffText } from "../workflow-text";
 import { Badge, Button } from "./ui";
 
 function savedLabel(iso: string): string {
@@ -63,7 +63,7 @@ export function WorkflowVersionsPanel(props: {
       for (const item of list) {
         if (item.current) continue;
         const older = await api.getVersion({ workflowId, version: item.number });
-        next[item.number] = describeWorkflowDiff(diffWorkflowGraphs(older, base));
+        next[item.number] = workflowDiffText(diffWorkflowGraphs(older, base));
       }
       if (n === serial) setChanges(next);
     } catch (cause) {

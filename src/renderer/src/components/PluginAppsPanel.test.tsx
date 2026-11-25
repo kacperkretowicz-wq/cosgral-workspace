@@ -77,3 +77,23 @@ it("says so without the contract", () => {
   render(() => <PluginAppsPanel />);
   expect(screen.getByText("Apps are not available in this version.")).toBeInTheDocument();
 });
+
+it("says what is missing when no catalog is loaded, and loads one from a folder the person chooses", async () => {
+  const empty = {
+    source: "none",
+    catalogVersion: null,
+    count: 0,
+    loadedAt: null,
+    skipped: 0,
+    directory: null,
+  } as const;
+  vi.spyOn(api, "list").mockResolvedValueOnce({ info: empty, plugins: [], total: 0 });
+  const choose = vi.spyOn(api, "chooseCatalogFolder");
+  render(() => <PluginAppsPanel />);
+  // No pointer to a "server settings" screen that does not exist: the way out is on the card itself.
+  expect(await screen.findByText(/No app catalog is loaded yet/)).toBeInTheDocument();
+  expect(screen.queryByText(/server settings/)).not.toBeInTheDocument();
+  await fireEvent.click(screen.getByRole("button", { name: "Choose the catalog folder" }));
+  await waitFor(() => expect(choose).toHaveBeenCalledOnce());
+  expect(await screen.findByRole("button", { name: "Demo Data" })).toBeInTheDocument();
+});

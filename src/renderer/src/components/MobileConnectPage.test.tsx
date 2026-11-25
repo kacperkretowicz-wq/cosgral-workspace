@@ -1,6 +1,7 @@
 import type { MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { fireEvent, render, screen } from "@solidjs/testing-library";
+import { flush } from "solid-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setLanguage } from "../i18n";
 import { formatMobileCountdown, MobileConnectView, type MobileConnectViewProps } from "./MobileConnectPage";
@@ -106,6 +107,20 @@ describe("MobileConnectView", () => {
     expect(p.onCancelPairing).toHaveBeenCalledOnce();
     expect(p.onDisable).toHaveBeenCalledOnce();
     expect(p.onCopy).toHaveBeenCalledWith("https://127.0.0.1:47930/app/#v=1&t=demo");
+  });
+
+  it("without any agent the pairing button is off and says why, in Polish too (the card appears in an agent's row)", () => {
+    const view = render(() => <MobileConnectView {...props({ state: state({ enabled: false }), noAgents: true })} />);
+    expect(screen.getByRole("button", { name: "Turn on and pair a phone" })).toBeDisabled();
+    expect(screen.getByText("Create an agent first: the pairing card appears in an agent's row.")).toBeInTheDocument();
+    view.unmount();
+    setLanguage("pl");
+    flush();
+    render(() => <MobileConnectView {...props({ state: state({ enabled: false }), noAgents: true })} />);
+    expect(screen.getByRole("button", { name: "Włącz i sparuj telefon" })).toBeDisabled();
+    expect(
+      screen.getByText("Najpierw utwórz agenta: karta parowania pojawia się w wierszu agenta."),
+    ).toBeInTheDocument();
   });
 
   it("describes LAN and reports the chosen exposure", async () => {

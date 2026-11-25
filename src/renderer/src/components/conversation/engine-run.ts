@@ -49,3 +49,25 @@ export function engineRunSummary(body: string): string | null {
       : t("Workflow “{name}” · step “{step}”", { name: run.name, step: run.step });
   return `${label}: ${run.text}`;
 }
+
+const WORKFLOW_TITLE = /^\[COSGRAL workflow run\] "(.*?)", step "(.*?)"(?:\.|$)/;
+const WORKFLOW_NAME_ONLY = /^\[COSGRAL workflow run\] "(.*?)"(?:,|\.|$)/;
+const ROUTINE_TITLE = /^\[COSGRAL routine run\] "(.*?)" \(/;
+
+/**
+ * A thread that a routine or a workflow started is titled after its first line, the agent's header ("[COSGRAL workflow
+ * run] "Release", step "Notes". A workflow asks…", cut at 60 characters). The window shows who started it instead, in its
+ * own language; null for any other title.
+ */
+export function engineRunTitle(title: string): string | null {
+  if (!title.startsWith("[COSGRAL ")) return null;
+  const workflow = WORKFLOW_TITLE.exec(title);
+  if (workflow) return t("Workflow “{name}” · step “{step}”", { name: workflow[1] ?? "", step: workflow[2] ?? "" });
+  const named = WORKFLOW_NAME_ONLY.exec(title);
+  if (named) return t("Workflow “{name}”", { name: named[1] ?? "" });
+  if (title.startsWith("[COSGRAL workflow run]")) return t("Workflow run");
+  const routine = ROUTINE_TITLE.exec(title);
+  if (routine) return t("Routine “{name}”", { name: routine[1] ?? "" });
+  if (title.startsWith("[COSGRAL routine run]")) return t("Routine run");
+  return null;
+}
