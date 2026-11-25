@@ -4,6 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RoutineEditForm, RoutineForm, RoutinePanel } from "./RoutinePanel";
 
 describe("RoutineForm", () => {
+  it("explains each trigger in a plain sentence under the choice", async () => {
+    render(() => <RoutineForm bots={[{ id: "a", name: "Alex" }]} onCreate={vi.fn()} />);
+    expect(screen.getByText(/after the number of minutes you give/)).toBeInTheDocument();
+    await fireEvent.change(screen.getByLabelText("Trigger"), { target: { value: "cron" } });
+    expect(screen.getByText(/0 9 \* \* 1-5 means 9:00 from Monday to Friday/)).toBeInTheDocument();
+    await fireEvent.change(screen.getByLabelText("Trigger"), { target: { value: "webhook" } });
+    expect(screen.getByText(/another program sends a signal/)).toBeInTheDocument();
+  });
+
   it("creates a daily schedule with its time zone", async () => {
     const create = vi.fn().mockResolvedValue(undefined);
     render(() => <RoutineForm bots={[{ id: "a", name: "Alex" }]} onCreate={create} />);

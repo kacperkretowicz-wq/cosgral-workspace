@@ -740,6 +740,13 @@ export const pl = {
   "Without it the program makes no network request about updates by itself.":
     "Bez tego program sam nie wysyła żadnych zapytań o aktualizacje.",
   "How often": "Jak często",
+  "Starts again and again, after the number of minutes you give.":
+    "Uruchamia się raz za razem, co podaną liczbę minut.",
+  "Starts every day at the time you choose.": "Uruchamia się codziennie o wybranej godzinie.",
+  "A schedule written as five fields: minute, hour, day of the month, month, day of the week. For example 0 9 * * 1-5 means 9:00 from Monday to Friday.":
+    "Harmonogram zapisany w pięciu polach: minuta, godzina, dzień miesiąca, miesiąc, dzień tygodnia. Na przykład 0 9 * * 1-5 to 9:00 od poniedziałku do piątku.",
+  "Starts when another program sends a signal to the address you get after creating the routine. The secret key is shown once.":
+    "Uruchamia się, gdy inny program wyśle sygnał na adres, który dostaniesz po utworzeniu rutyny. Tajny klucz pokażemy tylko raz.",
   "Install a downloaded update when the program closes": "Instaluj pobraną aktualizację przy zamknięciu programu",
   "Otherwise it waits until you restart yourself.": "W przeciwnym razie czeka, aż sam uruchomisz program ponownie.",
   "Restart when idle": "Uruchom ponownie, gdy będę bezczynny",

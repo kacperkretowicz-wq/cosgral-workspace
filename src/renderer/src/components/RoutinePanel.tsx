@@ -16,6 +16,25 @@ import { RefreshCw } from "./ui/icons";
 
 type Bot = { id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>;
 type FormTrigger = "interval" | "daily" | "cron" | "webhook";
+
+/** One plain sentence under the trigger choice: what it does, so nobody has to know what a cron or a webhook is. */
+function TriggerHint(props: { kind: FormTrigger }) {
+  return (
+    <p class="routine-hint">
+      {props.kind === "interval"
+        ? t("Starts again and again, after the number of minutes you give.")
+        : props.kind === "daily"
+          ? t("Starts every day at the time you choose.")
+          : props.kind === "cron"
+            ? t(
+                "A schedule written as five fields: minute, hour, day of the month, month, day of the week. For example 0 9 * * 1-5 means 9:00 from Monday to Friday.",
+              )
+            : t(
+                "Starts when another program sends a signal to the address you get after creating the routine. The secret key is shown once.",
+              )}
+    </p>
+  );
+}
 export function RoutineForm(props: {
   bots: Bot[];
   botId?: string;
@@ -95,6 +114,7 @@ export function RoutineForm(props: {
           <option value="webhook">{t("Webhook")}</option>
         </NativeSelect>
       </label>
+      <TriggerHint kind={trigger()} />
       <Show when={trigger() === "interval"}>
         <label>
           {t("Minutes")}
@@ -216,6 +236,7 @@ export function RoutineEditForm(props: {
             <option value="cron">{t("Cron")}</option>
           </NativeSelect>
         </label>
+        <TriggerHint kind={kind()} />
         <Show when={kind() === "interval"}>
           <label>
             {t("Minutes")}
