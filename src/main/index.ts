@@ -302,7 +302,8 @@ const appIconPath = resolveAppIconPath({
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "openbot-app",
-    privileges: { standard: true, secure: true, supportFetchAPI: true },
+    // stream: the wave wallpaper video is a <video> source served by this scheme.
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
   },
   {
     scheme: "openbot-attachment",
@@ -1517,6 +1518,9 @@ if (!hasSingleInstanceLock) {
     .whenReady()
     .then(async () => {
       if (process.platform === "darwin") app.setAsDefaultProtocolClient("cosgral");
+      // Windows: the installed app owns cosgral:// so the Hub's WORKSPACE page (cosgral://open)
+      // can start or focus it. Dev runs from a folder are left alone (they are not the installed app).
+      if (process.platform === "win32" && app.isPackaged) app.setAsDefaultProtocolClient("cosgral");
       if (process.platform === "darwin") app.dock?.setIcon(appIconPath);
       configureContentSecurityPolicy();
       mainWindow = createWindow();
@@ -2761,9 +2765,17 @@ function applicationContentType(
   | "text/css; charset=utf-8"
   | "image/svg+xml"
   | "image/png"
+  | "image/jpeg"
+  | "video/webm"
   | "font/woff2"
   | "application/octet-stream" {
   switch (extname(path).toLowerCase()) {
+    // The Hub wave wallpaper (HubAmbient): its poster frame, grain and looping video.
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".webm":
+      return "video/webm";
     case ".html":
       return "text/html; charset=utf-8";
     case ".js":

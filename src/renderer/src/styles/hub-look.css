@@ -1,0 +1,795 @@
+/*
+ * COSGRAL Hub look (23.11). The Workspace dresses exactly like COSGRAL Hub: the same wave wallpaper, Satoshi,
+ * graphite glass panels, white "paper" tiles and pills, the black sliding pill for the current place, and the
+ * Hub's motion (tiles lift 3 px on hover, press in to 0.968 with the Hub spring, glass rises in a 55 ms cascade).
+ * It replaces the earlier Azure Glass layer. Layout, order, sizes of the shell and every setting stay as they are:
+ * only surfaces, type, colour and motion change here.
+ *
+ * Recipes are read off the running Hub (liquid-glass-v6, "cosgral" wallpaper, dark tone, mixed tiles):
+ *   graphite glass  rgb(30 32 38 / .41) + top sheen, blur 14 px saturate 1.5, rim inset 0 1px 1px #fff8
+ *   graphite tile   #111212 + two soft white radial lights, inset 0 1px 1px #fff3
+ *   white tile      #fff, ink #202121, inset 0 1px 1px #fffb, 0 16px 42px rgb(20 20 24 / .075)
+ *   pill / field    999 px, white fill + #202121 ink for the main action, glass for the rest
+ *   motion          cubic-bezier(.22,.61,.36,1); hover lift 560 ms; press 140 ms to scale .968
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* The Workspace's own names follow the Hub. */
+  --openbot-main: transparent;
+  --openbot-main-deep: transparent;
+  --openbot-surface-light: var(--cosgral-hub-paper);
+  --openbot-text-on-light: var(--cosgral-hub-paper-ink);
+  --openbot-text-on-accent: var(--cosgral-hub-hex-10131a);
+  --openbot-radius-card: var(--cosgral-radius-md);
+  --openbot-radius-sheet: var(--cosgral-hub-radius-sheet);
+  --shell-gap: 8px;
+}
+
+/* Wallpaper -------------------------------------------------------------------------------------------------------- */
+
+html,
+body {
+  background:
+    radial-gradient(at 12% 0%, var(--cosgral-hub-hex-202536), var(--cosgral-hub-black-00) 66%),
+    radial-gradient(at 90% 90%, var(--cosgral-hub-hex-0c151e), var(--cosgral-hub-black-00) 65%),
+    var(--cosgral-hub-hex-080a0f);
+}
+
+body {
+  font-family: var(--openbot-font-sans);
+  font-feature-settings: "ss01" 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+.hub-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(at 12% 0%, var(--cosgral-hub-hex-202536), var(--cosgral-hub-black-00) 66%),
+    radial-gradient(at 90% 90%, var(--cosgral-hub-hex-0c151e), var(--cosgral-hub-black-00) 65%),
+    var(--cosgral-hub-hex-080a0f);
+}
+
+.hub-ambient-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 500ms var(--cosgral-hub-ease);
+}
+
+/* Same strength as the Hub's "cosgral" wallpaper in the dark tone. */
+.hub-ambient-scene[data-ready="true"] {
+  opacity: 0.3;
+}
+
+.hub-ambient-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hub-ambient-tints {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 5% 15%, var(--cosgral-hub-rgb-185-212-255-12), transparent 50%),
+    radial-gradient(ellipse at 95% 80%, var(--cosgral-hub-rgb-185-212-255-06), transparent 45%);
+}
+
+.hub-ambient-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--cosgral-hub-rgb-3-3-3-28);
+}
+
+/* Everything the app draws sits above the wallpaper. */
+#root > :not(.hub-ambient) {
+  position: relative;
+  z-index: 1;
+}
+
+/* The Hub's charcoal grain, barely there. */
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: url("../assets/ambient/grain.jpg") 0 0 / 280px;
+  content: "";
+  mix-blend-mode: overlay;
+  opacity: 0.018;
+  pointer-events: none;
+}
+
+.app-frame,
+.initial-setup-screen {
+  background: transparent;
+}
+
+.panel-edge {
+  border-right-color: transparent;
+}
+
+/* Type ------------------------------------------------------------------------------------------------------------- */
+
+:where(h1, h2, h3, .ui-heading) {
+  font-family: var(--openbot-font-sans);
+  letter-spacing: -0.03em;
+}
+
+.work-page-heading h1,
+.new-agent-page h1,
+.account-login h1,
+.initial-setup-screen h1 {
+  font-weight: 400;
+  letter-spacing: -0.055em;
+}
+
+.work-page-heading h1 {
+  font-size: var(--cosgral-hub-title-size);
+  line-height: 1.1;
+}
+
+/* Panels: graphite glass floating on the waves -------------------------------------------------------------------- */
+
+.app-frame > .sidebar,
+.app-frame-with-page-rail .conversation-panel,
+.app-frame-with-page-rail .direct-conversation,
+.app-frame-with-page-rail .coming-soon,
+.app-frame-with-page-rail .w2-library,
+.app-frame-with-page-rail .work-page,
+.app-frame-with-page-rail .new-agent-page {
+  border: 0;
+  border-radius: var(--cosgral-hub-radius-sheet);
+  background: var(--cosgral-hub-glass);
+  box-shadow: var(--cosgral-hub-glass-rim);
+  -webkit-backdrop-filter: var(--cosgral-hub-glass-filter);
+  backdrop-filter: var(--cosgral-hub-glass-filter);
+}
+
+.app-frame > .sidebar {
+  margin-left: 4px;
+}
+
+.app-frame-with-page-rail .work-page,
+.app-frame-with-page-rail .new-agent-page {
+  margin-right: var(--shell-gap);
+  margin-bottom: var(--shell-gap);
+}
+
+.sidebar-topbar,
+.work-page-header {
+  border-bottom-color: transparent;
+}
+
+.work-page-header::after {
+  display: none;
+}
+
+/* Page rail: the Hub sidebar, white paper with the black sliding pill -------------------------------------------- */
+
+.page-rail {
+  margin: var(--shell-gap) 0 var(--shell-gap) 4px;
+  border-radius: var(--cosgral-hub-radius-hero);
+  background: var(--cosgral-hub-paper);
+  box-shadow: var(--cosgral-hub-paper-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+/* The cube sits at the top of the white rail, like the Hub's COSGRAL mark. */
+.page-rail .page-rail-logo {
+  top: 8px;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  border-radius: var(--cosgral-radius-pill);
+}
+
+.page-rail .page-rail-button[data-variant] {
+  border-radius: var(--cosgral-radius-pill);
+  background: transparent;
+  box-shadow: none;
+  color: var(--cosgral-hub-paper-ink);
+  transition:
+    background-color 300ms var(--cosgral-hub-ease),
+    color 300ms var(--cosgral-hub-ease),
+    transform 560ms var(--cosgral-hub-spring);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .page-rail .page-rail-button[data-variant]:hover:not(:disabled) {
+    background: var(--cosgral-hub-rgb-16-17-17-06);
+    color: var(--cosgral-hub-paper-ink);
+  }
+}
+
+.page-rail .page-rail-button-active[data-variant],
+.page-rail .page-rail-button-active[data-variant]:hover:not(:disabled) {
+  background: var(--cosgral-hub-black);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-18);
+  color: var(--cosgral-hub-hex-faf9f6);
+}
+
+.page-rail .page-rail-mark,
+.page-rail .page-rail-button-active .page-rail-mark {
+  display: none;
+}
+
+.page-rail .page-rail-tools .ui-button,
+.page-rail-tools button {
+  color: var(--cosgral-hub-paper-ink);
+}
+
+/* Server rail: quiet monograms on the waves. */
+.server-rail-button-active .server-rail-monogram,
+.server-rail-button:hover .server-rail-monogram {
+  background: var(--cosgral-hub-paper);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.server-rail-mark,
+.server-rail-button-active .server-rail-mark {
+  background: var(--cosgral-hub-ink);
+}
+
+/* Sidebar: agent list ---------------------------------------------------------------------------------------------- */
+
+.sidebar .search-field,
+.sidebar .sidebar-compact-search {
+  border: 0;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-paper);
+  box-shadow: var(--cosgral-hub-pill-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.sidebar .search-field input,
+.sidebar .search-field svg,
+.sidebar .sidebar-compact-search {
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.sidebar .search-field input::placeholder {
+  color: var(--cosgral-hub-paper-muted);
+}
+
+.sidebar .spaces-rail {
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-ink-08);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-14);
+}
+
+.sidebar .bot-row {
+  border-radius: var(--cosgral-radius-md);
+  transition:
+    background-color 300ms var(--cosgral-hub-ease),
+    box-shadow 320ms var(--cosgral-hub-ease),
+    transform 560ms var(--cosgral-hub-spring);
+}
+
+.sidebar .bot-row-active {
+  background: var(--cosgral-hub-tile);
+  box-shadow: var(--cosgral-hub-tile-rim);
+}
+
+/* Tiles: graphite glass cards with a soft light, lifting like the Hub tiles ------------------------------------- */
+
+.ui-card,
+.provider-account-list,
+.provider-account-settings,
+.settings-notification-table,
+.channel-member-list,
+.w2-panel,
+.work-page .usage-table,
+.work-page .usage-split,
+.usage-machine,
+.new-agent-studio,
+.work-page .w2-item,
+.work-page .usage-totals > div,
+.work-page .usage-chart,
+.marketplace-shell .plugin-row,
+.agent-card {
+  border-color: transparent;
+  border-radius: var(--cosgral-radius-md);
+  background: var(--cosgral-hub-tile);
+  box-shadow: var(--cosgral-hub-tile-rim);
+}
+
+.work-page .usage-totals > div {
+  min-height: 150px;
+  align-content: start;
+}
+
+/* The first total is a white paper tile, like the Hub's stats card. */
+.work-page .usage-totals > div:first-child {
+  background: var(--cosgral-hub-paper);
+  box-shadow: var(--cosgral-hub-paper-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.work-page
+  .usage-totals
+  > div:first-child
+  :is(p, span, strong, dt, dd, small):not(.usage-stat-icon, .usage-stat-icon *) {
+  color: inherit;
+}
+
+/* Agent stage on "New agent": the creature sits on a graphite tile. */
+.new-agent-stage {
+  border-color: transparent;
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-hub-tile);
+  box-shadow: var(--cosgral-hub-tile-rim);
+}
+
+/* Hover lift and press, the Hub's "drop" feel. Only for things that are clickable. */
+:is(
+  .work-page .w2-item,
+  .marketplace-shell .plugin-row,
+  .agent-card,
+  .new-agent-template,
+  .provider-account-row,
+  .sidebar .bot-row
+) {
+  transition:
+    transform 560ms var(--cosgral-hub-spring),
+    box-shadow 320ms var(--cosgral-hub-ease),
+    background-color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.work-page .w2-item, .marketplace-shell .plugin-row, .agent-card, .new-agent-template):hover {
+    box-shadow: var(--cosgral-hub-tile-rim-hover);
+    transform: translateY(-3px) scale(1.008);
+  }
+
+  .provider-account-row:hover,
+  .channel-member-row:hover:not([data-picked]) {
+    background: var(--cosgral-hub-ink-05);
+  }
+
+  .sidebar .bot-row:hover:not(.bot-row-active) {
+    background: var(--cosgral-hub-ink-05);
+  }
+}
+
+:is(
+  .work-page .w2-item,
+  .marketplace-shell .plugin-row,
+  .agent-card,
+  .new-agent-template,
+  .sidebar .bot-row,
+  .page-rail .page-rail-button
+):active {
+  transform: scale(0.968);
+  transition-duration: var(--cosgral-hub-press-duration);
+  transition-timing-function: var(--cosgral-hub-ease);
+}
+
+/* Glass rises in a short cascade when a page opens (the Hub's lg-reveal). */
+@keyframes hub-rise {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :is(.work-page, .new-agent-page) :is(.ui-card, .w2-panel, .usage-totals > div, .usage-chart, .new-agent-studio) {
+    animation: hub-rise 620ms var(--cosgral-hub-ease) both;
+  }
+
+  :is(.work-page, .new-agent-page) :is(.ui-card, .w2-panel, .usage-totals > div):nth-child(2) {
+    animation-delay: 55ms;
+  }
+
+  :is(.work-page, .new-agent-page) :is(.ui-card, .w2-panel, .usage-totals > div):nth-child(3) {
+    animation-delay: 110ms;
+  }
+
+  :is(.work-page, .new-agent-page) :is(.ui-card, .w2-panel, .usage-totals > div):nth-child(4) {
+    animation-delay: 165ms;
+  }
+
+  :is(.work-page, .new-agent-page) :is(.ui-card, .w2-panel, .usage-totals > div):nth-child(n + 5) {
+    animation-delay: 220ms;
+  }
+
+  .app-frame-with-page-rail :is(.work-page, .new-agent-page) {
+    animation: hub-rise 620ms var(--cosgral-hub-ease) both;
+  }
+}
+
+/* Icon tiles: monochrome, a white paper square with the icon in ink (the Hub's "Materiały" mark). ------------- */
+
+.work-page-icon,
+.settings-dialog-icon,
+.usage-stat-icon,
+.marketplace-shell .plugin-row-icon {
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-black);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-20);
+  color: var(--cosgral-hub-hex-faf9f6);
+}
+
+.work-page .usage-totals > div:first-child .usage-stat-icon {
+  background: var(--cosgral-hub-black);
+}
+
+/* Selection inside pages and Settings: the black pill. ---------------------------------------------------------- */
+
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]),
+.settings-dialog-nav-item[aria-current="true"] {
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-paper);
+  box-shadow: var(--cosgral-hub-pill-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]) svg,
+.settings-dialog-nav-item[aria-current="true"] svg {
+  color: var(--cosgral-hub-paper-ink);
+}
+
+/* Buttons: Hub pills ---------------------------------------------------------------------------------------------- */
+
+:where(.ui-button) {
+  border-radius: var(--cosgral-radius-pill);
+  transition:
+    scale 650ms var(--cosgral-hub-ease),
+    background-color 700ms var(--cosgral-hub-ease),
+    border-color 700ms var(--cosgral-hub-ease),
+    color 500ms var(--cosgral-hub-ease),
+    box-shadow 900ms var(--cosgral-hub-ease),
+    opacity 320ms var(--cosgral-hub-ease),
+    transform 560ms var(--cosgral-hub-spring);
+}
+
+:where(.ui-button)[data-variant="primary"],
+.voice-button,
+.voice-button-active,
+.initial-setup-save,
+.account-login-primary,
+.remote-primary-button {
+  border-color: transparent;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-hex-eef1f5);
+  box-shadow:
+    inset 0 1px 1px var(--cosgral-hub-white-45),
+    inset 0 0 0 1px var(--cosgral-hub-white-10),
+    0 10px 24px -14px var(--cosgral-hub-black-65);
+  color: var(--cosgral-hub-hex-111316);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+:where(.ui-button)[data-variant="secondary"] {
+  border-color: var(--cosgral-hub-white-12);
+  background:
+    linear-gradient(145deg, var(--cosgral-hub-white-10), var(--cosgral-hub-black-00) 70%), var(--cosgral-hub-glass-50);
+  box-shadow: var(--cosgral-hub-field-rim);
+  color: var(--cosgral-hub-ink-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(.ui-button)[data-variant="primary"]:hover:not(:disabled),
+  .voice-button:hover,
+  .voice-button-active:hover,
+  .initial-setup-save:hover:not(:disabled),
+  .account-login-primary:hover:not(:disabled),
+  .remote-primary-button:hover:not(:disabled) {
+    background: var(--cosgral-hub-hex-ffffff);
+    color: var(--cosgral-hub-hex-111316);
+    filter: none;
+  }
+
+  :where(.ui-button)[data-variant="secondary"]:hover:not(:disabled),
+  :where(.ui-button)[data-variant="ghost"]:hover:not(:disabled) {
+    background: var(--cosgral-hub-ink-10);
+    color: var(--cosgral-hub-ink);
+  }
+}
+
+/* Press: a soft white flash and a small dip, like the Hub's glass-action. */
+:where(.ui-button):active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 100vmax var(--cosgral-hub-white-12),
+    inset 0 1px 1px var(--cosgral-hub-white-70);
+  transform: scale(0.968);
+  transition-duration: var(--cosgral-duration-fast);
+}
+
+:where(.ui-button)[data-variant="primary"]:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 100vmax var(--cosgral-hub-black-06),
+    inset 0 1px 1px var(--cosgral-hub-white-70);
+}
+
+:where(.ui-button)[data-variant="primary"]:disabled {
+  box-shadow: none;
+  opacity: 0.4;
+}
+
+.ui-button[data-variant="danger-solid"] {
+  border-color: transparent;
+  border-radius: var(--cosgral-radius-pill);
+  background: var(--cosgral-hub-hex-ffb5bd);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-45);
+  color: var(--cosgral-hub-hex-3a0b12);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(.ui-button)[data-variant="danger"]:hover:not(:disabled),
+  .ui-button[data-variant="danger-solid"]:hover:not(:disabled) {
+    background: var(--cosgral-hub-hex-ffc9cf);
+    color: var(--cosgral-hub-hex-3a0b12);
+  }
+}
+
+/* Fields: glass capsules with a light rim; the focus is drawn in the accent. ---------------------------------- */
+
+:where(.ui-input, .ui-textarea, .ui-select, select.ui-input),
+.new-agent-page :is(input, textarea, select),
+.settings-modal :is(input[type="text"], input[type="email"], input[type="url"], input[type="search"], textarea) {
+  border: 1px solid var(--cosgral-hub-white-12);
+  background: var(--cosgral-hub-field);
+  box-shadow: var(--cosgral-hub-field-rim);
+  transition:
+    border-color 700ms var(--cosgral-hub-ease),
+    box-shadow 900ms var(--cosgral-hub-ease),
+    background-color 700ms var(--cosgral-hub-ease);
+}
+
+:where(input.ui-input),
+.new-agent-page input,
+.new-agent-page select {
+  border-radius: var(--cosgral-radius-pill);
+}
+
+:where(.ui-textarea),
+.new-agent-page textarea {
+  border-radius: var(--cosgral-radius-xl);
+}
+
+:where(.ui-input, .ui-textarea):focus,
+.new-agent-page :is(input, textarea, select):focus {
+  border-color: var(--cosgral-hub-rgb-185-212-255-55);
+  box-shadow:
+    var(--cosgral-hub-field-rim),
+    0 0 0 3px var(--cosgral-hub-rgb-185-212-255-16);
+  outline: none;
+}
+
+/* The sidebar search keeps its white pill (above), without the glass field. */
+.sidebar .search-field .ui-input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The composer is the Hub's floating glass bar. */
+.composer {
+  border-color: transparent;
+  border-radius: var(--cosgral-hub-radius-hero);
+  background: var(--cosgral-hub-glass);
+  box-shadow: var(--cosgral-hub-glass-rim);
+  -webkit-backdrop-filter: var(--cosgral-hub-glass-filter);
+  backdrop-filter: var(--cosgral-hub-glass-filter);
+}
+
+.composer:focus-within {
+  box-shadow:
+    var(--cosgral-hub-glass-rim),
+    0 0 0 1px var(--cosgral-hub-rgb-185-212-255-35);
+}
+
+/* Your own message: a white paper bubble, like the Hub chat. */
+.message-entry-user .user-bubble {
+  border-radius: var(--cosgral-radius-xl) var(--cosgral-radius-xl) 6px var(--cosgral-radius-xl);
+  background: var(--cosgral-hub-paper);
+  box-shadow: var(--cosgral-hub-paper-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
+.message-entry-user .user-bubble :is(p, li, span, strong, em, a) {
+  color: inherit;
+}
+
+/* Dialogs and menus: thick glass sheets. ---------------------------------------------------------------------- */
+
+.settings-modal,
+.remote-dialog {
+  border-color: transparent;
+  border-radius: var(--cosgral-radius-pane);
+  background:
+    radial-gradient(130% 90% at 40% -38%, var(--cosgral-hub-rgb-255-247-231-12), var(--cosgral-hub-black-00) 65%),
+    var(--cosgral-hub-glass-72);
+  box-shadow:
+    inset 0 1px 1px var(--cosgral-hub-white-50),
+    inset 0 -1px 1px var(--cosgral-hub-white-12),
+    0 30px 90px var(--cosgral-hub-black-50);
+  -webkit-backdrop-filter: blur(45px) saturate(1.65) brightness(1.12);
+  backdrop-filter: blur(45px) saturate(1.65) brightness(1.12);
+}
+
+.settings-modal-sidebar {
+  background: transparent;
+}
+
+.settings-modal-main {
+  background: transparent;
+}
+
+.remote-dialog-backdrop,
+.initial-setup-screen.settings-dialog-backdrop {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.bot-context-menu,
+[role="menu"],
+[role="listbox"] {
+  border-radius: var(--cosgral-radius-lg);
+  background: var(--cosgral-hub-glass-82);
+  box-shadow: var(--cosgral-shadow-popover);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+}
+
+/* Status pills: quiet tinted capsules, the colour in the text. --------------------------------------------------- */
+
+:where(.ui-badge)[data-tone="accent"],
+:where(.ui-badge)[data-tone="success"],
+:where(.ui-badge)[data-tone="warning"],
+:where(.ui-badge)[data-tone="danger"] {
+  border: 0;
+  border-radius: var(--cosgral-radius-pill);
+  padding-inline: var(--openbot-space-2);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-14);
+}
+
+:where(.ui-badge)[data-tone="accent"] {
+  background: var(--cosgral-hub-rgb-185-212-255-14);
+  color: var(--cosgral-status-blue);
+}
+
+:where(.ui-badge)[data-tone="success"] {
+  background: var(--cosgral-hub-rgb-169-223-207-13);
+  color: var(--cosgral-status-green);
+}
+
+:where(.ui-badge)[data-tone="warning"] {
+  background: var(--cosgral-hub-rgb-239-210-163-13);
+  color: var(--cosgral-status-amber);
+}
+
+:where(.ui-badge)[data-tone="danger"] {
+  background: var(--cosgral-hub-rgb-255-181-189-13);
+  color: var(--cosgral-status-red);
+}
+
+/* Switches: the Hub toggle, pale accent with a white knob. */
+.ui-switch[data-checked] .ui-switch-control {
+  border-color: transparent;
+  background: var(--cosgral-accent);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-45);
+}
+
+/* Accent fills carry dark text (the accent is a pale blue). */
+.chat-tasks-switch-tab-active,
+[data-checked] > .sidebar-filter-check,
+.channel-member-row[data-picked] .channel-member-check {
+  color: var(--openbot-text-on-accent);
+}
+
+.person-unread-badge {
+  background: var(--cosgral-hub-paper);
+  box-shadow: none;
+  color: var(--cosgral-hub-paper-ink);
+}
+
+/* Usage chart: monochrome bars, today's bar in white. ------------------------------------------------------------ */
+
+.usage-bar-stop-top {
+  stop-color: var(--cosgral-hub-hex-f5f7fc);
+  stop-opacity: 0.55;
+}
+
+.usage-bar-stop-bottom {
+  stop-color: var(--cosgral-hub-hex-f5f7fc);
+  stop-opacity: 0.05;
+}
+
+.usage-bar-stop-last-top {
+  stop-color: var(--cosgral-hub-hex-ffffff);
+}
+
+.usage-bar-stop-last-bottom {
+  stop-color: var(--cosgral-hub-hex-b9d4ff);
+}
+
+.work-page .usage-bar {
+  fill: url(#usage-bar-fill);
+}
+
+.work-page .usage-bar[data-last="true"],
+.work-page .usage-bar:hover {
+  fill: url(#usage-bar-fill-last);
+}
+
+.work-page .usage-chart-grid i {
+  border-top-color: var(--cosgral-hub-ink-08);
+}
+
+/* Creatures keep their own colours; a soft shadow under the large one. */
+.new-agent-page .new-agent-preview .mo-root {
+  filter: drop-shadow(0 12px 26px var(--cosgral-hub-black-45));
+}
+
+.new-agent-swatch.new-agent-choice-selected,
+.new-agent-face.new-agent-choice-selected {
+  box-shadow:
+    0 0 0 2px var(--cosgral-hub-ink),
+    0 6px 18px -6px var(--cosgral-hub-black-60);
+}
+
+/* Reduced motion and transparency: the Hub's fallbacks. ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .work-page .w2-item,
+    .marketplace-shell .plugin-row,
+    .agent-card,
+    .new-agent-template,
+    .sidebar .bot-row,
+    .page-rail .page-rail-button
+  ):is(:hover, :active),
+  :where(.ui-button):active:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-frame > .sidebar,
+  .app-frame-with-page-rail
+    :is(.conversation-panel, .direct-conversation, .coming-soon, .w2-library, .work-page, .new-agent-page),
+  .composer,
+  .settings-modal,
+  .remote-dialog {
+    background: var(--cosgral-hub-hex-17191d);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* The COSGRAL cube: white on black, still (the Hub mark does not blink). ----------------------------------------- */
+
+.app-logo {
+  --app-logo-background: var(--cosgral-hub-black);
+  box-shadow: inset 0 1px 1px var(--cosgral-hub-white-20);
+}
+
+.app-logo .app-logo-mark,
+.app-logo[data-animation] .app-logo-mark,
+.app-logo[data-click-reaction] .app-logo-mark,
+.app-logo[data-easter-egg] .app-logo-mark {
+  animation: none;
+}

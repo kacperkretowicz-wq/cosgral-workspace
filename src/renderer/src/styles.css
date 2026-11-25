@@ -18,13 +18,14 @@
 @import "./styles/work-page.css";
 @import "./styles/channel-view.css";
 @import "./styles/azure-glass.css";
+@import "./styles/hub-look.css";
 @import "./styles/theme-light.css";
 
 :root {
   color-scheme: dark;
   /* Grok Bot-inspired neutral system. Keep UI colors here, not in components. */
   --openbot-contrast-white: #fff;
-  /* Azure Glass: gradients, glass, glows and grain (cosgral-tokens.css). */
+  /* Gradients, glass, glows and grain (cosgral-tokens.css); the Hub look itself is styles/hub-look.css. */
   --openbot-gradient-brand: var(--cosgral-gradient-brand);
   --openbot-gradient-electric: var(--cosgral-gradient-electric);
   --openbot-gradient-red: var(--cosgral-gradient-red);

@@ -1,5 +1,6 @@
 import type { AppVariant } from "@openbot/contracts/ipc";
 import { createSignal, flush, onCleanup } from "solid-js";
+import cosgralCube from "../assets/cosgral-cube.png";
 import { t } from "../i18n";
 
 export type AppLogoAnimation = "none" | "blink" | "look-around" | "surprised";
@@ -104,11 +105,8 @@ export function AppLogo(props: AppLogoProps) {
     >
       <rect class="app-logo-background" width="240" height="240" rx="50" ry="50" />
       <g class="app-logo-eye-motion">
-        {/* Own C mark for COSGRAL branding */}
-        <path
-          class="app-logo-mark"
-          d="M168 72c-18-22-48-36-82-36-62 0-108 44-108 110s46 110 108 110c34 0 64-14 82-36l-32-28c-12 14-30 22-50 22-36 0-62-26-62-68s26-68 62-68c20 0 38 8 50 22l32-28Z"
-        />
+        {/* The COSGRAL cube, white on black, the same mark as COSGRAL Hub and the app icon. */}
+        <image class="app-logo-mark" href={cosgralCube} x="48" y="48" width="144" height="144" />
       </g>
     </svg>
   );

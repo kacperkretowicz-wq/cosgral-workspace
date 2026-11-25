@@ -36,7 +36,8 @@ Built on OpenBot 0.1.11 (Apache-2.0) and brought to OpenBot 0.71 feature parity 
 
 ## Brand Commitments
 
-- Name: COSGRAL Workspace. Logo: the blue "C" mark stays.
+- Name: COSGRAL Workspace. Logo (owner, 23.11): the white COSGRAL cube of COSGRAL Hub; the app icon is a black tile with a small white cube above "WORKSPACE" in Satoshi Bold.
+- Look (owner, 23.11): the same as COSGRAL Hub: its wave wallpaper (a looping video of the Hub shader), Satoshi, graphite glass, white tiles and pills, the Hub's tile motion (`styles/hub-look.css`). Layout and settings unchanged.
 - Dark theme is the default; light is an option.
 - The agent avatars ("stworki", the colored creature characters) are part of the identity and should be refined further: finish, animation, expression.
 - Layout follows OpenBot (page rail, agent list, conversation); quality of every section should be at least OpenBot's, preferably better.
