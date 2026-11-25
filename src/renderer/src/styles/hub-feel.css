@@ -1,0 +1,270 @@
+/*
+ * How the Workspace answers a hand (25.11). A control that only changes its background colour feels thin; the Hub
+ * answers with a body: a pill lifts a pixel and its rim lights up, a tile rises, a row fills, a field's edge brightens,
+ * and a press sinks the element with a short white flash. Everything is one family so no corner of the app feels
+ * unfinished:
+ *
+ *   hover     lift (pills 1 px, tiles 3 px, chips pop), brighter rim, a fill on rows              (Hub spring, 560 ms)
+ *   press     sink to .968 / .985 with a short flash, 140 ms                                      (the Hub press)
+ *   keyboard  a 2 px ring that stays visible on glass (pale blue) and on paper (ink)
+ *   motion    transforms come from tokens that turn to "none" under prefers-reduced-motion; fills and rims stay
+ *
+ * Colours, shadows and transforms are tokens (cosgral-tokens.css). Loaded after hub-look.css, before theme-light.css.
+ */
+
+/* Transitions: quick for colour and rim, springy for movement. ---------------------------------------------------- */
+
+:where(.ui-button, .ui-input, .ui-textarea, .ui-native-select),
+.search-field,
+.mk-card,
+.setup-route-button,
+.new-agent-face,
+.new-agent-swatch,
+.new-agent-mood,
+.new-agent-suggestion,
+.work-page-nav-item,
+.settings-dialog-nav-item,
+.workflow-list-item,
+.workflow-palette-button,
+.provider-account-row,
+.message-attachment,
+.provider-model-trigger,
+.sidebar-icon-button,
+.sidebar-footer,
+.spaces-rail,
+.new-agent-more-faces,
+.ui-switch-control {
+  transition:
+    transform 560ms var(--cosgral-hub-spring),
+    box-shadow var(--cosgral-duration-normal) var(--cosgral-hub-ease),
+    background-color var(--cosgral-duration-normal) var(--cosgral-hub-ease),
+    border-color var(--cosgral-duration-normal) var(--cosgral-hub-ease),
+    color var(--cosgral-duration-fast) var(--cosgral-hub-ease);
+}
+
+/* Pills: lift a pixel, the rim lights up ------------------------------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-button:not(:disabled, [aria-disabled="true"]):hover {
+    transform: var(--cosgral-hub-lift-sm);
+  }
+
+  .ui-button:is([data-variant="secondary"], [data-variant="ghost"], [data-variant="danger"]):not(
+    :disabled,
+    [aria-disabled="true"]
+  ):hover {
+    box-shadow: var(--cosgral-hub-hover-rim);
+  }
+
+  .ui-button[data-variant="primary"]:not(:disabled, [aria-disabled="true"]):hover {
+    box-shadow: var(--cosgral-hub-paper-rim-hover);
+  }
+
+  /* Small icon buttons pop instead of lifting: they are too small for a visible rise. */
+  .ui-button.ui-icon-button:not(:disabled, [aria-disabled="true"]):hover,
+  .sidebar-icon-button:not(:disabled, [aria-disabled="true"]):hover {
+    box-shadow: var(--cosgral-hub-hover-rim);
+    transform: var(--cosgral-hub-pop);
+  }
+
+  /* Wide quiet buttons of the sidebar (account, spaces, more faces): the rim lights, no movement. */
+  .sidebar-footer:not(:disabled):hover,
+  .sidebar .spaces-rail:not(:disabled):hover,
+  .new-agent-more-faces:not(:disabled):hover {
+    box-shadow: var(--cosgral-hub-hover-rim);
+    transform: var(--cosgral-hub-lift-sm);
+  }
+
+  /* The page rail: the pill rises, the black one for the open page stays put. */
+  .page-rail .page-rail-button:not(.page-rail-button-active, :disabled):hover {
+    background: var(--cosgral-hub-rgb-16-17-17-10);
+    box-shadow: none;
+    transform: var(--cosgral-hub-pop);
+  }
+}
+
+/* Press: sink with a white flash (the Hub's glass-action). */
+.ui-button:not(:disabled, [aria-disabled="true"]):active,
+.sidebar-icon-button:not(:disabled):active,
+.sidebar-footer:not(:disabled):active,
+.sidebar .spaces-rail:not(:disabled):active,
+.new-agent-more-faces:not(:disabled):active {
+  box-shadow:
+    inset 0 0 0 100vmax var(--cosgral-hub-white-12),
+    inset 0 1px 1px var(--cosgral-hub-white-70);
+  transform: var(--cosgral-hub-sink);
+  transition-duration: var(--cosgral-hub-press-duration);
+}
+
+.ui-button[data-variant="primary"]:not(:disabled, [aria-disabled="true"]):active {
+  box-shadow:
+    inset 0 0 0 100vmax var(--cosgral-hub-black-06),
+    inset 0 1px 1px var(--cosgral-hub-white-70);
+}
+
+.page-rail .page-rail-button:not(:disabled):active {
+  background: var(--cosgral-hub-rgb-16-17-17-16);
+  transform: var(--cosgral-hub-sink);
+}
+
+/* Rows: a fill and a small step to the right ---------------------------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .work-page-nav-item:not([aria-current], :disabled):hover,
+  .settings-dialog-nav-item:not([aria-current="true"], :disabled):hover,
+  .workflow-list-item:not([aria-current="true"], :disabled):hover {
+    background: var(--cosgral-hub-row-hover);
+    box-shadow: inset 0 1px 1px var(--cosgral-hub-white-10);
+    transform: var(--cosgral-hub-nudge);
+  }
+
+  .provider-account-row:hover,
+  .channel-member-row:hover:not([data-picked]) {
+    background: var(--cosgral-hub-row-hover);
+  }
+
+  [role="menuitem"]:not([aria-disabled="true"]):hover,
+  [role="option"]:not([aria-disabled="true"]):hover {
+    background: var(--cosgral-hub-row-hover);
+  }
+}
+
+[role="menuitem"][data-highlighted],
+[role="option"][data-highlighted] {
+  background: var(--cosgral-hub-row-hover);
+}
+
+.work-page-nav-item:not([aria-current], :disabled):active,
+.settings-dialog-nav-item:not([aria-current="true"], :disabled):active,
+.workflow-list-item:not([aria-current="true"], :disabled):active {
+  background: var(--cosgral-hub-row-press);
+  transform: var(--cosgral-hub-sink-soft);
+}
+
+/* The chip of a selected section sits on the black chip: its icon stays light. */
+.work-page-nav-item:is([aria-current="page"], [aria-current="true"]) > svg,
+.settings-dialog-nav-item[aria-current="true"] > svg {
+  color: var(--cosgral-hub-hex-faf9f6);
+}
+
+/* Tiles: rise like the Hub tiles, sink when pressed --------------------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .mk-gallery .mk-card:hover,
+  .agent-cards .agent-card-row:hover,
+  .initial-setup-screen .setup-route-button:hover,
+  .message-attachments .message-attachment:hover,
+  .new-agent-suggestion.ui-button:not(:disabled):hover {
+    box-shadow: var(--cosgral-hub-tile-rim-hover);
+    transform: var(--cosgral-hub-lift);
+  }
+}
+
+.mk-gallery .mk-card:active,
+.agent-cards .agent-card-row:active,
+.initial-setup-screen .setup-route-button:active,
+.message-attachments .message-attachment:active,
+.new-agent-suggestion.ui-button:not(:disabled):active {
+  transform: var(--cosgral-hub-sink-soft);
+  transition-duration: var(--cosgral-hub-press-duration);
+}
+
+/* Choices: faces, colours, moods and filters answer where the pointer is ------------------------------------------ */
+
+@media (hover: hover) and (pointer: fine) {
+  .new-agent-face:hover,
+  .new-agent-swatch:hover {
+    transform: var(--cosgral-hub-pop);
+  }
+
+  .new-agent-stage .new-agent-mood:hover {
+    box-shadow: var(--cosgral-hub-hover-rim);
+    transform: var(--cosgral-hub-lift-sm);
+  }
+
+  /* Inside a track the chip fills instead of lifting. */
+  :is(.usage-periods, .plugin-filter-chips, .chat-tasks-switch, .chat-right-panel-tabs, .mk-categories)
+  :is(.ui-button, .chat-right-panel-tab):not([aria-current], [aria-pressed="true"], :disabled):hover {
+    background: var(--cosgral-hub-row-hover);
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+.new-agent-face:active,
+.new-agent-swatch:active {
+  transform: var(--cosgral-hub-sink);
+  transition-duration: var(--cosgral-hub-press-duration);
+}
+
+.new-agent-stage .new-agent-mood:active {
+  transform: var(--cosgral-hub-sink-soft);
+  transition-duration: var(--cosgral-hub-press-duration);
+}
+
+/* Fields: the edge brightens on hover, the ring lights on focus ---------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  :where(.ui-input, .ui-textarea, .ui-native-select):hover:not(:focus, :focus-visible, :disabled),
+  .provider-model-trigger:hover {
+    border-color: var(--cosgral-hub-field-border-hover);
+    box-shadow: var(--cosgral-hub-field-rim-hover);
+  }
+
+  .sidebar .search-field:hover:not(:focus-within),
+  .sidebar .sidebar-compact-search:hover:not(:disabled) {
+    box-shadow: var(--cosgral-hub-paper-rim-hover);
+  }
+
+  .search-field:not(.sidebar .search-field):hover:not(:focus-within) {
+    box-shadow: var(--cosgral-hub-field-rim-hover);
+  }
+}
+
+.sidebar .search-field:focus-within {
+  box-shadow: var(--cosgral-hub-pill-rim), var(--cosgral-hub-focus-ring);
+}
+
+/* Switches: the knob answers too. */
+@media (hover: hover) and (pointer: fine) {
+  .ui-switch:hover .ui-switch-control {
+    box-shadow: var(--cosgral-hub-hover-rim);
+  }
+}
+
+/* Keyboard: a ring that is visible on every surface ---------------------------------------------------------------- */
+
+:where(
+  button,
+  a[href],
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [tabindex="0"]
+):focus-visible {
+  outline: 2px solid var(--cosgral-accent);
+  outline-offset: 2px;
+}
+
+/* On the white paper (rail, sidebar search) a pale ring vanishes: the ring is ink there. */
+.page-rail :is(button, a[href]):focus-visible,
+.page-rail .page-rail-button:focus-visible,
+.sidebar .sidebar-compact-search:focus-visible,
+.person-unread-badge:focus-visible {
+  outline: 2px solid var(--cosgral-hub-paper-ink);
+  outline-offset: 2px;
+}
+
+/* The fields that light with a ring of their own do not need the outline on top of it. */
+.search-field:focus-within:has(:focus-visible) :focus-visible {
+  outline: none;
+}
+
+/* A button that cannot be used yet stays readable: it is dimmed, not close to invisible (it was .42). */
+:where(.ui-button):disabled,
+:where(.ui-button)[data-disabled],
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(button:not(.ui-button)):disabled {
+  opacity: 0.62;
+}

@@ -29,8 +29,8 @@ body::after {
   background: var(--openbot-backdrop);
 }
 
-.app-frame .page-rail,
-.app-frame .server-rail {
+.app-frame .server-rail,
+:root[data-theme="light"] .app-frame .page-rail {
   background: transparent;
 }
 
@@ -285,7 +285,7 @@ body::after {
 .work-page .usage-bar[data-last="true"],
 .work-page .usage-bar:hover {
   fill: url(#usage-bar-fill-last);
-  filter: drop-shadow(0 0 8px var(--openbot-electric));
+  filter: drop-shadow(0 0 8px var(--openbot-accent));
 }
 
 .work-page .usage-chart-grid i {
@@ -294,7 +294,7 @@ body::after {
 
 .work-page .usage-share-fill,
 .usage-ring-fill {
-  filter: drop-shadow(0 0 5px var(--openbot-electric));
+  filter: drop-shadow(0 0 5px var(--openbot-accent));
 }
 
 /* Glossy pills: the main action like the "Color gradient" stack, destructive ones in the cool red. -------------- */
@@ -468,10 +468,11 @@ body::after {
   color: var(--openbot-text-primary);
 }
 
-/* Dock: every page on the rail is its own mesh-gradient tile; the others rest dimmed, the open one glows. --------- */
+/* Dock: in the light theme every page on the rail is its own mesh-gradient tile; the others rest dimmed, the open one glows.
+ * In the dark theme the rail is the Hub's white paper with the black pill (hub-look.css), so none of these rules apply there. */
 
-.app-frame .page-rail-button[data-page],
-.app-frame .page-rail-button[data-page]:hover:not(:disabled) {
+:root[data-theme="light"] .app-frame .page-rail-button[data-page],
+:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled) {
   width: 34px;
   height: 34px;
   flex-basis: 34px;
@@ -487,80 +488,80 @@ body::after {
     transform var(--openbot-duration-fast) var(--openbot-ease-out);
 }
 
-.app-frame .page-rail-button[data-page] svg {
+:root[data-theme="light"] .app-frame .page-rail-button[data-page] svg {
   width: 18px;
   height: 18px;
   filter: drop-shadow(0 1px 2px var(--openbot-shadow-dialog));
 }
 
-.app-frame .page-rail-button[data-page]:hover:not(:disabled),
-.app-frame .page-rail-button[data-page]:focus-visible {
+:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled),
+:root[data-theme="light"] .app-frame .page-rail-button[data-page]:focus-visible {
   filter: none;
 }
 
-.app-frame .page-rail-button-active[data-page],
-.app-frame .page-rail-button-active[data-page]:hover:not(:disabled),
-.app-frame .page-rail-button[data-page]:hover:not(:disabled) {
+:root[data-theme="light"] .app-frame .page-rail-button-active[data-page],
+:root[data-theme="light"] .app-frame .page-rail-button-active[data-page]:hover:not(:disabled),
+:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled) {
   box-shadow: var(--openbot-mesh-edge), var(--openbot-glow-accent);
   color: var(--openbot-contrast-white);
   filter: none;
 }
 
-.app-frame .page-rail-button[data-page] .page-rail-mark {
+:root[data-theme="light"] .app-frame .page-rail-button[data-page] .page-rail-mark {
   left: -9px;
 }
 
-.app-frame .page-rail-button-active[data-page] .page-rail-mark {
+:root[data-theme="light"] .app-frame .page-rail-button-active[data-page] .page-rail-mark {
   background: var(--openbot-text-primary);
 }
 
-.page-rail-button[data-page="workflows"] {
+:root[data-theme="light"] .page-rail-button[data-page="workflows"] {
   --rail-mesh: var(--openbot-mesh-lime);
 }
 
-.page-rail-button[data-page="tasks"] {
+:root[data-theme="light"] .page-rail-button[data-page="tasks"] {
   --rail-mesh: var(--openbot-mesh-cyan);
 }
 
-.page-rail-button[data-page="remote-desktop"] {
+:root[data-theme="light"] .page-rail-button[data-page="remote-desktop"] {
   --rail-mesh: var(--openbot-mesh-cyan);
 }
 
-.page-rail-button[data-page="usage"] {
+:root[data-theme="light"] .page-rail-button[data-page="usage"] {
   --rail-mesh: var(--openbot-mesh-red);
 }
 
-.page-rail-button[data-page="library"] {
+:root[data-theme="light"] .page-rail-button[data-page="library"] {
   --rail-mesh: var(--openbot-mesh-pink);
 }
 
-.page-rail-button[data-page="server-settings"] {
+:root[data-theme="light"] .page-rail-button[data-page="server-settings"] {
   --rail-mesh: var(--openbot-mesh-pink);
 }
 
-.page-rail-button[data-page="schedule"] {
+:root[data-theme="light"] .page-rail-button[data-page="schedule"] {
   --rail-mesh: var(--openbot-mesh-green);
 }
 
-.page-rail-button[data-page="phone"] {
+:root[data-theme="light"] .page-rail-button[data-page="phone"] {
   --rail-mesh: var(--openbot-mesh-green);
 }
 
-.page-rail-button[data-page="marketplace"] {
+:root[data-theme="light"] .page-rail-button[data-page="marketplace"] {
   --rail-mesh: var(--openbot-mesh-orange);
 }
 
-.page-rail-button[data-page="agents"] {
+:root[data-theme="light"] .page-rail-button[data-page="agents"] {
   --rail-mesh: var(--openbot-mesh-blue);
 }
 
-.page-rail-button[data-page="providers"] {
+:root[data-theme="light"] .page-rail-button[data-page="providers"] {
   --rail-mesh: var(--openbot-mesh-blue);
 }
 
 /* "More" and Settings are tools, not pages: quiet glass tiles. */
-.app-frame .page-rail-button[data-page="more"],
-.app-frame .page-rail-button[data-page="settings"] {
+:root[data-theme="light"] .app-frame .page-rail-button[data-page="more"],
+:root[data-theme="light"] .app-frame .page-rail-button[data-page="settings"] {
   --rail-mesh: var(--openbot-tile-quiet), var(--openbot-tile-base);
   box-shadow: var(--openbot-tile-quiet-shadow);
   color: var(--openbot-text-secondary);
@@ -826,6 +827,14 @@ body [role="tooltip"] {
   color: var(--openbot-contrast-white);
 }
 
+/* Dark theme: the open tab is the Hub's white paper pill, not a glossy blue one. */
+:root:not([data-theme="light"]) .chat-tasks-switch .chat-tasks-switch-tab.chat-tasks-switch-tab-active[data-variant] {
+  background-color: var(--cosgral-hub-paper);
+  background-image: none;
+  box-shadow: var(--cosgral-hub-pill-rim);
+  color: var(--cosgral-hub-paper-ink);
+}
+
 .channel-view-settings > details > summary {
   border-color: transparent;
   background: var(--openbot-field-glass);
@@ -907,7 +916,7 @@ body [role="tooltip"] {
 .account-login-logo {
   width: 52px;
   height: 52px;
-  filter: drop-shadow(0 10px 24px var(--openbot-electric));
+  filter: drop-shadow(0 10px 24px var(--openbot-shadow-dialog));
 }
 
 .account-login-wordmark {
@@ -1438,7 +1447,7 @@ body [role="tooltip"] {
 
 /* A long note keeps the quiet tile and a coloured rim along its bottom edge; the lit pool is for short content (numbers). */
 .work-page .mobile-warning {
-  --note-rim: var(--openbot-success);
+  --note-rim: var(--openbot-status-green);
 
   border: 0;
   border-radius: var(--openbot-radius-tile);
@@ -1450,7 +1459,7 @@ body [role="tooltip"] {
 }
 
 .work-page .mobile-warning[data-transport="plain"] {
-  --note-rim: var(--openbot-danger-strong);
+  --note-rim: var(--openbot-status-red);
 }
 
 /* Messages of a page (unavailable, error, saved) are notes, not loose text in the middle of the column. */
