@@ -279,6 +279,21 @@ export class BrowserHost {
     return toPublicTab(tab);
   }
 
+  /** Back or Forward by the person's own button; the page to go to is checked against the domain rules of the tab's agent. */
+  async navigateHistory(tabId: string, direction: "back" | "forward"): Promise<void> {
+    const tab = this.#requireTab(tabId);
+    const history = tab.view.webContents.navigationHistory;
+    const target = history.getActiveIndex() + (direction === "back" ? -1 : 1);
+    if (target < 0 || target >= history.length()) return;
+    const refused =
+      this.#profiles?.checkNavigation(
+        this.#ownerOf(tab.ownerThreadId, tab.ownerBotId),
+        history.getEntryAtIndex(target).url,
+      ) ?? null;
+    if (refused) throw new Error(refused);
+    history.goToIndex(target);
+  }
+
   async activate(tabId: string): Promise<void> {
     this.#requireTab(tabId);
     this.#activeTabId = tabId;
@@ -896,6 +911,8 @@ function toPublicTab(tab: InternalTab): BrowserTab {
     loading: tab.view.webContents.isLoading(),
     ownerThreadId: tab.ownerThreadId,
     ownerBotId: tab.ownerBotId,
+    canGoBack: tab.view.webContents.navigationHistory.canGoBack(),
+    canGoForward: tab.view.webContents.navigationHistory.canGoForward(),
   };
 }
 

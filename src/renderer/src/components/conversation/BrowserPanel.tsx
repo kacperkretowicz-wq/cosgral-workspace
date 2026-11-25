@@ -35,6 +35,8 @@ export function BrowserPanel(props: {
   onActivateTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onNewTab: () => void;
+  onBack: () => void;
+  onForward: () => void;
   onReload: () => void;
   onAddressInput: (value: string) => void;
   onAddressSubmit: () => void;
@@ -43,6 +45,7 @@ export function BrowserPanel(props: {
   onOpenSidePanel: (target: ChatSidePanelTarget) => void;
   surfaceRef: (element: HTMLDivElement) => void;
 }) {
+  const activeTab = () => props.tabs.find((tab) => tab.id === props.activeTabId);
   return (
     <Tabs.Root
       as="aside"
@@ -146,10 +149,24 @@ export function BrowserPanel(props: {
       </header>
       <Tabs.Content forceMount value={props.activeTabId ?? "__empty"} class="browser-tab-panel">
         <div class="browser-toolbar">
-          <Button type="button" aria-label={t("Go back")} class="browser-toolbar-button" disabled>
+          <Button
+            type="button"
+            aria-label={t("Go back")}
+            title={activeTab()?.canGoBack ? t("Go back") : t("There is no earlier page in this tab.")}
+            class="browser-toolbar-button"
+            disabled={!activeTab()?.canGoBack}
+            onClick={props.onBack}
+          >
             <BrowserBackIcon />
           </Button>
-          <Button type="button" aria-label={t("Go forward")} class="browser-toolbar-button" disabled>
+          <Button
+            type="button"
+            aria-label={t("Go forward")}
+            title={activeTab()?.canGoForward ? t("Go forward") : t("There is no later page in this tab.")}
+            class="browser-toolbar-button"
+            disabled={!activeTab()?.canGoForward}
+            onClick={props.onForward}
+          >
             <BrowserForwardIcon />
           </Button>
           <Button type="button" aria-label={t("Reload page")} class="browser-toolbar-button" onClick={props.onReload}>

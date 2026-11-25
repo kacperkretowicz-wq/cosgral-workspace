@@ -1317,6 +1317,16 @@ export function Conversation(props: ConversationProps) {
     }
   }
 
+  async function goInBrowserHistory(direction: "back" | "forward") {
+    const tab = activeBrowserTab();
+    if (!tab) return;
+    try {
+      await window.openbot.browser.navigate({ tabId: tab.id, direction });
+    } catch (cause) {
+      setComposerError(cause instanceof Error ? cause.message : t("Could not open the link."));
+    }
+  }
+
   async function openMessageLink(url: string) {
     try {
       // "Open external links in" (App settings): the program's own browser panel, or the default browser (the default).
@@ -2316,6 +2326,8 @@ export function Conversation(props: ConversationProps) {
             setBrowserAddress("https://www.google.com");
             void openBrowserAddress("https://www.google.com");
           }}
+          onBack={() => void goInBrowserHistory("back")}
+          onForward={() => void goInBrowserHistory("forward")}
           onReload={() => void openBrowserAddress()}
           onAddressInput={setBrowserAddress}
           onAddressSubmit={() => void openBrowserAddress()}

@@ -88,6 +88,7 @@ function createBrowser(): TestBrowser {
     getControlState: unimplemented,
     open: unimplemented,
     activate: unimplemented,
+    navigateHistory: unimplemented,
     close: unimplemented,
     setVisible: unimplemented,
   };

@@ -220,6 +220,8 @@ export const pl = {
     "{date}: zaplanowane {planned}, wykonane {ran}, z błędem {failed}",
   "Nothing is planned or has run on this day.": "Tego dnia nic nie jest zaplanowane i nic się nie uruchomiło.",
   "Pick a day to see its runs.": "Wybierz dzień, żeby zobaczyć jego uruchomienia.",
+  "There is no earlier page in this tab.": "W tej karcie nie ma wcześniejszej strony.",
+  "There is no later page in this tab.": "W tej karcie nie ma późniejszej strony.",
   "Used for new local agents. You can change it for each agent later.":
     "Używany dla nowych lokalnych agentów. Później możesz go zmienić dla każdego agenta.",
   "Paste an cosgral:// invitation link": "Wklej link zaproszenia cosgral://",

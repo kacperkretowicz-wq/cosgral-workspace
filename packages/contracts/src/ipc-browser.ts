@@ -5,6 +5,9 @@ export interface BrowserTab {
   loading: boolean;
   ownerThreadId: string | null;
   ownerBotId: string | null;
+  /** Whether the tab has a page to go back / forward to (left out by a host that does not report it). */
+  canGoBack?: boolean;
+  canGoForward?: boolean;
 }
 
 export type BrowserControlPhase = "acting" | "waiting";
@@ -49,6 +52,14 @@ export interface BrowserOpenInput {
   url: string;
   ownerThreadId?: string | null;
   ownerBotId?: string | null;
+}
+
+export type BrowserHistoryDirection = "back" | "forward";
+
+/** A person's Back / Forward in the browser panel. */
+export interface BrowserNavigateInput {
+  tabId: string;
+  direction: BrowserHistoryDirection;
 }
 
 export interface BrowserVisibilityInput {
