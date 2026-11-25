@@ -454,8 +454,6 @@ export const pl = {
   "Could not update the app.": "Nie udało się zaktualizować aplikacji.",
   "Could not uninstall the app.": "Nie udało się odinstalować aplikacji.",
   "Loading apps…": "Wczytywanie aplikacji…",
-  "No catalog is loaded yet. Choose the catalog folder in the server settings.":
-    "Katalog nie jest jeszcze wczytany. Wybierz folder katalogu w ustawieniach serwera.",
   "No matching apps.": "Brak pasujących aplikacji.",
   Showing: "Pokazano",
   of: "z",
@@ -935,8 +933,6 @@ export const pl = {
   "Your phones": "Twoje telefony",
   "Notifications from this computer are on.": "Powiadomienia z tego komputera są włączone.",
   "Notifications from this computer are off.": "Powiadomienia z tego komputera są wyłączone.",
-  "No phones yet. Use “Pair another phone” above to add one.":
-    "Brak telefonów. Dodaj pierwszy przyciskiem „Sparuj kolejny telefon” wyżej.",
   "This computer only": "Tylko ten komputer",
   "Local network": "Sieć lokalna",
   "Local network and Tailscale": "Sieć lokalna i Tailscale",
@@ -2962,12 +2958,6 @@ export const pl = {
   "Two steps have the same id: {id}.": "Dwa kroki mają ten sam identyfikator: {id}.",
   "Two connections have the same id: {id}.": "Dwa połączenia mają ten sam identyfikator: {id}.",
   "Connection {id} points to an unknown step.": "Połączenie {id} wskazuje nieznany krok.",
-  'Connection {id} leaves the approval {step}: use "allow" or "deny".':
-    "Połączenie {id} wychodzi ze zgody {step}: użyj „allow” albo „deny”.",
-  'Connection {id} leaves the condition {step}: use "yes" or "no".':
-    "Połączenie {id} wychodzi z warunku {step}: użyj „yes” albo „no”.",
-  'Connection {id} leaves {step}: use "next".': "Połączenie {id} wychodzi z kroku {step}: użyj „next”.",
-  "The trigger cannot have incoming connections ({id}).": "Wyzwalacz nie może mieć połączeń przychodzących ({id}).",
   "The approval {step} needs an Allow connection.": "Zgoda {step} potrzebuje połączenia „Zezwól”.",
   "The approval {step} has more than one way on for a decision.":
     "Zgoda {step} ma więcej niż jedną drogę dalej dla jednej decyzji.",
@@ -3172,4 +3162,55 @@ export const pl = {
   "The previous run of this routine is still running.": "Poprzednie uruchomienie tej rutyny jeszcze trwa.",
   "The turn is gone.": "Tej tury już nie ma.",
   "The turn ended": "Tura zakończyła się",
+  "Connection {connection} leaves the approval {step}: use Allow or Deny.":
+    "Połączenie {connection} wychodzi ze zgody {step}: wybierz „Zezwól” albo „Odmów”.",
+  "Connection {connection} leaves the condition {step}: use Yes or No.":
+    "Połączenie {connection} wychodzi z warunku {step}: wybierz „Tak” albo „Nie”.",
+  "Connection {connection} leaves {step}: use Next.":
+    "Połączenie {connection} wychodzi z kroku {step}: wybierz „Dalej”.",
+  "The trigger cannot have incoming connections ({connection}).":
+    "Wyzwalacz nie może mieć połączeń przychodzących ({connection}).",
+  "Every step needs a title (1–{n} characters).": "Każdy krok potrzebuje nazwy (1–{n} znaków).",
+  'The routine "{id}" in the trigger does not exist.': "Rutyna „{id}” z wyzwalacza już nie istnieje.",
+  'The agent "{id}" in step "{title}" does not exist.': "Agent „{id}” z kroku „{title}” już nie istnieje.",
+  'The channel "{id}" in step "{title}" does not exist.': "Kanał „{id}” z kroku „{title}” już nie istnieje.",
+  'Step "{title}" needs an agent.': "Krok „{title}” wymaga wybrania agenta.",
+  'Step "{title}" needs a channel.': "Krok „{title}” wymaga wybrania kanału.",
+  'Step "{title}" needs an instruction.': "Krok „{title}” wymaga polecenia dla agenta.",
+  'Step "{title}" needs a text to check.': "Krok „{title}” wymaga tekstu do sprawdzenia.",
+  'Step "{title}" needs a value to compare with.': "Krok „{title}” wymaga wartości do porównania.",
+  'Step "{title}" needs a text.': "Krok „{title}” wymaga tekstu.",
+  'Step "{title}": the text is longer than {n} characters.': "Krok „{title}”: tekst jest dłuższy niż {n} znaków.",
+  'Step "{title}": the value is longer than {n} characters.': "Krok „{title}”: wartość jest dłuższa niż {n} znaków.",
+  contains: "zawiera",
+  "does not contain": "nie zawiera",
+  "is exactly": "jest dokładnie",
+  "is not": "nie jest",
+  "starts with": "zaczyna się od",
+  "ends with": "kończy się na",
+  "is empty": "jest pusty",
+  "is not empty": "nie jest pusty",
+  "Added: {titles}.": "Dodano: {titles}.",
+  "Removed: {titles}.": "Usunięto: {titles}.",
+  "Changed: {titles}.": "Zmieniono: {titles}.",
+  "Connections changed.": "Zmieniły się połączenia.",
+  "Only positions on the canvas changed.": "Zmieniło się tylko położenie kroków na płótnie.",
+  "Workflow “{name}”": "Przepływ „{name}”",
+  "Workflow run": "Uruchomienie przepływu",
+  "Routine run": "Uruchomienie rutyny",
+  "Create an agent first: the pairing card appears in an agent's row.":
+    "Najpierw utwórz agenta: karta parowania pojawia się w wierszu agenta.",
+  "Create an agent first: the consent card for a viewer appears in an agent's row.":
+    "Najpierw utwórz agenta: karta zgody dla oglądającego pojawia się w wierszu agenta.",
+  "Create an agent first: the card appears in an agent's row.":
+    "Najpierw utwórz agenta: karta pojawia się w wierszu agenta.",
+  "No phones yet. Pair the first one with the button above.": "Brak telefonów. Sparuj pierwszy przyciskiem wyżej.",
+  "No app catalog is loaded yet. Choose the folder with the catalog to load it.":
+    "Katalog aplikacji nie jest jeszcze wczytany. Wskaż folder z katalogiem, żeby go wczytać.",
+  "Choose the catalog folder": "Wybierz folder katalogu",
+  "Projects and follow-ups": "Projekty i terminy",
+  "Research and analysis": "Badania i analiza",
+  "E-mail": "Poczta",
+  "Code review": "Przegląd kodu",
+  "This workflow cannot be saved: {problems}": "Tego przepływu nie można zapisać: {problems}",
 } as const;

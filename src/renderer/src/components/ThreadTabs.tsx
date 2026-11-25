@@ -7,6 +7,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { t } from "../i18n";
+import { engineRunTitle } from "./conversation/engine-run";
 import { Button, ContextMenu, DropdownMenu } from "./ui";
 import { ChevronDown, MessageSquarePlus, Plus, X } from "./ui/icons";
 
@@ -290,7 +291,10 @@ export function ThreadTabs(props: ThreadTabsProps) {
   );
 }
 
-/** The default title from the store ("New thread") is shown in the window language; a title the person gave is not. */
+/**
+ * The default title from the store ("New thread") is shown in the window language; a title the person gave is not.
+ * A thread a routine or a workflow started is titled after the agent's English header line; it shows who started it.
+ */
 export function threadTitle(title: string): string {
-  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
+  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : (engineRunTitle(title) ?? title);
 }

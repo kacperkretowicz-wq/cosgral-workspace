@@ -432,9 +432,23 @@ export function PluginAppsPanel() {
           {(value) => (
             <>
               <Show when={value().info.source === "none"}>
-                <p class="plugin-note">
-                  {t("No catalog is loaded yet. Choose the catalog folder in the server settings.")}
-                </p>
+                <div class="plugin-note plugin-empty">
+                  <p>{t("No app catalog is loaded yet. Choose the folder with the catalog to load it.")}</p>
+                  <Show when={api?.chooseCatalogFolder}>
+                    <Button
+                      type="button"
+                      disabled={busy()}
+                      onClick={() =>
+                        void run(
+                          () => api?.chooseCatalogFolder() ?? Promise.resolve(),
+                          t("Could not load the catalog."),
+                        )
+                      }
+                    >
+                      {t("Choose the catalog folder")}
+                    </Button>
+                  </Show>
+                </div>
               </Show>
               <Show when={value().plugins.length === 0 && value().info.source !== "none"}>
                 <p class="plugin-note cosgral-empty-enter">{t("No matching apps.")}</p>

@@ -1,10 +1,11 @@
 import type { MobileExposure, MobilePairingTicket, MobileState } from "@openbot/contracts/ipc";
 import { MOBILE_PLAIN_TRANSPORT_WARNING, MOBILE_TRANSPORT_WARNING } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { appLocale, t } from "../i18n";
+import { appLocale, t, tDataParts } from "../i18n";
 import { MobileOverviewPanel } from "./MobileOverviewPanel";
 import { PageIcon } from "./PageRail";
 import { PanelHeading } from "./PanelHeading";
+import { withoutIpcPrefix } from "./provider-error";
 import { Badge, Button, Card, Field, NativeSelect, Text } from "./ui";
 import { QrCode, ShieldCheck, Smartphone, Wifi } from "./ui/icons";
 
@@ -31,6 +32,8 @@ export interface MobileConnectViewProps {
   error: string;
   /** Last event: a phone paired. */
   notice: string;
+  /** No agent exists yet: the pairing card appears in an agent's row, so pairing waits for the first agent. */
+  noAgents?: boolean;
   onExposure: (exposure: MobileExposure) => void;
   onStartPairing: () => void;
   onCancelPairing: () => void;
@@ -121,7 +124,12 @@ export function MobileConnectView(props: MobileConnectViewProps) {
             : t("The phone server is off.")}
         </Text>
         <div class="mobile-actions">
-          <Button type="button" variant="primary" disabled={props.busy} onClick={props.onStartPairing}>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={props.busy || props.noAgents === true}
+            onClick={props.onStartPairing}
+          >
             {props.state.enabled ? t("Pair another phone") : t("Turn on and pair a phone")}
           </Button>
           <Show when={props.state.enabled}>
@@ -130,6 +138,11 @@ export function MobileConnectView(props: MobileConnectViewProps) {
             </Button>
           </Show>
         </div>
+        <Show when={props.noAgents}>
+          <Text as="p" tone="warning" role="status">
+            {t("Create an agent first: the pairing card appears in an agent's row.")}
+          </Text>
+        </Show>
       </Card>
 
       <Show when={props.ticket}>
@@ -312,6 +325,18 @@ export function MobileConnectPage() {
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
   const [notice, setNotice] = createSignal("");
+  const [noAgents, setNoAgents] = createSignal(false);
+
+  /** What a failed call says, in the window language and without Electron's "Error invoking remote method" in front. */
+  const problem = (cause: unknown, fallback: string) =>
+    cause instanceof Error ? tDataParts(withoutIpcPrefix(cause.message)) : fallback;
+  async function refreshAgents() {
+    try {
+      setNoAgents((await window.openbot.agent.listBots()).length === 0);
+    } catch {
+      setNoAgents(false);
+    }
+  }
 
   function apply(next: MobileState) {
     setState(next);
@@ -323,7 +348,7 @@ export function MobileConnectPage() {
       await action();
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Something went wrong."));
+      setError(problem(e, t("Something went wrong.")));
     } finally {
       setBusy(false);
     }
@@ -339,10 +364,12 @@ export function MobileConnectPage() {
         apply(next);
         setExposure(next.exposure);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => setError(problem(e, String(e))));
+    void refreshAgents();
     const timer = setInterval(() => setNow(Date.now()), 1000);
     const off = window.openbot.agent.onEvent((event) => {
       if (event.type === "mobile-changed") apply(event.state);
+      if (event.type === "bots-changed") void refreshAgents();
       if (event.type === "mobile-pairing-completed") {
         setTicket(null);
         setNotice(t("{name} is paired.", { name: event.device.name }));
@@ -363,6 +390,7 @@ export function MobileConnectPage() {
         busy={busy() || !api}
         error={error()}
         notice={notice()}
+        noAgents={noAgents()}
         onExposure={setExposure}
         onStartPairing={() =>
           void run(async () => {

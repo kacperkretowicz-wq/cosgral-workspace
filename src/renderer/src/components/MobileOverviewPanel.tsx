@@ -275,7 +275,7 @@ export function MobileOverviewPanel() {
                     when={view().phones.length > 0}
                     fallback={
                       <Text as="p" tone="muted">
-                        {t("No phones yet. Use “Pair another phone” above to add one.")}
+                        {t("No phones yet. Pair the first one with the button above.")}
                       </Text>
                     }
                   >

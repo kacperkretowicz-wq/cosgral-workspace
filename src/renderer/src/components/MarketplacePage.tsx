@@ -4,7 +4,7 @@ import type {
   MarketplaceItemDetails,
   MarketplaceItemKind,
 } from "@openbot/contracts/ipc";
-import { createSignal, For, onSettled, Show } from "solid-js";
+import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import { language, t, tData } from "../i18n";
 import { CATEGORY_LABELS, MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
@@ -23,8 +23,22 @@ export function MarketplaceDetail(props: {
   onUninstall: (id: string) => void;
 }) {
   const item = () => props.details.item;
+  let panel: HTMLElement | undefined;
+  // The details open below the whole catalog: bring them into view (and to the screen reader) when another card is opened.
+  createEffect(
+    () => props.details.item.id,
+    () => {
+      panel?.scrollIntoView?.({
+        block: "nearest",
+        behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    },
+  );
+  // Done is done: a skill for the chosen agent, an agent that already exists (like the card, which hides its quick install).
+  const installedForChoice = () =>
+    item().kind === "skill" ? item().installedBotIds.includes(props.selectedBot) : item().installedBotIds.length > 0;
   return (
-    <section class="marketplace-detail" aria-label={t("Item details")}>
+    <section ref={panel} class="marketplace-detail" aria-label={t("Item details")} tabindex="-1">
       <h2>{tData(item().title)}</h2>
       <p>{tData(item().description)}</p>
       <p>
@@ -42,7 +56,7 @@ export function MarketplaceDetail(props: {
       <Show when={props.details.agent}>
         {(agent) => (
           <>
-            <p>{t("Role: {role}", { role: agent().role })}</p>
+            <p>{t("Role: {role}", { role: tData(agent().role) })}</p>
             <p>{agent().description}</p>
             <ul>
               <For each={agent().memories}>{(memory) => <li>{memory}</li>}</For>
@@ -65,10 +79,14 @@ export function MarketplaceDetail(props: {
       <Button
         unstyled
         type="button"
-        disabled={item().libraryState === "local" || (item().kind === "skill" && !props.selectedBot)}
+        disabled={
+          item().libraryState === "local" ||
+          (item().kind === "skill" && !props.selectedBot) ||
+          (installedForChoice() && item().libraryState !== "outdated")
+        }
         onClick={props.onInstall}
       >
-        {item().libraryState === "outdated" ? t("Update") : t("Install")}
+        {item().libraryState === "outdated" ? t("Update") : installedForChoice() ? t("Installed") : t("Install")}
       </Button>
       <ul>
         <For each={item().installedBotIds}>
@@ -172,10 +190,16 @@ export function MarketplacePage(props: { bots: Person[] }) {
     const api = window.openbot.marketplace;
     if (!item || !api) return;
     try {
+      // The catalog is English; an agent made from it gets the name and role the window shows, in its language.
+      const profile = item.kind === "agent" ? (await api.get({ itemId: item.id })).agent : null;
       const result =
         item.kind === "skill"
           ? await api.installSkill({ itemId: item.id, botId: botId() })
-          : await api.installAgent({ itemId: item.id });
+          : await api.installAgent({
+              itemId: item.id,
+              name: tData(item.title),
+              ...(profile ? { role: tData(profile.role) } : {}),
+            });
       setWarnings(result.warnings);
       await refresh();
     } catch (e) {
