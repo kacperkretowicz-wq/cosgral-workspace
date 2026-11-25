@@ -20,7 +20,7 @@ describe("W2 settings with mock API", () => {
       </>
     ));
     await screen.findByText("Prefers concise updates.");
-    const channel = within(screen.getByRole("region", { name: "Channel memory" }));
+    const channel = within(screen.getByRole("region", { name: "Project memory" }));
     await channel.findByText("The team meets on Monday.");
     await fireEvent.input(channel.getByLabelText("Memory text"), { target: { value: "Review on Friday" } });
     await fireEvent.click(channel.getByRole("button", { name: "Save memory" }));

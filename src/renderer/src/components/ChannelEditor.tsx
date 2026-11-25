@@ -13,7 +13,7 @@ const MAX_MEMBERS = 20;
 /**
  * New / Edit channel. The team is a list of agents with their creatures (pick by clicking the row), the lead is
  * marked on that list, and the top shows the channel as it will look on the sidebar (stack of creatures, title,
- * `#name`). The field names ("Channel name", "Display title", "Lead agent", "Create channel", "Save changes") are
+ * `#name`). The field names ("Project name", "Display title", "Lead agent", "Create project", "Save changes") are
  * used by tests and the acceptance scripts.
  */
 export function ChannelEditor(props: {
@@ -50,11 +50,11 @@ export function ChannelEditor(props: {
   async function save() {
     if (busy()) return;
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name().trim())) {
-      setError(t("Use lowercase letters, digits and dashes for the channel name."));
+      setError(t("Use lowercase letters, digits and dashes for the project name."));
       return;
     }
     if (!lead() || !members().includes(lead())) {
-      setError(t("Choose a lead from the channel members."));
+      setError(t("Choose a lead from the project members."));
       return;
     }
     setBusy(true);
@@ -70,7 +70,7 @@ export function ChannelEditor(props: {
       });
       props.onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save the channel. Try again."));
+      setError(cause instanceof Error ? cause.message : t("Could not save the project. Try again."));
     } finally {
       setBusy(false);
     }
@@ -104,9 +104,9 @@ export function ChannelEditor(props: {
                 </Show>
               </span>
               <div class="channel-editor-heading">
-                <Dialog.Title>{props.channel ? t("Edit channel") : t("New channel")}</Dialog.Title>
+                <Dialog.Title>{props.channel ? t("Edit project") : t("New project")}</Dialog.Title>
                 <Dialog.Description>
-                  {t("Choose the team and shared instructions for this channel.")}
+                  {t("Choose the team and shared instructions for this project.")}
                 </Dialog.Description>
               </div>
             </header>
@@ -120,7 +120,7 @@ export function ChannelEditor(props: {
                 <div class="channel-editor-names">
                   <div class="channel-editor-field">
                     <label class="remote-field">
-                      {t("Channel name")}
+                      {t("Project name")}
                       <span class="channel-editor-name-input">
                         <Hash size={14} stroke-width={1.75} aria-hidden="true" />
                         <Input
@@ -221,7 +221,7 @@ export function ChannelEditor(props: {
                   </small>
                 </div>
                 <label class="remote-field">
-                  {t("Channel instructions")}
+                  {t("Project instructions")}
                   <Textarea
                     rows={4}
                     maxlength={2000}
@@ -241,7 +241,7 @@ export function ChannelEditor(props: {
                   {t("Cancel")}
                 </Button>
                 <Button type="submit" variant="primary" loading={busy()} loadingLabel={t("Saving…")}>
-                  {props.channel ? t("Save changes") : t("Create channel")}
+                  {props.channel ? t("Save changes") : t("Create project")}
                 </Button>
               </footer>
             </form>

@@ -198,9 +198,9 @@ function optionsProblem(input: { timezone?: unknown; paused?: unknown }) {
 
 /** Why a channel cannot take one more routine, in plain words, or null. `channel` null = it does not exist. */
 export function channelRoutineChannelProblem(channel: Pick<WorkspaceChannel, "archived" | "leadBotId"> | null) {
-  if (!channel) return "This channel no longer exists.";
-  if (channel.archived) return "This channel is archived.";
-  if (!channel.leadBotId) return "This channel has no lead to take the work. Make one of its members the lead first.";
+  if (!channel) return "This project no longer exists.";
+  if (channel.archived) return "This project is archived.";
+  if (!channel.leadBotId) return "This project has no lead to take the work. Make one of its members the lead first.";
   return null;
 }
 
@@ -213,7 +213,7 @@ export function channelRoutineProblem(
   channel: Pick<WorkspaceChannel, "archived" | "leadBotId"> | null,
   routinesInChannel: number,
 ): string | null {
-  if (!isDynamicRecord(input) || !isString(input.channelId)) return "Choose a channel.";
+  if (!isDynamicRecord(input) || !isString(input.channelId)) return "Choose a project.";
   const channelProblem = channelRoutineChannelProblem(channel);
   if (channelProblem) return channelProblem;
   if (routinesInChannel >= CHANNEL_ROUTINE_LIMITS.perChannel) {
@@ -317,14 +317,14 @@ export function parseListChannelRoutinesInput(input: unknown): ListChannelRoutin
   if (input === undefined || input === null) return {};
   if (!isDynamicRecord(input)) throw new Error("The query is a set of fields.");
   if (input.channelId === undefined) return {};
-  if (!isString(input.channelId) || input.channelId.length === 0) throw new Error("Choose a channel.");
+  if (!isString(input.channelId) || input.channelId.length === 0) throw new Error("Choose a project.");
   return { channelId: input.channelId };
 }
 
 /** The shape of a create request (the rules that need the channel are `channelRoutineProblem`). */
 export function parseCreateChannelRoutineInput(input: unknown): CreateChannelRoutineInput {
   if (!isDynamicRecord(input) || !isString(input.channelId) || input.channelId.length === 0) {
-    throw new Error("Choose a channel.");
+    throw new Error("Choose a project.");
   }
   const problem =
     nameProblem(input.name) ?? promptProblem(input.prompt) ?? scheduleProblem(input.schedule) ?? optionsProblem(input);

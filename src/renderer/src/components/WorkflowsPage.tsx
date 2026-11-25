@@ -44,7 +44,7 @@ const NODE_TYPE_LABELS: Record<WorkflowNode["type"], string> = {
   trigger: "Trigger",
   agent: "Agent",
   approval: "Approval",
-  "channel-output": "Channel output",
+  "channel-output": "Project output",
   prompt: "Prompt",
   condition: "Condition",
 };
@@ -116,7 +116,7 @@ const PALETTE: ReadonlyArray<{ type: WorkflowNodeType; label: string }> = [
   { type: "trigger", label: "Add trigger" },
   { type: "agent", label: "Add agent" },
   { type: "approval", label: "Add approval" },
-  { type: "channel-output", label: "Add channel output" },
+  { type: "channel-output", label: "Add project output" },
   { type: "prompt", label: "Add prompt" },
   { type: "condition", label: "Add condition" },
 ];
@@ -482,12 +482,12 @@ export function WorkflowCanvas(
               <Show when={node.type === "channel-output" ? node : undefined}>
                 {(channel) => (
                   <label>
-                    {t("Channel")}{" "}
+                    {t("Project")}{" "}
                     <NativeSelect
                       value={channel().channelId}
                       onChange={(e) => update({ ...channel(), channelId: e.currentTarget.value })}
                     >
-                      <option value="">{t("Choose channel")}</option>
+                      <option value="">{t("Choose project")}</option>
                       <Show
                         when={
                           channel().channelId && !(props.channels ?? []).some((item) => item.id === channel().channelId)
@@ -716,7 +716,7 @@ export function WorkflowsPage() {
     if (nextRoutines.status === "fulfilled")
       setRoutines(nextRoutines.value.map((routine) => ({ id: routine.id, name: routine.name })));
     if ([nextBots, nextChannels, nextRoutines].some((result) => result.status === "rejected"))
-      setError(t("Could not load all agents, channels or routines."));
+      setError(t("Could not load all agents, projects or routines."));
   }
   async function refresh() {
     const api = window.openbot.workflows;
@@ -785,7 +785,7 @@ export function WorkflowsPage() {
     <WorkPage
       page="workflows"
       title={t("Workflows")}
-      description={t("Chains of steps: a trigger, agents, approvals, conditions and a message to a channel.")}
+      description={t("Chains of steps: a trigger, agents, approvals, conditions and a message to a project.")}
       class="workflows-page"
       actions={
         <Button type="button" variant="primary" class="work-page-primary" onClick={startNew}>

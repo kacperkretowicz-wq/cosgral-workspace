@@ -36,7 +36,7 @@ function mount(onSelectHit = vi.fn()) {
 
 it("offers a tab for each kind and asks the search API only for channels, files and routines", async () => {
   mount();
-  for (const name of ["All", "Agents", "Channels", "Messages", "Files", "Routines"]) {
+  for (const name of ["All", "Agents", "Projects", "Messages", "Files", "Routines"]) {
     expect(screen.getByRole("tab", { name })).toBeInTheDocument();
   }
   await fireEvent.input(screen.getByRole("combobox", { name: "Search COSGRAL" }), { target: { value: "launch" } });
@@ -49,7 +49,7 @@ it("filters hits by tab and opens a channel hit", async () => {
   const onSelectHit = mount();
   await fireEvent.input(screen.getByRole("combobox", { name: "Search COSGRAL" }), { target: { value: "launch" } });
   await waitFor(() => expect(query).toHaveBeenCalled());
-  await fireEvent.click(screen.getByRole("tab", { name: "Channels" }));
+  await fireEvent.click(screen.getByRole("tab", { name: "Projects" }));
   const option = await screen.findByRole("option", { name: /Launch room/ });
   expect(screen.queryByRole("option", { name: /launch-plan/ })).not.toBeInTheDocument();
   await fireEvent.click(option);

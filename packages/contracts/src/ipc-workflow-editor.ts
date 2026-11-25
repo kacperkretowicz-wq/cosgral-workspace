@@ -634,9 +634,9 @@ export function workflowNodeIssues(graph: WorkflowGraph, known: KnownWorkflowTar
     }
     if (node.type === "channel-output") {
       if (!node.channelId) {
-        issues.push({ nodeId: node.id, message: `Step "${title}" needs a channel.` });
+        issues.push({ nodeId: node.id, message: `Step "${title}" needs a project.` });
       } else if (!known.channelIds.includes(node.channelId)) {
-        issues.push({ nodeId: node.id, message: `The channel "${node.channelId}" in step "${title}" does not exist.` });
+        issues.push({ nodeId: node.id, message: `The project "${node.channelId}" in step "${title}" does not exist.` });
       }
       if (!node.text.trim()) {
         issues.push({ nodeId: node.id, message: `Step "${title}" needs a text.` });

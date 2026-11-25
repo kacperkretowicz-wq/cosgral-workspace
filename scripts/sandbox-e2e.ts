@@ -790,10 +790,10 @@ async function main(): Promise<void> {
     });
     await step("channel UI: create, edit and reply", async () => {
       await page.getByRole("button", { name: "Create new", exact: true }).first().click();
-      // Since PR #24 "New channel" is an item of the sidebar's "+" menu, not a button on the Agents page.
-      await page.getByRole("menuitem", { name: "New channel" }).first().click();
+      // Since PR #24 "New project" is an item of the sidebar's "+" menu, not a button on the Agents page.
+      await page.getByRole("menuitem", { name: "New project" }).first().click();
       let dialog = page.getByRole("dialog");
-      await dialog.getByLabel("Channel name", { exact: true }).fill(`ui-${Date.now().toString(36)}`);
+      await dialog.getByLabel("Project name", { exact: true }).fill(`ui-${Date.now().toString(36)}`);
       await dialog.getByLabel("Display title").fill("UI acceptance");
       await dialog.getByRole("button", { name: "New agent", exact: true }).click();
       const botId = String(
@@ -803,19 +803,19 @@ async function main(): Promise<void> {
       );
       assert(botId.length > 0, "The sandbox agent exists");
       await dialog.getByLabel("Lead agent").selectOption(botId);
-      await dialog.getByLabel("Channel instructions").fill("Answer briefly.");
-      await dialog.getByRole("button", { name: "Create channel", exact: true }).click();
+      await dialog.getByLabel("Project instructions").fill("Answer briefly.");
+      await dialog.getByRole("button", { name: "Create project", exact: true }).click();
       await dialog.waitFor({ state: "hidden" });
-      await page.getByRole("button", { name: "Edit channel", exact: true }).click();
+      await page.getByRole("button", { name: "Edit project", exact: true }).click();
       dialog = page.getByRole("dialog");
       await dialog.getByLabel("Display title").fill("UI acceptance edited");
       await dialog.getByRole("button", { name: "Save changes" }).click();
       await dialog.waitFor({ state: "hidden" });
       await page.getByRole("heading", { name: "UI acceptance edited", exact: true }).waitFor();
-      await page.getByLabel("New message to channel lead").fill("UI reply target");
+      await page.getByLabel("New message to project lead").fill("UI reply target");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await page.getByRole("button", { name: "Reply to UI reply target", exact: true }).click();
-      await page.getByLabel("New message to channel lead").fill("UI reply linked");
+      await page.getByLabel("New message to project lead").fill("UI reply linked");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await page.getByText("UI reply linked", { exact: true }).waitFor();
       const linked = await page.evaluate(`(async () => {

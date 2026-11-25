@@ -30,8 +30,8 @@ export function MemoryPanel(props: {
     }
   }
   return (
-    <section class="w2-panel" aria-label={props.channel ? t("Channel memory") : t("Agent memory")}>
-      <h3>{props.channel ? t("Channel memory") : t("Memory")}</h3>
+    <section class="w2-panel" aria-label={props.channel ? t("Project memory") : t("Agent memory")}>
+      <h3>{props.channel ? t("Project memory") : t("Memory")}</h3>
       <Show when={props.settings}>
         {(s) => (
           <>

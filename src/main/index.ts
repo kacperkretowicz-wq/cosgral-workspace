@@ -1118,7 +1118,7 @@ function registerIpcHandlers(
     const parsed = localSidebarInput(input, parseMoveSidebarItem);
     if (parsed.itemKind === "channel") {
       if (!channels.list().some((channel) => channel.id === parsed.itemId)) {
-        throw new Error("This channel no longer exists.");
+        throw new Error("This project no longer exists.");
       }
     } else if (!service.listBots().some((bot) => bot.id === parsed.itemId)) {
       throw new Error("This agent no longer exists.");

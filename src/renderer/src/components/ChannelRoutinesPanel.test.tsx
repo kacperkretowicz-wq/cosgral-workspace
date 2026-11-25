@@ -15,7 +15,7 @@ function setup() {
 }
 
 async function fill(name: string, prompt: string) {
-  const form = within(screen.getByRole("region", { name: "New channel routine" }));
+  const form = within(screen.getByRole("region", { name: "New project routine" }));
   await fireEvent.input(form.getByLabelText("Routine name"), { target: { value: name } });
   await fireEvent.input(form.getByLabelText("What the lead does on each run"), { target: { value: prompt } });
   return form;
@@ -31,7 +31,7 @@ describe("ChannelRoutinesPanel", () => {
   it("creates a daily routine, runs it now and shows the history with the task state", async () => {
     const mock = setup();
     const view = render(() => <ChannelRoutinesPanel channel={channel} />);
-    await screen.findByText("No routines in this channel yet.");
+    await screen.findByText("No routines in this project yet.");
     const form = await fill("Morning brief", "Summarize the night");
     await fireEvent.input(form.getByLabelText("Time"), { target: { value: "08:30" } });
     await fireEvent.click(form.getByRole("button", { name: "Create routine" }));
@@ -51,8 +51,8 @@ describe("ChannelRoutinesPanel", () => {
     if (!api) throw new Error("mock without channel routines");
     const create = vi.spyOn(api, "create");
     const view = render(() => <ChannelRoutinesPanel channel={channel} />);
-    await screen.findByText("No routines in this channel yet.");
-    const form = within(screen.getByRole("region", { name: "New channel routine" }));
+    await screen.findByText("No routines in this project yet.");
+    const form = within(screen.getByRole("region", { name: "New project routine" }));
     await fireEvent.click(form.getByRole("button", { name: "Create routine" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Give the routine a name.");
     expect(create).not.toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe("ChannelRoutinesPanel", () => {
   it("pauses and deletes a routine, and follows the changes sent by the program", async () => {
     const mock = setup();
     const view = render(() => <ChannelRoutinesPanel channel={channel} />);
-    await screen.findByText("No routines in this channel yet.");
+    await screen.findByText("No routines in this project yet.");
     const form = await fill("Weekly", "Report");
     await fireEvent.click(form.getByRole("button", { name: "Create routine" }));
     await screen.findByText("Weekly");
@@ -81,7 +81,7 @@ describe("ChannelRoutinesPanel", () => {
     const mock = setup();
     setLanguage("pl");
     const view = render(() => <ChannelRoutinesPanel channel={channel} />);
-    await screen.findByText("W tym kanale nie ma jeszcze rutyn.");
+    await screen.findByText("W tym projekcie nie ma jeszcze rutyn.");
     expect(screen.getByRole("button", { name: "Utwórz rutynę" })).toBeInTheDocument();
     expect(describeSchedule({ type: "interval", everyMinutes: 15 })).toBe("Co 15 min");
     expect(describeSchedule({ type: "daily", time: "09:00" })).toBe("Codziennie o 09:00");
@@ -153,7 +153,7 @@ describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)",
   }
 
   async function fillForm(name: string, prompt: string) {
-    const form = within(await screen.findByRole("region", { name: "New channel routine" }));
+    const form = within(await screen.findByRole("region", { name: "New project routine" }));
     await fireEvent.input(form.getByLabelText("Routine name"), { target: { value: name } });
     await fireEvent.input(form.getByLabelText("What the lead does on each run"), { target: { value: prompt } });
     return form;
@@ -174,12 +174,12 @@ describe("ChannelRoutinesPanel on the mock of the routines of a channel (KK-Y)",
   it("says so when this build has no routines of a channel", async () => {
     install(false);
     render(() => <ChannelRoutinesPanel channel={panelChannel} />);
-    expect(await screen.findByText("Channel routines are unavailable in this build.")).toBeInTheDocument();
+    expect(await screen.findByText("Project routines are unavailable in this build.")).toBeInTheDocument();
   });
 
   it("shows an empty channel, makes an interval routine and lists it with its schedule", async () => {
     render(() => <ChannelRoutinesPanel channel={panelChannel} />);
-    await screen.findByText("No routines in this channel yet.");
+    await screen.findByText("No routines in this project yet.");
     const form = await fillForm("Weekly review", "Summarise the week.");
     await fireEvent.change(form.getByLabelText("Repeats"), { target: { value: "interval" } });
     await fireEvent.input(await screen.findByLabelText("Minutes"), { target: { value: "30" } });

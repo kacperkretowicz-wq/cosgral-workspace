@@ -32,14 +32,14 @@ async function draftWithOutput() {
   render(() => <WorkflowsPage />);
   await screen.findByRole("option", { name: "Ogólny" }).catch(() => undefined);
   await fireEvent.click(await screen.findByRole("button", { name: "Add trigger" }));
-  await fireEvent.click(screen.getByRole("button", { name: "Add channel output" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Add project output" }));
 }
 
 it("does not let a draft with an Output step without a channel be saved, and says what is missing", async () => {
   await draftWithOutput();
   const panel = await screen.findByRole("status");
-  expect(panel).toHaveTextContent('Step "Channel output" needs a channel.');
-  expect(panel).toHaveTextContent('Step "Channel output" needs a text.');
+  expect(panel).toHaveTextContent('Step "Project output" needs a project.');
+  expect(panel).toHaveTextContent('Step "Project output" needs a text.');
   expect(save()).toBeDisabled();
 });
 
@@ -48,16 +48,16 @@ it("says it in Polish, next to the step too", async () => {
   flush();
   render(() => <WorkflowsPage />);
   await fireEvent.click(await screen.findByRole("button", { name: "Dodaj wyzwalacz" }));
-  await fireEvent.click(screen.getByRole("button", { name: "Dodaj wyjście do kanału" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Dodaj wiadomość do projektu" }));
   const panel = await screen.findByRole("status");
-  expect(panel).toHaveTextContent("wymaga wybrania kanału");
-  expect(panel).not.toHaveTextContent("needs a channel");
-  expect(screen.getAllByText(/wymaga wybrania kanału/).length).toBeGreaterThan(1);
+  expect(panel).toHaveTextContent("wymaga wybrania projektu");
+  expect(panel).not.toHaveTextContent("needs a project");
+  expect(screen.getAllByText(/wymaga wybrania projektu/).length).toBeGreaterThan(1);
 });
 
 it("opens Save once the channel and the text are filled in", async () => {
   await draftWithOutput();
-  const channel = await screen.findByRole("combobox", { name: /Channel/ });
+  const channel = await screen.findByRole("combobox", { name: /Project/ });
   await waitFor(() => expect(screen.getByRole("option", { name: "Ogólny" })).toBeInTheDocument());
   await fireEvent.change(channel, { target: { value: "general" } });
   await fireEvent.input(screen.getByRole("textbox", { name: /Text/ }), { target: { value: "Done" } });

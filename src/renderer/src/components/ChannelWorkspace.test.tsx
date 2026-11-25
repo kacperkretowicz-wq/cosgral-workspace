@@ -20,7 +20,7 @@ describe("channel workspace", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
     await screen.findByText("Prepare the release plan.");
     await fireEvent.click(screen.getByRole("button", { name: "Reply to Prepare the release plan." }));
-    await fireEvent.input(screen.getByLabelText("New message to channel lead"), { target: { value: "Reply text" } });
+    await fireEvent.input(screen.getByLabelText("New message to project lead"), { target: { value: "Reply text" } });
     await fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(
       (await mock.api.channels?.listMessages?.({ channelId: "demo-channel" }))?.find(
@@ -43,7 +43,7 @@ describe("channel workspace", () => {
       },
     });
     await screen.findByText(/Superseded/);
-    await fireEvent.input(screen.getByLabelText("New message to channel lead"), {
+    await fireEvent.input(screen.getByLabelText("New message to project lead"), {
       target: { value: "Check the dates" },
     });
     await fireEvent.click(screen.getByRole("button", { name: "Send" }));
@@ -72,7 +72,7 @@ describe("channel workspace", () => {
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
     await screen.findByText("Prepare the release plan.");
     const open = async () => {
-      const summary = screen.getByText("Channel history");
+      const summary = screen.getByText("Project history");
       const details = summary.closest("details");
       if (details && !details.open) await fireEvent.click(summary);
     };
@@ -103,7 +103,7 @@ describe("channel workspace", () => {
     render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} />);
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
     await screen.findByText("Prepare the release plan.");
-    await fireEvent.click(screen.getByText("Channel history"));
+    await fireEvent.click(screen.getByText("Project history"));
     expect(await screen.findByRole("combobox", { name: "History window" })).toHaveValue("200");
     await fireEvent.change(screen.getByRole("combobox", { name: "History window" }), { target: { value: "50" } });
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("History window saved."));
@@ -123,12 +123,12 @@ describe("channel workspace", () => {
       .mockResolvedValue({ ...template, id: "new-channel", name: "launch", title: "Launch" });
     Object.defineProperty(window, "openbot", { configurable: true, value: api.api });
     render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} />);
-    await fireEvent.click(screen.getByRole("button", { name: "New channel" }));
-    await fireEvent.input(screen.getByLabelText("Channel name"), { target: { value: "launch" } });
+    await fireEvent.click(screen.getByRole("button", { name: "New project" }));
+    await fireEvent.input(screen.getByLabelText("Project name"), { target: { value: "launch" } });
     await fireEvent.input(screen.getByLabelText("Display title"), { target: { value: "Launch" } });
     await fireEvent.click(screen.getByRole("button", { name: "Chief" }));
     await fireEvent.change(screen.getByLabelText("Lead agent"), { target: { value: "chief" } });
-    await fireEvent.click(screen.getByRole("button", { name: "Create channel" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     await screen.findByRole("heading", { name: "Launch" });
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ name: "launch", leadBotId: "chief", memberBotIds: ["chief"] }),
@@ -168,8 +168,8 @@ describe("channel workspace", () => {
       />
     ));
     await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
-    await fireEvent.click(screen.getByRole("button", { name: "Edit channel" }));
-    expect(screen.getByLabelText("Channel name")).toBeDisabled();
+    await fireEvent.click(screen.getByRole("button", { name: "Edit project" }));
+    expect(screen.getByLabelText("Project name")).toBeDisabled();
     await fireEvent.click(screen.getByRole("button", { name: "New lead" }));
     await fireEvent.change(screen.getByLabelText("Lead agent"), { target: { value: "new" } });
     await fireEvent.click(screen.getByRole("button", { name: "Chief" }));
@@ -191,11 +191,11 @@ describe("channel workspace", () => {
     try {
       Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
       render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} />);
-      expect(await screen.findByRole("heading", { name: "Kanały" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Nowy kanał" })).toBeInTheDocument();
-      expect(screen.getByText("Wybierz kanał.")).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Projekty" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Nowy projekt" })).toBeInTheDocument();
+      expect(screen.getByText("Wybierz projekt.")).toBeInTheDocument();
       await fireEvent.click(await screen.findByRole("button", { name: "# Project" }));
-      expect(await screen.findByRole("button", { name: "Edytuj kanał" })).toBeInTheDocument();
+      expect(await screen.findByRole("button", { name: "Edytuj projekt" })).toBeInTheDocument();
     } finally {
       setLanguage("en");
     }
@@ -220,11 +220,11 @@ describe("channel workspace", () => {
     Object.defineProperty(window, "openbot", { configurable: true, value: mock.api });
     const onCreateCancelled = vi.fn();
     render(() => <ChannelWorkspace bots={[{ id: "chief", name: "Chief" }]} onCreateCancelled={onCreateCancelled} />);
-    await fireEvent.click(await screen.findByRole("button", { name: "New channel" }));
+    await fireEvent.click(await screen.findByRole("button", { name: "New project" }));
     const dialog = await screen.findByRole("dialog");
     await fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(onCreateCancelled).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "Select a channel." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Select a project." })).toBeInTheDocument();
   });
 });

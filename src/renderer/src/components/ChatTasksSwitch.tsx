@@ -17,7 +17,7 @@ export function ChatTasksSwitch(props: {
         { value: "chat", label: t("Chat") },
         { value: "tasks", label: t("Tasks") },
       ]}
-      label={t("Channel view")}
+      label={t("Project view")}
       class="chat-tasks-switch"
       tabClass={(value) => ["chat-tasks-switch-tab", { "chat-tasks-switch-tab-active": props.mode === value }]}
     >

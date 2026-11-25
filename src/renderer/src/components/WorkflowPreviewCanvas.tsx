@@ -11,7 +11,7 @@ const TYPE_LABELS: Record<WorkflowNode["type"], string> = {
   trigger: "Trigger",
   agent: "Agent",
   approval: "Approval",
-  "channel-output": "Channel output",
+  "channel-output": "Project output",
   prompt: "Prompt",
   condition: "Condition",
 };

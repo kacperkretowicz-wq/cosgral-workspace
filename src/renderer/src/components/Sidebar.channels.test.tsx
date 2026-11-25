@@ -69,9 +69,9 @@ describe("Sidebar channels", () => {
       channels: [channel("launch", { title: "Launch plan" }), channel("old", { archived: true })],
       onOpenChannel: open,
     });
-    expect(screen.getByRole("heading", { name: "Channels" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Projects" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agents" })).toBeInTheDocument();
-    const row = screen.getByRole("button", { name: "Channel Launch plan. 2 members" });
+    const row = screen.getByRole("button", { name: "Project Launch plan. 2 members" });
     expect(row.querySelectorAll(".channel-row-member")).toHaveLength(2);
     expect(row).toHaveTextContent("#launch");
     expect(row).toHaveTextContent("led by Chief");
@@ -82,11 +82,11 @@ describe("Sidebar channels", () => {
 
   it("marks the open channel and draws nothing without a handler", () => {
     renderSidebar({ channels: [channel("launch")], onOpenChannel: vi.fn(), activeChannelId: "launch" });
-    expect(screen.getByRole("button", { name: "Channel launch. 2 members" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Project launch. 2 members" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("hides the section when the window cannot open channels", () => {
     renderSidebar({ channels: [channel("launch")] });
-    expect(screen.queryByRole("heading", { name: "Channels" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Projects" })).toBeNull();
   });
 });

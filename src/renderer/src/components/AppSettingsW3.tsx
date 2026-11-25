@@ -163,7 +163,7 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   "needs-input": "Needs your answer",
   "needs-approval": "Needs your approval",
   takeover: "Needs you to take over",
-  "channel-result": "Channel result",
+  "channel-result": "Project result",
 };
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

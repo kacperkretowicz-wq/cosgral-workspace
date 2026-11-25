@@ -31,9 +31,9 @@ export function ChannelHistoryClear(props: { onClear: () => Promise<ChannelHisto
   }
 
   return (
-    <section class="channel-history-clear" aria-label={t("Channel history")}>
+    <section class="channel-history-clear" aria-label={t("Project history")}>
       <Text as="p" tone="muted" variant="caption">
-        {t("Removes all messages and tasks of this channel. The channel, its members, memory and routines stay.")}
+        {t("Removes all messages and tasks of this project. The project, its members, memory and routines stay.")}
       </Text>
       <Show
         when={asking()}
@@ -44,7 +44,7 @@ export function ChannelHistoryClear(props: { onClear: () => Promise<ChannelHisto
         }
       >
         <fieldset class="channel-history-confirm" aria-label={t("Confirm clearing the history")}>
-          <Text as="p">{t("Clear the whole history of this channel? This cannot be undone.")}</Text>
+          <Text as="p">{t("Clear the whole history of this project? This cannot be undone.")}</Text>
           <Button type="button" variant="danger" disabled={busy()} onClick={() => void clear()}>
             {t("Yes, clear")}
           </Button>

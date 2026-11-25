@@ -20,12 +20,12 @@ export function ChannelWorkspace(props: {
   /** The channel was opened from the sidebar list, which already lists the channels: no second list here. */
   hideList?: boolean;
   /**
-   * "New channel" from the sidebar's + menu was cancelled before a channel was chosen: the window goes back to where
+   * "New project" from the sidebar's + menu was cancelled before a channel was chosen: the window goes back to where
    * the person was, instead of staying on the empty channel list behind the closed dialog.
    */
   onCreateCancelled?: () => void;
 }) {
-  /** The editor was opened by createRequested (the + menu), not by the "New channel" button of this view. */
+  /** The editor was opened by createRequested (the + menu), not by the "New project" button of this view. */
   let editorFromRequest = false;
   const [channels, setChannels] = createSignal<WorkspaceChannel[]>([]);
   const [selected, setSelected] = createSignal("");
@@ -77,7 +77,7 @@ export function ChannelWorkspace(props: {
   async function choose(id: string) {
     const api = window.openbot.channels;
     if (!api?.listMessages) {
-      setError(t("Channel history is unavailable in this build."));
+      setError(t("Project history is unavailable in this build."));
       return;
     }
     const current = ++generation;
@@ -97,7 +97,7 @@ export function ChannelWorkspace(props: {
         else applyTask(change.item);
       }
     } catch (e) {
-      if (current === generation) setError(e instanceof Error ? e.message : t("Could not load channel."));
+      if (current === generation) setError(e instanceof Error ? e.message : t("Could not load project."));
     } finally {
       if (current === generation) {
         setLoading(false);
@@ -108,7 +108,7 @@ export function ChannelWorkspace(props: {
   onSettled(() => {
     const api = window.openbot.channels;
     if (!api) {
-      setError(t("Channels are unavailable in this build."));
+      setError(t("Projects are unavailable in this build."));
       return;
     }
     const revision = channelRevision;
@@ -178,7 +178,7 @@ export function ChannelWorkspace(props: {
   async function action(taskId: string, ownerBotId?: string) {
     try {
       const api = window.openbot.channels;
-      if (!api) throw new Error(t("Channels unavailable"));
+      if (!api) throw new Error(t("Projects unavailable"));
       const task = ownerBotId
         ? await api.reassignTask({ taskId, ownerBotId })
         : await api.actOnTask({ taskId, action: "resume" });
@@ -189,13 +189,13 @@ export function ChannelWorkspace(props: {
   }
   return (
     <div class="channel-workspace" data-list={props.hideList && channel() ? "hidden" : undefined}>
-      <aside aria-label={t("Channels")} hidden={props.hideList && !!channel()}>
-        <h2>{t("Channels")}</h2>
+      <aside aria-label={t("Projects")} hidden={props.hideList && !!channel()}>
+        <h2>{t("Projects")}</h2>
         <Button class="channel-workspace-new" onClick={() => setEditor("new")}>
           <Plus size={15} stroke-width={1.75} aria-hidden="true" />
-          {t("New channel")}
+          {t("New project")}
         </Button>
-        <Show when={channels().length} fallback={<p>{t("No channels yet.")}</p>}>
+        <Show when={channels().length} fallback={<p>{t("No projects yet.")}</p>}>
           <For each={channels().filter((item) => !item.archived)}>
             {(item) => (
               <Button
@@ -215,7 +215,7 @@ export function ChannelWorkspace(props: {
           <p role="alert">{error()}</p>
         </Show>
         <Show when={loading()}>
-          <CosgralLoadingSkeleton label={t("Loading channel…")} />
+          <CosgralLoadingSkeleton label={t("Loading project…")} />
         </Show>
         {/* Keyed by the id: saving a setting of the channel replaces its object, and the open sections and their notes must stay. */}
         <Show
@@ -226,8 +226,8 @@ export function ChannelWorkspace(props: {
                 <span class="channel-workspace-empty-icon" aria-hidden="true">
                   <Hash size={22} stroke-width={1.5} />
                 </span>
-                <h2>{t("Select a channel.")}</h2>
-                <p>{t("Choose a channel on the left, or create one for a team of agents.")}</p>
+                <h2>{t("Select a project.")}</h2>
+                <p>{t("Choose a project on the left, or create one for a team of agents.")}</p>
               </div>
             </Show>
           }
@@ -252,7 +252,7 @@ export function ChannelWorkspace(props: {
                   actions={
                     <Button type="button" variant="ghost" class="channel-edit" onClick={() => setEditor(channel())}>
                       <Settings size={15} stroke-width={1.5} aria-hidden="true" />
-                      {t("Edit channel")}
+                      {t("Edit project")}
                     </Button>
                   }
                   onResume={(id) => void action(id)}
@@ -276,12 +276,12 @@ export function ChannelWorkspace(props: {
             }}
             onSave={async (input) => {
               const api = window.openbot.channels;
-              if (!api) throw new Error(t("Channels are unavailable."));
+              if (!api) throw new Error(t("Projects are unavailable."));
               let saved: WorkspaceChannel;
               if (editing === "new") saved = await api.create(input);
               else {
                 const current = (await api.list()).find((item) => item.id === editing.id);
-                if (!current) throw new Error(t("This channel no longer exists."));
+                if (!current) throw new Error(t("This project no longer exists."));
                 for (const botId of input.memberBotIds.filter((id) => !current.memberBotIds.includes(id)))
                   await api.addMember({ channelId: current.id, botId });
                 await api.setLead({ channelId: current.id, botId: input.leadBotId });

@@ -23,7 +23,7 @@ export function parseChannelId(value: unknown): string {
 }
 
 export function parseClearChannelHistory(value: unknown): ClearChannelHistoryInput {
-  if (!isObject(value)) throw new Error("Choose a channel.");
+  if (!isObject(value)) throw new Error("Choose a project.");
   return { channelId: requireString(value.channelId, "channelId") };
 }
 

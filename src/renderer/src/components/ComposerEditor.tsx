@@ -62,7 +62,7 @@ function pickerOptionKey(option: PickerOption): string {
 
 function pickerOptionText(option: PickerOption): string {
   if (option.type === "remote")
-    return `${option.candidate.label} ${option.candidate.kind === "channel" ? "Channel" : "File"}`;
+    return `${option.candidate.label} ${option.candidate.kind === "channel" ? "Project" : "File"}`;
   return option.type === "bot" ? `${option.bot.name} Agent` : `${option.attachment.name} File`;
 }
 
@@ -506,7 +506,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     <div class="mention-picker-section">{t("Files")}</div>
                   </Show>
                   <Show when={option.type === "remote" && item.index === firstRemoteIndex()}>
-                    <div class="mention-picker-section">{t("Channels and files")}</div>
+                    <div class="mention-picker-section">{t("Projects and files")}</div>
                   </Show>
                   <Listbox.Item
                     item={item}
@@ -543,9 +543,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
                         ? t("Agent")
                         : option.type === "attachment"
                           ? t("File")
-                          : // The engine sends "Channel" / "Library" (or an agent's own description): through the dictionary.
+                          : // The engine sends "Project" / "Library" (or an agent's own description): through the dictionary.
                             tData(option.candidate.detail) ||
-                            (option.candidate.kind === "channel" ? t("Channel") : t("File"))}
+                            (option.candidate.kind === "channel" ? t("Project") : t("File"))}
                     </span>
                   </Listbox.Item>
                 </>

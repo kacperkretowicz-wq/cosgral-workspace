@@ -162,9 +162,9 @@ Dwukierunkowy most umożliwiający rozmowę z agentami COSGRAL z poziomu aplikac
 - **Limity bezpieczeństwa:** Maksymalnie 10 wiadomości na minutę na czat, kolejka do 5 oczekujących odpowiedzi, limit czasu 15 minut na odpowiedź agenta, teksty dłuższe niż 4000 znaków odrzucane ze stałym komunikatem.
 - **Stan w oknie:** Kontrakt IPC `window.openbot.messengers`, klient Bot API, silnik mostu i testy jednostkowe (`messenger-bridge.test.ts`, `telegram-client.test.ts`) są gotowe. Formularz w oknie głównym czeka na wdrożenie przez UI Designera. Szczegóły: `docs/cosgral-raporty/kk-w10-kk2.md`.
 
-## W4-UI1: kanały (oczekuje na odbiór okna)
+## W4-UI1: projekty (dawniej kanały; oczekuje na odbiór okna)
 
-W pasku bocznym wybierz **New channel** albo **Browse channels** i **New channel**. Wpisz nazwę (małe litery, cyfry, myślniki), wybierz członków i lidera spośród nich. **Edit channel** zmienia tytuł, skład, lidera i instrukcje. Krótka nazwa pozostaje stała. **Reply** odpowiada na wiadomość. Krok `channel UI: create, edit and reply` w `sandbox:e2e` czeka na odbiór.
+W pasku bocznym wybierz **Nowy projekt** albo **Przeglądaj projekty** i **Nowy projekt**. Wpisz nazwę (małe litery, cyfry, myślniki), wybierz członków i lidera spośród nich. **Edytuj projekt** zmienia tytuł, skład, lidera i instrukcje. Krótka nazwa pozostaje stała. **Reply** odpowiada na wiadomość. Krok `channel UI: create, edit and reply` w `sandbox:e2e` czeka na odbiór.
 
 ## W4-K3: nowe metody kontraktu (czekają na UI)
 

@@ -85,7 +85,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
   async function refresh() {
     const list = window.openbot.channels?.listMemories;
     if (!list) {
-      setError(t("Channel memory is unavailable in this build."));
+      setError(t("Project memory is unavailable in this build."));
       return;
     }
     const n = ++serial;
@@ -96,7 +96,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
         setError("");
       }
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load channel memory."));
+      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load project memory."));
     }
   }
   onSettled(() => {
@@ -120,13 +120,13 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
         entries={items()}
         onSave={async (text, _inclusion, memoryId) => {
           const save = window.openbot.channels?.saveMemory;
-          if (!save) throw new Error(t("Channel memory unavailable"));
+          if (!save) throw new Error(t("Project memory unavailable"));
           await save({ channelId: props.channelId, text, memoryId });
           await refresh();
         }}
         onDelete={async (memoryId) => {
           const remove = window.openbot.channels?.deleteMemory;
-          if (!remove) throw new Error(t("Channel memory unavailable"));
+          if (!remove) throw new Error(t("Project memory unavailable"));
           await remove({ channelId: props.channelId, memoryId });
           await refresh();
         }}

@@ -63,12 +63,12 @@ const ENGLISH_LABELS: Record<string, string> = {
   "Otwórz pliki": "Open Files",
   "Otwórz ustawienia agenta": "Open Agent settings",
   Utwórz: "Create new",
-  "Nowy kanał": "New channel",
+  "Nowy projekt": "New project",
   "Nowy agent": "New agent",
   "Więcej działań wiadomości": "More message actions",
   "Usuń agenta": "Delete agent",
   Anuluj: "Cancel",
-  "Edytuj kanał": "Edit channel",
+  "Edytuj projekt": "Edit project",
   Ustawienia: "Settings",
 };
 /** A label of the window in the probe's language (the probe is written with the Polish labels). */
@@ -536,7 +536,7 @@ try {
         .first()
         .click();
       await page
-        .getByRole("menuitem", { name: label("Nowy kanał") })
+        .getByRole("menuitem", { name: label("Nowy projekt") })
         .first()
         .click();
     },
@@ -600,7 +600,7 @@ try {
     "channel-edit",
     () =>
       page
-        .getByRole("button", { name: label("Edytuj kanał") })
+        .getByRole("button", { name: label("Edytuj projekt") })
         .first()
         .click(),
     "[role=dialog]",

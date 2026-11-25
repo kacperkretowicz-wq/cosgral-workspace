@@ -455,7 +455,7 @@ export class ChannelRoutineService {
         const message = channelRoutineMessage(routine.name, routine.prompt);
         sent = this.#o.send(routine.channelId, delivery ? `${message}\n\nWebhook:\n${delivery}` : message);
       } catch (error) {
-        reason = error instanceof Error ? error.message : "The channel did not take the message.";
+        reason = error instanceof Error ? error.message : "The project did not take the message.";
       }
     }
     const run = this.#record(routine, cause, sent ? "started" : "skipped", reason, sent, at);

@@ -11,6 +11,7 @@ COSGRAL Workspace to prywatny program zespołu COSGRAL. Bazą jest **OpenBot 0.1
 
 | Data | Pliki | Zmiana |
 |---|---|---|
+| 25.11.2026 | `src/renderer/src/locales/{en,pl}.ts`, `src/mobile-app/app.ts` (+ `src/backend/mobile-app-assets.ts`), komponenty i testy z napisami kanałów, `scripts/sandbox-*` | Zamiast „kanałów” w całym programie są „projekty” (menu, pasek boczny, edytor, pamięć, rutyny, wyszukiwarka, przepływy, aplikacja na telefon). Zmiana tylko nazw widocznych dla użytkownika: identyfikatory, magazyn danych i kontrakty IPC (`channels`, `channelId`) zostają, więc zapisane kanały są po prostu projektami, bez migracji i bez utraty danych. Nazwa „kanał” zostaje tam, gdzie chodzi o prawdziwy kanał komunikatora (Slack, Discord) albo kanał aktualizacji |
 | 12.11.2026 | `package.json`, `electron-builder.yml` | Własna nazwa, `appId` `pl.cosgral.workspace`, protokół `cosgral://`, aktualizacje z naszego repo |
 | 12.11.2026 | `src/main/index.ts`, `src/main/development-profile.ts`, `src/main/host-service.ts`, `src/main/remote-server-manager.ts`, `src/renderer/src/components/InitialSetup.tsx`, `scripts/team-connection-smoke.ts`, `scripts/verify-macos-package.ts`, stories i testy | Linki `cosgral://` zamiast `openbot://`, własny identyfikator aplikacji, własne foldery danych trybu dev |
 | 12.11.2026 | `src/backend/bot-store.ts` (+ test) | Dane agentów w `~/COSGRAL Workspace` zamiast `~/OpenBot`, żeby nie kolidować z zainstalowanym OpenBotem |

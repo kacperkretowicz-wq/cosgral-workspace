@@ -695,7 +695,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       listMessages: async ({ channelId }) => clone(mockMessages.filter((item) => item.channelId === channelId)),
       listTasks: async (channelId) => clone(mockTasks.filter((item) => item.channelId === channelId)),
       clearHistory: async ({ channelId }) => {
-        if (!mockChannels.some((item) => item.id === channelId)) throw new Error("This channel no longer exists.");
+        if (!mockChannels.some((item) => item.id === channelId)) throw new Error("This project no longer exists.");
         const busy = mockTasks.filter(
           (item) =>
             item.channelId === channelId &&
@@ -776,7 +776,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
       update: async (input) => {
         const found = mockChannels.find((item) => item.id === input.channelId);
-        if (!found) throw new Error("This channel no longer exists.");
+        if (!found) throw new Error("This project no longer exists.");
         if (input.historyWindow !== undefined && !isChannelHistoryWindow(input.historyWindow)) {
           throw new Error("historyWindow is 20, 50, 100 or 200.");
         }

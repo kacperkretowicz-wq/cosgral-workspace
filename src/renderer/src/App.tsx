@@ -1477,7 +1477,7 @@ export function App() {
     setBotList((items) => (items.some((bot) => bot.id === next.id) ? items : [...items, createStoredProfile(next)]));
     selectBot(result.bot.id);
     setAgentCopyNotice(
-      `${t("Copy ready. Memory, history, queue, routines, channels and Vault are not copied.")}${result.warnings.length ? ` ${t("Note:")} ${result.warnings.join(" ")}` : ""}`,
+      `${t("Copy ready. Memory, history, queue, routines, projects and Vault are not copied.")}${result.warnings.length ? ` ${t("Note:")} ${result.warnings.join(" ")}` : ""}`,
     );
   }
 

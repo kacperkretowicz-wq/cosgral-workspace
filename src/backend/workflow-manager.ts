@@ -440,7 +440,7 @@ export class WorkflowManager {
 
   #post(session: Session, node: WorkflowNode & { type: "channel-output" }, previous: string): string {
     const { channels } = this.#options;
-    if (!channels.exists(node.channelId)) throw new Error("This channel no longer exists.");
+    if (!channels.exists(node.channelId)) throw new Error("This project no longer exists.");
     const text = render(node.text, session, previous, false);
     channels.post(node.channelId, `[Workflow "${session.workflow.name}"] ${text}`);
     return text;
@@ -559,9 +559,9 @@ export class WorkflowManager {
         }
       }
       if (node.type === "channel-output") {
-        if (!node.channelId) throw new Error(`Step "${title}" needs a channel.`);
+        if (!node.channelId) throw new Error(`Step "${title}" needs a project.`);
         if (!channels.exists(node.channelId)) {
-          throw new Error(`The channel "${node.channelId}" in step "${title}" does not exist.`);
+          throw new Error(`The project "${node.channelId}" in step "${title}" does not exist.`);
         }
         if (!node.text.trim()) throw new Error(`Step "${title}" needs a text.`);
         if (node.text.length > WORKFLOW_LIMITS.text) {

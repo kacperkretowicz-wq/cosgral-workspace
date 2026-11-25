@@ -57,12 +57,12 @@ const PROBLEMS: Record<string, string> = {
   "The webhook secret cannot be stored safely on this computer: system encryption is not available.":
     "The webhook secret cannot be stored safely on this computer: system encryption is not available.",
   "The routine is paused.": "The routine is paused.",
-  "Choose a channel.": "Choose a channel.",
+  "Choose a project.": "Choose a project.",
   "Choose a routine.": "Choose a routine.",
-  "This channel no longer exists.": "This channel no longer exists.",
-  "This channel is archived.": "This channel is archived.",
-  "This channel has no lead to take the work. Make one of its members the lead first.":
-    "This channel has no lead to take the work. Make one of its members the lead first.",
+  "This project no longer exists.": "This project no longer exists.",
+  "This project is archived.": "This project is archived.",
+  "This project has no lead to take the work. Make one of its members the lead first.":
+    "This project has no lead to take the work. Make one of its members the lead first.",
   "Give the routine a name.": "Give the routine a name.",
   "Say what the lead should do on each run.": "Say what the lead should do on each run.",
   "Give the schedule.": "Give the schedule.",
@@ -78,13 +78,13 @@ const PROBLEMS: Record<string, string> = {
   "This routine no longer exists.": "This routine no longer exists.",
   "The previous run is still going.": "The previous run is still going.",
   "The program was off at the planned time.": "The program was off at the planned time.",
-  "The channel did not take the message.": "The channel did not take the message.",
+  "The project did not take the message.": "The project did not take the message.",
   "The routine could not start.": "The routine could not start.",
 };
 const COUNTED: Array<[RegExp, string]> = [
   [/^The name has at most (\d+) characters\.$/, "The name has at most {limit} characters."],
   [/^The instruction has at most (\d+) characters\.$/, "The instruction has at most {limit} characters."],
-  [/^A channel has at most (\d+) routines\.$/, "A channel has at most {limit} routines."],
+  [/^A channel has at most (\d+) routines\.$/, "A project has at most {limit} routines."],
 ];
 export function problemText(raw: string): string {
   // In the program the sentence comes through IPC with Electron's prefix; without removing it no sentence would be found below.
@@ -193,7 +193,7 @@ export function ChannelRoutineForm(props: {
       setError(e instanceof Error ? problemText(e.message) : fallback);
     }
   }
-  const heading = () => (editing ? t("Edit routine") : t("New channel routine"));
+  const heading = () => (editing ? t("Edit routine") : t("New project routine"));
   return (
     <section class="w2-panel" aria-label={heading()}>
       <h3>{heading()}</h3>
@@ -384,18 +384,18 @@ export function ChannelRoutinesPanel(props: {
     };
   });
   return (
-    <section class="w2-panel channel-routines" aria-label={t("Channel routines")}>
-      <h2>{t("Channel routines")}</h2>
+    <section class="w2-panel channel-routines" aria-label={t("Project routines")}>
+      <h2>{t("Project routines")}</h2>
       <p>{t("On each run the lead gets the instruction as a message from you.")}</p>
       <Show
         when={window.openbot.channelRoutines}
-        fallback={<p>{t("Channel routines are unavailable in this build.")}</p>}
+        fallback={<p>{t("Project routines are unavailable in this build.")}</p>}
       >
         <Show when={error()}>
           <p role="alert">{error()}</p>
         </Show>
         <Show when={loaded() && routines().length === 0}>
-          <p>{t("No routines in this channel yet.")}</p>
+          <p>{t("No routines in this project yet.")}</p>
         </Show>
         <For each={routines()}>
           {(routine) => (
@@ -409,7 +409,7 @@ export function ChannelRoutinesPanel(props: {
                   onCancel={() => setEditing("")}
                   onSave={async (input) => {
                     const api = window.openbot.channelRoutines;
-                    if (!api) throw new Error(t("Channel routines are unavailable in this build."));
+                    if (!api) throw new Error(t("Project routines are unavailable in this build."));
                     await api.update(input);
                     setEditing("");
                     await refresh();
@@ -582,7 +582,7 @@ export function ChannelRoutinesPanel(props: {
           existing={routines().length}
           onCreate={async (input) => {
             const api = window.openbot.channelRoutines;
-            if (!api) throw new Error(t("Channel routines are unavailable in this build."));
+            if (!api) throw new Error(t("Project routines are unavailable in this build."));
             await api.create(input);
             await refresh();
           }}
