@@ -1,4 +1,5 @@
 import { type BotSummary, NEW_THREAD_TITLE, type ThreadList } from "@openbot/contracts/ipc";
+import { engineRunTitle } from "./components/conversation/engine-run";
 import { t } from "./i18n";
 import { needsYouItemsFromCards } from "./needs-you";
 import type { PendingCard } from "./pending-cards";
@@ -44,7 +45,7 @@ export function threadRowLabel(list: ThreadList) {
   });
 }
 
-/** The store's default title ("New thread") in the window language; a title the person gave stays as it is. */
+/** The store's default title ("New thread") in the window language, a routine's or workflow's header as who started it; a title the person gave stays as it is. */
 function defaultThreadTitle(title: string): string {
-  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : title;
+  return title === NEW_THREAD_TITLE ? t(NEW_THREAD_TITLE) : (engineRunTitle(title) ?? title);
 }

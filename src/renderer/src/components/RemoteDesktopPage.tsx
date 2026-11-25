@@ -10,8 +10,9 @@ import {
   REMOTE_DESKTOP_LIMITS,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
-import { t, tData } from "../i18n";
+import { t, tData, tDataParts } from "../i18n";
 import { PanelHeading } from "./PanelHeading";
+import { withoutIpcPrefix } from "./provider-error";
 import { RemoteDesktopAccessPanel } from "./RemoteDesktopAccessPanel";
 import { Button, Input, NativeSelect } from "./ui";
 import { Cast, MonitorUp } from "./ui/icons";
@@ -73,7 +74,7 @@ export function RemoteDesktopSafety() {
               setCount(state.sessions.length);
               setError("");
             })
-            .catch((e) => setError(e instanceof Error ? e.message : t("Stop failed.")))
+            .catch((e) => setError(e instanceof Error ? problemText(e.message) : t("Stop failed.")))
         }
       />
       <Show when={error()}>
@@ -112,6 +113,11 @@ export function RemoteDesktopToken(props: { token: string; onClose: () => void }
   );
 }
 
+/** What a failed call says, in the window language and without Electron's "Error invoking remote method" in front. */
+function problemText(message: string): string {
+  return tDataParts(withoutIpcPrefix(message));
+}
+
 export function RemoteDesktopPage() {
   const api = window.openbot.remoteDesktop;
   const [host, setHost] = createSignal(emptyRemoteDesktopHostState());
@@ -132,7 +138,7 @@ export function RemoteDesktopPage() {
       setHost(await action());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Host action failed."));
+      setError(e instanceof Error ? problemText(e.message) : t("Host action failed."));
     }
   }
   async function tokenAction(action: () => Promise<{ state: ReturnType<typeof host>; token: string }>) {
@@ -142,7 +148,7 @@ export function RemoteDesktopPage() {
       setToken(result.token);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not start sharing."));
+      setError(e instanceof Error ? problemText(e.message) : t("Could not start sharing."));
     }
   }
   async function clientAction(action: () => Promise<ReturnType<typeof client>>) {
@@ -150,7 +156,7 @@ export function RemoteDesktopPage() {
       setClient(await action());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Connection failed."));
+      setError(e instanceof Error ? problemText(e.message) : t("Connection failed."));
     }
   }
   function draw(frame: RemoteDesktopFrame) {
@@ -169,7 +175,9 @@ export function RemoteDesktopPage() {
   }
   function send(input: RemoteDesktopInput) {
     if (client().phase !== "connected" || client().mode !== "control" || !api) return;
-    void api.client.sendInput(input).catch((e) => setError(e instanceof Error ? e.message : t("Input failed.")));
+    void api.client
+      .sendInput(input)
+      .catch((e) => setError(e instanceof Error ? problemText(e.message) : t("Input failed.")));
   }
   function point(e: MouseEvent | WheelEvent) {
     const rect = e.currentTarget instanceof HTMLCanvasElement ? e.currentTarget.getBoundingClientRect() : null;

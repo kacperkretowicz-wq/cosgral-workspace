@@ -226,7 +226,7 @@ export class Marketplace {
       }
       const created = await this.#deps.createAgent({
         name,
-        role: entry.role,
+        role: input.role?.trim() || entry.role,
         description: entry.instructions,
         ...(entry.reasoningEffort ? { reasoningEffort: entry.reasoningEffort } : {}),
         tools: { ...entry.tools },

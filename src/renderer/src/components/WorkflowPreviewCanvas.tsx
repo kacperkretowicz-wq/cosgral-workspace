@@ -1,7 +1,7 @@
 import type { WorkflowEdge, WorkflowGraph, WorkflowNode } from "@openbot/contracts/ipc";
-import { describeWorkflowCondition } from "@openbot/contracts/ipc";
 import { For, Show } from "solid-js";
 import { t } from "../i18n";
+import { conditionText } from "../workflow-text";
 import "../styles/workflow-preview.css";
 
 const NODE_WIDTH = 220;
@@ -36,7 +36,7 @@ export function describeWorkflowStep(node: WorkflowNode): string {
     case "prompt":
       return node.text;
     case "condition":
-      return describeWorkflowCondition(node);
+      return conditionText(node);
   }
 }
 

@@ -455,8 +455,6 @@ export const en = {
   "Could not update the app.": "Could not update the app.",
   "Could not uninstall the app.": "Could not uninstall the app.",
   "Loading apps…": "Loading apps…",
-  "No catalog is loaded yet. Choose the catalog folder in the server settings.":
-    "No catalog is loaded yet. Choose the catalog folder in the server settings.",
   "No matching apps.": "No matching apps.",
   Showing: "Showing",
   of: "of",
@@ -935,8 +933,6 @@ export const en = {
   "Your phones": "Your phones",
   "Notifications from this computer are on.": "Notifications from this computer are on.",
   "Notifications from this computer are off.": "Notifications from this computer are off.",
-  "No phones yet. Use “Pair another phone” above to add one.":
-    "No phones yet. Use “Pair another phone” above to add one.",
   "This computer only": "This computer only",
   "Local network": "Local network",
   "Local network and Tailscale": "Local network and Tailscale",
@@ -2955,12 +2951,6 @@ export const en = {
   "Two steps have the same id: {id}.": "Two steps have the same id: {id}.",
   "Two connections have the same id: {id}.": "Two connections have the same id: {id}.",
   "Connection {id} points to an unknown step.": "Connection {id} points to an unknown step.",
-  'Connection {id} leaves the approval {step}: use "allow" or "deny".':
-    'Connection {id} leaves the approval {step}: use "allow" or "deny".',
-  'Connection {id} leaves the condition {step}: use "yes" or "no".':
-    'Connection {id} leaves the condition {step}: use "yes" or "no".',
-  'Connection {id} leaves {step}: use "next".': 'Connection {id} leaves {step}: use "next".',
-  "The trigger cannot have incoming connections ({id}).": "The trigger cannot have incoming connections ({id}).",
   "The approval {step} needs an Allow connection.": "The approval {step} needs an Allow connection.",
   "The approval {step} has more than one way on for a decision.":
     "The approval {step} has more than one way on for a decision.",
@@ -3165,4 +3155,56 @@ export const en = {
   "The previous run of this routine is still running.": "The previous run of this routine is still running.",
   "The turn is gone.": "The turn is gone.",
   "The turn ended": "The turn ended",
+  "Connection {connection} leaves the approval {step}: use Allow or Deny.":
+    "Connection {connection} leaves the approval {step}: use Allow or Deny.",
+  "Connection {connection} leaves the condition {step}: use Yes or No.":
+    "Connection {connection} leaves the condition {step}: use Yes or No.",
+  "Connection {connection} leaves {step}: use Next.": "Connection {connection} leaves {step}: use Next.",
+  "The trigger cannot have incoming connections ({connection}).":
+    "The trigger cannot have incoming connections ({connection}).",
+  "Every step needs a title (1–{n} characters).": "Every step needs a title (1–{n} characters).",
+  'The routine "{id}" in the trigger does not exist.': 'The routine "{id}" in the trigger does not exist.',
+  'The agent "{id}" in step "{title}" does not exist.': 'The agent "{id}" in step "{title}" does not exist.',
+  'The channel "{id}" in step "{title}" does not exist.': 'The channel "{id}" in step "{title}" does not exist.',
+  'Step "{title}" needs an agent.': 'Step "{title}" needs an agent.',
+  'Step "{title}" needs a channel.': 'Step "{title}" needs a channel.',
+  'Step "{title}" needs an instruction.': 'Step "{title}" needs an instruction.',
+  'Step "{title}" needs a text to check.': 'Step "{title}" needs a text to check.',
+  'Step "{title}" needs a value to compare with.': 'Step "{title}" needs a value to compare with.',
+  'Step "{title}" needs a text.': 'Step "{title}" needs a text.',
+  'Step "{title}": the text is longer than {n} characters.': 'Step "{title}": the text is longer than {n} characters.',
+  'Step "{title}": the value is longer than {n} characters.':
+    'Step "{title}": the value is longer than {n} characters.',
+  contains: "contains",
+  "does not contain": "does not contain",
+  "is exactly": "is exactly",
+  "is not": "is not",
+  "starts with": "starts with",
+  "ends with": "ends with",
+  "is empty": "is empty",
+  "is not empty": "is not empty",
+  "Added: {titles}.": "Added: {titles}.",
+  "Removed: {titles}.": "Removed: {titles}.",
+  "Changed: {titles}.": "Changed: {titles}.",
+  "Connections changed.": "Connections changed.",
+  "Only positions on the canvas changed.": "Only positions on the canvas changed.",
+  "Workflow “{name}”": "Workflow “{name}”",
+  "Workflow run": "Workflow run",
+  "Routine run": "Routine run",
+  "Create an agent first: the pairing card appears in an agent's row.":
+    "Create an agent first: the pairing card appears in an agent's row.",
+  "Create an agent first: the consent card for a viewer appears in an agent's row.":
+    "Create an agent first: the consent card for a viewer appears in an agent's row.",
+  "Create an agent first: the card appears in an agent's row.":
+    "Create an agent first: the card appears in an agent's row.",
+  "No phones yet. Pair the first one with the button above.":
+    "No phones yet. Pair the first one with the button above.",
+  "No app catalog is loaded yet. Choose the folder with the catalog to load it.":
+    "No app catalog is loaded yet. Choose the folder with the catalog to load it.",
+  "Choose the catalog folder": "Choose the catalog folder",
+  "Projects and follow-ups": "Projects and follow-ups",
+  "Research and analysis": "Research and analysis",
+  "E-mail": "E-mail",
+  "Code review": "Code review",
+  "This workflow cannot be saved: {problems}": "This workflow cannot be saved: {problems}",
 } as const;

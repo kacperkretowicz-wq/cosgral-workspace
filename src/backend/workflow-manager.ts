@@ -530,6 +530,7 @@ export class WorkflowManager {
         throw new Error(`The routine "${node.trigger.routineId}" in the trigger does not exist.`);
       }
       if (node.type === "agent" || node.type === "approval") {
+        if (!node.botId) throw new Error(`Step "${title}" needs an agent.`);
         if (!runner.botExists(node.botId)) {
           throw new Error(`The agent "${node.botId}" in step "${title}" does not exist.`);
         }
@@ -558,6 +559,7 @@ export class WorkflowManager {
         }
       }
       if (node.type === "channel-output") {
+        if (!node.channelId) throw new Error(`Step "${title}" needs a channel.`);
         if (!channels.exists(node.channelId)) {
           throw new Error(`The channel "${node.channelId}" in step "${title}" does not exist.`);
         }
