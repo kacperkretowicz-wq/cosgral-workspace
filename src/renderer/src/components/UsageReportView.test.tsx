@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { flush } from "solid-js";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createMockUsageReport } from "../../stories/mock-insights";
+import { setLanguage } from "../i18n";
 import { UsageReportView } from "./UsageReportView";
 
 let usage = createMockUsageReport();
@@ -17,6 +19,22 @@ it("shows totals, the daily chart, the machine rings and the agent table", async
   expect(screen.getByRole("img", { name: /^Processor:/ })).toBeInTheDocument();
   expect(screen.getByRole("img", { name: /^Memory:/ })).toBeInTheDocument();
   expect(screen.getByRole("table", { name: "By agent" })).toBeInTheDocument();
+});
+
+it("writes the first and last day of the chart as dates, not as 2026-10-27 (seen in the real window)", async () => {
+  const real = await usage.get({ period: 30 });
+  vi.spyOn(usage, "get").mockResolvedValue({ ...real, from: "2026-10-27", to: "2026-11-25" });
+  setLanguage("pl");
+  flush();
+  try {
+    render(() => <UsageReportView />);
+    expect(await screen.findByText("27 paź 2026")).toBeInTheDocument();
+    expect(screen.getByText("25 lis 2026")).toBeInTheDocument();
+    expect(screen.queryByText("2026-10-27")).not.toBeInTheDocument();
+  } finally {
+    setLanguage("en");
+    flush();
+  }
 });
 
 it("asks for the period that was chosen", async () => {

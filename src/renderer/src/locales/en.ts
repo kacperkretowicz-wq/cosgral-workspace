@@ -1972,6 +1972,11 @@ export const en = {
   "Remove {name} for all agents?": "Remove {name} for all agents?",
   "Enabled for this agent": "Enabled for this agent",
   "Add server": "Add server",
+  "Server on the internet (HTTP)": "Server on the internet (HTTP)",
+  "The app starts this program on your computer. Type the command, for example npx, and its arguments below.":
+    "The app starts this program on your computer. Type the command, for example npx, and its arguments below.",
+  "The server already runs somewhere else. Type its address.":
+    "The server already runs somewhere else. Type its address.",
   Transport: "Transport",
   "Arguments (one per line)": "Arguments (one per line)",
   "Secret name": "Secret name",

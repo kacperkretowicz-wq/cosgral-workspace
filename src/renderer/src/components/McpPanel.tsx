@@ -100,10 +100,17 @@ export function McpPanel(props: {
               if (isOneOf(MCP_TRANSPORTS, value)) setTransport(value);
             }}
           >
-            <option value="stdio">stdio</option>
-            <option value="http">HTTP</option>
+            <option value="stdio">{t("Local program (stdio)")}</option>
+            <option value="http">{t("Server on the internet (HTTP)")}</option>
           </NativeSelect>
         </label>
+        <p class="mcp-hint">
+          {transport() === "stdio"
+            ? t(
+                "The app starts this program on your computer. Type the command, for example npx, and its arguments below.",
+              )
+            : t("The server already runs somewhere else. Type its address.")}
+        </p>
         <Show
           when={transport() === "stdio"}
           fallback={

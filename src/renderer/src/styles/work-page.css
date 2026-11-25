@@ -1492,3 +1492,11 @@
 .work-page .ui-field > label.ui-label {
   display: block;
 }
+
+/* One plain sentence under the MCP server transport choice. */
+.work-page .mcp-hint {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: 1.4;
+}
