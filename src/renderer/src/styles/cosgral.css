@@ -2303,6 +2303,7 @@ meter.account-usage-track::-webkit-meter-optimum-value {
 }
 
 .usage-unavailable h3,
+.usage-unavailable h2,
 .schedule-day h3,
 .schedule-feed h3 {
   margin: 0 0 6px;
@@ -2368,7 +2369,8 @@ meter.account-usage-track::-webkit-meter-optimum-value {
   gap: 8px;
 }
 
-.usage-split h3 {
+.usage-split h3,
+.usage-split h2 {
   margin: 0;
   font-size: var(--cosgral-text-md);
 }
