@@ -3213,7 +3213,6 @@ export const pl = {
   "Takes the whole set away from every agent. The skills stay in the library.":
     "Zabiera cały zestaw wszystkim agentom. Skille zostają w bibliotece.",
   "Turn off for all agents": "Wyłącz u wszystkich agentów",
-  Project: "Projekt",
   "Choose a project": "Wybierz projekt",
   "Gives the set to the agents that work in the chosen project.":
     "Daje zestaw agentom, którzy pracują w wybranym projekcie.",
