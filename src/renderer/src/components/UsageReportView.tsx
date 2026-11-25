@@ -222,7 +222,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
               <div class="usage-overview">
                 <figure class="usage-chart">
                   <header class="usage-card-header">
-                    <h3>{t("Tokens per day")}</h3>
+                    <h2>{t("Tokens per day")}</h2>
                     <span class="usage-peak">{t("Peak {value}", { value: compact(peak()) })}</span>
                   </header>
                   <div class="usage-chart-plot">
@@ -280,10 +280,10 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
 
                 <section class="usage-machine" aria-label={t("This computer")}>
                   <header class="usage-card-header">
-                    <h3>
+                    <h2>
                       <Cpu size={15} stroke-width={1.5} aria-hidden="true" />
                       {t("This computer")}
-                    </h3>
+                    </h2>
                   </header>
                   <div class="usage-rings">
                     <Ring label={t("Processor")} percent={current().machine.cpuPercent} />
@@ -333,7 +333,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
               <Show when={current().split}>
                 {(split) => (
                   <section class="usage-split" aria-label={t("Token split")}>
-                    <h3>{t("Token split")}</h3>
+                    <h2>{t("Token split")}</h2>
                     <ul class="usage-split-bar" aria-hidden="true">
                       <For each={splitParts(split())}>
                         {(part) => (
@@ -400,7 +400,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
 
               <Show when={current().unavailable.length > 0}>
                 <section class="usage-unavailable" aria-label={t("Not collected")}>
-                  <h3>{t("Not collected yet")}</h3>
+                  <h2>{t("Not collected yet")}</h2>
                   <ul>
                     <For each={current().unavailable}>
                       {(item) => (

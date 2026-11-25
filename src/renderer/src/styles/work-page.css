@@ -1018,7 +1018,7 @@
   gap: var(--openbot-space-2);
 }
 
-.work-page .usage-card-header h3 {
+.work-page .usage-card-header h2 {
   display: inline-flex;
   align-items: center;
   gap: var(--openbot-space-1-5);
