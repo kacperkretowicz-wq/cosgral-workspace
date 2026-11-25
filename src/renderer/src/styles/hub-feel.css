@@ -261,3 +261,10 @@
 .search-field:focus-within:has(:focus-visible) :focus-visible {
   outline: none;
 }
+
+/* A button that cannot be used yet stays readable: it is dimmed, not close to invisible (it was .42). */
+:where(.ui-button):disabled,
+:where(.ui-button)[data-disabled],
+:where(.w2-library, .w2-panel, .cosgral-form, .agent-settings-content) :where(button:not(.ui-button)):disabled {
+  opacity: 0.62;
+}
