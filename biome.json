@@ -30,7 +30,8 @@
       "!tools/biome/anti-slop",
       "!coverage",
       "!.agents",
-      "!graphify-out"
+      "!graphify-out",
+      "!resources/builtin-skills"
     ]
   },
   "formatter": {

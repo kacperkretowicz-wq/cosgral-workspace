@@ -2,3 +2,5 @@
 *.ico binary
 patches/*.patch -whitespace
 *.cmd text eol=crlf
+# Skills that ship with the app are copies of public sources; their bytes stay as they are.
+resources/builtin-skills/** -text

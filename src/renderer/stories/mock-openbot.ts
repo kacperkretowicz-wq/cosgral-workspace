@@ -107,6 +107,7 @@ import { createMockAgentCards } from "./mock-agent-cards";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockBudgets } from "./mock-budgets";
+import { createMockBuiltinSkills } from "./mock-builtin-skills";
 import { createMockChannelRoutines } from "./mock-channel-routines";
 import { createMockComposer, createMockSearch, createMockThreadTabs } from "./mock-composer";
 import { createMockContext } from "./mock-context";
@@ -602,6 +603,9 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       routineIds: ["routine-demo", "rt-demo-pipeline"],
     }),
     seed: { botId: firstBotId, channelId: mockChannels[0]?.id ?? "demo-channel" },
+  });
+  const mockBuiltinSkills = createMockBuiltinSkills((event) => emitAgentEvent(event), {
+    botIds: () => bots.map((bot) => bot.id),
   });
   const mockMarketplace = createMockMarketplace((event) => emitAgentEvent(event), {
     bots: () => bots.map((bot) => ({ id: bot.id, name: bot.name })),
@@ -1497,6 +1501,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     // COSGRAL W12-KK: routines, workflows and the Marketplace tabs Agents and Skills (demo; nothing is scheduled, run or installed).
     routines: mockRoutines.api,
     workflows: mockWorkflows.api,
+    builtinSkills: mockBuiltinSkills.api,
     marketplace: mockMarketplace.api,
     // COSGRAL W12-KK: remote desktop host and client (demo; no socket, no screen).
     remoteDesktop: createMockRemoteDesktop((event) => emitAgentEvent(event)),

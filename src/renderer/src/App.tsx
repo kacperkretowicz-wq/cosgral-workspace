@@ -2196,7 +2196,7 @@ export function App() {
               />
               <Show when={activePage() === "library"}>
                 <LazyPage>
-                  <LibraryPage />
+                  <LibraryPage bots={botList()} channels={channelList()} />
                 </LazyPage>
               </Show>
               <Show when={activePage() === "schedule"}>

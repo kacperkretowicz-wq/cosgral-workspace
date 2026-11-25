@@ -3155,6 +3155,66 @@ export const en = {
   "The previous run of this routine is still running.": "The previous run of this routine is still running.",
   "The turn is gone.": "The turn is gone.",
   "The turn ended": "The turn ended",
+  "Built-in skills": "Built-in skills",
+  "Built-in": "Built-in",
+  "Comes with the app. It stays in the library.": "Comes with the app. It stays in the library.",
+  "Skills that come with the app. They are always here; choose which agents use them.":
+    "Skills that come with the app. They are always here; choose which agents use them.",
+  "Could not load the built-in skills.": "Could not load the built-in skills.",
+  "Built-in skills are unavailable in this build.": "Built-in skills are unavailable in this build.",
+  "These skills come with the app and cannot be deleted. A skill is a ready set of instructions an agent works by. The files are copies of public projects and keep their licenses.":
+    "These skills come with the app and cannot be deleted. A skill is a ready set of instructions an agent works by. The files are copies of public projects and keep their licenses.",
+  "Could not change the skills: {reason}": "Could not change the skills: {reason}",
+  "There are no agents to change.": "There are no agents to change.",
+  "{title} is on. Agents changed: {count}.": "{title} is on. Agents changed: {count}.",
+  "{title} is off. Agents changed: {count}.": "{title} is off. Agents changed: {count}.",
+  "Agents with this set: {count} of {total}": "Agents with this set: {count} of {total}",
+  "The program “{command}” is on this computer.": "The program “{command}” is on this computer.",
+  "The program “{command}” was not found. Without it the skill cannot work.":
+    "The program “{command}” was not found. Without it the skill cannot work.",
+  "Install it once by typing this in a terminal:": "Install it once by typing this in a terminal:",
+  "Copies the command so you can paste it in a terminal.": "Copies the command so you can paste it in a terminal.",
+  "Copy the command": "Copy the command",
+  "Looks for the program again, for example after you installed it.":
+    "Looks for the program again, for example after you installed it.",
+  "Check again": "Check again",
+  "Could not copy. Select the command and copy it by hand.": "Could not copy. Select the command and copy it by hand.",
+  "You already have your own skill named “{name}”. It stays as it is.":
+    "You already have your own skill named “{name}”. It stays as it is.",
+  "Give to new agents": "Give to new agents",
+  "Every new agent gets this set at once. You can change it any time.":
+    "Every new agent gets this set at once. You can change it any time.",
+  "New agents will get {title}.": "New agents will get {title}.",
+  "New agents will not get {title}.": "New agents will not get {title}.",
+  "Gives every agent all skills of this set.": "Gives every agent all skills of this set.",
+  "Turn on for all agents": "Turn on for all agents",
+  "Takes the whole set away from every agent. The skills stay in the library.":
+    "Takes the whole set away from every agent. The skills stay in the library.",
+  "Turn off for all agents": "Turn off for all agents",
+  Project: "Project",
+  "Choose a project": "Choose a project",
+  "Gives the set to the agents that work in the chosen project.":
+    "Gives the set to the agents that work in the chosen project.",
+  "Turn on for the project’s agents": "Turn on for the project’s agents",
+  "Switch the set on or off for one agent.": "Switch the set on or off for one agent.",
+  "Choose agents": "Choose agents",
+  "There are no agents yet. Create an agent first.": "There are no agents yet. Create an agent first.",
+  "Only some skills of the set": "Only some skills of the set",
+  "The skills that belong to this set.": "The skills that belong to this set.",
+  "Skills in this set ({count})": "Skills in this set ({count})",
+  "License: {license}. Source version {version}.": "License: {license}. Source version {version}.",
+  "A set of working habits for agents: plan first, write the test first, check the result before saying it is done.":
+    "A set of working habits for agents: plan first, write the test first, check the result before saying it is done.",
+  "Works by itself. When you start something new, the agent first asks what you need, then writes a plan, works step by step and checks each step.":
+    "Works by itself. When you start something new, the agent first asks what you need, then writes a plan, works step by step and checks each step.",
+  "The agent writes for a person with ADHD: the next step comes first, steps are short and numbered, and times are given in minutes.":
+    "The agent writes for a person with ADHD: the next step comes first, steps are short and numbered, and times are given in minutes.",
+  "Write /i-have-adhd in the chat to turn it on. It stays on until you write: stop adhd mode. It does nothing until you turn it on.":
+    "Write /i-have-adhd in the chat to turn it on. It stays on until you write: stop adhd mode. It does nothing until you turn it on.",
+  "Turns a project folder into a map of how its parts connect, so the agent can ask the map instead of reading every file.":
+    "Turns a project folder into a map of how its parts connect, so the agent can ask the map instead of reading every file.",
+  "Write /graphify in the chat. It needs the graphify program on this computer; install it once with the command below.":
+    "Write /graphify in the chat. It needs the graphify program on this computer; install it once with the command below.",
   "Connection {connection} leaves the approval {step}: use Allow or Deny.":
     "Connection {connection} leaves the approval {step}: use Allow or Deny.",
   "Connection {connection} leaves the condition {step}: use Yes or No.":
@@ -3207,4 +3267,6 @@ export const en = {
   "E-mail": "E-mail",
   "Code review": "Code review",
   "This workflow cannot be saved: {problems}": "This workflow cannot be saved: {problems}",
+  "No agent has {title} turned on.": "No agent has {title} turned on.",
+  "Choose a project first.": "Choose a project first.",
 } as const;

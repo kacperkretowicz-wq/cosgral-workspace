@@ -50,6 +50,8 @@ export interface SkillLibraryOptions {
   root: string;
   /** The agent's workspace, or null when the agent no longer exists. */
   workspaceFor: (botId: string) => string | null;
+  /** Skills the app ships (built-in): `delete` refuses them. */
+  isProtected?: (skillId: string) => boolean;
   limits?: Partial<SkillLimits>;
   now?: () => Date;
 }
@@ -103,6 +105,7 @@ export class SkillLibrary extends EventEmitter<SkillLibraryEvents> {
   readonly #database: OpenBotDatabase;
   readonly #root: string;
   readonly #workspaceFor: (botId: string) => string | null;
+  readonly #isProtected: (skillId: string) => boolean;
   readonly #limits: SkillLimits;
   readonly #now: () => Date;
   #queue: Promise<unknown> = Promise.resolve();
@@ -112,6 +115,7 @@ export class SkillLibrary extends EventEmitter<SkillLibraryEvents> {
     this.#database = options.database;
     this.#root = options.root;
     this.#workspaceFor = options.workspaceFor;
+    this.#isProtected = options.isProtected ?? (() => false);
     this.#limits = { ...SKILL_LIMITS, ...options.limits };
     this.#now = options.now ?? (() => new Date());
   }
@@ -231,6 +235,9 @@ export class SkillLibrary extends EventEmitter<SkillLibraryEvents> {
   delete(input: DeleteSkillInput): Promise<void> {
     return this.#serial(async () => {
       const skill = this.#stored(input.skillId);
+      if (this.#isProtected(skill.id)) {
+        throw new Error(`${skill.name} is a built-in skill and stays in the library. Remove it from an agent instead.`);
+      }
       const installs = this.#installRows().filter((install) => install.skillId === skill.id);
       if (!input.force) {
         const changed: string[] = [];

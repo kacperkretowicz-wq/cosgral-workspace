@@ -123,6 +123,7 @@ import { BROWSER_DYNAMIC_TOOLS, OPENBOT_BROWSER_NAMESPACE } from "./browser-host
 import type { BudgetMeter } from "./budget-meter";
 import { addSplits, PersistentSplitTracker, splitFromTokenUsage, type TokenSplit } from "./budget-thread-split";
 import { PersistentUsageTracker } from "./budget-thread-totals";
+import { BuiltinSkills } from "./builtin-skills";
 import { ChannelAgentRunner } from "./channel-agent-runner";
 import type { ChannelRunInput, ChannelTurnResult } from "./channel-engine";
 import { ClaudeAgentClient } from "./claude-client";
@@ -438,6 +439,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #acpLogin: AcpLogin;
   /** COSGRAL W2: the local skill library and the agent tools on top of it. */
   readonly #skills: SkillLibrary;
+  /** COSGRAL: the skills the app ships (superpowers, i-have-adhd, graphify); null until the host gives their folder. */
+  #builtinSkills: BuiltinSkills | null = null;
   readonly #skillTools: SkillTools;
   /** COSGRAL W2: the local Vault; encryption comes from the host (safeStorage) through `useSecretBox`. */
   #secretBox: SecretBox = NO_SECRET_BOX;
@@ -566,6 +569,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       database: store.database,
       root: join(dirname(store.sharedRoot), "Skills"),
       workspaceFor: (botId) => this.#store.list().find((bot) => bot.id === botId)?.workspacePath ?? null,
+      isProtected: (skillId) => this.#builtinSkills?.isBuiltin(skillId) ?? false,
     });
     this.#skillTools = new SkillTools(this.#skills, () => this.marketplace);
     // COSGRAL W2: the Vault encrypts through whatever box the host gives later; until then nothing is saved.
@@ -1417,6 +1421,22 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#endpoints = endpoints;
   }
 
+  /** COSGRAL: puts the shipped skills (the folder `resources/builtin-skills`) into the library and keeps them there. */
+  useBuiltinSkills(root: string): BuiltinSkills {
+    this.#builtinSkills = new BuiltinSkills({
+      database: this.#store.database,
+      library: this.#skills,
+      root,
+      botIds: () => this.#store.list().map((bot) => bot.id),
+    });
+    void this.#builtinSkills.ready();
+    return this.#builtinSkills;
+  }
+
+  get builtinSkills(): BuiltinSkills | null {
+    return this.#builtinSkills;
+  }
+
   async createBot(): Promise<BotSummary> {
     let bot = await this.#store.createBot();
     if (this.#preferredProvider === "claude") {
@@ -1428,6 +1448,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     // COSGRAL W8-BE1 (Q9): every new agent, also from a template, a copy or an import, starts at the least access.
     this.#access?.agentCreated(bot.id);
+    // COSGRAL: the built-in skills the person wants new agents to have (a problem here never stops the agent).
+    await this.#builtinSkills?.applyDefaults(bot.id);
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     return bot;
   }

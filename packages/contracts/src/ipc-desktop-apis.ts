@@ -40,6 +40,7 @@ import type { AgentActivity, PendingAgentRequest } from "./ipc-attention";
 import type { BrowserControlState, BrowserOpenInput, BrowserTab, BrowserVisibilityInput } from "./ipc-browser";
 import type { BrowserProfilesDesktopApi } from "./ipc-browser-profiles";
 import type { BudgetsDesktopApi } from "./ipc-budgets";
+import type { BuiltinSkillsDesktopApi } from "./ipc-builtin-skills";
 import type { ChannelRoutinesDesktopApi } from "./ipc-channel-routines";
 import type { ComposerDesktopApi } from "./ipc-composer";
 import type { ComputerUseState, StopComputerUseInput } from "./ipc-computer-use";
@@ -683,6 +684,8 @@ export interface OpenBotDesktopApi {
   onboarding?: OnboardingDesktopApi;
   /** COSGRAL W3 remote desktop (this computer only). Optional until every renderer mock implements it. */
   remoteDesktop?: RemoteDesktopDesktopApi;
+  /** COSGRAL built-in skills: superpowers, i-have-adhd, graphify (this computer only). Optional until every mock has it. */
+  builtinSkills?: BuiltinSkillsDesktopApi;
   /** COSGRAL W3 local Marketplace (this computer only). Optional until every renderer mock implements it. */
   marketplace?: MarketplaceDesktopApi;
   /** COSGRAL W3 Mobile Connect (this computer only). Optional until every renderer mock implements it. */
