@@ -89,6 +89,13 @@ describe("first run: one flow", () => {
     });
   });
 
+  it("tells a person without an account that free models are planned and what to do for now", async () => {
+    vi.stubGlobal("openbot", { onboarding: { getState: vi.fn().mockResolvedValue(onboarding()) } });
+    renderSetup();
+    await fireEvent.click(screen.getByRole("button", { name: /Use this computer/ }));
+    expect(await screen.findByText(/Free models are planned/)).toBeInTheDocument();
+  });
+
   it("starts the language field on the language the window already shows, not on English", async () => {
     // The window follows the system language (Polish) before a language was chosen; the field must not send "en".
     setLanguage("pl");

@@ -209,6 +209,8 @@ export const en = {
   "Connection type": "Connection type",
   "Back to connection choice": "Back to connection choice",
   "Default provider": "Default provider",
+  "No account yet? Free models are planned. For now, sign in to Codex or Claude, or add your own key later on the Providers page.":
+    "No account yet? Free models are planned. For now, sign in to Codex or Claude, or add your own key later on the Providers page.",
   "Used for new local agents. You can change it for each agent later.":
     "Used for new local agents. You can change it for each agent later.",
   "Paste an cosgral:// invitation link": "Paste an cosgral:// invitation link",

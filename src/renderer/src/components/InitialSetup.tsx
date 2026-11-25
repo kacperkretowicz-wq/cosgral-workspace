@@ -482,6 +482,14 @@ export function InitialSetup(props: InitialSetupProps) {
                 onChange={setSelectedProvider}
               />
 
+              <Show when={!props.reviewing}>
+                <p class="provider-picker-hint setup-free-models-note">
+                  {t(
+                    "No account yet? Free models are planned. For now, sign in to Codex or Claude, or add your own key later on the Providers page.",
+                  )}
+                </p>
+              </Show>
+
               <Show when={!props.reviewing && window.openbot.subscriptions && selectedProvider()} keyed>
                 {(provider) => (
                   <ManagedCliSection

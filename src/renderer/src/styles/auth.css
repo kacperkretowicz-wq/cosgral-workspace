@@ -1089,6 +1089,10 @@
   line-height: 16px;
 }
 
+.setup-free-models-note {
+  margin-top: 4px;
+}
+
 .mac-permission-copy {
   display: grid;
   gap: 2px;
