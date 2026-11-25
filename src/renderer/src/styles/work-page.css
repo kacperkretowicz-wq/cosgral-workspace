@@ -602,6 +602,103 @@
   gap: var(--openbot-space-1);
 }
 
+/* Schedule › Plan › Month: a grid of days (Monday first); a click chooses the day whose runs show below. */
+
+.schedule-month {
+  display: grid;
+  gap: var(--openbot-space-2);
+}
+
+.schedule-month-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.schedule-month-bar h3 {
+  min-width: 11ch;
+  margin: 0;
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-lg);
+  font-weight: var(--openbot-weight-semibold);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.schedule-month-head,
+.schedule-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--openbot-space-1);
+}
+
+.schedule-month-head span {
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.schedule-month .schedule-month-cell {
+  display: grid;
+  width: 100%;
+  min-height: 56px;
+  align-content: space-between;
+  justify-items: start;
+  gap: var(--openbot-space-1);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  background: transparent;
+  padding: var(--openbot-space-1) var(--openbot-space-2);
+  text-align: left;
+  color: var(--openbot-text-primary);
+  cursor: pointer;
+  transition:
+    background var(--openbot-duration-fast, 120ms) ease,
+    border-color var(--openbot-duration-fast, 120ms) ease;
+}
+
+.schedule-month .schedule-month-cell:hover {
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-bg-control-hover);
+}
+
+.schedule-month .schedule-month-cell[data-outside="true"] {
+  color: var(--openbot-text-secondary);
+  opacity: 0.55;
+}
+
+.schedule-month .schedule-month-cell[data-today="true"] .schedule-month-number {
+  font-weight: var(--openbot-weight-semibold);
+  text-decoration: underline;
+}
+
+.schedule-month .schedule-month-cell[aria-pressed="true"] {
+  border-color: var(--openbot-border-strong);
+  background: var(--openbot-bg-control-hover);
+}
+
+.schedule-month-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.schedule-month-counts span {
+  min-width: 18px;
+  border-radius: 9px;
+  background: var(--openbot-bg-control-hover);
+  padding: 0 6px;
+  color: var(--openbot-text-secondary);
+  font-size: var(--openbot-text-xs);
+  line-height: 18px;
+  text-align: center;
+}
+
+.schedule-month-counts span[data-kind="failed"] {
+  color: var(--openbot-text-danger, #e5484d);
+}
+
 .work-page .schedule-day {
   display: grid;
   gap: var(--openbot-space-1);
