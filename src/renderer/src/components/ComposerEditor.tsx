@@ -468,6 +468,22 @@ export function ComposerEditor(props: ComposerEditorProps) {
             </For>
           </section>
         </Show>
+        <Show when={mention() && matchingOptions().length === 0 && !/\s/u.test(mention()?.query ?? "")}>
+          <section
+            class="mention-picker mention-picker-empty"
+            role="status"
+            aria-label={t("Insert mention")}
+            style={{
+              bottom: `${pickerPosition().bottom}px`,
+              left: `${pickerPosition().left}px`,
+              width: `${pickerPosition().width}px`,
+            }}
+          >
+            {mention()?.query
+              ? t("Nothing matches this name. Esc closes the list.")
+              : t("Nobody to mention yet. Add another agent or attach a file, then type @ again.")}
+          </section>
+        </Show>
         <Show when={mention() && matchingOptions().length > 0}>
           <Listbox.Root<PickerOption>
             as="div"

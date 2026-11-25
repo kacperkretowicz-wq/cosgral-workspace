@@ -1936,6 +1936,9 @@ export const en = {
   "Close selected text actions": "Close selected text actions",
   "Describe edits": "Describe edits",
   "Send edit instruction": "Send edit instruction",
+  "Nothing matches this name. Esc closes the list.": "Nothing matches this name. Esc closes the list.",
+  "Nobody to mention yet. Add another agent or attach a file, then type @ again.":
+    "Nobody to mention yet. Add another agent or attach a file, then type @ again.",
   "Insert mention": "Insert mention",
   "Agent account": "Agent account",
   "COSGRAL accounts are available for Codex and Claude.": "COSGRAL accounts are available for Codex and Claude.",

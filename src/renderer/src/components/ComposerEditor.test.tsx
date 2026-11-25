@@ -81,6 +81,31 @@ describe("ComposerEditor channel mentions", () => {
   });
 });
 
+describe("ComposerEditor empty mention list", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, "openbot");
+  });
+
+  it("says why the list is empty after @ instead of showing nothing (seen in the real window)", async () => {
+    Object.assign(window, {
+      openbot: { composer: { searchMentions: async () => [], listSlashCommands: async () => [] } },
+    });
+    const { editor } = renderComposer();
+    editor.textContent = "@";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    expect(await screen.findByText(/Nobody to mention yet/)).toBeInTheDocument();
+    editor.textContent = "@zzz";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    expect(await screen.findByText(/Nothing matches this name/)).toBeInTheDocument();
+    editor.textContent = "@zzz and more";
+    placeCaretAtEnd(editor);
+    await fireEvent.input(editor);
+    await waitFor(() => expect(screen.queryByText(/Nothing matches this name/)).not.toBeInTheDocument());
+  });
+});
+
 describe("ComposerEditor slash commands", () => {
   const listSlashCommands = vi.fn(async () => [
     { name: "compact", hint: "Shorten the context", kind: "program" as const },
