@@ -22,6 +22,21 @@ export const PROJECT_PLAN_ASPECTS = [
 ] as const;
 export type ProjectPlanAspect = (typeof PROJECT_PLAN_ASPECTS)[number];
 
+/** The headings the lead is asked to use, in this order; the reply is split at them (`parseProjectPlanReply`). */
+export const PROJECT_PLAN_HEADINGS = [
+  "Cel",
+  "Zakres",
+  "Ryzyka",
+  "Kroki",
+  "Zależności",
+  "Jakość",
+  "Testy",
+  "Bezpieczeństwo",
+  "Kolejność",
+  "Skille do utworzenia",
+  "Potrzebne narzędzia",
+] as const;
+
 export const PROJECT_PLAN_LIMITS = {
   description: 4_000,
   feedback: 1_000,
@@ -248,38 +263,23 @@ function parseNeeds(body: string): string[] {
   return needs;
 }
 
-/** The sentence the person's description and the aspects are sent in. Plain Polish: the lead answers in the language of the description. */
+/** The message the lead gets (it shows in the project chat as a message of the person). Plain Polish: the lead answers in the language of the description. */
 export function projectPlanRequestMessage(description: string, feedback?: string): string {
   const change = feedback?.trim()
-    ? `\n\nPoprzednia wersja planu nie podobała się. Zmień ją według tej uwagi:\n${feedback.trim()}`
-    : "";
+    ? ["", `Poprzednia wersja nie pasowała. Zmień ją według tej uwagi: ${feedback.trim()}`]
+    : [];
   return [
-    "Zaplanuj ten projekt, zanim zaczniemy pracę. Najpierw przeczytaj opis, potem spójrz na projekt z każdej strony.",
+    "Zaplanuj ten projekt, zanim zaczniemy pracę. Spójrz na niego z każdej strony.",
     "",
     "Opis projektu:",
     description.trim(),
-    change,
+    ...change,
     "",
-    "Odpowiedz prostym językiem, bez skrótów i bez podwójnych myślników, tak aby zrozumiał to ktoś, kto zaczyna. Użyj dokładnie tych nagłówków, każdy w osobnej linii:",
-    "## Cel",
-    "## Zakres",
-    "## Ryzyka",
-    "## Kroki",
-    "## Zależności",
-    "## Jakość",
-    "## Testy",
-    "## Bezpieczeństwo",
-    "## Kolejność",
-    "## Skille do utworzenia",
-    "## Potrzebne narzędzia",
+    "Odpowiedz prostym językiem, bez skrótów i bez podwójnych myślników. Użyj tych nagłówków, każdy w osobnej linii i z dwoma znakami # na początku:",
+    PROJECT_PLAN_HEADINGS.join(", "),
     "",
-    "W sekcji „Skille do utworzenia” podaj najwyżej sześć skilli, które naprawdę pomogą w tym projekcie. Każdy zapisz tak:",
-    "### nazwa-malymi-literami-z-myslnikami",
-    "Opis: jedno zdanie, kiedy skill jest potrzebny.",
-    "Instrukcja:",
-    "krótki opis krok po kroku, jak ma pracować agent z tym skillem.",
-    "",
-    "W sekcji „Potrzebne narzędzia” wypisz w punktach (każdy punkt zaczyna się od myślnika) usługi i narzędzia, z których projekt będzie korzystał, np. kalendarz, GitHub, arkusz.",
+    "Pod „Skille do utworzenia” podaj najwyżej sześć skilli, które naprawdę pomogą. Każdy zapisz tak: linia „### nazwa-malymi-literami”, linia „Opis: kiedy skill jest potrzebny”, linia „Instrukcja:” i pod nią krótkie kroki pracy.",
+    "Pod „Potrzebne narzędzia” wypisz w punktach (myślnik na początku) usługi, z których projekt będzie korzystał, np. kalendarz albo GitHub.",
     "To tylko propozycja. Niczego nie twórz i nie włączaj, dopóki użytkownik się wyraźnie nie zgodzi. Gotowy plan oddaj jako wynik zadania.",
   ].join("\n");
 }

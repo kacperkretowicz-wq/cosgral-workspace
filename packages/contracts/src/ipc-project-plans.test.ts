@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isProjectPlan,
+  PROJECT_PLAN_HEADINGS,
   PROJECT_PLAN_LIMITS,
   parseDecideProjectPlanInput,
   parseProjectPlanReply,
@@ -84,16 +85,8 @@ describe("parseProjectPlanReply", () => {
 describe("requests", () => {
   it("asks for every side of the project and promises that nothing is created", () => {
     const message = projectPlanRequestMessage("Sklep ze świecami", "Więcej o ryzykach");
-    for (const heading of [
-      "## Cel",
-      "## Ryzyka",
-      "## Testy",
-      "## Bezpieczeństwo",
-      "## Kolejność",
-      "## Skille do utworzenia",
-    ]) {
-      expect(message).toContain(heading);
-    }
+    for (const heading of PROJECT_PLAN_HEADINGS) expect(message).toContain(heading);
+    expect(message.length).toBeLessThan(1_300);
     expect(message).toContain("Sklep ze świecami");
     expect(message).toContain("Więcej o ryzykach");
     expect(message).toContain("Niczego nie twórz");

@@ -35,15 +35,16 @@ export function ProjectPlanPill(props: { channel: WorkspaceChannel; onToggle?: (
   const [plan, setPlan] = createSignal<ProjectPlan | null>(null);
   const [open, setOpen] = createSignal(false);
   let serial = 0;
-  async function refresh() {
+  /** The hint of the pill is quiet when it cannot read the plan; "Check now" (`loud`) says what went wrong. */
+  async function refresh(loud = false) {
     const api = window.openbot.projectPlans;
     if (!api) return;
     const n = ++serial;
     try {
       const next = await api.get({ channelId: props.channel.id });
       if (n === serial) setPlan(next);
-    } catch {
-      // The pill only shows a hint; the panel shows real problems when an action fails.
+    } catch (cause) {
+      if (loud) throw cause;
     }
   }
   onSettled(() => {
@@ -86,7 +87,7 @@ export function ProjectPlanPill(props: { channel: WorkspaceChannel; onToggle?: (
       </summary>
       <div class="channel-view-card" data-wide="">
         <Show when={open()}>
-          <ProjectPlanPanel channel={props.channel} plan={plan()} onChange={setPlan} onRefresh={refresh} />
+          <ProjectPlanPanel channel={props.channel} plan={plan()} onChange={setPlan} onRefresh={() => refresh(true)} />
         </Show>
       </div>
     </details>
@@ -108,6 +109,15 @@ export function ProjectPlanPanel(props: {
   const description = () => draft() ?? props.plan?.description ?? props.channel.instructions;
   const problem = () => projectDescriptionProblem(description());
   const lead = () => props.channel.leadBotId ?? "";
+
+  async function check() {
+    setError("");
+    try {
+      await props.onRefresh();
+    } catch (cause) {
+      setError(problemText(cause, t("This did not work. Try again.")));
+    }
+  }
 
   /** Runs one action of the plan; the answer is the new plan. Only one action runs at a time. */
   async function run(name: string, work: (plans: NonNullable<ReturnType<typeof api>>) => Promise<ProjectPlan>) {
@@ -225,12 +235,7 @@ export function ProjectPlanPanel(props: {
             <p>
               {t("The lead is making the plan. This can take a few minutes. You can follow the work in the Tasks tab.")}
             </p>
-            <Button
-              type="button"
-              size="sm"
-              title={t("Check whether the plan is ready.")}
-              onClick={() => void props.onRefresh()}
-            >
+            <Button type="button" size="sm" title={t("Check whether the plan is ready.")} onClick={() => void check()}>
               {t("Check now")}
             </Button>
           </div>

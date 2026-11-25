@@ -919,6 +919,7 @@
 }
 
 .project-plan-hint {
+  white-space: nowrap;
   border-radius: var(--openbot-radius-pill);
   background: var(--openbot-accent-soft);
   padding: 1px var(--openbot-space-2);

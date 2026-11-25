@@ -178,7 +178,7 @@ export function ChannelView(props: {
             channelLabel={`# ${props.channel.name}`}
           />
           <div class="channel-view-settings" ref={(element) => (settings = element)}>
-            <Show when={window.openbot.projectPlans}>
+            <Show when={window.openbot?.projectPlans}>
               <ProjectPlanPill channel={props.channel} onToggle={onlyOne} />
             </Show>
             <Show when={props.channel.instructions}>

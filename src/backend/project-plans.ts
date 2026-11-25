@@ -406,11 +406,8 @@ export function createProjectPlanService(deps: {
   database: OpenBotDatabase;
   channels: {
     list: () => WorkspaceChannel[];
-    getTask: (taskId: string) => { state: ChannelTaskState };
-    listMessages: (
-      channelId: string,
-      input?: { limit?: number },
-    ) => Array<{ taskId: string | null; kind: string; superseded: boolean; text: string }>;
+    getTask: (taskId: string) => { state: ChannelTaskState; resultMessageId?: string | null };
+    getMessage: (channelId: string, messageId: string) => { text: string };
     saveMemoryByPerson: (input: { channelId: string; text: string }) => unknown;
   };
   engine: { sendMessage: (input: { channelId: string; text: string }) => { task: { id: string } } };
@@ -448,10 +445,12 @@ export function createProjectPlanService(deps: {
       }
     },
     result: (channelId, taskId) => {
-      const results = deps.channels
-        .listMessages(channelId, { limit: 500 })
-        .filter((message) => message.kind === "result" && message.taskId === taskId && !message.superseded);
-      return results.at(-1)?.text ?? null;
+      try {
+        const messageId = deps.channels.getTask(taskId).resultMessageId;
+        return messageId ? deps.channels.getMessage(channelId, messageId).text : null;
+      } catch {
+        return null;
+      }
     },
     remember: (channelId, text) => {
       deps.channels.saveMemoryByPerson({ channelId, text });
