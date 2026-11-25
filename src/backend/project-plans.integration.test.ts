@@ -50,7 +50,7 @@ async function setup() {
   const skills = {
     findByName: vi.fn(() => null),
     create: vi.fn(async () => ({ id: "skill-1" })),
-    install: vi.fn(async () => ({})),
+    install: vi.fn(async (_input: { skillId: string; botId: string }) => ({})),
   };
   const service = createProjectPlanService({
     database,
