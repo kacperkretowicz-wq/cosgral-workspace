@@ -1,4 +1,10 @@
-import type { CreateRoutineInput, Routine, RoutineRun } from "@openbot/contracts/ipc";
+import type {
+  CreateRoutineInput,
+  Routine,
+  RoutineRun,
+  RoutineSchedule,
+  UpdateRoutineInput,
+} from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
 import { appLocale, t } from "../i18n";
@@ -138,12 +144,135 @@ export function RoutineForm(props: {
     </section>
   );
 }
+
+/** Changes a routine that exists: its name, instructions, schedule and time zone. The agent and the trigger stay. */
+export function RoutineEditForm(props: {
+  routine: Routine;
+  onSave: (input: UpdateRoutineInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const start = props.routine.schedule;
+  const [name, setName] = createSignal(props.routine.name);
+  const [prompt, setPrompt] = createSignal(props.routine.prompt);
+  const [kind, setKind] = createSignal<RoutineSchedule["type"]>(start?.type ?? "interval");
+  const [interval, setInterval] = createSignal(String(start?.type === "interval" ? start.everyMinutes : 60));
+  const [time, setTime] = createSignal(start?.type === "daily" ? start.time : "09:00");
+  const [cron, setCron] = createSignal(start?.type === "cron" ? start.expression : "0 9 * * *");
+  const [timezone, setTimezone] = createSignal(props.routine.timezone);
+  const [error, setError] = createSignal("");
+  const hasSchedule = () => props.routine.trigger === "schedule";
+  function schedule(): RoutineSchedule {
+    if (kind() === "daily")
+      return start?.type === "daily" && start.weekdays
+        ? { type: "daily", time: time(), weekdays: start.weekdays }
+        : { type: "daily", time: time() };
+    if (kind() === "cron") return { type: "cron", expression: cron() };
+    return { type: "interval", everyMinutes: Number(interval()) };
+  }
+  async function save() {
+    setError("");
+    try {
+      await props.onSave({
+        routineId: props.routine.id,
+        name: name().trim(),
+        prompt: prompt().trim(),
+        timezone: timezone().trim(),
+        ...(hasSchedule() ? { schedule: schedule() } : {}),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("Could not save the routine."));
+    }
+  }
+  return (
+    <section class="w2-panel routine-form routine-edit" aria-label={t("Edit routine")}>
+      <h3>{t("Edit routine")}</h3>
+      <label>
+        {t("Routine name")}
+        <Input unstyled aria-label={t("Routine name")} value={name()} onInput={(e) => setName(e.currentTarget.value)} />
+      </label>
+      <label>
+        {t("Instructions")}
+        <Textarea
+          unstyled
+          aria-label={t("Instructions")}
+          value={prompt()}
+          onInput={(e) => setPrompt(e.currentTarget.value)}
+        />
+      </label>
+      <Show when={hasSchedule()}>
+        <label>
+          {t("How often")}
+          <NativeSelect
+            unstyled
+            aria-label={t("How often")}
+            value={kind()}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              if (value === "interval" || value === "daily" || value === "cron") setKind(value);
+            }}
+          >
+            <option value="interval">{t("Interval")}</option>
+            <option value="daily">{t("Daily")}</option>
+            <option value="cron">{t("Cron")}</option>
+          </NativeSelect>
+        </label>
+        <Show when={kind() === "interval"}>
+          <label>
+            {t("Minutes")}
+            <Input
+              unstyled
+              type="number"
+              min="1"
+              max="10080"
+              value={interval()}
+              onInput={(e) => setInterval(e.currentTarget.value)}
+            />
+          </label>
+        </Show>
+        <Show when={kind() === "daily"}>
+          <label>
+            {t("Time")}
+            <Input
+              unstyled
+              aria-label={t("Time")}
+              type="time"
+              value={time()}
+              onInput={(e) => setTime(e.currentTarget.value)}
+            />
+          </label>
+        </Show>
+        <Show when={kind() === "cron"}>
+          <label>
+            {t("Cron")}
+            <Input unstyled value={cron()} onInput={(e) => setCron(e.currentTarget.value)} />
+          </label>
+        </Show>
+      </Show>
+      <label>
+        {t("Time zone")}
+        <Input unstyled value={timezone()} onInput={(e) => setTimezone(e.currentTarget.value)} />
+      </label>
+      <Show when={error()}>
+        <p role="alert">{error()}</p>
+      </Show>
+      <div class="w2-item-actions">
+        <Button unstyled type="button" disabled={!name().trim() || !prompt().trim()} onClick={() => void save()}>
+          {t("Save")}
+        </Button>{" "}
+        <Button unstyled type="button" onClick={props.onCancel}>
+          {t("Cancel")}
+        </Button>
+      </div>
+    </section>
+  );
+}
 /** `heading={false}` where the page already titles the section (Schedule › Routines). */
 export function RoutinePanel(props: { bots: Bot[]; botId?: string; heading?: boolean }) {
   const [routines, setRoutines] = createSignal<Routine[]>([]);
   const [runs, setRuns] = createSignal<RoutineRun[]>([]);
   const [history, setHistory] = createSignal("");
   const [secret, setSecret] = createSignal("");
+  const [editing, setEditing] = createSignal("");
   const [error, setError] = createSignal("");
   let serial = 0;
   async function refresh() {
@@ -205,101 +334,132 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string; heading?: boo
       </Show>
       <For each={routines()}>
         {(routine) => (
-          <article class="w2-item routine-item" data-paused={routine.paused ? "true" : undefined}>
-            <span class="w2-item-icon" aria-hidden="true">
-              <Show
-                when={props.bots.find((bot) => bot.id === routine.botId && bot.avatarSeed)}
-                fallback={<RefreshCw size={18} stroke-width={1.5} />}
-              >
-                {(bot) => (
-                  <AgentAvatar
-                    bot={{
-                      avatarSeed: bot().avatarSeed ?? bot().id,
-                      avatarHue: bot().avatarHue ?? null,
-                      avatarUrl: bot().avatarUrl ?? null,
-                    }}
-                  />
-                )}
-              </Show>
-            </span>
-            <strong>
-              {routine.name}{" "}
-              <span class="w2-item-tag" data-state={routine.paused ? "paused" : "active"}>
-                {routine.paused ? t("Paused") : t("Active")}
+          <>
+            <article class="w2-item routine-item" data-paused={routine.paused ? "true" : undefined}>
+              <span class="w2-item-icon" aria-hidden="true">
+                <Show
+                  when={props.bots.find((bot) => bot.id === routine.botId && bot.avatarSeed)}
+                  fallback={<RefreshCw size={18} stroke-width={1.5} />}
+                >
+                  {(bot) => (
+                    <AgentAvatar
+                      bot={{
+                        avatarSeed: bot().avatarSeed ?? bot().id,
+                        avatarHue: bot().avatarHue ?? null,
+                        avatarUrl: bot().avatarUrl ?? null,
+                      }}
+                    />
+                  )}
+                </Show>
               </span>
-            </strong>
-            <p>
-              {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} · {routine.timezone}
-            </p>
-            <p>
-              {routine.nextRunAt
-                ? t("Next: {when} ({timezone})", {
-                    when: new Date(routine.nextRunAt).toLocaleString(appLocale(), {
-                      timeZone: routine.timezone,
-                    }),
-                    timezone: routine.timezone,
-                  })
-                : t("No scheduled run")}
-            </p>
-            <Show when={routine.webhook}>
+              <strong>
+                {routine.name}{" "}
+                <span class="w2-item-tag" data-state={routine.paused ? "paused" : "active"}>
+                  {routine.paused ? t("Paused") : t("Active")}
+                </span>
+              </strong>
               <p>
-                {t("Webhook")}: {routine.webhook?.url}
+                {props.bots.find((bot) => bot.id === routine.botId)?.name ?? routine.botId} · {routine.timezone}
               </p>
-              <Button
-                unstyled
-                type="button"
-                onClick={() => {
-                  if (window.confirm(t("Replace the webhook secret? Existing senders must be updated.")))
-                    void run(async () => {
-                      const result = await window.openbot.routines?.regenerateSecret({
-                        routineId: routine.id,
+              <p>
+                {routine.nextRunAt
+                  ? t("Next: {when} ({timezone})", {
+                      when: new Date(routine.nextRunAt).toLocaleString(appLocale(), {
+                        timeZone: routine.timezone,
+                      }),
+                      timezone: routine.timezone,
+                    })
+                  : t("No scheduled run")}
+              </p>
+              <Show when={routine.webhook}>
+                <p>
+                  {t("Webhook")}: {routine.webhook?.url}
+                </p>
+                <Button
+                  unstyled
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t("Replace the webhook secret? Existing senders must be updated.")))
+                      void run(async () => {
+                        const result = await window.openbot.routines?.regenerateSecret({
+                          routineId: routine.id,
+                        });
+                        if (result?.secret) setSecret(result.secret);
                       });
-                      if (result?.secret) setSecret(result.secret);
-                    });
+                  }}
+                >
+                  {t("Generate new secret")}
+                </Button>
+              </Show>
+              <div class="w2-item-actions">
+                <Button
+                  unstyled
+                  type="button"
+                  onClick={() =>
+                    void run(async () => {
+                      await window.openbot.routines?.update({ routineId: routine.id, paused: !routine.paused });
+                    })
+                  }
+                >
+                  {routine.paused ? t("Resume") : t("Pause")}
+                </Button>{" "}
+                <Button
+                  unstyled
+                  type="button"
+                  disabled={routine.paused}
+                  onClick={() =>
+                    void run(async () => {
+                      await window.openbot.routines?.runNow({ routineId: routine.id });
+                    })
+                  }
+                >
+                  {t("Run now")}
+                </Button>{" "}
+                <Button unstyled type="button" onClick={() => void loadHistory(routine.id)}>
+                  {t("History")}
+                </Button>{" "}
+                <Button unstyled type="button" onClick={() => setEditing(routine.id)}>
+                  {t("Edit")}
+                </Button>{" "}
+                <Button
+                  unstyled
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t("Delete this routine? Its history goes with it.")))
+                      void run(async () => {
+                        await window.openbot.routines?.delete({ routineId: routine.id });
+                        if (history() === routine.id) setHistory("");
+                        if (editing() === routine.id) setEditing("");
+                      });
+                  }}
+                >
+                  {t("Delete")}
+                </Button>
+              </div>
+
+              <Show when={history() === routine.id}>
+                <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
+                  {(entry) => (
+                    <p>
+                      {runStatusLabel(entry.status)} · {new Date(entry.startedAt).toLocaleString(appLocale())}
+                      {entry.reason ? ` · ${runReasonText(entry.reason)}` : ""}
+                    </p>
+                  )}
+                </For>
+              </Show>
+            </article>
+            <Show when={editing() === routine.id}>
+              <RoutineEditForm
+                routine={routine}
+                onCancel={() => setEditing("")}
+                onSave={async (input) => {
+                  await window.openbot.routines?.update(input);
+                  setEditing("");
+                  await refresh();
                 }}
-              >
-                {t("Generate new secret")}
-              </Button>
+              />
             </Show>
-            <div class="w2-item-actions">
-              <Button
-                unstyled
-                type="button"
-                onClick={() =>
-                  void run(async () => {
-                    await window.openbot.routines?.update({ routineId: routine.id, paused: !routine.paused });
-                  })
-                }
-              >
-                {routine.paused ? t("Resume") : t("Pause")}
-              </Button>{" "}
-              <Button
-                unstyled
-                type="button"
-                disabled={routine.paused}
-                onClick={() =>
-                  void run(async () => {
-                    await window.openbot.routines?.runNow({ routineId: routine.id });
-                  })
-                }
-              >
-                {t("Run now")}
-              </Button>{" "}
-              <Button unstyled type="button" onClick={() => void loadHistory(routine.id)}>
-                {t("History")}
-              </Button>
-            </div>
-            <Show when={history() === routine.id}>
-              <For each={runs()} fallback={<p>{t("No runs yet.")}</p>}>
-                {(entry) => (
-                  <p>
-                    {runStatusLabel(entry.status)} · {new Date(entry.startedAt).toLocaleString(appLocale())}
-                    {entry.reason ? ` · ${runReasonText(entry.reason)}` : ""}
-                  </p>
-                )}
-              </For>
-            </Show>
-          </article>
+          </>
         )}
       </For>
       <Show when={secret()}>

@@ -496,6 +496,20 @@
   align-self: center;
 }
 
+/* A routine has five actions: under the text, so the next run time is not cut off. */
+.work-page .routine-item > .w2-item-actions {
+  grid-column: 2;
+  grid-row: auto;
+  flex-wrap: wrap;
+  align-self: start;
+  margin-top: var(--openbot-space-1);
+}
+
+.work-page .routine-item > :is(p, span, small) {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .work-page .w2-item > strong {
   color: var(--openbot-text-primary);
   font-size: var(--openbot-text-lg);
