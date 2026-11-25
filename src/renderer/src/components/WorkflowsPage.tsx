@@ -162,6 +162,8 @@ export function WorkflowCanvas(
   const [edgeKind, setEdgeKind] = createSignal<WorkflowEdgeKind>("next");
   const [connecting, setConnecting] = createSignal<{ from: string; x: number; y: number }>();
   let canvas: HTMLElement | undefined;
+  // Tall enough for the lowest step card (about 440 px high) but never taller than most of the window; beyond that the canvas scrolls.
+  const canvasHeight = () => `max(520px, min(80vh, ${Math.max(0, ...props.nodes.map((node) => node.y)) + 460}px))`;
   let cancelPointer: (() => void) | undefined;
   onCleanup(() => cancelPointer?.());
   function startDrag(event: PointerEvent, node: WorkflowNode) {
@@ -253,9 +255,9 @@ export function WorkflowCanvas(
       id: `step-${Date.now()}`,
       // The title is the person's own text; it starts as the step kind in the window language.
       title: t(NODE_TYPE_LABELS[type]),
-      // A step card is 260 px wide (workflow-editor.css): 280 px apart leaves a gap, so new steps never cover each other.
+      // A step card is 260 px wide (workflow-editor.css) and up to about 440 px high with its hints: 280 px across and 460 px down leave a gap, so new steps never cover each other.
       x: 24 + (props.nodes.length % 3) * 280,
-      y: 24 + Math.floor(props.nodes.length / 3) * 320,
+      y: 24 + Math.floor(props.nodes.length / 3) * 460,
     };
     const node: WorkflowNode =
       type === "trigger"
@@ -283,7 +285,12 @@ export function WorkflowCanvas(
           )}
         </For>
       </div>
-      <section ref={canvas} class="workflow-canvas" aria-label={t("Workflow canvas")}>
+      <section
+        ref={canvas}
+        class="workflow-canvas"
+        aria-label={t("Workflow canvas")}
+        style={{ height: canvasHeight() }}
+      >
         <Show when={props.nodes.length === 0}>
           <div class="workflow-canvas-empty">
             <span class="workflow-canvas-empty-icon" aria-hidden="true">

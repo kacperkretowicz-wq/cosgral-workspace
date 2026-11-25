@@ -35,6 +35,15 @@ describe("workflow editor steps", () => {
     }
   });
 
+  it("starts a new row of steps far enough below the first one for a tall card (seen overlapping in the real window)", async () => {
+    const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
+    render(() => <WorkflowCanvas nodes={graph().nodes} edges={graph().edges} onChange={setGraph} />);
+    for (const name of ["Add trigger", "Add agent", "Add approval", "Add condition"])
+      await fireEvent.click(screen.getByRole("button", { name }));
+    const [first, , , fourth] = graph().nodes;
+    expect((fourth?.y ?? 0) - (first?.y ?? 0)).toBeGreaterThanOrEqual(440);
+  });
+
   it("marks each step card with its type and keeps the Yes and No paths selectable", () => {
     const { container } = render(() => (
       <WorkflowCanvas
