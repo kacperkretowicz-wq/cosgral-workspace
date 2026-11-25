@@ -11,14 +11,14 @@ describe("ChannelEditor", () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const close = vi.fn();
     render(() => <ChannelEditor bots={bots} onSave={save} onClose={close} />);
-    await fireEvent.click(screen.getByRole("button", { name: "Create channel" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("lowercase");
-    await fireEvent.input(screen.getByLabelText("Channel name"), { target: { value: "launch" } });
-    await fireEvent.click(screen.getByRole("button", { name: "Create channel" }));
+    await fireEvent.input(screen.getByLabelText("Project name"), { target: { value: "launch" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     expect(screen.getByRole("alert")).toHaveTextContent("lead");
     await fireEvent.click(screen.getByRole("button", { name: "Planner" }));
     await fireEvent.change(screen.getByLabelText("Lead agent"), { target: { value: "a" } });
-    await fireEvent.click(screen.getByRole("button", { name: "Create channel" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith(
         expect.objectContaining({ name: "launch", leadBotId: "a", memberBotIds: ["a"] }),
@@ -29,11 +29,11 @@ describe("ChannelEditor", () => {
   it("keeps the draft and explains a rejected save", async () => {
     const save = vi.fn().mockRejectedValue(new Error("Name already exists"));
     render(() => <ChannelEditor bots={bots} onSave={save} onClose={() => {}} />);
-    await fireEvent.input(screen.getByLabelText("Channel name"), { target: { value: "launch" } });
+    await fireEvent.input(screen.getByLabelText("Project name"), { target: { value: "launch" } });
     await fireEvent.click(screen.getByRole("button", { name: "Planner" }));
     await fireEvent.change(screen.getByLabelText("Lead agent"), { target: { value: "a" } });
-    await fireEvent.click(screen.getByRole("button", { name: "Create channel" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Name already exists");
-    expect(screen.getByLabelText("Channel name")).toHaveValue("launch");
+    expect(screen.getByLabelText("Project name")).toHaveValue("launch");
   });
 });

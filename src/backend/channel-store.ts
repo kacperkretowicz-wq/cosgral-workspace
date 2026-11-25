@@ -101,7 +101,7 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
 
   get(channelId: string): WorkspaceChannel {
     const row = this.#database.connection.prepare(`${CHANNEL_SELECT} WHERE channel_id = ?`).get(channelId);
-    if (!isDynamicRecord(row)) throw new Error("This channel no longer exists.");
+    if (!isDynamicRecord(row)) throw new Error("This project no longer exists.");
     const channel = channelFromRow(row);
     return { ...channel, historyWindow: this.#historyWindows().get(channel.id) ?? DEFAULT_CHANNEL_HISTORY_WINDOW };
   }
@@ -313,10 +313,10 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
 
   createTask(input: NewChannelTask): ChannelTask {
     const channel = this.get(input.channelId);
-    if (channel.archived) throw new Error("This channel is archived.");
+    if (channel.archived) throw new Error("This project is archived.");
     const ownerBotId = input.ownerBotId ?? channel.leadBotId;
     if (!ownerBotId || !channel.memberBotIds.includes(ownerBotId)) {
-      throw new Error("Only a member of the channel can own its tasks.");
+      throw new Error("Only a member of the project can own its tasks.");
     }
     const existing = new Set(this.listTasks(channel.id).map((task) => task.id));
     const dependencyTaskIds = [...new Set(input.dependencyTaskIds ?? [])];
@@ -457,7 +457,7 @@ export class ChannelStore extends EventEmitter<{ event: [event: AgentEvent] }> {
     const task = this.getTask(input.taskId);
     const channel = this.get(task.channelId);
     if (!channel.memberBotIds.includes(input.ownerBotId)) {
-      throw new Error("Only a member of the channel can own its tasks.");
+      throw new Error("Only a member of the project can own its tasks.");
     }
     if (FINISHED_STATES.includes(task.state)) throw new Error("This task is finished.");
     if (actor === "agent" && task.state === "paused") return task;

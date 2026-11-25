@@ -55,7 +55,7 @@ const DEMO_COMMANDS: SlashCommand[] = [
 const DEMO_MENTIONS: MentionCandidate[] = [
   { kind: "agent", id: "research", label: "Research", detail: "Finds sources" },
   { kind: "agent", id: "writer", label: "Writer", detail: "Drafts texts" },
-  { kind: "channel", id: "launch", label: "Launch plan", detail: "Channel" },
+  { kind: "channel", id: "launch", label: "Launch plan", detail: "Project" },
   { kind: "file", id: "f-1", label: "launch-plan.md", detail: "Library" },
 ];
 

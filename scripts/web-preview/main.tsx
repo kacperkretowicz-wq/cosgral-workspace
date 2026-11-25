@@ -60,7 +60,7 @@ window.setTimeout(() => {
         question: "Which part of the W1 round should I start with?",
         isSecret: false,
         options: [
-          { label: "Channels", description: "Channels with a lead and tasks." },
+          { label: "Projects", description: "Projects with a lead and tasks." },
           { label: "Folders", description: "Agent folders in the sidebar." },
         ],
       },

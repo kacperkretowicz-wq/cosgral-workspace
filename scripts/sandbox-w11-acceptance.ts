@@ -71,7 +71,7 @@ const AGENT_CARD_IDS = [
 ] as const;
 
 const SEARCH_KINDS = ["agents", "channels", "messages", "files", "routines"] as const;
-const SEARCH_TAB_LABELS = ["All", "Agents", "Channels", "Messages", "Files", "Routines"] as const;
+const SEARCH_TAB_LABELS = ["All", "Agents", "Projects", "Messages", "Files", "Routines"] as const;
 const VAULT_CONNECTORS = ["onepassword", "bitwarden", "protonpass"] as const;
 const MENTION_KINDS = ["agent", "channel", "file"] as const;
 const PLUGIN_SOURCES = ["none", "folder", "demo"] as const;

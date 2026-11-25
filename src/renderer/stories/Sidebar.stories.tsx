@@ -170,7 +170,7 @@ export const Channels: Story = {
   decorators: [(Story) => <div style={{ width: "280px", height: "100vh" }}>{Story()}</div>],
   play: async ({ canvas, args, userEvent }) => {
     // Channels are opened from the Create new menu (like OpenBot), not from a block above the list.
-    await expect(canvas.queryByRole("button", { name: "Browse channels" })).toBeNull();
+    await expect(canvas.queryByRole("button", { name: "Browse projects" })).toBeNull();
     const createNew = canvas.getByRole("button", { name: "Create new" });
     createNew.focus();
     // The keyboard focus ring is an outline or a shadow; either way it must be there.
@@ -178,10 +178,10 @@ export const Channels: Story = {
     await expect(focusStyle.outlineStyle !== "none" || focusStyle.boxShadow !== "none").toBe(true);
     await userEvent.click(createNew);
     const body = within(document.body);
-    await userEvent.click(await body.findByRole("menuitem", { name: "Browse channels" }));
+    await userEvent.click(await body.findByRole("menuitem", { name: "Browse projects" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith();
     await userEvent.click(createNew);
-    await userEvent.click(await body.findByRole("menuitem", { name: "New channel" }));
+    await userEvent.click(await body.findByRole("menuitem", { name: "New project" }));
     await expect(args.onSelectChannels).toHaveBeenCalledWith(true);
   },
 };

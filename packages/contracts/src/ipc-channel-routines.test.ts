@@ -38,11 +38,11 @@ describe("rules of a routine of a channel (W12 BE-Q)", () => {
   });
 
   it("refuses a channel that is gone, archived, has no lead, or has too many routines", () => {
-    expect(channelRoutineProblem(input, null, 0)).toBe("This channel no longer exists.");
-    expect(channelRoutineProblem(input, { archived: true, leadBotId: "chief" }, 0)).toBe("This channel is archived.");
+    expect(channelRoutineProblem(input, null, 0)).toBe("This project no longer exists.");
+    expect(channelRoutineProblem(input, { archived: true, leadBotId: "chief" }, 0)).toBe("This project is archived.");
     expect(channelRoutineProblem(input, { archived: false, leadBotId: null }, 0)).toContain("no lead");
     expect(channelRoutineProblem(input, open, CHANNEL_ROUTINE_LIMITS.perChannel)).toContain("at most 16 routines");
-    expect(channelRoutineProblem({ name: "x" }, open, 0)).toBe("Choose a channel.");
+    expect(channelRoutineProblem({ name: "x" }, open, 0)).toBe("Choose a project.");
   });
 
   it("refuses a missing or too long name and instruction", () => {
@@ -112,8 +112,8 @@ const run = {
 describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
   it("tells the problem of a channel on its own", () => {
     expect(channelRoutineChannelProblem(open)).toBeNull();
-    expect(channelRoutineChannelProblem(null)).toBe("This channel no longer exists.");
-    expect(channelRoutineChannelProblem({ archived: true, leadBotId: "chief" })).toBe("This channel is archived.");
+    expect(channelRoutineChannelProblem(null)).toBe("This project no longer exists.");
+    expect(channelRoutineChannelProblem({ archived: true, leadBotId: "chief" })).toBe("This project is archived.");
     expect(channelRoutineChannelProblem({ archived: false, leadBotId: null })).toContain("no lead");
   });
 
@@ -139,7 +139,7 @@ describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
       timezone: "Europe/Warsaw",
       paused: true,
     });
-    expect(() => parseCreateChannelRoutineInput({ ...input, channelId: "" })).toThrow("Choose a channel.");
+    expect(() => parseCreateChannelRoutineInput({ ...input, channelId: "" })).toThrow("Choose a project.");
     expect(() => parseCreateChannelRoutineInput({ ...input, prompt: "" })).toThrow("what the lead should do");
     expect(parseUpdateChannelRoutineInput({ routineId: "r-1", name: " A ", paused: false })).toEqual({
       routineId: "r-1",
@@ -151,7 +151,7 @@ describe("routines of a channel: shapes and parsers (W12 BE-R)", () => {
     expect(() => parseChannelRoutineIdInput({})).toThrow("Choose a routine.");
     expect(parseListChannelRoutinesInput(undefined)).toEqual({});
     expect(parseListChannelRoutinesInput({ channelId: "c-1" })).toEqual({ channelId: "c-1" });
-    expect(() => parseListChannelRoutinesInput({ channelId: 5 })).toThrow("Choose a channel.");
+    expect(() => parseListChannelRoutinesInput({ channelId: 5 })).toThrow("Choose a project.");
   });
 
   it("checks what the program answers and what it announces", () => {

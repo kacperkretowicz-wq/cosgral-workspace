@@ -194,9 +194,9 @@ export function ChannelView(props: {
                 setMemoryOpen(event.currentTarget.open);
               }}
             >
-              <summary title={t("Channel memory")}>
+              <summary title={t("Project memory")}>
                 <Brain size={14} stroke-width={1.5} aria-hidden="true" />
-                <span class="channel-pill-label">{t("Channel memory")}</span>
+                <span class="channel-pill-label">{t("Project memory")}</span>
               </summary>
               <div class="channel-view-card">
                 <Show when={memoryOpen()}>
@@ -210,9 +210,9 @@ export function ChannelView(props: {
                 setRoutinesOpen(event.currentTarget.open);
               }}
             >
-              <summary title={t("Channel routines")}>
+              <summary title={t("Project routines")}>
                 <RefreshCw size={14} stroke-width={1.5} aria-hidden="true" />
-                <span class="channel-pill-label">{t("Channel routines")}</span>
+                <span class="channel-pill-label">{t("Project routines")}</span>
               </summary>
               <div class="channel-view-card">
                 <Show when={routinesOpen()}>
@@ -222,9 +222,9 @@ export function ChannelView(props: {
             </details>
             <Show when={props.onClearHistory || props.onChangeHistoryWindow}>
               <details onToggle={onlyOne}>
-                <summary title={t("Channel history")}>
+                <summary title={t("Project history")}>
                   <Clock size={14} stroke-width={1.5} aria-hidden="true" />
-                  <span class="channel-pill-label">{t("Channel history")}</span>
+                  <span class="channel-pill-label">{t("Project history")}</span>
                 </summary>
                 <div class="channel-view-card">
                   <Show when={props.onChangeHistoryWindow}>
@@ -245,7 +245,7 @@ export function ChannelView(props: {
           <ViewTabPanel idPrefix={tabsId} value="tasks" class="channel-view-content">
             <Show
               when={props.tasks.some((task) => !task.archivedAt)}
-              fallback={<p>{t("No tasks in this channel.")}</p>}
+              fallback={<p>{t("No tasks in this project.")}</p>}
             >
               <For each={props.tasks.filter((task) => !task.archivedAt)}>
                 {(task) => (
@@ -294,7 +294,7 @@ export function ChannelView(props: {
         }
       >
         <ViewTabPanel idPrefix={tabsId} value="chat" class="channel-chat-panel">
-          <section class="channel-view-content" aria-label={t("Channel messages")}>
+          <section class="channel-view-content" aria-label={t("Project messages")}>
             <Show
               when={props.messages.length}
               fallback={
@@ -380,7 +380,7 @@ export function ChannelView(props: {
             }}
           >
             <label for="channel-message-input" class="sr-only">
-              {t("New message to channel lead")}
+              {t("New message to project lead")}
             </label>
             <Show when={reply()}>
               {(item) => (
@@ -400,7 +400,7 @@ export function ChannelView(props: {
                 id="channel-message-input"
                 maxlength={32000}
                 rows={1}
-                placeholder={t("Message {lead}, the channel lead", { lead: name(props.channel.leadBotId) })}
+                placeholder={t("Message {lead}, the project lead", { lead: name(props.channel.leadBotId) })}
                 value={text()}
                 onInput={(e) => setText(e.currentTarget.value)}
                 onKeyDown={(event) => {

@@ -19,10 +19,10 @@ import {
 
 const en = {
   tabAgents: "Agents",
-  tabChannels: "Channels",
+  tabChannels: "Projects",
   tabNeeds: "Needs you",
   tabPhone: "Phone",
-  channelsEmpty: "No channels yet. Create one on the computer.",
+  channelsEmpty: "No projects yet. Create one on the computer.",
   channelTasks: "Tasks",
   openTasks: "{n} open",
   noChannelTasks: "No open tasks.",
@@ -146,10 +146,10 @@ const en = {
 
 const pl: Record<keyof typeof en, string> = {
   tabAgents: "Agenci",
-  tabChannels: "Kanały",
+  tabChannels: "Projekty",
   tabNeeds: "Czeka na Ciebie",
   tabPhone: "Telefon",
-  channelsEmpty: "Brak kanałów. Utwórz jeden na komputerze.",
+  channelsEmpty: "Brak projektów. Utwórz jeden na komputerze.",
   channelTasks: "Zadania",
   openTasks: "{n} otwartych",
   noChannelTasks: "Brak otwartych zadań.",
@@ -207,7 +207,7 @@ const pl: Record<keyof typeof en, string> = {
   approve: "Zatwierdź",
   deny: "Odrzuć",
   to: "Do",
-  via: "Kanał",
+  via: "Przez",
   keepDraft: "Zachowaj szkic",
   askChanges: "Poproś o zmiany",
   changesLabel: "Co zmienić?",

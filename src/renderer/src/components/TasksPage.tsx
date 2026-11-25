@@ -130,7 +130,7 @@ export function TasksPage(props: {
   onSettled(() => {
     const api = window.openbot.channels;
     if (!api) {
-      setError(t("Channels are not available in this build."));
+      setError(t("Projects are not available in this build."));
       setLoaded(true);
       return;
     }
@@ -141,7 +141,7 @@ export function TasksPage(props: {
         return load(list);
       })
       .catch((e) => {
-        fail(e, t("Could not load channels."));
+        fail(e, t("Could not load projects."));
         setLoaded(true);
       });
     return window.openbot.agent.onEvent((event) => {
@@ -166,7 +166,7 @@ export function TasksPage(props: {
       class="tasks-page"
       title={t("Tasks")}
       description={t(
-        "Tasks from all channels. Stop, pause, resume or archive them here; the channel keeps the conversation.",
+        "Tasks from all projects. Stop, pause, resume or archive them here; the project keeps the conversation.",
       )}
     >
       <fieldset class="tasks-filter">

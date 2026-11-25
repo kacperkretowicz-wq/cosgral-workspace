@@ -729,17 +729,17 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
       await d.openAgent("Assistant");
       const channelName = `accept-${Date.now().toString(36)}`;
       await page.getByRole("button", { name: "Create new", exact: true }).first().click();
-      // Since PR #24 "New channel" is an item of the sidebar's "+" menu, not a button on the Agents page.
-      await page.getByRole("menuitem", { name: "New channel" }).first().click();
+      // Since PR #24 "New project" is an item of the sidebar's "+" menu, not a button on the Agents page.
+      await page.getByRole("menuitem", { name: "New project" }).first().click();
       let dialog = page.getByRole("dialog");
-      await dialog.getByLabel("Channel name", { exact: true }).fill(channelName);
+      await dialog.getByLabel("Project name", { exact: true }).fill(channelName);
       await dialog.getByLabel("Display title").fill("Accept team");
       for (const member of ["Assistant", "Res", "Tmpl"])
         await dialog.getByRole("button", { name: member, exact: true }).click();
       const leadId = await d.botId("Assistant");
       await dialog.getByLabel("Lead agent").selectOption(leadId);
-      await dialog.getByLabel("Channel instructions").fill("Work together and answer briefly.");
-      await dialog.getByRole("button", { name: "Create channel", exact: true }).click();
+      await dialog.getByLabel("Project instructions").fill("Work together and answer briefly.");
+      await dialog.getByRole("button", { name: "Create project", exact: true }).click();
       await dialog.waitFor({ state: "hidden", timeout: 20_000 });
       await page.getByRole("heading", { name: "Accept team", exact: true }).waitFor({ timeout: 20_000 });
       const info = asRecord(
@@ -750,16 +750,16 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
       assert(info.id && info.members === 3 && info.lead === leadId, `channel from the window: ${JSON.stringify(info)}`);
 
       // Edit: the title and the instructions change, the short name stays.
-      await page.getByRole("button", { name: "Edit channel", exact: true }).click();
+      await page.getByRole("button", { name: "Edit project", exact: true }).click();
       dialog = page.getByRole("dialog");
-      assert(await dialog.getByLabel("Channel name", { exact: true }).isDisabled(), "the short name cannot be edited");
+      assert(await dialog.getByLabel("Project name", { exact: true }).isDisabled(), "the short name cannot be edited");
       await dialog.getByLabel("Display title").fill("Accept team edited");
       await dialog.getByRole("button", { name: "Save changes" }).click();
       await dialog.waitFor({ state: "hidden", timeout: 20_000 });
       await page.getByRole("heading", { name: "Accept team edited", exact: true }).waitFor({ timeout: 20_000 });
 
       // A message of the person: the lead delegates to the two other members, who finish their tasks.
-      await page.getByLabel("New message to channel lead").fill("Prepare the weekly summary");
+      await page.getByLabel("New message to project lead").fill("Prepare the weekly summary");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await page.getByText("Stub combined result").first().waitFor({ timeout: 90_000 });
       const tasks = list(await d.ev(`window.openbot.channels.listTasks(${JSON.stringify(String(info.id))})`));
@@ -775,7 +775,7 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
 
       // Reply to a message: the new message links to its parent in the engine.
       await page.getByRole("button", { name: "Reply to Prepare the weekly summary", exact: true }).click();
-      await page.getByLabel("New message to channel lead").fill("A reply from the person");
+      await page.getByLabel("New message to project lead").fill("A reply from the person");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await page.getByText("A reply from the person", { exact: true }).waitFor({ timeout: 20_000 });
       const linked = await d.ev(
@@ -784,7 +784,7 @@ async function firstRun(d: Driver, root: string, cli: CliStandIn): Promise<void>
       assert(linked === true, "the reply is linked to its parent");
 
       // Stop and resume in the Tasks page: a task that never finishes is paused, resumed and stopped.
-      await page.getByLabel("New message to channel lead").fill("HOLD this task");
+      await page.getByLabel("New message to project lead").fill("HOLD this task");
       await page.getByRole("button", { name: "Send", exact: true }).click();
       await d.openPage("Tasks");
       const rowOf = () => page.locator("li.tasks-row", { hasText: "HOLD this task" });

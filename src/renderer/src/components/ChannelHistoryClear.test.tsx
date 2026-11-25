@@ -12,7 +12,7 @@ it("asks first and clears nothing until the person says yes", async () => {
   render(() => <ChannelHistoryClear onClear={onClear} />);
   fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
   expect(
-    await screen.findByText("Clear the whole history of this channel? This cannot be undone."),
+    await screen.findByText("Clear the whole history of this project? This cannot be undone."),
   ).toBeInTheDocument();
   expect(onClear).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Keep" }));

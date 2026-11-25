@@ -440,7 +440,7 @@ export class WorkflowManager {
 
   #post(session: Session, node: WorkflowNode & { type: "channel-output" }, previous: string): string {
     const { channels } = this.#options;
-    if (!channels.exists(node.channelId)) throw new Error("This channel no longer exists.");
+    if (!channels.exists(node.channelId)) throw new Error("This project no longer exists.");
     const text = render(node.text, session, previous, false);
     channels.post(node.channelId, `[Workflow "${session.workflow.name}"] ${text}`);
     return text;

@@ -95,7 +95,7 @@ export class ComposerService {
             kind: "channel",
             id: channel.id,
             label: channel.title || channel.name,
-            detail: "Channel",
+            detail: "Project",
           }),
         ),
       ...this.#options

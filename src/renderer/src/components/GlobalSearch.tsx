@@ -11,7 +11,7 @@ type SearchTab = "all" | "agents" | "channels" | "messages" | "files" | "routine
 const SEARCH_TABS: ReadonlyArray<{ id: SearchTab; label: string }> = [
   { id: "all", label: "All" },
   { id: "agents", label: "Agents" },
-  { id: "channels", label: "Channels" },
+  { id: "channels", label: "Projects" },
   { id: "messages", label: "Messages" },
   { id: "files", label: "Files" },
   { id: "routines", label: "Routines" },
@@ -83,7 +83,7 @@ function resultKindLabel(result: GlobalSearchResult): string {
   if (result.kind === "message") return t("Message");
   const kind = result.hit.kind;
   return kind === "channels"
-    ? t("Channel")
+    ? t("Project")
     : kind === "files"
       ? t("File")
       : kind === "routines"

@@ -85,7 +85,7 @@ function shell({ dark }) {
   <rect x="790" y="144" width="386" height="160" rx="14" fill="${panel}" stroke="${stroke}"/>
   <text x="810" y="172" fill="#d98ac9" font-family="Segoe UI, sans-serif" font-size="11" font-weight="700">Podglad szkicu</text>
   <rect x="810" y="186" width="346" height="96" rx="8" fill="${bg}" stroke="${stroke}"/>
-  <text x="830" y="230" fill="${muted}" font-family="Segoe UI, sans-serif" font-size="12">Draft wiadomosci do kanalu...</text>
+  <text x="830" y="230" fill="${muted}" font-family="Segoe UI, sans-serif" font-size="12">Draft wiadomosci do projektu...</text>
   <rect x="790" y="320" width="386" height="100" rx="14" fill="${panel}" stroke="#74b9ff"/>
   <text x="810" y="348" fill="#74b9ff" font-family="Segoe UI, sans-serif" font-size="11" font-weight="700">Przejecie przegladarki</text>
   <text x="810" y="372" fill="${text}" font-family="Segoe UI, sans-serif" font-size="12">Agent prosi o Twoje klikniecie na checkout.</text>

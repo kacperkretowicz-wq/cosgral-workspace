@@ -541,10 +541,10 @@ export function Sidebar(props: SidebarProps) {
                   </DropdownMenu.Item>
                   <Show when={props.onSelectChannels}>
                     <DropdownMenu.Item onSelect={() => props.onSelectChannels?.(true)}>
-                      <span>{t("New channel")}</span>
+                      <span>{t("New project")}</span>
                     </DropdownMenu.Item>
                     <DropdownMenu.Item onSelect={() => props.onSelectChannels?.()}>
-                      <span>{t("Browse channels")}</span>
+                      <span>{t("Browse projects")}</span>
                     </DropdownMenu.Item>
                   </Show>
                   <Show when={props.layout && props.folderActions}>
@@ -713,7 +713,7 @@ export function Sidebar(props: SidebarProps) {
           <Show when={showChannels()}>
             <section class="sidebar-chat-group" aria-labelledby="sidebar-channels-heading">
               <header>
-                <h2 id="sidebar-channels-heading">{t("Channels")}</h2>
+                <h2 id="sidebar-channels-heading">{t("Projects")}</h2>
               </header>
               <For each={filteredChannels()}>
                 {(channel) => {
@@ -732,7 +732,7 @@ export function Sidebar(props: SidebarProps) {
                       type="button"
                       class={["bot-row channel-row", { "bot-row-active": props.activeChannelId === channel.id }]}
                       aria-pressed={props.activeChannelId === channel.id ? "true" : "false"}
-                      aria-label={`${t("Channel")} ${title()}. ${tn(channel.memberBotIds.length, "{count} member", "{count} members")}`}
+                      aria-label={`${t("Project")} ${title()}. ${tn(channel.memberBotIds.length, "{count} member", "{count} members")}`}
                       data-channel-id={channel.id}
                       onClick={() => props.onOpenChannel?.(channel.id)}
                     >

@@ -165,7 +165,7 @@ describe("ChannelStore", () => {
     channels.markRunning(task.id);
 
     expect(() => channels.reassign({ taskId: task.id, ownerBotId: "scout" })).toThrow(
-      "Only a member of the channel can own its tasks.",
+      "Only a member of the project can own its tasks.",
     );
     expect(channels.reassign({ taskId: task.id, ownerBotId: "writer" })).toMatchObject({
       ownerBotId: "writer",

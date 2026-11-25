@@ -334,10 +334,10 @@ describe("Sidebar folders", () => {
   it("opens channel browsing and creation from the Create new menu, without a channel block above the list", async () => {
     const select = vi.fn();
     renderSidebar({ onSelectChannels: select });
-    expect(screen.queryByRole("button", { name: "Browse channels" })).toBeNull();
-    await createNew("Browse channels");
+    expect(screen.queryByRole("button", { name: "Browse projects" })).toBeNull();
+    await createNew("Browse projects");
     expect(select).toHaveBeenLastCalledWith();
-    await createNew("New channel");
+    await createNew("New project");
     expect(select).toHaveBeenLastCalledWith(true);
   });
 

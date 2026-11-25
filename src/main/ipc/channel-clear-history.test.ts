@@ -6,7 +6,7 @@ import { parseClearChannelHistory, parseUpdateChannel } from "./channel-inputs";
 describe("clearing the history of a channel (BE-Y): input, answer and event", () => {
   it("reads only a channel id and refuses anything else", () => {
     expect(parseClearChannelHistory({ channelId: "c1" })).toEqual({ channelId: "c1" });
-    expect(() => parseClearChannelHistory(null)).toThrow("Choose a channel.");
+    expect(() => parseClearChannelHistory(null)).toThrow("Choose a project.");
     expect(() => parseClearChannelHistory({})).toThrow();
     expect(() => parseClearChannelHistory({ channelId: 5 })).toThrow();
   });

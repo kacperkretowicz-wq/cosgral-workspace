@@ -44,7 +44,7 @@ async function setup() {
     store,
     channel: (channelId) => channels.get(channelId) ?? null,
     send: (channelId, text) => {
-      if (state.sendFails) throw new Error("This channel is archived.");
+      if (state.sendFails) throw new Error("This project is archived.");
       sent.push({ channelId, text });
       const id = `t${sent.length}`;
       states.set(id, "queued");
@@ -200,7 +200,7 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     service.tick();
     expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({
       outcome: "skipped",
-      reason: "This channel is archived.",
+      reason: "This project is archived.",
     });
     channels.set("c1", { archived: false, leadBotId: null });
     at("2026-11-18T11:00:00.000Z");
@@ -212,7 +212,7 @@ describe("routines of a channel: runs (W12 BE-R)", () => {
     service.tick();
     expect(service.listRuns({ routineId: routine.id })[0]).toMatchObject({
       outcome: "skipped",
-      reason: "This channel is archived.",
+      reason: "This project is archived.",
     });
     expect(service.listRuns({ routineId: routine.id })).toHaveLength(3);
   });
