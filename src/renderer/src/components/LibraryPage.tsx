@@ -1,5 +1,7 @@
+import type { WorkspaceChannel } from "@openbot/contracts/ipc";
 import { Show } from "solid-js";
 import { t } from "../i18n";
+import { BuiltinSkillsPanel } from "./BuiltinSkillsPanel";
 import { IntegrationsPanel } from "./IntegrationsPanel";
 import { LibraryFilesView } from "./LibraryFilesView";
 import { LibraryPanel } from "./LibraryPanel";
@@ -7,13 +9,14 @@ import { McpSettings } from "./McpSettings";
 import { MessengersPanel } from "./MessengersPanel";
 import { SkillsSettings } from "./SkillsSettings";
 import { TablesPanel } from "./TablesPanel";
-import { FolderOpen, KeyRound, Lock, MessageCircle, Plug, Server, Sparkles, Table2 } from "./ui/icons";
+import { FolderOpen, KeyRound, Lock, MessageCircle, Pin, Plug, Server, Sparkles, Table2 } from "./ui/icons";
 import { VaultConnectorsPanel } from "./VaultConnectorsPanel";
 import { VaultPanel } from "./VaultPanel";
 import { WorkPage, type WorkPageSection, WorkPageSections } from "./WorkPage";
 
 export type LibrarySectionId =
   | "files"
+  | "builtin-skills"
   | "skills"
   | "tables"
   | "vault"
@@ -26,7 +29,10 @@ export type LibrarySectionId =
  * The Library: everything agents work with, one kind per section instead of eight cards stacked on one long page.
  * Files come first (what people open the Library for); access and connections follow.
  */
-export function LibraryPage() {
+export function LibraryPage(props: {
+  bots?: Array<{ id: string; name: string; hidden?: boolean }>;
+  channels?: WorkspaceChannel[];
+}) {
   const sections = (): WorkPageSection<LibrarySectionId>[] => [
     {
       id: "files",
@@ -38,6 +44,13 @@ export function LibraryPage() {
           <LibraryFilesView />
         </Show>
       ),
+    },
+    {
+      id: "builtin-skills",
+      label: t("Built-in skills"),
+      description: t("Skills that come with the app. They are always here; choose which agents use them."),
+      icon: Pin,
+      render: () => <BuiltinSkillsPanel bots={props.bots} projects={props.channels?.map(projectOf)} />,
     },
     {
       id: "skills",
@@ -99,4 +112,14 @@ export function LibraryPage() {
       <WorkPageSections page="library" label={t("Library sections")} sections={sections()} />
     </WorkPage>
   );
+}
+
+function projectOf(channel: WorkspaceChannel) {
+  return {
+    id: channel.id,
+    name: channel.name,
+    title: channel.title,
+    memberBotIds: channel.memberBotIds,
+    archived: channel.archived,
+  };
 }

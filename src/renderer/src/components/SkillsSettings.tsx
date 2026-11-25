@@ -2,7 +2,7 @@ import type { LocalSkill, SkillContent, SkillInstall, SkillVersion } from "@open
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
 import { SkillsPanel } from "./SkillsPanel";
-import { Button } from "./ui";
+import { Badge, Button } from "./ui";
 import { Sparkles } from "./ui/icons";
 export function SkillsSettings(props: { botId?: string }) {
   function skillsApi() {
@@ -19,6 +19,8 @@ export function SkillsSettings(props: { botId?: string }) {
   const [installs, setInstalls] = createSignal<SkillInstall[]>([]);
   const [content, setContent] = createSignal<SkillContent>();
   const [versions, setVersions] = createSignal<SkillVersion[]>([]);
+  // Skills the app ships: they stay in the library, so they get a tag and no Delete.
+  const [builtinNames, setBuiltinNames] = createSignal<ReadonlySet<string>>(new Set());
   const [error, setError] = createSignal("");
   let serial = 0;
   async function refresh() {
@@ -29,11 +31,13 @@ export function SkillsSettings(props: { botId?: string }) {
     }
     const n = ++serial;
     try {
-      const [list, installed] = await Promise.all([
+      const [list, installed, builtin] = await Promise.all([
         api.list(),
         props.botId ? api.listInstalls({ botId: props.botId }) : Promise.resolve([]),
+        window.openbot.builtinSkills?.list().catch(() => []) ?? Promise.resolve([]),
       ]);
       if (n === serial) {
+        setBuiltinNames(new Set(builtin.flatMap((pack) => pack.skills.map((skill) => skill.name))));
         setSkills(list);
         setInstalls(installed);
         setError("");
@@ -90,27 +94,34 @@ export function SkillsSettings(props: { botId?: string }) {
                     <Sparkles size={18} stroke-width={1.5} />
                   </span>
                   <strong>
-                    {skill.name} <span class="w2-item-tag">v{skill.version}</span>
+                    {skill.name} <span class="w2-item-tag">v{skill.version}</span>{" "}
+                    <Show when={builtinNames().has(skill.name)}>
+                      <Badge tone="accent" size="sm" title={t("Comes with the app. It stays in the library.")}>
+                        {t("Built-in")}
+                      </Badge>
+                    </Show>
                   </strong>
                   <p>{skill.description}</p>
                   <div class="w2-item-actions">
                     <Button unstyled type="button" onClick={() => void inspect(skill.id)}>
                       {t("View versions")}
                     </Button>
-                    <Button
-                      unstyled
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(t("Delete this skill and uninstall it from all agents?"))) {
-                          const force = window.confirm(
-                            t("Also remove installed copies with local changes? Choose Cancel to preserve them."),
-                          );
-                          void run(() => skillsApi().delete({ skillId: skill.id, force }));
-                        }
-                      }}
-                    >
-                      {t("Delete")}
-                    </Button>
+                    <Show when={!builtinNames().has(skill.name)}>
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(t("Delete this skill and uninstall it from all agents?"))) {
+                            const force = window.confirm(
+                              t("Also remove installed copies with local changes? Choose Cancel to preserve them."),
+                            );
+                            void run(() => skillsApi().delete({ skillId: skill.id, force }));
+                          }
+                        }}
+                      >
+                        {t("Delete")}
+                      </Button>
+                    </Show>
                   </div>
                 </article>
               )}

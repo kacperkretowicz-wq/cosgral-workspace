@@ -21,6 +21,6 @@ export default defineConfig({
     hookTimeout: 10_000 * timeoutScale,
     teardownTimeout: 10_000 * timeoutScale,
     setupFiles: ["./src/renderer/src/setupTests.ts"],
-    exclude: [...configDefaults.exclude, "apps/**", "tests/visual/**"],
+    exclude: [...configDefaults.exclude, "apps/**", "resources/builtin-skills/**", "tests/visual/**"],
   },
 });

@@ -31,3 +31,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+This product ships three skills as unmodified copies of their public sources (resources/builtin-skills/, each with
+its own LICENSE and SOURCE.md):
+
+- superpowers 7.0.2, Copyright (c) 2025 Jesse Vincent, MIT License. https://github.com/obra/superpowers
+- i-have-adhd 0.4.1, Copyright (c) 2026 Ayoub Ghriss, MIT License. https://github.com/ayghri/i-have-adhd
+- graphify 0.9.120, Copyright 2026 Safi Shamsi and the Graphify contributors, Apache License 2.0 (parts MIT).
+  https://github.com/Graphify-Labs/graphify

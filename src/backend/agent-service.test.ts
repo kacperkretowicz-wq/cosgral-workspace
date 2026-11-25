@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { serializeAttachmentReference } from "@openbot/contracts/attachment-references";
@@ -437,6 +437,31 @@ describe.sequential("AgentService", { timeout: suiteTimeout(20_000, 5_000) }, ()
     );
     const settings = await service.agentSettings.get("chief");
     expect(settings.tools.find((tool) => tool.group === "vault")).toMatchObject({ enabled: false });
+  });
+
+  it("COSGRAL: new agents get the built-in skills the person chose, and the library keeps them", async () => {
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser());
+    await service.initialize();
+    const shipped = join(root, "builtin-skills");
+    await mkdir(join(shipped, "superpowers", "skills", "brainstorming"), { recursive: true });
+    await writeFile(
+      join(shipped, "superpowers", "skills", "brainstorming", "SKILL.md"),
+      "---\nname: brainstorming\ndescription: Think before building.\n---\n",
+    );
+    const builtin = service.useBuiltinSkills(shipped);
+    await builtin.ready();
+    expect(service.skillLibrary.list().map((skill) => skill.name)).toEqual(["brainstorming"]);
+
+    const bot = await service.createBot();
+    expect(service.skillLibrary.installedFor(bot.id).map((skill) => skill.name)).toEqual(["brainstorming"]);
+    const skill = service.skillLibrary.findByName("brainstorming");
+    if (!skill) throw new Error("brainstorming is missing");
+    await expect(service.skillLibrary.delete({ skillId: skill.id })).rejects.toThrow("built-in skill");
+
+    await builtin.setDefault({ packId: "superpowers", enabled: false });
+    const plain = await service.createBot();
+    expect(service.skillLibrary.installedFor(plain.id)).toEqual([]);
   });
 
   it("COSGRAL W3: creates an agent from a template with its tools, skills and starting memories", async () => {

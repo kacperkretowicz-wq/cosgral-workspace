@@ -114,6 +114,7 @@ import { disposeBackgroundMode, installBackgroundMode, shouldHideMainWindowOnClo
 import { createElectronBackgroundMode } from "./background-mode-electron";
 import { registerBrowserProfilesIpc } from "./browser-profiles-ipc";
 import { registerBudgetsIpc } from "./budgets-ipc";
+import { registerBuiltinSkillsIpc } from "./builtin-skills-ipc";
 import { registerChannelRoutinesIpc } from "./channel-routines-ipc";
 import { registerComposerIpc } from "./composer-ipc";
 import { registerComputerUseIpc } from "./computer-use-ipc";
@@ -1085,6 +1086,8 @@ function registerIpcHandlers(
       await initializeAgent();
     },
   });
+  // COSGRAL: the built-in skills (superpowers, i-have-adhd, graphify).
+  registerBuiltinSkillsIpc(() => service.builtinSkills);
   // COSGRAL W3: the local Marketplace (catalog of our own skills and agents).
   registerMarketplaceIpc(() => service.marketplace);
   // COSGRAL W1: sidebar folders of this computer; remote servers have none yet.
@@ -1640,6 +1643,12 @@ if (!hasSingleInstanceLock) {
       );
       // COSGRAL W2: the Vault encrypts with the operating system (safeStorage, DPAPI on Windows).
       agentService.useSecretBox(electronSecretBox());
+      // COSGRAL: the built-in skills (superpowers, i-have-adhd, graphify) ship in `resources/builtin-skills`.
+      agentService.useBuiltinSkills(
+        app.isPackaged
+          ? join(process.resourcesPath, "builtin-skills")
+          : resolve(__dirname, "../../resources/builtin-skills"),
+      );
       // COSGRAL W10-KK2: the Telegram bridge (long polling; the token is encrypted in this space's database).
       messengerBridge = new MessengerBridge({
         database: store.database,

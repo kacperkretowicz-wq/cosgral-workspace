@@ -93,6 +93,7 @@ import { createAppDataApi } from "./app-data-api";
 import { createApprovalRulesApi } from "./approval-rules-api";
 import { createBrowserProfilesApi } from "./browser-profiles-api";
 import { createBudgetsApi } from "./budgets-api";
+import { createBuiltinSkillsApi } from "./builtin-skills-api";
 import { createChannelRoutinesApi } from "./channel-routines-api";
 import { createComposerApi, createSearchApi, createThreadTabsApi } from "./composer-api";
 import { createComputerUseApi } from "./computer-use-api";
@@ -851,6 +852,7 @@ const openbotApi: OpenBotDesktopApi = {
   agentSettings: createAgentSettingsApi(invokeAgent, decodeBot),
   appSettings: createAppSettingsApi(invokeAgent),
   onboarding: createOnboardingApi(invokeAgent),
+  builtinSkills: createBuiltinSkillsApi(invokeAgent),
   marketplace: createMarketplaceApi(invokeAgent, decodeBot),
   mobile: createMobileApi(invokeAgent),
   approvalRules: createApprovalRulesApi(invokeAgent),

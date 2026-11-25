@@ -3172,4 +3172,65 @@ export const pl = {
   "The previous run of this routine is still running.": "Poprzednie uruchomienie tej rutyny jeszcze trwa.",
   "The turn is gone.": "Tej tury już nie ma.",
   "The turn ended": "Tura zakończyła się",
+  "Built-in skills": "Stałe skille",
+  "Built-in": "Stały",
+  "Comes with the app. It stays in the library.": "Jest częścią aplikacji. Zostaje w bibliotece.",
+  "Skills that come with the app. They are always here; choose which agents use them.":
+    "Skille, które są w aplikacji od początku. Zawsze tu są. Wybierz, które agenty z nich korzystają.",
+  "Could not load the built-in skills.": "Nie udało się wczytać stałych skilli.",
+  "Built-in skills are unavailable in this build.": "Stałe skille nie są dostępne w tej wersji aplikacji.",
+  "These skills come with the app and cannot be deleted. A skill is a ready set of instructions an agent works by. The files are copies of public projects and keep their licenses.":
+    "Te skille są częścią aplikacji i nie da się ich usunąć. Skill to gotowa instrukcja, według której pracuje agent. Pliki są kopiami publicznych projektów i mają swoje licencje.",
+  "Could not change the skills: {reason}": "Nie udało się zmienić skilli: {reason}",
+  "There are no agents to change.": "Nie ma agentów do zmiany.",
+  "{title} is on. Agents changed: {count}.": "{title} jest włączony. Zmienieni agenci: {count}.",
+  "{title} is off. Agents changed: {count}.": "{title} jest wyłączony. Zmienieni agenci: {count}.",
+  "Agents with this set: {count} of {total}": "Agenci z tym zestawem: {count} z {total}",
+  "The program “{command}” is on this computer.": "Program „{command}” jest na tym komputerze.",
+  "The program “{command}” was not found. Without it the skill cannot work.":
+    "Nie znaleziono programu „{command}”. Bez niego skill nie zadziała.",
+  "Install it once by typing this in a terminal:": "Zainstaluj go raz, wpisując w terminalu:",
+  "Copies the command so you can paste it in a terminal.": "Kopiuje polecenie, żebyś mógł je wkleić w terminalu.",
+  "Copy the command": "Skopiuj polecenie",
+  "Looks for the program again, for example after you installed it.":
+    "Szuka programu jeszcze raz, na przykład po jego zainstalowaniu.",
+  "Check again": "Sprawdź jeszcze raz",
+  "Could not copy. Select the command and copy it by hand.":
+    "Nie udało się skopiować. Zaznacz polecenie i skopiuj je ręcznie.",
+  "You already have your own skill named “{name}”. It stays as it is.":
+    "Masz już własny skill o nazwie „{name}”. Zostaje bez zmian.",
+  "Give to new agents": "Dla nowych agentów",
+  "Every new agent gets this set at once. You can change it any time.":
+    "Każdy nowy agent od razu dostaje ten zestaw. Możesz to zmienić w każdej chwili.",
+  "New agents will get {title}.": "Nowi agenci dostaną: {title}.",
+  "New agents will not get {title}.": "Nowi agenci nie dostaną: {title}.",
+  "Gives every agent all skills of this set.": "Daje każdemu agentowi wszystkie skille z tego zestawu.",
+  "Turn on for all agents": "Włącz u wszystkich agentów",
+  "Takes the whole set away from every agent. The skills stay in the library.":
+    "Zabiera cały zestaw wszystkim agentom. Skille zostają w bibliotece.",
+  "Turn off for all agents": "Wyłącz u wszystkich agentów",
+  Project: "Projekt",
+  "Choose a project": "Wybierz projekt",
+  "Gives the set to the agents that work in the chosen project.":
+    "Daje zestaw agentom, którzy pracują w wybranym projekcie.",
+  "Turn on for the project’s agents": "Włącz u agentów projektu",
+  "Switch the set on or off for one agent.": "Włącz albo wyłącz zestaw dla jednego agenta.",
+  "Choose agents": "Wybierz agentów",
+  "There are no agents yet. Create an agent first.": "Nie ma jeszcze agentów. Najpierw utwórz agenta.",
+  "Only some skills of the set": "Tylko część skilli z zestawu",
+  "The skills that belong to this set.": "Skille, które należą do tego zestawu.",
+  "Skills in this set ({count})": "Skille w tym zestawie ({count})",
+  "License: {license}. Source version {version}.": "Licencja: {license}. Wersja źródła: {version}.",
+  "A set of working habits for agents: plan first, write the test first, check the result before saying it is done.":
+    "Zestaw nawyków pracy agenta: najpierw plan, najpierw test, a przed słowem „gotowe” sprawdzenie wyniku.",
+  "Works by itself. When you start something new, the agent first asks what you need, then writes a plan, works step by step and checks each step.":
+    "Działa samo. Gdy zaczynasz coś nowego, agent najpierw pyta, czego potrzebujesz, potem pisze plan, pracuje krok po kroku i sprawdza każdy krok.",
+  "The agent writes for a person with ADHD: the next step comes first, steps are short and numbered, and times are given in minutes.":
+    "Agent pisze tak, żeby łatwo się to czytało przy ADHD: najpierw następny krok, krótkie ponumerowane punkty i czas podany w minutach.",
+  "Write /i-have-adhd in the chat to turn it on. It stays on until you write: stop adhd mode. It does nothing until you turn it on.":
+    "Napisz w rozmowie /i-have-adhd, żeby to włączyć. Działa, dopóki nie napiszesz: stop adhd mode. Dopóki tego nie włączysz, nic nie zmienia.",
+  "Turns a project folder into a map of how its parts connect, so the agent can ask the map instead of reading every file.":
+    "Zamienia folder projektu w mapę powiązań między jego częściami. Agent pyta mapę zamiast czytać po kolei każdy plik.",
+  "Write /graphify in the chat. It needs the graphify program on this computer; install it once with the command below.":
+    "Napisz w rozmowie /graphify. Potrzebuje programu graphify na tym komputerze. Zainstaluj go raz poleceniem poniżej.",
 } as const;

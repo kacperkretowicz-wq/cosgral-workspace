@@ -22,6 +22,9 @@ await Promise.all([
   access(executablePath),
   access(resolve(resourcesPath, "app.asar")),
   access(resolve(resourcesPath, "licenses/Electron-LICENSE")),
+  access(resolve(resourcesPath, "builtin-skills/superpowers/skills/using-superpowers/SKILL.md")),
+  access(resolve(resourcesPath, "builtin-skills/i-have-adhd/skills/i-have-adhd/SKILL.md")),
+  access(resolve(resourcesPath, "builtin-skills/graphify/skills/graphify/SKILL.md")),
   access(resolve(resourcesPath, "licenses/LICENSES.chromium.html")),
 ]);
 

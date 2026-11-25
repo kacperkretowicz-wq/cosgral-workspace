@@ -13,6 +13,7 @@ export * from "./ipc-attention";
 export * from "./ipc-browser";
 export * from "./ipc-browser-profiles";
 export * from "./ipc-budgets";
+export * from "./ipc-builtin-skills";
 export * from "./ipc-channel-routines";
 export * from "./ipc-channels";
 export * from "./ipc-composer";
