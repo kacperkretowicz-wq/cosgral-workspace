@@ -135,7 +135,7 @@ export function ContextSettingsSection(props: { api?: ContextDesktopApi; onEvent
       </Show>
       <Show when={notice()}>
         <Text as="p" role="status">
-          {t(notice())}
+          {notice()}
         </Text>
       </Show>
     </Card>

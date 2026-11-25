@@ -2301,6 +2301,13 @@ export const pl = {
     "Usuwa wszystko, co COSGRAL Workspace trzyma na tym komputerze, i startuje od zera. Odinstalowanie programu zostawia dane; tu je usuwasz.",
   "Delete my data…": "Usuń moje dane…",
   "Will be deleted": "Zostanie usunięte",
+  "Program data: database, conversations, settings, Vault and MCP secrets (encrypted with Windows safeStorage), browser profile, logs":
+    "Dane programu: baza danych, rozmowy, ustawienia, sekrety Sejfu i serwerów MCP (zaszyfrowane przez Windows), profil przeglądarki, dzienniki",
+  "Agents' folder: agent workspaces and shared files": "Folder agentów: miejsca pracy agentów i wspólne pliki",
+  "Codex and Claude CLI sign-ins (kept in their own folders)":
+    "Logowania do Codex i Claude CLI (zostają w swoich folderach)",
+  "Data of the regular OpenBot app": "Dane zwykłej aplikacji OpenBot",
+  "Everything else on this computer": "Wszystko inne na tym komputerze",
   "Never touched": "Nietknięte",
   "Type {word} to confirm": "Wpisz {word}, by potwierdzić",
   "Stopping the agents and restarting. The data is deleted before the next start.":

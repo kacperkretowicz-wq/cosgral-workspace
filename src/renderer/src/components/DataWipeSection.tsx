@@ -1,6 +1,6 @@
 import type { DataWipePlan } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
-import { t } from "../i18n";
+import { t, tData } from "../i18n";
 import { Button, Card, Field, Heading, Input, Text } from "./ui";
 
 /**
@@ -80,7 +80,7 @@ export function DataWipeSection() {
                 <For each={current().removes}>
                   {(item) => (
                     <li>
-                      <Text as="span">{item.label}</Text>
+                      <Text as="span">{tData(item.label)}</Text>
                       <Show when={item.path}>
                         {(path) => (
                           <Text as="span" variant="caption" tone="muted" class="data-wipe-path">
@@ -99,7 +99,7 @@ export function DataWipeSection() {
                 <For each={current().keeps}>
                   {(item) => (
                     <li>
-                      <Text as="span">{item.label}</Text>
+                      <Text as="span">{tData(item.label)}</Text>
                       <Show when={item.path}>
                         {(path) => (
                           <Text as="span" variant="caption" tone="muted" class="data-wipe-path">
