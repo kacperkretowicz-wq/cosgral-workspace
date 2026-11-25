@@ -831,6 +831,11 @@ export function Sidebar(props: SidebarProps) {
                     !bot.preview.trim() || bot.preview === NO_MESSAGES_PREVIEW || bot.preview === t(NO_MESSAGES_PREVIEW)
                       ? role() || t("No messages yet")
                       : bot.preview;
+                  // The screen reader reads the row's preview: the placeholder is stored in the language the app started in.
+                  const ariaPreview = () =>
+                    bot.preview === NO_MESSAGES_PREVIEW || bot.preview === t(NO_MESSAGES_PREVIEW)
+                      ? t(NO_MESSAGES_PREVIEW)
+                      : bot.preview;
                   return (
                     <ContextMenu.Root modal={false}>
                       <ContextMenu.Trigger
@@ -844,7 +849,7 @@ export function Sidebar(props: SidebarProps) {
                             "bot-row-hidden": bot.hidden === true,
                           },
                         ]}
-                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? `${t("Hidden")}. ` : ""}${bot.activeModel && bot.activeModel !== bot.model ? `${t("Fallback model: {model}", { model: bot.activeModel })}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? `${t("Looking")}. ` : ""}${bot.preview}`}
+                        aria-label={`${bot.name}${role() ? `, ${role()}` : ""}. ${bot.hidden ? `${t("Hidden")}. ` : ""}${bot.activeModel && bot.activeModel !== bot.model ? `${t("Fallback model: {model}", { model: bot.activeModel })}. ` : ""}${stateLabel() ? `${stateLabel()}. ` : ""}${looking() ? `${t("Looking")}. ` : ""}${ariaPreview()}`}
                         style={depth > 0 ? { "--folder-level": String(depth - 1) } : undefined}
                         data-agent-id={bot.id}
                         data-in-folder={depth > 0 ? "true" : undefined}
