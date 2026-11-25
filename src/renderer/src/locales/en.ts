@@ -3204,7 +3204,6 @@ export const en = {
   "Takes the whole set away from every agent. The skills stay in the library.":
     "Takes the whole set away from every agent. The skills stay in the library.",
   "Turn off for all agents": "Turn off for all agents",
-  Project: "Project",
   "Choose a project": "Choose a project",
   "Gives the set to the agents that work in the chosen project.":
     "Gives the set to the agents that work in the chosen project.",
