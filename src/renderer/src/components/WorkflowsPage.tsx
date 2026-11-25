@@ -19,6 +19,7 @@ import {
 import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { appLocale, t, tn } from "../i18n";
+import { canRedo, canUndo, emptyHistory, type History, record, redo, undo } from "../workflow-history";
 import { workflowProblemText } from "../workflow-problems";
 import { conditionOperatorLabel, conditionText } from "../workflow-text";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
@@ -30,8 +31,10 @@ import {
   MessageCircle,
   Play,
   Plus,
+  Redo2,
   ShieldCheck,
   Trash2,
+  Undo2,
   Workflow as WorkflowIcon,
   Zap,
 } from "./ui/icons";
@@ -688,14 +691,70 @@ export function WorkflowCanvas(
   );
 }
 
+// The draft lives outside the page, so leaving the page (to Agents and back) does not throw the work away.
+const [selected, setSelected] = createSignal<string>("");
+// `undefined` until the person types or opens a workflow: the name then follows the window language ("New workflow").
+const [typedName, setName] = createSignal<string | undefined>();
+const [graph, setGraphRaw] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
+const [history, setHistory] = createSignal<History<WorkflowGraph>>(emptyHistory<WorkflowGraph>());
+
+/** Forgets the draft (a new workflow, or a fresh start in a test). */
+export function resetWorkflowDraft() {
+  setSelected("");
+  setName(undefined);
+  setGraphRaw({ nodes: [], edges: [] });
+  setHistory(emptyHistory<WorkflowGraph>());
+}
+
+/** A change made by the person: remembered, so it can be undone. */
+function changeGraph(next: WorkflowGraph) {
+  setHistory(record(history(), graph(), Date.now()));
+  setGraphRaw(next);
+}
+
+/** Shows another graph (opened, restored or deleted): there is nothing to undo back to. */
+function showGraph(next: WorkflowGraph) {
+  setHistory(emptyHistory<WorkflowGraph>());
+  setGraphRaw(next);
+}
+
+function undoGraph() {
+  const step = undo(history(), graph());
+  if (!step) return;
+  setHistory(step.history);
+  setGraphRaw(step.value);
+}
+
+function redoGraph() {
+  const step = redo(history(), graph());
+  if (!step) return;
+  setHistory(step.history);
+  setGraphRaw(step.value);
+}
+
+function isTextField(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+  );
+}
+
+/** Ctrl+Z / Cmd+Z undoes, Ctrl+Shift+Z / Ctrl+Y redoes; inside a text field the field keeps its own undo. */
+function onEditorKeyDown(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || isTextField(event.target)) return;
+  const key = event.key.toLowerCase();
+  if (key === "z" && !event.shiftKey) undoGraph();
+  else if ((key === "z" && event.shiftKey) || key === "y") redoGraph();
+  else return;
+  event.preventDefault();
+}
+
 export function WorkflowsPage() {
   const [items, setItems] = createSignal<Workflow[]>([]);
   const [bots, setBots] = createSignal<ResourceOption[]>([]);
   const [channels, setChannels] = createSignal<ResourceOption[]>([]);
   const [routines, setRoutines] = createSignal<ResourceOption[]>([]);
-  const [selected, setSelected] = createSignal<string>("");
-  const [name, setName] = createSignal(t("New workflow"));
-  const [graph, setGraph] = createSignal<WorkflowGraph>({ nodes: [], edges: [] });
+  const name = () => typedName() ?? t("New workflow");
   const [preview, setPreview] = createSignal<{ number: number; graph: WorkflowGraph } | null>(null);
   const [runs, setRuns] = createSignal<WorkflowRun[]>([]);
   const [input, setInput] = createSignal("");
@@ -725,18 +784,22 @@ export function WorkflowsPage() {
       return;
     }
     try {
-      setItems(await api.list());
+      const list = await api.list();
+      setItems(list);
+      // The opened workflow was deleted somewhere else: what is on the canvas becomes a new draft.
+      if (selected() && !list.some((item) => item.id === selected())) setSelected("");
       if (selected()) setRuns(await api.listRuns({ workflowId: selected() }));
       setError("");
     } catch (e) {
       setError(e instanceof Error ? errorText(e) : t("Could not load workflows."));
     }
   }
-  function choose(item: Workflow) {
+  function choose(item: Workflow, keepEdits = false) {
     setSelected(item.id);
     setPreview(null);
     setName(item.name);
-    setGraph({ nodes: item.nodes, edges: item.edges });
+    // After saving the canvas already shows the saved graph, so the undo steps stay.
+    if (!keepEdits) showGraph({ nodes: item.nodes, edges: item.edges });
     void window.openbot.workflows
       ?.listRuns({ workflowId: item.id })
       .then(setRuns)
@@ -749,7 +812,7 @@ export function WorkflowsPage() {
       const item = selected()
         ? await api.update({ workflowId: selected(), name: name(), ...graph() })
         : await api.create({ name: name(), ...graph() });
-      choose(item);
+      choose(item, true);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? errorText(e) : t("Could not save workflow."));
@@ -766,9 +829,7 @@ export function WorkflowsPage() {
     return off;
   });
   const startNew = () => {
-    setSelected("");
-    setName(t("New workflow"));
-    setGraph({ nodes: [], edges: [] });
+    resetWorkflowDraft();
     setRuns([]);
     setPreview(null);
   };
@@ -830,7 +891,7 @@ export function WorkflowsPage() {
             </ul>
           </Show>
         </aside>
-        <section class="workflows-editor" aria-label={t("Workflow")}>
+        <section class="workflows-editor" aria-label={t("Workflow")} onKeyDown={onEditorKeyDown}>
           <Show when={error()}>
             <p role="alert" class="workflows-alert">
               {error()}
@@ -845,6 +906,28 @@ export function WorkflowsPage() {
               <span class="workflows-draft">{t("Draft")}</span>
             </Show>
             <div class="workflows-editor-actions">
+              <Button
+                type="button"
+                variant="ghost"
+                class="workflows-history-button"
+                aria-label={t("Undo")}
+                title={t("Undo the last change (Ctrl+Z)")}
+                disabled={!canUndo(history())}
+                onClick={undoGraph}
+              >
+                <Undo2 size={16} stroke-width={1.5} aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                class="workflows-history-button"
+                aria-label={t("Redo")}
+                title={t("Redo the change you undid (Ctrl+Shift+Z)")}
+                disabled={!canRedo(history())}
+                onClick={redoGraph}
+              >
+                <Redo2 size={16} stroke-width={1.5} aria-hidden="true" />
+              </Button>
               <Show when={selected()}>
                 <Button
                   type="button"
@@ -857,8 +940,7 @@ export function WorkflowsPage() {
                       void window.openbot.workflows
                         ?.delete({ workflowId: selected() })
                         .then(() => {
-                          setSelected("");
-                          setGraph({ nodes: [], edges: [] });
+                          resetWorkflowDraft();
                           setRuns([]);
                           return refresh();
                         })
@@ -883,7 +965,7 @@ export function WorkflowsPage() {
           <WorkflowCanvas
             nodes={graph().nodes}
             edges={graph().edges}
-            onChange={setGraph}
+            onChange={changeGraph}
             bots={bots()}
             channels={channels()}
             routines={routines()}
@@ -977,7 +1059,7 @@ export function WorkflowsPage() {
                 onPreview={setPreview}
                 onRestored={(workflow) => {
                   setPreview(null);
-                  setGraph({ nodes: workflow.nodes, edges: workflow.edges });
+                  showGraph({ nodes: workflow.nodes, edges: workflow.edges });
                 }}
               />
             </div>

@@ -2,11 +2,12 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-li
 import { flush } from "solid-js";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLanguage } from "../i18n";
-import { WorkflowsPage } from "./WorkflowsPage";
+import { resetWorkflowDraft, WorkflowsPage } from "./WorkflowsPage";
 
 const create = vi.fn();
 
 beforeEach(() => {
+  resetWorkflowDraft();
   create.mockReset();
   Object.assign(window, {
     openbot: {
