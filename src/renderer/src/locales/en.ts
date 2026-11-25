@@ -3267,4 +3267,6 @@ export const en = {
   "E-mail": "E-mail",
   "Code review": "Code review",
   "This workflow cannot be saved: {problems}": "This workflow cannot be saved: {problems}",
+  "No agent has {title} turned on.": "No agent has {title} turned on.",
+  "Choose a project first.": "Choose a project first.",
 } as const;

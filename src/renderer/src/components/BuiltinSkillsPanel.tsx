@@ -264,9 +264,13 @@ function PackCard(props: {
           type="button"
           variant="secondary"
           size="sm"
-          disabled={busy() || !usable() || have() === 0}
+          disabled={busy() || !usable()}
           title={t("Takes the whole set away from every agent. The skills stay in the library.")}
-          onClick={() => apply(props.pack.installedBotIds.concat(props.pack.partialBotIds), false)}
+          onClick={() => {
+            const holders = props.pack.installedBotIds.concat(props.pack.partialBotIds);
+            if (holders.length === 0) setNotice(t("No agent has {title} turned on.", { title: title() }));
+            else apply(holders, false);
+          }}
         >
           {t("Turn off for all agents")}
         </Button>
@@ -289,9 +293,12 @@ function PackCard(props: {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={busy() || !usable() || projectId() === ""}
+            disabled={busy() || !usable()}
             title={t("Gives the set to the agents that work in the chosen project.")}
-            onClick={() => apply(projectAgents(), true)}
+            onClick={() => {
+              if (projectId() === "") setNotice(t("Choose a project first."));
+              else apply(projectAgents(), true);
+            }}
           >
             {t("Turn on for the project’s agents")}
           </Button>

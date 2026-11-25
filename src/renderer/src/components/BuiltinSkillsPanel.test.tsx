@@ -63,8 +63,8 @@ it("turns a set on for all agents, answers with a sentence and then offers to tu
   render(() => <BuiltinSkillsPanel bots={BOTS} projects={PROJECTS} />);
   await screen.findByText("Superpowers", { selector: "strong" });
   const card = within(cardOf("Superpowers"));
-  const off = card.getByRole("button", { name: "Turn off for all agents" });
-  expect(off).toBeDisabled();
+  await fireEvent.click(card.getByRole("button", { name: "Turn off for all agents" }));
+  expect(await card.findByText("No agent has Superpowers turned on.")).toBeInTheDocument();
   await fireEvent.click(card.getByRole("button", { name: "Turn on for all agents" }));
   expect(await card.findByText("Superpowers is on. Agents changed: 2.")).toBeInTheDocument();
   expect(card.getByText("Agents with this set: 2 of 2")).toBeInTheDocument();
@@ -81,9 +81,9 @@ it("turns a set on for the agents of one project only; empty and archived projec
   const options = card.getAllByRole("option").map((option) => option.textContent);
   expect(options).toEqual(["Choose a project", "Launch plan"]);
   const button = card.getByRole("button", { name: "Turn on for the project’s agents" });
-  expect(button).toBeDisabled();
+  await fireEvent.click(button);
+  expect(await card.findByText("Choose a project first.")).toBeInTheDocument();
   await fireEvent.change(card.getByLabelText("Project"), { target: { value: "p1" } });
-  await waitFor(() => expect(button).toBeEnabled());
   await fireEvent.click(button);
   expect(await card.findByText("Agents with this set: 1 of 2")).toBeInTheDocument();
 });

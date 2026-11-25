@@ -42,13 +42,18 @@ export const LibraryBuiltinSkills: Story = {
   render: () => <Mocked>{() => <LibraryPage bots={STORY_BOTS} />}</Mocked>,
   play: async ({ canvas }) => {
     await userEvent.click(await canvas.findByRole("button", { name: /Built-in skills/ }));
-    await expect(await canvas.findByText("Superpowers")).toBeInTheDocument();
-    await expect(canvas.getByText(/Agents with this set: 0 of/)).toBeInTheDocument();
-    await expect(canvas.getByText(/The program “graphify” was not found/)).toBeInTheDocument();
-    const [turnOn] = canvas.getAllByRole("button", { name: "Turn on for all agents" });
-    if (!turnOn) throw new Error("The set has no Turn on button.");
-    await userEvent.click(turnOn);
-    await expect(await canvas.findByText(/Superpowers is on\. Agents changed:/)).toBeInTheDocument();
+    try {
+      await expect(await canvas.findByText("Superpowers")).toBeInTheDocument();
+      await expect(canvas.getAllByText(/Agents with this set: 0 of/)).toHaveLength(3);
+      await expect(canvas.getByText(/The program “graphify” was not found/)).toBeInTheDocument();
+      const [turnOn] = canvas.getAllByRole("button", { name: "Turn on for all agents" });
+      if (!turnOn) throw new Error("The set has no Turn on button.");
+      await userEvent.click(turnOn);
+      await expect(await canvas.findByText(/Superpowers is on\. Agents changed:/)).toBeInTheDocument();
+    } finally {
+      // The page remembers the section; the other Library stories start on Files.
+      await userEvent.click(await canvas.findByRole("button", { name: /^Files/ }));
+    }
   },
 };
 

@@ -3274,4 +3274,6 @@ export const pl = {
   "E-mail": "Poczta",
   "Code review": "Przegląd kodu",
   "This workflow cannot be saved: {problems}": "Tego przepływu nie można zapisać: {problems}",
+  "No agent has {title} turned on.": "Żaden agent nie ma włączonego zestawu {title}.",
+  "Choose a project first.": "Najpierw wybierz projekt.",
 } as const;
