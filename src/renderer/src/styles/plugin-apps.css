@@ -142,6 +142,16 @@
   color: var(--cosgral-danger);
 }
 
+.plugin-empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.plugin-empty > p {
+  margin: 0;
+}
+
 .plugin-section {
   display: grid;
   gap: 10px;

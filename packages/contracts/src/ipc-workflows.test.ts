@@ -138,7 +138,7 @@ describe("workflows IPC contract", () => {
     ).toContainEqual(expect.stringMatching(/Allow/));
     // A step outside the path from the trigger is reported, not silently ignored.
     expect(workflowProblems({ nodes: [...workflow.nodes], edges: edges.slice(0, 2) })).toContainEqual(
-      expect.stringMatching(/not reachable.*post/),
+      expect.stringMatching(/not reachable.*"Post to channel"/),
     );
     // "next" belongs to normal steps; "allow" and "deny" to approvals only.
     expect(
@@ -146,7 +146,7 @@ describe("workflows IPC contract", () => {
         nodes: [trigger, agent],
         edges: [{ id: "e1", from: "start", to: "draft", on: "allow" }],
       }),
-    ).toContainEqual(expect.stringMatching(/"next"/));
+    ).toContainEqual(expect.stringMatching(/use Next/));
     // One way on from a normal step; no loops.
     expect(
       workflowProblems({

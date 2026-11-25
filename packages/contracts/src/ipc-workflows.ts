@@ -352,8 +352,16 @@ export function connectionKindsOf(node: WorkflowNode): readonly WorkflowEdgeKind
   return ["next"];
 }
 
+/** A step in a sentence: its title in quotes (the id means nothing to a person; two steps with one title are still told apart by the connections). */
 function label(node: WorkflowNode): string {
-  return `"${node.title}" (${node.id})`;
+  return `"${node.title}"`;
+}
+
+/** A connection in a sentence: `"Ask" → "Post"`, by the titles of its two steps (the edge id means nothing to a person). */
+function connectionLabel(edge: WorkflowEdge, byId: ReadonlyMap<string, WorkflowNode>): string {
+  const from = byId.get(edge.from);
+  const to = byId.get(edge.to);
+  return from && to ? `${label(from)} → ${label(to)}` : edge.id;
 }
 
 /**
@@ -393,15 +401,18 @@ export function workflowProblems(graph: WorkflowGraph): string[] {
     }
     valid.push(edge);
     if (!connectionKindsOf(from).includes(edge.on)) {
+      const link = connectionLabel(edge, byId);
       problems.push(
         from.type === "approval"
-          ? `Connection ${edge.id} leaves the approval ${label(from)}: use "allow" or "deny".`
+          ? `Connection ${link} leaves the approval ${label(from)}: use Allow or Deny.`
           : from.type === "condition"
-            ? `Connection ${edge.id} leaves the condition ${label(from)}: use "yes" or "no".`
-            : `Connection ${edge.id} leaves ${label(from)}: use "next".`,
+            ? `Connection ${link} leaves the condition ${label(from)}: use Yes or No.`
+            : `Connection ${link} leaves ${label(from)}: use Next.`,
       );
     }
-    if (to.type === "trigger") problems.push(`The trigger cannot have incoming connections (${edge.id}).`);
+    if (to.type === "trigger") {
+      problems.push(`The trigger cannot have incoming connections (${connectionLabel(edge, byId)}).`);
+    }
   }
 
   for (const node of nodes) {

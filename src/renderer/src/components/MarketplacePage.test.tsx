@@ -89,4 +89,81 @@ describe("marketplace", () => {
     expect(matchesBothLanguages(meetingNotes, "produktywnosc")).toBe(true);
     expect(matchesBothLanguages(meetingNotes, "notatki podróż")).toBe(false);
   });
+
+  const agent: MarketplaceItem = {
+    ...meetingNotes,
+    id: "agent:research-analyst",
+    kind: "agent",
+    title: "Research analyst",
+    skillName: null,
+    libraryState: null,
+  };
+  const agentDetails = (installedBotIds: string[]) => ({
+    item: { ...agent, installedBotIds },
+    skillMd: null,
+    files: [],
+    agent: { role: "Research and analysis", description: "You research.", memories: [] },
+  });
+
+  it("brings the details into view when a card is opened", () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    render(() => (
+      <MarketplaceDetail
+        bots={[]}
+        selectedBot=""
+        onSelectBot={vi.fn()}
+        onInstall={vi.fn()}
+        onUninstall={vi.fn()}
+        details={agentDetails([])}
+      />
+    ));
+    flush();
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole("region", { name: "Item details" }));
+    Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+  });
+
+  it("shows the role in Polish and says Installed once the agent exists", () => {
+    setLanguage("pl");
+    render(() => (
+      <MarketplaceDetail
+        bots={[{ id: "a", name: "Analityk" }]}
+        selectedBot=""
+        onSelectBot={vi.fn()}
+        onInstall={vi.fn()}
+        onUninstall={vi.fn()}
+        details={agentDetails(["a"])}
+      />
+    ));
+    expect(screen.getByText("Rola: Badania i analiza")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zainstalowane" })).toBeDisabled();
+  });
+
+  it("keeps Install for an agent that is not installed yet, and for a skill only until it is on the chosen agent", () => {
+    const onInstall = vi.fn();
+    const view = render(() => (
+      <MarketplaceDetail
+        bots={[]}
+        selectedBot=""
+        onSelectBot={vi.fn()}
+        onInstall={onInstall}
+        onUninstall={vi.fn()}
+        details={agentDetails([])}
+      />
+    ));
+    expect(screen.getByRole("button", { name: "Install" })).toBeEnabled();
+    view.unmount();
+    render(() => (
+      <MarketplaceDetail
+        bots={[{ id: "a", name: "Ada" }]}
+        selectedBot="a"
+        onSelectBot={vi.fn()}
+        onInstall={onInstall}
+        onUninstall={vi.fn()}
+        details={{ item: { ...meetingNotes, installedBotIds: ["a"] }, skillMd: null, files: [], agent: null }}
+      />
+    ));
+    expect(screen.getByRole("button", { name: "Installed" })).toBeDisabled();
+  });
 });

@@ -51,6 +51,11 @@ export function parseInstallMarketplaceAgent(value: unknown): InstallMarketplace
     if (input.name.length > MARKETPLACE_LIMITS.agentName) throw new Error("name is too long.");
     parsed.name = input.name;
   }
+  if (input.role !== undefined && input.role !== null) {
+    if (!isString(input.role)) throw new Error("role must be text.");
+    if (input.role.length > MARKETPLACE_LIMITS.agentName) throw new Error("role is too long.");
+    parsed.role = input.role;
+  }
   return parsed;
 }
 

@@ -750,9 +750,16 @@ export const WORKFLOW_CONDITION_OPERATOR_LABELS: Record<WorkflowConditionOperato
   "is-not-empty": "is not empty",
 };
 
-/** The line on a condition card: `{{previous}} contains "approved"`; an empty-test has no value. */
-export function describeWorkflowCondition(node: Extract<WorkflowNode, { type: "condition" }>): string {
+/**
+ * The line on a condition card: `{{previous}} contains "approved"`; an empty-test has no value. `operatorLabel` puts the
+ * operator in another language (the window passes its own words); it defaults to the English labels.
+ */
+export function describeWorkflowCondition(
+  node: Extract<WorkflowNode, { type: "condition" }>,
+  operatorLabel: (operator: WorkflowConditionOperator) => string = (operator) =>
+    WORKFLOW_CONDITION_OPERATOR_LABELS[operator],
+): string {
   const subject = node.subject.trim() === "" ? "…" : node.subject.trim();
-  const label = WORKFLOW_CONDITION_OPERATOR_LABELS[node.operator];
+  const label = operatorLabel(node.operator);
   return workflowOperatorNeedsValue(node.operator) ? `${subject} ${label} "${node.value}"` : `${subject} ${label}`;
 }

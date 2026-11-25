@@ -167,6 +167,34 @@ describe("WorkflowManager: saving", () => {
     expect(manager.list()).toEqual([]);
   });
 
+  it("refuses a step that has no agent or no channel chosen yet, in the same words the editor shows", async () => {
+    const { manager } = await build();
+    expect(() => save(manager, [trigger, { ...ask, botId: "" }, post], chain)).toThrow('Step "Ask" needs an agent.');
+    expect(() => save(manager, [trigger, ask, { ...post, channelId: "" }], chain)).toThrow(
+      'Step "Post" needs a channel.',
+    );
+    const approve: WorkflowNode = {
+      id: "approve",
+      type: "approval",
+      title: "Approve",
+      x: 0,
+      y: 0,
+      botId: "",
+      text: "Ok?",
+    };
+    expect(() =>
+      save(
+        manager,
+        [trigger, approve, post],
+        [
+          { id: "e1", from: "start", to: "approve", on: "next" },
+          { id: "e2", from: "approve", to: "post", on: "allow" },
+        ],
+      ),
+    ).toThrow('Step "Approve" needs an agent.');
+    expect(manager.list()).toEqual([]);
+  });
+
   it("keeps at most 64 workflows", async () => {
     const { manager } = await build();
     for (let index = 0; index < 64; index += 1) save(manager, [trigger, ask, post], chain, `Flow ${index}`);
@@ -776,7 +804,7 @@ describe("WorkflowManager: prompt and condition steps", () => {
           { id: "e2", from: "ask", to: "yes-post", on: "yes" },
         ],
       ),
-    ).toThrow(/use "next"/);
+    ).toThrow(/use Next/);
     expect(() =>
       save(
         manager,
@@ -786,6 +814,6 @@ describe("WorkflowManager: prompt and condition steps", () => {
           { id: "e2", from: "check", to: "yes-post", on: "next" },
         ],
       ),
-    ).toThrow(/use "yes" or "no"/);
+    ).toThrow(/use Yes or No/);
   });
 });

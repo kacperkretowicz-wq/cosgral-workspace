@@ -30,7 +30,7 @@ export function SchedulePage(props: { bots: ReadonlyArray<BotProfile> }) {
             label: t("Routines"),
             description: t("Repeating work: what an agent does, how often, and where it reports."),
             icon: RefreshCw,
-            render: () => <RoutinePanel bots={[...props.bots]} />,
+            render: () => <RoutinePanel bots={[...props.bots]} heading={false} />,
           },
         ]}
       />

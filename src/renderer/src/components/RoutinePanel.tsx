@@ -138,7 +138,8 @@ export function RoutineForm(props: {
     </section>
   );
 }
-export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
+/** `heading={false}` where the page already titles the section (Schedule › Routines). */
+export function RoutinePanel(props: { bots: Bot[]; botId?: string; heading?: boolean }) {
   const [routines, setRoutines] = createSignal<Routine[]>([]);
   const [runs, setRuns] = createSignal<RoutineRun[]>([]);
   const [history, setHistory] = createSignal("");
@@ -194,9 +195,11 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string }) {
   });
   return (
     <section class="w2-panel" aria-label={t("Routines")}>
-      <PanelHeading icon={RefreshCw} tint="red">
-        {t("Routines")}
-      </PanelHeading>
+      <Show when={props.heading !== false}>
+        <PanelHeading icon={RefreshCw} tint="red">
+          {t("Routines")}
+        </PanelHeading>
+      </Show>
       <Show when={error()}>
         <p role="alert">{error()}</p>
       </Show>

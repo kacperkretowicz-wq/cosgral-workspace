@@ -156,6 +156,9 @@ export function WorkPageAnchors(props: {
 }) {
   const [active, setActive] = createSignal(untrack(() => props.anchors[0]?.id ?? ""));
   let content: HTMLDivElement | undefined;
+  // After a click the highlight stays on the chosen section while the page scrolls there. The last sections are too
+  // short to reach the top of the view, so the observer below would otherwise move the highlight back to the one above.
+  let chosenAt = Number.NEGATIVE_INFINITY;
   const target = (id: string) => content?.querySelector<HTMLElement>(`[data-anchor="${id}"]`) ?? null;
   onSettled(() => {
     if (!content || !("IntersectionObserver" in window)) return;
@@ -168,6 +171,7 @@ export function WorkPageAnchors(props: {
           // A section with nothing in it (no height) touches the edge of the view; it must not hold the highlight.
           if (id) seen.set(id, entry.isIntersecting && entry.boundingClientRect.height > 0);
         }
+        if (Date.now() - chosenAt < 900) return;
         const first = props.anchors.find((anchor) => seen.get(anchor.id));
         if (first) setActive(first.id);
       },
@@ -190,6 +194,7 @@ export function WorkPageAnchors(props: {
               class="work-page-nav-item"
               aria-current={active() === anchor.id ? "true" : undefined}
               onClick={() => {
+                chosenAt = Date.now();
                 setActive(anchor.id);
                 target(anchor.id)?.scrollIntoView({ block: "start" });
               }}

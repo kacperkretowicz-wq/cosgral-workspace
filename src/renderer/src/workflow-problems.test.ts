@@ -1,4 +1,4 @@
-import { type WorkflowGraph, workflowProblems } from "@openbot/contracts/ipc";
+import { checkWorkflowDraft, type WorkflowGraph, workflowProblems } from "@openbot/contracts/ipc";
 import { flush } from "solid-js";
 import { afterEach, expect, it } from "vitest";
 import { setLanguage } from "./i18n";
@@ -15,10 +15,10 @@ const SAMPLES: Array<[string, string]> = [
   ["Two steps have the same id: n1.", "n1"],
   ["Two connections have the same id: e1.", "e1"],
   ["Connection e2 points to an unknown step.", "e2"],
-  ['Connection e3 leaves the approval "Ask": use "allow" or "deny".', "e3"],
-  ['Connection e4 leaves the condition "Check": use "yes" or "no".', "e4"],
-  ['Connection e5 leaves "Run": use "next".', "e5"],
-  ["The trigger cannot have incoming connections (e6).", "e6"],
+  ['Connection "Ask" → "Say" leaves the approval "Ask": use Allow or Deny.', "Say"],
+  ['Connection "Check" → "Say" leaves the condition "Check": use Yes or No.', "Say"],
+  ['Connection "Run" → "Say" leaves "Run": use Next.', "Say"],
+  ['The trigger cannot have incoming connections ("Say" → "Start").', "Start"],
   ['The approval "Ask" needs an Allow connection.', "Ask"],
   ['The approval "Ask" has more than one way on for a decision.', "Ask"],
   ['The condition "Check" needs a Yes or a No connection.', "Check"],
@@ -26,6 +26,19 @@ const SAMPLES: Array<[string, string]> = [
   ['These steps are not reachable from the trigger: "A", "B".', "A"],
   ['"Run" has more than one way on; keep one connection.', "Run"],
   ["A workflow has exactly one trigger.", "trigger"],
+  ["Every step needs a title (1–80 characters).", "80"],
+  ['The routine "r1" in the trigger does not exist.', "r1"],
+  ['The agent "bot" in step "Ask" does not exist.', "Ask"],
+  ['The channel "general" in step "Post" does not exist.', "Post"],
+  ['Step "Ask" needs an agent.', "Ask"],
+  ['Step "Post" needs a channel.', "Post"],
+  ['Step "Ask" needs an instruction.', "Ask"],
+  ['Step "Check" needs a text to check.', "Check"],
+  ['Step "Check" needs a value to compare with.', "Check"],
+  ['Step "Say" needs a text.', "Say"],
+  ['Step "Say": the text is longer than 8000 characters.', "8000"],
+  ['Step "Check": the value is longer than 500 characters.', "500"],
+  ['This workflow cannot be saved: Step "Post" needs a channel. Step "Check" needs a value to compare with.', "Post"],
 ];
 
 it("leaves the English sentence as it is in English", () => {
@@ -74,4 +87,77 @@ it("covers the problems the contract really reports for a broken graph", () => {
   setLanguage("pl");
   flush();
   for (const problem of problems) expect(workflowProblemText(problem), problem).not.toBe(problem);
+});
+
+it("shows no raw step or connection id, in either language", () => {
+  const base = { x: 0, y: 0 };
+  const graph: WorkflowGraph = {
+    nodes: [
+      { ...base, id: "step-1795613226335", title: "Start", type: "trigger", trigger: { kind: "manual" } },
+      { ...base, id: "step-1795613226336", title: "Zgoda", type: "approval", botId: "bot", text: "Ok?" },
+      { ...base, id: "step-1795613226337", title: "Say", type: "prompt", text: "Hi" },
+    ],
+    edges: [
+      { id: "edge-1795613226338", from: "step-1795613226335", to: "step-1795613226336", on: "next" },
+      { id: "edge-1795613226339", from: "step-1795613226336", to: "step-1795613226337", on: "next" },
+    ],
+  };
+  const problems = workflowProblems(graph);
+  expect(problems.length).toBeGreaterThan(1);
+  for (const language of ["en", "pl"] as const) {
+    setLanguage(language);
+    flush();
+    for (const problem of problems) {
+      const text = workflowProblemText(problem);
+      expect(text).not.toMatch(/step-\d|edge-\d/);
+    }
+  }
+});
+
+it("translates what a step still needs before the workflow can be saved", () => {
+  const base = { x: 0, y: 0 };
+  const graph: WorkflowGraph = {
+    nodes: [
+      { ...base, id: "t", title: "Start", type: "trigger", trigger: { kind: "manual" } },
+      { ...base, id: "a", title: "Ask", type: "agent", botId: "", prompt: "" },
+      {
+        ...base,
+        id: "c",
+        title: "Check",
+        type: "condition",
+        subject: "{{previous}}",
+        operator: "contains",
+        value: "",
+        caseSensitive: false,
+      },
+      { ...base, id: "o", title: "Post", type: "channel-output", channelId: "", text: "Done" },
+    ],
+    edges: [
+      { id: "e1", from: "t", to: "a", on: "next" },
+      { id: "e2", from: "a", to: "c", on: "next" },
+      { id: "e3", from: "c", to: "o", on: "yes" },
+    ],
+  };
+  const check = checkWorkflowDraft(graph, { botIds: [], channelIds: [], routineIds: [] });
+  expect(check.canSave).toBe(false);
+  const messages = check.nodeIssues.map((issue) => issue.message);
+  expect(messages).toEqual(
+    expect.arrayContaining([
+      'Step "Ask" needs an agent.',
+      'Step "Check" needs a value to compare with.',
+      'Step "Post" needs a channel.',
+    ]),
+  );
+  setLanguage("pl");
+  flush();
+  for (const message of messages) expect(workflowProblemText(message), message).not.toBe(message);
+  expect(workflowProblemText('Step "Post" needs a channel.')).toBe("Krok „Post” wymaga wybrania kanału.");
+});
+
+it("drops Electron's prefix from a refused save", () => {
+  setLanguage("pl");
+  flush();
+  expect(
+    workflowProblemText("Error invoking remote method 'workflows:create': Error: Step \"Post\" needs a channel."),
+  ).toBe("Krok „Post” wymaga wybrania kanału.");
 });

@@ -59,6 +59,8 @@ describe("evaluating a condition", () => {
       "{{steps.a}} is empty",
     );
     expect(describeWorkflowCondition({ ...node, subject: " " })).toBe('… contains "approved"');
+    // The window passes its own words for the operator.
+    expect(describeWorkflowCondition(node, () => "zawiera")).toBe('{{previous}} zawiera "approved"');
   });
 });
 
@@ -92,13 +94,18 @@ describe("the new steps in a graph", () => {
       nodes: graph.nodes,
       edges: graph.edges.map((edge) => (edge.id === yes.id ? { ...edge, on: "next" as const } : edge)),
     };
-    expect(workflowProblems(wrong).join(" ")).toMatch(/leaves the condition .*: use "yes" or "no"/);
+    expect(workflowProblems(wrong).join(" ")).toMatch(/leaves the condition .*: use Yes or No/);
     // "yes" leaving an agent step is refused too.
     const agentYes: WorkflowGraph = {
       nodes: graph.nodes,
       edges: graph.edges.map((edge) => (edge.from === "agent" ? { ...edge, on: "yes" as const } : edge)),
     };
-    expect(workflowProblems(agentYes).join(" ")).toMatch(/use "next"/);
+    expect(workflowProblems(agentYes).join(" ")).toMatch(/use Next/);
+    // A person reads these: titles, never the ids of steps or connections.
+    for (const text of [...workflowProblems(wrong), ...workflowProblems(agentYes)]) {
+      for (const node of graph.nodes) expect(text).not.toContain(`(${node.id})`);
+      for (const edge of graph.edges) expect(text).not.toContain(edge.id);
+    }
   });
 
   it("connecting from a condition picks Yes then No, and the guards accept the new steps and edges", () => {

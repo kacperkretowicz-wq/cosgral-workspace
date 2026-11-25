@@ -1,5 +1,7 @@
 import type {
+  KnownWorkflowTargets,
   Workflow,
+  WorkflowDraftCheck,
   WorkflowEdgeKind,
   WorkflowGraph,
   WorkflowNode,
@@ -7,8 +9,8 @@ import type {
   WorkflowRun,
 } from "@openbot/contracts/ipc";
 import {
-  describeWorkflowCondition,
-  WORKFLOW_CONDITION_OPERATOR_LABELS,
+  checkWorkflowDraft,
+  connectionKindsOf,
   WORKFLOW_CONDITION_OPERATORS,
   WORKFLOW_EDGE_KINDS,
   workflowOperatorNeedsValue,
@@ -18,6 +20,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, For, onCleanup, onSettled, Show } from "solid-js";
 import { appLocale, t, tn } from "../i18n";
 import { workflowProblemText } from "../workflow-problems";
+import { conditionOperatorLabel, conditionText } from "../workflow-text";
 import { Button, Input, NativeSelect, Switch, Textarea } from "./ui";
 import {
   Bot,
@@ -105,7 +108,7 @@ function nodePreview(node: WorkflowNode): string {
     if (!text) return t("Empty prompt — type the fixed text for the next step.");
     return text.length > 96 ? `${text.slice(0, 93)}…` : text;
   }
-  if (node.type === "condition") return describeWorkflowCondition(node);
+  if (node.type === "condition") return conditionText(node);
   return "";
 }
 
@@ -128,14 +131,29 @@ function routineId(node: Extract<WorkflowNode, { type: "trigger" }>): string {
 }
 
 type ResourceOption = { id: string; name: string };
+
+/** What a failed call says, in the window language and without Electron's "Error invoking remote method" in front. */
+function errorText(error: unknown): string {
+  return workflowProblemText(error instanceof Error ? error.message : String(error));
+}
 export function WorkflowCanvas(
   props: WorkflowGraph & {
     onChange: (graph: WorkflowGraph) => void;
     bots?: ResourceOption[];
     channels?: ResourceOption[];
     routines?: ResourceOption[];
+    /**
+     * What the page found wrong with the draft (`checkWorkflowDraft`): a step that still needs an agent or a channel, a
+     * condition without a value. Without it the canvas only checks the shape of the graph.
+     */
+    check?: WorkflowDraftCheck;
   },
 ) {
+  // The whole-graph problems and what each step still needs, in one list under the canvas.
+  const listedProblems = () =>
+    props.check
+      ? [...props.check.graphProblems, ...props.check.nodeIssues.map((issue) => issue.message)]
+      : workflowProblems(props);
   const [from, setFrom] = createSignal("");
   const [to, setTo] = createSignal("");
   const [edgeKind, setEdgeKind] = createSignal<WorkflowEdgeKind>("next");
@@ -374,6 +392,13 @@ export function WorkflowCanvas(
                 {t("Title")}{" "}
                 <Input value={node.title} onInput={(e) => update({ ...node, title: e.currentTarget.value })} />
               </label>
+              <For each={(props.check?.nodeIssues ?? []).filter((issue) => issue.nodeId === node.id)}>
+                {(issue) => (
+                  <p class="workflow-node-issue" role="note">
+                    {workflowProblemText(issue.message)}
+                  </p>
+                )}
+              </For>
               <details class="workflow-node-position">
                 <summary>{t("Position")}</summary>
                 <label>
@@ -546,9 +571,7 @@ export function WorkflowCanvas(
                         }}
                       >
                         <For each={WORKFLOW_CONDITION_OPERATORS}>
-                          {(operator) => (
-                            <option value={operator}>{WORKFLOW_CONDITION_OPERATOR_LABELS[operator]}</option>
-                          )}
+                          {(operator) => <option value={operator}>{conditionOperatorLabel(operator)}</option>}
                         </For>
                       </NativeSelect>
                     </label>
@@ -618,12 +641,16 @@ export function WorkflowCanvas(
         <Button
           type="button"
           disabled={!from() || !to()}
-          onClick={() =>
+          onClick={() => {
+            // The path must be one the source step can have: Next for most, Allow/Deny for an approval, Yes/No for a condition.
+            const source = props.nodes.find((node) => node.id === from());
+            const allowed = source ? connectionKindsOf(source) : [];
+            const on = allowed.includes(edgeKind()) ? edgeKind() : (allowed[0] ?? edgeKind());
             props.onChange({
               nodes: props.nodes,
-              edges: [...props.edges, { id: `edge-${Date.now()}`, from: from(), to: to(), on: edgeKind() }],
-            })
-          }
+              edges: [...props.edges, { id: `edge-${Date.now()}`, from: from(), to: to(), on }],
+            });
+          }}
         >
           {t("Connect")}
         </Button>
@@ -649,11 +676,11 @@ export function WorkflowCanvas(
           </For>
         </ul>
       </fieldset>
-      <Show when={workflowProblems(props).length}>
+      <Show when={listedProblems().length}>
         <div role="status">
           <h3>{t("Fix before saving")}</h3>
           <ul>
-            <For each={workflowProblems(props)}>{(problem) => <li>{workflowProblemText(problem)}</li>}</For>
+            <For each={listedProblems()}>{(problem) => <li>{workflowProblemText(problem)}</li>}</For>
           </ul>
         </div>
       </Show>
@@ -702,7 +729,7 @@ export function WorkflowsPage() {
       if (selected()) setRuns(await api.listRuns({ workflowId: selected() }));
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not load workflows."));
+      setError(e instanceof Error ? errorText(e) : t("Could not load workflows."));
     }
   }
   function choose(item: Workflow) {
@@ -713,7 +740,7 @@ export function WorkflowsPage() {
     void window.openbot.workflows
       ?.listRuns({ workflowId: item.id })
       .then(setRuns)
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(errorText(e)));
   }
   async function save() {
     const api = window.openbot.workflows;
@@ -725,7 +752,7 @@ export function WorkflowsPage() {
       choose(item);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not save workflow."));
+      setError(e instanceof Error ? errorText(e) : t("Could not save workflow."));
     }
   }
   onSettled(() => {
@@ -745,7 +772,14 @@ export function WorkflowsPage() {
     setRuns([]);
     setPreview(null);
   };
-  const problems = () => workflowProblems(graph());
+  // The same checks the program makes on save: the shape of the graph and what each step needs (an agent, a channel, a value).
+  const known = (): KnownWorkflowTargets => ({
+    botIds: bots().map((bot) => bot.id),
+    channelIds: channels().map((channel) => channel.id),
+    routineIds: routines().map((routine) => routine.id),
+  });
+  const draft = () => checkWorkflowDraft(graph(), known());
+  const problems = () => [...draft().graphProblems, ...draft().nodeIssues.map((issue) => issue.message)];
   const stepCount = (item: Workflow) => item.nodes.length;
   return (
     <WorkPage
@@ -828,7 +862,7 @@ export function WorkflowsPage() {
                           setRuns([]);
                           return refresh();
                         })
-                        .catch((e) => setError(String(e)));
+                        .catch((e) => setError(errorText(e)));
                   }}
                 >
                   <Trash2 size={16} stroke-width={1.5} aria-hidden="true" />
@@ -837,7 +871,7 @@ export function WorkflowsPage() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={!name().trim() || problems().length > 0}
+                disabled={!name().trim() || !draft().canSave}
                 title={problems()[0] ? workflowProblemText(problems()[0] ?? "") : undefined}
                 onClick={() => void save()}
               >
@@ -853,6 +887,7 @@ export function WorkflowsPage() {
             bots={bots()}
             channels={channels()}
             routines={routines()}
+            check={draft()}
           />
           <Show when={selected()}>
             <div class="workflows-panels">
@@ -868,7 +903,7 @@ export function WorkflowsPage() {
                     void window.openbot.workflows
                       ?.run({ workflowId: selected(), input: input() })
                       .then(refresh)
-                      .catch((e) => setError(String(e)))
+                      .catch((e) => setError(errorText(e)))
                   }
                 >
                   <Play size={15} stroke-width={1.75} aria-hidden="true" />
@@ -901,7 +936,7 @@ export function WorkflowsPage() {
                                   void window.openbot.workflows
                                     ?.cancelRun({ runId: run.id })
                                     .then(refresh)
-                                    .catch((e) => setError(String(e)))
+                                    .catch((e) => setError(errorText(e)))
                                 }
                               >
                                 {t("Cancel run")}
