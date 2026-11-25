@@ -35,6 +35,15 @@ describe("managed CLI controls", () => {
     render(() => <ManagedCliCard state={{ ...emptyCli, source: "system" }} onAction={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
   });
+  it("does not say Ready under a program that is not there", () => {
+    render(() => <ManagedCliCard state={{ ...emptyCli, source: "none" }} onAction={vi.fn()} />);
+    expect(screen.queryByText("Ready")).toBeNull();
+    expect(screen.getByText("Nothing is running. Download the program to use it.")).toBeInTheDocument();
+  });
+  it("says Ready when a program is in use", () => {
+    render(() => <ManagedCliCard state={{ ...emptyCli, source: "system" }} onAction={vi.fn()} />);
+    expect(screen.getByText("Ready")).toBeInTheDocument();
+  });
   it("sends install", async () => {
     const action = vi.fn();
     render(() => <ManagedCliCard state={emptyCli} onAction={action} />);
