@@ -1087,8 +1087,6 @@ export const pl = {
     "3 do 32 liter, cyfr, kropek, myślników lub podkreślników. Inni zobaczą tę nazwę.",
   "At least 12 characters. It is saved only on this computer, encrypted.":
     "Co najmniej 12 znaków. Zapisane tylko na tym komputerze, w postaci zaszyfrowanej.",
-  "Paste the one-time invitation link and choose the name and password you will use on this server. Tailscale must be on and signed in to the same network as the host.":
-    "Wklej jednorazowy link zaproszenia i wybierz nazwę oraz hasło, którymi będziesz wchodzić na ten serwer. Tailscale musi być włączony i zalogowany do tej samej sieci co gospodarz.",
   "Sharing on": "Udostępnianie włączone",
   "Sharing off": "Udostępnianie wyłączone",
   "Control who can reach this COSGRAL Workspace through your private Tailscale network.":
@@ -1103,6 +1101,25 @@ export const pl = {
   "Turn on sharing before inviting people.": "Najpierw włącz udostępnianie, potem zapraszaj.",
   "Share the agents, conversations, files and browser of this computer with another person through Tailscale, a private network. Only people you invite, who are in the same Tailscale network, can sign in. Nothing is opened to the whole internet. Install Tailscale on both computers and sign in first.":
     "Udostępnij agentów, rozmowy, pliki i przeglądarkę z tego komputera drugiej osobie przez Tailscale, czyli prywatną sieć. Wejść mogą tylko zaproszone osoby, które są w tej samej sieci Tailscale. Nic nie jest otwarte na cały internet. Najpierw zainstaluj Tailscale na obu komputerach i zaloguj się.",
+  "Turn on sharing, create an invitation link and send it to the other person. They need nothing else.":
+    "Włącz udostępnianie, utwórz link zaproszenia i wyślij go drugiej osobie. Nic więcej jej nie potrzeba.",
+  "Sharing address": "Adres udostępniania",
+  "The address is random and only invited people can sign in.":
+    "Adres jest losowy, a wejść mogą tylko zaproszone osoby.",
+  "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.":
+    "Adres zmienia się za każdym razem, gdy włączasz udostępnianie od nowa. Osoby, które już dołączyły, potrzebują wtedy nowego adresu: skopiuj go przyciskiem i im wyślij.",
+  "Copy the new address for people": "Skopiuj nowy adres dla osób",
+  "Use Tailscale instead of the free Cloudflare tunnel": "Użyj Tailscale zamiast darmowego tunelu Cloudflare",
+  "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.":
+    "Tylko jeśli Ty i druga osoba już używacie Tailscale. Oboje musicie być zalogowani do tej samej sieci Tailscale.",
+  "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.":
+    "Udostępnij agentów, rozmowy, pliki i przeglądarkę z tego komputera drugiej osobie. Dostajesz jeden link do wysłania, a druga osoba nie potrzebuje konta ani dodatkowego programu. Za pierwszym razem COSGRAL pobiera mały, darmowy program Cloudflare. Wejść mogą tylko osoby z Twoim zaproszeniem, a udostępnianie działa, dopóki ten program jest włączony.",
+  "This link only brings the new address of a server you already joined. No name or password is needed.":
+    "Ten link przynosi tylko nowy adres serwera, do którego już dołączyłeś. Nie trzeba podawać nazwy ani hasła.",
+  "Updating…": "Aktualizuję…",
+  "Update the address": "Zaktualizuj adres",
+  "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.":
+    "Wklej jednorazowy link zaproszenia i wybierz nazwę oraz hasło, którymi będziesz wchodzić na ten serwer. Jeśli w linku jest adres Tailscale, Tailscale musi być włączony i zalogowany do tej samej sieci co gospodarz.",
   "Create the server and turn on sharing": "Utwórz serwer i włącz udostępnianie",
   Working: "Pracuje",
   "Waiting for you": "Czeka na Ciebie",

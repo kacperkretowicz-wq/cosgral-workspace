@@ -47,4 +47,22 @@ describe("JoinServerDialog", () => {
       }),
     );
   });
+
+  it("takes a pasted address update link without a name and a password", async () => {
+    const onJoin = vi.fn().mockResolvedValue(undefined);
+    render(() => (
+      <JoinServerDialog
+        inviteUrl="cosgral://update?api=x"
+        accountEmail="owner@cosgral.local"
+        localProfile
+        onClose={vi.fn()}
+        onJoin={onJoin}
+      />
+    ));
+    expect(screen.queryByLabelText(/Your password on this server/)).toBeNull();
+    const update = screen.getByRole("button", { name: "Update the address" });
+    expect(update).toBeEnabled();
+    fireEvent.click(update);
+    await waitFor(() => expect(onJoin).toHaveBeenCalledWith({ inviteUrl: "cosgral://update?api=x" }));
+  });
 });

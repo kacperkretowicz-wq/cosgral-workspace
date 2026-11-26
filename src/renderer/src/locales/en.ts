@@ -1083,8 +1083,6 @@ export const en = {
     "3 to 32 letters, numbers, dots, dashes or underscores. Others will see this name.",
   "At least 12 characters. It is saved only on this computer, encrypted.":
     "At least 12 characters. It is saved only on this computer, encrypted.",
-  "Paste the one-time invitation link and choose the name and password you will use on this server. Tailscale must be on and signed in to the same network as the host.":
-    "Paste the one-time invitation link and choose the name and password you will use on this server. Tailscale must be on and signed in to the same network as the host.",
   "Sharing on": "Sharing on",
   "Sharing off": "Sharing off",
   "Control who can reach this COSGRAL Workspace through your private Tailscale network.":
@@ -1099,6 +1097,25 @@ export const en = {
   "Turn on sharing before inviting people.": "Turn on sharing before inviting people.",
   "Share the agents, conversations, files and browser of this computer with another person through Tailscale, a private network. Only people you invite, who are in the same Tailscale network, can sign in. Nothing is opened to the whole internet. Install Tailscale on both computers and sign in first.":
     "Share the agents, conversations, files and browser of this computer with another person through Tailscale, a private network. Only people you invite, who are in the same Tailscale network, can sign in. Nothing is opened to the whole internet. Install Tailscale on both computers and sign in first.",
+  "Turn on sharing, create an invitation link and send it to the other person. They need nothing else.":
+    "Turn on sharing, create an invitation link and send it to the other person. They need nothing else.",
+  "Sharing address": "Sharing address",
+  "The address is random and only invited people can sign in.":
+    "The address is random and only invited people can sign in.",
+  "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.":
+    "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.",
+  "Copy the new address for people": "Copy the new address for people",
+  "Use Tailscale instead of the free Cloudflare tunnel": "Use Tailscale instead of the free Cloudflare tunnel",
+  "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.":
+    "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.",
+  "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.":
+    "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.",
+  "This link only brings the new address of a server you already joined. No name or password is needed.":
+    "This link only brings the new address of a server you already joined. No name or password is needed.",
+  "Updating…": "Updating…",
+  "Update the address": "Update the address",
+  "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.":
+    "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.",
   "Create the server and turn on sharing": "Create the server and turn on sharing",
   Working: "Working",
   "Waiting for you": "Waiting for you",

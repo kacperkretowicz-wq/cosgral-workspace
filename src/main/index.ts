@@ -191,6 +191,7 @@ import {
   parseCreateTeamInvite,
   parseDirectTyping,
   parseHostConfig,
+  parseHostStart,
   parseJoinServer,
   parseLoginServer,
   parseMarkDirectRead,
@@ -235,6 +236,7 @@ import { registerPluginCatalogIpc } from "./plugin-catalog-ipc";
 import { registerProjectPlansIpc } from "./project-plans-ipc";
 import { registerProviderCatalogIpc } from "./provider-catalog-ipc";
 import { registerProviderIpc } from "./provider-ipc";
+import { QuickTunnelPublisher } from "./quick-tunnel-publisher";
 import { ElectronFrameSource } from "./remote-desktop-capture";
 import { RemoteDesktopCredentialStore } from "./remote-desktop-credential-store";
 import {
@@ -581,7 +583,7 @@ function registerIpcHandlers(
   handleTrusted(IPC_CHANNELS.hostConfigureRemoteDesktop, (input: unknown) =>
     host.configureRemoteDesktop(parseRemoteDesktopConfig(input)),
   );
-  handleTrusted(IPC_CHANNELS.hostStart, () => host.start());
+  handleTrusted(IPC_CHANNELS.hostStart, (input: unknown) => host.start(parseHostStart(input)));
   handleTrusted(IPC_CHANNELS.hostStop, () => host.stop());
   handleTrusted(IPC_CHANNELS.hostListMembers, () => host.listMembers());
   handleTrusted(IPC_CHANNELS.hostUpdateMember, (input: unknown) => host.updateMember(parseUpdateTeamMember(input)));
@@ -2180,8 +2182,17 @@ if (!hasSingleInstanceLock) {
         },
         getRemoteDesktopPassword: () => remoteDesktopCredentials.getPassword(),
         setRemoteDesktopPassword: (password) => remoteDesktopCredentials.setPassword(password),
-        // COSGRAL: without an account service (the default) the server is shown through Tailscale.
-        ...(process.env.OPENBOT_AUTH_API_URL?.trim() ? {} : { tailscale: new TailscalePublisher() }),
+        // COSGRAL: without an account service (the default) the server is shown through a free quick tunnel
+        // (no account), or through Tailscale as the advanced choice.
+        ...(process.env.OPENBOT_AUTH_API_URL?.trim()
+          ? {}
+          : {
+              quickTunnel: new QuickTunnelPublisher({
+                binDirectory: join(app.getPath("userData"), "bin"),
+                logDirectory: join(app.getPath("userData"), "logs", "remote"),
+              }),
+              tailscale: new TailscalePublisher(),
+            }),
         provisionTeamTunnel: (input) => {
           if (!centralAuthManager) throw new Error("The account service is not ready.");
           return centralAuthManager.provisionTeamTunnel(input);

@@ -10,6 +10,7 @@ import type {
   RemoteMacConnectInput,
   SendDirectMessageInput,
   SetTeamTypingInput,
+  StartHostInput,
   UpdateTeamMemberInput,
 } from "@openbot/contracts/ipc";
 import { isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
@@ -24,6 +25,16 @@ export function parseHostConfig(value: unknown): ConfigureHostInput {
   return {
     serverName,
   };
+}
+
+export function parseHostStart(value: unknown): StartHostInput {
+  if (value === undefined || value === null) return {};
+  if (!isObject(value)) throw new Error("Host start options are invalid.");
+  if (value.transport === undefined) return {};
+  if (value.transport !== "quick-tunnel" && value.transport !== "tailscale") {
+    throw new Error("Unknown way of sharing.");
+  }
+  return { transport: value.transport };
 }
 
 export function parseJoinServer(value: unknown): JoinServerInput {

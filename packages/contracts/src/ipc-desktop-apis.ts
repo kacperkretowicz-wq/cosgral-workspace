@@ -235,6 +235,7 @@ import type {
   SendDirectMessageInput,
   ServerSummary,
   SetTeamTypingInput,
+  StartHostInput,
   TeamInviteSummary,
   TeamMemberSummary,
   TeamPresenceSnapshot,
@@ -622,7 +623,7 @@ export interface HostDesktopApi {
   getStatus: () => Promise<HostStatus>;
   configure: (input: ConfigureHostInput) => Promise<HostStatus>;
   configureRemoteDesktop: (input: ConfigureRemoteDesktopInput) => Promise<HostStatus>;
-  start: () => Promise<HostStatus>;
+  start: (input?: StartHostInput) => Promise<HostStatus>;
   stop: () => Promise<HostStatus>;
   listMembers: () => Promise<TeamMemberSummary[]>;
   updateMember: (input: UpdateTeamMemberInput) => Promise<TeamMemberSummary>;

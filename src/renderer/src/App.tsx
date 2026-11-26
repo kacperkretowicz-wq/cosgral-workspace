@@ -31,6 +31,7 @@ import type {
   SearchHit,
   ServerSummary,
   SidebarLayout,
+  StartHostInput,
   StopAgentEyesInput,
   TeamInviteSummary,
   TeamMemberSummary,
@@ -1917,7 +1918,9 @@ export function App() {
   }
 
   async function joinServer(input: JoinServerInput): Promise<void> {
-    await window.openbot.servers.join(input);
+    // A pasted "new address" link updates a server the person already joined instead of joining a new one.
+    if (input.inviteUrl.startsWith("cosgral://update?")) await window.openbot.servers.updateAddress(input.inviteUrl);
+    else await window.openbot.servers.join(input);
     setPendingInviteUrl("");
     setJoinServerOpen(false);
     await selectServer(
@@ -1969,8 +1972,8 @@ export function App() {
     }
   }
 
-  async function startHost(): Promise<void> {
-    setHostStatus(await window.openbot.host.start());
+  async function startHost(input?: StartHostInput): Promise<void> {
+    setHostStatus(await window.openbot.host.start(input));
   }
 
   async function configureRemoteDesktop(password: string): Promise<void> {
