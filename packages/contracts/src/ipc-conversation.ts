@@ -447,6 +447,25 @@ export interface AgentExchangeSummary {
   deliveries: Array<Pick<QueueDelivery, "id" | "recipientBotId" | "status" | "position" | "error">>;
 }
 
+/** COSGRAL: what a working agent is doing at this moment (the person sees it as one short Polish sentence). */
+export const AGENT_LIVE_STATUS_KINDS = [
+  "thinking",
+  "writing",
+  "reading",
+  "searching-files",
+  "listing-files",
+  "running",
+  "changing-files",
+  "searching-web",
+  "using-tool",
+  "tidying",
+] as const;
+export type AgentLiveStatusKind = (typeof AGENT_LIVE_STATUS_KINDS)[number];
+
+export function isAgentLiveStatusKind(value: unknown): value is AgentLiveStatusKind {
+  return AGENT_LIVE_STATUS_KINDS.some((kind) => kind === value);
+}
+
 export interface ConversationSnapshot {
   botId: string;
   threadId: string | null;
@@ -665,6 +684,15 @@ export type AgentEvent =
   | { type: "agent-templates-changed"; templates: AgentTemplate[] }
   /** COSGRAL W3: language, notification matrix or settings tabs changed. */
   | { type: "app-settings-changed"; settings: AppSettings }
+  /** COSGRAL: what a working agent does right now (read a file, search the web...); kept only while the turn runs. */
+  | {
+      type: "agent-live-status";
+      botId: string;
+      threadId: string | null;
+      turnId: string;
+      kind: AgentLiveStatusKind;
+      detail?: string;
+    }
   /** COSGRAL W1: an agent asks the user to take over a browser tab. */
   | { type: "browser-takeover"; request: BrowserTakeoverRequest }
   | { type: "browser-takeover-changed"; requestId: string; botId: string; phase: BrowserTakeoverPhase }
@@ -868,6 +896,14 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
       return Array.isArray(value.templates) && value.templates.every(isAgentTemplate);
     case "app-settings-changed":
       return isAppSettings(value.settings);
+    case "agent-live-status":
+      return (
+        isString(value.botId) &&
+        (value.threadId === null || isString(value.threadId)) &&
+        isString(value.turnId) &&
+        isAgentLiveStatusKind(value.kind) &&
+        (value.detail === undefined || isString(value.detail))
+      );
     case "browser-takeover":
       return isBrowserTakeoverRequest(value.request);
     case "browser-takeover-changed":

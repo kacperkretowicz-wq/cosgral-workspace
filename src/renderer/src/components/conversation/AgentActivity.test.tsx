@@ -27,6 +27,26 @@ describe("AgentActivityIndicator", () => {
     expect(view.container.querySelector(".agent-activity-avatar")).toBeNull();
   });
 
+  it("tells what the agent does right now instead of the plain word", () => {
+    const view = render(() => (
+      <AgentActivityIndicator
+        bot={bot}
+        state="Working"
+        liveStatus={{ turnId: "t1", kind: "reading", detail: "plan.md" }}
+      />
+    ));
+
+    expect(view.container.querySelector(".agent-activity-text")).toHaveTextContent("Reading plan.md…");
+    expect(view.container.querySelector(".agent-activity-text")).toHaveAttribute("data-live-kind", "reading");
+    expect(screen.getByRole("status", { name: "Chief is working" })).toHaveAttribute("title");
+  });
+
+  it("falls back to the plain word while nothing is known", () => {
+    const view = render(() => <AgentActivityIndicator bot={bot} state="Working" liveStatus={null} />);
+
+    expect(view.container.querySelector(".agent-activity-text")).toHaveTextContent("Working");
+  });
+
   it("keeps the avatar for queued work", () => {
     const view = render(() => <AgentActivityIndicator bot={bot} state="Queued" />);
 

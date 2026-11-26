@@ -400,6 +400,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     if (message.type === "assistant") {
       if (message.parent_tool_use_id !== null) return;
       const turn = runtime.activeTurn;
+      if (turn) this.#announceToolUse(runtime, turn.id, message.message);
       const text = messageText(message.message);
       if (!turn || !text || !message.uuid) return;
       turn.assistantMessages.set(message.uuid, text);
@@ -425,6 +426,27 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       errors.some((error) => /interrupt|abort/i.test(error));
     const status = interrupted ? "interrupted" : message.subtype === "success" ? "completed" : "failed";
     this.#completeTurn(runtime, status, errors.length > 0 ? errors.join("\n") : null);
+  }
+
+  /** COSGRAL: tell which tool the agent starts (Read, Bash, WebSearch...), so the window can say what it does. */
+  #announceToolUse(runtime: ThreadRuntime, turnId: string, message: unknown): void {
+    if (!isRecord(message) || !Array.isArray(message.content)) return;
+    for (const block of message.content.filter(isRecord)) {
+      if (block.type !== "tool_use" || !isString(block.name)) continue;
+      this.emit("notification", {
+        method: "item/started",
+        params: {
+          threadId: runtime.id,
+          turnId,
+          item: {
+            id: isString(block.id) ? block.id : `${turnId}:${block.name}`,
+            type: "toolUse",
+            tool: block.name,
+            input: isRecord(block.input) ? block.input : {},
+          },
+        },
+      });
+    }
   }
 
   #appendDelta(runtime: ThreadRuntime, delta: string): void {

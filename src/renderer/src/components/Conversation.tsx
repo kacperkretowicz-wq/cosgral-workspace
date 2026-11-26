@@ -1984,7 +1984,11 @@ export function Conversation(props: ConversationProps) {
           <Show when={props.actionCard?.kind === "vault-request" ? props.actionCard.request : undefined} keyed>
             {(request) => <VaultRequestCard request={request} />}
           </Show>
-          <AgentActivityIndicator bot={props.bot} state={visibleAgentActivity()} />
+          <AgentActivityIndicator
+            bot={props.bot}
+            state={visibleAgentActivity()}
+            liveStatus={props.liveStatus?.turnId === props.activeTurnId ? props.liveStatus : null}
+          />
         </Show>
       </div>
 

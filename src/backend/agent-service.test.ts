@@ -2156,6 +2156,42 @@ describe.sequential("AgentService", { timeout: suiteTimeout(20_000, 5_000) }, ()
     expect(store.activeProviderSession("chief")).not.toBeNull();
   });
 
+  it("tells the window what the agent does now, once per step, without the text of commands", async () => {
+    const clients = new Map<AgentProvider, FakeAgentClient>();
+    const { store, mailbox } = stores();
+    service = new AgentService(store, mailbox, fakeBrowser(), null, 30_000, "codex", (provider) => {
+      const client = new FakeAgentClient(provider, "", false);
+      clients.set(provider, client);
+      return client;
+    });
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    await service.sendMessage({ botId: "chief", text: "Look at the notes." });
+    await waitFor(() => events.some((event) => event.type === "turn-started"));
+
+    const started = events.find((event) => event.type === "turn-started");
+    const client = clients.get("codex");
+    const threadId = store.activeProviderSession("chief")?.externalSessionId;
+    if (started?.type !== "turn-started" || !client || !threadId) {
+      throw new Error("The fake Codex turn did not start.");
+    }
+    const send = (item: { id: string; type: string; command?: string; commandActions?: unknown[]; query?: string }) =>
+      client.emit("notification", notification("item/started", { threadId, turnId: started.turnId, item }));
+    send({ id: "c1", type: "commandExecution", command: "git push --token=secret", commandActions: [] });
+    send({ id: "c1", type: "commandExecution", command: "git push --token=secret", commandActions: [] });
+    send({ id: "w1", type: "webSearch", query: "pogoda" });
+
+    const statuses = () =>
+      events.flatMap((event) => (event.type === "agent-live-status" ? [[event.kind, event.detail]] : []));
+    await waitFor(() => statuses().length >= 2);
+    expect(statuses()).toEqual([
+      ["running", "git"],
+      ["searching-web", undefined],
+    ]);
+    expect(JSON.stringify(events)).not.toContain("secret");
+  });
+
   it("renders a Codex image generation item and manages its saved image", async () => {
     const clients = new Map<AgentProvider, FakeAgentClient>();
     const { store, mailbox } = stores();

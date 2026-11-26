@@ -5,6 +5,7 @@ import { t, tn } from "../../i18n";
 import { AgentAvatar } from "../AgentAvatar";
 import { Brain, FileText, Globe, Pencil, Search, Terminal } from "../ui/icons";
 import { ChevronIcon, ThinkingIcon } from "./ConversationIcons";
+import { type LiveStatus, liveStatusText } from "./live-status";
 
 type StepKind = "read" | "search" | "run" | "write" | "web" | "think";
 
@@ -31,7 +32,18 @@ export function stepKind(text: string): StepKind {
 
 const STEP_ICONS = { read: FileText, search: Search, run: Terminal, write: Pencil, web: Globe, think: Brain } as const;
 
-export function AgentActivityIndicator(props: { bot: BotProfile | undefined; state: "Queued" | "Working" | null }) {
+export function AgentActivityIndicator(props: {
+  bot: BotProfile | undefined;
+  state: "Queued" | "Working" | null;
+  /** What the agent does right now; while it is known it replaces the plain word "Pracuje". */
+  liveStatus?: LiveStatus | null;
+}) {
+  const statusText = () => {
+    if (props.state === "Working") {
+      return props.liveStatus ? liveStatusText(props.liveStatus.kind, props.liveStatus.detail) : t("Working");
+    }
+    return t("Queued");
+  };
   return (
     <Show when={props.state !== null}>
       <div
@@ -41,18 +53,26 @@ export function AgentActivityIndicator(props: { bot: BotProfile | undefined; sta
           name: props.bot?.name ?? t("Agent"),
           state: props.state === "Working" ? t("working") : t("queued"),
         })}
+        title={
+          props.state === "Working"
+            ? t("This line changes while the agent works. It tells what the agent is doing right now.")
+            : undefined
+        }
       >
         <Show when={props.state !== "Working"}>
           <AgentAvatar bot={props.bot} class="agent-activity-avatar" />
         </Show>
         <div class="agent-activity-bubble" aria-hidden="true">
-          <span>{props.state === "Working" ? t("Working") : t("Queued")}</span>
+          <span class="agent-activity-text" data-live-kind={props.liveStatus?.kind}>
+            {statusText()}
+          </span>
           <span class="agent-activity-dots">
             <i />
             <i />
             <i />
           </span>
         </div>
+        <span class="sr-only">{statusText()}</span>
       </div>
     </Show>
   );

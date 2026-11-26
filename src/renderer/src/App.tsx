@@ -86,6 +86,7 @@ import { ChannelWorkspace } from "./components/ChannelWorkspace";
 import { ComingSoon } from "./components/ComingSoon";
 import { Conversation } from "./components/Conversation";
 import { CosgralLoadingSkeleton } from "./components/CosgralLoadingSkeleton";
+import type { LiveStatus } from "./components/conversation/live-status";
 import { DirectConversation } from "./components/DirectConversation";
 import { GlobalSearch } from "./components/GlobalSearch";
 import { HostPanel } from "./components/HostPanel";
@@ -175,6 +176,8 @@ export function App() {
   const [conversationLoaded, setConversationLoaded] = createSignal<Record<string, boolean>>({});
   const [conversationRevisions, setConversationRevisions] = createSignal<Record<string, number>>({});
   const [activeTurns, setActiveTurns] = createSignal<Record<string, string | null>>({});
+  // COSGRAL: what each working agent does right now (shown as the line next to the agent).
+  const [liveStatuses, setLiveStatuses] = createSignal<Record<string, LiveStatus>>({});
   const [unreadReplies, setUnreadReplies] = createSignal<Record<string, number>>({});
   const [conversationReads, setConversationReads] = createSignal<Record<string, ConversationReadState>>({});
   const [recentReplies, setRecentReplies] = createSignal<Record<string, boolean>>({});
@@ -619,6 +622,7 @@ export function App() {
     setConversationRevisions((current) => withoutBot(current, next.botId));
     setConversationLoaded((current) => ({ ...current, [next.botId]: false }));
     setActiveTurns((current) => withoutBot(current, next.botId));
+    setLiveStatuses((current) => withoutBot(current, next.botId));
     setQueues((current) => withoutBot(current, next.botId));
     const threadId = next.activeThreadId;
     void Promise.all([window.openbot.agent.readConversation(next.botId), window.openbot.agent.listQueue(next.botId)])
@@ -756,9 +760,22 @@ export function App() {
       case "computer-use-changed":
         setComputerUsingBotIds(event.state.sessions.map((session) => session.botId));
         return;
+      case "agent-live-status":
+        if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
+          return;
+        setLiveStatuses((current) => ({
+          ...current,
+          [event.botId]: {
+            turnId: event.turnId,
+            kind: event.kind,
+            ...(event.detail ? { detail: event.detail } : {}),
+          },
+        }));
+        return;
       case "turn-started":
         if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
           return;
+        setLiveStatuses((current) => withoutBot(current, event.botId));
         clearRecentReply(event.botId);
         setActiveTurns((current) => ({
           ...current,
@@ -774,6 +791,7 @@ export function App() {
         if (threadLists()[event.botId]?.activeThreadId && threadLists()[event.botId].activeThreadId !== event.threadId)
           return;
         setActiveTurns((current) => ({ ...current, [event.botId]: null }));
+        setLiveStatuses((current) => withoutBot(current, event.botId));
         // The backend already sent `*-resolved` (expired) for these; this also covers older backends.
 
         if (event.status === "completed") markReplyCompleted(event.botId);
@@ -2345,6 +2363,7 @@ export function App() {
                   approval={activeApproval()}
                   actionCard={activeDecisionCard()}
                   activeTurnId={activeBot() ? activeTurns()[activeBot()?.id ?? ""] : null}
+                  liveStatus={activeBot() ? (liveStatuses()[activeBot()?.id ?? ""] ?? null) : null}
                   agentPickerOpen={agentPickerOpen()}
                   globalOverlayOpen={globalSearchOpen()}
                   creatingAgent={creatingAgent()}
