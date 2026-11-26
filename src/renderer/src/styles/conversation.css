@@ -6310,6 +6310,42 @@
   gap: var(--openbot-space-2);
 }
 
+.browser-share-card {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--openbot-border);
+  background: var(--openbot-bg-surface);
+  color: var(--openbot-text-primary);
+  font-size: var(--openbot-text-sm);
+}
+
+.browser-share-card p {
+  margin: 0;
+  color: var(--openbot-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.browser-share-page {
+  font-size: var(--openbot-text-xs);
+}
+
+.browser-share-preview {
+  max-height: 72px;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  font-size: var(--openbot-text-xs);
+}
+
+.browser-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .browser-menu-note {
   margin: 0;
   padding: 4px 12px;

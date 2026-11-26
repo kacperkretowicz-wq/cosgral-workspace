@@ -1294,6 +1294,13 @@ function registerIpcHandlers(
       ? browser.navigateHistory(parsed.tabId, parsed.direction)
       : remoteServers.request("/v1/browser/navigate", { method: "POST", body: parsed }, undefined, decodeVoid);
   });
+  // COSGRAL: the person shows one page to an agent. Only the browser on this computer can be read.
+  handleTrusted(IPC_CHANNELS.browserReadPage, (tabId: unknown) => {
+    if (remoteServers.activeServerId !== "local") {
+      throw new Error("Showing a page to an agent works only for the browser on this computer.");
+    }
+    return browser.readPageForPerson(requireString(tabId, "tabId"));
+  });
   handleTrusted(IPC_CHANNELS.browserListTabs, () =>
     remoteServers.activeServerId === "local"
       ? browser.listTabs()

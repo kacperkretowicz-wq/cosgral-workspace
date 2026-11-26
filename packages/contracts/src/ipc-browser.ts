@@ -62,6 +62,19 @@ export interface BrowserNavigateInput {
   direction: BrowserHistoryDirection;
 }
 
+/** The most text of one page that the person can show to an agent. */
+export const BROWSER_PAGE_COPY_LIMIT = 20_000;
+
+/** One page, read when the person asks to show it to an agent: only visible text, cut to `BROWSER_PAGE_COPY_LIMIT`. */
+export interface BrowserPageCopy {
+  tabId: string;
+  title: string;
+  url: string;
+  text: string;
+  /** The page had more text than fits. */
+  truncated: boolean;
+}
+
 export interface BrowserVisibilityInput {
   visible: boolean;
   bounds?: BrowserBounds;

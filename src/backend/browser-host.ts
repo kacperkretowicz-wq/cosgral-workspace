@@ -3,13 +3,15 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type {
-  BrowserBounds,
-  BrowserControlAction,
-  BrowserControlSession,
-  BrowserControlState,
-  BrowserTab,
-  BrowserVisibilityInput,
+import {
+  BROWSER_PAGE_COPY_LIMIT,
+  type BrowserBounds,
+  type BrowserControlAction,
+  type BrowserControlSession,
+  type BrowserControlState,
+  type BrowserPageCopy,
+  type BrowserTab,
+  type BrowserVisibilityInput,
 } from "@openbot/contracts/ipc";
 import { type DynamicRecord, isBoolean, isNumber, isString } from "@openbot/contracts/runtime-values";
 import { app, type BrowserWindow, type Session, session, type WebContents, WebContentsView } from "electron";
@@ -292,6 +294,33 @@ export class BrowserHost {
       ) ?? null;
     if (refused) throw new Error(refused);
     history.goToIndex(target);
+  }
+
+  /**
+   * COSGRAL: the person asks to show this one page to an agent. Reads only the visible text of the page, cut to a
+   * limit (no pictures, no other tabs). Nothing is sent from here; the window shows it to the person first.
+   */
+  async readPageForPerson(tabId: string): Promise<BrowserPageCopy> {
+    const tab = this.#requireTab(tabId);
+    const raw = await withTimeout(
+      tab.view.webContents.executeJavaScript(
+        "(() => ({ title: document.title, url: location.href, text: document.body ? document.body.innerText : '' }))()",
+        true,
+      ),
+      10_000,
+      "Reading the page timed out.",
+    );
+    if (!isRecord(raw)) throw new Error("The browser returned an invalid page.");
+    const url = isString(raw.url) ? raw.url : tab.view.webContents.getURL();
+    if (!/^https?:\/\//iu.test(url)) throw new Error("Only a web page can be shown to an agent.");
+    const text = (isString(raw.text) ? raw.text : "").replace(/\n{3,}/gu, "\n\n").trim();
+    return {
+      tabId: tab.id,
+      title: isString(raw.title) ? raw.title.slice(0, 500) : "",
+      url: url.slice(0, 2_000),
+      text: text.slice(0, BROWSER_PAGE_COPY_LIMIT),
+      truncated: text.length > BROWSER_PAGE_COPY_LIMIT,
+    };
   }
 
   async activate(tabId: string): Promise<void> {

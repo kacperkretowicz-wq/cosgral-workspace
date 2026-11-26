@@ -124,3 +124,63 @@ it("has a browser menu that opens the page outside and copies its address, and s
   });
   await waitFor(() => expect(handlers.onOpenExternal).toHaveBeenCalledOnce());
 });
+
+const sharedPage = {
+  tabId: "a",
+  title: "Docs",
+  url: "https://example.com/a",
+  text: "Hello from the page",
+  truncated: false,
+};
+
+async function openShareFromMenu() {
+  await fireEvent.pointerDown(screen.getByRole("button", { name: "Browser menu" }), {
+    button: 0,
+    pointerType: "mouse",
+  });
+  await fireEvent.pointerUp(await screen.findByRole("menuitem", { name: "Show this page to the agent" }), {
+    button: 0,
+  });
+}
+
+it("shows one page to the agent only after the person reads it and confirms", async () => {
+  const onReadPage = vi.fn().mockResolvedValue(sharedPage);
+  const onSendPage = vi.fn().mockResolvedValue(true);
+  setup({ agentName: "Chief", onReadPage, onSendPage });
+  await openShareFromMenu();
+  await waitFor(() => expect(onReadPage).toHaveBeenCalledWith("a"));
+  expect(await screen.findByText("Show this page to Chief?")).toBeInTheDocument();
+  expect(screen.getByText(/19 characters/u)).toBeInTheDocument();
+  expect(screen.getByText(/Hello from the page/u)).toBeInTheDocument();
+  expect(onSendPage).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Send to the agent" }));
+  await waitFor(() => expect(onSendPage).toHaveBeenCalledWith(sharedPage));
+  expect(await screen.findByText("The page was sent to Chief.")).toBeInTheDocument();
+});
+
+it("sends nothing when the person cancels, and says when a page cannot be read", async () => {
+  const onReadPage = vi.fn().mockResolvedValueOnce(sharedPage).mockRejectedValueOnce(new Error("no"));
+  const onSendPage = vi.fn().mockResolvedValue(true);
+  setup({ agentName: "Chief", onReadPage, onSendPage });
+  await openShareFromMenu();
+  fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+  expect(onSendPage).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.queryByText("Show this page to Chief?")).toBeNull());
+  await openShareFromMenu();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not read this page.");
+  expect(onSendPage).not.toHaveBeenCalled();
+});
+
+it("does not offer to show a page when there is no agent", async () => {
+  const onReadPage = vi.fn();
+  setup({ onReadPage });
+  await fireEvent.pointerDown(screen.getByRole("button", { name: "Browser menu" }), {
+    button: 0,
+    pointerType: "mouse",
+  });
+  expect(await screen.findByRole("menuitem", { name: "Show this page to the agent" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  expect(onReadPage).not.toHaveBeenCalled();
+});

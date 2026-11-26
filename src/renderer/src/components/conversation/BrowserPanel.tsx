@@ -1,5 +1,5 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
-import type { BrowserControlState, BrowserTab } from "@openbot/contracts/ipc";
+import type { BrowserControlState, BrowserPageCopy, BrowserTab } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
 import { t } from "../../i18n";
 import { ChatRightPanelTabs, type ChatSidePanelTarget } from "../ChatSidePanelLauncher";
@@ -13,6 +13,7 @@ import {
   PlusIcon,
 } from "./ConversationIcons";
 import { BROWSER_PANEL_SIZES, browserActionLabel } from "./model";
+import { pagePreview } from "./page-share";
 import { SidePanelResizer } from "./SidePanelResizer";
 
 type BrowserControlSession = BrowserControlState["sessions"][number];
@@ -42,6 +43,12 @@ export function BrowserPanel(props: {
   onOpenExternal: () => void;
   /** Copies the address of the active tab; resolves to whether it worked. */
   onCopyAddress: () => Promise<boolean>;
+  /** The agent of this conversation (its name); without one, a page cannot be shown. */
+  agentName?: string;
+  /** Reads the visible text of the active tab, only after the person asked. */
+  onReadPage?: (tabId: string) => Promise<BrowserPageCopy>;
+  /** Sends the page to the agent as a message; resolves to whether it was sent. */
+  onSendPage?: (page: BrowserPageCopy) => Promise<boolean>;
   onAddressInput: (value: string) => void;
   onAddressSubmit: () => void;
   onResize: (width: number) => void;
@@ -57,6 +64,41 @@ export function BrowserPanel(props: {
     setMenuNote(ok ? t("Address copied.") : t("Could not copy the address."));
     clearTimeout(noteTimer);
     noteTimer = setTimeout(() => setMenuNote(""), 2500);
+  }
+  type Share =
+    | { phase: "closed" }
+    | { phase: "reading" }
+    | { phase: "ready"; page: BrowserPageCopy }
+    | { phase: "sending"; page: BrowserPageCopy }
+    | { phase: "error"; message: string };
+  const [share, setShare] = createSignal<Share>({ phase: "closed" });
+  const shareError = () => {
+    const current = share();
+    return current.phase === "error" ? current.message : null;
+  };
+  async function startShare() {
+    const tab = activeTab();
+    if (!tab || !props.onReadPage) return;
+    setShare({ phase: "reading" });
+    try {
+      setShare({ phase: "ready", page: await props.onReadPage(tab.id) });
+    } catch {
+      setShare({
+        phase: "error",
+        message: t("Could not read this page. Only ordinary web pages can be shown to the agent."),
+      });
+    }
+  }
+  async function confirmShare(page: BrowserPageCopy) {
+    if (!props.onSendPage) return;
+    setShare({ phase: "sending", page });
+    const sent = await props.onSendPage(page);
+    if (sent) {
+      setShare({ phase: "closed" });
+      setMenuNote(t("The page was sent to {name}.", { name: props.agentName ?? t("Agent") }));
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(() => setMenuNote(""), 4000);
+    } else setShare({ phase: "error", message: t("Could not send the page. Try again.") });
   }
   return (
     <Tabs.Root
@@ -217,10 +259,88 @@ export function BrowserPanel(props: {
                 <DropdownMenu.Item onSelect={() => void copyAddress()}>
                   <span>{t("Copy address")}</span>
                 </DropdownMenu.Item>
+                <Show when={props.onReadPage}>
+                  <DropdownMenu.Item
+                    disabled={!props.agentName}
+                    onSelect={() => void startShare()}
+                    title={
+                      props.agentName
+                        ? t(
+                            "Sends this one page to {name} after you confirm. The agent never watches the browser by itself.",
+                            {
+                              name: props.agentName,
+                            },
+                          )
+                        : t("Open a chat with an agent first.")
+                    }
+                  >
+                    <span>{t("Show this page to the agent")}</span>
+                  </DropdownMenu.Item>
+                </Show>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
         </div>
+        <Show when={share().phase !== "closed"}>
+          <section class="browser-share-card" aria-label={t("Show this page to the agent")}>
+            <Show when={share().phase === "reading"}>
+              <p role="status">{t("Reading the page…")}</p>
+            </Show>
+            <Show when={shareError()}>
+              <p role="alert">{shareError()}</p>
+              <div class="browser-share-actions">
+                <Button type="button" onClick={() => setShare({ phase: "closed" })}>
+                  {t("Close")}
+                </Button>
+              </div>
+            </Show>
+            <Show
+              when={(() => {
+                const current = share();
+                return current.phase === "ready" || current.phase === "sending" ? current : null;
+              })()}
+              keyed
+            >
+              {(current) => (
+                <>
+                  <strong>{t("Show this page to {name}?", { name: props.agentName ?? t("Agent") })}</strong>
+                  <p class="browser-share-page">
+                    {current.page.title || t("(no title)")} · {current.page.url}
+                  </p>
+                  <p>
+                    {t(
+                      "The agent will get the title, the address and the visible text of this one page ({count} characters). It will not see other tabs or pictures. It is sent as an ordinary message in this chat.",
+                      { count: current.page.text.length },
+                    )}
+                  </p>
+                  <Show when={current.page.truncated}>
+                    <p>{t("The page was long, so only its beginning is sent.")}</p>
+                  </Show>
+                  <p class="browser-share-preview">
+                    <strong>{t("Beginning of the page")}:</strong>{" "}
+                    {pagePreview(current.page) || t("This page has no text to show.")}
+                  </p>
+                  <div class="browser-share-actions">
+                    <Button
+                      type="button"
+                      disabled={current.phase === "sending" || current.page.text.length === 0}
+                      onClick={() => void confirmShare(current.page)}
+                    >
+                      {t("Send to the agent")}
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={current.phase === "sending"}
+                      onClick={() => setShare({ phase: "closed" })}
+                    >
+                      {t("Cancel")}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Show>
+          </section>
+        </Show>
         <Show when={menuNote()}>
           <p class="browser-menu-note" role="status">
             {menuNote()}
