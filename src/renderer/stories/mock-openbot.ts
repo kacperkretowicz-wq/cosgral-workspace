@@ -16,6 +16,7 @@ import type {
   CentralAuthState,
   CentralAuthUser,
   ConfigureHostInput,
+  ConfigureNgrokInput,
   ConfigureRemoteDesktopInput,
   ConversationMessage,
   ConversationSnapshot,
@@ -1385,6 +1386,11 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     },
     host: {
       getStatus: async () => clone(hostStatus),
+      configureNgrok: async (input: ConfigureNgrokInput) => {
+        hostStatus = { ...hostStatus, ngrok: { configured: true, domain: input.domain } };
+        emitHostStatus(hostStatus);
+        return clone(hostStatus);
+      },
       configure: async (input: ConfigureHostInput) => {
         hostStatus = {
           ...hostStatus,

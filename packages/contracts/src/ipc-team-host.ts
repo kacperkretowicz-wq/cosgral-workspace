@@ -29,10 +29,10 @@ export type HostPhase = "unconfigured" | "idle" | "starting" | "online" | "stopp
  * How the host is reachable: through a Cloudflare tunnel of the account service ("cloudflare"), through a free Cloudflare
  * quick tunnel that needs no account ("quick-tunnel", the COSGRAL default), or through the private Tailscale network.
  */
-export type HostTransport = "cloudflare" | "quick-tunnel" | "tailscale";
+export type HostTransport = "cloudflare" | "quick-tunnel" | "ngrok" | "tailscale";
 
 /** What a person can pick for sharing without an account service. */
-export type HostShareChoice = "quick-tunnel" | "tailscale";
+export type HostShareChoice = "quick-tunnel" | "ngrok" | "tailscale";
 
 export interface StartHostInput {
   /** Absent: the saved choice, or the quick tunnel. */
@@ -43,6 +43,8 @@ export interface HostStatus {
   phase: HostPhase;
   /** Absent in older versions (treat as "cloudflare"). */
   transport?: HostTransport;
+  /** The free ngrok account of this host (stable address): saved or not, and its address name. */
+  ngrok?: { configured: boolean; domain: string | null };
   configured: boolean;
   enabledOnLaunch: boolean;
   serverId: string | null;
@@ -57,6 +59,12 @@ export interface HostStatus {
 
 export interface ConfigureHostInput {
   serverName: string;
+}
+
+/** The two things a person copies from a free ngrok account: the authtoken and the free static domain. */
+export interface ConfigureNgrokInput {
+  authtoken: string;
+  domain: string;
 }
 
 export interface ConfigureRemoteDesktopInput {

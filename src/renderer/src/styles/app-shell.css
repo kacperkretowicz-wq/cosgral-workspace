@@ -1097,6 +1097,30 @@
   text-align: center;
 }
 
+.remote-share-choice {
+  margin: 12px 0 0;
+  border: 0;
+  padding: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-2xs);
+}
+
+.remote-share-choice > legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.remote-ngrok-setup {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 4px 24px;
+}
+
+.remote-ngrok-setup ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .remote-advanced {
   margin-top: 12px;
   color: var(--openbot-text-muted);

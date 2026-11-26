@@ -16,6 +16,7 @@ import type {
   BrowserControlState,
   BrowserTab,
   CentralAuthState,
+  ConfigureNgrokInput,
   ConversationReadState,
   ConversationSnapshot,
   DirectConversationSnapshot,
@@ -1982,6 +1983,10 @@ export function App() {
     }
   }
 
+  async function configureNgrok(input: ConfigureNgrokInput): Promise<void> {
+    setHostStatus(await window.openbot.host.configureNgrok(input));
+  }
+
   async function startHost(input?: StartHostInput): Promise<void> {
     setHostStatus(await window.openbot.host.start(input));
   }
@@ -2456,6 +2461,7 @@ export function App() {
                   onConfigure={configureAndPublishHost}
                   onConfigureRemoteDesktop={configureRemoteDesktop}
                   onStart={startHost}
+                  onConfigureNgrok={configureNgrok}
                   onStop={stopHost}
                   onCreateInvite={createHostInvite}
                   onUpdateMember={updateHostMember}

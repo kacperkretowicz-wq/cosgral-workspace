@@ -650,6 +650,9 @@ function isStoredTeam(value: unknown): value is StoredTeam {
     Array.isArray(record.members) &&
     Array.isArray(record.invites) &&
     Array.isArray(record.sessions) &&
-    (record.shareChoice === undefined || record.shareChoice === "quick-tunnel" || record.shareChoice === "tailscale")
+    (record.shareChoice === undefined ||
+      record.shareChoice === "quick-tunnel" ||
+      record.shareChoice === "ngrok" ||
+      record.shareChoice === "tailscale")
   );
 }

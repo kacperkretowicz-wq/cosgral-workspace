@@ -55,6 +55,13 @@ export function isTailscaleHostname(value: string): boolean {
   return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?){1,3}\.ts\.net$/u.test(value);
 }
 
+/** An address of the free ngrok service (`<name>.ngrok-free.app` and the other ngrok domains): the stable address of a host. */
+export function isNgrokHostname(value: string): boolean {
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?){0,3}\.(?:ngrok-free\.(?:app|dev)|ngrok\.(?:app|dev|io))$/u.test(
+    value,
+  );
+}
+
 export function isOpenBotTeamVncHostname(value: string): boolean {
   const match = TEAM_HOST_PATTERN.exec(value);
   return Boolean(match && match[1] === "vnc-" && isValidTeamHostSlug(match[2]));

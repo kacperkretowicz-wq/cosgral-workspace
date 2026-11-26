@@ -161,6 +161,7 @@ test("advanced panels and pickers are visually stable", async () => {
       onRevokeSession={async () => undefined}
       onRevokeInvite={async () => undefined}
       onCopyAddressUpdate={async () => undefined}
+      onConfigureNgrok={async () => undefined}
     />
   ));
 
