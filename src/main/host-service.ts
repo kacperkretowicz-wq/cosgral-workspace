@@ -32,6 +32,7 @@ import type { MailboxStore } from "../backend/mailbox-store";
 import type { TeamChatStore } from "../backend/team-chat-store";
 import type { ProvisionedTeamTunnel } from "./central-auth-manager";
 import { appendDiagnosticLog, probeRfbHandshake, resolveCloudflaredExecutable, stopOwnedProcess } from "./remote-mac";
+import { TAILSCALE_MESSAGES } from "./tailscale-publisher";
 import { TeamApiServer } from "./team-api-server";
 import type { TeamStore } from "./team-store";
 
@@ -63,6 +64,8 @@ interface HostServiceOptions {
   }) => Promise<void>;
   getRemoteDesktopPassword: () => string | null;
   setRemoteDesktopPassword: (password: string) => Promise<void>;
+  /** COSGRAL: without an account service the server is shown through the private Tailscale network instead of a tunnel. */
+  tailscale?: { publish: (port: number) => Promise<string>; unpublish: () => Promise<void> };
   provisionTeamTunnel: (input: {
     serverId: string;
     serverName: string;
@@ -70,6 +73,8 @@ interface HostServiceOptions {
     vncEnabled?: boolean;
   }) => Promise<ProvisionedTeamTunnel>;
 }
+
+const TAILSCALE_READY_MESSAGE = TAILSCALE_MESSAGES.ready;
 
 export function buildNamedTunnelArgs(): string[] {
   return ["tunnel", "--protocol", "quic", "run"];
@@ -96,6 +101,7 @@ export class HostService extends EventEmitter<HostEvents> {
     };
     const identity = options.store.getIdentity();
     this.#status = {
+      transport: options.tailscale ? "tailscale" : "cloudflare",
       phase: identity ? "idle" : "unconfigured",
       configured: Boolean(identity),
       enabledOnLaunch: identity?.enabledOnLaunch ?? false,
@@ -146,6 +152,10 @@ export class HostService extends EventEmitter<HostEvents> {
       message: null,
     });
     this.#api.refreshPresence();
+    if (this.#options.tailscale) {
+      this.#setStatus({ message: "Gotowe. Włącz udostępnienie, żeby zaprosić drugą osobę." });
+      return this.getStatus();
+    }
     try {
       const tunnel = await this.#options.provisionTeamTunnel({
         serverId: identity.serverId,
@@ -189,6 +199,7 @@ export class HostService extends EventEmitter<HostEvents> {
     const signedInUser = this.#options.getSignedInUser();
     this.#options.store.assertOwnerAccount(signedInUser);
     await this.syncSignedInAccount(signedInUser);
+    if (this.#options.tailscale) return this.#startWithTailscale(this.#options.tailscale);
     this.#setStatus({ phase: "starting", message: "Starting the secure public API…" });
     const executable = await (this.#options.resolveCloudflared?.() ?? resolveCloudflaredExecutable());
     if (!executable) {
@@ -250,6 +261,35 @@ export class HostService extends EventEmitter<HostEvents> {
     return this.getStatus();
   }
 
+  /** COSGRAL: show the server through Tailscale. No account is created and nothing is opened to the internet. */
+  async #startWithTailscale(tailscale: NonNullable<HostServiceOptions["tailscale"]>): Promise<HostStatus> {
+    this.#setStatus({ phase: "starting", message: "Włączam udostępnienie przez Tailscale…" });
+    try {
+      const apiPort = await this.#api.start();
+      const apiUrl = await tailscale.publish(apiPort);
+      this.#setStatus({
+        apiUrl,
+        vncHostname: null,
+        apiOnline: true,
+        vncOnline: false,
+        message: TAILSCALE_READY_MESSAGE,
+      });
+      await this.#options.store.setEnabledOnLaunch(true);
+      this.#setStatus({ phase: "online", enabledOnLaunch: true });
+    } catch (error) {
+      await this.#stopRuntime();
+      this.#setStatus({
+        phase: "error",
+        apiOnline: false,
+        vncOnline: false,
+        apiUrl: null,
+        vncHostname: null,
+        message: error instanceof Error ? error.message : "Nie udało się włączyć udostępnienia.",
+      });
+    }
+    return this.getStatus();
+  }
+
   async stop(persistPreference = true): Promise<HostStatus> {
     if (this.#status.phase === "unconfigured") return this.getStatus();
     this.#setStatus({ phase: "stopping", message: "Making this COSGRAL Workspace private…" });
@@ -262,7 +302,7 @@ export class HostService extends EventEmitter<HostEvents> {
       vncHostname: null,
       apiOnline: false,
       vncOnline: false,
-      message: "This COSGRAL Workspace is private.",
+      message: this.#options.tailscale ? "Udostępnienie jest wyłączone." : "This COSGRAL Workspace is private.",
     });
     return this.getStatus();
   }
@@ -422,6 +462,7 @@ export class HostService extends EventEmitter<HostEvents> {
     const tunnel = this.#tunnel;
     this.#tunnel = null;
     if (tunnel) await stopOwnedProcess(tunnel);
+    await this.#options.tailscale?.unpublish();
     await this.#api.stop();
   }
 

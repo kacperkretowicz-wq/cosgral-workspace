@@ -269,6 +269,7 @@ import {
 } from "./startup-failure";
 import { registerSubagentsIpc } from "./subagents-ipc";
 import { createManagedCli, type ManagedCliRuntime, needsRestart, registerSubscriptionsIpc } from "./subscriptions-ipc";
+import { TailscalePublisher } from "./tailscale-publisher";
 import { registerTasksViewIpc } from "./tasks-view-ipc";
 import { TeamStore } from "./team-store";
 import { registerThreadUndoIpc } from "./thread-undo-ipc";
@@ -2179,6 +2180,8 @@ if (!hasSingleInstanceLock) {
         },
         getRemoteDesktopPassword: () => remoteDesktopCredentials.getPassword(),
         setRemoteDesktopPassword: (password) => remoteDesktopCredentials.setPassword(password),
+        // COSGRAL: without an account service (the default) the server is shown through Tailscale.
+        ...(process.env.OPENBOT_AUTH_API_URL?.trim() ? {} : { tailscale: new TailscalePublisher() }),
         provisionTeamTunnel: (input) => {
           if (!centralAuthManager) throw new Error("The account service is not ready.");
           return centralAuthManager.provisionTeamTunnel(input);

@@ -1,6 +1,6 @@
 # Wspólna przestrzeń botów dla dwóch osób (Kacper i Kuba)
 
-Stan: 26.11.2026. To jest plan do przeczytania i decyzji. Niczego tu nie założyłem, nie zapłaciłem i nie uruchomiłem. Każdy krok, który wymaga konta, pieniędzy albo wysłania danych poza komputer, czeka na zgodę Kacpra.
+Stan: 26.11.2026. Kacper wybrał opcję A, więc jest już w programie (patrz „Jak to włączyć”). Niczego nie założyłem, nie zapłaciłem i nie uruchomiłem na prawdziwej sieci. Każdy krok, który wymaga konta, pieniędzy albo wysłania danych poza komputer, czeka na zgodę Kacpra.
 
 ## Czego chcesz
 
@@ -55,6 +55,32 @@ Jak to wygląda: każdy ma program u siebie. Opis botów (nazwa, rola, instrukcj
 Dlaczego A: daje dokładnie to, o co prosisz (te same boty, wejście z dowolnego miejsca, wspólna praca), nic nie kosztuje na początek, klucze zostają na Twoim komputerze i jest najbliżej tego, co program już ma. Opcja B jest dla Ciebie za trudna na start, a C nie daje wspólnej pracy na żywo.
 
 Zanim Kuba zacznie używać botów: sprawdź w warunkach planu, czy wolno Wam dzielić jedno konto z modelem. Jeśli nie, zrobimy wspólną przestrzeń na osobnym kluczu API.
+
+## Jak to włączyć (opcja A jest już w programie)
+
+Stan 26.11: program ma gotowe udostępnianie przez Tailscale. Sprawdziłem je w testach na atrapie Tailscale (gospodarz, link zaproszenia, dołączenie nazwą i hasłem, ponowne logowanie). **Nie próbowałem tego na prawdziwym Tailscale ani na dwóch komputerach**, bo nie zakładam kont. Pierwszy prawdziwy test robicie Wy.
+
+**Gospodarz (komputer, na którym stoją boty, na przykład Twój):**
+
+1. Zainstaluj Tailscale (tailscale.com/download) i zaloguj się. Konto zakładasz Ty, jeśli zdecydujesz się z niego korzystać.
+2. W panelu administracyjnym Tailscale (zakładka DNS) włącz nazwy MagicDNS i HTTPS dla Waszej sieci. Bez tego program powie, co zrobić.
+3. W programie: pasek serwerów po lewej, prawy przycisk na swoim serwerze, „Udostępnij ten COSGRAL Workspace”. Wpisz nazwę serwera i kliknij „Utwórz serwer i włącz udostępnianie”.
+4. Wejdź w „Ludzie”, wybierz rolę (Członek albo Admin), kliknij „Utwórz link zaproszenia” i wyślij link drugiej osobie. Link działa raz i wygasa po 24 godzinach.
+
+**Druga osoba (Kuba):**
+
+1. Zainstaluj Tailscale i zaloguj się. Dołącza do Waszej sieci Tailscale (zaprasza gospodarz w panelu Tailscale).
+2. W programie: plus na pasku serwerów, wklej link zaproszenia, wybierz swoją nazwę i hasło (co najmniej 12 znaków) i kliknij „Dołącz do serwera”.
+3. Kuba widzi tych samych agentów i rozmowy, może pisać do botów i prowadzić z Tobą rozmowy. Role: Członek, Admin, Właściciel; Ty możesz w „Ludziach” zmienić rolę, wyłączyć dostęp albo usunąć osobę.
+
+**Ważne:**
+
+- Gospodarz musi mieć włączony komputer i program. Gdy go zamkniesz, serwer znika (przy następnym starcie program sam włącza udostępnianie, jeśli było włączone).
+- Boty pracują na kontach i kluczach gospodarza. Kuba ich nie widzi. Sprawdź warunki planów, zanim wspólnie z nich korzystacie.
+- Dane (boty, rozmowy) leżą na dysku gospodarza. Zrób kopię zapasową.
+- Hasło Kuby jest zapisane w jego programie w postaci zaszyfrowanej, żeby mógł wejść ponownie po wygaśnięciu sesji (po 30 dniach).
+- Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Używaj linku.
+- Sekcja „Strony” w Ustawieniach serwera dalej jest wyłączona (hosting stron wymaga usługi w internecie).
 
 ## Marketplace: skąd miałby pochodzić katalog dodatkowych pluginów
 

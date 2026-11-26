@@ -28,8 +28,12 @@ export function parseHostConfig(value: unknown): ConfigureHostInput {
 
 export function parseJoinServer(value: unknown): JoinServerInput {
   if (!isObject(value)) throw new Error("Invitation details are required.");
+  const inviteUrl = requireString(value.inviteUrl, "inviteUrl", INPUT_LIMITS.inviteUrl);
+  if (value.username === undefined && value.password === undefined) return { inviteUrl };
   return {
-    inviteUrl: requireString(value.inviteUrl, "inviteUrl", INPUT_LIMITS.inviteUrl),
+    inviteUrl,
+    username: requireString(value.username, "username", 64),
+    password: requireString(value.password, "password", 256),
   };
 }
 

@@ -1,26 +1,40 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
+import type { JoinServerInput } from "@openbot/contracts/ipc";
 import { createSignal, Show, untrack } from "solid-js";
 import { t } from "../i18n";
-import { Button, Dialog, Textarea } from "./ui";
+import { Button, Dialog, Input, Textarea } from "./ui";
 
 interface JoinServerDialogProps {
   inviteUrl: string;
   accountEmail: string;
+  /** Without an account service the person joins with a name and a password chosen for the server. */
+  localProfile?: boolean;
   onClose: () => void;
-  onJoin: (input: { inviteUrl: string }) => Promise<void>;
+  onJoin: (input: JoinServerInput) => Promise<void>;
 }
+
+const USERNAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{2,31}$/u;
+const PASSWORD_MIN_LENGTH = 12;
 
 export function JoinServerDialog(props: JoinServerDialogProps) {
   const [inviteUrl, setInviteUrl] = createSignal(untrack(() => props.inviteUrl));
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
+  const [username, setUsername] = createSignal("");
+  const [password, setPassword] = createSignal("");
+  const credentialsValid = () =>
+    !props.localProfile || (USERNAME_PATTERN.test(username().trim()) && password().length >= PASSWORD_MIN_LENGTH);
 
   async function join() {
-    if (busy()) return;
+    if (busy() || !credentialsValid()) return;
     setBusy(true);
     setError(null);
     try {
-      await props.onJoin({ inviteUrl: inviteUrl() });
+      await props.onJoin(
+        props.localProfile
+          ? { inviteUrl: inviteUrl(), username: username().trim(), password: password() }
+          : { inviteUrl: inviteUrl() },
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not join the server."));
     } finally {
@@ -45,7 +59,11 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
               </Button>
             </header>
             <Dialog.Description>
-              {t("Paste the one-time invitation link. You will join with your signed-in COSGRAL account.")}
+              {props.localProfile
+                ? t(
+                    "Paste the one-time invitation link and choose the name and password you will use on this server. Tailscale must be on and signed in to the same network as the host.",
+                  )
+                : t("Paste the one-time invitation link. You will join with your signed-in COSGRAL account.")}
             </Dialog.Description>
             <label class="remote-field">
               <span>{t("Invitation link")}</span>
@@ -57,13 +75,40 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
                 spellcheck={false}
               />
             </label>
-            <div class="remote-account-chip">
-              <span aria-hidden="true">@</span>
-              <div>
-                <small>{t("Joining as")}</small>
-                <strong>{props.accountEmail}</strong>
-              </div>
-            </div>
+            <Show
+              when={props.localProfile}
+              fallback={
+                <div class="remote-account-chip">
+                  <span aria-hidden="true">@</span>
+                  <div>
+                    <small>{t("Joining as")}</small>
+                    <strong>{props.accountEmail}</strong>
+                  </div>
+                </div>
+              }
+            >
+              <label class="remote-field">
+                <span>{t("Your name on this server")}</span>
+                <Input
+                  value={username()}
+                  autocomplete="username"
+                  maxlength={32}
+                  onInput={(event) => setUsername(event.currentTarget.value)}
+                />
+                <small>{t("3 to 32 letters, numbers, dots, dashes or underscores. Others will see this name.")}</small>
+              </label>
+              <label class="remote-field">
+                <span>{t("Your password on this server")}</span>
+                <Input
+                  type="password"
+                  value={password()}
+                  autocomplete="new-password"
+                  maxlength={256}
+                  onInput={(event) => setPassword(event.currentTarget.value)}
+                />
+                <small>{t("At least 12 characters. It is saved only on this computer, encrypted.")}</small>
+              </label>
+            </Show>
             <Show when={error()}>{(message) => <p class="remote-dialog-error">{message()}</p>}</Show>
             <footer>
               <Button
@@ -74,7 +119,12 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
               >
                 {t("Cancel")}
               </Button>
-              <Button type="button" class="remote-primary-button" disabled={busy()} onClick={() => void join()}>
+              <Button
+                type="button"
+                class="remote-primary-button"
+                disabled={busy() || !credentialsValid()}
+                onClick={() => void join()}
+              >
                 {busy() ? t("Joining…") : t("Join server")}
               </Button>
             </footer>

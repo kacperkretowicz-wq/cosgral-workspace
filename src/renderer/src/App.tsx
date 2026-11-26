@@ -25,6 +25,7 @@ import type {
   DirectTypingRealtimeEvent,
   HostStatus,
   InviteSummary,
+  JoinServerInput,
   QueueSnapshot,
   RemoteMacSession,
   SearchHit,
@@ -1915,7 +1916,7 @@ export function App() {
     });
   }
 
-  async function joinServer(input: { inviteUrl: string }): Promise<void> {
+  async function joinServer(input: JoinServerInput): Promise<void> {
     await window.openbot.servers.join(input);
     setPendingInviteUrl("");
     setJoinServerOpen(false);
@@ -2421,6 +2422,7 @@ export function App() {
                 <JoinServerDialog
                   inviteUrl={pendingInviteUrl()}
                   accountEmail={account().email}
+                  localProfile={localProfile()}
                   onClose={() => {
                     setJoinServerOpen(false);
                     setPendingInviteUrl("");

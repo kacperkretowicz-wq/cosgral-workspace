@@ -80,6 +80,14 @@ describe("server IPC input parsing", () => {
     expect(parseJoinServer({ inviteUrl: "https://openbot.run/invite" })).toEqual({
       inviteUrl: "https://openbot.run/invite",
     });
+    expect(parseJoinServer({ inviteUrl: "cosgral://join", username: "kuba", password: "bardzo-dlugie-haslo" })).toEqual(
+      {
+        inviteUrl: "cosgral://join",
+        username: "kuba",
+        password: "bardzo-dlugie-haslo",
+      },
+    );
+    expect(() => parseJoinServer({ inviteUrl: "cosgral://join", username: "kuba" })).toThrowError("password");
     expect(parseLoginServer({ serverId: "server-1" })).toEqual({ serverId: "server-1" });
     expect(parseRemoteMacConnect({ hostname: "mac.example.com" })).toEqual({
       hostname: "mac.example.com",

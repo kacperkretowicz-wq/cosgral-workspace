@@ -14,6 +14,9 @@ export interface ServerSummary {
 
 export interface JoinServerInput {
   inviteUrl: string;
+  /** Without a COSGRAL account service: the name and password the person chooses on this server. */
+  username?: string;
+  password?: string;
 }
 
 export interface LoginServerInput {
@@ -22,8 +25,13 @@ export interface LoginServerInput {
 
 export type HostPhase = "unconfigured" | "idle" | "starting" | "online" | "stopping" | "error";
 
+/** How the host is reachable: through a Cloudflare tunnel of the account service, or through the private Tailscale network. */
+export type HostTransport = "cloudflare" | "tailscale";
+
 export interface HostStatus {
   phase: HostPhase;
+  /** Absent in older versions (treat as "cloudflare"). */
+  transport?: HostTransport;
   configured: boolean;
   enabledOnLaunch: boolean;
   serverId: string | null;

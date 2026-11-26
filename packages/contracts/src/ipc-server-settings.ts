@@ -181,7 +181,8 @@ export function serverSettingsSections(): ServerSettingsSection[] {
       id: "members",
       source: {
         kind: "unavailable",
-        reason: "Inviting people needs an online service. This program runs on this computer only.",
+        reason:
+          "Invite people from the server bar on the left: right-click your server and choose Publish this COSGRAL Workspace. It works through Tailscale, a private network.",
       },
     },
     api("remote-desktop", "remoteDesktop"),
