@@ -41,6 +41,7 @@ import type {
   BrowserControlState,
   BrowserNavigateInput,
   BrowserOpenInput,
+  BrowserPageCopy,
   BrowserTab,
   BrowserVisibilityInput,
 } from "./ipc-browser";
@@ -576,6 +577,8 @@ export interface BrowserDesktopApi {
   close: (tabId: string) => Promise<void>;
   /** Back or Forward in the history of a tab (the person's own buttons). */
   navigate: (input: BrowserNavigateInput) => Promise<void>;
+  /** Reads the visible text of one tab so the person can show it to an agent (one page, only on their click). */
+  readPage: (tabId: string) => Promise<BrowserPageCopy>;
   listTabs: () => Promise<BrowserTab[]>;
   getControlState: () => Promise<BrowserControlState>;
   setVisible: (input: BrowserVisibilityInput) => Promise<void>;

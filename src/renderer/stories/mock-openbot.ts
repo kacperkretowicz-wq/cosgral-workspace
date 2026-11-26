@@ -1206,6 +1206,13 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       },
       activate: async () => undefined,
       navigate: async () => undefined,
+      readPage: async (tabId) => ({
+        tabId,
+        title: "Przykładowa strona",
+        url: "https://example.com/",
+        text: "To jest przykładowy tekst strony, który agent dostanie po Twoim potwierdzeniu.",
+        truncated: false,
+      }),
       close: async (tabId) => {
         browserTabs = browserTabs.filter((tab) => tab.id !== tabId);
         emitAgentEvent({

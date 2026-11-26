@@ -75,6 +75,7 @@ import {
   SETTINGS_PANEL_SIZES,
   SETTINGS_PANEL_STORAGE_KEY,
 } from "./conversation/model";
+import { pageShareMessage } from "./conversation/page-share";
 import { QueuePanel } from "./conversation/QueuePanel";
 import { ReasoningSelect } from "./conversation/ReasoningSelect";
 import { MessageSelectionActions } from "./conversation/SelectionActions";
@@ -2356,6 +2357,9 @@ export function Conversation(props: ConversationProps) {
           onReload={() => void openBrowserAddress()}
           onOpenExternal={() => void openActiveBrowserTabExternally()}
           onCopyAddress={copyActiveBrowserAddress}
+          agentName={props.bot?.name}
+          onReadPage={(tabId) => window.openbot.browser.readPage(tabId)}
+          onSendPage={(page) => props.onSendMessage(pageShareMessage(page), [], null)}
           onAddressInput={setBrowserAddress}
           onAddressSubmit={() => void openBrowserAddress()}
           onResize={setBrowserPanelWidth}
