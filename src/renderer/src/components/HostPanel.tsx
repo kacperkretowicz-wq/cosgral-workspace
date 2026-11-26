@@ -54,6 +54,8 @@ export function HostPanel(props: HostPanelProps) {
     props.invites.filter((item) => item.usedAt === null && Date.parse(item.expiresAt) > currentTime()),
   );
   const online = createMemo(() => props.status.phase === "online");
+  // COSGRAL: without an account service the server is shown through the private Tailscale network.
+  const tailscale = createMemo(() => props.status.transport === "tailscale");
   let inviteExpiryTimer: ReturnType<typeof setTimeout> | undefined;
 
   createEffect(
@@ -145,6 +147,7 @@ export function HostPanel(props: HostPanelProps) {
               when={props.status.configured}
               fallback={
                 <HostSetup
+                  tailscale={tailscale()}
                   accountEmail={props.accountEmail}
                   serverName={serverName()}
                   busy={busy()}
@@ -178,7 +181,15 @@ export function HostPanel(props: HostPanelProps) {
                   </Show>
                   <div class="remote-admin-nav-state">
                     <i class={online() ? "online" : ""} />
-                    <span>{online() ? t("Public") : t("Private")}</span>
+                    <span>
+                      {tailscale()
+                        ? online()
+                          ? t("Sharing on")
+                          : t("Sharing off")
+                        : online()
+                          ? t("Public")
+                          : t("Private")}
+                    </span>
                   </div>
                 </nav>
 
@@ -189,7 +200,13 @@ export function HostPanel(props: HostPanelProps) {
                         <div>
                           <span class="remote-admin-kicker">{t("This COSGRAL Workspace")}</span>
                           <h3 id="server-overview-title">{t("Published access")}</h3>
-                          <p>{t("Control the secure public address for this local COSGRAL Workspace instance.")}</p>
+                          <p>
+                            {tailscale()
+                              ? t(
+                                  "Control who can reach this COSGRAL Workspace through your private Tailscale network.",
+                                )
+                              : t("Control the secure public address for this local COSGRAL Workspace instance.")}
+                          </p>
                         </div>
                         <Badge
                           class={["remote-admin-status-pill", { online: online() }]}
@@ -197,12 +214,18 @@ export function HostPanel(props: HostPanelProps) {
                           shape="pill"
                           dot
                         >
-                          {online() ? t("Public") : t("Private")}
+                          {tailscale()
+                            ? online()
+                              ? t("Sharing on")
+                              : t("Sharing off")
+                            : online()
+                              ? t("Public")
+                              : t("Private")}
                         </Badge>
                       </div>
                       <div class="remote-status-grid">
                         <StatusCard
-                          label={t("Public API")}
+                          label={tailscale() ? t("Address in Tailscale") : t("Public API")}
                           online={props.status.apiOnline}
                           value={props.status.apiUrl ?? t("Not running")}
                         />
@@ -224,7 +247,10 @@ export function HostPanel(props: HostPanelProps) {
                         <div>
                           <h3>{t("Publishing controls")}</h3>
                           <p>
-                            {props.status.message ?? t("The address is public, but only invited people can sign in.")}
+                            {props.status.message ??
+                              (tailscale()
+                                ? t("Only invited people who are in your Tailscale network can sign in.")
+                                : t("The address is public, but only invited people can sign in."))}
                           </p>
                         </div>
                         <div class="remote-host-actions">
@@ -237,7 +263,13 @@ export function HostPanel(props: HostPanelProps) {
                                 disabled={busy() || props.status.phase === "starting"}
                                 onClick={() => void run(props.onStart)}
                               >
-                                {props.status.phase === "starting" ? t("Publishing…") : t("Make public")}
+                                {props.status.phase === "starting"
+                                  ? tailscale()
+                                    ? t("Turning on…")
+                                    : t("Publishing…")
+                                  : tailscale()
+                                    ? t("Turn on sharing")
+                                    : t("Make public")}
                               </Button>
                             }
                           >
@@ -247,17 +279,19 @@ export function HostPanel(props: HostPanelProps) {
                               disabled={busy()}
                               onClick={() => void run(props.onStop)}
                             >
-                              {t("Make private")}
+                              {tailscale() ? t("Turn off sharing") : t("Make private")}
                             </Button>
                           </Show>
-                          <Button
-                            type="button"
-                            class="remote-secondary-button"
-                            disabled={!props.status.apiOnline || busy()}
-                            onClick={() => void run(props.onCopyAddressUpdate)}
-                          >
-                            {t("Copy address update")}
-                          </Button>
+                          <Show when={!tailscale()}>
+                            <Button
+                              type="button"
+                              class="remote-secondary-button"
+                              disabled={!props.status.apiOnline || busy()}
+                              onClick={() => void run(props.onCopyAddressUpdate)}
+                            >
+                              {t("Copy address update")}
+                            </Button>
+                          </Show>
                         </div>
                       </section>
                     </section>
@@ -269,7 +303,11 @@ export function HostPanel(props: HostPanelProps) {
                         <div>
                           <span class="remote-admin-kicker">{t("Access control")}</span>
                           <h3 id="people-access-title">{t("People and invitations")}</h3>
-                          <p>{t("Add people by email or create a private one-time link.")}</p>
+                          <p>
+                            {tailscale()
+                              ? t("Create a private one-time link and send it to the other person.")
+                              : t("Add people by email or create a private one-time link.")}
+                          </p>
                         </div>
                       </div>
 
@@ -303,9 +341,11 @@ export function HostPanel(props: HostPanelProps) {
                             <Tabs.Trigger value="link" class={inviteMode() === "link" ? "active" : ""}>
                               {t("Invitation link")}
                             </Tabs.Trigger>
-                            <Tabs.Trigger value="email" class={inviteMode() === "email" ? "active" : ""}>
-                              {t("Email invitation")}
-                            </Tabs.Trigger>
+                            <Show when={!tailscale()}>
+                              <Tabs.Trigger value="email" class={inviteMode() === "email" ? "active" : ""}>
+                                {t("Email invitation")}
+                              </Tabs.Trigger>
+                            </Show>
                           </Tabs.List>
                           <Tabs.Content value="email">
                             <label class="remote-field remote-invite-email">
@@ -339,7 +379,9 @@ export function HostPanel(props: HostPanelProps) {
                         </Button>
                         <Show when={!props.status.apiOnline}>
                           <p class="remote-inline-note">
-                            {t("Make this COSGRAL Workspace public before inviting people.")}
+                            {tailscale()
+                              ? t("Turn on sharing before inviting people.")
+                              : t("Make this COSGRAL Workspace public before inviting people.")}
                           </p>
                         </Show>
                         <Show when={invite()}>
@@ -514,6 +556,7 @@ export function HostPanel(props: HostPanelProps) {
 }
 
 function HostSetup(props: {
+  tailscale: boolean;
   accountEmail: string;
   serverName: string;
   busy: boolean;
@@ -523,9 +566,13 @@ function HostSetup(props: {
   return (
     <div class="remote-host-setup">
       <p>
-        {t(
-          "Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.",
-        )}
+        {props.tailscale
+          ? t(
+              "Share the agents, conversations, files and browser of this computer with another person through Tailscale, a private network. Only people you invite, who are in the same Tailscale network, can sign in. Nothing is opened to the whole internet. Install Tailscale on both computers and sign in first.",
+            )
+          : t(
+              "Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.",
+            )}
       </p>
       <label class="remote-field">
         <span>{t("Server name")}</span>
@@ -537,20 +584,28 @@ function HostSetup(props: {
           onInput={(event) => props.onServerName(event.currentTarget.value)}
         />
       </label>
-      <div class="remote-account-chip">
-        <span aria-hidden="true">@</span>
-        <div>
-          <small>{t("Owner account")}</small>
-          <strong>{props.accountEmail}</strong>
+      <Show when={!props.tailscale}>
+        <div class="remote-account-chip">
+          <span aria-hidden="true">@</span>
+          <div>
+            <small>{t("Owner account")}</small>
+            <strong>{props.accountEmail}</strong>
+          </div>
         </div>
-      </div>
+      </Show>
       <Button
         type="button"
         class="remote-primary-button"
         disabled={props.busy || props.serverName.trim().length < INPUT_LIMITS.serverNameMin}
         onClick={props.onCreate}
       >
-        {props.busy ? t("Publishing…") : t("Publish this COSGRAL Workspace")}
+        {props.busy
+          ? props.tailscale
+            ? t("Turning on…")
+            : t("Publishing…")
+          : props.tailscale
+            ? t("Create the server and turn on sharing")
+            : t("Publish this COSGRAL Workspace")}
       </Button>
     </div>
   );

@@ -294,4 +294,47 @@ describe("HostPanel", () => {
     expect(await screen.findByText("Link copied")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy again" })).toBeInTheDocument();
   });
+
+  it("speaks about Tailscale and offers only a link invitation when sharing through Tailscale", () => {
+    render(() => (
+      <HostPanel
+        platform="win32"
+        accountEmail="owner@cosgral.local"
+        status={{
+          transport: "tailscale",
+          phase: "idle",
+          configured: true,
+          enabledOnLaunch: false,
+          serverId: "server-1",
+          serverName: "Nasza przestrzeń",
+          apiUrl: null,
+          vncHostname: null,
+          apiOnline: false,
+          vncOnline: false,
+          remoteDesktopCredentialConfigured: false,
+          message: null,
+        }}
+        members={[]}
+        invites={[]}
+        sessions={[]}
+        presence={{ serverId: "server-1", members: [], updatedAt: "" }}
+        onClose={vi.fn()}
+        onConfigure={vi.fn()}
+        onConfigureRemoteDesktop={vi.fn()}
+        onStart={vi.fn()}
+        onStop={vi.fn()}
+        onCreateInvite={vi.fn()}
+        onUpdateMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onRevokeSession={vi.fn()}
+        onRevokeInvite={vi.fn()}
+        onCopyAddressUpdate={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByRole("button", { name: "Turn on sharing" })).toBeInTheDocument();
+    expect(screen.getByText("Address in Tailscale")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy address update" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Make public" })).toBeNull();
+  });
 });

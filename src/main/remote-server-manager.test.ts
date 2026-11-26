@@ -18,6 +18,16 @@ describe("remote server links", () => {
     expect(isValidRemoteApiUrl("https://example.com/")).toBe(false);
   });
 
+  it("accepts the https address of a computer in a Tailscale network, and nothing that only looks like it", () => {
+    expect(isValidRemoteApiUrl("https://komputer-kacpra.tail1a2b3.ts.net/")).toBe(true);
+    expect(isValidRemoteApiUrl("https://komputer-kacpra.tail1a2b3.ts.net")).toBe(true);
+    expect(isValidRemoteApiUrl("http://komputer-kacpra.tail1a2b3.ts.net/")).toBe(false);
+    expect(isValidRemoteApiUrl("https://komputer-kacpra.tail1a2b3.ts.net:8443/")).toBe(false);
+    expect(isValidRemoteApiUrl("https://ts.net/")).toBe(false);
+    expect(isValidRemoteApiUrl("https://komputer.tail1a2b3.ts.net.evil.example/")).toBe(false);
+    expect(isValidRemoteApiUrl("https://evil-ts.net/")).toBe(false);
+  });
+
   it("parses a COSGRAL invitation", () => {
     const url = new URL("cosgral://join");
     url.searchParams.set("api", "https://team-host.trycloudflare.com/");

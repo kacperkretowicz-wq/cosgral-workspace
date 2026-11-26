@@ -49,7 +49,7 @@ import {
   isOneOf,
   isString,
 } from "@openbot/contracts/runtime-values";
-import { isOpenBotTeamApiHostname, isOpenBotTeamVncHostname } from "@openbot/contracts/validation";
+import { isOpenBotTeamApiHostname, isOpenBotTeamVncHostname, isTailscaleHostname } from "@openbot/contracts/validation";
 import { addressUpdatePayload, fingerprint } from "./team-store";
 
 interface StoredRemoteServer {
@@ -60,6 +60,8 @@ interface StoredRemoteServer {
   publicKey?: string;
   username: string;
   encryptedToken: string;
+  /** Only for a server joined with a name and a password (no account service); lets the program sign in again. */
+  encryptedPassword?: string;
   vncHostname: string | null;
   role: TeamRole;
 }
@@ -174,22 +176,30 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
   async join(input: JoinServerInput): Promise<ServerSummary> {
     const invite = parseJoinUrl(input.inviteUrl);
     const verifiedIdentity = await this.#verifyIdentity(invite.apiUrl, invite.serverId, invite.fingerprint);
-    const accountTicket = await this.#centralAccount.createTeamAuthTicket(invite.serverId);
-    const result = await requestJson(invite.apiUrl, "/v1/join/account", decodeJoinResult, {
-      method: "POST",
-      body: {
-        inviteToken: invite.token,
-        accountTicket,
-      },
-    });
+    // COSGRAL: without an account service the person joins with a name and a password chosen for this server.
+    const withPassword = input.password !== undefined || input.username !== undefined;
+    const username = withPassword ? (input.username ?? "").trim().toLowerCase() : "";
+    const result = withPassword
+      ? await requestJson(invite.apiUrl, "/v1/join", decodeJoinResult, {
+          method: "POST",
+          body: { inviteToken: invite.token, username, password: input.password ?? "" },
+        })
+      : await requestJson(invite.apiUrl, "/v1/join/account", decodeJoinResult, {
+          method: "POST",
+          body: {
+            inviteToken: invite.token,
+            accountTicket: await this.#centralAccount.createTeamAuthTicket(invite.serverId),
+          },
+        });
     const stored: StoredRemoteServer = {
       id: invite.serverId,
       name: verifiedIdentity.serverName,
       apiUrl: invite.apiUrl,
       fingerprint: invite.fingerprint,
       publicKey: verifiedIdentity.publicKey,
-      username: this.#centralAccount.getEmail().trim().toLowerCase(),
+      username: withPassword ? username : this.#centralAccount.getEmail().trim().toLowerCase(),
       encryptedToken: this.#cipher.encrypt(result.sessionToken).toString("base64"),
+      ...(withPassword ? { encryptedPassword: this.#cipher.encrypt(input.password ?? "").toString("base64") } : {}),
       vncHostname: null,
       role: result.member.role,
     };
@@ -209,12 +219,19 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
     this.#emitChanged();
     try {
       await this.#verifyIdentity(server.apiUrl, server.id, server.fingerprint);
-      const accountTicket = await this.#centralAccount.createTeamAuthTicket(server.id);
-      const result = await requestJson(server.apiUrl, "/v1/auth/account", decodeJoinResult, {
-        method: "POST",
-        body: { accountTicket },
-      });
-      server.username = this.#centralAccount.getEmail().trim().toLowerCase();
+      const result = server.encryptedPassword
+        ? await requestJson(server.apiUrl, "/v1/auth/login", decodeJoinResult, {
+            method: "POST",
+            body: {
+              username: server.username,
+              password: this.#cipher.decrypt(Buffer.from(server.encryptedPassword, "base64")),
+            },
+          })
+        : await requestJson(server.apiUrl, "/v1/auth/account", decodeJoinResult, {
+            method: "POST",
+            body: { accountTicket: await this.#centralAccount.createTeamAuthTicket(server.id) },
+          });
+      if (!server.encryptedPassword) server.username = this.#centralAccount.getEmail().trim().toLowerCase();
       server.role = result.member.role;
       server.encryptedToken = this.#cipher.encrypt(result.sessionToken).toString("base64");
       this.#states.set(server.id, "online");
@@ -622,7 +639,8 @@ export function isValidRemoteApiUrl(value: string): boolean {
       url.search === "" &&
       url.hash === "" &&
       (/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.trycloudflare\.com$/.test(url.hostname) ||
-        isOpenBotTeamApiHostname(url.hostname))
+        isOpenBotTeamApiHostname(url.hostname) ||
+        isTailscaleHostname(url.hostname))
     );
   } catch {
     return false;
@@ -1117,6 +1135,7 @@ function isStoredRemoteServer(value: unknown): value is StoredRemoteServer {
     (value.publicKey === undefined || isString(value.publicKey)) &&
     isString(value.username) &&
     isString(value.encryptedToken) &&
+    (value.encryptedPassword === undefined || isString(value.encryptedPassword)) &&
     (value.vncHostname === null || isString(value.vncHostname)) &&
     isOneOf(["owner", "admin", "member"] as const, value.role)
   );

@@ -50,6 +50,11 @@ export function isOpenBotTeamApiHostname(value: string): boolean {
   return Boolean(match && !match[1] && isValidTeamHostSlug(match[2]));
 }
 
+/** A Tailscale name of a computer (`<computer>.<network>.ts.net`): only people in the same private network can reach it. */
+export function isTailscaleHostname(value: string): boolean {
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?){1,3}\.ts\.net$/u.test(value);
+}
+
 export function isOpenBotTeamVncHostname(value: string): boolean {
   const match = TEAM_HOST_PATTERN.exec(value);
   return Boolean(match && match[1] === "vnc-" && isValidTeamHostSlug(match[2]));
