@@ -112,6 +112,7 @@ import { AcpLogin } from "./acp-login";
 import { ActionCards, CARDS_DYNAMIC_TOOLS, CARDS_INSTRUCTIONS, CARDS_NAMESPACE } from "./action-cards";
 import { AgentActivityTracker } from "./agent-activity";
 import type { AgentClient, AgentProvider } from "./agent-client";
+import { type AgentLiveStatus, liveStatusOfItem } from "./agent-live-status";
 import { type AgentPolicyPort, turnLimitReached } from "./agent-policy";
 import { AgentSettingsService, builtInTabFeatures } from "./agent-settings";
 import { AgentTemplates } from "./agent-templates";
@@ -469,6 +470,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #pendingSequence = 0;
   readonly #activity: AgentActivityTracker;
   readonly #itemTurns = new Map<string, string>();
+  /** COSGRAL: the last live status told for each agent, so the same step is told once. */
+  readonly #liveStatusKeys = new Map<string, string>();
   readonly #imageGenerationOperations = new Map<string, ImageGenerationOperation>();
   readonly #interruptedTurns = new Set<string>();
   readonly #turnAssociations = new Map<string, Promise<void>>();
@@ -3092,6 +3095,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         if (!turnId || !item) return;
         const itemId = getString(item, "id");
         if (itemId) this.#itemTurns.set(itemId, turnId);
+        if (notification.method === "item/started")
+          this.#reportLiveStatus(botId, threadId, turnId, liveStatusOfItem(item));
         // COSGRAL W5-K1: a turn that ran a command, changed a file or called a tool is no longer free to repeat.
         if (isString(item.type)) this.#accountRouter?.noteItem(turnId, item.type);
         if (item.type === "contextCompaction") {
@@ -3115,6 +3120,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         const delta = getString(params, "delta");
         if (!turnId || !itemId || delta === null) return;
         this.#itemTurns.set(itemId, turnId);
+        this.#reportLiveStatus(botId, threadId, turnId, { kind: "writing" });
         const publicThreadId = this.#publicThreadId(botId, threadId);
         const snapshot = this.#ensureSnapshot(botId, publicThreadId);
         let message = snapshot.messages.find((candidate) => candidate.id === itemId);
@@ -3248,6 +3254,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       this.#emit({ type: "bots-changed", bots: this.#store.list() });
     }
     this.#emitConversation(snapshot, "turn.completed", { turnId, status });
+    this.#liveStatusKeys.delete(botId);
     this.#emit({
       type: "turn-completed",
       botId,
@@ -3609,6 +3616,22 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       changed = true;
     }
     if (changed) this.#emitConversation(snapshot, "image-generation.interrupted", { turnId });
+  }
+
+  /** COSGRAL: tell the window what the agent does now (once per step; the window forgets it when the turn ends). */
+  #reportLiveStatus(botId: string, threadId: string, turnId: string, status: AgentLiveStatus | null): void {
+    if (!status) return;
+    const key = `${turnId}:${status.kind}:${status.detail ?? ""}`;
+    if (this.#liveStatusKeys.get(botId) === key) return;
+    this.#liveStatusKeys.set(botId, key);
+    this.#emit({
+      type: "agent-live-status",
+      botId,
+      threadId: this.#publicThreadId(botId, threadId),
+      turnId,
+      kind: status.kind,
+      ...(status.detail ? { detail: status.detail } : {}),
+    });
   }
 
   #applyItem(botId: string, threadId: string, turnId: string, item: ThreadItem, completed: boolean): void {

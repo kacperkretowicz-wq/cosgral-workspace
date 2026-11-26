@@ -37,7 +37,12 @@ type TestStreamMessage =
       parent_tool_use_id: string | null;
       session_id: string;
       uuid: string;
-      message: { content: Array<{ type: "text"; text: string }> };
+      message: {
+        content: Array<
+          | { type: "text"; text: string }
+          | { type: "tool_use"; id: string; name: string; input: { file_path?: string; command?: string } }
+        >;
+      };
     }
   | {
       type: "result";
@@ -415,6 +420,37 @@ describe("ClaudeAgentClient", () => {
     expect(notificationDeltas(notifications)).toEqual(["Visible without a refresh"]);
     expect(completedText(notifications)).toBe("Visible without a refresh");
     expect(JSON.stringify(notifications)).not.toContain("Hidden child response");
+    await client.stop();
+  });
+
+  it("announces the tool the agent starts, but not tools of hidden child work", async () => {
+    const { client, notifications, output, threadId } = await createHarness();
+    const turnId = "66666666-6666-4666-8666-666666666666";
+    await startTurn(client, threadId, turnId);
+
+    output.push({
+      type: "assistant",
+      parent_tool_use_id: null,
+      session_id: threadId,
+      uuid: "tool-message",
+      message: { content: [{ type: "tool_use", id: "tool-1", name: "Read", input: { file_path: "/a/plan.md" } }] },
+    });
+    output.push({
+      type: "assistant",
+      parent_tool_use_id: "tool-1",
+      session_id: threadId,
+      uuid: "child-tool-message",
+      message: { content: [{ type: "tool_use", id: "tool-2", name: "Bash", input: { command: "ls" } }] },
+    });
+    output.push(resultMessage(threadId, turnId, "done"));
+    await waitFor(() => notifications.some((event) => event.method === "turn/completed"));
+
+    const started = notifications.filter((event) => event.method === "item/started");
+    expect(started).toHaveLength(1);
+    expect(started[0]?.params).toMatchObject({
+      turnId,
+      item: { id: "tool-1", type: "toolUse", tool: "Read", input: { file_path: "/a/plan.md" } },
+    });
     await client.stop();
   });
 

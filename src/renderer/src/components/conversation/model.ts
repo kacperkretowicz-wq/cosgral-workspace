@@ -24,6 +24,7 @@ import type { BotMessage, BotProfile } from "../../data";
 import { t } from "../../i18n";
 import type { PendingCard } from "../../pending-cards";
 import type { AccountNotice } from "../account-usage-view";
+import type { LiveStatus } from "./live-status";
 
 /** Types, constants and small pure helpers of the conversation view, kept apart from the component. */
 
@@ -112,6 +113,8 @@ export interface ConversationProps {
   firstUnreadMessageId: string | null;
   loaded: boolean;
   activeTurnId: string | null | undefined;
+  /** What the agent does right now (a short live status); null while nothing is known. */
+  liveStatus?: LiveStatus | null;
   agentPickerOpen: boolean;
   globalOverlayOpen: boolean;
   creatingAgent: boolean;
