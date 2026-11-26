@@ -984,6 +984,7 @@ const openbotApi: OpenBotDesktopApi = {
     configure: (input) => ipcInvoke(IPC_CHANNELS.hostConfigure, input),
     configureRemoteDesktop: (input) => ipcInvoke(IPC_CHANNELS.hostConfigureRemoteDesktop, input),
     start: (input) => ipcInvoke(IPC_CHANNELS.hostStart, input),
+    configureNgrok: (input) => ipcInvoke(IPC_CHANNELS.hostConfigureNgrok, input),
     stop: () => ipcInvoke(IPC_CHANNELS.hostStop),
     listMembers: () => ipcInvoke(IPC_CHANNELS.hostListMembers),
     updateMember: (input) => ipcInvoke(IPC_CHANNELS.hostUpdateMember, input),

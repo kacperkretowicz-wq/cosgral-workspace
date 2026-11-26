@@ -215,6 +215,7 @@ import type {
 import type { TasksViewDesktopApi } from "./ipc-tasks-view";
 import type {
   ConfigureHostInput,
+  ConfigureNgrokInput,
   ConfigureRemoteDesktopInput,
   CreateTeamInviteInput,
   DirectConversationReadState,
@@ -622,6 +623,7 @@ export interface ServersDesktopApi {
 export interface HostDesktopApi {
   getStatus: () => Promise<HostStatus>;
   configure: (input: ConfigureHostInput) => Promise<HostStatus>;
+  configureNgrok: (input: ConfigureNgrokInput) => Promise<HostStatus>;
   configureRemoteDesktop: (input: ConfigureRemoteDesktopInput) => Promise<HostStatus>;
   start: (input?: StartHostInput) => Promise<HostStatus>;
   stop: () => Promise<HostStatus>;

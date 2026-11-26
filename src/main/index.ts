@@ -196,6 +196,7 @@ import {
   parseJoinServer,
   parseLoginServer,
   parseMarkDirectRead,
+  parseNgrokConfig,
   parseRemoteDesktopConfig,
   parseRemoteMacConnect,
   parseSendDirectMessage,
@@ -231,6 +232,8 @@ import { registerMessageActionsIpc } from "./message-actions-ipc";
 import { registerMessengersIpc } from "./messengers-ipc";
 import { registerMobileConnectOverviewIpc } from "./mobile-connect-overview-ipc";
 import { createMobileConnect, mobilePhoneHost, registerMobileIpc } from "./mobile-ipc";
+import { NgrokPublisher } from "./ngrok-publisher";
+import { NgrokSettingsStore } from "./ngrok-settings-store";
 import { registerPhoneIpc } from "./phone-ipc";
 import { registerPlansIpc } from "./plans-ipc";
 import { registerPluginCatalogIpc } from "./plugin-catalog-ipc";
@@ -585,6 +588,7 @@ function registerIpcHandlers(
     host.configureRemoteDesktop(parseRemoteDesktopConfig(input)),
   );
   handleTrusted(IPC_CHANNELS.hostStart, (input: unknown) => host.start(parseHostStart(input)));
+  handleTrusted(IPC_CHANNELS.hostConfigureNgrok, (input: unknown) => host.configureNgrok(parseNgrokConfig(input)));
   handleTrusted(IPC_CHANNELS.hostStop, () => host.stop());
   handleTrusted(IPC_CHANNELS.hostListMembers, () => host.listMembers());
   handleTrusted(IPC_CHANNELS.hostUpdateMember, (input: unknown) => host.updateMember(parseUpdateTeamMember(input)));
@@ -2162,6 +2166,15 @@ if (!hasSingleInstanceLock) {
         },
       );
       await remoteDesktopCredentials.initialize();
+      // COSGRAL: the authtoken and the free domain of the ngrok account of the person (stable address).
+      const ngrokSettings = new NgrokSettingsStore(join(app.getPath("userData"), "ngrok-settings.json"), {
+        encrypt: (value) => {
+          if (!safeStorage.isEncryptionAvailable()) throw new Error("Bezpieczny schowek systemu jest niedostępny.");
+          return safeStorage.encryptString(value);
+        },
+        decrypt: (value) => safeStorage.decryptString(value),
+      });
+      await ngrokSettings.initialize();
       // COSGRAL: a free public mailbox (ntfy) passes the new random address of the host to the people who joined.
       // Set COSGRAL_ADDRESS_RELAY=off to switch it off, or to another https address to use your own.
       const addressRelay = resolveAddressRelay(process.env.COSGRAL_ADDRESS_RELAY);
@@ -2192,6 +2205,15 @@ if (!hasSingleInstanceLock) {
           ? {}
           : {
               ...(addressRelay ? { addressBeacon: new AddressBeacon({ relayUrl: addressRelay }) } : {}),
+              ngrok: new NgrokPublisher({
+                binDirectory: join(app.getPath("userData"), "bin"),
+                logDirectory: join(app.getPath("userData"), "logs", "remote"),
+                getSettings: () => ngrokSettings.get(),
+              }),
+              ngrokSettings: {
+                get: () => ngrokSettings.get(),
+                set: (input) => ngrokSettings.set(input),
+              },
               quickTunnel: new QuickTunnelPublisher({
                 binDirectory: join(app.getPath("userData"), "bin"),
                 logDirectory: join(app.getPath("userData"), "logs", "remote"),

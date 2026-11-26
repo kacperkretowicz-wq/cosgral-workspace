@@ -479,6 +479,7 @@ export const IPC_CHANNELS = {
   hostConfigure: "host:configure",
   hostConfigureRemoteDesktop: "host:configure-remote-desktop",
   hostStart: "host:start",
+  hostConfigureNgrok: "host:configure-ngrok",
   hostStop: "host:stop",
   hostListMembers: "host:list-members",
   hostCreateInvite: "host:create-invite",

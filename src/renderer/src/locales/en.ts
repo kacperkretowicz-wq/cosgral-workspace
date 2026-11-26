@@ -1116,6 +1116,22 @@ export const en = {
   "Update the address": "Update the address",
   "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.":
     "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.",
+  "How to share": "How to share",
+  "Free tunnel, no account (the address is random)": "Free tunnel, no account (the address is random)",
+  "Stable address (free ngrok account)": "Stable address (free ngrok account)",
+  "Create a free account at ngrok.com.": "Create a free account at ngrok.com.",
+  "In ngrok open Your Authtoken and copy the token.": "In ngrok open Your Authtoken and copy the token.",
+  "In ngrok open Domains and copy your free domain, for example name.ngrok-free.app.":
+    "In ngrok open Domains and copy your free domain, for example name.ngrok-free.app.",
+  "Paste both below and press Save. You do it once.": "Paste both below and press Save. You do it once.",
+  "ngrok token": "ngrok token",
+  "ngrok domain": "ngrok domain",
+  "Saved. Paste a new one to change it.": "Saved. Paste a new one to change it.",
+  "Saved: {domain}": "Saved: {domain}",
+  "Tailscale (both people already use it)": "Tailscale (both people already use it)",
+  "The address is stable and only invited people can sign in.":
+    "The address is stable and only invited people can sign in.",
+  "name.ngrok-free.app": "name.ngrok-free.app",
   "Create the server and turn on sharing": "Create the server and turn on sharing",
   Working: "Working",
   "Waiting for you": "Waiting for you",

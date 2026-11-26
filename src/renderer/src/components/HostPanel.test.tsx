@@ -38,6 +38,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -81,6 +82,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -130,6 +132,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -221,6 +224,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -280,6 +284,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -329,6 +334,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -374,6 +380,7 @@ describe("HostPanel", () => {
         onRevokeSession={vi.fn()}
         onRevokeInvite={vi.fn()}
         onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={vi.fn()}
       />
     ));
 
@@ -385,8 +392,64 @@ describe("HostPanel", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Turn on sharing" }));
     await waitFor(() => expect(onStart).toHaveBeenCalledWith({ transport: "quick-tunnel" }));
 
-    await fireEvent.click(screen.getByLabelText("Use Tailscale instead of the free Cloudflare tunnel"));
+    await fireEvent.click(screen.getByLabelText("Tailscale (both people already use it)"));
     await fireEvent.click(screen.getByRole("button", { name: "Turn on sharing" }));
     await waitFor(() => expect(onStart).toHaveBeenLastCalledWith({ transport: "tailscale" }));
+  });
+
+  it("takes the token and the domain from a free ngrok account for a stable address, and waits for them before it starts", async () => {
+    const onStart = vi.fn().mockResolvedValue(undefined);
+    const onConfigureNgrok = vi.fn().mockResolvedValue(undefined);
+    render(() => (
+      <HostPanel
+        platform="win32"
+        accountEmail="owner@cosgral.local"
+        status={{
+          transport: "quick-tunnel",
+          ngrok: { configured: false, domain: null },
+          phase: "idle",
+          configured: true,
+          enabledOnLaunch: false,
+          serverId: "server-1",
+          serverName: "Nasza przestrzeń",
+          apiUrl: null,
+          vncHostname: null,
+          apiOnline: false,
+          vncOnline: false,
+          remoteDesktopCredentialConfigured: false,
+          message: null,
+        }}
+        members={[]}
+        invites={[]}
+        sessions={[]}
+        presence={{ serverId: "server-1", members: [], updatedAt: "" }}
+        onClose={vi.fn()}
+        onConfigure={vi.fn()}
+        onConfigureRemoteDesktop={vi.fn()}
+        onStart={onStart}
+        onStop={vi.fn()}
+        onCreateInvite={vi.fn()}
+        onUpdateMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onRevokeSession={vi.fn()}
+        onRevokeInvite={vi.fn()}
+        onCopyAddressUpdate={vi.fn()}
+        onConfigureNgrok={onConfigureNgrok}
+      />
+    ));
+
+    await fireEvent.click(screen.getByLabelText("Stable address (free ngrok account)"));
+    expect(screen.getByText("Create a free account at ngrok.com.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Turn on sharing" })).toBeDisabled();
+
+    await fireEvent.input(screen.getByLabelText("ngrok token"), { target: { value: "  token-z-ngrok-1234567890  " } });
+    await fireEvent.input(screen.getByLabelText("ngrok domain"), { target: { value: "nazwa-test.ngrok-free.app" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(onConfigureNgrok).toHaveBeenCalledWith({
+        authtoken: "token-z-ngrok-1234567890",
+        domain: "nazwa-test.ngrok-free.app",
+      }),
+    );
   });
 });

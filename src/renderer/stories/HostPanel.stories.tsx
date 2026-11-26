@@ -29,6 +29,7 @@ const args: Parameters<typeof HostPanel>[0] = {
   onRevokeSession: async () => undefined,
   onRevokeInvite: async () => undefined,
   onCopyAddressUpdate: async () => undefined,
+  onConfigureNgrok: async () => undefined,
 };
 
 const meta = {

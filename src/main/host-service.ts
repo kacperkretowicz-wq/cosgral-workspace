@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import type {
   CentralAuthUser,
   ConfigureHostInput,
+  ConfigureNgrokInput,
   ConfigureRemoteDesktopInput,
   ConversationReadState,
   ConversationWithReadState,
@@ -34,6 +35,7 @@ import type { BrowserHost } from "../backend/browser-host";
 import type { MailboxStore } from "../backend/mailbox-store";
 import type { TeamChatStore } from "../backend/team-chat-store";
 import type { ProvisionedTeamTunnel } from "./central-auth-manager";
+import { NGROK_MESSAGES } from "./ngrok-publisher";
 import { QUICK_TUNNEL_MESSAGES } from "./quick-tunnel-publisher";
 import { appendDiagnosticLog, probeRfbHandshake, resolveCloudflaredExecutable, stopOwnedProcess } from "./remote-mac";
 import { TAILSCALE_MESSAGES } from "./tailscale-publisher";
@@ -72,6 +74,12 @@ interface HostServiceOptions {
   quickTunnel?: SharePublisher;
   /** ...or, as the advanced choice, through the private Tailscale network. */
   tailscale?: SharePublisher;
+  /** ...or at the stable address of a free ngrok account. */
+  ngrok?: SharePublisher;
+  ngrokSettings?: {
+    get: () => { domain: string } | null;
+    set: (input: ConfigureNgrokInput) => Promise<void>;
+  };
   /** COSGRAL: tells the people who already joined the new random address of the quick tunnel. */
   addressBeacon?: { publish: (serverId: string, fingerprint: string, updateUrl: string) => Promise<void> };
   /** How often the address is announced again while sharing is on. Default: every 30 minutes. */
@@ -92,8 +100,9 @@ export interface SharePublisher {
   setListeners?: (listeners: { closed?: () => void; progress?: (message: string) => void }) => void;
 }
 
-const SHARE_READY_MESSAGES: Record<"quick-tunnel" | "tailscale", string> = {
+const SHARE_READY_MESSAGES: Record<HostShareChoice, string> = {
   "quick-tunnel": QUICK_TUNNEL_MESSAGES.ready,
+  ngrok: NGROK_MESSAGES.ready,
   tailscale: TAILSCALE_MESSAGES.ready,
 };
 
@@ -129,6 +138,7 @@ export class HostService extends EventEmitter<HostEvents> {
       enabledOnLaunch: identity?.enabledOnLaunch ?? false,
       serverId: identity?.serverId ?? null,
       serverName: identity?.serverName ?? null,
+      ...(options.ngrokSettings ? { ngrok: this.#ngrokStatus() } : {}),
       apiUrl: null,
       vncHostname: null,
       apiOnline: false,
@@ -136,7 +146,7 @@ export class HostService extends EventEmitter<HostEvents> {
       remoteDesktopCredentialConfigured: options.getRemoteDesktopPassword() !== null,
       message: null,
     };
-    for (const publisher of [options.quickTunnel, options.tailscale]) {
+    for (const publisher of [options.quickTunnel, options.ngrok, options.tailscale]) {
       publisher?.setListeners?.({
         closed: () => this.#handleShareClosed(),
         progress: (message) => {
@@ -205,6 +215,15 @@ export class HostService extends EventEmitter<HostEvents> {
         message: error instanceof Error ? error.message : "Could not reserve the public address.",
       });
     }
+    return this.getStatus();
+  }
+
+  /** Saves the authtoken and the free domain from the ngrok account of the person (the stable address). */
+  async configureNgrok(input: ConfigureNgrokInput): Promise<HostStatus> {
+    const settings = this.#options.ngrokSettings;
+    if (!settings) throw new Error("The stable address is not available here.");
+    await settings.set(input);
+    this.#setStatus({ ngrok: this.#ngrokStatus() });
     return this.getStatus();
   }
 
@@ -304,19 +323,25 @@ export class HostService extends EventEmitter<HostEvents> {
    */
   async #startWithPublisher(publisher: SharePublisher): Promise<HostStatus> {
     const transport = this.#shareTransport();
+    if (transport === "cloudflare") return this.getStatus();
     const quick = transport === "quick-tunnel";
     this.#setStatus({
       transport,
       phase: "starting",
-      message: quick ? "Włączam udostępnienie…" : "Włączam udostępnienie przez Tailscale…",
+      message:
+        transport === "tailscale"
+          ? "Włączam udostępnienie przez Tailscale…"
+          : transport === "ngrok"
+            ? "Włączam udostępnienie pod stałym adresem…"
+            : "Włączam udostępnienie…",
     });
     try {
       const apiPort = await this.#api.start();
       const apiUrl = await publisher.publish(apiPort);
-      if (quick) {
+      if (transport !== "tailscale") {
         this.#setStatus({ message: "Sprawdzam, czy adres jest już widoczny z internetu…" });
         if (!(await waitForPublicApi(apiUrl, this.#options.publicReadyTimeoutMs))) {
-          throw new Error(QUICK_TUNNEL_MESSAGES.notReachable);
+          throw new Error(quick ? QUICK_TUNNEL_MESSAGES.notReachable : NGROK_MESSAGES.notReachable);
         }
       }
       this.#setStatus({
@@ -324,7 +349,7 @@ export class HostService extends EventEmitter<HostEvents> {
         vncHostname: null,
         apiOnline: true,
         vncOnline: false,
-        message: SHARE_READY_MESSAGES[quick ? "quick-tunnel" : "tailscale"],
+        message: SHARE_READY_MESSAGES[transport],
       });
       await this.#options.store.setEnabledOnLaunch(true);
       this.#setStatus({ phase: "online", enabledOnLaunch: true });
@@ -375,21 +400,28 @@ export class HostService extends EventEmitter<HostEvents> {
       vncOnline: false,
       apiUrl: null,
       vncHostname: null,
-      message: QUICK_TUNNEL_MESSAGES.stopped,
+      message: this.#shareTransport() === "ngrok" ? NGROK_MESSAGES.stopped : QUICK_TUNNEL_MESSAGES.stopped,
     });
   }
 
   #publisherFor(choice: HostShareChoice): SharePublisher | undefined {
-    return choice === "tailscale" ? this.#options.tailscale : this.#options.quickTunnel;
+    if (choice === "tailscale") return this.#options.tailscale;
+    if (choice === "ngrok") return this.#options.ngrok;
+    return this.#options.quickTunnel;
+  }
+
+  #ngrokStatus(): { configured: boolean; domain: string | null } {
+    const saved = this.#options.ngrokSettings?.get() ?? null;
+    return { configured: saved !== null, domain: saved?.domain ?? null };
   }
 
   /** What the server is shown through: the saved choice, else the quick tunnel; "cloudflare" with an account service. */
   #shareTransport(): HostTransport {
-    const { quickTunnel, tailscale } = this.#options;
-    if (!quickTunnel && !tailscale) return "cloudflare";
+    const { quickTunnel, tailscale, ngrok } = this.#options;
+    if (!quickTunnel && !tailscale && !ngrok) return "cloudflare";
     const saved = this.#options.store.getShareChoice();
     if (saved && this.#publisherFor(saved)) return saved;
-    return quickTunnel ? "quick-tunnel" : "tailscale";
+    return quickTunnel ? "quick-tunnel" : tailscale ? "tailscale" : "ngrok";
   }
 
   #sharePublisher(): SharePublisher | undefined {
@@ -571,6 +603,7 @@ export class HostService extends EventEmitter<HostEvents> {
     this.#tunnel = null;
     if (tunnel) await stopOwnedProcess(tunnel);
     await this.#options.quickTunnel?.unpublish();
+    await this.#options.ngrok?.unpublish();
     await this.#options.tailscale?.unpublish();
     await this.#api.stop();
   }

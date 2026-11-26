@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   ConfigureHostInput,
+  ConfigureNgrokInput,
   ConfigureRemoteDesktopInput,
   CreateTeamInviteInput,
   DirectTypingInput,
@@ -27,11 +28,19 @@ export function parseHostConfig(value: unknown): ConfigureHostInput {
   };
 }
 
+export function parseNgrokConfig(value: unknown): ConfigureNgrokInput {
+  if (!isObject(value)) throw new Error("Dane z konta ngrok są wymagane.");
+  return {
+    authtoken: requireString(value.authtoken, "authtoken", 300),
+    domain: requireString(value.domain, "domain", 253),
+  };
+}
+
 export function parseHostStart(value: unknown): StartHostInput {
   if (value === undefined || value === null) return {};
   if (!isObject(value)) throw new Error("Host start options are invalid.");
   if (value.transport === undefined) return {};
-  if (value.transport !== "quick-tunnel" && value.transport !== "tailscale") {
+  if (value.transport !== "quick-tunnel" && value.transport !== "ngrok" && value.transport !== "tailscale") {
     throw new Error("Unknown way of sharing.");
   }
   return { transport: value.transport };

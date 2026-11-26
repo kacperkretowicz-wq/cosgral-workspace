@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isNgrokHostname,
   isOpenBotTeamApiHostname,
   isOpenBotTeamVncHostname,
   isUuidV4,
@@ -50,5 +51,15 @@ describe("shared boundary validation", () => {
     expect(slugifyTeamServerName(" Studio Mac ")).toBe("studio-mac");
     expect(slugifyTeamServerName("Crème & Brûlée")).toBe("creme-brulee");
     expect(slugifyTeamServerName("a".repeat(64))).toHaveLength(44);
+  });
+
+  it("accepts the free static addresses of ngrok and nothing else", () => {
+    expect(isNgrokHostname("nazwa-test.ngrok-free.app")).toBe(true);
+    expect(isNgrokHostname("nazwa-test.ngrok-free.dev")).toBe(true);
+    expect(isNgrokHostname("nazwa.ngrok.app")).toBe(true);
+    expect(isNgrokHostname("ngrok-free.app")).toBe(false);
+    expect(isNgrokHostname("nazwa.ngrok-free.app.evil.com")).toBe(false);
+    expect(isNgrokHostname("evilngrok-free.app")).toBe(false);
+    expect(isNgrokHostname("nazwa.example.com")).toBe(false);
   });
 });

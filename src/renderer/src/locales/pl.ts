@@ -1120,6 +1120,22 @@ export const pl = {
   "Update the address": "Zaktualizuj adres",
   "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.":
     "Wklej jednorazowy link zaproszenia i wybierz nazwę oraz hasło, którymi będziesz wchodzić na ten serwer. Jeśli w linku jest adres Tailscale, Tailscale musi być włączony i zalogowany do tej samej sieci co gospodarz.",
+  "How to share": "Jak udostępnić",
+  "Free tunnel, no account (the address is random)": "Darmowy tunel, bez konta (adres jest losowy)",
+  "Stable address (free ngrok account)": "Stały adres (darmowe konto ngrok)",
+  "Create a free account at ngrok.com.": "Załóż darmowe konto na ngrok.com.",
+  "In ngrok open Your Authtoken and copy the token.": "W ngrok otwórz „Your Authtoken” i skopiuj token.",
+  "In ngrok open Domains and copy your free domain, for example name.ngrok-free.app.":
+    "W ngrok otwórz „Domains” i skopiuj swoją darmową domenę, na przykład nazwa.ngrok-free.app.",
+  "Paste both below and press Save. You do it once.": "Wklej obie rzeczy poniżej i kliknij „Zapisz”. Robisz to raz.",
+  "ngrok token": "Token ngrok",
+  "ngrok domain": "Domena ngrok",
+  "Saved. Paste a new one to change it.": "Zapisany. Wklej nowy, żeby go zmienić.",
+  "Saved: {domain}": "Zapisano: {domain}",
+  "Tailscale (both people already use it)": "Tailscale (obie osoby już go używają)",
+  "The address is stable and only invited people can sign in.":
+    "Adres jest stały, a wejść mogą tylko zaproszone osoby.",
+  "name.ngrok-free.app": "nazwa.ngrok-free.app",
   "Create the server and turn on sharing": "Utwórz serwer i włącz udostępnianie",
   Working: "Pracuje",
   "Waiting for you": "Czeka na Ciebie",

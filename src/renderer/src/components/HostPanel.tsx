@@ -1,6 +1,8 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   AppInfo,
+  ConfigureNgrokInput,
+  HostShareChoice,
   HostStatus,
   InviteSummary,
   StartHostInput,
@@ -38,6 +40,7 @@ interface HostPanelProps {
   onConfigure: (input: { serverName: string }) => Promise<void>;
   onConfigureRemoteDesktop: (password: string) => Promise<void>;
   onStart: (input?: StartHostInput) => Promise<void>;
+  onConfigureNgrok: (input: ConfigureNgrokInput) => Promise<void>;
   onStop: () => Promise<void>;
   onCreateInvite: (input: { role: Exclude<TeamRole, "owner">; email?: string }) => Promise<InviteSummary>;
   onUpdateMember: (input: UpdateTeamMemberInput) => Promise<void>;
@@ -67,8 +70,18 @@ export function HostPanel(props: HostPanelProps) {
   // COSGRAL: without an account service the server is shown through a free quick tunnel or through Tailscale.
   const tailscale = createMemo(() => props.status.transport === "tailscale");
   const quickTunnel = createMemo(() => props.status.transport === "quick-tunnel");
-  const shared = createMemo(() => tailscale() || quickTunnel());
-  const [useTailscale, setUseTailscale] = createSignal(untrack(() => props.status.transport === "tailscale"));
+  const ngrok = createMemo(() => props.status.transport === "ngrok");
+  const shared = createMemo(() => tailscale() || quickTunnel() || ngrok());
+  const [choice, setChoice] = createSignal<HostShareChoice>(
+    untrack(() =>
+      props.status.transport === "tailscale" || props.status.transport === "ngrok"
+        ? props.status.transport
+        : "quick-tunnel",
+    ),
+  );
+  const [ngrokToken, setNgrokToken] = createSignal("");
+  const [ngrokDomain, setNgrokDomain] = createSignal(untrack(() => props.status.ngrok?.domain ?? ""));
+  const ngrokReady = () => props.status.ngrok?.configured === true;
   let inviteExpiryTimer: ReturnType<typeof setTimeout> | undefined;
 
   createEffect(
@@ -219,7 +232,7 @@ export function HostPanel(props: HostPanelProps) {
                               ? t(
                                   "Control who can reach this COSGRAL Workspace through your private Tailscale network.",
                                 )
-                              : quickTunnel()
+                              : quickTunnel() || ngrok()
                                 ? t(
                                     "Turn on sharing, create an invitation link and send it to the other person. They need nothing else.",
                                   )
@@ -246,7 +259,7 @@ export function HostPanel(props: HostPanelProps) {
                           label={
                             tailscale()
                               ? t("Address in Tailscale")
-                              : quickTunnel()
+                              : quickTunnel() || ngrok()
                                 ? t("Sharing address")
                                 : t("Public API")
                           }
@@ -274,9 +287,11 @@ export function HostPanel(props: HostPanelProps) {
                             {props.status.message ??
                               (tailscale()
                                 ? t("Only invited people who are in your Tailscale network can sign in.")
-                                : quickTunnel()
-                                  ? t("The address is random and only invited people can sign in.")
-                                  : t("The address is public, but only invited people can sign in."))}
+                                : ngrok()
+                                  ? t("The address is stable and only invited people can sign in.")
+                                  : quickTunnel()
+                                    ? t("The address is random and only invited people can sign in.")
+                                    : t("The address is public, but only invited people can sign in."))}
                           </p>
                           <Show when={quickTunnel() && online()}>
                             <p class="remote-inline-note">
@@ -293,15 +308,11 @@ export function HostPanel(props: HostPanelProps) {
                               <Button
                                 type="button"
                                 class="remote-primary-button"
-                                disabled={busy() || props.status.phase === "starting"}
+                                disabled={
+                                  busy() || props.status.phase === "starting" || (choice() === "ngrok" && !ngrokReady())
+                                }
                                 onClick={() =>
-                                  void run(() =>
-                                    props.onStart(
-                                      shared()
-                                        ? { transport: useTailscale() ? "tailscale" : "quick-tunnel" }
-                                        : undefined,
-                                    ),
-                                  )
+                                  void run(() => props.onStart(shared() ? { transport: choice() } : undefined))
                                 }
                               >
                                 {props.status.phase === "starting"
@@ -323,7 +334,7 @@ export function HostPanel(props: HostPanelProps) {
                               {shared() ? t("Turn off sharing") : t("Make private")}
                             </Button>
                           </Show>
-                          <Show when={!tailscale()}>
+                          <Show when={!tailscale() && !ngrok()}>
                             <Button
                               type="button"
                               class="remote-secondary-button"
@@ -335,23 +346,92 @@ export function HostPanel(props: HostPanelProps) {
                           </Show>
                         </div>
                         <Show when={shared() && !online()}>
-                          <details class="remote-advanced">
-                            <summary>{t("Advanced")}</summary>
+                          <fieldset class="remote-share-choice" disabled={busy() || props.status.phase === "starting"}>
+                            <legend>{t("How to share")}</legend>
                             <label class="remote-advanced-option">
                               <input
-                                type="checkbox"
-                                checked={useTailscale()}
-                                disabled={busy() || props.status.phase === "starting"}
-                                onChange={(event) => setUseTailscale(event.currentTarget.checked)}
+                                type="radio"
+                                name="share-choice"
+                                checked={choice() === "quick-tunnel"}
+                                onChange={() => setChoice("quick-tunnel")}
                               />
-                              <span>{t("Use Tailscale instead of the free Cloudflare tunnel")}</span>
+                              <span>{t("Free tunnel, no account (the address is random)")}</span>
                             </label>
-                            <small>
-                              {t(
-                                "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.",
-                              )}
-                            </small>
-                          </details>
+                            <label class="remote-advanced-option">
+                              <input
+                                type="radio"
+                                name="share-choice"
+                                checked={choice() === "ngrok"}
+                                onChange={() => setChoice("ngrok")}
+                              />
+                              <span>{t("Stable address (free ngrok account)")}</span>
+                            </label>
+                            <Show when={choice() === "ngrok"}>
+                              <div class="remote-ngrok-setup">
+                                <ol>
+                                  <li>{t("Create a free account at ngrok.com.")}</li>
+                                  <li>{t("In ngrok open Your Authtoken and copy the token.")}</li>
+                                  <li>
+                                    {t(
+                                      "In ngrok open Domains and copy your free domain, for example name.ngrok-free.app.",
+                                    )}
+                                  </li>
+                                  <li>{t("Paste both below and press Save. You do it once.")}</li>
+                                </ol>
+                                <label class="remote-field">
+                                  <span>{t("ngrok token")}</span>
+                                  <Input
+                                    type="password"
+                                    autocomplete="off"
+                                    value={ngrokToken()}
+                                    placeholder={ngrokReady() ? t("Saved. Paste a new one to change it.") : ""}
+                                    maxlength={300}
+                                    onInput={(event) => setNgrokToken(event.currentTarget.value)}
+                                  />
+                                </label>
+                                <label class="remote-field">
+                                  <span>{t("ngrok domain")}</span>
+                                  <Input
+                                    value={ngrokDomain()}
+                                    placeholder={t("name.ngrok-free.app")}
+                                    maxlength={253}
+                                    onInput={(event) => setNgrokDomain(event.currentTarget.value)}
+                                  />
+                                </label>
+                                <Button
+                                  type="button"
+                                  class="remote-secondary-button"
+                                  disabled={busy() || !ngrokToken().trim() || !ngrokDomain().trim()}
+                                  onClick={() =>
+                                    void run(async () => {
+                                      await props.onConfigureNgrok({
+                                        authtoken: ngrokToken().trim(),
+                                        domain: ngrokDomain().trim(),
+                                      });
+                                      setNgrokToken("");
+                                    })
+                                  }
+                                >
+                                  {t("Save")}
+                                </Button>
+                                <Show when={ngrokReady()}>
+                                  <small>{t("Saved: {domain}", { domain: props.status.ngrok?.domain ?? "" })}</small>
+                                </Show>
+                              </div>
+                            </Show>
+                            <details class="remote-advanced">
+                              <summary>{t("Advanced")}</summary>
+                              <label class="remote-advanced-option">
+                                <input
+                                  type="radio"
+                                  name="share-choice"
+                                  checked={choice() === "tailscale"}
+                                  onChange={() => setChoice("tailscale")}
+                                />
+                                <span>{t("Tailscale (both people already use it)")}</span>
+                              </label>
+                            </details>
+                          </fieldset>
                         </Show>
                       </section>
                     </section>

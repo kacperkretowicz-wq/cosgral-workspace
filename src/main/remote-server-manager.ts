@@ -49,7 +49,12 @@ import {
   isOneOf,
   isString,
 } from "@openbot/contracts/runtime-values";
-import { isOpenBotTeamApiHostname, isOpenBotTeamVncHostname, isTailscaleHostname } from "@openbot/contracts/validation";
+import {
+  isNgrokHostname,
+  isOpenBotTeamApiHostname,
+  isOpenBotTeamVncHostname,
+  isTailscaleHostname,
+} from "@openbot/contracts/validation";
 import { addressUpdatePayload, fingerprint } from "./team-store";
 
 interface StoredRemoteServer {
@@ -744,6 +749,7 @@ export function isValidRemoteApiUrl(value: string): boolean {
       url.hash === "" &&
       (/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.trycloudflare\.com$/.test(url.hostname) ||
         isOpenBotTeamApiHostname(url.hostname) ||
+        isNgrokHostname(url.hostname) ||
         isTailscaleHostname(url.hostname))
     );
   } catch {
@@ -845,6 +851,8 @@ async function requestJson<T>(
       Accept: "application/json",
       ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      // The free ngrok plan puts a warning page in front of pages opened by a browser; this is not a browser.
+      ...(isNgrokUrl(apiUrl) ? { "ngrok-skip-browser-warning": "1" } : {}),
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
@@ -1243,6 +1251,14 @@ function isStoredRemoteServer(value: unknown): value is StoredRemoteServer {
     (value.vncHostname === null || isString(value.vncHostname)) &&
     isOneOf(["owner", "admin", "member"] as const, value.role)
   );
+}
+
+function isNgrokUrl(value: string): boolean {
+  try {
+    return isNgrokHostname(new URL(value).hostname);
+  } catch {
+    return false;
+  }
 }
 
 function remoteFetch(input: string | URL, init: RequestInit = {}): Promise<Response> {

@@ -92,9 +92,30 @@ Program używa **darmowego tunelu Cloudflare „na szybko” (quick tunnel)**. N
 - Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Sekcja „Strony” dalej jest wyłączona.
 - **Nie sprawdziłem tego na prawdziwym Cloudflare ani ntfy.sh ani na dwóch komputerach**: moje środowisko nie ma dostępu do tych usług. Cały przebieg (uruchomienie, zaproszenie, dołączenie, restart z nowym adresem, samodzielne odnalezienie adresu) przetestowałem na atrapach. Pierwszy prawdziwy test robicie Wy.
 
-**Zaawansowane (dla kogoś, kto już ma Tailscale):** w panelu „Publikowanie”, przed włączeniem, jest „Zaawansowane” z opcją „Użyj Tailscale zamiast darmowego tunelu Cloudflare”. Adres jest wtedy stały (`<komputer>.<sieć>.ts.net`), ale obie osoby muszą mieć Tailscale w tej samej sieci.
+### Stały adres za darmo: darmowe konto ngrok (zalecane, jeśli chcesz adres, który się nie zmienia)
 
-**Jeśli kiedyś będziesz chciał prawdziwie stały adres jak w OpenBocie (nic z tego nie zrobiłem, bo wymaga konta albo pieniędzy):** darmowe konto Cloudflare plus własna domena (około 40–60 zł rocznie) i nazwany tunel; albo darmowy Worker na Twoim koncie Cloudflare jako własny rejestr nazw. W obu przypadkach potrzebne jest Twoje konto Cloudflare.
+Każde darmowe konto ngrok dostaje **jedną stałą domenę** w stylu `nazwa-losowa.ngrok-free.app`. COSGRAL potrafi się pod nią udostępniać, więc adres nigdy się nie zmienia i nikt nie musi go szukać. To najprostsza darmowa droga ze stałym adresem. Musisz założyć konto sam (to jedyna rzecz, której nie mogę zrobić za Ciebie):
+
+1. Wejdź na **ngrok.com** i załóż darmowe konto (e-mail albo logowanie przez Google/GitHub).
+2. W panelu ngrok otwórz **„Your Authtoken”** i skopiuj token.
+3. W panelu ngrok otwórz **„Domains”** i skopiuj swoją darmową domenę (jeśli jej nie ma, kliknij przycisk tworzenia darmowej domeny).
+4. W COSGRAL: „Publikowanie” > **„Jak udostępnić” > „Stały adres (darmowe konto ngrok)”**, wklej token i domenę, kliknij **„Zapisz”**, potem **„Włącz udostępnianie”**.
+
+Dalej wszystko jak zwykle: „Ludzie” > link zaproszenia > wyślij Kubie raz. Token jest zapisany na Twoim komputerze w postaci zaszyfrowanej. Za pierwszym razem program sam pobiera mały program ngrok (z oficjalnego adresu ngrok).
+
+**Uczciwie o ograniczeniach:**
+
+- Darmowy plan ngrok ma **limity** (miesięczny transfer i liczba zapytań). Nie mogłem ich sprawdzić na żywo, aktualne wartości są na ngrok.com/pricing. Gdy limit się skończy, adres przestaje działać do następnego miesiąca. Wtedy wystarczy wybrać „Darmowy tunel” (adres losowy, odnajdywany automatycznie).
+- Na darmowym planie ngrok pokazuje stronę ostrzeżenia, gdy ktoś otwiera adres w przeglądarce. Program COSGRAL to omija, więc Kuby to nie dotyczy.
+- Gospodarz musi mieć włączony komputer i program.
+- **Nie sprawdziłem tego na prawdziwym koncie ngrok** (moje środowisko nie ma do niego dostępu). Pobieranie programu, uruchomienie, komunikaty o błędach i cały przebieg zaproszenia sprawdziłem w testach na atrapie. Pierwszy prawdziwy test robisz Ty; jeśli coś nie działa, program podpowiada po polsku (zły token, zła domena, domena zajęta).
+
+### Pozostałe sposoby
+
+- **Darmowy tunel Cloudflare** (domyślny, bez konta): adres losowy, osoby które dołączyły odnajdują go same (opis wyżej).
+- **Tailscale** (w „Zaawansowane”, dla kogoś, kto już go używa): adres stały (`<komputer>.<sieć>.ts.net`), ale obie osoby muszą mieć Tailscale w tej samej sieci.
+
+Sprawdziłem też inne darmowe drogi: własny przekaźnik na Cloudflare Workers (darmowa subdomena workers.dev) wymaga konta Cloudflare, tokenu i wdrożenia z mojej strony bez możliwości przetestowania, a połączenie bezpośrednie WebRTC zawodzi przy części domowych sieci bez płatnego serwera pośredniczącego. Dlatego ngrok jest najprostszy.
 
 ## Marketplace: skąd miałby pochodzić katalog dodatkowych pluginów
 
