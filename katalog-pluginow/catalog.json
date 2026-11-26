@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "2026-11-26",
+  "plugins": [
+    {
+      "slug": "dokumentacja-bibliotek",
+      "version": "1.0",
+      "featured": false,
+      "detailSha256": "9d0569aea224dbf2200a3d7afce518f3a26763f2ece76165f41e1a489cd1ed06"
+    },
+    {
+      "slug": "myslenie-krok-po-kroku",
+      "version": "1.0",
+      "featured": false,
+      "detailSha256": "1fb735c89af5299be00ff6441b11335f0b14b69f540cd256fde1232c5452d7ab"
+    },
+    {
+      "slug": "pamiec-agenta",
+      "version": "1.0",
+      "featured": true,
+      "detailSha256": "ea99ed021b4306ba3aaa69f0fb2cae45a1dcc1752bfe86013e161c284d07f0e1"
+    }
+  ]
+}

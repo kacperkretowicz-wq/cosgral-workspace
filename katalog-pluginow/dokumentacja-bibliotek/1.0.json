@@ -1,0 +1,41 @@
+{
+  "slug": "dokumentacja-bibliotek",
+  "version": "1.0",
+  "name": "Dokumentacja bibliotek",
+  "tagline": "Agent czyta aktualną dokumentację bibliotek programistycznych zamiast zgadywać.",
+  "description": "Agent pobiera świeże fragmenty dokumentacji wybranej biblioteki, więc pisze kod zgodny z jej obecną wersją. Zapytania o nazwy bibliotek idą do usługi Context7 w internecie. Wymaga zainstalowanego programu Node.js.",
+  "category": "coding",
+  "creatorName": "Upstash",
+  "featured": false,
+  "prompts": [
+    {
+      "id": "p1",
+      "text": "Sprawdź w dokumentacji, jak w Reakcie używa się useEffect."
+    }
+  ],
+  "apps": [
+    {
+      "id": "docs",
+      "name": "Context7",
+      "description": "Pobiera aktualną dokumentację bibliotek.",
+      "server": {
+        "transport": "stdio",
+        "command": "npx",
+        "args": ["-y", "@upstash/context7-mcp"],
+        "auth": [
+          {
+            "id": "lokalnie",
+            "kind": "local",
+            "label": "Bez logowania",
+            "fields": [],
+            "steps": [
+              "Zainstaluj program Node.js, jeśli go jeszcze nie masz.",
+              "Kliknij Zainstaluj. Nic więcej nie trzeba."
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "websiteUrl": "https://github.com/upstash/context7"
+}
