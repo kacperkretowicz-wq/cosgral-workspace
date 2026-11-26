@@ -56,36 +56,45 @@ Dlaczego A: daje dokładnie to, o co prosisz (te same boty, wejście z dowolnego
 
 Zanim Kuba zacznie używać botów: sprawdź w warunkach planu, czy wolno Wam dzielić jedno konto z modelem. Jeśli nie, zrobimy wspólną przestrzeń na osobnym kluczu API.
 
-## Jak to włączyć (zmiana 26.11: bez Tailscale)
+## Jak to robi OpenBot (sprawdzone w kodzie: `apps/auth-api` w tym repozytorium)
 
-Kacper zauważył, że OpenBot nie wymaga żadnego dodatkowego programu. Ma rację: OpenBot łączy komputer gospodarza z internetem przez tunel Cloudflare, który stawia ich własna usługa (adresy `openbot.run`). Gość dostaje zwykły link. My nie mamy tej usługi, więc program używa **darmowego tunelu Cloudflare „na szybko” (quick tunnel)**. Nie trzeba konta, nie trzeba nic instalować, nie trzeba ustawiać routera: komputer sam „dzwoni” do Cloudflare.
+Kod ich usługi jest w tym repozytorium (licencja Apache 2.0), więc to nie domysły.
 
-**Gospodarz (komputer, na którym stoją boty, na przykład Twój):**
+- **Usługa pośrednicząca to jedna aplikacja na Cloudflare Workers z bazą D1.** Przechowuje konta (logowanie kodem z maila) i „rezerwacje” serwerów.
+- **Stała nazwa:** gospodarz prosi usługę o adres. Usługa przez API Cloudflare (ich token, ich konto, ich strefa DNS) tworzy **tunel z nazwą** i wpis DNS `<nazwa>-<losowe osiem znaków>-host.openbot.run`. Nazwa jest zapisana w ich bazie, więc po każdym restarcie gospodarz dostaje ten sam adres. Gospodarz dostaje token i uruchamia `cloudflared tunnel run`; tunel łączy się wychodząco, więc nic nie trzeba otwierać w routerze.
+- **Gość:** dostaje link zaproszenia z adresem `…openbot.run` i dołącza. Adres nigdy się nie zmienia.
+- **Kto płaci i co jest czyje:** tunele Cloudflare i Workers z D1 mają darmowe progi, ale **domena `openbot.run` i konto Cloudflare należą do OpenBota** (domena kosztuje rocznie, jest też płatna poczta do wysyłania kodów). Program akceptuje tylko adresy z tej domeny. **Otwarty jest kod usługi, a nie jej konta, domena i tokeny**, więc nie możemy z niej korzystać.
+- **Wniosek:** stały adres „jak w OpenBocie” wymaga domeny na koncie Cloudflare. Bez własnej domeny i konta nie da się go zrobić. Dlatego poniżej jest droga, która daje to samo dla gościa (nic nie wysyłasz drugi raz), ale za darmo i bez konta.
 
-1. W programie: pasek serwerów po lewej, prawy przycisk na swoim serwerze, „Udostępnij ten COSGRAL Workspace”. Wpisz nazwę serwera i kliknij „Utwórz serwer i włącz udostępnianie”.
-2. Za pierwszym razem program sam pobiera mały darmowy program Cloudflare (około 40 MB, z oficjalnej strony Cloudflare na GitHubie) i sprawdza jego sumę kontrolną. Potem już nic nie pobiera.
-3. Wejdź w „Ludzie”, wybierz rolę (Członek albo Admin), kliknij „Utwórz link zaproszenia” i wyślij link Kubie. Link działa raz i wygasa po 24 godzinach.
+## Jak to włączyć (darmowy tunel Cloudflare i samodzielne odnajdywanie adresu)
 
-**Druga osoba (Kuba):** w programie plus na pasku serwerów, wklej link, wybierz swoją nazwę i hasło (co najmniej 12 znaków), „Dołącz do serwera”. Nic więcej: bez konta, bez dodatkowych programów. Kuba widzi tych samych agentów i rozmowy i może pisać do botów. Ty w „Ludziach” zmieniasz rolę, wyłączasz dostęp albo usuwasz osobę.
+Program używa **darmowego tunelu Cloudflare „na szybko” (quick tunnel)**. Nie trzeba konta, niczego instalować ani ustawiać w routerze: komputer sam „dzwoni” do Cloudflare. Adres takiego tunelu jest losowy i zmienia się po każdym ponownym włączeniu. Żeby **Kuba nie musiał dostawać nowego adresu**, dzieje się to automatycznie:
+
+1. Gdy gospodarz włącza udostępnianie (i potem co pół godziny), program zostawia **podpisaną notatkę z aktualnym adresem** w darmowej publicznej skrzynce (ntfy.sh, bez konta). Nazwę skrzynki da się obliczyć tylko znając identyfikator serwera i odcisk klucza, które są w zaproszeniu.
+2. Program Kuby, gdy serwer przestaje odpowiadać, sprawdza skrzynkę, weryfikuje podpis gospodarza i tożsamość serwera pod nowym adresem i sam przełącza się na nowy adres. Próbuje co 10 s, potem rzadziej (do 2 min). Gdy znajdzie serwer, sam się łączy i odświeża dane. Jeśli sesja wygasła, loguje się zapisanym hasłem.
+3. Nikt nie musi ufać skrzynce: bez podpisu gospodarza i potwierdzenia tożsamości program niczego nie zmieni, a w skrzynce leży tylko tymczasowy adres.
+
+**Gospodarz:**
+
+1. Pasek serwerów po lewej, prawy przycisk na swoim serwerze, „Udostępnij ten COSGRAL Workspace”. Wpisz nazwę serwera i kliknij „Utwórz serwer i włącz udostępnianie”.
+2. Za pierwszym razem program sam pobiera mały darmowy program Cloudflare (około 40 MB, z oficjalnej strony Cloudflare na GitHubie) i sprawdza jego sumę kontrolną.
+3. „Ludzie” > rola > „Utwórz link zaproszenia” i wyślij link Kubie **raz**. Link działa raz i wygasa po 24 godzinach.
+
+**Kuba:** plus na pasku serwerów, wklej link, wybierz nazwę i hasło (co najmniej 12 znaków), „Dołącz do serwera”. Od tej pory wchodzi sam, o ile Twój komputer i program są włączone.
 
 **Ważne, uczciwie:**
 
-- **Adres jest losowy i zmienia się za każdym razem, gdy włączasz udostępnianie od nowa** (na przykład po wyłączeniu programu). Dopóki program stoi włączony, adres się nie zmienia. Po nowym włączeniu kliknij w „Publikowanie” przycisk „Skopiuj nowy adres dla osób”, wyślij go Kubie, a on wkleja go w to samo okno „Dołącz” (program rozpozna, że to nowy adres, i nie zapyta o hasło). Stały adres wymaga czegoś płatnego albo konta (patrz niżej).
-- Gospodarz musi mieć włączony komputer i program. Gdy go zamkniesz, serwer znika.
-- Adres jest dostępny z internetu, ale bez zaproszenia nikt się nie zaloguje. Zaproszenie działa raz i wygasa po 24 godzinach.
+- Gospodarz musi mieć włączony komputer i program. Gdy go zamkniesz, serwer znika. Po ponownym włączeniu Kuba wraca w ciągu około minuty lub dwóch.
+- Skrzynka ntfy.sh to cudza, darmowa usługa. Widzi tymczasowy adres tunelu (nie widzi haseł, rozmów ani kluczy). Gdyby była niedostępna, zostaje przycisk „Skopiuj nowy adres dla osób” (Kuba wkleja link w oknie „Dołącz”). Własną skrzynkę można wskazać zmienną `COSGRAL_ADDRESS_RELAY` (adres https), wyłączyć ją wartością `off`.
+- Adres tunelu jest dostępny z internetu, ale bez zaproszenia nikt się nie zaloguje.
 - Boty pracują na kontach i kluczach gospodarza. Kuba ich nie widzi. Sprawdź warunki planów, zanim wspólnie z nich korzystacie.
 - Dane (boty, rozmowy) leżą na dysku gospodarza. Zrób kopię zapasową.
-- Hasło Kuby jest zapisane w jego programie w postaci zaszyfrowanej, żeby mógł wejść ponownie po wygaśnięciu sesji (po 30 dniach).
-- Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Używaj linku. Sekcja „Strony” dalej jest wyłączona.
-- **Nie sprawdziłem tego na prawdziwym Cloudflare ani na dwóch komputerach**: moje środowisko nie ma dostępu do tej usługi. Cały przebieg (uruchomienie, link, dołączenie, ponowne włączenie z nowym adresem i aktualizacja adresu) przetestowałem w testach na atrapie tunelu. Pierwszy prawdziwy test robicie Wy.
+- Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Sekcja „Strony” dalej jest wyłączona.
+- **Nie sprawdziłem tego na prawdziwym Cloudflare ani ntfy.sh ani na dwóch komputerach**: moje środowisko nie ma dostępu do tych usług. Cały przebieg (uruchomienie, zaproszenie, dołączenie, restart z nowym adresem, samodzielne odnalezienie adresu) przetestowałem na atrapach. Pierwszy prawdziwy test robicie Wy.
 
-**Zaawansowane (dla kogoś, kto już ma Tailscale):** w panelu „Publikowanie”, przed włączeniem, jest „Zaawansowane” z opcją „Użyj Tailscale zamiast darmowego tunelu Cloudflare”. Wtedy adres jest stały (`<komputer>.<sieć>.ts.net`), ale obie osoby muszą mieć Tailscale i być w tej samej sieci, a HTTPS i MagicDNS muszą być włączone w panelu Tailscale. Program zapamiętuje wybór.
+**Zaawansowane (dla kogoś, kto już ma Tailscale):** w panelu „Publikowanie”, przed włączeniem, jest „Zaawansowane” z opcją „Użyj Tailscale zamiast darmowego tunelu Cloudflare”. Adres jest wtedy stały (`<komputer>.<sieć>.ts.net`), ale obie osoby muszą mieć Tailscale w tej samej sieci.
 
-**Co dałoby stały adres (nic z tego nie zrobiłem, bo wymaga konta albo pieniędzy):**
-
-1. Darmowe konto Cloudflare plus własna domena (około 40–60 zł rocznie za domenę): tunel z nazwą, adres stały, nic się nie zmienia po restarcie. Wymaga założenia konta na Twoje dane.
-2. Mały własny przekaźnik na wynajętym serwerze (kilka euro miesięcznie): jedna nazwa, która zawsze prowadzi do aktualnego adresu. Wymaga serwera i utrzymania.
-3. Darmowa „skrzynka” z adresem (np. usługa typu ntfy) do automatycznego przekazywania nowego adresu: bez kosztów, ale cudza usługa widziałaby adresy. Mogę to dodać po Twojej zgodzie.
+**Jeśli kiedyś będziesz chciał prawdziwie stały adres jak w OpenBocie (nic z tego nie zrobiłem, bo wymaga konta albo pieniędzy):** darmowe konto Cloudflare plus własna domena (około 40–60 zł rocznie) i nazwany tunel; albo darmowy Worker na Twoim koncie Cloudflare jako własny rejestr nazw. W obu przypadkach potrzebne jest Twoje konto Cloudflare.
 
 ## Marketplace: skąd miałby pochodzić katalog dodatkowych pluginów
 

@@ -1102,14 +1102,14 @@ export const en = {
   "Sharing address": "Sharing address",
   "The address is random and only invited people can sign in.":
     "The address is random and only invited people can sign in.",
-  "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.":
-    "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.",
+  "The address changes every time you turn sharing on again, but people who already joined find the new one by themselves within a minute or two. If someone still cannot connect, copy the new address with the button and send it to them.":
+    "The address changes every time you turn sharing on again, but people who already joined find the new one by themselves within a minute or two. If someone still cannot connect, copy the new address with the button and send it to them.",
   "Copy the new address for people": "Copy the new address for people",
   "Use Tailscale instead of the free Cloudflare tunnel": "Use Tailscale instead of the free Cloudflare tunnel",
   "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.":
     "Only if you and the other person already use Tailscale. Both of you must be signed in to the same Tailscale network.",
-  "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.":
-    "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.",
+  "Share the agents, conversations, files and browser of this computer with another person. You send one link, once, and the other person needs no account and no extra program. After that they get back in on their own, even when the address changes. The first time, COSGRAL downloads a small free program from Cloudflare. To pass on a new address it leaves a signed note in a free public mailbox (ntfy.sh, no account) that only people who joined can find. Only people with your invitation can sign in, and sharing works while this program is on.":
+    "Share the agents, conversations, files and browser of this computer with another person. You send one link, once, and the other person needs no account and no extra program. After that they get back in on their own, even when the address changes. The first time, COSGRAL downloads a small free program from Cloudflare. To pass on a new address it leaves a signed note in a free public mailbox (ntfy.sh, no account) that only people who joined can find. Only people with your invitation can sign in, and sharing works while this program is on.",
   "This link only brings the new address of a server you already joined. No name or password is needed.":
     "This link only brings the new address of a server you already joined. No name or password is needed.",
   "Updating…": "Updating…",

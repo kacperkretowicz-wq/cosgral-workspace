@@ -281,7 +281,7 @@ export function HostPanel(props: HostPanelProps) {
                           <Show when={quickTunnel() && online()}>
                             <p class="remote-inline-note">
                               {t(
-                                "The address changes every time you turn sharing on again. People who already joined then need the new address: copy it with the button and send it to them.",
+                                "The address changes every time you turn sharing on again, but people who already joined find the new one by themselves within a minute or two. If someone still cannot connect, copy the new address with the button and send it to them.",
                               )}
                             </p>
                           </Show>
@@ -633,7 +633,7 @@ function HostSetup(props: {
             )
           : props.shared
             ? t(
-                "Share the agents, conversations, files and browser of this computer with another person. You get one link to send, and the other person needs no account and no extra program. The first time, COSGRAL downloads a small free program from Cloudflare. Only people with your invitation can sign in, and sharing works while this program is on.",
+                "Share the agents, conversations, files and browser of this computer with another person. You send one link, once, and the other person needs no account and no extra program. After that they get back in on their own, even when the address changes. The first time, COSGRAL downloads a small free program from Cloudflare. To pass on a new address it leaves a signed note in a free public mailbox (ntfy.sh, no account) that only people who joined can find. Only people with your invitation can sign in, and sharing works while this program is on.",
               )
             : t(
                 "Publish the agents, conversations, files, and browser from this local COSGRAL Workspace instance through a secure public address. Only people you invite can sign in.",

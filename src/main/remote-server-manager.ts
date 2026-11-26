@@ -100,21 +100,47 @@ export interface RemoteDesktopAccess {
   password: string;
 }
 
+export interface RemoteServerManagerOptions {
+  /** COSGRAL: the signed "new address" links the host left for this server, newest first. */
+  lookupAddresses?: (server: { serverId: string; fingerprint: string }) => Promise<string[]>;
+  /** Waits between attempts to find a server that went offline. Default: 10 s growing to 2 min. */
+  recoveryDelaysMs?: number[];
+}
+
+const DEFAULT_RECOVERY_DELAYS_MS = [10_000, 20_000, 40_000, 60_000, 120_000];
+
 export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
   readonly #path: string;
   readonly #cipher: TokenCipher;
   readonly #centralAccount: CentralAccountSession;
+  readonly #options: RemoteServerManagerOptions;
+  #recoveryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  #recoveryAttempts = new Map<string, number>();
   #state: StoredRemoteServers = { version: 1, activeServerId: "local", servers: [] };
   #states = new Map<string, ServerSummary["state"]>();
   #eventControllers = new Map<string, AbortController>();
   #eventSockets = new Map<string, WebSocket>();
   #presence = new Map<string, TeamPresenceSnapshot>();
 
-  constructor(path: string, cipher: TokenCipher, centralAccount: CentralAccountSession) {
+  constructor(
+    path: string,
+    cipher: TokenCipher,
+    centralAccount: CentralAccountSession,
+    options: RemoteServerManagerOptions = {},
+  ) {
     super();
     this.#path = path;
     this.#cipher = cipher;
     this.#centralAccount = centralAccount;
+    this.#options = options;
+  }
+
+  /** Connects the remote server that was active when the program was closed (the local one needs nothing). */
+  resume(): void {
+    const active = this.#state.activeServerId;
+    if (active !== "local" && this.#state.servers.some((server) => server.id === active)) {
+      void this.#connectEvents(active);
+    }
   }
 
   async initialize(): Promise<void> {
@@ -263,17 +289,88 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
   async updateAddress(updateUrl: string): Promise<ServerSummary> {
     const update = parseAddressUpdateUrl(updateUrl);
     const server = this.#requireServer(update.serverId);
+    await this.#applyAddressUpdate(server, update);
+    this.#states.set(server.id, "online");
+    this.#emitChanged();
+    void this.#connectEvents(server.id);
+    return requiredServerSummary(this.list(), server.id);
+  }
+
+  /** Checks the signature of the host and its identity at the new address, then switches to that address. */
+  async #applyAddressUpdate(
+    server: StoredRemoteServer,
+    update: ReturnType<typeof parseAddressUpdateUrl>,
+  ): Promise<void> {
     verifyAddressUpdate(update, server.fingerprint);
     const identity = await this.#verifyIdentity(update.apiUrl, server.id, server.fingerprint);
     server.apiUrl = update.apiUrl;
     server.vncHostname = update.vncHostname;
     server.publicKey = identity.publicKey;
     server.name = identity.serverName;
-    this.#states.set(server.id, "online");
     await this.#persist();
+  }
+
+  /** Looks for a newer address the host left behind. Returns true when the server answers at an address now. */
+  async #followAddressNotes(server: StoredRemoteServer): Promise<boolean> {
+    const notes = await (this.#options.lookupAddresses?.({ serverId: server.id, fingerprint: server.fingerprint }) ??
+      Promise.resolve([]));
+    for (const note of notes) {
+      try {
+        const update = parseAddressUpdateUrl(note);
+        if (update.serverId !== server.id || update.apiUrl === server.apiUrl) continue;
+        await this.#applyAddressUpdate(server, update);
+        return true;
+      } catch {
+        // A stale, forged or unreachable note: try the next one.
+      }
+    }
+    return false;
+  }
+
+  #scheduleRecovery(serverId: string, controller: AbortController): void {
+    if (controller.signal.aborted) return;
+    const attempts = this.#recoveryAttempts.get(serverId) ?? 0;
+    this.#recoveryAttempts.set(serverId, attempts + 1);
+    const delays = this.#options.recoveryDelaysMs ?? DEFAULT_RECOVERY_DELAYS_MS;
+    const delay = delays[Math.min(attempts, delays.length - 1)] ?? 10_000;
+    const timer = setTimeout(() => {
+      this.#recoveryTimers.delete(serverId);
+      void this.#recover(serverId, controller);
+    }, delay);
+    timer.unref?.();
+    this.#recoveryTimers.set(serverId, timer);
+  }
+
+  /** The server went offline: find it again (it may have a new address) and reconnect, without any action by the person. */
+  async #recover(serverId: string, controller: AbortController): Promise<void> {
+    if (controller.signal.aborted || this.#eventControllers.get(serverId) !== controller) return;
+    const server = this.#state.servers.find((candidate) => candidate.id === serverId);
+    if (!server) return;
+    this.#states.set(serverId, "connecting");
     this.#emitChanged();
-    void this.#connectEvents(server.id);
-    return requiredServerSummary(this.list(), server.id);
+    try {
+      let reachable = await this.#verifyIdentity(server.apiUrl, server.id, server.fingerprint).then(
+        () => true,
+        () => false,
+      );
+      if (!reachable) reachable = await this.#followAddressNotes(server);
+      if (!reachable) throw new Error("The server is not reachable.");
+      // The session lasts a long time, but if the host forgot it, sign in again with the saved details.
+      try {
+        await this.#refreshVnc(server);
+      } catch {
+        await this.login({ serverId });
+        return;
+      }
+      await this.#persist();
+      if (controller.signal.aborted) return;
+      void this.#connectEvents(serverId);
+    } catch {
+      if (controller.signal.aborted) return;
+      this.#states.set(serverId, "offline");
+      this.#emitChanged();
+      this.#scheduleRecovery(serverId, controller);
+    }
   }
 
   async request<T>(
@@ -485,6 +582,8 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
   stop(): void {
     for (const controller of this.#eventControllers.values()) controller.abort();
     this.#eventControllers.clear();
+    for (const timer of this.#recoveryTimers.values()) clearTimeout(timer);
+    this.#recoveryTimers.clear();
   }
 
   async #verifyIdentity(
@@ -518,6 +617,8 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
   async #connectEvents(serverId: string): Promise<void> {
     const server = this.#requireServer(serverId);
     this.#eventControllers.get(serverId)?.abort();
+    clearTimeout(this.#recoveryTimers.get(serverId));
+    this.#recoveryTimers.delete(serverId);
     const controller = new AbortController();
     this.#eventControllers.set(serverId, controller);
     try {
@@ -532,6 +633,7 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
           "open",
           () => {
             this.#eventSockets.set(serverId, socket);
+            this.#recoveryAttempts.delete(serverId);
             this.#states.set(serverId, "online");
             this.#emitChanged();
           },
@@ -577,12 +679,14 @@ export class RemoteServerManager extends EventEmitter<RemoteServerEvents> {
         this.#states.set(serverId, "offline");
         this.#setPresenceOffline(serverId);
         this.#emitChanged();
+        this.#scheduleRecovery(serverId, controller);
       }
     } catch {
       if (!controller.signal.aborted) {
         this.#states.set(serverId, "offline");
         this.#setPresenceOffline(serverId);
         this.#emitChanged();
+        this.#scheduleRecovery(serverId, controller);
       }
     }
   }

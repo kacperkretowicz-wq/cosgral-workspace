@@ -11,7 +11,7 @@ import { appendDiagnosticLog, stopOwnedProcess } from "./remote-mac";
 
 export const QUICK_TUNNEL_MESSAGES = {
   ready:
-    "Udostępnione. Adres jest losowy i działa, dopóki ten program jest włączony. Wejść mogą tylko osoby z Twoim zaproszeniem.",
+    "Udostępnione. Osoby, które już dołączyły, same znajdą nowy adres. Wejść mogą tylko osoby z Twoim zaproszeniem, a udostępnianie działa, dopóki ten program jest włączony.",
   noAddress:
     "Cloudflare nie podał adresu. Sprawdź połączenie z internetem i spróbuj jeszcze raz. Jeśli to się powtarza, w ustawieniach zaawansowanych możesz wybrać Tailscale.",
   stopped: "Połączenie z Cloudflare zostało przerwane, więc udostępnienie przestało działać. Włącz je jeszcze raz.",
