@@ -72,6 +72,10 @@ interface HostServiceOptions {
   quickTunnel?: SharePublisher;
   /** ...or, as the advanced choice, through the private Tailscale network. */
   tailscale?: SharePublisher;
+  /** COSGRAL: tells the people who already joined the new random address of the quick tunnel. */
+  addressBeacon?: { publish: (serverId: string, fingerprint: string, updateUrl: string) => Promise<void> };
+  /** How often the address is announced again while sharing is on. Default: every 30 minutes. */
+  addressAnnounceIntervalMs?: number;
   provisionTeamTunnel: (input: {
     serverId: string;
     serverName: string;
@@ -106,6 +110,7 @@ export class HostService extends EventEmitter<HostEvents> {
     Omit<HostServiceOptions, "spawnProcess" | "tunnelTimeoutMs" | "publicReadyTimeoutMs">;
   readonly #api: TeamApiServer;
   #tunnel: ChildProcess | null = null;
+  #announceTimer: ReturnType<typeof setInterval> | null = null;
   #status: HostStatus;
 
   constructor(options: HostServiceOptions) {
@@ -323,6 +328,7 @@ export class HostService extends EventEmitter<HostEvents> {
       });
       await this.#options.store.setEnabledOnLaunch(true);
       this.#setStatus({ phase: "online", enabledOnLaunch: true });
+      if (quick) this.#startAnnouncing();
     } catch (error) {
       await this.#stopRuntime();
       this.#setStatus({
@@ -337,8 +343,31 @@ export class HostService extends EventEmitter<HostEvents> {
     return this.getStatus();
   }
 
+  /** Leaves the new address for the people who already joined, now and every half hour while sharing is on. */
+  #startAnnouncing(): void {
+    this.#stopAnnouncing();
+    const beacon = this.#options.addressBeacon;
+    if (!beacon) return;
+    const announce = () => {
+      const identity = this.#options.store.getIdentity();
+      if (!identity || !this.#status.apiUrl) return;
+      void beacon
+        .publish(identity.serverId, identity.fingerprint, this.createAddressUpdate())
+        .catch((error) => console.warn("The new address could not be announced:", error));
+    };
+    announce();
+    this.#announceTimer = setInterval(announce, this.#options.addressAnnounceIntervalMs ?? 30 * 60_000);
+    this.#announceTimer.unref?.();
+  }
+
+  #stopAnnouncing(): void {
+    if (this.#announceTimer) clearInterval(this.#announceTimer);
+    this.#announceTimer = null;
+  }
+
   #handleShareClosed(): void {
     if (this.#status.phase !== "online") return;
+    this.#stopAnnouncing();
     void this.#api.stop().catch(() => undefined);
     this.#setStatus({
       phase: "error",
@@ -537,6 +566,7 @@ export class HostService extends EventEmitter<HostEvents> {
   }
 
   async #stopRuntime(): Promise<void> {
+    this.#stopAnnouncing();
     const tunnel = this.#tunnel;
     this.#tunnel = null;
     if (tunnel) await stopOwnedProcess(tunnel);

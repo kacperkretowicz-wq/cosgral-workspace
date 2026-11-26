@@ -103,6 +103,7 @@ import { WorkflowStore } from "../backend/workflow-store";
 import { registerAccessIpc } from "./access-ipc";
 import { registerAcpLoginIpc } from "./acp-login-ipc";
 import { registerAcpPresetsIpc } from "./acp-presets-ipc";
+import { AddressBeacon, resolveAddressRelay } from "./address-beacon";
 import { registerAgentCardsIpc } from "./agent-cards-ipc";
 import { AgentInitializationGate } from "./agent-initialization";
 import { notificationForAgentEvent } from "./agent-notifications";
@@ -2161,6 +2162,9 @@ if (!hasSingleInstanceLock) {
         },
       );
       await remoteDesktopCredentials.initialize();
+      // COSGRAL: a free public mailbox (ntfy) passes the new random address of the host to the people who joined.
+      // Set COSGRAL_ADDRESS_RELAY=off to switch it off, or to another https address to use your own.
+      const addressRelay = resolveAddressRelay(process.env.COSGRAL_ADDRESS_RELAY);
       hostService = new HostService({
         store: teamStore,
         agents: service,
@@ -2187,6 +2191,7 @@ if (!hasSingleInstanceLock) {
         ...(process.env.OPENBOT_AUTH_API_URL?.trim()
           ? {}
           : {
+              ...(addressRelay ? { addressBeacon: new AddressBeacon({ relayUrl: addressRelay }) } : {}),
               quickTunnel: new QuickTunnelPublisher({
                 binDirectory: join(app.getPath("userData"), "bin"),
                 logDirectory: join(app.getPath("userData"), "logs", "remote"),
@@ -2223,8 +2228,15 @@ if (!hasSingleInstanceLock) {
             return centralAuthManager.getSignedInUser().email;
           },
         },
+        addressRelay
+          ? {
+              lookupAddresses: (server) =>
+                new AddressBeacon({ relayUrl: addressRelay }).lookup(server.serverId, server.fingerprint),
+            }
+          : {},
       );
       await remoteServerManager.initialize();
+      remoteServerManager.resume();
       remoteMacManager = new RemoteMacManager({
         logDirectory: join(app.getPath("userData"), "logs", "remote"),
         resolveRemoteDesktop: (serverId) => {

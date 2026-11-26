@@ -264,6 +264,7 @@ export function App() {
   const [eyesState, setEyesState] = createSignal<AgentEyesState>(emptyAgentEyesState());
   const [servers, setServers] = createSignal<ServerSummary[]>([]);
   const [joinServerOpen, setJoinServerOpen] = createSignal(false);
+  const serverStatesBefore = new Map<string, ServerSummary["state"]>();
   const [pendingInviteUrl, setPendingInviteUrl] = createSignal("");
   const [hostOpen, setHostOpen] = createSignal(false);
   const [globalSearchOpen, setGlobalSearchOpen] = createSignal(false);
@@ -410,7 +411,16 @@ export function App() {
     const unsubscribeAuth = window.openbot.auth.onEvent((state) => {
       flush(() => applyCentralAuthState(state));
     });
-    const unsubscribeServers = window.openbot.servers.onEvent((value) => flush(() => setServers(value)));
+    const unsubscribeServers = window.openbot.servers.onEvent((value) =>
+      flush(() => {
+        // The active server was offline and the program found it again (maybe at a new address): load its data again.
+        const active = value.find((item) => item.active && item.kind === "remote");
+        const before = active ? serverStatesBefore.get(active.id) : undefined;
+        for (const item of value) serverStatesBefore.set(item.id, item.state);
+        setServers(value);
+        if (active && before === "connecting" && active.state === "online") void selectServer(active.id);
+      }),
+    );
     const unsubscribePresence = window.openbot.servers.onPresence((snapshot) => flush(() => setTeamPresence(snapshot)));
     const unsubscribeDirectMessage = window.openbot.servers.onDirectMessage((event) =>
       flush(() => handleDirectMessageEvent(event)),

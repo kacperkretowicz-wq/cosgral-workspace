@@ -24,7 +24,7 @@ function unused(): never {
   throw new Error("This operation is not used by this test.");
 }
 
-async function setup(setupOptions: { publishError?: Error; withTailscale?: boolean } = {}) {
+async function setup(setupOptions: { publishError?: Error; withTailscale?: boolean; announceEveryMs?: number } = {}) {
   const root = await mkdtemp(join(tmpdir(), "cosgral-host-quick-"));
   roots.push(root);
   const store = new TeamStore(join(root, "team.json"));
@@ -35,6 +35,7 @@ async function setup(setupOptions: { publishError?: Error; withTailscale?: boole
   const published: number[] = [];
   let unpublished = 0;
   const listeners: { closed?: () => void } = {};
+  const mailbox: string[] = [];
   const options = {
     store,
     agents: Object.assign(events, { listBots: () => [] }),
@@ -47,6 +48,12 @@ async function setup(setupOptions: { publishError?: Error; withTailscale?: boole
     getRemoteDesktopPassword: () => null,
     setRemoteDesktopPassword: async () => undefined,
     provisionTeamTunnel: async () => unused(),
+    addressBeacon: {
+      publish: async (_serverId: string, _fingerprint: string, updateUrl: string) => {
+        mailbox.unshift(updateUrl);
+      },
+    },
+    ...(setupOptions.announceEveryMs ? { addressAnnounceIntervalMs: setupOptions.announceEveryMs } : {}),
     quickTunnel: {
       publish: async (port: number) => {
         if (setupOptions.publishError) throw setupOptions.publishError;
@@ -75,7 +82,7 @@ async function setup(setupOptions: { publishError?: Error; withTailscale?: boole
   // The host needs only a small part of the agent service, browser host and mailbox in this test.
   // biome-ignore lint/nursery/noUnsafeTypeAssertion: the host needs only a small part of the agent service, browser host and mailbox here.
   const host = new HostService(options as unknown as Options);
-  return { host, published, listeners, store, unpublishedCount: () => unpublished };
+  return { host, published, listeners, store, mailbox, unpublishedCount: () => unpublished };
 }
 
 /** Sends the requests for the random addresses to the local server that stands behind each of them. */
@@ -91,13 +98,14 @@ function routeAddresses(published: number[]) {
   });
 }
 
-async function remoteManager() {
+async function remoteManager(lookupAddresses?: () => Promise<string[]>) {
   const root = await mkdtemp(join(tmpdir(), "cosgral-remote-"));
   roots.push(root);
   const manager = new RemoteServerManager(
     join(root, "servers.json"),
     { encrypt: (value) => Buffer.from(value), decrypt: (value) => value.toString() },
     { createTeamAuthTicket: async () => unused(), getEmail: () => unused() },
+    lookupAddresses ? { lookupAddresses, recoveryDelaysMs: [20] } : {},
   );
   await manager.initialize();
   return manager;
@@ -186,5 +194,48 @@ describe("HostService through a quick tunnel", () => {
       message: "Nie mam połączenia z internetem.",
     });
     expect(unpublishedCount()).toBeGreaterThan(0);
+  });
+
+  it("announces the new address when sharing starts and again every while, and stops when sharing stops", async () => {
+    const { host, published, mailbox } = await setup({ announceEveryMs: 30 });
+    routeAddresses(published);
+    await host.configure({ serverName: "Nasza przestrzeń" });
+    await host.start();
+    expect(mailbox[0]).toContain("cosgral://update?");
+    expect(mailbox[0]).toContain(encodeURIComponent("https://pierwszy-adres-test.trycloudflare.com"));
+    await vi.waitFor(() => expect(mailbox.length).toBeGreaterThan(2));
+    await host.stop();
+    const count = mailbox.length;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(mailbox.length).toBe(count);
+  });
+
+  it("lets the person who joined find the server at its new address without being told", async () => {
+    const { host, published, mailbox } = await setup();
+    routeAddresses(published);
+    await host.configure({ serverName: "Nasza przestrzeń" });
+    await host.start();
+    const invite = await host.createInvite({ role: "member" });
+    const manager = await remoteManager(async () => [...mailbox]);
+    const server = await manager.join({
+      inviteUrl: invite.inviteUrl,
+      username: "Kuba",
+      password: "bardzo-dlugie-haslo-1",
+    });
+    expect(server.apiUrl).toBe("https://pierwszy-adres-test.trycloudflare.com");
+
+    await host.stop();
+    const restarted = await host.start();
+    expect(restarted.apiUrl).toBe("https://drugi-adres-test.trycloudflare.com");
+
+    await vi.waitFor(
+      () =>
+        expect(manager.list().find((item) => item.id === server.id)?.apiUrl).toBe(
+          "https://drugi-adres-test.trycloudflare.com",
+        ),
+      { timeout: 8_000 },
+    );
+    manager.stop();
+    await host.stop();
   });
 });
