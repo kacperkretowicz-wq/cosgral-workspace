@@ -25,8 +25,19 @@ export interface LoginServerInput {
 
 export type HostPhase = "unconfigured" | "idle" | "starting" | "online" | "stopping" | "error";
 
-/** How the host is reachable: through a Cloudflare tunnel of the account service, or through the private Tailscale network. */
-export type HostTransport = "cloudflare" | "tailscale";
+/**
+ * How the host is reachable: through a Cloudflare tunnel of the account service ("cloudflare"), through a free Cloudflare
+ * quick tunnel that needs no account ("quick-tunnel", the COSGRAL default), or through the private Tailscale network.
+ */
+export type HostTransport = "cloudflare" | "quick-tunnel" | "tailscale";
+
+/** What a person can pick for sharing without an account service. */
+export type HostShareChoice = "quick-tunnel" | "tailscale";
+
+export interface StartHostInput {
+  /** Absent: the saved choice, or the quick tunnel. */
+  transport?: HostShareChoice;
+}
 
 export interface HostStatus {
   phase: HostPhase;

@@ -14,12 +14,15 @@ import type {
   DirectThreadSummary,
   DirectTypingInput,
   DirectTypingRealtimeEvent,
+  HostShareChoice,
   HostStatus,
+  HostTransport,
   InviteSummary,
   MarkConversationReadInput,
   MarkDirectReadInput,
   SendDirectMessageInput,
   SetTeamTypingInput,
+  StartHostInput,
   TeamInviteSummary,
   TeamMemberSummary,
   TeamPresenceSnapshot,
@@ -31,6 +34,7 @@ import type { BrowserHost } from "../backend/browser-host";
 import type { MailboxStore } from "../backend/mailbox-store";
 import type { TeamChatStore } from "../backend/team-chat-store";
 import type { ProvisionedTeamTunnel } from "./central-auth-manager";
+import { QUICK_TUNNEL_MESSAGES } from "./quick-tunnel-publisher";
 import { appendDiagnosticLog, probeRfbHandshake, resolveCloudflaredExecutable, stopOwnedProcess } from "./remote-mac";
 import { TAILSCALE_MESSAGES } from "./tailscale-publisher";
 import { TeamApiServer } from "./team-api-server";
@@ -64,8 +68,10 @@ interface HostServiceOptions {
   }) => Promise<void>;
   getRemoteDesktopPassword: () => string | null;
   setRemoteDesktopPassword: (password: string) => Promise<void>;
-  /** COSGRAL: without an account service the server is shown through the private Tailscale network instead of a tunnel. */
-  tailscale?: { publish: (port: number) => Promise<string>; unpublish: () => Promise<void> };
+  /** COSGRAL: without an account service the server is shown through a free quick tunnel (no account needed)... */
+  quickTunnel?: SharePublisher;
+  /** ...or, as the advanced choice, through the private Tailscale network. */
+  tailscale?: SharePublisher;
   provisionTeamTunnel: (input: {
     serverId: string;
     serverName: string;
@@ -74,7 +80,18 @@ interface HostServiceOptions {
   }) => Promise<ProvisionedTeamTunnel>;
 }
 
-const TAILSCALE_READY_MESSAGE = TAILSCALE_MESSAGES.ready;
+/** One way of showing the local server to other people without an account service. */
+export interface SharePublisher {
+  publish: (port: number) => Promise<string>;
+  unpublish: () => Promise<void>;
+  /** Lets the publisher say what it is doing and tell the host that the connection broke. */
+  setListeners?: (listeners: { closed?: () => void; progress?: (message: string) => void }) => void;
+}
+
+const SHARE_READY_MESSAGES: Record<"quick-tunnel" | "tailscale", string> = {
+  "quick-tunnel": QUICK_TUNNEL_MESSAGES.ready,
+  tailscale: TAILSCALE_MESSAGES.ready,
+};
 
 export function buildNamedTunnelArgs(): string[] {
   return ["tunnel", "--protocol", "quic", "run"];
@@ -101,7 +118,7 @@ export class HostService extends EventEmitter<HostEvents> {
     };
     const identity = options.store.getIdentity();
     this.#status = {
-      transport: options.tailscale ? "tailscale" : "cloudflare",
+      transport: this.#shareTransport(),
       phase: identity ? "idle" : "unconfigured",
       configured: Boolean(identity),
       enabledOnLaunch: identity?.enabledOnLaunch ?? false,
@@ -114,6 +131,14 @@ export class HostService extends EventEmitter<HostEvents> {
       remoteDesktopCredentialConfigured: options.getRemoteDesktopPassword() !== null,
       message: null,
     };
+    for (const publisher of [options.quickTunnel, options.tailscale]) {
+      publisher?.setListeners?.({
+        closed: () => this.#handleShareClosed(),
+        progress: (message) => {
+          if (this.#status.phase === "starting") this.#setStatus({ message });
+        },
+      });
+    }
     this.#api = new TeamApiServer({
       store: options.store,
       agents: options.agents,
@@ -152,8 +177,11 @@ export class HostService extends EventEmitter<HostEvents> {
       message: null,
     });
     this.#api.refreshPresence();
-    if (this.#options.tailscale) {
-      this.#setStatus({ message: "Gotowe. Włącz udostępnienie, żeby zaprosić drugą osobę." });
+    if (this.#sharePublisher()) {
+      this.#setStatus({
+        transport: this.#shareTransport(),
+        message: "Gotowe. Włącz udostępnienie, żeby zaprosić drugą osobę.",
+      });
       return this.getStatus();
     }
     try {
@@ -191,7 +219,7 @@ export class HostService extends EventEmitter<HostEvents> {
     return this.getStatus();
   }
 
-  async start(): Promise<HostStatus> {
+  async start(input: StartHostInput = {}): Promise<HostStatus> {
     if (!this.#options.store.configured) throw new Error("Name this COSGRAL Workspace before publishing it.");
     if (this.#status.phase === "online" || this.#status.phase === "starting") {
       return this.getStatus();
@@ -199,7 +227,11 @@ export class HostService extends EventEmitter<HostEvents> {
     const signedInUser = this.#options.getSignedInUser();
     this.#options.store.assertOwnerAccount(signedInUser);
     await this.syncSignedInAccount(signedInUser);
-    if (this.#options.tailscale) return this.#startWithTailscale(this.#options.tailscale);
+    if (input.transport && this.#publisherFor(input.transport)) {
+      await this.#options.store.setShareChoice(input.transport);
+    }
+    const publisher = this.#sharePublisher();
+    if (publisher) return this.#startWithPublisher(publisher);
     this.#setStatus({ phase: "starting", message: "Starting the secure public API…" });
     const executable = await (this.#options.resolveCloudflared?.() ?? resolveCloudflaredExecutable());
     if (!executable) {
@@ -261,18 +293,33 @@ export class HostService extends EventEmitter<HostEvents> {
     return this.getStatus();
   }
 
-  /** COSGRAL: show the server through Tailscale. No account is created and nothing is opened to the internet. */
-  async #startWithTailscale(tailscale: NonNullable<HostServiceOptions["tailscale"]>): Promise<HostStatus> {
-    this.#setStatus({ phase: "starting", message: "Włączam udostępnienie przez Tailscale…" });
+  /**
+   * COSGRAL: shows the server through a quick tunnel or through Tailscale. No account is created, and nobody can
+   * sign in without an invitation.
+   */
+  async #startWithPublisher(publisher: SharePublisher): Promise<HostStatus> {
+    const transport = this.#shareTransport();
+    const quick = transport === "quick-tunnel";
+    this.#setStatus({
+      transport,
+      phase: "starting",
+      message: quick ? "Włączam udostępnienie…" : "Włączam udostępnienie przez Tailscale…",
+    });
     try {
       const apiPort = await this.#api.start();
-      const apiUrl = await tailscale.publish(apiPort);
+      const apiUrl = await publisher.publish(apiPort);
+      if (quick) {
+        this.#setStatus({ message: "Sprawdzam, czy adres jest już widoczny z internetu…" });
+        if (!(await waitForPublicApi(apiUrl, this.#options.publicReadyTimeoutMs))) {
+          throw new Error(QUICK_TUNNEL_MESSAGES.notReachable);
+        }
+      }
       this.#setStatus({
         apiUrl,
         vncHostname: null,
         apiOnline: true,
         vncOnline: false,
-        message: TAILSCALE_READY_MESSAGE,
+        message: SHARE_READY_MESSAGES[quick ? "quick-tunnel" : "tailscale"],
       });
       await this.#options.store.setEnabledOnLaunch(true);
       this.#setStatus({ phase: "online", enabledOnLaunch: true });
@@ -290,6 +337,37 @@ export class HostService extends EventEmitter<HostEvents> {
     return this.getStatus();
   }
 
+  #handleShareClosed(): void {
+    if (this.#status.phase !== "online") return;
+    void this.#api.stop().catch(() => undefined);
+    this.#setStatus({
+      phase: "error",
+      apiOnline: false,
+      vncOnline: false,
+      apiUrl: null,
+      vncHostname: null,
+      message: QUICK_TUNNEL_MESSAGES.stopped,
+    });
+  }
+
+  #publisherFor(choice: HostShareChoice): SharePublisher | undefined {
+    return choice === "tailscale" ? this.#options.tailscale : this.#options.quickTunnel;
+  }
+
+  /** What the server is shown through: the saved choice, else the quick tunnel; "cloudflare" with an account service. */
+  #shareTransport(): HostTransport {
+    const { quickTunnel, tailscale } = this.#options;
+    if (!quickTunnel && !tailscale) return "cloudflare";
+    const saved = this.#options.store.getShareChoice();
+    if (saved && this.#publisherFor(saved)) return saved;
+    return quickTunnel ? "quick-tunnel" : "tailscale";
+  }
+
+  #sharePublisher(): SharePublisher | undefined {
+    const transport = this.#shareTransport();
+    return transport === "cloudflare" ? undefined : this.#publisherFor(transport);
+  }
+
   async stop(persistPreference = true): Promise<HostStatus> {
     if (this.#status.phase === "unconfigured") return this.getStatus();
     this.#setStatus({ phase: "stopping", message: "Making this COSGRAL Workspace private…" });
@@ -302,7 +380,7 @@ export class HostService extends EventEmitter<HostEvents> {
       vncHostname: null,
       apiOnline: false,
       vncOnline: false,
-      message: this.#options.tailscale ? "Udostępnienie jest wyłączone." : "This COSGRAL Workspace is private.",
+      message: this.#sharePublisher() ? "Udostępnienie jest wyłączone." : "This COSGRAL Workspace is private.",
     });
     return this.getStatus();
   }
@@ -462,6 +540,7 @@ export class HostService extends EventEmitter<HostEvents> {
     const tunnel = this.#tunnel;
     this.#tunnel = null;
     if (tunnel) await stopOwnedProcess(tunnel);
+    await this.#options.quickTunnel?.unpublish();
     await this.#options.tailscale?.unpublish();
     await this.#api.stop();
   }

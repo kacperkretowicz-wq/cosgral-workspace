@@ -337,4 +337,56 @@ describe("HostPanel", () => {
     expect(screen.queryByRole("button", { name: "Copy address update" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Make public" })).toBeNull();
   });
+
+  it("shares through a free tunnel by default: one button, a new-address button, and Tailscale only under Advanced", async () => {
+    const onStart = vi.fn().mockResolvedValue(undefined);
+    const status = {
+      transport: "quick-tunnel" as const,
+      phase: "idle" as const,
+      configured: true,
+      enabledOnLaunch: false,
+      serverId: "server-1",
+      serverName: "Nasza przestrzeń",
+      apiUrl: null,
+      vncHostname: null,
+      apiOnline: false,
+      vncOnline: false,
+      remoteDesktopCredentialConfigured: false,
+      message: null,
+    };
+    render(() => (
+      <HostPanel
+        platform="win32"
+        accountEmail="owner@cosgral.local"
+        status={status}
+        members={[]}
+        invites={[]}
+        sessions={[]}
+        presence={{ serverId: "server-1", members: [], updatedAt: "" }}
+        onClose={vi.fn()}
+        onConfigure={vi.fn()}
+        onConfigureRemoteDesktop={vi.fn()}
+        onStart={onStart}
+        onStop={vi.fn()}
+        onCreateInvite={vi.fn()}
+        onUpdateMember={vi.fn()}
+        onRemoveMember={vi.fn()}
+        onRevokeSession={vi.fn()}
+        onRevokeInvite={vi.fn()}
+        onCopyAddressUpdate={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByText("Sharing address")).toBeInTheDocument();
+    expect(screen.queryByText("Address in Tailscale")).toBeNull();
+    expect(screen.getByRole("button", { name: "Copy the new address for people" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Make public" })).toBeNull();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Turn on sharing" }));
+    await waitFor(() => expect(onStart).toHaveBeenCalledWith({ transport: "quick-tunnel" }));
+
+    await fireEvent.click(screen.getByLabelText("Use Tailscale instead of the free Cloudflare tunnel"));
+    await fireEvent.click(screen.getByRole("button", { name: "Turn on sharing" }));
+    await waitFor(() => expect(onStart).toHaveBeenLastCalledWith({ transport: "tailscale" }));
+  });
 });

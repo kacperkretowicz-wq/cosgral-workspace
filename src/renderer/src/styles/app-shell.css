@@ -1097,6 +1097,23 @@
   text-align: center;
 }
 
+.remote-advanced {
+  margin-top: 12px;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-2xs);
+}
+
+.remote-advanced > summary {
+  cursor: pointer;
+}
+
+.remote-advanced-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
 .remote-invite-result {
   display: flex;
   align-items: center;

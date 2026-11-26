@@ -22,8 +22,12 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
   const [error, setError] = createSignal<string | null>(null);
   const [username, setUsername] = createSignal("");
   const [password, setPassword] = createSignal("");
+  // A link that only brings the new address of a server the person already joined: no name and password are needed.
+  const addressUpdate = () => inviteUrl().trim().startsWith("cosgral://update?");
   const credentialsValid = () =>
-    !props.localProfile || (USERNAME_PATTERN.test(username().trim()) && password().length >= PASSWORD_MIN_LENGTH);
+    addressUpdate() ||
+    !props.localProfile ||
+    (USERNAME_PATTERN.test(username().trim()) && password().length >= PASSWORD_MIN_LENGTH);
 
   async function join() {
     if (busy() || !credentialsValid()) return;
@@ -31,9 +35,9 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
     setError(null);
     try {
       await props.onJoin(
-        props.localProfile
-          ? { inviteUrl: inviteUrl(), username: username().trim(), password: password() }
-          : { inviteUrl: inviteUrl() },
+        props.localProfile && !addressUpdate()
+          ? { inviteUrl: inviteUrl().trim(), username: username().trim(), password: password() }
+          : { inviteUrl: inviteUrl().trim() },
       );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not join the server."));
@@ -61,7 +65,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
             <Dialog.Description>
               {props.localProfile
                 ? t(
-                    "Paste the one-time invitation link and choose the name and password you will use on this server. Tailscale must be on and signed in to the same network as the host.",
+                    "Paste the one-time invitation link and choose the name and password you will use on this server. If the link has a Tailscale address, Tailscale must be on and signed in to the same network as the host.",
                   )
                 : t("Paste the one-time invitation link. You will join with your signed-in COSGRAL account.")}
             </Dialog.Description>
@@ -75,16 +79,25 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
                 spellcheck={false}
               />
             </label>
+            <Show when={addressUpdate()}>
+              <p class="remote-inline-note">
+                {t(
+                  "This link only brings the new address of a server you already joined. No name or password is needed.",
+                )}
+              </p>
+            </Show>
             <Show
-              when={props.localProfile}
+              when={props.localProfile && !addressUpdate()}
               fallback={
-                <div class="remote-account-chip">
-                  <span aria-hidden="true">@</span>
-                  <div>
-                    <small>{t("Joining as")}</small>
-                    <strong>{props.accountEmail}</strong>
+                <Show when={!addressUpdate()}>
+                  <div class="remote-account-chip">
+                    <span aria-hidden="true">@</span>
+                    <div>
+                      <small>{t("Joining as")}</small>
+                      <strong>{props.accountEmail}</strong>
+                    </div>
                   </div>
-                </div>
+                </Show>
               }
             >
               <label class="remote-field">
@@ -125,7 +138,13 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
                 disabled={busy() || !credentialsValid()}
                 onClick={() => void join()}
               >
-                {busy() ? t("Joining…") : t("Join server")}
+                {busy()
+                  ? addressUpdate()
+                    ? t("Updating…")
+                    : t("Joining…")
+                  : addressUpdate()
+                    ? t("Update the address")
+                    : t("Join server")}
               </Button>
             </footer>
           </Dialog.Content>

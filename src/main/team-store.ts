@@ -12,6 +12,7 @@ import { promisify } from "node:util";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
   CentralAuthUser,
+  HostShareChoice,
   TeamInviteSummary,
   TeamMemberSummary,
   TeamRole,
@@ -51,6 +52,8 @@ interface StoredTeam {
   serverId: string;
   serverName: string;
   enabledOnLaunch: boolean;
+  /** COSGRAL: how the server is shared without an account service. Absent in older files (the quick tunnel). */
+  shareChoice?: HostShareChoice;
   publicKey: string;
   privateKey: string;
   members: StoredMember[];
@@ -212,6 +215,17 @@ export class TeamStore {
     const identity = this.getIdentity();
     if (!identity) throw new Error("The team identity could not be created.");
     return identity;
+  }
+
+  getShareChoice(): HostShareChoice | null {
+    return this.#state?.shareChoice ?? null;
+  }
+
+  async setShareChoice(choice: HostShareChoice): Promise<void> {
+    const state = this.#requireState();
+    if (state.shareChoice === choice) return;
+    state.shareChoice = choice;
+    await this.#persist();
   }
 
   async setEnabledOnLaunch(enabled: boolean): Promise<void> {
@@ -635,6 +649,7 @@ function isStoredTeam(value: unknown): value is StoredTeam {
     isString(record.privateKey) &&
     Array.isArray(record.members) &&
     Array.isArray(record.invites) &&
-    Array.isArray(record.sessions)
+    Array.isArray(record.sessions) &&
+    (record.shareChoice === undefined || record.shareChoice === "quick-tunnel" || record.shareChoice === "tailscale")
   );
 }

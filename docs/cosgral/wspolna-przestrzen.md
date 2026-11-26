@@ -1,6 +1,6 @@
 # Wspólna przestrzeń botów dla dwóch osób (Kacper i Kuba)
 
-Stan: 26.11.2026. Kacper wybrał opcję A, więc jest już w programie (patrz „Jak to włączyć”). Niczego nie założyłem, nie zapłaciłem i nie uruchomiłem na prawdziwej sieci. Każdy krok, który wymaga konta, pieniędzy albo wysłania danych poza komputer, czeka na zgodę Kacpra.
+Stan: 26.11.2026. Kacper wybrał opcję A (jeden komputer-gospodarz) i odrzucił Tailscale jako wymóg, więc w programie jest darmowy tunel Cloudflare bez konta; Tailscale został jako opcja zaawansowana (patrz „Jak to włączyć”). Niczego nie założyłem, nie zapłaciłem i nie uruchomiłem na prawdziwej sieci. Każdy krok, który wymaga konta, pieniędzy albo wysłania danych poza komputer, czeka na zgodę Kacpra.
 
 ## Czego chcesz
 
@@ -56,31 +56,36 @@ Dlaczego A: daje dokładnie to, o co prosisz (te same boty, wejście z dowolnego
 
 Zanim Kuba zacznie używać botów: sprawdź w warunkach planu, czy wolno Wam dzielić jedno konto z modelem. Jeśli nie, zrobimy wspólną przestrzeń na osobnym kluczu API.
 
-## Jak to włączyć (opcja A jest już w programie)
+## Jak to włączyć (zmiana 26.11: bez Tailscale)
 
-Stan 26.11: program ma gotowe udostępnianie przez Tailscale. Sprawdziłem je w testach na atrapie Tailscale (gospodarz, link zaproszenia, dołączenie nazwą i hasłem, ponowne logowanie). **Nie próbowałem tego na prawdziwym Tailscale ani na dwóch komputerach**, bo nie zakładam kont. Pierwszy prawdziwy test robicie Wy.
+Kacper zauważył, że OpenBot nie wymaga żadnego dodatkowego programu. Ma rację: OpenBot łączy komputer gospodarza z internetem przez tunel Cloudflare, który stawia ich własna usługa (adresy `openbot.run`). Gość dostaje zwykły link. My nie mamy tej usługi, więc program używa **darmowego tunelu Cloudflare „na szybko” (quick tunnel)**. Nie trzeba konta, nie trzeba nic instalować, nie trzeba ustawiać routera: komputer sam „dzwoni” do Cloudflare.
 
 **Gospodarz (komputer, na którym stoją boty, na przykład Twój):**
 
-1. Zainstaluj Tailscale (tailscale.com/download) i zaloguj się. Konto zakładasz Ty, jeśli zdecydujesz się z niego korzystać.
-2. W panelu administracyjnym Tailscale (zakładka DNS) włącz nazwy MagicDNS i HTTPS dla Waszej sieci. Bez tego program powie, co zrobić.
-3. W programie: pasek serwerów po lewej, prawy przycisk na swoim serwerze, „Udostępnij ten COSGRAL Workspace”. Wpisz nazwę serwera i kliknij „Utwórz serwer i włącz udostępnianie”.
-4. Wejdź w „Ludzie”, wybierz rolę (Członek albo Admin), kliknij „Utwórz link zaproszenia” i wyślij link drugiej osobie. Link działa raz i wygasa po 24 godzinach.
+1. W programie: pasek serwerów po lewej, prawy przycisk na swoim serwerze, „Udostępnij ten COSGRAL Workspace”. Wpisz nazwę serwera i kliknij „Utwórz serwer i włącz udostępnianie”.
+2. Za pierwszym razem program sam pobiera mały darmowy program Cloudflare (około 40 MB, z oficjalnej strony Cloudflare na GitHubie) i sprawdza jego sumę kontrolną. Potem już nic nie pobiera.
+3. Wejdź w „Ludzie”, wybierz rolę (Członek albo Admin), kliknij „Utwórz link zaproszenia” i wyślij link Kubie. Link działa raz i wygasa po 24 godzinach.
 
-**Druga osoba (Kuba):**
+**Druga osoba (Kuba):** w programie plus na pasku serwerów, wklej link, wybierz swoją nazwę i hasło (co najmniej 12 znaków), „Dołącz do serwera”. Nic więcej: bez konta, bez dodatkowych programów. Kuba widzi tych samych agentów i rozmowy i może pisać do botów. Ty w „Ludziach” zmieniasz rolę, wyłączasz dostęp albo usuwasz osobę.
 
-1. Zainstaluj Tailscale i zaloguj się. Dołącza do Waszej sieci Tailscale (zaprasza gospodarz w panelu Tailscale).
-2. W programie: plus na pasku serwerów, wklej link zaproszenia, wybierz swoją nazwę i hasło (co najmniej 12 znaków) i kliknij „Dołącz do serwera”.
-3. Kuba widzi tych samych agentów i rozmowy, może pisać do botów i prowadzić z Tobą rozmowy. Role: Członek, Admin, Właściciel; Ty możesz w „Ludziach” zmienić rolę, wyłączyć dostęp albo usunąć osobę.
+**Ważne, uczciwie:**
 
-**Ważne:**
-
-- Gospodarz musi mieć włączony komputer i program. Gdy go zamkniesz, serwer znika (przy następnym starcie program sam włącza udostępnianie, jeśli było włączone).
+- **Adres jest losowy i zmienia się za każdym razem, gdy włączasz udostępnianie od nowa** (na przykład po wyłączeniu programu). Dopóki program stoi włączony, adres się nie zmienia. Po nowym włączeniu kliknij w „Publikowanie” przycisk „Skopiuj nowy adres dla osób”, wyślij go Kubie, a on wkleja go w to samo okno „Dołącz” (program rozpozna, że to nowy adres, i nie zapyta o hasło). Stały adres wymaga czegoś płatnego albo konta (patrz niżej).
+- Gospodarz musi mieć włączony komputer i program. Gdy go zamkniesz, serwer znika.
+- Adres jest dostępny z internetu, ale bez zaproszenia nikt się nie zaloguje. Zaproszenie działa raz i wygasa po 24 godzinach.
 - Boty pracują na kontach i kluczach gospodarza. Kuba ich nie widzi. Sprawdź warunki planów, zanim wspólnie z nich korzystacie.
 - Dane (boty, rozmowy) leżą na dysku gospodarza. Zrób kopię zapasową.
 - Hasło Kuby jest zapisane w jego programie w postaci zaszyfrowanej, żeby mógł wejść ponownie po wygaśnięciu sesji (po 30 dniach).
-- Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Używaj linku.
-- Sekcja „Strony” w Ustawieniach serwera dalej jest wyłączona (hosting stron wymaga usługi w internecie).
+- Zaproszenie mailem jest wyłączone (program nie ma skrzynki). Używaj linku. Sekcja „Strony” dalej jest wyłączona.
+- **Nie sprawdziłem tego na prawdziwym Cloudflare ani na dwóch komputerach**: moje środowisko nie ma dostępu do tej usługi. Cały przebieg (uruchomienie, link, dołączenie, ponowne włączenie z nowym adresem i aktualizacja adresu) przetestowałem w testach na atrapie tunelu. Pierwszy prawdziwy test robicie Wy.
+
+**Zaawansowane (dla kogoś, kto już ma Tailscale):** w panelu „Publikowanie”, przed włączeniem, jest „Zaawansowane” z opcją „Użyj Tailscale zamiast darmowego tunelu Cloudflare”. Wtedy adres jest stały (`<komputer>.<sieć>.ts.net`), ale obie osoby muszą mieć Tailscale i być w tej samej sieci, a HTTPS i MagicDNS muszą być włączone w panelu Tailscale. Program zapamiętuje wybór.
+
+**Co dałoby stały adres (nic z tego nie zrobiłem, bo wymaga konta albo pieniędzy):**
+
+1. Darmowe konto Cloudflare plus własna domena (około 40–60 zł rocznie za domenę): tunel z nazwą, adres stały, nic się nie zmienia po restarcie. Wymaga założenia konta na Twoje dane.
+2. Mały własny przekaźnik na wynajętym serwerze (kilka euro miesięcznie): jedna nazwa, która zawsze prowadzi do aktualnego adresu. Wymaga serwera i utrzymania.
+3. Darmowa „skrzynka” z adresem (np. usługa typu ntfy) do automatycznego przekazywania nowego adresu: bez kosztów, ale cudza usługa widziałaby adresy. Mogę to dodać po Twojej zgodzie.
 
 ## Marketplace: skąd miałby pochodzić katalog dodatkowych pluginów
 
