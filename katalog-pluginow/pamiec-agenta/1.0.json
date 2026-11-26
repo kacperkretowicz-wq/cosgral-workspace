@@ -1,0 +1,45 @@
+{
+  "slug": "pamiec-agenta",
+  "version": "1.0",
+  "name": "Pamięć agenta",
+  "tagline": "Agent zapamiętuje ludzi, projekty i ustalenia między rozmowami.",
+  "description": "Prosty magazyn pamięci: agent zapisuje fakty i powiązania (kto, co, z czym się łączy) i potrafi do nich wrócić w kolejnej rozmowie. Dane zostają na tym komputerze. Wymaga zainstalowanego programu Node.js.",
+  "category": "productivity",
+  "creatorName": "Model Context Protocol",
+  "featured": true,
+  "prompts": [
+    {
+      "id": "p1",
+      "text": "Zapamiętaj, że projekt Alfa prowadzi Kuba, a termin to piątek."
+    },
+    {
+      "id": "p2",
+      "text": "Co wiesz o projekcie Alfa?"
+    }
+  ],
+  "apps": [
+    {
+      "id": "pamiec",
+      "name": "Pamięć",
+      "description": "Zapisuje i odczytuje fakty o ludziach i projektach.",
+      "server": {
+        "transport": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-memory"],
+        "auth": [
+          {
+            "id": "lokalnie",
+            "kind": "local",
+            "label": "Bez logowania",
+            "fields": [],
+            "steps": [
+              "Zainstaluj program Node.js, jeśli go jeszcze nie masz.",
+              "Kliknij Zainstaluj. Nic więcej nie trzeba."
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "websiteUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/memory"
+}

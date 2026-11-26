@@ -1,0 +1,41 @@
+{
+  "slug": "myslenie-krok-po-kroku",
+  "version": "1.0",
+  "name": "Myślenie krok po kroku",
+  "tagline": "Pomaga agentowi rozbić trudne zadanie na kroki i poprawiać plan po drodze.",
+  "description": "Narzędzie, w którym agent układa swoje myślenie w ponumerowane kroki, może się cofnąć i zmienić zdanie. Przydaje się przy planowaniu projektów i trudnych pytaniach. Nic nie wysyła do internetu. Wymaga zainstalowanego programu Node.js.",
+  "category": "productivity",
+  "creatorName": "Model Context Protocol",
+  "featured": false,
+  "prompts": [
+    {
+      "id": "p1",
+      "text": "Rozpisz krok po kroku, jak przygotować wspólną przestrzeń dla dwóch osób."
+    }
+  ],
+  "apps": [
+    {
+      "id": "mysl",
+      "name": "Myślenie krok po kroku",
+      "description": "Układa rozumowanie w kroki, które można poprawiać.",
+      "server": {
+        "transport": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+        "auth": [
+          {
+            "id": "lokalnie",
+            "kind": "local",
+            "label": "Bez logowania",
+            "fields": [],
+            "steps": [
+              "Zainstaluj program Node.js, jeśli go jeszcze nie masz.",
+              "Kliknij Zainstaluj. Nic więcej nie trzeba."
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "websiteUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking"
+}
