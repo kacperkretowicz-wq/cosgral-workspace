@@ -502,4 +502,43 @@
   --cosgral-grain-opacity: 0.035;
   --cosgral-shadow-popover: 0 0 0 1px rgba(20, 20, 30, 0.1), 0 4px 12px rgba(20, 20, 30, 0.12);
   --cosgral-shadow-dialog: 0 0 0 1px rgba(20, 20, 30, 0.12), 0 12px 32px rgba(20, 20, 30, 0.18);
+
+  /* The Hub look in the light theme (hub-light.css): frosted white glass and white tiles on a pale wallpaper, the text
+     stays dark. Without these the dark Hub glass would sit under dark text. */
+  --cosgral-hub-ink: #14141c;
+  --cosgral-hub-ink-soft: #2a2d38;
+  --cosgral-hub-muted: #4a5060;
+  --cosgral-hub-glass:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.5) 60%), rgba(236, 242, 247, 0.55);
+  --cosgral-hub-glass-filter: blur(14px) saturate(1.3);
+  --cosgral-hub-glass-rim:
+    inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(20, 40, 60, 0.1), 0 14px 40px rgba(20, 40, 60, 0.12);
+  --cosgral-hub-tile: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%);
+  --cosgral-hub-tile-rim:
+    inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(20, 40, 60, 0.1), 0 10px 28px rgba(20, 40, 60, 0.08);
+  --cosgral-hub-tile-rim-hover:
+    inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(20, 40, 60, 0.16),
+    0 18px 40px rgba(20, 40, 60, 0.16);
+  --cosgral-hub-field: rgba(255, 255, 255, 0.8);
+  --cosgral-hub-field-rim: inset 0 1px 2px rgba(20, 30, 50, 0.08), inset 0 0 0 1px rgba(20, 40, 60, 0.04);
+  --cosgral-hub-ink-05: rgba(20, 20, 30, 0.05);
+  --cosgral-hub-ink-08: rgba(20, 20, 30, 0.08);
+  --cosgral-hub-ink-10: rgba(20, 20, 30, 0.1);
+  --cosgral-hub-glass-50: rgba(255, 255, 255, 0.62);
+  --cosgral-hub-glass-72: rgba(255, 255, 255, 0.84);
+  --cosgral-hub-glass-82: rgba(255, 255, 255, 0.94);
+  --cosgral-hub-white-10: rgba(255, 255, 255, 0.5);
+  --cosgral-hub-white-12: rgba(20, 40, 60, 0.18);
+  --cosgral-hub-white-14: rgba(255, 255, 255, 0.6);
+  --cosgral-hub-black-45: rgba(20, 40, 60, 0.28);
+  --cosgral-hub-black-50: rgba(20, 40, 60, 0.26);
+  --cosgral-hub-black-60: rgba(20, 40, 60, 0.3);
+  --cosgral-hub-black-65: rgba(20, 40, 60, 0.35);
+  --cosgral-hub-rgb-185-212-255-14: rgba(0, 88, 126, 0.1);
+  --cosgral-hub-rgb-169-223-207-13: rgba(22, 101, 52, 0.1);
+  --cosgral-hub-rgb-239-210-163-13: rgba(138, 90, 0, 0.1);
+  --cosgral-hub-rgb-255-181-189-13: rgba(168, 11, 47, 0.08);
+  --cosgral-hub-rgb-185-212-255-16: rgba(0, 99, 142, 0.18);
+  --cosgral-hub-rgb-185-212-255-35: rgba(0, 99, 142, 0.35);
+  --cosgral-hub-rgb-185-212-255-55: rgba(0, 99, 142, 0.6);
 }

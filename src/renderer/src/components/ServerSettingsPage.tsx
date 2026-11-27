@@ -5,6 +5,7 @@ import type {
   StorageReport,
 } from "@openbot/contracts/ipc";
 import {
+  DEFAULT_SERVER_NAME,
   MEMORY_REVIEW_INTERVALS,
   RESPONSE_STYLES,
   SERVER_BUSY_MESSAGE_MODES,
@@ -318,7 +319,9 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
                           <label class="server-settings-field">
                             <span>{t("Name")}</span>
                             <Input
-                              value={value.general.name}
+                              value={
+                                value.general.name === DEFAULT_SERVER_NAME ? t("This computer") : value.general.name
+                              }
                               maxlength={SERVER_SETTINGS_LIMITS.nameMax}
                               onInput={(event) => patch("general", { name: event.currentTarget.value })}
                             />

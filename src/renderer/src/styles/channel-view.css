@@ -151,6 +151,7 @@
   color: var(--openbot-text-secondary);
   font-size: var(--openbot-text-sm);
   list-style: none;
+  white-space: nowrap;
   cursor: pointer;
   user-select: none;
   transition:
@@ -888,8 +889,41 @@
   flex-wrap: nowrap;
 }
 
+/* The labels of the pills go away in steps, so the toolbar never grows wider than the header (a wider toolbar pushed
+ * the "Project plan" card past the right edge of the window, 27.11): first the quiet pills (Instructions, Memory,
+ * Routines, History) shrink to icons, then the plan pill drops its label but keeps the "Waiting for you" hint, then
+ * everything is an icon. Every pill keeps its tooltip and its label for screen readers. */
+@container channel-header (max-width: 1100px) {
+  .channel-view-settings > details:not(.project-plan-pill) .channel-pill-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .channel-view-settings > details:not(.project-plan-pill) > summary {
+    width: var(--openbot-control-sm);
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@container channel-header (max-width: 760px) {
+  .project-plan-pill .channel-pill-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 @container channel-header (max-width: 640px) {
-  .channel-pill-label {
+  .channel-pill-label,
+  .project-plan-hint {
     position: absolute;
     width: 1px;
     height: 1px;

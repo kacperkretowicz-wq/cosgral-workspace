@@ -3,12 +3,23 @@ import { createSignal, For, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
 import { t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
+import { withoutIpcPrefix } from "./provider-error";
 import { Button, Dialog, Input, NativeSelect, Textarea } from "./ui";
 import { Check, Hash } from "./ui/icons";
 
 type ChannelBot = { id: string; name: string } & Partial<Pick<BotProfile, "avatarSeed" | "avatarHue" | "avatarUrl">>;
 
 const MAX_MEMBERS = 20;
+
+/** The engine words its refusals in English and with "channel"; the person sees the same thing in plain words about the project. */
+export function saveProblemText(cause: unknown): string {
+  if (!(cause instanceof Error)) return t("Could not save the project. Try again.");
+  const message = withoutIpcPrefix(cause.message);
+  const taken = /^A channel named (.+) already exists\.$/.exec(message);
+  if (taken) return t("A project named {name} already exists. Choose another name.", { name: taken[1] ?? "" });
+  if (message === "The lead must be a member of the channel.") return t("Choose a lead from the project members.");
+  return message;
+}
 
 /**
  * New / Edit channel. The team is a list of agents with their creatures (pick by clicking the row), the lead is
@@ -70,7 +81,7 @@ export function ChannelEditor(props: {
       });
       props.onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save the project. Try again."));
+      setError(saveProblemText(cause));
     } finally {
       setBusy(false);
     }

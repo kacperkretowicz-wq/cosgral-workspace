@@ -36,6 +36,9 @@ export interface ServerSettingsSection {
   source: ServerSettingsSectionSource;
 }
 
+/** The name a server has until the person renames it; the window shows it in the app's language (the stored text stays as it is). */
+export const DEFAULT_SERVER_NAME = "This computer";
+
 export const SERVER_SETTINGS_LIMITS = {
   nameMax: 60,
   /** Most threads of all agents that may run at the same time (null = no limit). */
@@ -146,7 +149,7 @@ export interface ServerSettingsChanged {
 export function defaultServerSettings(): ServerSettings {
   return {
     general: {
-      name: "This computer",
+      name: DEFAULT_SERVER_NAME,
       logo: null,
       timezone: null,
       maxThreads: null,
