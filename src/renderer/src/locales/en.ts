@@ -917,6 +917,7 @@ export const en = {
   "Choose the .zip an agent export made. You see every item before anything changes.":
     "Choose the .zip an agent export made. You see every item before anything changes.",
   "Hermes Agent": "Hermes Agent",
+  "Custom agent": "Custom agent",
   "Read the Hermes folder on this computer, or an export from Hermes.":
     "Read the Hermes folder on this computer, or an export from Hermes.",
   "Reading a Hermes folder is not supported in this version.":

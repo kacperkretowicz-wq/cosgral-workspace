@@ -252,7 +252,7 @@ export const pl = {
     "Zaproszenia e-mailowe działają tylko dla adresu, na który je wysłano.",
   Duplicate: "Duplikuj",
   "Copy ready. Memory, history, queue, routines, projects and Vault are not copied.":
-    "Kopia gotowa. Pamięć, historia, kolejka, rutyny, projekty i Vault nie są kopiowane.",
+    "Kopia gotowa. Pamięć, historia, kolejka, rutyny, projekty i Sejf nie są kopiowane.",
   "Note:": "Uwaga:",
   "Could not change the thread tabs.": "Nie udało się zmienić kart wątków.",
   Threads: "Wątki",
@@ -576,7 +576,7 @@ export const pl = {
   "{days} days": "{days} dni",
   "Loading usage…": "Wczytywanie użycia…",
   Tokens: "Tokeny",
-  Turns: "Tury",
+  Turns: "Odpowiedzi agenta",
   "Cost reported by providers": "Koszt zgłoszony przez dostawców",
   "Counted since {day}.": "Liczone od {day}.",
   "Nothing has been counted yet.": "Nic jeszcze nie zliczono.",
@@ -918,6 +918,7 @@ export const pl = {
   "Choose the .zip an agent export made. You see every item before anything changes.":
     "Wybierz plik .zip z eksportu agentów. Zobaczysz każdą pozycję, zanim cokolwiek się zmieni.",
   "Hermes Agent": "Hermes Agent",
+  "Custom agent": "Własny agent",
   "Read the Hermes folder on this computer, or an export from Hermes.":
     "Odczytaj folder Hermes na tym komputerze albo eksport z Hermesa.",
   "Reading a Hermes folder is not supported in this version.":
@@ -1144,7 +1145,7 @@ export const pl = {
   "Its answer": "Jego odpowiedź",
   "Stop {title}": "Zatrzymaj: {title}",
   "Stopped by the user.": "Zatrzymany przez użytkownika.",
-  "The turn of the agent ended.": "Tura agenta się skończyła.",
+  "The turn of the agent ended.": "Agent skończył odpowiadać.",
   "Could not change the notifications.": "Nie udało się zmienić powiadomień.",
   "The test notification was sent.": "Powiadomienie testowe zostało wysłane.",
   "It was not sent.": "Nie zostało wysłane.",
@@ -1912,7 +1913,7 @@ export const pl = {
   "Last reported numbers; waiting for a new report after compaction.":
     "Ostatnie znane liczby; czekam na nowy raport po kompaktowaniu.",
   "Compacting context. This may wait for the current turn to finish.":
-    "Kompaktuję kontekst. Może poczekać na koniec bieżącej tury.",
+    "Kompaktuję kontekst. Może poczekać, aż agent skończy bieżącą odpowiedź.",
   Compact: "Kompaktuj",
   "Compactions: {count}": "Kompaktowania: {count}",
   "Last compacted:": "Ostatnie kompaktowanie:",
@@ -2013,7 +2014,7 @@ export const pl = {
   "Dollar limit not enforceable: no provider price is available.":
     "Limit dolarowy nieegzekwowalny: brak ceny dostawcy.",
   "New turns are blocked. A running turn is allowed to finish.":
-    "Nowe tury są zablokowane. Trwająca tura może się dokończyć.",
+    "Nowe odpowiedzi agenta są zablokowane. Trwająca odpowiedź może się dokończyć.",
   "Limits reset at midnight UTC each day or on the first day of each calendar month. Dollar amounts are provider estimates, not a bill.":
     "Limity resetują się o północy UTC każdego dnia albo pierwszego dnia miesiąca. Kwoty w dolarach to szacunki dostawcy, nie rachunek.",
   "Could not update the budget.": "Nie udało się zaktualizować budżetu.",
@@ -2028,8 +2029,8 @@ export const pl = {
     "Liczą się tylko ceny podane przez dostawców. Brakujących cen aplikacja nigdy nie szacuje.",
   "Warn at (%)": "Ostrzeż przy (%)",
   "50–99% of a limit.": "50–99% limitu.",
-  "Stop new turns when exhausted": "Zatrzymaj nowe tury po wyczerpaniu",
-  "A running turn is never interrupted.": "Trwająca tura nigdy nie jest przerywana.",
+  "Stop new turns when exhausted": "Po wyczerpaniu zatrzymaj nowe odpowiedzi agenta",
+  "A running turn is never interrupted.": "Trwająca odpowiedź nigdy nie jest przerywana.",
   "Save budget": "Zapisz budżet",
   "Budget removed. Usage is retained.": "Budżet usunięty. Użycie zostaje.",
   "Remove budget": "Usuń budżet",
@@ -2118,7 +2119,7 @@ export const pl = {
   Inclusion: "Dołączanie",
   "When needed": "Gdy potrzeba",
   Always: "Zawsze",
-  "Vault item form": "Formularz pozycji Vault",
+  "Vault item form": "Formularz wpisu w Sejfie",
   "Edit item": "Edytuj pozycję",
   "Add item": "Dodaj pozycję",
   Login: "Logowanie",
@@ -2360,13 +2361,13 @@ export const pl = {
   "Tables unavailable": "Tabele niedostępne",
   "Row changed since you opened it. Current version {n}:": "Wiersz zmienił się od otwarcia. Bieżąca wersja {n}:",
   "Delete current version": "Usuń bieżącą wersję",
-  "Could not load Vault items.": "Nie udało się wczytać pozycji Vault.",
-  "Vault unavailable.": "Vault niedostępny.",
+  "Could not load Vault items.": "Nie udało się wczytać wpisów z Sejfu.",
+  "Vault unavailable.": "Sejf jest niedostępny.",
   "Could not answer this request. Try again.": "Nie udało się odpowiedzieć na prośbę. Spróbuj ponownie.",
-  "Vault request": "Prośba Vault",
+  "Vault request": "Prośba o dostęp do Sejfu",
   "No matching items are available.": "Brak pasujących pozycji.",
   "Use saved item": "Użyj zapisanej pozycji",
-  "Vault unavailable": "Vault niedostępny",
+  "Vault unavailable": "Sejf jest niedostępny",
   Decline: "Odrzuć",
   "Project view": "Widok projektu",
   Confirm: "Potwierdź",
@@ -2521,7 +2522,7 @@ export const pl = {
     "Usuwany jest tylko folder. Jego agenci i podfoldery przechodzą poziom wyżej.",
   "Could not update spaces. Try again.": "Nie udało się zaktualizować przestrzeni. Spróbuj ponownie.",
   "Each space keeps its own agents, conversations, files, Vault, browser, MCP servers and memory. Switching restarts the app and stops running turns.":
-    "Każda przestrzeń ma własnych agentów, rozmowy, pliki, Vault, przeglądarkę, serwery MCP i pamięć. Przełączenie restartuje aplikację i zatrzymuje trwające tury.",
+    "Każda przestrzeń ma własnych agentów, rozmowy, pliki, Sejf, przeglądarkę, serwery MCP i pamięć. Przełączenie restartuje aplikację i zatrzymuje trwające odpowiedzi agentów.",
   "A different space is selected. Waiting for the app to restart.":
     "Wybrano inną przestrzeń. Czekam na restart aplikacji.",
   "Client spaces": "Przestrzenie klienta",
@@ -2550,14 +2551,14 @@ export const pl = {
   "Restart and switch: {name}?": "Restart i przełączenie: {name}?",
   "Delete space: {name}?": "Usunąć przestrzeń: {name}?",
   "The app will restart. Running turns in this space will stop. Your saved work stays here.":
-    "Aplikacja się zrestartuje. Trwające tury w tej przestrzeni się zatrzymają. Zapisana praca zostaje.",
+    "Aplikacja się zrestartuje. Trwające odpowiedzi agentów w tej przestrzeni się zatrzymają. Zapisana praca zostaje.",
   "All data in this client space will be permanently deleted. This cannot be undone.":
     "Wszystkie dane w tej przestrzeni klienta zostaną trwale usunięte. Tego nie da się cofnąć.",
   "Restart and switch": "Restart i przełączenie",
   "Delete permanently": "Usuń trwale",
   "Client space: {name}": "Przestrzeń klienta: {name}",
   "Client space: {name}. Manage spaces": "Przestrzeń klienta: {name}. Zarządzaj przestrzeniami",
-  Main: "Main",
+  Main: "Główna",
   "Space: {name}": "Przestrzeń: {name}",
   "Manage separate workspaces on this computer.": "Zarządzaj osobnymi obszarami pracy na tym komputerze.",
   "Close spaces": "Zamknij przestrzenie",
@@ -2606,7 +2607,7 @@ export const pl = {
   "Loading...": "Ładowanie…",
   "Agent threads": "Wątki agenta",
   "Running turns finish in their own thread. History, queued messages and Needs you stay with that thread. Memory is shared by this agent.":
-    "Trwające tury kończą się we własnym wątku. Historia, kolejka i karty „Czeka na Ciebie” zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
+    "Trwające odpowiedzi kończą się we własnym wątku. Historia, kolejka i karty „Czeka na Ciebie” zostają przy tym wątku. Pamięć jest wspólna dla tego agenta.",
   "Reload threads": "Odśwież wątki",
   "Show archived threads": "Pokaż zarchiwizowane wątki",
   "Loading threads...": "Ładowanie wątków…",
@@ -2736,8 +2737,8 @@ export const pl = {
   "This queued message is no longer available.": "Ta wiadomość z kolejki już nie jest dostępna.",
   "Could not save item. Check the fields and encryption status.":
     "Nie udało się zapisać pozycji. Sprawdź pola i status szyfrowania.",
-  "Vault is unavailable in this build.": "Vault nie jest dostępny w tej wersji.",
-  "Could not load Vault.": "Nie udało się wczytać Vault.",
+  "Vault is unavailable in this build.": "Sejf nie jest dostępny w tej wersji.",
+  "Could not load Vault.": "Nie udało się wczytać Sejfu.",
   "Could not delete item.": "Nie udało się usunąć pozycji.",
   "Existing contact fields or account cannot be read back. Saving replaces them with the values entered here. Continue?":
     "Istniejących pól kontaktu lub konta nie da się odczytać wstecz. Zapis zastąpi je wartościami z formularza. Kontynuować?",
@@ -2811,7 +2812,7 @@ export const pl = {
   "≈ {value} per day": "≈ {value} dziennie",
   "≈ {value} tokens per turn": "≈ {value} tokenów na turę",
   "No provider reported a price.": "Żaden dostawca nie podał ceny.",
-  "{count} priced turns": "Tury z ceną: {count}",
+  "{count} priced turns": "Odpowiedzi z ceną: {count}",
   "Tokens per day": "Tokeny dziennie",
   "Peak {value}": "Szczyt {value}",
   "{count} members": "Członkowie: {count}",
@@ -3078,13 +3079,14 @@ export const pl = {
     "Przepływ zachowuje ostatni zapisany stan i 100 ostatnich przebiegów; nie ma historii wersji.",
   "Files are not passed between steps in this version.": "W tej wersji pliki nie są przekazywane między krokami.",
   "No turn of this period was kept with its model yet (the counter keeps it from the day the parts were first reported).":
-    "Żadna tura z tego okresu nie ma jeszcze zapisanego modelu (licznik zapisuje go od dnia, w którym dostawca po raz pierwszy podał te dane).",
+    "Żadna odpowiedź agenta z tego okresu nie ma jeszcze zapisanego modelu (licznik zapisuje go od dnia, w którym dostawca po raz pierwszy podał te dane).",
   "No turn of this period was kept with its cache and input/output split yet.":
-    "Żadna tura z tego okresu nie została jeszcze zapisana z podziałem na pamięć podręczną oraz wejście i wyjście.",
+    "Żadna odpowiedź agenta z tego okresu nie została jeszcze zapisana z podziałem na pamięć podręczną oraz wejście i wyjście.",
   "Only steps and connections are saved with a workflow; marks drawn on the canvas would be lost.":
     "Z przepływem zapisują się tylko kroki i połączenia; oznaczenia narysowane na płótnie przepadłyby.",
   "Start with a trigger.": "Zacznij od wyzwalacza.",
-  "The counter does not tell which skill a turn used.": "Licznik nie podaje, której umiejętności użyła tura.",
+  "The counter does not tell which skill a turn used.":
+    "Licznik nie podaje, której umiejętności agent użył w odpowiedzi.",
   "This workflow is already running.": "Ten przepływ już działa.",
   "This workflow is paused.": "Ten przepływ jest wstrzymany.",
   "Use an Agent step: it runs the instruction with that agent's model.":
@@ -3308,8 +3310,8 @@ export const pl = {
     "COSGRAL Workspace nie był uruchomiony o zaplanowanej porze; pominiętych uruchomień nie nadrabia.",
   "The program stopped during this run.": "Program zatrzymał się w trakcie tego uruchomienia.",
   "The previous run of this routine is still running.": "Poprzednie uruchomienie tej rutyny jeszcze trwa.",
-  "The turn is gone.": "Tej tury już nie ma.",
-  "The turn ended": "Tura zakończyła się",
+  "The turn is gone.": "Tej odpowiedzi agenta już nie ma.",
+  "The turn ended": "Odpowiedź agenta się zakończyła",
   "Built-in skills": "Stałe skille",
   "Built-in": "Stały",
   "Comes with the app. It stays in the library.": "Jest częścią aplikacji. Zostaje w bibliotece.",

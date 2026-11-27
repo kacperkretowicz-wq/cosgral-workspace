@@ -1,9 +1,14 @@
 import type { SpaceDescription, SpaceList, SpaceSummary, SpacesDesktopApi } from "@openbot/contracts/ipc";
-import { spaceNameProblem } from "@openbot/contracts/ipc";
+import { MAIN_SPACE_NAME, spaceNameProblem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { errorText } from "../errors";
 import { t } from "../i18n";
 import { AlertDialog, Badge, Button, Dialog, Field, Heading, Input, Text } from "./ui";
+
+/** The first space keeps the stored name "Main"; the window shows it in the language of the person (a renamed space shows as it is). */
+function spaceLabel(name: string | undefined): string {
+  return name === undefined || name === MAIN_SPACE_NAME ? t("Main") : name;
+}
 
 export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; onChange: (list: SpaceList) => void }) {
   const [name, setName] = createSignal("");
@@ -58,7 +63,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
             <li class="providers-form">
               <div class="providers-heading spaces-actions">
                 <Heading as="h3" size="sm">
-                  {space.name}
+                  {spaceLabel(space.name)}
                 </Heading>
                 <Show when={space.running}>
                   <Badge tone="success">{t("Running")}</Badge>
@@ -79,11 +84,11 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                     }
                   }}
                 >
-                  {t("Details for {name}", { name: space.name })}
+                  {t("Details for {name}", { name: spaceLabel(space.name) })}
                 </Button>
                 <Show when={!space.running && !space.archivedAt}>
                   <Button disabled={busy()} onClick={() => setConfirmation({ space, action: "switch" })}>
-                    {t("Switch to {name}", { name: space.name })}
+                    {t("Switch to {name}", { name: spaceLabel(space.name) })}
                   </Button>
                 </Show>
                 <Show when={!space.main}>
@@ -94,7 +99,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                       setName(space.name);
                     }}
                   >
-                    {t("Rename {name}", { name: space.name })}
+                    {t("Rename {name}", { name: spaceLabel(space.name) })}
                   </Button>
                   <Show when={!space.running}>
                     <Button
@@ -106,15 +111,15 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                       }
                     >
                       {space.archivedAt
-                        ? t("Restore {name}", { name: space.name })
-                        : t("Archive {name}", { name: space.name })}
+                        ? t("Restore {name}", { name: spaceLabel(space.name) })
+                        : t("Archive {name}", { name: spaceLabel(space.name) })}
                     </Button>
                     <Button
                       variant="danger"
                       disabled={busy()}
                       onClick={() => setConfirmation({ space, action: "delete" })}
                     >
-                      {t("Delete {name}", { name: space.name })}
+                      {t("Delete {name}", { name: spaceLabel(space.name) })}
                     </Button>
                   </Show>
                 </Show>
@@ -127,7 +132,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
         {(detail) => (
           <section aria-label={t("Space details")}>
             <Heading as="h3" size="sm">
-              {detail().name}
+              {spaceLabel(detail().name)}
             </Heading>
             <Text as="p">
               {detail().separateFolder ? t("Separate data folder") : t("Original main data folder")}.{" "}
@@ -191,8 +196,8 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
                 <AlertDialog.Content class="bot-delete-dialog">
                   <AlertDialog.Title>
                     {pending().action === "switch"
-                      ? t("Restart and switch: {name}?", { name: pending().space.name })
-                      : t("Delete space: {name}?", { name: pending().space.name })}
+                      ? t("Restart and switch: {name}?", { name: spaceLabel(pending().space.name) })
+                      : t("Delete space: {name}?", { name: spaceLabel(pending().space.name) })}
                   </AlertDialog.Title>
                   <AlertDialog.Description>
                     {pending().action === "switch"
@@ -248,16 +253,16 @@ export function SpacesRail(props: { compact?: boolean } = {}) {
           <Button
             class="no-drag spaces-rail"
             title={t("Client space: {name}", {
-              name: current().spaces.find((s) => s.running)?.name ?? t("Main"),
+              name: spaceLabel(current().spaces.find((s) => s.running)?.name),
             })}
             aria-label={t("Client space: {name}. Manage spaces", {
-              name: current().spaces.find((s) => s.running)?.name ?? t("Main"),
+              name: spaceLabel(current().spaces.find((s) => s.running)?.name),
             })}
             onClick={() => setOpen(true)}
           >
             {props.compact
               ? "S"
-              : t("Space: {name}", { name: current().spaces.find((s) => s.running)?.name ?? t("Main") })}
+              : t("Space: {name}", { name: spaceLabel(current().spaces.find((s) => s.running)?.name) })}
           </Button>
           <Dialog.Portal>
             <Dialog.Overlay class="bot-delete-backdrop">

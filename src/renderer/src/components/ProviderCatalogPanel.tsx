@@ -135,7 +135,7 @@ export function ProviderCatalogPanel() {
               {(item) => (
                 <li class="provider-catalog-card" data-support={item.support}>
                   <header>
-                    <strong>{item.name}</strong>
+                    <strong>{tData(item.name)}</strong>
                     <Badge tone={supportView(item.support).tone} dot>
                       {supportView(item.support).label}
                     </Badge>

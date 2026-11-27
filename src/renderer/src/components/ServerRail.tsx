@@ -12,6 +12,18 @@ interface ServerRailProps {
   onOpenRemoteMac: () => void;
 }
 
+/** The built-in server is called "Local" by the engine; the window calls it "This computer" (in the person's language). */
+function serverAria(server: { kind: string; name: string; state: string }): string {
+  const name = serverLabel(server);
+  const local = server.kind === "local";
+  if (server.state === "online") return local ? name : t("{name} server", { name });
+  return local ? `${name}, ${server.state}` : t("{name} server, {state}", { name, state: server.state });
+}
+
+export function serverLabel(server: { kind: string; name: string }): string {
+  return server.kind === "local" ? t("This computer") : server.name;
+}
+
 export function ServerRail(props: ServerRailProps) {
   const activeRemote = () => props.servers.find((server) => server.active && server.kind === "remote");
   return (
@@ -25,13 +37,9 @@ export function ServerRail(props: ServerRailProps) {
                 <Button
                   type="button"
                   class={["server-rail-button", { "server-rail-button-active": server.active }]}
-                  aria-label={
-                    server.state === "online"
-                      ? t("{name} server", { name: server.name })
-                      : t("{name} server, {state}", { name: server.name, state: server.state })
-                  }
+                  aria-label={serverAria(server)}
                   aria-pressed={server.active ? "true" : "false"}
-                  title={server.name}
+                  title={serverLabel(server)}
                   onClick={() => props.onSelect(server.id)}
                 >
                   <span class="server-rail-mark" />
@@ -45,17 +53,13 @@ export function ServerRail(props: ServerRailProps) {
                   as={Button}
                   type="button"
                   class={["server-rail-button", { "server-rail-button-active": server.active }]}
-                  aria-label={
-                    server.state === "online"
-                      ? t("{name} server", { name: server.name })
-                      : t("{name} server, {state}", { name: server.name, state: server.state })
-                  }
+                  aria-label={serverAria(server)}
                   aria-pressed={server.active ? "true" : "false"}
-                  title={server.name}
+                  title={serverLabel(server)}
                   onClick={() => props.onSelect(server.id)}
                 >
                   <span class="server-rail-mark" />
-                  <span class="server-rail-local">O</span>
+                  <span class="server-rail-local">C</span>
                   <span class={`server-rail-state server-rail-state-${server.state}`} />
                 </ContextMenu.Trigger>
                 <ContextMenu.Portal>
