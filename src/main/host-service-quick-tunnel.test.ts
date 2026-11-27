@@ -24,7 +24,9 @@ function unused(): never {
   throw new Error("This operation is not used by this test.");
 }
 
-async function setup(setupOptions: { publishError?: Error; withTailscale?: boolean; announceEveryMs?: number } = {}) {
+async function setup(
+  setupOptions: { publishError?: Error; beaconError?: Error; withTailscale?: boolean; announceEveryMs?: number } = {},
+) {
   const root = await mkdtemp(join(tmpdir(), "cosgral-host-quick-"));
   roots.push(root);
   const store = new TeamStore(join(root, "team.json"));
@@ -50,6 +52,7 @@ async function setup(setupOptions: { publishError?: Error; withTailscale?: boole
     provisionTeamTunnel: async () => unused(),
     addressBeacon: {
       publish: async (_serverId: string, _fingerprint: string, updateUrl: string) => {
+        if (setupOptions.beaconError) throw setupOptions.beaconError;
         mailbox.unshift(updateUrl);
       },
     },
@@ -228,6 +231,72 @@ describe("HostService through a quick tunnel", () => {
     const restarted = await host.start();
     expect(restarted.apiUrl).toBe("https://drugi-adres-test.trycloudflare.com");
 
+    await vi.waitFor(
+      () =>
+        expect(manager.list().find((item) => item.id === server.id)?.apiUrl).toBe(
+          "https://drugi-adres-test.trycloudflare.com",
+        ),
+      { timeout: 8_000 },
+    );
+    manager.stop();
+    await host.stop();
+  });
+  it("starts sharing even when the address mailbox cannot be reached", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { host, published, mailbox } = await setup({ beaconError: new Error("The address mailbox answered 503.") });
+    routeAddresses(published);
+    await host.configure({ serverName: "Nasza przestrzeń" });
+    const state = await host.start();
+    expect(state.apiUrl).toBe("https://pierwszy-adres-test.trycloudflare.com");
+    expect(mailbox).toEqual([]);
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled());
+    await host.stop();
+    warn.mockRestore();
+  });
+
+  it("ignores a forged address note, waits out an empty mailbox, and then follows the real note", async () => {
+    const { host, published, mailbox } = await setup();
+    routeAddresses(published);
+    await host.configure({ serverName: "Nasza przestrzeń" });
+    await host.start();
+    const invite = await host.createInvite({ role: "member" });
+    let mailboxAnswer: "empty" | "forged" | "real" = "empty";
+    const evilAddress = "https://zly-adres-test.trycloudflare.com";
+    const realFetch = globalThis.fetch;
+    const evilRequests: string[] = [];
+    const manager = await remoteManager(async () => {
+      if (mailboxAnswer === "empty") return [];
+      if (mailboxAnswer === "real") return [...mailbox];
+      // The forged note keeps the look of the real one, but the address is somebody else's: the signature no longer fits.
+      return mailbox.map((note) =>
+        note.replace(encodeURIComponent("https://drugi-adres-test.trycloudflare.com"), encodeURIComponent(evilAddress)),
+      );
+    });
+    const server = await manager.join({
+      inviteUrl: invite.inviteUrl,
+      username: "Kuba",
+      password: "bardzo-dlugie-haslo-1",
+    });
+    vi.stubGlobal("fetch", (input: string | URL, init?: RequestInit) => {
+      if (String(input).startsWith(evilAddress)) evilRequests.push(String(input));
+      return realFetch(input, init);
+    });
+    routeAddresses(published);
+
+    await host.stop();
+    await host.start();
+    // The mailbox is empty for a while: the person's program keeps the old address and keeps trying.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(manager.list().find((item) => item.id === server.id)?.apiUrl).toBe(
+      "https://pierwszy-adres-test.trycloudflare.com",
+    );
+    mailboxAnswer = "forged";
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(manager.list().find((item) => item.id === server.id)?.apiUrl).toBe(
+      "https://pierwszy-adres-test.trycloudflare.com",
+    );
+    expect(evilRequests).toEqual([]);
+    mailboxAnswer = "real";
     await vi.waitFor(
       () =>
         expect(manager.list().find((item) => item.id === server.id)?.apiUrl).toBe(

@@ -47,6 +47,8 @@ export interface PluginCatalogServiceOptions {
   now?: () => Date;
   /** For tests: how files are read. */
   read?: ReadText;
+  /** The catalog that ships with the program. It is used while the owner has chosen no folder (and is never saved as a choice). */
+  defaultFolder?: string;
 }
 
 interface InstalledRow {
@@ -114,7 +116,14 @@ export class PluginCatalogService {
   async load(): Promise<PluginCatalogInfo> {
     const directory = this.#setting(CATALOG_FOLDER_KEY);
     if (directory) await this.#loadFolder(directory).catch(() => undefined);
+    if (this.#info.source === "none") await this.#loadDefaultFolder();
     return this.info();
+  }
+
+  /** The catalog shipped with the program: loaded when no folder was chosen. A missing or broken one leaves the catalog empty. */
+  async #loadDefaultFolder(): Promise<void> {
+    const directory = this.#options.defaultFolder;
+    if (directory) await this.#loadFolder(directory).catch(() => undefined);
   }
 
   info(): PluginCatalogInfo {
@@ -126,6 +135,7 @@ export class PluginCatalogService {
       this.#db().prepare("DELETE FROM projection_plugin_settings WHERE key = ?").run(CATALOG_FOLDER_KEY);
       this.#entries = new Map();
       this.#info = emptyPluginCatalogInfo();
+      await this.#loadDefaultFolder();
     } else {
       // The folder is saved only when it holds a valid catalog; a wrong folder leaves the current catalog untouched.
       await this.#loadFolder(directory);

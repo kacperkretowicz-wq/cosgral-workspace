@@ -1,5 +1,6 @@
 import type { LocalSkill, SkillContent, SkillInstall, SkillVersion } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { SkillsPanel } from "./SkillsPanel";
 import { Badge, Button } from "./ui";
@@ -52,7 +53,7 @@ export function SkillsSettings(props: { botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Skill action failed."));
+      setError(errorText(e, t("Skill action failed.")));
     }
   }
   async function inspect(skillId: string, version?: number) {

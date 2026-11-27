@@ -1,5 +1,6 @@
 import { APPROVAL_RULES_NEVER_COVER, type ApprovalRule, describeApprovalRule } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { Button, Heading, Text } from "./ui";
 
@@ -77,7 +78,7 @@ export function ApprovalRulesSettings(props: { botId: string }) {
     void api
       .list(props.botId)
       .then(setRules)
-      .catch((e) => setError(e instanceof Error ? e.message : t("Could not load the rules.")));
+      .catch((e) => setError(errorText(e, t("Could not load the rules."))));
     return window.openbot.agent.onEvent((event) => {
       if (event.type === "approval-rules-changed") setRules(event.rules.filter((rule) => rule.botId === props.botId));
     });
@@ -97,7 +98,7 @@ export function ApprovalRulesSettings(props: { botId: string }) {
                 setRules(left.filter((rule) => rule.botId === props.botId));
                 setError("");
               })
-              .catch((e) => setError(e instanceof Error ? e.message : t("Could not remove the rule.")))
+              .catch((e) => setError(errorText(e, t("Could not remove the rule."))))
               .finally(() => setBusy(false));
           }}
         />

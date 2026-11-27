@@ -1,5 +1,6 @@
 import { MCP_OAUTH_LIMITS, type McpOAuthState, type McpOAuthStatus } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button } from "./ui";
@@ -44,7 +45,7 @@ export function McpSignInPanel() {
       setStatuses(list.statuses);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the sign-ins."));
+      setError(errorText(cause, t("Could not load the sign-ins.")));
     } finally {
       setLoaded(true);
     }
@@ -70,7 +71,7 @@ export function McpSignInPanel() {
       // The answer of the call can be older than an event that arrived meanwhile, so read the list again.
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(null);
     }

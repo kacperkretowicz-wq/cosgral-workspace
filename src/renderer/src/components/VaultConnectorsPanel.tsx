@@ -5,6 +5,7 @@ import type {
   VaultConnectorStatus,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
@@ -77,7 +78,7 @@ export function VaultConnectorsPanel() {
       setConnectors((await api.list()).connectors);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the connectors."));
+      setError(errorText(cause, t("Could not load the connectors.")));
     } finally {
       setLoaded(true);
     }
@@ -103,7 +104,7 @@ export function VaultConnectorsPanel() {
       const status = await work();
       if (status) replace(status);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(null);
     }

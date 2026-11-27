@@ -1715,6 +1715,10 @@ if (!hasSingleInstanceLock) {
         mcp,
         emit: (event) => forwardAgentEvent("local", event),
         botIds: () => agentService?.listBots().map((bot) => bot.id) ?? [],
+        // The small catalog that ships with the program (folder `katalog-pluginow`), so the Apps tab is not empty at the start.
+        defaultFolder: app.isPackaged
+          ? join(process.resourcesPath, "katalog-pluginow")
+          : join(app.getAppPath(), "katalog-pluginow"),
       });
       void pluginCatalogService.load();
       vaultSecretsService = new VaultSecretsService({

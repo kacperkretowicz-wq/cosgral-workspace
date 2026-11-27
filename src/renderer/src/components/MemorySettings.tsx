@@ -1,5 +1,6 @@
 import type { AgentMemory, AgentMemorySettings, ChannelMemory } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { MemoryPanel } from "./MemoryPanel";
 
@@ -29,7 +30,7 @@ export function AgentMemorySettingsView(props: { botId: string }) {
         setError("");
       }
     } catch (e) {
-      if (serial === request) setError(e instanceof Error ? e.message : t("Could not load memory."));
+      if (serial === request) setError(errorText(e, t("Could not load memory.")));
     }
   }
   onSettled(() => {
@@ -96,7 +97,7 @@ export function ChannelMemorySettingsView(props: { channelId: string }) {
         setError("");
       }
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load project memory."));
+      if (n === serial) setError(errorText(e, t("Could not load project memory.")));
     }
   }
   onSettled(() => {

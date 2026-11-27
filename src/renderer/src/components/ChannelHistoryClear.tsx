@@ -1,5 +1,6 @@
 import type { ChannelHistoryCleared } from "@openbot/contracts/ipc";
 import { createSignal, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Text } from "./ui";
 
@@ -23,7 +24,7 @@ export function ChannelHistoryClear(props: { onClear: () => Promise<ChannelHisto
       setDone(await props.onClear());
       setAsking(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not clear the history."));
+      setError(errorText(cause, t("Could not clear the history.")));
       setAsking(false);
     } finally {
       setBusy(false);

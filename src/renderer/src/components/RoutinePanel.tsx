@@ -7,6 +7,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { PanelHeading } from "./PanelHeading";
@@ -72,7 +73,7 @@ export function RoutineForm(props: {
       setName("");
       setPrompt("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not create routine."));
+      setError(errorText(e, t("Could not create routine.")));
     }
   }
   return (
@@ -200,7 +201,7 @@ export function RoutineEditForm(props: {
         ...(hasSchedule() ? { schedule: schedule() } : {}),
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not save the routine."));
+      setError(errorText(e, t("Could not save the routine.")));
     }
   }
   return (
@@ -307,7 +308,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string; heading?: boo
       const list = await api.list(props.botId);
       if (n === serial) setRoutines(list);
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load routines."));
+      if (n === serial) setError(errorText(e, t("Could not load routines.")));
     }
   }
   async function run(fn: () => Promise<unknown>) {
@@ -316,7 +317,7 @@ export function RoutinePanel(props: { bots: Bot[]; botId?: string; heading?: boo
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Routine action failed."));
+      setError(errorText(e, t("Routine action failed.")));
     }
   }
   async function loadHistory(routineId: string) {

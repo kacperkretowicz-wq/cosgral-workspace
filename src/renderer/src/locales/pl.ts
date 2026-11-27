@@ -3413,8 +3413,8 @@ export const pl = {
   "Create an agent first: the card appears in an agent's row.":
     "Najpierw utwórz agenta: karta pojawia się w wierszu agenta.",
   "No phones yet. Pair the first one with the button above.": "Brak telefonów. Sparuj pierwszy przyciskiem wyżej.",
-  "No app catalog is loaded yet. Choose the folder with the catalog to load it.":
-    "Katalog aplikacji nie jest jeszcze wczytany. Wskaż folder z katalogiem, żeby go wczytać.",
+  "No app catalog is loaded yet. Choose the folder named “katalog-pluginow” (it has a catalog.json file inside) to load it.":
+    "Nie wczytano jeszcze katalogu aplikacji. Wskaż folder o nazwie „katalog-pluginow” (w środku jest plik catalog.json), a katalog się wczyta.",
   "Choose the catalog folder": "Wybierz folder katalogu",
   "Projects and follow-ups": "Projekty i terminy",
   "Research and analysis": "Badania i analiza",

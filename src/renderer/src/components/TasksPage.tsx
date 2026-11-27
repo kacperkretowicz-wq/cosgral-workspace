@@ -1,5 +1,6 @@
 import type { ChannelTask, ChannelTaskAction, ChannelTaskState, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { Badge, type BadgeTone, Button, Card, Heading, Input, Text } from "./ui";
 import { WorkPage } from "./WorkPage";
@@ -77,7 +78,7 @@ export function TasksPage(props: {
   const [loaded, setLoaded] = createSignal(false);
   const [busy, setBusy] = createSignal<string | null>(null);
   const [error, setError] = createSignal("");
-  const fail = (e: unknown, fallback: string) => setError(e instanceof Error ? e.message : fallback);
+  const fail = (e: unknown, fallback: string) => setError(errorText(e, fallback));
   const upsert = (task: ChannelTask) => setTasks((list) => [...list.filter((item) => item.id !== task.id), task]);
   const visible = createMemo(() =>
     tasks()

@@ -6,6 +6,7 @@ import {
   DEFAULT_APP_WORKSPACE,
 } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Card, Heading, NativeSelect, Switch, Text } from "./ui";
 
@@ -60,7 +61,7 @@ export function AppBehaviorSection() {
     } catch (cause) {
       setBehavior(beforeBehavior);
       setRestore(beforeRestore);
-      setError(cause instanceof Error ? cause.message : t("Could not save the setting."));
+      setError(errorText(cause, t("Could not save the setting.")));
     } finally {
       setBusy(null);
     }

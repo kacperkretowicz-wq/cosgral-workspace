@@ -5,6 +5,7 @@ import type {
   PhoneTailscaleGuide,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Card, Heading, Switch, Text } from "./ui";
@@ -118,8 +119,7 @@ export function MobileOverviewPanel() {
       setOverview(next);
       setError("");
     } catch (cause) {
-      if (mine === serial)
-        setError(cause instanceof Error ? cause.message : t("Could not load the overview of your phones."));
+      if (mine === serial) setError(errorText(cause, t("Could not load the overview of your phones.")));
     } finally {
       setLoaded(true);
     }
@@ -133,7 +133,7 @@ export function MobileOverviewPanel() {
       await phoneApi.setPushEnabled({ enabled });
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not change the notifications."));
+      setError(errorText(cause, t("Could not change the notifications.")));
     } finally {
       setPushBusy(false);
     }
@@ -151,7 +151,7 @@ export function MobileOverviewPanel() {
       });
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not send the test notification."));
+      setError(errorText(cause, t("Could not send the test notification.")));
     } finally {
       setPushBusy(false);
     }

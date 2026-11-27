@@ -1,5 +1,6 @@
 import { type AgentPlan, type PlansDesktopApi, planProgress } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { createThreadRecords } from "../thread-records";
 import { Button, Heading, Text } from "./ui";
@@ -42,7 +43,7 @@ export function PlanCard(props: { plan: AgentPlan; api?: PlansDesktopApi }) {
       const next = await api.respond({ requestId: id, decision });
       if (value().requestId === id) setValue(next);
     } catch (e) {
-      if (value().requestId === id) setError(e instanceof Error ? e.message : t("Could not answer this plan."));
+      if (value().requestId === id) setError(errorText(e, t("Could not answer this plan.")));
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,6 @@
 import { type AgentMemorySettings, isMemoryInclusion, type MemoryInclusion } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
 
@@ -24,7 +25,7 @@ export function MemoryPanel(props: {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not update memory."));
+      setError(errorText(e, t("Could not update memory.")));
     } finally {
       setBusy(false);
     }

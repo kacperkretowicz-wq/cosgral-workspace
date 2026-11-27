@@ -140,6 +140,13 @@
   gap: var(--openbot-space-1);
 }
 
+.project-plan-accepted > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  cursor: pointer;
+}
+
 .channel-view-settings > details > summary {
   display: inline-flex;
   height: var(--openbot-control-sm);
@@ -1054,13 +1061,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--openbot-space-2);
-}
-
-.project-plan-accepted > summary {
-  display: flex;
-  align-items: center;
-  gap: var(--openbot-space-2);
-  cursor: pointer;
 }
 
 .project-plan-accepted[open] > summary {

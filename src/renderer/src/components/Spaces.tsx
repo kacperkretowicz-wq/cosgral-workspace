@@ -1,6 +1,7 @@
 import type { SpaceDescription, SpaceList, SpaceSummary, SpacesDesktopApi } from "@openbot/contracts/ipc";
 import { spaceNameProblem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { AlertDialog, Badge, Button, Dialog, Field, Heading, Input, Text } from "./ui";
 
@@ -21,7 +22,7 @@ export function SpacesManager(props: { api: SpacesDesktopApi; list: SpaceList; o
       setConfirmation(undefined);
       setDescription(undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not update spaces. Try again."));
+      setError(errorText(e, t("Could not update spaces. Try again.")));
     } finally {
       setBusy(false);
     }

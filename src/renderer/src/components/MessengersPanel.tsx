@@ -13,6 +13,7 @@ import {
   type UnknownChat,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
@@ -72,7 +73,7 @@ export function MessengersPanel() {
       setBots(agentList);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the messengers."));
+      setError(errorText(cause, t("Could not load the messengers.")));
     } finally {
       setLoaded(true);
     }
@@ -97,7 +98,7 @@ export function MessengersPanel() {
       await work();
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(null);
     }

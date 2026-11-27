@@ -5,6 +5,7 @@ import {
   type WorkflowVersionSummary,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t, tn } from "../i18n";
 import { workflowDiffText } from "../workflow-text";
 import { Badge, Button } from "./ui";
@@ -67,7 +68,7 @@ export function WorkflowVersionsPanel(props: {
       }
       if (n === serial) setChanges(next);
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the versions."));
+      if (n === serial) setError(errorText(cause, t("Could not load the versions.")));
     }
   }
 
@@ -101,7 +102,7 @@ export function WorkflowVersionsPanel(props: {
       const found = await api.getVersion({ workflowId: props.workflowId, version: version.number });
       props.onPreview({ number: version.number, graph: { nodes: found.nodes, edges: found.edges } });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the versions."));
+      setError(errorText(cause, t("Could not load the versions.")));
     }
   }
 
@@ -114,7 +115,7 @@ export function WorkflowVersionsPanel(props: {
       props.onRestored?.(workflow);
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not restore this version."));
+      setError(errorText(cause, t("Could not restore this version.")));
     } finally {
       setBusy(false);
     }

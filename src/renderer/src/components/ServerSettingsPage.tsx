@@ -13,6 +13,7 @@ import {
   SKILL_LEARNING_MODES,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, Match, onSettled, Show, Switch as SolidSwitch, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { InstanceTransferPanel } from "./InstanceTransferPanel";
@@ -176,7 +177,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
       setDraft(settings);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the server settings."));
+      setError(errorText(cause, t("Could not load the server settings.")));
     }
   }
   onSettled(() => {
@@ -197,7 +198,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
       setDraft(next);
       setNotice(t("Saved."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save the server settings."));
+      setError(errorText(cause, t("Could not save the server settings.")));
     } finally {
       setBusy(false);
     }
@@ -211,7 +212,7 @@ export function ServerSettingsPage(props: ServerSettingsPageProps) {
       setStorage(clear ? await api.clearLogs() : await api.measureStorage());
       setConfirmClear(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not measure the storage."));
+      setError(errorText(cause, t("Could not measure the storage.")));
     } finally {
       setBusy(false);
     }

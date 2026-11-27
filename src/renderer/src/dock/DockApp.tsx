@@ -12,6 +12,7 @@ import {
   defaultDockState,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, flush, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 
 const CHAT_MESSAGES = 6;
@@ -36,7 +37,7 @@ export function DockApp() {
       const next = await action();
       if (next) setDock(next);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorText(cause, String(cause)));
     }
   }
 

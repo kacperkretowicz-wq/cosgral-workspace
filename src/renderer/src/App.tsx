@@ -105,6 +105,7 @@ import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
 import type { BotMessage, BotProfile } from "./data";
+import { errorText } from "./errors";
 import { language, t, tData } from "./i18n";
 import { selectIslandCard } from "./island-selection";
 import { isShortcutListKey } from "./keyboard-shortcuts";
@@ -1300,7 +1301,7 @@ export function App() {
       }));
     } catch (error) {
       if (request !== directConversationRequest) return;
-      setDirectConversationError(error instanceof Error ? error.message : t("The messages could not load."));
+      setDirectConversationError(errorText(error, t("The messages could not load.")));
     } finally {
       if (request === directConversationRequest) setDirectConversationLoading(false);
     }
@@ -1322,7 +1323,7 @@ export function App() {
     try {
       await markDirectMessagesRead(memberId, message.sequence);
     } catch (error) {
-      readError = error instanceof Error ? error.message : t("Could not mark messages as read.");
+      readError = errorText(error, t("Could not mark messages as read."));
     }
     await refreshDirectThreads();
     return { message, ...(readError ? { readError } : {}) };
@@ -1735,7 +1736,7 @@ export function App() {
   }
 
   function appendUiError(botId: string, error: unknown, status: string) {
-    const body = error instanceof Error ? error.message : String(error);
+    const body = errorText(error, String(error));
     setUiErrors((current) => ({
       ...current,
       [botId]: [

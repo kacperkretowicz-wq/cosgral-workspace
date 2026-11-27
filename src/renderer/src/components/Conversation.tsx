@@ -21,6 +21,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onSettled, Show
 import { normalizeAvatarFile } from "../avatar-image";
 import { avatarCandidateSeeds } from "../blobatar";
 import type { BotMessage } from "../data";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { AccountErrorCard } from "./AccountErrorCard";
 import { AccountLimitReachedCard, AccountSwitchedCard } from "./AccountLimitCards";
@@ -411,7 +412,7 @@ export function Conversation(props: ConversationProps) {
       await props.onUpdateBot(botId, updates);
       return true;
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : t("Could not save agent settings."));
+      setSettingsSaveError(errorText(error, t("Could not save agent settings.")));
       return false;
     }
   }
@@ -468,7 +469,7 @@ export function Conversation(props: ConversationProps) {
       await props.onSetAgentAvatar(botId, image);
       return true;
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : t("Could not save the agent avatar."));
+      setSettingsSaveError(errorText(error, t("Could not save the agent avatar.")));
       return false;
     } finally {
       setAvatarUploadBusy(false);
@@ -485,7 +486,7 @@ export function Conversation(props: ConversationProps) {
       if (!botId) return;
       await props.onSetAgentAvatar(botId, image);
     } catch (error) {
-      setSettingsSaveError(error instanceof Error ? error.message : t("Could not process the agent avatar."));
+      setSettingsSaveError(errorText(error, t("Could not process the agent avatar.")));
     } finally {
       setAvatarUploadBusy(false);
       if (avatarFileInput) avatarFileInput.value = "";
@@ -1095,7 +1096,7 @@ export function Conversation(props: ConversationProps) {
     try {
       addAttachments(await window.openbot.agent.chooseAttachments());
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : String(error));
+      setComposerError(errorText(error, String(error)));
     } finally {
       setAttachmentBusy(false);
     }
@@ -1216,7 +1217,7 @@ export function Conversation(props: ConversationProps) {
     try {
       await props.onMarkRead();
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : t("Could not mark messages as read."));
+      setComposerError(errorText(error, t("Could not mark messages as read.")));
     } finally {
       setMarkingRead(false);
     }
@@ -1263,7 +1264,7 @@ export function Conversation(props: ConversationProps) {
         emoji,
       });
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : String(error));
+      setComposerError(errorText(error, String(error)));
     }
   }
 
@@ -1289,7 +1290,7 @@ export function Conversation(props: ConversationProps) {
         if (copiedMessageId() === message.id) setCopiedMessageId(null);
       }, 1_400);
     } catch (error) {
-      setComposerError(error instanceof Error ? error.message : t("Could not copy the message."));
+      setComposerError(errorText(error, t("Could not copy the message.")));
     }
   }
 
@@ -1345,7 +1346,7 @@ export function Conversation(props: ConversationProps) {
     try {
       await window.openbot.browser.navigate({ tabId: tab.id, direction });
     } catch (cause) {
-      setComposerError(cause instanceof Error ? cause.message : t("Could not open the link."));
+      setComposerError(errorText(cause, t("Could not open the link.")));
     }
   }
 
@@ -1444,7 +1445,7 @@ export function Conversation(props: ConversationProps) {
           ? {
               ...current,
               loading: false,
-              error: error instanceof Error ? error.message : String(error),
+              error: errorText(error, String(error)),
             }
           : current,
       );
@@ -1454,7 +1455,7 @@ export function Conversation(props: ConversationProps) {
   function attachmentAction(attachment: AttachmentSummary, action: "open" | "reveal" | "download") {
     void window.openbot.agent
       .openAttachment({ attachmentId: attachment.id, action })
-      .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)));
+      .catch((error) => setComposerError(errorText(error, String(error))));
   }
 
   return (
@@ -1720,7 +1721,7 @@ export function Conversation(props: ConversationProps) {
                         onClick={() => {
                           setRetryingStart(true);
                           void retryStart()()
-                            .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
+                            .catch((error) => setComposerError(errorText(error, String(error))))
                             .finally(() => setRetryingStart(false));
                         }}
                       >
@@ -1731,9 +1732,7 @@ export function Conversation(props: ConversationProps) {
                   <Button
                     type="button"
                     onClick={() =>
-                      void props
-                        .onOpenAgentSetup()
-                        .catch((error) => setComposerError(error instanceof Error ? error.message : String(error)))
+                      void props.onOpenAgentSetup().catch((error) => setComposerError(errorText(error, String(error))))
                     }
                   >
                     {t("Setup guide")}

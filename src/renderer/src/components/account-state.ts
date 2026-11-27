@@ -1,8 +1,9 @@
 import type { AccountsSnapshot } from "@openbot/contracts/ipc";
 import { createSignal, onSettled } from "solid-js";
+import { errorText } from "../errors";
 import { safeCliError } from "./provider-error";
 export function accountError(error: unknown) {
-  return safeCliError(error instanceof Error ? error.message : String(error)).replace(/[^\s@]+@[^\s@]+/g, "[konto]");
+  return safeCliError(errorText(error, String(error))).replace(/[^\s@]+@[^\s@]+/g, "[konto]");
 }
 export function useAccounts() {
   const [snapshot, setSnapshot] = createSignal<AccountsSnapshot>();

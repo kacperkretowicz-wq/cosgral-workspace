@@ -3404,8 +3404,8 @@ export const en = {
     "Create an agent first: the card appears in an agent's row.",
   "No phones yet. Pair the first one with the button above.":
     "No phones yet. Pair the first one with the button above.",
-  "No app catalog is loaded yet. Choose the folder with the catalog to load it.":
-    "No app catalog is loaded yet. Choose the folder with the catalog to load it.",
+  "No app catalog is loaded yet. Choose the folder named “katalog-pluginow” (it has a catalog.json file inside) to load it.":
+    "No app catalog is loaded yet. Choose the folder named “katalog-pluginow” (it has a catalog.json file inside) to load it.",
   "Choose the catalog folder": "Choose the catalog folder",
   "Projects and follow-ups": "Projects and follow-ups",
   "Research and analysis": "Research and analysis",

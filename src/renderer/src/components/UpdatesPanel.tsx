@@ -1,5 +1,6 @@
 import { UPDATE_TRACKS, type UpdateStatus, type UpdatesOverview, updateTrackChange } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Card, Heading, NativeSelect, Switch, Text } from "./ui";
@@ -52,7 +53,7 @@ export function UpdatesPanel() {
       setOverview(next);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the update settings."));
+      setError(errorText(cause, t("Could not load the update settings.")));
     } finally {
       setLoaded(true);
     }
@@ -78,7 +79,7 @@ export function UpdatesPanel() {
       await work();
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(false);
     }

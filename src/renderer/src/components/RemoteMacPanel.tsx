@@ -1,6 +1,7 @@
 import RFB from "@novnc/novnc";
 import type { RemoteMacSession, ServerSummary } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { PanelResizer } from "./PanelResizer";
 import { Button } from "./ui";
@@ -170,7 +171,7 @@ export function RemoteMacPanel(props: RemoteMacPanelProps) {
       await onConnect(hostname, server.id);
     } catch (error) {
       setViewerState("error");
-      setViewerError(error instanceof Error ? error.message : t("Could not connect to this Mac."));
+      setViewerError(errorText(error, t("Could not connect to this Mac.")));
     } finally {
       setBusy(false);
     }

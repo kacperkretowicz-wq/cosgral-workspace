@@ -9,6 +9,7 @@ import {
   type ModelEndpoint,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText as sharedErrorText } from "../errors";
 import { t } from "../i18n";
 import { Badge, Button, Card, Field, Heading, Input, NativeSelect, Switch, Text } from "./ui";
 import { Server } from "./ui/icons";
@@ -41,8 +42,7 @@ const SHOWN_MODELS = 6;
 
 function errorText(error: unknown, fallback: string): string {
   // The program's own messages never contain a key; the IPC prefix is not for the person.
-  const message = error instanceof Error ? error.message : fallback;
-  return message.replace(/^Error invoking remote method '[^']*': (Error: )?/, "") || fallback;
+  return sharedErrorText(error, fallback);
 }
 
 /** Own model endpoints: OpenAI-compatible servers, Ollama and LM Studio (W5-K2). Nothing is contacted until you ask. */

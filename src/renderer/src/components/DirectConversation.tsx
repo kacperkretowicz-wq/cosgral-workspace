@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { DirectConversationSnapshot, DirectMessage, TeamPresenceMember } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onCleanup, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { language, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { ScrollToLatestButton, scrollToLatestMessage } from "./conversation/MessageNavigation";
@@ -123,7 +124,7 @@ export function DirectConversation(props: DirectConversationProps) {
       setText("");
       if (result.readError) setError(result.readError);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("The message was not sent."));
+      setError(errorText(cause, t("The message was not sent.")));
     } finally {
       setSending(false);
     }
@@ -136,7 +137,7 @@ export function DirectConversation(props: DirectConversationProps) {
     try {
       await props.onMarkRead();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not mark messages as read."));
+      setError(errorText(cause, t("Could not mark messages as read.")));
     } finally {
       setMarkingRead(false);
     }

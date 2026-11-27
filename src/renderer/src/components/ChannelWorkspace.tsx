@@ -1,6 +1,7 @@
 import type { ChannelHistoryWindow, ChannelMessage, ChannelTask, WorkspaceChannel } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { ChannelEditor } from "./ChannelEditor";
 import { ChannelView } from "./ChannelView";
@@ -97,7 +98,7 @@ export function ChannelWorkspace(props: {
         else applyTask(change.item);
       }
     } catch (e) {
-      if (current === generation) setError(e instanceof Error ? e.message : t("Could not load project."));
+      if (current === generation) setError(errorText(e, t("Could not load project.")));
     } finally {
       if (current === generation) {
         setLoading(false);
@@ -184,7 +185,7 @@ export function ChannelWorkspace(props: {
         : await api.actOnTask({ taskId, action: "resume" });
       if (task.channelId === selected()) applyTask(task);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Task action failed"));
+      setError(errorText(e, t("Task action failed")));
     }
   }
   return (

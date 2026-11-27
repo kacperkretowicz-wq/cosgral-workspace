@@ -1,5 +1,6 @@
 import { SUBAGENT_LIMITS, type Subagent, type SubagentState, subagentIsActive } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Badge, type BadgeTone, Button, Text } from "./ui";
 
@@ -36,7 +37,7 @@ export function SubagentsPanel(props: { botId: string }) {
         setError("");
       }
     } catch (cause) {
-      if (mine === serial) setError(cause instanceof Error ? cause.message : t("Could not load the subagents."));
+      if (mine === serial) setError(errorText(cause, t("Could not load the subagents.")));
     }
   }
 
@@ -66,7 +67,7 @@ export function SubagentsPanel(props: { botId: string }) {
       await api.stop({ subagentId: item.id });
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not stop the subagent."));
+      setError(errorText(cause, t("Could not stop the subagent.")));
     } finally {
       setBusy(null);
     }

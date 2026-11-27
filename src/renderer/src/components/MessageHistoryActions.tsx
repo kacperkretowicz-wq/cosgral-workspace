@@ -10,6 +10,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show, untrack } from "solid-js";
 import type { BotMessage } from "../data";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { MoreIcon } from "./conversation/ConversationIcons";
 import { Button, Dialog, DropdownMenu, Field, Text, Textarea } from "./ui";
@@ -117,7 +118,7 @@ export function MessageHistoryActions(
       }
       if (serial === generation) setDialog(null);
     } catch (e) {
-      if (serial === generation) setError(e instanceof Error ? e.message : t("Could not change this message."));
+      if (serial === generation) setError(errorText(e, t("Could not change this message.")));
     } finally {
       if (serial === generation) setBusy(false);
     }
