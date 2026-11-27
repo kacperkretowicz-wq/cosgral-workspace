@@ -9,6 +9,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { budgetDay, budgetPeriodDays, parseSetBudgetInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t, tData } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
@@ -125,7 +126,7 @@ export function BudgetPanel(props: {
       await action();
       setNotice(success);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not update the budget."));
+      setError(errorText(e, t("Could not update the budget.")));
     } finally {
       setBusy(false);
     }

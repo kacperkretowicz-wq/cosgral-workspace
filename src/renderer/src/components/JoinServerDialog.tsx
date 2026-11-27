@@ -1,6 +1,7 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type { JoinServerInput } from "@openbot/contracts/ipc";
 import { createSignal, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Dialog, Input, Textarea } from "./ui";
 
@@ -40,7 +41,7 @@ export function JoinServerDialog(props: JoinServerDialogProps) {
           : { inviteUrl: inviteUrl().trim() },
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not join the server."));
+      setError(errorText(cause, t("Could not join the server.")));
     } finally {
       setBusy(false);
     }

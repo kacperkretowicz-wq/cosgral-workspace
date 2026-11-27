@@ -1,5 +1,6 @@
 import { type RemoteDesktopBadge, type RemoteDesktopHostState, remoteDesktopSummary } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { PanelHeading } from "./PanelHeading";
@@ -39,8 +40,7 @@ export function RemoteDesktopAccessPanel() {
       setHost(next);
       setError("");
     } catch (cause) {
-      if (mine === serial)
-        setError(cause instanceof Error ? cause.message : t("Could not load the remote desktop settings."));
+      if (mine === serial) setError(errorText(cause, t("Could not load the remote desktop settings.")));
     } finally {
       setLoaded(true);
     }
@@ -68,7 +68,7 @@ export function RemoteDesktopAccessPanel() {
       serial++;
       setHost(next);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not change the setting."));
+      setError(errorText(cause, t("Could not change the setting.")));
     } finally {
       setBusy(false);
     }

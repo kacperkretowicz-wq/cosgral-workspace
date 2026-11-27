@@ -1,5 +1,6 @@
 import type { AgentMcpServerSetting, McpServer } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { McpPanel } from "./McpPanel";
 import { McpSignInPanel } from "./McpSignInPanel";
@@ -45,7 +46,7 @@ export function McpSettings(props: { botId?: string }) {
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("MCP action failed."));
+      setError(errorText(e, t("MCP action failed.")));
     }
   }
   onSettled(() => {

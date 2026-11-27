@@ -4,6 +4,7 @@ import {
   DEFAULT_CHANNEL_HISTORY_WINDOW,
 } from "@openbot/contracts/ipc";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { NativeSelect, Text } from "./ui";
 
@@ -32,7 +33,7 @@ export function ChannelHistoryWindowSetting(props: {
       await props.onChange(next);
       setSaved(true);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save the history window."));
+      setError(errorText(cause, t("Could not save the history window.")));
     } finally {
       setBusy(false);
     }

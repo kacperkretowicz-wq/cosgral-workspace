@@ -2,6 +2,7 @@ import type { UsagePeriod, UsageReport, UsageTokenSplit, UsageUnavailable } from
 import { USAGE_PERIODS } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { appLocale, t, tData } from "../i18n";
 import { AgentAvatar } from "./AgentAvatar";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
@@ -97,7 +98,7 @@ export function UsageReportView(props: { bots?: ReadonlyArray<BotProfile> } = {}
       setReport(result);
       setError("");
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the usage report."));
+      if (n === serial) setError(errorText(cause, t("Could not load the usage report.")));
     }
   }
 

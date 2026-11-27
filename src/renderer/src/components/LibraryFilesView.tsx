@@ -9,6 +9,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { LIBRARY_KINDS, LIBRARY_SORTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { CosgralPanelState } from "./CosgralPanelState";
@@ -122,7 +123,7 @@ export function LibraryFilesView() {
       setPicked((ids) => ids.filter((id) => next.items.some((item) => item.id === id)));
       setError("");
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the files."));
+      if (n === serial) setError(errorText(cause, t("Could not load the files.")));
     }
   }
 
@@ -147,7 +148,7 @@ export function LibraryFilesView() {
     try {
       await work();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(false);
     }

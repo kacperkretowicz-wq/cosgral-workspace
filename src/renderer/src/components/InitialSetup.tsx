@@ -11,6 +11,7 @@ import type {
   OnboardingState,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, flush, onCleanup, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { language, t } from "../i18n";
 import { AppBehaviorSection } from "./AppBehaviorSection";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -619,5 +620,5 @@ function fallbackProviderState(status: AgentStatus): AgentProviderState {
 }
 
 function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  return errorText(error, fallback);
 }

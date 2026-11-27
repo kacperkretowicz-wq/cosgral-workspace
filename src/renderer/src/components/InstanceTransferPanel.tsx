@@ -8,6 +8,7 @@ import {
   type TransferPreview,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, Switch } from "./ui";
@@ -49,7 +50,7 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
       setWithSettings(info.capabilities.settings);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the transfer page."));
+      setError(errorText(cause, t("Could not load the transfer page.")));
     } finally {
       setLoaded(true);
     }
@@ -71,7 +72,7 @@ export function InstanceTransferPanel(props: { mode: "import" | "transfer"; onOp
     try {
       await work();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(false);
     }

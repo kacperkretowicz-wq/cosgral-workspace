@@ -9,6 +9,7 @@ import type { JSX } from "@solidjs/web";
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import type { AvatarMood } from "../blobatar";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { channelMemberMood, channelMessageMood } from "../row-activity";
 import { AgentAvatar } from "./AgentAvatar";
@@ -133,7 +134,7 @@ export function ChannelView(props: {
       setText("");
       setReply(undefined);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not send message"));
+      setError(errorText(e, t("Could not send message")));
     } finally {
       setSending(false);
     }

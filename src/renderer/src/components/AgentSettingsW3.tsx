@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { fallbackModelsProblem, isAgentModel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { AccessSettings } from "./AccessSettings";
 import { AgentAccountPicker } from "./AgentAccountPicker";
@@ -36,7 +37,7 @@ export function AgentTemplateCreator(props: {
       setWarnings(result.warnings);
       setMessage(t("Agent created."));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("Could not create agent."));
+      setMessage(errorText(error, t("Could not create agent.")));
     }
   }
   return (
@@ -97,7 +98,7 @@ export function AgentSettingsW3(props: { botId: string }) {
       setSavedFallbacks(visible);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not load settings."));
+      setError(errorText(e, t("Could not load settings.")));
     }
   }
   onSettled(() => {
@@ -294,7 +295,7 @@ export function AgentSettingsW3(props: { botId: string }) {
                       setSavedFallbacks(list);
                       setError("");
                     } catch (e) {
-                      setError(e instanceof Error ? e.message : t("Could not reset the list."));
+                      setError(errorText(e, t("Could not reset the list.")));
                     } finally {
                       setSaving(false);
                     }

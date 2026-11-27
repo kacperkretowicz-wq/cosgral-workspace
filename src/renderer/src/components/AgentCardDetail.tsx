@@ -1,5 +1,6 @@
 import type { AgentCardDetails, AgentDetailCardId, AgentPublishDetails } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t, tData, tn } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { formatFileSize } from "./conversation/AttachmentCards";
@@ -38,7 +39,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
         setError("");
       }
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not open the card."));
+      if (n === serial) setError(errorText(cause, t("Could not open the card.")));
     }
   }
 
@@ -60,7 +61,7 @@ export function AgentCardDetail(props: { botId: string; card: AgentDetailCardId;
           : await api.unpublishTemplate({ botId: props.botId });
       setDetails(next);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not change the template."));
+      setError(errorText(cause, t("Could not change the template.")));
     } finally {
       setBusy(false);
     }

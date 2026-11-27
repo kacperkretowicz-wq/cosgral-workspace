@@ -10,6 +10,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { AGENT_BUSY_MESSAGE_MODES, AGENT_DETAIL_CARD_IDS, AGENT_NOTIFICATION_LEVELS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tn } from "../i18n";
 import { AgentCardDetail } from "./AgentCardDetail";
 import { AgentCardPage, type AgentPageCardId, isAgentPageCard } from "./AgentCardPage";
@@ -177,8 +178,7 @@ export function AgentCardsSection(props: { botId: string }) {
       setPrefs(preferences);
       setError("");
     } catch (cause) {
-      if (serial === generation)
-        setError(cause instanceof Error ? cause.message : t("Could not load the agent cards."));
+      if (serial === generation) setError(errorText(cause, t("Could not load the agent cards.")));
     }
   }
 
@@ -231,7 +231,7 @@ export function AgentCardsSection(props: { botId: string }) {
       setPrefs(await api.updatePreferences({ botId: props.botId, ...changes }));
       setOverview(await api.overview({ botId: props.botId }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save the agent preferences."));
+      setError(errorText(cause, t("Could not save the agent preferences.")));
     } finally {
       setBusy(false);
     }
@@ -246,7 +246,7 @@ export function AgentCardsSection(props: { botId: string }) {
       setNotice(t("The next message starts with a fresh context. History stays."));
       setConfirmReset(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not reset the session."));
+      setError(errorText(cause, t("Could not reset the session.")));
     } finally {
       setBusy(false);
     }

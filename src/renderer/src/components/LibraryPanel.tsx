@@ -1,5 +1,6 @@
 import type { DraftAttachment, LibraryItem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Input } from "./ui";
 
@@ -66,7 +67,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
         setError("");
       }
     } catch (e) {
-      if (n === seq) setError(e instanceof Error ? e.message : t("Could not load files."));
+      if (n === seq) setError(errorText(e, t("Could not load files.")));
     }
   }
   async function action(fn: () => Promise<unknown>) {
@@ -75,7 +76,7 @@ export function LibraryPanel(props: { onAttach?: (draft: DraftAttachment) => voi
       await fn();
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("File action failed."));
+      setError(errorText(e, t("File action failed.")));
     }
   }
   onSettled(() => {

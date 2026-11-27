@@ -1,6 +1,7 @@
 import type { AccessDesktopApi, AgentAccess, AgentEvent } from "@openbot/contracts/ipc";
 import { ACCESS_LEVEL_INFO, ACCESS_LEVELS, accessFolderProblem } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { PanelHeading } from "./PanelHeading";
@@ -64,7 +65,7 @@ export function AccessSettings(props: { botId: string; api?: AccessDesktopApi; o
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not update access settings."));
+      setError(errorText(e, t("Could not update access settings.")));
     } finally {
       setBusy(false);
     }

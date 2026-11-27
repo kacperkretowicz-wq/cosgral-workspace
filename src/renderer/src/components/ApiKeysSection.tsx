@@ -1,5 +1,6 @@
 import type { ApiKeyEntry, ApiKeyProvider, ApiKeysDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { emptyApiKeys, providerLabel, statusLabel, statusTone } from "./api-keys-view";
 import { Badge, Button, Card, Field, Heading, Input, Text } from "./ui";
@@ -137,7 +138,7 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
       setError("");
     } catch (e) {
       if (serial !== loadGeneration) return;
-      setError(e instanceof Error ? e.message : t("Could not load API keys."));
+      setError(errorText(e, t("Could not load API keys.")));
     }
   }
 
@@ -154,7 +155,7 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
     try {
       await work();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("The API key action failed."));
+      setError(errorText(e, t("The API key action failed.")));
     } finally {
       setBusy(false);
     }
@@ -208,7 +209,7 @@ export function ApiKeysSection(props: { api?: ApiKeysDesktopApi }) {
                   const next = await client.check({ provider });
                   setRows((list) => list.map((row) => (row.provider === provider ? next : row)));
                 } catch (e) {
-                  setError(e instanceof Error ? e.message : t("Could not check the connection."));
+                  setError(errorText(e, t("Could not check the connection.")));
                 } finally {
                   setChecking(null);
                 }

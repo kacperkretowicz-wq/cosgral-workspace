@@ -1,6 +1,7 @@
 import type { AgentEvent, PluginCategory, PluginDetails, PluginList, PluginSummary } from "@openbot/contracts/ipc";
 import { PLUGIN_CATEGORIES, PLUGIN_CATEGORY_LABELS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Button, Input, NativeSelect } from "./ui";
@@ -146,7 +147,7 @@ export function PluginAppsPanel() {
       const open = details();
       if (open) setDetails(await api.get({ slug: open.summary.slug }));
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the catalog."));
+      if (n === serial) setError(errorText(cause, t("Could not load the catalog.")));
     }
   }
 
@@ -176,7 +177,7 @@ export function PluginAppsPanel() {
       setDetails(await api.get({ slug: plugin.slug }));
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the plugin."));
+      setError(errorText(cause, t("Could not load the plugin.")));
     }
   }
 
@@ -189,7 +190,7 @@ export function PluginAppsPanel() {
       setSecrets({});
       await refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(false);
     }
@@ -433,7 +434,11 @@ export function PluginAppsPanel() {
             <>
               <Show when={value().info.source === "none"}>
                 <div class="plugin-note plugin-empty">
-                  <p>{t("No app catalog is loaded yet. Choose the folder with the catalog to load it.")}</p>
+                  <p>
+                    {t(
+                      "No app catalog is loaded yet. Choose the folder named “katalog-pluginow” (it has a catalog.json file inside) to load it.",
+                    )}
+                  </p>
                   <Show when={api?.chooseCatalogFolder}>
                     <Button
                       type="button"

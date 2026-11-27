@@ -3,6 +3,7 @@
 import type { SidebarLayout } from "@openbot/contracts/ipc";
 import { SIDEBAR_LIMITS } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { canCreateSubfolder, type MoveTarget, type SidebarFolderRow } from "../sidebar-tree";
 import { AlertDialog, Button, ContextMenu, Dialog, Input } from "./ui";
@@ -22,7 +23,7 @@ export interface SidebarFolderActions {
 export const FOLDER_INDENT_PX = 14;
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return errorText(error, String(error));
 }
 
 export function FolderPlusIcon() {

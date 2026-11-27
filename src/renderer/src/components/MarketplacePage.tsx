@@ -5,6 +5,7 @@ import type {
   MarketplaceItemKind,
 } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { language, t, tData } from "../i18n";
 import { CATEGORY_LABELS, MarketplaceGallery } from "./MarketplaceGallery";
 import { PluginAppsPanel } from "./PluginAppsPanel";
@@ -175,7 +176,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
       const current = details();
       if (current) setDetails(await api.get({ itemId: current.item.id }));
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load Marketplace."));
+      if (n === serial) setError(errorText(e, t("Could not load Marketplace.")));
     }
   }
   async function choose(item: MarketplaceItem) {
@@ -203,7 +204,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
       setWarnings(result.warnings);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Install failed."));
+      setError(errorText(e, t("Install failed.")));
     }
   }
   async function uninstall(id: string) {
@@ -215,7 +216,7 @@ export function MarketplacePage(props: { bots: Person[] }) {
       await api.uninstall({ itemId: item.id, botId: id });
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Uninstall failed."));
+      setError(errorText(e, t("Uninstall failed.")));
     }
   }
   onSettled(() => {

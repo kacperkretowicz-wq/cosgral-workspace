@@ -23,6 +23,7 @@ import {
   type Element as SolidElement,
   untrack,
 } from "solid-js";
+import { errorText } from "../errors";
 import { language, t } from "../i18n";
 import { Badge, Button, Dialog, Input, NativeSelect, Tabs } from "./ui";
 
@@ -106,7 +107,7 @@ export function HostPanel(props: HostPanelProps) {
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("The server action failed."));
+      setError(errorText(cause, t("The server action failed.")));
     } finally {
       setBusy(false);
     }

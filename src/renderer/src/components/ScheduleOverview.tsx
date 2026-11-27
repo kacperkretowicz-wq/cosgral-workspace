@@ -1,6 +1,7 @@
 import type { ScheduleEntry, ScheduleFeedItem, ScheduleView } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { appLocale, t, tDataParts } from "../i18n";
 import { addMonths, localDayKey, monthCells, monthWindow, startOfMonth } from "../schedule-month";
 import { AgentAvatar } from "./AgentAvatar";
@@ -105,7 +106,7 @@ export function ScheduleOverview(props: { bots?: ReadonlyArray<BotProfile> } = {
       setFeed(latest);
       setError("");
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the schedule."));
+      if (n === serial) setError(errorText(cause, t("Could not load the schedule.")));
     }
   }
 

@@ -1,5 +1,6 @@
 import type { AgentIsolation, IsolationDesktopApi } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tDataParts } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
@@ -50,7 +51,7 @@ export function IsolationSettings(props: { botId: string; api?: IsolationDesktop
           : t("Isolation enabled."),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not change isolation."));
+      setError(errorText(e, t("Could not change isolation.")));
     } finally {
       setBusy(false);
     }

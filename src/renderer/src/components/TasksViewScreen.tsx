@@ -12,6 +12,7 @@ import { CHANNEL_TASK_STATES } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { appLocale, t, tData } from "../i18n";
 import "../styles/tasks-detail.css";
+import { errorText } from "../errors";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, NativeSelect } from "./ui";
 import { CircleAlert, MessageCircleQuestion, Pause, Search, X, Zap } from "./ui/icons";
@@ -137,7 +138,7 @@ export function TasksViewScreen(props: {
       const open = detail();
       if (open) setDetail(await view.detail({ taskId: open.task.id }));
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load the tasks."));
+      if (n === serial) setError(errorText(cause, t("Could not load the tasks.")));
     }
   }
 
@@ -159,7 +160,7 @@ export function TasksViewScreen(props: {
       setOwner("");
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the task."));
+      setError(errorText(cause, t("Could not load the task.")));
     }
   }
 
@@ -176,7 +177,7 @@ export function TasksViewScreen(props: {
       }
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not change the task."));
+      setError(errorText(cause, t("Could not change the task.")));
     } finally {
       setBusy(false);
     }

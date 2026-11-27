@@ -254,6 +254,12 @@ body::after {
   color: var(--cosgral-hub-paper-ink);
 }
 
+:where(input.ui-input),
+.new-agent-page input,
+.new-agent-page select {
+  border-radius: var(--cosgral-radius-pill);
+}
+
 .sidebar .search-field input,
 .sidebar .search-field svg,
 .sidebar .sidebar-compact-search {
@@ -564,12 +570,6 @@ body::after {
     border-color 700ms var(--cosgral-hub-ease),
     box-shadow 900ms var(--cosgral-hub-ease),
     background-color 700ms var(--cosgral-hub-ease);
-}
-
-:where(input.ui-input),
-.new-agent-page input,
-.new-agent-page select {
-  border-radius: var(--cosgral-radius-pill);
 }
 
 :where(.ui-textarea),

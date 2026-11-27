@@ -12,6 +12,7 @@ import {
 } from "@openbot/contracts/ipc";
 import { createSignal, For, flush, onSettled, Show } from "solid-js";
 import { Button, Textarea } from "../components/ui";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 
 export function ConversationWindowApp(props: { target: ConversationWindowInput }) {
@@ -56,7 +57,7 @@ export function ConversationWindowApp(props: { target: ConversationWindowInput }
     try {
       await api.agent.sendMessage({ botId: props.target.botId, text });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorText(cause, String(cause)));
     }
   }
 

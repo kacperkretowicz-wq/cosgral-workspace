@@ -1,6 +1,7 @@
 import type { AgentChatColor, AgentModelId, FallbackModelsInfo } from "@openbot/contracts/ipc";
 import { AGENT_CHAT_COLORS, fallbackModelsProblem } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { type FallbackModelOption, FallbackOrder } from "./fallback-order";
 import { AgentMemorySettingsView } from "./MemorySettings";
@@ -49,7 +50,7 @@ function InstructionsPage(props: { botId: string }) {
       setPath(settings.bot.workspacePath ? `${settings.bot.workspacePath}/AGENTS.md` : "");
       setError("");
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load instructions."));
+      if (n === serial) setError(errorText(cause, t("Could not load instructions.")));
     }
   }
 
@@ -78,7 +79,7 @@ function InstructionsPage(props: { botId: string }) {
       });
       setNotice(t("Instructions saved."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save instructions."));
+      setError(errorText(cause, t("Could not save instructions.")));
     } finally {
       setBusy(false);
     }
@@ -172,7 +173,7 @@ function BackupModelsPage(props: { botId: string; botName: string }) {
       if (settings?.bot.name) setName(settings.bot.name);
       setError("");
     } catch (cause) {
-      if (n === serial) setError(cause instanceof Error ? cause.message : t("Could not load backup models."));
+      if (n === serial) setError(errorText(cause, t("Could not load backup models.")));
     } finally {
       if (n === serial) setBusy(false);
     }
@@ -202,7 +203,7 @@ function BackupModelsPage(props: { botId: string; botName: string }) {
       setInfo((await api.getFallbackInfo?.(props.botId)) ?? null);
       setNotice(t("Backup models saved."));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not save backup models."));
+      setError(errorText(cause, t("Could not save backup models.")));
     } finally {
       setBusy(false);
     }

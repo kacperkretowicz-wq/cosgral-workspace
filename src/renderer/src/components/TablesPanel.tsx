@@ -1,5 +1,6 @@
 import type { SharedTable, TableRow, TableValues, TableWriteResult } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Input, NativeSelect } from "./ui";
 export function RowEditor(props: {
@@ -27,7 +28,7 @@ export function RowEditor(props: {
       if (result?.status === "conflict") setConflict(result.current);
       else props.onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not save row."));
+      setError(errorText(e, t("Could not save row.")));
     }
   }
   return (
@@ -141,7 +142,7 @@ export function TablesPanel() {
       });
       if (n === seq) setRows(page.rows);
     } catch (e) {
-      if (n === seq) setError(e instanceof Error ? e.message : t("Could not load rows."));
+      if (n === seq) setError(errorText(e, t("Could not load rows.")));
     }
   }
   onSettled(() => {
@@ -170,7 +171,7 @@ export function TablesPanel() {
         await loadRows();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not delete row."));
+      setError(errorText(e, t("Could not delete row.")));
     }
   }
   return (

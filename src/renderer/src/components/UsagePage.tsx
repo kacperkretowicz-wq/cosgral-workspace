@@ -1,6 +1,7 @@
 import type { AcpAgentConfig, ProviderUsage } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show } from "solid-js";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { ProviderUsageList } from "./ProvidersPage";
 import { UsageReportView } from "./UsageReportView";
@@ -29,7 +30,7 @@ export function UsagePage(props: { bots?: ReadonlyArray<BotProfile> } = {}) {
       setNow(Date.now());
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not load usage."));
+      setError(errorText(e, t("Could not load usage.")));
     } finally {
       setRefreshing(false);
       setLoaded(true);

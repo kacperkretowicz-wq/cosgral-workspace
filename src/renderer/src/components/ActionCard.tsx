@@ -1,5 +1,6 @@
 import type { RespondToBrowserTakeoverInput, RespondToDraftPreviewInput } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import type { PendingCard } from "../pending-cards";
 import { Button, Textarea } from "./ui";
@@ -28,7 +29,7 @@ export function ActionCard(props: {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Action failed. Try again."));
+      setError(errorText(e, t("Action failed. Try again.")));
     } finally {
       setBusy(false);
     }

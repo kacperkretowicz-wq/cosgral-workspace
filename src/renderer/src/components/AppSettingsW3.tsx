@@ -8,6 +8,7 @@ import type {
 } from "@openbot/contracts/ipc";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_EVENTS } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { language, setLanguage, t, tData } from "../i18n";
 import { SettingsSection } from "./SettingsDialog";
 import { Button, Card, Field, NativeSelect, Switch, Text } from "./ui";
@@ -36,7 +37,7 @@ export function AppSettingsW3(props: { onRegisterSave?: (save: () => Promise<boo
       document.documentElement.lang = value.language;
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not save settings."));
+      setError(errorText(e, t("Could not save settings.")));
       return false;
     }
     return true;

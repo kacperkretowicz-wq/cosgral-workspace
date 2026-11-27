@@ -267,7 +267,8 @@ function fakeMcp() {
   };
 }
 
-async function setup(plugins: FakePlugin[], platform: NodeJS.Platform = "win32") {
+async function setup(plugins: FakePlugin[], options: { platform?: NodeJS.Platform; defaultFolder?: string } = {}) {
+  const platform = options.platform ?? "win32";
   const dir = await mkdtemp(join(tmpdir(), "plugin-catalog-db-"));
   roots.push(dir);
   const database = testDatabase(join(dir, "data"));
@@ -282,6 +283,7 @@ async function setup(plugins: FakePlugin[], platform: NodeJS.Platform = "win32")
       emit: (event) => events.push(event),
       botIds: () => ["bot-1", "off"],
       platform,
+      ...(options.defaultFolder ? { defaultFolder: options.defaultFolder } : {}),
     });
   const service = make();
   return { service, make, mcp, events, catalogDir };
@@ -295,6 +297,16 @@ const PLUGINS: FakePlugin[] = [
 ];
 
 describe("plugin catalog engine", () => {
+  it("loads the catalog that ships with the program when no folder was chosen, and returns to it after the choice is cleared", async () => {
+    const { catalogDir } = await setup(PLUGINS);
+    const { service } = await setup([], { defaultFolder: catalogDir });
+    expect(await service.load()).toMatchObject({ source: "folder", count: 4, directory: catalogDir });
+    // The shipped catalog is not saved as the owner's choice.
+    const { service: broken } = await setup([], { defaultFolder: join(tmpdir(), "no-such-catalog-folder") });
+    expect(await broken.load()).toMatchObject({ source: "none", count: 0 });
+    expect(await service.setCatalogFolder(null)).toMatchObject({ source: "folder", count: 4 });
+  });
+
   it("starts empty and says so, then loads the folder the owner chose and remembers it", async () => {
     const { service, make, catalogDir, events } = await setup(PLUGINS);
     expect(service.info()).toMatchObject({ source: "none", count: 0 });
@@ -397,11 +409,11 @@ describe("plugin catalog engine", () => {
   });
 
   it("a plugin for macOS is refused here and works on macOS", async () => {
-    const win = await setup(PLUGINS, "win32");
+    const win = await setup(PLUGINS, { platform: "win32" });
     await win.service.setCatalogFolder(win.catalogDir);
     expect(win.service.get("gamma").summary.unavailableHere).toBe(true);
     await expect(win.service.install({ slug: "gamma" })).rejects.toThrow(/macOS/);
-    const mac = await setup(PLUGINS, "darwin");
+    const mac = await setup(PLUGINS, { platform: "darwin" });
     await mac.service.setCatalogFolder(mac.catalogDir);
     expect((await mac.service.install({ slug: "gamma" })).state).toBe("installed");
   });

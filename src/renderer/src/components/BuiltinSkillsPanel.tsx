@@ -1,5 +1,6 @@
 import type { BuiltinSkillPack } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, Button, NativeSelect, Switch } from "./ui";
@@ -35,7 +36,7 @@ export function BuiltinSkillsPanel(props: { bots?: Person[]; projects?: Project[
       setPacks(list);
       setError("");
     } catch (cause) {
-      if (mine === serial) setError(cause instanceof Error ? cause.message : t("Could not load the built-in skills."));
+      if (mine === serial) setError(errorText(cause, t("Could not load the built-in skills.")));
     } finally {
       setLoaded(true);
     }
@@ -132,9 +133,7 @@ function PackCard(props: {
       if (next) props.onChange(next);
       setNotice(done);
     } catch (cause) {
-      props.onError(
-        t("Could not change the skills: {reason}", { reason: cause instanceof Error ? cause.message : String(cause) }),
-      );
+      props.onError(t("Could not change the skills: {reason}", { reason: errorText(cause, String(cause)) }));
     } finally {
       setBusy(false);
     }

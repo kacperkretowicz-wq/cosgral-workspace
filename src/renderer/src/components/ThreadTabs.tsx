@@ -6,6 +6,7 @@ import {
   type ThreadTabCloseMode,
 } from "@openbot/contracts/ipc";
 import { createEffect, createMemo, createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { engineRunTitle } from "./conversation/engine-run";
 import { Button, ContextMenu, DropdownMenu } from "./ui";
@@ -91,7 +92,7 @@ export function ThreadTabs(props: ThreadTabsProps) {
     try {
       return await work();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not change the thread tabs."));
+      setError(errorText(cause, t("Could not change the thread tabs.")));
       return undefined;
     }
   }

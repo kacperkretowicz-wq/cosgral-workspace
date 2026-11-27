@@ -31,6 +31,9 @@ files:
   - "!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**"
   - "!**/node_modules/@anthropic-ai/claude-agent-sdk-*"
 extraResources:
+  # COSGRAL: the small plugin catalog (Marketplace > Apps) is loaded from this folder until the owner chooses another one.
+  - from: katalog-pluginow
+    to: katalog-pluginow
   - from: build/icon-production.png
     to: icons/icon-production.png
   - from: build/icon-dev.png

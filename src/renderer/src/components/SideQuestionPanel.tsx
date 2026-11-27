@@ -1,6 +1,7 @@
 import type { AgentEvent, SideQuestionState } from "@openbot/contracts/ipc";
 import { COMPOSER_LIMITS } from "@openbot/contracts/ipc";
 import { createEffect, createSignal, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { Button, Textarea } from "./ui";
 import { X } from "./ui/icons";
@@ -61,7 +62,7 @@ export function SideQuestionPanel(props: SideQuestionPanelProps) {
       });
       setState(first);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not ask the side question."));
+      setError(errorText(cause, t("Could not ask the side question.")));
     }
   }
 
@@ -71,7 +72,7 @@ export function SideQuestionPanel(props: SideQuestionPanelProps) {
     try {
       setState(await api.cancelSideQuestion({ questionId: current.questionId }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not stop the side question."));
+      setError(errorText(cause, t("Could not stop the side question.")));
     }
   }
 

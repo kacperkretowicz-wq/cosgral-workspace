@@ -1,5 +1,6 @@
 import type { DataWipePlan } from "@openbot/contracts/ipc";
 import { createSignal, For, Show } from "solid-js";
+import { errorText } from "../errors";
 import { t, tData } from "../i18n";
 import { Button, Card, Field, Heading, Input, Text } from "./ui";
 
@@ -26,7 +27,7 @@ export function DataWipeSection() {
       setTyped("");
       setOpen(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not prepare the deletion."));
+      setError(errorText(e, t("Could not prepare the deletion.")));
     }
   }
 
@@ -39,7 +40,7 @@ export function DataWipeSection() {
       await appData.requestWipe({ confirmation: word });
       setRestarting(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not delete the data."));
+      setError(errorText(e, t("Could not delete the data.")));
     } finally {
       setBusy(false);
     }

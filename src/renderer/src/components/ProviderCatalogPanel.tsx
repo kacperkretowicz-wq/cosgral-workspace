@@ -1,6 +1,7 @@
 import type { ProviderCatalogItem, ProviderSupportLevel } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
 import { SHOW_API_KEYS } from "../api-keys-visibility";
+import { errorText } from "../errors";
 import { appLocale, t, tData } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
@@ -66,7 +67,7 @@ export function ProviderCatalogPanel() {
       setItems(await api.list());
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("Could not load the providers."));
+      setError(errorText(cause, t("Could not load the providers.")));
     } finally {
       setLoaded(true);
     }
@@ -88,7 +89,7 @@ export function ProviderCatalogPanel() {
       const next = await work();
       if (next) replace(next);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(null);
     }

@@ -1,6 +1,7 @@
 ﻿import type { BrowserProfilesDesktopApi } from "@openbot/contracts/ipc";
 import { parseDomainList } from "@openbot/contracts/ipc";
 import { createSignal, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import type { SettingsEvents } from "./AccessSettings";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
@@ -73,7 +74,7 @@ export function BrowserProfileSettings(props: {
         setNotice(t("Domain rules saved."));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("Could not update browser profile."));
+      setError(errorText(e, t("Could not update browser profile.")));
     } finally {
       setBusy(false);
     }

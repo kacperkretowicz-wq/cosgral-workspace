@@ -11,6 +11,7 @@ import {
   type WorkspaceChannel,
 } from "@openbot/contracts/ipc";
 import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
+import { errorText } from "../errors";
 import { appLocale, t } from "../i18n";
 import { withoutIpcPrefix } from "./provider-error";
 import { Button, Input, NativeSelect, Textarea } from "./ui";
@@ -345,7 +346,7 @@ export function ChannelRoutinesPanel(props: {
       const list = await api.list({ channelId: props.channel.id });
       if (n === serial) setRoutines(list);
     } catch (e) {
-      if (n === serial) setError(e instanceof Error ? e.message : t("Could not load routines."));
+      if (n === serial) setError(errorText(e, t("Could not load routines.")));
     } finally {
       if (n === serial) setLoaded(true);
     }

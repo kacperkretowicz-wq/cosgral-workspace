@@ -9,6 +9,7 @@ import {
   integrationCallbackExample,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show, untrack } from "solid-js";
+import { errorText } from "../errors";
 import { t } from "../i18n";
 import { CosgralLoadingSkeleton } from "./CosgralLoadingSkeleton";
 import { Badge, type BadgeTone, Button, Input, Switch } from "./ui";
@@ -60,7 +61,7 @@ export function IntegrationsPanel() {
       setDescribed(Object.fromEntries(details.map((detail) => [detail.service, detail])));
       setError("");
     } catch (cause) {
-      if (mine === serial) setError(cause instanceof Error ? cause.message : t("Could not load the integrations."));
+      if (mine === serial) setError(errorText(cause, t("Could not load the integrations.")));
     } finally {
       setLoaded(true);
     }
@@ -90,7 +91,7 @@ export function IntegrationsPanel() {
       // The answer of the call can be older than an event that arrived meanwhile, so read the list again.
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : failure);
+      setError(errorText(cause, failure));
     } finally {
       setBusy(null);
     }

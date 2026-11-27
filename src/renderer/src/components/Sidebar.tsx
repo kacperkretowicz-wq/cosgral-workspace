@@ -5,6 +5,7 @@ import { createEffect, createMemo, createSignal, For, onSettled, Show } from "so
 import { unreadFirst as unreadFirstSetting } from "../appearance";
 import { normalizeAvatarFile } from "../avatar-image";
 import type { BotProfile } from "../data";
+import { errorText } from "../errors";
 import { appLocale, t, tData, tn } from "../i18n";
 import { agentStep, isTypingTarget, neighbourAgent } from "../keyboard-shortcuts";
 import { avatarMoodFor, type SidebarAgentState, sidebarAgentStateLabel, sidebarAgentStateNote } from "../row-activity";
@@ -67,9 +68,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await change();
     } catch (error) {
-      setRowActionError(
-        error instanceof Error ? error.message : t("Could not change this agent. Try again from the menu."),
-      );
+      setRowActionError(errorText(error, t("Could not change this agent. Try again from the menu.")));
     } finally {
       setAgentActionBusy(false);
     }
@@ -90,7 +89,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onMarkBotRead(botId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : t("Try again");
+      const message = errorText(error, t("Try again"));
       setRowActionError(t("Could not mark {name} as read. {message}", { name, message }));
     } finally {
       setReadBusy(false);
@@ -194,7 +193,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await change(actions);
     } catch (error) {
-      setFolderError(error instanceof Error ? error.message : String(error));
+      setFolderError(errorText(error, String(error)));
     }
   }
 
@@ -359,7 +358,7 @@ export function Sidebar(props: SidebarProps) {
       await props.onDeleteBot(botId);
       setDeleteTargetId(null);
     } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : String(error));
+      setDeleteError(errorText(error, String(error)));
     } finally {
       setDeleting(false);
     }
@@ -372,7 +371,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onRefreshUsage();
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : t("Usage is unavailable."));
+      setAccountError(errorText(error, t("Usage is unavailable.")));
     } finally {
       setUsageLoading(false);
     }
@@ -383,16 +382,14 @@ export function Sidebar(props: SidebarProps) {
     void props
       .onOpenExternal(destination)
       .then(() => setAccountMenuOpen(false))
-      .catch((error) => setAccountError(error instanceof Error ? error.message : t("Could not open the link.")));
+      .catch((error) => setAccountError(errorText(error, t("Could not open the link."))));
   }
 
   function runUpdateAction() {
     setAccountError(null);
     void props
       .onUpdateAction()
-      .catch((error) =>
-        setAccountError(error instanceof Error ? error.message : t("Could not update COSGRAL Workspace.")),
-      );
+      .catch((error) => setAccountError(errorText(error, t("Could not update COSGRAL Workspace."))));
   }
 
   async function logout(): Promise<void> {
@@ -402,7 +399,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onLogout();
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : t("Could not sign out."));
+      setAccountError(errorText(error, t("Could not sign out.")));
       setLoggingOut(false);
     }
   }
@@ -414,7 +411,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onUpdateAccountAvatar(image);
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : t("Could not update your avatar."));
+      setAccountError(errorText(error, t("Could not update your avatar.")));
     } finally {
       setAvatarUploadBusy(false);
     }
@@ -427,7 +424,7 @@ export function Sidebar(props: SidebarProps) {
     try {
       await props.onUpdateAccountAvatar(await normalizeAvatarFile(file));
     } catch (error) {
-      setAccountError(error instanceof Error ? error.message : t("Could not update your avatar."));
+      setAccountError(errorText(error, t("Could not update your avatar.")));
     } finally {
       setAvatarUploadBusy(false);
       if (accountAvatarInput) accountAvatarInput.value = "";
