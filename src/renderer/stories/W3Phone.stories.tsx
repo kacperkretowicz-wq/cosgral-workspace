@@ -115,9 +115,6 @@ const meta = { title: "COSGRAL/W3 phone (Mobile Connect)", component: Scene } sa
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const OffDark: Story = { args: { theme: "dark", kind: "off" } };
-export const OffLight: Story = { args: { theme: "light", kind: "off" } };
 export const PairingDark: Story = { args: { theme: "dark", kind: "pairing" } };
-export const PairingLight: Story = { args: { theme: "light", kind: "pairing" } };
 export const PairedDark: Story = { args: { theme: "dark", kind: "paired" } };
-export const PairedLight: Story = { args: { theme: "light", kind: "paired" } };
 export const PlainWarningDark: Story = { args: { theme: "dark", kind: "plain" } };

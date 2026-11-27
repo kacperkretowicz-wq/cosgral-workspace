@@ -29,23 +29,10 @@ export const Dark: Story = {
     await expect(await canvas.findByRole("button", { name: "Clear history" })).toBeInTheDocument();
   },
 };
-export const Light: Story = {
-  args: { theme: "light", refuse: false },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("button", { name: "Clear history" })).toBeInTheDocument();
-  },
-};
 
 /** The question is open: the contrast of the two buttons and the sentence is watched in both themes. */
 export const AskingDark: Story = {
   args: { theme: "dark", refuse: false },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Clear history" }));
-    await expect(await canvas.findByRole("button", { name: "Yes, clear" })).toBeInTheDocument();
-  },
-};
-export const AskingLight: Story = {
-  args: { theme: "light", refuse: false },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Clear history" }));
     await expect(await canvas.findByRole("button", { name: "Yes, clear" })).toBeInTheDocument();

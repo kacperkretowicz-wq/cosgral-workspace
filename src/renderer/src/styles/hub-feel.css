@@ -9,7 +9,7 @@
  *   keyboard  a 2 px ring that stays visible on glass (pale blue) and on paper (ink)
  *   motion    transforms come from tokens that turn to "none" under prefers-reduced-motion; fills and rims stay
  *
- * Colours, shadows and transforms are tokens (cosgral-tokens.css). Loaded after hub-look.css, before theme-light.css.
+ * Colours, shadows and transforms are tokens (cosgral-tokens.css). Loaded after hub-look.css.
  */
 
 /* Transitions: quick for colour and rim, springy for movement. ---------------------------------------------------- */

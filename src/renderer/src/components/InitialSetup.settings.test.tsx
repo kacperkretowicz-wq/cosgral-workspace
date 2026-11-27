@@ -63,12 +63,12 @@ it("has no Voice section on the Settings screen", async () => {
   expect(screen.queryByRole("button", { name: "Voice" })).toBeNull();
 });
 
-it("lets the person change the theme on the Settings screen", async () => {
+it("offers no theme choice on the Settings screen (the program has one dark look)", async () => {
   renderSettings();
   await screen.findByRole("heading", { name: "Settings" });
-  const theme = await screen.findByLabelText("Theme");
-  await waitFor(() => expect(theme).not.toBeDisabled());
-  expect(screen.getByRole("option", { name: "Light" })).toBeInTheDocument();
+  expect(await screen.findByLabelText("Interface scale")).toBeInTheDocument();
+  expect(screen.queryByLabelText("Theme")).toBeNull();
+  expect(screen.queryByRole("option", { name: "Light" })).toBeNull();
 });
 
 it("shows App behavior (launch at login, keep running in the background) on the Settings screen", async () => {

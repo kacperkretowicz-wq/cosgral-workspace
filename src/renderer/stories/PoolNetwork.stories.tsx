@@ -15,10 +15,10 @@ const event: AccountError = {
   reason: "network-error",
   message: "Network error. The account was not counted as at its limit; nothing was switched.",
 };
-function Scene(props: { light?: boolean; network?: boolean }) {
+function Scene(props: { network?: boolean }) {
   const [dismissed, setDismissed] = createSignal(false);
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <Show when={props.network} fallback={<ProviderAccounts />}>
           <Show when={!dismissed()}>
@@ -32,7 +32,7 @@ function Scene(props: { light?: boolean; network?: boolean }) {
 const meta = {
   title: "COSGRAL/Pool return and network",
   component: Scene,
-  args: { light: false, network: false },
+  args: { network: false },
   beforeEach: () => {
     const previous = window.openbot;
     const mock = createMockOpenBot();
@@ -57,7 +57,6 @@ const toggle = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
   await expect(after?.maxAccountsPerProvider).toBe(before?.maxAccountsPerProvider);
 };
 export const PoolReturn: Story = { play: toggle };
-export const Light: Story = { args: { light: true }, play: toggle };
 export const NetworkDismiss: Story = {
   args: { network: true },
   play: async ({ canvasElement }) => {
@@ -66,13 +65,5 @@ export const NetworkDismiss: Story = {
     await expect(card).not.toHaveTextContent(/limit|continue/i);
     await userEvent.click(c.getByRole("button", { name: "Dismiss" }));
     await expect(c.queryByRole("status")).not.toBeInTheDocument();
-  },
-};
-export const NetworkLight: Story = {
-  args: { network: true, light: true },
-  play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole("status", { name: "Network error for Work" })).toHaveTextContent(
-      "Your account stayed selected.",
-    );
   },
 };

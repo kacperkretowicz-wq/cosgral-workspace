@@ -17,7 +17,7 @@ const returned: AccountSwitched = {
   toLabel: "First",
   reason: "returned",
 };
-function Scene(props: { light?: boolean; error?: boolean }) {
+function Scene(props: { error?: boolean }) {
   const initial = addAccountNotice(
     addAccountNotice([], { type: "account-switched", ...returned }, "return"),
     {
@@ -33,7 +33,7 @@ function Scene(props: { light?: boolean; error?: boolean }) {
   );
   const [notices, setNotices] = createSignal(initial);
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <Show
           when={props.error}
@@ -61,7 +61,7 @@ function Scene(props: { light?: boolean; error?: boolean }) {
 const meta = {
   title: "COSGRAL/Provider feedback",
   component: Scene,
-  args: { light: false, error: false },
+  args: { error: false },
 } satisfies Meta<typeof Scene>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -72,7 +72,6 @@ const merged = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
   await expect(c.getByText(/switched to Other/)).toBeInTheDocument();
 };
 export const MergedSwitch: Story = { play: merged };
-export const Light: Story = { args: { light: true }, play: merged };
 export const Dismiss: Story = {
   play: async (context) => {
     await merged(context);

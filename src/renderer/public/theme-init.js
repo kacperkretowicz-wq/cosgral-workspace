@@ -1,16 +1,9 @@
 (() => {
-  // Dark is the default look. "system" (chosen by the person) follows the OS; light stays available.
-  let theme = "dark";
+  // COSGRAL Workspace has one look: the dark Hub style. An older saved choice ("light" or "system") is ignored,
+  // and its leftover cache entry is removed.
+  document.documentElement.dataset.theme = "dark";
+  document.documentElement.style.colorScheme = "dark";
   try {
-    theme = localStorage.getItem("cosgral-theme");
+    localStorage.removeItem("cosgral-theme");
   } catch {}
-  document.documentElement.dataset.theme =
-    theme === "light"
-      ? "light"
-      : theme === "system"
-        ? matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : "dark";
-  document.documentElement.style.colorScheme = document.documentElement.dataset.theme;
 })();

@@ -51,4 +51,3 @@ const meta = { title: "COSGRAL/Catalog and workflows" } satisfies Meta;
 export default meta;
 type Story = StoryObj;
 export const Dark: Story = { render: () => <Preview theme="dark" /> };
-export const Light: Story = { render: () => <Preview theme="light" /> };

@@ -15,7 +15,7 @@ afterEach(() => {
 function settings(): AppSettings {
   return {
     language: "en",
-    theme: "system",
+    theme: "dark",
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),

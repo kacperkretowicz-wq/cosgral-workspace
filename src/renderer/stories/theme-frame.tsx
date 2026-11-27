@@ -1,5 +1,5 @@
 import type { JSX } from "@solidjs/web";
-export type StoryTheme = "dark" | "light";
+export type StoryTheme = "dark";
 export function ThemeFrame(props: { theme: StoryTheme; style?: string; children: JSX.Element }) {
   return (
     <div

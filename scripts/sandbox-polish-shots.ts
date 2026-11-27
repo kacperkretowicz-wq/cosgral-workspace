@@ -1,5 +1,5 @@
 // COSGRAL W3-BE9: screenshots of every screen of the running program (real Electron, sandbox profile, Codex fixture),
-// in the dark app theme and in the light preview theme, to check the look by eye. It is not a test: it only clicks
+// in the dark look (the only one the program has), to check it by eye. It is not a test: it only clicks
 // through first run, one chat turn, every page of the page rail and the Settings dialog.
 //
 //   COSGRAL_SANDBOX_ROOT=<folder> node scripts/sandbox-polish-shots.ts [--keep] [--out=<subfolder>]
@@ -15,42 +15,6 @@ import { type ElectronApplication, _electron as electron, type Page } from "play
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const findings: string[] = [];
-
-/** The light preview tokens of `src/renderer/stories/theme-frame.tsx` (the app itself ships the dark theme only). */
-const LIGHT_TOKENS: Record<string, string> = {
-  "color-scheme": "light",
-  "--openbot-bg-canvas": "#f6f6f8",
-  "--openbot-bg-sidebar": "#ececf0",
-  "--openbot-bg-surface": "#ffffff",
-  "--openbot-bg-surface-raised": "#ffffff",
-  "--openbot-bg-control": "#f1f1f5",
-  "--openbot-bg-control-hover": "#e4e4ea",
-  "--openbot-bg-control-active": "#d9d9e2",
-  "--openbot-main": "#f6f6f8",
-  "--openbot-main-deep": "#f6f6f8",
-  "--openbot-border": "rgba(20, 20, 30, 0.1)",
-  "--openbot-border-strong": "rgba(20, 20, 30, 0.18)",
-  "--openbot-hover": "rgba(20, 20, 30, 0.06)",
-  "--openbot-text-primary": "#14141c",
-  "--openbot-white": "#14141c",
-  "--openbot-text-secondary": "rgba(20, 20, 28, 0.78)",
-  "--openbot-text-muted": "rgba(20, 20, 28, 0.66)",
-  "--openbot-text-readable": "rgba(20, 20, 28, 0.66)",
-  "--openbot-text-dim": "rgba(20, 20, 28, 0.5)",
-  "--openbot-accent": "#4d44d6",
-  "--openbot-accent-text": "#4038c4",
-  "--openbot-accent-soft": "rgba(77, 68, 214, 0.12)",
-  "--openbot-warning": "#9a6b12",
-  "--openbot-warning-soft": "rgba(154, 107, 18, 0.14)",
-  "--openbot-danger": "#b3261e",
-  "--openbot-danger-soft": "rgba(179, 38, 30, 0.1)",
-  "--openbot-danger-strong": "#8f1c16",
-  "--openbot-success": "#1d7a3f",
-  "--openbot-shadow-popover-ambient": "rgba(20, 20, 30, 0.12)",
-};
-const LIGHT_CSS = `:root { ${Object.entries(LIGHT_TOKENS)
-  .map(([name, value]) => `${name}: ${value} !important`)
-  .join("; ")} }`;
 
 const PAGES = [
   "Agents",
@@ -111,14 +75,10 @@ async function launch(root: string): Promise<{ app: ElectronApplication; page: P
   return { app, page };
 }
 
-/** Dark screenshot, then the same screen with the light preview tokens. */
+/** Screenshot of the screen as it is now. */
 async function both(page: Page, out: string, name: string): Promise<void> {
   await page.waitForTimeout(400);
   await page.screenshot({ path: join(out, `${name}-dark.png`) });
-  const style = await page.addStyleTag({ content: LIGHT_CSS });
-  await page.waitForTimeout(250);
-  await page.screenshot({ path: join(out, `${name}-light.png`) });
-  await style.evaluate((node) => node.parentNode?.removeChild(node));
 }
 
 /** Screenshots of a scrolling element from top to bottom (at most 4 views). */

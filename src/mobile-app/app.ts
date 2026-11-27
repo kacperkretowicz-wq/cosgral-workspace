@@ -103,10 +103,6 @@ const en = {
   encrypted: "Encrypted (HTTPS)",
   notEncrypted: "Not encrypted",
   deviceLabel: "Phone",
-  theme: "Theme",
-  themeSystem: "System",
-  themeLight: "Light",
-  themeDark: "Dark",
   forget: "Forget this phone",
   forgetSure: "Tap again to forget",
   forgetHelp:
@@ -230,10 +226,6 @@ const pl: Record<keyof typeof en, string> = {
   encrypted: "Szyfrowane (HTTPS)",
   notEncrypted: "Bez szyfrowania",
   deviceLabel: "Telefon",
-  theme: "Motyw",
-  themeSystem: "Systemowy",
-  themeLight: "Jasny",
-  themeDark: "Ciemny",
   forget: "Zapomnij ten telefon",
   forgetSure: "Dotknij ponownie, by zapomnieć",
   forgetHelp:
@@ -691,7 +683,6 @@ function toast(message: string): void {
 // -- state -----------------------------------------------------------------------------------------------------------
 
 const SESSION_KEY = "cosgral.phone.v1";
-const THEME_KEY = "cosgral.theme";
 const TICKET = /^[A-Za-z0-9_-]{22,64}$/;
 const PIN_FORMAT = /^[0-9]{4,8}$/;
 
@@ -2228,15 +2219,14 @@ function needScreen(id: string): Screen {
 
 // -- this phone ------------------------------------------------------------------------------------------------------
 
-function theme(): string {
-  const saved = localStorage.getItem(THEME_KEY);
-  return saved === "light" || saved === "dark" ? saved : "system";
-}
-
+/** The phone app has one look, dark. A choice saved by an older version ("light" or "system") is forgotten. */
 function applyTheme(): void {
-  const value = theme();
-  if (value === "system") document.documentElement.removeAttribute("data-theme");
-  else document.documentElement.setAttribute("data-theme", value);
+  document.documentElement.setAttribute("data-theme", "dark");
+  try {
+    localStorage.removeItem("cosgral.theme");
+  } catch {
+    /* Storage may be blocked; the look does not depend on it. */
+  }
 }
 
 function phoneScreen(): Screen {
@@ -2264,35 +2254,6 @@ function phoneScreen(): Screen {
   if (!secure && !isLoopbackHost(location.hostname)) {
     body.append(h("p", { class: "banner danger", "data-plain-warning": true }, icon("alert"), t("plainWarning")));
   }
-  const segments = h("div", { class: "segmented", role: "group", "aria-label": t("theme") });
-  const paintThemes = () => {
-    const options: Array<[string, Key]> = [
-      ["system", "themeSystem"],
-      ["light", "themeLight"],
-      ["dark", "themeDark"],
-    ];
-    segments.replaceChildren(
-      ...options.map(([value, label]) =>
-        h(
-          "button",
-          {
-            type: "button",
-            "data-theme-choice": value,
-            "aria-pressed": String(theme() === value),
-            onclick: () => {
-              if (value === "system") localStorage.removeItem(THEME_KEY);
-              else localStorage.setItem(THEME_KEY, value);
-              applyTheme();
-              paintThemes();
-            },
-          },
-          t(label),
-        ),
-      ),
-    );
-  };
-  paintThemes();
-  body.append(h("div", {}, h("span", { class: "field-label" }, t("theme")), segments));
   body.append(pinSection(), pushSection());
   const forget = h("button", { class: "btn danger", type: "button", "data-action": "forget" }, t("forget"));
   let armed = false;

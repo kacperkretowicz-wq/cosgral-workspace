@@ -28,12 +28,6 @@ export const Dark: Story = {
     await expect(await canvas.findByRole("combobox", { name: "History window" })).toHaveValue("200");
   },
 };
-export const Light: Story = {
-  args: { theme: "light", refuse: false, value: 50 },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("combobox", { name: "History window" })).toHaveValue("50");
-  },
-};
 
 /** After a save the note "History window saved." is on screen: its contrast is watched in both themes. */
 export const SavedDark: Story = {
@@ -43,24 +37,10 @@ export const SavedDark: Story = {
     await expect(await canvas.findByRole("status")).toHaveTextContent("History window saved.");
   },
 };
-export const SavedLight: Story = {
-  args: { theme: "light", refuse: false },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.selectOptions(await canvas.findByRole("combobox", { name: "History window" }), "100");
-    await expect(await canvas.findByRole("status")).toHaveTextContent("History window saved.");
-  },
-};
 
 /** The program says no: its sentence is shown as it comes, with no "saved" note. */
 export const RefusedDark: Story = {
   args: { theme: "dark", refuse: true },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.selectOptions(await canvas.findByRole("combobox", { name: "History window" }), "20");
-    await expect(await canvas.findByRole("alert")).toHaveTextContent(REFUSAL);
-  },
-};
-export const RefusedLight: Story = {
-  args: { theme: "light", refuse: true },
   play: async ({ canvas, userEvent }) => {
     await userEvent.selectOptions(await canvas.findByRole("combobox", { name: "History window" }), "20");
     await expect(await canvas.findByRole("alert")).toHaveTextContent(REFUSAL);

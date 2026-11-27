@@ -1,6 +1,6 @@
 // COSGRAL (23.11, Windows): a probe of the real program window. It opens the built program on an EXISTING sandbox profile
 // (one that went through first run, e.g. after sandbox-shots-w12.ts, so it has agents, channels and tasks), visits every
-// page of the page rail, the conversation (+ popover, @ picker) and every Settings section, in Polish, dark and light.
+// page of the page rail, the conversation (+ popover, @ picker) and every Settings section, in Polish, in the dark look.
 // For each screen it reports:
 //   - "[i18n] Missing UI translation" from the console (a t() key with no Polish text);
 //   - an English dictionary key that has a different Polish text, visible on a Polish screen (a string that skipped
@@ -333,12 +333,6 @@ async function shoot(name: string): Promise<void> {
   await page.waitForTimeout(900);
   await inspect(`${name} (${LANG}, dark)`);
   await page.screenshot({ path: join(out, `${name}-${LANG}-dark.png`) });
-  await setSettings({ theme: "light" });
-  await page.waitForTimeout(700);
-  await inspect(`${name} (${LANG}, light)`);
-  await page.screenshot({ path: join(out, `${name}-${LANG}-light.png`) });
-  await setSettings({ theme: "dark" });
-  await page.waitForTimeout(400);
 }
 
 async function openPage(text: string): Promise<boolean> {
@@ -487,13 +481,6 @@ try {
       await inspect(`${name} (${LANG}, dark)`);
       await page.screenshot({ path: join(out, `${name}-${LANG}-dark.png`) });
       if (walk !== "none") await tabWalk(`${name} (keyboard)`, visible, walk === "modal");
-      // The same open dialog or menu in the light theme.
-      await setSettings({ theme: "light" });
-      await page.waitForTimeout(700);
-      await inspect(`${name} (${LANG}, light)`);
-      await page.screenshot({ path: join(out, `${name}-${LANG}-light.png`) });
-      await setSettings({ theme: "dark" });
-      await page.waitForTimeout(300);
     } catch (error) {
       findings.push(`${name}: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
       await page.screenshot({ path: join(out, `${name}-${LANG}-failed.png`) }).catch(() => undefined);
@@ -675,7 +662,7 @@ try {
   ].join("\n");
   await writeFile(join(out, "report.txt"), `${report}\n`);
   console.log(report);
-  await setSettings({ language: "en", theme: "system" }).catch(() => undefined);
+  await setSettings({ language: "en", theme: "dark" }).catch(() => undefined);
   await app.close();
 }
 process.exitCode = 0;

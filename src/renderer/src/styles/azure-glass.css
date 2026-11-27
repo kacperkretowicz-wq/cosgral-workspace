@@ -29,8 +29,7 @@ body::after {
   background: var(--openbot-backdrop);
 }
 
-.app-frame .server-rail,
-:root[data-theme="light"] .app-frame .page-rail {
+.app-frame .server-rail {
   background: transparent;
 }
 
@@ -468,105 +467,7 @@ body::after {
   color: var(--openbot-text-primary);
 }
 
-/* Dock: in the light theme every page on the rail is its own mesh-gradient tile; the others rest dimmed, the open one glows.
- * In the dark theme the rail is the Hub's white paper with the black pill (hub-look.css), so none of these rules apply there. */
-
-:root[data-theme="light"] .app-frame .page-rail-button[data-page],
-:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled) {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
-  margin-inline: auto;
-  border-radius: var(--openbot-radius-chip);
-  /* Each page sets its own tile (below); the rule also covers hover, which the older rail rules recolour. */
-  background: var(--rail-mesh, var(--openbot-mesh-blue));
-  box-shadow: var(--openbot-mesh-edge);
-  color: var(--openbot-contrast-white);
-  filter: saturate(0.8) brightness(0.78);
-  transition:
-    filter var(--openbot-duration-normal) var(--openbot-ease-out),
-    transform var(--openbot-duration-fast) var(--openbot-ease-out);
-}
-
-:root[data-theme="light"] .app-frame .page-rail-button[data-page] svg {
-  width: 18px;
-  height: 18px;
-  filter: drop-shadow(0 1px 2px var(--openbot-shadow-dialog));
-}
-
-:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled),
-:root[data-theme="light"] .app-frame .page-rail-button[data-page]:focus-visible {
-  filter: none;
-}
-
-:root[data-theme="light"] .app-frame .page-rail-button-active[data-page],
-:root[data-theme="light"] .app-frame .page-rail-button-active[data-page]:hover:not(:disabled),
-:root[data-theme="light"] .app-frame .page-rail-button[data-page]:hover:not(:disabled) {
-  box-shadow: var(--openbot-mesh-edge), var(--openbot-glow-accent);
-  color: var(--openbot-contrast-white);
-  filter: none;
-}
-
-:root[data-theme="light"] .app-frame .page-rail-button[data-page] .page-rail-mark {
-  left: -9px;
-}
-
-:root[data-theme="light"] .app-frame .page-rail-button-active[data-page] .page-rail-mark {
-  background: var(--openbot-text-primary);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="workflows"] {
-  --rail-mesh: var(--openbot-mesh-lime);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="tasks"] {
-  --rail-mesh: var(--openbot-mesh-cyan);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="remote-desktop"] {
-  --rail-mesh: var(--openbot-mesh-cyan);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="usage"] {
-  --rail-mesh: var(--openbot-mesh-red);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="library"] {
-  --rail-mesh: var(--openbot-mesh-pink);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="server-settings"] {
-  --rail-mesh: var(--openbot-mesh-pink);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="schedule"] {
-  --rail-mesh: var(--openbot-mesh-green);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="phone"] {
-  --rail-mesh: var(--openbot-mesh-green);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="marketplace"] {
-  --rail-mesh: var(--openbot-mesh-orange);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="agents"] {
-  --rail-mesh: var(--openbot-mesh-blue);
-}
-
-:root[data-theme="light"] .page-rail-button[data-page="providers"] {
-  --rail-mesh: var(--openbot-mesh-blue);
-}
-
 /* "More" and Settings are tools, not pages: quiet glass tiles. */
-:root[data-theme="light"] .app-frame .page-rail-button[data-page="more"],
-:root[data-theme="light"] .app-frame .page-rail-button[data-page="settings"] {
-  --rail-mesh: var(--openbot-tile-quiet), var(--openbot-tile-base);
-  box-shadow: var(--openbot-tile-quiet-shadow);
-  color: var(--openbot-text-secondary);
-  filter: none;
-}
 
 .work-page[data-page="usage"] .work-page-icon {
   background: var(--openbot-mesh-red);
@@ -819,16 +720,8 @@ body [role="tooltip"] {
 }
 
 /* [data-variant] lifts this above the secondary-button glass of the channel view and work pages (specificity 0,3,0), which made
-   the active tab lose its accent and, in the light theme, show white text on white. */
+   the active tab lose its accent. */
 .chat-tasks-switch .chat-tasks-switch-tab.chat-tasks-switch-tab-active[data-variant] {
-  background-color: var(--openbot-accent);
-  background-image: var(--openbot-pill-glossy);
-  box-shadow: var(--openbot-pill-glossy-shadow);
-  color: var(--openbot-contrast-white);
-}
-
-/* Dark theme: the open tab is the Hub's white paper pill, not a glossy blue one. */
-:root:not([data-theme="light"]) .chat-tasks-switch .chat-tasks-switch-tab.chat-tasks-switch-tab-active[data-variant] {
   background-color: var(--cosgral-hub-paper);
   background-image: none;
   box-shadow: var(--cosgral-hub-pill-rim);

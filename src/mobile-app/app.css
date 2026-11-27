@@ -1,5 +1,5 @@
-/* COSGRAL phone app. One stylesheet, tokens first. Light and dark come from light-dark(); the person can pin one
-   with data-theme on <html>. Values follow the desktop program (Azure accent, quiet neutral surfaces). */
+/* COSGRAL phone app. One stylesheet, tokens first. One look only: dark, like the desktop program
+   (Azure accent, quiet graphite surfaces). */
 
 /* Jost Variable: the interface face of the desktop program (SIL OFL). Served by the phone server, cached by the worker. */
 @font-face {
@@ -22,28 +22,28 @@
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
   --cg-font: "Jost Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --cg-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --cg-canvas: light-dark(#f4f4f7, #0b0b0c);
-  --cg-surface: light-dark(#ffffff, #161617);
-  --cg-raised: light-dark(#ebebf0, #232325);
-  --cg-press: light-dark(rgb(20 20 20 / 6%), rgb(255 255 255 / 7%));
-  --cg-text: light-dark(#141414, #f2f2f2);
-  --cg-text-2: light-dark(rgb(20 20 20 / 76%), rgb(255 255 255 / 76%));
-  --cg-muted: light-dark(rgb(20 20 20 / 62%), rgb(255 255 255 / 60%));
-  --cg-border: light-dark(rgb(20 20 20 / 12%), rgb(255 255 255 / 11%));
-  --cg-border-strong: light-dark(rgb(20 20 20 / 22%), rgb(255 255 255 / 22%));
+  --cg-canvas: #0b0b0c;
+  --cg-surface: #161617;
+  --cg-raised: #232325;
+  --cg-press: rgb(255 255 255 / 7%);
+  --cg-text: #f2f2f2;
+  --cg-text-2: rgb(255 255 255 / 76%);
+  --cg-muted: rgb(255 255 255 / 60%);
+  --cg-border: rgb(255 255 255 / 11%);
+  --cg-border-strong: rgb(255 255 255 / 22%);
   --cg-accent: #1a5cf0;
   --cg-on-accent: #ffffff;
-  --cg-accent-text: light-dark(#00587e, #7ab6ff);
-  --cg-accent-soft: light-dark(rgb(26 92 240 / 12%), rgb(26 92 240 / 24%));
-  --cg-success: light-dark(#1d7a42, #61c985);
-  --cg-warning: light-dark(#8a5a00, #e3b866);
-  --cg-warning-soft: light-dark(rgb(138 90 0 / 11%), rgb(227 184 102 / 13%));
-  --cg-danger: light-dark(#b3261e, #e47d75);
-  --cg-danger-soft: light-dark(rgb(179 38 30 / 10%), rgb(228 125 117 / 14%));
+  --cg-accent-text: #7ab6ff;
+  --cg-accent-soft: rgb(26 92 240 / 24%);
+  --cg-success: #61c985;
+  --cg-warning: #e3b866;
+  --cg-warning-soft: rgb(227 184 102 / 13%);
+  --cg-danger: #e47d75;
+  --cg-danger-soft: rgb(228 125 117 / 14%);
 
   --cg-s1: 4px;
   --cg-s2: 8px;
@@ -56,14 +56,6 @@
   --cg-tap: 48px;
   --cg-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --cg-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 8px 24px rgb(0 0 0 / 12%);
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
 }
 
 * {
@@ -753,28 +745,6 @@ textarea.field {
   background: var(--cg-danger-soft);
   color: var(--cg-text);
   font-size: 15px;
-}
-
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 3px;
-  border-radius: var(--cg-radius);
-  background: var(--cg-raised);
-}
-
-.segmented button {
-  min-height: 42px;
-  border: 0;
-  border-radius: 11px;
-  background: transparent;
-  font-size: 15px;
-}
-
-.segmented button[aria-pressed="true"] {
-  background: var(--cg-accent-soft);
-  color: var(--cg-accent-text);
-  font-weight: 590;
 }
 
 .toast {

@@ -3,15 +3,13 @@ import { expect, it, vi } from "vitest";
 import { createMockOpenBot } from "../../stories/mock-openbot";
 import { AppearanceSettings } from "./AppearanceSettings";
 
-it("loads and automatically persists the selected theme", async () => {
+it("has no theme choice: the program has one dark look", async () => {
   const mock = createMockOpenBot();
   window.openbot = mock.api;
   render(() => <AppearanceSettings />);
-  const select = screen.getByLabelText("Theme");
-  await waitFor(() => expect(select).toBeEnabled());
-  fireEvent.change(select, { target: { value: "light" } });
-  await waitFor(() => expect(select).toHaveValue("light"));
-  expect((await mock.api.appSettings?.get())?.theme).toBe("light");
+  await waitFor(() => expect(screen.getByLabelText("Interface scale")).toBeEnabled());
+  expect(screen.queryByLabelText("Theme")).toBeNull();
+  expect(screen.queryByRole("option", { name: "Light" })).toBeNull();
   mock.dispose();
 });
 
@@ -39,10 +37,11 @@ it("shows a failed save and restores the saved choice", async () => {
   if (!mock.api.appSettings) throw new Error("missing mock");
   mock.api.appSettings.update = vi.fn().mockRejectedValue(new Error("disk unavailable"));
   render(() => <AppearanceSettings />);
-  const select = screen.getByLabelText("Theme");
+  const select = screen.getByLabelText("Interface scale");
   await waitFor(() => expect(select).toBeEnabled());
-  fireEvent.change(select, { target: { value: "dark" } });
+  const saved = select instanceof HTMLSelectElement ? select.value : "";
+  fireEvent.change(select, { target: { value: "125" } });
   expect(await screen.findByRole("alert")).toHaveTextContent("Could not save appearance");
-  expect(select).toHaveValue("system");
+  expect(select).toHaveValue(saved);
   mock.dispose();
 });

@@ -183,11 +183,14 @@ export interface NotificationPreferences {
   onlyWhenUnfocused: boolean;
 }
 
-export const APP_THEMES = ["dark", "light", "system"] as const;
+/**
+ * COSGRAL Workspace has one look: the dark "Hub" style. The field stays in the settings so that older saved data and
+ * older hosts keep working, but every value ("light", "system", anything else) now means "dark".
+ */
+export const APP_THEMES = ["dark"] as const;
 export type AppTheme = (typeof APP_THEMES)[number];
-export function normalizeAppTheme(value: unknown): AppTheme {
-  // Dark is the default look; "system" follows the OS only when the person chose it.
-  return value === "light" || value === "system" ? value : "dark";
+export function normalizeAppTheme(_value?: unknown): AppTheme {
+  return "dark";
 }
 
 export const APP_LANGUAGES = ["en", "pl"] as const;
@@ -795,7 +798,7 @@ function isNotificationPreferences(value: unknown): value is NotificationPrefere
 export function isAppSettings(value: unknown): value is AppSettings {
   return (
     isDynamicRecord(value) &&
-    isOneOf(APP_THEMES, value.theme) &&
+    // The theme value is not checked: older hosts may still send "light" or "system", and the app shows dark anyway.
     isOneOf(APP_LANGUAGES, value.language) &&
     isBoolean(value.languageChosen) &&
     isNotificationPreferences(value.notifications) &&

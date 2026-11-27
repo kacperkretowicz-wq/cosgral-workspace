@@ -5,7 +5,7 @@ import { createMockBrowserProfiles } from "./mock-browser-profiles";
 import { createMockIsolation, demoAvailability } from "./mock-isolation";
 import { ThemeFrame } from "./theme-frame";
 
-function Scene(props: { state: "active" | "shared-process" | "unavailable" | "off"; theme: "dark" | "light" }) {
+function Scene(props: { state: "active" | "shared-process" | "unavailable" | "off"; theme: "dark" }) {
   const api = createMockIsolation(() => {}, { demo: { name: "Demo", ownProcesses: props.state !== "shared-process" } });
   if (props.state === "unavailable")
     api.setAvailability({ ...demoAvailability(), jobObject: { ok: false, reason: "Process host could not start." } });
@@ -37,7 +37,3 @@ export const Active: Story = {};
 export const SharedProcess: Story = { args: { state: "shared-process" } };
 export const Unavailable: Story = { args: { state: "unavailable" } };
 export const Off: Story = { args: { state: "off" } };
-export const ActiveLight: Story = { args: { theme: "light" } };
-export const SharedProcessLight: Story = { args: { state: "shared-process", theme: "light" } };
-export const UnavailableLight: Story = { args: { state: "unavailable", theme: "light" } };
-export const OffLight: Story = { args: { state: "off", theme: "light" } };

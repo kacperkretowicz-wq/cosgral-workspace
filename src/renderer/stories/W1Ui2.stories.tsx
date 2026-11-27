@@ -19,7 +19,7 @@ import { createMockSidebar } from "./mock-sidebar";
 import { type StoryTheme, ThemeFrame } from "./theme-frame";
 
 // COSGRAL W1-UI2: durable Needs you / Decision, agent row activity states, sidebar folders.
-// Every scene has a dark and a light story. Light only previews contrast; the app ships one theme.
+// Every scene is shown in the dark look, the only look the app has.
 
 const account: CentralAuthUser = { id: "user-1", email: "person@example.com", name: "Owner", avatarUrl: null };
 const AT = "2026-11-12T10:00:00.000Z";
@@ -260,11 +260,6 @@ export const ActivityStatesDark: Story = {
   },
 };
 
-export const ActivityStatesLight: Story = {
-  name: "Agent row states · light",
-  render: () => <ActivityScene theme="light" />,
-};
-
 export const FoldersTreeDark: Story = {
   name: "Folders tree · dark",
   render: () => <FoldersScene theme="dark" />,
@@ -280,11 +275,6 @@ export const FoldersTreeDark: Story = {
   },
 };
 
-export const FoldersTreeLight: Story = {
-  name: "Folders tree · light",
-  render: () => <FoldersScene theme="light" />,
-};
-
 export const DurableNeedsYouDark: Story = {
   name: "Durable Needs you after reload · dark",
   render: () => <MockedApp theme="dark" options={DURABLE} />,
@@ -293,9 +283,4 @@ export const DurableNeedsYouDark: Story = {
     await expect(section).toHaveTextContent("Which variant should I ship?");
     await expect(await canvas.findByRole("region", { name: "Decision" })).toHaveTextContent("bun run build");
   },
-};
-
-export const DurableNeedsYouLight: Story = {
-  name: "Durable Needs you after reload · light",
-  render: () => <MockedApp theme="light" options={DURABLE} />,
 };

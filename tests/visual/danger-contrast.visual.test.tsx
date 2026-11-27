@@ -60,4 +60,3 @@ async function check(theme: StoryTheme) {
   assertContrast(soft);
 }
 test("solid danger and soft hover keep contrast in the dark theme", () => check("dark"));
-test("solid danger and soft hover keep contrast in the light preview", () => check("light"));

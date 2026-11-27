@@ -27,12 +27,7 @@ export const pl = {
   "Up to date": "Aktualna wersja",
   Checked: "Sprawdzono",
   "Check for updates": "Sprawdź aktualizacje",
-  Theme: "Motyw",
   System: "Systemowy",
-  Light: "Jasny",
-  Dark: "Ciemny",
-  "System follows your computer’s appearance. Changes are saved automatically.":
-    "Motyw systemowy odpowiada ustawieniom komputera. Zmiany zapisują się automatycznie.",
   "Could not load appearance settings.": "Nie udało się wczytać ustawień wyglądu.",
   "Could not save appearance. Try again.": "Nie udało się zapisać wyglądu. Spróbuj ponownie.",
   "Interface scale": "Skala interfejsu",

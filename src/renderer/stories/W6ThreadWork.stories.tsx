@@ -44,13 +44,9 @@ function PlanScene(props: { theme: StoryTheme; phase: AgentPlan["phase"] }) {
   );
 }
 export const PlanWaitingDark: Story = { render: () => <PlanScene theme="dark" phase="proposed" /> };
-export const PlanWaitingLight: Story = { render: () => <PlanScene theme="light" phase="proposed" /> };
 export const PlanApprovedDark: Story = { render: () => <PlanScene theme="dark" phase="approved" /> };
-export const PlanApprovedLight: Story = { render: () => <PlanScene theme="light" phase="approved" /> };
 export const PlanRejectedDark: Story = { render: () => <PlanScene theme="dark" phase="rejected" /> };
-export const PlanRejectedLight: Story = { render: () => <PlanScene theme="light" phase="rejected" /> };
 export const PlanAfterRestartDark: Story = { render: () => <PlanScene theme="dark" phase="stopped" /> };
-export const PlanAfterRestartLight: Story = { render: () => <PlanScene theme="light" phase="stopped" /> };
 
 function HistoryScene(props: { theme: StoryTheme; busy?: boolean }) {
   const api = createMockMessageActions(() => {});
@@ -91,10 +87,6 @@ export const DeleteConfirmationDark: Story = {
     await expect(page.getByRole("dialog", { name: "Delete message?" })).toBeVisible();
   },
 };
-export const DeleteConfirmationLight: Story = {
-  ...DeleteConfirmationDark,
-  render: () => <HistoryScene theme="light" />,
-};
 export const EditConfirmationDark: Story = {
   render: () => <HistoryScene theme="dark" />,
   play: async ({ canvasElement, userEvent }) => {
@@ -104,7 +96,6 @@ export const EditConfirmationDark: Story = {
     await expect(page.getByRole("dialog", { name: "Edit message" })).toHaveTextContent("remove 2 later messages");
   },
 };
-export const EditConfirmationLight: Story = { ...EditConfirmationDark, render: () => <HistoryScene theme="light" /> };
 export const BusyHistoryDark: Story = {
   render: () => <HistoryScene theme="dark" busy />,
   play: async ({ canvasElement, userEvent }) => {
@@ -117,4 +108,3 @@ export const BusyHistoryDark: Story = {
     await expect(page.getByRole("menuitem", { name: "Pin message" })).not.toHaveAttribute("aria-disabled", "true");
   },
 };
-export const BusyHistoryLight: Story = { ...BusyHistoryDark, render: () => <HistoryScene theme="light" busy /> };

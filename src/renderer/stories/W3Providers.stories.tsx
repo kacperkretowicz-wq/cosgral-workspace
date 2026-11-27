@@ -113,4 +113,3 @@ const meta = { title: "COSGRAL/W3 providers and limits", component: Scene } sati
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Dark: Story = { args: { theme: "dark" } };
-export const Light: Story = { args: { theme: "light" } };

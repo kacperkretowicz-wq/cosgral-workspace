@@ -42,13 +42,6 @@ export const Dark: Story = {
     ).toBeInTheDocument();
   },
 };
-export const Light: Story = {
-  args: { theme: "light" },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Discord", { selector: "strong" })).toBeInTheDocument();
-    await expect(canvas.getAllByText("Not connected")).toHaveLength(3);
-  },
-};
 
 /** A token of the wrong shape is refused before anything is sent, with a sentence (not the token). */
 export const DiscordWrongTokenDark: Story = {
@@ -68,13 +61,5 @@ export const DiscordConnectedDark: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Connect (Discord)" }));
     await expect(await canvas.findByText(/Connected as @cosgral_discord/)).toBeInTheDocument();
     await expect(document.body.textContent).not.toContain(DISCORD_TOKEN);
-  },
-};
-export const DiscordConnectedLight: Story = {
-  args: { theme: "light" },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.type(await canvas.findByLabelText("Bot token (Discord)"), DISCORD_TOKEN);
-    await userEvent.click(canvas.getByRole("button", { name: "Connect (Discord)" }));
-    await expect(await canvas.findByText(/Connected as @cosgral_discord/)).toBeInTheDocument();
   },
 };

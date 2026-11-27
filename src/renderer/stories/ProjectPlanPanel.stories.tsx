@@ -85,9 +85,3 @@ export const AcceptedDark: Story = {
     await expect(canvas.getByRole("button", { name: "Yes, review them" })).toBeInTheDocument();
   },
 };
-export const AcceptedLight: Story = {
-  args: { theme: "light", stage: "accepted" },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("button", { name: "Yes, create the skills" })).toBeInTheDocument();
-  },
-};
