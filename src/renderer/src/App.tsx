@@ -100,7 +100,7 @@ import { PAGE_RAIL_ITEMS, type PageId, PageRail } from "./components/PageRail";
 import { PanelResizer, readPanelWidth, savePanelWidth } from "./components/PanelResizer";
 import { ProvidersPage } from "./components/ProvidersPage";
 import { RemoteDesktopPage, RemoteDesktopSafety } from "./components/RemoteDesktopPage";
-import { ServerRail } from "./components/ServerRail";
+import { ServerRail, serverLabel } from "./components/ServerRail";
 import { ShortcutsDialog } from "./components/ShortcutsDialog";
 import { Sidebar } from "./components/Sidebar";
 import type { SidebarFolderActions } from "./components/SidebarFolders";
@@ -2126,7 +2126,7 @@ export function App() {
                 onOpenSettings={() => setPermissionsOpen(true)}
               />
               <Sidebar
-                serverName={activeServer()?.name ?? "Local"}
+                serverName={serverLabel(activeServer() ?? { kind: "local", name: "" })}
                 bots={botList()}
                 activeBotId={activeDirectMemberId() || channelsOpen() ? "" : (activeBot()?.id ?? "")}
                 people={directPeople()}

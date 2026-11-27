@@ -3237,7 +3237,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
   it("shows the server rail and opens the join flow", async () => {
     render(() => <App />);
     expect(await screen.findByRole("complementary", { name: "Servers" })).toBeInTheDocument();
-    expect(screen.getByText("Local", { selector: ".sidebar-server-name" })).toBeInTheDocument();
+    expect(screen.getByText("This computer", { selector: ".sidebar-server-name" })).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: "Add remote server" }));
     expect(screen.getByRole("dialog", { name: "Join a COSGRAL team" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Invitation link" })).toBeInTheDocument();
@@ -3273,7 +3273,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
 
     render(() => <App />);
 
-    expect(await screen.findByText("Local", { selector: ".sidebar-server-name" })).toBeInTheDocument();
+    expect(await screen.findByText("This computer", { selector: ".sidebar-server-name" })).toBeInTheDocument();
     await fireEvent.click(screen.getByRole("button", { name: "Design studio server" }));
     expect(await screen.findByText("Design studio", { selector: ".sidebar-server-name" })).toBeInTheDocument();
   });
@@ -3282,7 +3282,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     render(() => <App />);
     await screen.findByRole("heading", { name: "Chief" });
     expect(screen.queryByRole("button", { name: "Open publishing controls" })).not.toBeInTheDocument();
-    await fireEvent.contextMenu(screen.getByRole("button", { name: "Local server" }), {
+    await fireEvent.contextMenu(screen.getByRole("button", { name: "This computer" }), {
       clientX: 32,
       clientY: 80,
     });
@@ -3316,7 +3316,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     render(() => <App />);
 
     await screen.findByRole("heading", { name: "Chief" });
-    await fireEvent.contextMenu(screen.getByRole("button", { name: "Local server" }), {
+    await fireEvent.contextMenu(screen.getByRole("button", { name: "This computer" }), {
       clientX: 32,
       clientY: 80,
     });
@@ -3341,7 +3341,7 @@ describe("COSGRAL Workspace connected desktop shell", () => {
     render(() => <App />);
 
     expect(await screen.findByRole("complementary", { name: "Servers" })).toBeInTheDocument();
-    await fireEvent.contextMenu(screen.getByRole("button", { name: "Local server" }), {
+    await fireEvent.contextMenu(screen.getByRole("button", { name: "This computer" }), {
       clientX: 32,
       clientY: 80,
     });

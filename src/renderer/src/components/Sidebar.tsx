@@ -558,6 +558,7 @@ export function Sidebar(props: SidebarProps) {
           type="button"
           class="sidebar-compact-search"
           aria-label={t("Expand sidebar and search chats")}
+          title={props.compact ? t("Expand sidebar and search chats") : undefined}
           aria-hidden={props.compact ? undefined : "true"}
           tabindex={props.compact ? 0 : -1}
           onClick={expandToSearch}
