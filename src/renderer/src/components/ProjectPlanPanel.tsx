@@ -75,12 +75,13 @@ export function ProjectPlanPill(props: { channel: WorkspaceChannel; onToggle?: (
   };
   return (
     <details
+      class="project-plan-pill"
       onToggle={(event) => {
         props.onToggle?.(event);
         setOpen(event.currentTarget.open);
       }}
     >
-      <summary title={t("Project plan")}>
+      <summary title={hint() ? `${t("Project plan")}: ${hint()}` : t("Project plan")}>
         <Sparkles size={14} stroke-width={1.5} aria-hidden="true" />
         <span class="channel-pill-label">{t("Project plan")}</span>
         <Show when={hint()}>{(text) => <span class="project-plan-hint">{text()}</span>}</Show>

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { flush } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import { ChannelEditor } from "./ChannelEditor";
+import { setLanguage } from "../i18n";
+import { ChannelEditor, saveProblemText } from "./ChannelEditor";
 
 const bots = [
   { id: "a", name: "Planner" },
@@ -35,5 +37,20 @@ describe("ChannelEditor", () => {
     await fireEvent.click(screen.getByRole("button", { name: "Create project" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Name already exists");
     expect(screen.getByLabelText("Project name")).toHaveValue("launch");
+  });
+  it("says in plain Polish that a project name is taken, without the word channel", () => {
+    setLanguage("pl");
+    flush();
+    try {
+      const taken = new Error("Error invoking remote method 'x': Error: A channel named pokaz-projekt already exists.");
+      expect(saveProblemText(taken)).toBe("Projekt o nazwie pokaz-projekt już istnieje. Wybierz inną nazwę.");
+      expect(saveProblemText(new Error("The lead must be a member of the channel."))).toBe(
+        "Wybierz lidera spośród członków projektu.",
+      );
+      expect(saveProblemText("nope")).toBe("Nie udało się zapisać projektu. Spróbuj ponownie.");
+    } finally {
+      setLanguage("en");
+      flush();
+    }
   });
 });

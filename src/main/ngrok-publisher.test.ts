@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import type { SpawnOptions } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
@@ -32,6 +33,11 @@ function fakeProcess() {
   return { child, stdout, events };
 }
 
+/** A stand-in for `spawn`: the same three parameters, so the calls it records are typed. */
+function fakeSpawn<Child>(make: () => Child) {
+  return vi.fn((_executable: string, _args: readonly string[], _options: SpawnOptions) => make());
+}
+
 const SETTINGS = { authtoken: "2abcDEFghiJKLmnoPQRstuVWXyz_0123456789ab", domain: "nazwa-test.ngrok-free.app" };
 
 describe("explainNgrokFailure", () => {
@@ -46,7 +52,7 @@ describe("explainNgrokFailure", () => {
 describe("NgrokPublisher", () => {
   it("starts ngrok for the local port and the saved domain, without the token on the command line", async () => {
     const { child, stdout } = fakeProcess();
-    const spawnProcess = vi.fn(() => child);
+    const spawnProcess = fakeSpawn(() => child);
     const publisher = new NgrokPublisher({
       binDirectory: "/unused",
       getSettings: () => SETTINGS,
@@ -71,7 +77,7 @@ describe("NgrokPublisher", () => {
     await expect(empty.publish(1)).rejects.toThrow(NGROK_MESSAGES.notConfigured);
 
     const { child, stdout, events } = fakeProcess();
-    const spawnProcess = vi.fn(() => child);
+    const spawnProcess = fakeSpawn(() => child);
     const publisher = new NgrokPublisher({
       binDirectory: "/unused",
       getSettings: () => SETTINGS,
@@ -89,7 +95,7 @@ describe("NgrokPublisher", () => {
     const first = fakeProcess();
     const second = fakeProcess();
     const processes = [first.child, second.child];
-    const spawnProcess = vi.fn(() => {
+    const spawnProcess = fakeSpawn(() => {
       const next = processes.shift();
       if (!next) throw new Error("no more");
       return next;

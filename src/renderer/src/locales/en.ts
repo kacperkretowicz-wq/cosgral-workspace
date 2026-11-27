@@ -1222,6 +1222,12 @@ export const en = {
   "Uses Windows apps with the mouse and keyboard after you allow it.":
     "Uses Windows apps with the mouse and keyboard after you allow it.",
   "Remote desktop works on Windows in this version.": "Remote desktop works on Windows in this version.",
+  "This computer cannot be controlled: the Windows driver is missing.":
+    "This computer cannot be controlled: the Windows driver is missing.",
+  "This computer cannot encrypt secrets, so remote desktop stays off.":
+    "This computer cannot encrypt secrets, so remote desktop stays off.",
+  "Codex CLI was found but could not be started. Run `codex --version` in a new terminal.":
+    "Codex CLI was found but could not be started. Run `codex --version` in a new terminal.",
   "Codex (this computer)": "Codex (this computer)",
   "Claude (this computer)": "Claude (this computer)",
   "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.":
@@ -2390,6 +2396,8 @@ export const en = {
   "Use lowercase letters, digits and dashes for the project name.":
     "Use lowercase letters, digits and dashes for the project name.",
   "Choose a lead from the project members.": "Choose a lead from the project members.",
+  "A project named {name} already exists. Choose another name.":
+    "A project named {name} already exists. Choose another name.",
   "Could not save the project. Try again.": "Could not save the project. Try again.",
   "Choose the team and shared instructions for this project.":
     "Choose the team and shared instructions for this project.",

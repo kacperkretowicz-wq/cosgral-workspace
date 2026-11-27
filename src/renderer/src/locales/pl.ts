@@ -1226,6 +1226,12 @@ export const pl = {
   "Uses Windows apps with the mouse and keyboard after you allow it.":
     "Obsługuje aplikacje Windows myszą i klawiaturą, gdy na to pozwolisz.",
   "Remote desktop works on Windows in this version.": "Zdalny pulpit działa w tej wersji tylko na Windows.",
+  "This computer cannot be controlled: the Windows driver is missing.":
+    "Tego komputera nie da się sterować, bo brakuje sterownika Windows.",
+  "This computer cannot encrypt secrets, so remote desktop stays off.":
+    "Ten komputer nie potrafi bezpiecznie zapisać haseł, więc zdalny pulpit zostaje wyłączony.",
+  "Codex CLI was found but could not be started. Run `codex --version` in a new terminal.":
+    "Program Codex został znaleziony, ale nie dało się go uruchomić. Otwórz nowe okno terminala i wpisz `codex --version`, żeby zobaczyć, co jest nie tak.",
   "Codex (this computer)": "Codex (ten komputer)",
   "Claude (this computer)": "Claude (ten komputer)",
   "Claude CLI was not found. Install Claude Code, run `claude auth login`, then choose Try again.":
@@ -2398,6 +2404,8 @@ export const pl = {
   OK: "OK",
   "Use lowercase letters, digits and dashes for the project name.": "Nazwa projektu: małe litery, cyfry i myślniki.",
   "Choose a lead from the project members.": "Wybierz lidera spośród członków projektu.",
+  "A project named {name} already exists. Choose another name.":
+    "Projekt o nazwie {name} już istnieje. Wybierz inną nazwę.",
   "Could not save the project. Try again.": "Nie udało się zapisać projektu. Spróbuj ponownie.",
   "Choose the team and shared instructions for this project.": "Wybierz zespół i wspólne instrukcje dla tego projektu.",
   "Project name": "Nazwa projektu",
