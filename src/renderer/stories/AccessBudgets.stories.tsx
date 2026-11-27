@@ -134,7 +134,7 @@ function BudgetScene(props: { scene: SceneName }) {
     </Show>
   );
 }
-function Scene(props: { scene: SceneName; theme: "dark" | "light" }) {
+function Scene(props: { scene: SceneName; theme: "dark" }) {
   return (
     <ThemeFrame theme={props.theme}>
       <main class="providers-page">
@@ -169,12 +169,3 @@ export const BudgetOk: Story = { args: { scene: "ok" } };
 export const BudgetWarning: Story = { args: { scene: "warning" } };
 export const BudgetExhausted: Story = { args: { scene: "exhausted" } };
 export const CostUnavailable: Story = { args: { scene: "cost-unavailable" } };
-export const WorkingFolderLight: Story = { args: { theme: "light" } };
-export const AskFirstLight: Story = { args: { scene: "ask-first", theme: "light" } };
-export const FullLight: Story = { args: { scene: "full", theme: "light" } };
-export const RaiseApprovalLight: Story = { args: { scene: "raise", theme: "light" } };
-export const AccessDeniedLight: Story = { args: { scene: "denied", theme: "light" } };
-export const BudgetOkLight: Story = { args: { scene: "ok", theme: "light" } };
-export const BudgetWarningLight: Story = { args: { scene: "warning", theme: "light" } };
-export const BudgetExhaustedLight: Story = { args: { scene: "exhausted", theme: "light" } };
-export const CostUnavailableLight: Story = { args: { scene: "cost-unavailable", theme: "light" } };

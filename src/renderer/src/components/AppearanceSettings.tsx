@@ -10,10 +10,8 @@ import {
   type AppFont,
   type AppFontWeight,
   type AppSendShortcut,
-  type AppTheme,
   type AppUiScale,
   DEFAULT_APP_APPEARANCE,
-  normalizeAppTheme,
 } from "@openbot/contracts/ipc";
 import { createSignal, For, onSettled, Show } from "solid-js";
 import { t } from "../i18n";
@@ -76,11 +74,10 @@ function pickSteps(value: string): AppAgentSteps {
 }
 
 /**
- * Settings → Appearance: theme plus the look/send knobs from appSettings.appearance
+ * Settings → Appearance: the look/send knobs from appSettings.appearance
  * (scale, font, accent, send shortcut, unread first, agent steps). Saved through appSettings.update.
  */
 export function AppearanceSettings() {
-  const [theme, setTheme] = createSignal<AppTheme>("dark");
   const [uiScale, setUiScale] = createSignal<AppUiScale>(DEFAULT_APP_APPEARANCE.uiScale);
   const [font, setFont] = createSignal<AppFont>(DEFAULT_APP_APPEARANCE.font);
   const [fontWeight, setFontWeight] = createSignal<AppFontWeight>(DEFAULT_APP_APPEARANCE.fontWeight);
@@ -93,7 +90,6 @@ export function AppearanceSettings() {
   const [error, setError] = createSignal("");
 
   function applyFromSettings(s: {
-    theme: AppTheme;
     appearance: {
       uiScale: AppUiScale;
       font: AppFont;
@@ -104,7 +100,6 @@ export function AppearanceSettings() {
       agentSteps: AppAgentSteps;
     };
   }) {
-    setTheme(s.theme);
     setUiScale(s.appearance.uiScale);
     setFont(s.appearance.font);
     setFontWeight(s.appearance.fontWeight);
@@ -124,7 +119,7 @@ export function AppearanceSettings() {
       .catch(() => setError(t("Could not load appearance settings.")));
   });
 
-  async function save(patch: { theme?: AppTheme; appearance?: Record<string, string | number | boolean> }) {
+  async function save(patch: { appearance?: Record<string, string | number | boolean> }) {
     setBusy(true);
     try {
       const result = await window.openbot.appSettings?.update(patch);
@@ -147,22 +142,6 @@ export function AppearanceSettings() {
 
   return (
     <section class="settings-modal-group appearance-settings" aria-label={t("Appearance")}>
-      <Field
-        label={t("Theme")}
-        description={t("System follows your computer’s appearance. Changes are saved automatically.")}
-      >
-        <NativeSelect
-          value={theme()}
-          disabled={disabled()}
-          aria-label={t("Theme")}
-          onChange={(e) => void save({ theme: normalizeAppTheme(e.currentTarget.value) })}
-        >
-          <option value="system">{t("System")}</option>
-          <option value="light">{t("Light")}</option>
-          <option value="dark">{t("Dark")}</option>
-        </NativeSelect>
-      </Field>
-
       <Field label={t("Interface scale")} description={t("Size of the whole window relative to normal.")}>
         <NativeSelect
           value={String(uiScale())}

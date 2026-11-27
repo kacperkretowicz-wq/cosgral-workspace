@@ -28,12 +28,7 @@ export const en = {
   "Up to date": "Up to date",
   Checked: "Checked",
   "Check for updates": "Check for updates",
-  Theme: "Theme",
   System: "System",
-  Light: "Light",
-  Dark: "Dark",
-  "System follows your computer’s appearance. Changes are saved automatically.":
-    "System follows your computer’s appearance. Changes are saved automatically.",
   "Could not load appearance settings.": "Could not load appearance settings.",
   "Could not save appearance. Try again.": "Could not save appearance. Try again.",
   "Interface scale": "Interface scale",

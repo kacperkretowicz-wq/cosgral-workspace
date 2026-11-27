@@ -66,19 +66,9 @@ export const Dark: Story = {
   render: () => <RailShell theme="dark" />,
 };
 
-export const Light: Story = {
-  name: "Rail · light",
-  render: () => <RailShell theme="light" />,
-};
-
 export const ComingSoonDark: Story = {
   name: "Coming soon · dark",
   render: () => <RailShell theme="dark" initial="workflows" />,
-};
-
-export const ComingSoonLight: Story = {
-  name: "Coming soon · light",
-  render: () => <RailShell theme="light" initial="workflows" />,
 };
 
 export const InTheApp: Story = {
@@ -108,10 +98,6 @@ export const Overflow: Story = {
     // The page is drawn after the menu closes; wait for it instead of checking the first frame.
     await waitFor(() => expect(canvas.getByRole("heading", { name: "Library" })).toBeVisible());
   },
-};
-export const OverflowLight: Story = {
-  ...Overflow,
-  render: () => <RailShell theme="light" initial="phone" height="300px" />,
 };
 
 export const PinnedPages: Story = {

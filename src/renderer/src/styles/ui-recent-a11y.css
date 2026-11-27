@@ -76,14 +76,6 @@
   }
 }
 
-/* Gradient label can fall below 4.5:1 on light theme — solid accent text. */
-:root[data-theme="light"] .tasks-screen-hero-lead em,
-[data-story-theme="light"] .tasks-screen-hero-lead em {
-  background: none;
-  color: var(--cosgral-accent-text);
-  -webkit-text-fill-color: var(--cosgral-accent-text);
-}
-
 @media (forced-colors: active) {
   .chat-side-panel-launcher-item,
   .chat-right-panel-tab,

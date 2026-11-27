@@ -16,9 +16,9 @@ const groups = [
   { scope: "provider:endpoint:local", label: "Local server" },
   { scope: "*", label: "All providers" },
 ];
-function Scene(props: { agent?: boolean; light?: boolean }) {
+function Scene(props: { agent?: boolean }) {
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <Show when={props.agent} fallback={<ProviderFallbackLists groups={groups} options={STORY_MODELS} />}>
           <AgentSettingsW3 botId="chief" />
@@ -30,7 +30,7 @@ function Scene(props: { agent?: boolean; light?: boolean }) {
 const meta = {
   title: "COSGRAL/Provider fallback lists",
   component: Scene,
-  args: { agent: false, light: false },
+  args: { agent: false },
   beforeEach: async () => {
     const previous = window.openbot;
     const mock = createMockOpenBot();
@@ -130,11 +130,5 @@ export const EmptyProvider: Story = {
       await group.findByText("This list is empty. Later fallback layers may still apply."),
     ).toBeInTheDocument();
     await expect(group.getByRole("button", { name: "Save order" })).toBeDisabled();
-  },
-};
-export const Light: Story = {
-  args: { light: true },
-  play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByText("Unavailable")).toBeInTheDocument();
   },
 };

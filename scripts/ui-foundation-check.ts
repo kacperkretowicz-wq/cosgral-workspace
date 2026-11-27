@@ -71,9 +71,9 @@ const featureStyles = filesUnder(resolve(rendererRoot, "styles"))
   .filter((path) => path.endsWith(".css"))
   .map((path) => {
     const source = readFileSync(path, "utf8");
-    // The light palette is a token definition boundary, like :root in styles.css.
+    // The token file is a token definition boundary, like :root in styles.css.
     // Keep checking ordinary declarations in it; only palette definitions are exempt.
-    return path.endsWith("theme-light.css") || path.endsWith("cosgral-tokens.css")
+    return path.endsWith("cosgral-tokens.css")
       ? source.replace(/--(?:openbot|cosgral)-[\w-]+\s*:[^;{}]+;/gu, "")
       : source;
   })

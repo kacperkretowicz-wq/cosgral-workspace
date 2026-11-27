@@ -74,18 +74,3 @@ const dangerStates: Story = {
   },
 };
 export const DangerFilled: Story = dangerStates;
-export const DangerFilledLight: Story = {
-  ...dangerStates,
-  render: () => (
-    <ThemeFrame theme="light">
-      <main class="foundation-story">
-        <Heading as="h1">Destructive actions</Heading>
-        <Button variant="danger-solid">Delete item</Button>
-        <Button variant="danger-solid" disabled>
-          Delete unavailable
-        </Button>
-        <Button variant="danger">Soft danger</Button>
-      </main>
-    </ThemeFrame>
-  ),
-};

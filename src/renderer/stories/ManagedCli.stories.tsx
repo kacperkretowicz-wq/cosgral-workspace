@@ -64,12 +64,3 @@ export const CustomPath: Story = {
 export const AwaitingApproval: Story = { args: { state: { ...empty, phase: "awaiting-approval" } } };
 export const Verifying: Story = { args: { state: { ...empty, phase: "verifying" } } };
 export const Installing: Story = { args: { state: { ...empty, phase: "installing" } } };
-export const Light: Story = {
-  decorators: [
-    (Story) => (
-      <ThemeFrame theme="light">
-        <Story />
-      </ThemeFrame>
-    ),
-  ],
-};

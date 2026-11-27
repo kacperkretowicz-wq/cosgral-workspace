@@ -6,7 +6,7 @@ import { EndpointsSection } from "../src/components/EndpointsSection";
 import { createMockEndpointsApi } from "./mock-endpoints-api";
 import { ThemeFrame } from "./theme-frame";
 
-function Scene(props: { state: ModelEndpoint["state"]; remote?: boolean; light?: boolean }) {
+function Scene(props: { state: ModelEndpoint["state"]; remote?: boolean }) {
   const remote = untrack(() => props.remote);
   const api = createMockEndpointsApi(0);
   const ready = api.save({
@@ -20,7 +20,7 @@ function Scene(props: { state: ModelEndpoint["state"]; remote?: boolean; light?:
     list: async () => [{ ...(await ready), state: props.state, models: props.state === "ok" ? ["llama3:8b"] : [] }],
   };
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <EndpointsSection api={client} />
       </div>
@@ -69,4 +69,3 @@ export const MaskedKey: Story = {
     await expect(c.queryByDisplayValue("test-key-4242")).not.toBeInTheDocument();
   },
 };
-export const Light: Story = { args: { light: true, state: "ok" }, play: status("Reachable") };

@@ -155,19 +155,9 @@ export const BarDark: Story = {
   render: () => <BarFrame theme="dark" sessions={[WATCHING, CAPTURING_CAMERA]} />,
 };
 
-export const BarLight: Story = {
-  name: "Bar · light",
-  render: () => <BarFrame theme="light" sessions={[WATCHING, CAPTURING_CAMERA]} />,
-};
-
 export const ScreenRequestDark: Story = {
   name: "Approval · screen (window, live) · dark",
   render: () => <CardFrame theme="dark" approval={SCREEN_APPROVAL} />,
-};
-
-export const ScreenRequestLight: Story = {
-  name: "Approval · screen (window, live) · light",
-  render: () => <CardFrame theme="light" approval={SCREEN_APPROVAL} />,
 };
 
 export const CameraRequestDark: Story = {
@@ -175,19 +165,9 @@ export const CameraRequestDark: Story = {
   render: () => <CardFrame theme="dark" approval={CAMERA_APPROVAL} />,
 };
 
-export const CameraRequestLight: Story = {
-  name: "Approval · camera · light",
-  render: () => <CardFrame theme="light" approval={CAMERA_APPROVAL} />,
-};
-
 export const SidebarLookingDark: Story = {
   name: "Sidebar row · dark",
   render: () => <SidebarFrame theme="dark" />,
-};
-
-export const SidebarLookingLight: Story = {
-  name: "Sidebar row · light",
-  render: () => <SidebarFrame theme="light" />,
 };
 
 export const InTheApp: Story = {

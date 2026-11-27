@@ -44,9 +44,9 @@ const seed: ThreadSummary[] = [
     branchedFromMessageId: null,
   },
 ];
-function Scene(props: { light?: boolean }) {
+function Scene() {
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <ThreadPanel botId="chief" />
       </div>
@@ -56,7 +56,6 @@ function Scene(props: { light?: boolean }) {
 const meta = {
   title: "COSGRAL/Agent threads",
   component: Scene,
-  args: { light: false },
   beforeEach: () => {
     const previous = window.openbot;
     const mock = createMockOpenBot();
@@ -121,12 +120,5 @@ export const DeleteConfirmation: Story = {
     );
     await userEvent.click(c.getByRole("button", { name: "Keep thread" }));
     await expect(c.queryByRole("button", { name: "Delete permanently" })).not.toBeInTheDocument();
-  },
-};
-export const Light: Story = {
-  args: { light: true },
-  play: async ({ canvasElement }) => {
-    const c = await open(canvasElement);
-    await expect(c.getByRole("region", { name: "Needs you by thread" })).toBeInTheDocument();
   },
 };

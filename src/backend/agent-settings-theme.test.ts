@@ -69,20 +69,22 @@ async function open(root?: string) {
   return { dir, database, service, bots, updates, events, availability };
 }
 
-it("persists theme across reopening and normalizes older or edited settings", async () => {
+it("always reports the dark theme, also for older saved settings with light, system or unknown values", async () => {
   const { dir, database, service, events } = await open();
   expect(service.appSettings().theme).toBe("dark");
-  await service.updateAppSettings({ theme: "light" });
+  await service.updateAppSettings(JSON.parse('{"theme":"light"}'));
+  expect(service.appSettings().theme).toBe("dark");
   expect(events).toContainEqual({ type: "app-settings-changed", settings: service.appSettings() });
   database.close();
-  const reopened = await open(dir);
-  expect(reopened.service.appSettings().theme).toBe("light");
-  await reopened.service.updateAppSettings({ language: "pl" });
-  expect(reopened.service.appSettings().theme).toBe("light");
-  reopened.database.connection
-    .prepare("UPDATE projection_app_settings SET value_json = ? WHERE setting_key = 'app'")
-    .run(JSON.stringify({ theme: "sepia" }));
-  reopened.database.close();
-  const repaired = await open(dir);
-  expect(repaired.service.appSettings().theme).toBe("dark");
+  for (const saved of ["light", "system", "sepia"]) {
+    const writer = await open(dir);
+    writer.database.connection
+      .prepare("UPDATE projection_app_settings SET value_json = ? WHERE setting_key = 'app'")
+      .run(JSON.stringify({ theme: saved, language: "pl" }));
+    writer.database.close();
+    const repaired = await open(dir);
+    expect(repaired.service.appSettings().theme).toBe("dark");
+    expect(repaired.service.appSettings().language).toBe("pl");
+    repaired.database.close();
+  }
 });

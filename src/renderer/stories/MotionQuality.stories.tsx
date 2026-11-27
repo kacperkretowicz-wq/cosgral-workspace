@@ -78,10 +78,3 @@ export const Dark: Story = {
     await assertContrast(canvasElement, "dark");
   },
 };
-
-export const Light: Story = {
-  args: { theme: "light" },
-  play: async ({ canvasElement }) => {
-    await assertContrast(canvasElement, "light");
-  },
-};

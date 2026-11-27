@@ -216,8 +216,6 @@
   }
 }
 
-/* Light theme: the step colours are the light palette's own (dark shades), so the type label on the tint keeps 4.5:1. */
-
 /* Workflows page (WorkflowsPage.tsx): saved workflows on the left, the editor on the right. ------------------ */
 
 .workflows-page .workflows-layout {

@@ -491,15 +491,15 @@ describe("phone web app", { timeout: suiteTimeout(30_000, 30_000) }, () => {
     expect(localStorage.getItem("cosgral.phone.v1")).toBeNull();
   });
 
-  it("forgets the phone after a second tap, and keeps the chosen theme", async () => {
+  it("forgets the phone after a second tap, and is always dark", async () => {
     const fixture = await pairThroughTheApp();
     one("button[data-action='pair']").click();
     await until(() => !!document.querySelector("[data-agent='scout']"), "the agent list");
     one("nav [data-tab='phone']").click();
     await until(() => !!document.querySelector('[data-screen="phone"]'), "the phone screen");
-    one("[data-theme-choice='dark']").click();
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(localStorage.getItem("cosgral.theme")).toBe("dark");
+    expect(document.querySelector("[data-theme-choice]")).toBeNull();
+    expect(localStorage.getItem("cosgral.theme")).toBeNull();
     one("button[data-action='forget']").click();
     expect(localStorage.getItem("cosgral.phone.v1")).not.toBeNull();
     one("button[data-action='forget']").click();

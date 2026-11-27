@@ -7,12 +7,9 @@ import { createMockContext } from "./mock-context";
 import { createMockOpenBot } from "./mock-openbot";
 import { ThemeFrame } from "./theme-frame";
 
-function Scene(props: {
-  variant: "reported" | "unavailable" | "warning" | "compacting" | "settings";
-  light?: boolean;
-}) {
+function Scene(props: { variant: "reported" | "unavailable" | "warning" | "compacting" | "settings" }) {
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <Show when={props.variant === "settings"} fallback={<ContextIndicator botId="chief" threadId="one" />}>
           <ContextSettingsSection />
@@ -24,7 +21,7 @@ function Scene(props: {
 const meta = {
   title: "COSGRAL/Context controls",
   component: Scene,
-  args: { variant: "reported", light: false },
+  args: { variant: "reported" },
   beforeEach: async ({ args }) => {
     const previous = window.openbot;
     const mock = createMockOpenBot();
@@ -82,11 +79,5 @@ export const Settings: Story = {
     await userEvent.click(c.getByRole("switch", { name: "Automatically compact context" }));
     await userEvent.click(c.getByRole("button", { name: "Save context settings" }));
     await waitFor(() => expect(c.getByText("Context settings saved.")).toBeInTheDocument());
-  },
-};
-export const Light: Story = {
-  args: { variant: "warning", light: true },
-  play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement).findByRole("progressbar")).toHaveAttribute("value", "82");
   },
 };

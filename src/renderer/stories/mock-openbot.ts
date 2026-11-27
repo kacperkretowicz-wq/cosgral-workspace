@@ -234,7 +234,7 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   let setupState = clone<AppSetupState>(options.setupState ?? { completed: true, preferredProvider: "codex" });
   let appSettingsState: AppSettings = {
     language: "en",
-    theme: "system",
+    theme: "dark",
     languageChosen: true,
     notifications: defaultNotificationPreferences(),
     tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),

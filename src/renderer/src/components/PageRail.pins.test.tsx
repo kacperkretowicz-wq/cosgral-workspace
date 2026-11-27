@@ -81,7 +81,7 @@ it("uses a newer settings event instead of a late load response", async () => {
     type: "app-settings-changed",
     settings: {
       language: "en",
-      theme: "system",
+      theme: "dark",
       languageChosen: true,
       notifications: defaultNotificationPreferences(),
       tabs: SETTINGS_TABS.map((id) => ({ id, available: true })),

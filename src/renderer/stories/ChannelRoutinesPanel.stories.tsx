@@ -65,26 +65,10 @@ export const Dark: Story = {
     await expect(canvas.getByText("Weekly report")).toBeInTheDocument();
   },
 };
-export const Light: Story = {
-  args: { theme: "light" },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Morning brief")).toBeInTheDocument();
-  },
-};
 
 /** The edit form opened on the first routine, in both themes (the contrast of fields, days and buttons is watched). */
 export const EditingDark: Story = {
   args: { theme: "dark" },
-  play: async ({ canvas, userEvent }) => {
-    const buttons = await canvas.findAllByRole("button", { name: "Edit" });
-    const first = buttons[0];
-    if (!first) throw new Error("No routine to edit.");
-    await userEvent.click(first);
-    await expect(await canvas.findByRole("region", { name: "Edit routine" })).toBeInTheDocument();
-  },
-};
-export const EditingLight: Story = {
-  args: { theme: "light" },
   play: async ({ canvas, userEvent }) => {
     const buttons = await canvas.findAllByRole("button", { name: "Edit" });
     const first = buttons[0];

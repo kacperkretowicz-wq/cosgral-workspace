@@ -6,7 +6,7 @@ import { InitialSetup } from "../src/components/InitialSetup";
 import { STORY_AGENT_STATUS } from "./fixtures";
 import { createMockOpenBot } from "./mock-openbot";
 
-function Scene(props: { theme: "dark" | "light"; settings?: boolean; needs?: boolean }) {
+function Scene(props: { theme: "dark"; settings?: boolean; needs?: boolean }) {
   const previous = window.openbot;
   const oldTheme = document.documentElement.dataset.theme;
   const mock = createMockOpenBot({
@@ -81,7 +81,6 @@ export const ConversationDark: Story = {
     await expect(canvas.findByRole("navigation", { name: "Chat list" })).resolves.toBeInTheDocument();
   },
 };
-export const ConversationLight: Story = { ...ConversationDark, render: () => <Scene theme="light" /> };
 export const SettingsDark: Story = {
   render: () => <Scene theme="dark" settings />,
   play: async ({ canvasElement, userEvent }) => {
@@ -91,7 +90,6 @@ export const SettingsDark: Story = {
     await expect(page.findByLabelText("Theme")).resolves.toBeInTheDocument();
   },
 };
-export const SettingsLight: Story = { ...SettingsDark, render: () => <Scene theme="light" settings /> };
 export const NeedsYouDark: Story = {
   render: () => <Scene theme="dark" needs />,
   play: async ({ canvas }) => {
@@ -103,4 +101,3 @@ export const NeedsYouDark: Story = {
     );
   },
 };
-export const NeedsYouLight: Story = { ...NeedsYouDark, render: () => <Scene theme="light" needs /> };

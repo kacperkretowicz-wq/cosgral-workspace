@@ -70,7 +70,6 @@ const meta = { title: "COSGRAL/Action cards", component: Scene } satisfies Meta<
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Dark: Story = { args: { theme: "dark" } };
-export const Light: Story = { args: { theme: "light" } };
 
 export const CliDownloadApproval: Story = {
   args: { theme: "dark" },

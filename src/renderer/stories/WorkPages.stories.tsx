@@ -6,7 +6,6 @@ import { SchedulePage } from "../src/components/SchedulePage";
 import { WorkflowsPage } from "../src/components/WorkflowsPage";
 import { STORY_BOTS } from "./fixtures";
 import { createMockOpenBot } from "./mock-openbot";
-import { ThemeFrame } from "./theme-frame";
 
 /** The rail pages in the shared work-page frame, each with the mock API (one frame, three layouts). */
 function Mocked(props: { children: () => ReturnType<typeof LibraryPage> }) {
@@ -84,32 +83,4 @@ export const Schedule: Story = {
     await expect(canvas.getByRole("heading", { level: 1, name: "Schedule" })).toBeInTheDocument();
     await expect(canvas.getByRole("navigation", { name: "Schedule sections" })).toBeInTheDocument();
   },
-};
-
-/** The same pages in the light theme, so the accessibility check (axe) also covers the light contrast. */
-export const LibraryLight: Story = {
-  render: () => (
-    <ThemeFrame theme="light">
-      <Mocked>{() => <LibraryPage />}</Mocked>
-    </ThemeFrame>
-  ),
-  play: Library.play,
-};
-
-export const WorkflowsLight: Story = {
-  render: () => (
-    <ThemeFrame theme="light">
-      <Mocked>{() => <WorkflowsPage />}</Mocked>
-    </ThemeFrame>
-  ),
-  play: Workflows.play,
-};
-
-export const ScheduleLight: Story = {
-  render: () => (
-    <ThemeFrame theme="light">
-      <Mocked>{() => <SchedulePage bots={STORY_BOTS} />}</Mocked>
-    </ThemeFrame>
-  ),
-  play: Schedule.play,
 };

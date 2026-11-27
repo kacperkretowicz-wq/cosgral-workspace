@@ -1,7 +1,7 @@
 // T-U / T-O: screenshot states for COSGRAL (real Electron, sandbox only).
 //   COSGRAL_SANDBOX_ROOT=<sandbox> COSGRAL_SHOTS_OUT=<Shared/cosgral-docs/zrzuty-cosgral-17-11-e> node scripts/sandbox-shots-w12.ts
 // Writes 1440x900 PNGs outside the repo. No commit. `bun run build` first.
-// States: dark+light; New agent; chat+stub; menu +/@//; search; Tasks (steps/Open as chat); Usage (By model);
+// States: dark; New agent; chat+stub; menu +/@//; search; Tasks (steps/Open as chat); Usage (By model);
 // Schedule; message menu; agent cards; server settings; Marketplace (Agents/Skills); Library files + Vault connectors.
 
 import assert from "node:assert/strict";
@@ -317,7 +317,7 @@ async function reachMain(page: Page): Promise<string[]> {
   throw new Error(`main window missing (saw: ${seen.join(", ")})`);
 }
 
-async function setTheme(page: Page, theme: "dark" | "light"): Promise<void> {
+async function setTheme(page: Page, theme: "dark"): Promise<void> {
   await page.evaluate(`(async () => {
     const api = window.openbot.appSettings;
     if (!api?.update) throw new Error("no appSettings.update");
@@ -598,12 +598,6 @@ async function main(): Promise<void> {
       await clickRail(p, ["Agents", "Agenci"]).catch(() => undefined);
       await p.waitForTimeout(400);
       return "ciemny motyw + pasek / agenci (pusty → Nowy agent)";
-    });
-
-    await tryShot(app, pageRef, out, "02-light-sidebar", async (p) => {
-      await setTheme(p, "light");
-      await p.waitForTimeout(400);
-      return "jasny motyw + pasek";
     });
 
     await tryShot(app, pageRef, out, "03-new-agent", async (p) => {

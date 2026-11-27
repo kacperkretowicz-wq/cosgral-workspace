@@ -19,10 +19,7 @@ const account: {
   limitedUntil: null,
 };
 
-function Scene(props: {
-  variant: "ok" | "exhausted" | "unknown" | "limit-switched" | "limit-all" | "switched";
-  light?: boolean;
-}) {
+function Scene(props: { variant: "ok" | "exhausted" | "unknown" | "limit-switched" | "limit-all" | "switched" }) {
   const [dismissed, setDismissed] = createSignal(false);
 
   const ok = accountUsageFromSources({
@@ -45,7 +42,7 @@ function Scene(props: {
   });
 
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library account-usage-story">
         {props.variant === "ok" ? <AccountUsageMeter usage={ok} nowMs={nowMs} /> : null}
         {props.variant === "exhausted" ? <AccountUsageMeter usage={exhausted} nowMs={nowMs} /> : null}
@@ -164,8 +161,4 @@ export const SwitchedNotice: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Dismiss" }));
     await expect(body.getByText("Dismissed")).toBeInTheDocument();
   },
-};
-
-export const UsageOkLight: Story = {
-  args: { variant: "ok", light: true },
 };

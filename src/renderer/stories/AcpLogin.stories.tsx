@@ -65,12 +65,6 @@ export const MissingCommand: Story = {
     />
   ),
 };
-export const WaitingLight: Story = { parameters: { theme: "light" } };
-export const RejectedLight: Story = { ...Rejected, parameters: { theme: "light" } };
-export const SuccessLight: Story = { ...Success, parameters: { theme: "light" } };
-export const CancelledLight: Story = { ...Cancelled, parameters: { theme: "light" } };
-export const ErrorLight: Story = { ...LoginError, parameters: { theme: "light" } };
-export const MissingCommandLight: Story = { ...MissingCommand, parameters: { theme: "light" } };
 
 function SpacesScene() {
   const [list, setList] = createSignal<SpaceList>();
@@ -88,4 +82,3 @@ function SpacesScene() {
   );
 }
 export const ClientSpaces: Story = { render: () => <SpacesScene /> };
-export const ClientSpacesLight: Story = { ...ClientSpaces, parameters: { theme: "light" } };

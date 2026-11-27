@@ -12,9 +12,7 @@ import "./conversation-window/conversation-window.css";
 
 import { startAppearance } from "./appearance";
 import { startI18n } from "./i18n";
-import { startTheme } from "./theme";
 
-startTheme();
 startAppearance();
 startI18n();
 

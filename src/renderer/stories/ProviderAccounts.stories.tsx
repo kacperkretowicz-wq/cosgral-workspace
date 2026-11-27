@@ -24,10 +24,7 @@ const own: ProviderAccount = {
   login: { phase: "idle", message: null, url: null, userCode: null },
   checkedAt: null,
 };
-function Scene(props: {
-  variant: "empty" | "system" | "limit" | "error" | "code" | "waiting" | "live";
-  light?: boolean;
-}) {
+function Scene(props: { variant: "empty" | "system" | "limit" | "error" | "code" | "waiting" | "live" }) {
   const mock = createMockOpenBot();
   const previous = window.openbot;
   const api = mock.api.subscriptions;
@@ -63,7 +60,7 @@ function Scene(props: {
     window.openbot = previous;
   });
   return (
-    <ThemeFrame theme={props.light ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <ProviderAccounts />
         <AgentAccountPicker botId="chief" provider="codex" />
@@ -114,7 +111,6 @@ export const CodeRequired: Story = {
   },
 };
 export const WaitingForBrowser: Story = { args: { variant: "waiting" } };
-export const Light: Story = { args: { variant: "system", light: true } };
 export const AddAndLogin: Story = {
   args: { variant: "live" },
   play: async ({ canvasElement }) => {

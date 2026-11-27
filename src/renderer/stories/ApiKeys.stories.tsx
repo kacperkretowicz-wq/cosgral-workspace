@@ -4,7 +4,7 @@ import { ApiKeysSection } from "../src/components/ApiKeysSection";
 import { createMockApiKeysApi } from "./mock-api-keys-api";
 import { ThemeFrame } from "./theme-frame";
 
-function Scene(props: { variant: "empty" | "saved" | "rejected" | "light" }) {
+function Scene(props: { variant: "empty" | "saved" | "rejected" }) {
   const api = createMockApiKeysApi(0);
   const ready = (async () => {
     if (props.variant === "empty") return;
@@ -19,7 +19,7 @@ function Scene(props: { variant: "empty" | "saved" | "rejected" | "light" }) {
     },
   };
   return (
-    <ThemeFrame theme={props.variant === "light" ? "light" : "dark"}>
+    <ThemeFrame theme="dark">
       <div class="w2-library providers-page">
         <ApiKeysSection api={client} />
       </div>
@@ -77,8 +77,4 @@ export const SavedOk: Story = {
     await expect(await canvas.findByText(/••••ok12/)).toBeInTheDocument();
     await expect(await canvas.findByText("OK")).toBeInTheDocument();
   },
-};
-
-export const Light: Story = {
-  args: { variant: "light" },
 };
